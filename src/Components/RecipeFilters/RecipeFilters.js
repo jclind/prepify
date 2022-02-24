@@ -26,6 +26,7 @@ const RecipeFilters = ({
     getTopTags(5).then(tags => {
       setTags(tags.data)
     })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleSelectChange = e => {

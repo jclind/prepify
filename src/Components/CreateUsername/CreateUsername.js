@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import '../Form/FormStyles.scss'
 import './CreateUsername.scss'
 import { useAuth } from '../../context/AuthContext'
@@ -59,7 +59,7 @@ const CreateUsername = () => {
           <button className='form-action-btn btn'>
             {loadingCreateUsername ? (
               <TailSpin
-                heigth='30'
+                height='30'
                 width='30'
                 color='white'
                 arialLabel='loading'

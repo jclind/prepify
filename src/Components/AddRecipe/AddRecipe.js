@@ -11,7 +11,6 @@ import { useRecipe } from '../../context/RecipeContext'
 import { TailSpin } from 'react-loader-spinner'
 import LoadingBar from 'react-top-loading-bar'
 import RecipeTags from './RecipeTags/RecipeTags'
-import { Navigate, useNavigate } from 'react-router-dom'
 
 const AddRecipe = () => {
   const [recipeTitle, setRecipeTitle] = useState('')
@@ -248,7 +247,7 @@ const AddRecipe = () => {
             val={recipeTitle}
             setVal={setRecipeTitle}
             placeholder={'Mexican Chipotle Bowl...'}
-            characterLimit={50}
+            characterLimit={60}
           />
           <RecipeFormTextArea
             name='Recipe Description'

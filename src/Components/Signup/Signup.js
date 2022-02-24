@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
-import { AiOutlineUser, AiOutlineGoogle } from 'react-icons/ai'
+import { AiOutlineGoogle } from 'react-icons/ai'
 import { MdOutlineEmail, MdOutlineLock } from 'react-icons/md'
 import { useAuth } from '../../context/AuthContext'
 import { TailSpin } from 'react-loader-spinner'

@@ -113,6 +113,9 @@
           flex-wrap: wrap;
           gap: 0.25rem;
           width: 200px;
+          .tag {
+            padding-right: 0.5rem;
+          }
         }
 
         &:hover {

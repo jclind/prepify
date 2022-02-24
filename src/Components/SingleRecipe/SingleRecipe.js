@@ -62,6 +62,7 @@ const SingleRecipe = () => {
         )
       )
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [yieldSize])
 
   const { getRecipe } = useRecipe()
@@ -75,6 +76,7 @@ const SingleRecipe = () => {
       setCurrRecipe(res.data)
       setLoading(false)
     })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {

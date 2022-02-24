@@ -47,6 +47,7 @@ const ReviewFilters = ({ reviewListSort, setReviewListSort, isList }) => {
 
   useEffect(() => {
     setReviewListSort(options[0])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleSelectChange = e => {

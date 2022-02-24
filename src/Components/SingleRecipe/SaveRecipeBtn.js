@@ -49,6 +49,7 @@ const SaveRecipeBtn = ({ recipeId }) => {
         setIsSaved(currIsSaved)
       })
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
 
   return (

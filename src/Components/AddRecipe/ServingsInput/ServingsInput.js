@@ -51,10 +51,12 @@ const ServingsInput = ({ recipeYield, setRecipeYield }) => {
     if (recipeYield.value) {
       setValue(recipeYield.value)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
     setRecipeYield({ type, value })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [type, value])
 
   return (

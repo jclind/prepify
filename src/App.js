@@ -1,12 +1,10 @@
-import React, { useState, useEffect } from 'react'
+import React from 'react'
 import { Routes, Route } from 'react-router-dom'
 import AuthProvider from './context/AuthContext'
 import RecipeProvider from './context/RecipeContext'
 
 import Home from './Components/Home/Home'
 import Recipes from './Components/Recipes/Recipes'
-import Navbar from './Components/Navbar/Navbar'
-import Footer from './Components/Footer/Footer'
 import Login from './Components/Login/Login'
 import Signup from './Components/Signup/Signup'
 import ForgotPassword from './Components/ForgotPassword/ForgotPassword'

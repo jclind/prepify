@@ -3,10 +3,7 @@ import './Recipes.scss'
 import RecipeThumbnail from '../RecipeThumbnail/RecipeThumbnail'
 import RecipeFilters from '../RecipeFilters/RecipeFilters'
 import RecipeAPI from '../../api/recipes'
-import EJSON from 'ejson'
 import SearchRecipesInput from '../SearchRecipesInput/SearchRecipesInput'
-
-import { useRecipe } from '../../context/RecipeContext'
 
 const Recipes = () => {
   const [recipeList, setRecipeList] = useState([])
@@ -16,8 +13,6 @@ const Recipes = () => {
 
   const [currPage, setCurrPage] = useState(null)
   const [totalResults, setTotalResults] = useState(null)
-
-  const [loading, setLoading] = useState(false)
 
   const getRecipes = page => {
     console.log(page, selectFilterVal)
@@ -42,12 +37,14 @@ const Recipes = () => {
       setCurrPage(0)
       getRecipes(0)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectFilterVal, selectedTags])
 
   useEffect(() => {
     if (currPage !== null && currPage !== 0) {
       getRecipes(currPage)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currPage])
 
   return (

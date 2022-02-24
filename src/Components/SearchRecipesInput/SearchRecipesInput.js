@@ -4,6 +4,7 @@ import { AiOutlineSearch, AiOutlineStar, AiOutlineUser } from 'react-icons/ai'
 import { CgTimer } from 'react-icons/cg'
 import './SearchRecipesInput.scss'
 import { useRecipe } from '../../context/RecipeContext'
+import { formatRating } from '../../util/formatRating'
 
 const SearchRecipesInput = ({ autoComplete }) => {
   const [searchRecipeVal, setSearchRecipeVal] = useState('')
@@ -44,6 +45,7 @@ const SearchRecipesInput = ({ autoComplete }) => {
     if (autoComplete) {
       getAutoCompleteResult(searchRecipeVal)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchRecipeVal])
 
   return (
@@ -83,11 +85,14 @@ const SearchRecipesInput = ({ autoComplete }) => {
                         <CgTimer className='icon' /> {recipe.totalTime}
                       </div>
                       <div className='servings item'>
-                        <AiOutlineUser className='icon' /> {recipe.servings}
+                        <AiOutlineUser className='icon' /> {recipe.yield.value}
                       </div>
                       <div className='rating item'>
                         <AiOutlineStar className='icon' />{' '}
-                        {recipe.rating === '0' ? 'none' : recipe.rating}
+                        {formatRating(
+                          Number(recipe.rating.rateValue),
+                          Number(recipe.rating.rateCount)
+                        )}
                       </div>
                     </div>
                   </div>

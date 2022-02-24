@@ -26,6 +26,7 @@ const Navbar = ({ darkNavLinks }) => {
         }
       })
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
 
   const loggedOutLinks = (

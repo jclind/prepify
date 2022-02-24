@@ -23,6 +23,7 @@ const UsernameInput = ({ username, setUsername, setSuccess, setError }) => {
         console.log(val)
       })
       .catch(err => setError(err.code))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [username])
 
   return (

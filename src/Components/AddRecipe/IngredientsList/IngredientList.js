@@ -3,7 +3,7 @@ import Select from 'react-select'
 import IngredientsItem from './IngredientsItem'
 import { DragDropContext, Droppable } from 'react-beautiful-dnd'
 import { capitalize } from '../../../util/capitalize'
-import { v4 as uuidv4, validate } from 'uuid'
+import { v4 as uuidv4 } from 'uuid'
 import './IngredientsList.scss'
 import { validateQuantity } from '../../../util/validateIngredientQuantityStr'
 

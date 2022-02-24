@@ -81,6 +81,7 @@ const SavedRecipes = () => {
 
   useEffect(() => {
     handleGetSavedRecipes(recipesPage, selectValue)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleSelectChange = e => {

@@ -64,6 +64,7 @@ const RecipeRatings = ({
         setIsReviewed(isUserReview)
       })
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
   useEffect(() => {
     if (reviewListSort) {
@@ -81,6 +82,7 @@ const RecipeRatings = ({
         }
       })
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reviewListSort])
 
   useEffect(() => {

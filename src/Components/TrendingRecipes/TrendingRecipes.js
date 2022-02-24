@@ -14,6 +14,7 @@ const TrendingRecipes = () => {
       const resData = res.data
       setRecipes(resData)
     })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return (

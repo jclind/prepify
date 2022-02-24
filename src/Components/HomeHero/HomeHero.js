@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React from 'react'
 import './HomeHero.scss'
 import SearchRecipesInput from '../SearchRecipesInput/SearchRecipesInput'
 

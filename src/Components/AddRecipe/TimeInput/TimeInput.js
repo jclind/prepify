@@ -12,12 +12,14 @@ const TimeInput = ({ label, val, setVal }) => {
       setMinutes(Number(val) % 60)
       setHours(Math.floor(Number(val) / 60))
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [val])
 
   useEffect(() => {
     if (minutes || hours)
       console.log((Number(minutes) + Number(hours) * 60).toString())
     setVal((Number(minutes) + Number(hours) * 60).toString())
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [minutes, hours])
 
   return (

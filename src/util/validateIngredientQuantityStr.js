@@ -137,6 +137,32 @@ const isFraction = str => {
 
   return true
 }
+export const evalNum = str => {
+  if (!isNaN(str)) {
+    return str
+  }
+  const evalFraction = frac => {
+    const split = frac.split('/')
+    const res = parseInt(Number(split[0]), 10) / parseInt(Number(split[1]), 10)
+    console.log(res)
+    return res
+  }
+  if (isFraction(str)) {
+    return evalFraction(str)
+  }
+
+  const splitVal = str.split(/[\s-]/)
+  if (splitVal.length <= 0) return 0
+  if (splitVal.length === 1) {
+    if (isFraction(splitVal[0])) {
+      return evalFraction(splitVal[0])
+    } else {
+      return Number(splitVal[0])
+    }
+  } else {
+    console.log("This shouldn't be happening in evalNum")
+  }
+}
 
 export const validateQuantity = str => {
   const splitVal = str.split(/[\s-]/)
@@ -173,6 +199,9 @@ export const validateQuantity = str => {
     if (isNaN(splitVal[0]) && !isFraction(splitVal[0])) {
       return { err: 'Number entered must be a valid whole or mixed number' }
     }
+    if (isFraction(splitVal[0])) {
+      return {}
+    }
     if (splitVal[0] % 1 !== 0) {
       return { err: 'Please enter whole or mixed numbers only, no decimals' }
     }
@@ -183,8 +212,6 @@ export const validateQuantity = str => {
   return {
     err: 'Something went wrong, please check that the quantity entered is a valid whole or mixed number',
   }
-
-  console.log(splitVal)
 }
 
 const validateQuantityandMeasurements = str => {
@@ -200,7 +227,7 @@ const validateQuantityandMeasurements = str => {
     }
   }
   if (splitVal.length === 1 && isFraction(splitVal[0].trim())) {
-    const num = eval(splitVal[0].trim())
+    const num = evalNum(splitVal[0].trim())
     const contentHTML = `${num}`
     return {
       quantity: num,
@@ -210,7 +237,7 @@ const validateQuantityandMeasurements = str => {
   }
   if (splitVal.length === 2 && !isNaN(splitVal[0]) && isFraction(splitVal[1])) {
     const wholeNum = Number(splitVal[0])
-    const decimalNum = eval(splitVal[1].trim())
+    const decimalNum = evalNum(splitVal[1].trim())
     const contentHTML = `${wholeNum} ${splitVal[1]}`
     return {
       quantity: wholeNum + decimalNum,
@@ -280,7 +307,7 @@ const validateQuantityandMeasurements = str => {
   }
   // If first value is a fraction, convert fraction to decimal and return data object
   if (isFraction(splitVal[0])) {
-    const num = eval(splitVal[0])
+    const num = evalNum(splitVal[0])
 
     // Hold html that will be rendered in quantityInput
     const contentHTML = `${splitVal[0]} <span className="valid-measurement">${singleNumberQuantityTypeStr}</span>`
@@ -295,7 +322,7 @@ const validateQuantityandMeasurements = str => {
   // If first value is a number and second value is a fraction, convert fraction to decimal
   // check that the number is valid and add the both numbers. return data object
   const wholeNum = Number(splitVal[0])
-  const decimalNum = eval(splitVal[1])
+  const decimalNum = evalNum(splitVal[1])
   if (wholeNum <= 0) {
     return { err: 'ERROR, PLEASE ENTER NUMBER GREATER THAN 0' }
   }
