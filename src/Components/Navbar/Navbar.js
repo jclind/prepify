@@ -40,14 +40,6 @@ const Navbar = ({ darkNavLinks }) => {
         recipes
       </NavLink>
       <NavLink
-        to='/about'
-        className={({ isActive }) => {
-          return isActive ? 'nav-link active' : 'nav-link'
-        }}
-      >
-        about
-      </NavLink>
-      <NavLink
         to='/login'
         className={({ isActive }) => {
           return isActive ? 'nav-link active' : 'nav-link'
