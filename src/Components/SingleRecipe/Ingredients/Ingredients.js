@@ -23,6 +23,7 @@ const CheckBox = ({ ingr, loading }) => {
             type='checkbox'
             checked={checked}
             className='ingredient-checkbox'
+            onChange={() => {}}
           />
           <label>
             <strong>

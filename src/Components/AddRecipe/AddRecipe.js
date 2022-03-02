@@ -12,6 +12,7 @@ import { TailSpin } from 'react-loader-spinner'
 import LoadingBar from 'react-top-loading-bar'
 import RecipeTags from './RecipeTags/RecipeTags'
 import { useNavigate } from 'react-router-dom'
+import { Helmet } from 'react-helmet'
 import Modal from 'react-modal'
 Modal.setAppElement('#root')
 
@@ -301,112 +302,118 @@ const AddRecipe = () => {
   const addRecipeTitleRef = useRef()
 
   return (
-    <div className='add-recipe-page page'>
-      <RecipeCreatedModal
-        recipeCreatedModalIsOpen={recipeCreatedModalIsOpen}
-        setRecipeCreatedModalIsOpen={setRecipeCreatedModalIsOpen}
-        recipeId={recipeId}
-      />
-      <LoadingBar
-        color='#ff5722'
-        progress={loadingProgress}
-        onLoaderFinished={() => setLoadingProgress(0)}
-      />
-      <h1 className='title' ref={addRecipeTitleRef}>
-        Create Your Own Recipe
-      </h1>
-      <div className='form-container'>
-        <form
-          action=''
-          className='create-recipe-form'
-          onSubmit={handleAddRecipeFormSubmit}
-        >
-          {error && <div className='error'>{error}</div>}
-          <RecipeFormInput
-            name={'Title *'}
-            val={recipeTitle}
-            setVal={setRecipeTitle}
-            placeholder={'Mexican Chipotle Bowl...'}
-            characterLimit={60}
-          />
-          <RecipeFormTextArea
-            name='Recipe Description'
-            val={recipeDescription}
-            setVal={setRecipeDescription}
-            placeholder='Description of recipe...'
-            characterLimit={400}
-          />
-          <ServingsInput
-            recipeYield={recipeYield}
-            setRecipeYield={setRecipeYield}
-          />
-          <div className='recipe-data times'>
-            <TimeInput
-              label='Prep Time *'
-              val={recipePrepTime}
-              setVal={setRecipePrepTime}
-            />
-            <TimeInput
-              label='Cook Time'
-              val={recipeCookTime}
-              setVal={setRecipeCookTime}
-            />
-            <TimeInput
-              label='Additional Time'
-              val={recipeAdditionalTime}
-              setVal={setRecipeAdditionalTime}
-            />
-          </div>
-          <div className='recipe-data'>
+    <>
+      <Helmet>
+        <meta charSet='utf-8' />
+        <title>Prepify | Create Recipe</title>
+      </Helmet>
+      <div className='add-recipe-page page'>
+        <RecipeCreatedModal
+          recipeCreatedModalIsOpen={recipeCreatedModalIsOpen}
+          setRecipeCreatedModalIsOpen={setRecipeCreatedModalIsOpen}
+          recipeId={recipeId}
+        />
+        <LoadingBar
+          color='#ff5722'
+          progress={loadingProgress}
+          onLoaderFinished={() => setLoadingProgress(0)}
+        />
+        <h1 className='title' ref={addRecipeTitleRef}>
+          Create Your Own Recipe
+        </h1>
+        <div className='form-container'>
+          <form
+            action=''
+            className='create-recipe-form'
+            onSubmit={handleAddRecipeFormSubmit}
+          >
+            {error && <div className='error'>{error}</div>}
             <RecipeFormInput
-              name={'Fridge Life (days)'}
-              type={'number'}
-              val={recipeFridgeLife}
-              setVal={setRecipeFridgeLife}
-              placeholder={'3'}
-              characterLimit={3}
+              name={'Title *'}
+              val={recipeTitle}
+              setVal={setRecipeTitle}
+              placeholder={'Mexican Chipotle Bowl...'}
+              characterLimit={60}
             />
-            <RecipeFormInput
-              name={'Freezer Life (days)'}
-              type={'number'}
-              val={recipeFreezerLife}
-              setVal={setRecipeFreezerLife}
-              placeholder={'40'}
-              characterLimit={3}
+            <RecipeFormTextArea
+              name='Recipe Description'
+              val={recipeDescription}
+              setVal={setRecipeDescription}
+              placeholder='Description of recipe...'
+              characterLimit={400}
             />
-          </div>
-          <IngredientListContainer
-            recipeIngredients={recipeIngredients}
-            setRecipeIngredients={setRecipeIngredients}
-          />
-          <InstructionsContainer
-            recipeInstructions={recipeInstructions}
-            setRecipeInstructions={setRecipeInstructions}
-          />
-          <RecipeImage
-            recipeImage={recipeImage}
-            setRecipeImage={setRecipeImage}
-          />
-          <RecipeTags tags={recipeTags} setTags={setRecipeTags} />
-          <button type='submit' className='btn add-recipe-btn'>
-            {loading ? (
-              <TailSpin
-                heigth='30'
-                width='30'
-                color='white'
-                arialLabel='loading'
-                className='spinner'
+            <ServingsInput
+              recipeYield={recipeYield}
+              setRecipeYield={setRecipeYield}
+            />
+            <div className='recipe-data times'>
+              <TimeInput
+                label='Prep Time *'
+                val={recipePrepTime}
+                setVal={setRecipePrepTime}
               />
-            ) : (
-              'Create Recipe'
-            )}
-          </button>
-        </form>
+              <TimeInput
+                label='Cook Time'
+                val={recipeCookTime}
+                setVal={setRecipeCookTime}
+              />
+              <TimeInput
+                label='Additional Time'
+                val={recipeAdditionalTime}
+                setVal={setRecipeAdditionalTime}
+              />
+            </div>
+            <div className='recipe-data'>
+              <RecipeFormInput
+                name={'Fridge Life (days)'}
+                type={'number'}
+                val={recipeFridgeLife}
+                setVal={setRecipeFridgeLife}
+                placeholder={'3'}
+                characterLimit={3}
+              />
+              <RecipeFormInput
+                name={'Freezer Life (days)'}
+                type={'number'}
+                val={recipeFreezerLife}
+                setVal={setRecipeFreezerLife}
+                placeholder={'40'}
+                characterLimit={3}
+              />
+            </div>
+            <IngredientListContainer
+              recipeIngredients={recipeIngredients}
+              setRecipeIngredients={setRecipeIngredients}
+            />
+            <InstructionsContainer
+              recipeInstructions={recipeInstructions}
+              setRecipeInstructions={setRecipeInstructions}
+            />
+            <RecipeImage
+              recipeImage={recipeImage}
+              setRecipeImage={setRecipeImage}
+            />
+            <RecipeTags tags={recipeTags} setTags={setRecipeTags} />
+            <button type='submit' className='btn add-recipe-btn'>
+              {loading ? (
+                <TailSpin
+                  heigth='30'
+                  width='30'
+                  color='white'
+                  arialLabel='loading'
+                  className='spinner'
+                />
+              ) : (
+                'Create Recipe'
+              )}
+            </button>
+          </form>
+        </div>
+        <button className='clear-form' onClick={clearForm}>
+          {undoClearForm ? 'Undo' : 'Clear Form'}
+        </button>
       </div>
-      <button className='clear-form' onClick={clearForm}>
-        {undoClearForm ? 'Undo' : 'Clear Form'}
-      </button>
-    </div>
+    </>
   )
 }
 

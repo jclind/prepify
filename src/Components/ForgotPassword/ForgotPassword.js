@@ -6,6 +6,7 @@ import FormInput from '../Form/FormInput'
 import { MdOutlineEmail } from 'react-icons/md'
 import { useAuth } from '../../context/AuthContext'
 import PrepifyLogo from '../Navbar/PrepifyLogo'
+import { Helmet } from 'react-helmet'
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('')
@@ -24,6 +25,10 @@ const ForgotPassword = () => {
 
   return (
     <>
+      <Helmet>
+        <meta charSet='utf-8' />
+        <title>Prepify | Forgot Password</title>
+      </Helmet>
       <div className='abs-logo'>
         <PrepifyLogo className='abs-logo' />
       </div>
