@@ -3,6 +3,7 @@
 .instructions-list {
   position: relative;
   margin-top: 2rem;
+  margin-bottom: 2rem;
 
   .list-title {
     font-size: toRem(16);
@@ -58,6 +59,17 @@
       border: 1px solid $tertiary-text;
       background: $secondary-background;
       border-radius: $border-radius;
+    }
+  }
+  @media screen and (max-width: 725px) {
+    .instruction-list-textarea-container {
+      gap: 0.5rem;
+    }
+  }
+  @media screen and (max-width: 550px) {
+    .instruction-list-textarea-container {
+      flex-direction: column;
+      align-items: flex-start;
     }
   }
   .list {

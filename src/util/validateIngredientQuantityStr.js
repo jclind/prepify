@@ -144,7 +144,6 @@ export const evalNum = str => {
   const evalFraction = frac => {
     const split = frac.split('/')
     const res = parseInt(Number(split[0]), 10) / parseInt(Number(split[1]), 10)
-    console.log(res)
     return res
   }
   if (isFraction(str)) {
@@ -166,8 +165,6 @@ export const evalNum = str => {
 
 export const validateQuantity = str => {
   const splitVal = str.split(/[\s-]/)
-
-  console.log(splitVal)
 
   // If the split val length is greater than 2, then it will be called invalid
   if (splitVal.length > 2) {

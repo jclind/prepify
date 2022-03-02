@@ -91,9 +91,11 @@ const RecipeProvider = ({ children }) => {
       Number(tempAdditionalTime)
     ).toString()
 
+    const recipeId = ObjectID()
+
     const fullRecipeData = {
       ...recipeData,
-      _id: ObjectID(),
+      _id: recipeId,
       title: recipeData.title.toLowerCase(), // Needed for title search later on.
       totalTime,
       recipeImage: recipeImageUrl,
@@ -127,6 +129,7 @@ const RecipeProvider = ({ children }) => {
       })
 
     setLoadingProgress(90)
+    return recipeId.toString()
   }
 
   const saveRecipe = async (userId, recipeId) => {

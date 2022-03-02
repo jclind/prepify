@@ -1,13 +1,22 @@
 import React, { useState, useEffect } from 'react'
 import './Navbar.scss'
-import { NavLink } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import PrepifyLogo from './PrepifyLogo'
+import Hamburger from 'hamburger-react'
 
 const Navbar = ({ darkNavLinks }) => {
+  const [navOpen, setNavOpen] = useState(false)
+
   const { user, logout, getUsername } = useAuth()
 
   const [nameInitial, setNameInitial] = useState('')
+
+  const location = useLocation()
+
+  useEffect(() => {
+    setNavOpen(false)
+  }, [location])
 
   useEffect(() => {
     if (user) {
@@ -38,14 +47,6 @@ const Navbar = ({ darkNavLinks }) => {
         }}
       >
         recipes
-      </NavLink>
-      <NavLink
-        to='/about'
-        className={({ isActive }) => {
-          return isActive ? 'nav-link active' : 'nav-link'
-        }}
-      >
-        about
       </NavLink>
       <NavLink
         to='/login'
@@ -96,8 +97,15 @@ const Navbar = ({ darkNavLinks }) => {
     <nav className='nav'>
       <div className='nav-header'>
         <PrepifyLogo />
+        <div
+          className={
+            !navOpen && !darkNavLinks ? 'hamburger light' : 'hamburger'
+          }
+        >
+          <Hamburger toggled={navOpen} toggle={setNavOpen} />
+        </div>
       </div>
-      <div className='nav-content'>
+      <div className={navOpen ? 'nav-content show' : 'nav-content'}>
         <div
           className={darkNavLinks ? 'nav-links dark-nav-links' : 'nav-links'}
         >

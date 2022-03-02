@@ -34,7 +34,7 @@ const AddRatingBtn = ({ currUserReview }) => {
             ) : (
               <BsStar className='icon' />
             )}{' '}
-            Add Rating
+            Rate
           </>
         ) : (
           <>

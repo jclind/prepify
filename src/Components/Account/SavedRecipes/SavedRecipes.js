@@ -20,7 +20,6 @@ const customStyles = {
     background: '#eeeeee',
     minHeight: '40px',
     height: '40px',
-    width: '250px',
     boxShadow: state.isFocused ? null : null,
   }),
   singleValue: (provided, state) => ({

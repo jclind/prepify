@@ -42,7 +42,6 @@ const RecipeTags = ({ tags, setTags }) => {
     }
   }
   const handleClickSearchResult = result => {
-    console.log(result)
     setTags([...tags, result])
     setTagsInputVal('')
   }

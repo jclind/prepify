@@ -9,12 +9,23 @@
     display: flex;
     justify-content: space-between;
 
+    .title {
+      .skeleton {
+        width: 163px;
+        height: 32px;
+      }
+    }
     .servings {
       display: flex;
       align-items: center;
 
+      .skeleton {
+        width: 190px;
+        height: 32px;
+      }
+
       .content {
-        height: 100%;
+        height: 30px;
         display: flex;
         border: 1px solid $gray-400;
         border-radius: $border-radius;
@@ -38,6 +49,38 @@
       .text {
         font-weight: 600;
         padding-left: 1ch;
+      }
+    }
+    @media screen and (max-width: 540px) {
+      align-items: center;
+      gap: 0.5rem;
+
+      .servings {
+        position: relative;
+        display: flex;
+        flex-direction: column-reverse;
+        justify-content: flex-start;
+        align-items: flex-start;
+
+        .skeleton {
+          width: 100px;
+        }
+        .content {
+          input {
+            height: 100%;
+          }
+        }
+        .text {
+          position: absolute;
+          top: -1.25rem;
+          font-size: toRem(14);
+          padding: 0;
+          color: $tertiary-text;
+          padding-bottom: 0.25rem;
+          &::after {
+            content: ':';
+          }
+        }
       }
     }
   }
@@ -78,11 +121,11 @@
       display: flex;
       align-items: center;
       gap: 0.75rem;
-      height: 45px;
       cursor: pointer;
       max-width: 500px;
       width: 500px;
       margin: 0.25rem 0;
+      padding: 0.75rem 0rem;
 
       font-weight: toRem(18);
       font-weight: 500;
@@ -93,16 +136,32 @@
       }
 
       .ingredient-checkbox {
-        height: 18px;
-        width: 18px;
+        -ms-transform: scale(1.4); /* IE */
+        -moz-transform: scale(1.4); /* FF */
+        -webkit-transform: scale(1.4); /* Safari and Chrome */
+        -o-transform: scale(1.4); /* Opera */
+        transform: scale(1.4);
+        padding: 10px;
         cursor: pointer;
 
         &:checked {
           background: $primary;
         }
+        @media screen and (max-width: 450px) {
+          -ms-transform: scale(1); /* IE */
+          -moz-transform: scale(1); /* FF */
+          -webkit-transform: scale(1); /* Safari and Chrome */
+          -o-transform: scale(1); /* Opera */
+          transform: scale(1);
+          padding: 10px;
+        }
       }
       label {
         pointer-events: none;
+        line-height: 1.5;
+      }
+      @media screen and (max-width: 600px) {
+        max-width: 100%;
       }
     }
   }

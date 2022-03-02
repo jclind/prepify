@@ -1,10 +1,32 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AiOutlineSearch, AiOutlineStar, AiOutlineUser } from 'react-icons/ai'
 import { CgTimer } from 'react-icons/cg'
 import './SearchRecipesInput.scss'
 import { useRecipe } from '../../context/RecipeContext'
 import { formatRating } from '../../util/formatRating'
+
+function useOutsideAlerter(ref, setVal) {
+  useEffect(() => {
+    /**
+     * Alert if clicked on outside of element
+     */
+    function handleClickOutside(event) {
+      if (ref.current && !ref.current.contains(event.target)) {
+        setVal(true)
+      }
+    }
+
+    // Bind the event listener
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      // Unbind the event listener on clean up
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ref])
+}
 
 const SearchRecipesInput = ({ autoComplete }) => {
   const [searchRecipeVal, setSearchRecipeVal] = useState('')
@@ -17,19 +39,19 @@ const SearchRecipesInput = ({ autoComplete }) => {
 
   const navigate = useNavigate()
 
+  const wrapperRef = useRef()
+  useOutsideAlerter(wrapperRef, setIsBlurred)
+
   const handleSubmit = e => {
     e.preventDefault()
 
     navigate('/recipes')
-
-    console.log('yo Im here now')
   }
 
   const getAutoCompleteResult = title => {
     if (title.length > 2) {
       searchAutoCompleteRecipes(title)
         .then(res => {
-          console.log(res.data)
           setAutoCompleteResponse(res.data)
         })
         .catch(e => {
@@ -49,7 +71,11 @@ const SearchRecipesInput = ({ autoComplete }) => {
   }, [searchRecipeVal])
 
   return (
-    <form onSubmit={handleSubmit} className='search-recipes-form'>
+    <form
+      onSubmit={handleSubmit}
+      className='search-recipes-form'
+      ref={wrapperRef}
+    >
       <label
         htmlFor='.search-recipes-input'
         className='search-recipes-input-label'
@@ -60,7 +86,6 @@ const SearchRecipesInput = ({ autoComplete }) => {
           placeholder='Search All Recipes'
           onChange={e => setSearchRecipeVal(e.target.value)}
           value={searchRecipeVal}
-          onBlur={() => setIsBlurred(true)}
           onFocus={() => setIsBlurred(false)}
         />
         {searchRecipeVal && (
@@ -74,7 +99,11 @@ const SearchRecipesInput = ({ autoComplete }) => {
           <div className='recipes-container'>
             {autoCompleteResponse.map(recipe => {
               return (
-                <div className='recipe' key={recipe._id}>
+                <div
+                  className='recipe'
+                  key={recipe._id}
+                  onClick={() => navigate(`/recipes/${recipe._id}`)}
+                >
                   <div className='image-container'>
                     <img src={recipe.recipeImage} alt='' className='img' />
                   </div>

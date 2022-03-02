@@ -26,7 +26,7 @@ const PrintRecipeBtn = () => {
         ) : (
           <BsPrinter className='icon' />
         )}{' '}
-        Print Recipe
+        Print
         <div className='disabled-overlay'></div>
       </button>
     </div>

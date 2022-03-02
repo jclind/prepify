@@ -1,28 +1,42 @@
 import React, { useState } from 'react'
 import './Ingredients.scss'
+import Skeleton from 'react-loading-skeleton'
+import 'react-loading-skeleton/dist/skeleton.css'
 
-const CheckBox = ({ ingr }) => {
+const skeletonColor = '#d6d6d6'
+
+const CheckBox = ({ ingr, loading }) => {
   const [checked, setChecked] = useState(false)
 
+  const handleOnClick = () => {
+    if (!loading) {
+      setChecked(!checked)
+    }
+  }
   return (
-    <div className='ingredient' onClick={() => setChecked(!checked)}>
-      <input
-        type='checkbox'
-        checked={checked}
-        className='ingredient-checkbox'
-        onChange={() => {}}
-      />
-      <label>
-        <strong>
-          {ingr.quantity} {ingr.measurement.value}
-        </strong>{' '}
-        {ingr.name}
-      </label>
+    <div className='ingredient' onClick={handleOnClick}>
+      {loading ? (
+        <Skeleton baseColor={skeletonColor} width={400} />
+      ) : (
+        <>
+          <input
+            type='checkbox'
+            checked={checked}
+            className='ingredient-checkbox'
+          />
+          <label>
+            <strong>
+              {ingr.quantity} {ingr.measurement.value}
+            </strong>{' '}
+            {ingr.name}
+          </label>
+        </>
+      )}
     </div>
   )
 }
 
-const Ingredients = ({ ingredients, yieldSize, setYieldSize }) => {
+const Ingredients = ({ ingredients, yieldSize, setYieldSize, loading }) => {
   const [modYieldSize, setModYieldSize] = useState(yieldSize)
 
   const decYieldSize = () => {
@@ -58,35 +72,47 @@ const Ingredients = ({ ingredients, yieldSize, setYieldSize }) => {
   return (
     <div className='ingredients'>
       <div className='header'>
-        <h3 className='title'>Ingredients:</h3>
+        <h3 className='title'>
+          {loading ? (
+            <Skeleton baseColor={skeletonColor} className='skeleton' />
+          ) : (
+            'Ingredients:'
+          )}
+        </h3>
         <div className='servings'>
-          <div className='content'>
-            <button
-              type='button'
-              className='dec counter-btn btn'
-              onClick={decYieldSize}
-            >
-              -
-            </button>
-            <input
-              value={modYieldSize}
-              type='tel'
-              onChange={handleServingsOnChange}
-              onBlur={handleServingsBlur}
-            />
-            <button
-              type='button'
-              className='inc counter-btn btn'
-              onClick={incYieldSize}
-            >
-              +
-            </button>
-          </div>
-          <div className='text'>Servings</div>
+          {loading ? (
+            <Skeleton baseColor={skeletonColor} className='skeleton' />
+          ) : (
+            <>
+              <div className='content'>
+                <button
+                  type='button'
+                  className='dec counter-btn btn'
+                  onClick={decYieldSize}
+                >
+                  -
+                </button>
+                <input
+                  value={modYieldSize}
+                  type='tel'
+                  onChange={handleServingsOnChange}
+                  onBlur={handleServingsBlur}
+                />
+                <button
+                  type='button'
+                  className='inc counter-btn btn'
+                  onClick={incYieldSize}
+                >
+                  +
+                </button>
+              </div>
+              <div className='text'>Servings</div>
+            </>
+          )}
         </div>
       </div>
       <div className='ingredients-lists'>
-        {ingredients.length > 0 &&
+        {!loading && ingredients.length > 0 ? (
           ingredients.map((ingredientList, idx) => {
             const isMultiIngr = ingredients.length > 1
             return (
@@ -109,7 +135,16 @@ const Ingredients = ({ ingredients, yieldSize, setYieldSize }) => {
                 })}
               </div>
             )
-          })}
+          })
+        ) : (
+          <>
+            <CheckBox ingr={null} loading={true} />
+            <CheckBox ingr={null} loading={true} />
+            <CheckBox ingr={null} loading={true} />
+            <CheckBox ingr={null} loading={true} />
+            <CheckBox ingr={null} loading={true} />
+          </>
+        )}
       </div>
     </div>
   )

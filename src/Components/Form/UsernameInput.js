@@ -20,7 +20,6 @@ const UsernameInput = ({ username, setUsername, setSuccess, setError }) => {
     checkUsernameAvailability(username)
       .then(val => {
         setIsUsernameAvailable(val)
-        console.log(val)
       })
       .catch(err => setError(err.code))
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -43,7 +43,7 @@
 
   .inputs {
     margin-top: 1rem;
-    margin-bottom: 2rem;
+    margin-bottom: 1rem;
     display: flex;
     gap: 0.5rem;
 
@@ -80,10 +80,26 @@
     .add-ingredient-btn {
       font-size: toRem(16);
       font-weight: 600;
+      height: 45px;
       border: 1px solid $tertiary-text;
       background: $secondary-background;
       padding: 0 1rem;
       border-radius: $border-radius;
+    }
+
+    @media screen and (max-width: 725px) {
+      .ingredient-quantity {
+        width: 25%;
+      }
+      .measurement-container {
+        flex: 1;
+        min-width: 160px;
+      }
+      flex-wrap: wrap;
+
+      .ingredient-name {
+        flex: 1;
+      }
     }
   }
   .list {

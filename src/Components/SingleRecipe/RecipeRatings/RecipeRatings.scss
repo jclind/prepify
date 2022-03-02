@@ -9,6 +9,10 @@
     width: 100%;
     text-align: center;
     margin-bottom: 3rem;
+
+    @media screen and (max-width: 450px) {
+      margin-bottom: 2rem;
+    }
   }
   .ratings-reviews-container {
     display: flex;
@@ -61,6 +65,18 @@
           font-size: toRem(18);
           font-weight: 600;
           color: $primary-text;
+        }
+      }
+
+      @media screen and (max-width: 450px) {
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: center;
+        gap: 1.5rem;
+        .average-rating-container,
+        .user-rating {
+          gap: 0.25rem;
+          width: 170px;
         }
       }
     }

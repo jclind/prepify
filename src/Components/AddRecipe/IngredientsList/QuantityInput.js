@@ -5,8 +5,6 @@ import { validateIngredientQuantityStr } from '../../../util/validateIngredientQ
 const QuantityInput = ({ val, setVal }) => {
   const [tempQuantity, setTempQuantity] = useState(val)
 
-  const [error, setError] = useState('')
-
   const handleInputChange = e => {
     const newVal = e.target.value
 

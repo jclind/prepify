@@ -12,7 +12,9 @@
   // background: red;
   overflow: hidden;
 }
-
+html {
+  overflow: hidden;
+}
 html,
 body {
   height: 100%;
