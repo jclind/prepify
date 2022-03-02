@@ -1,39 +1,76 @@
 import React from 'react'
-import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { CgTimer } from 'react-icons/cg'
 import { AiOutlineStar } from 'react-icons/ai'
 import { formatRating } from '../../util/formatRating'
+import Skeleton from 'react-loading-skeleton'
+import 'react-loading-skeleton/dist/skeleton.css'
 
 import './RecipeThumbnail.scss'
 
-const RecipeThumbnail = ({ recipe }) => {
-  const { _id, recipeImage, title, totalTime, rating } = recipe
-  console.log(rating)
-  // console.log(recipe, recipeId)
+const skeletonColor = '#d6d6d6'
+
+const RecipeThumbnail = ({ recipe, loading }) => {
+  const { _id, recipeImage, title, totalTime, rating } = recipe || ''
+  const navigate = useNavigate()
+  const handleOnClick = () => {
+    if (!loading) {
+      navigate(`/recipes/${_id}`)
+    }
+  }
+
   return (
-    <Link to={`/recipes/${_id}`} className='recipe-thumbnail'>
-      <div className='img-container'>
-        <img src={recipeImage} alt={title} />
-      </div>
-      <h4 className='title'>{title}</h4>
-      <div className='info'>
-        <div className='total-time single-info'>
-          <CgTimer className='icon' />
-          {totalTime > 1 ? `${totalTime} mins` : `${totalTime} min`}
-        </div>
-        <div className='rating single-info'>
-          <AiOutlineStar className='icon' />
-          {Number(rating.rateCount) === 0 ? (
-            0
+    <>
+      <div onClick={handleOnClick} className='recipe-thumbnail'>
+        <div className='img-container'>
+          {loading || !recipeImage ? (
+            <Skeleton className='img' baseColor={skeletonColor} />
           ) : (
-            <>
-              {formatRating(rating.rateValue, rating.rateCount)} (
-              {rating.rateCount})
-            </>
+            <img className='img' src={recipeImage} alt={title} />
           )}
         </div>
+        <h4 className='title'>
+          {loading ? <Skeleton baseColor={skeletonColor} height={30} /> : title}
+        </h4>
+        <div className='info'>
+          <div className='total-time single-info'>
+            {loading ? (
+              <Skeleton
+                baseColor={skeletonColor}
+                className='skeleton'
+                width={50}
+              />
+            ) : (
+              <>
+                <CgTimer className='icon' />
+                {totalTime > 1 ? `${totalTime} mins` : `${totalTime} min`}
+              </>
+            )}
+          </div>
+          <div className='rating single-info'>
+            {loading ? (
+              <Skeleton
+                baseColor={skeletonColor}
+                className='skeleton'
+                width={50}
+              />
+            ) : (
+              <>
+                <AiOutlineStar className='icon' />
+                {Number(rating.rateCount) === 0 ? (
+                  0
+                ) : (
+                  <>
+                    {formatRating(rating.rateValue, rating.rateCount)} (
+                    {rating.rateCount})
+                  </>
+                )}
+              </>
+            )}
+          </div>
+        </div>
       </div>
-    </Link>
+    </>
   )
 }
 

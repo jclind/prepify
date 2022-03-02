@@ -38,8 +38,6 @@ const IngredientListContainer = ({
     const tempIngredients = JSON.parse(JSON.stringify(recipeIngredients))
     tempIngredients[idx] = data
 
-    console.log(tempIngredients)
-
     setRecipeIngredients(tempIngredients)
   }
 

@@ -18,7 +18,8 @@ import SingleRecipe from './Components/SingleRecipe/SingleRecipe'
 import AddRecipe from './Components/AddRecipe/AddRecipe'
 import SearchRecipesPage from './Components/SearchRecipesPage/SearchRecipesPage'
 import Layout from './Components/Layout/Layout'
-import WindowWidthControl from './Components/WindowWidthControl'
+import Help from './Components/Help/Help'
+import NotFound from './Components/404/404'
 
 import { transitions, positions, Provider as AlertProvider } from 'react-alert'
 import {
@@ -51,87 +52,94 @@ const AlertTemplate = ({ style, options, message, close }) => {
 
 function App() {
   return (
-    <WindowWidthControl>
-      <AuthProvider>
-        <RecipeProvider>
-          <AlertProvider template={AlertTemplate} {...alertOptions}>
-            <Routes>
-              <Route
-                exact
-                path='/'
-                element={
-                  <Layout>
-                    <Home />
-                  </Layout>
-                }
-              />
-              <Route
-                exact
-                path='/recipes'
-                element={
-                  <Layout darkNavLinks={true}>
-                    <Recipes />
-                  </Layout>
-                }
-              />
+    <AuthProvider>
+      <RecipeProvider>
+        <AlertProvider template={AlertTemplate} {...alertOptions}>
+          <Routes>
+            <Route
+              path='*'
+              element={
+                <Layout darkNavLinks={true}>
+                  <NotFound />
+                </Layout>
+              }
+            />
+            <Route
+              exact
+              path='/'
+              element={
+                <Layout>
+                  <Home />
+                </Layout>
+              }
+            />
+            <Route
+              exact
+              path='/recipes'
+              element={
+                <Layout darkNavLinks={true}>
+                  <Recipes />
+                </Layout>
+              }
+            />
 
+            <Route
+              path='/recipes/:recipeId'
+              element={
+                <Layout darkNavLinks={true}>
+                  <SingleRecipe />
+                </Layout>
+              }
+            />
+            <Route
+              path='recipes/search/:searchQuery'
+              element={
+                <Layout darkNavLinks={true}>
+                  <SearchRecipesPage />
+                </Layout>
+              }
+            />
+            <Route exact path='/' element={<PrivateRoute />}>
               <Route
-                path='/recipes/:recipeId'
+                exact
+                path='/account'
                 element={
                   <Layout darkNavLinks={true}>
-                    <SingleRecipe />
+                    <Account />
                   </Layout>
                 }
-              />
-              <Route
-                path='recipes/search/:searchQuery'
-                element={
-                  <Layout darkNavLinks={true}>
-                    <SearchRecipesPage />
-                  </Layout>
-                }
-              />
-              <Route exact path='/' element={<PrivateRoute />}>
-                <Route
-                  exact
-                  path='/account'
-                  element={
-                    <Layout darkNavLinks={true}>
-                      <Account />
-                    </Layout>
-                  }
-                >
-                  <Route path='saved-recipes' element={<SavedRecipes />} />
-                  <Route path='ratings' element={<UserRatings />} />
-                  <Route path='your-recipes' element={<UserRecipes />} />
-                </Route>
-                <Route
-                  exact
-                  path='/add-recipe'
-                  element={
-                    <Layout darkNavLinks={true}>
-                      <AddRecipe />
-                    </Layout>
-                  }
-                />
+              >
+                <Route path='saved-recipes' element={<SavedRecipes />} />
+                <Route path='ratings' element={<UserRatings />} />
+                <Route path='your-recipes' element={<UserRecipes />} />
               </Route>
-              <Route exact path='/login' element={<Login />} />
-              <Route exact path='/signup' element={<Signup />} />
               <Route
                 exact
-                path='/create-username'
-                element={<CreateUsername />}
+                path='/add-recipe'
+                element={
+                  <Layout darkNavLinks={true}>
+                    <AddRecipe />
+                  </Layout>
+                }
               />
-              <Route
-                exact
-                path='/forgot-password'
-                element={<ForgotPassword />}
-              />
-            </Routes>
-          </AlertProvider>
-        </RecipeProvider>
-      </AuthProvider>
-    </WindowWidthControl>
+            </Route>
+            <Route exact path='/login' element={<Login />} />
+            <Route exact path='/signup' element={<Signup />} />
+            <Route exact path='/create-username' element={<CreateUsername />} />
+            <Route exact path='/forgot-password' element={<ForgotPassword />} />
+            <Route
+              exact
+              path='/help'
+              element={
+                <Layout darkNavLinks={true}>
+                  <Help />
+                </Layout>
+              }
+            />
+          </Routes>
+        </AlertProvider>
+      </RecipeProvider>
+    </AuthProvider>
   )
 }
 

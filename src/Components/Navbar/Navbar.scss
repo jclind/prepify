@@ -17,10 +17,36 @@ nav {
   width: 90%;
   max-width: $max-width;
 
+  .nav-header {
+    .hamburger {
+      display: none;
+    }
+    .hamburger.light {
+      color: $white;
+    }
+
+    @media screen and (max-width: 725px) {
+      .hamburger {
+        position: absolute;
+        z-index: 11;
+        top: 0;
+        bottom: 0;
+        right: 0;
+        margin: auto 0;
+        display: block;
+        height: 40px;
+        width: 40px;
+        color: $primary-text;
+      }
+    }
+  }
+
   .nav-content {
-    width: 60%;
+    display: flex;
+    justify-content: flex-end;
     .nav-links {
       display: flex;
+      gap: 2rem;
       align-items: center;
       justify-content: space-between;
       width: 100%;
@@ -32,7 +58,6 @@ nav {
         text-decoration: none;
         white-space: nowrap;
       }
-
       .account-link {
         background: $primary-text;
         border-radius: 50%;
@@ -48,18 +73,58 @@ nav {
         font-weight: 500;
       }
     }
-    .nav-links.dark-nav-links {
-      .nav-link {
-        color: $primary-text !important;
+    @media screen and (max-width: 725px) {
+      position: fixed;
+      z-index: 10;
+      top: 0;
+      left: 0;
+      // display: none;
+      height: 100%;
+      width: 100%;
+      padding-top: 8rem;
+      visibility: hidden;
+      opacity: 0;
+      transition: visibility 0s, opacity 0.1s linear;
+      background: $primary-background;
+
+      .nav-links {
+        // display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: center;
+        gap: 2rem;
+
+        .nav-link {
+          padding: 0.5rem 0;
+          font-size: toRem(24);
+          color: $primary-text;
+          text-decoration: underline;
+        }
       }
     }
-    @media screen and (min-width: 700px) {
-      width: 550px;
+    @media screen and (max-width: 956px) {
+      .nav-links {
+        gap: 1rem;
+      }
+    }
+  }
+  .nav-content.show {
+    display: flex !important;
+    visibility: visible;
+    opacity: 1;
+
+    // gap: 5rem;
+  }
+
+  .nav-links.dark-nav-links {
+    .nav-link {
+      color: $primary-text !important;
     }
   }
 }
 
 .prepify-logo.nav-link {
+  z-index: 11;
   position: relative;
   display: flex;
   gap: 0.5rem;
@@ -76,7 +141,9 @@ nav {
     font-weight: 700;
     font-style: italic;
     color: $primary;
+    text-decoration: none;
   }
+
   .beta-tag {
     text-transform: uppercase;
     font-size: toRem(14);
@@ -131,6 +198,15 @@ nav {
       -webkit-transform: scale(1);
       -ms-transform: scale(1);
       transform: scale(1);
+    }
+  }
+
+  @media screen and (max-width: 725px) {
+    .nav-logo {
+      font-size: toRem(30);
+    }
+    .beta-tag {
+      font-size: toRem(12);
     }
   }
 }

@@ -26,7 +26,12 @@ const TrendingRecipes = () => {
             return <RecipeThumbnail key={recipe._id} recipe={recipe} />
           })
         ) : (
-          <p>Recipes Loading...</p>
+          <>
+            <RecipeThumbnail recipe={null} loading={true} />
+            <RecipeThumbnail recipe={null} loading={true} />
+            <RecipeThumbnail recipe={null} loading={true} />
+            <RecipeThumbnail recipe={null} loading={true} />
+          </>
         )}
       </div>
     </div>

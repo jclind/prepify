@@ -31,16 +31,12 @@ const InstructionsContainer = ({
     const tempInstructions = JSON.parse(JSON.stringify(recipeInstructions))
     tempInstructions[idx] = data
 
-    console.log(tempInstructions)
-
     setRecipeInstructions(tempInstructions)
   }
   const handleUpdateListName = (updatedName, idx) => {
     const data = { ...recipeInstructions[idx], name: updatedName }
     const tempInstructions = JSON.parse(JSON.stringify(recipeInstructions))
     tempInstructions[idx] = data
-
-    console.log(tempInstructions)
 
     setRecipeInstructions(tempInstructions)
   }

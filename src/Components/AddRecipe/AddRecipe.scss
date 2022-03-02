@@ -19,7 +19,9 @@
     gap: 2rem;
     margin: 0 auto;
     padding: 3rem;
-    max-width: 650px;
+    max-width: 750px;
+    width: 95%;
+    box-sizing: border-box;
     background: $primary-background;
     border-radius: $border-radius;
 
@@ -27,6 +29,9 @@
       display: flex;
       justify-content: space-around;
       gap: 2rem;
+      @media screen and (max-width: 725px) {
+        gap: 0.5rem;
+      }
     }
     .recipe-data.times {
       flex-direction: column;
@@ -44,14 +49,13 @@
         color: $primary;
       }
       .ingredients-list-container {
-        margin: 2rem 0 4rem 0;
+        margin: 2rem 0 2rem 0;
       }
       .add-ingredient-list-btn {
         display: flex;
         align-items: center;
         gap: 0.5rem;
         font-size: toRem(16);
-        margin-top: 2rem;
         color: $tertiary-text;
 
         .icon {
@@ -97,10 +101,47 @@
       font-weight: 600;
       font-size: toRem(18);
     }
+
+    @media screen and (max-width: 724px) {
+      padding: 3rem 2rem;
+    }
+    @media screen and (max-width: 450px) {
+      padding: 3rem 1rem;
+    }
   }
   .test {
     textarea {
       height: 200px;
     }
+  }
+}
+.recipe-created-modal {
+  .heading {
+    font-size: toRem(26) !important;
+    font-weight: 600;
+    padding-bottom: 0.5rem;
+  }
+  .text {
+    font-size: toRem(18);
+    margin-bottom: 1.5rem;
+  }
+  .options {
+    display: flex;
+    gap: 1.5rem;
+
+    button {
+      font-size: toRem(18);
+      font-weight: 600;
+      border-radius: $border-radius;
+      padding: 0.5rem 1rem;
+    }
+  }
+  .home-btn {
+    color: $secondary-text;
+    border: 1px solid $secondary-text;
+  }
+  .view-recipe-btn {
+    background: $primary;
+    color: $white;
   }
 }

@@ -12,7 +12,7 @@
   border-bottom: 1px solid $tertiary-text;
 
   .select {
-    max-width: 200px;
+    max-width: 250px;
     width: 100%;
   }
 
@@ -33,6 +33,36 @@
     .tag.tag-not-selected {
       background: none;
       border: 1px solid $primary-text;
+    }
+  }
+
+  @media screen and (max-width: 956px) {
+    .tags {
+      gap: 0.25rem;
+      .tag {
+        font-size: toRem(12);
+        font-weight: 700;
+      }
+    }
+  }
+  @media screen and (max-width: 815px) {
+    flex-direction: column;
+    align-items: flex-start;
+    padding-bottom: 1.5rem;
+    gap: 1rem;
+    .tags {
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      .tag {
+        font-size: toRem(14);
+        font-weight: 600;
+      }
+    }
+  }
+  @media screen and (max-width: 725px) {
+    align-items: center;
+    .select {
+      max-width: 90%;
     }
   }
 }

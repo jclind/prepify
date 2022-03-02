@@ -11,6 +11,75 @@ import { useRecipe } from '../../context/RecipeContext'
 import { TailSpin } from 'react-loader-spinner'
 import LoadingBar from 'react-top-loading-bar'
 import RecipeTags from './RecipeTags/RecipeTags'
+import { useNavigate } from 'react-router-dom'
+import Modal from 'react-modal'
+Modal.setAppElement('#root')
+
+const RecipeCreatedModal = ({
+  recipeCreatedModalIsOpen,
+  setRecipeCreatedModalIsOpen,
+  recipeId,
+}) => {
+  const navigate = useNavigate()
+  const closeModal = () => {
+    setRecipeCreatedModalIsOpen(false)
+  }
+  const customStyles = {
+    content: {
+      position: 'absolute',
+      top: '50%',
+      left: '50%',
+      right: 'auto',
+      bottom: 'auto',
+      marginRight: '-50%',
+      transform: 'translate(-50%, -50%)',
+
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'center',
+      alignItems: 'center',
+
+      background: '#eeeeee',
+      padding: '2.5rem',
+      borderRadius: '5px',
+    },
+    overlay: {
+      zIndex: '1000',
+      background: 'rgba(0, 0, 0, 0.5)',
+    },
+  }
+  return (
+    <Modal
+      isOpen={recipeCreatedModalIsOpen}
+      onRequestClose={closeModal}
+      style={customStyles}
+      className='recipe-created-modal'
+    >
+      <div className='heading'>Success!</div>
+      <p className='text'>
+        You're recipe has been posted for everyone to enjoy!
+      </p>
+      <div className='options'>
+        <button
+          className='home-btn btn'
+          onClick={() => {
+            navigate('/')
+          }}
+        >
+          Home
+        </button>
+        <button
+          className='view-recipe-btn btn'
+          onClick={() => {
+            navigate(`/recipes/${recipeId}`)
+          }}
+        >
+          View Recipe
+        </button>
+      </div>
+    </Modal>
+  )
+}
 
 const AddRecipe = () => {
   const [recipeTitle, setRecipeTitle] = useState('')
@@ -44,11 +113,14 @@ const AddRecipe = () => {
 
   const { addRecipe } = useRecipe()
 
+  const [recipeCreatedModalIsOpen, setRecipeCreatedModalIsOpen] =
+    useState(false)
+  const [recipeId, setRecipeId] = useState('')
+
   const setStatesToLocalData = () => {
     const addRecipeFormData = JSON.parse(
       localStorage.getItem('addRecipeFormData')
     )
-    console.log(addRecipeFormData)
 
     const title = addRecipeFormData?.recipeTitle
       ? addRecipeFormData.recipeTitle
@@ -183,9 +255,12 @@ const AddRecipe = () => {
       loadingProgress,
       setLoadingProgress,
       setError
-    ).then(() => {
-      // navigate('/')
+    ).then(res => {
+      setRecipeId(res)
       clearForm()
+      setStatesToLocalData()
+      setRecipeCreatedModalIsOpen(true)
+      // navigate('/')
     })
     // .catch(err => {
     //   setLoading(false)
@@ -227,6 +302,11 @@ const AddRecipe = () => {
 
   return (
     <div className='add-recipe-page page'>
+      <RecipeCreatedModal
+        recipeCreatedModalIsOpen={recipeCreatedModalIsOpen}
+        setRecipeCreatedModalIsOpen={setRecipeCreatedModalIsOpen}
+        recipeId={recipeId}
+      />
       <LoadingBar
         color='#ff5722'
         progress={loadingProgress}

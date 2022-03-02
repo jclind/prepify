@@ -9,10 +9,11 @@ footer {
   gap: 0.5rem;
   justify-content: center;
   align-items: center;
-  margin-top: 4rem;
+  margin-top: $footer-margin;
   color: $primary-text;
   font-size: toRem(14);
   font-weight: 600;
+  box-sizing: border-box;
   .email {
     color: $primary;
   }

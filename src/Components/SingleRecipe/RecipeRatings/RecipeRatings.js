@@ -70,7 +70,6 @@ const RecipeRatings = ({
     if (reviewListSort) {
       setReviewListPage(0)
       getReviews(recipeId, reviewListSort, 0, recipesPerPage).then(res => {
-        console.log(res.data)
         if (res && res.data) {
           const updatedArr = [...res.data.reviews]
           setReviewList([...updatedArr])

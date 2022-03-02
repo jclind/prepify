@@ -63,18 +63,23 @@ const Recipes = () => {
             {recipeList.map((recipe, idx) => {
               return <RecipeThumbnail key={idx} recipe={recipe} />
             })}
-            {totalResults && totalResults > recipeList.length ? (
-              <button
-                className='load-more-recipes-btn btn'
-                onClick={() => setCurrPage(currPage + 1)}
-              >
-                Load More Recipes
-              </button>
-            ) : null}
           </div>
         ) : (
-          <div>Loading Recipes...</div>
+          <div className='recipes-list'>
+            <RecipeThumbnail recipe={null} loading={true} />
+            <RecipeThumbnail recipe={null} loading={true} />
+            <RecipeThumbnail recipe={null} loading={true} />
+            <RecipeThumbnail recipe={null} loading={true} />
+          </div>
         )}
+        {totalResults && totalResults > recipeList.length ? (
+          <button
+            className='load-more-recipes-btn btn'
+            onClick={() => setCurrPage(currPage + 1)}
+          >
+            Load More Recipes
+          </button>
+        ) : null}
       </section>
     </div>
   )

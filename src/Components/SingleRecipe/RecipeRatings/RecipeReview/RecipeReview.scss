@@ -20,6 +20,37 @@
       font-weight: 500;
       // color: $secondary-text;
     }
+    @media screen and (max-width: 450px) {
+      position: relative;
+      flex-wrap: wrap;
+      gap: 0.25rem;
+      .name-content {
+        display: flex;
+        flex-wrap: wrap;
+        max-width: 300px;
+        column-gap: 0.35rem;
+        .name {
+          font-size: toRem(14);
+        }
+      }
+      .rating {
+        display: flex;
+        .text {
+          display: none;
+        }
+      }
+      .date {
+        position: absolute;
+        color: $tertiary-text;
+        right: 0;
+        font-size: toRem(12);
+      }
+    }
+    @media screen and (max-width: 350px) {
+      .name-content {
+        max-width: 200px;
+      }
+    }
   }
   .body {
     .text {

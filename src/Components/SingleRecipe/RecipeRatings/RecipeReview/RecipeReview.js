@@ -242,16 +242,18 @@ const RecipeReview = ({ review, setCurrUserReview, recipeId }) => {
   return (
     <div className='recipe-review'>
       <div className='head'>
-        <div className='name'>{username}</div>
-        rated this recipe:
-        <div className='rating'>
-          <StarRatings
-            rating={rating}
-            starRatedColor='#ff5722'
-            starDimension='15px'
-            starSpacing='1px'
-            name='rating'
-          />
+        <div className='name-content'>
+          <div className='name'>{username}</div>
+          <div className='rating'>
+            <div className='text'>rated this recipe:</div>
+            <StarRatings
+              rating={rating}
+              starRatedColor='#ff5722'
+              starDimension='15px'
+              starSpacing='1px'
+              name='rating'
+            />
+          </div>
         </div>
         <div className='date'>{date}</div>
       </div>

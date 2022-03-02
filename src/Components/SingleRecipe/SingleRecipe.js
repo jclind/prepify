@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react'
 import './SingleRecipe.scss'
 import { useParams } from 'react-router-dom'
 import { useRecipe } from '../../context/RecipeContext'
-import { TailSpin } from 'react-loader-spinner'
 
 import Ingredients from './Ingredients/Ingredients'
 import Directions from './Directions/Directions'
@@ -17,12 +16,21 @@ import { calcServings } from '../../util/calcServings'
 import { AiOutlineClockCircle, AiOutlineUsergroupAdd } from 'react-icons/ai'
 import { BsStar } from 'react-icons/bs'
 
+import { getWindowWidth } from '../../util/getWindowWidth'
+
+import Skeleton from 'react-loading-skeleton'
+import 'react-loading-skeleton/dist/skeleton.css'
+
+const skeletonColor = '#d6d6d6'
+
 const SingleRecipe = () => {
   const [currRecipe, setCurrRecipe] = useState(null)
   const [loading, setLoading] = useState(true)
   const [modIngredients, setModIngredients] = useState([])
 
   const [currUserReview, setCurrUserReview] = useState({})
+
+  const [windowWidth, setWindowWidth] = useState(getWindowWidth())
 
   const [yieldSize, setYieldSize] = useState(0)
   useEffect(() => {
@@ -76,13 +84,18 @@ const SingleRecipe = () => {
       setCurrRecipe(res.data)
       setLoading(false)
     })
+
+    function handleResize() {
+      setWindowWidth(getWindowWidth())
+    }
+
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
     if (currRecipe) {
-      console.log(currRecipe)
-
       const recipeServings = JSON.parse(localStorage.getItem('recipeServings'))
       if (recipeServings) {
         const idx = recipeServings.findIndex(
@@ -100,74 +113,164 @@ const SingleRecipe = () => {
 
   return (
     <div className='page single-recipe-page'>
-      {loading || !currRecipe ? (
-        <div className='loading-container'>
-          <TailSpin
-            heigth='50'
-            width='50'
-            color='gray'
-            arialLabel='loading'
-            className='spinner'
-          />
-        </div>
-      ) : (
-        <div className='recipe-container'>
-          <div className='header-content'>
-            <div className='recipe-image-container'>
-              <img src={currRecipe.recipeImage} alt={currRecipe.title} />
+      <div className='recipe-container'>
+        <div className='header-content'>
+          {windowWidth <= 956 && (
+            <div className='mobile-title-content'>
+              <h1 className='title'>
+                {loading ? (
+                  <Skeleton baseColor={skeletonColor} />
+                ) : (
+                  currRecipe.title
+                )}
+              </h1>
+              <p className='description'>
+                {loading ? (
+                  <Skeleton baseColor={skeletonColor} count={4} />
+                ) : (
+                  currRecipe.description
+                )}
+              </p>
             </div>
-            <div className='description-content'>
-              <h1 className='title'>{currRecipe.title}</h1>
-              <p className='description'>{currRecipe.description}</p>
-              <div className='recipe-data'>
-                <div className='time data-element'>
-                  <AiOutlineClockCircle className='icon' />
-                  <h3>Total Time</h3>
-                  <div className='data'>{currRecipe.totalTime} min.</div>
-                </div>
-                <div className='servings data-element'>
-                  <AiOutlineUsergroupAdd className='icon' />
-                  <h3>{currRecipe.yield.type.value}</h3>
-                  <div className='data'>{yieldSize}</div>
-                </div>
-                <div className='rating data-element'>
-                  <BsStar className='icon' />
-                  <h3>Rating</h3>
-                  <div className='data'>
-                    {Number(currRecipe.rating.rateCount) === 0 ? (
-                      'No Ratings'
-                    ) : (
-                      <>
-                        {formatRating(
-                          currRecipe.rating.rateValue,
-                          currRecipe.rating.rateCount
-                        )}{' '}
-                        ({currRecipe.rating.rateCount})
-                      </>
-                    )}
-                  </div>
-                </div>
+          )}
+          <div className='recipe-image-container'>
+            {loading ? (
+              <Skeleton baseColor={skeletonColor} className='img skeleton' />
+            ) : (
+              <img
+                className='img'
+                src={currRecipe.recipeImage}
+                alt={currRecipe.title}
+              />
+            )}
+          </div>
+          <div className='description-content'>
+            {windowWidth > 956 && (
+              <>
+                <h1 className='title'>
+                  {loading ? (
+                    <Skeleton baseColor={skeletonColor} />
+                  ) : (
+                    currRecipe.title
+                  )}
+                </h1>
+                <p className='description'>
+                  {loading ? (
+                    <Skeleton baseColor={skeletonColor} count={4} />
+                  ) : (
+                    currRecipe.description
+                  )}
+                </p>
+              </>
+            )}
+
+            <div className='recipe-data'>
+              <div className='time data-element'>
+                {loading ? (
+                  <Skeleton baseColor={skeletonColor} className='skeleton' />
+                ) : (
+                  <>
+                    <AiOutlineClockCircle className='icon' />
+                    <h3>Total Time</h3>
+                    <div className='data'>{currRecipe.totalTime} min.</div>
+                  </>
+                )}
               </div>
-              <div className='actions'>
-                <SaveRecipeBtn recipeId={currRecipe._id} />
+              <div className='servings data-element'>
+                {loading ? (
+                  <Skeleton baseColor={skeletonColor} className='skeleton' />
+                ) : (
+                  <>
+                    <AiOutlineUsergroupAdd className='icon' />
+                    <h3>
+                      {currRecipe.yield.type.value || currRecipe.yield.type}
+                    </h3>
+                    <div className='data'>{yieldSize}</div>
+                  </>
+                )}
+              </div>
+              <div className='rating data-element'>
+                {loading ? (
+                  <Skeleton baseColor={skeletonColor} className='skeleton' />
+                ) : (
+                  <>
+                    {' '}
+                    <BsStar className='icon' />
+                    <h3>Rating</h3>
+                    <div className='data'>
+                      {Number(currRecipe.rating.rateCount) === 0 ? (
+                        'No Ratings'
+                      ) : (
+                        <>
+                          {formatRating(
+                            currRecipe.rating.rateValue,
+                            currRecipe.rating.rateCount
+                          )}{' '}
+                          ({currRecipe.rating.rateCount})
+                        </>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+            <div className='actions'>
+              {loading ? (
+                <Skeleton
+                  baseColor={skeletonColor}
+                  className='action skeleton'
+                />
+              ) : (
+                <SaveRecipeBtn recipeId={currRecipe._id} className='action' />
+              )}
+              {loading ? (
+                <Skeleton
+                  baseColor={skeletonColor}
+                  className='action skeleton'
+                />
+              ) : (
                 <AddRatingBtn
                   recipeId={currRecipe._id}
                   currUserReview={currUserReview}
+                  className='action'
                 />
-                <PrintRecipeBtn recipe={currRecipe} />
-              </div>
+              )}
+              {loading ? (
+                <Skeleton
+                  baseColor={skeletonColor}
+                  className='action skeleton'
+                />
+              ) : (
+                <PrintRecipeBtn recipe={currRecipe} className='action' />
+              )}
             </div>
           </div>
+        </div>
 
-          <div className='body-content'>
-            <Ingredients
-              ingredients={modIngredients}
-              yieldSize={yieldSize}
-              setYieldSize={setYieldSize}
-            />
-            <Directions directions={currRecipe.instructions} />
-            <div className='tags-container'>
-              <label className='tag-label'>Tags:</label>
+        <div className='body-content'>
+          <Ingredients
+            ingredients={modIngredients}
+            yieldSize={yieldSize}
+            setYieldSize={setYieldSize}
+            loading={loading}
+          />
+          <Directions
+            directions={
+              currRecipe && currRecipe.instructions
+                ? currRecipe.instructions
+                : null
+            }
+            loading={loading}
+          />
+          <div className='tags-container'>
+            <label className='tag-label'>
+              {loading ? (
+                <Skeleton baseColor={skeletonColor} width={50} />
+              ) : (
+                'Tags:'
+              )}
+            </label>
+            {!loading ? (
               <div className='tags'>
                 {currRecipe.tags.map(tag => {
                   return (
@@ -177,8 +280,16 @@ const SingleRecipe = () => {
                   )
                 })}
               </div>
-            </div>
+            ) : (
+              <div className='tags'>
+                <Skeleton baseColor={skeletonColor} className='tag skeleton' />
+                <Skeleton baseColor={skeletonColor} className='tag skeleton' />
+                <Skeleton baseColor={skeletonColor} className='tag skeleton' />
+              </div>
+            )}
           </div>
+        </div>
+        {!loading && (
           <RecipeRatings
             recipeId={currRecipe._id}
             ratingVal={currRecipe.rating.rateValue}
@@ -186,8 +297,8 @@ const SingleRecipe = () => {
             currUserReview={currUserReview}
             setCurrUserReview={setCurrUserReview}
           />
-        </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }

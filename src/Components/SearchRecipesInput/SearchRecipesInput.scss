@@ -2,7 +2,7 @@
 
 .search-recipes-form {
   position: relative;
-  width: 80%;
+  width: 90%;
   max-width: 800px;
 
   .search-recipes-input-label {
@@ -66,13 +66,13 @@
         display: flex;
         align-items: center;
         gap: 1.5rem;
-        height: 140px;
+        height: 150px;
         background: $white;
         border-bottom: 1px solid $gray-200;
 
         .image-container {
-          max-width: 100px;
-          max-height: 100px;
+          max-width: 125px;
+          max-height: 125px;
           img {
             object-fit: contain;
             width: 100%;
@@ -116,11 +116,47 @@
           .tag {
             padding-right: 0.5rem;
           }
+          @media screen and (max-width: 725px) {
+            display: none;
+          }
         }
 
         &:hover {
           background: $gray-50;
           cursor: pointer;
+        }
+        @media screen and (max-width: 725px) {
+          .image-container {
+            max-width: 100px;
+            max-height: 100px;
+          }
+          .info-content {
+            .title {
+              font-size: toRem(16);
+            }
+            .data {
+              gap: 1rem;
+              .item {
+                display: flex;
+                align-items: center;
+                gap: 0.25rem;
+                font-weight: 500;
+                font-size: toRem(12);
+
+                .icon {
+                  height: 16px;
+                  width: 16px;
+                }
+              }
+            }
+          }
+        }
+        @media screen and (max-width: 956px) {
+          .info-content {
+            .title {
+              font-size: toRem(18);
+            }
+          }
         }
       }
     }

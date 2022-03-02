@@ -58,12 +58,20 @@
         font-size: toRem(16);
         border-radius: 50%;
       }
+      .number.skeleton {
+        background: $gray-400;
+        margin: 0;
+      }
       // }
       .content {
         font-size: toRem(16);
         font-weight: 500;
         max-width: 600px;
         line-height: 1.5;
+      }
+      .content.skeleton {
+        min-width: 500px;
+        line-height: 1;
       }
     }
   }

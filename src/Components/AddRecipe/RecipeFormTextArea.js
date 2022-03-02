@@ -14,7 +14,6 @@ const RecipeFormTextArea = ({
   const handleChange = e => {
     const val = e.target.value
 
-    console.log(val)
     if (characterLimit && val.length > characterLimit) {
       return
     }
