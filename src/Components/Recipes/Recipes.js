@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useParams, useLocation } from 'react-router-dom'
 import './Recipes.scss'
 import RecipeThumbnail from '../RecipeThumbnail/RecipeThumbnail'
 import RecipeFilters from '../RecipeFilters/RecipeFilters'
@@ -14,6 +15,11 @@ const Recipes = () => {
 
   const [currPage, setCurrPage] = useState(null)
   const [totalResults, setTotalResults] = useState(null)
+
+  const location = useLocation()
+  const urlParams = new URLSearchParams(location.search)
+  const query = urlParams.get('q').split('-').join(' ')
+  console.log(query)
 
   const getRecipes = page => {
     console.log(page, selectFilterVal)
@@ -56,7 +62,7 @@ const Recipes = () => {
       </Helmet>
       <div className='page recipes-page'>
         <h1 className='title'>Recipes</h1>
-        <SearchRecipesInput autoComplete={true} />
+        <SearchRecipesInput defaultVal={query} autoComplete={true} />
         <section className='recipes-container'>
           <RecipeFilters
             selectVal={selectFilterVal}
