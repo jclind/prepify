@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { useParams, useLocation } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 import './Recipes.scss'
 import RecipeThumbnail from '../RecipeThumbnail/RecipeThumbnail'
 import RecipeFilters from '../RecipeFilters/RecipeFilters'

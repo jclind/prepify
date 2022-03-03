@@ -46,7 +46,11 @@ const SearchRecipesInput = ({ defaultVal, autoComplete }) => {
   const handleSubmit = e => {
     e.preventDefault()
 
-    navigate(`/recipes?q=${slugify(searchRecipeVal)}`)
+    if (slugify(searchRecipeVal)) {
+      navigate(`/recipes?q=${slugify(searchRecipeVal)}`)
+    } else {
+      navigate('/recipes')
+    }
   }
 
   const getAutoCompleteResult = title => {
