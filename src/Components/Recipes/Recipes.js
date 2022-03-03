@@ -18,22 +18,30 @@ const Recipes = () => {
 
   const location = useLocation()
   const urlParams = new URLSearchParams(location.search)
-  const query = urlParams.get('q').split('-').join(' ')
-  console.log(query)
+  const param = urlParams.get('q')
+  const query = param ? param.split('-').join(' ') : ''
+
+  useEffect(() => {
+    getRecipes(0)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search])
 
   const getRecipes = page => {
-    console.log(page, selectFilterVal)
-    RecipeAPI.getAll(page, selectFilterVal, selectedTags).then(res => {
-      console.log(res.data, res.data.recipeList)
-
-      const totalResults = Number(res.data.total_results)
-      console.log(totalResults)
+    console.log(page, selectFilterVal, query)
+    RecipeAPI.getAll(page, selectFilterVal, selectedTags, query).then(res => {
+      const totalResults = Number(
+        res.data && res.data.total_results ? res.data.total_results : 0
+      )
       setTotalResults(totalResults)
 
-      if (currPage !== 0) {
-        setRecipeList([...recipeList, ...res.data.recipeList])
+      if (res.data && res.data.recipeList) {
+        if (currPage !== 0) {
+          setRecipeList([...recipeList, ...res.data.recipeList])
+        } else {
+          setRecipeList(res.data.recipeList)
+        }
       } else {
-        setRecipeList(res.data.recipeList)
+        setRecipeList([])
       }
     })
   }
@@ -70,20 +78,27 @@ const Recipes = () => {
             selectedTags={selectedTags}
             setSelectedTags={setSelectedTags}
           />
-          {recipeList[0] ? (
-            <div className='recipes-list'>
-              {recipeList.map((recipe, idx) => {
-                return <RecipeThumbnail key={idx} recipe={recipe} />
-              })}
-            </div>
+          {totalResults === 0 ? (
+            <div>No Results Found</div>
           ) : (
-            <div className='recipes-list'>
-              <RecipeThumbnail recipe={null} loading={true} />
-              <RecipeThumbnail recipe={null} loading={true} />
-              <RecipeThumbnail recipe={null} loading={true} />
-              <RecipeThumbnail recipe={null} loading={true} />
-            </div>
+            <>
+              {recipeList[0] ? (
+                <div className='recipes-list'>
+                  {recipeList.map((recipe, idx) => {
+                    return <RecipeThumbnail key={idx} recipe={recipe} />
+                  })}
+                </div>
+              ) : (
+                <div className='recipes-list'>
+                  <RecipeThumbnail recipe={null} loading={true} />
+                  <RecipeThumbnail recipe={null} loading={true} />
+                  <RecipeThumbnail recipe={null} loading={true} />
+                  <RecipeThumbnail recipe={null} loading={true} />
+                </div>
+              )}
+            </>
           )}
+
           {totalResults && totalResults > recipeList.length ? (
             <button
               className='load-more-recipes-btn btn'
