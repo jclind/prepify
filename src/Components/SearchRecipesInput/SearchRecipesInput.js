@@ -51,6 +51,7 @@ const SearchRecipesInput = ({ defaultVal, autoComplete }) => {
     } else {
       navigate('/recipes')
     }
+    setIsBlurred(true)
   }
 
   const getAutoCompleteResult = title => {
