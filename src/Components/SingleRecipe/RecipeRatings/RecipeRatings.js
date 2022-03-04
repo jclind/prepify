@@ -219,10 +219,13 @@ const RecipeRatings = ({
             />
           </div>
           <div className='reviews-container'>
-            {reviewList.length > 0 &&
+            {reviewList.length > 0 ? (
               reviewList.map(review => {
                 return <RecipeReview key={review.userId} review={review} />
-              })}
+              })
+            ) : (
+              <div className='no-reviews'>No Reviews</div>
+            )}
             {isMoreReviews && (
               <div className='get-more-reviews'>
                 <button
