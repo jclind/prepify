@@ -122,20 +122,20 @@ function App() {
                   </Layout>
                 }
               />
+              <Route
+                exact
+                path='/help'
+                element={
+                  <Layout darkNavLinks={true}>
+                    <Help />
+                  </Layout>
+                }
+              />
             </Route>
             <Route exact path='/login' element={<Login />} />
             <Route exact path='/signup' element={<Signup />} />
             <Route exact path='/create-username' element={<CreateUsername />} />
             <Route exact path='/forgot-password' element={<ForgotPassword />} />
-            <Route
-              exact
-              path='/help'
-              element={
-                <Layout darkNavLinks={true}>
-                  <Help />
-                </Layout>
-              }
-            />
           </Routes>
         </AlertProvider>
       </RecipeProvider>

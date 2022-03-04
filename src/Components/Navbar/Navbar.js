@@ -84,6 +84,14 @@ const Navbar = ({ darkNavLinks }) => {
       >
         Create Recipe
       </NavLink>
+      <NavLink
+        to='/help'
+        className={({ isActive }) => {
+          return isActive ? 'nav-link active' : 'nav-link'
+        }}
+      >
+        Help
+      </NavLink>
       <button className='nav-link btn' onClick={logout}>
         logout
       </button>
