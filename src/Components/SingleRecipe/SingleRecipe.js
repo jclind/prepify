@@ -36,31 +36,48 @@ const SingleRecipe = () => {
 
   const [yieldSize, setYieldSize] = useState(0)
   useEffect(() => {
-    if (yieldSize && currRecipe) {
+    if (yieldSize >= 0 && currRecipe) {
       const recipeServings = JSON.parse(localStorage.getItem('recipeServings'))
-      if (!recipeServings) {
-        localStorage.setItem(
-          'recipeServings',
-          JSON.stringify([{ recipeId: currRecipe._id, servingSize: yieldSize }])
-        )
-      } else {
-        const idx = recipeServings.findIndex(
-          item => item.recipeId === currRecipe._id
-        )
-        if (idx >= 0) {
-          recipeServings[idx].servingSize = yieldSize
-          localStorage.setItem(
-            'recipeServings',
-            JSON.stringify([...recipeServings])
+      if (yieldSize === 0) {
+        if (recipeServings) {
+          const idx = recipeServings.findIndex(
+            item => item.recipeId === currRecipe._id
           )
+
+          setYieldSize(recipeServings[idx].servingSize)
         } else {
-          localStorage.setItem(
-            'recipeServings',
-            JSON.stringify([
-              ...recipeServings,
-              { recipeId: currRecipe._id, servingSize: yieldSize },
-            ])
-          )
+          setYieldSize(Number(currRecipe.yield.value))
+        }
+      } else {
+        // If yieldSize has changed from original recipe size, set local storage
+        if (yieldSize) {
+          if (recipeServings) {
+            const idx = recipeServings.findIndex(
+              item => item.recipeId === currRecipe._id
+            )
+            if (idx >= 0) {
+              recipeServings[idx].servingSize = yieldSize
+              localStorage.setItem(
+                'recipeServings',
+                JSON.stringify([...recipeServings])
+              )
+            } else {
+              localStorage.setItem(
+                'recipeServings',
+                JSON.stringify([
+                  ...recipeServings,
+                  { recipeId: currRecipe._id, servingSize: yieldSize },
+                ])
+              )
+            }
+          } else {
+            localStorage.setItem(
+              'recipeServings',
+              JSON.stringify([
+                { recipeId: currRecipe._id, servingSize: yieldSize },
+              ])
+            )
+          }
         }
       }
 
@@ -73,7 +90,7 @@ const SingleRecipe = () => {
       )
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [yieldSize])
+  }, [yieldSize, currRecipe])
 
   const { getRecipe } = useRecipe()
 

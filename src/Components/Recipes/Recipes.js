@@ -27,7 +27,6 @@ const Recipes = () => {
   }, [location.search])
 
   const getRecipes = page => {
-    console.log(page, selectFilterVal, query)
     const orderParam = urlParams.get('order')
     const filter = orderParam || selectFilterVal
 
@@ -50,9 +49,7 @@ const Recipes = () => {
   }
 
   useEffect(() => {
-    console.log(selectFilterVal, selectedTags)
     if (selectFilterVal) {
-      console.log('test1')
       setCurrPage(0)
       getRecipes(0)
     }
@@ -61,7 +58,6 @@ const Recipes = () => {
 
   useEffect(() => {
     if (currPage !== null && currPage !== 0) {
-      console.log('test2')
       getRecipes(currPage)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
