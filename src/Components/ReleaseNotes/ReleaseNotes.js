@@ -147,6 +147,12 @@ const ReleaseNotes = ({
             </div>
           </section>
         </div>
+        <a
+          href='https://github.com/jclind/prepify/releases'
+          className='all-release-notes-btn btn'
+        >
+          View All Release Notes
+        </a>
       </div>
     </Modal>
   )
