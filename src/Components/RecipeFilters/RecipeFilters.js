@@ -39,6 +39,7 @@ const RecipeFilters = ({
 
   const handleSelectChange = e => {
     const value = e.value
+    console.log(value)
     setSelectVal(value)
     urlParams.set('order', value)
     navigate(`/recipes?${urlParams}`)

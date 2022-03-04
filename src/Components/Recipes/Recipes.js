@@ -28,7 +28,10 @@ const Recipes = () => {
 
   const getRecipes = page => {
     console.log(page, selectFilterVal, query)
-    RecipeAPI.getAll(page, selectFilterVal, selectedTags, query).then(res => {
+    const orderParam = urlParams.get('order')
+    const filter = orderParam || selectFilterVal
+
+    RecipeAPI.getAll(page, filter, selectedTags, query).then(res => {
       const totalResults = Number(
         res.data && res.data.total_results ? res.data.total_results : 0
       )
@@ -49,6 +52,7 @@ const Recipes = () => {
   useEffect(() => {
     console.log(selectFilterVal, selectedTags)
     if (selectFilterVal) {
+      console.log('test1')
       setCurrPage(0)
       getRecipes(0)
     }
@@ -57,6 +61,7 @@ const Recipes = () => {
 
   useEffect(() => {
     if (currPage !== null && currPage !== 0) {
+      console.log('test2')
       getRecipes(currPage)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
