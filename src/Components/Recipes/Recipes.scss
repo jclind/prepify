@@ -1,6 +1,9 @@
 @import '../../helpers.scss';
 
 .recipes-page {
+  min-height: calc(
+    100vh - #{$nav-height} - #{$footer-height} - #{$footer-margin} - 2rem
+  );
   h1.title {
     text-align: center;
   }
