@@ -15,10 +15,11 @@ const PrintRecipeBtn = () => {
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         onClick={() => {
-          alert.show("Sorry, this function isn't available yet in beta.", {
-            timeout: 10000,
-            type: 'info',
-          })
+          // alert.show("Sorry, this function isn't available yet in beta.", {
+          //   timeout: 10000,
+          //   type: 'info',
+          // })
+          window.print()
         }}
       >
         {isHovered ? (
