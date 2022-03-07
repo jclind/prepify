@@ -139,12 +139,12 @@ const isFraction = str => {
 }
 export const evalNum = str => {
   if (!isNaN(str)) {
-    return str
+    return Number(str)
   }
   const evalFraction = frac => {
     const split = frac.split('/')
     const res = parseInt(Number(split[0]), 10) / parseInt(Number(split[1]), 10)
-    return res
+    return Number(res)
   }
   if (isFraction(str)) {
     return evalFraction(str)

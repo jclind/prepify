@@ -42,6 +42,4 @@ export const calcServings = (ingredients, originalServings, newServings) => {
     })
     return { ...ingrObj, list }
   })
-
-  // return fractionString
 }
