@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import ReactToPrint from 'react-to-print'
+import { TailSpin } from 'react-loader-spinner'
 
 import { BsPrinter, BsFillPrinterFill } from 'react-icons/bs'
 import { useAlert } from 'react-alert'
@@ -8,22 +9,17 @@ const PrintRecipeBtn = ({ printedRef }) => {
   const [isHovered, setIsHovered] = useState(false)
 
   const alert = useAlert()
+  const [loading, setLoading] = useState(false)
 
   return (
     <div className='print-recipe'>
       <ReactToPrint
         trigger={() => (
           <button
-            className='print-recipe-btn btn disabled'
+            className='print-recipe-btn btn'
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
-            onClick={() => {
-              // alert.show("Sorry, this function isn't available yet in beta.", {
-              //   timeout: 10000,
-              //   type: 'info',
-              // })
-              window.print()
-            }}
+            disabled={loading}
           >
             {isHovered ? (
               <BsFillPrinterFill className='icon' />
@@ -31,9 +27,21 @@ const PrintRecipeBtn = ({ printedRef }) => {
               <BsPrinter className='icon' />
             )}{' '}
             Print
-            <div className='disabled-overlay'></div>
+            {loading && (
+              <div className='loading'>
+                <TailSpin
+                  heigth='30'
+                  width='30'
+                  color='#303841'
+                  arialLabel='loading'
+                  className='spinner'
+                />
+              </div>
+            )}
           </button>
         )}
+        onAfterPrint={() => setLoading(false)}
+        onBeforeGetContent={() => setLoading(true)}
         content={() => printedRef.current}
       />
     </div>
