@@ -75,4 +75,25 @@
       }
     }
   }
+
+  @media screen and (max-width: 540px) {
+    width: 95%;
+    margin-left: auto;
+    margin-right: auto;
+
+    .list {
+      .direction {
+        gap: 0.5rem;
+        .number {
+          height: 20px;
+          width: 20px;
+          font-size: toRem(14);
+          line-height: 1.5;
+        }
+        .content {
+          font-size: toRem(16);
+        }
+      }
+    }
+  }
 }
