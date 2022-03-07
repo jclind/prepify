@@ -207,7 +207,7 @@ const IngredientList = ({
       )}
       <div className='inputs'>
         <input
-          type='number'
+          type='text'
           className='ingredient-quantity'
           value={quantity}
           onChange={e => {
