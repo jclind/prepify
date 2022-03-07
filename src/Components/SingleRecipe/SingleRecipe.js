@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import './SingleRecipe.scss'
 import { useParams } from 'react-router-dom'
 import { useRecipe } from '../../context/RecipeContext'
@@ -35,6 +35,8 @@ const SingleRecipe = () => {
   const [windowWidth, setWindowWidth] = useState(getWindowWidth())
 
   const [yieldSize, setYieldSize] = useState(0)
+
+  const printedRef = useRef()
   useEffect(() => {
     if (yieldSize >= 0 && currRecipe) {
       const recipeServings = JSON.parse(localStorage.getItem('recipeServings'))
@@ -135,7 +137,7 @@ const SingleRecipe = () => {
           {loading ? 'Recipe Loading...' : capitalize(currRecipe.title)}
         </title>
       </Helmet>
-      <div className='page single-recipe-page'>
+      <div className='page single-recipe-page' ref={printedRef}>
         <div className='recipe-container'>
           <div className='header-content'>
             {windowWidth <= 956 && (
@@ -264,7 +266,11 @@ const SingleRecipe = () => {
                     className='action skeleton'
                   />
                 ) : (
-                  <PrintRecipeBtn recipe={currRecipe} className='action' />
+                  <PrintRecipeBtn
+                    recipe={currRecipe}
+                    printedRef={printedRef}
+                    className='action'
+                  />
                 )}
               </div>
             </div>

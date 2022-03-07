@@ -36,6 +36,7 @@
     "react-slug": "^0.1.2",
     "react-star-ratings": "^2.3.0",
     "react-tag-input": "^6.8.0",
+    "react-to-print": "^2.14.4",
     "react-top-loading-bar": "^2.1.0",
     "slugify": "^1.6.5",
     "styled-icons": "^10.45.0",
