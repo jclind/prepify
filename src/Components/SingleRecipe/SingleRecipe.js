@@ -328,7 +328,9 @@ const SingleRecipe = () => {
                 </div>
               )}
             </div>
-            {currRecipe && currRecipe.nutritionData && <NutritionData />}
+            {currRecipe && currRecipe.nutritionData && (
+              <NutritionData data={currRecipe.nutritionData} />
+            )}
           </div>
           {!loading && (
             <RecipeRatings

@@ -3,8 +3,11 @@ import { Collapse } from 'react-collapse'
 import { MdKeyboardArrowUp, MdKeyboardArrowDown } from 'react-icons/md'
 import './NutritionData.scss'
 
-const NutritionData = data => {
+const NutritionData = ({ data }) => {
   const [isOpen, setIsOpen] = useState(false)
+  console.log(data)
+  const tNutr = data.totalNutrients
+  const tDay = data.totalDaily
   return (
     <div className='recipe-nutrition-data'>
       <button
@@ -22,23 +25,13 @@ const NutritionData = data => {
         <section className='nutrition-label'>
           <header className='nutrition-header border-b-lg'>
             <h1 className='nutrition-facts border-b'>Nutrition Facts</h1>
-            <div className='servings'>8 servings per container</div>
-            <div className='nutrition-row'>
-              <div className='nutrition-column text-md text-bold'>
-                Serving size
-              </div>
-              <div className='nutrition-column text-md text-bold text-right'>
-                2/3 cup (55g)
-              </div>
-            </div>
           </header>
           <div className='nutrition-row border-b-md'>
             <div className='nutrition-column text-bold'>
-              <div className='text-sm'>Amount per serving</div>
               <div className='calories'>Calories</div>
             </div>
             <div className='nutrition-column calories amount align-bottom text-right'>
-              230
+              {data.calories}
             </div>
           </div>
           <div className='nutrition-row border-b'>
@@ -48,79 +41,114 @@ const NutritionData = data => {
           </div>
           <div className='nutrition-row border-b'>
             <div className='nutrition-column'>
-              <span className='text-bold'>Total Fat</span> 8g
+              <span className='text-bold'>Total Fat</span>{' '}
+              {Math.round(tNutr.FAT.quantity)}g
             </div>
-            <div className='nutrition-column text-bold text-right'>10%</div>
-          </div>
-          <div className='nutrition-row border-b'>
-            <div className='nutrition-column'>
-              <span className='text-indent'>Saturated Fat 1g</span>
+            <div className='nutrition-column text-bold text-right'>
+              {Math.round(tDay.FAT.quantity)}%
             </div>
-            <div className='nutrition-column text-bold text-right'>5%</div>
           </div>
           <div className='nutrition-row border-b'>
             <div className='nutrition-column'>
               <span className='text-indent'>
-                <i>Trans</i> Fat 0g
+                Saturated Fat {Math.round(tNutr.FASAT.quantity)}g
+              </span>
+            </div>
+            <div className='nutrition-column text-bold text-right'>
+              {Math.round(tDay.FASAT.quantity)}%
+            </div>
+          </div>
+          <div className='nutrition-row border-b'>
+            <div className='nutrition-column'>
+              <span className='text-indent'>
+                <i>Trans</i> Fat {Math.round(tNutr.FATRN.quantity)}g
               </span>
             </div>
             <div className='nutrition-column text-bold text-right'></div>
           </div>
           <div className='nutrition-row border-b'>
             <div className='nutrition-column'>
-              <span className='text-bold'>Cholesterol</span> 0mg
+              <span className='text-bold'>Cholesterol</span>{' '}
+              {Math.round(tNutr.CHOLE.quantity)}mg
             </div>
-            <div className='nutrition-column text-bold text-right'>0%</div>
+            <div className='nutrition-column text-bold text-right'>
+              {Math.round(tDay.CHOLE.quantity)}%
+            </div>
           </div>
           <div className='nutrition-row border-b'>
             <div className='nutrition-column'>
-              <span className='text-bold'>Sodium</span> 160mg
+              <span className='text-bold'>Sodium</span>{' '}
+              {Math.round(tNutr.NA.quantity)}mg
             </div>
-            <div className='nutrition-column text-bold text-right'>7%</div>
+            <div className='nutrition-column text-bold text-right'>
+              {Math.round(tDay.NA.quantity)}%
+            </div>
           </div>
           <div className='nutrition-row border-b'>
             <div className='nutrition-column'>
-              <span className='text-bold'>Total Carbohydrate</span> 37g
+              <span className='text-bold'>Total Carbohydrate</span>{' '}
+              {Math.round(tNutr.CHOCDF.quantity)}g
             </div>
-            <div className='nutrition-column text-bold text-right'>13%</div>
+            <div className='nutrition-column text-bold text-right'>
+              {Math.round(tDay.CHOCDF.quantity)}%
+            </div>
           </div>
           <div className='nutrition-row border-b'>
             <div className='nutrition-column'>
-              <span className='text-indent'>Dietary Fiber 4g</span>
+              <span className='text-indent'>
+                Dietary Fiber {Math.round(tNutr.FIBTG.quantity)}g
+              </span>
             </div>
-            <div className='nutrition-column text-bold text-right'>14%</div>
+            <div className='nutrition-column text-bold text-right'>
+              {Math.round(tDay.FIBTG.quantity)}%
+            </div>
           </div>
           <div className='nutrition-row'>
             <div className='nutrition-column'>
-              <span className='text-indent'>Total Sugars 12g</span>
+              <span className='text-indent'>
+                Total Sugars {Math.round(tNutr.SUGAR.quantity)}g
+              </span>
             </div>
             <div className='nutrition-column text-bold text-right'></div>
-          </div>
-          <div className='nutrition-row text-indent-md border-t-sm'>
-            <div className='nutrition-column'>Includes 10g Added Sugars</div>
-            <div className='nutrition-column text-bold text-right'>20%</div>
           </div>
           <div className='nutrition-row border-t-sm border-b-lg'>
             <div className='nutrition-column'>
-              <span className='text-bold'>Protein</span> 3g
+              <span className='text-bold'>Protein</span>{' '}
+              {Math.round(tNutr.PROCNT.quantity)}g
             </div>
             <div className='nutrition-column text-bold text-right'></div>
           </div>
           <div className='nutrition-row border-b'>
-            <div className='nutrition-column'>Vitamin D 2mcg</div>
-            <div className='nutrition-column text-right'>10%</div>
+            <div className='nutrition-column'>
+              Vitamin D {Math.round(tNutr.VITD.quantity)}mcg
+            </div>
+            <div className='nutrition-column text-right'>
+              {Math.round(tDay.VITD.quantity)}%
+            </div>
           </div>
           <div className='nutrition-row border-b'>
-            <div className='nutrition-column'>Calcium 260mg</div>
-            <div className='nutrition-column text-right'>20%</div>
+            <div className='nutrition-column'>
+              Calcium {Math.round(tNutr.CA.quantity)}mg
+            </div>
+            <div className='nutrition-column text-right'>
+              {Math.round(tDay.CA.quantity)}%
+            </div>
           </div>
           <div className='nutrition-row border-b'>
-            <div className='nutrition-column'>Iron 8mg</div>
-            <div className='nutrition-column text-right'>45%</div>
+            <div className='nutrition-column'>
+              Iron {Math.round(tNutr.FE.quantity)}mg
+            </div>
+            <div className='nutrition-column text-right'>
+              {Math.round(tDay.FE.quantity)}%
+            </div>
           </div>
           <div className='nutrition-row border-b-md'>
-            <div className='nutrition-column'>Potassium 235mg</div>
-            <div className='nutrition-column text-right'>6%</div>
+            <div className='nutrition-column'>
+              Potassium {Math.round(tNutr.K.quantity)}mg
+            </div>
+            <div className='nutrition-column text-right'>
+              {Math.round(tDay.K.quantity)}%
+            </div>
           </div>
           <footer className='nutrition-footer'>
             <div className='asteric'>*</div>
