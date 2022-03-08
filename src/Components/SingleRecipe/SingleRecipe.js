@@ -23,7 +23,6 @@ import { Helmet } from 'react-helmet'
 
 import Skeleton from 'react-loading-skeleton'
 import 'react-loading-skeleton/dist/skeleton.css'
-import RecipeAPI from '../../api/recipes'
 
 const skeletonColor = '#d6d6d6'
 
@@ -329,7 +328,10 @@ const SingleRecipe = () => {
               )}
             </div>
             {currRecipe && currRecipe.nutritionData && (
-              <NutritionData data={currRecipe.nutritionData} />
+              <NutritionData
+                data={currRecipe.nutritionData}
+                servings={currRecipe.yield.value}
+              />
             )}
           </div>
           {!loading && (

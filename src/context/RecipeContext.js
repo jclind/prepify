@@ -3,7 +3,6 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { useAuth } from './AuthContext'
 import RecipeAPI from '../api/recipes'
 import ObjectID from 'bson-objectid'
-import slugify from 'slugify'
 
 const RecipeContext = React.createContext()
 
