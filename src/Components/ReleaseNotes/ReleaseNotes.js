@@ -64,10 +64,11 @@ const ReleaseNotes = ({
         <h1 className='heading'>Prepify Release Notes • 3/2/2022</h1>
         <div className='release-tag'>v1.1.0-beta</div>
         <p className='release-description'>
-          This update brings a variety of user experience improvements including
-          mobile responsiveness, a contact form for community response and bug
-          reports, better loading indication, and many quality of life bug
-          fixes.
+          This update focuses on overall website enhancement and functionality.
+          Recipe search has been fixed to show accurate results from given
+          filters and search text. Recipe's can now be printed, and recipe
+          ingredient quantity fractions have been fixed to show more accurate
+          and common fractions.
         </p>
         <div className='content'>
           <section className='section'>
@@ -78,32 +79,7 @@ const ReleaseNotes = ({
             <div className='items'>
               <div className='item'>
                 <BsChevronDoubleRight className='icon' />
-                <div className='text'>Website wide responsive pages</div>
-              </div>
-              <div className='item'>
-                <BsChevronDoubleRight className='icon' />
-                <div className='text'>
-                  Added{' '}
-                  <Link to='/help' className='link'>
-                    help page
-                  </Link>{' '}
-                  with form for bug reports / feature requests
-                </div>
-              </div>
-              <div className='item'>
-                <BsChevronDoubleRight className='icon' />
-                <div className='text'>
-                  Added{' '}
-                  <Link to='/not-real-page' className='link'>
-                    404 page
-                  </Link>
-                </div>
-              </div>
-              <div className='item'>
-                <BsChevronDoubleRight className='icon' />
-                <div className='text'>
-                  Added modal popup after submitted recipe
-                </div>
+                <div className='text'>Recipes now have print functionality</div>
               </div>
             </div>
           </section>
@@ -115,19 +91,24 @@ const ReleaseNotes = ({
               <div className='item'>
                 <BsChevronDoubleRight className='icon' />
                 <div className='text'>
-                  Recipe search input no longer unfocuses on recipe selection
+                  Search recipes input now responds with correct search
+                  link/results
                 </div>
               </div>
               <div className='item'>
                 <BsChevronDoubleRight className='icon' />
                 <div className='text'>
-                  Image responsiveness fixed in individual recipe pages
+                  Search input no longer stays focused on search submit
                 </div>
               </div>
               <div className='item'>
                 <BsChevronDoubleRight className='icon' />
+                <div className='text'>Serving size no longer defaults to 0</div>
+              </div>
+              <div className='item'>
+                <BsChevronDoubleRight className='icon' />
                 <div className='text'>
-                  Clear form button now correctly clears form from local storage
+                  Recipe images now get cropped instead of stretched
                 </div>
               </div>
             </div>
@@ -139,9 +120,39 @@ const ReleaseNotes = ({
             <div className='items'>
               <div className='item'>
                 <BsChevronDoubleRight className='icon' />
+                <div className='text'>Added Prepify logo favicon</div>
+              </div>
+              <div className='item'>
+                <BsChevronDoubleRight className='icon' />
+                <div className='text'>Added titles to each page</div>
+              </div>
+              <div className='item'>
+                <BsChevronDoubleRight className='icon' />
+                <div className='text'>Added help button link in navbar</div>
+              </div>
+              <div className='item'>
+                <BsChevronDoubleRight className='icon' />
+                <div className='text'>Added 'no reviews' indicator</div>
+              </div>
+              <div className='item'>
+                <BsChevronDoubleRight className='icon' />
                 <div className='text'>
-                  Added skeleton loading for recipe thumbnails and individual
-                  recipe pages
+                  Added better ingredient quantity fractions for serving size
+                  changes
+                </div>
+              </div>
+              <div className='item'>
+                <BsChevronDoubleRight className='icon' />
+                <div className='text'>
+                  Increased readability of recipe ingredients and instructions
+                  on mobile
+                </div>
+              </div>
+              <div className='item'>
+                <BsChevronDoubleRight className='icon' />
+                <div className='text'>
+                  You can now view all releases at the bottom of this release
+                  notes page!
                 </div>
               </div>
             </div>
