@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react'
 import './ReleaseNotes.scss'
-import { Link, useLocation } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 import { BsChevronDoubleRight, BsPencil } from 'react-icons/bs'
 import { MdAddCircleOutline } from 'react-icons/md'
 import { BiWrench } from 'react-icons/bi'
