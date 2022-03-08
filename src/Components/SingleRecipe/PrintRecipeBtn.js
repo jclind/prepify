@@ -3,12 +3,10 @@ import ReactToPrint from 'react-to-print'
 import { TailSpin } from 'react-loader-spinner'
 
 import { BsPrinter, BsFillPrinterFill } from 'react-icons/bs'
-import { useAlert } from 'react-alert'
 
 const PrintRecipeBtn = ({ printedRef }) => {
   const [isHovered, setIsHovered] = useState(false)
 
-  const alert = useAlert()
   const [loading, setLoading] = useState(false)
 
   return (

@@ -28,17 +28,9 @@ const decimalToFraction = num => {
 export const calcServings = (ingredients, originalServings, newServings) => {
   const fractionMulti = newServings / originalServings
 
-  const gcd = function (a, b) {
-    if (!b) return a
-
-    return gcd(b, a % b)
-  }
-
   return ingredients.map(ingrObj => {
     const list = ingrObj.list.map(ingr => {
       if (ingr.quantity) {
-        const denominator = 16
-
         const res = mixedToDecimal(ingr.quantity) * fractionMulti
         const wholeNum = Math.floor(res)
         let fraction = decimalToFraction(res - wholeNum)
