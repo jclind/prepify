@@ -87,6 +87,16 @@
     }
   }
 
+  .all-release-notes-btn {
+    font-weight: 600;
+    font-size: toRem(16);
+    text-decoration: underline;
+    text-align: left;
+    margin: 0;
+    color: $secondary-text;
+    margin-top: 1rem;
+  }
+
   .link {
     color: $secondary;
   }

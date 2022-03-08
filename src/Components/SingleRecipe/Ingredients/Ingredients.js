@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import './Ingredients.scss'
 import Skeleton from 'react-loading-skeleton'
 import 'react-loading-skeleton/dist/skeleton.css'
@@ -23,6 +23,7 @@ const CheckBox = ({ ingr, loading }) => {
             type='checkbox'
             checked={checked}
             className='ingredient-checkbox'
+            onChange={() => {}}
           />
           <label>
             <strong>
@@ -38,6 +39,10 @@ const CheckBox = ({ ingr, loading }) => {
 
 const Ingredients = ({ ingredients, yieldSize, setYieldSize, loading }) => {
   const [modYieldSize, setModYieldSize] = useState(yieldSize)
+
+  useEffect(() => {
+    setModYieldSize(yieldSize)
+  }, [yieldSize])
 
   const decYieldSize = () => {
     const num = Number(modYieldSize)

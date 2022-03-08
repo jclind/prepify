@@ -179,3 +179,99 @@ input {
     text-align: center;
   }
 }
+
+@media print {
+  ::-webkit-scrollbar {
+    width: 0px;
+    background: transparent; /* make scrollbar transparent */
+  }
+  body,
+  html,
+  .single-recipe-page {
+    height: 100% !important;
+    width: 100% !important;
+    display: inline-block;
+    overflow: visible !important;
+  }
+  #root {
+    height: 100% !important;
+    width: 100% !important;
+  }
+  .single-recipe-page {
+    position: fixed;
+    z-index: 1000;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding-top: 2rem;
+    background-color: white;
+    .recipe-container {
+      margin: 0 auto;
+      padding: 0;
+      .header-content {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        margin: 0 auto;
+        width: 100%;
+        padding: 0;
+        .description-content {
+          display: flex;
+          justify-content: center;
+          flex-direction: column;
+          align-items: center;
+          margin: 0;
+          padding: 0;
+          min-height: 0px !important;
+          h1.title {
+            text-align: center;
+            margin: 0 auto;
+          }
+          .description {
+            text-align: center;
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+          .recipe-data {
+            padding: 0 !important;
+            margin: 0 !important;
+            max-width: 400px !important;
+          }
+        }
+        .actions {
+          display: none !important;
+        }
+      }
+      .recipe-image-container {
+        display: none !important;
+      }
+    }
+  }
+  .ingredients,
+  .directions {
+    padding-left: 2rem;
+    box-sizing: border-box;
+  }
+  .directions {
+    display: block;
+    page-break-before: always;
+    .list {
+      page-break-before: always;
+      .direction {
+        page-break-before: always;
+        .content {
+          page-break-before: always;
+        }
+      }
+    }
+  }
+  .tags-container {
+    display: none;
+  }
+  .recipe-ratings {
+    display: none;
+  }
+}

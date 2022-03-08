@@ -1,7 +1,7 @@
 import http from './http-common'
 
 class RecipeAPI {
-  getAll(page = 0, order = 'new', tags = []) {
+  getAll(page = 0, order = 'new', tags = [], query = '') {
     let tagsArrParam = '' // For tags that have been chosen
     if (tags.length > 0) {
       tagsArrParam += '&tags='
@@ -15,7 +15,9 @@ class RecipeAPI {
       })
     }
 
-    return http.get(`recipes?page=${page}&order=${order}${tagsArrParam}`)
+    return http.get(
+      `recipes?q=${query}&page=${page}&order=${order}${tagsArrParam}`
+    )
   }
   search(query, tag = '', page = 0, order = 'new', recipesPerPage = 5) {
     return http.get(

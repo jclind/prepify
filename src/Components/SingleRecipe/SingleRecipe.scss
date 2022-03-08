@@ -48,6 +48,26 @@
           background: $gray-300;
           padding: 0.35rem 0.75rem;
           border-radius: $border-radius;
+          height: 35px !important;
+
+          .loading {
+            z-index: 10;
+            position: absolute;
+            top: 0;
+            left: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            width: 100%;
+            position: absolute;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.5);
+            .spinner {
+              height: 100%;
+              width: 100%;
+            }
+          }
 
           .disabled-overlay {
             z-index: 10;
@@ -75,6 +95,7 @@
           }
         }
       }
+
       .save-recipe .save-recipe-btn.disabled,
       .add-rating .add-rating-btn.disabled,
       .print-recipe .print-recipe-btn.disabled {
@@ -91,7 +112,9 @@
         .img {
           width: 400px;
           height: 400px;
-          object-fit: fit;
+          overflow: hidden;
+
+          object-fit: cover;
         }
         .img.skeleton {
           width: 400px;

@@ -7,6 +7,7 @@ import { useAuth } from '../../context/AuthContext'
 import { AiOutlineGoogle } from 'react-icons/ai'
 import { MdOutlineEmail, MdOutlineLock } from 'react-icons/md'
 import PrepifyLogo from '../Navbar/PrepifyLogo'
+import { Helmet } from 'react-helmet'
 
 const Login = () => {
   const [email, setEmail] = useState('')
@@ -26,6 +27,10 @@ const Login = () => {
     <Navigate to='/' />
   ) : (
     <>
+      <Helmet>
+        <meta charSet='utf-8' />
+        <title>Prepify | Login</title>
+      </Helmet>
       <div className='abs-logo'>
         <PrepifyLogo className='abs-logo' />
       </div>

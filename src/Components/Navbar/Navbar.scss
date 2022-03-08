@@ -152,6 +152,7 @@ nav {
     border-radius: 5px;
     -webkit-animation: breathing 5s ease-out infinite normal;
     animation: breathing 5s ease-out infinite normal;
+    cursor: pointer;
   }
 
   @-webkit-keyframes breathing {

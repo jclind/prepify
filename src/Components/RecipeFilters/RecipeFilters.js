@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import Select from 'react-select'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useRecipe } from '../../context/RecipeContext'
 import './RecipeFilters.scss'
 
@@ -19,6 +20,13 @@ const RecipeFilters = ({
     { value: 'longest', label: 'Time: Longest' },
   ]
 
+  const navigate = useNavigate()
+  const location = useLocation()
+  let urlParams = new URLSearchParams(location.search)
+  const order = urlParams.get('order')
+  const defaultSelectValue =
+    selectOptions.find(el => el.value === order) || selectOptions[0]
+
   const { getTopTags } = useRecipe()
 
   useEffect(() => {
@@ -31,7 +39,10 @@ const RecipeFilters = ({
 
   const handleSelectChange = e => {
     const value = e.value
+    console.log(value)
     setSelectVal(value)
+    urlParams.set('order', value)
+    navigate(`/recipes?${urlParams}`)
   }
 
   const handleTagClick = text => {
@@ -54,7 +65,7 @@ const RecipeFilters = ({
         isClearable={false}
         className='select'
         onChange={handleSelectChange}
-        defaultValue={selectOptions[0]}
+        defaultValue={defaultSelectValue}
       />
       <div className='tags'>
         {tags.map(tag => {

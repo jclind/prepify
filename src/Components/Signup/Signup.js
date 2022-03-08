@@ -4,6 +4,7 @@ import { AiOutlineGoogle } from 'react-icons/ai'
 import { MdOutlineEmail, MdOutlineLock } from 'react-icons/md'
 import { useAuth } from '../../context/AuthContext'
 import { TailSpin } from 'react-loader-spinner'
+import { Helmet } from 'react-helmet'
 
 import UsernameInput from '../Form/UsernameInput'
 
@@ -37,6 +38,10 @@ const Signup = () => {
     <Navigate to='/' />
   ) : (
     <>
+      <Helmet>
+        <meta charSet='utf-8' />
+        <title>Prepify | Sign Up</title>
+      </Helmet>
       <div className='abs-logo'>
         <PrepifyLogo className='abs-logo' />
       </div>

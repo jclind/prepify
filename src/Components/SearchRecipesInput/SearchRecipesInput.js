@@ -5,6 +5,7 @@ import { CgTimer } from 'react-icons/cg'
 import './SearchRecipesInput.scss'
 import { useRecipe } from '../../context/RecipeContext'
 import { formatRating } from '../../util/formatRating'
+import slugify from 'slugify'
 
 function useOutsideAlerter(ref, setVal) {
   useEffect(() => {
@@ -28,8 +29,8 @@ function useOutsideAlerter(ref, setVal) {
   }, [ref])
 }
 
-const SearchRecipesInput = ({ autoComplete }) => {
-  const [searchRecipeVal, setSearchRecipeVal] = useState('')
+const SearchRecipesInput = ({ defaultVal, autoComplete }) => {
+  const [searchRecipeVal, setSearchRecipeVal] = useState(defaultVal || '')
 
   const [autoCompleteResponse, setAutoCompleteResponse] = useState([])
 
@@ -45,7 +46,12 @@ const SearchRecipesInput = ({ autoComplete }) => {
   const handleSubmit = e => {
     e.preventDefault()
 
-    navigate('/recipes')
+    if (slugify(searchRecipeVal)) {
+      navigate(`/recipes?q=${slugify(searchRecipeVal)}`)
+    } else {
+      navigate('/recipes')
+    }
+    setIsBlurred(true)
   }
 
   const getAutoCompleteResult = title => {

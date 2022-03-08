@@ -89,6 +89,13 @@
       max-width: 600px;
       width: 100%;
 
+      .no-reviews {
+        margin: 0 auto;
+        text-align: center;
+        font-size: toRem(18);
+        font-weight: 600;
+      }
+
       .curr-user-review {
         margin: 2rem 0;
         border: 1px solid $primary;
