@@ -4,12 +4,15 @@ import { NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import PrepifyLogo from './PrepifyLogo'
 import Hamburger from 'hamburger-react'
+import { AiOutlineUser } from 'react-icons/ai'
+import { BiHelpCircle, BiLogOut } from 'react-icons/bi'
 
 const Navbar = ({ darkNavLinks }) => {
   const [navOpen, setNavOpen] = useState(false)
 
   const { user, logout, getUsername } = useAuth()
 
+  const [username, setUsername] = useState('')
   const [nameInitial, setNameInitial] = useState('')
 
   const location = useLocation()
@@ -32,6 +35,7 @@ const Navbar = ({ darkNavLinks }) => {
         } else {
           const displayInitial = val.charAt(0).toUpperCase()
           setNameInitial(displayInitial)
+          setUsername(val)
         }
       })
     }
@@ -84,20 +88,36 @@ const Navbar = ({ darkNavLinks }) => {
       >
         Create Recipe
       </NavLink>
-      <NavLink
-        to='/help'
-        className={({ isActive }) => {
-          return isActive ? 'nav-link active' : 'nav-link'
-        }}
-      >
-        Help
-      </NavLink>
-      <button className='nav-link btn' onClick={logout}>
-        logout
-      </button>
-      <NavLink to='/account' className='account-link'>
-        {nameInitial}
-      </NavLink>
+      <div className='dropdown'>
+        <div className='dropdown-btn'>
+          <NavLink to='/account' className='account-link'>
+            {nameInitial}
+          </NavLink>
+        </div>
+        <div className='dropdown-links'>
+          <div className='dropdown-section'>
+            <div className='signed-in-as'>
+              <AiOutlineUser className='icon' />
+              <div className='text'>
+                Signed in as <strong>{username}</strong>
+              </div>
+            </div>
+          </div>
+          <NavLink
+            to='/help'
+            className={({ isActive }) => {
+              return isActive ? 'nav-link active' : 'nav-link'
+            }}
+          >
+            <BiHelpCircle className='icon' />
+            <div className='text'>Help</div>
+          </NavLink>
+          <button className='nav-link btn' onClick={logout}>
+            <BiLogOut className='icon' />
+            <div className='text'>logout</div>
+          </button>
+        </div>
+      </div>
     </>
   )
 

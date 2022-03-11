@@ -9,6 +9,7 @@ import SaveRecipeBtn from './SaveRecipeBtn'
 import AddRatingBtn from './AddRatingBtn'
 import PrintRecipeBtn from './PrintRecipeBtn'
 import RecipeRatings from './RecipeRatings/RecipeRatings'
+import NutritionData from './NutritionData/NutritionData'
 
 import { formatRating } from '../../util/formatRating'
 import { calcServings } from '../../util/calcServings'
@@ -326,6 +327,12 @@ const SingleRecipe = () => {
                 </div>
               )}
             </div>
+            {currRecipe && currRecipe.nutritionData && (
+              <NutritionData
+                data={currRecipe.nutritionData}
+                servings={currRecipe.yield.value}
+              />
+            )}
           </div>
           {!loading && (
             <RecipeRatings

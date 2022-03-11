@@ -64,6 +64,27 @@ const RecipeProvider = ({ children }) => {
     }
   }
 
+  const getRecipeNutrition = ingrArr => {
+    const ingrData = {
+      title: 'recipe 1',
+      ingr: [],
+    }
+    ingrArr.forEach(el => {
+      el.list.forEach(ingr => {
+        const {
+          quantity,
+          measurement: { value: meas },
+          name,
+        } = ingr
+        // if (quantity) {
+        const str = `${quantity} ${meas || ''} ${name}`
+        ingrData.ingr.push(str)
+        // }
+      })
+    })
+    return RecipeAPI.getRecipeNutrition(ingrData)
+  }
+
   const addRecipe = async (
     recipeData,
     setLoading,
@@ -91,12 +112,15 @@ const RecipeProvider = ({ children }) => {
       Number(tempAdditionalTime)
     ).toString()
 
+    const nutritionData = await getRecipeNutrition(recipeData.ingredients)
+
     const recipeId = ObjectID()
 
     const fullRecipeData = {
       ...recipeData,
       _id: recipeId,
       title: recipeData.title.toLowerCase(), // Needed for title search later on.
+      nutritionData: nutritionData.data,
       totalTime,
       recipeImage: recipeImageUrl,
       authorId: userUID,

@@ -1,4 +1,4 @@
-import http from './http-common'
+import { http, nutrition } from './http-common'
 
 class RecipeAPI {
   getAll(page = 0, order = 'new', tags = [], query = '') {
@@ -46,6 +46,12 @@ class RecipeAPI {
 
   async addRecipe(data) {
     return await http.post('addRecipe', data)
+  }
+  async getRecipeNutrition(data) {
+    return await nutrition.post(
+      `nutrition-details?app_id=${process.env.REACT_APP_EDAMAM_APP_ID}&app_key=${process.env.REACT_APP_EDAMAM_APP_KEY}`,
+      data
+    )
   }
 
   async addRecipeTag(data) {
