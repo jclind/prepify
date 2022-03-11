@@ -3,7 +3,6 @@ import './ReleaseNotes.scss'
 import { useLocation } from 'react-router-dom'
 import { BsChevronDoubleRight, BsPencil } from 'react-icons/bs'
 import { MdAddCircleOutline } from 'react-icons/md'
-import { BiWrench } from 'react-icons/bi'
 import { AiOutlineClose } from 'react-icons/ai'
 import Modal from 'react-modal'
 Modal.setAppElement('#root')
@@ -61,8 +60,8 @@ const ReleaseNotes = ({
         <AiOutlineClose className='icon' />
       </button>
       <div className='release-notes-content-container'>
-        <h1 className='heading'>Prepify Release Notes • 3/2/2022</h1>
-        <div className='release-tag'>v1.1.0-beta</div>
+        <h1 className='heading'>Prepify Release Notes • 3/11/2022</h1>
+        <div className='release-tag'>v1.3.0-beta</div>
         <p className='release-description'>
           This update focuses on overall website enhancement and functionality.
           Recipe search has been fixed to show accurate results from given
@@ -79,11 +78,13 @@ const ReleaseNotes = ({
             <div className='items'>
               <div className='item'>
                 <BsChevronDoubleRight className='icon' />
-                <div className='text'>Recipes now have print functionality</div>
+                <div className='text'>
+                  Add nutrition facts per serving for new recipes
+                </div>
               </div>
             </div>
           </section>
-          <section className='section'>
+          {/* <section className='section'>
             <h3 className='sub-heading'>
               <BiWrench className='icon' /> Bug Fixes
             </h3>
@@ -112,7 +113,7 @@ const ReleaseNotes = ({
                 </div>
               </div>
             </div>
-          </section>
+          </section> */}
           <section className='section'>
             <h3 className='sub-heading'>
               <BsPencil className='icon' /> Improvments
@@ -120,39 +121,8 @@ const ReleaseNotes = ({
             <div className='items'>
               <div className='item'>
                 <BsChevronDoubleRight className='icon' />
-                <div className='text'>Added Prepify logo favicon</div>
-              </div>
-              <div className='item'>
-                <BsChevronDoubleRight className='icon' />
-                <div className='text'>Added titles to each page</div>
-              </div>
-              <div className='item'>
-                <BsChevronDoubleRight className='icon' />
-                <div className='text'>Added help button link in navbar</div>
-              </div>
-              <div className='item'>
-                <BsChevronDoubleRight className='icon' />
-                <div className='text'>Added 'no reviews' indicator</div>
-              </div>
-              <div className='item'>
-                <BsChevronDoubleRight className='icon' />
                 <div className='text'>
-                  Added better ingredient quantity fractions for serving size
-                  changes
-                </div>
-              </div>
-              <div className='item'>
-                <BsChevronDoubleRight className='icon' />
-                <div className='text'>
-                  Increased readability of recipe ingredients and instructions
-                  on mobile
-                </div>
-              </div>
-              <div className='item'>
-                <BsChevronDoubleRight className='icon' />
-                <div className='text'>
-                  You can now view all releases at the bottom of this release
-                  notes page!
+                  Add nav-link dropdown for secondary links
                 </div>
               </div>
             </div>
