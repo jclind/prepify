@@ -41,9 +41,10 @@ const SingleRecipe = () => {
   useEffect(() => {
     if (yieldSize >= 0 && currRecipe) {
       const recipeServings = JSON.parse(localStorage.getItem('recipeServings'))
-      const idx = recipeServings.findIndex(
-        item => item.recipeId === currRecipe._id
-      )
+      const idx =
+        recipeServings &&
+        recipeServings.length > 0 &&
+        recipeServings.findIndex(item => item.recipeId === currRecipe._id)
       if (yieldSize === 0) {
         if (recipeServings && idx >= 0) {
           setYieldSize(recipeServings[idx].servingSize)
