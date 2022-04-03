@@ -4,6 +4,9 @@ import { MdKeyboardArrowUp, MdKeyboardArrowDown } from 'react-icons/md'
 import './NutritionData.scss'
 
 const getQuantity = (num, servings) => {
+  if (!num) {
+    return null
+  }
   return Math.round(num / servings)
 }
 

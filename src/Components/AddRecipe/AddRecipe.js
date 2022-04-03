@@ -256,17 +256,19 @@ const AddRecipe = () => {
       loadingProgress,
       setLoadingProgress,
       setError
-    ).then(res => {
-      setRecipeId(res)
-      clearForm()
-      setStatesToLocalData()
-      setRecipeCreatedModalIsOpen(true)
-      // navigate('/')
-    })
-    // .catch(err => {
-    //   setLoading(false)
-    //   setError(err)
-    // })
+    )
+      .then(res => {
+        setRecipeId(res)
+        clearForm()
+        setStatesToLocalData()
+        setRecipeCreatedModalIsOpen(true)
+        // navigate('/')
+      })
+      .catch(err => {
+        setLoading(false)
+        setError(err)
+        console.log(err)
+      })
   }
 
   const clearForm = () => {
