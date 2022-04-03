@@ -68,7 +68,8 @@ const NutritionData = ({ data, servings }) => {
           <div className='nutrition-row border-b'>
             <div className='nutrition-column'>
               <span className='text-indent'>
-                <i>Trans</i> Fat {getQuantity(tNutr.FATRN.quantity, servings)}g
+                <i>Trans</i> Fat{' '}
+                {tNutr.FATRN && getQuantity(tNutr.FATRN.quantity, servings)}g
               </span>
             </div>
             <div className='nutrition-column text-bold text-right'></div>

@@ -18,7 +18,7 @@ const Directions = ({ directions, loading }) => {
         )}
       </h3>
       <div className='directions-lists'>
-        {!loading ? (
+        {!loading && directions ? (
           directions.map((directionList, idx1) => {
             const isMultiDirection = directions.length > 1
             return (
