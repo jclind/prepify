@@ -228,7 +228,8 @@ const AddRecipe = () => {
     if (!recipeTitle) return returnError('Please Enter Recipe Title')
     if (!recipePrepTime) return returnError('Please Enter Prep time')
     if (!recipeCookTime) return returnError('Please Enter Cook Time')
-    if (!recipeYield) return returnError('Please Enter Serving Size')
+    if (!recipeYield || recipeYield === 0)
+      return returnError('Please Enter Serving Size')
     if (recipeInstructions.length <= 0)
       return returnError('Please Enter Instructions')
     if (recipeIngredients.length <= 0)
@@ -256,17 +257,19 @@ const AddRecipe = () => {
       loadingProgress,
       setLoadingProgress,
       setError
-    ).then(res => {
-      setRecipeId(res)
-      clearForm()
-      setStatesToLocalData()
-      setRecipeCreatedModalIsOpen(true)
-      // navigate('/')
-    })
-    // .catch(err => {
-    //   setLoading(false)
-    //   setError(err)
-    // })
+    )
+      .then(res => {
+        setRecipeId(res)
+        clearForm()
+        setStatesToLocalData()
+        setRecipeCreatedModalIsOpen(true)
+        // navigate('/')
+      })
+      .catch(err => {
+        setLoading(false)
+        setError(err)
+        console.log(err)
+      })
   }
 
   const clearForm = () => {
