@@ -112,7 +112,8 @@ const SingleRecipe = () => {
   useEffect(() => {
     getRecipe(recipeId)
       .then(res => {
-        if (!res || !res.data.length) {
+        if (!res || !res.data.title) {
+          setRecipe404(true)
         } else {
           setCurrRecipe(res.data)
         }
@@ -161,7 +162,7 @@ const SingleRecipe = () => {
             : 'Recipe 404'}
         </title>
       </Helmet>
-      {setRecipe404 ? (
+      {recipe404 ? (
         <RecipeNotFound />
       ) : (
         <>
