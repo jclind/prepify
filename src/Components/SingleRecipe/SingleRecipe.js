@@ -10,6 +10,7 @@ import AddRatingBtn from './AddRatingBtn'
 import PrintRecipeBtn from './PrintRecipeBtn'
 import RecipeRatings from './RecipeRatings/RecipeRatings'
 import NutritionData from './NutritionData/NutritionData'
+import RecipeNotFound from './RecipeNotFound.js/RecipeNotFound'
 
 import { formatRating } from '../../util/formatRating'
 import { calcServings } from '../../util/calcServings'
@@ -160,12 +161,12 @@ const SingleRecipe = () => {
             : 'Recipe 404'}
         </title>
       </Helmet>
-      <div className='page single-recipe-page' ref={printedRef}>
-        <div className='recipe-container'>
-          {setRecipe404 ? (
-            'RECIPE DOESNT EXIST'
-          ) : (
-            <>
+      {setRecipe404 ? (
+        <RecipeNotFound />
+      ) : (
+        <>
+          <div className='page single-recipe-page' ref={printedRef}>
+            <div className='recipe-container'>
               {' '}
               <div className='header-content'>
                 {windowWidth <= 956 && (
@@ -401,10 +402,10 @@ const SingleRecipe = () => {
                   setCurrUserReview={setCurrUserReview}
                 />
               )}
-            </>
-          )}
-        </div>
-      </div>
+            </div>
+          </div>
+        </>
+      )}
     </>
   )
 }
