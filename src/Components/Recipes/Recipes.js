@@ -28,7 +28,7 @@ const Recipes = () => {
 
   const getRecipes = page => {
     const orderParam = urlParams.get('order')
-    const filter = orderParam || selectFilterVal
+    const filter = orderParam || selectFilterVal || 'popular'
 
     RecipeAPI.getAll(page, filter, selectedTags, query).then(res => {
       const totalResults = Number(
