@@ -53,28 +53,34 @@ const SavedRecipes = () => {
   const [recipesPage, setRecipesPage] = useState(0)
   const { getSavedRecipes } = useRecipe()
   const [isMoreRecipes, setIsMoreRecipes] = useState(false)
+  const [loading, setLoading] = useState(true)
 
   const [selectOption, setSelectOption] = useState(options[0])
   const [selectValue, setSelectValue] = useState(options[0].value)
 
   const handleGetSavedRecipes = (recipesPage, selectValue) => {
+    setLoading(true)
     if (recipesPage >= 0 && selectValue) {
-      getSavedRecipes(recipesPage, 5, selectValue).then(res => {
-        const updatedArr =
-          recipesPage === 0
-            ? [...res.data.recipes]
-            : [...recipes, ...res.data.recipes]
-        setRecipes([...updatedArr])
+      getSavedRecipes(recipesPage, 5, selectValue)
+        .then(res => {
+          const updatedArr =
+            recipesPage === 0
+              ? [...res.data.recipes]
+              : [...recipes, ...res.data.recipes]
+          setRecipes([...updatedArr])
 
-        console.log(res.data.totalCount, recipes.length)
-        if (Number(res.data.totalCount) > updatedArr.length) {
-          setIsMoreRecipes(true)
-        } else {
-          setIsMoreRecipes(false)
-        }
+          if (Number(res.data.totalCount) > updatedArr.length) {
+            setIsMoreRecipes(true)
+          } else {
+            setIsMoreRecipes(false)
+          }
 
-        setRecipesPage(recipesPage + 1)
-      })
+          setRecipesPage(recipesPage + 1)
+          setLoading(false)
+        })
+        .catch(err => {
+          console.log(err)
+        })
     }
   }
 
@@ -106,19 +112,34 @@ const SavedRecipes = () => {
           value={selectOption}
         />
       </div>
-      <div className='thumbnails-container'>
-        {recipes.map(recipe => {
-          return <RecipeThumbnail key={recipe._id} recipe={recipe} />
-        })}
-        {isMoreRecipes && recipes.length > 0 ? (
-          <button
-            className='load-more-recipes-btn btn'
-            onClick={handleLoadMoreRecipes}
-          >
-            Load More Recipes
-          </button>
-        ) : null}
-      </div>
+      {loading ? (
+        <div className='thumbnails-container'>
+          <RecipeThumbnail loading={true} />
+          <RecipeThumbnail loading={true} />
+          <RecipeThumbnail loading={true} />
+        </div>
+      ) : recipes.length > 0 ? (
+        <div className='thumbnails-container'>
+          {recipes.map(recipe => {
+            return <RecipeThumbnail key={recipe._id} recipe={recipe} />
+          })}
+          {isMoreRecipes && recipes.length > 0 ? (
+            <button
+              className='load-more-recipes-btn btn'
+              onClick={handleLoadMoreRecipes}
+            >
+              Load More Recipes
+            </button>
+          ) : null}
+        </div>
+      ) : (
+        <div className='no-recipes-saved'>
+          <div className='header'>No Recipes Saved</div>
+          <div className='text'>
+            Your personally saved recipes will show up here.
+          </div>
+        </div>
+      )}
     </div>
   )
 }

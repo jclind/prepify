@@ -48,6 +48,7 @@ class RecipeAPI {
     return await http.post('addRecipe', data)
   }
   async getRecipeNutrition(data) {
+    console.log(data)
     return await nutrition.post(
       `nutrition-details?app_id=${process.env.REACT_APP_EDAMAM_APP_ID}&app_key=${process.env.REACT_APP_EDAMAM_APP_KEY}`,
       data

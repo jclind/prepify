@@ -24,7 +24,9 @@ const SaveRecipeBtn = ({ recipeId }) => {
       if (isSaved) {
         unsaveRecipe(user.uid, recipeId).then(() => setIsSaved(false))
       } else {
-        saveRecipe(user.uid, recipeId).then(() => setIsSaved(true))
+        saveRecipe(user.uid, recipeId).then(res => {
+          setIsSaved(true)
+        })
       }
     } else {
       alert.show(

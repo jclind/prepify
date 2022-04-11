@@ -8,6 +8,8 @@ import { BiWrench } from 'react-icons/bi'
 import Modal from 'react-modal'
 Modal.setAppElement('#root')
 
+const VERSION_NUMBER = 'v1.3.3-beta'
+
 const customStyles = {
   content: {
     position: 'absolute',
@@ -38,10 +40,13 @@ const ReleaseNotes = ({
 
   const additions = []
   const bugFixes = [
-    "Recipes can now be created without throwing 'Firebase storage bucket no longer undefined' error",
+    'Add additional error handling to create recipe form',
+    "Fix recipes showing 'new' results on 'recipes' page load regardless of dropdown selection",
+    "Variety of small 'create recipe form' bug fixes",
   ]
   const improvements = [
-    "Add 'Recipe Not Found' element that will show if current recipe was not found in database",
+    "Add loading and no-data UI to user's saved recipes pages",
+    'Page now scrolls to top on route change',
   ]
 
   const location = useLocation()
@@ -70,11 +75,12 @@ const ReleaseNotes = ({
       </button>
       <div className='release-notes-content-container'>
         <h1 className='heading'>Prepify Release Notes • 4/4/2022</h1>
-        <div className='release-tag'>v1.3.2-beta</div>
+        <div className='release-tag'>{VERSION_NUMBER}</div>
         <p className='release-description'>
-          This update focuses on create recipe and recipe page bug
-          fixes/improvements. Recipes could not be posted due to environment
-          variable issues on netlify (aka a typo 😢).
+          This release is mostly focused on quality of life and website breaking
+          bugs along with a few UI changes. Create recipes pages should now be a
+          little better to deal with (along with actually working
+          consistently... I hope).
         </p>
         <div className='content'>
           {additions.length > 0 && (
