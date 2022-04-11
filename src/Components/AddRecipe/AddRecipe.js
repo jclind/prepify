@@ -218,6 +218,7 @@ const AddRecipe = () => {
 
   const handleAddRecipeFormSubmit = e => {
     const returnError = msg => {
+      console.log(msg)
       setLoading(false)
       setError(msg)
     }
@@ -226,11 +227,11 @@ const AddRecipe = () => {
     setLoading(true)
 
     // ERROR HANDLING
-    if (!recipeTitle) return returnError('Please Enter Recipe Title') // Check if recipe title exists
+    if (!recipeTitle.trim()) return returnError('Please Enter Recipe Title') // Check if recipe title exists
     if (!recipePrepTime) return returnError('Please Enter Prep time') // Check if prep time is more than 0
     if (
-      isNaN(recipePrepTime) &&
-      Number(recipePrepTime) % 1 === 0 &&
+      isNaN(recipePrepTime) ||
+      Number(recipePrepTime) % 1 !== 0 ||
       Number(recipePrepTime) <= 0
     )
       return returnError(
@@ -246,16 +247,50 @@ const AddRecipe = () => {
       return returnError('Please Enter Cook Time As A Positive Whole Number') // Check if cookTime exists. If it does confirm it is a positive whole number
 
     if (
+      recipeAdditionalTime &&
+      (isNaN(recipeAdditionalTime) ||
+        Number(recipeAdditionalTime) < 0 ||
+        Number(recipeAdditionalTime) % 1 !== 0)
+    )
+      return returnError(
+        'Please Enter Additional Time As A Positive Whole Number Or 0'
+      ) // Check if cookTime exists. If it does confirm it is a positive whole number
+
+    if (
       !recipeYield ||
       Number(recipeYield.value) <= 0 ||
       Number(recipeYield.value) % 1 !== 0
     )
-      return returnError('Please Enter Serving Size As Positive Whole Number') // Check if recipeYield exists, is whole and positive
+      return returnError(
+        'Please Enter Serving Size As Positive Whole Number or 0'
+      ) // Check if recipeYield exists, is whole and positive
+
+    let isInstructionErr = false
     if (recipeInstructions.length <= 0)
       return returnError('Please Enter Instructions')
+    // If any list of instructions is empty, throw error
+    recipeInstructions.forEach(insList => {
+      if (insList.length <= 0) {
+        isInstructionErr = true
+        return
+      }
+    })
+    if (isInstructionErr)
+      return returnError('Please Enter Instructions For Each List')
+
+    let isIngredientErr = false
     if (recipeIngredients.length <= 0)
-      return returnError('Please Enter Ingredients')
-    if (!recipeImage) return returnError('Please Select Image')
+      return returnError('Please Enter Instructions')
+
+    // If any list of ingredients is empty, throw error
+    recipeIngredients.forEach(ingrList => {
+      if (ingrList.length <= 0) {
+        isIngredientErr = true
+        return
+      }
+    })
+    if (isIngredientErr)
+      return returnError('Please Enter Ingredients For Each List')
 
     const recipeData = {
       title: recipeTitle,
@@ -272,25 +307,27 @@ const AddRecipe = () => {
       tags: recipeTags,
     }
 
-    addRecipe(
-      recipeData,
-      setLoading,
-      loadingProgress,
-      setLoadingProgress,
-      setError
-    )
-      .then(res => {
-        setRecipeId(res)
-        clearForm()
-        setStatesToLocalData()
-        setRecipeCreatedModalIsOpen(true)
-        // navigate('/')
-      })
-      .catch(err => {
-        setLoading(false)
-        setError(err)
-        console.log(err)
-      })
+    console.log('RECIPE_SUBMITTED')
+
+    // addRecipe(
+    //   recipeData,
+    //   setLoading,
+    //   loadingProgress,
+    //   setLoadingProgress,
+    //   setError
+    // )
+    //   .then(res => {
+    //     setRecipeId(res)
+    //     clearForm()
+    //     setStatesToLocalData()
+    //     setRecipeCreatedModalIsOpen(true)
+    //     // navigate('/')
+    //   })
+    //   .catch(err => {
+    //     setLoading(false)
+    //     setError(err)
+    //     console.log(err)
+    //   })
   }
 
   const clearForm = () => {
@@ -315,6 +352,8 @@ const AddRecipe = () => {
     setRecipeImage('')
     setRecipeTags([])
     setUndoClearForm(true)
+
+    localStorage.removeItem('addRecipeFormData')
   }
 
   useEffect(() => {
