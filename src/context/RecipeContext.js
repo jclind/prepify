@@ -64,7 +64,7 @@ const RecipeProvider = ({ children }) => {
     }
   }
 
-  const getRecipeNutrition = ingrArr => {
+  const getRecipeNutrition = async ingrArr => {
     const ingrData = {
       title: 'recipe 1',
       ingr: [],
@@ -82,7 +82,16 @@ const RecipeProvider = ({ children }) => {
         // }
       })
     })
-    return RecipeAPI.getRecipeNutrition(ingrData)
+    await RecipeAPI.getRecipeNutrition(ingrData)
+      .then(res => {
+        return res
+      })
+      .catch(e => {
+        console.log(e.code)
+        if (e.code === 555) {
+          return null
+        }
+      })
   }
 
   const addRecipe = async (
@@ -93,7 +102,6 @@ const RecipeProvider = ({ children }) => {
     setError
   ) => {
     setLoadingProgress(loadingProgress + 10)
-    console.log(recipeData.recipeImage)
 
     // Get image url for submitted image, stored in firebase (for now)
     const recipeImage = recipeData.recipeImage
@@ -121,7 +129,8 @@ const RecipeProvider = ({ children }) => {
       ...recipeData,
       _id: recipeId,
       title: recipeData.title.toLowerCase(), // Needed for title search later on.
-      nutritionData: nutritionData.data,
+      nutritionData:
+        nutritionData && nutritionData.data ? nutritionData.data : null,
       totalTime,
       recipeImage: recipeImageUrl,
       authorId: userUID,
