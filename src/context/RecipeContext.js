@@ -102,7 +102,6 @@ const RecipeProvider = ({ children }) => {
     setError
   ) => {
     setLoadingProgress(loadingProgress + 10)
-    console.log(recipeData.recipeImage)
 
     // Get image url for submitted image, stored in firebase (for now)
     const recipeImage = recipeData.recipeImage

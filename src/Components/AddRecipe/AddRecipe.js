@@ -307,8 +307,6 @@ const AddRecipe = () => {
       tags: recipeTags,
     }
 
-    console.log('RECIPE_SUBMITTED')
-
     addRecipe(
       recipeData,
       setLoading,

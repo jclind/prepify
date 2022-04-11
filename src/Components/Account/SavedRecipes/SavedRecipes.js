@@ -63,14 +63,12 @@ const SavedRecipes = () => {
     if (recipesPage >= 0 && selectValue) {
       getSavedRecipes(recipesPage, 5, selectValue)
         .then(res => {
-          console.log(res)
           const updatedArr =
             recipesPage === 0
               ? [...res.data.recipes]
               : [...recipes, ...res.data.recipes]
           setRecipes([...updatedArr])
 
-          console.log(res.data.totalCount, recipes.length)
           if (Number(res.data.totalCount) > updatedArr.length) {
             setIsMoreRecipes(true)
           } else {
