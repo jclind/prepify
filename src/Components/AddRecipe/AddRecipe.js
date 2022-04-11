@@ -218,7 +218,6 @@ const AddRecipe = () => {
 
   const handleAddRecipeFormSubmit = e => {
     const returnError = msg => {
-      console.log(msg)
       setLoading(false)
       setError(msg)
     }
@@ -270,7 +269,7 @@ const AddRecipe = () => {
       return returnError('Please Enter Instructions')
     // If any list of instructions is empty, throw error
     recipeInstructions.forEach(insList => {
-      if (insList.length <= 0) {
+      if (insList.list.length <= 0) {
         isInstructionErr = true
         return
       }
@@ -281,16 +280,17 @@ const AddRecipe = () => {
     let isIngredientErr = false
     if (recipeIngredients.length <= 0)
       return returnError('Please Enter Instructions')
-
     // If any list of ingredients is empty, throw error
     recipeIngredients.forEach(ingrList => {
-      if (ingrList.length <= 0) {
+      if (ingrList.list.length <= 0) {
         isIngredientErr = true
         return
       }
     })
     if (isIngredientErr)
       return returnError('Please Enter Ingredients For Each List')
+
+    if (!recipeImage) return returnError('Please Enter Image')
 
     const recipeData = {
       title: recipeTitle,
@@ -309,25 +309,25 @@ const AddRecipe = () => {
 
     console.log('RECIPE_SUBMITTED')
 
-    // addRecipe(
-    //   recipeData,
-    //   setLoading,
-    //   loadingProgress,
-    //   setLoadingProgress,
-    //   setError
-    // )
-    //   .then(res => {
-    //     setRecipeId(res)
-    //     clearForm()
-    //     setStatesToLocalData()
-    //     setRecipeCreatedModalIsOpen(true)
-    //     // navigate('/')
-    //   })
-    //   .catch(err => {
-    //     setLoading(false)
-    //     setError(err)
-    //     console.log(err)
-    //   })
+    addRecipe(
+      recipeData,
+      setLoading,
+      loadingProgress,
+      setLoadingProgress,
+      setError
+    )
+      .then(res => {
+        setRecipeId(res)
+        clearForm()
+        setStatesToLocalData()
+        setRecipeCreatedModalIsOpen(true)
+        // navigate('/')
+      })
+      .catch(err => {
+        setLoading(false)
+        setError(err)
+        console.log(err)
+      })
   }
 
   const clearForm = () => {
@@ -352,6 +352,8 @@ const AddRecipe = () => {
     setRecipeImage('')
     setRecipeTags([])
     setUndoClearForm(true)
+
+    setError('')
 
     localStorage.removeItem('addRecipeFormData')
   }
