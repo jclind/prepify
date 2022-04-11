@@ -225,11 +225,32 @@ const AddRecipe = () => {
     setError('')
     setLoading(true)
 
-    if (!recipeTitle) return returnError('Please Enter Recipe Title')
-    if (!recipePrepTime) return returnError('Please Enter Prep time')
-    if (!recipeCookTime) return returnError('Please Enter Cook Time')
-    if (!recipeYield || recipeYield === 0)
-      return returnError('Please Enter Serving Size')
+    // ERROR HANDLING
+    if (!recipeTitle) return returnError('Please Enter Recipe Title') // Check if recipe title exists
+    if (!recipePrepTime) return returnError('Please Enter Prep time') // Check if prep time is more than 0
+    if (
+      isNaN(recipePrepTime) &&
+      Number(recipePrepTime) % 1 === 0 &&
+      Number(recipePrepTime) <= 0
+    )
+      return returnError(
+        'Please Make Sure Prep Time Is A Positive Whole Number'
+      ) // Only allow whole number for prep time
+
+    if (
+      recipeCookTime &&
+      (isNaN(recipeCookTime) ||
+        Number(recipeCookTime) < 0 ||
+        Number(recipeCookTime) % 1 !== 0)
+    )
+      return returnError('Please Enter Cook Time As A Positive Whole Number') // Check if cookTime exists. If it does confirm it is a positive whole number
+
+    if (
+      !recipeYield ||
+      Number(recipeYield.value) <= 0 ||
+      Number(recipeYield.value) % 1 !== 0
+    )
+      return returnError('Please Enter Serving Size As Positive Whole Number') // Check if recipeYield exists, is whole and positive
     if (recipeInstructions.length <= 0)
       return returnError('Please Enter Instructions')
     if (recipeIngredients.length <= 0)
