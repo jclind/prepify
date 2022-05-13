@@ -46,6 +46,7 @@ const IngredientList = ({
   const [quantity, setQuantity] = useState('')
   const [measurement, setMeasurement] = useState(options[0])
   const [name, setName] = useState('')
+  const [price, setPrice] = useState('')
 
   const [error, setError] = useState(false)
 
@@ -95,7 +96,8 @@ const IngredientList = ({
     e.preventDefault()
     setError('')
 
-    if (!name) return setError('Please fill out ingredient name')
+    if (!name) return setError('Please enter ingredient name')
+    if (!price || price === 0) return setError('Please enter ingredient price')
 
     // If a quantity was given test if it is a valid value
     if (quantity) {
@@ -239,6 +241,24 @@ const IngredientList = ({
             }
           }}
         />
+        <div className='ingredient-cost-input-container'>
+          <span className='dollar-symbol'>$</span>
+          <input
+            type='number'
+            placeholder='Ingredient Cost'
+            value={price}
+            onChange={e => {
+              const val = e.target.value
+              // Don't let price go past 2 decimal places
+              if (val && (val * 100) % 1 !== 0) return
+
+              // Don't let price go past $9999
+              if (val > 10000) return
+
+              setPrice(val)
+            }}
+          />
+        </div>
         <button
           className='add-ingredient-btn btn'
           type='button'
