@@ -236,12 +236,6 @@ const IngredientList = ({
           value={name}
           onChange={e => setName(e.target.value)}
           placeholder={'Name, instructions'}
-          onKeyPress={e => {
-            if (e.key === 'Enter') {
-              e.preventDefault()
-              handleAddIngredient(e)
-            }
-          }}
         />
         <div className='ingredient-cost-input-container'>
           <span className='dollar-symbol'>$</span>
@@ -250,14 +244,22 @@ const IngredientList = ({
             placeholder='Ingredient Cost'
             value={price}
             onChange={e => {
-              const val = e.target.value
+              let val = e.target.value
+
+              if (val && isNaN(val)) return
               // Don't let price go past 2 decimal places
-              if (val && (val * 100) % 1 !== 0) return
+              if (val && (val * 100).toFixed(2) % 1 !== 0) return
 
               // Don't let price go past $9999
               if (val > 10000) return
 
               setPrice(val)
+            }}
+            onKeyPress={e => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                handleAddIngredient(e)
+              }
             }}
           />
         </div>
