@@ -132,7 +132,8 @@
       display: flex;
       align-items: center;
       border-bottom: 1px solid $secondary-background;
-      height: 45px;
+      min-height: 45px;
+      padding: 0.5rem 0;
       font-size: toRem(16);
       font-weight: 600;
 
@@ -150,8 +151,16 @@
 
       .content {
         display: flex;
+        flex-wrap: wrap;
+        row-gap: 0.25rem;
         align-items: center;
-        height: 100%;
+        height: fit-content;
+
+        .price {
+          &::before {
+            content: '$';
+          }
+        }
 
         div.field {
           display: flex;

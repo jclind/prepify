@@ -112,6 +112,7 @@ const IngredientList = ({
       id: uuidv4(),
       measurement,
       name: capitalize(name),
+      price: price,
     }
     setRecipeIngredients(ingredientData, index)
 

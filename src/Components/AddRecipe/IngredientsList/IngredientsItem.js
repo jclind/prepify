@@ -20,12 +20,14 @@ const IngredientsItem = ({
   const [isMeasurementSelectorOpen, setIsMeasurementSelectorOpen] =
     useState(false)
   const [quantity, setQuantity] = useState(ingredient.quantity)
+  const [price, setPrice] = useState(ingredient.price)
 
   const { id } = ingredient
   const quantityElId = `quantity-${id}`
 
   const quantityRef = useRef()
   const nameRef = useRef()
+  const priceRef = useRef()
 
   const customStyles = {
     control: (provided, state) => ({
@@ -96,6 +98,22 @@ const IngredientsItem = ({
       nameRef.current.innerText = ingredient.name
     }
   }
+  const handlePriceChange = () => {
+    const newPrice = priceRef.current.innerText
+    // Check that newPrice exists, doesn't equal original price, is in correct price format, and is less than 10000
+    if (
+      newPrice &&
+      newPrice !== ingredient.price &&
+      (newPrice * 100) % 1 === 0 &&
+      newPrice < 10000
+    ) {
+      setPrice(newPrice)
+      const updatedIngredient = { ...ingredient, price: newPrice }
+      updateItem(updatedIngredient, id)
+    } else {
+      priceRef.current.innerText = ingredient.price
+    }
+  }
 
   const handleKeyPress = e => {
     if (e.key === 'Enter') {
@@ -135,10 +153,6 @@ const IngredientsItem = ({
             >
               {quantity ? quantity : '(No Quantity)'}
             </div>
-            {/* <div */}
-            {/* onMouseEnter={() => setIsMeasurementOpen(true)} */}
-            {/* onBlur={() => setIsMeasurementOpen(false)} */}
-            {/* > */}
             {isMeasurementFocused ? (
               <div
                 onMouseLeave={() => {
@@ -174,7 +188,6 @@ const IngredientsItem = ({
                 {measurement.value ? measurement.value : '(No Measurement)'}
               </div>
             )}
-            {/* </div> */}
             <div
               className='name field'
               contentEditable
@@ -184,6 +197,16 @@ const IngredientsItem = ({
               onKeyPress={handleKeyPress}
             >
               {name}
+            </div>
+            <div
+              className='price field'
+              contentEditable
+              suppressContentEditableWarning={true}
+              ref={priceRef}
+              onBlur={handlePriceChange}
+              onKeyPress={handleKeyPress}
+            >
+              {price}
             </div>
           </div>
           <AiOutlineClose className='remove' onClick={() => deleteItem(id)} />
