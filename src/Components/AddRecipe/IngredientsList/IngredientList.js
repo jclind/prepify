@@ -120,6 +120,7 @@ const IngredientList = ({
     setName('')
     setMeasurement(options[0])
     setQuantity('')
+    setPrice('')
   }
   const deleteIngredient = id => {
     const tempIngredientIndex = recipeIngredients.findIndex(
