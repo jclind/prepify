@@ -24,6 +24,7 @@ import { Helmet } from 'react-helmet'
 
 import Skeleton from 'react-loading-skeleton'
 import 'react-loading-skeleton/dist/skeleton.css'
+import { getRecipeCost } from '../../util/getRecipeCost'
 
 const skeletonColor = '#d6d6d6'
 
@@ -40,6 +41,7 @@ const SingleRecipe = () => {
   const [yieldSize, setYieldSize] = useState(0)
 
   const printedRef = useRef()
+
   // Update ingredients and serving size in local storage on yieldSize change
   useEffect(() => {
     if (yieldSize >= 0 && currRecipe) {
@@ -213,6 +215,11 @@ const SingleRecipe = () => {
                           currRecipe.title
                         )}
                       </h1>
+                      <div className='recipe-price'>
+                        {modIngredients && yieldSize > 0
+                          ? getRecipeCost(modIngredients, yieldSize).infoString
+                          : ''}
+                      </div>
                       <p className='description'>
                         {loading ? (
                           <Skeleton baseColor={skeletonColor} count={4} />
