@@ -36,9 +36,9 @@ const RecipeThumbnail = ({ recipe, loading }) => {
           {loading || !recipe || !recipe.servingPrice || !recipe.yield ? (
             <Skeleton baseColor={skeletonColor} height={30} />
           ) : (
-            `Recipe: $${(recipe.servingPrice * recipe.yield.value).toFixed(
-              2
-            )} | Serving: $${recipe.servingPrice}`
+            `Serving: $${recipe.servingPrice} | Recipe: $${(
+              recipe.servingPrice * recipe.yield.value
+            ).toFixed(2)}`
           )}
         </div>
         <div className='info'>

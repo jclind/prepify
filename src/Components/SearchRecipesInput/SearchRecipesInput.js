@@ -59,6 +59,7 @@ const SearchRecipesInput = ({ defaultVal, autoComplete }) => {
       searchAutoCompleteRecipes(title)
         .then(res => {
           setAutoCompleteResponse(res.data)
+          console.log(res)
         })
         .catch(e => {
           console.log(e)

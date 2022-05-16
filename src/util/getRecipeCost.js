@@ -12,6 +12,6 @@ export const getRecipeCost = (ingrs, servings) => {
   return {
     recipe: recipePrice,
     serving: servingPrice,
-    infoString: `Recipe: $${recipePrice} | Serving: $${servingPrice}`,
+    infoString: `Serving: $${servingPrice} | Recipe: $${recipePrice}`,
   }
 }
