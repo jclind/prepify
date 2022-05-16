@@ -40,6 +40,7 @@ const SingleRecipe = () => {
   const [yieldSize, setYieldSize] = useState(0)
 
   const printedRef = useRef()
+  // Update ingredients and serving size in local storage on yieldSize change
   useEffect(() => {
     if (yieldSize >= 0 && currRecipe) {
       const recipeServings = JSON.parse(localStorage.getItem('recipeServings'))
