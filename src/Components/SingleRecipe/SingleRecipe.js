@@ -182,6 +182,11 @@ const SingleRecipe = () => {
                         currRecipe.title
                       )}
                     </h1>
+                    <div className='recipe-price'>
+                      {modIngredients && yieldSize > 0
+                        ? getRecipeCost(modIngredients, yieldSize).infoString
+                        : ''}
+                    </div>
                     <p className='description'>
                       {loading ? (
                         <Skeleton baseColor={skeletonColor} count={4} />
