@@ -18,6 +18,8 @@ const RecipeFilters = ({
     { value: 'old', label: 'Date: Oldest' },
     { value: 'shortest', label: 'Time: Shortest' },
     { value: 'longest', label: 'Time: Longest' },
+    { value: 'cheapest', label: 'Price: Cheapest' },
+    { value: 'priciest', label: 'Price: Most Expensive' },
   ]
 
   const navigate = useNavigate()
