@@ -159,6 +159,9 @@
       label {
         pointer-events: none;
         line-height: 1.5;
+        .price {
+          color: $primary;
+        }
       }
       @media screen and (max-width: 600px) {
         max-width: 100%;

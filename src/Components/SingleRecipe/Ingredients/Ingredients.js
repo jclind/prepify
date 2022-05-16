@@ -30,6 +30,9 @@ const CheckBox = ({ ingr, loading }) => {
               {ingr.quantity} {ingr.measurement.value}
             </strong>{' '}
             {ingr.name}
+            <span className='price'>
+              {ingr.price ? ` ($${ingr.price})` : ''}
+            </span>
           </label>
         </>
       )}
