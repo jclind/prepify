@@ -1,70 +1,45 @@
-# Getting Started with Create React App
+<img alt="Prepify" src="./prepify-banner.png">
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+[<img align="left" width="26px" alt="React.js" src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg">](https://reactjs.org/)
+[<img align="left" width="26px" alt="sass" src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/sass/sass-original.svg">](https://developer.mozilla.org/en-US/docs/Web/CSS)
+[<img align="left" width="26px" alt="Firebase" src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/firebase/firebase-plain.svg">](https://firebase.google.com/)
+[<img align="left" width="26px" alt="Mongodb" src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/mongodb/mongodb-original.svg">](https://www.mongodb.com/)
 
-## Available Scripts
+<br>
 
-In the project directory, you can run:
+# About
+[Prepify](https://prepify.netlify.app/) is a user-friendly recipe website focused on meal prep and saving money while cooking. Prepify features recipe searching and filtering to find the perfect recipe for your needs. All recipes have their total price and price per serving clearly shown as well as the recipe's ratings, fridge life, freezer life, and nutritional data to help you with meal prepping and calorie counting. Users of Prepify can save recipes, leave ratings and reviews, and even create recipes of their own to share with the community.
 
-### `npm start`
+# Features
+- Simple and easy to use design
+- Recipe search funciton with autocompleted results as you type
+- Recipe filtering and tagging for better search customization
+- Recipe cost and nutritional data
+- User authenticaton and account system
+- Save recipes
+- Rate and review recipes
+- Create your own recipes
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+# Setup
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+You will need [node](https://nodejs.org/en/) and [npm](https://www.npmjs.com/) installed on your machine globally.
 
-### `npm test`
+Once this repository is cloned, to install, run:
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+`npm install`
 
-### `npm run build`
+To Start Server, Run:
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+`npm start`
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+To View App, Visit:
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+`localhost:3000`
 
-### `npm run eject`
+Web application hosted by netlify through automatic deploys from github.
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+# Reflection
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+The idea for Prepify was originally just a simple list of recipes I personally wanted to save. During the planning and creation process, I discovered the helpfulness of meal prepping and I wanted to integrate some useful meal prep features within the application. One thing led to another and I had added an authentication system and a MongoDB backend creating a much more complex application than I had initially intended.
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+Overall I'm happy with how Prepify has turned out and all the new concepts and resources it has taught me through its creation including MongoDB database creation and management, creating complex queried searches using MongoDB Functions and HTTPS Endpoints, overall user experience and UI creation, and much more.
