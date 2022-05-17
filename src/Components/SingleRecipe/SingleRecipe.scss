@@ -331,19 +331,43 @@
     .body-content {
       width: 100%;
       max-width: $recipe-body-max-width;
+      padding: 1rem;
+
+      .additional-data {
+        width: 100% !important;
+        padding: 2rem 0.5rem 1rem 0.5rem !important;
+        box-sizing: border-box;
+        margin-top: 2rem;
+        border-top: 1px solid $gray-400;
+
+        .food-life {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+          padding: 1rem 0;
+          font-weight: 500;
+          color: $secondary-text;
+          span {
+            font-weight: 600;
+            color: $primary-text;
+          }
+        }
+      }
 
       .tags-container {
-        margin-top: 4rem;
+        width: 100% !important;
+        padding-top: 0.5rem;
+
         .tag-label {
           font-size: toRem(16);
-          color: $primary;
+          color: $primary-text;
           font-weight: 700;
         }
         .tags {
           display: flex;
           flex-wrap: wrap;
           gap: 0.5rem;
-          margin-top: 1.5rem;
+          margin-top: 1rem;
           .tag {
             padding-right: 0.5rem;
           }
