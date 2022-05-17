@@ -24,6 +24,7 @@ import { Helmet } from 'react-helmet'
 
 import Skeleton from 'react-loading-skeleton'
 import 'react-loading-skeleton/dist/skeleton.css'
+import { getRecipeCost } from '../../util/getRecipeCost'
 
 const skeletonColor = '#d6d6d6'
 
@@ -40,6 +41,8 @@ const SingleRecipe = () => {
   const [yieldSize, setYieldSize] = useState(0)
 
   const printedRef = useRef()
+
+  // Update ingredients and serving size in local storage on yieldSize change
   useEffect(() => {
     if (yieldSize >= 0 && currRecipe) {
       const recipeServings = JSON.parse(localStorage.getItem('recipeServings'))
@@ -179,6 +182,11 @@ const SingleRecipe = () => {
                         currRecipe.title
                       )}
                     </h1>
+                    <div className='recipe-price'>
+                      {modIngredients && yieldSize > 0
+                        ? getRecipeCost(modIngredients, yieldSize).infoString
+                        : ''}
+                    </div>
                     <p className='description'>
                       {loading ? (
                         <Skeleton baseColor={skeletonColor} count={4} />
@@ -212,6 +220,11 @@ const SingleRecipe = () => {
                           currRecipe.title
                         )}
                       </h1>
+                      <div className='recipe-price'>
+                        {modIngredients && yieldSize > 0
+                          ? getRecipeCost(modIngredients, yieldSize).infoString
+                          : ''}
+                      </div>
                       <p className='description'>
                         {loading ? (
                           <Skeleton baseColor={skeletonColor} count={4} />
@@ -342,42 +355,72 @@ const SingleRecipe = () => {
                   }
                   loading={loading}
                 />
-                <div className='tags-container'>
-                  <label className='tag-label'>
+                <div className='additional-data'>
+                  <h3 className='title'>
                     {loading ? (
                       <Skeleton baseColor={skeletonColor} width={50} />
                     ) : (
-                      'Tags:'
+                      'Additional Data:'
                     )}
-                  </label>
-                  {!loading ? (
-                    <div className='tags'>
-                      {currRecipe &&
-                        currRecipe.tags &&
-                        currRecipe.tags.map(tag => {
-                          return (
-                            <div className='tag' key={tag}>
-                              {tag}
-                            </div>
-                          )
-                        })}
+                  </h3>
+                  <div className='food-life'>
+                    <div className='fridge-life'>
+                      {currRecipe && currRecipe.fridgeLife ? (
+                        <>
+                          Fridge Life: <span>{currRecipe.fridgeLife} days</span>
+                        </>
+                      ) : (
+                        ''
+                      )}
                     </div>
-                  ) : (
-                    <div className='tags'>
-                      <Skeleton
-                        baseColor={skeletonColor}
-                        className='tag skeleton'
-                      />
-                      <Skeleton
-                        baseColor={skeletonColor}
-                        className='tag skeleton'
-                      />
-                      <Skeleton
-                        baseColor={skeletonColor}
-                        className='tag skeleton'
-                      />
+                    <div className='freezer-life'>
+                      {currRecipe && currRecipe.freezerLife ? (
+                        <>
+                          Freezer Life:{' '}
+                          <span>{currRecipe.freezerLife} days</span>
+                        </>
+                      ) : (
+                        ''
+                      )}
                     </div>
-                  )}
+                  </div>
+                  <div className='tags-container'>
+                    <label className='tag-label'>
+                      {loading ? (
+                        <Skeleton baseColor={skeletonColor} width={50} />
+                      ) : (
+                        'Tags:'
+                      )}
+                    </label>
+                    {!loading ? (
+                      <div className='tags'>
+                        {currRecipe &&
+                          currRecipe.tags &&
+                          currRecipe.tags.map(tag => {
+                            return (
+                              <div className='tag' key={tag}>
+                                {tag}
+                              </div>
+                            )
+                          })}
+                      </div>
+                    ) : (
+                      <div className='tags'>
+                        <Skeleton
+                          baseColor={skeletonColor}
+                          className='tag skeleton'
+                        />
+                        <Skeleton
+                          baseColor={skeletonColor}
+                          className='tag skeleton'
+                        />
+                        <Skeleton
+                          baseColor={skeletonColor}
+                          className='tag skeleton'
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
                 {currRecipe && currRecipe.nutritionData && (
                   <NutritionData

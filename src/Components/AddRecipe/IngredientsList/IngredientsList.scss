@@ -45,6 +45,7 @@
     margin-top: 1rem;
     margin-bottom: 1rem;
     display: flex;
+    flex-wrap: wrap;
     gap: 0.5rem;
 
     .ingredient-quantity {
@@ -77,6 +78,23 @@
     .ingredient-name {
       width: 300px;
     }
+
+    .ingredient-cost-input-container {
+      position: relative;
+      display: flex;
+      align-items: center;
+
+      .dollar-symbol {
+        position: absolute;
+        padding: 0 0.5rem;
+        font-weight: 500;
+        color: $secondary-text;
+      }
+      input {
+        padding-left: 1.5rem;
+      }
+    }
+
     .add-ingredient-btn {
       font-size: toRem(16);
       font-weight: 600;
@@ -114,7 +132,8 @@
       display: flex;
       align-items: center;
       border-bottom: 1px solid $secondary-background;
-      height: 45px;
+      min-height: 45px;
+      padding: 0.5rem 0;
       font-size: toRem(16);
       font-weight: 600;
 
@@ -132,8 +151,16 @@
 
       .content {
         display: flex;
+        flex-wrap: wrap;
+        row-gap: 0.25rem;
         align-items: center;
-        height: 100%;
+        height: fit-content;
+
+        .price {
+          &::before {
+            content: '$';
+          }
+        }
 
         div.field {
           display: flex;

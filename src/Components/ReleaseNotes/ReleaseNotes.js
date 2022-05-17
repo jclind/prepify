@@ -8,7 +8,7 @@ import { BiWrench } from 'react-icons/bi'
 import Modal from 'react-modal'
 Modal.setAppElement('#root')
 
-const VERSION_NUMBER = 'v1.3.3-beta'
+const VERSION_NUMBER = 'v1.4.0-beta'
 
 const customStyles = {
   content: {
@@ -38,15 +38,16 @@ const ReleaseNotes = ({
     setReleaseNotesModalIsOpen(false)
   }
 
-  const additions = []
+  const additions = ['Add recipe and recipe serving price']
   const bugFixes = [
-    'Add additional error handling to create recipe form',
-    "Fix recipes showing 'new' results on 'recipes' page load regardless of dropdown selection",
-    "Variety of small 'create recipe form' bug fixes",
+    'Recipe nutrition data now submitted to recipe data',
+    'Fix infinite loading bug in the saved recipes page if no recipes are saved',
+    'Multiple minor ui fixes and improvements',
+    'Current user recipe reviews now visible',
   ]
   const improvements = [
-    "Add loading and no-data UI to user's saved recipes pages",
-    'Page now scrolls to top on route change',
+    'Recipes can now be sorted by price in recipe search page',
+    'Add additional recipe data showing fridge and freezer life for all recipes',
   ]
 
   const location = useLocation()
@@ -74,13 +75,17 @@ const ReleaseNotes = ({
         <AiOutlineClose className='icon' />
       </button>
       <div className='release-notes-content-container'>
-        <h1 className='heading'>Prepify Release Notes • 4/4/2022</h1>
+        <h1 className='heading'>Prepify Release Notes • 5/17/2022</h1>
         <div className='release-tag'>{VERSION_NUMBER}</div>
         <p className='release-description'>
-          This release is mostly focused on quality of life and website breaking
-          bugs along with a few UI changes. Create recipes pages should now be a
-          little better to deal with (along with actually working
-          consistently... I hope).
+          Recipe pricing is finally here! I spent a lot of time trying to
+          discover the best way to implement this feature. I looked into
+          countless apis and databases for a solution that wouldn't cost me an
+          arm and a leg, and I even considered webscraping for gathering
+          ingredient prices. Unfortunately, due to the high costs of apis and
+          sheer amount of time it would take to parse through webscraped data, I
+          decided to gather ingredient prices through user input as a temporary
+          solution.
         </p>
         <div className='content'>
           {additions.length > 0 && (

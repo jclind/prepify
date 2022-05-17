@@ -82,9 +82,11 @@ const RecipeProvider = ({ children }) => {
         // }
       })
     })
+
+    let nutritionResult = null
     await RecipeAPI.getRecipeNutrition(ingrData)
       .then(res => {
-        return res
+        nutritionResult = res
       })
       .catch(e => {
         console.log(e.code)
@@ -92,6 +94,8 @@ const RecipeProvider = ({ children }) => {
           return null
         }
       })
+
+    return nutritionResult
   }
 
   const addRecipe = async (
@@ -122,6 +126,7 @@ const RecipeProvider = ({ children }) => {
     ).toString()
 
     const nutritionData = await getRecipeNutrition(recipeData.ingredients)
+    console.log(nutritionData)
 
     const recipeId = ObjectID()
 

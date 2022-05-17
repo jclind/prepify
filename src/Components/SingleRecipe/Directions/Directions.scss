@@ -2,6 +2,9 @@
 
 .directions {
   margin-top: 2rem;
+  width: 100% !important;
+  padding: 0 0.5rem !important;
+  box-sizing: border-box;
 
   .list.multi-direction-list {
     display: flex;

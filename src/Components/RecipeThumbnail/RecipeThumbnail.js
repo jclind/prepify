@@ -32,6 +32,15 @@ const RecipeThumbnail = ({ recipe, loading }) => {
         <h4 className='title'>
           {loading ? <Skeleton baseColor={skeletonColor} height={30} /> : title}
         </h4>
+        <div className='price'>
+          {loading || !recipe || !recipe.servingPrice || !recipe.yield ? (
+            <Skeleton baseColor={skeletonColor} height={30} />
+          ) : (
+            `Serving: $${recipe.servingPrice} | Recipe: $${(
+              recipe.servingPrice * recipe.yield.value
+            ).toFixed(2)}`
+          )}
+        </div>
         <div className='info'>
           <div className='total-time single-info'>
             {loading ? (

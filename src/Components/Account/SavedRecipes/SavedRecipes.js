@@ -80,6 +80,7 @@ const SavedRecipes = () => {
         })
         .catch(err => {
           console.log(err)
+          setLoading(false)
         })
     }
   }

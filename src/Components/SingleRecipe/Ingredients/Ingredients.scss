@@ -1,8 +1,9 @@
 @import '../../../helpers.scss';
 
 .ingredients {
-  width: 100%;
-  padding-bottom: 1rem;
+  width: 100% !important;
+  padding: 0 0.5rem 1rem 0.5rem !important;
+  box-sizing: border-box;
   border-bottom: 1px solid $gray-400;
 
   .header {
@@ -159,6 +160,9 @@
       label {
         pointer-events: none;
         line-height: 1.5;
+        .price {
+          color: $primary;
+        }
       }
       @media screen and (max-width: 600px) {
         max-width: 100%;

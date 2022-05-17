@@ -14,6 +14,7 @@ import RecipeTags from './RecipeTags/RecipeTags'
 import { useNavigate } from 'react-router-dom'
 import { Helmet } from 'react-helmet'
 import Modal from 'react-modal'
+import { getRecipeCost } from '../../util/getRecipeCost'
 Modal.setAppElement('#root')
 
 const RecipeCreatedModal = ({
@@ -304,6 +305,7 @@ const AddRecipe = () => {
       instructions: recipeInstructions,
       ingredients: recipeIngredients,
       recipeImage: recipeImage,
+      servingPrice: getRecipeCost(recipeIngredients, recipeYield.value).recipe,
       tags: recipeTags,
     }
 
