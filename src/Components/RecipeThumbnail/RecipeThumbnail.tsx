@@ -17,7 +17,6 @@ type RecipeThumbnailType = {
 }
 
 const RecipeThumbnail = ({ recipe, loading }: RecipeThumbnailType) => {
-  // const { _id, recipeImage, title, totalTime, rating } = recipe || ''
   const navigate = useNavigate()
   const handleOnClick = () => {
     if (!loading) {

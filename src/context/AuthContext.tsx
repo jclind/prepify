@@ -7,6 +7,7 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
+  UserCredential,
 } from 'firebase/auth'
 import {
   doc,
@@ -21,15 +22,55 @@ import { db } from '../client/db'
 
 import { useNavigate } from 'react-router-dom'
 
-const AuthContext = React.createContext()
-const auth = getAuth()
-
 export function useAuth() {
   return useContext(AuthContext)
 }
 
-const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null)
+type AuthContextValueType = {
+  user: UserCredential['user'] | null
+  logout: () => void
+  signInWithGoogle: (setError: (val: string) => void) => void
+  signInDefault: (
+    email: string,
+    password: string,
+    setError: (val: string) => void
+  ) => void
+  signUp: (
+    email: string,
+    password: string,
+    username: string,
+    setLoading: (val: boolean) => void,
+    setSuccess: (val: string) => void,
+    setError: (val: string) => void
+  ) => void
+  getUsername: (uid: string) => Promise<string | null>
+  forgotPassword: (
+    email: string,
+    setSuccess: (val: string) => void,
+    setError: (val: string) => void
+  ) => void
+  checkUsernameAvailability: (
+    username: string,
+    setLoading?: (val: boolean) => void
+  ) => Promise<boolean>
+  setUsername: (
+    uid: string,
+    username: string,
+    setLoading: (val: boolean) => void,
+    setSuccess: (val: string) => void,
+    setError: (val: string) => void
+  ) => void
+}
+
+type AuthProviderProps = {
+  children: React.ReactNode
+}
+
+const AuthContext = React.createContext<AuthContextValueType | null>(null)
+const auth = getAuth()
+
+const AuthProvider = ({ children }: AuthProviderProps) => {
+  const [user, setUser] = useState<UserCredential['user'] | null>(null)
   const [loading, setLoading] = useState(true)
 
   const navigate = useNavigate()
@@ -45,7 +86,7 @@ const AuthProvider = ({ children }) => {
       })
   }
 
-  const signInWithGoogle = setError => {
+  const signInWithGoogle = (setError: (val: string) => void) => {
     const provider = new GoogleAuthProvider()
 
     signInWithPopup(auth, provider)
@@ -56,7 +97,11 @@ const AuthProvider = ({ children }) => {
         setError(err.code)
       })
   }
-  const signInDefault = (email, password, setError) => {
+  const signInDefault = (
+    email: string,
+    password: string,
+    setError: (val: string) => void
+  ) => {
     if (!email) {
       return setError('Must enter email')
     } else if (!password) {
@@ -82,12 +127,12 @@ const AuthProvider = ({ children }) => {
       })
   }
   const signUp = (
-    email,
-    password,
-    username,
-    setLoading,
-    setSuccess,
-    setError
+    email: string,
+    password: string,
+    username: string,
+    setLoading: (val: boolean) => void,
+    setSuccess: (val: string) => void,
+    setError: (val: string) => void
   ) => {
     setLoading(true)
     if (!username) {
@@ -119,7 +164,11 @@ const AuthProvider = ({ children }) => {
         })
     })
   }
-  const forgotPassword = (email, setSuccess, setError) => {
+  const forgotPassword = (
+    email: string,
+    setSuccess: (val: string) => void,
+    setError: (val: string) => void
+  ) => {
     sendPasswordResetEmail(auth, email)
       .then(() => {
         setSuccess('Email sent! Check your inbox for instructions.')
@@ -131,7 +180,7 @@ const AuthProvider = ({ children }) => {
       })
   }
 
-  const getUsername = async uid => {
+  const getUsername = async (uid: string): Promise<string | null> => {
     // Get reference to username collection document with property of the passed uid
     const usernamesRef = doc(db, 'username', uid)
     const usernamesSnap = await getDoc(usernamesRef)
@@ -145,7 +194,10 @@ const AuthProvider = ({ children }) => {
     }
   }
 
-  const checkUsernameAvailability = async (username, setLoading) => {
+  const checkUsernameAvailability = async (
+    username: string,
+    setLoading?: (val: boolean) => void
+  ): Promise<boolean> => {
     if (setLoading) {
       setLoading(true)
     }
@@ -161,11 +213,11 @@ const AuthProvider = ({ children }) => {
   }
 
   const setUsername = async (
-    uid,
-    username,
-    setLoading,
-    setSuccess,
-    setError
+    uid: string,
+    username: string,
+    setLoading: (val: boolean) => void,
+    setSuccess: (val: string) => void,
+    setError: (val: string) => void
   ) => {
     if (setLoading) setLoading(true)
 
@@ -207,7 +259,7 @@ const AuthProvider = ({ children }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const value = {
+  const value: AuthContextValueType = {
     user,
     logout,
     signInWithGoogle,

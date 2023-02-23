@@ -13,7 +13,7 @@ import NutritionData from './NutritionData/NutritionData'
 import RecipeNotFound from './RecipeNotFound.js/RecipeNotFound'
 
 import { formatRating } from '../../util/formatRating'
-import { calcServings } from '../../util/calcServings'
+import { updateIngredients } from '../../util/updateIngredients'
 import { capitalize } from '../../util/capitalize'
 
 import { AiOutlineClockCircle, AiOutlineUsergroupAdd } from 'react-icons/ai'
@@ -24,84 +24,108 @@ import { Helmet } from 'react-helmet'
 
 import Skeleton from 'react-loading-skeleton'
 import 'react-loading-skeleton/dist/skeleton.css'
+import { IngredientsType, RecipeType } from 'types'
 
 const skeletonColor = '#d6d6d6'
 
 const SingleRecipe = () => {
-  const [currRecipe, setCurrRecipe] = useState(null)
+  const [currRecipe, setCurrRecipe] = useState<RecipeType | null>(null)
   const [loading, setLoading] = useState(true)
   const [recipe404, setRecipe404] = useState(false)
-  const [modIngredients, setModIngredients] = useState([])
+  const [modIngredients, setModIngredients] = useState<IngredientsType[] | []>(
+    []
+  )
 
   const [currUserReview, setCurrUserReview] = useState({})
 
   const [windowWidth, setWindowWidth] = useState(getWindowWidth())
 
-  const [yieldSize, setYieldSize] = useState(0)
+  const [servingSize, setServingSize] = useState(0)
 
   const printedRef = useRef()
   useEffect(() => {
-    if (yieldSize >= 0 && currRecipe) {
-      const recipeServings = JSON.parse(localStorage.getItem('recipeServings'))
-      const idx =
-        recipeServings &&
-        recipeServings.length > 0 &&
-        recipeServings.findIndex(item => item.recipeId === currRecipe._id)
-      if (yieldSize === 0) {
-        if (recipeServings && idx >= 0) {
-          setYieldSize(recipeServings[idx].servingSize)
-        } else if (currRecipe && currRecipe.yield && currRecipe.yield.value) {
-          setYieldSize(Number(currRecipe.yield.value))
-        } else {
-          setYieldSize(null)
-        }
-      } else {
-        // If yieldSize has changed from original recipe size, set local storage
-        if (yieldSize) {
-          if (recipeServings) {
-            if (idx >= 0) {
-              recipeServings[idx].servingSize = yieldSize
-              localStorage.setItem(
-                'recipeServings',
-                JSON.stringify([...recipeServings])
-              )
-            } else {
-              localStorage.setItem(
-                'recipeServings',
-                JSON.stringify([
-                  ...recipeServings,
-                  { recipeId: currRecipe._id, servingSize: yieldSize },
-                ])
-              )
-            }
-          } else {
-            localStorage.setItem(
-              'recipeServings',
-              JSON.stringify([
-                { recipeId: currRecipe._id, servingSize: yieldSize },
-              ])
-            )
-          }
-        }
-      }
+    if (currRecipe) {
+      const recipeServings: { recipeId: string; numServings: number }[] | [] =
+        JSON.parse(localStorage.getItem('recipeServings') || '[]')
 
-      if (
-        currRecipe &&
-        currRecipe.ingredients &&
-        currRecipe.yield &&
-        currRecipe.yield.value &&
-        yieldSize
+      const currRecipeLocalStorageObj = recipeServings.find(
+        item => item.recipeId === currRecipe._id
       )
-        setModIngredients(
-          calcServings(
-            currRecipe.ingredients,
-            Number(currRecipe.yield.value),
-            yieldSize
-          )
+      // Set currRecipeServings to saved local numServings value for current recipe if it exists, if not set to the default servings for the current recipe
+      const currRecipeServings: number = currRecipeLocalStorageObj
+        ? currRecipeLocalStorageObj.numServings
+        : currRecipe.servings
+
+      setServingSize(currRecipeServings)
+      setModIngredients(
+        updateIngredients(
+          currRecipe.ingredients,
+          currRecipe.servings,
+          currRecipeServings
         )
+      )
     }
+
+    // const idx =
+    //   recipeServings &&
+    //   recipeServings.length > 0 &&
+    //   recipeServings.findIndex(item => item.recipeId === currRecipe._id)
+
+    //   if (yieldSize === 0) {
+    //     if (recipeServings && idx >= 0) {
+    //       setYieldSize(recipeServings[idx].servingSize)
+    //     } else if (currRecipe && currRecipe.yield && currRecipe.yield.value) {
+    //       setYieldSize(Number(currRecipe.yield.value))
+    //     } else {
+    //       setYieldSize(null)
+    //     }
+    //   } else {
+    //     // If yieldSize has changed from original recipe size, set local storage
+    //     if (yieldSize) {
+    //       if (recipeServings) {
+    //         if (idx >= 0) {
+    //           recipeServings[idx].servingSize = yieldSize
+    //           localStorage.setItem(
+    //             'recipeServings',
+    //             JSON.stringify([...recipeServings])
+    //           )
+    //         } else {
+    //           localStorage.setItem(
+    //             'recipeServings',
+    //             JSON.stringify([
+    //               ...recipeServings,
+    //               { recipeId: currRecipe._id, servingSize: yieldSize },
+    //             ])
+    //           )
+    //         }
+    //       } else {
+    //         localStorage.setItem(
+    //           'recipeServings',
+    //           JSON.stringify([
+    //             { recipeId: currRecipe._id, servingSize: yieldSize },
+    //           ])
+    //         )
+    //       }
+    //     }
+    //   }
+
+    //   if (
+    //     currRecipe &&
+    //     currRecipe.ingredients &&
+    //     currRecipe.yield &&
+    //     currRecipe.yield.value &&
+    //     yieldSize
+    //   )
+    //     setModIngredients(
+    //       updateIngredients(
+    //         currRecipe.ingredients,
+    //         Number(currRecipe.yield.value),
+    //         yieldSize
+    //       )
+    //     )
+    // }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [yieldSize, currRecipe])
+  }, [currRecipe])
 
   const { getRecipe } = useRecipe()
 
