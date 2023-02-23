@@ -1,4 +1,4 @@
-export const formatRating = (tot, count) => {
+export const formatRating = (tot: number, count: number) => {
   if (tot === 0 || count === 0) {
     return 'No Ratings'
   }
