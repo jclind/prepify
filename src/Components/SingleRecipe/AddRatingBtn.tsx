@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { BsStar, BsStarFill } from 'react-icons/bs'
 
-const AddRatingBtn = ({ currUserReview }) => {
+type AddRatingBtnProps = {
+  currUserReview: string
+}
+
+const AddRatingBtn = ({ currUserReview }: AddRatingBtnProps) => {
   const [isRated, setIsRated] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
 
@@ -14,7 +18,7 @@ const AddRatingBtn = ({ currUserReview }) => {
   }, [currUserReview])
 
   const handleClick = () => {
-    document.getElementById('recipeReviews').scrollIntoView({
+    document.getElementById('recipeReviews')?.scrollIntoView({
       behavior: 'smooth',
     })
   }

@@ -9,6 +9,16 @@ import { formatRating } from '../../../util/formatRating'
 import ReviewFilters from './ReviewFilters'
 import { useAuth } from '../../../context/AuthContext'
 import { useAlert } from 'react-alert'
+import AuthAPI from 'src/api/auth'
+import RecipeAPI from 'src/api/recipes'
+
+type RecipeRatingsProps = {
+  recipeId: string
+  ratingVal: number
+  ratingCount: number
+  currUserReview: any
+  setCurrUserReview: any
+}
 
 const RecipeRatings = ({
   recipeId,
@@ -16,7 +26,7 @@ const RecipeRatings = ({
   ratingCount,
   currUserReview,
   setCurrUserReview,
-}) => {
+}: RecipeRatingsProps) => {
   const [rating, setRating] = useState(0)
   const [isReviewed, setIsReviewed] = useState(false)
 
@@ -30,14 +40,19 @@ const RecipeRatings = ({
   const [newReviewError, setNewReviewError] = useState('')
 
   const { checkIfReviewed, newReview, getReviews, addRating } = useRecipe()
-  const { user } = useAuth()
+  const uid = AuthAPI.getUID()
   const alert = useAlert()
 
   const recipesPerPage = 5
 
-  const getNextReviewsPage = recipeId => {
-    getReviews(recipeId, reviewListPage + 1, recipesPerPage).then(res => {
-      const updatedArr = [...reviewList, ...res.data.reviews]
+  const getNextReviewsPage = (recipeId: string) => {
+    RecipeAPI.getReviews(
+      recipeId,
+      'new',
+      reviewListPage + 1,
+      recipesPerPage
+    ).then(res => {
+      const updatedArr = [...reviewList, ...res?.data.reviews]
       setReviewList([...updatedArr])
       if (res.data.totalCount > updatedArr.length) {
         setIsMoreReviews(true)
@@ -49,9 +64,9 @@ const RecipeRatings = ({
   }
 
   useEffect(() => {
-    if (user) {
-      checkIfReviewed(recipeId).then(res => {
-        const resData = res.data
+    if (uid) {
+      RecipeAPI.checkIfReviewed(recipeId).then(res => {
+        const resData = res?.data
         const reviewData = resData || null
 
         const userRating = reviewData?.rating

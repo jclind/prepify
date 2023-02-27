@@ -6,25 +6,26 @@ import {
 } from 'react-icons/bs'
 import { Link } from 'react-router-dom'
 
-import { useAuth } from '../../context/AuthContext'
-import { useRecipe } from '../../context/RecipeContext'
 import { useAlert } from 'react-alert'
+import AuthAPI from 'src/api/auth'
+import RecipeAPI from 'src/api/recipes'
 
-const SaveRecipeBtn = ({ recipeId }) => {
+type SaveRecipeBtnProps = { recipeId: string }
+
+const SaveRecipeBtn = ({ recipeId }: SaveRecipeBtnProps) => {
   const [isHovered, setIsHovered] = useState(false)
   const [isSaved, setIsSaved] = useState(false)
 
-  const { user } = useAuth()
-  const { saveRecipe, getSavedRecipe, unsaveRecipe } = useRecipe()
+  const uid = AuthAPI.getUID()
 
   const alert = useAlert()
 
-  const handleToggleSaveRecipe = recipeId => {
-    if (user) {
+  const handleToggleSaveRecipe = (recipeId: string) => {
+    if (uid) {
       if (isSaved) {
-        unsaveRecipe(user.uid, recipeId).then(() => setIsSaved(false))
+        RecipeAPI.unsaveRecipe(uid, recipeId).then(() => setIsSaved(false))
       } else {
-        saveRecipe(user.uid, recipeId).then(() => setIsSaved(true))
+        RecipeAPI.saveRecipe(uid, recipeId).then(() => setIsSaved(true))
       }
     } else {
       alert.show(
@@ -40,9 +41,9 @@ const SaveRecipeBtn = ({ recipeId }) => {
   }
 
   useEffect(() => {
-    if (user) {
-      const getIsRecipeSaved = async recipeId => {
-        return await getSavedRecipe(user.uid, recipeId)
+    if (uid) {
+      const getIsRecipeSaved = async (recipeId: string) => {
+        return await RecipeAPI.getSavedRecipe(uid, recipeId)
       }
       getIsRecipeSaved(recipeId).then(res => {
         const currIsSaved = res.data.length > 0
@@ -50,7 +51,7 @@ const SaveRecipeBtn = ({ recipeId }) => {
       })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user])
+  }, [uid])
 
   return (
     <div className='save-recipe'>

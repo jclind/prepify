@@ -25,6 +25,7 @@ import { Helmet } from 'react-helmet'
 import Skeleton from 'react-loading-skeleton'
 import 'react-loading-skeleton/dist/skeleton.css'
 import { IngredientsType, RecipeType } from 'types'
+import RecipeAPI from 'src/api/recipes'
 
 const skeletonColor = '#d6d6d6'
 
@@ -42,7 +43,7 @@ const SingleRecipe = () => {
 
   const [servingSize, setServingSize] = useState(0)
 
-  const printedRef = useRef()
+  const printedRef = useRef() as React.MutableRefObject<HTMLInputElement>
   useEffect(() => {
     if (currRecipe) {
       const recipeServings: { recipeId: string; numServings: number }[] | [] =
@@ -66,75 +67,19 @@ const SingleRecipe = () => {
       )
     }
 
-    // const idx =
-    //   recipeServings &&
-    //   recipeServings.length > 0 &&
-    //   recipeServings.findIndex(item => item.recipeId === currRecipe._id)
-
-    //   if (yieldSize === 0) {
-    //     if (recipeServings && idx >= 0) {
-    //       setYieldSize(recipeServings[idx].servingSize)
-    //     } else if (currRecipe && currRecipe.yield && currRecipe.yield.value) {
-    //       setYieldSize(Number(currRecipe.yield.value))
-    //     } else {
-    //       setYieldSize(null)
-    //     }
-    //   } else {
-    //     // If yieldSize has changed from original recipe size, set local storage
-    //     if (yieldSize) {
-    //       if (recipeServings) {
-    //         if (idx >= 0) {
-    //           recipeServings[idx].servingSize = yieldSize
-    //           localStorage.setItem(
-    //             'recipeServings',
-    //             JSON.stringify([...recipeServings])
-    //           )
-    //         } else {
-    //           localStorage.setItem(
-    //             'recipeServings',
-    //             JSON.stringify([
-    //               ...recipeServings,
-    //               { recipeId: currRecipe._id, servingSize: yieldSize },
-    //             ])
-    //           )
-    //         }
-    //       } else {
-    //         localStorage.setItem(
-    //           'recipeServings',
-    //           JSON.stringify([
-    //             { recipeId: currRecipe._id, servingSize: yieldSize },
-    //           ])
-    //         )
-    //       }
-    //     }
-    //   }
-
-    //   if (
-    //     currRecipe &&
-    //     currRecipe.ingredients &&
-    //     currRecipe.yield &&
-    //     currRecipe.yield.value &&
-    //     yieldSize
-    //   )
-    //     setModIngredients(
-    //       updateIngredients(
-    //         currRecipe.ingredients,
-    //         Number(currRecipe.yield.value),
-    //         yieldSize
-    //       )
-    //     )
-    // }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currRecipe])
 
-  const { getRecipe } = useRecipe()
+  // const recipeResult = useRecipe()
+  // const getRecipe = recipeResult?.getRecipe ?? null
 
   let recipeParams = useParams()
   const recipeId = recipeParams.recipeId
 
   // Retrieve recipe data with recipeId
   useEffect(() => {
-    getRecipe(recipeId)
+    if (!recipeId) return
+    RecipeAPI.getRecipe(recipeId)
       .then(res => {
         if (!res || !res.data.title) {
           setRecipe404(true)
@@ -156,22 +101,22 @@ const SingleRecipe = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  useEffect(() => {
-    if (currRecipe) {
-      const recipeServings = JSON.parse(localStorage.getItem('recipeServings'))
-      if (recipeServings) {
-        const idx = recipeServings.findIndex(
-          item => item.recipeId === currRecipe._id
-        )
-        if (idx >= 0) {
-          const newServingSize = recipeServings[idx].servingSize
-          setYieldSize(newServingSize)
-        } else {
-          setYieldSize(Number(currRecipe.yield.value))
-        }
-      }
-    }
-  }, [currRecipe])
+  // useEffect(() => {
+  //   if (currRecipe) {
+  //     const recipeServings = JSON.parse(localStorage.getItem('recipeServings') )
+  //     if (recipeServings) {
+  //       const idx = recipeServings.findIndex(
+  //         item => item.recipeId === currRecipe._id
+  //       )
+  //       if (idx >= 0) {
+  //         const newServingSize = recipeServings[idx].servingSize
+  //         setYieldSize(newServingSize)
+  //       } else {
+  //         setYieldSize(Number(currRecipe.yield.value))
+  //       }
+  //     }
+  //   }
+  // }, [currRecipe])
 
   return (
     <>
@@ -186,7 +131,7 @@ const SingleRecipe = () => {
             : 'Recipe 404'}
         </title>
       </Helmet>
-      {recipe404 ? (
+      {recipe404 || !currRecipe ? (
         <RecipeNotFound />
       ) : (
         <>
@@ -272,13 +217,8 @@ const SingleRecipe = () => {
                       ) : (
                         <>
                           <AiOutlineUsergroupAdd className='icon' />
-                          <h3>
-                            {currRecipe &&
-                              currRecipe.yield &&
-                              currRecipe.yield.type &&
-                              currRecipe.yield.type.value}
-                          </h3>
-                          <div className='data'>{yieldSize}</div>
+                          <h3>{currRecipe && currRecipe.servings}</h3>
+                          <div className='data'>{servingSize}</div>
                         </>
                       )}
                     </div>
@@ -354,8 +294,8 @@ const SingleRecipe = () => {
               <div className='body-content'>
                 <Ingredients
                   ingredients={modIngredients}
-                  yieldSize={yieldSize}
-                  setYieldSize={setYieldSize}
+                  servingSize={servingSize}
+                  setServingSize={setServingSize}
                   loading={loading}
                 />
                 <Directions
@@ -377,8 +317,8 @@ const SingleRecipe = () => {
                   {!loading ? (
                     <div className='tags'>
                       {currRecipe &&
-                        currRecipe.tags &&
-                        currRecipe.tags.map(tag => {
+                        currRecipe.nutritionLabels &&
+                        currRecipe.nutritionLabels.map(tag => {
                           return (
                             <div className='tag' key={tag}>
                               {tag}
@@ -406,7 +346,7 @@ const SingleRecipe = () => {
                 {currRecipe && currRecipe.nutritionData && (
                   <NutritionData
                     data={currRecipe.nutritionData}
-                    servings={currRecipe.yield.value}
+                    servings={currRecipe.servings}
                   />
                 )}
               </div>
