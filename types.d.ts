@@ -78,6 +78,8 @@ export interface RecipeSearchResponseType {
     rateValue: number
   }
   servingPrice: number
+  nutritionLabels: string[]
+  servings: number
 }
 export interface GetSavedRecipesResponseType {
   _id: string

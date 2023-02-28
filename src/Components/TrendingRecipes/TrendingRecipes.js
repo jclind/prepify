@@ -2,15 +2,13 @@ import React, { useState, useEffect } from 'react'
 import './TrendingRecipes.scss'
 
 import RecipeThumbnail from '../RecipeThumbnail/RecipeThumbnail'
-import { useRecipe } from '../../context/RecipeContext'
+import RecipeAPI from '../../api/recipes'
 
 const TrendingRecipes = () => {
   const [recipes, setRecipes] = useState()
 
-  const { getTrendingRecipes } = useRecipe()
-
   useEffect(() => {
-    getTrendingRecipes(4).then(res => {
+    RecipeAPI.getTrendingRecipes(4).then(res => {
       const resData = res.data
       setRecipes(resData)
     })

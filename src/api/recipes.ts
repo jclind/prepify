@@ -56,8 +56,11 @@ class RecipeAPIClass {
       `recipes?q=${query.toString()}&page=${page}&tag=${tag}&order=${order}&recipesPerPage=${recipesPerPage}`
     )
   }
-  async searchAutoComplete(title = ''): Promise<RecipeSearchResponseType[]> {
-    return await http.get(`searchAutoCompleteRecipes?title=${title}`)
+  async searchAutoCompleteRecipes(
+    title = ''
+  ): Promise<RecipeSearchResponseType[]> {
+    const result = await http.get(`searchAutoCompleteRecipes?title=${title}`)
+    return result.data
   }
   async getTrendingRecipes(limit = 4): Promise<RecipeType[]> {
     return await http.get(`getTrendingRecipes?limit=${limit}`)
@@ -74,9 +77,10 @@ class RecipeAPIClass {
     userId = '',
     recipeId = ''
   ): Promise<GetSavedRecipesResponseType[]> {
-    return await http.get(
+    const result = await http.get(
       `getSavedRecipe?userId=${userId}&recipeId=${recipeId}`
     )
+    return result.data
   }
   async unsaveRecipe(userId = '', recipeId = '') {
     return await http.put(`unsaveRecipe?userId=${userId}&recipeId=${recipeId}`)

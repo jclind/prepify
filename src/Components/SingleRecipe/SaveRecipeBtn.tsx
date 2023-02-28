@@ -46,7 +46,7 @@ const SaveRecipeBtn = ({ recipeId }: SaveRecipeBtnProps) => {
         return await RecipeAPI.getSavedRecipe(uid, recipeId)
       }
       getIsRecipeSaved(recipeId).then(res => {
-        const currIsSaved = res.data.length > 0
+        const currIsSaved = res.length > 0
         setIsSaved(currIsSaved)
       })
     }

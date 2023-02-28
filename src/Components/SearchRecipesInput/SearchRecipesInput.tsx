@@ -3,16 +3,20 @@ import { useNavigate } from 'react-router-dom'
 import { AiOutlineSearch, AiOutlineStar, AiOutlineUser } from 'react-icons/ai'
 import { CgTimer } from 'react-icons/cg'
 import './SearchRecipesInput.scss'
-import { useRecipe } from '../../context/RecipeContext'
 import { formatRating } from '../../util/formatRating'
 import slugify from 'slugify'
+import RecipeAPI from 'src/api/recipes'
+import { RecipeSearchResponseType } from 'types'
 
-function useOutsideAlerter(ref, setVal) {
+function useOutsideAlerter(
+  ref: React.RefObject<HTMLFormElement>,
+  setVal: (val: boolean) => void
+) {
   useEffect(() => {
     /**
      * Alert if clicked on outside of element
      */
-    function handleClickOutside(event) {
+    function handleClickOutside(event: any) {
       if (ref.current && !ref.current.contains(event.target)) {
         setVal(true)
       }
@@ -29,21 +33,29 @@ function useOutsideAlerter(ref, setVal) {
   }, [ref])
 }
 
-const SearchRecipesInput = ({ defaultVal, autoComplete }) => {
+type SearchRecipesInputProps = {
+  defaultVal?: string
+  autoComplete: boolean
+}
+
+const SearchRecipesInput = ({
+  defaultVal,
+  autoComplete,
+}: SearchRecipesInputProps) => {
   const [searchRecipeVal, setSearchRecipeVal] = useState(defaultVal || '')
 
-  const [autoCompleteResponse, setAutoCompleteResponse] = useState([])
+  const [autoCompleteResponse, setAutoCompleteResponse] = useState<
+    RecipeSearchResponseType[]
+  >([])
 
   const [isBlurred, setIsBlurred] = useState(true)
 
-  const { searchAutoCompleteRecipes } = useRecipe()
-
   const navigate = useNavigate()
 
-  const wrapperRef = useRef()
+  const wrapperRef = useRef<HTMLFormElement>(null)
   useOutsideAlerter(wrapperRef, setIsBlurred)
 
-  const handleSubmit = e => {
+  const handleSubmit = (e: any) => {
     e.preventDefault()
 
     if (slugify(searchRecipeVal)) {
@@ -54,11 +66,11 @@ const SearchRecipesInput = ({ defaultVal, autoComplete }) => {
     setIsBlurred(true)
   }
 
-  const getAutoCompleteResult = title => {
+  const getAutoCompleteResult = (title: string) => {
     if (title.length > 2) {
-      searchAutoCompleteRecipes(title)
+      RecipeAPI.searchAutoCompleteRecipes(title)
         .then(res => {
-          setAutoCompleteResponse(res.data)
+          setAutoCompleteResponse(res)
         })
         .catch(e => {
           console.log(e)
@@ -120,7 +132,7 @@ const SearchRecipesInput = ({ defaultVal, autoComplete }) => {
                         <CgTimer className='icon' /> {recipe.totalTime}
                       </div>
                       <div className='servings item'>
-                        <AiOutlineUser className='icon' /> {recipe.yield.value}
+                        <AiOutlineUser className='icon' /> {recipe.servings}
                       </div>
                       <div className='rating item'>
                         <AiOutlineStar className='icon' />{' '}
@@ -132,7 +144,7 @@ const SearchRecipesInput = ({ defaultVal, autoComplete }) => {
                     </div>
                   </div>
                   <div className='tags'>
-                    {recipe.tags.slice(0, 4).map(tag => {
+                    {recipe.nutritionLabels.slice(0, 4).map(tag => {
                       return (
                         <div className='tag' key={tag}>
                           {tag}

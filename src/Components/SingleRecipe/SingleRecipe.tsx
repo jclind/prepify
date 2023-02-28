@@ -216,7 +216,7 @@ const SingleRecipe = () => {
                       ) : (
                         <>
                           <AiOutlineUsergroupAdd className='icon' />
-                          <h3>{currRecipe && currRecipe.servings}</h3>
+                          <h3>Servings</h3>
                           <div className='data'>{servingSize}</div>
                         </>
                       )}
@@ -327,12 +327,12 @@ const SingleRecipe = () => {
                     </div>
                   )}
                 </div>
-                {currRecipe && currRecipe.nutritionData && (
+                {/* {currRecipe && currRecipe.nutritionData && (
                   <NutritionData
                     data={currRecipe.nutritionData}
                     servings={currRecipe.servings}
                   />
-                )}
+                )} */}
               </div>
               {!loading && (
                 <RecipeRatings

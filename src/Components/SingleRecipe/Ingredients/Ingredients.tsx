@@ -3,6 +3,7 @@ import './Ingredients.scss'
 import Skeleton from 'react-loading-skeleton'
 import 'react-loading-skeleton/dist/skeleton.css'
 import { IngredientsType } from 'types'
+import { closestFraction } from 'src/util/validateIngredientQuantityStr'
 
 const skeletonColor = '#d6d6d6'
 
@@ -31,7 +32,8 @@ const IngredientItem = ({ ingr, loading }: IngredientItemProps) => {
         />
         <label>
           <strong>
-            {ingr.parsedIngredient.quantity} {ingr.parsedIngredient.unit}
+            {closestFraction(Number(ingr.parsedIngredient.quantity))}{' '}
+            {ingr.parsedIngredient.unit}
           </strong>{' '}
           {ingr.parsedIngredient.ingredient}
         </label>

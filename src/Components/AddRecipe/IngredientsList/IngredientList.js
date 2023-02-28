@@ -5,7 +5,7 @@ import { DragDropContext, Droppable } from 'react-beautiful-dnd'
 import { capitalize } from '../../../util/capitalize'
 import { v4 as uuidv4 } from 'uuid'
 import './IngredientsList.scss'
-import { validateQuantity } from '../../../util/validateIngredientQuantityStr'
+// import { validateQuantity } from '../../../util/validateIngredientQuantityStr'
 
 const options = [
   { value: null, label: 'None' },
@@ -98,12 +98,12 @@ const IngredientList = ({
     if (!name) return setError('Please fill out ingredient name')
 
     // If a quantity was given test if it is a valid value
-    if (quantity) {
-      const validationRes = validateQuantity(quantity)
-      if (validationRes.err) {
-        return setError(validationRes.err)
-      }
-    }
+    // if (quantity) {
+    //   const validationRes = validateQuantity(quantity)
+    //   if (validationRes.err) {
+    //     return setError(validationRes.err)
+    //   }
+    // }
 
     const ingredientData = {
       quantity,
@@ -139,12 +139,12 @@ const IngredientList = ({
     if (
       updatedItem.quantity !== recipeIngredients[tempIngredientIndex].quantity
     ) {
-      if (updatedItem.quantity) {
-        const validationRes = validateQuantity(updatedItem.quantity)
-        if (validationRes.err) {
-          return setError(validationRes.err)
-        }
-      }
+      // if (updatedItem.quantity) {
+      //   const validationRes = validateQuantity(updatedItem.quantity)
+      //   if (validationRes.err) {
+      //     return setError(validationRes.err)
+      //   }
+      // }
     }
 
     const ingredientData = [

@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import './Directions.scss'
+import './Instructions.scss'
 import Skeleton from 'react-loading-skeleton'
 import 'react-loading-skeleton/dist/skeleton.css'
 import { InstructionsType } from 'types'
@@ -21,7 +21,7 @@ const InstructionItem = ({ instruction, loading }: IntructionItemProps) => {
   }
   if (loading || !instruction) {
     return (
-      <div className='direction'>
+      <div className='instruction'>
         <div className='number-container'>
           <Skeleton baseColor={skeletonColor} className='number skeleton' />
         </div>
@@ -34,7 +34,7 @@ const InstructionItem = ({ instruction, loading }: IntructionItemProps) => {
     )
   } else if ('content' in instruction) {
     return (
-      <div className='direction' key={instruction.id}>
+      <div className='instruction' key={instruction.id}>
         <div className='number-container'>
           <div className='number'>{instruction.index}</div>
         </div>
@@ -57,8 +57,6 @@ type InstructionsProps = {
 }
 
 const Instructions = ({ instructions, loading }: InstructionsProps) => {
-  let stepNum = 0
-
   return (
     <div className='directions'>
       <h3 className='title'>
@@ -70,15 +68,17 @@ const Instructions = ({ instructions, loading }: InstructionsProps) => {
       </h3>
       <div className='directions-lists'>
         {!loading && instructions ? (
-          instructions.map((instruction, idx1) => {
-            return (
-              <InstructionItem
-                instruction={instruction}
-                loading={false}
-                key={instruction.id}
-              />
-            )
-          })
+          <div className='list'>
+            {instructions.map((instruction, idx1) => {
+              return (
+                <InstructionItem
+                  instruction={instruction}
+                  loading={false}
+                  key={instruction.id}
+                />
+              )
+            })}
+          </div>
         ) : (
           <div className='list'>
             <InstructionItem instruction={null} loading={true} />

@@ -4,7 +4,7 @@ import IngredientsItem from './IngredientsItem'
 import { v4 as uuidv4 } from 'uuid'
 import { capitalize } from '../../../util/capitalize'
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
-import { validateIngredientQuantityStr } from '../../../util/validateIngredientQuantityStr'
+// import { validateIngredientQuantityStr } from '../../../util/validateIngredientQuantityStr'
 
 const IngredientsList = ({ ingredientsList, setIngredientsList }) => {
   const [name, setName] = useState('')
@@ -20,7 +20,8 @@ const IngredientsList = ({ ingredientsList, setIngredientsList }) => {
 
     if (!name || !quantity) return setError('Please fill out both fields')
 
-    const quantityValidation = validateIngredientQuantityStr(quantity)
+    // const quantityValidation = validateIngredientQuantityStr(quantity)
+    const quantityValidation = true
     if (quantityValidation.err) {
       const err = quantityValidation.err
       return setError(err)
@@ -43,14 +44,15 @@ const IngredientsList = ({ ingredientsList, setIngredientsList }) => {
       item => item.id === id
     )
 
-    const quantityValidation = validateIngredientQuantityStr(
-      updatedItem.quantity
-    )
-    if (quantityValidation.err) {
-      const err = quantityValidation.err
-      setError(err)
-      return false
-    }
+    // const quantityValidation = validateIngredientQuantityStr(
+    //   updatedItem.quantity
+    // )
+
+    // if (quantityValidation.err) {
+    //   const err = quantityValidation.err
+    //   setError(err)
+    //   return false
+    // }
 
     setIngredientsList([
       ...ingredientsList.slice(0, tempIngredientIndex),
