@@ -1,16 +1,22 @@
 import React, { useState } from 'react'
 import { Collapse } from 'react-collapse'
 import { MdKeyboardArrowUp, MdKeyboardArrowDown } from 'react-icons/md'
+import { NutritionDataType } from 'types'
 import './NutritionData.scss'
 
-const getQuantity = (num, servings) => {
+const getQuantity = (num: number, servings: number) => {
   if (!num) {
     return null
   }
   return Math.round(num / servings)
 }
 
-const NutritionData = ({ data, servings }) => {
+type NutritionDataProps = {
+  data: NutritionDataType
+  servings: number
+}
+
+const NutritionData = ({ data, servings }: NutritionDataProps) => {
   const [isOpen, setIsOpen] = useState(false)
   const tNutr = data.totalNutrients
   const tDay = data.totalDaily

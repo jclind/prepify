@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react'
 import './SingleRecipe.scss'
 import { useParams } from 'react-router-dom'
-import { useRecipe } from '../../context/RecipeContext'
 
 import Ingredients from './Ingredients/Ingredients'
-import Directions from './Directions/Directions'
 import SaveRecipeBtn from './SaveRecipeBtn'
 import AddRatingBtn from './AddRatingBtn'
 import PrintRecipeBtn from './PrintRecipeBtn'
@@ -24,8 +22,9 @@ import { Helmet } from 'react-helmet'
 
 import Skeleton from 'react-loading-skeleton'
 import 'react-loading-skeleton/dist/skeleton.css'
-import { IngredientsType, RecipeType } from 'types'
+import { IngredientsType, RecipeType, ReviewType } from 'types'
 import RecipeAPI from 'src/api/recipes'
+import Instructions from './Instructions/Instructions'
 
 const skeletonColor = '#d6d6d6'
 
@@ -37,7 +36,7 @@ const SingleRecipe = () => {
     []
   )
 
-  const [currUserReview, setCurrUserReview] = useState({})
+  const [currUserReview, setCurrUserReview] = useState<ReviewType | {}>({})
 
   const [windowWidth, setWindowWidth] = useState(getWindowWidth())
 
@@ -81,10 +80,10 @@ const SingleRecipe = () => {
     if (!recipeId) return
     RecipeAPI.getRecipe(recipeId)
       .then(res => {
-        if (!res || !res.data.title) {
+        if (!res || !res.title) {
           setRecipe404(true)
         } else {
-          setCurrRecipe(res.data)
+          setCurrRecipe(res)
         }
         setLoading(false)
       })
@@ -259,10 +258,7 @@ const SingleRecipe = () => {
                         className='action skeleton'
                       />
                     ) : (
-                      <SaveRecipeBtn
-                        recipeId={currRecipe._id}
-                        className='action'
-                      />
+                      <SaveRecipeBtn recipeId={currRecipe._id} />
                     )}
                     {loading ? (
                       <Skeleton
@@ -270,11 +266,7 @@ const SingleRecipe = () => {
                         className='action skeleton'
                       />
                     ) : (
-                      <AddRatingBtn
-                        recipeId={currRecipe._id}
-                        currUserReview={currUserReview}
-                        className='action'
-                      />
+                      <AddRatingBtn currUserReview={currUserReview} />
                     )}
                     {loading ? (
                       <Skeleton
@@ -282,11 +274,7 @@ const SingleRecipe = () => {
                         className='action skeleton'
                       />
                     ) : (
-                      <PrintRecipeBtn
-                        recipe={currRecipe}
-                        printedRef={printedRef}
-                        className='action'
-                      />
+                      <PrintRecipeBtn printedRef={printedRef} />
                     )}
                   </div>
                 </div>
@@ -298,12 +286,8 @@ const SingleRecipe = () => {
                   setServingSize={setServingSize}
                   loading={loading}
                 />
-                <Directions
-                  directions={
-                    currRecipe && currRecipe.instructions
-                      ? currRecipe.instructions
-                      : null
-                  }
+                <Instructions
+                  instructions={currRecipe.instructions}
                   loading={loading}
                 />
                 <div className='tags-container'>

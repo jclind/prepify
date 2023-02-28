@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react'
 import './RecipeReview.scss'
 import StarRatings from 'react-star-ratings'
 import { useAuth } from '../../../../context/AuthContext'
-import { useRecipe } from '../../../../context/RecipeContext'
 import { useAlert } from 'react-alert'
 import { formatDate } from '../../../../util/formatDate'
 import { TailSpin } from 'react-loader-spinner'
@@ -13,7 +12,19 @@ import {
   AiTwotoneDislike,
 } from 'react-icons/ai'
 import Modal from 'react-modal'
+import { ReviewType } from 'types'
+import AuthAPI from 'src/api/auth'
+import RecipeAPI from 'src/api/recipes'
 Modal.setAppElement('#root')
+
+type ReviewOptionsProps = {
+  handleEditReview: () => void
+  editing: boolean
+  setEditing: (val: boolean) => void
+  handleDeleteReview: () => Promise<void>
+  editLoading: boolean
+  reviewAuthorUID: string
+}
 
 const ReviewOptions = ({
   handleEditReview,
@@ -22,8 +33,8 @@ const ReviewOptions = ({
   handleDeleteReview,
   editLoading,
   reviewAuthorUID,
-}) => {
-  const { user } = useAuth()
+}: ReviewOptionsProps) => {
+  const uid = AuthAPI.getUID()
   const alert = useAlert()
 
   // const [likeStatus, setLikeStatue] = useState(null)
@@ -104,7 +115,7 @@ const ReviewOptions = ({
           <AiOutlineDislike className='icon' />
         )}
       </button>
-      {user && user.uid === reviewAuthorUID ? (
+      {uid === reviewAuthorUID ? (
         <>
           <Modal
             isOpen={deleteModalIsOpen}
@@ -137,10 +148,10 @@ const ReviewOptions = ({
                 {deleteLoading && (
                   <div className='btn-overlay'>
                     <TailSpin
-                      heigth='30'
+                      height='30'
                       width='30'
                       color='#303841'
-                      arialLabel='loading'
+                      ariaLabel='loading'
                     />
                   </div>
                 )}
@@ -180,10 +191,10 @@ const ReviewOptions = ({
                   {editLoading && (
                     <div className='btn-overlay'>
                       <TailSpin
-                        heigth='30'
+                        height='30'
                         width='30'
                         color='#303841'
-                        arialLabel='loading'
+                        ariaLabel='loading'
                       />
                     </div>
                   )}
@@ -199,12 +210,21 @@ const ReviewOptions = ({
   )
 }
 
-const RecipeReview = ({ review, setCurrUserReview, recipeId }) => {
+type RecipeReviewProps = {
+  review: ReviewType
+  setCurrUserReview?: (val: ReviewType | {}) => void
+  recipeId?: string
+}
+
+const RecipeReview = ({
+  review,
+  setCurrUserReview,
+  recipeId,
+}: RecipeReviewProps) => {
   const [rating, setRating] = useState(0)
   const [date, setDate] = useState('')
   const [username, setUsername] = useState('')
-  const { getUsername } = useAuth()
-  const { editReview, deleteReview } = useRecipe()
+  const authResponse = useAuth()
 
   const [reviewText, setReviewText] = useState(review.reviewText)
 
@@ -216,17 +236,19 @@ const RecipeReview = ({ review, setCurrUserReview, recipeId }) => {
     if (review.rating) {
       setRating(Number(review.rating))
       setDate(formatDate(review.reviewCreatedAt, true))
-      getUsername(review.userId).then(res => {
-        setUsername(res)
+      authResponse?.getUsername(review.userId).then(res => {
+        if (res) {
+          setUsername(res)
+        }
       })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [review])
 
   const handleEditReview = () => {
-    if (editingText.length >= 5 && editingText !== reviewText) {
+    if (editingText.length >= 5 && editingText !== reviewText && recipeId) {
       setEditLoading(true)
-      editReview(recipeId, editingText).then(() => {
+      RecipeAPI.editReview(recipeId, editingText).then(() => {
         setEditing(false)
         setReviewText(editingText)
         setEditLoading(false)
@@ -234,9 +256,11 @@ const RecipeReview = ({ review, setCurrUserReview, recipeId }) => {
     }
   }
   const handleDeleteReview = async () => {
-    await deleteReview(recipeId).then(() => {
-      setCurrUserReview([])
-    })
+    if (recipeId && setCurrUserReview) {
+      await RecipeAPI.deleteReview(recipeId).then(() => {
+        setCurrUserReview({})
+      })
+    }
   }
 
   return (

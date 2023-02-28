@@ -2,20 +2,11 @@ import React, { useState, useEffect } from 'react'
 import { BsStar, BsStarFill } from 'react-icons/bs'
 
 type AddRatingBtnProps = {
-  currUserReview: string
+  currUserReview: { rating: string } | {}
 }
 
 const AddRatingBtn = ({ currUserReview }: AddRatingBtnProps) => {
-  const [isRated, setIsRated] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
-
-  useEffect(() => {
-    if (currUserReview && currUserReview.rating) {
-      setIsRated(true)
-    } else {
-      setIsRated(false)
-    }
-  }, [currUserReview])
 
   const handleClick = () => {
     document.getElementById('recipeReviews')?.scrollIntoView({
@@ -31,7 +22,12 @@ const AddRatingBtn = ({ currUserReview }: AddRatingBtnProps) => {
         onMouseLeave={() => setIsHovered(false)}
         onClick={handleClick}
       >
-        {!isRated ? (
+        {'rating' in currUserReview ? (
+          <>
+            <BsStarFill className='icon' />
+            {currUserReview.rating}
+          </>
+        ) : (
           <>
             {isHovered ? (
               <BsStarFill className='icon' />
@@ -39,11 +35,6 @@ const AddRatingBtn = ({ currUserReview }: AddRatingBtnProps) => {
               <BsStar className='icon' />
             )}{' '}
             Rate
-          </>
-        ) : (
-          <>
-            <BsStarFill className='icon' />
-            {currUserReview.rating}
           </>
         )}
       </button>

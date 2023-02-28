@@ -60,3 +60,45 @@ export interface NutritionDataType {
   ingredients: any[]
   totalNutrientsKCal: any
 }
+
+export interface RecipeDBResponseType {
+  recipeList: RecipeType[]
+  page: number
+  filters: {}
+  entries_per_page: number
+  total_results: number
+}
+export interface RecipeSearchResponseType {
+  _id: string
+  title: string
+  recipeImage: string
+  totalTime: number
+  rating: {
+    rateCount: number
+    rateValue: number
+  }
+  servingPrice: number
+}
+export interface GetSavedRecipesResponseType {
+  _id: string
+  userRecipes: {
+    recipeId: string
+  }[]
+  savedRecipes: {
+    recipeId: string
+    dateSaved: string
+  }[]
+}
+
+export interface ReviewType {
+  userId: string
+  recipeId: string
+  reviewText: string
+  rating: number
+  reviewCreatedAt: string
+}
+export interface NewReviewType {
+  userId: string
+  recipeId: string
+  reviewText: string
+}

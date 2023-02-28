@@ -1,4 +1,4 @@
-export const getWindowWidth = () => {
+export const getWindowWidth = (): number => {
   const { innerWidth: width } = window
   return width
 }

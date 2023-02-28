@@ -8,16 +8,26 @@ import {
 import dietLabels from 'src/recipeData/dietLabels'
 import { calculateServingPrice } from 'src/util/calculateServingPrice'
 import {
+  GetSavedRecipesResponseType,
   IngredientsType,
+  NewReviewType,
   NutritionDataType,
+  RecipeDBResponseType,
   RecipeFormType,
+  RecipeSearchResponseType,
   RecipeType,
+  ReviewType,
 } from 'types'
 import AuthAPI from './auth'
 import { http, nutrition } from './http-common'
 
 class RecipeAPIClass {
-  getAll(page = 0, order = 'new', tags = [], query = '') {
+  async getAllRecipes(
+    page = 0,
+    order = 'new',
+    tags = [],
+    query = ''
+  ): Promise<RecipeDBResponseType[]> {
     let tagsArrParam = '' // For tags that have been chosen
     if (tags.length > 0) {
       tagsArrParam += '&tags='
@@ -31,29 +41,39 @@ class RecipeAPIClass {
       })
     }
 
-    return http.get(
+    return await http.get(
       `recipes?q=${query}&page=${page}&order=${order}${tagsArrParam}`
     )
   }
-  search(query: string, tag = '', page = 0, order = 'new', recipesPerPage = 5) {
+  search(
+    query: string,
+    tag = '',
+    page = 0,
+    order = 'new',
+    recipesPerPage = 5
+  ): Promise<RecipeDBResponseType[]> {
     return http.get(
       `recipes?q=${query.toString()}&page=${page}&tag=${tag}&order=${order}&recipesPerPage=${recipesPerPage}`
     )
   }
-  async searchAutoComplete(title = '') {
+  async searchAutoComplete(title = ''): Promise<RecipeSearchResponseType[]> {
     return await http.get(`searchAutoCompleteRecipes?title=${title}`)
   }
-  async getTrendingRecipes(limit = 4) {
+  async getTrendingRecipes(limit = 4): Promise<RecipeType[]> {
     return await http.get(`getTrendingRecipes?limit=${limit}`)
   }
-  async getRecipe(id: string) {
-    return await http.get(`getRecipe?id=${id}`)
+  async getRecipe(id: string): Promise<RecipeType> {
+    const result = await http.get(`getRecipe?id=${id}`)
+    return result.data
   }
 
   async saveRecipe(userId = '', recipeId = '') {
     return await http.put(`saveRecipe?userId=${userId}&recipeId=${recipeId}`)
   }
-  async getSavedRecipe(userId = '', recipeId = '') {
+  async getSavedRecipe(
+    userId = '',
+    recipeId = ''
+  ): Promise<GetSavedRecipesResponseType[]> {
     return await http.get(
       `getSavedRecipe?userId=${userId}&recipeId=${recipeId}`
     )
@@ -92,10 +112,10 @@ class RecipeAPIClass {
   async addRecipe(
     recipeData: RecipeFormType,
     setProgress: (val: number) => void
-  ) {
+  ): Promise<string | null> {
     // !FIX
     const uid = AuthAPI.getUID()
-    if (!uid) return
+    if (!uid) return null
 
     try {
       setProgress(0.1)
@@ -226,16 +246,25 @@ class RecipeAPIClass {
     )
   }
 
-  async newReview(recipeId: string, text: string) {
+  async newReview(
+    recipeId: string,
+    text: string
+  ): Promise<{
+    rating: { data: { rating: number } }
+    userId: string
+    reviewText: string
+    reviewCreatedAt: string
+  } | null> {
     const uid = AuthAPI.getUID()
     if (!uid) return null
 
-    const data = {
+    const data: NewReviewType = {
       userId: uid,
       recipeId,
       reviewText: text,
     }
-    return await http.put(`newReview`, data)
+    const result = await http.put(`newReview`, data)
+    return result.data
   }
   async checkIfReviewed(recipeId: string) {
     const uid = AuthAPI.getUID()

@@ -4,7 +4,11 @@ import { TailSpin } from 'react-loader-spinner'
 
 import { BsPrinter, BsFillPrinterFill } from 'react-icons/bs'
 
-const PrintRecipeBtn = ({ printedRef }) => {
+type PrintRecipeBtnProps = {
+  printedRef: React.MutableRefObject<HTMLInputElement>
+}
+
+const PrintRecipeBtn = ({ printedRef }: PrintRecipeBtnProps) => {
   const [isHovered, setIsHovered] = useState(false)
 
   const [loading, setLoading] = useState(false)
@@ -28,11 +32,10 @@ const PrintRecipeBtn = ({ printedRef }) => {
             {loading && (
               <div className='loading'>
                 <TailSpin
-                  heigth='30'
+                  height='30'
                   width='30'
                   color='#303841'
-                  arialLabel='loading'
-                  className='spinner'
+                  ariaLabel='loading'
                 />
               </div>
             )}

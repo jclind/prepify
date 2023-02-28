@@ -3,14 +3,13 @@ import './RecipeRatings.scss'
 import { Link } from 'react-router-dom'
 import StarRatings from 'react-star-ratings'
 import { BsStar } from 'react-icons/bs'
-import { useRecipe } from '../../../context/RecipeContext'
 import RecipeReview from './RecipeReview/RecipeReview'
 import { formatRating } from '../../../util/formatRating'
 import ReviewFilters from './ReviewFilters'
-import { useAuth } from '../../../context/AuthContext'
 import { useAlert } from 'react-alert'
 import AuthAPI from 'src/api/auth'
 import RecipeAPI from 'src/api/recipes'
+import { ReviewType } from 'types'
 
 type RecipeRatingsProps = {
   recipeId: string
@@ -30,16 +29,15 @@ const RecipeRatings = ({
   const [rating, setRating] = useState(0)
   const [isReviewed, setIsReviewed] = useState(false)
 
-  const [reviewList, setReviewList] = useState([])
+  const [reviewList, setReviewList] = useState<ReviewType[]>([])
   const [reviewListPage, setReviewListPage] = useState(0)
   const [isMoreReviews, setIsMoreReviews] = useState(false)
-  const [reviewListSort, setReviewListSort] = useState('')
+  const [reviewListSort, setReviewListSort] = useState<string>('')
 
   const [isReviewOpen, setIsReviewOpen] = useState(false)
   const [newReviewText, setNewReviewText] = useState('')
   const [newReviewError, setNewReviewError] = useState('')
 
-  const { checkIfReviewed, newReview, getReviews, addRating } = useRecipe()
   const uid = AuthAPI.getUID()
   const alert = useAlert()
 
@@ -52,9 +50,9 @@ const RecipeRatings = ({
       reviewListPage + 1,
       recipesPerPage
     ).then(res => {
-      const updatedArr = [...reviewList, ...res?.data.reviews]
-      setReviewList([...updatedArr])
-      if (res.data.totalCount > updatedArr.length) {
+      const updatedArr: ReviewType[] = [...reviewList, ...res?.data.reviews]
+      setReviewList(updatedArr)
+      if (res?.data.totalCount > updatedArr.length) {
         setIsMoreReviews(true)
       } else {
         setIsMoreReviews(false)
@@ -84,17 +82,19 @@ const RecipeRatings = ({
   useEffect(() => {
     if (reviewListSort) {
       setReviewListPage(0)
-      getReviews(recipeId, reviewListSort, 0, recipesPerPage).then(res => {
-        if (res && res.data) {
-          const updatedArr = [...res.data.reviews]
-          setReviewList([...updatedArr])
-          if (res.data.totalCount > updatedArr.length) {
-            setIsMoreReviews(true)
-          } else {
-            setIsMoreReviews(false)
+      RecipeAPI.getReviews(recipeId, reviewListSort, 0, recipesPerPage).then(
+        res => {
+          if (res && res.data) {
+            const updatedArr = res.data.reviews || []
+            setReviewList(updatedArr)
+            if (res.data.totalCount > updatedArr.length) {
+              setIsMoreReviews(true)
+            } else {
+              setIsMoreReviews(false)
+            }
           }
         }
-      })
+      )
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reviewListSort])
@@ -118,13 +118,13 @@ const RecipeRatings = ({
       )
     }
     setIsReviewOpen(false)
-    newReview(recipeId, newReviewText).then(res => {
-      setCurrUserReview(res.data)
+    RecipeAPI.newReview(recipeId, newReviewText).then(res => {
+      setCurrUserReview(res)
       setIsReviewed(true)
     })
   }
-  const changeRating = e => {
-    addRating(recipeId, e)
+  const changeRating = (e: any) => {
+    RecipeAPI.addRating(recipeId, e)
     setRating(e)
   }
 
@@ -148,7 +148,7 @@ const RecipeRatings = ({
           <div className='user-rating'>
             <span className='text'>Your Rating:</span>
             <div className='user-rate-container'>
-              {user ? (
+              {uid ? (
                 <StarRatings
                   rating={rating}
                   starRatedColor='#ff5722'
@@ -193,7 +193,7 @@ const RecipeRatings = ({
                   <button
                     className='leave-review-btn btn'
                     onClick={() => {
-                      if (user) {
+                      if (uid) {
                         setNewReviewText('')
                         setIsReviewOpen(true)
                       } else {
@@ -236,7 +236,7 @@ const RecipeRatings = ({
           <div className='reviews-container'>
             {reviewList.length > 0 ? (
               reviewList.map(review => {
-                return <RecipeReview key={review.userId} review={review} />
+                return <RecipeReview key={uid} review={review} />
               })
             ) : (
               <div className='no-reviews'>No Reviews</div>
