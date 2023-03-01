@@ -104,3 +104,16 @@ export interface NewReviewType {
   recipeId: string
   reviewText: string
 }
+
+export interface AddRecipeErrorType {
+  title: string
+  image: string
+  description: string
+  servings: string
+  prepTime: string
+  cookTime: string
+  ingredients: string
+  instructions: string
+  cuisine: string
+  course: string
+}

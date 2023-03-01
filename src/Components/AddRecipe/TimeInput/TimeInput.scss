@@ -4,16 +4,15 @@
   width: 100%;
   .label-title {
     font-weight: 600;
-    font-size: toRem(14);
+    font-size: 0.9rem;
     text-transform: capitalize;
-    color: $primary;
+    color: $secondary-text;
   }
 
   .time-input-inputs {
     margin-top: 0.5rem;
     display: flex;
-    gap: 0.5rem;
-    max-width: 400px;
+    gap: 1rem;
     input {
       padding-right: 0.25rem;
     }
