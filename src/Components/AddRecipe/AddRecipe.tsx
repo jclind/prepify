@@ -6,7 +6,7 @@ import './AddRecipe.scss'
 import RecipeFormTextArea from './RecipeFormTextArea'
 import ServingsInput from './ServingsInput/ServingsInput'
 import TimeInput from './TimeInput/TimeInput'
-import IngredientsContainer from './Ingredients/IngredientsContainer'
+import IngredientsContainer from './Ingredients/IngredientsContainer/IngredientsContainer'
 
 const AddRecipe = () => {
   const [addRecipeLoading, setAddRecipeLoading] = useState(false)

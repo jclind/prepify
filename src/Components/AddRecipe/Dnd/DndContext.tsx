@@ -1,6 +1,6 @@
 import React, { Dispatch, SetStateAction } from 'react'
 import { DragDropContext, DropResult } from 'react-beautiful-dnd'
-import { reorder } from 'src/util/reorder'
+import { reorder } from '../../../util/reorder'
 import Drop from './Drop'
 
 type DndContextProps<T> = {
@@ -38,4 +38,6 @@ const DndContext = <T extends {}>({
   )
 }
 
-export default DndContext
+export { DndContext as default }
+
+export {}

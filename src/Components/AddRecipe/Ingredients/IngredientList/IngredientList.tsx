@@ -1,9 +1,8 @@
 import React, { Dispatch, FC, SetStateAction, useState } from 'react'
 import { IngredientsType } from 'types'
+import { DndContext, Drag } from '../../Dnd'
+import IngredientItem from '../IngredientItem'
 import './IngredientList.scss'
-import Drag from './Dnd/Drag'
-import DndContext from './Dnd/DndContext'
-import IngredientItem from './IngredientItem'
 
 type IngredientListProps = {
   ingredients: IngredientsType[]

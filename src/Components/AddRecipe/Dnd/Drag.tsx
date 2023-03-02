@@ -18,4 +18,6 @@ const Drag: FC<DragProps> = ({ id, index, children }) => {
   )
 }
 
-export default Drag
+export { Drag as default }
+
+export {}

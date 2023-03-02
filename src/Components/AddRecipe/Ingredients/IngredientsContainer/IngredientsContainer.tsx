@@ -1,10 +1,7 @@
-import { ingredientParser } from '@jclind/ingredient-parser'
-import { IngredientResponse } from '@jclind/ingredient-parser/types'
 import React, { useState } from 'react'
 import { IngredientsType } from 'types'
-import IngredientsInput from './IngredientsInput'
-import { v4 as uuidv4 } from 'uuid'
-import IngredientList from './IngredientList'
+import IngredientList from '../IngredientList/IngredientList'
+import IngredientsInput from '../IngredientsInput'
 import './IngredientsContainer.scss'
 
 type IngredientsContainerProps = {

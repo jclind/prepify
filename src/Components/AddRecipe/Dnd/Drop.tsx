@@ -22,4 +22,6 @@ const Drop: FC<DropProps> = ({ children }) => {
   )
 }
 
-export default Drop
+export { Drop as default }
+
+export {}
