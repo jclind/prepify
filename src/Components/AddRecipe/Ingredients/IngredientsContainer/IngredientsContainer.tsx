@@ -1,6 +1,6 @@
-import React, { useState } from 'react'
+import React, { FC, useState } from 'react'
 import { IngredientsType } from 'types'
-import AddLabelContainer from '../AddLabel/AddLabel'
+import AddLabel from '../../AddLabel/AddLabel'
 import IngredientList from '../IngredientList/IngredientList'
 import IngredientsInput from '../IngredientsInput'
 import './IngredientsContainer.scss'
@@ -10,10 +10,10 @@ type IngredientsContainerProps = {
   setIngredients: React.Dispatch<React.SetStateAction<IngredientsType[]>>
 }
 
-const IngredientsContainer = ({
+const IngredientsContainer: FC<IngredientsContainerProps> = ({
   ingredients,
   setIngredients,
-}: IngredientsContainerProps) => {
+}) => {
   const [ingredientLoading, setIngredientLoading] = useState<{
     isLoading: boolean
     index: number
@@ -52,7 +52,7 @@ const IngredientsContainer = ({
         {reorderActive ? 'Done' : 'Reorder'}
       </button>
       {/* <button className="add-header-btn" onClick={}> */}
-      <AddLabelContainer addToList={addIngredientToList} />
+      <AddLabel addToList={addIngredientToList} />
       {/* </button> */}
     </div>
   )

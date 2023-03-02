@@ -5,7 +5,10 @@ import Skeleton from 'react-loading-skeleton'
 import RecipeAPI from 'src/api/recipes'
 import { getIndexById } from 'src/util/getIndexById'
 import { IngredientsType } from 'types'
+import Handler from '../ListComponents/Handler'
 import RecipeFormInput from '../RecipeFormInput'
+import '../ListComponents/Item.scss'
+import RemoveItem from '../ListComponents/RemoveItem'
 
 const skeletonColor = '#d6d6d6'
 
@@ -24,7 +27,6 @@ type IngredientItemProps = {
   snapshot?: DraggableStateSnapshot
   removeIngredient: (id: string) => void
   setIngredients: Dispatch<SetStateAction<IngredientsType[]>>
-  isDragging?: boolean
 }
 const IngredientItem: FC<IngredientItemProps> = ({
   ingredients,
@@ -36,7 +38,6 @@ const IngredientItem: FC<IngredientItemProps> = ({
   snapshot,
   removeIngredient,
   setIngredients,
-  isDragging,
 }) => {
   const [isEditing, setIsEditing] = useState(false)
   const [editedVal, setEditedVal] = useState(() => {
@@ -106,47 +107,26 @@ const IngredientItem: FC<IngredientItemProps> = ({
     editInputRef?.current?.blur()
   }
 
-  const renderHandler = () => (
-    <div
-      className={`handler ${
-        reorderActive ? 'handler-active' : 'handler-inactive'
-      }`}
-      {...provided?.dragHandleProps}
-    >
-      <AiOutlineMenu className='icon' />
-    </div>
-  )
-  const renderRemoveIngredientBtn = () => {
-    if (!ingredient) return null
-    return (
-      <button
-        className={`remove-ingredient-btn ${
-          reorderActive
-            ? 'remove-ingredient-active'
-            : 'remove-ingredient-inactive'
-        }`}
-        onClick={e => {
-          e.stopPropagation()
-          ingredient.id && removeIngredient(ingredient.id)
-        }}
-      >
-        <AiOutlineClose className='icon' />
-      </button>
-    )
-  }
-
   if (!ingredient) return null
   return (
     <div
-      className={`container ${snapshot?.isDragging ? 'dragging' : ''}`}
+      className={`ingredients-container item ${
+        snapshot?.isDragging ? 'dragging' : ''
+      }`}
       {...provided?.draggableProps}
     >
-      {renderHandler()}
-      {renderRemoveIngredientBtn()}
+      <Handler provided={provided} reorderActive={reorderActive} />
+      {ingredient && (
+        <RemoveItem
+          removeItem={removeIngredient}
+          id={ingredient.id}
+          reorderActive={reorderActive ?? false}
+        />
+      )}
       {isEditing ? null : 'parsedIngredient' in ingredient ? (
         <button className='item-btn' onClick={handleIngrClick}>
           <div
-            className={`img-container ${reorderActive ? 'padding-active' : ''}`}
+            className={`img-container ${reorderActive ? 'margin-active' : ''}`}
           >
             {loading ? (
               <Skeleton className='img' baseColor={skeletonColor} />
@@ -167,16 +147,13 @@ const IngredientItem: FC<IngredientItemProps> = ({
           </div>
         </button>
       ) : (
-        <button
-          className={`label-text-container ${
-            reorderActive ? 'padding-active' : ''
-          }`}
-          onClick={handleIngrClick}
-        >
-          <h4 className='text'>{ingredient.label}</h4>
+        <button className='label-text-container' onClick={handleIngrClick}>
+          <h4 className={`text ${reorderActive ? 'margin-active' : ''}`}>
+            {ingredient.label}
+          </h4>
         </button>
       )}
-      {!isDragging && (
+      {!snapshot?.isDragging && (
         <div
           className={`${isEditing && !reorderActive ? 'edit-input' : 'hidden'}`}
         >

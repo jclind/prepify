@@ -1,0 +1,29 @@
+@import '../../../../helpers.scss';
+
+.instructions-container {
+  .item-btn {
+    // height: fit-content;
+    // display: flex;
+    // transition: all 0.1s linear;
+    .index {
+      display: flex;
+      flex-shrink: 0;
+      justify-content: center;
+      align-items: center;
+      height: 30px;
+      width: 30px;
+      background: $tertiary-background;
+      border-radius: 50%;
+      color: $primary-text;
+      font-weight: 700;
+      font-size: 1.25rem;
+      transition: all 0.1s linear;
+    }
+    .content {
+      text-align: start;
+      font-size: 0.9rem;
+      font-weight: 500;
+      padding-right: 2rem;
+    }
+  }
+}

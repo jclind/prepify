@@ -25,14 +25,11 @@ const IngredientList: FC<IngredientListProps> = ({
   reorderActive,
   removeIngredient,
 }) => {
-  const [isDragging, setIsDragging] = useState(false)
+  const handlListChange = (updatedList: IngredientsType[]) =>
+    setIngredients(updatedList)
 
   return (
-    <DndContext
-      list={ingredients}
-      setList={setIngredients}
-      setIsDragging={setIsDragging}
-    >
+    <DndContext list={ingredients} handleListChange={handlListChange}>
       <>
         {ingredients.map((ingr, idx) => {
           const isCurrIngredientLoading =
@@ -48,7 +45,6 @@ const IngredientList: FC<IngredientListProps> = ({
                 loading={isCurrIngredientLoading}
                 removeIngredient={removeIngredient}
                 setIngredients={setIngredients}
-                isDragging={isDragging}
               />
             </Drag>
           )

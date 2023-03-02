@@ -7,6 +7,7 @@ import RecipeFormTextArea from './RecipeFormTextArea'
 import ServingsInput from './ServingsInput/ServingsInput'
 import TimeInput from './TimeInput/TimeInput'
 import IngredientsContainer from './Ingredients/IngredientsContainer/IngredientsContainer'
+import InstructionsContainer from './Instructions/InstructionsContainer'
 
 const AddRecipe = () => {
   const [addRecipeLoading, setAddRecipeLoading] = useState(false)
@@ -80,6 +81,13 @@ const AddRecipe = () => {
             <IngredientsContainer
               ingredients={ingredients}
               setIngredients={setIngredients}
+            />
+          </div>
+          <div className='instructions input-field'>
+            <h2 className='recipe-form-input-label'>Ingredients</h2>
+            <InstructionsContainer
+              instructions={instructions}
+              setInstructions={setInstructions}
             />
           </div>
         </div>

@@ -1,7 +1,7 @@
 import React, { FC, useRef, useState } from 'react'
 import { AiOutlinePlus } from 'react-icons/ai'
 import { LabelType } from 'types'
-import RecipeFormInput from '../../RecipeFormInput'
+import RecipeFormInput from '../RecipeFormInput'
 import { v4 as uuidv4 } from 'uuid'
 import './AddLabel.scss'
 
