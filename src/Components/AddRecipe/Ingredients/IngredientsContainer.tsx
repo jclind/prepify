@@ -23,28 +23,18 @@ const IngredientsContainer = ({
   const [reorderActive, setReorderActive] = useState(false)
 
   const addIngredientToList = (data: IngredientsType) => {
-    const ingredientData: IngredientsType = { ...data, id: uuidv4() }
     setIngredients((prev: IngredientsType[]) => {
-      const update: IngredientsType[] = [...prev, ingredientData]
+      const update: IngredientsType[] = [...prev, data]
       return update
     })
   }
-  const getIngredientData = async (val: string) => {
-    const apiKey = process.env.REACT_APP_SPOONACULAR_API_KEY
-
-    if (!apiKey) {
-      throw new Error('Spoonacular API key is not defined')
-    }
-
-    const result: IngredientResponse = await ingredientParser(val, apiKey)
-
-    return result
+  const removeIngredient = (removeId: string) => {
+    setIngredients(prev => prev.filter(ingr => ingr.id !== removeId))
   }
 
   return (
     <div className='ingredients-container'>
       <IngredientsInput
-        getIngredientData={getIngredientData}
         addIngredientToList={addIngredientToList}
         setIngredientLoading={setIngredientLoading}
         ingredientsLength={ingredients.length}
@@ -53,7 +43,9 @@ const IngredientsContainer = ({
         ingredients={ingredients}
         setIngredients={setIngredients}
         ingredientLoading={ingredientLoading}
+        setIngredientLoading={setIngredientLoading}
         reorderActive={reorderActive}
+        removeIngredient={removeIngredient}
       />
       <button
         className='reorder-btn'

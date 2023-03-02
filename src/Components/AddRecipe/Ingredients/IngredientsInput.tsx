@@ -1,19 +1,16 @@
 import { IngredientResponse } from '@jclind/ingredient-parser/types'
 import React, { useState } from 'react'
+import RecipeAPI from 'src/api/recipes'
 import { IngredientsType } from 'types'
 import RecipeFormInput from '../RecipeFormInput'
 
 type IngredientsInputProps = {
-  getIngredientData: (val: string) => Promise<IngredientResponse>
   addIngredientToList: (data: IngredientsType) => void
   setIngredientLoading: (data: { isLoading: boolean; index: number }) => void
   ingredientsLength: number
-  // ingredients: IngredientsType[]
-  // setIngredients: (val: IngredientsType[]) => void
 }
 
 const IngredientsInput = ({
-  getIngredientData,
   addIngredientToList,
   setIngredientLoading,
   ingredientsLength,
@@ -29,17 +26,15 @@ const IngredientsInput = ({
 
     setLoading(true)
 
-    const data: IngredientResponse = await getIngredientData(inputVal)
+    const data: IngredientsType = await RecipeAPI.getIngredientData(inputVal)
     if (data) {
       addIngredientToList(data)
       setInputVal('')
-      setLoading(false)
-      setIngredientLoading({ isLoading: false, index: -1 })
     } else {
-      setLoading(false)
       setError('something went wrong')
-      setIngredientLoading({ isLoading: false, index: -1 })
     }
+    setLoading(false)
+    setIngredientLoading({ isLoading: false, index: -1 })
   }
 
   return (

@@ -1,3 +1,5 @@
+import { ingredientParser } from '@jclind/ingredient-parser'
+import { IngredientResponse } from '@jclind/ingredient-parser/types'
 import ObjectID from 'bson-objectid'
 import {
   getDownloadURL,
@@ -20,6 +22,7 @@ import {
 } from 'types'
 import AuthAPI from './auth'
 import { http, nutrition } from './http-common'
+import { v4 as uuidv4 } from 'uuid'
 
 class RecipeAPIClass {
   async getAllRecipes(
@@ -298,6 +301,24 @@ class RecipeAPIClass {
     return await http.get(
       `getReviews?userId=${uid}&recipeId=${recipeId}&page=${page}&reviewsPerPage=${reviewsPerPage}&filter=${filter}`
     )
+  }
+
+  // Ingredients
+  async getIngredientData(val: string): Promise<IngredientsType> {
+    const apiKey = process.env.REACT_APP_SPOONACULAR_API_KEY
+
+    if (!apiKey) {
+      throw new Error('Spoonacular API key is not defined')
+    }
+
+    const result: IngredientResponse = await ingredientParser(val, apiKey)
+    if ('error' in result) {
+      throw new Error(result.error.message)
+    }
+
+    const data: IngredientsType = { ...result, id: uuidv4() }
+
+    return data
   }
 
   // User

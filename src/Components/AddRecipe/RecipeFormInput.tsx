@@ -10,6 +10,8 @@ interface RecipeFormInputProps<T extends string | number | undefined> {
   characterLimit?: number
   inputBeginningText?: string
   onEnter?: () => void
+  inputRef?: React.RefObject<HTMLInputElement>
+  onBlur?: () => void
 }
 
 const RecipeFormInput = <T extends string | number | undefined>({
@@ -21,6 +23,8 @@ const RecipeFormInput = <T extends string | number | undefined>({
   characterLimit,
   inputBeginningText,
   onEnter,
+  inputRef,
+  onBlur,
 }: RecipeFormInputProps<T>) => {
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value
@@ -51,6 +55,8 @@ const RecipeFormInput = <T extends string | number | undefined>({
           onKeyDown={e => {
             if (e.key === 'Enter' && onEnter) onEnter()
           }}
+          ref={inputRef}
+          onBlur={onBlur}
         />
       </div>
     </label>

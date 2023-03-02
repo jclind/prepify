@@ -42,7 +42,21 @@ export type RecipeFormType = {
 }
 
 export type LabelType = { label: string; id: string }
-export type IngredientsType = IngredientResponseType | LabelType
+export type IngredientsType =
+  | {
+      parsedIngredient: ParsedIngredient
+      ingredientData: IngredientData
+      id: string
+    }
+  | {
+      error: {
+        message: string
+      }
+      parsedIngredient: ParsedIngredient
+      ingredientData: IngredientData | null
+      id: string
+    }
+  | LabelType
 export type InstructionsType =
   | { content: string; index: number; id: string }
   | LabelType

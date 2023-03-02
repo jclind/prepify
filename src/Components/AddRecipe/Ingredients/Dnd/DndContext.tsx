@@ -1,4 +1,4 @@
-import React, { Dispatch, ReactNode, SetStateAction } from 'react'
+import React, { Dispatch, SetStateAction } from 'react'
 import { DragDropContext, DropResult } from 'react-beautiful-dnd'
 import { reorder } from 'src/util/reorder'
 import Drop from './Drop'
@@ -6,15 +6,18 @@ import Drop from './Drop'
 type DndContextProps<T> = {
   list: T[]
   setList: Dispatch<SetStateAction<T[]>>
-  children: ReactNode
+  setIsDragging: Dispatch<SetStateAction<boolean>>
+  children: React.ReactElement
 }
 
 const DndContext = <T extends {}>({
   list,
   setList,
+  setIsDragging,
   children,
 }: DndContextProps<T>) => {
   const onDragEnd = (result: DropResult) => {
+    setIsDragging(false)
     // dropped outside the list
     if (!result.destination) {
       return
@@ -26,7 +29,10 @@ const DndContext = <T extends {}>({
     setList(items)
   }
   return (
-    <DragDropContext onDragEnd={onDragEnd}>
+    <DragDropContext
+      onDragEnd={onDragEnd}
+      onDragStart={() => setIsDragging(true)}
+    >
       <Drop>{children}</Drop>
     </DragDropContext>
   )
