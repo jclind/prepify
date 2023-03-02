@@ -80,22 +80,28 @@ const IngredientItem: FC<IngredientItemProps> = ({
     )
   }
   const handleEditSubmit = async () => {
-    if (editedVal && ingredient) {
-      if ('label' in ingredient) {
-        if (ingredient.label !== editedVal) return
-        editIngredient(ingredient.id, { ...ingredient, label: editedVal })
-      } else {
-        if (ingredient.parsedIngredient.originalIngredientString === editedVal)
-          return
-        const currIndex = getIndexById(ingredients, ingredient.id)
-        setLoading({ isLoading: true, index: currIndex })
-        const updatedIngrData: IngredientsType =
-          await RecipeAPI.getIngredientData(editedVal)
-        editIngredient(ingredient.id, { ...updatedIngrData })
-        setLoading({ isLoading: false, index: -1 })
-      }
+    if (!editedVal || !ingredient) {
+      setIsEditing(false)
+      return
     }
-    editInputRef?.current && editInputRef.current.blur()
+
+    const isLabel = 'label' in ingredient
+
+    if (isLabel && ingredient.label !== editedVal) {
+      editIngredient(ingredient.id, { label: editedVal, id: ingredient.id })
+    } else if (
+      !isLabel &&
+      ingredient.parsedIngredient.originalIngredientString !== editedVal
+    ) {
+      const currIndex = getIndexById(ingredients, ingredient.id)
+      setLoading({ isLoading: true, index: currIndex })
+      const updatedIngrData = await RecipeAPI.getIngredientData(editedVal)
+      editIngredient(ingredient.id, { ...updatedIngrData })
+      setLoading({ isLoading: false, index: -1 })
+    }
+
+    setIsEditing(false)
+    editInputRef?.current?.blur()
   }
 
   const renderHandler = () => (
@@ -173,7 +179,7 @@ const IngredientItem: FC<IngredientItemProps> = ({
             val={editedVal}
             setVal={setEditedVal}
             inputRef={editInputRef}
-            onBlur={() => setIsEditing(false)}
+            onBlur={handleEditSubmit}
             onEnter={handleEditSubmit}
           />
         </div>

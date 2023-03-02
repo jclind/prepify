@@ -15,6 +15,7 @@ const AddLabel: FC<AddLabelProps> = ({ addToList }) => {
   const inputRef = useRef<HTMLInputElement>(null)
 
   const handleEnter = () => {
+    console.log('hehe??', isAddLabelVisible, labelVal)
     if (!isAddLabelVisible || !labelVal) return setIsAddLabelVisible(false)
     addToList({ label: labelVal, id: uuidv4() })
     setLabelVal('')
