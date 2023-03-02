@@ -2,14 +2,16 @@ import React, { ChangeEvent, KeyboardEvent, Ref } from 'react'
 import './RecipeFormInput.scss'
 
 type RecipeFormTextAreaProps = {
-  placeholder: string
+  placeholder?: string
   name?: string
   val: string
   smallTextArea?: boolean
   setVal: (val: string) => void
-  textAreaProp?: Ref<HTMLTextAreaElement>
+  textAreaRef?: React.RefObject<HTMLTextAreaElement>
   handleKeyPress?: (event: KeyboardEvent<HTMLTextAreaElement>) => void
   characterLimit?: number
+  onEnter?: () => void
+  onBlur?: () => void
 }
 
 const RecipeFormTextArea = ({
@@ -18,9 +20,11 @@ const RecipeFormTextArea = ({
   val,
   smallTextArea,
   setVal,
-  textAreaProp,
+  textAreaRef,
   handleKeyPress,
   characterLimit,
+  onEnter,
+  onBlur,
 }: RecipeFormTextAreaProps) => {
   const handleChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     const val = e.target.value
@@ -40,8 +44,12 @@ const RecipeFormTextArea = ({
           value={val}
           onChange={handleChange}
           className={smallTextArea ? 'small-textarea' : ''}
-          ref={textAreaProp ? textAreaProp : undefined}
+          ref={textAreaRef}
           onKeyPress={handleKeyPress}
+          onKeyDown={e => {
+            if (e.key === 'Enter' && onEnter) onEnter()
+          }}
+          onBlur={onBlur}
         />
       </div>
     </label>

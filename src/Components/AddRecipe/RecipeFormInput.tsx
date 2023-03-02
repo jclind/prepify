@@ -49,7 +49,7 @@ const RecipeFormInput = <T extends string | number | undefined>({
           onChange={handleChange}
           style={{
             paddingLeft: inputBeginningText
-              ? `${inputBeginningText.length + 1.5}ch`
+              ? `${inputBeginningText.length + 2}ch`
               : '1rem',
           }}
           onKeyDown={e => {

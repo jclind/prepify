@@ -5,6 +5,7 @@
     // height: fit-content;
     // display: flex;
     // transition: all 0.1s linear;
+    padding: 0.5rem 0 !important;
     .index {
       display: flex;
       flex-shrink: 0;
@@ -25,5 +26,8 @@
       font-weight: 500;
       padding-right: 2rem;
     }
+  }
+  .text-area-container {
+    height: fit-content !important;
   }
 }
