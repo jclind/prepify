@@ -1,5 +1,5 @@
 import React, { Dispatch, SetStateAction, FC, useState, useRef } from 'react'
-import { DraggableProvided } from 'react-beautiful-dnd'
+import { DraggableProvided, DraggableStateSnapshot } from 'react-beautiful-dnd'
 import { AiOutlineMenu, AiOutlineClose } from 'react-icons/ai'
 import Skeleton from 'react-loading-skeleton'
 import RecipeAPI from 'src/api/recipes'
@@ -21,6 +21,7 @@ type IngredientItemProps = {
   >
   loading?: boolean
   provided?: DraggableProvided
+  snapshot?: DraggableStateSnapshot
   removeIngredient: (id: string) => void
   setIngredients: Dispatch<SetStateAction<IngredientsType[]>>
   isDragging?: boolean
@@ -32,6 +33,7 @@ const IngredientItem: FC<IngredientItemProps> = ({
   setLoading,
   loading,
   provided,
+  snapshot,
   removeIngredient,
   setIngredients,
   isDragging,
@@ -135,7 +137,10 @@ const IngredientItem: FC<IngredientItemProps> = ({
 
   if (!ingredient) return null
   return (
-    <div className='container' {...provided?.draggableProps}>
+    <div
+      className={`container ${snapshot?.isDragging ? 'dragging' : ''}`}
+      {...provided?.draggableProps}
+    >
       {renderHandler()}
       {renderRemoveIngredientBtn()}
       {isEditing ? null : 'parsedIngredient' in ingredient ? (
