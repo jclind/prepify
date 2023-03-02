@@ -41,10 +41,10 @@ export type RecipeFormType = {
   mealTypes: string[]
 }
 
-export type LabelType = { label: string; id?: string }
+export type LabelType = { label: string; id: string }
 export type IngredientsType = IngredientResponseType | LabelType
 export type InstructionsType =
-  | { content: string; index: number; id?: string }
+  | { content: string; index: number; id: string }
   | LabelType
 
 export interface NutritionDataType {

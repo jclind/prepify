@@ -6,6 +6,8 @@ import RecipeFormInput from '../RecipeFormInput'
 type IngredientsInputProps = {
   getIngredientData: (val: string) => Promise<IngredientResponse>
   addIngredientToList: (data: IngredientsType) => void
+  setIngredientLoading: (data: { isLoading: boolean; index: number }) => void
+  ingredientsLength: number
   // ingredients: IngredientsType[]
   // setIngredients: (val: IngredientsType[]) => void
 }
@@ -13,12 +15,15 @@ type IngredientsInputProps = {
 const IngredientsInput = ({
   getIngredientData,
   addIngredientToList,
+  setIngredientLoading,
+  ingredientsLength,
 }: IngredientsInputProps) => {
   const [inputVal, setInputVal] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
   const handleAddIngredient = async () => {
+    setIngredientLoading({ isLoading: true, index: ingredientsLength })
     setError('')
     if (loading || !inputVal) return
 
@@ -29,9 +34,11 @@ const IngredientsInput = ({
       addIngredientToList(data)
       setInputVal('')
       setLoading(false)
+      setIngredientLoading({ isLoading: false, index: -1 })
     } else {
       setLoading(false)
       setError('something went wrong')
+      setIngredientLoading({ isLoading: false, index: -1 })
     }
   }
 

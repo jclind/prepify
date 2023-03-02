@@ -20,6 +20,7 @@ const RecipeFormInput = <T extends string | number | undefined>({
   setVal,
   characterLimit,
   inputBeginningText,
+  onEnter,
 }: RecipeFormInputProps<T>) => {
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value
@@ -46,6 +47,9 @@ const RecipeFormInput = <T extends string | number | undefined>({
             paddingLeft: inputBeginningText
               ? `${inputBeginningText.length + 1.5}ch`
               : '1rem',
+          }}
+          onKeyDown={e => {
+            if (e.key === 'Enter' && onEnter) onEnter()
           }}
         />
       </div>

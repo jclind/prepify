@@ -1,0 +1,98 @@
+@import '../../../helpers.scss';
+
+.ingredient-list {
+  display: flex;
+  flex-direction: column;
+  min-height: 100px;
+  gap: 1rem;
+  padding: 1rem 0;
+  .container {
+    position: relative;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+    .handler {
+      position: absolute;
+      transition: all 0.1s linear;
+      .icon {
+        height: 22px;
+        width: 22px;
+      }
+    }
+    .handler-active {
+      left: 0px;
+      opacity: 1;
+    }
+    .handler-inactive {
+      left: -30px;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .remove-ingredient-btn {
+      position: absolute;
+      outline: none;
+      border: none;
+      background: none;
+      transition: right 0.1s linear, opacity 0.1s linear;
+      cursor: pointer;
+      .icon {
+        height: 22px;
+        width: 22px;
+      }
+    }
+    .remove-ingredient-active {
+      right: 0px;
+      opacity: 1;
+    }
+    .remove-ingredient-inactive {
+      right: -20px;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .item-btn {
+      display: flex;
+      justify-content: flex-start;
+      align-items: center;
+      outline: none;
+      border: none;
+      width: 100%;
+      padding: 0;
+      margin: 0;
+      background: none;
+      gap: 0.5rem;
+    }
+    .img-container {
+      display: flex;
+      overflow: hidden;
+      justify-content: center;
+      align-items: center;
+      height: 60px;
+      width: 60px;
+      background: $white;
+      border-radius: 50%;
+      transition: margin 0.1s linear;
+      .img {
+        height: 50px;
+        width: 50px;
+        object-fit: contain;
+      }
+    }
+    .padding-active {
+      margin-left: 2rem;
+    }
+    .text-container {
+      flex: 1;
+      text-align: start;
+      font-size: 1rem;
+      font-weight: 500;
+      .text {
+        padding-right: 0.5ch;
+      }
+      .bold-text {
+        font-weight: 700;
+      }
+    }
+  }
+}
