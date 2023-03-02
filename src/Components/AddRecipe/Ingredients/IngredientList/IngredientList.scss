@@ -14,6 +14,9 @@
     padding: 0;
     margin: 0;
     height: 60px;
+    button: {
+      cursor: pointer;
+    }
     .handler {
       position: absolute;
       transition: all 0.1s linear;
@@ -107,6 +110,19 @@
     .edit-input {
       width: 100%;
       margin: 15px 0px;
+    }
+    .label-text-container {
+      width: 100%;
+      height: 100%;
+      transition: all 0.1s linear;
+      outline: none;
+      border: none;
+      background: none;
+      .text {
+        font-size: 1rem;
+        font-weight: 700;
+        text-align: start;
+      }
     }
   }
 }

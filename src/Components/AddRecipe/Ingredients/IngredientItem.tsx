@@ -132,7 +132,7 @@ const IngredientItem: FC<IngredientItemProps> = ({
     <div className='container' {...provided?.draggableProps}>
       {renderHandler()}
       {renderRemoveIngredientBtn()}
-      {'parsedIngredient' in ingredient && !isEditing ? (
+      {isEditing ? null : 'parsedIngredient' in ingredient ? (
         <button className='item-btn' onClick={handleIngrClick}>
           <div
             className={`img-container ${reorderActive ? 'padding-active' : ''}`}
@@ -155,7 +155,16 @@ const IngredientItem: FC<IngredientItemProps> = ({
             )}
           </div>
         </button>
-      ) : null}
+      ) : (
+        <button
+          className={`label-text-container ${
+            reorderActive ? 'padding-active' : ''
+          }`}
+          onClick={handleIngrClick}
+        >
+          <h4 className='text'>{ingredient.label}</h4>
+        </button>
+      )}
       {!isDragging && (
         <div
           className={`${isEditing && !reorderActive ? 'edit-input' : 'hidden'}`}

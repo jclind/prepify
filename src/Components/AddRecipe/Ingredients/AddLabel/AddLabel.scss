@@ -1,0 +1,28 @@
+@import '../../../../helpers.scss';
+
+.add-label-container {
+  padding-top: 0.25rem;
+  .add-label-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    outline: none;
+    border: none;
+    background: none;
+    color: $primary;
+    cursor: pointer;
+
+    .icon {
+      height: 18px;
+      width: 18px;
+    }
+    .text {
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+  }
+  .hidden {
+    position: absolute;
+    z-index: -1;
+  }
+}

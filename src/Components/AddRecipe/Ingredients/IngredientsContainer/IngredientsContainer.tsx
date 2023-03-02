@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { IngredientsType } from 'types'
+import AddLabelContainer from '../AddLabel/AddLabel'
 import IngredientList from '../IngredientList/IngredientList'
 import IngredientsInput from '../IngredientsInput'
 import './IngredientsContainer.scss'
@@ -50,6 +51,9 @@ const IngredientsContainer = ({
       >
         {reorderActive ? 'Done' : 'Reorder'}
       </button>
+      {/* <button className="add-header-btn" onClick={}> */}
+      <AddLabelContainer addToList={addIngredientToList} />
+      {/* </button> */}
     </div>
   )
 }
