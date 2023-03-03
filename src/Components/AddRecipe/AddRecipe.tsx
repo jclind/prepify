@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { AddRecipeErrorType, IngredientsType, InstructionsType } from 'types'
 import RecipeFormInput from './RecipeFormInput'
 import ImagePicker from './ImagePicker/ImagePicker'
@@ -32,6 +32,45 @@ const AddRecipe = () => {
   const [cuisine, setCuisine] = useState('')
   const [mealTypes, setMealTypes] = useState<string[]>([])
   const [errors, setErrors] = useState<Partial<AddRecipeErrorType>>({})
+
+  const [isFormValid, setIsFormValid] = useState(false)
+
+  const validate = () => {
+    let newErrors: Partial<AddRecipeErrorType> = {}
+
+    if (!title) {
+      newErrors.title = 'Title is required'
+    } else if (title.length > 50) {
+      newErrors.title = 'Title cannot exceed 50 characters'
+    }
+
+    if (!recipeImage) newErrors.image = 'Image is required'
+    if (!description) newErrors.description = 'Description is required'
+    if (!servings) newErrors.servings = 'Servings amount is required'
+    if (!prepTime) newErrors.prepTime = 'Prep time is required'
+    if (ingredients.length <= 0)
+      newErrors.ingredients = 'Recipe must contain ingredients'
+    if (instructions.length <= 0)
+      newErrors.instructions = 'Instructions are required'
+    if (mealTypes.length <= 0) newErrors.course = 'Course required'
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
+
+  useEffect(() => {
+    if (validate()) setIsFormValid(true)
+    else setIsFormValid(false)
+  }, [
+    title,
+    recipeImage,
+    description,
+    servings,
+    prepTime,
+    ingredients,
+    instructions,
+    mealTypes,
+  ])
 
   return (
     <div className='add-recipe-page page'>
@@ -103,6 +142,9 @@ const AddRecipe = () => {
               setMealTypes={setMealTypes}
             />
           </div>
+          <button className={`submit-btn ${isFormValid ? 'valid' : 'invalid'}`}>
+            Create Recipe
+          </button>
         </div>
       </div>
     </div>
