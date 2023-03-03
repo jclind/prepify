@@ -8,6 +8,8 @@ import ServingsInput from './ServingsInput/ServingsInput'
 import TimeInput from './TimeInput/TimeInput'
 import IngredientsContainer from './Ingredients/IngredientsContainer/IngredientsContainer'
 import InstructionsContainer from './Instructions/InstructionsContainer'
+import CuisineSelector from './CuisineSelector/CuisineSelector'
+import MealTypeSelector from './MealTypeSelector/MealTypeSelector'
 
 const AddRecipe = () => {
   const [addRecipeLoading, setAddRecipeLoading] = useState(false)
@@ -84,10 +86,21 @@ const AddRecipe = () => {
             />
           </div>
           <div className='instructions input-field'>
-            <h2 className='recipe-form-input-label'>Ingredients</h2>
+            <h2 className='recipe-form-input-label'>Instructions</h2>
             <InstructionsContainer
               instructions={instructions}
               setInstructions={setInstructions}
+            />
+          </div>
+          <div className='cuisine input-field'>
+            <h2 className='recipe-form-input-label'>Cuisine</h2>
+            <CuisineSelector cuisine={cuisine} setCuisine={setCuisine} />
+          </div>
+          <div className='course input-field'>
+            <h2 className='recipe-form-input-label'>Course</h2>
+            <MealTypeSelector
+              mealTypes={mealTypes}
+              setMealTypes={setMealTypes}
             />
           </div>
         </div>
