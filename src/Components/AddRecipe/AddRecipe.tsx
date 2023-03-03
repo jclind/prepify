@@ -1,5 +1,12 @@
-import React, { useEffect, useState } from 'react'
-import { AddRecipeErrorType, IngredientsType, InstructionsType } from 'types'
+import React, { useEffect, useRef, useState } from 'react'
+import {
+  AddRecipeErrorType,
+  IngredientsType,
+  InstructionsType,
+  RecipeFormType,
+} from 'types'
+import { TailSpin } from 'react-loader-spinner'
+import LoadingBar from 'react-top-loading-bar'
 import RecipeFormInput from './RecipeFormInput'
 import ImagePicker from './ImagePicker/ImagePicker'
 import './AddRecipe.scss'
@@ -10,9 +17,14 @@ import IngredientsContainer from './Ingredients/IngredientsContainer/Ingredients
 import InstructionsContainer from './Instructions/InstructionsContainer'
 import CuisineSelector from './CuisineSelector/CuisineSelector'
 import MealTypeSelector from './MealTypeSelector/MealTypeSelector'
+import { hrMinToMin } from 'src/util/hrMinToMin'
+import RecipeAPI from 'src/api/recipes'
+import styles from '../../_exports.scss'
 
 const AddRecipe = () => {
   const [addRecipeLoading, setAddRecipeLoading] = useState(false)
+  const [loadingProgress, setLoadingProgress] = useState(0)
+  const addRecipeFormRef = useRef<HTMLDivElement>(null)
   const [title, setTitle] = useState('')
   const [recipeImage, setRecipeImage] = useState<File | undefined>()
   const [description, setDescription] = useState('')
@@ -57,7 +69,28 @@ const AddRecipe = () => {
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
-
+  const clearForm = () => {
+    setTitle('')
+    // setRecipeImage('')
+    setDescription('')
+    setServings('')
+    setPrepTime(null)
+    setCookTime(null)
+    setFridgeLife(0)
+    setFreezerLife(0)
+    setIngredients([])
+    setInstructions([])
+    setCuisine('')
+    setMealTypes([])
+    setErrors({})
+  }
+  useEffect(() => {
+    const ptm = hrMinToMin(prepTime)
+    const ctm = hrMinToMin(cookTime)
+    console.log('prepTime:', ptm)
+    console.log('cookTime:', ctm)
+    console.log(ptm + (ctm ?? 0))
+  }, [prepTime, cookTime])
   useEffect(() => {
     if (validate()) setIsFormValid(true)
     else setIsFormValid(false)
@@ -71,11 +104,46 @@ const AddRecipe = () => {
     instructions,
     mealTypes,
   ])
+  const handleAddRecipe = async () => {
+    if (validate()) {
+      setAddRecipeLoading(true)
+      const recipeData: RecipeFormType = {
+        title,
+        prepTime: hrMinToMin(prepTime),
+        cookTime: hrMinToMin(cookTime),
+        servings: Number(servings),
+        fridgeLife,
+        freezerLife,
+        description,
+        ingredients,
+        instructions,
+        recipeImage: recipeImage!,
+        cuisine,
+        mealTypes,
+      }
+      try {
+        await RecipeAPI.addRecipe(recipeData, setLoadingProgress)
+        clearForm()
+      } catch (error) {
+        console.log('ERROR:', error)
+      } finally {
+        setAddRecipeLoading(false)
+        setLoadingProgress(100)
+      }
+    } else {
+      addRecipeFormRef?.current && addRecipeFormRef.current.scrollTo(0, 0)
+    }
+  }
 
   return (
     <div className='add-recipe-page page'>
+      <LoadingBar
+        color={styles.primary}
+        progress={loadingProgress}
+        onLoaderFinished={() => setLoadingProgress(0)}
+      />
       <div className='container'>
-        <div className='container-inner'>
+        <div className='container-inner' ref={addRecipeFormRef}>
           <div className='title input-field'>
             <h2 className='recipe-form-input-label'>Title</h2>
             <RecipeFormInput
@@ -142,8 +210,20 @@ const AddRecipe = () => {
               setMealTypes={setMealTypes}
             />
           </div>
-          <button className={`submit-btn ${isFormValid ? 'valid' : 'invalid'}`}>
-            Create Recipe
+          <button
+            className={`submit-btn ${isFormValid ? 'valid' : 'invalid'}`}
+            onClick={handleAddRecipe}
+          >
+            {addRecipeLoading ? (
+              <TailSpin
+                height='30'
+                width='30'
+                color='white'
+                ariaLabel='loading'
+              />
+            ) : (
+              'Create Recipe'
+            )}
           </button>
         </div>
       </div>

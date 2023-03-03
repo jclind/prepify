@@ -36,7 +36,7 @@ export type RecipeFormType = {
   description: string
   ingredients: IngredientsType[]
   instructions: InstructionsType[]
-  recipeImage: string
+  recipeImage: File
   cuisine: string
   mealTypes: string[]
 }

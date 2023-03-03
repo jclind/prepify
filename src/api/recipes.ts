@@ -5,6 +5,7 @@ import {
   getDownloadURL,
   getStorage,
   ref,
+  uploadBytes,
   uploadBytesResumable,
 } from 'firebase/storage'
 import dietLabels from 'src/recipeData/dietLabels'
@@ -89,29 +90,21 @@ class RecipeAPIClass {
     return await http.put(`unsaveRecipe?userId=${userId}&recipeId=${recipeId}`)
   }
   uploadRecipeImage = async (
-    imageURI: RecipeType['recipeImage'],
+    imageFile: File,
     setProgress: (val: number) => void
   ): Promise<string> => {
-    if (imageURI) {
-      const imageBlobRes = await fetch(imageURI)
-      setProgress(0.4)
-      const imageBlob = await imageBlobRes.blob()
-      setProgress(0.5)
+    if (imageFile) {
       const storage = getStorage()
 
-      const recipeImagesRef = ref(
-        storage,
-        `recipeImages/${new Date().toString()}`
-      )
-
-      await uploadBytesResumable(recipeImagesRef, imageBlob)
-      setProgress(0.7)
+      const recipeImagesRef = ref(storage, `recipeImages/${imageFile.name}`)
+      setProgress(40)
+      await uploadBytes(recipeImagesRef, imageFile)
+      setProgress(50)
       const fileUrl = await getDownloadURL(recipeImagesRef)
-      setProgress(0.75)
+      setProgress(70)
       return fileUrl
     } else {
-      // !ERROR
-      console.log('No Image Provided')
+      console.log('enter image')
       return ''
     }
   }
@@ -125,7 +118,7 @@ class RecipeAPIClass {
     if (!uid) return null
 
     try {
-      setProgress(0.1)
+      setProgress(10)
       const authorId: string = uid
       const recipeImage: string = await this.uploadRecipeImage(
         recipeData.recipeImage,
@@ -135,7 +128,7 @@ class RecipeAPIClass {
         recipeData.ingredients,
         recipeData.servings
       )
-      setProgress(0.8)
+      setProgress(80)
       const totalTime: number = recipeData.prepTime + (recipeData.cookTime ?? 0)
       const nutritionDataRes = await this.getRecipeNutrition(
         recipeData.ingredients
@@ -169,7 +162,7 @@ class RecipeAPIClass {
         mealTypes: recipeData.mealTypes,
         nutritionLabels,
       }
-      setProgress(0.9)
+      setProgress(90)
       await http.post('addRecipe', returnRecipeData)
       return recipeId
       // return await http.post('addRecipe', returnRecipeData)
@@ -312,9 +305,6 @@ class RecipeAPIClass {
     }
 
     const result: IngredientResponse = await ingredientParser(val, apiKey)
-    if ('error' in result) {
-      throw new Error(result.error.message)
-    }
 
     const data: IngredientsType = { ...result, id: uuidv4() }
 

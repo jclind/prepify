@@ -1,6 +1,5 @@
-import React, { FC, useState } from 'react'
-import Select, { MultiValue, SingleValue } from 'react-select'
-import cuisinesList from 'src/recipeData/cuisinesList'
+import React, { FC } from 'react'
+import Select, { MultiValue } from 'react-select'
 import mealTypesList from 'src/recipeData/mealTypesList'
 import styles from '../../../_exports.scss'
 
@@ -19,6 +18,7 @@ const customStyles = {
     ...provided,
     borderColor: state.isFocused ? styles.primary : provided.borderColor,
     borderWidth: '2px',
+    backgroundColor: 'none',
     '&:hover': {
       borderColor: 'primary',
     },

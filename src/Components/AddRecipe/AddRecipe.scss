@@ -32,7 +32,11 @@
       .submit-btn {
         outline: none;
         background: none;
-        padding: 0.65rem 1rem;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 160px;
+        height: 42px;
         border-radius: $border-radius;
         font-size: 1rem;
         font-weight: 600;

@@ -1,6 +1,6 @@
 import React, { Dispatch, SetStateAction, FC, useState, useRef } from 'react'
 import { DraggableProvided, DraggableStateSnapshot } from 'react-beautiful-dnd'
-import { AiOutlineMenu, AiOutlineClose } from 'react-icons/ai'
+import { CiShoppingBasket } from 'react-icons/ci'
 import Skeleton from 'react-loading-skeleton'
 import RecipeAPI from 'src/api/recipes'
 import { getIndexById } from 'src/util/getIndexById'
@@ -9,6 +9,8 @@ import Handler from '../ListComponents/Handler'
 import RecipeFormInput from '../RecipeFormInput'
 import '../ListComponents/Item.scss'
 import RemoveItem from '../ListComponents/RemoveItem'
+import { TailSpin } from 'react-loader-spinner'
+import styles from '../../../_exports.scss'
 
 const skeletonColor = '#d6d6d6'
 
@@ -98,8 +100,11 @@ const IngredientItem: FC<IngredientItemProps> = ({
     ) {
       const currIndex = getIndexById(ingredients, ingredient.id)
       setLoading({ isLoading: true, index: currIndex })
-      const updatedIngrData = await RecipeAPI.getIngredientData(editedVal)
-      editIngredient(ingredient.id, { ...updatedIngrData })
+      const ingredientDataRes = await RecipeAPI.getIngredientData(editedVal)
+      if ('error' in ingredientDataRes) {
+        console.log(ingredientDataRes.error)
+      }
+      editIngredient(ingredient.id, { ...ingredientDataRes })
       setLoading({ isLoading: false, index: -1 })
     }
 
@@ -131,11 +136,17 @@ const IngredientItem: FC<IngredientItemProps> = ({
             {loading ? (
               <Skeleton className='img' baseColor={skeletonColor} />
             ) : (
-              <img
-                className='img'
-                src={ingredient?.ingredientData?.imagePath}
-                alt=''
-              />
+              <>
+                {ingredient?.ingredientData?.imagePath ? (
+                  <img
+                    className='img'
+                    src={ingredient.ingredientData.imagePath}
+                    alt=''
+                  />
+                ) : (
+                  <CiShoppingBasket className='img no-img' />
+                )}
+              </>
             )}
           </div>
           <div className='text-container'>
@@ -164,6 +175,16 @@ const IngredientItem: FC<IngredientItemProps> = ({
             onBlur={handleEditSubmit}
             onEnter={handleEditSubmit}
           />
+          {loading && (
+            <div className='loading-indicator'>
+              <TailSpin
+                height='20'
+                width='20'
+                color={styles.primaryText}
+                ariaLabel='loading'
+              />
+            </div>
+          )}
         </div>
       )}
     </div>

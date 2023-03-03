@@ -84,10 +84,10 @@ const Signup = () => {
             <button className='form-action-btn btn'>
               {loading ? (
                 <TailSpin
-                  heigth='30'
+                  height='30'
                   width='30'
                   color='white'
-                  arialLabel='loading'
+                  ariaLabel='loading'
                   className='spinner'
                 />
               ) : (

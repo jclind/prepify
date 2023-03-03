@@ -23,6 +23,7 @@ const customStyles = {
     ...provided,
     borderColor: state.isFocused ? styles.primary : provided.borderColor,
     borderWidth: '2px',
+    backgroundColor: 'none',
     '&:hover': {
       borderColor: 'primary',
     },

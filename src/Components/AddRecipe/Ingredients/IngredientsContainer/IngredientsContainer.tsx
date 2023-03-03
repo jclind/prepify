@@ -36,6 +36,7 @@ const IngredientsContainer: FC<IngredientsContainerProps> = ({
         addIngredientToList={addIngredientToList}
         setIngredientLoading={setIngredientLoading}
         ingredientsLength={ingredients.length}
+        ingredientLoading={ingredientLoading}
       />
       <IngredientList
         ingredients={ingredients}

@@ -103,34 +103,34 @@
 //   //   return await RecipeAPI.getTrendingRecipes(limit)
 //   // }
 
-//   // Uploads image to firebase storage and returns url of image to be kept in database
-//   // const uploadRecipeImage = async (
-//   //   imageURI: RecipeType['recipeImage'],
-//   //   setProgress: (val: number) => void
-//   // ): Promise<string> => {
-//   //   if (imageURI) {
-//   //     const imageBlobRes = await fetch(imageURI)
-//   //     setProgress(0.4)
-//   //     const imageBlob = await imageBlobRes.blob()
-//   //     setProgress(0.5)
-//   //     const storage = getStorage()
+// Uploads image to firebase storage and returns url of image to be kept in database
+// const uploadRecipeImage = async (
+//   imageURI: RecipeType['recipeImage'],
+//   setProgress: (val: number) => void
+// ): Promise<string> => {
+//   if (imageURI) {
+//     const imageBlobRes = await fetch(imageURI)
+//     setProgress(0.4)
+//     const imageBlob = await imageBlobRes.blob()
+//     setProgress(0.5)
+//     const storage = getStorage()
 
-//   //     const recipeImagesRef = ref(
-//   //       storage,
-//   //       `recipeImages/${new Date().toString()}`
-//   //     )
+//     const recipeImagesRef = ref(
+//       storage,
+//       `recipeImages/${new Date().toString()}`
+//     )
 
-//   //     await uploadBytesResumable(recipeImagesRef, imageBlob)
-//   //     setProgress(0.7)
-//   //     const fileUrl = await getDownloadURL(recipeImagesRef)
-//   //     setProgress(0.75)
-//   //     return fileUrl
-//   //   } else {
-//   //     // !ERROR
-//   //     console.log('No Image Provided')
-//   //     return ''
-//   //   }
-//   // }
+//     await uploadBytesResumable(recipeImagesRef, imageBlob)
+//     setProgress(0.7)
+//     const fileUrl = await getDownloadURL(recipeImagesRef)
+//     setProgress(0.75)
+//     return fileUrl
+//   } else {
+//     // !ERROR
+//     console.log('No Image Provided')
+//     return ''
+//   }
+// }
 
 //   // const getRecipeNutrition = async (ingrArr: IngredientsType[]) => {
 //   //   const ingrData: { title: string; ingr: string[] } = {
