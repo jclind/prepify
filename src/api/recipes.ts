@@ -67,7 +67,8 @@ class RecipeAPIClass {
     return result.data
   }
   async getTrendingRecipes(limit = 4): Promise<RecipeType[]> {
-    return await http.get(`getTrendingRecipes?limit=${limit}`)
+    const result = await http.get(`getTrendingRecipes?limit=${limit}`)
+    return result.data
   }
   async getRecipe(id: string): Promise<RecipeType> {
     const result = await http.get(`getRecipe?id=${id}`)

@@ -24,12 +24,24 @@
     }
   }
   .title {
+    display: flex;
+    justify-content: center;
+    align-items: center;
     margin: 0 auto;
     margin-top: 1rem;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.25rem;
     height: 3ch;
     text-transform: capitalize;
     max-width: 90%;
+  }
+  .price {
+    font-size: toRem(12);
+    font-weight: 700;
+    color: $primary;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    padding-top: 0.5rem;
+    padding-bottom: 0.25rem;
   }
   .info {
     display: flex;

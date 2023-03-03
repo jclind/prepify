@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CgTimer } from 'react-icons/cg'
 import { AiOutlineStar } from 'react-icons/ai'
@@ -12,23 +12,27 @@ import { RecipeType } from '../../../types'
 const skeletonColor = '#d6d6d6'
 
 type RecipeThumbnailType = {
-  recipe: RecipeType
-  loading: boolean
+  recipe: RecipeType | null
+  loading?: boolean
 }
 
 const RecipeThumbnail = ({ recipe, loading }: RecipeThumbnailType) => {
   const navigate = useNavigate()
   const handleOnClick = () => {
     if (!loading) {
-      navigate(`/recipes/${recipe._id}`)
+      navigate(`/recipes/${recipe?._id}`)
     }
   }
+
+  useEffect(() => {
+    console.log(recipe?.servingPrice)
+  }, [recipe])
 
   return (
     <>
       <div onClick={handleOnClick} className='recipe-thumbnail'>
         <div className='img-container'>
-          {loading || !recipe.recipeImage ? (
+          {loading || !recipe?.recipeImage ? (
             <Skeleton className='img' baseColor={skeletonColor} />
           ) : (
             <img className='img' src={recipe.recipeImage} alt={recipe.title} />
@@ -38,7 +42,7 @@ const RecipeThumbnail = ({ recipe, loading }: RecipeThumbnailType) => {
           {loading ? (
             <Skeleton baseColor={skeletonColor} height={30} />
           ) : (
-            recipe.title
+            recipe?.title
           )}
         </h4>
         <div className='price'>
@@ -62,9 +66,9 @@ const RecipeThumbnail = ({ recipe, loading }: RecipeThumbnailType) => {
             ) : (
               <>
                 <CgTimer className='icon' />
-                {recipe.totalTime > 1
-                  ? `${recipe.totalTime} mins`
-                  : `${recipe.totalTime} min`}
+                {recipe && recipe.totalTime > 1
+                  ? `${recipe?.totalTime} mins`
+                  : `${recipe?.totalTime} min`}
               </>
             )}
           </div>
@@ -78,15 +82,16 @@ const RecipeThumbnail = ({ recipe, loading }: RecipeThumbnailType) => {
             ) : (
               <>
                 <AiOutlineStar className='icon' />
-                {Number(recipe.rating.rateCount) === 0 ? (
+                {Number(recipe?.rating.rateCount) === 0 ? (
                   0
                 ) : (
                   <>
-                    {formatRating(
-                      recipe.rating.rateValue,
-                      recipe.rating.rateCount
-                    )}{' '}
-                    ({recipe.rating.rateCount})
+                    {recipe &&
+                      formatRating(
+                        recipe.rating.rateValue,
+                        recipe.rating.rateCount
+                      )}{' '}
+                    ({recipe?.rating.rateCount})
                   </>
                 )}
               </>

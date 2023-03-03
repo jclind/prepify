@@ -3,13 +3,14 @@ import './TrendingRecipes.scss'
 
 import RecipeThumbnail from '../RecipeThumbnail/RecipeThumbnail'
 import RecipeAPI from '../../api/recipes'
+import { RecipeType } from 'types'
 
 const TrendingRecipes = () => {
-  const [recipes, setRecipes] = useState()
+  const [recipes, setRecipes] = useState<RecipeType[]>([])
 
   useEffect(() => {
     RecipeAPI.getTrendingRecipes(4).then(res => {
-      const resData = res.data
+      const resData: RecipeType[] = res
       setRecipes(resData)
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
