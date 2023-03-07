@@ -25,6 +25,7 @@ import 'react-loading-skeleton/dist/skeleton.css'
 import { IngredientsType, RecipeType, ReviewType } from 'types'
 import RecipeAPI from 'src/api/recipes'
 import Instructions from './Instructions/Instructions'
+import Tags from './Tags'
 
 const skeletonColor = '#d6d6d6'
 
@@ -303,49 +304,7 @@ const SingleRecipe = () => {
                   instructions={currRecipe?.instructions || []}
                   loading={loading}
                 />
-                <div className='tags-container'>
-                  <label className='tag-label'>
-                    {loading ? (
-                      <Skeleton baseColor={skeletonColor} width={50} />
-                    ) : (
-                      'Tags:'
-                    )}
-                  </label>
-                  {!loading ? (
-                    <div className='tags'>
-                      {currRecipe &&
-                        currRecipe.nutritionLabels &&
-                        currRecipe.nutritionLabels.map(tag => {
-                          return (
-                            <div className='tag' key={tag}>
-                              {tag}
-                            </div>
-                          )
-                        })}
-                    </div>
-                  ) : (
-                    <div className='tags'>
-                      <Skeleton
-                        baseColor={skeletonColor}
-                        className='tag skeleton'
-                      />
-                      <Skeleton
-                        baseColor={skeletonColor}
-                        className='tag skeleton'
-                      />
-                      <Skeleton
-                        baseColor={skeletonColor}
-                        className='tag skeleton'
-                      />
-                    </div>
-                  )}
-                </div>
-                {/* {currRecipe && currRecipe.nutritionData && (
-                  <NutritionData
-                    data={currRecipe.nutritionData}
-                    servings={currRecipe.servings}
-                  />
-                )} */}
+                <Tags loading={loading} currRecipe={currRecipe} />
               </div>
               {!loading && currRecipe && (
                 <RecipeRatings

@@ -182,15 +182,6 @@
             }
           }
         }
-        .tags {
-          display: flex;
-          gap: 0.75rem;
-          .tag {
-            display: flex;
-            padding-left: 0.5rem;
-            padding-right: 0.5rem;
-          }
-        }
       }
 
       @media screen and (max-width: 1100px) {
@@ -335,7 +326,10 @@
       max-width: $recipe-body-max-width;
 
       .tags-container {
+        margin: 0 auto;
         margin-top: 4rem;
+        max-width: 700px;
+        width: 700px;
         .tag-label {
           font-size: toRem(16);
           color: $primary;
