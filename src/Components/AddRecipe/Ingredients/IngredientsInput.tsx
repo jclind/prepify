@@ -1,4 +1,3 @@
-import { IngredientResponse } from '@jclind/ingredient-parser/types'
 import React, { useState } from 'react'
 import { TailSpin } from 'react-loader-spinner'
 import RecipeAPI from 'src/api/recipes'

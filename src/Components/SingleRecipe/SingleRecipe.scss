@@ -125,16 +125,26 @@
         display: flex;
         flex-direction: column;
         align-items: space-between;
-        gap: 2rem;
+        gap: 1rem;
         min-height: 400px;
         width: 100%;
         max-width: 670px;
         // background: red;
         .title {
           text-transform: capitalize;
+          padding: 0;
+          margin: 0;
+        }
+        .recipe-price {
+          font-size: toRem(12);
+          font-weight: 700;
+          color: $primary;
+          text-transform: uppercase;
+          letter-spacing: 1.2px;
         }
         .description {
-          font-size: toRem(18);
+          font-size: 1rem;
+          font-weight: 500;
           max-width: 600px;
           flex: 1;
           // background: red;
@@ -221,6 +231,14 @@
           .title {
             padding-bottom: 1rem;
             text-transform: capitalize;
+          }
+          .recipe-price {
+            font-size: toRem(12);
+            font-weight: 700;
+            color: $primary;
+            text-transform: uppercase;
+            padding-top: 0.5rem;
+            letter-spacing: 1.2px;
           }
           .description {
             max-width: 700px;

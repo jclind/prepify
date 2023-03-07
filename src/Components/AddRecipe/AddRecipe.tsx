@@ -71,7 +71,7 @@ const AddRecipe = () => {
   }
   const clearForm = () => {
     setTitle('')
-    // setRecipeImage('')
+    setRecipeImage(undefined)
     setDescription('')
     setServings('')
     setPrepTime(null)

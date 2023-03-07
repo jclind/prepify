@@ -4,6 +4,8 @@ import Skeleton from 'react-loading-skeleton'
 import 'react-loading-skeleton/dist/skeleton.css'
 import { IngredientsType } from 'types'
 import { closestFraction } from 'src/util/validateIngredientQuantityStr'
+import { CiShoppingBasket } from 'react-icons/ci'
+import IngredientItemText from 'src/Components/IngredientItemText/IngredientItemText'
 
 const skeletonColor = '#d6d6d6'
 
@@ -23,7 +25,10 @@ const IngredientItem = ({ ingr, loading }: IngredientItemProps) => {
     return <Skeleton baseColor={skeletonColor} width={400} />
   } else if ('parsedIngredient' in ingr) {
     return (
-      <div className='ingredient' onClick={handleOnClick}>
+      <div
+        className={`ingredient ${checked ? 'checked' : ''}`}
+        onClick={handleOnClick}
+      >
         <input
           type='checkbox'
           checked={checked}
@@ -31,11 +36,25 @@ const IngredientItem = ({ ingr, loading }: IngredientItemProps) => {
           onChange={() => {}}
         />
         <label>
-          <strong>
-            {closestFraction(Number(ingr.parsedIngredient.quantity))}{' '}
-            {ingr.parsedIngredient.unit}
-          </strong>{' '}
-          {ingr.parsedIngredient.ingredient}
+          <div className='img-container'>
+            {ingr?.ingredientData?.imagePath ? (
+              <img
+                className='img'
+                src={ingr.ingredientData.imagePath}
+                alt={ingr.parsedIngredient.ingredient ?? ''}
+              />
+            ) : (
+              <CiShoppingBasket className='img no-img' />
+            )}
+          </div>
+          <div className='text-container'>
+            <IngredientItemText
+              quantity={ingr.parsedIngredient.quantity}
+              unit={ingr.parsedIngredient.unit}
+              ingredientName={ingr.parsedIngredient.ingredient}
+              comment={ingr.parsedIngredient.comment}
+            />
+          </div>
         </label>
       </div>
     )
@@ -140,32 +159,7 @@ const Ingredients = ({
       <div className='ingredients-lists'>
         {!loading && ingredients.length > 0 ? (
           ingredients.map(ingr => {
-            return (
-              //  <div style={recipeStyles.sectionListItem} key={ingr.id} key={ingr.id}>
-              <IngredientItem ingr={ingr} loading={false} key={ingr.id} />
-              // </div>
-            )
-            // const isMultiIngr = ingredients.length > 1
-            // return (
-            //   <div
-            //     className={isMultiIngr ? 'multi-ingredient-list list' : 'list'}
-            //     key={idx}
-            //   >
-            //     {isMultiIngr && (
-            //       <h4 className='title'>
-            //         <span className='text'>{ingredientList.name}</span>
-            //         <div className='divider'></div>
-            //       </h4>
-            //     )}
-            //     {ingredientList.map(ingr => {
-            //       return (
-            //         <div key={ingr.id}>
-            //           <CheckBox ingr={ingr} />
-            //         </div>
-            //       )
-            //     })}
-            //   </div>
-            // )
+            return <IngredientItem ingr={ingr} loading={false} key={ingr.id} />
           })
         ) : (
           <>

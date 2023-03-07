@@ -1,5 +1,5 @@
-import { ingredientParser } from '@jclind/ingredient-parser'
-import { IngredientResponse } from '@jclind/ingredient-parser/types'
+import { IngredientResponse, ingredientParser } from '@jclind/ingredient-parser'
+
 import ObjectID from 'bson-objectid'
 import {
   getDownloadURL,

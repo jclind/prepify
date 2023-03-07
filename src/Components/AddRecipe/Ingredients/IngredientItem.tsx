@@ -11,6 +11,7 @@ import '../ListComponents/Item.scss'
 import RemoveItem from '../ListComponents/RemoveItem'
 import { TailSpin } from 'react-loader-spinner'
 import styles from '../../../_exports.scss'
+import IngredientItemText from 'src/Components/IngredientItemText/IngredientItemText'
 
 const skeletonColor = '#d6d6d6'
 
@@ -58,17 +59,14 @@ const IngredientItem: FC<IngredientItemProps> = ({
         ingredient: ingredientName,
         comment,
       } = ingredient.parsedIngredient
+      console.log(ingredientName, comment)
       return (
-        <>
-          {quantity && quantity > 0 ? (
-            <span className='bold-text text'>{quantity}</span>
-          ) : null}
-          {quantity && quantity > 0 && unit ? (
-            <span className='bold-text text'>{unit}</span>
-          ) : null}
-          <span className='text'>{ingredientName}</span>
-          {comment && <span className='text'>{`, ${comment}`}</span>}
-        </>
+        <IngredientItemText
+          quantity={quantity}
+          unit={unit}
+          ingredientName={ingredientName}
+          comment={comment}
+        />
       )
     }
     return null

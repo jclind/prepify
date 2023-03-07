@@ -1,4 +1,8 @@
-import { IngredientResponseType } from '@jclind/ingredient-parser'
+import {
+  IngredientResponseType,
+  IngredientData,
+  ParsedIngredient,
+} from '@jclind/ingredient-parser'
 
 export type RecipeType = {
   _id: string

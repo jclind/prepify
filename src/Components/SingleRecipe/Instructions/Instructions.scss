@@ -1,11 +1,15 @@
 @import '../../../helpers.scss';
 
 .directions {
+  margin: 0 auto;
+  max-width: 700px;
+  width: 700px;
   margin-top: 2rem;
 
   .list.multi-direction-list {
     display: flex;
     flex-direction: column;
+
     margin-bottom: 2rem;
     // border-bottom: 1px solid $gray-400;
 
@@ -28,50 +32,54 @@
       }
     }
   }
-  .list {
-    display: flex;
-    flex-direction: column;
-    gap: 2rem;
-    margin-top: 2rem;
-
-    .instruction {
-      position: relative;
+  .directions-lists {
+    .list {
       display: flex;
-      gap: 1.5rem;
+      flex-direction: column;
+      gap: 2rem;
+      margin: 0 auto;
 
-      // .number-container {
-      //   position: relative;
-      //   display: flex;
-      //   justify-content: center;
-      //   align-items: center;
+      margin-top: 2rem;
 
-      .number {
+      .instruction {
+        position: relative;
         display: flex;
-        justify-content: center;
-        align-items: center;
-        margin-top: 0.25rem;
-        height: 25px;
-        width: 25px;
-        background: $primary-text;
-        color: $white;
-        font-weight: 700;
-        font-size: toRem(16);
-        border-radius: 50%;
-      }
-      .number.skeleton {
-        background: $gray-400;
-        margin: 0;
-      }
-      // }
-      .content {
-        font-size: toRem(16);
-        font-weight: 500;
-        max-width: 600px;
-        line-height: 1.5;
-      }
-      .content.skeleton {
-        min-width: 500px;
-        line-height: 1;
+        gap: 1.5rem;
+
+        // .number-container {
+        //   position: relative;
+        //   display: flex;
+        //   justify-content: center;
+        //   align-items: center;
+
+        .number {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          margin-top: 0.25rem;
+          height: 25px;
+          width: 25px;
+          background: $primary-text;
+          color: $white;
+          font-weight: 700;
+          font-size: toRem(16);
+          border-radius: 50%;
+        }
+        .number.skeleton {
+          background: $gray-400;
+          margin: 0;
+        }
+        // }
+        .content {
+          font-size: toRem(16);
+          font-weight: 500;
+          max-width: 600px;
+          line-height: 1.5;
+        }
+        .content.skeleton {
+          min-width: 500px;
+          line-height: 1;
+        }
       }
     }
   }

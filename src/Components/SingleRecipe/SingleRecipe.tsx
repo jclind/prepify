@@ -80,7 +80,9 @@ const SingleRecipe = () => {
     if (!recipeId) return
     RecipeAPI.getRecipe(recipeId)
       .then(res => {
+        console.log(res)
         if (!res || !res.title) {
+          console.log('heh?')
           setRecipe404(true)
         } else {
           setCurrRecipe(res)
@@ -100,23 +102,6 @@ const SingleRecipe = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // useEffect(() => {
-  //   if (currRecipe) {
-  //     const recipeServings = JSON.parse(localStorage.getItem('recipeServings') )
-  //     if (recipeServings) {
-  //       const idx = recipeServings.findIndex(
-  //         item => item.recipeId === currRecipe._id
-  //       )
-  //       if (idx >= 0) {
-  //         const newServingSize = recipeServings[idx].servingSize
-  //         setYieldSize(newServingSize)
-  //       } else {
-  //         setYieldSize(Number(currRecipe.yield.value))
-  //       }
-  //     }
-  //   }
-  // }, [currRecipe])
-
   return (
     <>
       <Helmet>
@@ -130,7 +115,7 @@ const SingleRecipe = () => {
             : 'Recipe 404'}
         </title>
       </Helmet>
-      {recipe404 || !currRecipe ? (
+      {recipe404 ? (
         <RecipeNotFound />
       ) : (
         <>
@@ -141,14 +126,28 @@ const SingleRecipe = () => {
                 {windowWidth <= 956 && (
                   <div className='mobile-title-content'>
                     <h1 className='title'>
-                      {loading ? (
+                      {loading || !currRecipe?.title ? (
                         <Skeleton baseColor={skeletonColor} />
                       ) : (
                         currRecipe.title
                       )}
                     </h1>
+                    <div className='recipe-price'>
+                      {loading ||
+                      !currRecipe?.servingPrice ||
+                      !currRecipe?.servings ? (
+                        <Skeleton baseColor={skeletonColor} height={30} />
+                      ) : (
+                        `Serving: $${(currRecipe.servingPrice / 100).toFixed(
+                          2
+                        )} | Recipe: $${(
+                          (currRecipe.servingPrice / 100) *
+                          currRecipe.servings
+                        ).toFixed(2)}`
+                      )}
+                    </div>
                     <p className='description'>
-                      {loading ? (
+                      {loading || !currRecipe?.description ? (
                         <Skeleton baseColor={skeletonColor} count={4} />
                       ) : (
                         currRecipe.description
@@ -157,7 +156,7 @@ const SingleRecipe = () => {
                   </div>
                 )}
                 <div className='recipe-image-container'>
-                  {loading ? (
+                  {loading || !currRecipe?.recipeImage ? (
                     <Skeleton
                       baseColor={skeletonColor}
                       className='img skeleton'
@@ -174,14 +173,28 @@ const SingleRecipe = () => {
                   {windowWidth > 956 && (
                     <>
                       <h1 className='title'>
-                        {loading ? (
+                        {loading || !currRecipe?.title ? (
                           <Skeleton baseColor={skeletonColor} />
                         ) : (
                           currRecipe.title
                         )}
                       </h1>
+                      <div className='recipe-price'>
+                        {loading ||
+                        !currRecipe?.servingPrice ||
+                        !currRecipe?.servings ? (
+                          <Skeleton baseColor={skeletonColor} height={30} />
+                        ) : (
+                          `Serving: $${(currRecipe.servingPrice / 100).toFixed(
+                            2
+                          )} | Recipe: $${(
+                            (currRecipe.servingPrice / 100) *
+                            currRecipe.servings
+                          ).toFixed(2)}`
+                        )}
+                      </div>
                       <p className='description'>
-                        {loading ? (
+                        {loading || !currRecipe?.description ? (
                           <Skeleton baseColor={skeletonColor} count={4} />
                         ) : (
                           currRecipe.description
@@ -192,7 +205,7 @@ const SingleRecipe = () => {
 
                   <div className='recipe-data'>
                     <div className='time data-element'>
-                      {loading ? (
+                      {loading || !currRecipe?.totalTime ? (
                         <Skeleton
                           baseColor={skeletonColor}
                           className='skeleton'
@@ -252,7 +265,7 @@ const SingleRecipe = () => {
                     </div>
                   </div>
                   <div className='actions'>
-                    {loading ? (
+                    {loading || !currRecipe?._id ? (
                       <Skeleton
                         baseColor={skeletonColor}
                         className='action skeleton'
@@ -287,7 +300,7 @@ const SingleRecipe = () => {
                   loading={loading}
                 />
                 <Instructions
-                  instructions={currRecipe.instructions}
+                  instructions={currRecipe?.instructions || []}
                   loading={loading}
                 />
                 <div className='tags-container'>
@@ -334,7 +347,7 @@ const SingleRecipe = () => {
                   />
                 )} */}
               </div>
-              {!loading && (
+              {!loading && currRecipe && (
                 <RecipeRatings
                   recipeId={currRecipe && currRecipe._id}
                   ratingVal={
