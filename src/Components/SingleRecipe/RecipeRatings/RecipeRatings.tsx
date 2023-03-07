@@ -238,9 +238,9 @@ const RecipeRatings = ({
               reviewList.map(review => {
                 return <RecipeReview key={uid} review={review} />
               })
-            ) : (
+            ) : !isReviewed ? (
               <div className='no-reviews'>No Reviews</div>
-            )}
+            ) : null}
             {isMoreReviews && (
               <div className='get-more-reviews'>
                 <button
