@@ -1,10 +1,17 @@
-import React, { useState, useEffect } from 'react'
-import Select from 'react-select'
+import React, { useState, useEffect, FC } from 'react'
+import Select, { SingleValue } from 'react-select'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { useRecipe } from '../../context/RecipeContext'
 import './RecipeFilters.scss'
 
-const RecipeFilters = ({
+type RecipeFiltersProps = {
+  options?: { value: string; label: string }[]
+  selectVal: string
+  setSelectVal: (val: string) => void
+  selectedTags: string[]
+  setSelectedTags: (val: string[]) => void
+}
+
+const RecipeFilters: FC<RecipeFiltersProps> = ({
   options,
   selectVal,
   setSelectVal,
@@ -16,6 +23,8 @@ const RecipeFilters = ({
     { value: 'popular', label: 'Popular' },
     { value: 'new', label: 'Date: Newest' },
     { value: 'old', label: 'Date: Oldest' },
+    { value: 'cheapest', label: 'Price: Cheapest' },
+    { value: 'expensive', label: 'Price: Most Expensive' },
     { value: 'shortest', label: 'Time: Shortest' },
     { value: 'longest', label: 'Time: Longest' },
   ]
@@ -27,25 +36,30 @@ const RecipeFilters = ({
   const defaultSelectValue =
     selectOptions.find(el => el.value === order) || selectOptions[0]
 
-  const { getTopTags } = useRecipe()
-
   useEffect(() => {
     setSelectVal(selectOptions[0].value)
-    getTopTags(5).then(tags => {
-      setTags(tags.data)
-    })
+    // getTopTags(5).then(tags => {
+    //   setTags(tags.data)
+    // })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const handleSelectChange = e => {
-    const value = e.value
-    console.log(value)
-    setSelectVal(value)
-    urlParams.set('order', value)
-    navigate(`/recipes?${urlParams}`)
+  const handleSelectChange = (
+    e: SingleValue<{
+      value: string
+      label: string
+    }>
+  ) => {
+    if (e) {
+      const value = e.value
+      console.log(value)
+      setSelectVal(value)
+      urlParams.set('order', value)
+      navigate(`/recipes?${urlParams}`)
+    }
   }
 
-  const handleTagClick = text => {
+  const handleTagClick = (text: string) => {
     if (selectedTags.includes(text)) {
       const idx = selectedTags.indexOf(text)
       return setSelectedTags([
@@ -67,7 +81,7 @@ const RecipeFilters = ({
         onChange={handleSelectChange}
         defaultValue={defaultSelectValue}
       />
-      <div className='tags'>
+      {/* <div className='tags'>
         {tags.map(tag => {
           return (
             <div
@@ -83,7 +97,7 @@ const RecipeFilters = ({
             </div>
           )
         })}
-      </div>
+      </div> */}
     </div>
   )
 }

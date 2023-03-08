@@ -3,18 +3,22 @@ import { useLocation } from 'react-router-dom'
 import './Recipes.scss'
 import RecipeThumbnail from '../RecipeThumbnail/RecipeThumbnail'
 import RecipeFilters from '../RecipeFilters/RecipeFilters'
-import RecipeAPI from '../../api/recipes'
 import SearchRecipesInput from '../SearchRecipesInput/SearchRecipesInput'
 import { Helmet } from 'react-helmet'
+import RecipeAPI from 'src/api/recipes'
+import { RecipeType } from 'types'
+import { TailSpin } from 'react-loader-spinner'
 
 const Recipes = () => {
-  const [recipeList, setRecipeList] = useState([])
+  const [recipeList, setRecipeList] = useState<RecipeType[]>([])
 
   const [selectFilterVal, setSelectFilterVal] = useState('')
-  const [selectedTags, setSelectedTags] = useState([])
+  const [selectedTags, setSelectedTags] = useState<string[]>([])
 
-  const [currPage, setCurrPage] = useState(null)
-  const [totalResults, setTotalResults] = useState(null)
+  const [fetchRecipesLoading, setFetchRecipesLoading] = useState(false)
+
+  const [currPage, setCurrPage] = useState<number | null>(null)
+  const [totalResults, setTotalResults] = useState<number | null>(null)
 
   const location = useLocation()
   const urlParams = new URLSearchParams(location.search)
@@ -26,27 +30,30 @@ const Recipes = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.search])
 
-  const getRecipes = page => {
+  const getRecipes = (page: number) => {
     const orderParam = urlParams.get('order')
     const filter = orderParam || selectFilterVal
+    const recipesPerPage = 3
 
-    RecipeAPI.getAll(page, filter, selectedTags, query).then(res => {
-      const totalResults = Number(
-        res.data && res.data.total_results ? res.data.total_results : 0
-      )
-      setTotalResults(totalResults)
+    setFetchRecipesLoading(true)
+    RecipeAPI.getAllRecipes(page, filter, selectedTags, recipesPerPage, query)
+      .then(res => {
+        setTotalResults(res.total_results)
 
-      if (res.data && res.data.recipeList) {
-        if (currPage !== 0) {
-          setRecipeList([...recipeList, ...res.data.recipeList])
+        if (res.recipeList) {
+          if (currPage !== 0) {
+            setRecipeList([...recipeList, ...res.recipeList])
+          } else {
+            setRecipeList(res.recipeList)
+          }
         } else {
-          setRecipeList(res.data.recipeList)
+          setRecipeList([])
         }
-      } else {
-        setRecipeList([])
-      }
-    })
+      })
+      .finally(() => setFetchRecipesLoading(false))
   }
+
+  console.log(totalResults, recipeList.length)
 
   useEffect(() => {
     if (selectFilterVal) {
@@ -62,7 +69,6 @@ const Recipes = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currPage])
-
   return (
     <>
       <Helmet>
@@ -100,12 +106,24 @@ const Recipes = () => {
             </>
           )}
 
-          {totalResults && totalResults > recipeList.length ? (
+          {totalResults &&
+          totalResults > recipeList.length &&
+          currPage !== null ? (
             <button
               className='load-more-recipes-btn btn'
               onClick={() => setCurrPage(currPage + 1)}
+              disabled={fetchRecipesLoading}
             >
-              Load More Recipes
+              {fetchRecipesLoading ? (
+                <TailSpin
+                  height='30'
+                  width='30'
+                  color='black'
+                  ariaLabel='loading'
+                />
+              ) : (
+                'Load More Recipes'
+              )}
             </button>
           ) : null}
         </section>

@@ -29,9 +29,10 @@ class RecipeAPIClass {
   async getAllRecipes(
     page = 0,
     order = 'new',
-    tags = [],
+    tags: string[] = [],
+    recipesPerPage = 5,
     query = ''
-  ): Promise<RecipeDBResponseType[]> {
+  ): Promise<RecipeDBResponseType> {
     let tagsArrParam = '' // For tags that have been chosen
     if (tags.length > 0) {
       tagsArrParam += '&tags='
@@ -45,9 +46,10 @@ class RecipeAPIClass {
       })
     }
 
-    return await http.get(
-      `recipes?q=${query}&page=${page}&order=${order}${tagsArrParam}`
+    const result = await http.get(
+      `recipes?q=${query}&page=${page}&recipesPerPage=${recipesPerPage}&order=${order}${tagsArrParam}`
     )
+    return result.data
   }
   search(
     query: string,

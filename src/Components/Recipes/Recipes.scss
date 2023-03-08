@@ -21,6 +21,7 @@
     flex-direction: column;
     align-items: center;
     gap: 2rem;
+    padding-bottom: 2rem;
     .recipes-list {
       display: grid;
       justify-items: center;
@@ -49,12 +50,16 @@
       }
     }
     .load-more-recipes-btn {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 250px;
+      height: 45px;
       border: 1px solid $gray-400;
-      height: fit-content;
-      width: fit-content;
       margin: 0 auto;
-      padding: 0.5rem 1rem;
       border-radius: $border-radius;
+      font-size: 1.3rem;
+      white-space: nowrap;
 
       &:hover {
         border-color: $tertiary-text;
