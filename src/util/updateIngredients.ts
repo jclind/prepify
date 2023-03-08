@@ -1,3 +1,4 @@
+import { IngredientData, ParsedIngredient } from '@jclind/ingredient-parser'
 import { IngredientsType } from 'types'
 import { evalNum } from './validateIngredientQuantityStr'
 
@@ -52,17 +53,29 @@ export const updateIngredients = (
           .toString()
       }
 
+      let updatedIngredientData: IngredientData | null = structuredClone(
+        ingr.ingredientData
+      )
+      let updatedParsedIngredient: ParsedIngredient = structuredClone(
+        ingr.parsedIngredient
+      )
       if (price && quantity) {
-        return { ...ingr, price, quantity }
+        // If quantity exists, updatedIngredientData will exist
+        updatedIngredientData!.totalPriceUSACents = Number(price)
+        updatedParsedIngredient.quantity = quantity
       } else if (price) {
-        return { ...ingr, price }
+        updatedIngredientData!.totalPriceUSACents = Number(price)
       } else if (quantity) {
-        return { ...ingr, quantity }
+        updatedParsedIngredient.quantity = quantity
       }
 
-      return { ...ingr }
+      return {
+        ...ingr,
+        ingredientData: updatedIngredientData,
+        parsedIngredient: updatedParsedIngredient,
+      }
     }
-    return { ...ingr }
+    return ingr
   })
   return updatedIngredients
 }

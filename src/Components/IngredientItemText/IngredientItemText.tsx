@@ -1,4 +1,5 @@
 import React, { FC } from 'react'
+import { closestFraction } from 'src/util/validateIngredientQuantityStr'
 import './IngredientItemText.scss'
 
 type IngredientItemText = {
@@ -19,7 +20,7 @@ const IngredientItemText: FC<IngredientItemText> = ({
       <p>
         {quantity ? (
           <>
-            <strong>{quantity}</strong>{' '}
+            <strong>{closestFraction(quantity)}</strong>{' '}
           </>
         ) : null}
         {unit ? (

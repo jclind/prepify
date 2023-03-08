@@ -29,13 +29,16 @@ import Tags from './Tags'
 
 const skeletonColor = '#d6d6d6'
 
+type LocalStorageRecipeType = {
+  recipeId: string
+  numServings: number
+}
+
 const SingleRecipe = () => {
   const [currRecipe, setCurrRecipe] = useState<RecipeType | null>(null)
   const [loading, setLoading] = useState(true)
   const [recipe404, setRecipe404] = useState(false)
-  const [modIngredients, setModIngredients] = useState<IngredientsType[] | []>(
-    []
-  )
+  const [modIngredients, setModIngredients] = useState<IngredientsType[]>([])
 
   const [currUserReview, setCurrUserReview] = useState<ReviewType | {}>({})
 
@@ -44,34 +47,43 @@ const SingleRecipe = () => {
   const [servingSize, setServingSize] = useState(0)
 
   const printedRef = useRef() as React.MutableRefObject<HTMLInputElement>
+
+  const updateRecipeLocalStorage = (recipeId: string, numServings: number) => {
+    const localStorageRecipeArr: LocalStorageRecipeType[] = JSON.parse(
+      localStorage.getItem('recipeServings') || '[]'
+    )
+    const currRecipeLocalStorageIndex = localStorageRecipeArr.findIndex(
+      item => item.recipeId === recipeId
+    )
+
+    if (currRecipeLocalStorageIndex !== -1) {
+      localStorageRecipeArr[currRecipeLocalStorageIndex].numServings =
+        servingSize
+    } else {
+      localStorageRecipeArr.push({ recipeId, numServings })
+    }
+    localStorage.setItem(
+      'recipeServings',
+      JSON.stringify(localStorageRecipeArr)
+    )
+  }
+
   useEffect(() => {
-    if (currRecipe) {
-      const recipeServings: { recipeId: string; numServings: number }[] | [] =
-        JSON.parse(localStorage.getItem('recipeServings') || '[]')
-
-      const currRecipeLocalStorageObj = recipeServings.find(
-        item => item.recipeId === currRecipe._id
-      )
-      // Set currRecipeServings to saved local numServings value for current recipe if it exists, if not set to the default servings for the current recipe
-      const currRecipeServings: number = currRecipeLocalStorageObj
-        ? currRecipeLocalStorageObj.numServings
-        : currRecipe.servings
-
-      setServingSize(currRecipeServings)
+    if (currRecipe && servingSize > 0) {
+      updateRecipeLocalStorage(currRecipe._id, servingSize)
+      console.log(servingSize)
       setModIngredients(
         updateIngredients(
           currRecipe.ingredients,
           currRecipe.servings,
-          currRecipeServings
+          servingSize
         )
       )
+      // console.log(updateIngredients([currRecipe.ingredients[0]], 4, 4))
+      // console.log(updateIngredients([currRecipe.ingredients[0]], 4, 5))
     }
-
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currRecipe])
-
-  // const recipeResult = useRecipe()
-  // const getRecipe = recipeResult?.getRecipe ?? null
+  }, [servingSize])
 
   let recipeParams = useParams()
   const recipeId = recipeParams.recipeId
@@ -81,12 +93,24 @@ const SingleRecipe = () => {
     if (!recipeId) return
     RecipeAPI.getRecipe(recipeId)
       .then(res => {
-        console.log(res)
         if (!res || !res.title) {
-          console.log('heh?')
           setRecipe404(true)
         } else {
           setCurrRecipe(res)
+          const recipeServingsLS: LocalStorageRecipeType[] = JSON.parse(
+            localStorage.getItem('recipeServings') || '[]'
+          )
+
+          const currRecipeLocalStorageObj = recipeServingsLS.find(
+            item => item.recipeId === res._id
+          )
+
+          // Set currRecipeServings to saved local numServings value for current recipe if it exists, if not set to the default servings for the current recipe
+          const currRecipeServings: number = currRecipeLocalStorageObj
+            ? currRecipeLocalStorageObj.numServings
+            : res.servings
+
+          setServingSize(currRecipeServings)
         }
         setLoading(false)
       })

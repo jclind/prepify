@@ -53,7 +53,7 @@ export type IngredientsType =
       id: string
     }
   | {
-      error: {
+      error?: {
         message: string
       }
       parsedIngredient: ParsedIngredient

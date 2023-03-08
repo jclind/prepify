@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import './Ingredients.scss'
 import Skeleton from 'react-loading-skeleton'
 import 'react-loading-skeleton/dist/skeleton.css'
 import { IngredientsType } from 'types'
-import { closestFraction } from 'src/util/validateIngredientQuantityStr'
 import { CiShoppingBasket } from 'react-icons/ci'
 import IngredientItemText from 'src/Components/IngredientItemText/IngredientItemText'
 
@@ -82,8 +81,11 @@ const Ingredients = ({
 }: IngredientsProps) => {
   const [modServingSize, setModServingSize] = useState(servingSize)
 
+  const servingsInputRef = useRef<HTMLInputElement>(null)
+
   useEffect(() => {
     setModServingSize(servingSize)
+    // console.log(ingredients)
   }, [servingSize])
 
   const decYieldSize = () => {
@@ -99,13 +101,13 @@ const Ingredients = ({
     setModServingSize(num + 1)
   }
 
-  const handleServingsBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    const val: string = e.target.value
-    if (val) {
+  const handleServingsBlur = () => {
+    if (modServingSize > 0 && modServingSize < 100) {
       setServingSize(modServingSize)
     } else {
       setModServingSize(servingSize)
     }
+    servingsInputRef?.current && servingsInputRef.current.blur()
   }
   const handleServingsOnChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val: number = Number(e.target.value)
@@ -142,6 +144,10 @@ const Ingredients = ({
                   type='tel'
                   onChange={handleServingsOnChange}
                   onBlur={handleServingsBlur}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') handleServingsBlur()
+                  }}
+                  ref={servingsInputRef}
                 />
                 <button
                   type='button'
