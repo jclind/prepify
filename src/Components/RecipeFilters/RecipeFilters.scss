@@ -11,9 +11,15 @@
   padding-bottom: 1rem;
   border-bottom: 1px solid $tertiary-text;
 
-  .select {
+  .sort-select {
     max-width: 250px;
     width: 100%;
+  }
+  .diet-label-select {
+    width: fit-content;
+    .Select-control {
+      border-radius: 20%;
+    }
   }
 
   .tags {

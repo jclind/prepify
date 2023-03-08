@@ -1,7 +1,9 @@
 import React, { useState, useEffect, FC } from 'react'
-import Select, { SingleValue } from 'react-select'
+import Select, { MultiValue, SingleValue } from 'react-select'
 import { useNavigate, useLocation } from 'react-router-dom'
 import './RecipeFilters.scss'
+import { dietLabelsOptions } from 'src/recipeData/dietLabels'
+import styles from '../../_exports.scss'
 
 type RecipeFiltersProps = {
   options?: { value: string; label: string }[]
@@ -9,6 +11,42 @@ type RecipeFiltersProps = {
   setSelectVal: (val: string) => void
   selectedTags: string[]
   setSelectedTags: (val: string[]) => void
+}
+type OptionType = {
+  value: string
+  label: string
+}
+
+const customDietLabelStyles = {
+  control: (provided: any) => ({
+    ...provided,
+    borderRadius: '20px',
+    maxHeight: '30px',
+  }),
+
+  option: (provided: any) => ({
+    ...provided,
+    fontSize: '0.8rem',
+    color: styles.primaryText,
+  }),
+  singleValue: (provided: any) => ({
+    ...provided,
+    fontSize: '0.8rem',
+    color: styles.primaryText,
+  }),
+  valueContainer: (provided: any) => ({
+    ...provided,
+    padding: '1px',
+    paddingLeft: '5px',
+  }),
+  indicatorSeparator: () => ({
+    display: 'none',
+  }),
+  dropdownIndicator: (provided: any) => ({
+    ...provided,
+    padding: '5px',
+    paddingLeft: '0px',
+  }),
 }
 
 const RecipeFilters: FC<RecipeFiltersProps> = ({
@@ -19,7 +57,8 @@ const RecipeFilters: FC<RecipeFiltersProps> = ({
   setSelectedTags,
 }) => {
   const [tags, setTags] = useState([])
-  const selectOptions = options || [
+  const [dietLabels, setDietLabels] = useState<MultiValue<OptionType>>([])
+  const selectSortOptions = options || [
     { value: 'popular', label: 'Popular' },
     { value: 'new', label: 'Date: Newest' },
     { value: 'old', label: 'Date: Oldest' },
@@ -34,10 +73,10 @@ const RecipeFilters: FC<RecipeFiltersProps> = ({
   let urlParams = new URLSearchParams(location.search)
   const order = urlParams.get('order')
   const defaultSelectValue =
-    selectOptions.find(el => el.value === order) || selectOptions[0]
+    selectSortOptions.find(el => el.value === order) || selectSortOptions[0]
 
   useEffect(() => {
-    setSelectVal(selectOptions[0].value)
+    setSelectVal(selectSortOptions[0].value)
     // getTopTags(5).then(tags => {
     //   setTags(tags.data)
     // })
@@ -71,16 +110,38 @@ const RecipeFilters: FC<RecipeFiltersProps> = ({
     return setSelectedTags([...selectedTags, text])
   }
 
+  const handleDietLabelChange = (
+    newValues: MultiValue<OptionType> | null,
+    actionMeta: any
+  ) => {
+    if (newValues) {
+      if (newValues.length >= 3) return
+      setDietLabels(newValues)
+    } else {
+      setDietLabels([])
+    }
+  }
   return (
     <div className='filters'>
       <Select
-        options={selectOptions}
+        options={selectSortOptions}
         isSearchable={false}
         isClearable={false}
-        className='select'
+        className='sort-select'
         onChange={handleSelectChange}
         defaultValue={defaultSelectValue}
       />
+      <Select
+        options={dietLabelsOptions}
+        isMulti={true}
+        className='diet-label-select'
+        placeholder={'Diet Label'}
+        styles={customDietLabelStyles}
+        onChange={handleDietLabelChange}
+        value={dietLabels}
+        closeMenuOnSelect={false}
+      />
+
       {/* <div className='tags'>
         {tags.map(tag => {
           return (
