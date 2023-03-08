@@ -7,6 +7,9 @@ import { formatRating } from '../../util/formatRating'
 import slugify from 'slugify'
 import RecipeAPI from 'src/api/recipes'
 import { RecipeSearchResponseType } from 'types'
+import Skeleton from 'react-loading-skeleton'
+
+const skeletonColor = '#d6d6d6'
 
 function useOutsideAlerter(
   ref: React.RefObject<HTMLFormElement>,
@@ -117,12 +120,16 @@ const SearchRecipesInput = ({
           <div className='recipes-container'>
             {autoCompleteResponse.map(recipe => {
               return (
-                <div
+                <button
                   className='recipe'
                   key={recipe._id}
                   onClick={() => navigate(`/recipes/${recipe._id}`)}
                 >
-                  <div className='image-container'>
+                  <div className='img-container'>
+                    <Skeleton
+                      className='img-loading'
+                      baseColor={skeletonColor}
+                    />
                     <img src={recipe.recipeImage} alt='' className='img' />
                   </div>
                   <div className='info-content'>
@@ -152,7 +159,7 @@ const SearchRecipesInput = ({
                       )
                     })}
                   </div>
-                </div>
+                </button>
               )
             })}
           </div>
