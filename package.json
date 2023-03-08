@@ -5,7 +5,7 @@
   "dependencies": {
     "@firebase/firestore-types": "^2.5.1",
     "@formspree/react": "^2.2.4",
-    "@jclind/ingredient-parser": "^1.0.42",
+    "@jclind/ingredient-parser": "^1.1.2",
     "@testing-library/jest-dom": "^5.16.1",
     "@testing-library/react": "^12.1.2",
     "@testing-library/user-event": "^13.5.0",

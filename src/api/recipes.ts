@@ -307,8 +307,11 @@ class RecipeAPIClass {
 
     const result: IngredientResponse = await ingredientParser(val, apiKey)
 
+    console.log(ingredientParser('1 Tablespoon Vinegar', apiKey))
+
     const data: IngredientsType = { ...result, id: uuidv4() }
 
+    console.log(data)
     return data
   }
 

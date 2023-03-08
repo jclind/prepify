@@ -59,7 +59,6 @@ const IngredientItem: FC<IngredientItemProps> = ({
         ingredient: ingredientName,
         comment,
       } = ingredient.parsedIngredient
-      console.log(ingredientName, comment)
       return (
         <IngredientItemText
           quantity={quantity}

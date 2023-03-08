@@ -60,7 +60,8 @@ const IngredientItem = ({ ingr, loading }: IngredientItemProps) => {
   } else {
     return (
       <div className='ingredient' onClick={handleOnClick}>
-        <h1>{ingr.label}</h1>
+        {/* Remove all colons from label (to be added by css) */}
+        <h4 className='ingredient-label'>{ingr.label.replace(/:/g, '')}</h4>
       </div>
     )
   }
@@ -117,7 +118,7 @@ const Ingredients = ({
   }
 
   return (
-    <div className='ingredients'>
+    <div className='recipe-page ingredients'>
       <div className='header'>
         <h3 className='title'>
           {loading ? (
