@@ -36,7 +36,14 @@ const Recipes = () => {
     const recipesPerPage = 3
 
     setFetchRecipesLoading(true)
-    RecipeAPI.getAllRecipes(page, filter, selectedTags, recipesPerPage, query)
+    RecipeAPI.getAllRecipes(
+      page,
+      filter,
+      selectedTags,
+      selectedCuisine,
+      recipesPerPage,
+      query
+    )
       .then(res => {
         setTotalResults(res.total_results)
 

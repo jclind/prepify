@@ -30,6 +30,7 @@ class RecipeAPIClass {
     page = 0,
     order = 'new',
     tags: string[] = [],
+    cuisine: string = '',
     recipesPerPage = 5,
     query = ''
   ): Promise<RecipeDBResponseType> {
@@ -47,7 +48,7 @@ class RecipeAPIClass {
     }
 
     const result = await http.get(
-      `recipes?q=${query}&page=${page}&recipesPerPage=${recipesPerPage}&order=${order}${tagsArrParam}`
+      `recipes?q=${query}&page=${page}&recipesPerPage=${recipesPerPage}&order=${order}&cuisine=${cuisine}${tagsArrParam}`
     )
     return result.data
   }

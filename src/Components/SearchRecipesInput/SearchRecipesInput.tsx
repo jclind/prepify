@@ -108,6 +108,9 @@ const SearchRecipesInput = ({
           onChange={e => setSearchRecipeVal(e.target.value)}
           value={searchRecipeVal}
           onFocus={() => setIsBlurred(false)}
+          onKeyDown={e => {
+            if (e.key === 'Enter') handleSubmit(e)
+          }}
         />
         {searchRecipeVal && (
           <div className='search-recipes-btn btn' onClick={handleSubmit}>
