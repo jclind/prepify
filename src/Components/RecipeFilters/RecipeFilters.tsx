@@ -1,5 +1,10 @@
 import React, { useState, useEffect, FC } from 'react'
-import Select, { MultiValue, SingleValue } from 'react-select'
+import Select, {
+  GroupBase,
+  InputProps,
+  MultiValue,
+  SingleValue,
+} from 'react-select'
 import { useNavigate, useLocation } from 'react-router-dom'
 import './RecipeFilters.scss'
 import { dietLabelsOptions } from 'src/recipeData/dietLabels'
@@ -7,10 +12,9 @@ import styles from '../../_exports.scss'
 
 type RecipeFiltersProps = {
   options?: { value: string; label: string }[]
-  selectVal: string
   setSelectVal: (val: string) => void
-  selectedTags: string[]
-  setSelectedTags: (val: string[]) => void
+  selectedDietTags: string[]
+  setSelectedDietTags: (val: string[]) => void
 }
 type OptionType = {
   value: string
@@ -22,6 +26,7 @@ const customDietLabelStyles = {
     ...provided,
     borderRadius: '20px',
     maxHeight: '30px',
+    minWidth: '150px',
   }),
 
   option: (provided: any) => ({
@@ -51,13 +56,10 @@ const customDietLabelStyles = {
 
 const RecipeFilters: FC<RecipeFiltersProps> = ({
   options,
-  selectVal,
   setSelectVal,
-  selectedTags,
-  setSelectedTags,
+  selectedDietTags,
+  setSelectedDietTags,
 }) => {
-  const [tags, setTags] = useState([])
-  const [dietLabels, setDietLabels] = useState<MultiValue<OptionType>>([])
   const selectSortOptions = options || [
     { value: 'popular', label: 'Popular' },
     { value: 'new', label: 'Date: Newest' },
@@ -74,16 +76,20 @@ const RecipeFilters: FC<RecipeFiltersProps> = ({
   const order = urlParams.get('order')
   const defaultSelectValue =
     selectSortOptions.find(el => el.value === order) || selectSortOptions[0]
+  const dietTagsParamArr = urlParams.get('dietTags')?.split(',') ?? []
+  const defaultDietTagValue = dietLabelsOptions.filter(option =>
+    dietTagsParamArr.includes(option.value)
+  )
+  const [dietSearchVal, setDietSearchVal] = useState('')
 
   useEffect(() => {
     setSelectVal(selectSortOptions[0].value)
-    // getTopTags(5).then(tags => {
-    //   setTags(tags.data)
-    // })
+    setSelectedDietTags(dietTagsParamArr)
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const handleSelectChange = (
+  const handleSortSelectChange = (
     e: SingleValue<{
       value: string
       label: string
@@ -98,27 +104,20 @@ const RecipeFilters: FC<RecipeFiltersProps> = ({
     }
   }
 
-  const handleTagClick = (text: string) => {
-    if (selectedTags.includes(text)) {
-      const idx = selectedTags.indexOf(text)
-      return setSelectedTags([
-        ...selectedTags.slice(0, idx),
-        ...selectedTags.slice(idx + 1, selectedTags.length),
-      ])
-    }
-
-    return setSelectedTags([...selectedTags, text])
-  }
-
-  const handleDietLabelChange = (
+  const handleDietTagsChange = (
     newValues: MultiValue<OptionType> | null,
     actionMeta: any
   ) => {
     if (newValues) {
-      if (newValues.length >= 3) return
-      setDietLabels(newValues)
+      if (newValues.length >= 4) return
+      const newTags = newValues.map(option => option.value)
+      setSelectedDietTags(newTags)
+      const dietTagsString = newTags.join(',')
+      console.log(dietTagsString)
+      urlParams.set('dietTags', dietTagsString)
+      navigate(`/recipes?${urlParams}`)
     } else {
-      setDietLabels([])
+      setSelectedDietTags([])
     }
   }
   return (
@@ -128,37 +127,26 @@ const RecipeFilters: FC<RecipeFiltersProps> = ({
         isSearchable={false}
         isClearable={false}
         className='sort-select'
-        onChange={handleSelectChange}
+        onChange={handleSortSelectChange}
         defaultValue={defaultSelectValue}
       />
       <Select
         options={dietLabelsOptions}
         isMulti={true}
+        defaultValue={defaultDietTagValue}
         className='diet-label-select'
-        placeholder={'Diet Label'}
+        placeholder={'Diet Tags'}
         styles={customDietLabelStyles}
-        onChange={handleDietLabelChange}
-        value={dietLabels}
+        onChange={handleDietTagsChange}
+        isSearchable={selectedDietTags.length < 3}
         closeMenuOnSelect={false}
+        inputValue={dietSearchVal}
+        onInputChange={text => {
+          if (text.length <= 16) {
+            setDietSearchVal(text)
+          }
+        }}
       />
-
-      {/* <div className='tags'>
-        {tags.map(tag => {
-          return (
-            <div
-              className={
-                selectedTags.includes(tag.text)
-                  ? 'tag-selected tag'
-                  : 'tag-not-selected tag'
-              }
-              key={tag.text}
-              onClick={() => handleTagClick(tag.text)}
-            >
-              {tag.text} <span className='count'>({tag.count})</span>
-            </div>
-          )
-        })}
-      </div> */}
     </div>
   )
 }

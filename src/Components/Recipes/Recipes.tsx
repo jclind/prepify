@@ -56,6 +56,7 @@ const Recipes = () => {
   console.log(totalResults, recipeList.length)
 
   useEffect(() => {
+    console.log('here', selectedTags)
     if (selectFilterVal) {
       setCurrPage(0)
       getRecipes(0)
@@ -80,10 +81,9 @@ const Recipes = () => {
         <SearchRecipesInput defaultVal={query} autoComplete={true} />
         <section className='recipes-container'>
           <RecipeFilters
-            selectVal={selectFilterVal}
             setSelectVal={setSelectFilterVal}
-            selectedTags={selectedTags}
-            setSelectedTags={setSelectedTags}
+            selectedDietTags={selectedTags}
+            setSelectedDietTags={setSelectedTags}
           />
           {totalResults === 0 ? (
             <div>No Results Found</div>
