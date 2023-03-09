@@ -9,12 +9,16 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import './RecipeFilters.scss'
 import { dietLabelsOptions } from 'src/recipeData/dietLabels'
 import styles from '../../_exports.scss'
+import { cuisinesListOptions } from 'src/recipeData/cuisinesList'
 
 type RecipeFiltersProps = {
   options?: { value: string; label: string }[]
   setSelectVal: (val: string) => void
   selectedDietTags: string[]
   setSelectedDietTags: (val: string[]) => void
+  selectedCuisine: string
+  setSelectedCuisine: (val: string) => void
+  setFiltersLoading: (val: boolean) => void
 }
 type OptionType = {
   value: string
@@ -54,11 +58,22 @@ const customDietLabelStyles = {
   }),
 }
 
+const getOptionFromValue = (val: string, options: OptionType[]) => {
+  const result = options.find(el => el.value === val)
+  if (!result?.value) {
+    return null
+  }
+  return result
+}
+
 const RecipeFilters: FC<RecipeFiltersProps> = ({
   options,
   setSelectVal,
   selectedDietTags,
   setSelectedDietTags,
+  selectedCuisine,
+  setSelectedCuisine,
+  setFiltersLoading,
 }) => {
   const selectSortOptions = options || [
     { value: 'popular', label: 'Popular' },
@@ -80,12 +95,15 @@ const RecipeFilters: FC<RecipeFiltersProps> = ({
   const defaultDietTagValue = dietLabelsOptions.filter(option =>
     dietTagsParamArr.includes(option.value)
   )
+  const cuisine = urlParams.get('cuisine')
   const [dietSearchVal, setDietSearchVal] = useState('')
 
   useEffect(() => {
     setSelectVal(selectSortOptions[0].value)
     setSelectedDietTags(dietTagsParamArr)
+    setSelectedCuisine(cuisine ?? '')
 
+    setFiltersLoading(false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -97,9 +115,12 @@ const RecipeFilters: FC<RecipeFiltersProps> = ({
   ) => {
     if (e) {
       const value = e.value
-      console.log(value)
       setSelectVal(value)
-      urlParams.set('order', value)
+      if (value !== 'popular') {
+        urlParams.set('order', value)
+      } else {
+        urlParams.delete('order')
+      }
       navigate(`/recipes?${urlParams}`)
     }
   }
@@ -108,16 +129,35 @@ const RecipeFilters: FC<RecipeFiltersProps> = ({
     newValues: MultiValue<OptionType> | null,
     actionMeta: any
   ) => {
-    if (newValues) {
+    if (newValues && newValues.length > 0) {
       if (newValues.length >= 4) return
       const newTags = newValues.map(option => option.value)
       setSelectedDietTags(newTags)
       const dietTagsString = newTags.join(',')
-      console.log(dietTagsString)
       urlParams.set('dietTags', dietTagsString)
-      navigate(`/recipes?${urlParams}`)
     } else {
+      console.log('here?')
+      urlParams.delete('dietTags')
       setSelectedDietTags([])
+    }
+    navigate(`/recipes?${urlParams}`)
+  }
+  const handleCuisineChange = (
+    e: SingleValue<{
+      value: string
+      label: string
+    }>
+  ) => {
+    if (e) {
+      const value = e.value
+      if (!e.value) {
+        setSelectedCuisine('')
+        urlParams.delete('cuisine')
+      } else {
+        setSelectedCuisine(value)
+        urlParams.set('cuisine', value)
+      }
+      navigate(`/recipes?${urlParams}`)
     }
   }
   return (
@@ -146,6 +186,14 @@ const RecipeFilters: FC<RecipeFiltersProps> = ({
             setDietSearchVal(text)
           }
         }}
+      />
+      <Select
+        options={cuisinesListOptions}
+        placeholder='Cuisine'
+        value={getOptionFromValue(selectedCuisine, cuisinesListOptions)}
+        className='cuisine-select'
+        styles={customDietLabelStyles}
+        onChange={handleCuisineChange}
       />
     </div>
   )

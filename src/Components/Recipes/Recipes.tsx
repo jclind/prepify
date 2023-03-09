@@ -8,14 +8,17 @@ import { Helmet } from 'react-helmet'
 import RecipeAPI from 'src/api/recipes'
 import { RecipeType } from 'types'
 import { TailSpin } from 'react-loader-spinner'
+import cuisinesList from 'src/recipeData/cuisinesList'
 
 const Recipes = () => {
   const [recipeList, setRecipeList] = useState<RecipeType[]>([])
 
   const [selectFilterVal, setSelectFilterVal] = useState('')
   const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [selectedCuisine, setSelectedCuisine] = useState('')
 
   const [fetchRecipesLoading, setFetchRecipesLoading] = useState(false)
+  const [filtersLoading, setFiltersLoading] = useState(true)
 
   const [currPage, setCurrPage] = useState<number | null>(null)
   const [totalResults, setTotalResults] = useState<number | null>(null)
@@ -25,12 +28,9 @@ const Recipes = () => {
   const param = urlParams.get('q')
   const query = param ? param.split('-').join(' ') : ''
 
-  useEffect(() => {
-    getRecipes(0)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.search])
-
   const getRecipes = (page: number) => {
+    console.log('SUSSY')
+
     const orderParam = urlParams.get('order')
     const filter = orderParam || selectFilterVal
     const recipesPerPage = 3
@@ -53,16 +53,15 @@ const Recipes = () => {
       .finally(() => setFetchRecipesLoading(false))
   }
 
-  console.log(totalResults, recipeList.length)
-
   useEffect(() => {
-    console.log('here', selectedTags)
-    if (selectFilterVal) {
+    if (!filtersLoading) {
+      console.log('heh?')
+      setRecipeList([])
       setCurrPage(0)
       getRecipes(0)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectFilterVal, selectedTags])
+  }, [selectFilterVal, selectedTags, selectedCuisine, location.search])
 
   useEffect(() => {
     if (currPage !== null && currPage !== 0) {
@@ -84,6 +83,9 @@ const Recipes = () => {
             setSelectVal={setSelectFilterVal}
             selectedDietTags={selectedTags}
             setSelectedDietTags={setSelectedTags}
+            selectedCuisine={selectedCuisine}
+            setSelectedCuisine={setSelectedCuisine}
+            setFiltersLoading={setFiltersLoading}
           />
           {totalResults === 0 ? (
             <div>No Results Found</div>

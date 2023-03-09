@@ -13,57 +13,23 @@
 
   .sort-select {
     max-width: 250px;
+    width: 250px;
     width: 100%;
   }
   .diet-label-select {
     width: fit-content;
+    margin-left: auto;
+    padding-right: 1rem;
     .Select-control {
       border-radius: 20%;
     }
   }
 
-  .tags {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 1rem;
-    cursor: pointer;
-
-    .tag {
-      padding-right: 0.5rem;
-
-      .count {
-        margin-left: 0.25rem;
-      }
-    }
-    .tag.tag-not-selected {
-      background: none;
-      border: 1px solid $primary-text;
-    }
-  }
-
-  @media screen and (max-width: 956px) {
-    .tags {
-      gap: 0.25rem;
-      .tag {
-        font-size: toRem(12);
-        font-weight: 700;
-      }
-    }
-  }
   @media screen and (max-width: 815px) {
     flex-direction: column;
     align-items: flex-start;
     padding-bottom: 1.5rem;
     gap: 1rem;
-    .tags {
-      gap: 0.5rem;
-      flex-wrap: wrap;
-      .tag {
-        font-size: toRem(14);
-        font-weight: 600;
-      }
-    }
   }
   @media screen and (max-width: 725px) {
     align-items: center;
