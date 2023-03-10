@@ -15,6 +15,7 @@ import {
   IngredientsType,
   NewReviewType,
   NutritionDataType,
+  OptionalReviewType,
   RecipeDBResponseType,
   RecipeFormType,
   RecipeSearchResponseType,
@@ -299,6 +300,19 @@ class RecipeAPIClass {
       `getReviews?userId=${uid}&recipeId=${recipeId}&page=${page}&reviewsPerPage=${reviewsPerPage}&filter=${filter}`
     )
   }
+  async getSingleUserReviews(
+    page = 0,
+    reviewsPerPage = 5,
+    filter = 'new',
+    returnRecipeData = false
+  ): Promise<{ reviews: OptionalReviewType[]; totalCount: number } | null> {
+    const uid = AuthAPI.getUID()
+    if (!uid) return null
+    const reviewResult = await http.get(
+      `getSingleUserReviews?userId=${uid}&page=${page}&reviewsPerPage=${reviewsPerPage}&filter=${filter}&returnRecipeData=${returnRecipeData}`
+    )
+    return reviewResult.data
+  }
 
   // Ingredients
   async getIngredientData(val: string): Promise<IngredientsType> {
@@ -319,12 +333,17 @@ class RecipeAPIClass {
   }
 
   // User
-  async getSavedRecipes(page: number, recipesPerPage: number, order: string) {
+  async getSavedRecipes(
+    page: number,
+    recipesPerPage: number,
+    order: string
+  ): Promise<{ recipes: RecipeType[]; totalCount: number } | null> {
     const uid = AuthAPI.getUID()
     if (!uid) return null
-    return await http.get(
+    const result = await http.get(
       `getSavedRecipes?userId=${uid}&page=${page}&recipesPerPage=${recipesPerPage}&order=${order}`
     )
+    return result.data
   }
 }
 

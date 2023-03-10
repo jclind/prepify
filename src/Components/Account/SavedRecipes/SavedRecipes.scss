@@ -1,4 +1,5 @@
 .saved-recipes {
+  padding-bottom: 2rem;
   .saved-recipes-filters {
     margin-top: 1rem;
     max-width: 250px;
@@ -32,6 +33,22 @@
     }
     @media screen and (max-width: 725px) {
       grid-template-columns: 1fr;
+    }
+  }
+  .no-recipes-saved {
+    text-align: center;
+    margin: 0 auto;
+    margin-top: 3rem;
+    padding-bottom: 3rem;
+
+    h2 {
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
+
+    p {
+      font-size: 16px;
+      color: #666;
     }
   }
 }

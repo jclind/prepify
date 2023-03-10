@@ -39,8 +39,10 @@ $nav-height: toRem(100);
 
 $footer-height: toRem(150);
 $footer-margin: 4rem;
+$page-min-height: calc(100vh - #{$footer-height} - #{$nav-height});
 
-$page-top-padding: calc(#{$nav-height} + 2rem);
+$page-top-padding: 2rem;
+$page-top-margin: calc(#{$nav-height});
 
 $recipe-page-max-width: 1000px;
 $recipe-body-max-width: 800px;

@@ -73,8 +73,11 @@ input {
 .page {
   width: 90%;
   max-width: $max-width;
+  min-height: $page-min-height;
+  box-sizing: border-box;
   margin: 0 auto;
   padding-top: $page-top-padding;
+  margin-top: $page-top-margin;
 }
 
 .abs-logo {

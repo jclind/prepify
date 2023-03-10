@@ -110,13 +110,29 @@ export interface GetSavedRecipesResponseType {
   }[]
 }
 
-export interface ReviewType {
+export type OptionalReviewType = {
+  _id: string
   userId: string
   recipeId: string
-  reviewText: string
-  rating: number
-  reviewCreatedAt: string
+  rating: string
+  ratingLastUpdated: string
+  reviewCreatedAt?: string
+  reviewLastUpdated?: string
+  reviewText?: string
+  recipeTitle?: string
+  recipeImage?: string
 }
+export type ReviewType = {
+  _id: string
+  userId: string
+  recipeId: string
+  rating: string
+  ratingLastUpdated: string
+  reviewCreatedAt: string
+  reviewLastUpdated: string
+  reviewText: string
+}
+
 export interface NewReviewType {
   userId: string
   recipeId: string
