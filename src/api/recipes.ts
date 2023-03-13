@@ -1,13 +1,7 @@
 import { IngredientResponse, ingredientParser } from '@jclind/ingredient-parser'
 
 import ObjectID from 'bson-objectid'
-import {
-  getDownloadURL,
-  getStorage,
-  ref,
-  uploadBytes,
-  uploadBytesResumable,
-} from 'firebase/storage'
+import { getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage'
 import dietLabels from 'src/recipeData/dietLabels'
 import { calculateServingPrice } from 'src/util/calculateServingPrice'
 import {
@@ -20,7 +14,6 @@ import {
   RecipeFormType,
   RecipeSearchResponseType,
   RecipeType,
-  ReviewType,
 } from 'types'
 import AuthAPI from './auth'
 import { http, nutrition } from './http-common'
@@ -324,11 +317,8 @@ class RecipeAPIClass {
 
     const result: IngredientResponse = await ingredientParser(val, apiKey)
 
-    console.log(ingredientParser('1 Tablespoon Vinegar', apiKey))
-
     const data: IngredientsType = { ...result, id: uuidv4() }
 
-    console.log(data)
     return data
   }
 

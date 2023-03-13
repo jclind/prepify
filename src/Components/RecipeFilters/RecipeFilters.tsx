@@ -1,10 +1,5 @@
 import React, { useState, useEffect, FC } from 'react'
-import Select, {
-  GroupBase,
-  InputProps,
-  MultiValue,
-  SingleValue,
-} from 'react-select'
+import Select, { MultiValue, SingleValue } from 'react-select'
 import { useNavigate, useLocation } from 'react-router-dom'
 import './RecipeFilters.scss'
 import { dietLabelsOptions } from 'src/recipeData/dietLabels'
@@ -136,7 +131,6 @@ const RecipeFilters: FC<RecipeFiltersProps> = ({
       const dietTagsString = newTags.join(',')
       urlParams.set('dietTags', dietTagsString)
     } else {
-      console.log('here?')
       urlParams.delete('dietTags')
       setSelectedDietTags([])
     }

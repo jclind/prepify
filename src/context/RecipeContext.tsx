@@ -127,7 +127,6 @@
 //     return fileUrl
 //   } else {
 //     // !ERROR
-//     console.log('No Image Provided')
 //     return ''
 //   }
 // }
@@ -224,7 +223,6 @@
 //   //     return recipeId
 //   //     // return await http.post('addRecipe', returnRecipeData)
 //   //   } catch (error) {
-//   //     console.log(error)
 //   //     // !CATCH ERROR
 //   //   }
 //   // }

@@ -4,12 +4,10 @@ import { InstructionsType } from 'types'
 import Handler from '../../ListComponents/Handler'
 import RemoveItem from '../../ListComponents/RemoveItem'
 import './InstructionItem.scss'
-import '../../ListComponents/Item.scss'
-import RecipeFormInput from '../../RecipeFormInput'
 import RecipeFormTextArea from '../../RecipeFormTextArea'
+import '../../ListComponents/Item.scss'
 
 type InstructionItemProps = {
-  instructions: InstructionsType[]
   instruction: InstructionsType
   reorderActive?: boolean
   provided?: DraggableProvided
@@ -19,7 +17,6 @@ type InstructionItemProps = {
 }
 
 const InstructionItem: FC<InstructionItemProps> = ({
-  instructions,
   instruction,
   reorderActive,
   provided,

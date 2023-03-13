@@ -1,4 +1,4 @@
-import React, { ChangeEvent, KeyboardEvent, Ref } from 'react'
+import React, { ChangeEvent, KeyboardEvent } from 'react'
 import './RecipeFormInput.scss'
 
 type RecipeFormTextAreaProps = {

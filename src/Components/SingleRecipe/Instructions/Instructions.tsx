@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React from 'react'
 import './Instructions.scss'
 import Skeleton from 'react-loading-skeleton'
 import 'react-loading-skeleton/dist/skeleton.css'
@@ -12,13 +12,13 @@ type IntructionItemProps = {
 }
 
 const InstructionItem = ({ instruction, loading }: IntructionItemProps) => {
-  const [checked, setChecked] = useState(false)
+  // const [checked, setChecked] = useState(false)
 
-  const handleOnClick = () => {
-    if (!loading) {
-      setChecked(!checked)
-    }
-  }
+  // const handleOnClick = () => {
+  //   if (!loading) {
+  //     setChecked(!checked)
+  //   }
+  // }
   if (loading || !instruction) {
     return (
       <div className='instruction'>

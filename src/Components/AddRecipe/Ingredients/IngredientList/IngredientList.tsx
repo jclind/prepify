@@ -1,4 +1,4 @@
-import React, { Dispatch, FC, SetStateAction, useState } from 'react'
+import React, { Dispatch, FC, SetStateAction } from 'react'
 import { IngredientsType } from 'types'
 import { DndContext, Drag } from '../../Dnd'
 import IngredientItem from '../IngredientItem'

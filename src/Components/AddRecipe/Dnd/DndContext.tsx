@@ -1,4 +1,4 @@
-import React, { Dispatch, SetStateAction } from 'react'
+import React from 'react'
 import { DragDropContext, DropResult } from 'react-beautiful-dnd'
 import { reorder } from '../../../util/reorder'
 import Drop from './Drop'
@@ -19,7 +19,6 @@ const DndContext = <T extends {}>({
     if (!result.destination) {
       return
     }
-    // console.log(result)
 
     const items = reorder(list, result.source.index, result.destination.index)
 

@@ -99,7 +99,6 @@ const IngredientItem: FC<IngredientItemProps> = ({
       setLoading({ isLoading: true, index: currIndex })
       const ingredientDataRes = await RecipeAPI.getIngredientData(editedVal)
       if ('error' in ingredientDataRes) {
-        console.log(ingredientDataRes.error)
       }
       editIngredient(ingredient.id, { ...ingredientDataRes })
       setLoading({ isLoading: false, index: -1 })
