@@ -1,9 +1,62 @@
-import React, { useEffect, useState } from 'react'
+import React, { FC, useEffect, useState } from 'react'
 import Select, { SingleValue } from 'react-select'
 import RecipeAPI from 'src/api/recipes'
-import { OptionalReviewType, ReviewType } from 'types'
+import { OptionalReviewType } from 'types'
 import { selectCustomStyles } from '../selectCustomStyles'
+import StarRatings from 'react-star-ratings'
 import './UserRatings.scss'
+import { timeElapsedSince } from 'src/util/timeElapsedSince'
+import Skeleton from 'react-loading-skeleton'
+
+type SingleReviewProps = {
+  review?: OptionalReviewType
+  loading: boolean
+}
+const SingleReview: FC<SingleReviewProps> = ({ review, loading }) => {
+  return (
+    <div className='single-review'>
+      <div className='recipe-data-container'>
+        <div className='img-container'>
+          {loading ? (
+            <Skeleton className='img' baseColor={skeletonColor} />
+          ) : (
+            <img
+              className='img'
+              src={review?.recipeImage}
+              alt={review?.recipeTitle}
+            />
+          )}
+        </div>
+        {loading ? (
+          <Skeleton baseColor={skeletonColor} width={'30ch'} height={'25px'} />
+        ) : (
+          <h4>{review?.recipeTitle}</h4>
+        )}
+      </div>
+      <div className='star-rating-container'>
+        {loading ? (
+          <Skeleton baseColor={skeletonColor} width={'20ch'} height={'22px'} />
+        ) : (
+          <>
+            <StarRatings
+              rating={Number(review?.rating)}
+              starRatedColor='#ff5722'
+              starDimension='16px'
+              starSpacing='1px'
+              name='rating'
+            />
+            <div className='date'>
+              {timeElapsedSince(review?.ratingLastUpdated ?? '')}
+            </div>
+          </>
+        )}
+      </div>
+      {!loading && review?.reviewText && (
+        <div className='review-text'>{review?.reviewText}</div>
+      )}
+    </div>
+  )
+}
 
 const options = [
   // { value: 'popular', label: 'Popular' },
@@ -13,14 +66,17 @@ const options = [
   // { value: 'longest', label: 'Time: Longest' },
   { value: 'newAdd', label: 'Save Time: Recent' },
   { value: 'oldAdd', label: 'Save Time: Oldest' },
+  { value: 'positive', label: 'Rating: Most Positive' },
+  { value: 'negative', label: 'Rating: Least Positive' },
 ]
-
+const skeletonColor = '#d6d6d6'
 const Ratings = () => {
   const [reviews, setReviews] = useState<OptionalReviewType[]>([])
   const [page, setPage] = useState(0)
-  const [isMoreRecipes, setIsMoreRecipes] = useState(false)
+  const [isMoreReviews, setIsMoreReviews] = useState(true)
 
   const [selectOption, setSelectOption] = useState(options[0])
+  const [loading, setLoading] = useState(true)
 
   const handleGetUserReviews = (recipesPage: number, selectValue: string) => {
     if (recipesPage >= 0 && selectValue) {
@@ -34,13 +90,14 @@ const Ratings = () => {
             setReviews(updatedArr)
 
             if (Number(res.totalCount) > updatedArr.length) {
-              setIsMoreRecipes(true)
+              setIsMoreReviews(true)
             } else {
-              setIsMoreRecipes(false)
+              setIsMoreReviews(false)
             }
 
             setPage(recipesPage + 1)
           }
+          setLoading(false)
         }
       )
     }
@@ -67,7 +124,7 @@ const Ratings = () => {
 
   return (
     <div className='user-ratings'>
-      {reviews.length > 0 ? (
+      {reviews.length > 0 || loading ? (
         <>
           <div className='saved-filters'>
             <Select
@@ -81,21 +138,23 @@ const Ratings = () => {
             />
           </div>
           <div className='thumbnails-container'>
-            {reviews.map(review => {
-              console.log(review)
-              return (
-                <div key={review._id}>
-                  <h1>{review.recipeTitle}</h1>
-                  <img
-                    src={review.recipeImage}
-                    alt={review.recipeTitle}
-                    height={50}
-                    width={50}
+            {loading ? (
+              <>
+                <SingleReview loading={true} />
+                <SingleReview loading={true} />
+              </>
+            ) : (
+              reviews.map(review => {
+                return (
+                  <SingleReview
+                    key={review._id}
+                    review={review}
+                    loading={loading}
                   />
-                </div>
-              )
-            })}
-            {isMoreRecipes && reviews.length > 0 ? (
+                )
+              })
+            )}
+            {isMoreReviews && reviews.length > 0 ? (
               <button
                 className='load-more-recipes-btn btn'
                 onClick={handleLoadMoreReviews}

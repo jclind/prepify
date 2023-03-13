@@ -4,4 +4,62 @@
   padding-top: 1rem;
   font-size: toRem(18);
   font-weight: 600;
+  max-width: 550px;
+  margin: 0 auto;
+
+  .thumbnails-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    margin: 2rem 0;
+    .single-review {
+      padding: 1rem;
+      border: 1px solid $tertiary-text;
+      max-width: 550px;
+      box-sizing: border-box;
+      width: 100%;
+      border-radius: $border-radius;
+
+      .recipe-data-container {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        .img-container {
+          height: 50px;
+          width: 50px;
+          border-radius: 50%;
+          overflow: hidden;
+          .img {
+            height: 100%;
+            width: 100%;
+            object-fit: cover;
+          }
+        }
+        h4 {
+          font-weight: 600;
+        }
+      }
+      .star-rating-container {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+        height: 22px;
+
+        .date {
+          font-size: 0.9rem;
+          font-weight: 600;
+          color: $secondary-text;
+        }
+      }
+      .review-text {
+        margin-top: 0.5rem;
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+        font-weight: 500;
+      }
+    }
+  }
 }
