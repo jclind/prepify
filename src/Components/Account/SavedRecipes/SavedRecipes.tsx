@@ -26,7 +26,7 @@ const SavedRecipes = () => {
 
   const handleGetSavedRecipes = (recipesPage: number, selectValue: string) => {
     if (recipesPage >= 0 && selectValue) {
-      RecipeAPI.getSavedRecipes(recipesPage, 5, selectValue).then(res => {
+      RecipeAPI.getSavedRecipes(recipesPage, 2, selectValue).then(res => {
         if (res) {
           const updatedArr =
             recipesPage === 0 ? [...res.recipes] : [...recipes, ...res.recipes]
@@ -86,15 +86,15 @@ const SavedRecipes = () => {
             {recipes.map(recipe => {
               return <RecipeThumbnail key={recipe._id} recipe={recipe} />
             })}
-            {isMoreRecipes && recipes.length > 0 ? (
-              <button
-                className='load-more-recipes-btn btn'
-                onClick={handleLoadMoreRecipes}
-              >
-                Load More Recipes
-              </button>
-            ) : null}
           </div>
+          {isMoreRecipes && recipes.length > 0 ? (
+            <button
+              className='load-more-btn btn'
+              onClick={handleLoadMoreRecipes}
+            >
+              Load More Recipes
+            </button>
+          ) : null}
         </>
       ) : (
         <div className='no-recipes-saved'>

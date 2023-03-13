@@ -119,7 +119,7 @@ const Recipes = () => {
           totalResults > recipeList.length &&
           currPage !== null ? (
             <button
-              className='load-more-recipes-btn btn'
+              className='load-more-btn btn'
               onClick={() => setCurrPage(currPage + 1)}
               disabled={fetchRecipesLoading}
             >

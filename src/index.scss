@@ -70,6 +70,27 @@ input {
   }
 }
 
+.load-more-btn {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 250px;
+  height: 45px;
+  border: 1px solid $gray-400;
+  margin: 0 auto;
+  border-radius: $border-radius;
+  font-size: 1.3rem;
+  white-space: nowrap;
+
+  &:hover {
+    border-color: $tertiary-text;
+  }
+
+  @media screen and (max-width: 375px) {
+    font-size: toRem(20);
+  }
+}
+
 .page {
   width: 90%;
   max-width: $max-width;

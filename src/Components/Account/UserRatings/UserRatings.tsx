@@ -7,14 +7,21 @@ import StarRatings from 'react-star-ratings'
 import './UserRatings.scss'
 import { timeElapsedSince } from 'src/util/timeElapsedSince'
 import Skeleton from 'react-loading-skeleton'
+import { useNavigate } from 'react-router-dom'
 
 type SingleReviewProps = {
   review?: OptionalReviewType
   loading: boolean
 }
 const SingleReview: FC<SingleReviewProps> = ({ review, loading }) => {
+  const navigate = useNavigate()
+
   return (
-    <div className='single-review'>
+    <button
+      className='single-review'
+      disabled={loading}
+      onClick={() => !loading && navigate(`/recipes/${review?.recipeId}`)}
+    >
       <div className='recipe-data-container'>
         <div className='img-container'>
           {loading ? (
@@ -54,7 +61,7 @@ const SingleReview: FC<SingleReviewProps> = ({ review, loading }) => {
       {!loading && review?.reviewText && (
         <div className='review-text'>{review?.reviewText}</div>
       )}
-    </div>
+    </button>
   )
 }
 
@@ -80,7 +87,7 @@ const Ratings = () => {
 
   const handleGetUserReviews = (recipesPage: number, selectValue: string) => {
     if (recipesPage >= 0 && selectValue) {
-      RecipeAPI.getSingleUserReviews(recipesPage, 5, selectValue, true).then(
+      RecipeAPI.getSingleUserReviews(recipesPage, 2, selectValue, true).then(
         res => {
           if (res) {
             const updatedArr =
@@ -154,15 +161,15 @@ const Ratings = () => {
                 )
               })
             )}
-            {isMoreReviews && reviews.length > 0 ? (
-              <button
-                className='load-more-recipes-btn btn'
-                onClick={handleLoadMoreReviews}
-              >
-                Load More Reviews
-              </button>
-            ) : null}
           </div>
+          {isMoreReviews && reviews.length > 0 ? (
+            <button
+              className='load-more-btn btn'
+              onClick={handleLoadMoreReviews}
+            >
+              Load More Reviews
+            </button>
+          ) : null}
         </>
       ) : (
         <div className='no-recipes-saved'>

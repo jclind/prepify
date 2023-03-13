@@ -121,6 +121,7 @@ export type OptionalReviewType = {
   reviewText?: string
   recipeTitle?: string
   recipeImage?: string
+  recipeId?: string
 }
 export type ReviewType = {
   _id: string
