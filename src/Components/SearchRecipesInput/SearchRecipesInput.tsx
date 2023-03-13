@@ -76,7 +76,7 @@ const SearchRecipesInput = ({
           setAutoCompleteResponse(res)
         })
         .catch(e => {
-          console.log(e)
+          console.log('Error:', e)
         })
     } else {
       setAutoCompleteResponse([])

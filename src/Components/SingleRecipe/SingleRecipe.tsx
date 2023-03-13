@@ -7,7 +7,6 @@ import SaveRecipeBtn from './SaveRecipeBtn'
 import AddRatingBtn from './AddRatingBtn'
 import PrintRecipeBtn from './PrintRecipeBtn'
 import RecipeRatings from './RecipeRatings/RecipeRatings'
-import NutritionData from './NutritionData/NutritionData'
 import RecipeNotFound from './RecipeNotFound.js/RecipeNotFound'
 
 import { formatRating } from '../../util/formatRating'
@@ -71,7 +70,6 @@ const SingleRecipe = () => {
   useEffect(() => {
     if (currRecipe && servingSize > 0) {
       updateRecipeLocalStorage(currRecipe._id, servingSize)
-      console.log(servingSize)
       setModIngredients(
         updateIngredients(
           currRecipe.ingredients,
@@ -79,8 +77,6 @@ const SingleRecipe = () => {
           servingSize
         )
       )
-      // console.log(updateIngredients([currRecipe.ingredients[0]], 4, 4))
-      // console.log(updateIngredients([currRecipe.ingredients[0]], 4, 5))
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [servingSize])

@@ -36,7 +36,6 @@ const InstructionList: FC<InstructionListProps> = ({
           <Drag key={instr.id} id={instr.id} index={idx}>
             <InstructionItem
               instruction={instr}
-              instructions={instructions}
               reorderActive={reorderActive}
               removeInstruction={removeInstruction}
               setInstructions={setInstructions}

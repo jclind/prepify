@@ -150,5 +150,5 @@ export interface AddRecipeErrorType {
   ingredients: string
   instructions: string
   cuisine: string
-  course: string
+  mealType: string
 }

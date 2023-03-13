@@ -1,35 +1,35 @@
 import { IngredientData, ParsedIngredient } from '@jclind/ingredient-parser'
 import { IngredientsType } from 'types'
-import { evalNum } from './validateIngredientQuantityStr'
+// import { evalNum } from './validateIngredientQuantityStr'
 
-const mixedToDecimal = (str: string): number => {
-  const split: string[] = str.split(' ')
+// const mixedToDecimal = (str: string): number => {
+//   const split: string[] = str.split(' ')
 
-  const decimal = split.reduce((prev, curr) => {
-    return evalNum(prev) + evalNum(curr)
-  }, 0)
+//   const decimal = split.reduce((prev, curr) => {
+//     return evalNum(prev) + evalNum(curr)
+//   }, 0)
 
-  return decimal || 0
-}
-const decimalToFraction = (num: number) => {
-  const fracs = [
-    { frac: '0', num: 0 },
-    { frac: '1/8', num: 0.125 },
-    { frac: '1/4', num: 0.25 },
-    { frac: '1/3', num: 0.333 },
-    { frac: '3/8', num: 0.375 },
-    { frac: '1/2', num: 0.5 },
-    { frac: '5/8', num: 0.625 },
-    { frac: '2/3', num: 0.666 },
-    { frac: '3/4', num: 0.75 },
-    { frac: '7/8', num: 0.875 },
-  ]
+//   return decimal || 0
+// }
+// const decimalToFraction = (num: number) => {
+//   const fracs = [
+//     { frac: '0', num: 0 },
+//     { frac: '1/8', num: 0.125 },
+//     { frac: '1/4', num: 0.25 },
+//     { frac: '1/3', num: 0.333 },
+//     { frac: '3/8', num: 0.375 },
+//     { frac: '1/2', num: 0.5 },
+//     { frac: '5/8', num: 0.625 },
+//     { frac: '2/3', num: 0.666 },
+//     { frac: '3/4', num: 0.75 },
+//     { frac: '7/8', num: 0.875 },
+//   ]
 
-  const closest = fracs.sort(
-    (a, b) => Math.abs(num - a.num) - Math.abs(num - b.num)
-  )[0]
-  return closest.frac
-}
+//   const closest = fracs.sort(
+//     (a, b) => Math.abs(num - a.num) - Math.abs(num - b.num)
+//   )[0]
+//   return closest.frac
+// }
 
 export const updateIngredients = (
   ingredients: IngredientsType[],

@@ -78,7 +78,6 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
   const logout = () => {
     signOut(auth)
       .then(() => {
-        console.log('sign out success')
         navigate('/')
       })
       .catch(err => {
@@ -110,7 +109,6 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
     signInWithEmailAndPassword(auth, email, password)
       .then(userCredential => {
         setUser(userCredential.user)
-        console.log('Login Success')
         navigate('/')
       })
       .catch(err => {
@@ -172,7 +170,6 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
     sendPasswordResetEmail(auth, email)
       .then(() => {
         setSuccess('Email sent! Check your inbox for instructions.')
-        console.log('email sent')
       })
       .catch(err => {
         console.log(err)
@@ -246,10 +243,8 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
           getUsername(userInstance.uid)
         }
 
-        console.log('logged in')
         setUser(userInstance)
       } else {
-        console.log('logged out')
         setUser(null)
       }
       setLoading(false)

@@ -20,6 +20,7 @@ import MealTypeSelector from './MealTypeSelector/MealTypeSelector'
 import { hrMinToMin } from 'src/util/hrMinToMin'
 import RecipeAPI from 'src/api/recipes'
 import styles from '../../_exports.scss'
+import AddRecipeFormError from './AddRecipeFormError'
 
 const AddRecipe = () => {
   const [addRecipeLoading, setAddRecipeLoading] = useState(false)
@@ -47,7 +48,7 @@ const AddRecipe = () => {
 
   const [isFormValid, setIsFormValid] = useState(false)
 
-  const validate = () => {
+  const validate = (assignErrors: boolean = false) => {
     let newErrors: Partial<AddRecipeErrorType> = {}
 
     if (!title) {
@@ -64,9 +65,9 @@ const AddRecipe = () => {
       newErrors.ingredients = 'Recipe must contain ingredients'
     if (instructions.length <= 0)
       newErrors.instructions = 'Instructions are required'
-    if (mealTypes.length <= 0) newErrors.course = 'Course required'
+    if (mealTypes.length <= 0) newErrors.mealType = 'Meal type required'
 
-    setErrors(newErrors)
+    assignErrors && setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
   const clearForm = () => {
@@ -85,15 +86,9 @@ const AddRecipe = () => {
     setErrors({})
   }
   useEffect(() => {
-    const ptm = hrMinToMin(prepTime)
-    const ctm = hrMinToMin(cookTime)
-    console.log('prepTime:', ptm)
-    console.log('cookTime:', ctm)
-    console.log(ptm + (ctm ?? 0))
-  }, [prepTime, cookTime])
-  useEffect(() => {
     if (validate()) setIsFormValid(true)
     else setIsFormValid(false)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     title,
     recipeImage,
@@ -105,7 +100,7 @@ const AddRecipe = () => {
     mealTypes,
   ])
   const handleAddRecipe = async () => {
-    if (validate()) {
+    if (validate(true)) {
       setAddRecipeLoading(true)
       const recipeData: RecipeFormType = {
         title,
@@ -145,7 +140,8 @@ const AddRecipe = () => {
       <div className='container'>
         <div className='container-inner' ref={addRecipeFormRef}>
           <div className='title input-field'>
-            <h2 className='recipe-form-input-label'>Title</h2>
+            <h2 className='recipe-form-input-label'>Title </h2>
+            {errors.title && <AddRecipeFormError error={errors.title} />}
             <RecipeFormInput
               placeholder='Add a title to your recipe.'
               val={title}
@@ -155,10 +151,14 @@ const AddRecipe = () => {
           </div>
           <div className='image-picker input-field'>
             <h2 className='recipe-form-input-label'>Select Image</h2>
+            {errors.image && <AddRecipeFormError error={errors.image} />}
             <ImagePicker image={recipeImage} setImage={setRecipeImage} />
           </div>
           <div className='description input-field'>
             <h2 className='recipe-form-input-label'>Description</h2>
+            {errors.description && (
+              <AddRecipeFormError error={errors.description} />
+            )}
             <RecipeFormTextArea
               placeholder='Add a description to your recipe'
               val={description}
@@ -167,10 +167,12 @@ const AddRecipe = () => {
           </div>
           <div className='servings input-field'>
             <h2 className='recipe-form-input-label'>Servings</h2>
+            {errors.servings && <AddRecipeFormError error={errors.servings} />}
             <ServingsInput servings={servings} setServings={setServings} />
           </div>
           <div className='prep-time input-field'>
             <h2 className='recipe-form-input-label'>Prep Time</h2>
+            {errors.prepTime && <AddRecipeFormError error={errors.prepTime} />}
             <TimeInput
               label={'How long will your recipe take to prepare?'}
               val={prepTime}
@@ -179,6 +181,7 @@ const AddRecipe = () => {
           </div>
           <div className='cook-time input-field'>
             <h2 className='recipe-form-input-label'>Cook Time</h2>
+            {errors.cookTime && <AddRecipeFormError error={errors.cookTime} />}
             <TimeInput
               label={'How long will your recipe take to cook?'}
               val={cookTime}
@@ -187,6 +190,9 @@ const AddRecipe = () => {
           </div>
           <div className='ingredients input-field'>
             <h2 className='recipe-form-input-label'>Ingredients</h2>
+            {errors.ingredients && (
+              <AddRecipeFormError error={errors.ingredients} />
+            )}
             <IngredientsContainer
               ingredients={ingredients}
               setIngredients={setIngredients}
@@ -194,6 +200,9 @@ const AddRecipe = () => {
           </div>
           <div className='instructions input-field'>
             <h2 className='recipe-form-input-label'>Instructions</h2>
+            {errors.instructions && (
+              <AddRecipeFormError error={errors.instructions} />
+            )}
             <InstructionsContainer
               instructions={instructions}
               setInstructions={setInstructions}
@@ -205,6 +214,7 @@ const AddRecipe = () => {
           </div>
           <div className='course input-field'>
             <h2 className='recipe-form-input-label'>Course</h2>
+            {errors.mealType && <AddRecipeFormError error={errors.mealType} />}
             <MealTypeSelector
               mealTypes={mealTypes}
               setMealTypes={setMealTypes}

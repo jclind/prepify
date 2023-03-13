@@ -86,7 +86,6 @@ const Ingredients = ({
 
   useEffect(() => {
     setModServingSize(servingSize)
-    // console.log(ingredients)
   }, [servingSize])
 
   const decYieldSize = () => {

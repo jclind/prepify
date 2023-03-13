@@ -1,6 +1,5 @@
 import React, { useState, useRef } from 'react'
-import { AiOutlineEdit, AiOutlineClose } from 'react-icons/ai'
-import RecipeAPI from 'src/api/recipes'
+import { AiOutlineClose } from 'react-icons/ai'
 import './ImagePicker.scss'
 
 interface ImagePickerProps {

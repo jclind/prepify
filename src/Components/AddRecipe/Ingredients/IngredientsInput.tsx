@@ -19,12 +19,10 @@ const IngredientsInput = ({
   ingredientLoading,
 }: IngredientsInputProps) => {
   const [inputVal, setInputVal] = useState('')
-  const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
   const handleAddIngredient = async () => {
     setIngredientLoading({ isLoading: true, index: ingredientsLength })
-    setError('')
     if (loading || !inputVal) return
 
     setLoading(true)
@@ -34,7 +32,7 @@ const IngredientsInput = ({
       addIngredientToList(data)
       setInputVal('')
     } else {
-      setError('something went wrong')
+      // !! ERROR
     }
     setLoading(false)
     setIngredientLoading({ isLoading: false, index: -1 })

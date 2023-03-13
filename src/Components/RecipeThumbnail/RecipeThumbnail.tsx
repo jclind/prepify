@@ -24,9 +24,7 @@ const RecipeThumbnail = ({ recipe, loading }: RecipeThumbnailType) => {
     }
   }
 
-  useEffect(() => {
-    console.log(recipe?.servingPrice)
-  }, [recipe])
+  useEffect(() => {}, [recipe])
 
   return (
     <>

@@ -8,7 +8,6 @@ import { Helmet } from 'react-helmet'
 import RecipeAPI from 'src/api/recipes'
 import { RecipeType } from 'types'
 import { TailSpin } from 'react-loader-spinner'
-import cuisinesList from 'src/recipeData/cuisinesList'
 
 const Recipes = () => {
   const [recipeList, setRecipeList] = useState<RecipeType[]>([])
@@ -29,11 +28,9 @@ const Recipes = () => {
   const query = param ? param.split('-').join(' ') : ''
 
   const getRecipes = (page: number) => {
-    console.log('SUSSY')
-
     const orderParam = urlParams.get('order')
     const filter = orderParam || selectFilterVal
-    const recipesPerPage = 3
+    const recipesPerPage = 9
 
     setFetchRecipesLoading(true)
     RecipeAPI.getAllRecipes(
@@ -62,7 +59,6 @@ const Recipes = () => {
 
   useEffect(() => {
     if (!filtersLoading) {
-      console.log('heh?')
       setRecipeList([])
       setCurrPage(0)
       getRecipes(0)

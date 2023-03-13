@@ -87,7 +87,7 @@ const Ratings = () => {
 
   const handleGetUserReviews = (recipesPage: number, selectValue: string) => {
     if (recipesPage >= 0 && selectValue) {
-      RecipeAPI.getSingleUserReviews(recipesPage, 2, selectValue, true).then(
+      RecipeAPI.getSingleUserReviews(recipesPage, 5, selectValue, true).then(
         res => {
           if (res) {
             const updatedArr =

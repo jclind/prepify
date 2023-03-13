@@ -26,14 +26,12 @@ const SavedRecipes = () => {
 
   const handleGetSavedRecipes = (recipesPage: number, selectValue: string) => {
     if (recipesPage >= 0 && selectValue) {
-      RecipeAPI.getSavedRecipes(recipesPage, 2, selectValue).then(res => {
+      RecipeAPI.getSavedRecipes(recipesPage, 6, selectValue).then(res => {
         if (res) {
           const updatedArr =
             recipesPage === 0 ? [...res.recipes] : [...recipes, ...res.recipes]
           setRecipes([...updatedArr])
-          console.log(res)
 
-          console.log(res.totalCount, recipes.length)
           if (Number(res.totalCount) > updatedArr.length) {
             setIsMoreRecipes(true)
           } else {

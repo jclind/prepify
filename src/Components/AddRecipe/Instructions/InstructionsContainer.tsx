@@ -37,6 +37,7 @@ const InstructionsContainer = ({
         // Get array of instructions without headers for proper indexing
         const instructionOnlyArr = prev.filter(instr => {
           if ('content' in instr) return instr
+          else return instr
         })
         instructionData = {
           ...data,
@@ -56,20 +57,6 @@ const InstructionsContainer = ({
 
   return (
     <div className='ingredients-container'>
-      {/* <IngredientsInput
-        addIngredientToList={addIngredientToList}
-        setIngredientLoading={setIngredientLoading}
-        ingredientsLength={ingredients.length}
-      />
-      
-      <IngredientList
-        ingredients={ingredients}
-        setIngredients={setIngredients}
-        ingredientLoading={ingredientLoading}
-        setIngredientLoading={setIngredientLoading}
-        reorderActive={reorderActive}
-        removeIngredient={removeIngredient}
-      /> */}
       <RecipeFormInput
         placeholder='Add instruction for your recipe.'
         val={inputVal}
@@ -88,9 +75,7 @@ const InstructionsContainer = ({
       >
         {reorderActive ? 'Done' : 'Reorder'}
       </button>
-      {/* <button className="add-header-btn" onClick={}> */}
       <AddLabel addToList={addInstructionToList} />
-      {/* </button> */}
     </div>
   )
 }
