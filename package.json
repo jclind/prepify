@@ -1,6 +1,6 @@
 {
   "name": "prepify",
-  "version": "0.1.0",
+  "version": "2.0.0-beta",
   "private": true,
   "dependencies": {
     "@firebase/firestore-types": "^2.5.1",
