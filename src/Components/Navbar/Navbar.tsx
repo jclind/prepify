@@ -7,12 +7,16 @@ import Hamburger from 'hamburger-react'
 import { AiOutlineUser } from 'react-icons/ai'
 import { BiHelpCircle, BiLogOut } from 'react-icons/bi'
 import AuthAPI from 'src/api/auth'
+import Skeleton from 'react-loading-skeleton'
+
+const skeletonColor = '#d6d6d6'
 
 type NavbarProps = {
   darkNavLinks: boolean
+  loading: boolean
 }
 
-const Navbar: FC<NavbarProps> = ({ darkNavLinks }) => {
+const Navbar: FC<NavbarProps> = ({ darkNavLinks, loading }) => {
   const [navOpen, setNavOpen] = useState(false)
 
   const authRes = useAuth()
@@ -95,9 +99,16 @@ const Navbar: FC<NavbarProps> = ({ darkNavLinks }) => {
       </NavLink>
       <div className='dropdown'>
         <div className='dropdown-btn'>
-          <NavLink to='/account' className='account-link'>
-            {nameInitial}
-          </NavLink>
+          {authRes?.authLoading ? (
+            <Skeleton
+              className='account-link-loading'
+              baseColor={skeletonColor}
+            />
+          ) : (
+            <NavLink to='/account' className='account-link'>
+              {nameInitial}
+            </NavLink>
+          )}
         </div>
         <div className='dropdown-links'>
           <div className='dropdown-section'>

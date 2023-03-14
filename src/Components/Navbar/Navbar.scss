@@ -71,6 +71,11 @@ nav {
         color: $primary;
         font-weight: 500;
       }
+      .account-link-loading {
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+      }
       .dropdown {
         position: relative;
         .dropdown-btn {

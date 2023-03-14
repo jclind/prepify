@@ -60,6 +60,7 @@ type AuthContextValueType = {
     setSuccess: (val: string) => void,
     setError: (val: string) => void
   ) => void
+  authLoading: boolean
 }
 
 type AuthProviderProps = {
@@ -264,13 +265,10 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
     forgotPassword,
     checkUsernameAvailability,
     setUsername,
+    authLoading: loading,
   }
 
-  return (
-    <AuthContext.Provider value={value}>
-      {React.cloneElement(children, { loading: loading })}
-    </AuthContext.Provider>
-  )
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
 export default AuthProvider
