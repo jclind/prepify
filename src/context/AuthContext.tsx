@@ -63,7 +63,7 @@ type AuthContextValueType = {
 }
 
 type AuthProviderProps = {
-  children: React.ReactNode
+  children: React.ReactElement
 }
 
 const AuthContext = React.createContext<AuthContextValueType | null>(null)
@@ -268,7 +268,7 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
 
   return (
     <AuthContext.Provider value={value}>
-      {loading ? <div>Loading auth....</div> : <>{children}</>}
+      {React.cloneElement(children, { loading: loading })}
     </AuthContext.Provider>
   )
 }
