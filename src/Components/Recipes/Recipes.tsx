@@ -83,11 +83,13 @@ const Recipes = () => {
         <SearchRecipesInput defaultVal={query} autoComplete={true} />
         <section className='recipes-container'>
           <RecipeFilters
+            selectVal={selectFilterVal}
             setSelectVal={setSelectFilterVal}
             selectedDietTags={selectedTags}
             setSelectedDietTags={setSelectedTags}
             selectedCuisine={selectedCuisine}
             setSelectedCuisine={setSelectedCuisine}
+            filtersLoading={filtersLoading}
             setFiltersLoading={setFiltersLoading}
           />
           {totalResults === 0 ? (
