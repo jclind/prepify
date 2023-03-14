@@ -47,7 +47,7 @@ $page-top-margin: calc(#{$nav-height});
 $recipe-page-max-width: 1000px;
 $recipe-body-max-width: 800px;
 
-$home-hero-height: calc(500px - #{$page-top-padding});
+$home-hero-height: calc(500px - #{$page-top-padding} - #{$page-top-margin});
 
 $border-radius: 10px;
 
