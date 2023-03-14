@@ -20,7 +20,7 @@ const TrendingRecipes = () => {
     <div className='trending-recipes'>
       <h2 className='title'>Trending</h2>
       <div className='recipes'>
-        {recipes ? (
+        {recipes.length > 0 ? (
           recipes.map(recipe => {
             return <RecipeThumbnail key={recipe._id} recipe={recipe} />
           })

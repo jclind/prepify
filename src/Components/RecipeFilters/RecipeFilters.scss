@@ -4,7 +4,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 2rem;
+  // margin-top: 2rem;
   font-size: toRem(14);
   font-weight: 600;
   width: 100%;
@@ -24,17 +24,84 @@
       border-radius: 20%;
     }
   }
+  .filters-btn {
+    background: none;
+    border: 1px solid $tertiary-text;
+    border-radius: 20px;
+    padding: 0.25rem 0.5rem;
+    color: $secondary-text;
+    font-weight: 600;
+    font-size: 0.8rem;
+    cursor: pointer;
+  }
+  .filters-btn.expanded {
+    background: $primary;
+    color: $primary-background;
+    border-color: $primary;
+  }
 
   @media screen and (max-width: 815px) {
+    margin-top: 0;
     flex-direction: column;
     align-items: flex-start;
-    padding-bottom: 1.5rem;
-    gap: 1rem;
+    justify-content: flex-start;
+    border: none;
+    padding: 0;
+    margin: 0;
+    section {
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      gap: 0.5rem;
+      width: 100%;
+      max-width: 100%;
+      transition: height 0.1s linear;
+      padding: 0;
+      margin: 0;
+      overflow: hidden;
+    }
+    h5 {
+      padding-bottom: 0.15rem;
+    }
+    .section-expanded {
+      height: 190px;
+    }
+    .section-collapsed {
+      height: 0;
+    }
+    .sort-select {
+      max-width: 100%;
+      width: 100%;
+      margin: 0;
+    }
+    .diet-label-select {
+    }
+    .cuisine-select {
+      width: fit-content;
+    }
+    .select-tags-container {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      margin-top: 0.5rem;
+      gap: 0.25rem;
+    }
+    .select {
+      flex: 1;
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      max-width: 100%;
+      font-size: 0.8rem;
+    }
+    .react-select__menu {
+    }
   }
   @media screen and (max-width: 725px) {
-    align-items: center;
+    // align-items: center;
     .select {
-      max-width: 90%;
+      // max-width: 90%;
     }
   }
 }

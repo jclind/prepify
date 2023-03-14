@@ -6,6 +6,7 @@ import { MdAddCircleOutline } from 'react-icons/md'
 import { AiOutlineClose } from 'react-icons/ai'
 import { BiWrench } from 'react-icons/bi'
 import Modal from 'react-modal'
+// import packageInfo from '../../../package.json'
 Modal.setAppElement('#root')
 
 const customStyles = {
@@ -28,6 +29,11 @@ const customStyles = {
   },
 }
 
+const RELEASE_DATE = '3/14/2023'
+const version = '2.0.0-beta'
+const description =
+  "We've made significant improvements to our application, including a faster and easier recipe creation process, improved search filters, better code quality, and enhanced database performance and reliability. These changes are designed to create a smoother and more enjoyable experience for our users."
+
 const ReleaseNotes = ({
   releaseNotesModalIsOpen,
   setReleaseNotesModalIsOpen,
@@ -36,12 +42,15 @@ const ReleaseNotes = ({
     setReleaseNotesModalIsOpen(false)
   }
 
-  const additions = []
-  const bugFixes = [
-    "Recipes can now be created without throwing 'Firebase storage bucket no longer undefined' error",
+  const additions = [
+    "Create recipes page is now remastered and ingredient input no longer requires users to fetch the ingredient price individually, instead with the help of the spoonacular api all ingredient data is retrieved from the user's ingredient string input.",
+    'Individual recipe pages are also updated to support more information.',
+    'Search page now has multiple search filters',
   ]
+  const bugFixes = []
   const improvements = [
-    "Add 'Recipe Not Found' element that will show if current recipe was not found in database",
+    'Add Typescript support to the majority of components',
+    'Database refactor updates a large number of functions and data formats',
   ]
 
   const location = useLocation()
@@ -69,13 +78,9 @@ const ReleaseNotes = ({
         <AiOutlineClose className='icon' />
       </button>
       <div className='release-notes-content-container'>
-        <h1 className='heading'>Prepify Release Notes • 4/4/2022</h1>
-        <div className='release-tag'>v1.3.2-beta</div>
-        <p className='release-description'>
-          This update focuses on create recipe and recipe page bug
-          fixes/improvements. Recipes could not be posted due to environment
-          variable issues on netlify (aka a typo 😢).
-        </p>
+        <h1 className='heading'>Prepify Release Notes • {RELEASE_DATE}</h1>
+        <div className='release-tag'>v{version}</div>
+        <p className='release-description'>{description}</p>
         <div className='content'>
           {additions.length > 0 && (
             <section className='section'>
