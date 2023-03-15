@@ -255,7 +255,7 @@ class RecipeAPIClass {
     text: string
   ): Promise<{
     rating: { data: { rating: number } }
-    userId: string
+    username: string
     reviewText: string
     reviewCreatedAt: string
   } | null> {
@@ -272,25 +272,26 @@ class RecipeAPIClass {
   }
   async checkIfReviewed(recipeId: string) {
     const username = await AuthAPI.getUsername()
-    if (!username) {
-      return null
-    }
+    if (!username) return null
+
     const result = await http.get(
       `checkIfReviewed?username=${username}&recipeId=${recipeId}`
     )
     return result.data
   }
   async editReview(recipeId: string, text: string) {
-    const uid = AuthAPI.getUID()
-    if (!uid) return null
+    const username = await AuthAPI.getUsername()
+    if (!username) return null
     return await http.put(
-      `editReview?userId=${uid}&recipeId=${recipeId}&text=${text}`
+      `editReview?username=${username}&recipeId=${recipeId}&text=${text}`
     )
   }
   async deleteReview(recipeId: string) {
-    const uid = AuthAPI.getUID()
-    if (!uid) return null
-    return await http.put(`deleteReview?userId=${uid}&recipeId=${recipeId}`)
+    const username = await AuthAPI.getUsername()
+    if (!username) return null
+    return await http.put(
+      `deleteReview?username=${username}&recipeId=${recipeId}`
+    )
   }
   async getReviews(
     recipeId: string,
