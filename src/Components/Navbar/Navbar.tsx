@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, FC } from 'react'
 import './Navbar.scss'
 import { NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
@@ -6,11 +6,22 @@ import PrepifyLogo from './PrepifyLogo'
 import Hamburger from 'hamburger-react'
 import { AiOutlineUser } from 'react-icons/ai'
 import { BiHelpCircle, BiLogOut } from 'react-icons/bi'
+import AuthAPI from 'src/api/auth'
+import Skeleton from 'react-loading-skeleton'
 
-const Navbar = ({ darkNavLinks }) => {
+const skeletonColor = '#d6d6d6'
+
+type NavbarProps = {
+  darkNavLinks: boolean
+  loading: boolean
+}
+
+const Navbar: FC<NavbarProps> = ({ darkNavLinks, loading }) => {
   const [navOpen, setNavOpen] = useState(false)
 
-  const { user, logout, getUsername } = useAuth()
+  const authRes = useAuth()
+  // const { user, logout, getUsername } = useAuth()
+  const uid = AuthAPI.getUID()
 
   const [username, setUsername] = useState('')
   const [nameInitial, setNameInitial] = useState('')
@@ -22,13 +33,11 @@ const Navbar = ({ darkNavLinks }) => {
   }, [location])
 
   useEffect(() => {
-    if (user) {
-      const uid = user.uid
-
-      getUsername(uid).then(val => {
+    if (uid && authRes?.getUsername && authRes.user) {
+      authRes.getUsername(uid).then(val => {
         if (!val) {
-          if (user.email) {
-            const displayInitial = user.email.charAt(0).toUpperCase()
+          if (authRes?.user?.email) {
+            const displayInitial = authRes.user.email.charAt(0).toUpperCase()
             return setNameInitial(displayInitial)
           }
           return setNameInitial('')
@@ -40,7 +49,7 @@ const Navbar = ({ darkNavLinks }) => {
       })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user])
+  }, [authRes?.user])
 
   const loggedOutLinks = (
     <>
@@ -90,9 +99,16 @@ const Navbar = ({ darkNavLinks }) => {
       </NavLink>
       <div className='dropdown'>
         <div className='dropdown-btn'>
-          <NavLink to='/account' className='account-link'>
-            {nameInitial}
-          </NavLink>
+          {authRes?.authLoading ? (
+            <Skeleton
+              className='account-link-loading'
+              baseColor={skeletonColor}
+            />
+          ) : (
+            <NavLink to='/account' className='account-link'>
+              {nameInitial}
+            </NavLink>
+          )}
         </div>
         <div className='dropdown-links'>
           <div className='dropdown-section'>
@@ -112,7 +128,7 @@ const Navbar = ({ darkNavLinks }) => {
             <BiHelpCircle className='icon' />
             <div className='text'>Help</div>
           </NavLink>
-          <button className='nav-link btn' onClick={logout}>
+          <button className='nav-link btn' onClick={authRes?.logout}>
             <BiLogOut className='icon' />
             <div className='text'>logout</div>
           </button>
@@ -137,7 +153,11 @@ const Navbar = ({ darkNavLinks }) => {
         <div
           className={darkNavLinks ? 'nav-links dark-nav-links' : 'nav-links'}
         >
-          {user ? loggedInLinks : loggedOutLinks}
+          {authRes?.authLoading
+            ? null
+            : authRes?.user
+            ? loggedInLinks
+            : loggedOutLinks}
         </div>
       </div>
     </nav>

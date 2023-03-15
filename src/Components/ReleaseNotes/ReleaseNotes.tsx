@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { FC, useEffect } from 'react'
 import './ReleaseNotes.scss'
 import { useLocation } from 'react-router-dom'
 import { BsChevronDoubleRight, BsPencil } from 'react-icons/bs'
@@ -34,7 +34,12 @@ const version = '2.0.0-beta'
 const description =
   "We've made significant improvements to our application, including a faster and easier recipe creation process, improved search filters, better code quality, and enhanced database performance and reliability. These changes are designed to create a smoother and more enjoyable experience for our users."
 
-const ReleaseNotes = ({
+type ReleaseNotesProps = {
+  releaseNotesModalIsOpen: boolean
+  setReleaseNotesModalIsOpen: (val: boolean) => void
+}
+
+const ReleaseNotes: FC<ReleaseNotesProps> = ({
   releaseNotesModalIsOpen,
   setReleaseNotesModalIsOpen,
 }) => {
@@ -42,13 +47,13 @@ const ReleaseNotes = ({
     setReleaseNotesModalIsOpen(false)
   }
 
-  const additions = [
+  const additions: string[] = [
     "Create recipes page is now remastered and ingredient input no longer requires users to fetch the ingredient price individually, instead with the help of the spoonacular api all ingredient data is retrieved from the user's ingredient string input.",
     'Individual recipe pages are also updated to support more information.',
     'Search page now has multiple search filters',
   ]
-  const bugFixes = []
-  const improvements = [
+  const bugFixes: string[] = []
+  const improvements: string[] = [
     'Add Typescript support to the majority of components',
     'Database refactor updates a large number of functions and data formats',
   ]

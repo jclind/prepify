@@ -4,7 +4,7 @@ import ReleaseNotes from '../ReleaseNotes/ReleaseNotes'
 
 const PrepifyLogo = () => {
   const [releaseNotesModalIsOpen, setReleaseNotesModalIsOpen] = useState(false)
-  const handleOpenReleaseNotes = e => {
+  const handleOpenReleaseNotes = (e: any) => {
     e.stopPropagation()
     e.preventDefault()
     setReleaseNotesModalIsOpen(true)
