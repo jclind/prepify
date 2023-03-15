@@ -342,6 +342,8 @@
           margin-top: 1.5rem;
           .tag {
             padding-right: 0.5rem;
+            cursor: pointer;
+            text-decoration: none;
           }
           .tag.skeleton {
             height: 24px;

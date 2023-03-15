@@ -1,6 +1,7 @@
 import React, { FC } from 'react'
 import Skeleton from 'react-loading-skeleton'
 import { RecipeType } from 'types'
+import { Link } from 'react-router-dom'
 
 const skeletonColor = '#d6d6d6'
 
@@ -21,9 +22,9 @@ const Tags: FC<TagsProps> = ({ loading, currRecipe }) => {
             currRecipe.nutritionLabels &&
             currRecipe.nutritionLabels.map(tag => {
               return (
-                <div className='tag' key={tag}>
+                <Link className='tag' key={tag} to={`/recipes?dietTags=${tag}`}>
                   {tag}
-                </div>
+                </Link>
               )
             })}
         </div>
