@@ -71,6 +71,12 @@ class RecipeAPIClass {
     const result = await http.get(`getRecipe?id=${id}`)
     return result.data
   }
+  async deleteRecipe(recipeId: string, userId: string) {
+    const result = await http.delete(
+      `deleteRecipe?recipeId=${recipeId}&userId=${userId}`
+    )
+    return result.data
+  }
 
   async saveRecipe(userId = '', recipeId = '') {
     return await http.put(`saveRecipe?userId=${userId}&recipeId=${recipeId}`)
@@ -118,6 +124,7 @@ class RecipeAPIClass {
     try {
       setProgress(10)
       const authorId: string = uid
+      // const authorUsername: string = getUsername
       const recipeImage: string = await this.uploadRecipeImage(
         recipeData.recipeImage,
         setProgress
@@ -148,7 +155,7 @@ class RecipeAPIClass {
         recipeImage,
         nutritionData,
         totalTime,
-        authorId,
+        authorUsername: 'sus',
         rating: {
           rateCount: 0,
           rateValue: 0,
@@ -235,12 +242,11 @@ class RecipeAPIClass {
 
   // Ratings / Reviews
   async addRating(recipeId: string, rating: number) {
-    const uid = AuthAPI.getUID()
-
-    if (!uid) return null
+    const username = await AuthAPI.getUsername()
+    if (!username) return null
 
     return await http.put(
-      `addRating?userId=${uid}&recipeId=${recipeId}&rating=${rating}`
+      `addRating?username=${username}&recipeId=${recipeId}&rating=${rating}`
     )
   }
 
@@ -253,11 +259,11 @@ class RecipeAPIClass {
     reviewText: string
     reviewCreatedAt: string
   } | null> {
-    const uid = AuthAPI.getUID()
-    if (!uid) return null
+    const username = await AuthAPI.getUsername()
+    if (!username) return null
 
     const data: NewReviewType = {
-      userId: uid,
+      username: username,
       recipeId,
       reviewText: text,
     }
@@ -265,9 +271,14 @@ class RecipeAPIClass {
     return result.data
   }
   async checkIfReviewed(recipeId: string) {
-    const uid = AuthAPI.getUID()
-    if (!uid) return null
-    return await http.get(`checkIfReviewed?userId=${uid}&recipeId=${recipeId}`)
+    const username = await AuthAPI.getUsername()
+    if (!username) {
+      return null
+    }
+    const result = await http.get(
+      `checkIfReviewed?username=${username}&recipeId=${recipeId}`
+    )
+    return result.data
   }
   async editReview(recipeId: string, text: string) {
     const uid = AuthAPI.getUID()
@@ -287,11 +298,13 @@ class RecipeAPIClass {
     page: number,
     reviewsPerPage = 5
   ) {
-    const uid = AuthAPI.getUID()
-    if (!uid) return null
-    return await http.get(
-      `getReviews?userId=${uid}&recipeId=${recipeId}&page=${page}&reviewsPerPage=${reviewsPerPage}&filter=${filter}`
+    const username = await AuthAPI.getUsername()
+    console.log('username', username)
+    if (!username) return null
+    const result = await http.get(
+      `getReviews?username=${username}&recipeId=${recipeId}&page=${page}&reviewsPerPage=${reviewsPerPage}&filter=${filter}`
     )
+    return result.data
   }
   async getSingleUserReviews(
     page = 0,
@@ -299,10 +312,10 @@ class RecipeAPIClass {
     filter = 'new',
     returnRecipeData = false
   ): Promise<{ reviews: OptionalReviewType[]; totalCount: number } | null> {
-    const uid = AuthAPI.getUID()
-    if (!uid) return null
+    const username = await AuthAPI.getUsername()
+    if (!username) return null
     const reviewResult = await http.get(
-      `getSingleUserReviews?userId=${uid}&page=${page}&reviewsPerPage=${reviewsPerPage}&filter=${filter}&returnRecipeData=${returnRecipeData}`
+      `getSingleUserReviews?username=${username}&page=${page}&reviewsPerPage=${reviewsPerPage}&filter=${filter}&returnRecipeData=${returnRecipeData}`
     )
     return reviewResult.data
   }

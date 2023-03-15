@@ -33,8 +33,8 @@ const Navbar: FC<NavbarProps> = ({ darkNavLinks, loading }) => {
   }, [location])
 
   useEffect(() => {
-    if (uid && authRes?.getUsername && authRes.user) {
-      authRes.getUsername(uid).then(val => {
+    if (uid && authRes?.user) {
+      AuthAPI.getUsername(uid).then(val => {
         if (!val) {
           if (authRes?.user?.email) {
             const displayInitial = authRes.user.email.charAt(0).toUpperCase()

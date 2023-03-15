@@ -25,6 +25,7 @@ import { IngredientsType, RecipeType, ReviewType } from 'types'
 import RecipeAPI from 'src/api/recipes'
 import Instructions from './Instructions/Instructions'
 import Tags from './Tags'
+import RecipeControls from './RecipeControls/RecipeControls'
 
 const skeletonColor = '#d6d6d6'
 
@@ -142,7 +143,13 @@ const SingleRecipe = () => {
         <>
           <div className='page single-recipe-page' ref={printedRef}>
             <div className='recipe-container'>
-              {' '}
+              {currRecipe && (
+                <RecipeControls
+                  recipeId={currRecipe._id}
+                  authorUsername={currRecipe.authorUsername}
+                  recipeTitle={currRecipe.title}
+                />
+              )}
               <div className='header-content'>
                 {windowWidth <= 956 && (
                   <div className='mobile-title-content'>

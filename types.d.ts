@@ -18,7 +18,7 @@ export type RecipeType = {
   recipeImage: string
   nutritionData: any
   totalTime: number
-  authorId: string
+  authorUsername: string
   rating: {
     rateCount: number
     rateValue: number
@@ -112,7 +112,7 @@ export interface GetSavedRecipesResponseType {
 
 export type OptionalReviewType = {
   _id: string
-  userId: string
+  username: string
   recipeId: string
   rating: string
   ratingLastUpdated: string
@@ -125,7 +125,7 @@ export type OptionalReviewType = {
 }
 export type ReviewType = {
   _id: string
-  userId: string
+  username: string
   recipeId: string
   rating: string
   ratingLastUpdated: string
@@ -135,7 +135,7 @@ export type ReviewType = {
 }
 
 export interface NewReviewType {
-  userId: string
+  username: string
   recipeId: string
   reviewText: string
 }

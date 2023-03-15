@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import './RecipeReview.scss'
 import StarRatings from 'react-star-ratings'
-import { useAuth } from '../../../../context/AuthContext'
 import { useAlert } from 'react-alert'
 import { formatDate } from '../../../../util/formatDate'
 import { TailSpin } from 'react-loader-spinner'
@@ -23,7 +22,7 @@ type ReviewOptionsProps = {
   setEditing: (val: boolean) => void
   handleDeleteReview: () => Promise<void>
   editLoading: boolean
-  reviewAuthorUID: string
+  reviewAuthorUsername: string
 }
 
 const ReviewOptions = ({
@@ -32,10 +31,22 @@ const ReviewOptions = ({
   setEditing,
   handleDeleteReview,
   editLoading,
-  reviewAuthorUID,
+  reviewAuthorUsername,
 }: ReviewOptionsProps) => {
   const uid = AuthAPI.getUID()
   const alert = useAlert()
+
+  const [currUsername, setCurrUsername] = useState<string | null>(null)
+
+  useEffect(() => {
+    const getCurrUsername = async () => {
+      if (uid) {
+        const un = await AuthAPI.getUsername(uid)
+        setCurrUsername(un)
+      }
+    }
+    getCurrUsername()
+  }, [uid])
 
   // const [likeStatus, setLikeStatue] = useState(null)
   const [isLikeHovered, setIsLikeHovered] = useState(false)
@@ -115,7 +126,7 @@ const ReviewOptions = ({
           <AiOutlineDislike className='icon' />
         )}
       </button>
-      {uid === reviewAuthorUID ? (
+      {currUsername === reviewAuthorUsername ? (
         <>
           <Modal
             isOpen={deleteModalIsOpen}
@@ -224,7 +235,6 @@ const RecipeReview = ({
   const [rating, setRating] = useState(0)
   const [date, setDate] = useState('')
   const [username, setUsername] = useState('')
-  const authResponse = useAuth()
 
   const [reviewText, setReviewText] = useState(review.reviewText)
 
@@ -236,11 +246,7 @@ const RecipeReview = ({
     if (review.rating) {
       setRating(Number(review.rating))
       setDate(formatDate(review.reviewCreatedAt, true))
-      authResponse?.getUsername(review.userId).then(res => {
-        if (res) {
-          setUsername(res)
-        }
-      })
+      setUsername(review.username)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [review])
@@ -298,7 +304,7 @@ const RecipeReview = ({
           setEditing={setEditing}
           handleDeleteReview={handleDeleteReview}
           editLoading={editLoading}
-          reviewAuthorUID={review.userId}
+          reviewAuthorUsername={review.username}
         />
       </div>
     </div>

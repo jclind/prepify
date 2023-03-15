@@ -24,8 +24,11 @@ const SavedRecipes = () => {
 
   const [selectOption, setSelectOption] = useState(options[0])
 
+  const [loading, setLoading] = useState(true)
+
   const handleGetSavedRecipes = (recipesPage: number, selectValue: string) => {
     if (recipesPage >= 0 && selectValue) {
+      setLoading(true)
       RecipeAPI.getSavedRecipes(recipesPage, 6, selectValue).then(res => {
         if (res) {
           const updatedArr =
@@ -40,6 +43,7 @@ const SavedRecipes = () => {
 
           setRecipesPage(recipesPage + 1)
         }
+        setLoading(false)
       })
     }
   }
@@ -67,7 +71,7 @@ const SavedRecipes = () => {
 
   return (
     <div className='saved-recipes'>
-      {recipes.length > 0 ? (
+      {recipes.length > 0 || loading ? (
         <>
           <div className='saved-recipes-filters'>
             <Select
@@ -81,9 +85,17 @@ const SavedRecipes = () => {
             />
           </div>
           <div className='thumbnails-container'>
-            {recipes.map(recipe => {
-              return <RecipeThumbnail key={recipe._id} recipe={recipe} />
-            })}
+            {!loading ? (
+              recipes.map(recipe => {
+                return <RecipeThumbnail key={recipe._id} recipe={recipe} />
+              })
+            ) : (
+              <>
+                <RecipeThumbnail recipe={null} loading={true} />
+                <RecipeThumbnail recipe={null} loading={true} />
+                <RecipeThumbnail recipe={null} loading={true} />
+              </>
+            )}
           </div>
           {isMoreRecipes && recipes.length > 0 ? (
             <button
