@@ -153,7 +153,11 @@ const Navbar: FC<NavbarProps> = ({ darkNavLinks, loading }) => {
         <div
           className={darkNavLinks ? 'nav-links dark-nav-links' : 'nav-links'}
         >
-          {authRes?.user ? loggedInLinks : loggedOutLinks}
+          {authRes?.authLoading
+            ? null
+            : authRes?.user
+            ? loggedInLinks
+            : loggedOutLinks}
         </div>
       </div>
     </nav>

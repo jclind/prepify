@@ -329,7 +329,7 @@
         margin: 0 auto;
         margin-top: 4rem;
         max-width: 700px;
-        width: 700px;
+        width: 90%;
         .tag-label {
           font-size: toRem(16);
           color: $primary;
@@ -347,6 +347,13 @@
             height: 24px;
             width: 70px;
             border: none;
+          }
+        }
+        @media screen and (max-width: 500px) {
+          .tags {
+            .tag {
+              font-size: 0.8rem;
+            }
           }
         }
       }
