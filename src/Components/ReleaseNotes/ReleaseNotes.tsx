@@ -30,9 +30,9 @@ const customStyles = {
 }
 
 const RELEASE_DATE = '3/14/2023'
-const version = '2.0.0-beta'
+const version = '2.1.0-beta'
 const description =
-  "We've made significant improvements to our application, including a faster and easier recipe creation process, improved search filters, better code quality, and enhanced database performance and reliability. These changes are designed to create a smoother and more enjoyable experience for our users."
+  'This update includes a major security update and improved user safety. It also contains various code refactoring and improvements, which enhance the overall performance, stability and user experience of Prepify.'
 
 type ReleaseNotesProps = {
   releaseNotesModalIsOpen: boolean
@@ -47,15 +47,11 @@ const ReleaseNotes: FC<ReleaseNotesProps> = ({
     setReleaseNotesModalIsOpen(false)
   }
 
-  const additions: string[] = [
-    "Create recipes page is now remastered and ingredient input no longer requires users to fetch the ingredient price individually, instead with the help of the spoonacular api all ingredient data is retrieved from the user's ingredient string input.",
-    'Individual recipe pages are also updated to support more information.',
-    'Search page now has multiple search filters',
-  ]
+  const additions: string[] = []
   const bugFixes: string[] = []
   const improvements: string[] = [
-    'Add Typescript support to the majority of components',
-    'Database refactor updates a large number of functions and data formats',
+    'Major security update/improved user safety',
+    'Various code refactoring and improvements',
   ]
 
   const location = useLocation()
