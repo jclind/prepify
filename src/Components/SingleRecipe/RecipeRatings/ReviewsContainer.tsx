@@ -27,21 +27,30 @@ const ReviewsContainer: FC<ReviewsContainerProps> = ({
   const [isMoreReviews, setIsMoreReviews] = useState(false)
   const [reviewListSort, setReviewListSort] = useState<string>('')
 
-  const getNextReviewsPage = (recipeId: string) => {
-    RecipeAPI.getReviews(recipeId, 'new', reviewListPage + 1, recipesPerPage)
-      .then(res => {
-        const updatedArr: ReviewType[] = [...reviewList, ...res?.data.reviews]
-        setReviewList(updatedArr)
-        if (res?.data.totalCount > updatedArr.length) {
-          setIsMoreReviews(true)
-        } else {
-          setIsMoreReviews(false)
-        }
-      })
-      .catch((error: any) => {
-        console.log(error)
-      })
-    setReviewListPage(reviewListPage + 1)
+  const handleGetUserReviews = (recipesPage: number, selectValue: string) => {
+    if (recipesPage >= 0 && selectValue) {
+      RecipeAPI.getReviews(recipeId, selectValue, recipesPage, recipesPerPage)
+        .then(res => {
+          if (res) {
+            const updatedArr =
+              recipesPage === 0
+                ? [...res.reviews]
+                : [...reviewList, ...res.reviews]
+            // Remove elements that are only ratings and not reviews
+            const reviewArr = updatedArr.filter(review => review.reviewText)
+            console.log(reviewArr)
+            setReviewList(reviewArr)
+
+            if (Number(res.totalCount) > updatedArr.length) {
+              setIsMoreReviews(true)
+            } else {
+              setIsMoreReviews(false)
+            }
+          }
+          setReviewListPage(reviewListPage + 1)
+        })
+        .catch((error: any) => console.log(error))
+    }
   }
 
   const uid = AuthAPI.getUID()
@@ -49,20 +58,7 @@ const ReviewsContainer: FC<ReviewsContainerProps> = ({
   useEffect(() => {
     if (reviewListSort && uid) {
       setReviewListPage(0)
-      RecipeAPI.getReviews(recipeId, reviewListSort, 0, recipesPerPage).then(
-        res => {
-          if (res) {
-            const updatedArr = res.reviews || []
-            setReviewList(updatedArr)
-
-            if (res.totalCount > updatedArr.length) {
-              setIsMoreReviews(true)
-            } else {
-              setIsMoreReviews(false)
-            }
-          }
-        }
-      )
+      handleGetUserReviews(0, reviewListSort)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reviewListSort, uid])
@@ -98,7 +94,9 @@ const ReviewsContainer: FC<ReviewsContainerProps> = ({
       <ReviewsList
         recipeId={recipeId}
         currUserReview={currUserReview}
-        getNextReviewsPage={getNextReviewsPage}
+        getNextReviewsPage={() =>
+          handleGetUserReviews(reviewListPage, reviewListSort)
+        }
         isMoreReviews={isMoreReviews}
         reviewList={reviewList}
       />

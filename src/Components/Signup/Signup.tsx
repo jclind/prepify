@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { ChangeEvent, useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { AiOutlineGoogle } from 'react-icons/ai'
 import { MdOutlineEmail, MdOutlineLock } from 'react-icons/md'
@@ -24,17 +24,23 @@ const Signup = () => {
 
   const [loading, setLoading] = useState(false)
 
-  const { signInWithGoogle, signUp, user } = useAuth()
+  const [isUsernameAvailable, setIsUsernameAvailable] = useState<
+    boolean | null
+  >(null)
 
-  const handleEmailAndPasswordFormSubmit = async e => {
+  const authRes = useAuth()
+
+  const handleEmailAndPasswordFormSubmit = async (
+    e: ChangeEvent<HTMLFormElement>
+  ) => {
     setError('')
     setSuccess('')
     e.preventDefault()
 
-    signUp(email, password, username, setLoading, setSuccess, setError)
+    authRes?.signUp(email, password, username, setLoading, setSuccess, setError)
   }
 
-  return user ? (
+  return authRes?.user ? (
     <Navigate to='/' />
   ) : (
     <>
@@ -43,7 +49,7 @@ const Signup = () => {
         <title>Prepify | Sign Up</title>
       </Helmet>
       <div className='abs-logo'>
-        <PrepifyLogo className='abs-logo' />
+        <PrepifyLogo />
       </div>
       <div className='signup-page form-format'>
         <div className='form-container'>
@@ -59,6 +65,8 @@ const Signup = () => {
             {error ? <div className='error'>{error}</div> : null}
             <div className='input-fields'>
               <UsernameInput
+                isUsernameAvailable={isUsernameAvailable}
+                setIsUsernameAvailable={setIsUsernameAvailable}
                 username={username}
                 setUsername={setUsername}
                 setSuccess={setSuccess}
@@ -88,7 +96,6 @@ const Signup = () => {
                   width='30'
                   color='white'
                   ariaLabel='loading'
-                  className='spinner'
                 />
               ) : (
                 'Create Username'
@@ -97,7 +104,7 @@ const Signup = () => {
           </form>
           <button
             className='google-btn btn'
-            onClick={() => signInWithGoogle(setError)}
+            onClick={() => authRes?.signInWithGoogle(setError)}
           >
             <AiOutlineGoogle className='icon' /> Sign Up With Google
           </button>
