@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import './RecipeRatings.scss'
 import { Link } from 'react-router-dom'
 import StarRatings from 'react-star-ratings'
@@ -7,9 +7,9 @@ import RecipeReview from './RecipeReview/RecipeReview'
 import { formatRating } from '../../../util/formatRating'
 import ReviewFilters from './ReviewFilters'
 import { useAlert } from 'react-alert'
-import AuthAPI from 'src/api/auth'
 import RecipeAPI from 'src/api/recipes'
 import { ReviewType } from 'types'
+import { useAuth } from 'src/context/AuthContext'
 
 type RecipeRatingsProps = {
   recipeId: string
@@ -38,7 +38,10 @@ const RecipeRatings = ({
   const [newReviewText, setNewReviewText] = useState('')
   const [newReviewError, setNewReviewError] = useState('')
 
-  const uid = AuthAPI.getUID()
+  const addReviewTextAreaRef = useRef<HTMLTextAreaElement>(null)
+
+  const authRes = useAuth()
+  const uid = authRes?.user?.uid
   const alert = useAlert()
 
   const recipesPerPage = 5
@@ -64,8 +67,7 @@ const RecipeRatings = ({
   useEffect(() => {
     if (uid) {
       RecipeAPI.checkIfReviewed(recipeId).then(res => {
-        const resData = res?.data
-        const reviewData = resData || null
+        const reviewData = res || null
 
         const userRating = reviewData?.rating
         const isUserReview = reviewData?.reviewText?.length > 0
@@ -73,21 +75,22 @@ const RecipeRatings = ({
         if (!isNaN(userRating)) {
           setRating(Number(userRating))
         }
-        setCurrUserReview(reviewData)
+        setCurrUserReview(reviewData ?? {})
         setIsReviewed(isUserReview)
       })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [uid])
   useEffect(() => {
-    if (reviewListSort) {
+    if (reviewListSort && uid) {
       setReviewListPage(0)
       RecipeAPI.getReviews(recipeId, reviewListSort, 0, recipesPerPage).then(
         res => {
-          if (res && res.data) {
-            const updatedArr = res.data.reviews || []
+          if (res) {
+            const updatedArr = res.reviews || []
             setReviewList(updatedArr)
-            if (res.data.totalCount > updatedArr.length) {
+
+            if (res.totalCount > updatedArr.length) {
               setIsMoreReviews(true)
             } else {
               setIsMoreReviews(false)
@@ -97,7 +100,7 @@ const RecipeRatings = ({
       )
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reviewListSort])
+  }, [reviewListSort, uid])
 
   useEffect(() => {
     if (currUserReview.length <= 0) {
@@ -170,18 +173,25 @@ const RecipeRatings = ({
           <div className='leave-review-input-container'>
             {!isReviewed ? (
               <>
-                {isReviewOpen ? (
-                  <div className='review-open'>
-                    <h4 className='review-input-title'>Write Review:</h4>
-                    {newReviewError && (
-                      <div className='error'>{newReviewError}</div>
-                    )}
-                    <textarea
-                      name='review'
-                      className='review-text-area'
-                      value={newReviewText}
-                      onChange={e => setNewReviewText(e.target.value)}
-                    />
+                <div className={`review-open ${isReviewOpen ? 'visible' : ''}`}>
+                  <h4 className='review-input-title'>Write Review:</h4>
+                  {newReviewError && (
+                    <div className='error'>{newReviewError}</div>
+                  )}
+                  <textarea
+                    name='review'
+                    className='review-text-area'
+                    value={newReviewText}
+                    onChange={e => setNewReviewText(e.target.value)}
+                    ref={addReviewTextAreaRef}
+                  />
+                  <div className='btns-container'>
+                    <button
+                      className='close-review-textarea-btn'
+                      onClick={() => setIsReviewOpen(false)}
+                    >
+                      close
+                    </button>
                     <button
                       className='submit-review-btn btn'
                       onClick={handleSubmitReview}
@@ -189,30 +199,32 @@ const RecipeRatings = ({
                       Submit Review
                     </button>
                   </div>
-                ) : (
-                  <button
-                    className='leave-review-btn btn'
-                    onClick={() => {
-                      if (uid) {
-                        setNewReviewText('')
-                        setIsReviewOpen(true)
-                      } else {
-                        alert.show(
-                          <div>
-                            Please <Link to='/login'>login</Link> to add a
-                            review.
-                          </div>,
-                          {
-                            timeout: 10000,
-                            type: 'info',
-                          }
-                        )
-                      }
-                    }}
-                  >
-                    Add Review
-                  </button>
-                )}
+                </div>
+                <button
+                  className={`leave-review-btn btn ${
+                    isReviewOpen ? '' : 'visible'
+                  }`}
+                  onClick={() => {
+                    if (uid) {
+                      setNewReviewText('')
+                      setIsReviewOpen(true)
+                      addReviewTextAreaRef?.current &&
+                        addReviewTextAreaRef.current.focus()
+                    } else {
+                      alert.show(
+                        <div>
+                          Please <Link to='/login'>login</Link> to add a review.
+                        </div>,
+                        {
+                          timeout: 10000,
+                          type: 'info',
+                        }
+                      )
+                    }
+                  }}
+                >
+                  Add Review
+                </button>
               </>
             ) : (
               <div className='curr-user-review'>

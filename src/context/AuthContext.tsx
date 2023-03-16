@@ -9,18 +9,9 @@ import {
   sendPasswordResetEmail,
   UserCredential,
 } from 'firebase/auth'
-import {
-  doc,
-  setDoc,
-  getDoc,
-  collection,
-  query,
-  where,
-  getDocs,
-} from 'firebase/firestore'
-import { db } from '../client/db'
 
 import { useNavigate } from 'react-router-dom'
+import AuthAPI from 'src/api/auth'
 
 export function useAuth() {
   return useContext(AuthContext)
@@ -43,20 +34,8 @@ type AuthContextValueType = {
     setSuccess: (val: string) => void,
     setError: (val: string) => void
   ) => void
-  getUsername: (uid: string) => Promise<string | null>
   forgotPassword: (
     email: string,
-    setSuccess: (val: string) => void,
-    setError: (val: string) => void
-  ) => void
-  checkUsernameAvailability: (
-    username: string,
-    setLoading?: (val: boolean) => void
-  ) => Promise<boolean>
-  setUsername: (
-    uid: string,
-    username: string,
-    setLoading: (val: boolean) => void,
     setSuccess: (val: string) => void,
     setError: (val: string) => void
   ) => void
@@ -142,19 +121,18 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
       return setError('Must enter password')
     }
 
-    checkUsernameAvailability(username).then(isAvailable => {
+    AuthAPI.checkUsernameAvailability(username).then(isAvailable => {
       if (!isAvailable) {
         return setError(`${username} has already been taken`)
       }
       createUserWithEmailAndPassword(auth, email, password)
         .then(cred => {
           const uid = cred.user.uid
-          setUsername(uid, username, setLoading, setSuccess, setError).then(
-            () => {
-              setLoading(false)
-              return navigate('/')
-            }
-          )
+          AuthAPI.setUsername(uid, username).then(() => {
+            setLoading(false)
+            setSuccess('Username successfully created!')
+            return navigate('/')
+          })
         })
         .catch(err => {
           const errCode = err.code
@@ -178,59 +156,60 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
       })
   }
 
-  const getUsername = async (uid: string): Promise<string | null> => {
-    // Get reference to username collection document with property of the passed uid
-    const usernamesRef = doc(db, 'username', uid)
-    const usernamesSnap = await getDoc(usernamesRef)
+  // const getUsername = async (uid: string): Promise<string | null> => {
+  //   // // Get reference to username collection document with property of the passed uid
 
-    if (usernamesSnap.exists()) {
-      const currUsername = usernamesSnap.data().username
-      return currUsername
-    } else {
-      navigate('/create-username')
-      return null
-    }
-  }
+  //   // const usernamesRef = doc(db, 'username', uid)
+  //   // const usernamesSnap = await getDoc(usernamesRef)
 
-  const checkUsernameAvailability = async (
-    username: string,
-    setLoading?: (val: boolean) => void
-  ): Promise<boolean> => {
-    if (setLoading) {
-      setLoading(true)
-    }
+  //   // if (usernamesSnap.exists()) {
+  //   //   const currUsername = usernamesSnap.data().username
+  //   //   return currUsername
+  //   // } else {
+  //   //   navigate('/create-username')
+  //   //   return null
+  //   // }
+  // }
 
-    const usernamesRef = collection(db, 'username')
-    const q = query(usernamesRef, where('username', '==', username))
+  // const checkUsernameAvailability = async (
+  //   username: string,
+  //   setLoading?: (val: boolean) => void
+  // ): Promise<boolean> => {
+  //   if (setLoading) {
+  //     setLoading(true)
+  //   }
 
-    const usernamesQuerySnapshot = await getDocs(q)
-    if (usernamesQuerySnapshot.empty) {
-      return true
-    }
-    return false
-  }
+  //   const usernamesRef = collection(db, 'username')
+  //   const q = query(usernamesRef, where('username', '==', username))
 
-  const setUsername = async (
-    uid: string,
-    username: string,
-    setLoading: (val: boolean) => void,
-    setSuccess: (val: string) => void,
-    setError: (val: string) => void
-  ) => {
-    if (setLoading) setLoading(true)
+  //   const usernamesQuerySnapshot = await getDocs(q)
+  //   if (usernamesQuerySnapshot.empty) {
+  //     return true
+  //   }
+  //   return false
+  // }
 
-    const isAvailable = await checkUsernameAvailability(username)
-    if (!isAvailable) {
-      if (setError) return setError(`${username} has already been taken`)
-    }
+  // const setUsername = async (
+  //   uid: string,
+  //   username: string,
+  //   setLoading: (val: boolean) => void,
+  //   setSuccess: (val: string) => void,
+  //   setError: (val: string) => void
+  // ) => {
+  //   if (setLoading) setLoading(true)
 
-    const usernameData = { username }
+  //   const isAvailable = await checkUsernameAvailability(username)
+  //   if (!isAvailable) {
+  //     if (setError) return setError(`${username} has already been taken`)
+  //   }
 
-    const usernamesRef = doc(db, 'username', uid)
-    await setDoc(usernamesRef, usernameData)
-    // If setSuccess exists, set it's message
-    return setSuccess ? setSuccess('Username successfully created!') : null
-  }
+  //   const usernameData = { username }
+
+  //   const usernamesRef = doc(db, 'username', uid)
+  //   await setDoc(usernamesRef, usernameData)
+  //   // If setSuccess exists, set it's message
+  //   return setSuccess ? setSuccess('Username successfully created!') : null
+  // }
 
   // Check for auth status on page load
   useEffect(() => {
@@ -241,7 +220,8 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
 
         // If the authentication is anything other than password, send getUsername to check if username exists for that user
         if (providerId !== 'password') {
-          getUsername(userInstance.uid)
+          // !!FIX MEEEEEE
+          AuthAPI.getUsername(userInstance.uid)
         }
 
         setUser(userInstance)
@@ -261,14 +241,15 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
     signInWithGoogle,
     signInDefault,
     signUp,
-    getUsername,
     forgotPassword,
-    checkUsernameAvailability,
-    setUsername,
     authLoading: loading,
   }
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+  return (
+    <AuthContext.Provider value={value}>
+      {loading ? 'Auth Loading' : children}
+    </AuthContext.Provider>
+  )
 }
 
 export default AuthProvider

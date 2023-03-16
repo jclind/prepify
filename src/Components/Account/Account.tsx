@@ -1,25 +1,24 @@
 import React, { useState, useEffect } from 'react'
 import { useLocation, useNavigate, Link, Outlet } from 'react-router-dom'
 import './Account.scss'
-import { useAuth } from '../../context/AuthContext'
 import { Helmet } from 'react-helmet'
+import AuthAPI from '../../api/auth'
 
 const Account = () => {
   const [nameInitial, setNameInitial] = useState('')
   const [username, setUsername] = useState('')
   const [currPath, setCurrPath] = useState('')
 
-  const { getUsername, user } = useAuth()
+  const uid = AuthAPI.getUID()
 
   const location = useLocation()
   const navigate = useNavigate()
 
   useEffect(() => {
-    if (user) {
-      const uid = user.uid
-      getUsername(uid).then(val => {
-        setUsername(val)
+    if (uid) {
+      AuthAPI.getUsername(uid).then(val => {
         if (val) {
+          setUsername(val)
           const i = val.charAt(0).toUpperCase()
           setNameInitial(i)
         } else {
@@ -27,7 +26,7 @@ const Account = () => {
         }
       })
     }
-  }, [getUsername, user])
+  }, [uid])
 
   useEffect(() => {
     setCurrPath(location.pathname)
