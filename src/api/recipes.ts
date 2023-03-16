@@ -118,8 +118,6 @@ class RecipeAPIClass {
     recipeData: RecipeFormType,
     setProgress: (val: number) => void
   ): Promise<string | null> {
-    // !FIX
-
     try {
       setProgress(10)
       const authorUsername: string | null = await AuthAPI.getUsername()
@@ -165,6 +163,7 @@ class RecipeAPIClass {
         cuisine: recipeData.cuisine,
         mealTypes: recipeData.mealTypes,
         nutritionLabels,
+        views: 0,
       }
       setProgress(90)
       await http.post('addRecipe', returnRecipeData)

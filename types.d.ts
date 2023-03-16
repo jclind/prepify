@@ -1,8 +1,4 @@
-import {
-  IngredientResponseType,
-  IngredientData,
-  ParsedIngredient,
-} from '@jclind/ingredient-parser'
+import { IngredientData, ParsedIngredient } from '@jclind/ingredient-parser'
 
 export type RecipeType = {
   _id: string
@@ -29,6 +25,7 @@ export type RecipeType = {
   cuisine: string
   mealTypes: string[]
   nutritionLabels: string[] | null
+  views: number
 }
 export type RecipeFormType = {
   title: string

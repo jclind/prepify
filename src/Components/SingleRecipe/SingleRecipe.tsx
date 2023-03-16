@@ -332,6 +332,7 @@ const SingleRecipe = () => {
                   loading={loading}
                 />
                 <Tags loading={loading} currRecipe={currRecipe} />
+                <div className='recipe-stats'></div>
               </div>
               {!loading && currRecipe && (
                 <RecipeRatings
