@@ -1,13 +1,16 @@
-import React, { useState } from 'react'
+import React, { ChangeEvent, useState } from 'react'
 import '../Form/FormStyles.scss'
 import './CreateUsername.scss'
-import { useAuth } from '../../context/AuthContext'
 import { TailSpin } from 'react-loader-spinner'
 import { useNavigate } from 'react-router-dom'
 import UsernameInput from '../Form/UsernameInput'
+import AuthAPI from 'src/api/auth'
 
 const CreateUsername = () => {
   const [currUsername, setCurrUsername] = useState('')
+  const [isUsernameAvailable, setIsUsernameAvailable] = useState<
+    boolean | null
+  >(null)
 
   const [loadingCreateUsername, setLoadingCreateUsername] = useState(false)
 
@@ -16,26 +19,27 @@ const CreateUsername = () => {
 
   const navigate = useNavigate()
 
-  const { setUsername, user } = useAuth()
+  const uid = AuthAPI.getUID()
 
-  const uid = user ? user.uid : null
+  const handleCreateUsernameForm = (e: ChangeEvent<HTMLFormElement>) => {
+    if (uid && isUsernameAvailable) {
+      e.preventDefault()
+      setLoadingCreateUsername(true)
 
-  const handleCreateUsernameForm = e => {
-    e.preventDefault()
+      setError('')
+      setSuccess('')
 
-    setError('')
-    setSuccess('')
-
-    setUsername(
-      uid,
-      currUsername,
-      setLoadingCreateUsername,
-      setSuccess,
-      setError
-    ).then(() => {
-      setLoadingCreateUsername(false)
-      navigate('/')
-    })
+      AuthAPI.setUsername(uid, currUsername)
+        .then(() => {
+          setLoadingCreateUsername(false)
+          setSuccess('Username Created Successfully!')
+          navigate('/')
+        })
+        .catch((error: any) => {
+          setLoadingCreateUsername(false)
+          setError(error.message.toString())
+        })
+    }
   }
 
   return (
@@ -54,16 +58,20 @@ const CreateUsername = () => {
               setUsername={setCurrUsername}
               setSuccess={setSuccess}
               setError={setError}
+              isUsernameAvailable={isUsernameAvailable}
+              setIsUsernameAvailable={setIsUsernameAvailable}
             />
           </div>
-          <button className='form-action-btn btn'>
+          <button
+            className='form-action-btn btn'
+            disabled={loadingCreateUsername}
+          >
             {loadingCreateUsername ? (
               <TailSpin
                 height='30'
                 width='30'
                 color='white'
-                arialLabel='loading'
-                className='spinner'
+                ariaLabel='loading'
               />
             ) : (
               'Create Username'

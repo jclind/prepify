@@ -1,13 +1,25 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, FC } from 'react'
 import FormInput from './FormInput'
 import { AiOutlineUser } from 'react-icons/ai'
-import { useAuth } from '../../context/AuthContext'
+import AuthAPI from 'src/api/auth'
 
-const UsernameInput = ({ username, setUsername, setSuccess, setError }) => {
-  const [isUsernameAvailable, setIsUsernameAvailable] = useState(null)
+type UsernameInputProps = {
+  username: string
+  setUsername: (val: string) => void
+  setSuccess: (val: string) => void
+  setError: (val: string) => void
+  isUsernameAvailable: boolean | null
+  setIsUsernameAvailable: (val: boolean | null) => void
+}
 
-  const { checkUsernameAvailability } = useAuth()
-
+const UsernameInput: FC<UsernameInputProps> = ({
+  username,
+  setUsername,
+  setSuccess,
+  setError,
+  isUsernameAvailable,
+  setIsUsernameAvailable,
+}) => {
   // on username change, check username availability against firestore 'usernames' collection
   useEffect(() => {
     setError('')
@@ -17,7 +29,7 @@ const UsernameInput = ({ username, setUsername, setSuccess, setError }) => {
       return setError('Cannot have white space in username')
     if (!username || username.length < 3) return setIsUsernameAvailable(null)
 
-    checkUsernameAvailability(username)
+    AuthAPI.checkUsernameAvailability(username)
       .then(val => {
         setIsUsernameAvailable(val)
       })
