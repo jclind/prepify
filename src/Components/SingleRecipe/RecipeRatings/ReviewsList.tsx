@@ -7,7 +7,7 @@ type ReviewsListProps = {
   reviewList: ReviewType[]
   currUserReview: ReviewType | null
   isMoreReviews: boolean
-  getNextReviewsPage: (recipeId: string) => void
+  getNextReviewsPage: () => void
 }
 
 const ReviewsList: FC<ReviewsListProps> = ({
@@ -30,7 +30,7 @@ const ReviewsList: FC<ReviewsListProps> = ({
         <div className='get-more-reviews'>
           <button
             className='get-more-reviews-btn btn'
-            onClick={() => getNextReviewsPage(recipeId)}
+            onClick={getNextReviewsPage}
           >
             More Reviews
           </button>

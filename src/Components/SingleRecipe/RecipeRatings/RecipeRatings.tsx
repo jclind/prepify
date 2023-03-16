@@ -32,9 +32,7 @@ const RecipeRatings = ({
         if (!isNaN(userRating)) {
           setRating(Number(userRating))
         }
-
-        const reviewData = res.reviewText ? res : null
-        console.log(res)
+        const reviewData = res?.reviewText ? res : null
         setCurrUserReview(reviewData ?? null)
       })
     }
