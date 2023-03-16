@@ -1,15 +1,15 @@
-import React from 'react'
+// import React from 'react'
 import './UserRecipes.scss'
 
-const options = [
-  // { value: 'popular', label: 'Popular' },
-  // { value: 'new', label: 'Recipe Date: Newest' },
-  // { value: 'old', label: 'Recipe Date: Oldest' },
-  // { value: 'shortest', label: 'Time: Shortest' },
-  // { value: 'longest', label: 'Time: Longest' },
-  { value: 'newAdd', label: 'Save Time: Recent' },
-  { value: 'oldAdd', label: 'Save Time: Oldest' },
-]
+// const options = [
+//   // { value: 'popular', label: 'Popular' },
+//   // { value: 'new', label: 'Recipe Date: Newest' },
+//   // { value: 'old', label: 'Recipe Date: Oldest' },
+//   // { value: 'shortest', label: 'Time: Shortest' },
+//   // { value: 'longest', label: 'Time: Longest' },
+//   { value: 'newAdd', label: 'Save Time: Recent' },
+//   { value: 'oldAdd', label: 'Save Time: Oldest' },
+// ]
 
 const UserRecipes = () => {
   return 'Functionality not yet set up!'

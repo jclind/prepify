@@ -2,6 +2,7 @@ import React, { FC, useEffect, useState } from 'react'
 import { AiOutlineClose } from 'react-icons/ai'
 import { TailSpin } from 'react-loader-spinner'
 import Modal from 'react-modal'
+import { useNavigate } from 'react-router-dom'
 import AuthAPI from 'src/api/auth'
 import RecipeAPI from 'src/api/recipes'
 import './RecipeControls.scss'
@@ -42,7 +43,9 @@ const RecipeControls: FC<RecipeControlsType> = ({
     setIsDeleteModalOpen(false)
   }
 
-  const [deleteLoading, setDeleteLoading] = useState(true)
+  const navigate = useNavigate()
+
+  const [deleteLoading, setDeleteLoading] = useState(false)
   const [isUsersRecipe, setIsUsersRecipe] = useState(false)
   const [deleteError, setDeleteError] = useState('')
 
@@ -55,6 +58,7 @@ const RecipeControls: FC<RecipeControlsType> = ({
       }
     }
     checkIsUsersRecipe()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currUID])
 
   if (!isUsersRecipe) return null
@@ -67,6 +71,7 @@ const RecipeControls: FC<RecipeControlsType> = ({
           setDeleteError(res.error)
         } else {
           closeDeleteModal()
+          navigate('/')
         }
         setDeleteLoading(false)
       })
@@ -105,7 +110,11 @@ const RecipeControls: FC<RecipeControlsType> = ({
             <button className='cancel' onClick={closeDeleteModal}>
               Cancel
             </button>
-            <button className='confirm' disabled={deleteLoading}>
+            <button
+              className='confirm'
+              onClick={handleDeleteRecipe}
+              disabled={deleteLoading}
+            >
               {deleteLoading ? (
                 <TailSpin
                   height='26'

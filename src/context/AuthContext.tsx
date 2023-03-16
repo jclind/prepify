@@ -9,16 +9,6 @@ import {
   sendPasswordResetEmail,
   UserCredential,
 } from 'firebase/auth'
-import {
-  doc,
-  setDoc,
-  getDoc,
-  collection,
-  query,
-  where,
-  getDocs,
-} from 'firebase/firestore'
-import { db } from '../client/db'
 
 import { useNavigate } from 'react-router-dom'
 import AuthAPI from 'src/api/auth'

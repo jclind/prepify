@@ -118,13 +118,11 @@ class RecipeAPIClass {
     setProgress: (val: number) => void
   ): Promise<string | null> {
     // !FIX
-    const uid = AuthAPI.getUID()
-    if (!uid) return null
 
     try {
       setProgress(10)
-      const authorId: string = uid
-      // const authorUsername: string = getUsername
+      const authorUsername: string | null = await AuthAPI.getUsername()
+      if (!authorUsername) throw Error('User does not exist')
       const recipeImage: string = await this.uploadRecipeImage(
         recipeData.recipeImage,
         setProgress
@@ -155,7 +153,7 @@ class RecipeAPIClass {
         recipeImage,
         nutritionData,
         totalTime,
-        authorUsername: 'sus',
+        authorUsername,
         rating: {
           rateCount: 0,
           rateValue: 0,
@@ -300,7 +298,6 @@ class RecipeAPIClass {
     reviewsPerPage = 5
   ) {
     const username = await AuthAPI.getUsername()
-    console.log('username', username)
     if (!username) return null
     const result = await http.get(
       `getReviews?username=${username}&recipeId=${recipeId}&page=${page}&reviewsPerPage=${reviewsPerPage}&filter=${filter}`

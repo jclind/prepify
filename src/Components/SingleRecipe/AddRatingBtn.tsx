@@ -13,7 +13,6 @@ const AddRatingBtn = ({ currUserReview }: AddRatingBtnProps) => {
       behavior: 'smooth',
     })
   }
-  console.log('currUserReview', currUserReview)
 
   return (
     <div className='add-rating'>

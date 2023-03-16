@@ -66,10 +66,8 @@ const RecipeRatings = ({
 
   useEffect(() => {
     if (uid) {
-      console.log('HERE?')
       RecipeAPI.checkIfReviewed(recipeId).then(res => {
         const reviewData = res || null
-        console.log(res)
 
         const userRating = reviewData?.rating
         const isUserReview = reviewData?.reviewText?.length > 0
