@@ -172,9 +172,9 @@ const Ratings = () => {
           ) : null}
         </>
       ) : (
-        <div className='no-recipes-saved'>
-          <h2>No Recipes Saved Yet</h2>
-          <p>Start saving your favorite recipes today!</p>
+        <div className='no-data-saved'>
+          <h2>No Ratings Yet</h2>
+          <p>All of your future ratings will show up here</p>
         </div>
       )}
     </div>

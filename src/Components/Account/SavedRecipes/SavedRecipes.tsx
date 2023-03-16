@@ -107,7 +107,7 @@ const SavedRecipes = () => {
           ) : null}
         </>
       ) : (
-        <div className='no-recipes-saved'>
+        <div className='no-data-saved'>
           <h2>No Recipes Saved Yet</h2>
           <p>Start saving your favorite recipes today!</p>
         </div>

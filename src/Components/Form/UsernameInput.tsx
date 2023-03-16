@@ -1,4 +1,4 @@
-import React, { useState, useEffect, FC } from 'react'
+import React, { useEffect, FC } from 'react'
 import FormInput from './FormInput'
 import { AiOutlineUser } from 'react-icons/ai'
 import AuthAPI from 'src/api/auth'

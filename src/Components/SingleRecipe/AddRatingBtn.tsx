@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { BsStar, BsStarFill } from 'react-icons/bs'
 
 type AddRatingBtnProps = {
-  currUserReview: { rating: string } | {}
+  currUserReview: { rating: string } | null
 }
 
 const AddRatingBtn = ({ currUserReview }: AddRatingBtnProps) => {
@@ -22,7 +22,7 @@ const AddRatingBtn = ({ currUserReview }: AddRatingBtnProps) => {
         onMouseLeave={() => setIsHovered(false)}
         onClick={handleClick}
       >
-        {'rating' in currUserReview ? (
+        {currUserReview ? (
           <>
             <BsStarFill className='icon' />
             {currUserReview.rating}

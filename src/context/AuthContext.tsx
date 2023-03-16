@@ -182,14 +182,13 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
   // Check if user has username after auth is loaded and user exists
   useEffect(() => {
     if (!loading && user && user.uid) {
-      console.log('heh', user.uid)
       AuthAPI.getUsername(user.uid).then(username => {
-        console.log(username)
         if (!username) {
           navigate('/create-username')
         }
       })
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, user])
 
   const value: AuthContextValueType = {
