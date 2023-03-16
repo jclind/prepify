@@ -10,7 +10,7 @@ Modal.setAppElement('#root')
 
 type RecipeReviewProps = {
   review: ReviewType
-  setCurrUserReview?: (val: ReviewType | {}) => void
+  setCurrUserReview?: (val: ReviewType | null) => void
   recipeId?: string
 }
 
@@ -51,7 +51,7 @@ const RecipeReview = ({
   const handleDeleteReview = async () => {
     if (recipeId && setCurrUserReview) {
       await RecipeAPI.deleteReview(recipeId).then(() => {
-        setCurrUserReview({})
+        setCurrUserReview(null)
       })
     }
   }

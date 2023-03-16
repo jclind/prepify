@@ -12,6 +12,7 @@ import {
 
 import { useNavigate } from 'react-router-dom'
 import AuthAPI from 'src/api/auth'
+import { TailSpin } from 'react-loader-spinner'
 
 export function useAuth() {
   return useContext(AuthContext)
@@ -64,7 +65,6 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
         console.log('sign out NOT success,', err)
       })
   }
-
   const signInWithGoogle = (setError: (val: string) => void) => {
     const provider = new GoogleAuthProvider()
 
@@ -156,73 +156,18 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
       })
   }
 
-  // const getUsername = async (uid: string): Promise<string | null> => {
-  //   // // Get reference to username collection document with property of the passed uid
-
-  //   // const usernamesRef = doc(db, 'username', uid)
-  //   // const usernamesSnap = await getDoc(usernamesRef)
-
-  //   // if (usernamesSnap.exists()) {
-  //   //   const currUsername = usernamesSnap.data().username
-  //   //   return currUsername
-  //   // } else {
-  //   //   navigate('/create-username')
-  //   //   return null
-  //   // }
-  // }
-
-  // const checkUsernameAvailability = async (
-  //   username: string,
-  //   setLoading?: (val: boolean) => void
-  // ): Promise<boolean> => {
-  //   if (setLoading) {
-  //     setLoading(true)
-  //   }
-
-  //   const usernamesRef = collection(db, 'username')
-  //   const q = query(usernamesRef, where('username', '==', username))
-
-  //   const usernamesQuerySnapshot = await getDocs(q)
-  //   if (usernamesQuerySnapshot.empty) {
-  //     return true
-  //   }
-  //   return false
-  // }
-
-  // const setUsername = async (
-  //   uid: string,
-  //   username: string,
-  //   setLoading: (val: boolean) => void,
-  //   setSuccess: (val: string) => void,
-  //   setError: (val: string) => void
-  // ) => {
-  //   if (setLoading) setLoading(true)
-
-  //   const isAvailable = await checkUsernameAvailability(username)
-  //   if (!isAvailable) {
-  //     if (setError) return setError(`${username} has already been taken`)
-  //   }
-
-  //   const usernameData = { username }
-
-  //   const usernamesRef = doc(db, 'username', uid)
-  //   await setDoc(usernamesRef, usernameData)
-  //   // If setSuccess exists, set it's message
-  //   return setSuccess ? setSuccess('Username successfully created!') : null
-  // }
-
   // Check for auth status on page load
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(userInstance => {
       if (userInstance) {
         // Gets type of authentication, ie... password, google...
-        const providerId = userInstance.providerData[0].providerId
+        // const providerId = userInstance.providerData[0].providerId
 
-        // If the authentication is anything other than password, send getUsername to check if username exists for that user
-        if (providerId !== 'password') {
-          // !!FIX MEEEEEE
-          AuthAPI.getUsername(userInstance.uid)
-        }
+        // // If the authentication is anything other than password, send getUsername to check if username exists for that user
+        // if (providerId !== 'password') {
+        //   // // !!FIX MEEEEEE
+
+        // }
 
         setUser(userInstance)
       } else {
@@ -234,6 +179,17 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
     return () => unsubscribe()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+  // Check if user has username after auth is loaded and user exists
+  useEffect(() => {
+    if (!loading && user && user.uid) {
+      AuthAPI.getUsername(user.uid).then(username => {
+        if (!username) {
+          navigate('/create-username')
+        }
+      })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, user])
 
   const value: AuthContextValueType = {
     user,
@@ -247,7 +203,14 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
 
   return (
     <AuthContext.Provider value={value}>
-      {loading ? 'Auth Loading' : children}
+      {loading ? (
+        <div className='auth-loading-container'>
+          <h2>Auth Loading...</h2>
+          <TailSpin height='30' width='30' color='black' ariaLabel='loading' />
+        </div>
+      ) : (
+        children
+      )}
     </AuthContext.Provider>
   )
 }

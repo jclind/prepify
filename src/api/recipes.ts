@@ -14,6 +14,7 @@ import {
   RecipeFormType,
   RecipeSearchResponseType,
   RecipeType,
+  ReviewType,
 } from 'types'
 import AuthAPI from './auth'
 import { http, nutrition } from './http-common'
@@ -248,24 +249,17 @@ class RecipeAPIClass {
     )
   }
 
-  async newReview(
-    recipeId: string,
-    text: string
-  ): Promise<{
-    rating: { data: { rating: number } }
-    username: string
-    reviewText: string
-    reviewCreatedAt: string
-  } | null> {
-    const username = await AuthAPI.getUsername()
-    if (!username) return null
+  async newReview(recipeId: string, text: string): Promise<ReviewType | null> {
+    const uid = AuthAPI.getUID()
+    if (!uid) return null
 
     const data: NewReviewType = {
-      username: username,
+      userId: uid,
       recipeId,
       reviewText: text,
     }
     const result = await http.put(`newReview`, data)
+    console.log(result.data)
     return result.data
   }
   async checkIfReviewed(recipeId: string) {
@@ -285,11 +279,9 @@ class RecipeAPIClass {
     )
   }
   async deleteReview(recipeId: string) {
-    const username = await AuthAPI.getUsername()
-    if (!username) return null
-    return await http.put(
-      `deleteReview?username=${username}&recipeId=${recipeId}`
-    )
+    const userId = await AuthAPI.getUID()
+    if (!userId) return null
+    return await http.put(`deleteReview?userId=${userId}&recipeId=${recipeId}`)
   }
   async getReviews(
     recipeId: string,

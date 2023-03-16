@@ -40,7 +40,7 @@ const SingleRecipe = () => {
   const [recipe404, setRecipe404] = useState(false)
   const [modIngredients, setModIngredients] = useState<IngredientsType[]>([])
 
-  const [currUserReview, setCurrUserReview] = useState<ReviewType | {}>({})
+  const [currUserReview, setCurrUserReview] = useState<ReviewType | null>(null)
 
   const [windowWidth, setWindowWidth] = useState(getWindowWidth())
 

@@ -130,4 +130,20 @@
       }
     }
   }
+  .no-data-saved {
+    text-align: center;
+    margin: 0 auto;
+    margin-top: 3rem;
+    padding-bottom: 3rem;
+
+    h2 {
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
+
+    p {
+      font-size: 16px;
+      color: #666;
+    }
+  }
 }

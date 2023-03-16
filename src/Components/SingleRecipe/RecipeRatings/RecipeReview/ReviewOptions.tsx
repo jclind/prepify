@@ -26,6 +26,7 @@ const ReviewOptions = ({
   const [currUsername, setCurrUsername] = useState<string | null>(null)
 
   useEffect(() => {
+    const abortController = new AbortController()
     const getCurrUsername = async () => {
       if (uid) {
         const un = await AuthAPI.getUsername(uid)
@@ -33,6 +34,9 @@ const ReviewOptions = ({
       }
     }
     getCurrUsername()
+    return () => {
+      abortController.abort()
+    }
   }, [uid])
 
   const [deleteModalIsOpen, setDeleteModalIsOpen] = useState(false)

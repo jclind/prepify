@@ -61,9 +61,9 @@ const ConfirmDeleteReviewModal: FC<ConfirmDeleteReviewModalProps> = ({
           className='delete btn'
           onClick={() => {
             setDeleteLoading(true)
-            handleDeleteReview().then(() => {
-              setDeleteModalIsOpen(false)
+            handleDeleteReview().catch((error: any) => {
               setDeleteLoading(false)
+              console.log(error)
             })
           }}
           disabled={deleteLoading}
