@@ -30,7 +30,10 @@ const ReviewsContainer: FC<ReviewsContainerProps> = ({
   const getNextReviewsPage = (recipeId: string) => {
     RecipeAPI.getReviews(recipeId, 'new', reviewListPage + 1, recipesPerPage)
       .then(res => {
-        const updatedArr: ReviewType[] = [...reviewList, ...res?.data.reviews]
+        const updatedArr: ReviewType[] = [
+          ...reviewList,
+          ...res?.data.reviews,
+        ].filter(review => review.reviewText !== '')
         setReviewList(updatedArr)
         if (res?.data.totalCount > updatedArr.length) {
           setIsMoreReviews(true)
