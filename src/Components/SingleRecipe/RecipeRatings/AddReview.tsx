@@ -38,7 +38,6 @@ const AddReview: FC<AddReviewProps> = ({
     }
     setIsReviewOpen(false)
     RecipeAPI.newReview(recipeId, newReviewText).then(res => {
-      console.log(res)
       setCurrUserReview(res ?? null)
     })
   }

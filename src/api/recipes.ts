@@ -279,7 +279,6 @@ class RecipeAPIClass {
       reviewText: text,
     }
     const result = await http.put(`newReview`, data)
-    console.log(result.data)
     return result.data
   }
   async checkIfReviewed(recipeId: string) {

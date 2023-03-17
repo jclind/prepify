@@ -15,7 +15,6 @@ const monthNames = [
 
 export const formatDate = (d: string, short: boolean): string => {
   const date = Number.isNaN(d) ? new Date(d) : new Date(Number(d))
-  console.log(d, short, date)
   let day = date.getDate()
   let month = monthNames[date.getMonth()]
   let year = date.getFullYear()
