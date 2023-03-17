@@ -6,7 +6,6 @@ import { MdAddCircleOutline } from 'react-icons/md'
 import { AiOutlineClose } from 'react-icons/ai'
 import { BiWrench } from 'react-icons/bi'
 import Modal from 'react-modal'
-// import packageInfo from '../../../package.json'
 Modal.setAppElement('#root')
 
 const customStyles = {
@@ -30,9 +29,8 @@ const customStyles = {
 }
 
 const RELEASE_DATE = '3/14/2023'
-const version = '2.1.0-beta'
-const description =
-  'This update includes a major security update and improved user safety. It also contains various code refactoring and improvements, which enhance the overall performance, stability and user experience of Prepify.'
+const version = '2.3.0-beta'
+const description = ''
 
 type ReleaseNotesProps = {
   releaseNotesModalIsOpen: boolean
@@ -47,12 +45,11 @@ const ReleaseNotes: FC<ReleaseNotesProps> = ({
     setReleaseNotesModalIsOpen(false)
   }
 
-  const additions: string[] = []
-  const bugFixes: string[] = []
-  const improvements: string[] = [
-    'Major security update/improved user safety',
-    'Various code refactoring and improvements',
+  const additions: string[] = [
+    "Added 'Made It' button functionality for users to mark and keep track of recipes they have made.",
   ]
+  const bugFixes: string[] = []
+  const improvements: string[] = []
 
   const location = useLocation()
 

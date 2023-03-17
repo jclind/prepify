@@ -26,6 +26,7 @@ import RecipeAPI from 'src/api/recipes'
 import Instructions from './Instructions/Instructions'
 import Tags from './Tags'
 import RecipeControls from './RecipeControls/RecipeControls'
+import MadeRecipeBtn from './MadeRecipeBtn'
 
 const skeletonColor = '#d6d6d6'
 
@@ -332,6 +333,8 @@ const SingleRecipe = () => {
                   loading={loading}
                 />
                 <Tags loading={loading} currRecipe={currRecipe} />
+                {recipeId && <MadeRecipeBtn recipeId={recipeId} />}
+                <div className='recipe-stats'></div>
               </div>
               {!loading && currRecipe && (
                 <RecipeRatings

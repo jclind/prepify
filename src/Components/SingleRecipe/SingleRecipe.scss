@@ -360,5 +360,43 @@
         }
       }
     }
+    .made-this-recipe {
+      margin: 0 auto;
+      margin-top: 4rem;
+      max-width: 700px;
+      width: 90%;
+      .content {
+        display: flex;
+        flex-direction: column;
+        width: fit-content;
+        align-items: center;
+        gap: 0.25rem;
+      }
+      .made-recipe {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border: 1px solid $primary-text;
+        border-radius: $border-radius;
+        color: $primary-text;
+        padding: 0.5rem 1rem;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.1s linear;
+        width: 105px;
+        height: 40px;
+
+        &:hover {
+          background: $primary-text;
+          color: $primary-background;
+        }
+      }
+      span {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: $secondary-text;
+      }
+    }
   }
 }

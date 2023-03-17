@@ -1,5 +1,9 @@
 import React from 'react'
+import pjson from '../../../package.json'
+
 import './Footer.scss'
+
+const version = pjson.version
 
 const Footer = () => {
   return (
@@ -9,6 +13,7 @@ const Footer = () => {
         © {new Date().getFullYear()} || Made with{' '}
         <a href='https://reactjs.org/'>React.js</a>
       </div>
+      <div className='version'>version {version}-beta</div>
     </footer>
   )
 }
