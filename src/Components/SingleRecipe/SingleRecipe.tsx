@@ -1,34 +1,31 @@
 import React, { useState, useEffect, useRef } from 'react'
-import './SingleRecipe.scss'
 import { useParams } from 'react-router-dom'
+import { AiOutlineClockCircle, AiOutlineUsergroupAdd } from 'react-icons/ai'
+import { BsStar } from 'react-icons/bs'
+import { Helmet } from 'react-helmet'
+import Skeleton from 'react-loading-skeleton'
 
-import Ingredients from './Ingredients/Ingredients'
-import SaveRecipeBtn from './SaveRecipeBtn'
-import AddRatingBtn from './AddRatingBtn'
-import PrintRecipeBtn from './PrintRecipeBtn'
-import RecipeRatings from './RecipeRatings/RecipeRatings'
+import './SingleRecipe.scss'
+
+import Ingredients from './DataSections/Ingredients/Ingredients'
+import SaveRecipeBtn from './Buttons/SaveRecipeBtn'
+import AddRatingBtn from './Buttons/AddRatingBtn'
+import PrintRecipeBtn from './Buttons/PrintRecipeBtn'
+import RecipeRatings from './DataSections/RecipeRatings/RecipeRatings'
 import RecipeNotFound from './RecipeNotFound.js/RecipeNotFound'
+import Instructions from './DataSections/Instructions/Instructions'
+import Tags from './DataSections/Tags'
+import RecipeControls from './DataSections/RecipeControls/RecipeControls'
+import MadeRecipeBtn from './Buttons/MadeRecipeBtn'
 
 import { formatRating } from '../../util/formatRating'
 import { updateIngredients } from '../../util/updateIngredients'
 import { capitalize } from '../../util/capitalize'
-
-import { AiOutlineClockCircle, AiOutlineUsergroupAdd } from 'react-icons/ai'
-import { BsStar } from 'react-icons/bs'
-
 import { getWindowWidth } from '../../util/getWindowWidth'
-import { Helmet } from 'react-helmet'
 
-import Skeleton from 'react-loading-skeleton'
-import 'react-loading-skeleton/dist/skeleton.css'
 import { IngredientsType, RecipeType, ReviewType } from 'types'
 import RecipeAPI from 'src/api/recipes'
-import Instructions from './Instructions/Instructions'
-import Tags from './Tags'
-import RecipeControls from './RecipeControls/RecipeControls'
-import MadeRecipeBtn from './MadeRecipeBtn'
-
-const skeletonColor = '#d6d6d6'
+import RecipeHeaderContent from './RecipeHeaderContent/RecipeHeaderContent'
 
 type LocalStorageRecipeType = {
   recipeId: string
@@ -42,8 +39,6 @@ const SingleRecipe = () => {
   const [modIngredients, setModIngredients] = useState<IngredientsType[]>([])
 
   const [currUserReview, setCurrUserReview] = useState<ReviewType | null>(null)
-
-  const [windowWidth, setWindowWidth] = useState(getWindowWidth())
 
   const [servingSize, setServingSize] = useState(0)
 
@@ -116,12 +111,6 @@ const SingleRecipe = () => {
         console.log(err)
       })
 
-    function handleResize() {
-      setWindowWidth(getWindowWidth())
-    }
-
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -151,176 +140,13 @@ const SingleRecipe = () => {
                   recipeTitle={currRecipe.title}
                 />
               )}
-              <div className='header-content'>
-                {windowWidth <= 956 && (
-                  <div className='mobile-title-content'>
-                    <h1 className='title'>
-                      {loading || !currRecipe?.title ? (
-                        <Skeleton baseColor={skeletonColor} />
-                      ) : (
-                        currRecipe.title
-                      )}
-                    </h1>
-                    <div className='recipe-price'>
-                      {loading ||
-                      !currRecipe?.servingPrice ||
-                      !currRecipe?.servings ? (
-                        <Skeleton baseColor={skeletonColor} height={30} />
-                      ) : (
-                        `Serving: $${(currRecipe.servingPrice / 100).toFixed(
-                          2
-                        )} | Recipe: $${(
-                          (currRecipe.servingPrice / 100) *
-                          currRecipe.servings
-                        ).toFixed(2)}`
-                      )}
-                    </div>
-                    <p className='description'>
-                      {loading || !currRecipe?.description ? (
-                        <Skeleton baseColor={skeletonColor} count={4} />
-                      ) : (
-                        currRecipe.description
-                      )}
-                    </p>
-                  </div>
-                )}
-                <div className='recipe-image-container'>
-                  {loading || !currRecipe?.recipeImage ? (
-                    <Skeleton
-                      baseColor={skeletonColor}
-                      className='img skeleton'
-                    />
-                  ) : (
-                    <img
-                      className='img'
-                      src={currRecipe.recipeImage}
-                      alt={currRecipe.title}
-                    />
-                  )}
-                </div>
-                <div className='description-content'>
-                  {windowWidth > 956 && (
-                    <>
-                      <h1 className='title'>
-                        {loading || !currRecipe?.title ? (
-                          <Skeleton baseColor={skeletonColor} />
-                        ) : (
-                          currRecipe.title
-                        )}
-                      </h1>
-                      <div className='recipe-price'>
-                        {loading ||
-                        !currRecipe?.servingPrice ||
-                        !currRecipe?.servings ? (
-                          <Skeleton baseColor={skeletonColor} height={30} />
-                        ) : (
-                          `Serving: $${(currRecipe.servingPrice / 100).toFixed(
-                            2
-                          )} | Recipe: $${(
-                            (currRecipe.servingPrice / 100) *
-                            currRecipe.servings
-                          ).toFixed(2)}`
-                        )}
-                      </div>
-                      <p className='description'>
-                        {loading || !currRecipe?.description ? (
-                          <Skeleton baseColor={skeletonColor} count={4} />
-                        ) : (
-                          currRecipe.description
-                        )}
-                      </p>
-                    </>
-                  )}
-
-                  <div className='recipe-data'>
-                    <div className='time data-element'>
-                      {loading || !currRecipe?.totalTime ? (
-                        <Skeleton
-                          baseColor={skeletonColor}
-                          className='skeleton'
-                        />
-                      ) : (
-                        <>
-                          <AiOutlineClockCircle className='icon' />
-                          <h3>Total Time</h3>
-                          <div className='data'>
-                            {currRecipe.totalTime} min.
-                          </div>
-                        </>
-                      )}
-                    </div>
-                    <div className='servings data-element'>
-                      {loading ? (
-                        <Skeleton
-                          baseColor={skeletonColor}
-                          className='skeleton'
-                        />
-                      ) : (
-                        <>
-                          <AiOutlineUsergroupAdd className='icon' />
-                          <h3>Servings</h3>
-                          <div className='data'>{servingSize}</div>
-                        </>
-                      )}
-                    </div>
-                    <div className='rating data-element'>
-                      {loading ? (
-                        <Skeleton
-                          baseColor={skeletonColor}
-                          className='skeleton'
-                        />
-                      ) : (
-                        <>
-                          {' '}
-                          <BsStar className='icon' />
-                          <h3>Rating</h3>
-                          <div className='data'>
-                            {!currRecipe ||
-                            !currRecipe.rating ||
-                            Number(currRecipe.rating.rateCount) === 0 ? (
-                              'No Ratings'
-                            ) : (
-                              <>
-                                {formatRating(
-                                  currRecipe.rating.rateValue,
-                                  currRecipe.rating.rateCount
-                                )}{' '}
-                                ({currRecipe.rating.rateCount})
-                              </>
-                            )}
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                  <div className='actions'>
-                    {loading || !currRecipe?._id ? (
-                      <Skeleton
-                        baseColor={skeletonColor}
-                        className='action skeleton'
-                      />
-                    ) : (
-                      <SaveRecipeBtn recipeId={currRecipe._id} />
-                    )}
-                    {loading ? (
-                      <Skeleton
-                        baseColor={skeletonColor}
-                        className='action skeleton'
-                      />
-                    ) : (
-                      <AddRatingBtn currUserReview={currUserReview} />
-                    )}
-                    {loading ? (
-                      <Skeleton
-                        baseColor={skeletonColor}
-                        className='action skeleton'
-                      />
-                    ) : (
-                      <PrintRecipeBtn printedRef={printedRef} />
-                    )}
-                  </div>
-                </div>
-              </div>
+              <RecipeHeaderContent
+                currRecipe={currRecipe}
+                loading={loading}
+                currUserReview={currUserReview}
+                printedRef={printedRef}
+                servingSize={servingSize}
+              />
               <div className='body-content'>
                 <Ingredients
                   ingredients={modIngredients}
