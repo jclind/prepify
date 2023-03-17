@@ -6,7 +6,6 @@ import { MdAddCircleOutline } from 'react-icons/md'
 import { AiOutlineClose } from 'react-icons/ai'
 import { BiWrench } from 'react-icons/bi'
 import Modal from 'react-modal'
-// import packageInfo from '../../../package.json'
 Modal.setAppElement('#root')
 
 const customStyles = {
