@@ -26,6 +26,8 @@ export type RecipeType = {
   mealTypes: string[]
   nutritionLabels: string[] | null
   views: number
+  numTimesSaved: number
+  numTimesMade: number
 }
 export type RecipeFormType = {
   title: string

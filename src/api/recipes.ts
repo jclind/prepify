@@ -94,6 +94,25 @@ class RecipeAPIClass {
   async unsaveRecipe(userId = '', recipeId = '') {
     return await http.put(`unsaveRecipe?userId=${userId}&recipeId=${recipeId}`)
   }
+  async madeRecipe(recipeId: string) {
+    const userId = AuthAPI.getUID()
+    if (!userId) return
+
+    const result = await http.post(
+      `madeRecipe?userId=${userId}&recipeId=${recipeId}`
+    )
+    return result.data
+  }
+  async checkMadeRecipe(recipeId: string) {
+    const userId = AuthAPI.getUID()
+    if (!userId) return
+
+    const result = await http.get(
+      `checkMadeRecipe?userId=${userId}&recipeId=${recipeId}`
+    )
+    return result.data
+  }
+
   uploadRecipeImage = async (
     imageFile: File,
     setProgress: (val: number) => void
@@ -164,6 +183,8 @@ class RecipeAPIClass {
         mealTypes: recipeData.mealTypes,
         nutritionLabels,
         views: 0,
+        numTimesSaved: 0,
+        numTimesMade: 0,
       }
       setProgress(90)
       await http.post('addRecipe', returnRecipeData)
