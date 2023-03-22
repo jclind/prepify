@@ -1,16 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useParams } from 'react-router-dom'
-import { AiOutlineClockCircle, AiOutlineUsergroupAdd } from 'react-icons/ai'
-import { BsStar } from 'react-icons/bs'
 import { Helmet } from 'react-helmet'
-import Skeleton from 'react-loading-skeleton'
 
 import './SingleRecipe.scss'
 
 import Ingredients from './DataSections/Ingredients/Ingredients'
-import SaveRecipeBtn from './Buttons/SaveRecipeBtn'
-import AddRatingBtn from './Buttons/AddRatingBtn'
-import PrintRecipeBtn from './Buttons/PrintRecipeBtn'
 import RecipeRatings from './DataSections/RecipeRatings/RecipeRatings'
 import RecipeNotFound from './RecipeNotFound.js/RecipeNotFound'
 import Instructions from './DataSections/Instructions/Instructions'
@@ -18,10 +12,8 @@ import Tags from './DataSections/Tags'
 import RecipeControls from './DataSections/RecipeControls/RecipeControls'
 import MadeRecipeBtn from './Buttons/MadeRecipeBtn'
 
-import { formatRating } from '../../util/formatRating'
 import { updateIngredients } from '../../util/updateIngredients'
 import { capitalize } from '../../util/capitalize'
-import { getWindowWidth } from '../../util/getWindowWidth'
 
 import { IngredientsType, RecipeType, ReviewType } from 'types'
 import RecipeAPI from 'src/api/recipes'
@@ -37,12 +29,11 @@ const SingleRecipe = () => {
   const [loading, setLoading] = useState(true)
   const [recipe404, setRecipe404] = useState(false)
   const [modIngredients, setModIngredients] = useState<IngredientsType[]>([])
-
   const [currUserReview, setCurrUserReview] = useState<ReviewType | null>(null)
-
   const [servingSize, setServingSize] = useState(0)
-
   const printedRef = useRef() as React.MutableRefObject<HTMLInputElement>
+
+  const { recipeId } = useParams<{ recipeId: string }>()
 
   const updateRecipeLocalStorage = (recipeId: string, numServings: number) => {
     const localStorageRecipeArr: LocalStorageRecipeType[] = JSON.parse(
@@ -77,9 +68,6 @@ const SingleRecipe = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [servingSize])
-
-  let recipeParams = useParams()
-  const recipeId = recipeParams.recipeId
 
   // Retrieve recipe data with recipeId
   useEffect(() => {

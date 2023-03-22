@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import './RecipeReview.scss'
 import StarRatings from 'react-star-ratings'
-import { formatDate } from '../../../../util/formatDate'
 import Modal from 'react-modal'
 import { ReviewType } from 'types'
 import RecipeAPI from 'src/api/recipes'
 import ReviewOptions from './ReviewOptions'
+import { formatDate } from 'src/util/formatDate'
 Modal.setAppElement('#root')
 
 type RecipeReviewProps = {
