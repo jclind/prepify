@@ -15,6 +15,9 @@
 
 // Import commands.js using ES2015 syntax:
 import './commands'
+export const username = 'testinguser'
+export const email = 'testinguser@gmail.com'
+export const password = 'testinguser'
 
 // Alternatively you can use CommonJS syntax:
 // require('./commands')

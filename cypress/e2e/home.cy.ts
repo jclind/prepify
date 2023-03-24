@@ -20,5 +20,6 @@ describe('Home Page', () => {
       }
     )
     cy.get('.recipes').should('contain', 'Tuscan Chicken Skillet')
+    cy.get('.recipes').should('contain', 'Serving: $2.00 | Recipe: $8.00')
   })
 })
