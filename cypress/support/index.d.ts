@@ -11,5 +11,6 @@ declare namespace Cypress {
         uniquePassword?: boolean
       }
     ): Chainable<Element>
+    signupProcess(): Chainable<Elemnt>
   }
 }

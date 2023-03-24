@@ -24,6 +24,23 @@ Cypress.Commands.add(
     }
   }
 )
+Cypress.Commands.add('signupProcess', () => {
+  cy.contains('a', 'signup').click()
+
+  cy.fillSignupInputs(username, email, password, {
+    click: true,
+    uniqueUsername: true,
+    uniqueEmail: true,
+  })
+
+  // Should be on home page
+  cy.contains('a', 'Create Recipe')
+
+  // Logout
+  cy.contains('button', 'logout').click({ force: true })
+
+  cy.contains('a', 'login')
+})
 
 describe('Login/Logout Process', () => {
   it('All links should work', () => {
@@ -84,20 +101,12 @@ describe('Login/Logout Process', () => {
         })
       }
     )
-    const newDate = new Date().getTime()
-    cy.contains('a', 'signup').click()
-    cy.get('input[name="username"]').type(`${username}${newDate}`)
-    cy.get('input[name="email"]').type(`${username}${newDate}@gmail.com`)
-    cy.get('input[name="password"]').type(password)
-
-    cy.contains('button', 'Create Username').click()
-
-    // Should be on home page
-    cy.contains('a', 'Create Recipe')
-
-    // Logout
-    cy.contains('button', 'logout').click({ force: true })
-
-    cy.contains('a', 'login')
+    cy.signupProcess()
+  })
+  it('Should complete signup process on mobile', () => {
+    cy.viewport(375, 977)
+    cy.visit('/')
+    cy.get('.hamburger-react').click()
+    cy.signupProcess()
   })
 })
