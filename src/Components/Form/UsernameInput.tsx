@@ -1,4 +1,4 @@
-import React, { useEffect, FC } from 'react'
+import React, { useEffect, FC, useState } from 'react'
 import FormInput from './FormInput'
 import { AiOutlineUser } from 'react-icons/ai'
 import AuthAPI from 'src/api/auth'
@@ -20,6 +20,8 @@ const UsernameInput: FC<UsernameInputProps> = ({
   isUsernameAvailable,
   setIsUsernameAvailable,
 }) => {
+  const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null)
+
   // on username change, check username availability against firestore 'usernames' collection
   useEffect(() => {
     setError('')
@@ -29,11 +31,23 @@ const UsernameInput: FC<UsernameInputProps> = ({
       return setError('Cannot have white space in username')
     if (!username || username.length < 3) return setIsUsernameAvailable(null)
 
-    AuthAPI.checkUsernameAvailability(username)
-      .then(val => {
-        setIsUsernameAvailable(val)
-      })
-      .catch(err => setError(err.code))
+    if (timeoutId) clearTimeout(timeoutId)
+
+    const newTimeoutId = setTimeout(() => {
+      AuthAPI.checkUsernameAvailability(username)
+        .then(val => {
+          setIsUsernameAvailable(val)
+        })
+        .catch(err => setError(err.code))
+    }, 500) // 500 milliseconds debounce time
+
+    setTimeoutId(newTimeoutId)
+
+    // cleanup function to clear timeout on unmount or username change
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId)
+    }
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [username])
 
