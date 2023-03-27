@@ -1,0 +1,35 @@
+{
+  "reviews": [
+    {
+      "_id": "6412454270e05494f84f43db",
+      "username": "aac",
+      "recipeId": "6408d2495491ab77fb7780b0",
+      "rating": "4",
+      "ratingLastUpdated": "2023-03-15T22:22:58.613Z",
+      "reviewCreatedAt": "1678925487714",
+      "reviewLastUpdated": "",
+      "reviewText": "Really enjoyed!"
+    },
+    {
+      "_id": "641250470743cef57daf5d44",
+      "username": "aab",
+      "recipeId": "6408d2495491ab77fb7780b0",
+      "rating": "5",
+      "ratingLastUpdated": "2023-03-15T23:09:59.260Z",
+      "reviewCreatedAt": "1678921806736",
+      "reviewLastUpdated": "",
+      "reviewText": "Great recipe!"
+    },
+    {
+      "_id": "6413689f9162972ab385cd80",
+      "username": "BenLeeX",
+      "recipeId": "6408d2495491ab77fb7780b0",
+      "rating": "4",
+      "ratingLastUpdated": "2023-03-16T19:06:07.393Z",
+      "reviewCreatedAt": "",
+      "reviewLastUpdated": "",
+      "reviewText": ""
+    }
+  ],
+  "totalCount": 3
+}

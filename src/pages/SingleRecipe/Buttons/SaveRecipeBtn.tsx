@@ -56,7 +56,7 @@ const SaveRecipeBtn = ({ recipeId }: SaveRecipeBtnProps) => {
   return (
     <div className='save-recipe'>
       <button
-        className='save-recipe-btn btn'
+        className={`save-recipe-btn btn ${isSaved ? 'saved' : ''}`}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         onClick={() => handleToggleSaveRecipe(recipeId)}

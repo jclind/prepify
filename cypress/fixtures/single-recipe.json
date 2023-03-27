@@ -1,0 +1,460 @@
+{
+  "_id": "6408d2495491ab77fb7780b0",
+  "title": "Tuscan Chicken Skillet",
+  "prepTime": 10,
+  "cookTime": 30,
+  "servings": 4,
+  "fridgeLife": 0,
+  "freezerLife": 0,
+  "description": "Bacon, cream, Parmesan -- is your mouth watering yet? There's no need to go out to dinner when you can make this restaurant-style creamy, cheesy chicken and fettuccine at home.",
+  "ingredients": [
+    {
+      "ingredientData": {
+        "_id": "640631289d2d02e6c3a18b10",
+        "originalName": "salt and black pepper",
+        "name": "salt and pepper",
+        "amount": 1,
+        "possibleUnits": [
+          "pinch",
+          "g",
+          "oz",
+          "dash",
+          "teaspoon",
+          "cup",
+          "serving",
+          "tablespoon"
+        ],
+        "estimatedCost": {
+          "value": 0.11,
+          "unit": "US Cents"
+        },
+        "consistency": "solid",
+        "aisle": "Spices and Seasonings",
+        "image": "salt-and-pepper.jpg",
+        "ingredientId": 1102047,
+        "names": ["salt and pepper", "salt and black pepper"],
+        "dateAdded": 1678127400482,
+        "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/salt-and-pepper.jpg",
+        "totalPriceUSACents": 0
+      },
+      "parsedIngredient": {
+        "quantity": 0,
+        "unit": "q.b.",
+        "unitPlural": "q.b.",
+        "symbol": null,
+        "ingredient": "salt and pepper",
+        "minQty": 0,
+        "maxQty": 0,
+        "originalIngredientString": "Salt and pepper",
+        "comment": ""
+      },
+      "id": "7c41b25c-a68f-46a5-8078-69cf05157ef1"
+    },
+    {
+      "ingredientData": {
+        "_id": "6408ced47b9822764cfcebee",
+        "originalName": "fettucine",
+        "name": "fettucini",
+        "amount": 1,
+        "possibleUnits": ["package", "g", "bag", "box", "oz", "serving"],
+        "estimatedCost": {
+          "value": 0.21,
+          "unit": "US Cents"
+        },
+        "consistency": "solid",
+        "shoppingListUnits": ["ounces", "pounds"],
+        "aisle": "Pasta and Rice",
+        "image": "egg-noodles.jpg",
+        "ingredientId": 10020409,
+        "names": ["fettucini", "fettuccine"],
+        "dateAdded": 1678298836360,
+        "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/egg-noodles.jpg",
+        "totalPriceUSACents": 74.52
+      },
+      "parsedIngredient": {
+        "quantity": 12,
+        "unit": "ounce",
+        "unitPlural": "ounces",
+        "symbol": "oz",
+        "ingredient": "fettuccine",
+        "minQty": 12,
+        "maxQty": 12,
+        "originalIngredientString": "12 ounces fettuccine",
+        "comment": ""
+      },
+      "id": "cd9fc80b-83d6-41ca-93b6-4b60fe11b192"
+    },
+    {
+      "ingredientData": {
+        "originalName": "applewood smoked bacon",
+        "name": "bacon",
+        "amount": 1,
+        "possibleUnits": [
+          "slice raw",
+          "package",
+          "strip",
+          "rasher",
+          "piece",
+          "slice",
+          "g",
+          "oz",
+          "serving"
+        ],
+        "estimatedCost": {
+          "value": 1.29,
+          "unit": "US Cents"
+        },
+        "consistency": "solid",
+        "shoppingListUnits": ["ounces", "pounds"],
+        "aisle": "Meat",
+        "image": "raw-bacon.png",
+        "ingredientId": 10123,
+        "_id": "6408d06da8590f68419a05ad",
+        "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/raw-bacon.png",
+        "totalPriceUSACents": 113.16
+      },
+      "parsedIngredient": {
+        "quantity": 4,
+        "unit": "slice",
+        "unitPlural": "slices",
+        "symbol": null,
+        "ingredient": "bacon",
+        "minQty": 4,
+        "maxQty": 4,
+        "originalIngredientString": "4 slices bacon, chopped",
+        "comment": "chopped"
+      },
+      "id": "7642013e-aff3-4c3b-8c93-0c6a90a0de19"
+    },
+    {
+      "ingredientData": {
+        "originalName": "chicken fingers",
+        "name": "chicken tenders",
+        "amount": 1,
+        "possibleUnits": ["piece", "g", "oz", "serving"],
+        "estimatedCost": {
+          "value": 1.29,
+          "unit": "US Cents"
+        },
+        "consistency": "solid",
+        "shoppingListUnits": ["ounces", "pounds"],
+        "aisle": "Meat",
+        "image": "chicken-tenders-or-fingers.png",
+        "ingredientId": 1015062,
+        "_id": "6408d072554b0508f9356aa4",
+        "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/chicken-tenders-or-fingers.png",
+        "totalPriceUSACents": 585.14
+      },
+      "parsedIngredient": {
+        "quantity": 1,
+        "unit": "pound",
+        "unitPlural": "pounds",
+        "symbol": "lb",
+        "ingredient": "chicken tenders",
+        "minQty": 1,
+        "maxQty": 1,
+        "originalIngredientString": " 1 pound chicken tenders, cut into 1-inch pieces",
+        "comment": "cut into 1-inch pieces"
+      },
+      "id": "e04650ce-b9e0-4244-910d-a476b629e9e7"
+    },
+    {
+      "ingredientData": {
+        "_id": "640654b1e8e3c20589bd3b01",
+        "originalName": "garlic",
+        "name": "garlic",
+        "amount": 1,
+        "possibleUnits": [
+          "clove",
+          "head",
+          "piece",
+          "g",
+          "oz",
+          "teaspoon",
+          "cup",
+          "serving",
+          "tablespoon"
+        ],
+        "estimatedCost": {
+          "value": 2.22,
+          "unit": "US Cents"
+        },
+        "consistency": "solid",
+        "aisle": "Produce",
+        "image": "garlic.png",
+        "ingredientId": 11215,
+        "names": ["garlic"],
+        "dateAdded": 1678136497817,
+        "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/garlic.png",
+        "totalPriceUSACents": 13.34
+      },
+      "parsedIngredient": {
+        "quantity": 2,
+        "unit": "clove",
+        "unitPlural": "cloves",
+        "symbol": null,
+        "ingredient": "garlic",
+        "minQty": 2,
+        "maxQty": 2,
+        "originalIngredientString": "2 cloves garlic, minced",
+        "comment": "minced"
+      },
+      "id": "4c5a6527-f690-4b33-bf2e-c738c3bad9b4"
+    },
+    {
+      "ingredientData": {
+        "originalName": "plum tomatoes",
+        "name": "plum tomatoes",
+        "amount": 1,
+        "possibleUnits": ["piece", "g", "oz"],
+        "estimatedCost": {
+          "value": 0.38,
+          "unit": "US Cents"
+        },
+        "consistency": "solid",
+        "shoppingListUnits": ["pieces"],
+        "aisle": "Produce",
+        "image": "plum-tomatoes.png",
+        "ingredientId": 10411529,
+        "_id": "6408d07a70e05494f85b6aad",
+        "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/plum-tomatoes.png",
+        "totalPriceUSACents": 93.12
+      },
+      "parsedIngredient": {
+        "quantity": 4,
+        "unit": null,
+        "unitPlural": null,
+        "symbol": null,
+        "ingredient": "plum tomatoes",
+        "minQty": 4,
+        "maxQty": 4,
+        "originalIngredientString": "4 plum tomatoes, chopped",
+        "comment": "chopped"
+      },
+      "id": "3695cdd9-d7e0-4d44-9ed9-abf769d453b3"
+    },
+    {
+      "ingredientData": {
+        "originalName": "cream",
+        "name": "heavy cream",
+        "amount": 1,
+        "possibleUnits": [
+          "quart",
+          "g",
+          "oz",
+          "teaspoon",
+          "fluid ounce",
+          "cup",
+          "serving",
+          "tablespoon"
+        ],
+        "estimatedCost": {
+          "value": 0.54,
+          "unit": "US Cents"
+        },
+        "consistency": "liquid",
+        "shoppingListUnits": ["ounces", "pints", "quarts"],
+        "aisle": "Milk, Eggs, Other Dairy",
+        "image": "fluid-cream.jpg",
+        "ingredientId": 1053,
+        "_id": "6408d07d0743cef57dafe4ea",
+        "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/fluid-cream.jpg",
+        "totalPriceUSACents": 127.76
+      },
+      "parsedIngredient": {
+        "quantity": 1,
+        "unit": "cup",
+        "unitPlural": "cups",
+        "symbol": "c",
+        "ingredient": "heavy cream",
+        "minQty": 1,
+        "maxQty": 1,
+        "originalIngredientString": "1 cup heavy cream",
+        "comment": ""
+      },
+      "id": "1cf99b45-a478-476a-ae5d-50f4cfd6f7cb"
+    },
+    {
+      "ingredientData": {
+        "originalName": "baby spinach leaves",
+        "name": "baby spinach",
+        "amount": 1,
+        "possibleUnits": [
+          "package",
+          "handful",
+          "leave",
+          "g",
+          "bag",
+          "bunch",
+          "oz",
+          "cup",
+          "serving"
+        ],
+        "estimatedCost": {
+          "value": 1.18,
+          "unit": "US Cents"
+        },
+        "consistency": "solid",
+        "shoppingListUnits": ["ounces", "pounds"],
+        "aisle": "Produce",
+        "image": "spinach.jpg",
+        "ingredientId": 11457,
+        "_id": "6408d0807b9822764cfe9f27",
+        "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/spinach.jpg",
+        "totalPriceUSACents": 174.47
+      },
+      "parsedIngredient": {
+        "quantity": 5,
+        "unit": "ounce",
+        "unitPlural": "ounces",
+        "symbol": "oz",
+        "ingredient": "baby spinach",
+        "minQty": 5,
+        "maxQty": 5,
+        "originalIngredientString": "5 ounces baby spinach",
+        "comment": ""
+      },
+      "id": "dab8e1ff-1ca6-4bb0-a0d5-35455c99cabb"
+    },
+    {
+      "ingredientData": {
+        "originalName": "grated parmesan cheese",
+        "name": "grated parmesan",
+        "amount": 1,
+        "possibleUnits": ["g", "ounce", "oz", "cup", "serving", "tablespoon"],
+        "estimatedCost": {
+          "value": 2.11,
+          "unit": "US Cents"
+        },
+        "consistency": "solid",
+        "shoppingListUnits": ["ounces", "pounds"],
+        "aisle": "Cheese",
+        "image": "parmesan.jpg",
+        "ingredientId": 1032,
+        "_id": "6408d08570e05494f85b7307",
+        "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/parmesan.jpg",
+        "totalPriceUSACents": 374.41
+      },
+      "parsedIngredient": {
+        "quantity": 0.75,
+        "unit": "cup",
+        "unitPlural": "cups",
+        "symbol": "c",
+        "ingredient": "grated parmesan",
+        "minQty": 0.75,
+        "maxQty": 0.75,
+        "originalIngredientString": "3/4 cup grated Parmesan",
+        "comment": ""
+      },
+      "id": "0de40c25-ec33-426b-a596-3af34b636568"
+    },
+    {
+      "ingredientData": {
+        "originalName": "fresh basil leaf",
+        "name": "basil",
+        "amount": 1,
+        "possibleUnits": [
+          "cup leave",
+          "handful",
+          "piece",
+          "leave",
+          "g",
+          "sprig",
+          "bunch",
+          "oz",
+          "teaspoon",
+          "cup",
+          "serving",
+          "tablespoon"
+        ],
+        "estimatedCost": {
+          "value": 3.93,
+          "unit": "US Cents"
+        },
+        "consistency": "solid",
+        "shoppingListUnits": ["ounces"],
+        "aisle": "Produce",
+        "image": "fresh-basil.jpg",
+        "ingredientId": 2044,
+        "_id": "6408d08f554b0508f9358de1",
+        "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/fresh-basil.jpg",
+        "totalPriceUSACents": 174.26
+      },
+      "parsedIngredient": {
+        "quantity": 3,
+        "unit": "tablespoon",
+        "unitPlural": "tablespoons",
+        "symbol": "tbs",
+        "ingredient": "basil",
+        "minQty": 3,
+        "maxQty": 3,
+        "originalIngredientString": "3 tablespoons fresh basil, chopped",
+        "comment": "chopped"
+      },
+      "id": "e73cfb35-3472-4ef6-b32c-f37d24f217a7"
+    }
+  ],
+  "instructions": [
+    {
+      "content": "Bring a large pot of salted water to a boil. Cook the fettuccine according to package directions; drain.",
+      "index": 1,
+      "id": "f3f7aef1-de5c-499a-a592-b7ba4a18ecde"
+    },
+    {
+      "content": "Meanwhile, put the bacon in a large, cold skillet, then cook over medium-high heat, stirring occasionally, until crispy, about 8 minutes; transfer to a plate with a slotted spoon. ",
+      "index": 2,
+      "id": "2019429c-e0c7-4b48-b9a5-02c00ef13ce5"
+    },
+    {
+      "content": "Sprinkle the chicken lightly with salt and pepper and add to the skillet in a single layer. Let cook, undisturbed, until golden brown on the underside, 2 to 3 minutes. Continue to cook, stirring occasionally, until cooked through, about 4 minutes more. Transfer to the plate with the bacon.",
+      "index": 3,
+      "id": "babcb33a-698a-4e3f-8e7b-45b192545651"
+    },
+    {
+      "content": "Reduce the heat to medium and add the garlic, stirring, until fragrant, about 30 seconds. Add the tomatoes and cream and bring to a simmer, then add the spinach and stir until just wilted. Add the bacon, chicken, fettuccine and Parmesan and toss with tongs until well coated; season to taste with salt and pepper. Sprinkle with basil and serve.",
+      "index": 4,
+      "id": "f88c5de1-c0db-419e-8017-df1369e48e98"
+    }
+  ],
+  "recipeImage": "https://firebasestorage.googleapis.com/v0/b/prepify-9b974.appspot.com/o/recipeImages%2F1537973085542.jpeg?alt=media&token=02b0588b-89f4-4512-bb09-e0ed53647377",
+  "nutritionData": {
+    "uri": "http://www.edamam.com/ontologies/edamam.owl#recipe_6a698cc40c0c42da9da12613d72d9a57",
+    "calories": 4285,
+    "dietLabels": [],
+    "healthLabels": [
+      "SUGAR_CONSCIOUS",
+      "KIDNEY_FRIENDLY",
+      "EGG_FREE",
+      "PEANUT_FREE",
+      "TREE_NUT_FREE",
+      "SOY_FREE",
+      "FISH_FREE",
+      "SHELLFISH_FREE",
+      "CRUSTACEAN_FREE",
+      "CELERY_FREE",
+      "MUSTARD_FREE",
+      "SESAME_FREE",
+      "LUPINE_FREE",
+      "MOLLUSK_FREE",
+      "ALCOHOL_FREE",
+      "NO_OIL_ADDED",
+      "NO_SUGAR_ADDED",
+      "SULPHITE_FREE"
+    ]
+  },
+  "totalTime": 40,
+  "rating": {
+    "rateCount": "3",
+    "rateValue": "13"
+  },
+  "createdAt": "1678299721258",
+  "editedAt": null,
+  "servingPrice": 200,
+  "cuisine": "Italian",
+  "mealTypes": ["Dinner", "Lunch"],
+  "nutritionLabels": ["PEANUT_FREE"],
+  "authorUsername": "aaa",
+  "views": 11,
+  "numTimesSaved": 0,
+  "numTimesMade": 0
+}

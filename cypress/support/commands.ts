@@ -1,4 +1,7 @@
 /// <reference types="cypress" />
+
+import { email, password } from './e2e'
+
 // ***********************************************
 // This example commands.ts shows you how to
 // create various custom commands and overwrite
@@ -35,3 +38,31 @@
 //     }
 //   }
 // }
+
+Cypress.Commands.add('login', () => {
+  cy.viewport(726, 977)
+  cy.visit('/')
+  cy.intercept(
+    'https://us-east-1.aws.data.mongodb-api.com/app/prepify-ixumn/endpoint/getTrendingRecipes*',
+    req => {
+      req.reply(res => {
+        res.send({ fixture: 'trending-recipes.json' })
+      })
+    }
+  )
+  cy.intercept(
+    'GET',
+    'https://us-east-1.aws.data.mongodb-api.com/app/prepify-ixumn/endpoint/getUsername*',
+    { body: 'testinguser' }
+  )
+  cy.contains('a', 'login').click()
+
+  // Login page
+  cy.get('input[name="email"]').type(email)
+  cy.get('input[name="password"]').type(password)
+
+  cy.contains('button', 'Login').click()
+
+  // Should be on home page
+  cy.contains('a', 'Create Recipe')
+})
