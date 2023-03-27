@@ -56,12 +56,12 @@ const ReviewsContainer: FC<ReviewsContainerProps> = ({
   const uid = AuthAPI.getUID()
 
   useEffect(() => {
-    if (reviewListSort && uid) {
+    if (reviewListSort) {
       setReviewListPage(0)
       handleGetUserReviews(0, reviewListSort)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reviewListSort, uid])
+  }, [reviewListSort])
 
   return (
     <div className='reviews'>
