@@ -1,0 +1,32 @@
+[
+  {
+    "_id": "6408d2495491ab77fb7780b0",
+    "title": "Tuscan Chicken Skillet",
+    "servings": 4,
+    "recipeImage": "https://firebasestorage.googleapis.com/v0/b/prepify-9b974.appspot.com/o/recipeImages%2F1537973085542.jpeg?alt=media\u0026token=02b0588b-89f4-4512-bb09-e0ed53647377",
+    "totalTime": 40,
+    "rating": { "rateCount": "3", "rateValue": "13" },
+    "servingPrice": 200,
+    "nutritionLabels": ["PEANUT_FREE"]
+  },
+  {
+    "_id": "6408e14f5491ab77fb7780b1",
+    "title": "CHINESE LEMON CHICKEN",
+    "servings": 4,
+    "recipeImage": "https://firebasestorage.googleapis.com/v0/b/prepify-9b974.appspot.com/o/recipeImages%2FChinese-Lemon-Chicken-7.jpg?alt=media\u0026token=be424e76-3f6c-412f-a514-4e69f6024691",
+    "totalTime": 35,
+    "rating": { "rateCount": "0", "rateValue": "0" },
+    "servingPrice": 100,
+    "nutritionLabels": ["PEANUT_FREE", "KOSHER"]
+  },
+  {
+    "_id": "6406584db37bf7978afa3419",
+    "title": "15-MINUTE HONEY GARLIC CHICKEN",
+    "servings": 4,
+    "recipeImage": "https://firebasestorage.googleapis.com/v0/b/prepify-9b974.appspot.com/o/recipeImages%2F15-minute-honey-garlic-chicken-4.jpg?alt=media\u0026token=85c6f70c-656f-4821-a529-ef7c81baf315",
+    "totalTime": 15,
+    "rating": { "rateCount": "0", "rateValue": "0" },
+    "servingPrice": 100,
+    "nutritionLabels": ["PEANUT_FREE", "KOSHER"]
+  }
+]

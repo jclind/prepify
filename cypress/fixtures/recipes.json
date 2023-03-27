@@ -1,0 +1,1992 @@
+{
+  "recipeList": [
+    {
+      "_id": "6408d2495491ab77fb7780b0",
+      "title": "Tuscan Chicken Skillet",
+      "prepTime": 10,
+      "cookTime": 30,
+      "servings": 4,
+      "fridgeLife": 0,
+      "freezerLife": 0,
+      "description": "Bacon, cream, Parmesan -- is your mouth watering yet? There's no need to go out to dinner when you can make this restaurant-style creamy, cheesy chicken and fettuccine at home.",
+      "ingredients": [
+        {
+          "ingredientData": {
+            "_id": "640631289d2d02e6c3a18b10",
+            "originalName": "salt and black pepper",
+            "name": "salt and pepper",
+            "amount": 1,
+            "possibleUnits": [
+              "pinch",
+              "g",
+              "oz",
+              "dash",
+              "teaspoon",
+              "cup",
+              "serving",
+              "tablespoon"
+            ],
+            "estimatedCost": { "value": 0.11, "unit": "US Cents" },
+            "consistency": "solid",
+            "aisle": "Spices and Seasonings",
+            "image": "salt-and-pepper.jpg",
+            "ingredientId": 1102047,
+            "names": ["salt and pepper", "salt and black pepper"],
+            "dateAdded": 1678127400482,
+            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/salt-and-pepper.jpg",
+            "totalPriceUSACents": 0
+          },
+          "parsedIngredient": {
+            "quantity": 0,
+            "unit": "q.b.",
+            "unitPlural": "q.b.",
+            "symbol": null,
+            "ingredient": "salt and pepper",
+            "minQty": 0,
+            "maxQty": 0,
+            "originalIngredientString": "Salt and pepper",
+            "comment": ""
+          },
+          "id": "7c41b25c-a68f-46a5-8078-69cf05157ef1"
+        },
+        {
+          "ingredientData": {
+            "_id": "6408ced47b9822764cfcebee",
+            "originalName": "fettucine",
+            "name": "fettucini",
+            "amount": 1,
+            "possibleUnits": ["package", "g", "bag", "box", "oz", "serving"],
+            "estimatedCost": { "value": 0.21, "unit": "US Cents" },
+            "consistency": "solid",
+            "shoppingListUnits": ["ounces", "pounds"],
+            "aisle": "Pasta and Rice",
+            "image": "egg-noodles.jpg",
+            "ingredientId": 10020409,
+            "names": ["fettucini", "fettuccine"],
+            "dateAdded": 1678298836360,
+            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/egg-noodles.jpg",
+            "totalPriceUSACents": 74.52
+          },
+          "parsedIngredient": {
+            "quantity": 12,
+            "unit": "ounce",
+            "unitPlural": "ounces",
+            "symbol": "oz",
+            "ingredient": "fettuccine",
+            "minQty": 12,
+            "maxQty": 12,
+            "originalIngredientString": "12 ounces fettuccine",
+            "comment": ""
+          },
+          "id": "cd9fc80b-83d6-41ca-93b6-4b60fe11b192"
+        },
+        {
+          "ingredientData": {
+            "originalName": "applewood smoked bacon",
+            "name": "bacon",
+            "amount": 1,
+            "possibleUnits": [
+              "slice raw",
+              "package",
+              "strip",
+              "rasher",
+              "piece",
+              "slice",
+              "g",
+              "oz",
+              "serving"
+            ],
+            "estimatedCost": { "value": 1.29, "unit": "US Cents" },
+            "consistency": "solid",
+            "shoppingListUnits": ["ounces", "pounds"],
+            "aisle": "Meat",
+            "image": "raw-bacon.png",
+            "ingredientId": 10123,
+            "_id": "6408d06da8590f68419a05ad",
+            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/raw-bacon.png",
+            "totalPriceUSACents": 113.16
+          },
+          "parsedIngredient": {
+            "quantity": 4,
+            "unit": "slice",
+            "unitPlural": "slices",
+            "symbol": null,
+            "ingredient": "bacon",
+            "minQty": 4,
+            "maxQty": 4,
+            "originalIngredientString": "4 slices bacon, chopped",
+            "comment": "chopped"
+          },
+          "id": "7642013e-aff3-4c3b-8c93-0c6a90a0de19"
+        },
+        {
+          "ingredientData": {
+            "originalName": "chicken fingers",
+            "name": "chicken tenders",
+            "amount": 1,
+            "possibleUnits": ["piece", "g", "oz", "serving"],
+            "estimatedCost": { "value": 1.29, "unit": "US Cents" },
+            "consistency": "solid",
+            "shoppingListUnits": ["ounces", "pounds"],
+            "aisle": "Meat",
+            "image": "chicken-tenders-or-fingers.png",
+            "ingredientId": 1015062,
+            "_id": "6408d072554b0508f9356aa4",
+            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/chicken-tenders-or-fingers.png",
+            "totalPriceUSACents": 585.14
+          },
+          "parsedIngredient": {
+            "quantity": 1,
+            "unit": "pound",
+            "unitPlural": "pounds",
+            "symbol": "lb",
+            "ingredient": "chicken tenders",
+            "minQty": 1,
+            "maxQty": 1,
+            "originalIngredientString": " 1 pound chicken tenders, cut into 1-inch pieces",
+            "comment": "cut into 1-inch pieces"
+          },
+          "id": "e04650ce-b9e0-4244-910d-a476b629e9e7"
+        },
+        {
+          "ingredientData": {
+            "_id": "640654b1e8e3c20589bd3b01",
+            "originalName": "garlic",
+            "name": "garlic",
+            "amount": 1,
+            "possibleUnits": [
+              "clove",
+              "head",
+              "piece",
+              "g",
+              "oz",
+              "teaspoon",
+              "cup",
+              "serving",
+              "tablespoon"
+            ],
+            "estimatedCost": { "value": 2.22, "unit": "US Cents" },
+            "consistency": "solid",
+            "aisle": "Produce",
+            "image": "garlic.png",
+            "ingredientId": 11215,
+            "names": ["garlic"],
+            "dateAdded": 1678136497817,
+            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/garlic.png",
+            "totalPriceUSACents": 13.34
+          },
+          "parsedIngredient": {
+            "quantity": 2,
+            "unit": "clove",
+            "unitPlural": "cloves",
+            "symbol": null,
+            "ingredient": "garlic",
+            "minQty": 2,
+            "maxQty": 2,
+            "originalIngredientString": "2 cloves garlic, minced",
+            "comment": "minced"
+          },
+          "id": "4c5a6527-f690-4b33-bf2e-c738c3bad9b4"
+        },
+        {
+          "ingredientData": {
+            "originalName": "plum tomatoes",
+            "name": "plum tomatoes",
+            "amount": 1,
+            "possibleUnits": ["piece", "g", "oz"],
+            "estimatedCost": { "value": 0.38, "unit": "US Cents" },
+            "consistency": "solid",
+            "shoppingListUnits": ["pieces"],
+            "aisle": "Produce",
+            "image": "plum-tomatoes.png",
+            "ingredientId": 10411529,
+            "_id": "6408d07a70e05494f85b6aad",
+            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/plum-tomatoes.png",
+            "totalPriceUSACents": 93.12
+          },
+          "parsedIngredient": {
+            "quantity": 4,
+            "unit": null,
+            "unitPlural": null,
+            "symbol": null,
+            "ingredient": "plum tomatoes",
+            "minQty": 4,
+            "maxQty": 4,
+            "originalIngredientString": "4 plum tomatoes, chopped",
+            "comment": "chopped"
+          },
+          "id": "3695cdd9-d7e0-4d44-9ed9-abf769d453b3"
+        },
+        {
+          "ingredientData": {
+            "originalName": "cream",
+            "name": "heavy cream",
+            "amount": 1,
+            "possibleUnits": [
+              "quart",
+              "g",
+              "oz",
+              "teaspoon",
+              "fluid ounce",
+              "cup",
+              "serving",
+              "tablespoon"
+            ],
+            "estimatedCost": { "value": 0.54, "unit": "US Cents" },
+            "consistency": "liquid",
+            "shoppingListUnits": ["ounces", "pints", "quarts"],
+            "aisle": "Milk, Eggs, Other Dairy",
+            "image": "fluid-cream.jpg",
+            "ingredientId": 1053,
+            "_id": "6408d07d0743cef57dafe4ea",
+            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/fluid-cream.jpg",
+            "totalPriceUSACents": 127.76
+          },
+          "parsedIngredient": {
+            "quantity": 1,
+            "unit": "cup",
+            "unitPlural": "cups",
+            "symbol": "c",
+            "ingredient": "heavy cream",
+            "minQty": 1,
+            "maxQty": 1,
+            "originalIngredientString": "1 cup heavy cream",
+            "comment": ""
+          },
+          "id": "1cf99b45-a478-476a-ae5d-50f4cfd6f7cb"
+        },
+        {
+          "ingredientData": {
+            "originalName": "baby spinach leaves",
+            "name": "baby spinach",
+            "amount": 1,
+            "possibleUnits": [
+              "package",
+              "handful",
+              "leave",
+              "g",
+              "bag",
+              "bunch",
+              "oz",
+              "cup",
+              "serving"
+            ],
+            "estimatedCost": { "value": 1.18, "unit": "US Cents" },
+            "consistency": "solid",
+            "shoppingListUnits": ["ounces", "pounds"],
+            "aisle": "Produce",
+            "image": "spinach.jpg",
+            "ingredientId": 11457,
+            "_id": "6408d0807b9822764cfe9f27",
+            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/spinach.jpg",
+            "totalPriceUSACents": 174.47
+          },
+          "parsedIngredient": {
+            "quantity": 5,
+            "unit": "ounce",
+            "unitPlural": "ounces",
+            "symbol": "oz",
+            "ingredient": "baby spinach",
+            "minQty": 5,
+            "maxQty": 5,
+            "originalIngredientString": "5 ounces baby spinach",
+            "comment": ""
+          },
+          "id": "dab8e1ff-1ca6-4bb0-a0d5-35455c99cabb"
+        },
+        {
+          "ingredientData": {
+            "originalName": "grated parmesan cheese",
+            "name": "grated parmesan",
+            "amount": 1,
+            "possibleUnits": [
+              "g",
+              "ounce",
+              "oz",
+              "cup",
+              "serving",
+              "tablespoon"
+            ],
+            "estimatedCost": { "value": 2.11, "unit": "US Cents" },
+            "consistency": "solid",
+            "shoppingListUnits": ["ounces", "pounds"],
+            "aisle": "Cheese",
+            "image": "parmesan.jpg",
+            "ingredientId": 1032,
+            "_id": "6408d08570e05494f85b7307",
+            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/parmesan.jpg",
+            "totalPriceUSACents": 374.41
+          },
+          "parsedIngredient": {
+            "quantity": 0.75,
+            "unit": "cup",
+            "unitPlural": "cups",
+            "symbol": "c",
+            "ingredient": "grated parmesan",
+            "minQty": 0.75,
+            "maxQty": 0.75,
+            "originalIngredientString": "3/4 cup grated Parmesan",
+            "comment": ""
+          },
+          "id": "0de40c25-ec33-426b-a596-3af34b636568"
+        },
+        {
+          "ingredientData": {
+            "originalName": "fresh basil leaf",
+            "name": "basil",
+            "amount": 1,
+            "possibleUnits": [
+              "cup leave",
+              "handful",
+              "piece",
+              "leave",
+              "g",
+              "sprig",
+              "bunch",
+              "oz",
+              "teaspoon",
+              "cup",
+              "serving",
+              "tablespoon"
+            ],
+            "estimatedCost": { "value": 3.93, "unit": "US Cents" },
+            "consistency": "solid",
+            "shoppingListUnits": ["ounces"],
+            "aisle": "Produce",
+            "image": "fresh-basil.jpg",
+            "ingredientId": 2044,
+            "_id": "6408d08f554b0508f9358de1",
+            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/fresh-basil.jpg",
+            "totalPriceUSACents": 174.26
+          },
+          "parsedIngredient": {
+            "quantity": 3,
+            "unit": "tablespoon",
+            "unitPlural": "tablespoons",
+            "symbol": "tbs",
+            "ingredient": "basil",
+            "minQty": 3,
+            "maxQty": 3,
+            "originalIngredientString": "3 tablespoons fresh basil, chopped",
+            "comment": "chopped"
+          },
+          "id": "e73cfb35-3472-4ef6-b32c-f37d24f217a7"
+        }
+      ],
+      "instructions": [
+        {
+          "content": "Bring a large pot of salted water to a boil. Cook the fettuccine according to package directions; drain.",
+          "index": 1,
+          "id": "f3f7aef1-de5c-499a-a592-b7ba4a18ecde"
+        },
+        {
+          "content": "Meanwhile, put the bacon in a large, cold skillet, then cook over medium-high heat, stirring occasionally, until crispy, about 8 minutes; transfer to a plate with a slotted spoon. ",
+          "index": 2,
+          "id": "2019429c-e0c7-4b48-b9a5-02c00ef13ce5"
+        },
+        {
+          "content": "Sprinkle the chicken lightly with salt and pepper and add to the skillet in a single layer. Let cook, undisturbed, until golden brown on the underside, 2 to 3 minutes. Continue to cook, stirring occasionally, until cooked through, about 4 minutes more. Transfer to the plate with the bacon.",
+          "index": 3,
+          "id": "babcb33a-698a-4e3f-8e7b-45b192545651"
+        },
+        {
+          "content": "Reduce the heat to medium and add the garlic, stirring, until fragrant, about 30 seconds. Add the tomatoes and cream and bring to a simmer, then add the spinach and stir until just wilted. Add the bacon, chicken, fettuccine and Parmesan and toss with tongs until well coated; season to taste with salt and pepper. Sprinkle with basil and serve.",
+          "index": 4,
+          "id": "f88c5de1-c0db-419e-8017-df1369e48e98"
+        }
+      ],
+      "recipeImage": "https://firebasestorage.googleapis.com/v0/b/prepify-9b974.appspot.com/o/recipeImages%2F1537973085542.jpeg?alt=media\u0026token=02b0588b-89f4-4512-bb09-e0ed53647377",
+      "nutritionData": {
+        "uri": "http://www.edamam.com/ontologies/edamam.owl#recipe_6a698cc40c0c42da9da12613d72d9a57",
+        "calories": 4285,
+        "dietLabels": [],
+        "healthLabels": [
+          "SUGAR_CONSCIOUS",
+          "KIDNEY_FRIENDLY",
+          "EGG_FREE",
+          "PEANUT_FREE",
+          "TREE_NUT_FREE",
+          "SOY_FREE",
+          "FISH_FREE",
+          "SHELLFISH_FREE",
+          "CRUSTACEAN_FREE",
+          "CELERY_FREE",
+          "MUSTARD_FREE",
+          "SESAME_FREE",
+          "LUPINE_FREE",
+          "MOLLUSK_FREE",
+          "ALCOHOL_FREE",
+          "NO_OIL_ADDED",
+          "NO_SUGAR_ADDED",
+          "SULPHITE_FREE"
+        ]
+      },
+      "totalTime": 40,
+      "rating": { "rateCount": "3", "rateValue": "13" },
+      "createdAt": "1678299721258",
+      "editedAt": null,
+      "servingPrice": 200,
+      "cuisine": "Italian",
+      "mealTypes": ["Dinner", "Lunch"],
+      "nutritionLabels": ["PEANUT_FREE"],
+      "authorUsername": "aaa",
+      "views": 40,
+      "numTimesSaved": 0,
+      "numTimesMade": 0,
+      "averageRating": 4.333333333333333
+    },
+    {
+      "_id": "63fe34ad3d057633b6e2970e",
+      "title": "Yogurt and Fruit Parfaits",
+      "prepTime": 5,
+      "cookTime": null,
+      "servings": 4,
+      "fridgeLife": 3,
+      "freezerLife": 0,
+      "description": "Quick and easy parfait that tastes delicious!",
+      "ingredients": [
+        {
+          "ingredientData": {
+            "originalName": "fat-free vanilla greek yogurt",
+            "name": "vanilla nonfat yogurt",
+            "amount": 1,
+            "possibleUnits": ["container", "g", "oz", "cup"],
+            "consistency": "liquid",
+            "shoppingListUnits": ["ounces", "gallons", "quarts"],
+            "aisle": "Milk, Eggs, Other Dairy",
+            "image": "vanilla-yogurt.png",
+            "ingredientId": 99033,
+            "_id": "63fe343cd36b2cfd1eb3f302",
+            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/vanilla-yogurt.png",
+            "totalPriceUSACents": 809.14
+          },
+          "parsedIngredient": {
+            "quantity": 3,
+            "unit": "cup",
+            "unitPlural": "cups",
+            "symbol": "c",
+            "ingredient": "vanilla nonfat yogurt",
+            "minQty": 3,
+            "maxQty": 3,
+            "originalIngredientString": "3 cups vanilla nonfat yogurt",
+            "comment": null
+          },
+          "id": "b94b412f-6ac3-4b7b-af37-034ebe829e95"
+        },
+        {
+          "ingredientData": {
+            "originalName": "strawberry",
+            "name": "strawberries",
+            "amount": 1,
+            "possibleUnits": [
+              "container",
+              "small",
+              "package",
+              "large",
+              "handful",
+              "g",
+              "medium",
+              "pint",
+              "oz",
+              "extra large",
+              "serving",
+              "piece",
+              "NLEA serving",
+              "cup"
+            ],
+            "consistency": "solid",
+            "shoppingListUnits": ["ounces", "pounds"],
+            "aisle": "Produce",
+            "image": "strawberries.png",
+            "ingredientId": 9316,
+            "_id": "63fe3476e03b994e26750d35",
+            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/strawberries.png",
+            "totalPriceUSACents": 2533.86
+          },
+          "parsedIngredient": {
+            "quantity": 1,
+            "unit": "cup",
+            "unitPlural": "cups",
+            "symbol": "c",
+            "ingredient": "strawberries",
+            "minQty": 1,
+            "maxQty": 1,
+            "originalIngredientString": "1 cup strawberries, fresh or frozen defrosted in juice ",
+            "comment": "fresh or frozen defrosted in juice"
+          },
+          "id": "d1c09436-24ae-47da-9325-e91ce6ab5830"
+        },
+        {
+          "ingredientData": {
+            "_id": "63f5307ed44f6f713a113eec",
+            "originalName": "blackberry",
+            "name": "blackberries",
+            "amount": 1,
+            "possibleUnits": [
+              "container",
+              "piece",
+              "fruit",
+              "g",
+              "pint",
+              "oz",
+              "cup"
+            ],
+            "consistency": "solid",
+            "shoppingListUnits": ["ounces", "pounds"],
+            "aisle": "Produce",
+            "image": "blackberries.jpg",
+            "ingredientId": 9042,
+            "names": ["blackberries"],
+            "dateAdded": 1677013118622,
+            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/blackberries.jpg",
+            "totalPriceUSACents": 837.53
+          },
+          "parsedIngredient": {
+            "quantity": 1,
+            "unit": "pint",
+            "unitPlural": "pints",
+            "symbol": "pt",
+            "ingredient": "blackberries",
+            "minQty": 1,
+            "maxQty": 1,
+            "originalIngredientString": "1 pint fresh blackberries, raspberries or blueberries",
+            "comment": "raspberries or blueberries"
+          },
+          "id": "75ccd43b-95e9-47ea-b2ba-0d42f2e5d7ab"
+        },
+        {
+          "ingredientData": {
+            "_id": "63f53092ace82aca35e59ef4",
+            "originalName": "granola cereal",
+            "name": "granola",
+            "amount": 1,
+            "possibleUnits": [
+              "handful",
+              "g",
+              "oz",
+              "cup",
+              "serving",
+              "tablespoon"
+            ],
+            "consistency": "solid",
+            "shoppingListUnits": ["ounces", "pounds"],
+            "aisle": "Cereal",
+            "image": "granola.jpg",
+            "ingredientId": 8212,
+            "names": ["granola"],
+            "dateAdded": 1677013138540,
+            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/granola.jpg",
+            "totalPriceUSACents": 160.88
+          },
+          "parsedIngredient": {
+            "quantity": 1,
+            "unit": "cup",
+            "unitPlural": "cups",
+            "symbol": "c",
+            "ingredient": "granola",
+            "minQty": 1,
+            "maxQty": 1,
+            "originalIngredientString": "1 cup granola",
+            "comment": null
+          },
+          "id": "56ee39ad-88c2-4f13-b504-fc3c63ade928"
+        }
+      ],
+      "instructions": [
+        {
+          "content": "Layer 1/3 cup vanilla yogurt into the bottom each of 4 tall glasses. Combine defrosted strawberries and juice with fresh berries. Alternate layers of fruit and granola with yogurt until glasses are filled to the top. Serve parfaits immediately to keep granola crunchy.",
+          "index": 1,
+          "id": "d0975b96-9c28-4b11-bb00-e1f78808aa64"
+        }
+      ],
+      "recipeImage": "https://firebasestorage.googleapis.com/v0/b/prepify-9b974.appspot.com/o/recipeImages%2F1677604011276?alt=media\u0026token=142d8420-33dd-4440-a150-091bd617420a",
+      "nutritionData": {
+        "uri": "http://www.edamam.com/ontologies/edamam.owl#recipe_ed1f166c74724219a4c023d1a482fbd0",
+        "calories": 1180,
+        "dietLabels": ["LOW_SODIUM"],
+        "healthLabels": [
+          "VEGETARIAN",
+          "PESCATARIAN",
+          "MEDITERRANEAN",
+          "GLUTEN_FREE",
+          "WHEAT_FREE",
+          "EGG_FREE",
+          "PEANUT_FREE",
+          "TREE_NUT_FREE",
+          "SOY_FREE",
+          "FISH_FREE",
+          "SHELLFISH_FREE",
+          "PORK_FREE",
+          "RED_MEAT_FREE",
+          "CRUSTACEAN_FREE",
+          "CELERY_FREE",
+          "MUSTARD_FREE",
+          "SESAME_FREE",
+          "LUPINE_FREE",
+          "MOLLUSK_FREE",
+          "ALCOHOL_FREE",
+          "SULPHITE_FREE",
+          "KOSHER"
+        ]
+      },
+      "totalTime": 5,
+      "rating": { "rateCount": "0", "rateValue": "0" },
+      "createdAt": "1677604013152",
+      "editedAt": null,
+      "servingPrice": 300,
+      "cuisine": "",
+      "mealTypes": ["Breakfast", "Simple", "Snack"],
+      "nutritionLabels": ["VEGETARIAN", "GLUTEN_FREE", "PEANUT_FREE", "KOSHER"],
+      "authorUsername": "aaa",
+      "views": 37,
+      "numTimesSaved": 0,
+      "numTimesMade": 1,
+      "averageRating": 0
+    },
+    {
+      "_id": "63fe39e9243ec94294661930",
+      "title": "Grilled Salmon with Tomatoes \u0026 Basil",
+      "prepTime": 10,
+      "cookTime": 20,
+      "servings": 4,
+      "fridgeLife": 3,
+      "freezerLife": 60,
+      "description": "his recipe is so beautiful and yet so simple to prepare--it's perfect for entertaining. You just spread a side of salmon with minced garlic, sprinkle with fresh basil, then layer sliced tomatoes on top. Put it on the grill for 10 minutes and you're done!",
+      "ingredients": [
+        {
+          "ingredientData": {
+            "_id": "63fe3765e03b994e26785718",
+            "originalName": "garlic",
+            "name": "garlic",
+            "amount": 1,
+            "possibleUnits": [
+              "clove",
+              "head",
+              "piece",
+              "g",
+              "oz",
+              "teaspoon",
+              "cup",
+              "serving",
+              "tablespoon"
+            ],
+            "consistency": "solid",
+            "aisle": "Produce",
+            "image": "garlic.png",
+            "ingredientId": 11215,
+            "names": ["garlic"],
+            "dateAdded": 1677604709001,
+            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/garlic.png",
+            "totalPriceUSACents": 13.34
+          },
+          "parsedIngredient": {
+            "quantity": 2,
+            "unit": "clove",
+            "unitPlural": "cloves",
+            "symbol": null,
+            "ingredient": "garlic",
+            "minQty": 2,
+            "maxQty": 2,
+            "originalIngredientString": "2 cloves garlic, minced",
+            "comment": "minced"
+          },
+          "id": "d107331d-e574-4d68-b0ee-45f8c917ca7e"
+        },
+        {
+          "ingredientData": {
+            "_id": "63fe376ff6359b9f63a43365",
+            "originalName": "kosher salt",
+            "name": "kosher salt",
+            "amount": 1,
+            "possibleUnits": [
+              "pinch",
+              "g",
+              "oz",
+              "dash",
+              "teaspoon",
+              "cup",
+              "serving",
+              "tablespoon"
+            ],
+            "consistency": "solid",
+            "aisle": "Spices and Seasonings",
+            "image": "salt.jpg",
+            "ingredientId": 1082047,
+            "names": ["kosher salt"],
+            "dateAdded": 1677604719847,
+            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/salt.jpg",
+            "totalPriceUSACents": 0
+          },
+          "parsedIngredient": {
+            "quantity": 1,
+            "unit": "teaspoon",
+            "unitPlural": "teaspoons",
+            "symbol": "tsp",
+            "ingredient": "kosher salt",
+            "minQty": 1,
+            "maxQty": 1,
+            "originalIngredientString": "1 teaspoon kosher salt, divided",
+            "comment": "divided"
+          },
+          "id": "1f8361b9-68b8-468a-b0f4-530cd725b44d"
+        },
+        {
+          "ingredientData": {
+            "_id": "63fe378587292c1aff8f427b",
+            "originalName": "extra-virgin olive oil",
+            "name": "extra-virgin olive oil",
+            "amount": 1,
+            "possibleUnits": [
+              "spoonful",
+              "g",
+              "oz",
+              "teaspoon",
+              "cup",
+              "serving",
+              "tablespoon"
+            ],
+            "consistency": "liquid",
+            "shoppingListUnits": ["ounces", "quarts", "gallons"],
+            "aisle": "Oil, Vinegar, Salad Dressing",
+            "image": "olive-oil.jpg",
+            "ingredientId": 1034053,
+            "names": ["extra-virgin olive oil"],
+            "dateAdded": 1677604741117,
+            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/olive-oil.jpg",
+            "totalPriceUSACents": 17.59
+          },
+          "parsedIngredient": {
+            "quantity": 1,
+            "unit": "tablespoon",
+            "unitPlural": "tablespoons",
+            "symbol": "tbs",
+            "ingredient": "extra-virgin olive oil",
+            "minQty": 1,
+            "maxQty": 1,
+            "originalIngredientString": "1 tbsp extra-virgin olive oil",
+            "comment": null
+          },
+          "id": "5969228a-4162-4818-b781-b0c71f4e075a"
+        },
+        {
+          "ingredientData": {
+            "_id": "63fe37b1f6359b9f63a46b65",
+            "originalName": "salmon filet",
+            "name": "salmon fillet",
+            "amount": 1,
+            "possibleUnits": [
+              "steak",
+              "g",
+              "oz",
+              "teaspoon",
+              "serving",
+              "tablespoon",
+              "can",
+              "piece",
+              "slice",
+              "tin",
+              "ounce",
+              "fillet",
+              "cup"
+            ],
+            "consistency": "solid",
+            "shoppingListUnits": ["ounces", "pounds"],
+            "aisle": "Seafood",
+            "image": "salmon.png",
+            "ingredientId": 10115076,
+            "names": ["salmon fillet"],
+            "dateAdded": 1677604785124,
+            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/salmon.png",
+            "totalPriceUSACents": 377.4
+          },
+          "parsedIngredient": {
+            "quantity": 1,
+            "unit": null,
+            "unitPlural": null,
+            "symbol": null,
+            "ingredient": "salmon fillet",
+            "minQty": 1,
+            "maxQty": 1,
+            "originalIngredientString": "1 salmon fillet",
+            "comment": null
+          },
+          "id": "0b05b06a-a20c-44b3-b2d0-8092e0f19582"
+        },
+        {
+          "ingredientData": {
+            "_id": "63fe37f94bc69b27db253450",
+            "originalName": "fresh basil leaf",
+            "name": "basil",
+            "amount": 1,
+            "possibleUnits": [
+              "cup leave",
+              "handful",
+              "piece",
+              "leave",
+              "g",
+              "sprig",
+              "bunch",
+              "oz",
+              "teaspoon",
+              "cup",
+              "serving",
+              "tablespoon"
+            ],
+            "consistency": "solid",
+            "shoppingListUnits": ["ounces"],
+            "aisle": "Produce",
+            "image": "fresh-basil.jpg",
+            "ingredientId": 2044,
+            "names": ["basil"],
+            "dateAdded": 1677604857701,
+            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/fresh-basil.jpg",
+            "totalPriceUSACents": 122.58
+          },
+          "parsedIngredient": {
+            "quantity": 0.33,
+            "unit": "cup",
+            "unitPlural": "cups",
+            "symbol": "c",
+            "ingredient": "basil",
+            "minQty": 0.33,
+            "maxQty": 0.33,
+            "originalIngredientString": "1/3 cup basil, thinly sliced",
+            "comment": "thinly sliced"
+          },
+          "id": "47a7c5ec-403b-4aab-861a-0ceb0c6dda72"
+        },
+        {
+          "ingredientData": {
+            "_id": "63fe3806d36b2cfd1eb7c2ff",
+            "originalName": "tomatoes",
+            "name": "tomatoes",
+            "amount": 1,
+            "possibleUnits": [
+              "small",
+              "cherry",
+              "large whole",
+              "large",
+              "medium whole",
+              "g",
+              "wedge",
+              "Italian tomato",
+              "medium",
+              "oz",
+              "plum tomato",
+              "serving",
+              "piece",
+              "slice",
+              "small whole",
+              "NLEA serving",
+              "cup"
+            ],
+            "consistency": "solid",
+            "shoppingListUnits": ["pieces"],
+            "aisle": "Produce",
+            "image": "tomato.png",
+            "ingredientId": 11529,
+            "names": ["tomatoes"],
+            "dateAdded": 1677604870433,
+            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/tomato.png",
+            "totalPriceUSACents": 72.16
+          },
+          "parsedIngredient": {
+            "quantity": 2,
+            "unit": "medium",
+            "unitPlural": null,
+            "symbol": null,
+            "ingredient": "tomatoes",
+            "minQty": 2,
+            "maxQty": 2,
+            "originalIngredientString": "2 medium tomatoes, thinly sliced",
+            "comment": "thinly sliced"
+          },
+          "id": "fd47bd0e-80a3-4a68-ac81-4e7d61b0e8e1"
+        },
+        {
+          "ingredientData": {
+            "originalName": "black pepper",
+            "name": "pepper",
+            "amount": 1,
+            "possibleUnits": [
+              "pinch",
+              "g",
+              "oz",
+              "dash",
+              "teaspoon",
+              "serving",
+              "tablespoon"
+            ],
+            "consistency": "solid",
+            "aisle": "Spices and Seasonings",
+            "image": "pepper.jpg",
+            "ingredientId": 1002030,
+            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/pepper.jpg",
+            "totalPriceUSACents": 3.69
+          },
+          "parsedIngredient": {
+            "quantity": 0.25,
+            "unit": "teaspoon",
+            "unitPlural": "teaspoons",
+            "symbol": "tsp",
+            "ingredient": "pepper",
+            "minQty": 0.25,
+            "maxQty": 0.25,
+            "originalIngredientString": "1/4 teaspoon pepper",
+            "comment": null
+          },
+          "id": "12aa771c-0ae2-4362-8672-54e296d1ecb9"
+        }
+      ],
+      "instructions": [
+        {
+          "content": "Preheat grill to medium.",
+          "index": 1,
+          "id": "2c86de39-8358-4cd6-a758-64383221d922"
+        },
+        {
+          "content": "Mash minced garlic and 3/4 teaspoon salt on a cutting board with the side of a chef's knife or a spoon until a paste forms. Transfer to a small bowl and stir in oil.",
+          "index": 2,
+          "id": "dba7c131-f8e2-4dd8-8654-3a6ec5716a98"
+        },
+        {
+          "content": "Check the salmon for pin bones and remove if necessary (see Tips). Measure out a piece of heavy-duty foil (or use a double layer of regular foil) large enough for the salmon fillet. Coat the foil with cooking spray. Place the salmon skin-side down on the foil and spread the garlic mixture all over it. Sprinkle with 1/3 cup basil. Overlap tomato slices on top and sprinkle with the remaining 1/4 teaspoon salt and pepper.",
+          "index": 3,
+          "id": "ffcbdb1c-ce2f-431e-a296-fb31997ec539"
+        },
+        {
+          "content": "Transfer the salmon on the foil to the grill. Grill until the fish flakes easily, 10 to 12 minutes. Use two large spatulas to slide the salmon from the foil to a serving platter. Serve the salmon sprinkled with the remaining 1/4 cup basil.",
+          "index": 4,
+          "id": "1ddb8f08-c461-4ccf-9b62-796ca5f4c104"
+        }
+      ],
+      "recipeImage": "https://firebasestorage.googleapis.com/v0/b/prepify-9b974.appspot.com/o/recipeImages%2F1677605350793?alt=media\u0026token=3c960b06-0eb2-4199-b76a-6d8dc1fcd7d6",
+      "nutritionData": {
+        "uri": "http://www.edamam.com/ontologies/edamam.owl#recipe_3a4292e27660449f97d1a91e5f0bdeaf",
+        "calories": 999,
+        "dietLabels": ["LOW_CARB"],
+        "healthLabels": [
+          "SUGAR_CONSCIOUS",
+          "KETO_FRIENDLY",
+          "PESCATARIAN",
+          "PALEO",
+          "SPECIFIC_CARBS",
+          "MEDITERRANEAN",
+          "DASH",
+          "DAIRY_FREE",
+          "GLUTEN_FREE",
+          "WHEAT_FREE",
+          "EGG_FREE",
+          "MILK_FREE",
+          "PEANUT_FREE",
+          "TREE_NUT_FREE",
+          "SOY_FREE",
+          "SHELLFISH_FREE",
+          "PORK_FREE",
+          "RED_MEAT_FREE",
+          "CRUSTACEAN_FREE",
+          "CELERY_FREE",
+          "MUSTARD_FREE",
+          "SESAME_FREE",
+          "LUPINE_FREE",
+          "MOLLUSK_FREE",
+          "ALCOHOL_FREE",
+          "NO_SUGAR_ADDED",
+          "SULPHITE_FREE"
+        ]
+      },
+      "totalTime": 30,
+      "rating": { "rateCount": "0", "rateValue": "0" },
+      "createdAt": "1677605353795",
+      "editedAt": null,
+      "servingPrice": 100,
+      "cuisine": "",
+      "mealTypes": ["Lunch", "Dinner"],
+      "nutritionLabels": ["GLUTEN_FREE", "PEANUT_FREE"],
+      "authorUsername": "aaa",
+      "views": 3,
+      "numTimesSaved": 0,
+      "numTimesMade": 0,
+      "averageRating": 0
+    },
+    {
+      "_id": "6406584db37bf7978afa3419",
+      "title": "15-MINUTE HONEY GARLIC CHICKEN",
+      "prepTime": 5,
+      "cookTime": 10,
+      "servings": 4,
+      "fridgeLife": 0,
+      "freezerLife": 0,
+      "description": "This 5-ingredient, 15-minute honey garlic chicken with an addictively delicious sauce makes a perfect quick and easy weeknight dinner recipe!",
+      "ingredients": [
+        {
+          "ingredientData": {
+            "_id": "640630a4e1ba3db4bc32bdeb",
+            "originalName": "extra-virgin olive oil",
+            "name": "extra-virgin olive oil",
+            "amount": 1,
+            "possibleUnits": [
+              "spoonful",
+              "g",
+              "oz",
+              "teaspoon",
+              "cup",
+              "serving",
+              "tablespoon"
+            ],
+            "estimatedCost": { "value": 1.19, "unit": "US Cents" },
+            "consistency": "liquid",
+            "shoppingListUnits": ["ounces", "quarts", "gallons"],
+            "aisle": "Oil, Vinegar, Salad Dressing",
+            "image": "olive-oil.jpg",
+            "ingredientId": 1034053,
+            "names": ["extra-virgin olive oil"],
+            "dateAdded": 1678127268291,
+            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/olive-oil.jpg",
+            "totalPriceUSACents": 11.71
+          },
+          "parsedIngredient": {
+            "quantity": 2,
+            "unit": "teaspoon",
+            "unitPlural": "teaspoons",
+            "symbol": "tsp",
+            "ingredient": "extra-virgin olive oil",
+            "minQty": 2,
+            "maxQty": 2,
+            "originalIngredientString": "2 teaspoons extra-virgin olive oil (or canola oil)",
+            "comment": "(or canola oil)"
+          },
+          "id": "1061d434-9900-498e-9eda-a2b3b229c141"
+        },
+        {
+          "ingredientData": {
+            "_id": "6406223470e05494f8a6bb9d",
+            "originalName": "boneless skinless chicken breasts",
+            "name": "boneless skinless chicken breasts",
+            "amount": 1,
+            "possibleUnits": [
+              "unit",
+              "piece",
+              "g",
+              "oz",
+              "breast",
+              "cup",
+              "serving"
+            ],
+            "estimatedCost": { "value": 0.89, "unit": "US Cents" },
+            "consistency": "solid",
+            "shoppingListUnits": ["ounces", "pounds"],
+            "aisle": "Meat",
+            "image": "chicken-breasts.png",
+            "ingredientId": 1055062,
+            "names": ["boneless skinless chicken breasts"],
+            "dateAdded": 1678123572755,
+            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/chicken-breasts.png",
+            "totalPriceUSACents": 605.55
+          },
+          "parsedIngredient": {
+            "quantity": 1.5,
+            "unit": "pound",
+            "unitPlural": "pounds",
+            "symbol": "lb",
+            "ingredient": "boneless skinless chicken breasts",
+            "minQty": 1.5,
+            "maxQty": 1.5,
+            "originalIngredientString": "1 ½ pounds boneless skinless chicken breasts, cut into small cubes (about ½ inch)",
+            "comment": "cut into small cubes  (about ½ inch)"
+          },
+          "id": "eaff74a5-06de-4d08-a843-727e6a0e0676"
+        },
+        {
+          "ingredientData": {
+            "_id": "640631289d2d02e6c3a18b10",
+            "originalName": "salt and black pepper",
+            "name": "salt and pepper",
+            "amount": 1,
+            "possibleUnits": [
+              "pinch",
+              "g",
+              "oz",
+              "dash",
+              "teaspoon",
+              "cup",
+              "serving",
+              "tablespoon"
+            ],
+            "estimatedCost": { "value": 0.11, "unit": "US Cents" },
+            "consistency": "solid",
+            "aisle": "Spices and Seasonings",
+            "image": "salt-and-pepper.jpg",
+            "ingredientId": 1102047,
+            "names": ["salt and pepper", "salt and black pepper"],
+            "dateAdded": 1678127400482,
+            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/salt-and-pepper.jpg",
+            "totalPriceUSACents": 0
+          },
+          "parsedIngredient": {
+            "quantity": 0,
+            "unit": "q.b.",
+            "unitPlural": "q.b.",
+            "symbol": null,
+            "ingredient": "salt and black pepper",
+            "minQty": 0,
+            "maxQty": 0,
+            "originalIngredientString": "Salt and black pepper",
+            "comment": ""
+          },
+          "id": "d053258f-7ac1-4476-9233-fc440efcb828"
+        },
+        {
+          "ingredientData": {
+            "_id": "6406549d0743cef57d3d860c",
+            "originalName": "honey",
+            "name": "honey",
+            "amount": 1,
+            "possibleUnits": [
+              "g",
+              "jar",
+              "oz",
+              "packet",
+              "teaspoon",
+              "cup",
+              "serving",
+              "tablespoon"
+            ],
+            "estimatedCost": { "value": 1.22, "unit": "US Cents" },
+            "consistency": "liquid",
+            "shoppingListUnits": ["ounces"],
+            "aisle": "Nut butters, Jams, and Honey",
+            "image": "honey.png",
+            "ingredientId": 19296,
+            "names": ["honey"],
+            "dateAdded": 1678136477135,
+            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/honey.png",
+            "totalPriceUSACents": 54.1
+          },
+          "parsedIngredient": {
+            "quantity": 3,
+            "unit": "tablespoon",
+            "unitPlural": "tablespoons",
+            "symbol": "tbs",
+            "ingredient": "honey",
+            "minQty": 3,
+            "maxQty": 3,
+            "originalIngredientString": "3 tablespoons honey",
+            "comment": ""
+          },
+          "id": "dfa910ca-553c-49b1-ae42-a7a5afb08a0a"
+        },
+        {
+          "ingredientData": {
+            "_id": "640654a6554b0508f9cad57b",
+            "originalName": "low sodium soy sauce",
+            "name": "low-sodium soy sauce",
+            "amount": 1,
+            "possibleUnits": ["g", "oz", "teaspoon", "cup", "tablespoon"],
+            "estimatedCost": { "value": 1.02, "unit": "US Cents" },
+            "consistency": "liquid",
+            "shoppingListUnits": ["ounces"],
+            "aisle": "Ethnic Foods;Condiments",
+            "image": "soy-sauce.jpg",
+            "ingredientId": 16424,
+            "names": ["low-sodium soy sauce"],
+            "dateAdded": 1678136486356,
+            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/soy-sauce.jpg",
+            "totalPriceUSACents": 45.23
+          },
+          "parsedIngredient": {
+            "quantity": 3,
+            "unit": "tablespoon",
+            "unitPlural": "tablespoons",
+            "symbol": "tbs",
+            "ingredient": "low-sodium soy sauce",
+            "minQty": 3,
+            "maxQty": 3,
+            "originalIngredientString": "3 tablespoons low-sodium soy sauce",
+            "comment": ""
+          },
+          "id": "f56f9ae4-1426-4d0d-867e-89cc03ea58fe"
+        },
+        {
+          "ingredientData": {
+            "_id": "640654b1e8e3c20589bd3b01",
+            "originalName": "garlic",
+            "name": "garlic",
+            "amount": 1,
+            "possibleUnits": [
+              "clove",
+              "head",
+              "piece",
+              "g",
+              "oz",
+              "teaspoon",
+              "cup",
+              "serving",
+              "tablespoon"
+            ],
+            "estimatedCost": { "value": 2.22, "unit": "US Cents" },
+            "consistency": "solid",
+            "aisle": "Produce",
+            "image": "garlic.png",
+            "ingredientId": 11215,
+            "names": ["garlic"],
+            "dateAdded": 1678136497817,
+            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/garlic.png",
+            "totalPriceUSACents": 20.009999999999998
+          },
+          "parsedIngredient": {
+            "quantity": 3,
+            "unit": "clove",
+            "unitPlural": "cloves",
+            "symbol": null,
+            "ingredient": "garlic",
+            "minQty": 3,
+            "maxQty": 3,
+            "originalIngredientString": "3 cloves garlic, minced",
+            "comment": "minced"
+          },
+          "id": "8fcc25b4-8622-4857-9d0b-65e75febeccc"
+        },
+        {
+          "ingredientData": {
+            "_id": "640657980743cef57d40b641",
+            "originalName": "crushed red pepper",
+            "name": "red pepper flakes",
+            "amount": 1,
+            "possibleUnits": [
+              "pinch",
+              "pinche",
+              "piece",
+              "g",
+              "oz",
+              "dash",
+              "teaspoon",
+              "serving",
+              "tablespoon"
+            ],
+            "estimatedCost": { "value": 5.18, "unit": "US Cents" },
+            "consistency": "solid",
+            "aisle": "Spices and Seasonings",
+            "image": "red-pepper-flakes.jpg",
+            "ingredientId": 1032009,
+            "names": ["red pepper flakes"],
+            "dateAdded": 1678137240965,
+            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/red-pepper-flakes.jpg",
+            "totalPriceUSACents": 6.38
+          },
+          "parsedIngredient": {
+            "quantity": 0.25,
+            "unit": "teaspoon",
+            "unitPlural": "teaspoons",
+            "symbol": "tsp",
+            "ingredient": "red pepper flakes",
+            "minQty": 0.25,
+            "maxQty": 0.25,
+            "originalIngredientString": "¼ teaspoon red pepper flakes (optional, adjust for heat)",
+            "comment": "(optional, adjust for heat)"
+          },
+          "id": "4d96fee3-6d59-437c-98a8-fc5854b12f30"
+        }
+      ],
+      "instructions": [
+        {
+          "content": "Heat olive oil in a large skillet over medium-high heat.",
+          "index": 1,
+          "id": "47734e93-c639-4610-9e05-7ad7dfb549c7"
+        },
+        {
+          "content": "Lightly season the cubed chicken with salt and pepper. (Go easy because the soy sauce has plenty of sodium.)",
+          "index": 2,
+          "id": "4de11d26-5c16-440e-8d5b-046b272ce89c"
+        },
+        {
+          "content": "Add the chicken to the skillet and brown on one side, about 3-4 minutes.",
+          "index": 3,
+          "id": "70e1eb81-7436-4027-88d5-71feab3badeb"
+        },
+        {
+          "content": "Meanwhile, make the glaze. Whisk the honey, soy sauce, garlic and red pepper flakes, if using, in a small bowl until well combined.",
+          "index": 4,
+          "id": "9cc02955-cca0-4a77-942a-9a6fe4bfec18"
+        },
+        {
+          "content": "Add the sauce to the pan and toss to coat the chicken pieces. Cook until chicken is cooked through, 4-5 more minutes.",
+          "index": 5,
+          "id": "aa875502-808d-4f74-91e3-ee7b24bc9a64"
+        },
+        {
+          "content": "Serve with steamed rice and top with green onions, sesame seeds and a squeeze of lime juice, if desired.",
+          "index": 6,
+          "id": "8b01eb6f-683b-41e4-8574-0aa7273e3f20"
+        }
+      ],
+      "recipeImage": "https://firebasestorage.googleapis.com/v0/b/prepify-9b974.appspot.com/o/recipeImages%2F15-minute-honey-garlic-chicken-4.jpg?alt=media\u0026token=85c6f70c-656f-4821-a529-ef7c81baf315",
+      "nutritionData": {
+        "uri": "http://www.edamam.com/ontologies/edamam.owl#recipe_21f59093969c4dca868fb70d76ea386f",
+        "calories": 1125,
+        "dietLabels": ["HIGH_PROTEIN"],
+        "healthLabels": [
+          "DAIRY_FREE",
+          "EGG_FREE",
+          "MILK_FREE",
+          "PEANUT_FREE",
+          "TREE_NUT_FREE",
+          "FISH_FREE",
+          "SHELLFISH_FREE",
+          "PORK_FREE",
+          "RED_MEAT_FREE",
+          "CRUSTACEAN_FREE",
+          "CELERY_FREE",
+          "MUSTARD_FREE",
+          "SESAME_FREE",
+          "LUPINE_FREE",
+          "MOLLUSK_FREE",
+          "ALCOHOL_FREE",
+          "KOSHER"
+        ]
+      },
+      "totalTime": 15,
+      "rating": { "rateCount": "0", "rateValue": "0" },
+      "createdAt": "1678137421714",
+      "editedAt": null,
+      "servingPrice": 100,
+      "cuisine": "Asian",
+      "mealTypes": ["Lunch", "Dinner", "Simple", "Quick"],
+      "nutritionLabels": ["PEANUT_FREE", "KOSHER"],
+      "authorUsername": "aaa",
+      "views": 0,
+      "numTimesSaved": 0,
+      "numTimesMade": 0,
+      "averageRating": 0
+    },
+    {
+      "_id": "6408e14f5491ab77fb7780b1",
+      "title": "CHINESE LEMON CHICKEN",
+      "prepTime": 15,
+      "cookTime": 20,
+      "servings": 4,
+      "fridgeLife": 0,
+      "freezerLife": 0,
+      "description": "Chinese Lemon Chicken made with crispy fried chicken covered in an authentic, fresh lemon sauce. The ultimate Chinese Lemon Chicken Recipe which is way better than take-out. ",
+      "ingredients": [
+        { "label": "Chicken", "id": "c3332729-20b2-404a-b608-7a06d09969da" },
+        {
+          "ingredientData": {
+            "_id": "6406223470e05494f8a6bb9d",
+            "originalName": "boneless skinless chicken breasts",
+            "name": "boneless skinless chicken breasts",
+            "amount": 1,
+            "possibleUnits": [
+              "unit",
+              "piece",
+              "g",
+              "oz",
+              "breast",
+              "cup",
+              "serving"
+            ],
+            "estimatedCost": { "value": 0.89, "unit": "US Cents" },
+            "consistency": "solid",
+            "shoppingListUnits": ["ounces", "pounds"],
+            "aisle": "Meat",
+            "image": "chicken-breasts.png",
+            "ingredientId": 1055062,
+            "names": [
+              "boneless skinless chicken breasts",
+              "boneless skinless chicken breast"
+            ],
+            "dateAdded": 1678123572755,
+            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/chicken-breasts.png",
+            "totalPriceUSACents": 400.76
+          },
+          "parsedIngredient": {
+            "quantity": 4,
+            "unit": null,
+            "unitPlural": null,
+            "symbol": null,
+            "ingredient": "boneless skinless chicken breasts",
+            "minQty": 4,
+            "maxQty": 4,
+            "originalIngredientString": "4 Boneless Skinless Chicken Breasts, cut into bite-sized pieces",
+            "comment": "cut into bite-sized pieces"
+          },
+          "id": "500af4eb-2108-4955-914e-5783ce2e5b48"
+        },
+        {
+          "ingredientData": {
+            "originalName": "eggs",
+            "name": "eggs",
+            "amount": 1,
+            "possibleUnits": [
+              "small",
+              "jumbo",
+              "large",
+              "piece",
+              "g",
+              "medium",
+              "oz",
+              "extra large",
+              "dozen",
+              "cup",
+              "serving"
+            ],
+            "estimatedCost": { "value": 0.55, "unit": "US Cents" },
+            "consistency": "solid",
+            "aisle": "Milk, Eggs, Other Dairy",
+            "image": "egg.png",
+            "ingredientId": 1123,
+            "_id": "6408da8fe7f904cbc026e319",
+            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/egg.png",
+            "totalPriceUSACents": 72
+          },
+          "parsedIngredient": {
+            "quantity": 3,
+            "unit": "large",
+            "unitPlural": null,
+            "symbol": null,
+            "ingredient": "eggs",
+            "minQty": 3,
+            "maxQty": 3,
+            "originalIngredientString": "3 large eggs, whisked",
+            "comment": "whisked"
+          },
+          "id": "146f059f-8c2c-4b09-8a84-46190f792e46"
+        },
+        {
+          "ingredientData": {
+            "originalName": "cornstarch",
+            "name": "cornstarch",
+            "amount": 1,
+            "possibleUnits": ["g", "oz", "teaspoon", "cup", "tablespoon"],
+            "estimatedCost": { "value": 0.43, "unit": "US Cents" },
+            "consistency": "solid",
+            "shoppingListUnits": ["ounces"],
+            "aisle": "Baking",
+            "image": "white-powder.jpg",
+            "ingredientId": 20027,
+            "_id": "6408da969162972ab36cd522",
+            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/white-powder.jpg",
+            "totalPriceUSACents": 33.58
+          },
+          "parsedIngredient": {
+            "quantity": 0.33,
+            "unit": "cup",
+            "unitPlural": "cups",
+            "symbol": "c",
+            "ingredient": "cornstarch",
+            "minQty": 0.33,
+            "maxQty": 0.33,
+            "originalIngredientString": "1/3 cup cornstarch",
+            "comment": ""
+          },
+          "id": "d1856f8b-5f2f-424d-86e9-ee2e2173d65f"
+        },
+        {
+          "ingredientData": {
+            "_id": "640794c2058eecc4958fd3f5",
+            "originalName": "wheat flour",
+            "name": "flour",
+            "amount": 1,
+            "possibleUnits": [
+              "g",
+              "oz",
+              "teaspoon",
+              "cup",
+              "serving",
+              "tablespoon"
+            ],
+            "estimatedCost": { "value": 0.13, "unit": "US Cents" },
+            "consistency": "solid",
+            "shoppingListUnits": ["ounces"],
+            "aisle": "Baking",
+            "image": "flour.png",
+            "ingredientId": 20081,
+            "names": ["flour"],
+            "dateAdded": 1678218434796,
+            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/flour.png",
+            "totalPriceUSACents": 10.15
+          },
+          "parsedIngredient": {
+            "quantity": 0.33,
+            "unit": "cup",
+            "unitPlural": "cups",
+            "symbol": "c",
+            "ingredient": "flour",
+            "minQty": 0.33,
+            "maxQty": 0.33,
+            "originalIngredientString": "1/3 cup flour",
+            "comment": ""
+          },
+          "id": "ee50b8a8-b405-4231-b37e-87edc88f8e7b"
+        },
+        {
+          "ingredientData": {
+            "originalName": "table salt",
+            "name": "salt",
+            "amount": 1,
+            "possibleUnits": [
+              "pinch",
+              "g",
+              "oz",
+              "dash",
+              "teaspoon",
+              "cup",
+              "serving",
+              "tablespoon"
+            ],
+            "estimatedCost": { "value": 0.11, "unit": "US Cents" },
+            "consistency": "solid",
+            "aisle": "Spices and Seasonings",
+            "image": "salt.jpg",
+            "ingredientId": 2047,
+            "_id": "6408da9e7b9822764c0d5912",
+            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/salt.jpg",
+            "totalPriceUSACents": 0
+          },
+          "parsedIngredient": {
+            "quantity": 0,
+            "unit": "q.b.",
+            "unitPlural": "q.b.",
+            "symbol": null,
+            "ingredient": "salt",
+            "minQty": 0,
+            "maxQty": 0,
+            "originalIngredientString": "salt",
+            "comment": ""
+          },
+          "id": "7b787e1e-4548-48e1-9eeb-dfec9128b0de"
+        },
+        {
+          "label": "Lemon Sauce",
+          "id": "7af381e9-582c-4c04-8e4d-139e896be155"
+        },
+        {
+          "ingredientData": {
+            "originalName": "juice of lemon",
+            "name": "lemon juice",
+            "amount": 1,
+            "possibleUnits": [
+              "drop",
+              "piece",
+              "wedge yield",
+              "g",
+              "oz",
+              "lemon yield",
+              "teaspoon",
+              "fluid ounce",
+              "cup",
+              "serving",
+              "tablespoon"
+            ],
+            "estimatedCost": { "value": 0.68, "unit": "US Cents" },
+            "consistency": "liquid",
+            "shoppingListUnits": ["ounces"],
+            "aisle": "Produce",
+            "image": "lemon-juice.jpg",
+            "ingredientId": 9152,
+            "_id": "6408dabb9162972ab36d0864",
+            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/lemon-juice.jpg",
+            "totalPriceUSACents": 160.88
+          },
+          "parsedIngredient": {
+            "quantity": 1,
+            "unit": "cup",
+            "unitPlural": "cups",
+            "symbol": "c",
+            "ingredient": "lemon juice",
+            "minQty": 1,
+            "maxQty": 1,
+            "originalIngredientString": "1 cup Lemon Juice (Freshly Squeezed from about 4-5 lemons)",
+            "comment": "(Freshly Squeezed from about 4-5 lemons)"
+          },
+          "id": "c8493637-a99d-4983-8e63-5d020209d519"
+        },
+        {
+          "ingredientData": {
+            "originalName": "sucrose",
+            "name": "sugar",
+            "amount": 1,
+            "possibleUnits": [
+              "pinch",
+              "spoonful",
+              "g",
+              "serving packet",
+              "oz",
+              "dash",
+              "teaspoon",
+              "cup",
+              "serving",
+              "tablespoon"
+            ],
+            "estimatedCost": { "value": 0.14, "unit": "US Cents" },
+            "consistency": "solid",
+            "shoppingListUnits": ["ounces", "pounds"],
+            "aisle": "Baking",
+            "image": "sugar-in-bowl.png",
+            "ingredientId": 19335,
+            "_id": "6408dac07139b02725df3b65",
+            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/sugar-in-bowl.png",
+            "totalPriceUSACents": 21.87
+          },
+          "parsedIngredient": {
+            "quantity": 0.66,
+            "unit": "cup",
+            "unitPlural": "cups",
+            "symbol": "c",
+            "ingredient": "sugar",
+            "minQty": 0.66,
+            "maxQty": 0.66,
+            "originalIngredientString": "⅔ cup Sugar",
+            "comment": ""
+          },
+          "id": "250cdd07-9441-4edb-9cb3-66bdfeca4132"
+        },
+        {
+          "ingredientData": {
+            "_id": "6408db000743cef57dbdb6e0",
+            "originalName": "distilled vinegar",
+            "name": "vinegar",
+            "amount": 1,
+            "possibleUnits": [
+              "g",
+              "oz",
+              "teaspoon",
+              "cup",
+              "serving",
+              "tablespoon"
+            ],
+            "estimatedCost": { "value": 0.31, "unit": "US Cents" },
+            "consistency": "liquid",
+            "shoppingListUnits": ["ounces"],
+            "aisle": "Oil, Vinegar, Salad Dressing",
+            "image": "vinegar-(white).jpg",
+            "ingredientId": 2053,
+            "names": ["vinegar"],
+            "dateAdded": 1678301952290,
+            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/vinegar-(white).jpg",
+            "totalPriceUSACents": 4.59
+          },
+          "parsedIngredient": {
+            "quantity": 1,
+            "unit": "tablespoon",
+            "unitPlural": "tablespoons",
+            "symbol": "tbs",
+            "ingredient": "vinegar",
+            "minQty": 1,
+            "maxQty": 1,
+            "originalIngredientString": "1 tablespoon vinegar",
+            "comment": ""
+          },
+          "id": "d6ab2432-509c-4a19-93a9-cbdbd27461c7"
+        },
+        {
+          "ingredientData": {
+            "originalName": "soya sauce",
+            "name": "soy sauce",
+            "amount": 1,
+            "possibleUnits": [
+              "g",
+              "oz",
+              "teaspoon",
+              "cup",
+              "serving",
+              "tablespoon"
+            ],
+            "estimatedCost": { "value": 0.68, "unit": "US Cents" },
+            "consistency": "liquid",
+            "shoppingListUnits": ["ounces"],
+            "aisle": "Ethnic Foods;Condiments",
+            "image": "soy-sauce.jpg",
+            "ingredientId": 16124,
+            "_id": "6408df5a7139b02725e691bd",
+            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/soy-sauce.jpg",
+            "totalPriceUSACents": 20.11
+          },
+          "parsedIngredient": {
+            "quantity": 2,
+            "unit": "tablespoon",
+            "unitPlural": "tablespoons",
+            "symbol": "tbs",
+            "ingredient": "soy sauce",
+            "minQty": 2,
+            "maxQty": 2,
+            "originalIngredientString": "2 Tablespoons Soy Sauce",
+            "comment": ""
+          },
+          "id": "30770877-da66-4088-98e7-d7b643e36ddc"
+        },
+        {
+          "ingredientData": {
+            "originalName": "dried ginger",
+            "name": "ginger powder",
+            "amount": 1,
+            "possibleUnits": [
+              "pinch",
+              "piece",
+              "slice",
+              "g",
+              "inch",
+              "oz",
+              "teaspoon",
+              "serving",
+              "tablespoon"
+            ],
+            "estimatedCost": { "value": 12.11, "unit": "US Cents" },
+            "consistency": "solid",
+            "shoppingListUnits": ["pieces"],
+            "aisle": "Spices and Seasonings",
+            "image": "ginger.png",
+            "ingredientId": 2021,
+            "_id": "6408df5f7139b02725e69720",
+            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/ginger.png",
+            "totalPriceUSACents": 14.9
+          },
+          "parsedIngredient": {
+            "quantity": 0.25,
+            "unit": "teaspoon",
+            "unitPlural": "teaspoons",
+            "symbol": "tsp",
+            "ingredient": "ginger powder",
+            "minQty": 0.25,
+            "maxQty": 0.25,
+            "originalIngredientString": "¼ teaspoon Ginger Powder",
+            "comment": ""
+          },
+          "id": "09616ec4-ddac-43d8-b9ee-1b2e65662c88"
+        },
+        {
+          "ingredientData": {
+            "originalName": "garlic powder",
+            "name": "garlic powder",
+            "amount": 1,
+            "possibleUnits": [
+              "pinch",
+              "g",
+              "oz",
+              "dash",
+              "teaspoon",
+              "serving",
+              "tablespoon"
+            ],
+            "estimatedCost": { "value": 3.04, "unit": "US Cents" },
+            "consistency": "solid",
+            "aisle": "Spices and Seasonings",
+            "image": "garlic-powder.png",
+            "ingredientId": 1022020,
+            "_id": "6408df640743cef57dc4da0a",
+            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/garlic-powder.png",
+            "totalPriceUSACents": 3.74
+          },
+          "parsedIngredient": {
+            "quantity": 0.25,
+            "unit": "teaspoon",
+            "unitPlural": "teaspoons",
+            "symbol": "tsp",
+            "ingredient": "garlic powder",
+            "minQty": 0.25,
+            "maxQty": 0.25,
+            "originalIngredientString": "¼ teaspoon Garlic Powder",
+            "comment": ""
+          },
+          "id": "14d38e9f-1237-4092-9f7a-06a900b0b93c"
+        },
+        {
+          "ingredientData": {
+            "_id": "640657980743cef57d40b641",
+            "originalName": "crushed red pepper",
+            "name": "red pepper flakes",
+            "amount": 1,
+            "possibleUnits": [
+              "pinch",
+              "pinche",
+              "piece",
+              "g",
+              "oz",
+              "dash",
+              "teaspoon",
+              "serving",
+              "tablespoon"
+            ],
+            "estimatedCost": { "value": 5.18, "unit": "US Cents" },
+            "consistency": "solid",
+            "aisle": "Spices and Seasonings",
+            "image": "red-pepper-flakes.jpg",
+            "ingredientId": 1032009,
+            "names": ["red pepper flakes"],
+            "dateAdded": 1678137240965,
+            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/red-pepper-flakes.jpg",
+            "totalPriceUSACents": 12.75
+          },
+          "parsedIngredient": {
+            "quantity": 0.5,
+            "unit": "teaspoon",
+            "unitPlural": "teaspoons",
+            "symbol": "tsp",
+            "ingredient": "red pepper flakes",
+            "minQty": 0.5,
+            "maxQty": 0.5,
+            "originalIngredientString": "½ teaspoon Red Pepper Flakes",
+            "comment": ""
+          },
+          "id": "33675442-8746-4b5a-9ff9-c3d6040741aa"
+        },
+        {
+          "ingredientData": {
+            "originalName": "lemon rind",
+            "name": "lemon zest",
+            "amount": 1,
+            "possibleUnits": [
+              "strip",
+              "piece",
+              "g",
+              "oz",
+              "teaspoon",
+              "cup",
+              "serving",
+              "tablespoon"
+            ],
+            "estimatedCost": { "value": 8.33, "unit": "US Cents" },
+            "consistency": "solid",
+            "shoppingListUnits": ["pieces"],
+            "aisle": "Produce",
+            "image": "zest-lemon.jpg",
+            "ingredientId": 9156,
+            "_id": "6408df6e0743cef57dc4e385",
+            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/zest-lemon.jpg",
+            "totalPriceUSACents": 50
+          },
+          "parsedIngredient": {
+            "quantity": 1,
+            "unit": null,
+            "unitPlural": null,
+            "symbol": null,
+            "ingredient": "lemon zest",
+            "minQty": 1,
+            "maxQty": 1,
+            "originalIngredientString": "1 Lemon Zest (from one lemon)",
+            "comment": "(from one lemon)"
+          },
+          "id": "c4e59307-d33c-43b0-9e7c-774dc5c9666c"
+        },
+        {
+          "ingredientData": {
+            "_id": "6408da969162972ab36cd522",
+            "originalName": "cornstarch",
+            "name": "cornstarch",
+            "amount": 1,
+            "possibleUnits": ["g", "oz", "teaspoon", "cup", "tablespoon"],
+            "estimatedCost": { "value": 0.43, "unit": "US Cents" },
+            "consistency": "solid",
+            "shoppingListUnits": ["ounces"],
+            "aisle": "Baking",
+            "image": "white-powder.jpg",
+            "ingredientId": 20027,
+            "names": ["cornstarch"],
+            "dateAdded": 1678301846559,
+            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/white-powder.jpg",
+            "totalPriceUSACents": 6.36
+          },
+          "parsedIngredient": {
+            "quantity": 1,
+            "unit": "tablespoon",
+            "unitPlural": "tablespoons",
+            "symbol": "tbs",
+            "ingredient": "cornstarch",
+            "minQty": 1,
+            "maxQty": 1,
+            "originalIngredientString": "1 tablespoon cornstarch",
+            "comment": ""
+          },
+          "id": "abeb2862-2747-40a0-b44e-6bf1b5c41ee0"
+        }
+      ],
+      "instructions": [
+        {
+          "label": "To make Lemon Sauce",
+          "id": "1cd8991f-8bee-4ca0-b17a-4e8a62815719"
+        },
+        {
+          "content": "In a medium pot, add lemon juice, sugar, vinegar, soy sauce, ginger, garlic, and red chili flakes. Heat for 3 minutes.",
+          "index": 1,
+          "id": "6a2d1ced-555f-4f77-b5f8-bcbe0d384444"
+        },
+        {
+          "content": "In a small bowl, whisk 1 Tablespoon of cornstarch with 2 Tablespoons of water to form a paste. Add to lemon sauce and whisk together. Continue to cook for 5 minutes, until the mixture begins to thicken. Once the sauce is thickened, remove from heat and add lemon zest.",
+          "index": 2,
+          "id": "e1a66a83-9c52-44d5-81db-7c06c3329018"
+        },
+        {
+          "label": "To make Chicken",
+          "id": "c5debd07-1db1-4627-8e03-7942a09ae09c"
+        },
+        {
+          "content": "Place flour and cornstarch in a shallow dish or pie plate. Add a pinch of salt. Stir.",
+          "index": 3,
+          "id": "932e9a0d-3891-4ead-9704-a72fe474401f"
+        },
+        {
+          "content": "Whisk eggs in a shallow dish. Dip chicken pieces in the egg mixture and then flour mixture. Place on a plate.",
+          "index": 4,
+          "id": "043b6163-4748-4493-ab1e-e5bece90aaf1"
+        },
+        {
+          "content": "Heat 2 -3 inches of oil in a heavy-bottomed pot over medium-high heat. Using a thermometer, watch for it to reach 350 degrees.",
+          "index": 5,
+          "id": "692059ed-78bf-4e7b-91ff-928cc5a37fa4"
+        },
+        {
+          "content": "Working in batches, cook several chicken pieces at a time. Cook for 2 - 3 minutes, turning often until golden brown. Place chicken on a paper-towel-lined plate. Repeat.",
+          "index": 6,
+          "id": "58ce9691-ea9a-4caf-aa82-2e92adcdd79d"
+        },
+        {
+          "content": "Toss chicken with lemon sauce. You may reserve some of the sauce to place on rice. Serve it with a sprinkling of green onion and lemon zest, if so desired.",
+          "index": 7,
+          "id": "4175b780-a8d7-4cbd-8cc3-6c726d739c8f"
+        }
+      ],
+      "recipeImage": "https://firebasestorage.googleapis.com/v0/b/prepify-9b974.appspot.com/o/recipeImages%2FChinese-Lemon-Chicken-7.jpg?alt=media\u0026token=be424e76-3f6c-412f-a514-4e69f6024691",
+      "nutritionData": {
+        "uri": "http://www.edamam.com/ontologies/edamam.owl#recipe_6470ee5bb74e4ecba1439d08f7cf7e8c",
+        "calories": 2456,
+        "dietLabels": [],
+        "healthLabels": [
+          "DAIRY_FREE",
+          "MILK_FREE",
+          "PEANUT_FREE",
+          "TREE_NUT_FREE",
+          "FISH_FREE",
+          "SHELLFISH_FREE",
+          "PORK_FREE",
+          "RED_MEAT_FREE",
+          "CRUSTACEAN_FREE",
+          "CELERY_FREE",
+          "MUSTARD_FREE",
+          "SESAME_FREE",
+          "LUPINE_FREE",
+          "MOLLUSK_FREE",
+          "ALCOHOL_FREE",
+          "NO_OIL_ADDED",
+          "KOSHER"
+        ]
+      },
+      "totalTime": 35,
+      "rating": { "rateCount": "0", "rateValue": "0" },
+      "createdAt": "1678303567977",
+      "editedAt": null,
+      "servingPrice": 100,
+      "cuisine": "Chinese",
+      "mealTypes": ["Lunch", "Dinner"],
+      "nutritionLabels": ["PEANUT_FREE", "KOSHER"],
+      "authorUsername": "aaa",
+      "views": 0,
+      "numTimesSaved": 0,
+      "numTimesMade": 0,
+      "averageRating": 0
+    }
+  ],
+  "page": 0,
+  "filters": {},
+  "entries_per_page": 9,
+  "total_results": 5
+}

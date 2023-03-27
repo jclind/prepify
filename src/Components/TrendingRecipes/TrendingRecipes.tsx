@@ -12,6 +12,7 @@ const TrendingRecipes = () => {
     RecipeAPI.getTrendingRecipes(4).then(res => {
       const resData: RecipeType[] = res
       setRecipes(resData)
+      console.log(resData)
     })
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -20,7 +21,7 @@ const TrendingRecipes = () => {
   return (
     <div className='trending-recipes'>
       <h2 className='title'>Trending</h2>
-      <div className='recipes'>
+      <div className={`recipes ${recipes.length < 0 ? '' : 'loading'}`}>
         {recipes.length > 0 ? (
           recipes.map(recipe => {
             return <RecipeThumbnail key={recipe._id} recipe={recipe} />

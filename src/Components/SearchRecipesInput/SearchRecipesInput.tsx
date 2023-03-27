@@ -50,6 +50,7 @@ const SearchRecipesInput = ({
   const [autoCompleteResponse, setAutoCompleteResponse] = useState<
     RecipeSearchResponseType[]
   >([])
+  const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null)
 
   const [isBlurred, setIsBlurred] = useState(true)
 
@@ -86,7 +87,17 @@ const SearchRecipesInput = ({
   useEffect(() => {
     // If the autocomplete property passed through exists and is true, show auto complete results
     if (autoComplete) {
-      getAutoCompleteResult(searchRecipeVal)
+      if (timeoutId) clearTimeout(timeoutId)
+
+      const newTimeoutId = setTimeout(() => {
+        getAutoCompleteResult(searchRecipeVal)
+      }, 300)
+
+      setTimeoutId(newTimeoutId)
+      // cleanup function to clear timeout on unmount or username change
+      return () => {
+        if (timeoutId) clearTimeout(timeoutId)
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchRecipeVal])

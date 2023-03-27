@@ -75,7 +75,7 @@ const Navbar: FC<NavbarProps> = ({ darkNavLinks, loading }) => {
           return isActive ? 'nav-link active' : 'nav-link'
         }}
       >
-        Signup
+        signup
       </NavLink>
     </>
   )

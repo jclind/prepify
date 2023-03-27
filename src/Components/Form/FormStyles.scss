@@ -8,8 +8,9 @@
   .form {
     display: flex;
     flex-direction: column;
-    width: 100vw;
+    width: 95%;
     max-width: 350px;
+    margin: 0 auto;
     .title {
       padding-bottom: 1rem;
     }
