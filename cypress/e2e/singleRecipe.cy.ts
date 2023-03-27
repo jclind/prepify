@@ -17,35 +17,35 @@ describe('Login/Logout Process', () => {
     )
   })
 
-  // it('Should render single recipe, logged out', () => {
-  //   cy.viewport(726, 977)
-  //   cy.visit('/')
+  it('Should render single recipe, logged out', () => {
+    cy.viewport(726, 977)
+    cy.visit('/')
 
-  //   cy.contains('.recipe-thumbnail', 'Tuscan Chicken Skillet').click()
+    cy.contains('.recipe-thumbnail', 'Tuscan Chicken Skillet').click()
 
-  //   cy.contains('h1', 'Tuscan Chicken Skillet')
-  //   cy.contains('.ingredient', '12 ounce fettuccine')
-  //     .click()
-  //     .should('have.class', 'checked')
+    cy.contains('h1', 'Tuscan Chicken Skillet')
+    cy.contains('.ingredient', '12 ounce fettuccine')
+      .click()
+      .should('have.class', 'checked')
 
-  //   // Test ingredient serving size change
-  //   cy.get('button.inc').click()
-  //   cy.contains('.ingredient', '15 ounce fettuccine')
-  //   cy.get('button.dec').click()
-  //   cy.contains('.ingredient', '12 ounce fettuccine')
+    // Test ingredient serving size change
+    cy.get('button.inc').click()
+    cy.contains('.ingredient', '15 ounce fettuccine')
+    cy.get('button.dec').click()
+    cy.contains('.ingredient', '12 ounce fettuccine')
 
-  //   // Directions
-  //   cy.contains(
-  //     '.instruction',
-  //     'Bring a large pot of salted water to a boil. Cook the fettuccine according to package directions; drain.'
-  //   )
+    // Directions
+    cy.contains(
+      '.instruction',
+      'Bring a large pot of salted water to a boil. Cook the fettuccine according to package directions; drain.'
+    )
 
-  //   // Reviews
-  //   cy.contains('button.leave-review-btn', 'Add Review').click()
-  //   cy.get('.alert').contains('Please login to add a review.')
+    // Reviews
+    cy.contains('button.leave-review-btn', 'Add Review').click()
+    cy.get('.alert').contains('Please login to add a review.')
 
-  //   cy.contains('.recipe-review', 'Really enjoyed!')
-  // })
+    cy.contains('.recipe-review', 'Really enjoyed!')
+  })
   it('Should render single recipe, logged in', () => {
     cy.intercept(
       'PUT',
