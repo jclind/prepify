@@ -54,3 +54,10 @@ $border-radius: 10px;
 $max-width: 1400px;
 
 $font-family: 'Montserrat', sans-serif;
+
+@mixin outline() {
+  outline-color: #4d90fe;
+  // outline-offset: -2px;
+  outline-style: auto;
+  outline-width: 5px;
+}

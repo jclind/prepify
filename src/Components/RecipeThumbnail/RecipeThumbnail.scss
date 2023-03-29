@@ -10,6 +10,9 @@
   max-width: 300px;
   text-align: center;
   cursor: pointer;
+  &:focus {
+    @include outline();
+  }
 
   .img-container {
     width: 300px;
