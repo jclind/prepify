@@ -17,6 +17,9 @@
     font-size: 0.9rem;
     font-weight: 600;
     color: $primary-text;
+    &:focus {
+      @include outline();
+    }
   }
   button.edit-btn {
     background: none;

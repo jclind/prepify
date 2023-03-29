@@ -50,6 +50,10 @@
           border-radius: $border-radius;
           height: 35px !important;
 
+          &:focus {
+            @include outline();
+          }
+
           .loading {
             z-index: 10;
             position: absolute;
@@ -344,6 +348,10 @@
             padding-right: 0.5rem;
             cursor: pointer;
             text-decoration: none;
+
+            &:focus {
+              @include outline();
+            }
           }
           .tag.skeleton {
             height: 24px;
@@ -390,6 +398,9 @@
         &:hover {
           background: $primary-text;
           color: $primary-background;
+        }
+        &:focus {
+          @include outline();
         }
       }
       span {

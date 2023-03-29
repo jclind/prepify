@@ -91,10 +91,16 @@
           &:hover {
             color: $primary-text;
           }
+          &:focus {
+            @include outline();
+          }
         }
         button.delete-btn {
           &:hover {
             color: $error-red;
+          }
+          &:focus {
+            @include outline();
           }
         }
         button.edit-review {
@@ -109,6 +115,12 @@
           display: flex;
           justify-self: center;
           align-items: center;
+        }
+      }
+      button.like-review-btn,
+      button.dislike-review-btn {
+        &:focus {
+          @include outline();
         }
       }
     }

@@ -53,17 +53,20 @@ const AddReview: FC<AddReviewProps> = ({
           value={newReviewText}
           onChange={e => setNewReviewText(e.target.value)}
           ref={addReviewTextAreaRef}
+          // tabIndex={isReviewOpen ? 1 : -1}
         />
         <div className='btns-container'>
           <button
             className='close-review-textarea-btn'
             onClick={() => setIsReviewOpen(false)}
+            // tabIndex={isReviewOpen ? 1 : -1}
           >
             close
           </button>
           <button
             className='submit-review-btn btn'
             onClick={handleSubmitReview}
+            // tabIndex={isReviewOpen ? 1 : -1}
           >
             Submit Review
           </button>
@@ -71,6 +74,7 @@ const AddReview: FC<AddReviewProps> = ({
       </div>
       <button
         className={`leave-review-btn btn ${isReviewOpen ? '' : 'visible'}`}
+        // tabIndex={isReviewOpen ? 1 : -1}
         onClick={() => {
           if (uid) {
             setNewReviewText('')

@@ -48,7 +48,9 @@
 
         .counter-btn {
           width: 2rem;
-          // background: red;
+          &:focus {
+            @include outline();
+          }
         }
       }
       .text {
@@ -151,6 +153,9 @@
 
         &:checked {
           background: $primary;
+        }
+        &:focus {
+          @include outline();
         }
 
         @media screen and (max-width: 450px) {
