@@ -36,7 +36,7 @@
           justify-content: center;
           height: 100%;
           text-align: center;
-          font-size: toRem(18);
+          font-size: 1.125rem;
           font-weight: 500;
           width: 3ch;
           outline: none;
@@ -80,7 +80,7 @@
         .text {
           position: absolute;
           top: -1.25rem;
-          font-size: toRem(14);
+          font-size: 0.875rem;
           padding: 0;
           color: $tertiary-text;
           padding-bottom: 0.25rem;
@@ -112,7 +112,7 @@
         .text {
           color: $primary;
           font-weight: 700;
-          font-size: toRem(16);
+          font-size: 1rem;
           white-space: nowrap;
         }
         .divider {
@@ -133,7 +133,7 @@
       padding: 0.75rem 0rem;
       padding-right: 1rem;
 
-      font-size: toRem(16) !important;
+      font-size: 1rem !important;
       font-weight: 500;
       border-radius: $border-radius;
 
@@ -211,7 +211,7 @@
         max-width: 100%;
         margin: 0;
         padding: 0.5rem 0;
-        font-size: toRem(16);
+        font-size: 1rem;
       }
 
       .ingredient-label {

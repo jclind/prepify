@@ -22,7 +22,7 @@
       .text {
         color: $primary;
         font-weight: 700;
-        font-size: toRem(16);
+        font-size: 1rem;
         white-space: nowrap;
       }
       .divider {
@@ -62,7 +62,7 @@
           background: $primary-text;
           color: $white;
           font-weight: 700;
-          font-size: toRem(16);
+          font-size: 1rem;
           border-radius: 50%;
         }
         .number.skeleton {
@@ -71,7 +71,7 @@
         }
         // }
         .content {
-          font-size: toRem(16);
+          font-size: 1rem;
           font-weight: 500;
           max-width: 600px;
           line-height: 1.5;
@@ -95,11 +95,11 @@
         .number {
           height: 20px;
           width: 20px;
-          font-size: toRem(14);
+          font-size: 0.875rem;
           line-height: 1.5;
         }
         .content {
-          font-size: toRem(16);
+          font-size: 1rem;
         }
       }
     }

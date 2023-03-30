@@ -1,4 +1,4 @@
-@import '../../helpers.scss';
+@use '../../helpers.scss' as s;
 
 nav {
   position: absolute;
@@ -12,17 +12,17 @@ nav {
   justify-content: space-between;
   margin: 0 auto;
   display: flex;
-  height: $nav-height;
-  // background: $primary;
+  height: s.$nav-height;
+  // background: s.$primary;
   width: 90%;
-  max-width: $max-width;
+  max-width: s.$max-width;
 
   .nav-header {
     .hamburger {
       display: none;
     }
     .hamburger.light {
-      color: $white;
+      color: s.$white;
     }
 
     @media screen and (max-width: 725px) {
@@ -36,7 +36,7 @@ nav {
         display: block;
         height: 40px;
         width: 40px;
-        color: $primary-text;
+        color: s.$primary-text;
       }
     }
   }
@@ -52,27 +52,27 @@ nav {
       .nav-link {
         text-transform: capitalize;
         padding: 0.5rem;
-        font-size: toRem(18);
+        font-size: 1.125rem;
         font-weight: 700;
-        color: $primary-background;
+        color: s.$primary-background;
         text-decoration: none;
         white-space: nowrap;
         &:focus {
-          @include outline();
+          @include s.outline();
         }
       }
       .account-link {
-        background: $primary-text;
+        background: s.$primary-text;
         border-radius: 50%;
-        border: 1px solid $primary-background;
+        border: 1px solid s.$primary-background;
         width: 45px;
         height: 45px;
         display: flex;
         text-decoration: none;
         justify-content: center;
         align-items: center;
-        font-size: toRem(30);
-        color: $primary;
+        font-size: 1.875rem;
+        color: s.$primary;
         font-weight: 500;
       }
       .account-link-loading {
@@ -117,12 +117,12 @@ nav {
         opacity: 0;
         transition: visibility 0s, opacity 0.1s linear;
 
-        background: $white;
-        border: 1px solid $gray-400;
-        border-radius: $border-radius;
+        background: s.$white;
+        border: 1px solid s.$gray-400;
+        border-radius: s.$border-radius;
 
         .dropdown-section {
-          border-bottom: 1px solid $gray-400;
+          border-bottom: 1px solid s.$gray-400;
         }
         .signed-in-as {
           display: flex;
@@ -136,10 +136,10 @@ nav {
             height: 20px;
             width: 20px;
             flex-shrink: 0;
-            color: $primary-text;
+            color: s.$primary-text;
           }
           .text {
-            font-size: toRem(14);
+            font-size: 0.875rem;
             font-weight: 600;
           }
         }
@@ -147,7 +147,7 @@ nav {
           display: flex;
           gap: 0.5rem;
           align-items: center;
-          color: $primary-text;
+          color: s.$primary-text;
           padding: 0.5rem 1rem;
           width: 100%;
           box-sizing: border-box;
@@ -157,7 +157,7 @@ nav {
             flex-shrink: 0;
           }
           .text {
-            font-size: toRem(14);
+            font-size: 0.875rem;
             font-weight: 600;
           }
         }
@@ -194,13 +194,13 @@ nav {
             }
             .text {
               text-transform: capitalize;
-              font-size: toRem(24);
+              font-size: 1.5rem;
               font-weight: 700;
-              color: $primary-text;
+              color: s.$primary-text;
               text-decoration: none;
               white-space: nowrap;
               padding: 0.5rem 0;
-              color: $primary-text;
+              color: s.$primary-text;
               text-decoration: underline;
               text-align: center;
             }
@@ -220,7 +220,7 @@ nav {
       visibility: hidden;
       opacity: 0;
       transition: visibility 0s, opacity 0.1s linear;
-      background: $primary-background;
+      background: s.$primary-background;
 
       .nav-links {
         // display: flex;
@@ -231,8 +231,8 @@ nav {
 
         .nav-link {
           padding: 0.5rem 0;
-          font-size: toRem(24);
-          color: $primary-text;
+          font-size: 1.5rem;
+          color: s.$primary-text;
           text-decoration: underline;
         }
       }
@@ -253,7 +253,7 @@ nav {
 
   .nav-links.dark-nav-links {
     .nav-link {
-      color: $primary-text !important;
+      color: s.$primary-text !important;
     }
   }
 }
@@ -267,37 +267,37 @@ nav {
   text-decoration: none;
   text-transform: capitalize;
   text-decoration: none;
-  font-size: toRem(18);
+  font-size: 1.125rem;
   font-weight: 700;
-  color: $primary-background;
+  color: s.$primary-background;
 
   .nav-logo {
-    font-size: toRem(36);
+    font-size: 2.25rem;
     font-weight: 700;
     font-style: italic;
-    color: $primary;
+    color: s.$primary;
     text-decoration: none;
     padding: 0.25rem 0.35rem;
     margin: -0.25rem -0.35rem;
     &:focus {
-      @include outline();
+      @include s.outline();
     }
   }
 
   .beta-tag {
     text-transform: uppercase;
-    font-size: toRem(14);
-    background: $secondary;
+    font-size: 0.875rem;
+    background: s.$secondary;
     padding: 0.25rem 0.5rem;
     border: none;
-    color: $primary-background;
+    color: s.$primary-background;
     font-weight: 600;
     border-radius: 5px;
     -webkit-animation: breathing 5s ease-out infinite normal;
     animation: breathing 5s ease-out infinite normal;
     cursor: pointer;
     &:focus {
-      @include outline();
+      @include s.outline();
     }
   }
 
@@ -350,10 +350,10 @@ nav {
 
   @media screen and (max-width: 725px) {
     .nav-logo {
-      font-size: toRem(30);
+      font-size: 1.875rem;
     }
     .beta-tag {
-      font-size: toRem(12);
+      font-size: 0.75rem;
     }
   }
 }

@@ -31,7 +31,7 @@
         }
       }
       button.submit-another-form-btn {
-        font-size: toRem(16);
+        font-size: 1rem;
         font-weight: 500;
         color: $secondary;
         text-decoration: underline;
@@ -47,7 +47,7 @@
       .title {
         text-align: center;
         font-weight: 600;
-        font-size: toRem(22);
+        font-size: 1.375;
       }
       .error {
         margin-bottom: 0;
@@ -58,7 +58,7 @@
         align-items: flex-start;
         .text {
           width: 5ch;
-          font-size: toRem(14);
+          font-size: 0.875rem;
           font-weight: 600;
           color: $secondary;
           padding-bottom: 0.25rem;
@@ -90,7 +90,7 @@
 
       label {
         .text {
-          font-size: toRem(14);
+          font-size: 0.875rem;
           font-weight: 600;
           padding-bottom: 0.25rem;
           color: $secondary;
@@ -102,7 +102,7 @@
         border: none;
         border: 1px solid $gray-400;
         border-radius: $border-radius;
-        font-size: toRem(16);
+        font-size: 1rem;
         font-weight: 500;
 
         &::placeholder {
@@ -115,7 +115,7 @@
 
       button.submit-help-btn {
         padding: 0.75rem;
-        font-size: toRem(20);
+        font-size: 1.25rem;
         font-weight: 600;
         border-radius: $border-radius;
         color: $white;

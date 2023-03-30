@@ -1,24 +1,24 @@
-@import '../../helpers.scss';
+@use '../../helpers.scss' as s;
 
 .recipe-thumbnail {
-  border: 1px solid $tertiary-text;
-  border-radius: $border-radius;
+  border: 1px solid s.$tertiary-text;
+  border-radius: s.$border-radius;
   padding-bottom: 0.5rem;
   text-decoration: none;
-  color: $primary-text;
+  color: s.$primary-text;
   width: 300px;
   max-width: 300px;
   text-align: center;
   cursor: pointer;
   &:focus {
-    @include outline();
+    @include s.outline();
   }
 
   .img-container {
     width: 300px;
     overflow: hidden;
     .img {
-      border-radius: $border-radius;
+      border-radius: s.$border-radius;
       border-bottom-left-radius: 0;
       border-bottom-right-radius: 0;
       object-fit: cover;
@@ -40,9 +40,9 @@
     font-size: 1.12rem;
   }
   .price {
-    font-size: toRem(12);
+    font-size: 0.75rem;
     font-weight: 700;
-    color: $primary;
+    color: s.$primary;
     text-transform: uppercase;
     letter-spacing: 1.2px;
     padding-top: 0.5rem;
@@ -56,15 +56,15 @@
     .single-info {
       display: flex;
       align-items: center;
-      gap: toRem(5);
+      gap: 0.313rem;
       font-weight: 600;
-      height: toRem(22);
+      height: 1.375;
       .skeleton {
-        height: toRem(22);
+        height: 1.375;
       }
       .icon {
-        height: toRem(22);
-        width: toRem(22);
+        height: 1.375;
+        width: 1.375;
       }
     }
   }
