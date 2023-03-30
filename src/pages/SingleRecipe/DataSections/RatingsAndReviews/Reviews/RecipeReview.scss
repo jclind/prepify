@@ -16,7 +16,7 @@
     .date {
       flex: 1;
       text-align: right;
-      font-size: toRem(14);
+      font-size: 0.875rem;
       font-weight: 500;
       // color: $secondary-text;
     }
@@ -30,7 +30,7 @@
         max-width: 300px;
         column-gap: 0.35rem;
         .name {
-          font-size: toRem(14);
+          font-size: 0.875rem;
         }
       }
       .rating {
@@ -43,7 +43,7 @@
         position: absolute;
         color: $tertiary-text;
         right: 0;
-        font-size: toRem(12);
+        font-size: 0.75rem;
       }
     }
     @media screen and (max-width: 350px) {
@@ -54,7 +54,7 @@
   }
   .body {
     .text {
-      font-size: toRem(16);
+      font-size: 1rem;
       font-weight: 500;
       color: $primary-text;
       line-height: 1.5;
@@ -82,7 +82,7 @@
         gap: 1.5rem;
 
         button {
-          font-size: toRem(14);
+          font-size: 0.875rem;
           font-weight: 600;
           text-decoration: underline;
           color: $tertiary-text;
@@ -91,10 +91,16 @@
           &:hover {
             color: $primary-text;
           }
+          &:focus {
+            @include outline();
+          }
         }
         button.delete-btn {
           &:hover {
             color: $error-red;
+          }
+          &:focus {
+            @include outline();
           }
         }
         button.edit-review {
@@ -111,13 +117,19 @@
           align-items: center;
         }
       }
+      button.like-review-btn,
+      button.dislike-review-btn {
+        &:focus {
+          @include outline();
+        }
+      }
     }
   }
 }
 
 .delete-modal {
   .heading {
-    font-size: toRem(20);
+    font-size: 1.25rem;
     font-weight: 600;
     margin-bottom: 0.5rem;
   }
@@ -131,7 +143,7 @@
     gap: 1.5rem;
     justify-content: center;
     button {
-      font-size: toRem(18);
+      font-size: 1.125rem;
       padding: 0.75rem 1.25rem;
       border-radius: $border-radius;
       transition: all 0.3s linear;

@@ -1,8 +1,3 @@
-@function toRem($value) {
-  $remValue: $value / 16 + rem;
-  @return $remValue;
-}
-
 $primary: #ff5722; // Also located in TrendingRecipes.js
 $secondary: #00adb5;
 
@@ -35,9 +30,9 @@ $secondary-background: #d6d6d6;
 $tertiary-background: #b1b1b1;
 
 // Navbar
-$nav-height: toRem(100);
+$nav-height: 6.25rem;
 
-$footer-height: toRem(150);
+$footer-height: 9.375rem;
 $footer-margin: 4rem;
 $page-min-height: calc(100vh - #{$footer-height} - #{$nav-height});
 
@@ -54,3 +49,10 @@ $border-radius: 10px;
 $max-width: 1400px;
 
 $font-family: 'Montserrat', sans-serif;
+
+@mixin outline() {
+  outline-color: #4d90fe;
+  // outline-offset: -2px;
+  outline-style: auto;
+  outline-width: 5px;
+}

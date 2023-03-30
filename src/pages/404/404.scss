@@ -18,7 +18,7 @@
     align-items: center;
 
     span.number {
-      font-size: toRem(180);
+      font-size: 11.25;
       font-weight: 700;
     }
     .image-container {
@@ -33,7 +33,7 @@
 
     @media screen and (max-width: 650px) {
       span.number {
-        font-size: toRem(160);
+        font-size: 10rem;
       }
       .image-container {
         height: 160px;
@@ -46,7 +46,7 @@
     }
     @media screen and (max-width: 550px) {
       span.number {
-        font-size: toRem(140);
+        font-size: 8.75rem;
       }
       .image-container {
         height: 140px;
@@ -59,7 +59,7 @@
     }
     @media screen and (max-width: 450px) {
       span.number {
-        font-size: toRem(120);
+        font-size: 7.5rem;
       }
       .image-container {
         height: 120px;
@@ -94,16 +94,16 @@
       color: $white;
       padding: 0.75rem 2rem;
       border-radius: 10px;
-      font-size: toRem(24);
+      font-size: 1.5rem;
       font-weight: 700;
       margin-top: 2rem;
     }
     @media screen and (max-width: 450px) {
       h1 {
-        font-size: toRem(24);
+        font-size: 1.5rem;
       }
       p.text {
-        font-size: toRem(14);
+        font-size: 0.875rem;
       }
     }
   }

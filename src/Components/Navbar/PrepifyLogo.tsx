@@ -14,9 +14,9 @@ const PrepifyLogo = () => {
       <NavLink to='/' className='nav-logo'>
         Prepify
       </NavLink>
-      <div className='beta-tag' onClick={handleOpenReleaseNotes}>
+      <button className='beta-tag' onClick={handleOpenReleaseNotes}>
         Beta
-      </div>
+      </button>
       <ReleaseNotes
         releaseNotesModalIsOpen={releaseNotesModalIsOpen}
         setReleaseNotesModalIsOpen={setReleaseNotesModalIsOpen}

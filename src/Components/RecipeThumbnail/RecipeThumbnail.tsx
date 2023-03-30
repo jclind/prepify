@@ -28,7 +28,7 @@ const RecipeThumbnail = ({ recipe, loading }: RecipeThumbnailType) => {
 
   return (
     <>
-      <div onClick={handleOnClick} className='recipe-thumbnail'>
+      <button onClick={handleOnClick} className='recipe-thumbnail'>
         <div className='img-container'>
           {loading || !recipe?.recipeImage ? (
             <Skeleton className='img' baseColor={skeletonColor} />
@@ -36,13 +36,13 @@ const RecipeThumbnail = ({ recipe, loading }: RecipeThumbnailType) => {
             <img className='img' src={recipe.recipeImage} alt={recipe.title} />
           )}
         </div>
-        <h4 className='title'>
+        <h1 className='title'>
           {loading ? (
             <Skeleton baseColor={skeletonColor} height={30} />
           ) : (
             recipe?.title
           )}
-        </h4>
+        </h1>
         <div className='price'>
           {loading || !recipe || !recipe.servingPrice || !recipe.servings ? (
             <Skeleton baseColor={skeletonColor} height={30} />
@@ -96,7 +96,7 @@ const RecipeThumbnail = ({ recipe, loading }: RecipeThumbnailType) => {
             )}
           </div>
         </div>
-      </div>
+      </button>
     </>
   )
 }

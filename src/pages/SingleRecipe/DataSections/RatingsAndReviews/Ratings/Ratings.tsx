@@ -54,6 +54,7 @@ const Ratings: FC<RatingsProps> = ({
               starDimension='30px'
               starSpacing='2px'
               name='rating'
+              tabIndex={1}
             />
           ) : (
             <Link to='/login' className='text'>

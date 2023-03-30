@@ -179,7 +179,7 @@
           }
           .info-content {
             .title {
-              font-size: toRem(16);
+              font-size: 1rem;
             }
             .data {
               gap: 1rem;
@@ -188,7 +188,7 @@
                 align-items: center;
                 gap: 0.25rem;
                 font-weight: 500;
-                font-size: toRem(12);
+                font-size: 0.75rem;
 
                 .icon {
                   height: 16px;
@@ -201,7 +201,7 @@
         @media screen and (max-width: 956px) {
           .info-content {
             .title {
-              font-size: toRem(18);
+              font-size: 1.125rem;
             }
           }
         }

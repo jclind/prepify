@@ -11,7 +11,7 @@
   .label-title {
     padding-bottom: 0.5rem;
     font-weight: 600;
-    font-size: toRem(14);
+    font-size: 0.875rem;
     text-transform: capitalize;
   }
 
@@ -39,7 +39,7 @@
       padding-right: 1rem;
       width: 100%;
       height: 100%;
-      font-size: toRem(16);
+      font-size: 1rem;
       font-weight: 500;
       background: $secondary-background;
       border-radius: $border-radius;

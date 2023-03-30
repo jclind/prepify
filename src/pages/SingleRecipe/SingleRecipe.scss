@@ -43,12 +43,16 @@
           justify-content: center;
           align-items: center;
           gap: 0.5rem;
-          font-size: toRem(18);
+          font-size: 1.125rem;
           border: 1px solid $gray-400;
           background: $gray-300;
           padding: 0.35rem 0.75rem;
           border-radius: $border-radius;
           height: 35px !important;
+
+          &:focus {
+            @include outline();
+          }
 
           .loading {
             z-index: 10;
@@ -136,7 +140,7 @@
           margin: 0;
         }
         .recipe-price {
-          font-size: toRem(12);
+          font-size: 0.75rem;
           font-weight: 700;
           color: $primary;
           text-transform: uppercase;
@@ -173,11 +177,11 @@
               width: 30px;
             }
             h3 {
-              font-size: toRem(16);
+              font-size: 1rem;
               font-weight: 700;
             }
             .data {
-              font-size: toRem(16);
+              font-size: 1rem;
               color: $secondary-text;
             }
           }
@@ -203,7 +207,7 @@
         .actions {
           gap: 1rem;
           button {
-            font-size: toRem(16) !important;
+            font-size: 1rem !important;
           }
         }
       }
@@ -224,7 +228,7 @@
             text-transform: capitalize;
           }
           .recipe-price {
-            font-size: toRem(12);
+            font-size: 0.75rem;
             font-weight: 700;
             color: $primary;
             text-transform: uppercase;
@@ -249,7 +253,7 @@
         .actions {
           gap: 1rem;
           button {
-            font-size: toRem(18) !important;
+            font-size: 1.125rem !important;
           }
         }
       }
@@ -260,7 +264,7 @@
         .actions {
           justify-content: center;
           button {
-            font-size: toRem(16) !important;
+            font-size: 1rem !important;
           }
           .action.skeleton {
             height: 35px;
@@ -292,7 +296,7 @@
             .data-element {
               h3,
               .data {
-                font-size: toRem(14);
+                font-size: 0.875rem;
               }
               .skeleton {
                 min-width: 82px;
@@ -316,7 +320,7 @@
         .actions {
           gap: 0.5rem;
           button {
-            font-size: toRem(14) !important;
+            font-size: 0.875rem !important;
           }
         }
       }
@@ -331,7 +335,7 @@
         max-width: 700px;
         width: 90%;
         .tag-label {
-          font-size: toRem(16);
+          font-size: 1rem;
           color: $primary;
           font-weight: 700;
         }
@@ -344,6 +348,10 @@
             padding-right: 0.5rem;
             cursor: pointer;
             text-decoration: none;
+
+            &:focus {
+              @include outline();
+            }
           }
           .tag.skeleton {
             height: 24px;
@@ -390,6 +398,9 @@
         &:hover {
           background: $primary-text;
           color: $primary-background;
+        }
+        &:focus {
+          @include outline();
         }
       }
       span {

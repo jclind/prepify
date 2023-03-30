@@ -27,12 +27,12 @@
     justify-content: center;
   }
   .heading {
-    // font-size: toRem(30);
+    // font-size: 1.875rem;
     padding-top: 1rem;
     text-align: center;
   }
   .release-tag {
-    font-size: toRem(18);
+    font-size: 1.125rem;
     font-weight: 700;
     color: $primary;
     padding-top: 0.5rem;
@@ -56,7 +56,7 @@
         display: flex;
         align-items: center;
         gap: 0.5rem;
-        font-size: toRem(20);
+        font-size: 1.25rem;
         font-weight: 700;
         // color: $primary;
         text-align: left;
@@ -92,7 +92,7 @@
 
   .all-release-notes-btn {
     font-weight: 600;
-    font-size: toRem(16);
+    font-size: 1rem;
     text-decoration: underline;
     text-align: left;
     margin: 0;
