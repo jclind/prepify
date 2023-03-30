@@ -48,6 +48,16 @@ input {
     color: $tertiary-text;
   }
 }
+button {
+  &:focus {
+    @include outline();
+  }
+}
+a {
+  &:focus {
+    @include outline();
+  }
+}
 
 .btn {
   background: none;

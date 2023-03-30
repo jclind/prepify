@@ -16,6 +16,9 @@
       height: 30px;
       width: 30px;
     }
+    &:focus {
+      @include outline();
+    }
   }
   .release-notes-content-container {
     display: flex;
