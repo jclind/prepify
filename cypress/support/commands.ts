@@ -55,6 +55,13 @@ Cypress.Commands.add('login', () => {
     'https://us-east-1.aws.data.mongodb-api.com/app/prepify-ixumn/endpoint/getUsername*',
     { body: 'testinguser' }
   )
+  // Logout
+  cy.get('button').then($buttons => {
+    if ($buttons.filter(':contains("login")').length <= 0) {
+      cy.contains('button', 'logout').click({ force: true })
+    }
+  })
+
   cy.contains('a', 'login').click()
 
   // Login page
