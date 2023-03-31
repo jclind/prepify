@@ -64,7 +64,7 @@ const Navbar: FC<NavbarProps> = ({ darkNavLinks, loading }) => {
       <NavLink
         to='/login'
         className={({ isActive }) => {
-          return isActive ? 'nav-link active' : 'nav-link'
+          return isActive ? 'nav-link active login' : 'nav-link login'
         }}
       >
         login
@@ -72,7 +72,7 @@ const Navbar: FC<NavbarProps> = ({ darkNavLinks, loading }) => {
       <NavLink
         to='/signup'
         className={({ isActive }) => {
-          return isActive ? 'nav-link active' : 'nav-link'
+          return isActive ? 'nav-link active signup' : 'nav-link signup'
         }}
       >
         signup
@@ -128,7 +128,7 @@ const Navbar: FC<NavbarProps> = ({ darkNavLinks, loading }) => {
             <BiHelpCircle className='icon' />
             <div className='text'>Help</div>
           </NavLink>
-          <button className='nav-link btn' onClick={authRes?.logout}>
+          <button className='nav-link btn logout' onClick={authRes?.logout}>
             <BiLogOut className='icon' />
             <div className='text'>logout</div>
           </button>

@@ -56,8 +56,9 @@ Cypress.Commands.add('login', () => {
     { body: 'testinguser' }
   )
   // Logout
-  cy.get('button').then($buttons => {
-    if ($buttons.filter(':contains("login")').length <= 0) {
+  cy.get('body').contains('Save money.')
+  cy.get('body').then($body => {
+    if ($body.text().includes('Create Recipe')) {
       cy.contains('button', 'logout').click({ force: true })
     }
   })
