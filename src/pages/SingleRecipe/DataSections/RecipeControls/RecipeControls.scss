@@ -1,0 +1,105 @@
+@import '../../../../helpers.scss';
+
+.recipe-controls-container {
+  display: flex;
+  justify-content: flex-end;
+  padding-bottom: 1rem;
+  width: 100%;
+  .btns-container {
+    display: flex;
+    gap: 1rem;
+  }
+  button {
+    border: 1px solid $secondary-text;
+    padding: 0.5rem 0.75rem;
+    border-radius: $border-radius;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: $primary-text;
+    &:focus {
+      @include outline();
+    }
+  }
+  button.edit-btn {
+    background: none;
+    transition: all 0.1s linear;
+    &:hover {
+      color: $primary-background;
+      background: $primary-text;
+    }
+  }
+  button.delete-btn {
+    // background: $primary-text;
+    // color: $primary-background;
+    background: none;
+    transition: all 0.1s linear;
+    &:hover {
+      color: $primary-background;
+      background: $error-red;
+      border-color: $error-red;
+    }
+  }
+}
+.confirm-delete-modal {
+  position: relative;
+  .close-modal {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    .icon {
+      height: 30px;
+      width: 30px;
+    }
+  }
+  .content {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    h4 {
+      font-weight: 700;
+      font-size: 1.2rem;
+      padding-bottom: 1rem;
+    }
+    p {
+      font-weight: 500;
+    }
+    .error {
+      margin-top: 1rem;
+      margin-bottom: 0;
+    }
+    .btns {
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      padding-top: 2rem;
+
+      button {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 1rem;
+        font-weight: 600;
+        border-radius: $border-radius;
+        border: none;
+        width: 180px;
+        height: 45px;
+        cursor: pointer;
+      }
+      button.cancel {
+        background: $secondary-background;
+        &:hover {
+          background: $tertiary-background;
+        }
+      }
+      button.confirm {
+        background: $error-red;
+        color: $primary-background;
+        &:hover {
+          opacity: 0.9;
+        }
+      }
+    }
+  }
+}

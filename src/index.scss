@@ -29,15 +29,15 @@ body {
 
 h2 {
   font-weight: 600;
-  font-size: toRem(24);
+  font-size: 1.5rem;
 }
 h3 {
   font-weight: 500;
-  font-size: toRem(24);
+  font-size: 1.5rem;
 }
 h4 {
   font-weight: 500;
-  font-size: toRem(18);
+  font-size: 1.125rem;
 }
 p {
   line-height: 1.75;
@@ -48,13 +48,23 @@ input {
     color: $tertiary-text;
   }
 }
+button {
+  &:focus {
+    @include outline();
+  }
+}
+a {
+  &:focus {
+    @include outline();
+  }
+}
 
 .btn {
   background: none;
   outline: none;
   border: none;
   cursor: pointer;
-  font-size: toRem(24);
+  font-size: 1.5rem;
   font-weight: 500;
   color: $primary-text;
 }
@@ -87,7 +97,7 @@ input {
   }
 
   @media screen and (max-width: 375px) {
-    font-size: toRem(20);
+    font-size: 1.25rem;
   }
 }
 
@@ -210,7 +220,7 @@ input {
   display: flex;
   justify-content: center;
   align-items: center;
-  font-size: toRem(24);
+  font-size: 1.5rem;
   font-weight: 700;
   height: 100vh;
   width: 100%;

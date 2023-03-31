@@ -114,15 +114,19 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
   ) => {
     setLoading(true)
     if (!username) {
+      setLoading(false)
       return setError('Must enter username')
     } else if (!email) {
+      setLoading(false)
       return setError('Must enter email')
     } else if (!password) {
+      setLoading(false)
       return setError('Must enter password')
     }
 
     AuthAPI.checkUsernameAvailability(username).then(isAvailable => {
       if (!isAvailable) {
+        setLoading(false)
         return setError(`${username} has already been taken`)
       }
       createUserWithEmailAndPassword(auth, email, password)
@@ -136,7 +140,13 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
         })
         .catch(err => {
           const errCode = err.code
-          setError(errCode)
+          if (err.code === 'auth/weak-password') {
+            setError('Password must be 6 characters or more')
+          } else if (err.code === 'auth/email-already-in-use') {
+            setError('Email is already in use')
+          } else {
+            setError(errCode)
+          }
           setLoading(false)
         })
     })

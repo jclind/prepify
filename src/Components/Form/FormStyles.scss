@@ -8,15 +8,16 @@
   .form {
     display: flex;
     flex-direction: column;
-    width: 100vw;
+    width: 95%;
     max-width: 350px;
+    margin: 0 auto;
     .title {
       padding-bottom: 1rem;
     }
     .prompt {
       padding-bottom: 2rem;
       font-weight: 500;
-      font-size: toRem(16);
+      font-size: 1rem;
       color: $secondary-text;
       .prompt-btn {
         color: $secondary;
@@ -32,7 +33,7 @@
       .forgot-password-prompt {
         text-decoration: none;
         font-weight: 500;
-        font-size: toRem(14);
+        font-size: 0.875rem;
         color: $secondary-text;
         width: fit-content;
       }
@@ -58,7 +59,7 @@
   .available,
   .not-available {
     font-weight: 600;
-    font-size: toRem(16);
+    font-size: 1rem;
   }
   .available {
     color: $success-green;
@@ -73,7 +74,7 @@
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    font-size: toRem(18);
+    font-size: 1.125rem;
     .icon {
       height: 40px;
       width: 40px;

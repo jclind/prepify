@@ -1,0 +1,107 @@
+@import '../../../../helpers.scss';
+
+.directions {
+  margin: 0 auto;
+  max-width: 700px;
+  width: 700px;
+  margin-top: 2rem;
+
+  .list.multi-direction-list {
+    display: flex;
+    flex-direction: column;
+
+    margin-bottom: 2rem;
+    // border-bottom: 1px solid $gray-400;
+
+    .title {
+      display: flex;
+      align-items: center;
+      text-transform: capitalize;
+      padding-bottom: 0.5rem;
+      gap: 0.5rem;
+      .text {
+        color: $primary;
+        font-weight: 700;
+        font-size: 1rem;
+        white-space: nowrap;
+      }
+      .divider {
+        height: 1px;
+        width: 100%;
+        background: $gray-400;
+      }
+    }
+  }
+  .directions-lists {
+    .list {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+      margin: 0 auto;
+
+      margin-top: 2rem;
+
+      .instruction {
+        position: relative;
+        display: flex;
+        gap: 1.5rem;
+
+        // .number-container {
+        //   position: relative;
+        //   display: flex;
+        //   justify-content: center;
+        //   align-items: center;
+
+        .number {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          margin-top: 0.25rem;
+          height: 25px;
+          width: 25px;
+          background: $primary-text;
+          color: $white;
+          font-weight: 700;
+          font-size: 1rem;
+          border-radius: 50%;
+        }
+        .number.skeleton {
+          background: $gray-400;
+          margin: 0;
+        }
+        // }
+        .content {
+          font-size: 1rem;
+          font-weight: 500;
+          max-width: 600px;
+          line-height: 1.5;
+        }
+        .content.skeleton {
+          min-width: 500px;
+          line-height: 1;
+        }
+      }
+    }
+  }
+
+  @media screen and (max-width: 540px) {
+    width: 95%;
+    margin-left: auto;
+    margin-right: auto;
+
+    .list {
+      .direction {
+        gap: 0.5rem;
+        .number {
+          height: 20px;
+          width: 20px;
+          font-size: 0.875rem;
+          line-height: 1.5;
+        }
+        .content {
+          font-size: 1rem;
+        }
+      }
+    }
+  }
+}

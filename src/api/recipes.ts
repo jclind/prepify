@@ -309,7 +309,6 @@ class RecipeAPIClass {
     reviewsPerPage = 5
   ) {
     const username = await AuthAPI.getUsername()
-    if (!username) return null
     const result = await http.get(
       `getReviews?username=${username}&recipeId=${recipeId}&page=${page}&reviewsPerPage=${reviewsPerPage}&filter=${filter}`
     )
