@@ -38,7 +38,6 @@ const ReviewsContainer: FC<ReviewsContainerProps> = ({
                 : [...reviewList, ...res.reviews]
             // Remove elements that are only ratings and not reviews
             const reviewArr = updatedArr.filter(review => review.reviewText)
-            console.log(reviewArr)
             setReviewList(reviewArr)
 
             if (Number(res.totalCount) > updatedArr.length) {

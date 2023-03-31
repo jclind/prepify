@@ -12,7 +12,6 @@ const TrendingRecipes = () => {
     RecipeAPI.getTrendingRecipes(4).then(res => {
       const resData: RecipeType[] = res
       setRecipes(resData)
-      console.log(resData)
     })
 
     // eslint-disable-next-line react-hooks/exhaustive-deps

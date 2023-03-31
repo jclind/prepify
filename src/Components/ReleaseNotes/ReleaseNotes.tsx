@@ -28,9 +28,10 @@ const customStyles = {
   },
 }
 
-const RELEASE_DATE = '3/14/2023'
-const version = '2.3.0-beta'
-const description = ''
+const RELEASE_DATE = '3/31/2023'
+const version = '2.4.0-beta'
+const description =
+  "The latest website release includes improvements to make the website more accessible for all users, such as improved keyboard navigation. We've also integrated Cypress for end-to-end testing to ensure the website is running smoothly."
 
 type ReleaseNotesProps = {
   releaseNotesModalIsOpen: boolean
@@ -46,10 +47,10 @@ const ReleaseNotes: FC<ReleaseNotesProps> = ({
   }
 
   const additions: string[] = [
-    "Added 'Made It' button functionality for users to mark and keep track of recipes they have made.",
+    'Added Cypress.io for end-to-end testing. Implemented several general website/page wide testing to improve user experience functionality confidence.',
   ]
   const bugFixes: string[] = []
-  const improvements: string[] = []
+  const improvements: string[] = ['Updated overall website accessibility.']
 
   const location = useLocation()
 
