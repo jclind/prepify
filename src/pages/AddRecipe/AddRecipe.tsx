@@ -137,7 +137,7 @@ const AddRecipe = () => {
         <title>Create New Recipe</title>
         <link
           rel='canonical'
-          href='https://www.prepify.netlify.app/add-recipe'
+          href='https://www.prepifymeals.com/add-recipe'
         />
         <meta
           name='description'

@@ -89,7 +89,7 @@ const Help: FC = () => {
           name='description'
           content='Contact Prepify support for help with meal planning or questions about Prepify. Our friendly team is dedicated to assisting you with your queries and health goals.'
         />
-        <link rel='canonical' href='https://www.prepify.netlify.app/help' />
+        <link rel='canonical' href='https://www.prepifymeals.com/help' />
       </Helmet>
       <div className='help-page page'>
         <div className='form-container'>
