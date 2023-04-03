@@ -4,7 +4,7 @@ import './Recipes.scss'
 import RecipeThumbnail from '../../Components/RecipeThumbnail/RecipeThumbnail'
 import RecipeFilters from '../../Components/RecipeFilters/RecipeFilters'
 import SearchRecipesInput from '../../Components/SearchRecipesInput/SearchRecipesInput'
-import { Helmet } from 'react-helmet'
+import { Helmet } from 'react-helmet-async'
 import RecipeAPI from 'src/api/recipes'
 import { RecipeType } from 'types'
 import { TailSpin } from 'react-loader-spinner'
@@ -77,6 +77,10 @@ const Recipes = () => {
       <Helmet>
         <meta charSet='utf-8' />
         <title>Prepify | Search Recipes</title>
+        <meta
+          name='description'
+          content="Find healthy and budget-friendly recipes on Prepify's search page. Get meal prices and nutrition info for easy meal planning. Cook delicious meals with our flavorful recipes."
+        />
       </Helmet>
       <div className='page recipes-page'>
         <h1 className='title'>Recipes</h1>

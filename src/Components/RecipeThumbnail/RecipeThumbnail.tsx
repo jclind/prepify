@@ -33,16 +33,25 @@ const RecipeThumbnail = ({ recipe, loading }: RecipeThumbnailType) => {
           {loading || !recipe?.recipeImage ? (
             <Skeleton className='img' baseColor={skeletonColor} />
           ) : (
-            <img className='img' src={recipe.recipeImage} alt={recipe.title} />
+            <img
+              className='img'
+              height={300}
+              width={200}
+              src={recipe.recipeImage}
+              alt={recipe.title}
+              title={recipe.title}
+              loading='eager'
+            />
           )}
         </div>
-        <h1 className='title'>
-          {loading ? (
+        <h3 className='title'>
+          <Skeleton baseColor={skeletonColor} height={30} />
+          {loading && recipe?.title ? (
             <Skeleton baseColor={skeletonColor} height={30} />
           ) : (
             recipe?.title
           )}
-        </h1>
+        </h3>
         <div className='price'>
           {loading || !recipe || !recipe.servingPrice || !recipe.servings ? (
             <Skeleton baseColor={skeletonColor} height={30} />

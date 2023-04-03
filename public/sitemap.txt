@@ -1,0 +1,11 @@
+https://prepifymeals.app/
+https://prepifymeals.app/login
+https://prepifymeals.app/signup
+https://prepifymeals.app/forgot-password
+https://prepifymeals.app/recipes
+https://prepifymeals.app/add-recipe
+https://prepifymeals.app/help
+https://prepifymeals.app/account
+https://prepifymeals.app/account/saved-recipes
+https://prepifymeals.com/account/ratings
+https://prepifymeals.com/account/your-recipes
