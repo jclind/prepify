@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://prepifymeals.app/</loc>
+  </url>
+  <url>
+    <loc>https://prepifymeals.app/login</loc>
+  </url>
+  <url>
+    <loc>https://prepifymeals.app/signup</loc>
+  </url>
+  <url>
+    <loc>https://prepifymeals.app/forgot-password</loc>
+  </url>
+  <url>
+    <loc>https://prepifymeals.app/recipes</loc>
+  </url>
+  <url>
+    <loc>https://prepifymeals.app/add-recipe</loc>
+  </url>
+  <url>
+    <loc>https://prepifymeals.app/help</loc>
+  </url>
+  <url>
+    <loc>https://prepifymeals.app/account</loc>
+  </url>
+  <url>
+    <loc>https://prepifymeals.app/account/saved-recipes</loc>
+  </url>
+  <url>
+    <loc>https://prepifymeals.com/account/ratings</loc>
+  </url>
+  <url>
+    <loc>https://prepifymeals.com/account/your-recipes</loc>
+  </url>
+</urlset>
