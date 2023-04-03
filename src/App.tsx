@@ -1,5 +1,6 @@
 import React from 'react'
 import { Routes, Route } from 'react-router-dom'
+import { HelmetProvider } from 'react-helmet-async'
 import AuthProvider from './context/AuthContext'
 
 import Home from './pages/Home/Home'
@@ -53,80 +54,82 @@ const AlertTemplate = ({ style, options, message, close }: any) => {
 
 function App() {
   return (
-    <AuthProvider>
-      <AlertProvider template={AlertTemplate} {...alertOptions}>
-        <Routes>
-          <Route
-            path='*'
-            element={
-              <Layout darkNavLinks={true}>
-                <NotFound />
-              </Layout>
-            }
-          />
-          <Route
-            path='/'
-            element={
-              <Layout>
-                <Home />
-              </Layout>
-            }
-          />
-          <Route
-            path='/recipes'
-            element={
-              <Layout darkNavLinks={true}>
-                <Recipes />
-              </Layout>
-            }
-          />
-
-          <Route
-            path='/recipes/:recipeId'
-            element={
-              <Layout darkNavLinks={true}>
-                <SingleRecipe />
-              </Layout>
-            }
-          />
-
-          <Route path='/' element={<PrivateRoute />}>
+    <HelmetProvider>
+      <AuthProvider>
+        <AlertProvider template={AlertTemplate} {...alertOptions}>
+          <Routes>
             <Route
-              path='/account'
+              path='*'
               element={
                 <Layout darkNavLinks={true}>
-                  <Account />
+                  <NotFound />
                 </Layout>
               }
-            >
-              <Route path='saved-recipes' element={<SavedRecipes />} />
-              <Route path='ratings' element={<UserRatings />} />
-              <Route path='your-recipes' element={<UserRecipes />} />
+            />
+            <Route
+              path='/'
+              element={
+                <Layout>
+                  <Home />
+                </Layout>
+              }
+            />
+            <Route
+              path='/recipes'
+              element={
+                <Layout darkNavLinks={true}>
+                  <Recipes />
+                </Layout>
+              }
+            />
+
+            <Route
+              path='/recipes/:recipeId'
+              element={
+                <Layout darkNavLinks={true}>
+                  <SingleRecipe />
+                </Layout>
+              }
+            />
+
+            <Route path='/' element={<PrivateRoute />}>
+              <Route
+                path='/account'
+                element={
+                  <Layout darkNavLinks={true}>
+                    <Account />
+                  </Layout>
+                }
+              >
+                <Route path='saved-recipes' element={<SavedRecipes />} />
+                <Route path='ratings' element={<UserRatings />} />
+                <Route path='your-recipes' element={<UserRecipes />} />
+              </Route>
+              <Route
+                path='/add-recipe'
+                element={
+                  <Layout darkNavLinks={true} navBackgroundColor='gray'>
+                    <AddRecipe />
+                  </Layout>
+                }
+              />
+              <Route
+                path='/help'
+                element={
+                  <Layout darkNavLinks={true}>
+                    <Help />
+                  </Layout>
+                }
+              />
             </Route>
-            <Route
-              path='/add-recipe'
-              element={
-                <Layout darkNavLinks={true}>
-                  <AddRecipe />
-                </Layout>
-              }
-            />
-            <Route
-              path='/help'
-              element={
-                <Layout darkNavLinks={true}>
-                  <Help />
-                </Layout>
-              }
-            />
-          </Route>
-          <Route path='/login' element={<Login />} />
-          <Route path='/signup' element={<Signup />} />
-          <Route path='/create-username' element={<CreateUsername />} />
-          <Route path='/forgot-password' element={<ForgotPassword />} />
-        </Routes>
-      </AlertProvider>
-    </AuthProvider>
+            <Route path='/login' element={<Login />} />
+            <Route path='/signup' element={<Signup />} />
+            <Route path='/create-username' element={<CreateUsername />} />
+            <Route path='/forgot-password' element={<ForgotPassword />} />
+          </Routes>
+        </AlertProvider>
+      </AuthProvider>
+    </HelmetProvider>
   )
 }
 
