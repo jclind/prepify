@@ -45,7 +45,7 @@ const AddReview: FC<AddReviewProps> = ({
   return (
     <>
       <div className={`review-open ${isReviewOpen ? 'visible' : ''}`}>
-        <h4 className='review-input-title'>Write Review:</h4>
+        <h3 className='review-input-title'>Write Review:</h3>
         {newReviewError && <div className='error'>{newReviewError}</div>}
         <textarea
           name='review'

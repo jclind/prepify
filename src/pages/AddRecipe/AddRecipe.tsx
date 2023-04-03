@@ -21,6 +21,7 @@ import { hrMinToMin } from 'src/util/hrMinToMin'
 import RecipeAPI from 'src/api/recipes'
 import styles from '../../_exports.scss'
 import AddRecipeFormError from './AddRecipeFormError'
+import { Helmet } from 'react-helmet-async'
 
 const AddRecipe = () => {
   const [addRecipeLoading, setAddRecipeLoading] = useState(false)
@@ -131,113 +132,135 @@ const AddRecipe = () => {
   }
 
   return (
-    <div className='add-recipe-page page'>
-      <LoadingBar
-        color={styles.primary}
-        progress={loadingProgress}
-        onLoaderFinished={() => setLoadingProgress(0)}
-      />
-      <div className='container'>
-        <div className='container-inner' ref={addRecipeFormRef}>
-          <div className='title input-field'>
-            <h2 className='recipe-form-input-label'>Title </h2>
-            {errors.title && <AddRecipeFormError error={errors.title} />}
-            <RecipeFormInput
-              placeholder='Add a title to your recipe.'
-              val={title}
-              setVal={setTitle}
-              characterLimit={60}
-            />
-          </div>
-          <div className='image-picker input-field'>
-            <h2 className='recipe-form-input-label'>Select Image</h2>
-            {errors.image && <AddRecipeFormError error={errors.image} />}
-            <ImagePicker image={recipeImage} setImage={setRecipeImage} />
-          </div>
-          <div className='description input-field'>
-            <h2 className='recipe-form-input-label'>Description</h2>
-            {errors.description && (
-              <AddRecipeFormError error={errors.description} />
-            )}
-            <RecipeFormTextArea
-              placeholder='Add a description to your recipe'
-              val={description}
-              setVal={setDescription}
-            />
-          </div>
-          <div className='servings input-field'>
-            <h2 className='recipe-form-input-label'>Servings</h2>
-            {errors.servings && <AddRecipeFormError error={errors.servings} />}
-            <ServingsInput servings={servings} setServings={setServings} />
-          </div>
-          <div className='prep-time input-field'>
-            <h2 className='recipe-form-input-label'>Prep Time</h2>
-            {errors.prepTime && <AddRecipeFormError error={errors.prepTime} />}
-            <TimeInput
-              label={'How long will your recipe take to prepare?'}
-              val={prepTime}
-              setVal={setPrepTime}
-            />
-          </div>
-          <div className='cook-time input-field'>
-            <h2 className='recipe-form-input-label'>Cook Time</h2>
-            {errors.cookTime && <AddRecipeFormError error={errors.cookTime} />}
-            <TimeInput
-              label={'How long will your recipe take to cook?'}
-              val={cookTime}
-              setVal={setCookTime}
-            />
-          </div>
-          <div className='ingredients input-field'>
-            <h2 className='recipe-form-input-label'>Ingredients</h2>
-            {errors.ingredients && (
-              <AddRecipeFormError error={errors.ingredients} />
-            )}
-            <IngredientsContainer
-              ingredients={ingredients}
-              setIngredients={setIngredients}
-            />
-          </div>
-          <div className='instructions input-field'>
-            <h2 className='recipe-form-input-label'>Instructions</h2>
-            {errors.instructions && (
-              <AddRecipeFormError error={errors.instructions} />
-            )}
-            <InstructionsContainer
-              instructions={instructions}
-              setInstructions={setInstructions}
-            />
-          </div>
-          <div className='cuisine input-field'>
-            <h2 className='recipe-form-input-label'>Cuisine</h2>
-            <CuisineSelector cuisine={cuisine} setCuisine={setCuisine} />
-          </div>
-          <div className='course input-field'>
-            <h2 className='recipe-form-input-label'>Course</h2>
-            {errors.mealType && <AddRecipeFormError error={errors.mealType} />}
-            <MealTypeSelector
-              mealTypes={mealTypes}
-              setMealTypes={setMealTypes}
-            />
-          </div>
-          <button
-            className={`submit-btn ${isFormValid ? 'valid' : 'invalid'}`}
-            onClick={handleAddRecipe}
-          >
-            {addRecipeLoading ? (
-              <TailSpin
-                height='30'
-                width='30'
-                color='white'
-                ariaLabel='loading'
+    <>
+      <Helmet>
+        <title>Create New Recipe</title>
+        <link
+          rel='canonical'
+          href='https://www.prepify.netlify.app/add-recipe'
+        />
+        <meta
+          name='description'
+          content='Create your own healthy recipe on Prepify'
+        />
+      </Helmet>
+      <div className='add-recipe-page page'>
+        <LoadingBar
+          color={styles.primary}
+          progress={loadingProgress}
+          onLoaderFinished={() => setLoadingProgress(0)}
+        />
+        <h1>Create New Recipe</h1>
+        <div className='container'>
+          <div className='container-inner' ref={addRecipeFormRef}>
+            <div className='title input-field'>
+              <h2 className='recipe-form-input-label'>Title </h2>
+              {errors.title && <AddRecipeFormError error={errors.title} />}
+              <RecipeFormInput
+                placeholder='Add a title to your recipe.'
+                val={title}
+                setVal={setTitle}
+                characterLimit={60}
               />
-            ) : (
-              'Create Recipe'
-            )}
-          </button>
+            </div>
+            <div className='image-picker input-field'>
+              <h2 className='recipe-form-input-label'>Select Image</h2>
+              {errors.image && <AddRecipeFormError error={errors.image} />}
+              <ImagePicker image={recipeImage} setImage={setRecipeImage} />
+            </div>
+            <div className='description input-field'>
+              <h2 className='recipe-form-input-label'>Description</h2>
+              {errors.description && (
+                <AddRecipeFormError error={errors.description} />
+              )}
+              <RecipeFormTextArea
+                placeholder='Add a description to your recipe'
+                val={description}
+                setVal={setDescription}
+              />
+            </div>
+            <div className='servings input-field'>
+              <h2 className='recipe-form-input-label'>Servings</h2>
+              {errors.servings && (
+                <AddRecipeFormError error={errors.servings} />
+              )}
+              <ServingsInput servings={servings} setServings={setServings} />
+            </div>
+            <div className='prep-time input-field'>
+              <h2 className='recipe-form-input-label'>Prep Time</h2>
+              {errors.prepTime && (
+                <AddRecipeFormError error={errors.prepTime} />
+              )}
+              <TimeInput
+                label={'How long will your recipe take to prepare?'}
+                val={prepTime}
+                setVal={setPrepTime}
+              />
+            </div>
+            <div className='cook-time input-field'>
+              <h2 className='recipe-form-input-label'>Cook Time</h2>
+              {errors.cookTime && (
+                <AddRecipeFormError error={errors.cookTime} />
+              )}
+              <TimeInput
+                label={'How long will your recipe take to cook?'}
+                val={cookTime}
+                setVal={setCookTime}
+              />
+            </div>
+            <div className='ingredients input-field'>
+              <h2 className='recipe-form-input-label'>Ingredients</h2>
+              {errors.ingredients && (
+                <AddRecipeFormError error={errors.ingredients} />
+              )}
+              <IngredientsContainer
+                ingredients={ingredients}
+                setIngredients={setIngredients}
+              />
+            </div>
+            <div className='instructions input-field'>
+              <h2 className='recipe-form-input-label'>Instructions</h2>
+              {errors.instructions && (
+                <AddRecipeFormError error={errors.instructions} />
+              )}
+              <InstructionsContainer
+                instructions={instructions}
+                setInstructions={setInstructions}
+              />
+            </div>
+            <div className='cuisine input-field'>
+              <h2 className='recipe-form-input-label'>Cuisine</h2>
+              <CuisineSelector cuisine={cuisine} setCuisine={setCuisine} />
+            </div>
+            <div className='course input-field'>
+              <h2 className='recipe-form-input-label'>Course</h2>
+              {errors.mealType && (
+                <AddRecipeFormError error={errors.mealType} />
+              )}
+              <MealTypeSelector
+                mealTypes={mealTypes}
+                setMealTypes={setMealTypes}
+              />
+            </div>
+            <button
+              className={`submit-btn ${isFormValid ? 'valid' : 'invalid'}`}
+              onClick={handleAddRecipe}
+            >
+              {addRecipeLoading ? (
+                <TailSpin
+                  height='30'
+                  width='30'
+                  color='white'
+                  ariaLabel='loading'
+                />
+              ) : (
+                'Create Recipe'
+              )}
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   )
 }
 

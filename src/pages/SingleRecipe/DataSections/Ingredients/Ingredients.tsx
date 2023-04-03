@@ -41,6 +41,10 @@ const IngredientItem = ({ ingr, loading }: IngredientItemProps) => {
                 className='img'
                 src={ingr.ingredientData.imagePath}
                 alt={ingr.parsedIngredient.ingredient ?? ''}
+                title={ingr.parsedIngredient.ingredient ?? ''}
+                loading='lazy'
+                height={50}
+                width={50}
               />
             ) : (
               <CiShoppingBasket className='img no-img' />

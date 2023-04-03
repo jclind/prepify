@@ -46,7 +46,7 @@ const Account = () => {
           <div className='info-container'>
             <div className='profile-image'>{nameInitial}</div>
             <div className='content'>
-              <div className='username'>{username && username}</div>
+              <h1 className='username'>{username && username}</h1>
               <div className='actions'>
                 <button className='edit-profile-btn btn'>Edit Profile</button>
               </div>

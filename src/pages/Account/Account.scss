@@ -29,7 +29,9 @@
         font-size: 1.875rem;
         font-weight: 700;
         justify-content: space-around;
-
+        .username {
+          font-size: 1.875rem;
+        }
         .edit-profile-btn {
           font-size: 1.125rem;
           border: 1px solid $primary-text;

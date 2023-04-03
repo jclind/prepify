@@ -14,8 +14,15 @@ nav {
   display: flex;
   height: s.$nav-height;
   // background: s.$primary;
-  width: 90%;
-  max-width: s.$max-width;
+  width: 100%;
+  .nav-center {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 0 auto;
+    width: 90%;
+    max-width: s.$max-width;
+  }
 
   .nav-header {
     .hamburger {
@@ -256,6 +263,13 @@ nav {
       color: s.$primary-text !important;
     }
   }
+}
+
+.background-gray {
+  background: s.$secondary-background;
+}
+.background-white {
+  background: white;
 }
 
 .prepify-logo.nav-link {
