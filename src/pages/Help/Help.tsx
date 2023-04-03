@@ -2,7 +2,7 @@ import React, { FC, useState } from 'react'
 import Select from 'react-select'
 import { useForm } from '@formspree/react'
 import './Help.scss'
-import { Helmet } from 'react-helmet'
+import { Helmet } from 'react-helmet-async'
 
 const options = [
   { value: 'bug', label: 'Reporting A Bug' },
@@ -85,6 +85,11 @@ const Help: FC = () => {
       <Helmet>
         <meta charSet='utf-8' />
         <title>Prepify | Help</title>
+        <meta
+          name='description'
+          content='Contact Prepify support for help with meal planning or questions about Prepify. Our friendly team is dedicated to assisting you with your queries and health goals.'
+        />
+        <link rel='canonical' href='https://www.prepify.netlify.app/help' />
       </Helmet>
       <div className='help-page page'>
         <div className='form-container'>
@@ -103,7 +108,7 @@ const Help: FC = () => {
             </div>
           ) : (
             <form className='report-form' onSubmit={handleSubmit}>
-              <h4 className='title'>Help Form</h4>
+              <h1 className='title'>Help Form</h1>
               {error && <div className='error'>{error}</div>}
               <div className='select-container'>
                 <div className='text'>Category</div>
