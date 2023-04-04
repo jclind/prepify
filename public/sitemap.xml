@@ -33,4 +33,10 @@
   <url>
     <loc>https://prepifymeals.com/account/your-recipes</loc>
   </url>
+  <url>
+    <loc>https://prepifymeals.com/settings</loc>
+  </url>
+  <url>
+    <loc>https://prepifymeals.com/settings/security</loc>
+  </url>
 </urlset>

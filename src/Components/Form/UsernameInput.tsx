@@ -1,6 +1,6 @@
 import React, { useEffect, FC, useState } from 'react'
 import FormInput from './FormInput'
-import { AiOutlineUser } from 'react-icons/ai'
+import { MdAlternateEmail } from 'react-icons/md'
 import AuthAPI from 'src/api/auth'
 
 type UsernameInputProps = {
@@ -54,7 +54,7 @@ const UsernameInput: FC<UsernameInputProps> = ({
   return (
     <>
       <FormInput
-        icon={<AiOutlineUser className='icon' />}
+        icon={<MdAlternateEmail className='icon' />}
         type='username'
         name='username'
         val={username}

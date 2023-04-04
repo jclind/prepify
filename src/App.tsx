@@ -29,6 +29,9 @@ import {
   AiOutlineClose,
 } from 'react-icons/ai'
 import { BiError } from 'react-icons/bi'
+import Settings from './pages/Settings/Settings'
+import Profile from './pages/Settings/SubSettings/Profile'
+import Security from './pages/Settings/SubSettings/Security'
 
 const alertOptions = {
   // you can also just use 'bottom center'
@@ -112,6 +115,17 @@ function App() {
                 <Route path='saved-recipes' element={<SavedRecipes />} />
                 <Route path='ratings' element={<UserRatings />} />
                 <Route path='your-recipes' element={<UserRecipes />} />
+              </Route>
+              <Route
+                path='/settings'
+                element={
+                  <Layout darkNavLinks={true}>
+                    <Settings />
+                  </Layout>
+                }
+              >
+                <Route path='' element={<Profile />} />
+                <Route path='security' element={<Security />} />
               </Route>
               <Route
                 path='/add-recipe'

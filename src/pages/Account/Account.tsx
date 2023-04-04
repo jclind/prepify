@@ -48,7 +48,12 @@ const Account = () => {
             <div className='content'>
               <h1 className='username'>{username && username}</h1>
               <div className='actions'>
-                <button className='edit-profile-btn btn'>Edit Profile</button>
+                <button
+                  className='edit-profile-btn btn'
+                  onClick={() => navigate('/settings')}
+                >
+                  Edit Profile
+                </button>
               </div>
             </div>
           </div>

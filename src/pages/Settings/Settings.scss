@@ -1,0 +1,26 @@
+@use '../../helpers.scss' as s;
+
+.page.settings-page {
+  h1 {
+    // margin: 0 auto;
+    text-align: center;
+  }
+  .link-options {
+    display: flex;
+    gap: 1rem;
+    margin: 1rem auto;
+    width: fit-content;
+    .selection {
+      font-size: 1.1rem;
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      text-decoration: none;
+      font-weight: 600;
+      color: s.$secondary-text;
+    }
+    .selection.active {
+      background: s.$secondary-background;
+      color: s.$primary-text;
+    }
+  }
+}

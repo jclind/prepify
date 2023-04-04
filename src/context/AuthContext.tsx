@@ -8,6 +8,7 @@ import {
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
   UserCredential,
+  updateProfile,
 } from 'firebase/auth'
 
 import { useNavigate } from 'react-router-dom'
@@ -31,6 +32,7 @@ type AuthContextValueType = {
     email: string,
     password: string,
     username: string,
+    displayName: string,
     setLoading: (val: boolean) => void,
     setSuccess: (val: string) => void,
     setError: (val: string) => void
@@ -108,6 +110,7 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
     email: string,
     password: string,
     username: string,
+    displayName: string,
     setLoading: (val: boolean) => void,
     setSuccess: (val: string) => void,
     setError: (val: string) => void
@@ -136,6 +139,9 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
             setLoading(false)
             setSuccess('Username successfully created!')
             return navigate('/')
+          })
+          updateProfile(cred.user, {
+            displayName: displayName,
           })
         })
         .catch(err => {
