@@ -55,9 +55,7 @@ const AlertTemplate = ({ style, options, message, close }: any) => {
 const ScrollToTop = () => {
   const { pathname } = useLocation()
   useEffect(() => {
-    console.log('testing')
     document.querySelector('body')?.scrollTo(0, 0)
-    console.log(document.querySelector('body'))
   }, [pathname])
   return null
 }
@@ -66,7 +64,6 @@ function App() {
     <HelmetProvider>
       <AuthProvider>
         <AlertProvider template={AlertTemplate} {...alertOptions}>
-          {/* <div className='app-container'> */}
           <ScrollToTop />
           <Routes>
             <Route
@@ -138,7 +135,6 @@ function App() {
             <Route path='/create-username' element={<CreateUsername />} />
             <Route path='/forgot-password' element={<ForgotPassword />} />
           </Routes>
-          {/* </div> */}
         </AlertProvider>
       </AuthProvider>
     </HelmetProvider>
