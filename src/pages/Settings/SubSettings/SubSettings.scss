@@ -5,25 +5,54 @@
   width: 90%;
   margin: 0 auto;
 
-  .user-photo-container {
+  .user-photo-row {
     display: flex;
     align-items: center;
     gap: 2rem;
     padding-top: 2rem;
-    .profile-img {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 90px;
-      width: 90px;
-      border-radius: 50%;
-      object-fit: cover;
-    }
-    .profile-img.not-set {
-      color: s.$primary;
-      font-weight: 500;
-      font-size: 3.125rem;
-      background: s.$primary-text;
+
+    .user-photo-container {
+      position: relative;
+      .profile-img {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 90px;
+        width: 90px;
+        border-radius: 50%;
+        object-fit: cover;
+      }
+      .profile-img.not-set {
+        color: s.$primary;
+        font-weight: 500;
+        font-size: 3.125rem;
+        background: s.$primary-text;
+      }
+      .remove-img-btn {
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 28px;
+        width: 28px;
+        background: s.$error-red;
+        border: none;
+        border-radius: 50%;
+        cursor: pointer;
+
+        &:focus {
+          @include s.outline;
+        }
+
+        .close-icon {
+          height: 18px;
+          width: 18px;
+          color: s.$primary-background;
+          stroke-width: 50;
+        }
+      }
     }
     .upload-img-container {
       padding-top: 1.5rem;
@@ -39,6 +68,9 @@
         cursor: pointer;
         &:hover {
           opacity: 0.8;
+        }
+        &:focus {
+          @include s.outline;
         }
       }
       p.text {

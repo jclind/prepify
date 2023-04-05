@@ -4,6 +4,7 @@ import { useAuth } from 'src/context/AuthContext'
 import AuthAPI from 'src/api/auth'
 import { useAlert } from 'react-alert'
 import { TailSpin } from 'react-loader-spinner'
+import { AiOutlineClose } from 'react-icons/ai'
 
 type InputContainerProps = {
   label: string
@@ -112,7 +113,7 @@ const Profile: FC = () => {
     }
     const data = {
       ...(displayName !== authRes?.user?.displayName && { displayName }),
-      ...(imgURL !== authRes?.user?.photoURL && { imgFile }),
+      ...(imgURL !== authRes?.user?.photoURL ? { imgFile } : { imgFile: null }),
       username,
     }
     authRes?.updateProfileData(data).then(() => {
@@ -126,14 +127,27 @@ const Profile: FC = () => {
 
   return (
     <div className='settings-component'>
-      <div className={`user-photo-container`}>
-        {imgURL ? (
-          <img src={imgURL} alt='profile avatar' className='profile-img' />
-        ) : (
-          <div className='profile-img not-set'> {nameInitial}</div>
-        )}
+      <div className='user-photo-row'>
+        <div className='user-photo-container'>
+          {imgURL ? (
+            <>
+              <img src={imgURL} alt='profile avatar' className='profile-img' />
+              <button
+                className='remove-img-btn'
+                onClick={() => {
+                  setImgFile(null)
+                  setImgURL('')
+                }}
+              >
+                <AiOutlineClose className='close-icon' />
+              </button>
+            </>
+          ) : (
+            <div className='profile-img not-set'>{nameInitial}</div>
+          )}
+        </div>
         <div className='upload-img-container'>
-          <label htmlFor='upload-img' className='upload-img'>
+          <label htmlFor='upload-img' className='upload-img' tabIndex={0}>
             Upload Photo
           </label>
           <input

@@ -85,6 +85,9 @@ nav {
         overflow: hidden;
 
         .profile-image {
+          display: flex;
+          justify-content: center;
+          align-items: center;
           height: 45px;
           width: 45px;
           object-fit: contain;

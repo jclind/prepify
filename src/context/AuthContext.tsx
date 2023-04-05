@@ -190,19 +190,23 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
       const storage = getStorage()
       let profilePhotoURL = ''
       if (imgFile) {
-        console.log('test')
         const profilePhotosRef = ref(storage, `profilePhotos/${imgFile.name}`)
         await uploadBytes(profilePhotosRef, imgFile)
         profilePhotoURL = await getDownloadURL(profilePhotosRef)
       }
-      console.log(profilePhotoURL)
       if (username && username !== currUsername) {
         await AuthAPI.setUsername(user.uid, username)
       }
+      console.log({
+        ...(profilePhotoURL
+          ? { photoURL: profilePhotoURL }
+          : { photoURL: null }),
+      })
       await updateProfile(user, {
-        ...(profilePhotoURL && { photoURL: profilePhotoURL }),
+        ...(profilePhotoURL ? { photoURL: profilePhotoURL } : { photoURL: '' }),
         ...(displayName && { displayName }),
       })
+      console.log(user)
     }
   }
 
