@@ -111,7 +111,15 @@ const Navbar: FC<NavbarProps> = ({
             />
           ) : (
             <NavLink to='/account' className='account-link'>
-              {nameInitial}
+              {authRes?.user?.photoURL ? (
+                <img
+                  src={authRes.user.photoURL}
+                  alt='Profile Avatar'
+                  className='profile-image'
+                />
+              ) : (
+                <div className='profile-image not-set'>{nameInitial}</div>
+              )}
             </NavLink>
           )}
         </div>

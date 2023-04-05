@@ -48,10 +48,6 @@ const Profile: FC = () => {
 
   const authRes = useAuth()
   useEffect(() => {
-    alert.show('Profile updated!', {
-      timeout: 30000,
-      type: 'success',
-    })
     setLoading(true)
     if (authRes?.user) {
       AuthAPI.getUsername()
@@ -93,11 +89,9 @@ const Profile: FC = () => {
       }
       setImgFile(file)
       setImgURL(URL.createObjectURL(file))
-      // onImageSelected(file)
     } else {
       setImgFile(null)
       setImgURL('')
-      // onImageSelected(null)
     }
   }
 
@@ -134,7 +128,7 @@ const Profile: FC = () => {
     <div className='settings-component'>
       <div className={`user-photo-container`}>
         {imgURL ? (
-          <img src={imgURL} alt='profile photo' className='profile-img' />
+          <img src={imgURL} alt='profile avatar' className='profile-img' />
         ) : (
           <div className='profile-img not-set'> {nameInitial}</div>
         )}

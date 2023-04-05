@@ -53,7 +53,16 @@ const Account = () => {
       <div className='page account-page'>
         <section className='account-header'>
           <div className='info-container'>
-            <div className='profile-image'>{nameInitial}</div>
+            {authRes?.user?.photoURL ? (
+              <img
+                src={authRes.user.photoURL}
+                alt='Profile Avatar'
+                className='profile-image'
+              />
+            ) : (
+              <div className='profile-image not-set'>{nameInitial}</div>
+            )}
+
             <div className='content'>
               <h1 className='username'>{username && username}</h1>
               <div className='actions'>
