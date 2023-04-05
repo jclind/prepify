@@ -31,6 +31,7 @@ const Settings = () => {
               className={
                 currPath === link.path ? 'active selection' : 'selection'
               }
+              key={link.path}
             >
               {link.name}
             </Link>

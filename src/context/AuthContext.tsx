@@ -14,6 +14,7 @@ import {
 import { useNavigate } from 'react-router-dom'
 import AuthAPI from 'src/api/auth'
 import { TailSpin } from 'react-loader-spinner'
+import { getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage'
 
 export function useAuth() {
   return useContext(AuthContext)
@@ -43,6 +44,11 @@ type AuthContextValueType = {
     setError: (val: string) => void
   ) => void
   authLoading: boolean
+  updateProfileData: (data: {
+    displayName?: string
+    username?: string
+    imgFile?: File | null
+  }) => Promise<void>
 }
 
 type AuthProviderProps = {
@@ -172,6 +178,34 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
       })
   }
 
+  const updateProfileData = async (data: {
+    displayName?: string
+    username?: string
+    imgFile?: File | null
+  }) => {
+    if (user) {
+      const currUsername = await AuthAPI.getUsername()
+      const { displayName, username, imgFile } = data
+
+      const storage = getStorage()
+      let profilePhotoURL = ''
+      if (imgFile) {
+        console.log('test')
+        const profilePhotosRef = ref(storage, `profilePhotos/${imgFile.name}`)
+        await uploadBytes(profilePhotosRef, imgFile)
+        profilePhotoURL = await getDownloadURL(profilePhotosRef)
+      }
+      console.log(profilePhotoURL)
+      if (username && username !== currUsername) {
+        await AuthAPI.setUsername(user.uid, username)
+      }
+      await updateProfile(user, {
+        ...(profilePhotoURL && { photoURL: profilePhotoURL }),
+        ...(displayName && { displayName }),
+      })
+    }
+  }
+
   // Check for auth status on page load
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(userInstance => {
@@ -215,6 +249,7 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
     signUp,
     forgotPassword,
     authLoading: loading,
+    updateProfileData,
   }
 
   return (

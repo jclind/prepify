@@ -3,6 +3,7 @@ import { useLocation, useNavigate, Link, Outlet } from 'react-router-dom'
 import './Account.scss'
 import { Helmet } from 'react-helmet'
 import AuthAPI from '../../api/auth'
+import { useAuth } from 'src/context/AuthContext'
 
 const Account = () => {
   const [nameInitial, setNameInitial] = useState('')
@@ -14,17 +15,25 @@ const Account = () => {
   const location = useLocation()
   const navigate = useNavigate()
 
+  const authRes = useAuth()
+
   useEffect(() => {
     if (uid) {
-      AuthAPI.getUsername(uid).then(val => {
-        if (val) {
-          setUsername(val)
-          const i = val.charAt(0).toUpperCase()
-          setNameInitial(i)
-        } else {
-          setNameInitial('null')
-        }
-      })
+      const displayName = authRes?.user?.displayName
+      if (displayName) {
+        const i = displayName.charAt(0).toUpperCase()
+        setNameInitial(i)
+      } else {
+        AuthAPI.getUsername(uid).then(val => {
+          if (val) {
+            setUsername(val)
+            const i = val.charAt(0).toUpperCase()
+            setNameInitial(i)
+          } else {
+            setNameInitial('null')
+          }
+        })
+      }
     }
   }, [uid])
 
