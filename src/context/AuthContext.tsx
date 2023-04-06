@@ -8,11 +8,18 @@ import {
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
   UserCredential,
+  updateProfile,
+  updateEmail,
+  reauthenticateWithCredential,
+  EmailAuthProvider,
+  updatePassword,
 } from 'firebase/auth'
 
 import { useNavigate } from 'react-router-dom'
 import AuthAPI from 'src/api/auth'
 import { TailSpin } from 'react-loader-spinner'
+import { getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage'
+import { ErrorWithData } from 'src/util/ErrorWithData'
 
 export function useAuth() {
   return useContext(AuthContext)
@@ -31,6 +38,7 @@ type AuthContextValueType = {
     email: string,
     password: string,
     username: string,
+    displayName: string,
     setLoading: (val: boolean) => void,
     setSuccess: (val: string) => void,
     setError: (val: string) => void
@@ -41,6 +49,14 @@ type AuthContextValueType = {
     setError: (val: string) => void
   ) => void
   authLoading: boolean
+  updateProfileData: (data: {
+    displayName?: string
+    username?: string
+    imgFile?: File | null
+    email?: string
+    password?: string
+  }) => Promise<void>
+  changePassword: (oldPass: string, newPass: string) => Promise<void>
 }
 
 type AuthProviderProps = {
@@ -108,6 +124,7 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
     email: string,
     password: string,
     username: string,
+    displayName: string,
     setLoading: (val: boolean) => void,
     setSuccess: (val: string) => void,
     setError: (val: string) => void
@@ -136,6 +153,9 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
             setLoading(false)
             setSuccess('Username successfully created!')
             return navigate('/')
+          })
+          updateProfile(cred.user, {
+            displayName: displayName,
           })
         })
         .catch(err => {
@@ -166,6 +186,52 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
       })
   }
 
+  const updateProfileData = async (data: {
+    displayName?: string
+    username?: string
+    imgFile?: File | null
+    email?: string
+    password?: string
+  }) => {
+    if (user) {
+      const currUsername = await AuthAPI.getUsername()
+      const { displayName, username, imgFile, email, password } = data
+
+      const storage = getStorage()
+      let profilePhotoURL = ''
+      if (imgFile) {
+        const profilePhotosRef = ref(storage, `profilePhotos/${imgFile.name}`)
+        await uploadBytes(profilePhotosRef, imgFile)
+        profilePhotoURL = await getDownloadURL(profilePhotosRef)
+      }
+      if (username && username !== currUsername) {
+        await AuthAPI.setUsername(user.uid, username)
+      }
+      if (email && user.email && email !== user.email) {
+        if (!password) {
+          throw new ErrorWithData(
+            'password-required',
+            'Password Is Required For Reauthentication'
+          )
+        }
+        const credential = EmailAuthProvider.credential(user.email, password)
+        await reauthenticateWithCredential(user, credential)
+        await updateEmail(user, email)
+      }
+      await updateProfile(user, {
+        ...(profilePhotoURL ? { photoURL: profilePhotoURL } : { photoURL: '' }),
+        ...(displayName && { displayName }),
+      })
+    }
+  }
+  const changePassword = async (oldPass: string, newPass: string) => {
+    if (user && user.email) {
+      const credential = EmailAuthProvider.credential(user.email, oldPass)
+      await reauthenticateWithCredential(user, credential)
+      await updatePassword(user, newPass)
+    }
+  }
+
   // Check for auth status on page load
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(userInstance => {
@@ -175,7 +241,7 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
 
         // // If the authentication is anything other than password, send getUsername to check if username exists for that user
         // if (providerId !== 'password') {
-        //   // // !!FIX MEEEEEE
+        //   // // !!FIX ME
 
         // }
 
@@ -209,6 +275,8 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
     signUp,
     forgotPassword,
     authLoading: loading,
+    updateProfileData,
+    changePassword,
   }
 
   return (

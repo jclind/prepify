@@ -1,0 +1,209 @@
+@use '../../../helpers.scss' as s;
+
+.settings-component {
+  max-width: 575px;
+  width: 90%;
+  margin: 0 auto;
+
+  .user-photo-row {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    padding-top: 2rem;
+
+    .user-photo-container {
+      position: relative;
+      .profile-img {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 90px;
+        width: 90px;
+        border-radius: 50%;
+        object-fit: cover;
+      }
+      .profile-img.not-set {
+        color: s.$primary;
+        font-weight: 500;
+        font-size: 3.125rem;
+        background: s.$primary-text;
+      }
+      .remove-img-btn {
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 28px;
+        width: 28px;
+        background: s.$error-red;
+        border: none;
+        border-radius: 50%;
+        cursor: pointer;
+
+        &:focus {
+          @include s.outline;
+        }
+
+        .close-icon {
+          height: 18px;
+          width: 18px;
+          color: s.$primary-background;
+          stroke-width: 50;
+        }
+      }
+    }
+    .upload-img-container {
+      padding: 1.5rem 0;
+      .upload-img {
+        height: fit-content;
+        width: fit-content;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: s.$primary;
+        border: 1px solid s.$primary;
+        padding: 0.5rem 1rem;
+        border-radius: s.$border-radius;
+        cursor: pointer;
+        &:hover {
+          opacity: 0.8;
+        }
+        &:focus {
+          @include s.outline;
+        }
+      }
+      p.text {
+        padding-top: 1rem;
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: s.$secondary-text;
+      }
+    }
+  }
+
+  .input-row {
+    display: flex;
+
+    gap: 2rem;
+    width: 100%;
+
+    padding: 0;
+    margin: 0;
+    margin-top: 2rem;
+
+    @media screen and (max-width: 600px) {
+      margin-top: 1rem;
+      gap: 1rem;
+      flex-direction: column;
+    }
+  }
+  .input-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    label {
+      padding-bottom: 0.5rem;
+      font-weight: 600;
+      font-size: 0.875rem;
+      text-transform: capitalize;
+      padding-bottom: 0.25rem;
+    }
+    input {
+      background: s.$secondary-background;
+      border: none;
+      font-size: 1rem;
+      padding: 0.6rem;
+      border-radius: s.$border-radius;
+      &:focus {
+        @include s.outline;
+      }
+    }
+    .error-text {
+      height: 0;
+      transition: 0.1s height linear;
+    }
+  }
+  .input-container.input-error {
+    input {
+      border: 2px solid s.$error-red;
+      color: s.$error-red;
+      font-weight: 600;
+      &:focus {
+        outline-color: s.$error-red;
+      }
+    }
+    .error-text {
+      display: flex;
+      align-items: center;
+      height: 25px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: s.$error-red;
+    }
+  }
+  .update-password {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+
+    .actions {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 0.5rem;
+      .save-btn {
+        margin: 0;
+      }
+    }
+    button.view-passwords {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: none;
+      border: none;
+      width: 50px;
+      padding: 0.1rem 0.25rem;
+      height: fit-content;
+      font-weight: 500;
+      border-radius: s.$border-radius;
+      color: s.$secondary-text;
+      cursor: pointer;
+    }
+  }
+  .password-input-container {
+    height: 0;
+    overflow: hidden;
+    margin: 0;
+    transition: 0.1s all linear;
+    width: 100%;
+    box-sizing: border-box;
+    &:focus-within {
+      overflow: initial;
+    }
+  }
+  .password-input-container.show {
+    height: 65px;
+    margin-top: 1rem;
+  }
+  button.save-btn {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 2rem;
+    height: 38px;
+    width: 145px;
+    border: none;
+    background: s.$primary;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: s.$primary-background;
+    padding: 0.6rem 1rem;
+    border-radius: s.$border-radius;
+    cursor: pointer;
+    transition: all 0.1s linear;
+
+    &:hover {
+      opacity: 0.8;
+    }
+  }
+}

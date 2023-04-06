@@ -21,6 +21,7 @@ Cypress.Commands.add(
       ? password + newDate
       : password
 
+    cy.get('input[name="name"]').type('Testing User')
     cy.get('input[name="username"]').type(updatedUsername)
     cy.get('input[name="email"]').type(updatedEmail)
     cy.get('input[name="password"]').type(updatePassword)

@@ -29,9 +29,9 @@ const customStyles = {
 }
 
 const RELEASE_DATE = '3/31/2023'
-const version = '2.4.0-beta'
+const version = '2.6.0-beta'
 const description =
-  "The latest website release includes improvements to make the website more accessible for all users, such as improved keyboard navigation. We've also integrated Cypress for end-to-end testing to ensure the website is running smoothly."
+  'With this update, users can now easily update their personal information and customize their profile information and user profile pictures.'
 
 type ReleaseNotesProps = {
   releaseNotesModalIsOpen: boolean
@@ -47,7 +47,8 @@ const ReleaseNotes: FC<ReleaseNotesProps> = ({
   }
 
   const additions: string[] = [
-    'Added Cypress.io for end-to-end testing. Implemented several general website/page wide testing to improve user experience functionality confidence.',
+    'Added settings page for profile editing.',
+    'Added profile pictures',
   ]
   const bugFixes: string[] = []
   const improvements: string[] = ['Updated overall website accessibility.']

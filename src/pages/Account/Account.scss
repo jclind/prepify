@@ -15,13 +15,16 @@
         display: flex;
         justify-content: center;
         align-items: center;
+
+        border-radius: 50%;
+        height: 100px;
+        width: 100px;
+      }
+      .profile-image.not-set {
         color: $primary;
         font-weight: 500;
         font-size: 3.125rem;
-        border-radius: 50%;
         background: $primary-text;
-        height: 100px;
-        width: 100px;
       }
       .content {
         display: flex;
