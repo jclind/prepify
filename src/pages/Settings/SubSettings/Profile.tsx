@@ -55,6 +55,7 @@ const Profile: FC = () => {
           setLoading(false)
         })
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authRes?.user])
 
   const handleFileSelected = (event: React.ChangeEvent<HTMLInputElement>) => {

@@ -241,7 +241,7 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
 
         // // If the authentication is anything other than password, send getUsername to check if username exists for that user
         // if (providerId !== 'password') {
-        //   // // !!FIX MEEEEEE
+        //   // // !!FIX ME
 
         // }
 

@@ -35,6 +35,8 @@ const Account = () => {
         })
       }
     }
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [uid])
 
   useEffect(() => {
