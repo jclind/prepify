@@ -5,7 +5,7 @@ import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 const Settings = () => {
   const settingsPages = [
     { name: 'Profile', path: '/settings' },
-    { name: 'Security', path: '/settings/security' },
+    { name: 'Password', path: '/settings/password' },
   ]
 
   const [currPath, setCurrPath] = useState('')

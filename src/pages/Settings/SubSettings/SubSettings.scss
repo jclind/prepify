@@ -91,32 +91,85 @@
     padding: 0;
     margin: 0;
     margin-top: 2rem;
-    .input-container {
-      display: flex;
-      flex-direction: column;
-      width: 100%;
-      label {
-        padding-bottom: 0.5rem;
-        font-weight: 600;
-        font-size: 0.875rem;
-        text-transform: capitalize;
-        padding-bottom: 0.25rem;
-      }
-      input {
-        background: s.$secondary-background;
-        border: none;
-        font-size: 1rem;
-        padding: 0.6rem;
-        border-radius: s.$border-radius;
-        &:focus {
-          @include s.outline;
-        }
-      }
-    }
+
     @media screen and (max-width: 600px) {
       margin-top: 1rem;
       gap: 1rem;
       flex-direction: column;
+    }
+  }
+  .input-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    label {
+      padding-bottom: 0.5rem;
+      font-weight: 600;
+      font-size: 0.875rem;
+      text-transform: capitalize;
+      padding-bottom: 0.25rem;
+    }
+    input {
+      background: s.$secondary-background;
+      border: none;
+      font-size: 1rem;
+      padding: 0.6rem;
+      border-radius: s.$border-radius;
+      &:focus {
+        @include s.outline;
+      }
+    }
+    .error-text {
+      height: 0;
+      transition: 0.1s height linear;
+    }
+  }
+  .input-container.input-error {
+    input {
+      border: 2px solid s.$error-red;
+      color: s.$error-red;
+      font-weight: 600;
+      &:focus {
+        outline-color: s.$error-red;
+      }
+    }
+    .error-text {
+      display: flex;
+      align-items: center;
+      height: 25px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: s.$error-red;
+    }
+  }
+  .update-password {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+
+    button {
+    }
+    .actions {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 0.5rem;
+      .save-btn {
+        margin: 0;
+      }
+    }
+    button.view-passwords {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: none;
+      border: none;
+      width: 50px;
+      padding: 0.1rem 0.25rem;
+      height: fit-content;
+      font-weight: 500;
+      border-radius: s.$border-radius;
+      color: s.$secondary-text;
+      cursor: pointer;
     }
   }
   .password-input-container {

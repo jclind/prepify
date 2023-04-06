@@ -5,34 +5,7 @@ import AuthAPI from 'src/api/auth'
 import { useAlert } from 'react-alert'
 import { TailSpin } from 'react-loader-spinner'
 import { AiOutlineClose } from 'react-icons/ai'
-
-type InputContainerProps = {
-  label: string
-  type?: string
-  val: string
-  setVal: (val: string) => void
-  placeholder?: string
-}
-
-const InputContainer: FC<InputContainerProps> = ({
-  label,
-  type = 'text',
-  val,
-  setVal,
-  placeholder,
-}) => {
-  return (
-    <div className='input-container'>
-      <label>{label}</label>
-      <input
-        type={type}
-        value={val}
-        onChange={e => setVal(e.target.value)}
-        placeholder={placeholder}
-      />
-    </div>
-  )
-}
+import InputContainer from './InputContainer'
 
 const MAX_FILE_SIZE = 5000 * 1024
 

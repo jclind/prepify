@@ -31,7 +31,7 @@ import {
 import { BiError } from 'react-icons/bi'
 import Settings from './pages/Settings/Settings'
 import Profile from './pages/Settings/SubSettings/Profile'
-import Security from './pages/Settings/SubSettings/Security'
+import Password from './pages/Settings/SubSettings/Password'
 
 const alertOptions = {
   // you can also just use 'bottom center'
@@ -125,7 +125,7 @@ function App() {
                 }
               >
                 <Route path='' element={<Profile />} />
-                <Route path='security' element={<Security />} />
+                <Route path='password' element={<Password />} />
               </Route>
               <Route
                 path='/add-recipe'

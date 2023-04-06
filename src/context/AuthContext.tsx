@@ -12,6 +12,7 @@ import {
   updateEmail,
   reauthenticateWithCredential,
   EmailAuthProvider,
+  updatePassword,
 } from 'firebase/auth'
 
 import { useNavigate } from 'react-router-dom'
@@ -55,6 +56,7 @@ type AuthContextValueType = {
     email?: string
     password?: string
   }) => Promise<void>
+  changePassword: (oldPass: string, newPass: string) => Promise<void>
 }
 
 type AuthProviderProps = {
@@ -222,6 +224,13 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
       })
     }
   }
+  const changePassword = async (oldPass: string, newPass: string) => {
+    if (user && user.email) {
+      const credential = EmailAuthProvider.credential(user.email, oldPass)
+      await reauthenticateWithCredential(user, credential)
+      await updatePassword(user, newPass)
+    }
+  }
 
   // Check for auth status on page load
   useEffect(() => {
@@ -267,6 +276,7 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
     forgotPassword,
     authLoading: loading,
     updateProfileData,
+    changePassword,
   }
 
   return (
