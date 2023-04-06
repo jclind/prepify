@@ -55,7 +55,7 @@
       }
     }
     .upload-img-container {
-      padding-top: 1.5rem;
+      padding: 1.5rem 0;
       .upload-img {
         height: fit-content;
         width: fit-content;
@@ -90,7 +90,7 @@
 
     padding: 0;
     margin: 0;
-    margin-top: 3rem;
+    margin-top: 2rem;
     .input-container {
       display: flex;
       flex-direction: column;
@@ -113,6 +113,26 @@
         }
       }
     }
+    @media screen and (max-width: 600px) {
+      margin-top: 1rem;
+      gap: 1rem;
+      flex-direction: column;
+    }
+  }
+  .password-input-container {
+    height: 0;
+    overflow: hidden;
+    margin: 0;
+    transition: 0.1s all linear;
+    width: 100%;
+    box-sizing: border-box;
+    &:focus-within {
+      overflow: initial;
+    }
+  }
+  .password-input-container.show {
+    height: 65px;
+    margin-top: 1rem;
   }
   button.save-btn {
     display: flex;

@@ -9,12 +9,16 @@ import {
   sendPasswordResetEmail,
   UserCredential,
   updateProfile,
+  updateEmail,
+  reauthenticateWithCredential,
+  EmailAuthProvider,
 } from 'firebase/auth'
 
 import { useNavigate } from 'react-router-dom'
 import AuthAPI from 'src/api/auth'
 import { TailSpin } from 'react-loader-spinner'
 import { getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage'
+import { ErrorWithData } from 'src/util/ErrorWithData'
 
 export function useAuth() {
   return useContext(AuthContext)
@@ -48,6 +52,8 @@ type AuthContextValueType = {
     displayName?: string
     username?: string
     imgFile?: File | null
+    email?: string
+    password?: string
   }) => Promise<void>
 }
 
@@ -182,10 +188,12 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
     displayName?: string
     username?: string
     imgFile?: File | null
+    email?: string
+    password?: string
   }) => {
     if (user) {
       const currUsername = await AuthAPI.getUsername()
-      const { displayName, username, imgFile } = data
+      const { displayName, username, imgFile, email, password } = data
 
       const storage = getStorage()
       let profilePhotoURL = ''
@@ -197,16 +205,21 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
       if (username && username !== currUsername) {
         await AuthAPI.setUsername(user.uid, username)
       }
-      console.log({
-        ...(profilePhotoURL
-          ? { photoURL: profilePhotoURL }
-          : { photoURL: null }),
-      })
+      if (email && user.email && email !== user.email) {
+        if (!password) {
+          throw new ErrorWithData(
+            'password-required',
+            'Password Is Required For Reauthentication'
+          )
+        }
+        const credential = EmailAuthProvider.credential(user.email, password)
+        await reauthenticateWithCredential(user, credential)
+        await updateEmail(user, email)
+      }
       await updateProfile(user, {
         ...(profilePhotoURL ? { photoURL: profilePhotoURL } : { photoURL: '' }),
         ...(displayName && { displayName }),
       })
-      console.log(user)
     }
   }
 

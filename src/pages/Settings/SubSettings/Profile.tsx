@@ -8,6 +8,7 @@ import { AiOutlineClose } from 'react-icons/ai'
 
 type InputContainerProps = {
   label: string
+  type?: string
   val: string
   setVal: (val: string) => void
   placeholder?: string
@@ -15,6 +16,7 @@ type InputContainerProps = {
 
 const InputContainer: FC<InputContainerProps> = ({
   label,
+  type = 'text',
   val,
   setVal,
   placeholder,
@@ -23,7 +25,7 @@ const InputContainer: FC<InputContainerProps> = ({
     <div className='input-container'>
       <label>{label}</label>
       <input
-        type='text'
+        type={type}
         value={val}
         onChange={e => setVal(e.target.value)}
         placeholder={placeholder}
@@ -41,7 +43,10 @@ const Profile: FC = () => {
   const [imgURL, setImgURL] = useState('')
   const [imgFile, setImgFile] = useState<File | null>(null)
   const [displayName, setDisplayName] = useState('')
+  const [originalUsername, setOriginalUsername] = useState('')
   const [username, setUsername] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
 
   const [nameInitial, setNameInitial] = useState('')
 
@@ -53,9 +58,11 @@ const Profile: FC = () => {
     if (authRes?.user) {
       AuthAPI.getUsername()
         .then(usernameRes => {
+          setOriginalUsername(usernameRes || '')
           setUsername(usernameRes || '')
-          setDisplayName(authRes?.user?.displayName || '')
-          setImgURL(authRes?.user?.photoURL || '')
+          setDisplayName(authRes.user?.displayName || '')
+          setImgURL(authRes.user?.photoURL || '')
+          setEmail(authRes.user?.email || '')
 
           if (authRes?.user?.displayName) {
             const i = authRes.user.displayName.charAt(0).toUpperCase()
@@ -98,6 +105,7 @@ const Profile: FC = () => {
 
   const handleSaveChanges = () => {
     setSaveLoading(true)
+
     if (!displayName) {
       setSaveLoading(false)
       return alert.show('Display Name Is Required.', {
@@ -110,19 +118,69 @@ const Profile: FC = () => {
         timeout: 5000,
         type: 'error',
       })
+    } else if (!email) {
+      setSaveLoading(false)
+      return alert.show('Email Is Required.', {
+        timeout: 5000,
+        type: 'error',
+      })
+    } else if (
+      imgURL === authRes?.user?.photoURL &&
+      email === authRes?.user?.email &&
+      imgURL === authRes?.user?.photoURL &&
+      displayName === authRes?.user?.displayName &&
+      username === originalUsername
+    ) {
+      setSaveLoading(false)
+      return alert.show('No Changes To Submit.', {
+        timeout: 3000,
+        type: 'error',
+      })
     }
     const data = {
       ...(displayName !== authRes?.user?.displayName && { displayName }),
       ...(imgURL !== authRes?.user?.photoURL ? { imgFile } : { imgFile: null }),
+      ...(email !== authRes?.user?.email && { email }),
+      ...(password && { password }),
       username,
     }
-    authRes?.updateProfileData(data).then(() => {
-      setSaveLoading(false)
-      alert.show('Profile updated!', {
-        timeout: 3000,
-        type: 'success',
+    authRes
+      ?.updateProfileData(data)
+      .then(() => {
+        setSaveLoading(false)
+        alert.show('Profile updated!', {
+          timeout: 3000,
+          type: 'success',
+        })
       })
-    })
+      .catch(err => {
+        setSaveLoading(false)
+
+        if (err.code === 'password-required') {
+          alert.show(err.message, {
+            timeout: 3000,
+            type: 'error',
+          })
+        } else if (
+          err.code === 'auth/user-mismatch' ||
+          err.code === 'auth/wrong-password'
+        ) {
+          alert.show('Password incorrect, please try again.', {
+            timeout: 5000,
+            type: 'error',
+          })
+        } else if (err.code === 'auth/email-already-in-use') {
+          alert.show('Email already in use.', {
+            timeout: 5000,
+            type: 'error',
+          })
+        } else {
+          alert.show(err.message, {
+            timeout: 5000,
+            type: 'error',
+          })
+        }
+      })
   }
 
   return (
@@ -172,6 +230,27 @@ const Profile: FC = () => {
           val={username}
           setVal={setUsername}
           placeholder={username}
+        />
+      </div>
+      <div className='input-row'>
+        <InputContainer
+          label='Email'
+          val={email}
+          setVal={setEmail}
+          placeholder={email}
+        />
+      </div>
+      <div
+        className={`input-row password-input-container ${
+          email !== authRes?.user?.email && !loading ? 'show' : 'hide'
+        }`}
+      >
+        <InputContainer
+          label='Password (Reauthenticate)'
+          val={password}
+          setVal={setPassword}
+          type='password'
+          placeholder='Authentication For Email Change'
         />
       </div>
       <button
