@@ -1,5 +1,5 @@
-import React from 'react'
-import { Routes, Route } from 'react-router-dom'
+import React, { useEffect } from 'react'
+import { Routes, Route, useLocation } from 'react-router-dom'
 import { HelmetProvider } from 'react-helmet-async'
 import AuthProvider from './context/AuthContext'
 
@@ -52,11 +52,19 @@ const AlertTemplate = ({ style, options, message, close }: any) => {
   )
 }
 
+const ScrollToTop = () => {
+  const { pathname } = useLocation()
+  useEffect(() => {
+    document.querySelector('body')?.scrollTo(0, 0)
+  }, [pathname])
+  return null
+}
 function App() {
   return (
     <HelmetProvider>
       <AuthProvider>
         <AlertProvider template={AlertTemplate} {...alertOptions}>
+          <ScrollToTop />
           <Routes>
             <Route
               path='*'
