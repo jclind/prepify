@@ -1,6 +1,6 @@
 import React, { ChangeEvent, useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
-import { AiOutlineGoogle } from 'react-icons/ai'
+import { AiOutlineGoogle, AiOutlineUser } from 'react-icons/ai'
 import { MdOutlineEmail, MdOutlineLock } from 'react-icons/md'
 import { useAuth } from '../../context/AuthContext'
 import { TailSpin } from 'react-loader-spinner'
@@ -15,6 +15,7 @@ import PrepifyLogo from '../../Components/Navbar/PrepifyLogo'
 import FormInput from '../../Components/Form/FormInput'
 
 const Signup = () => {
+  const [name, setName] = useState('')
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -37,7 +38,15 @@ const Signup = () => {
     setSuccess('')
     e.preventDefault()
 
-    authRes?.signUp(email, password, username, setLoading, setSuccess, setError)
+    authRes?.signUp(
+      email,
+      password,
+      username,
+      name,
+      setLoading,
+      setSuccess,
+      setError
+    )
   }
 
   return authRes?.user ? (
@@ -64,6 +73,14 @@ const Signup = () => {
             {success ? <div className='success'>{success}</div> : null}
             {error ? <div className='error'>{error}</div> : null}
             <div className='input-fields'>
+              <FormInput
+                icon={<AiOutlineUser className='icon' />}
+                type='text'
+                name='name'
+                val={name}
+                setVal={setName}
+                placeholder={'John Smith'}
+              />
               <UsernameInput
                 isUsernameAvailable={isUsernameAvailable}
                 setIsUsernameAvailable={setIsUsernameAvailable}

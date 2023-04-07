@@ -35,7 +35,7 @@ const Login = () => {
         <PrepifyLogo />
       </div>
       <div className='login-page form-format'>
-        <div className='login-form-container'>
+        <div className='form-container'>
           <form onSubmit={handleEmailAndPasswordFormSubmit} className='form'>
             <h1 className='title'>Login</h1>
             <p className='prompt'>

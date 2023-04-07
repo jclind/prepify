@@ -82,6 +82,16 @@ nav {
         font-size: 1.875rem;
         color: s.$primary;
         font-weight: 500;
+        overflow: hidden;
+
+        .profile-image {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          height: 45px;
+          width: 45px;
+          object-fit: contain;
+        }
       }
       .account-link-loading {
         width: 45px;

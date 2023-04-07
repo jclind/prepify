@@ -3,6 +3,7 @@ import { useLocation, useNavigate, Link, Outlet } from 'react-router-dom'
 import './Account.scss'
 import { Helmet } from 'react-helmet'
 import AuthAPI from '../../api/auth'
+import { useAuth } from 'src/context/AuthContext'
 
 const Account = () => {
   const [nameInitial, setNameInitial] = useState('')
@@ -14,18 +15,28 @@ const Account = () => {
   const location = useLocation()
   const navigate = useNavigate()
 
+  const authRes = useAuth()
+
   useEffect(() => {
     if (uid) {
-      AuthAPI.getUsername(uid).then(val => {
-        if (val) {
-          setUsername(val)
-          const i = val.charAt(0).toUpperCase()
-          setNameInitial(i)
-        } else {
-          setNameInitial('null')
-        }
-      })
+      const displayName = authRes?.user?.displayName
+      if (displayName) {
+        const i = displayName.charAt(0).toUpperCase()
+        setNameInitial(i)
+      } else {
+        AuthAPI.getUsername(uid).then(val => {
+          if (val) {
+            setUsername(val)
+            const i = val.charAt(0).toUpperCase()
+            setNameInitial(i)
+          } else {
+            setNameInitial('null')
+          }
+        })
+      }
     }
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [uid])
 
   useEffect(() => {
@@ -44,11 +55,25 @@ const Account = () => {
       <div className='page account-page'>
         <section className='account-header'>
           <div className='info-container'>
-            <div className='profile-image'>{nameInitial}</div>
+            {authRes?.user?.photoURL ? (
+              <img
+                src={authRes.user.photoURL}
+                alt='Profile Avatar'
+                className='profile-image'
+              />
+            ) : (
+              <div className='profile-image not-set'>{nameInitial}</div>
+            )}
+
             <div className='content'>
               <h1 className='username'>{username && username}</h1>
               <div className='actions'>
-                <button className='edit-profile-btn btn'>Edit Profile</button>
+                <button
+                  className='edit-profile-btn btn'
+                  onClick={() => navigate('/settings')}
+                >
+                  Edit Profile
+                </button>
               </div>
             </div>
           </div>
