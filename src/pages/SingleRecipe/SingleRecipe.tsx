@@ -24,8 +24,10 @@ type LocalStorageRecipeType = {
   numServings: number
 }
 
-const SingleRecipe = () => {
-  const [currRecipe, setCurrRecipe] = useState<RecipeType | null>(null)
+const SingleRecipe = ({ recipe }: { recipe?: RecipeType | null }) => {
+  const [currRecipe, setCurrRecipe] = useState<RecipeType | null>(
+    recipe || null
+  )
   const [loading, setLoading] = useState(true)
   const [recipe404, setRecipe404] = useState(false)
   const [modIngredients, setModIngredients] = useState<IngredientsType[]>([])
