@@ -32,7 +32,7 @@ import { BiError } from 'react-icons/bi'
 import Settings from './pages/Settings/Settings'
 import Profile from './pages/Settings/SubSettings/Profile'
 import Password from './pages/Settings/SubSettings/Password'
-import RecipeAI from './pages/RecipeAI/RecipeAI'
+// import RecipeAI from './pages/RecipeAI/RecipeAI'
 
 const alertOptions = {
   // you can also just use 'bottom center'
@@ -128,14 +128,14 @@ function App() {
                 <Route path='' element={<Profile />} />
                 <Route path='password' element={<Password />} />
               </Route>
-              <Route
+              {/* <Route
                 path='recipe-ai'
                 element={
                   <Layout>
                     <RecipeAI />
                   </Layout>
                 }
-              />
+              /> */}
               <Route
                 path='/add-recipe'
                 element={
