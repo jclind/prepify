@@ -51,7 +51,7 @@ const ReleaseNotes: FC<ReleaseNotesProps> = ({
     'Added profile pictures',
   ]
   const bugFixes: string[] = []
-  const improvements: string[] = ['Updated overall website accessibility.']
+  const improvements: string[] = []
 
   const location = useLocation()
 
