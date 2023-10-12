@@ -32,6 +32,7 @@ import { BiError } from 'react-icons/bi'
 import Settings from './pages/Settings/Settings'
 import Profile from './pages/Settings/SubSettings/Profile'
 import Password from './pages/Settings/SubSettings/Password'
+import Pricing from './pages/Pricing/Pricing'
 // import RecipeAI from './pages/RecipeAI/RecipeAI'
 
 const alertOptions = {
@@ -91,6 +92,14 @@ function App() {
               element={
                 <Layout darkNavLinks={true}>
                   <Recipes />
+                </Layout>
+              }
+            />
+            <Route
+              path='/pricing'
+              element={
+                <Layout darkNavLinks={true}>
+                  <Pricing />
                 </Layout>
               }
             />

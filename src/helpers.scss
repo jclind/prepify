@@ -6,6 +6,7 @@ $secondary-text: #595f66;
 $tertiary-text: #979ba0;
 
 $white: rgb(255, 255, 255);
+$black: rgb(0, 0, 0);
 $gray-50: #fafafa;
 $gray-200: #eeeeee;
 $gray-300: #e6e6e6;
@@ -45,6 +46,9 @@ $recipe-body-max-width: 800px;
 $home-hero-height: calc(500px - #{$page-top-padding} - #{$page-top-margin});
 
 $border-radius: 10px;
+
+$card-box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
+$card-bold-text: #181f25;
 
 $max-width: 1400px;
 
