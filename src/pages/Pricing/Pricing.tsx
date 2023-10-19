@@ -1,7 +1,6 @@
 import React from 'react'
 import './Pricing.scss'
 import { BsStars } from 'react-icons/bs'
-import { PiStarFourFill, PiShootingStarFill } from 'react-icons/pi'
 
 const plans = [
   {

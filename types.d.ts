@@ -15,6 +15,7 @@ export type RecipeType = {
   nutritionData: any
   totalTime: number
   authorUsername: string
+  authorId: string
   rating: {
     rateCount: number
     rateValue: number

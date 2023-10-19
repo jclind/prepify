@@ -22,6 +22,7 @@ import RecipeAPI from 'src/api/recipes'
 import styles from '../../_exports.scss'
 import AddRecipeFormError from './AddRecipeFormError'
 import { Helmet } from 'react-helmet-async'
+import { useNavigate } from 'react-router-dom'
 
 const AddRecipe = () => {
   const [addRecipeLoading, setAddRecipeLoading] = useState(false)
@@ -48,6 +49,8 @@ const AddRecipe = () => {
   const [errors, setErrors] = useState<Partial<AddRecipeErrorType>>({})
 
   const [isFormValid, setIsFormValid] = useState(false)
+
+  const navigate = useNavigate()
 
   const validate = (assignErrors: boolean = false) => {
     let newErrors: Partial<AddRecipeErrorType> = {}
@@ -118,8 +121,12 @@ const AddRecipe = () => {
         mealTypes,
       }
       try {
-        await RecipeAPI.addRecipe(recipeData, setLoadingProgress)
+        const recipeId = await RecipeAPI.addRecipe(
+          recipeData,
+          setLoadingProgress
+        )
         clearForm()
+        navigate(`/recipe-created/${recipeId}`)
       } catch (error) {
         console.log('ERROR:', error)
       } finally {
@@ -135,10 +142,7 @@ const AddRecipe = () => {
     <>
       <Helmet>
         <title>Create New Recipe</title>
-        <link
-          rel='canonical'
-          href='https://www.prepifymeals.com/add-recipe'
-        />
+        <link rel='canonical' href='https://www.prepifymeals.com/add-recipe' />
         <meta
           name='description'
           content='Create your own healthy recipe on Prepify'

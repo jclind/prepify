@@ -109,6 +109,7 @@ const RecipeAI = () => {
         numTimesSaved: 0,
         numTimesMade: 0,
         authorUsername: 'PrepifyAI',
+        authorId: 'recipe-ai-id',
       }
       console.log(updatedRecipeData)
       setRecipe(updatedRecipeData)

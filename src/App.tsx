@@ -33,6 +33,7 @@ import Settings from './pages/Settings/Settings'
 import Profile from './pages/Settings/SubSettings/Profile'
 import Password from './pages/Settings/SubSettings/Password'
 import Pricing from './pages/Pricing/Pricing'
+import RecipeCreated from './pages/RecipeCreated/RecipeCreated'
 // import RecipeAI from './pages/RecipeAI/RecipeAI'
 
 const alertOptions = {
@@ -150,6 +151,14 @@ function App() {
                 element={
                   <Layout darkNavLinks={true} navBackgroundColor='gray'>
                     <AddRecipe />
+                  </Layout>
+                }
+              />
+              <Route
+                path='/recipe-created/:recipeId'
+                element={
+                  <Layout darkNavLinks={true}>
+                    <RecipeCreated />
                   </Layout>
                 }
               />

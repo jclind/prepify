@@ -8,6 +8,7 @@ import 'react-loading-skeleton/dist/skeleton.css'
 
 import './RecipeThumbnail.scss'
 import { RecipeType } from '../../../types'
+import { calculateInflationPrice } from 'src/util/calculateInflationPrices'
 
 const skeletonColor = '#d6d6d6'
 
@@ -25,6 +26,11 @@ const RecipeThumbnail = ({ recipe, loading }: RecipeThumbnailType) => {
   }
 
   useEffect(() => {}, [recipe])
+
+  const { servingPrice, recipePrice } = calculateInflationPrice(
+    recipe?.servingPrice,
+    recipe?.servings
+  )
 
   return (
     <>
@@ -56,10 +62,7 @@ const RecipeThumbnail = ({ recipe, loading }: RecipeThumbnailType) => {
           {loading || !recipe || !recipe.servingPrice || !recipe.servings ? (
             <Skeleton baseColor={skeletonColor} height={30} />
           ) : (
-            `Serving: $${(recipe.servingPrice / 100).toFixed(2)} | Recipe: $${(
-              (recipe.servingPrice / 100) *
-              recipe.servings
-            ).toFixed(2)}`
+            `Serving: $${servingPrice} | Recipe: $${recipePrice}`
           )}
         </div>
         <div className='info'>

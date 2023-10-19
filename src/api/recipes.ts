@@ -154,11 +154,15 @@ class RecipeAPIClass {
       const nutritionDataRes = await this.getRecipeNutrition(
         recipeData.ingredients
       )
+
+      const authorId = await AuthAPI.getUID()
+      if (!authorId) throw new Error('User Not Logged In')
       const nutritionData = nutritionDataRes.nutritionData
       const nutritionLabels = nutritionDataRes.dietLabels
       const recipeId = '' + ObjectID()
       const returnRecipeData: RecipeType = {
         _id: recipeId,
+
         title: recipeData.title,
         prepTime: recipeData.prepTime,
         cookTime: recipeData.cookTime,
@@ -172,6 +176,7 @@ class RecipeAPIClass {
         nutritionData,
         totalTime,
         authorUsername,
+        authorId,
         rating: {
           rateCount: 0,
           rateValue: 0,

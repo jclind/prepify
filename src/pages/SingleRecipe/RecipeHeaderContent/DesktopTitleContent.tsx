@@ -1,5 +1,6 @@
 import React, { FC } from 'react'
 import Skeleton from 'react-loading-skeleton'
+import { calculateInflationPrice } from 'src/util/calculateInflationPrices'
 import { RecipeType } from 'types'
 
 const skeletonColor = '#d6d6d6'
@@ -17,6 +18,11 @@ const DesktopTitleContent: FC<DesktopTitleContentProps> = ({
 }) => {
   if (windowWidth <= 956) return null
 
+  const { servingPrice, recipePrice } = calculateInflationPrice(
+    currRecipe?.servingPrice,
+    currRecipe?.servings
+  )
+
   return (
     <>
       <h1 className='title'>
@@ -30,12 +36,7 @@ const DesktopTitleContent: FC<DesktopTitleContentProps> = ({
         {loading || !currRecipe?.servingPrice || !currRecipe?.servings ? (
           <Skeleton baseColor={skeletonColor} height={30} />
         ) : (
-          `Serving: $${(currRecipe.servingPrice / 100).toFixed(
-            2
-          )} | Recipe: $${(
-            (currRecipe.servingPrice / 100) *
-            currRecipe.servings
-          ).toFixed(2)}`
+          `Serving: $${servingPrice} | Recipe: $${recipePrice}`
         )}
       </div>
       <p className='description'>
