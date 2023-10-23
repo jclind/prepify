@@ -25,8 +25,8 @@ const plans = [
 
 const Pricing = () => {
   return (
-    <div className='pricing-page'>
-      <h1 className='title'>Premium Membership Pricing</h1>
+    <div className='pricing-page page'>
+      <h1 className='title'>Premium Membership</h1>
       <div className='description'>
         Unlock Premium Benefits with Prepify's Premium Subscription! Choose from
         our three flexible payment plans and elevate your cooking experience and
@@ -52,6 +52,7 @@ const Pricing = () => {
           <li className='feat'>Removed Ads</li>
         </ul>
       </div>
+      <h1 className='plans-title'>Plans</h1>
       <div className='plans'>
         {plans.map(plan => {
           return (

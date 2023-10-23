@@ -10,6 +10,10 @@
   );
   margin-top: $nav-height;
 
+  h1.title {
+    text-align: center;
+  }
+
   .description {
     max-width: 800px;
     text-align: center;
@@ -23,18 +27,20 @@
     flex-direction: column;
     align-items: center;
     position: relative;
-    margin-top: 2rem;
     background: $white;
     border-radius: $border-radius;
     box-shadow: $card-box-shadow;
-    padding: 1rem;
-    width: 400px;
+    margin: 3rem 0;
+    padding: 1.5rem;
+    width: 90%;
+    max-width: 450px;
+    box-sizing: border-box;
 
     .features {
       display: flex;
       flex-direction: column;
-      gap: 0.5rem;
-      margin-top: 1rem;
+      gap: 1rem;
+      margin-top: 1.5rem;
       list-style: none;
 
       .feat {
@@ -48,6 +54,9 @@
         display: inline-block; /* Needed to add space between the bullet and the text */
         width: 1.5rem; /* Also needed for space (tweak if needed) */
         margin-left: -1.5rem; /* Also needed for space (tweak if needed) */
+      }
+      li {
+        margin-left: 1rem;
       }
     }
 
@@ -64,10 +73,17 @@
     }
   }
 
+  .plans-title {
+    margin-bottom: 2rem;
+  }
+
   .plans {
     display: flex;
+    justify-content: center;
+    align-items: center;
+
     gap: 1rem;
-    margin-top: 3rem;
+    margin-bottom: 3rem;
     .plan {
       display: flex;
       flex-direction: column;
@@ -110,6 +126,15 @@
           font-size: 0.9rem;
           text-align: center;
         }
+      }
+    }
+
+    @media screen and (max-width: 1050px) {
+      flex-direction: column;
+      width: 100%;
+      .plan {
+        width: 90%;
+        max-width: 450px;
       }
     }
   }
