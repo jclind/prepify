@@ -1,29 +1,53 @@
-import React from 'react'
+import React, { useState } from 'react'
 import './Pricing.scss'
 import { BsStars } from 'react-icons/bs'
+import PaymentModal from 'src/Components/PaymentModal/PaymentModal'
 
-const plans = [
+export type SelectedType = 'one-time' | 'monthly' | 'yearly'
+
+const plans: {
+  price: string
+  category: string
+  type: SelectedType
+  tagLine: string
+  comments: string[]
+}[] = [
   {
     price: '5',
-    type: '1 month',
+    category: '1 month',
+    type: 'monthly',
     tagLine: 'Only $1.16 a week',
     comments: ['Billed every month', 'Cancel anytime'],
   },
   {
     price: '45',
-    type: '1 year',
+    category: '1 year',
+    type: 'yearly',
     tagLine: 'Only $0.86 a week',
     comments: ['You save 25%', 'Cancel anytime'],
   },
   {
     price: '120',
-    type: 'one time',
+    category: 'one time',
+    type: 'one-time',
     tagLine: 'One purchase',
     comments: ['Longer use = More savings', 'Lifelong access'],
   },
 ]
 
 const Pricing = () => {
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
+  const [selectedPlan, setSelectedPlan] = useState<{
+    price: string
+    type: SelectedType
+  }>({ price: '45', type: 'monthly' })
+
+  const handleSelectPlan = (price: string, type: SelectedType) => {
+    const plan = { price, type }
+    setSelectedPlan(plan)
+    setIsPaymentModalOpen(true)
+  }
+
   return (
     <div className='pricing-page page'>
       <h1 className='title'>Premium Membership</h1>
@@ -57,7 +81,7 @@ const Pricing = () => {
         {plans.map(plan => {
           return (
             <div className='plan'>
-              <div className='type'>{plan.type}</div>
+              <div className='type'>{plan.category}</div>
               <div className='price'>${plan.price}</div>
               <div className='tag-line'>{plan.tagLine}</div>
               <div className='comments'>
@@ -66,10 +90,21 @@ const Pricing = () => {
                     return <div className='comment'>{comment}</div>
                   })}
               </div>
+              <button
+                className='select-plan-btn btn-no-styles'
+                onClick={() => handleSelectPlan(plan.price, plan.type)}
+              >
+                Select This Plan
+              </button>
             </div>
           )
         })}
       </div>
+      <PaymentModal
+        isOpen={isPaymentModalOpen}
+        setIsOpen={setIsPaymentModalOpen}
+        planData={selectedPlan}
+      />
     </div>
   )
 }

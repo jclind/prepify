@@ -127,6 +127,15 @@
           text-align: center;
         }
       }
+      .select-plan-btn {
+        width: 80%;
+        max-width: 200px;
+        margin-top: 2rem;
+        padding: 0.5rem 0.35rem;
+        border-radius: $border-radius;
+        color: $white;
+        background: $primary;
+      }
     }
 
     @media screen and (max-width: 1050px) {
