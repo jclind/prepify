@@ -1,8 +1,14 @@
-import React from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import Modal from 'react-modal'
 import styles from '../../_exports.scss'
 import './PaymentModal.scss'
 import { SelectedType } from 'src/pages/Pricing/Pricing'
+import { PiCaretRightBold } from 'react-icons/pi'
+import { useAuth } from 'src/context/AuthContext'
+
+import Select, { SingleValue } from 'react-select'
+import countryList from 'react-select-country-list'
+// import SalesTax from 'sales-tax'
 
 const customStyles = {
   content: {
@@ -13,8 +19,10 @@ const customStyles = {
     marginRight: '-50%',
     transform: 'translate(-50%, -50%)',
     background: styles.primaryBackground,
-    borderRadius: '5px',
+    borderRadius: styles.borderRadius,
     maxWidth: '80%',
+    padding: '0',
+    overflow: 'none',
   },
   overlay: {
     zIndex: '1000',
@@ -29,7 +37,35 @@ type PaymentModalProps = {
 }
 
 const PaymentModal = ({ isOpen, setIsOpen, planData }: PaymentModalProps) => {
+  const [countryValue, setCountryValue] = useState('')
+
+  useEffect(() => {
+    if (countryValue) {
+      // const test = lookup.byCountry(countryValue)
+      // SalesTax.hasStateSalesTax()
+      // SalesTax.hasStateSalesTax(countryValue, 'US', false)
+      // SalesTax.getSalesTax('US', 'CA')
+      // SalesTax.setTaxOriginCountry('US')
+    }
+  }, [countryValue])
+
+  const handleChangeCountry = (
+    e: SingleValue<{
+      value: string
+      label: string
+    }>
+  ) => {
+    if (e) {
+      setCountryValue(e.value)
+    }
+  }
+  const options = useMemo(() => countryList().getData(), [])
+
   const closeModal = () => setIsOpen(false)
+
+  const [activeLink, setActiveLink] = useState<'account' | 'payment'>('account')
+
+  const { user } = useAuth() ?? {}
 
   const { price, type } = planData
 
@@ -81,7 +117,40 @@ const PaymentModal = ({ isOpen, setIsOpen, planData }: PaymentModalProps) => {
             </div>
           </div>
         </div>
-        <div className='input-data'></div>
+        <div className='input-data'>
+          <div className='payment-nav'>
+            <div className='account-details active'>
+              <button className='btn-no-styles account-details-link'>
+                Account Details
+              </button>
+            </div>
+            <PiCaretRightBold className='caret-icon' />
+            <div className='payment-details'>
+              <button className='btn-no-styles payment-details-link'>
+                Payment
+              </button>
+            </div>
+          </div>
+          {activeLink === 'account' ? (
+            <>
+              <div className='account-details-form'>
+                <div className='email-container form-value-container'>
+                  <div className='label'>Email</div>
+                  <div className='email-text'>{user?.email}</div>
+                </div>
+                <div className='country-container form-value-container'>
+                  <div className='label'>Country</div>
+                  <Select
+                    options={options}
+                    onChange={handleChangeCountry}
+                    className='select country-select'
+                  />
+                </div>
+              </div>
+              <button className='btn-no-styles next-btn'>To Payment</button>
+            </>
+          ) : null}
+        </div>
       </div>
     </Modal>
   )

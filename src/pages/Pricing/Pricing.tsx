@@ -11,6 +11,7 @@ const plans: {
   type: SelectedType
   tagLine: string
   comments: string[]
+  paymentLink: string
 }[] = [
   {
     price: '5',
@@ -18,6 +19,7 @@ const plans: {
     type: 'monthly',
     tagLine: 'Only $1.16 a week',
     comments: ['Billed every month', 'Cancel anytime'],
+    paymentLink: 'https://buy.stripe.com/test_bIY5ni9GCex37jq3cc',
   },
   {
     price: '45',
@@ -25,6 +27,7 @@ const plans: {
     type: 'yearly',
     tagLine: 'Only $0.86 a week',
     comments: ['You save 25%', 'Cancel anytime'],
+    paymentLink: 'https://buy.stripe.com/test_6oE7vqaKG60xcDKcMN',
   },
   {
     price: '120',
@@ -32,6 +35,7 @@ const plans: {
     type: 'one-time',
     tagLine: 'One purchase',
     comments: ['Longer use = More savings', 'Lifelong access'],
+    paymentLink: 'https://buy.stripe.com/test_7sI02Y9GC60xdHOeUW',
   },
 ]
 
@@ -90,10 +94,7 @@ const Pricing = () => {
                     return <div className='comment'>{comment}</div>
                   })}
               </div>
-              <button
-                className='select-plan-btn btn-no-styles'
-                onClick={() => handleSelectPlan(plan.price, plan.type)}
-              >
+              <button className='select-plan-btn btn-no-styles' onClick={}>
                 Select This Plan
               </button>
             </div>
