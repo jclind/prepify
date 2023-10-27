@@ -94,9 +94,12 @@ const Pricing = () => {
                     return <div className='comment'>{comment}</div>
                   })}
               </div>
-              <button className='select-plan-btn btn-no-styles' onClick={}>
+              <a
+                className='select-plan-link btn-no-styles'
+                href={plan.paymentLink}
+              >
                 Select This Plan
-              </button>
+              </a>
             </div>
           )
         })}
