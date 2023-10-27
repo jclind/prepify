@@ -1,7 +1,8 @@
 @use '../../helpers.scss' as s;
 
 .recipe-thumbnail {
-  border: 1px solid s.$tertiary-text;
+  border: none;
+  box-shadow: s.$card-box-shadow;
   border-radius: s.$border-radius;
   padding-bottom: 0.5rem;
   text-decoration: none;
