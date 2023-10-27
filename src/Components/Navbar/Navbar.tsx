@@ -14,9 +14,14 @@ const skeletonColor = '#d6d6d6'
 type NavbarProps = {
   darkNavLinks: boolean
   loading: boolean
+  navBackgroundColor: 'white' | 'gray' | 'none'
 }
 
-const Navbar: FC<NavbarProps> = ({ darkNavLinks, loading }) => {
+const Navbar: FC<NavbarProps> = ({
+  darkNavLinks,
+  navBackgroundColor,
+  loading,
+}) => {
   const [navOpen, setNavOpen] = useState(false)
 
   const authRes = useAuth()
@@ -106,7 +111,15 @@ const Navbar: FC<NavbarProps> = ({ darkNavLinks, loading }) => {
             />
           ) : (
             <NavLink to='/account' className='account-link'>
-              {nameInitial}
+              {authRes?.user?.photoURL ? (
+                <img
+                  src={authRes.user.photoURL}
+                  alt='Profile Avatar'
+                  className='profile-image'
+                />
+              ) : (
+                <div className='profile-image not-set'>{nameInitial}</div>
+              )}
             </NavLink>
           )}
         </div>
@@ -138,26 +151,28 @@ const Navbar: FC<NavbarProps> = ({ darkNavLinks, loading }) => {
   )
 
   return (
-    <nav className='nav'>
-      <div className='nav-header'>
-        <PrepifyLogo />
-        <div
-          className={
-            !navOpen && !darkNavLinks ? 'hamburger light' : 'hamburger'
-          }
-        >
-          <Hamburger toggled={navOpen} toggle={setNavOpen} />
+    <nav className={`nav background-${navBackgroundColor}`}>
+      <div className='nav-center'>
+        <div className='nav-header'>
+          <PrepifyLogo />
+          <div
+            className={
+              !navOpen && !darkNavLinks ? 'hamburger light' : 'hamburger'
+            }
+          >
+            <Hamburger toggled={navOpen} toggle={setNavOpen} />
+          </div>
         </div>
-      </div>
-      <div className={navOpen ? 'nav-content show' : 'nav-content'}>
-        <div
-          className={darkNavLinks ? 'nav-links dark-nav-links' : 'nav-links'}
-        >
-          {authRes?.authLoading
-            ? null
-            : authRes?.user
-            ? loggedInLinks
-            : loggedOutLinks}
+        <div className={navOpen ? 'nav-content show' : 'nav-content'}>
+          <div
+            className={darkNavLinks ? 'nav-links dark-nav-links' : 'nav-links'}
+          >
+            {authRes?.authLoading
+              ? null
+              : authRes?.user
+              ? loggedInLinks
+              : loggedOutLinks}
+          </div>
         </div>
       </div>
     </nav>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useParams } from 'react-router-dom'
-import { Helmet } from 'react-helmet'
+import { Helmet } from 'react-helmet-async'
 
 import './SingleRecipe.scss'
 
@@ -24,8 +24,10 @@ type LocalStorageRecipeType = {
   numServings: number
 }
 
-const SingleRecipe = () => {
-  const [currRecipe, setCurrRecipe] = useState<RecipeType | null>(null)
+const SingleRecipe = ({ recipe }: { recipe?: RecipeType | null }) => {
+  const [currRecipe, setCurrRecipe] = useState<RecipeType | null>(
+    recipe || null
+  )
   const [loading, setLoading] = useState(true)
   const [recipe404, setRecipe404] = useState(false)
   const [modIngredients, setModIngredients] = useState<IngredientsType[]>([])
@@ -114,6 +116,7 @@ const SingleRecipe = () => {
             ? capitalize(currRecipe.title)
             : 'Recipe 404'}
         </title>
+        <meta name='description' content={currRecipe?.description} />
       </Helmet>
       {recipe404 ? (
         <RecipeNotFound />

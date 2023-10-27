@@ -2,12 +2,16 @@
 
 .add-recipe-page {
   display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 2rem;
   justify-content: center;
   width: 100% !important;
   max-width: 100% !important;
   background: $secondary-background;
   padding-bottom: 75px;
-
+  padding-top: 0;
   .container {
     display: flex;
     justify-content: center;

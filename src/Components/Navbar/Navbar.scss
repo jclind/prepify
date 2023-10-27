@@ -14,8 +14,16 @@ nav {
   display: flex;
   height: s.$nav-height;
   // background: s.$primary;
-  width: 90%;
-  max-width: s.$max-width;
+  width: 100%;
+  .nav-center {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 0 auto;
+    width: 90%;
+    max-width: s.$max-width;
+  }
 
   .nav-header {
     .hamburger {
@@ -74,6 +82,16 @@ nav {
         font-size: 1.875rem;
         color: s.$primary;
         font-weight: 500;
+        overflow: hidden;
+
+        .profile-image {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          height: 45px;
+          width: 45px;
+          object-fit: contain;
+        }
       }
       .account-link-loading {
         width: 45px;
@@ -256,6 +274,13 @@ nav {
       color: s.$primary-text !important;
     }
   }
+}
+
+.background-gray {
+  background: s.$secondary-background;
+}
+.background-white {
+  background: white;
 }
 
 .prepify-logo.nav-link {

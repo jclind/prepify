@@ -1,14 +1,41 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    <!-- Google tag (gtag.js) -->
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=G-CN5K1P34LE"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || []
+      function gtag() {
+        dataLayer.push(arguments)
+      }
+      gtag('js', new Date())
+
+      gtag('config', 'G-CN5K1P34LE')
+    </script>
     <meta charset="utf-8" />
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#000000" />
+    <title>Prepify</title>
+    <meta property="og:title" content="Prepify" />
     <meta
       name="description"
-      content="Web site created using create-react-app"
+      content="Prepify provides budget-friendly, healthy recipes that don't skimp on flavor. Find easy-to-follow recipes that include meal price and nutrition information!"
+      data-rh="true"
     />
+    <meta
+      property="og:description"
+      content="Prepify provides budget-friendly, healthy recipes that don't skimp on flavor. Find easy-to-follow recipes that include meal price and nutrition information!"
+    />
+    <meta property="og:type" content="website" />
+    <meta
+      property="og:image"
+      content="https://firebasestorage.googleapis.com/v0/b/prepify-9b974.appspot.com/o/recipeImages%2Fprepify-image.png?alt=media&token=de585ed4-dff5-4ed0-9ac0-cc953a8ed64a"
+    />
+    <meta property="og:url" content="https://www.prepifymeals.com" />
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
     <!--
       manifest.json provides metadata used when your web app is installed on a
@@ -24,7 +51,6 @@
       work correctly both with client-side routing and a non-root public URL.
       Learn how to configure a non-root public URL by running `npm run build`.
     -->
-    <title>React App</title>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>

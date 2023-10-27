@@ -55,6 +55,10 @@ const RecipeHeaderContent: FC<RecipeHeaderContentProps> = ({
             className='img'
             src={currRecipe.recipeImage}
             alt={currRecipe.title}
+            title={currRecipe.title}
+            loading='eager'
+            height={400}
+            width={400}
           />
         )}
       </div>

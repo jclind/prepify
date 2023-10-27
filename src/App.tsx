@@ -1,5 +1,6 @@
-import React from 'react'
-import { Routes, Route } from 'react-router-dom'
+import React, { useEffect } from 'react'
+import { Routes, Route, useLocation } from 'react-router-dom'
+import { HelmetProvider } from 'react-helmet-async'
 import AuthProvider from './context/AuthContext'
 
 import Home from './pages/Home/Home'
@@ -28,6 +29,10 @@ import {
   AiOutlineClose,
 } from 'react-icons/ai'
 import { BiError } from 'react-icons/bi'
+import Settings from './pages/Settings/Settings'
+import Profile from './pages/Settings/SubSettings/Profile'
+import Password from './pages/Settings/SubSettings/Password'
+// import RecipeAI from './pages/RecipeAI/RecipeAI'
 
 const alertOptions = {
   // you can also just use 'bottom center'
@@ -51,82 +56,111 @@ const AlertTemplate = ({ style, options, message, close }: any) => {
   )
 }
 
+const ScrollToTop = () => {
+  const { pathname } = useLocation()
+  useEffect(() => {
+    document.querySelector('body')?.scrollTo(0, 0)
+  }, [pathname])
+  return null
+}
 function App() {
   return (
-    <AuthProvider>
-      <AlertProvider template={AlertTemplate} {...alertOptions}>
-        <Routes>
-          <Route
-            path='*'
-            element={
-              <Layout darkNavLinks={true}>
-                <NotFound />
-              </Layout>
-            }
-          />
-          <Route
-            path='/'
-            element={
-              <Layout>
-                <Home />
-              </Layout>
-            }
-          />
-          <Route
-            path='/recipes'
-            element={
-              <Layout darkNavLinks={true}>
-                <Recipes />
-              </Layout>
-            }
-          />
-
-          <Route
-            path='/recipes/:recipeId'
-            element={
-              <Layout darkNavLinks={true}>
-                <SingleRecipe />
-              </Layout>
-            }
-          />
-
-          <Route path='/' element={<PrivateRoute />}>
+    <HelmetProvider>
+      <AuthProvider>
+        <AlertProvider template={AlertTemplate} {...alertOptions}>
+          <ScrollToTop />
+          <Routes>
             <Route
-              path='/account'
+              path='*'
               element={
                 <Layout darkNavLinks={true}>
-                  <Account />
+                  <NotFound />
                 </Layout>
               }
-            >
-              <Route path='saved-recipes' element={<SavedRecipes />} />
-              <Route path='ratings' element={<UserRatings />} />
-              <Route path='your-recipes' element={<UserRecipes />} />
+            />
+            <Route
+              path='/'
+              element={
+                <Layout>
+                  <Home />
+                </Layout>
+              }
+            />
+            <Route
+              path='/recipes'
+              element={
+                <Layout darkNavLinks={true}>
+                  <Recipes />
+                </Layout>
+              }
+            />
+
+            <Route
+              path='/recipes/:recipeId'
+              element={
+                <Layout darkNavLinks={true}>
+                  <SingleRecipe />
+                </Layout>
+              }
+            />
+
+            <Route path='/' element={<PrivateRoute />}>
+              <Route
+                path='/account'
+                element={
+                  <Layout darkNavLinks={true}>
+                    <Account />
+                  </Layout>
+                }
+              >
+                <Route path='saved-recipes' element={<SavedRecipes />} />
+                <Route path='ratings' element={<UserRatings />} />
+                <Route path='your-recipes' element={<UserRecipes />} />
+              </Route>
+              <Route
+                path='/settings'
+                element={
+                  <Layout darkNavLinks={true}>
+                    <Settings />
+                  </Layout>
+                }
+              >
+                <Route path='' element={<Profile />} />
+                <Route path='password' element={<Password />} />
+              </Route>
+              {/* <Route
+                path='recipe-ai'
+                element={
+                  <Layout>
+                    <RecipeAI />
+                  </Layout>
+                }
+              /> */}
+              <Route
+                path='/add-recipe'
+                element={
+                  <Layout darkNavLinks={true} navBackgroundColor='gray'>
+                    <AddRecipe />
+                  </Layout>
+                }
+              />
+              <Route
+                path='/help'
+                element={
+                  <Layout darkNavLinks={true}>
+                    <Help />
+                  </Layout>
+                }
+              />
             </Route>
-            <Route
-              path='/add-recipe'
-              element={
-                <Layout darkNavLinks={true}>
-                  <AddRecipe />
-                </Layout>
-              }
-            />
-            <Route
-              path='/help'
-              element={
-                <Layout darkNavLinks={true}>
-                  <Help />
-                </Layout>
-              }
-            />
-          </Route>
-          <Route path='/login' element={<Login />} />
-          <Route path='/signup' element={<Signup />} />
-          <Route path='/create-username' element={<CreateUsername />} />
-          <Route path='/forgot-password' element={<ForgotPassword />} />
-        </Routes>
-      </AlertProvider>
-    </AuthProvider>
+            <Route path='/login' element={<Login />} />
+            <Route path='/signup' element={<Signup />} />
+            <Route path='/create-username' element={<CreateUsername />} />
+            <Route path='/forgot-password' element={<ForgotPassword />} />
+          </Routes>
+        </AlertProvider>
+      </AuthProvider>
+    </HelmetProvider>
   )
 }
 
