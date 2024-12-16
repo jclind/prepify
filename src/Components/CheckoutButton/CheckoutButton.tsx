@@ -8,6 +8,7 @@ type CheckoutButtonProps = {
   productID: string
   mode: 'payment' | 'subscription'
   uid: string
+  successURL: string
 }
 
 const CheckoutButton = ({
@@ -15,6 +16,7 @@ const CheckoutButton = ({
   productID,
   mode,
   uid,
+  successURL,
 }: CheckoutButtonProps) => {
   const handleClick = async () => {
     const stripe = await stripePromise
@@ -25,7 +27,7 @@ const CheckoutButton = ({
     const { error } = await stripe?.redirectToCheckout({
       lineItems: [{ price: productID, quantity: 1 }],
       mode,
-      successUrl: window.location.origin.toString(),
+      successUrl: successURL,
       cancelUrl: `${window.location.origin.toString()}/pricing`,
       customerEmail: userEmail,
       clientReferenceId: uid,
