@@ -141,8 +141,9 @@ class RecipeAPIClass {
       setProgress(10)
       console.log('before authorUsername')
       const authorUsername: string | null = await AuthAPI.getUsername()
+      const userId = await AuthAPI.getUID()
       console.log('after authorUsername', authorUsername)
-      if (!authorUsername) throw Error('User does not exist')
+      if (!authorUsername || !userId) throw Error('User does not exist')
       console.log('before recipeImage')
       const recipeImage: string = await this.uploadRecipeImage(
         recipeData.recipeImage,
@@ -163,8 +164,9 @@ class RecipeAPIClass {
       const nutritionData = nutritionDataRes.nutritionData
       const nutritionLabels = nutritionDataRes.dietLabels
       const recipeId = '' + ObjectID()
-      const returnRecipeData: RecipeType = {
+      const returnRecipeData: RecipeType & { userId: string } = {
         _id: recipeId,
+        userId,
         title: recipeData.title,
         prepTime: recipeData.prepTime,
         cookTime: recipeData.cookTime,
