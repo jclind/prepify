@@ -139,26 +139,34 @@ class RecipeAPIClass {
   ): Promise<string | null> {
     try {
       setProgress(10)
+      console.log('before authorUsername')
       const authorUsername: string | null = await AuthAPI.getUsername()
-      if (!authorUsername) throw Error('User does not exist')
+      const userId = await AuthAPI.getUID()
+      console.log('after authorUsername', authorUsername)
+      if (!authorUsername || !userId) throw Error('User does not exist')
+      console.log('before recipeImage')
       const recipeImage: string = await this.uploadRecipeImage(
         recipeData.recipeImage,
         setProgress
       )
+      console.log('after recipeImage', recipeImage)
       const servingPrice: number = calculateServingPrice(
         recipeData.ingredients,
         recipeData.servings
       )
       setProgress(80)
       const totalTime: number = recipeData.prepTime + (recipeData.cookTime ?? 0)
+      console.log('before nutritionDataRes')
       const nutritionDataRes = await this.getRecipeNutrition(
         recipeData.ingredients
       )
+      console.log('after nutritionDataRes', nutritionDataRes)
       const nutritionData = nutritionDataRes.nutritionData
       const nutritionLabels = nutritionDataRes.dietLabels
       const recipeId = '' + ObjectID()
-      const returnRecipeData: RecipeType = {
+      const returnRecipeData: RecipeType & { userId: string } = {
         _id: recipeId,
+        userId,
         title: recipeData.title,
         prepTime: recipeData.prepTime,
         cookTime: recipeData.cookTime,
@@ -187,7 +195,9 @@ class RecipeAPIClass {
         numTimesMade: 0,
       }
       setProgress(90)
-      await http.post('addRecipe', returnRecipeData)
+      console.log('before http.post', returnRecipeData)
+      const response = await http.post('addRecipe', returnRecipeData)
+      console.log('response:', response)
       return recipeId
       // return await http.post('addRecipe', returnRecipeData)
     } catch (error) {
