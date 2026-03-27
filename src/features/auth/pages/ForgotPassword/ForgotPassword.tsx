@@ -6,7 +6,7 @@ import FormInput from 'shared/components/Form/FormInput'
 import { MdOutlineEmail } from 'react-icons/md'
 import { useAuth } from 'features/auth/context/AuthContext'
 import PrepifyLogo from 'shared/components/Navbar/PrepifyLogo'
-import { Helmet } from 'react-helmet'
+import { Helmet } from 'react-helmet-async'
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('')
