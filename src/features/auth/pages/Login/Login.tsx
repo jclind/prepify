@@ -1,12 +1,12 @@
 import React, { useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import './Login.scss'
-import '../../Components/Form/FormStyles.scss'
-import FormInput from '../../Components/Form/FormInput'
-import { useAuth } from '../../context/AuthContext'
+import 'shared/components/Form/FormStyles.scss'
+import FormInput from 'shared/components/Form/FormInput'
+import { useAuth } from 'features/auth/context/AuthContext'
 import { AiOutlineGoogle } from 'react-icons/ai'
 import { MdOutlineEmail, MdOutlineLock } from 'react-icons/md'
-import PrepifyLogo from '../../Components/Navbar/PrepifyLogo'
+import PrepifyLogo from 'shared/components/Navbar/PrepifyLogo'
 import { Helmet } from 'react-helmet'
 
 const Login = () => {
@@ -79,5 +79,5 @@ const Login = () => {
     </>
   )
 }
-// Work on functionality for all log in, sign up, and forgot password forms
+
 export default Login

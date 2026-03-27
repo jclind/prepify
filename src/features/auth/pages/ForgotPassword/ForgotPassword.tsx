@@ -1,11 +1,11 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import './ForgotPassword.scss'
-import '../../Components/Form/FormStyles.scss'
-import FormInput from '../../Components/Form/FormInput'
+import 'shared/components/Form/FormStyles.scss'
+import FormInput from 'shared/components/Form/FormInput'
 import { MdOutlineEmail } from 'react-icons/md'
-import { useAuth } from '../../context/AuthContext'
-import PrepifyLogo from '../../Components/Navbar/PrepifyLogo'
+import { useAuth } from 'features/auth/context/AuthContext'
+import PrepifyLogo from 'shared/components/Navbar/PrepifyLogo'
 import { Helmet } from 'react-helmet'
 
 const ForgotPassword = () => {

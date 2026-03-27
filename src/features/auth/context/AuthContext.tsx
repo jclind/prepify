@@ -16,10 +16,10 @@ import {
 } from 'firebase/auth'
 
 import { useNavigate } from 'react-router-dom'
-import AuthAPI from 'src/api/auth'
+import AuthAPI from 'features/auth/api/auth'
 import { TailSpin } from 'react-loader-spinner'
 import { getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage'
-import { ErrorWithData } from 'src/util/ErrorWithData'
+import { ErrorWithData } from 'shared/utils/ErrorWithData'
 
 export function useAuth() {
   return useContext(AuthContext)
@@ -232,19 +232,9 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   }
 
-  // Check for auth status on page load
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(userInstance => {
       if (userInstance) {
-        // Gets type of authentication, ie... password, google...
-        // const providerId = userInstance.providerData[0].providerId
-
-        // // If the authentication is anything other than password, send getUsername to check if username exists for that user
-        // if (providerId !== 'password') {
-        //   // // !!FIX ME
-
-        // }
-
         setUser(userInstance)
       } else {
         setUser(null)
@@ -255,7 +245,7 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
     return () => unsubscribe()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-  // Check if user has username after auth is loaded and user exists
+
   useEffect(() => {
     if (!loading && user && user.uid) {
       AuthAPI.getUsername(user.uid).then(username => {

@@ -1,10 +1,10 @@
 import React, { ChangeEvent, useState } from 'react'
-import '../../Components/Form/FormStyles.scss'
+import 'shared/components/Form/FormStyles.scss'
 import './CreateUsername.scss'
 import { TailSpin } from 'react-loader-spinner'
 import { useNavigate } from 'react-router-dom'
-import UsernameInput from '../../Components/Form/UsernameInput'
-import AuthAPI from 'src/api/auth'
+import UsernameInput from 'features/auth/components/UsernameInput'
+import AuthAPI from 'features/auth/api/auth'
 
 const CreateUsername = () => {
   const [currUsername, setCurrUsername] = useState('')

@@ -2,17 +2,17 @@ import React, { ChangeEvent, useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { AiOutlineGoogle, AiOutlineUser } from 'react-icons/ai'
 import { MdOutlineEmail, MdOutlineLock } from 'react-icons/md'
-import { useAuth } from '../../context/AuthContext'
+import { useAuth } from 'features/auth/context/AuthContext'
 import { TailSpin } from 'react-loader-spinner'
 import { Helmet } from 'react-helmet'
 
-import UsernameInput from '../../Components/Form/UsernameInput'
+import UsernameInput from 'features/auth/components/UsernameInput'
 
 import './Signup.scss'
-import '../../Components/Form/FormStyles.scss'
+import 'shared/components/Form/FormStyles.scss'
 
-import PrepifyLogo from '../../Components/Navbar/PrepifyLogo'
-import FormInput from '../../Components/Form/FormInput'
+import PrepifyLogo from 'shared/components/Navbar/PrepifyLogo'
+import FormInput from 'shared/components/Form/FormInput'
 
 const Signup = () => {
   const [name, setName] = useState('')

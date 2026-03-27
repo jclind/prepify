@@ -1,5 +1,5 @@
-import { auth } from '../client/db'
-import { http } from './http-common'
+import { auth } from 'shared/lib/firebase'
+import { http } from 'shared/api/http'
 
 class AuthAPIClass {
   getUID(): string | null {
