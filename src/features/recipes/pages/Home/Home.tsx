@@ -1,0 +1,22 @@
+import React from 'react'
+import { Helmet } from 'react-helmet'
+import TrendingRecipes from 'features/recipes/components/TrendingRecipes/TrendingRecipes'
+import HomeHero from './HomeHero/HomeHero'
+
+const Home = () => {
+  return (
+    <>
+      <Helmet>
+        <meta charSet='utf-8' />
+        <title>Prepify | Home</title>
+        <link rel='canonical' href='https://www.prepifymeals.com/' />
+      </Helmet>
+      <div className='page home-page'>
+        <HomeHero />
+        <TrendingRecipes />
+      </div>
+    </>
+  )
+}
+
+export default Home

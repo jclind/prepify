@@ -1,0 +1,15 @@
+@import '../../helpers.scss';
+
+.ingredient-item-text {
+  display: flex;
+  flex-wrap: wrap;
+  line-height: 1.5;
+  word-break: break-word;
+  .bold-text {
+    padding-right: 0.5ch;
+    font-weight: 700;
+  }
+  span {
+    color: $primary-text;
+  }
+}
