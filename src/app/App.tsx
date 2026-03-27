@@ -1,26 +1,26 @@
 import React, { useEffect } from 'react'
 import { Routes, Route, useLocation } from 'react-router-dom'
 import { HelmetProvider } from 'react-helmet-async'
-import AuthProvider from './context/AuthContext'
+import AuthProvider from 'features/auth/context/AuthContext'
 
-import Home from './pages/Home/Home'
-import Recipes from './pages/Recipes/Recipes'
-import Login from './pages/Login/Login'
-import Signup from './pages/Signup/Signup'
-import ForgotPassword from './pages/ForgotPassword/ForgotPassword'
-import PrivateRoute from './Components/PrivateRoute'
-import CreateUsername from './pages/CreateUsername/CreateUsername'
+import Home from 'features/recipes/pages/Home/Home'
+import Recipes from 'features/recipes/pages/Recipes/Recipes'
+import Login from 'features/auth/pages/Login/Login'
+import Signup from 'features/auth/pages/Signup/Signup'
+import ForgotPassword from 'features/auth/pages/ForgotPassword/ForgotPassword'
+import PrivateRoute from 'features/auth/components/PrivateRoute'
+import CreateUsername from 'features/auth/pages/CreateUsername/CreateUsername'
 
-import Account from './pages/Account/Account'
-import SavedRecipes from './pages/Account/SavedRecipes/SavedRecipes'
-import UserRatings from './pages/Account/UserRatings/UserRatings'
-import UserRecipes from './pages/Account/UserRecipes/UserRecipes'
+import Account from 'features/account/pages/Account/Account'
+import SavedRecipes from 'features/account/pages/Account/SavedRecipes/SavedRecipes'
+import UserRatings from 'features/account/pages/Account/UserRatings/UserRatings'
+import UserRecipes from 'features/account/pages/Account/UserRecipes/UserRecipes'
 
-import AddRecipe from './pages/AddRecipe/AddRecipe'
-import Layout from './Components/Layout/Layout'
-import Help from './pages/Help/Help'
-import NotFound from './pages/404/404'
-import SingleRecipe from './pages/SingleRecipe/SingleRecipe'
+import AddRecipe from 'features/recipes/pages/AddRecipe/AddRecipe'
+import Layout from 'shared/components/Layout/Layout'
+import Help from 'app/pages/Help/Help'
+import NotFound from 'app/pages/NotFound/NotFound'
+import SingleRecipe from 'features/recipes/pages/SingleRecipe/SingleRecipe'
 
 import { transitions, positions, Provider as AlertProvider } from 'react-alert'
 import {
@@ -29,9 +29,10 @@ import {
   AiOutlineClose,
 } from 'react-icons/ai'
 import { BiError } from 'react-icons/bi'
-import Settings from './pages/Settings/Settings'
-import Profile from './pages/Settings/SubSettings/Profile'
-import Password from './pages/Settings/SubSettings/Password'
+import Settings from 'features/account/pages/Settings/Settings'
+import Profile from 'features/account/pages/Settings/SubSettings/Profile'
+import Password from 'features/account/pages/Settings/SubSettings/Password'
+
 // import RecipeAI from './pages/RecipeAI/RecipeAI'
 
 const alertOptions = {
