@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { useLocation, useNavigate, Link, Outlet } from 'react-router-dom'
 import './Account.scss'
 import { Helmet } from 'react-helmet'
-import AuthAPI from '../../api/auth'
-import { useAuth } from 'src/context/AuthContext'
+import AuthAPI from 'features/auth/api/auth'
+import { useAuth } from 'features/auth/context/AuthContext'
 
 const Account = () => {
   const [nameInitial, setNameInitial] = useState('')

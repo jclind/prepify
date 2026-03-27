@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react'
-import RecipeThumbnail from '../../../Components/RecipeThumbnail/RecipeThumbnail'
+import RecipeThumbnail from 'features/recipes/components/RecipeThumbnail/RecipeThumbnail'
 import Select, { SingleValue } from 'react-select'
 
 import './SavedRecipes.scss'
-import RecipeAPI from 'src/api/recipes'
-import { RecipeType } from 'types'
+import RecipeAPI from 'features/recipes/api/recipes'
+import { RecipeType } from 'features/recipes/types'
 import { selectCustomStyles } from '../selectCustomStyles'
 
 const options = [

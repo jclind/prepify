@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import './SubSettings.scss'
 import InputContainer from './InputContainer'
-import { useAuth } from 'src/context/AuthContext'
+import { useAuth } from 'features/auth/context/AuthContext'
 import { useAlert } from 'react-alert'
 import { TailSpin } from 'react-loader-spinner'
 
