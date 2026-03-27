@@ -6,7 +6,7 @@ import { MdAddCircleOutline } from 'react-icons/md'
 import { AiOutlineClose } from 'react-icons/ai'
 import { BiWrench } from 'react-icons/bi'
 import Modal from 'react-modal'
-import packageJSON from '../../../package.json'
+import packageJSON from '../../../../package.json'
 
 const version = packageJSON.version
 Modal.setAppElement('#root')
@@ -70,6 +70,7 @@ const ReleaseNotes: FC<ReleaseNotesProps> = ({
       document.body.style.overflowY = 'scroll'
     }
   }, [releaseNotesModalIsOpen])
+
   return (
     <Modal
       isOpen={releaseNotesModalIsOpen}

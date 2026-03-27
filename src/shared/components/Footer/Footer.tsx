@@ -1,6 +1,5 @@
 import React from 'react'
-import pjson from '../../../package.json'
-
+import pjson from '../../../../package.json'
 import './Footer.scss'
 
 const version = pjson.version

@@ -1,4 +1,4 @@
-import { IngredientsType } from 'types'
+import { IngredientsType } from 'features/recipes/types'
 
 export const calculateServingPrice = (
   ingredientsList: IngredientsType[],

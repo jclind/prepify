@@ -1,4 +1,3 @@
-// a little function to help us with reordering the result
 export const reorder = <T>(
   list: T[],
   startIndex: number,

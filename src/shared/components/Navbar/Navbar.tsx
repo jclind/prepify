@@ -1,13 +1,13 @@
 import React, { useState, useEffect, FC } from 'react'
 import './Navbar.scss'
 import { NavLink, useLocation } from 'react-router-dom'
-import { useAuth } from '../../context/AuthContext'
 import PrepifyLogo from './PrepifyLogo'
 import Hamburger from 'hamburger-react'
 import { AiOutlineUser } from 'react-icons/ai'
 import { BiHelpCircle, BiLogOut } from 'react-icons/bi'
-import AuthAPI from 'src/api/auth'
 import Skeleton from 'react-loading-skeleton'
+import { useAuth } from 'features/auth/context/AuthContext'
+import AuthAPI from 'features/auth/api/auth'
 
 const skeletonColor = '#d6d6d6'
 
@@ -25,7 +25,6 @@ const Navbar: FC<NavbarProps> = ({
   const [navOpen, setNavOpen] = useState(false)
 
   const authRes = useAuth()
-  // const { user, logout, getUsername } = useAuth()
   const uid = AuthAPI.getUID()
 
   const [username, setUsername] = useState('')
