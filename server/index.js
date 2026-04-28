@@ -11,10 +11,9 @@ const authRoutes = require('./routes/auth')
 const app = express()
 const PORT = process.env.PORT || 4000
 
-const allowedOrigins = [
-  'http://localhost:3000',
-  process.env.FRONTEND_URL,  // set to your Netlify URL in Railway env vars
-].filter(Boolean)
+const allowedOrigins = (process.env.FRONTEND_URLS || 'http://localhost:3000')
+  .split(',')
+  .map(s => s.trim().replace(/\/$/, ''))
 
 app.use(cors({
   origin: allowedOrigins,
