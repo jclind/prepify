@@ -6,6 +6,7 @@ const recipeRoutes = require('./routes/recipes')
 const tagRoutes = require('./routes/tags')
 const reviewRoutes = require('./routes/reviews')
 const userRoutes = require('./routes/users')
+const authRoutes = require('./routes/auth')
 
 const app = express()
 const PORT = process.env.PORT || 4000
@@ -22,6 +23,7 @@ app.use('/', recipeRoutes)
 app.use('/', tagRoutes)
 app.use('/', reviewRoutes)
 app.use('/', userRoutes)
+app.use('/', authRoutes)
 
 connectDB()
   .then(() => {
