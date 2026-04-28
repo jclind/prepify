@@ -118,7 +118,6 @@ router.get('/getRecipe', async (req, res) => {
 })
 
 // POST /addRecipe
-// TODO: protect with auth middleware — verify body.userId matches token uid
 router.post('/addRecipe', verifyToken, async (req, res) => {
   try {
     const db = getDB()
@@ -126,7 +125,17 @@ router.post('/addRecipe', verifyToken, async (req, res) => {
     if (body.userId !== req.uid) {
       return res.status(403).json({ error: 'Forbidden' })
     }
-    const result = await db.collection('recipes').insertOne(body)
+    const requiredFields = ['_id', 'title', 'ingredients', 'instructions', 'mealTypes']
+    const missing = requiredFields.filter(f => {
+      const val = body[f]
+      return val == null || val === '' || (Array.isArray(val) && val.length === 0)
+    })
+    if (missing.length > 0) {
+      return res.status(400).json({ error: `Missing required fields: ${missing.join(', ')}` })
+    }
+    // Enforce safe defaults — don't trust client-supplied counters
+    const docToInsert = { ...body, numTimesSaved: 0, numTimesMade: 0, views: 0 }
+    const result = await db.collection('recipes').insertOne(docToInsert)
     await db.collection('userRecipeData').updateOne(
       { _id: body.userId },
       { $push: { userRecipes: { recipeId: body._id } } },

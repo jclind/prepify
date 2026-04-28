@@ -117,10 +117,13 @@ router.put('/editReview', verifyToken, async (req, res) => {
     if (!recipeId || text == null) {
       return res.status(400).json({ error: 'recipeId and text are required' })
     }
-    await db.collection('ratings').updateOne(
+    const editResult = await db.collection('ratings').updateOne(
       { username, recipeId },
       { $set: { reviewText: text, reviewLastUpdated: Date.now().toString() } }
     )
+    if (editResult.matchedCount === 0) {
+      return res.status(403).json({ error: 'Review not found or not authorized' })
+    }
     res.json({ edited: true })
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -141,10 +144,13 @@ router.put('/deleteReview', verifyToken, async (req, res) => {
     if (!usernameDoc) return res.status(400).json({ error: 'Username not found for this user' })
     const { username } = usernameDoc
 
-    await db.collection('ratings').updateOne(
+    const deleteResult = await db.collection('ratings').updateOne(
       { username, recipeId },
       { $set: { reviewText: '', reviewLastUpdated: '' } }
     )
+    if (deleteResult.matchedCount === 0) {
+      return res.status(403).json({ error: 'Review not found or not authorized' })
+    }
     res.json({ deleted: true })
   } catch (err) {
     res.status(500).json({ error: err.message })
