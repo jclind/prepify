@@ -1,8 +1,7 @@
 import axios from 'axios'
 
 export const http = axios.create({
-  baseURL:
-    'https://us-east-1.aws.data.mongodb-api.com/app/prepify-ixumn/endpoint',
+  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:4000',
   headers: {
     'Content-type': 'application/json',
   },
