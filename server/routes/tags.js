@@ -1,11 +1,11 @@
 const { Router } = require('express')
 const { getDB } = require('../db')
+const { verifyToken } = require('../middleware/auth')
 
 const router = Router()
 
 // POST /addRecipeTag
-// TODO: protect with auth middleware
-router.post('/addRecipeTag', async (req, res) => {
+router.post('/addRecipeTag', verifyToken, async (req, res) => {
   try {
     const db = getDB()
     const text = req.body

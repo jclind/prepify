@@ -8,23 +8,33 @@ const router = Router()
 // TODO: protect with verifyToken
 router.put('/addRating', verifyToken, async (req, res) => {
   try {
+    const { recipeId, rating } = req.query
     const db = getDB()
-    const { username, recipeId, rating } = req.query
-    if (!username || !recipeId || !rating) {
-      return res.status(400).json({ error: 'username, recipeId, and rating are required' })
+    const userDoc = await db.collection('usernames').findOne({ _id: req.uid })
+    if (!userDoc) return res.status(400).json({ error: 'User not found' })
+    const username = userDoc.username
+    if (!recipeId || !rating) {
+      return res.status(400).json({ error: 'recipeId and rating are required' })
+    }
+    const parsedRating = parseFloat(rating)
+    if (isNaN(parsedRating)) {
+      return res.status(400).json({ error: 'Invalid rating' })
+    }
+    if (parsedRating < 1 || parsedRating > 5) {
+      return res.status(400).json({ error: 'Rating must be between 1 and 5' })
     }
 
     const existing = await db.collection('ratings').findOne({ username, recipeId })
     if (existing) {
       await db.collection('ratings').updateOne(
         { username, recipeId },
-        { $set: { rating, ratingLastUpdated: new Date() } }
+        { $set: { rating: parsedRating, ratingLastUpdated: new Date() } }
       )
     } else {
       await db.collection('ratings').insertOne({
         username,
         recipeId,
-        rating,
+        rating: parsedRating,
         ratingLastUpdated: new Date(),
         reviewCreatedAt: '',
         reviewLastUpdated: '',
@@ -38,7 +48,7 @@ router.put('/addRating', verifyToken, async (req, res) => {
 
     await db.collection('recipes').updateOne(
       { _id: recipeId },
-      { $set: { rating: { rateCount: count.toString(), rateValue: avg.toString() } } }
+      { $set: { rating: { rateCount: count, rateValue: avg } } }
     )
 
     res.json({ rated: true })
@@ -52,9 +62,10 @@ router.put('/addRating', verifyToken, async (req, res) => {
 router.put('/newReview', verifyToken, async (req, res) => {
   try {
     const db = getDB()
-    const { userId, recipeId, reviewText } = req.body
-    if (!userId || !recipeId || reviewText == null) {
-      return res.status(400).json({ error: 'userId, recipeId, and reviewText are required' })
+    const { recipeId, reviewText } = req.body
+    const userId = req.uid
+    if (!recipeId || reviewText == null) {
+      return res.status(400).json({ error: 'recipeId and reviewText are required' })
     }
 
     const usernameDoc = await db.collection('usernames').findOne({ _id: userId })
@@ -98,10 +109,13 @@ router.get('/checkIfReviewed', async (req, res) => {
 // TODO: protect with verifyToken
 router.put('/editReview', verifyToken, async (req, res) => {
   try {
+    const { recipeId, text } = req.query
     const db = getDB()
-    const { username, recipeId, text } = req.query
-    if (!username || !recipeId || text == null) {
-      return res.status(400).json({ error: 'username, recipeId, and text are required' })
+    const userDoc = await db.collection('usernames').findOne({ _id: req.uid })
+    if (!userDoc) return res.status(400).json({ error: 'User not found' })
+    const username = userDoc.username
+    if (!recipeId || text == null) {
+      return res.status(400).json({ error: 'recipeId and text are required' })
     }
     await db.collection('ratings').updateOne(
       { username, recipeId },
@@ -118,9 +132,10 @@ router.put('/editReview', verifyToken, async (req, res) => {
 router.put('/deleteReview', verifyToken, async (req, res) => {
   try {
     const db = getDB()
-    const { userId, recipeId } = req.query
-    if (!userId || !recipeId) {
-      return res.status(400).json({ error: 'userId and recipeId are required' })
+    const { recipeId } = req.query
+    const userId = req.uid
+    if (!recipeId) {
+      return res.status(400).json({ error: 'recipeId is required' })
     }
     const usernameDoc = await db.collection('usernames').findOne({ _id: userId })
     if (!usernameDoc) return res.status(400).json({ error: 'Username not found for this user' })
