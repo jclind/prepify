@@ -1,17 +1,26 @@
 const { MongoClient } = require('mongodb')
 
-const client = new MongoClient(process.env.MONGO_URI, {
-  tls: true,
-  serverSelectionTimeoutMS: 5000,
-  socketTimeoutMS: 45000,
-  maxPoolSize: 10,
-})
+let client
 let db
 
-async function connectDB() {
+async function connectDB(uri) {
+  const mongoUri = uri || process.env.MONGO_URI
+  const options = uri
+    ? { serverSelectionTimeoutMS: 5000 }
+    : { tls: true, serverSelectionTimeoutMS: 5000, socketTimeoutMS: 45000, maxPoolSize: 10 }
+
+  client = new MongoClient(mongoUri, options)
   await client.connect()
   db = client.db('prepify')
   console.log('Connected to MongoDB')
+}
+
+async function closeDB() {
+  if (client) {
+    await client.close()
+    client = null
+    db = null
+  }
 }
 
 function getDB() {
@@ -19,4 +28,4 @@ function getDB() {
   return db
 }
 
-module.exports = { connectDB, getDB }
+module.exports = { connectDB, closeDB, getDB }
