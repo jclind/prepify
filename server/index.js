@@ -11,8 +11,15 @@ const authRoutes = require('./routes/auth')
 const app = express()
 const PORT = process.env.PORT || 4000
 
-// TODO: lock CORS origin to frontend URL in production
-app.use(cors({ origin: '*' }))
+const allowedOrigins = [
+  'http://localhost:3000',
+  process.env.FRONTEND_URL,  // set to your Netlify URL in Railway env vars
+].filter(Boolean)
+
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true,
+}))
 app.use(express.json())
 
 app.get('/health', (req, res) => {
@@ -27,9 +34,11 @@ app.use('/', authRoutes)
 
 connectDB()
   .then(() => {
-    app.listen(PORT, () => console.log(`Server running on port ${PORT}`))
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`)
+    })
   })
   .catch((err) => {
-    console.error('Failed to connect to MongoDB:', err)
+    console.error('Failed to connect to MongoDB:', err.message)
     process.exit(1)
   })
