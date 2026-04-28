@@ -31,15 +31,7 @@ class RecipeAPIClass {
   ): Promise<RecipeDBResponseType> {
     let tagsArrParam = '' // For tags that have been chosen
     if (tags.length > 0) {
-      tagsArrParam += '&tags='
-      tags.forEach((tag, idx) => {
-        tagsArrParam += `${tag},`
-
-        // When the last tag is reached, leave off the last comma for backend array processing
-        if (idx === tags.length - 1) {
-          tagsArrParam += `${tag}`
-        }
-      })
+      tagsArrParam += `&tags=${tags.join(',')}`
     }
 
     const result = await http.get(
@@ -128,7 +120,6 @@ class RecipeAPIClass {
       setProgress(70)
       return fileUrl
     } else {
-      console.log('enter image')
       return ''
     }
   }
@@ -139,28 +130,22 @@ class RecipeAPIClass {
   ): Promise<string | null> {
     try {
       setProgress(10)
-      console.log('before authorUsername')
       const authorUsername: string | null = await AuthAPI.getUsername()
       const userId = await AuthAPI.getUID()
-      console.log('after authorUsername', authorUsername)
       if (!authorUsername || !userId) throw Error('User does not exist')
-      console.log('before recipeImage')
       const recipeImage: string = await this.uploadRecipeImage(
         recipeData.recipeImage,
         setProgress
       )
-      console.log('after recipeImage', recipeImage)
       const servingPrice: number = calculateServingPrice(
         recipeData.ingredients,
         recipeData.servings
       )
       setProgress(80)
       const totalTime: number = recipeData.prepTime + (recipeData.cookTime ?? 0)
-      console.log('before nutritionDataRes')
       const nutritionDataRes = await this.getRecipeNutrition(
         recipeData.ingredients
       )
-      console.log('after nutritionDataRes', nutritionDataRes)
       const nutritionData = nutritionDataRes.nutritionData
       const nutritionLabels = nutritionDataRes.dietLabels
       const recipeId = '' + ObjectID()
@@ -195,14 +180,9 @@ class RecipeAPIClass {
         numTimesMade: 0,
       }
       setProgress(90)
-      console.log('before http.post', returnRecipeData)
-      const response = await http.post('addRecipe', returnRecipeData)
-      console.log('response:', response)
+      await http.post('addRecipe', returnRecipeData)
       return recipeId
-      // return await http.post('addRecipe', returnRecipeData)
     } catch (error) {
-      console.log(error)
-      // !CATCH ERROR
       return null
     }
   }
@@ -271,12 +251,8 @@ class RecipeAPIClass {
 
   // Ratings / Reviews
   async addRating(recipeId: string, rating: number) {
-    const username = await AuthAPI.getUsername()
-    if (!username) return null
-
-    return await http.put(
-      `addRating?username=${username}&recipeId=${recipeId}&rating=${rating}`
-    )
+    if (!AuthAPI.getUID()) return null
+    return await http.put(`addRating?recipeId=${recipeId}&rating=${rating}`)
   }
 
   async newReview(recipeId: string, text: string): Promise<ReviewType | null> {
@@ -301,11 +277,8 @@ class RecipeAPIClass {
     return result.data
   }
   async editReview(recipeId: string, text: string) {
-    const username = await AuthAPI.getUsername()
-    if (!username) return null
-    return await http.put(
-      `editReview?username=${username}&recipeId=${recipeId}&text=${text}`
-    )
+    if (!AuthAPI.getUID()) return null
+    return await http.put(`editReview?recipeId=${recipeId}&text=${text}`)
   }
   async deleteReview(recipeId: string) {
     const userId = await AuthAPI.getUID()

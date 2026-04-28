@@ -45,8 +45,8 @@ const Recipes = () => {
         setTotalResults(res.total_results)
 
         if (res.recipeList) {
-          if (currPage !== 0) {
-            setRecipeList([...recipeList, ...res.recipeList])
+          if (page !== 0) {
+            setRecipeList(prev => [...prev, ...res.recipeList])
           } else {
             setRecipeList(res.recipeList)
           }
