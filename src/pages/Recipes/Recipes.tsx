@@ -17,6 +17,7 @@ const Recipes = () => {
   const [selectedCuisine, setSelectedCuisine] = useState('')
 
   const [fetchRecipesLoading, setFetchRecipesLoading] = useState(false)
+  const [fetchRecipesError, setFetchRecipesError] = useState<string | null>(null)
   const [filtersLoading, setFiltersLoading] = useState(true)
 
   const [currPage, setCurrPage] = useState<number | null>(null)
@@ -33,6 +34,7 @@ const Recipes = () => {
     const recipesPerPage = 9
 
     setFetchRecipesLoading(true)
+    setFetchRecipesError(null)
     RecipeAPI.getAllRecipes(
       page,
       filter,
@@ -53,6 +55,9 @@ const Recipes = () => {
         } else {
           setRecipeList([])
         }
+      })
+      .catch(() => {
+        setFetchRecipesError('Failed to load recipes. Please try again.')
       })
       .finally(() => setFetchRecipesLoading(false))
   }
@@ -96,7 +101,9 @@ const Recipes = () => {
             filtersLoading={filtersLoading}
             setFiltersLoading={setFiltersLoading}
           />
-          {totalResults === 0 ? (
+          {fetchRecipesError ? (
+            <div className='fetch-error'>{fetchRecipesError}</div>
+          ) : totalResults === 0 ? (
             <div>No Results Found</div>
           ) : (
             <>

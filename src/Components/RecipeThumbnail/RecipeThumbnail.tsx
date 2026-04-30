@@ -53,7 +53,7 @@ const RecipeThumbnail = ({ recipe, loading }: RecipeThumbnailType) => {
           )}
         </h3>
         <div className='price'>
-          {loading || !recipe || !recipe.servingPrice || !recipe.servings ? (
+          {loading || !recipe || recipe.servingPrice == null || !recipe.servings ? (
             <Skeleton baseColor={skeletonColor} height={30} />
           ) : (
             `Serving: $${(recipe.servingPrice / 100).toFixed(2)} | Recipe: $${(

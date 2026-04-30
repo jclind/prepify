@@ -75,7 +75,7 @@ const MadeRecipeBtn: FC<MadeRecipeBtnProps> = ({ recipeId }) => {
           }
         })
         .catch((error: any) =>
-          alert(error.toString(), { timeout: 5000, type: 'error' })
+          alert.show(error.toString(), { timeout: 5000, type: 'error' })
         )
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
