@@ -33,7 +33,7 @@ const AddReview: FC<AddReviewProps> = ({
     }
     if (newReviewText.length < 5) {
       return setNewReviewError(
-        'Review is too short. Please make sure to add 4 or more characters.'
+        'Review is too short. Please make sure to add 5 or more characters.'
       )
     }
     setIsReviewOpen(false)

@@ -1,5 +1,6 @@
 declare namespace Cypress {
   interface Chainable {
+    login(): Chainable<void>
     fillSignupInputs(
       username: string,
       email: string,
@@ -10,8 +11,7 @@ declare namespace Cypress {
         uniqueEmail?: boolean
         uniquePassword?: boolean
       }
-    ): Chainable<Element>
-    signupProcess(): Chainable<Element>
-    login(): Chainable<Element>
+    ): Chainable<void>
+    signupProcess(): Chainable<void>
   }
 }

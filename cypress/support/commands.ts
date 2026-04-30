@@ -1,76 +1,48 @@
 /// <reference types="cypress" />
 
-import { email, password } from './e2e'
-
-// ***********************************************
-// This example commands.ts shows you how to
-// create various custom commands and overwrite
-// existing commands.
-//
-// For more comprehensive examples of custom
-// commands please read more here:
-// https://on.cypress.io/custom-commands
-// ***********************************************
-//
-//
-// -- This is a parent command --
-// Cypress.Commands.add('login', (email, password) => { ... })
-//
-//
-// -- This is a child command --
-// Cypress.Commands.add('drag', { prevSubject: 'element'}, (subject, options) => { ... })
-//
-//
-// -- This is a dual command --
-// Cypress.Commands.add('dismiss', { prevSubject: 'optional'}, (subject, options) => { ... })
-//
-//
-// -- This will overwrite an existing command --
-// Cypress.Commands.overwrite('visit', (originalFn, url, options) => { ... })
-//
-// declare global {
-//   namespace Cypress {
-//     interface Chainable {
-//       login(email: string, password: string): Chainable<void>
-//       drag(subject: string, options?: Partial<TypeOptions>): Chainable<Element>
-//       dismiss(subject: string, options?: Partial<TypeOptions>): Chainable<Element>
-//       visit(originalFn: CommandOriginalFn, url: string, options: Partial<VisitOptions>): Chainable<Element>
-//     }
-//   }
-// }
+import { email, password, username } from './e2e'
 
 Cypress.Commands.add('login', () => {
-  cy.viewport(726, 977)
-  cy.visit('/')
-  cy.intercept(
-    'https://us-east-1.aws.data.mongodb-api.com/app/prepify-ixumn/endpoint/getTrendingRecipes*',
-    req => {
-      req.reply(res => {
-        res.send({ fixture: 'trending-recipes.json' })
-      })
-    }
+  const apiUrl = Cypress.env('API_URL')
+  cy.session(
+    'prepify-user',
+    () => {
+      // Stub the requests triggered after Firebase redirects to home on login
+      cy.intercept('GET', `${apiUrl}/getTrendingRecipes*`, { fixture: 'trending-recipes.json' })
+      cy.intercept('GET', `${apiUrl}/getUsername*`, { body: 'testinguser' })
+      cy.visit('/login')
+      cy.get('input[name="email"]').type(email)
+      cy.get('input[name="password"]').type(password)
+      cy.contains('button', 'Login').click()
+      cy.contains('a.nav-link', 'Create Recipe', { timeout: 15000 })
+    },
   )
-  cy.intercept(
-    'GET',
-    'https://us-east-1.aws.data.mongodb-api.com/app/prepify-ixumn/endpoint/getUsername*',
-    { body: 'testinguser' }
-  )
-  // Logout
-  cy.get('body').contains('Save money.')
-  cy.get('body').then($body => {
-    if ($body.text().includes('Create Recipe')) {
-      cy.contains('button', 'logout').click({ force: true })
-    }
+})
+
+Cypress.Commands.add('fillSignupInputs', (username, email, password, options) => {
+  const ts = new Date().getTime()
+  const u = options.uniqueUsername ? username + ts : username
+  const e = options.uniqueEmail ? username + ts + '@gmail.com' : email
+  const p = options.uniquePassword ? password + ts : password
+
+  cy.get('input[name="name"]').type('Testing User')
+  cy.get('input[name="username"]').type(u)
+  cy.get('input[name="email"]').type(e)
+  cy.get('input[name="password"]').type(p)
+
+  if (options.click) {
+    cy.contains('button', 'Create Username').click()
+  }
+})
+
+Cypress.Commands.add('signupProcess', () => {
+  cy.contains('a', 'signup').click()
+  cy.fillSignupInputs(username, email, password, {
+    click: true,
+    uniqueUsername: true,
+    uniqueEmail: true,
   })
-
-  cy.contains('a', 'login').click()
-
-  // Login page
-  cy.get('input[name="email"]').type(email)
-  cy.get('input[name="password"]').type(password)
-
-  cy.contains('button', 'Login').click()
-
-  // Should be on home page
   cy.contains('a', 'Create Recipe')
+  cy.contains('button', 'logout').click({ force: true })
+  cy.contains('a', 'login')
 })

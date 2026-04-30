@@ -30,6 +30,7 @@ const SingleRecipe = ({ recipe }: { recipe?: RecipeType | null }) => {
   )
   const [loading, setLoading] = useState(true)
   const [recipe404, setRecipe404] = useState(false)
+  const [recipeError, setRecipeError] = useState<string | null>(null)
   const [modIngredients, setModIngredients] = useState<IngredientsType[]>([])
   const [currUserReview, setCurrUserReview] = useState<ReviewType | null>(null)
   const [servingSize, setServingSize] = useState(0)
@@ -99,6 +100,8 @@ const SingleRecipe = ({ recipe }: { recipe?: RecipeType | null }) => {
       })
       .catch(err => {
         console.log(err)
+        setRecipeError('Failed to load recipe. Please try again.')
+        setLoading(false)
       })
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -118,7 +121,9 @@ const SingleRecipe = ({ recipe }: { recipe?: RecipeType | null }) => {
         </title>
         <meta name='description' content={currRecipe?.description} />
       </Helmet>
-      {recipe404 ? (
+      {recipeError ? (
+        <div className='recipe-fetch-error'>{recipeError}</div>
+      ) : recipe404 ? (
         <RecipeNotFound />
       ) : (
         <>

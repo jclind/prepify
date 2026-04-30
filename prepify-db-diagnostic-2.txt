@@ -1,0 +1,69 @@
+=== Step 1 — Install Node 20 via Homebrew ===
+✔︎ JSON API cask.jws.json
+✔︎ JSON API formula.jws.json
+Warning: node@20 has been deprecated because it is not supported upstream! It will be disabled on 2026-10-28.
+==> Fetching downloads for: node@20
+✔︎ Bottle Manifest node@20 (20.20.2)
+✔︎ Bottle Manifest icu4c@78 (78.3)
+✔︎ Bottle Manifest libnghttp2 (1.69.0)
+✔︎ Bottle Manifest ca-certificates (2026-03-19)
+✔︎ Bottle libnghttp2 (1.69.0)
+✔︎ Bottle ca-certificates (2026-03-19)
+✔︎ Bottle icu4c@78 (78.3)
+✔︎ Bottle node@20 (20.20.2)
+==> Installing dependencies for node@20: icu4c@78, libnghttp2 and ca-certificates
+==> Installing node@20 dependency: icu4c@78
+==> Pouring icu4c@78--78.3.arm64_tahoe.bottle.tar.gz
+🍺  /opt/homebrew/Cellar/icu4c@78/78.3: 279 files, 87.7MB
+==> Installing node@20 dependency: libnghttp2
+==> Pouring libnghttp2--1.69.0.arm64_tahoe.bottle.tar.gz
+🍺  /opt/homebrew/Cellar/libnghttp2/1.69.0: 14 files, 848.7KB
+==> Installing node@20 dependency: ca-certificates
+==> Pouring ca-certificates--2026-03-19.all.bottle.tar.gz
+[34m==>[0m [1mRegenerating CA certificate bundle from keychain, this may take a while...[0m
+🍺  /opt/homebrew/Cellar/ca-certificates/2026-03-19: 4 files, 237.5KB
+==> Installing node@20
+==> Pouring node@20--20.20.2.arm64_tahoe.bottle.tar.gz
+Warning: node@20 was installed but not linked because node is already linked.
+To link this version, run:
+  brew link node@20
+==> Caveats
+node@20 is keg-only, which means it was not symlinked into /opt/homebrew,
+because this is an alternate version of another formula.
+
+If you need to have node@20 first in your PATH, run:
+  echo 'export PATH="/opt/homebrew/opt/node@20/bin:$PATH"' >> ~/.zshrc
+
+For compilers to find node@20 you may need to set:
+  export LDFLAGS="-L/opt/homebrew/opt/node@20/lib"
+  export CPPFLAGS="-I/opt/homebrew/opt/node@20/include"
+==> Summary
+🍺  /opt/homebrew/Cellar/node@20/20.20.2: 2,068 files, 53.5MB
+==> Running `brew cleanup node@20`...
+Disable this behaviour by setting `HOMEBREW_NO_INSTALL_CLEANUP=1`.
+Hide these hints with `HOMEBREW_NO_ENV_HINTS=1` (see `man brew`).
+==> Caveats
+==> node@20
+node@20 is keg-only, which means it was not symlinked into /opt/homebrew,
+because this is an alternate version of another formula.
+
+If you need to have node@20 first in your PATH, run:
+  echo 'export PATH="/opt/homebrew/opt/node@20/bin:$PATH"' >> ~/.zshrc
+
+For compilers to find node@20 you may need to set:
+  export LDFLAGS="-L/opt/homebrew/opt/node@20/lib"
+  export CPPFLAGS="-I/opt/homebrew/opt/node@20/include"
+
+=== Step 2 — Link Node 20 as active version ===
+Unlinking /opt/homebrew/Cellar/node/25.8.1_1... 9 symlinks removed.
+Linking /opt/homebrew/Cellar/node@20/20.20.2... 1957 symlinks created.
+
+=== Step 3 — Confirm the switch ===
+v20.20.2
+/opt/homebrew/bin/node
+
+=== Step 4 — Raw MongoDB connection test ===
+(node:56806) Warning: Setting the NODE_TLS_REJECT_UNAUTHORIZED environment variable to '0' makes TLS connections and HTTPS requests insecure by disabling certificate verification.
+(Use `node --trace-warnings ...` to show where the warning was created)
+FAILED: C0186AFA01000000:error:0A000438:SSL routines:ssl3_read_bytes:tlsv1 alert internal error:ssl/record/rec_layer_s3.c:918:SSL alert number 80
+
