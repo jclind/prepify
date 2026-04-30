@@ -65,7 +65,9 @@ jobs:
         run: npm install
         working-directory: server
       - name: Start Express server
-        run: node index.js &
+        run: |
+          node index.js > server.log 2>&1 &
+          echo $! > server.pid
         working-directory: server
         env:
           PORT: 4000
@@ -73,7 +75,7 @@ jobs:
           FRONTEND_URLS: http://localhost:3000
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
       - name: Start React dev server
-        run: npm start &
+        run: npm start > react.log 2>&1 &
         env:
           BROWSER: none
           REACT_APP_API_URL: http://localhost:4000
@@ -84,10 +86,17 @@ jobs:
           REACT_APP_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.REACT_APP_FIREBASE_MESSAGING_SENDER_ID }}
           REACT_APP_FIREBASE_APP_ID: ${{ secrets.REACT_APP_FIREBASE_APP_ID }}
           REACT_APP_FIREBASE_MEASUREMENT_ID: ${{ secrets.REACT_APP_FIREBASE_MEASUREMENT_ID }}
-      - name: Install wait-on
-        run: npm install -g wait-on
       - name: Wait for servers
         run: npx wait-on http://localhost:3000 http://localhost:4000 --timeout 120000
+      - name: Check server status
+        if: failure()
+        run: |
+          echo "=== Express Server Log ==="
+          cat server/server.log || echo "No server log found"
+          echo "=== React Dev Server Log ==="
+          cat react.log || echo "No react log found"
+          echo "=== Network Status ==="
+          netstat -tlnp || ss -tlnp || echo "netstat/ss not available"
       - name: Run Cypress
         run: npx cypress run --headless
         env:
