@@ -4,7 +4,7 @@ import { AiOutlineGoogle, AiOutlineUser } from 'react-icons/ai'
 import { MdOutlineEmail, MdOutlineLock } from 'react-icons/md'
 import { useAuth } from '../../context/AuthContext'
 import { TailSpin } from 'react-loader-spinner'
-import { Helmet } from 'react-helmet'
+import { Helmet } from 'react-helmet-async'
 
 import UsernameInput from '../../Components/Form/UsernameInput'
 

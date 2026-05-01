@@ -1,5 +1,5 @@
 import React, { FC } from 'react'
-import { DraggableProvided } from 'react-beautiful-dnd'
+import { DraggableProvided } from '@hello-pangea/dnd'
 import { AiOutlineMenu } from 'react-icons/ai'
 
 type HandlerProps = {

@@ -1,5 +1,5 @@
 import React, { Dispatch, SetStateAction, FC, useState, useRef } from 'react'
-import { DraggableProvided, DraggableStateSnapshot } from 'react-beautiful-dnd'
+import { DraggableProvided, DraggableStateSnapshot } from '@hello-pangea/dnd'
 import { CiShoppingBasket } from 'react-icons/ci'
 import Skeleton from 'react-loading-skeleton'
 import RecipeAPI from 'src/api/recipes'

@@ -13,8 +13,7 @@ http.interceptors.request.use(async (config) => {
   const user = auth.currentUser
   if (user) {
     const token = await user.getIdToken()
-    config.headers = config.headers ?? {}
-    config.headers.Authorization = `Bearer ${token}`
+    config.headers.set('Authorization', `Bearer ${token}`)
   }
   return config
 })
