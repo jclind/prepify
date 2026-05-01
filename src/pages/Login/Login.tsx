@@ -7,7 +7,7 @@ import { useAuth } from '../../context/AuthContext'
 import { AiOutlineGoogle } from 'react-icons/ai'
 import { MdOutlineEmail, MdOutlineLock } from 'react-icons/md'
 import PrepifyLogo from '../../Components/Navbar/PrepifyLogo'
-import { Helmet } from 'react-helmet'
+import { Helmet } from 'react-helmet-async'
 
 const Login = () => {
   const [email, setEmail] = useState('')

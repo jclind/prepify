@@ -1,5 +1,5 @@
 import React from 'react'
-import { Helmet } from 'react-helmet'
+import { Helmet } from 'react-helmet-async'
 import TrendingRecipes from 'src/Components/TrendingRecipes/TrendingRecipes'
 import HomeHero from './HomeHero/HomeHero'
 

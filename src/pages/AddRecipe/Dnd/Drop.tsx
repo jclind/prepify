@@ -1,5 +1,5 @@
 import React, { FC } from 'react'
-import { Droppable } from 'react-beautiful-dnd'
+import { Droppable } from '@hello-pangea/dnd'
 
 type DropProps = {
   children: React.ReactNode

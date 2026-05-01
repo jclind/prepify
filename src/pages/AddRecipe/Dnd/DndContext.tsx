@@ -1,5 +1,5 @@
 import React from 'react'
-import { DragDropContext, DropResult } from 'react-beautiful-dnd'
+import { DragDropContext, DropResult } from '@hello-pangea/dnd'
 import { reorder } from '../../../util/reorder'
 import Drop from './Drop'
 

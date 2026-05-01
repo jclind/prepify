@@ -1,5 +1,5 @@
 import React, { Dispatch, FC, SetStateAction, useRef, useState } from 'react'
-import { DraggableProvided, DraggableStateSnapshot } from 'react-beautiful-dnd'
+import { DraggableProvided, DraggableStateSnapshot } from '@hello-pangea/dnd'
 import { InstructionsType } from 'types'
 import Handler from '../../ListComponents/Handler'
 import RemoveItem from '../../ListComponents/RemoveItem'
