@@ -6,16 +6,10 @@ const router = express.Router()
 
 router.post('/', async (req, res) => {
   try {
-    const spoonacularApiKey = process.env.SPOONACULAR_API_KEY
+    const { ingredientString, spoonacularApiKey } = req.body
 
-    if (!spoonacularApiKey) {
-      return res.status(500).json({ error: 'Server misconfiguration: SPOONACULAR_API_KEY not set' })
-    }
-
-    const { ingredientString } = req.body
-
-    if (!ingredientString) {
-      return res.status(400).json({ error: 'ingredientString is required' })
+    if (!ingredientString || !spoonacularApiKey) {
+      return res.status(400).json({ error: 'ingredientString and spoonacularApiKey are required' })
     }
 
     const db = req.app.locals.db
