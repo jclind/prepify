@@ -1,5 +1,4 @@
-import { parseIngredientString } from '@jclind/ingredient-parser'
-import { fetchIngredientEnrichment } from './ingredientParserApi'
+import { ingredientParser, IngredientResponse } from '@jclind/ingredient-parser'
 
 import ObjectID from 'bson-objectid'
 import { getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage'
@@ -314,23 +313,15 @@ class RecipeAPIClass {
 
   // Ingredients
   async getIngredientData(val: string): Promise<IngredientsType> {
-    const parsedIngredient = parseIngredientString(val)
-    const enrichment = await fetchIngredientEnrichment(parsedIngredient)
+    const apiKey = process.env.REACT_APP_SPOONACULAR_API_KEY
 
-    if (enrichment.error || !enrichment.data) {
-      return {
-        error: enrichment.error ?? { message: 'Enrichment failed' },
-        ingredientData: null,
-        parsedIngredient,
-        id: uuidv4(),
-      }
+    if (!apiKey) {
+      throw new Error('Spoonacular API key is not defined')
     }
 
-    const data: IngredientsType = {
-      ingredientData: enrichment.data,
-      parsedIngredient,
-      id: uuidv4(),
-    }
+    const result: IngredientResponse = await ingredientParser(val, apiKey)
+
+    const data: IngredientsType = { ...result, id: uuidv4() }
 
     return data
   }
