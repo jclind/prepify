@@ -1,11 +1,10 @@
 const express = require('express')
-const verifyToken = require('../middleware/auth')
 const { checkCache, writeCache } = require('../services/ingredientCache')
 const { fetchFromSpoonacular } = require('../services/spoonacular')
 
 const router = express.Router()
 
-router.post('/', verifyToken, async (req, res) => {
+router.post('/', async (req, res) => {
   try {
     const { ingredientString, spoonacularApiKey } = req.body
 
