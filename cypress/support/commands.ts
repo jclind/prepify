@@ -11,10 +11,10 @@ Cypress.Commands.add('login', () => {
       cy.intercept('GET', `${apiUrl}/getTrendingRecipes*`, { fixture: 'trending-recipes.json' })
       cy.intercept('GET', `${apiUrl}/getUsername*`, { body: 'testinguser' })
       cy.visit('/login')
-      cy.get('input[name="email"]').type(email)
-      cy.get('input[name="password"]').type(password)
-      cy.contains('button', 'Login').click()
-      cy.contains('a.nav-link', 'Create Recipe', { timeout: 15000 })
+      cy.get('input[name="email"]', { timeout: 10000 }).should('be.visible').type(email)
+      cy.get('input[name="password"]', { timeout: 10000 }).should('be.visible').type(password)
+      cy.contains('button', 'Login', { timeout: 5000 }).should('be.visible').click().and('be.visible')
+      cy.contains('a.nav-link', 'Create Recipe', { timeout: 15000 }).and('be.visible')
     },
   )
 })
@@ -25,24 +25,24 @@ Cypress.Commands.add('fillSignupInputs', (username, email, password, options) =>
   const e = options.uniqueEmail ? username + ts + '@gmail.com' : email
   const p = options.uniquePassword ? password + ts : password
 
-  cy.get('input[name="name"]').type('Testing User')
-  cy.get('input[name="username"]').type(u)
-  cy.get('input[name="email"]').type(e)
-  cy.get('input[name="password"]').type(p)
+  cy.get('input[name="name"]', { timeout: 10000 }).should('be.visible').type('Testing User')
+  cy.get('input[name="username"]', { timeout: 10000 }).should('be.visible').type(u)
+  cy.get('input[name="email"]', { timeout: 10000 }).should('be.visible').type(e)
+  cy.get('input[name="password"]', { timeout: 10000 }).should('be.visible').type(p)
 
   if (options.click) {
-    cy.contains('button', 'Create Username').click()
+    cy.contains('button', 'Create Username', { timeout: 5000 }).should('be.visible').click().and('be.visible')
   }
 })
 
 Cypress.Commands.add('signupProcess', () => {
-  cy.contains('a', 'signup').click()
+  cy.contains('a', 'signup', { timeout: 5000 }).should('be.visible').click()
   cy.fillSignupInputs(username, email, password, {
     click: true,
     uniqueUsername: true,
     uniqueEmail: true,
   })
-  cy.contains('a', 'Create Recipe')
-  cy.contains('button', 'logout').click({ force: true })
-  cy.contains('a', 'login')
+  cy.contains('a', 'Create Recipe', { timeout: 10000 }).should('be.visible')
+  cy.contains('button', 'logout', { timeout: 5000 }).should('be.visible').click({ force: true }).and('be.visible')
+  cy.contains('a', 'login', { timeout: 5000 }).should('be.visible')
 })
