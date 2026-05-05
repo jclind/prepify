@@ -1,0 +1,22 @@
+diff --git a/node_modules/@jclind/ingredient-parser/dist/src/api/http.js b/node_modules/@jclind/ingredient-parser/dist/src/api/http.js
+index 7dbd092..c7176a6 100644
+--- a/node_modules/@jclind/ingredient-parser/dist/src/api/http.js
++++ b/node_modules/@jclind/ingredient-parser/dist/src/api/http.js
+@@ -2,14 +2,15 @@
+ Object.defineProperty(exports, "__esModule", { value: true });
+ exports.createIngredientServerHttp = exports.spoonacularHttp = void 0;
+ const axios_1 = require("axios");
++const _axios = (axios_1 && axios_1.default && axios_1.default.create) ? axios_1.default : axios_1;
+ const DEFAULT_SERVER_URL = 'https://prepify-ingredients.up.railway.app';
+-exports.spoonacularHttp = axios_1.default.create({
++exports.spoonacularHttp = _axios.create({
+     baseURL: 'https://api.spoonacular.com/food/ingredients/',
+     headers: {
+         'Content-type': 'application/json',
+     },
+ });
+-const createIngredientServerHttp = (serverUrl) => axios_1.default.create({
++const createIngredientServerHttp = (serverUrl) => _axios.create({
+     baseURL: serverUrl || DEFAULT_SERVER_URL,
+     headers: {
+         'Content-type': 'application/json',
