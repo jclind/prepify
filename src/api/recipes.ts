@@ -346,7 +346,9 @@ class RecipeAPIClass {
       throw new Error('Spoonacular API key is not defined')
     }
 
-    const result: IngredientResponse = await ingredientParser(val, apiKey)
+    const result: IngredientResponse = await ingredientParser(val, apiKey, {
+      serverUrl: process.env.REACT_APP_INGREDIENT_PARSER_URL || 'https://ingredient-parser-service-production-2635.up.railway.app'
+    })
 
     const data: IngredientsType = { ...result, id: uuidv4() }
 
