@@ -10,6 +10,7 @@ class AuthAPIClass {
     if (!userId) {
       uid = this.getUID()
     }
+    if (!uid) return null
     const result = await http.get(`getUsername?userId=${uid}`)
     return result.data
   }

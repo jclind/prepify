@@ -48,6 +48,7 @@ const AddRecipe = () => {
   const [errors, setErrors] = useState<Partial<AddRecipeErrorType>>({})
 
   const [isFormValid, setIsFormValid] = useState(false)
+  const [addRecipeError, setAddRecipeError] = useState<string | null>(null)
 
   const validate = (assignErrors: boolean = false) => {
     let newErrors: Partial<AddRecipeErrorType> = {}
@@ -103,6 +104,7 @@ const AddRecipe = () => {
   const handleAddRecipe = async () => {
     if (validate(true)) {
       setAddRecipeLoading(true)
+      setAddRecipeError(null)
       const recipeData: RecipeFormType = {
         title,
         prepTime: hrMinToMin(prepTime),
@@ -117,15 +119,14 @@ const AddRecipe = () => {
         cuisine,
         mealTypes,
       }
-      try {
-        await RecipeAPI.addRecipe(recipeData, setLoadingProgress)
+      const result = await RecipeAPI.addRecipe(recipeData, setLoadingProgress)
+      if (result) {
         clearForm()
-      } catch (error) {
-        console.log('ERROR:', error)
-      } finally {
-        setAddRecipeLoading(false)
-        setLoadingProgress(100)
+      } else {
+        setAddRecipeError('Failed to create recipe. Please try again.')
       }
+      setAddRecipeLoading(false)
+      setLoadingProgress(100)
     } else {
       addRecipeFormRef?.current && addRecipeFormRef.current.scrollTo(0, 0)
     }
@@ -160,7 +161,7 @@ const AddRecipe = () => {
                 placeholder='Add a title to your recipe.'
                 val={title}
                 setVal={setTitle}
-                characterLimit={60}
+                characterLimit={50}
               />
             </div>
             <div className='image-picker input-field'>
@@ -242,6 +243,9 @@ const AddRecipe = () => {
                 setMealTypes={setMealTypes}
               />
             </div>
+            {addRecipeError && (
+              <p className='submit-error'>{addRecipeError}</p>
+            )}
             <button
               className={`submit-btn ${isFormValid ? 'valid' : 'invalid'}`}
               onClick={handleAddRecipe}
