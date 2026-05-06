@@ -8,7 +8,7 @@ export const http = axios.create({
   },
 })
 
-http.interceptors.request.use(async (config) => {
+http.interceptors.request.use(async config => {
   const auth = getAuth()
   const user = auth.currentUser
   if (user) {
