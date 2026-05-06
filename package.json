@@ -8,7 +8,7 @@
   "dependencies": {
     "@formspree/react": "^2.2.4",
     "@hello-pangea/dnd": "^16.6.0",
-    "@jclind/ingredient-parser": "^1.2.11",
+    "@jclind/ingredient-parser": "^1.2.13",
     "@types/node": "^20.0.0",
     "@types/react": "~18.2.79",
     "@types/react-dom": "~18.2.25",
