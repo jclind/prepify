@@ -159,7 +159,10 @@ router.delete('/deleteRecipe', verifyToken, async (req, res) => {
     if (userId !== req.uid) {
       return res.status(403).json({ error: 'Forbidden' })
     }
-    await db.collection('recipes').deleteOne({ _id: recipeId })
+    const deleteResult = await db.collection('recipes').deleteOne({ _id: recipeId })
+    if (deleteResult.deletedCount === 0) {
+      return res.status(404).json({ error: 'Recipe not found' })
+    }
     await db.collection('userRecipeData').updateOne(
       { _id: userId },
       { $pull: { userRecipes: { recipeId } } }

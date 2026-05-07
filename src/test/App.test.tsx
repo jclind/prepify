@@ -3,7 +3,7 @@
  * ──────────────────
  * vi.mock calls are hoisted above imports by Vitest, so they're in place before
  * any module-level Firebase code executes (e.g. `const auth = getAuth()` in
- * AuthContext.tsx and `firebase.initializeApp(...)` in src/client/db.ts).
+ * AuthContext.tsx and `initializeApp(...)` in src/client/db.ts).
  *
  * The onAuthStateChanged stub never calls its callback, so AuthProvider stays in
  * `loading: true` and renders only the loading spinner — no page components
@@ -20,16 +20,9 @@ import { render } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import App from '../App'
 
-vi.mock('firebase/compat/app', () => ({
-  default: {
-    apps: [{}],
-    initializeApp: vi.fn().mockReturnValue({
-      auth: vi.fn().mockReturnValue({}),
-    }),
-  },
+vi.mock('firebase/app', () => ({
+  initializeApp: vi.fn().mockReturnValue({}),
 }))
-
-vi.mock('firebase/compat/auth', () => ({}))
 
 vi.mock('firebase/auth', () => ({
   getAuth: vi.fn().mockReturnValue({
