@@ -8,7 +8,7 @@ const router = Router()
 router.post('/addRecipeTag', verifyToken, async (req, res) => {
   try {
     const db = getDB()
-    const text = req.body
+    const { text } = req.body
     const doc = { text }
     const result = await db.collection('tags').insertOne(doc)
     res.json({ ...doc, _id: result.insertedId })

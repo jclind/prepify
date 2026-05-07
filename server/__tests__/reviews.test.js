@@ -25,6 +25,7 @@ const request = require('supertest')
 const app = require('../app')
 const { getDB } = require('../db')
 const admin = require('firebase-admin')
+const { seedRating } = require('./helpers/seed')
 
 const TEST_UID = 'test-uid'
 const TEST_USERNAME = 'testuser'
@@ -190,5 +191,279 @@ describe('PUT /deleteReview', () => {
       .collection('ratings')
       .findOne({ username: TEST_USERNAME, recipeId: RECIPE_ID })
     expect(doc.reviewText).toBe('')
+  })
+})
+
+// ─── PUT /newReview ───────────────────────────────────────────────────────────
+
+describe('PUT /newReview', () => {
+  it('rejects request with no auth token (401)', async () => {
+    const res = await request(app)
+      .put('/newReview')
+      .send({ recipeId: RECIPE_ID, reviewText: 'Great!' })
+    expect(res.status).toBe(401)
+  })
+
+  it('returns 400 if reviewText is missing from body', async () => {
+    const res = await request(app)
+      .put('/newReview')
+      .set(AUTH_HEADER)
+      .send({ recipeId: RECIPE_ID })
+    expect(res.status).toBe(400)
+  })
+
+  it('returns 400 if the user has no username set', async () => {
+    admin.auth.mockReturnValueOnce({
+      verifyIdToken: jest.fn().mockResolvedValueOnce({ uid: 'no-username-uid' }),
+    })
+
+    const res = await request(app)
+      .put('/newReview')
+      .set(AUTH_HEADER)
+      .send({ recipeId: RECIPE_ID, reviewText: 'Text' })
+
+    expect(res.status).toBe(400)
+    expect(res.body.error).toMatch(/Username not found/)
+  })
+
+  it('creates a new review and returns the saved document', async () => {
+    const res = await request(app)
+      .put('/newReview')
+      .set(AUTH_HEADER)
+      .send({ recipeId: RECIPE_ID, reviewText: 'Amazing dish!' })
+
+    expect(res.status).toBe(200)
+    expect(res.body.reviewText).toBe('Amazing dish!')
+    expect(res.body.username).toBe(TEST_USERNAME)
+    expect(res.body.recipeId).toBe(RECIPE_ID)
+  })
+
+  it('updates an existing review entry (upsert)', async () => {
+    await seedRating({
+      username: TEST_USERNAME,
+      recipeId: RECIPE_ID,
+      rating: 4,
+      reviewText: 'Original text',
+      reviewCreatedAt: '1000',
+      reviewLastUpdated: '1000',
+    })
+
+    const res = await request(app)
+      .put('/newReview')
+      .set(AUTH_HEADER)
+      .send({ recipeId: RECIPE_ID, reviewText: 'Updated text' })
+
+    expect(res.status).toBe(200)
+    expect(res.body.reviewText).toBe('Updated text')
+  })
+})
+
+// ─── GET /checkIfReviewed ─────────────────────────────────────────────────────
+
+describe('GET /checkIfReviewed', () => {
+  it('returns 400 if username or recipeId is missing', async () => {
+    const res = await request(app).get(`/checkIfReviewed?username=${TEST_USERNAME}`)
+    expect(res.status).toBe(400)
+  })
+
+  it('returns { reviewed: false } when no rating document exists', async () => {
+    const res = await request(app).get(
+      `/checkIfReviewed?username=${TEST_USERNAME}&recipeId=${RECIPE_ID}`
+    )
+    expect(res.status).toBe(200)
+    expect(res.body).toEqual({ reviewed: false })
+  })
+
+  it('returns { reviewed: false } when a rating exists but reviewText is empty', async () => {
+    await seedRating({ username: TEST_USERNAME, recipeId: RECIPE_ID, rating: 3, reviewText: '' })
+
+    const res = await request(app).get(
+      `/checkIfReviewed?username=${TEST_USERNAME}&recipeId=${RECIPE_ID}`
+    )
+    expect(res.status).toBe(200)
+    expect(res.body).toEqual({ reviewed: false })
+  })
+
+  it('returns { reviewed: true, reviewText, rating } when a review exists', async () => {
+    await seedRating({
+      username: TEST_USERNAME,
+      recipeId: RECIPE_ID,
+      rating: 5,
+      reviewText: 'Really good!',
+    })
+
+    const res = await request(app).get(
+      `/checkIfReviewed?username=${TEST_USERNAME}&recipeId=${RECIPE_ID}`
+    )
+    expect(res.status).toBe(200)
+    expect(res.body.reviewed).toBe(true)
+    expect(res.body.reviewText).toBe('Really good!')
+    expect(res.body.rating).toBe(5)
+  })
+})
+
+// ─── GET /getReviews ──────────────────────────────────────────────────────────
+
+describe('GET /getReviews', () => {
+  it('returns 400 if recipeId is missing', async () => {
+    const res = await request(app).get('/getReviews')
+    expect(res.status).toBe(400)
+  })
+
+  it('returns reviews and totalCount for a recipe', async () => {
+    await seedRating({
+      username: TEST_USERNAME,
+      recipeId: RECIPE_ID,
+      rating: 5,
+      reviewText: 'First review',
+      reviewCreatedAt: '1000',
+    })
+    await seedRating({
+      username: OTHER_USERNAME,
+      recipeId: RECIPE_ID,
+      rating: 4,
+      reviewText: 'Second review',
+      reviewCreatedAt: '2000',
+    })
+
+    const res = await request(app).get(`/getReviews?recipeId=${RECIPE_ID}`)
+    expect(res.status).toBe(200)
+    expect(res.body.totalCount).toBe(2)
+    expect(res.body.reviews).toHaveLength(2)
+  })
+
+  it('excludes ratings with empty reviewText', async () => {
+    await seedRating({
+      username: TEST_USERNAME,
+      recipeId: RECIPE_ID,
+      rating: 4,
+      reviewText: 'Has a review',
+    })
+    await seedRating({
+      username: OTHER_USERNAME,
+      recipeId: RECIPE_ID,
+      rating: 3,
+      reviewText: '',
+    })
+
+    const res = await request(app).get(`/getReviews?recipeId=${RECIPE_ID}`)
+    expect(res.status).toBe(200)
+    expect(res.body.totalCount).toBe(1)
+  })
+
+  it('sets isCurrentUser=true for the review matching the username param', async () => {
+    await seedRating({
+      username: TEST_USERNAME,
+      recipeId: RECIPE_ID,
+      rating: 5,
+      reviewText: 'My review',
+      reviewCreatedAt: '1000',
+    })
+
+    const res = await request(app).get(
+      `/getReviews?recipeId=${RECIPE_ID}&username=${TEST_USERNAME}`
+    )
+    expect(res.status).toBe(200)
+    expect(res.body.reviews[0].isCurrentUser).toBe(true)
+  })
+
+  it('paginates results', async () => {
+    for (let i = 0; i < 3; i++) {
+      await seedRating({
+        username: `paginationuser${i}`,
+        recipeId: RECIPE_ID,
+        rating: 3,
+        reviewText: `Review ${i}`,
+        reviewCreatedAt: `${i}000`,
+      })
+    }
+
+    const res = await request(app).get(
+      `/getReviews?recipeId=${RECIPE_ID}&page=0&reviewsPerPage=2`
+    )
+    expect(res.status).toBe(200)
+    expect(res.body.reviews).toHaveLength(2)
+    expect(res.body.totalCount).toBe(3)
+  })
+})
+
+// ─── GET /getSingleUserReviews ────────────────────────────────────────────────
+
+describe('GET /getSingleUserReviews', () => {
+  it('returns 400 if username is missing', async () => {
+    const res = await request(app).get('/getSingleUserReviews')
+    expect(res.status).toBe(400)
+  })
+
+  it('returns only reviews for the specified user', async () => {
+    await seedRating({
+      username: TEST_USERNAME,
+      recipeId: RECIPE_ID,
+      rating: 5,
+      reviewText: 'My review',
+      reviewCreatedAt: '1000',
+    })
+    await seedRating({
+      username: OTHER_USERNAME,
+      recipeId: RECIPE_ID,
+      rating: 3,
+      reviewText: 'Other review',
+      reviewCreatedAt: '2000',
+    })
+
+    const res = await request(app).get(`/getSingleUserReviews?username=${TEST_USERNAME}`)
+    expect(res.status).toBe(200)
+    expect(res.body.totalCount).toBe(1)
+    expect(res.body.reviews[0].username).toBe(TEST_USERNAME)
+  })
+
+  it('includes recipeData when returnRecipeData=true', async () => {
+    await seedRating({
+      username: TEST_USERNAME,
+      recipeId: RECIPE_ID,
+      rating: 4,
+      reviewText: 'Great recipe!',
+      reviewCreatedAt: '1000',
+    })
+
+    const res = await request(app).get(
+      `/getSingleUserReviews?username=${TEST_USERNAME}&returnRecipeData=true`
+    )
+    expect(res.status).toBe(200)
+    expect(res.body.reviews[0].recipeData).toBeDefined()
+    expect(res.body.reviews[0].recipeData._id).toBe(RECIPE_ID)
+  })
+
+  it('does not include recipeData when returnRecipeData is not set', async () => {
+    await seedRating({
+      username: TEST_USERNAME,
+      recipeId: RECIPE_ID,
+      rating: 4,
+      reviewText: 'Great recipe!',
+      reviewCreatedAt: '1000',
+    })
+
+    const res = await request(app).get(`/getSingleUserReviews?username=${TEST_USERNAME}`)
+    expect(res.status).toBe(200)
+    expect(res.body.reviews[0].recipeData).toBeUndefined()
+  })
+
+  it('paginates results', async () => {
+    for (let i = 0; i < 4; i++) {
+      await seedRating({
+        username: TEST_USERNAME,
+        recipeId: `recipe-${i}`,
+        rating: 3,
+        reviewText: `Review ${i}`,
+        reviewCreatedAt: `${i}000`,
+      })
+    }
+
+    const res = await request(app).get(
+      `/getSingleUserReviews?username=${TEST_USERNAME}&page=0&reviewsPerPage=2`
+    )
+    expect(res.status).toBe(200)
+    expect(res.body.reviews).toHaveLength(2)
+    expect(res.body.totalCount).toBe(4)
   })
 })
