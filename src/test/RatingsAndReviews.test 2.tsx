@@ -40,7 +40,8 @@ vi.mock('react-star-ratings', () => ({
   ),
 }))
 
-vi.mock('react-hot-toast', () => ({ default: Object.assign(vi.fn(), { success: vi.fn(), error: vi.fn() }) }))
+const mockToast = vi.hoisted(() => Object.assign(vi.fn(), { success: vi.fn(), error: vi.fn() }))
+vi.mock('react-hot-toast', () => ({ default: mockToast }))
 
 const mockAddRating = RecipeAPI.addRating as ReturnType<typeof vi.fn>
 const mockNewReview = RecipeAPI.newReview as ReturnType<typeof vi.fn>
@@ -193,7 +194,7 @@ describe('AddReview', () => {
 
   beforeEach(() => {
     mockNewReview.mockReset()
-    mockAlert.show.mockClear()
+    mockToast.mockClear()
   })
 
   it('"Add Review" button is visible regardless of auth state', () => {
@@ -205,7 +206,7 @@ describe('AddReview', () => {
     const user = userEvent.setup()
     const { container } = renderAddReview({ uid: null })
     await user.click(screen.getByText('Add Review'))
-    expect(mockAlert.show).toHaveBeenCalledTimes(1)
+    expect(mockToast).toHaveBeenCalledTimes(1)
     expect(container.querySelector('.review-open')).not.toHaveClass('visible')
   })
 
