@@ -28,11 +28,11 @@ vi.mock('src/api/auth', () => ({
   },
 }))
 
-vi.mock('react-star-ratings', () => ({
-  default: ({ rating, changeRating, name }: any) => (
+vi.mock('src/Components/StarRating/StarRating', () => ({
+  default: ({ rating, onChange, interactive }: any) => (
     <div
-      data-testid={`star-ratings-${name ?? 'default'}`}
-      onClick={() => changeRating?.(4)}
+      data-testid='star-ratings-rating'
+      onClick={() => interactive && onChange?.(4)}
       aria-label={`${rating} stars`}
     >
       {rating} stars
