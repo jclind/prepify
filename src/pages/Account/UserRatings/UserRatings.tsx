@@ -3,7 +3,7 @@ import Select, { SingleValue } from 'react-select'
 import RecipeAPI from 'src/api/recipes'
 import { OptionalReviewType } from 'types'
 import { selectCustomStyles } from '../selectCustomStyles'
-import StarRatings from 'react-star-ratings'
+import StarRating from 'src/Components/StarRating/StarRating'
 import './UserRatings.scss'
 import { timeElapsedSince } from 'src/util/timeElapsedSince'
 import Skeleton from 'react-loading-skeleton'
@@ -45,12 +45,10 @@ const SingleReview: FC<SingleReviewProps> = ({ review, loading }) => {
           <Skeleton baseColor={skeletonColor} width={'20ch'} height={'22px'} />
         ) : (
           <>
-            <StarRatings
+            <StarRating
               rating={Number(review?.rating)}
-              starRatedColor='#ff5722'
-              starDimension='16px'
-              starSpacing='1px'
-              name='rating'
+              size={16}
+              spacing={1}
             />
             <div className='date'>
               {timeElapsedSince(review?.ratingLastUpdated ?? '')}
