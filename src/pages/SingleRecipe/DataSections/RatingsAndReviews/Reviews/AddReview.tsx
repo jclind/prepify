@@ -1,7 +1,6 @@
 import React, { FC, useRef, useState } from 'react'
 import RecipeAPI from 'src/api/recipes'
-import { useAlert } from 'react-alert'
-import { Link } from 'react-router-dom'
+import toast from 'react-hot-toast'
 import { ReviewType } from 'types'
 
 type AddReviewProps = {
@@ -21,8 +20,6 @@ const AddReview: FC<AddReviewProps> = ({
   const [newReviewText, setNewReviewText] = useState('')
   const [newReviewError, setNewReviewError] = useState('')
   const addReviewTextAreaRef = useRef<HTMLTextAreaElement>(null)
-
-  const alert = useAlert()
 
   const handleSubmitReview = () => {
     setNewReviewError('')
@@ -82,15 +79,7 @@ const AddReview: FC<AddReviewProps> = ({
             addReviewTextAreaRef?.current &&
               addReviewTextAreaRef.current.focus()
           } else {
-            alert.show(
-              <div>
-                Please <Link to='/login'>login</Link> to add a review.
-              </div>,
-              {
-                timeout: 10000,
-                type: 'info',
-              }
-            )
+            toast('Please login to add a review.', { duration: 10000 })
           }
         }}
       >

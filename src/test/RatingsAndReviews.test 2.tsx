@@ -40,9 +40,7 @@ vi.mock('react-star-ratings', () => ({
   ),
 }))
 
-// Use vi.hoisted so mockAlert is defined before vi.mock factories run
-const mockAlert = vi.hoisted(() => ({ show: vi.fn() }))
-vi.mock('react-alert', () => ({ useAlert: () => mockAlert }))
+vi.mock('react-hot-toast', () => ({ default: Object.assign(vi.fn(), { success: vi.fn(), error: vi.fn() }) }))
 
 const mockAddRating = RecipeAPI.addRating as ReturnType<typeof vi.fn>
 const mockNewReview = RecipeAPI.newReview as ReturnType<typeof vi.fn>
