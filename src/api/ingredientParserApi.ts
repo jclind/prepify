@@ -1,9 +1,5 @@
-import axios from 'axios'
-import { getAuth } from 'firebase/auth'
-import { ParsedIngredient, IngredientData } from '@jclind/ingredient-parser'
-
-const INGREDIENT_PARSER_URL =
-  process.env.REACT_APP_INGREDIENT_PARSER_URL || 'http://localhost:4001'
+import { ParsedIngredient, IngredientData, IngredientResponse } from '@jclind/ingredient-parser'
+import { http } from './http-common'
 
 export interface EnrichmentResult {
   source: 'cache' | 'spoonacular'
@@ -14,19 +10,12 @@ export interface EnrichmentResult {
 export async function fetchIngredientEnrichment(
   parsedIngredient: ParsedIngredient
 ): Promise<EnrichmentResult> {
-  const auth = getAuth()
-  const token = await auth.currentUser?.getIdToken()
-
-  const response = await axios.post<EnrichmentResult>(
-    `${INGREDIENT_PARSER_URL}/parse`,
-    { ingredientString: parsedIngredient.originalIngredientString },
-    {
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-    }
-  )
-
-  return response.data
+  const response = await http.post<IngredientResponse>('/api/ingredients/parse', {
+    ingredientString: parsedIngredient.originalIngredientString,
+  })
+  const result = response.data
+  if ('error' in result) {
+    return { source: 'spoonacular', data: result.ingredientData, error: result.error }
+  }
+  return { source: 'spoonacular', data: result.ingredientData }
 }

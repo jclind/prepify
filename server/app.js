@@ -5,6 +5,7 @@ const tagRoutes = require('./routes/tags')
 const reviewRoutes = require('./routes/reviews')
 const userRoutes = require('./routes/users')
 const authRoutes = require('./routes/auth')
+const ingredientRoutes = require('./routes/ingredients')
 
 const app = express()
 
@@ -22,5 +23,6 @@ app.use('/', tagRoutes)
 app.use('/', reviewRoutes)
 app.use('/', userRoutes)
 app.use('/', authRoutes)
+app.use('/api/ingredients', ingredientRoutes)
 
 module.exports = app
