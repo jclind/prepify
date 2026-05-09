@@ -102,7 +102,7 @@ jobs:
           VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
           VITE_FIREBASE_MEASUREMENT_ID: ${{ secrets.VITE_FIREBASE_MEASUREMENT_ID }}
       - name: Wait for servers
-        run: npx wait-on http://127.0.0.1:3000 http://127.0.0.1:4000 --timeout 120000
+        run: npx wait-on http://127.0.0.1:3000 http://127.0.0.1:4000/health --timeout 120000
       - name: Check server status
         if: failure()
         run: |
