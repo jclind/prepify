@@ -1,4 +1,4 @@
-import { ingredientParser, IngredientResponse } from '@jclind/ingredient-parser'
+import { parseIngredientString } from '@jclind/ingredient-parser'
 
 import ObjectID from 'bson-objectid'
 import { getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage'
@@ -17,6 +17,7 @@ import {
   ReviewType,
 } from 'types'
 import AuthAPI from './auth'
+import { fetchIngredientEnrichment } from './ingredientParserApi'
 import { http, nutrition } from './http-common'
 import { v4 as uuidv4 } from 'uuid'
 
@@ -203,7 +204,7 @@ class RecipeAPIClass {
       }
     })
     const nutritionResultRes = await nutrition.post(
-      `nutrition-details?app_id=${process.env.REACT_APP_EDAMAM_APP_ID}&app_key=${process.env.REACT_APP_EDAMAM_APP_KEY}`,
+      `nutrition-details?app_id=${import.meta.env.VITE_EDAMAM_APP_ID}&app_key=${import.meta.env.VITE_EDAMAM_APP_KEY}`,
       ingrData
     )
 
@@ -313,17 +314,23 @@ class RecipeAPIClass {
 
   // Ingredients
   async getIngredientData(val: string): Promise<IngredientsType> {
-    const apiKey = process.env.REACT_APP_SPOONACULAR_API_KEY
+    const parsedIngredient = parseIngredientString(val)
+    const enrichment = await fetchIngredientEnrichment(parsedIngredient)
 
-    if (!apiKey) {
-      throw new Error('Spoonacular API key is not defined')
+    if (enrichment.error || !enrichment.data) {
+      return {
+        error: enrichment.error ?? { message: 'No ingredient data returned' },
+        parsedIngredient,
+        ingredientData: null,
+        id: uuidv4(),
+      }
     }
 
-    const result: IngredientResponse = await ingredientParser(val, apiKey)
-
-    const data: IngredientsType = { ...result, id: uuidv4() }
-
-    return data
+    return {
+      parsedIngredient,
+      ingredientData: enrichment.data,
+      id: uuidv4(),
+    }
   }
 
   // User
