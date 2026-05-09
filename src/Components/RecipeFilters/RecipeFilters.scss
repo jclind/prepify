@@ -1,4 +1,4 @@
-@import '../../helpers.scss';
+@use '../../helpers.scss' as s;
 
 .filters {
   display: flex;
@@ -9,7 +9,7 @@
   font-weight: 600;
   width: 100%;
   padding-bottom: 1rem;
-  border-bottom: 1px solid $tertiary-text;
+  border-bottom: 1px solid s.$tertiary-text;
 
   .sort-select {
     max-width: 250px;
@@ -26,18 +26,18 @@
   }
   .filters-btn {
     background: none;
-    border: 1px solid $tertiary-text;
+    border: 1px solid s.$tertiary-text;
     border-radius: 20px;
     padding: 0.25rem 0.5rem;
-    color: $secondary-text;
+    color: s.$secondary-text;
     font-weight: 600;
     font-size: 0.8rem;
     cursor: pointer;
   }
   .filters-btn.expanded {
-    background: $primary;
-    color: $primary-background;
-    border-color: $primary;
+    background: s.$primary;
+    color: s.$primary-background;
+    border-color: s.$primary;
   }
 
   @media screen and (max-width: 815px) {

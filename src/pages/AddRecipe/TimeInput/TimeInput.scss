@@ -1,4 +1,4 @@
-@import '../../../helpers.scss';
+@use '../../../helpers.scss' as s;
 
 .time-input {
   width: 100%;
@@ -6,7 +6,7 @@
     font-weight: 600;
     font-size: 0.9rem;
     text-transform: capitalize;
-    color: $secondary-text;
+    color: s.$secondary-text;
   }
 
   .time-input-inputs {

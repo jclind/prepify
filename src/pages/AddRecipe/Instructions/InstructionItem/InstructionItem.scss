@@ -1,4 +1,4 @@
-@import '../../../../helpers.scss';
+@use '../../../../helpers.scss' as s;
 
 .instructions-container {
   .item-btn {
@@ -13,9 +13,9 @@
       align-items: center;
       height: 30px;
       width: 30px;
-      background: $tertiary-background;
+      background: s.$tertiary-background;
       border-radius: 50%;
-      color: $primary-text;
+      color: s.$primary-text;
       font-weight: 700;
       font-size: 1.25rem;
       transition: all 0.1s linear;

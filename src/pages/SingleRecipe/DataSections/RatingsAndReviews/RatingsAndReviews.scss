@@ -1,10 +1,10 @@
-@import '../../../../helpers.scss';
+@use '../../../../helpers.scss' as s;
 
 .recipe-ratings {
   margin-top: 5rem;
   padding-top: 3rem;
   width: 100%;
-  border-top: 1px solid $gray-400;
+  border-top: 1px solid s.$gray-400;
   .title {
     width: 100%;
     text-align: center;
@@ -34,7 +34,7 @@
 
       .text {
         font-size: 1rem;
-        color: $secondary-text;
+        color: s.$secondary-text;
         font-weight: 500;
       }
       .average-rating {
@@ -52,7 +52,7 @@
         .count {
           font-size: 1rem;
           font-weight: 500;
-          color: $secondary-text;
+          color: s.$secondary-text;
         }
       }
       .user-rating {
@@ -65,7 +65,7 @@
         svg,
         path {
           &:focus {
-            @include outline();
+            @include s.outline();
             background: red;
           }
         }
@@ -75,9 +75,9 @@
         .text {
           font-size: 1.125rem;
           font-weight: 600;
-          color: $primary-text;
+          color: s.$primary-text;
           &:focus {
-            @include outline();
+            @include s.outline();
           }
         }
       }
@@ -113,15 +113,15 @@
 
       .curr-user-review {
         margin: 2rem 0;
-        border: 1px solid $primary;
+        border: 1px solid s.$primary;
         padding: 1rem 1rem 0 1rem;
-        border-radius: $border-radius;
+        border-radius: s.$border-radius;
         width: 100%;
 
         .heading {
           text-align: center;
           font-weight: 600;
-          color: $primary;
+          color: s.$primary;
         }
       }
 
@@ -153,17 +153,17 @@
           cursor: pointer;
           font-size: 0.9rem;
           font-weight: 500;
-          color: $secondary-text;
+          color: s.$secondary-text;
         }
         .leave-review-btn,
         .submit-review-btn {
           font-size: 1rem;
-          background: $primary;
-          color: $primary-background;
+          background: s.$primary;
+          color: s.$primary-background;
           padding: 0.5rem 1rem;
-          border-radius: $border-radius;
+          border-radius: s.$border-radius;
           &:focus {
-            @include outline();
+            @include s.outline();
           }
         }
         .leave-review-btn {

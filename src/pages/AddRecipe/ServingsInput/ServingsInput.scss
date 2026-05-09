@@ -1,4 +1,4 @@
-@import '../../../helpers.scss';
+@use '../../../helpers.scss' as s;
 
 .servings-input {
   display: flex;
@@ -10,7 +10,7 @@
     font-weight: 600;
     font-size: 0.875rem;
     text-transform: capitalize;
-    color: $primary;
+    color: s.$primary;
   }
 
   .inputs {

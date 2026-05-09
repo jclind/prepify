@@ -1,4 +1,4 @@
-@import '../../../../helpers.scss';
+@use '../../../../helpers.scss' as s;
 
 .recipe-controls-container {
   display: flex;
@@ -10,34 +10,34 @@
     gap: 1rem;
   }
   button {
-    border: 1px solid $secondary-text;
+    border: 1px solid s.$secondary-text;
     padding: 0.5rem 0.75rem;
-    border-radius: $border-radius;
+    border-radius: s.$border-radius;
     cursor: pointer;
     font-size: 0.9rem;
     font-weight: 600;
-    color: $primary-text;
+    color: s.$primary-text;
     &:focus {
-      @include outline();
+      @include s.outline();
     }
   }
   button.edit-btn {
     background: none;
     transition: all 0.1s linear;
     &:hover {
-      color: $primary-background;
-      background: $primary-text;
+      color: s.$primary-background;
+      background: s.$primary-text;
     }
   }
   button.delete-btn {
-    // background: $primary-text;
-    // color: $primary-background;
+    // background: s.$primary-text;
+    // color: s.$primary-background;
     background: none;
     transition: all 0.1s linear;
     &:hover {
-      color: $primary-background;
-      background: $error-red;
-      border-color: $error-red;
+      color: s.$primary-background;
+      background: s.$error-red;
+      border-color: s.$error-red;
     }
   }
 }
@@ -81,21 +81,21 @@
         align-items: center;
         font-size: 1rem;
         font-weight: 600;
-        border-radius: $border-radius;
+        border-radius: s.$border-radius;
         border: none;
         width: 180px;
         height: 45px;
         cursor: pointer;
       }
       button.cancel {
-        background: $secondary-background;
+        background: s.$secondary-background;
         &:hover {
-          background: $tertiary-background;
+          background: s.$tertiary-background;
         }
       }
       button.confirm {
-        background: $error-red;
-        color: $primary-background;
+        background: s.$error-red;
+        color: s.$primary-background;
         &:hover {
           opacity: 0.9;
         }

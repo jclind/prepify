@@ -1,4 +1,4 @@
-@import '../../../helpers.scss';
+@use '../../../helpers.scss' as s;
 
 .user-ratings {
   padding-top: 1rem;
@@ -16,11 +16,11 @@
     margin: 2rem 0;
     .single-review {
       padding: 1rem;
-      border: 1px solid $tertiary-text;
+      border: 1px solid s.$tertiary-text;
       max-width: 550px;
       box-sizing: border-box;
       width: 100%;
-      border-radius: $border-radius;
+      border-radius: s.$border-radius;
       background: none;
       cursor: pointer;
 
@@ -42,7 +42,7 @@
         }
         h4 {
           font-weight: 600;
-          color: $primary-text;
+          color: s.$primary-text;
         }
       }
       .star-rating-container {
@@ -55,7 +55,7 @@
         .date {
           font-size: 0.9rem;
           font-weight: 600;
-          color: $secondary-text;
+          color: s.$secondary-text;
         }
       }
       .review-text {
@@ -64,7 +64,7 @@
         margin-bottom: 0.5rem;
         font-size: 0.9rem;
         font-weight: 500;
-        color: $primary-text;
+        color: s.$primary-text;
       }
     }
   }
