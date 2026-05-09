@@ -3,7 +3,7 @@
   "version": "2.6.3",
   "private": true,
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=24.0.0"
   },
   "dependencies": {
     "@formspree/react": "^3.0.0",
@@ -44,7 +44,9 @@
     "test:server": "npm test --prefix server",
     "test:ingredients": "npm test --prefix server-ingredients",
     "test:unit": "npm run test:frontend && npm run test:server && npm run test:ingredients",
-    "test:e2e": "cypress run"
+    "test:e2e": "cypress run",
+    "test:e2e:dev": "VITE_CYPRESS=true start-server-and-test start http://localhost:3000 'cypress open'",
+    "test:e2e:ci": "VITE_CYPRESS=true start-server-and-test start http://localhost:3000 'cypress run'"
   },
   "devDependencies": {
     "@testing-library/dom": "^10.4.1",
@@ -55,7 +57,9 @@
     "@types/uuid": "^10.0.0",
     "@vitejs/plugin-react": "^6.0.1",
     "cypress": "^15.14.2",
+    "firebase-admin": "^13.9.0",
     "jsdom": "^29.1.0",
+    "start-server-and-test": "^2.1.5",
     "vite": "^8.0.11",
     "vitest": "^4.1.5"
   }

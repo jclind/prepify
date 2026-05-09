@@ -1,50 +1,49 @@
 import React, { useState } from 'react'
-import ReactToPrint from 'react-to-print'
+import { useReactToPrint } from 'react-to-print'
 import { TailSpin } from 'react-loader-spinner'
 
 import { BsPrinter, BsFillPrinterFill } from 'react-icons/bs'
 
 type PrintRecipeBtnProps = {
-  printedRef: React.MutableRefObject<HTMLInputElement>
+  printedRef: React.RefObject<HTMLInputElement | null>
 }
 
 const PrintRecipeBtn = ({ printedRef }: PrintRecipeBtnProps) => {
   const [isHovered, setIsHovered] = useState(false)
-
   const [loading, setLoading] = useState(false)
+
+  const handlePrint = useReactToPrint({
+    contentRef: printedRef as React.RefObject<Element>,
+    onBeforePrint: async () => setLoading(true),
+    onAfterPrint: () => setLoading(false),
+  })
 
   return (
     <div className='print-recipe'>
-      <ReactToPrint
-        trigger={() => (
-          <button
-            className='print-recipe-btn btn'
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
-            disabled={loading}
-          >
-            {isHovered ? (
-              <BsFillPrinterFill className='icon' />
-            ) : (
-              <BsPrinter className='icon' />
-            )}{' '}
-            Print
-            {loading && (
-              <div className='loading'>
-                <TailSpin
-                  height='30'
-                  width='30'
-                  color='#303841'
-                  ariaLabel='loading'
-                />
-              </div>
-            )}
-          </button>
+      <button
+        className='print-recipe-btn btn'
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        disabled={loading}
+        onClick={() => handlePrint()}
+      >
+        {isHovered ? (
+          <BsFillPrinterFill className='icon' />
+        ) : (
+          <BsPrinter className='icon' />
+        )}{' '}
+        Print
+        {loading && (
+          <div className='loading'>
+            <TailSpin
+              height='30'
+              width='30'
+              color='#303841'
+              ariaLabel='loading'
+            />
+          </div>
         )}
-        onAfterPrint={() => setLoading(false)}
-        onBeforeGetContent={() => setLoading(true)}
-        content={() => printedRef.current}
-      />
+      </button>
     </div>
   )
 }

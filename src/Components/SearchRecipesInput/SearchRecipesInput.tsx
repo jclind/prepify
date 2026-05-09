@@ -12,7 +12,7 @@ import Skeleton from 'react-loading-skeleton'
 const skeletonColor = '#d6d6d6'
 
 function useOutsideAlerter(
-  ref: React.RefObject<HTMLFormElement>,
+  ref: React.RefObject<HTMLFormElement | null>,
   setVal: (val: boolean) => void
 ) {
   useEffect(() => {

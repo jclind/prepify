@@ -7,7 +7,7 @@ type RecipeFormTextAreaProps = {
   val: string
   smallTextArea?: boolean
   setVal: (val: string) => void
-  textAreaRef?: React.RefObject<HTMLTextAreaElement>
+  textAreaRef?: React.RefObject<HTMLTextAreaElement | null>
   handleKeyPress?: (event: KeyboardEvent<HTMLTextAreaElement>) => void
   characterLimit?: number
   onEnter?: () => void
