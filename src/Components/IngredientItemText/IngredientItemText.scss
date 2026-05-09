@@ -1,4 +1,4 @@
-@import '../../helpers.scss';
+@use '../../helpers.scss' as s;
 
 .ingredient-item-text {
   display: flex;
@@ -10,6 +10,6 @@
     font-weight: 700;
   }
   span {
-    color: $primary-text;
+    color: s.$primary-text;
   }
 }

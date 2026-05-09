@@ -1,9 +1,9 @@
-@import '../../../helpers.scss';
+@use '../../../helpers.scss' as s;
 
 .home-hero {
   display: flex;
   justify-content: center;
-  height: $home-hero-height;
+  height: s.$home-hero-height;
   // background:red;
   img.background,
   .hero-overlay {
@@ -39,7 +39,7 @@
     width: 90%;
     margin: 0 auto;
     text-align: center;
-    margin-top: calc(#{$nav-height} / 4);
+    margin-top: calc(#{s.$nav-height} / 4);
     margin-bottom: 2.5rem;
     font-size: 1.55rem;
     font-weight: 500;

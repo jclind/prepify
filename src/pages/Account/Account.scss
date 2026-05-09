@@ -1,4 +1,4 @@
-@import '../../helpers.scss';
+@use '../../helpers.scss' as s;
 
 .account-page {
   .account-header {
@@ -21,10 +21,10 @@
         width: 100px;
       }
       .profile-image.not-set {
-        color: $primary;
+        color: s.$primary;
         font-weight: 500;
         font-size: 3.125rem;
-        background: $primary-text;
+        background: s.$primary-text;
       }
       .content {
         display: flex;
@@ -37,8 +37,8 @@
         }
         .edit-profile-btn {
           font-size: 1.125rem;
-          border: 1px solid $primary-text;
-          border-radius: $border-radius;
+          border: 1px solid s.$primary-text;
+          border-radius: s.$border-radius;
           padding: 0.5rem 1rem;
         }
       }
@@ -66,8 +66,8 @@
           }
           .edit-profile-btn {
             font-size: 1rem;
-            border: 1px solid $primary-text;
-            border-radius: $border-radius;
+            border: 1px solid s.$primary-text;
+            border-radius: s.$border-radius;
             padding: 0.5rem 0.75rem;
           }
         }
@@ -86,8 +86,8 @@
           }
           .edit-profile-btn {
             font-size: 1rem;
-            border: 1px solid $primary-text;
-            border-radius: $border-radius;
+            border: 1px solid s.$primary-text;
+            border-radius: s.$border-radius;
             padding: 0.5rem 0.75rem;
           }
         }
@@ -109,12 +109,12 @@
       display: flex;
       gap: 2rem;
       padding-bottom: 1rem;
-      border-bottom: 1px solid $tertiary-text;
+      border-bottom: 1px solid s.$tertiary-text;
 
       .selection {
         text-decoration: none;
         font-weight: 700;
-        color: $tertiary-text;
+        color: s.$tertiary-text;
       }
       @media screen and (max-width: 450px) {
         justify-content: space-around;
@@ -131,7 +131,7 @@
         }
       }
       .selection.active {
-        color: $primary-text;
+        color: s.$primary-text;
       }
     }
   }

@@ -1,7 +1,7 @@
-@import '../../helpers.scss';
+@use '../../helpers.scss' as s;
 
 .single-recipe-page {
-  max-width: $recipe-page-max-width;
+  max-width: s.$recipe-page-max-width;
 
   h3.title {
     font-weight: 600;
@@ -24,7 +24,7 @@
       justify-content: center;
       padding-bottom: 2rem;
       margin-bottom: 2rem;
-      border-bottom: 1px solid $gray-400;
+      border-bottom: 1px solid s.$gray-400;
       gap: 3rem;
 
       .actions {
@@ -44,14 +44,14 @@
           align-items: center;
           gap: 0.5rem;
           font-size: 1.125rem;
-          border: 1px solid $gray-400;
-          background: $gray-300;
+          border: 1px solid s.$gray-400;
+          background: s.$gray-300;
           padding: 0.35rem 0.75rem;
-          border-radius: $border-radius;
+          border-radius: s.$border-radius;
           height: 35px !important;
 
           &:focus {
-            @include outline();
+            @include s.outline();
           }
 
           .loading {
@@ -80,7 +80,7 @@
             left: 0;
             height: 100%;
             width: 100%;
-            border-radius: $border-radius;
+            border-radius: s.$border-radius;
             background: rgba(255, 255, 255, 0.5);
 
             &:hover {
@@ -90,7 +90,7 @@
           }
 
           &:hover {
-            border: 1px solid $secondary-text;
+            border: 1px solid s.$secondary-text;
           }
 
           .icon {
@@ -104,7 +104,7 @@
       .add-rating .add-rating-btn.disabled,
       .print-recipe .print-recipe-btn.disabled {
         &:hover {
-          border: 1px solid $gray-400 !important;
+          border: 1px solid s.$gray-400 !important;
         }
       }
 
@@ -142,7 +142,7 @@
         .recipe-price {
           font-size: 0.75rem;
           font-weight: 700;
-          color: $primary;
+          color: s.$primary;
           text-transform: uppercase;
           letter-spacing: 1.2px;
         }
@@ -182,7 +182,7 @@
             }
             .data {
               font-size: 1rem;
-              color: $secondary-text;
+              color: s.$secondary-text;
             }
           }
         }
@@ -230,7 +230,7 @@
           .recipe-price {
             font-size: 0.75rem;
             font-weight: 700;
-            color: $primary;
+            color: s.$primary;
             text-transform: uppercase;
             padding-top: 0.5rem;
             letter-spacing: 1.2px;
@@ -327,7 +327,7 @@
     }
     .body-content {
       width: 100%;
-      max-width: $recipe-body-max-width;
+      max-width: s.$recipe-body-max-width;
 
       .tags-container {
         margin: 0 auto;
@@ -336,7 +336,7 @@
         width: 90%;
         .tag-label {
           font-size: 1rem;
-          color: $primary;
+          color: s.$primary;
           font-weight: 700;
         }
         .tags {
@@ -350,7 +350,7 @@
             text-decoration: none;
 
             &:focus {
-              @include outline();
+              @include s.outline();
             }
           }
           .tag.skeleton {
@@ -384,9 +384,9 @@
         display: flex;
         justify-content: center;
         align-items: center;
-        border: 1px solid $primary-text;
-        border-radius: $border-radius;
-        color: $primary-text;
+        border: 1px solid s.$primary-text;
+        border-radius: s.$border-radius;
+        color: s.$primary-text;
         padding: 0.5rem 1rem;
         font-size: 1rem;
         font-weight: 600;
@@ -396,17 +396,17 @@
         height: 40px;
 
         &:hover {
-          background: $primary-text;
-          color: $primary-background;
+          background: s.$primary-text;
+          color: s.$primary-background;
         }
         &:focus {
-          @include outline();
+          @include s.outline();
         }
       }
       span {
         font-size: 0.75rem;
         font-weight: 700;
-        color: $secondary-text;
+        color: s.$secondary-text;
       }
     }
   }

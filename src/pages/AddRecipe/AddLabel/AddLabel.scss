@@ -1,4 +1,4 @@
-@import '../../../helpers.scss';
+@use '../../../helpers.scss' as s;
 
 .add-label-container {
   padding-top: 0.25rem;
@@ -9,7 +9,7 @@
     outline: none;
     border: none;
     background: none;
-    color: $primary;
+    color: s.$primary;
     cursor: pointer;
 
     .icon {

@@ -1,8 +1,8 @@
-@import '../../helpers.scss';
+@use '../../helpers.scss' as s;
 
 .recipes-page {
   min-height: calc(
-    100vh - #{$nav-height} - #{$footer-height} - #{$footer-margin} - 2rem
+    100vh - #{s.$nav-height} - #{s.$footer-height} - #{s.$footer-margin} - 2rem
   );
   h1.title {
     text-align: center;
@@ -14,7 +14,7 @@
     margin-bottom: 1rem;
     width: 100%;
     input {
-      background: $white;
+      background: s.$white;
     }
   }
   .recipes-container {
@@ -55,14 +55,14 @@
       align-items: center;
       width: 250px;
       height: 45px;
-      border: 1px solid $gray-400;
+      border: 1px solid s.$gray-400;
       margin: 0 auto;
-      border-radius: $border-radius;
+      border-radius: s.$border-radius;
       font-size: 1.3rem;
       white-space: nowrap;
 
       &:hover {
-        border-color: $tertiary-text;
+        border-color: s.$tertiary-text;
       }
 
       @media screen and (max-width: 375px) {

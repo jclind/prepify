@@ -1,4 +1,4 @@
-@import '../../../../helpers.scss';
+@use '../../../../helpers.scss' as s;
 
 .ingredient-list {
   display: flex;
@@ -17,7 +17,7 @@
       align-items: center;
       height: 60px;
       width: 60px;
-      background: $white;
+      background: s.$white;
       border-radius: 50%;
       transition: margin 0.1s linear;
       .img {
