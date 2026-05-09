@@ -22,39 +22,11 @@ import Help from './pages/Help/Help'
 import NotFound from './pages/404/404'
 import SingleRecipe from './pages/SingleRecipe/SingleRecipe'
 
-import { transitions, positions, Provider as AlertProvider } from 'react-alert'
-import {
-  AiOutlineInfoCircle,
-  AiOutlineCheckCircle,
-  AiOutlineClose,
-} from 'react-icons/ai'
-import { BiError } from 'react-icons/bi'
+import { Toaster } from 'react-hot-toast'
 import Settings from './pages/Settings/Settings'
 import Profile from './pages/Settings/SubSettings/Profile'
 import Password from './pages/Settings/SubSettings/Password'
 // import RecipeAI from './pages/RecipeAI/RecipeAI'
-
-const alertOptions = {
-  // you can also just use 'bottom center'
-  position: positions.BOTTOM_CENTER,
-  timeout: 5000,
-  offset: '30px',
-  // you can also just use 'scale'
-  transition: transitions.SCALE,
-}
-const AlertTemplate = ({ style, options, message, close }: any) => {
-  return (
-    <div style={style} className='alert'>
-      {options.type === 'info' && <AiOutlineInfoCircle className='icon info' />}
-      {options.type === 'success' && (
-        <AiOutlineCheckCircle className='icon success' />
-      )}
-      {options.type === 'error' && <BiError className='icon error' />}
-      <div className='content'>{message}</div>
-      <AiOutlineClose className='close-icon' onClick={close} />
-    </div>
-  )
-}
 
 const ScrollToTop = () => {
   const { pathname } = useLocation()
@@ -67,9 +39,9 @@ function App() {
   return (
     <HelmetProvider>
       <AuthProvider>
-        <AlertProvider template={AlertTemplate} {...alertOptions}>
-          <ScrollToTop />
-          <Routes>
+        <Toaster position='bottom-center' toastOptions={{ duration: 5000 }} />
+        <ScrollToTop />
+        <Routes>
             <Route
               path='*'
               element={
@@ -158,7 +130,6 @@ function App() {
             <Route path='/create-username' element={<CreateUsername />} />
             <Route path='/forgot-password' element={<ForgotPassword />} />
           </Routes>
-        </AlertProvider>
       </AuthProvider>
     </HelmetProvider>
   )

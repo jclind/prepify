@@ -10,7 +10,7 @@ interface RecipeFormInputProps<T extends string | number | undefined> {
   characterLimit?: number
   inputBeginningText?: string
   onEnter?: () => void
-  inputRef?: React.RefObject<HTMLInputElement>
+  inputRef?: React.RefObject<HTMLInputElement | null>
   onBlur?: () => void
 }
 

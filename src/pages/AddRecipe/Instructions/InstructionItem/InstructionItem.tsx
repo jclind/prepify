@@ -61,6 +61,7 @@ const InstructionItem: FC<InstructionItemProps> = ({
 
   return (
     <div
+      ref={provided?.innerRef}
       className={`instructions-container item ${
         snapshot?.isDragging ? 'dragging' : ''
       }`}

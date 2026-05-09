@@ -17,7 +17,7 @@ type RecipeHeaderContentProps = {
   currRecipe: RecipeType | null
   servingSize: number
   currUserReview: ReviewType | null
-  printedRef: React.MutableRefObject<HTMLInputElement>
+  printedRef: React.RefObject<HTMLInputElement | null>
 }
 
 const skeletonColor = '#d6d6d6'

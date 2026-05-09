@@ -12,7 +12,7 @@ import Skeleton from 'react-loading-skeleton'
 const skeletonColor = '#d6d6d6'
 
 function useOutsideAlerter(
-  ref: React.RefObject<HTMLFormElement>,
+  ref: React.RefObject<HTMLFormElement | null>,
   setVal: (val: boolean) => void
 ) {
   useEffect(() => {
@@ -50,7 +50,7 @@ const SearchRecipesInput = ({
   const [autoCompleteResponse, setAutoCompleteResponse] = useState<
     RecipeSearchResponseType[]
   >([])
-  const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null)
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const [isBlurred, setIsBlurred] = useState(true)
 
@@ -85,18 +85,13 @@ const SearchRecipesInput = ({
   }
 
   useEffect(() => {
-    // If the autocomplete property passed through exists and is true, show auto complete results
     if (autoComplete) {
-      if (timeoutId) clearTimeout(timeoutId)
-
-      const newTimeoutId = setTimeout(() => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current)
+      timeoutRef.current = setTimeout(() => {
         getAutoCompleteResult(searchRecipeVal)
       }, 300)
-
-      setTimeoutId(newTimeoutId)
-      // cleanup function to clear timeout on unmount or username change
       return () => {
-        if (timeoutId) clearTimeout(timeoutId)
+        if (timeoutRef.current) clearTimeout(timeoutRef.current)
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

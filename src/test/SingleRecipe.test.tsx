@@ -1,6 +1,6 @@
 import React from 'react'
 import { vi } from 'vitest'
-import { render, screen, waitFor, act } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { HelmetProvider } from 'react-helmet-async'
@@ -42,7 +42,7 @@ vi.mock('src/pages/SingleRecipe/Buttons/MadeRecipeBtn', () => ({
   default: () => null,
 }))
 
-vi.mock('react-star-ratings', () => ({
+vi.mock('src/Components/StarRating/StarRating', () => ({
   default: ({ rating }: any) => <div data-testid='star-rating'>{rating}</div>,
 }))
 

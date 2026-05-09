@@ -19,7 +19,7 @@ import CuisineSelector from './CuisineSelector/CuisineSelector'
 import MealTypeSelector from './MealTypeSelector/MealTypeSelector'
 import { hrMinToMin } from 'src/util/hrMinToMin'
 import RecipeAPI from 'src/api/recipes'
-import styles from '../../_exports.scss'
+import styles from '../../_exports.module.scss'
 import AddRecipeFormError from './AddRecipeFormError'
 import { Helmet } from 'react-helmet-async'
 

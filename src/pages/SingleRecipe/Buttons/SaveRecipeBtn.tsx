@@ -4,9 +4,8 @@ import {
   BsFillBookmarkFill,
   BsFillBookmarkCheckFill,
 } from 'react-icons/bs'
-import { Link } from 'react-router-dom'
 
-import { useAlert } from 'react-alert'
+import toast from 'react-hot-toast'
 import AuthAPI from 'src/api/auth'
 import RecipeAPI from 'src/api/recipes'
 
@@ -18,8 +17,6 @@ const SaveRecipeBtn = ({ recipeId }: SaveRecipeBtnProps) => {
 
   const uid = AuthAPI.getUID()
 
-  const alert = useAlert()
-
   const handleToggleSaveRecipe = (recipeId: string) => {
     if (uid) {
       if (isSaved) {
@@ -28,15 +25,7 @@ const SaveRecipeBtn = ({ recipeId }: SaveRecipeBtnProps) => {
         RecipeAPI.saveRecipe(uid, recipeId).then(() => setIsSaved(true))
       }
     } else {
-      alert.show(
-        <div>
-          Please <Link to='/login'>login</Link> to save recipes.
-        </div>,
-        {
-          timeout: 10000,
-          type: 'info',
-        }
-      )
+      toast('Please login to save recipes.', { duration: 10000 })
     }
   }
 

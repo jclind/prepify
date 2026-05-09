@@ -34,7 +34,7 @@ import { IngredientsType } from 'types'
 export const updateIngredients = (
   ingredients: IngredientsType[],
   originalServings: number,
-  newServings: number
+  newServings: number,
 ) => {
   const fractionMulti = newServings / originalServings
 
@@ -54,10 +54,10 @@ export const updateIngredients = (
       }
 
       let updatedIngredientData: IngredientData | null = structuredClone(
-        ingr.ingredientData
+        ingr.ingredientData,
       )
       let updatedParsedIngredient: ParsedIngredient = structuredClone(
-        ingr.parsedIngredient
+        ingr.parsedIngredient,
       )
       if (price && quantity) {
         // If quantity exists, updatedIngredientData will exist

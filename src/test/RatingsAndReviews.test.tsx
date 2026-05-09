@@ -28,11 +28,11 @@ vi.mock('src/api/auth', () => ({
   },
 }))
 
-vi.mock('react-star-ratings', () => ({
-  default: ({ rating, changeRating, name }: any) => (
+vi.mock('src/Components/StarRating/StarRating', () => ({
+  default: ({ rating, onChange, interactive }: any) => (
     <div
-      data-testid={`star-ratings-${name ?? 'default'}`}
-      onClick={() => changeRating?.(4)}
+      data-testid='star-ratings-rating'
+      onClick={() => interactive && onChange?.(4)}
       aria-label={`${rating} stars`}
     >
       {rating} stars
@@ -40,9 +40,8 @@ vi.mock('react-star-ratings', () => ({
   ),
 }))
 
-// Use vi.hoisted so mockAlert is defined before vi.mock factories run
-const mockAlert = vi.hoisted(() => ({ show: vi.fn() }))
-vi.mock('react-alert', () => ({ useAlert: () => mockAlert }))
+const mockToast = vi.hoisted(() => Object.assign(vi.fn(), { success: vi.fn(), error: vi.fn() }))
+vi.mock('react-hot-toast', () => ({ default: mockToast }))
 
 const mockAddRating = RecipeAPI.addRating as ReturnType<typeof vi.fn>
 const mockNewReview = RecipeAPI.newReview as ReturnType<typeof vi.fn>
@@ -195,7 +194,7 @@ describe('AddReview', () => {
 
   beforeEach(() => {
     mockNewReview.mockReset()
-    mockAlert.show.mockClear()
+    mockToast.mockClear()
   })
 
   it('"Add Review" button is visible regardless of auth state', () => {
@@ -207,7 +206,7 @@ describe('AddReview', () => {
     const user = userEvent.setup()
     const { container } = renderAddReview({ uid: null })
     await user.click(screen.getByText('Add Review'))
-    expect(mockAlert.show).toHaveBeenCalledTimes(1)
+    expect(mockToast).toHaveBeenCalledTimes(1)
     expect(container.querySelector('.review-open')).not.toHaveClass('visible')
   })
 
