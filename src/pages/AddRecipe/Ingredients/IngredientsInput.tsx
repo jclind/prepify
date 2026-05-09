@@ -3,7 +3,7 @@ import { TailSpin } from 'react-loader-spinner'
 import RecipeAPI from 'src/api/recipes'
 import { IngredientsType } from 'types'
 import RecipeFormInput from '../RecipeFormInput'
-import styles from '../../../_exports.scss'
+import styles from '../../../_exports.module.scss'
 
 type IngredientsInputProps = {
   addIngredientToList: (data: IngredientsType) => void

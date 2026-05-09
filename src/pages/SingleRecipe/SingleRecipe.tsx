@@ -34,7 +34,7 @@ const SingleRecipe = ({ recipe }: { recipe?: RecipeType | null }) => {
   const [modIngredients, setModIngredients] = useState<IngredientsType[]>([])
   const [currUserReview, setCurrUserReview] = useState<ReviewType | null>(null)
   const [servingSize, setServingSize] = useState(0)
-  const printedRef = useRef() as React.MutableRefObject<HTMLInputElement>
+  const printedRef = useRef<HTMLInputElement>(null)
 
   const { recipeId } = useParams<{ recipeId: string }>()
 

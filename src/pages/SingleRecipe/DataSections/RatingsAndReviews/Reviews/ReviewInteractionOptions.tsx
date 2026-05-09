@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { useAlert } from 'react-alert'
+import toast from 'react-hot-toast'
 import {
   AiOutlineLike,
   AiOutlineDislike,
@@ -11,8 +11,6 @@ const ReviewInteractionOptions = () => {
   const [isLikeHovered, setIsLikeHovered] = useState(false)
   const [isDislikeHovered, setIsDislikeHovered] = useState(false)
 
-  const alert = useAlert()
-
   return (
     <>
       <button
@@ -20,13 +18,9 @@ const ReviewInteractionOptions = () => {
         onMouseEnter={() => setIsLikeHovered(true)}
         onMouseLeave={() => setIsLikeHovered(false)}
         onClick={() => {
-          alert.show(
-            "Sorry, liking and disliking reviews isn't available yet in beta.",
-            {
-              timeout: 10000,
-              type: 'info',
-            }
-          )
+          toast("Sorry, liking and disliking reviews isn't available yet in beta.", {
+            duration: 10000,
+          })
         }}
       >
         {isLikeHovered ? (
@@ -40,13 +34,9 @@ const ReviewInteractionOptions = () => {
         onMouseEnter={() => setIsDislikeHovered(true)}
         onMouseLeave={() => setIsDislikeHovered(false)}
         onClick={() => {
-          alert.show(
-            "Sorry, liking and disliking reviews isn't available yet in beta.",
-            {
-              timeout: 10000,
-              type: 'info',
-            }
-          )
+          toast("Sorry, liking and disliking reviews isn't available yet in beta.", {
+            duration: 10000,
+          })
         }}
       >
         {isDislikeHovered ? (

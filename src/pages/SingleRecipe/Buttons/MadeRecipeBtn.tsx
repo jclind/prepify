@@ -1,5 +1,5 @@
 import React, { FC, useEffect, useState } from 'react'
-import { useAlert } from 'react-alert'
+import toast from 'react-hot-toast'
 import { TailSpin } from 'react-loader-spinner'
 import AuthAPI from 'src/api/auth'
 import RecipeAPI from 'src/api/recipes'
@@ -19,8 +19,6 @@ const MadeRecipeBtn: FC<MadeRecipeBtnProps> = ({ recipeId }) => {
   const [numTimesMade, setNumTimesMade] = useState(0)
   const [lastDateMade, setLastDateMade] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
-  const alert = useAlert()
-
   const handleMadeRecipe = () => {
     if (canMakeAgain(lastDateMade)) {
       setLoading(true)
@@ -29,35 +27,20 @@ const MadeRecipeBtn: FC<MadeRecipeBtnProps> = ({ recipeId }) => {
           setLastDateMade(new Date().getTime())
           setNumTimesMade(prev => prev + 1)
           setLoading(false)
-          alert.show('Recipe marked as read, share your feedback below!', {
-            timeout: 3000,
-            type: 'success',
+          toast.success('Recipe marked as read, share your feedback below!', {
+            duration: 3000,
           })
         })
         .catch((error: any) => {
-          alert.show(<div>Error: {error.toString()}</div>, {
-            timeout: 5000,
-            type: 'error',
-          })
+          toast.error(`Error: ${error.toString()}`)
           setLoading(false)
         })
     } else if (lastDateMade) {
-      alert.show(
-        <div>
-          Recipe can only be marked as read once an hour. Try again in{' '}
-          {60 - Math.ceil((new Date().getTime() - lastDateMade) / (1000 * 60))}{' '}
-          minutes.
-        </div>,
-        {
-          timeout: 5000,
-          type: 'error',
-        }
+      toast.error(
+        `Recipe can only be marked as read once an hour. Try again in ${60 - Math.ceil((new Date().getTime() - lastDateMade) / (1000 * 60))} minutes.`
       )
     } else {
-      alert.show('Something went wrong, try refreshing.', {
-        timeout: 10000,
-        type: 'error',
-      })
+      toast.error('Something went wrong, try refreshing.', { duration: 10000 })
     }
   }
 
@@ -75,7 +58,7 @@ const MadeRecipeBtn: FC<MadeRecipeBtnProps> = ({ recipeId }) => {
           }
         })
         .catch((error: any) =>
-          alert.show(error.toString(), { timeout: 5000, type: 'error' })
+          toast.error(error.toString())
         )
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

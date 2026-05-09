@@ -1,6 +1,23 @@
-import React, { useState, useEffect } from 'react'
+import React, { Component, useState, useEffect } from 'react'
 import './RecipeReview.scss'
-import StarRatings from 'react-star-ratings'
+import StarRating from 'src/Components/StarRating/StarRating'
+
+class StarRatingErrorBoundary extends Component<
+  { children: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props)
+    this.state = { hasError: false }
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true }
+  }
+  render() {
+    if (this.state.hasError) return null
+    return this.props.children
+  }
+}
 import Modal from 'react-modal'
 import { ReviewType } from 'types'
 import RecipeAPI from 'src/api/recipes'
@@ -61,13 +78,9 @@ const RecipeReview = ({
       <div className='name-content'>
         <div className='name'>{username}</div>
         <div className='rating'>
-          <StarRatings
-            rating={rating}
-            starRatedColor='#ff5722'
-            starDimension='15px'
-            starSpacing='1px'
-            name='rating'
-          />
+          <StarRatingErrorBoundary>
+            <StarRating rating={rating} size={15} spacing={1} />
+          </StarRatingErrorBoundary>
         </div>
       </div>
       <div className='date'>{date}</div>

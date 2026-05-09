@@ -10,7 +10,7 @@ import RecipeFormInput from '../RecipeFormInput'
 import '../ListComponents/Item.scss'
 import RemoveItem from '../ListComponents/RemoveItem'
 import { TailSpin } from 'react-loader-spinner'
-import styles from '../../../_exports.scss'
+import styles from '../../../_exports.module.scss'
 import IngredientItemText from 'src/Components/IngredientItemText/IngredientItemText'
 
 const skeletonColor = '#d6d6d6'
@@ -111,6 +111,7 @@ const IngredientItem: FC<IngredientItemProps> = ({
   if (!ingredient) return null
   return (
     <div
+      ref={provided?.innerRef}
       className={`ingredients-container item ${
         snapshot?.isDragging ? 'dragging' : ''
       }`}
