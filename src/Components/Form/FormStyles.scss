@@ -1,4 +1,4 @@
-@import '../../helpers.scss';
+@use '../../helpers.scss' as s;
 
 .form-format {
   display: flex;
@@ -20,9 +20,9 @@
         padding-bottom: 2rem;
         font-weight: 500;
         font-size: 1rem;
-        color: $secondary-text;
+        color: s.$secondary-text;
         .prompt-btn {
-          color: $secondary;
+          color: s.$secondary;
           font-weight: 700;
         }
       }
@@ -36,7 +36,7 @@
           text-decoration: none;
           font-weight: 500;
           font-size: 0.875rem;
-          color: $secondary-text;
+          color: s.$secondary-text;
           width: fit-content;
         }
       }
@@ -46,7 +46,7 @@
   .btn {
     height: 55px;
     width: 100%;
-    border-radius: $border-radius;
+    border-radius: s.$border-radius;
     font-weight: 600;
   }
 
@@ -56,8 +56,8 @@
     align-items: center;
     margin-top: 3rem;
 
-    color: $primary-background;
-    background: $secondary;
+    color: s.$primary-background;
+    background: s.$secondary;
   }
   .available,
   .not-available {
@@ -65,14 +65,14 @@
     font-size: 1rem;
   }
   .available {
-    color: $success-green;
+    color: s.$success-green;
   }
   .not-available {
-    color: $error-red;
+    color: s.$error-red;
   }
   .google-btn {
     margin-top: 1rem;
-    border: 1px solid $secondary-background;
+    border: 1px solid s.$secondary-background;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -81,7 +81,7 @@
     .icon {
       height: 40px;
       width: 40px;
-      color: $secondary;
+      color: s.$secondary;
     }
   }
 }

@@ -1,4 +1,4 @@
-@import '../../../helpers.scss';
+@use '../../../helpers.scss' as s;
 
 .image-picker-container {
   display: flex;
@@ -9,7 +9,7 @@
 .image-picker-box {
   position: relative;
   width: 100%;
-  border-radius: $border-radius;
+  border-radius: s.$border-radius;
   min-height: 200px;
   background-color: #f0f0f0;
   border: 2px dashed #ccc;

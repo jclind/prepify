@@ -1,7 +1,7 @@
-@import './helpers.scss';
+@use './helpers.scss' as s;
 
 :export {
-  primary: $primary;
-  borderColor: $tertiary-text;
-  primaryText: $primary-text;
+  primary: s.$primary;
+  borderColor: s.$tertiary-text;
+  primaryText: s.$primary-text;
 }

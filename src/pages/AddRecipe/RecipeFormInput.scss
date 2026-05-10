@@ -1,4 +1,4 @@
-@import '../../helpers.scss';
+@use '../../helpers.scss' as s;
 
 .recipe-form-input,
 .recipe-form-textarea,
@@ -15,7 +15,7 @@
     font-weight: 600;
     font-size: 0.875rem;
     text-transform: capitalize;
-    color: $primary;
+    color: s.$primary;
   }
 
   .input-container {
@@ -30,7 +30,7 @@
       position: absolute;
       height: 25px;
       width: 25px;
-      color: $primary-text;
+      color: s.$primary-text;
       left: 0.75rem;
     }
     .input,
@@ -39,8 +39,8 @@
       background: none;
       border: none;
       outline: none;
-      border: 1px solid $tertiary-text;
-      border-radius: $border-radius;
+      border: 1px solid s.$tertiary-text;
+      border-radius: s.$border-radius;
       width: 100%;
       height: 100%;
       padding: 0 1rem;
@@ -71,7 +71,7 @@
   left: 16px;
   font-size: 0.9rem;
   font-weight: 600;
-  color: $secondary-text;
+  color: s.$secondary-text;
 }
 .recipe-form-textarea {
   // height: 10ch;
