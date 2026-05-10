@@ -1,4 +1,4 @@
-@import '../../helpers.scss';
+@use '../../helpers.scss' as s;
 
 .form-input {
   position: relative;
@@ -28,7 +28,7 @@
       position: absolute;
       height: 25px;
       width: 25px;
-      color: $primary-text;
+      color: s.$primary-text;
       left: 0.75rem;
     }
     input {
@@ -41,8 +41,8 @@
       height: 100%;
       font-size: 1rem;
       font-weight: 500;
-      background: $secondary-background;
-      border-radius: $border-radius;
+      background: s.$secondary-background;
+      border-radius: s.$border-radius;
     }
   }
 }
