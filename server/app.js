@@ -13,7 +13,18 @@ const allowedOrigins = (process.env.FRONTEND_URLS || 'http://localhost:3000')
   .split(',')
   .map(s => s.trim().replace(/\/$/, ''))
 
-app.use(cors({ origin: allowedOrigins, credentials: true }))
+const netlifyPreviewPattern = /^https:\/\/deploy-preview-\d+--prepify\.netlify\.app$/
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin) || netlifyPreviewPattern.test(origin)) {
+      callback(null, true)
+    } else {
+      callback(new Error('Not allowed by CORS'))
+    }
+  },
+  credentials: true,
+}))
 app.use(express.json())
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }))
