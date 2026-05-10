@@ -1,4 +1,5 @@
-const api = () => Cypress.env('API_URL')
+import { API_URL } from '../support/constants'
+const api = () => API_URL
 
 describe('Single Recipe', () => {
   let recipeId: string

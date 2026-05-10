@@ -3,9 +3,7 @@ import admin from 'firebase-admin'
 
 export default defineConfig({
   projectId: 'k156x8',
-  env: {
-    API_URL: 'http://localhost:4000',
-  },
+  allowCypressEnv: false,
   e2e: {
     baseUrl: 'http://localhost:3000',
     setupNodeEvents(on, config) {
