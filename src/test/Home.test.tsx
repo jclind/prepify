@@ -3,6 +3,7 @@ import { vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { HelmetProvider } from 'react-helmet-async'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import Home from 'src/pages/Home/Home'
 import RecipeAPI from 'src/api/recipes'
 
@@ -54,13 +55,18 @@ const makeRecipe = (id: string) => ({
   numTimesMade: 0,
 })
 
+const createTestQueryClient = () =>
+  new QueryClient({ defaultOptions: { queries: { retry: false } } })
+
 const renderHome = () =>
   render(
-    <MemoryRouter>
-      <HelmetProvider>
-        <Home />
-      </HelmetProvider>
-    </MemoryRouter>
+    <QueryClientProvider client={createTestQueryClient()}>
+      <MemoryRouter>
+        <HelmetProvider>
+          <Home />
+        </HelmetProvider>
+      </MemoryRouter>
+    </QueryClientProvider>
   )
 
 describe('Home page', () => {

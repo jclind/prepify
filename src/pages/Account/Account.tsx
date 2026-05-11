@@ -2,12 +2,11 @@ import React, { FC, useState, useEffect } from 'react'
 import { useLocation, useNavigate, Link, Outlet } from 'react-router-dom'
 import './Account.scss'
 import { Helmet } from 'react-helmet-async'
+import { useQuery } from '@tanstack/react-query'
 import AuthAPI from 'src/api/auth'
 import { useAuth } from 'src/context/AuthContext'
 
 const Account: FC = () => {
-  const [nameInitial, setNameInitial] = useState('')
-  const [username, setUsername] = useState('')
   const [currPath, setCurrPath] = useState('')
 
   const uid = AuthAPI.getUID()
@@ -17,27 +16,20 @@ const Account: FC = () => {
 
   const authRes = useAuth()
 
-  useEffect(() => {
-    if (uid) {
-      const displayName = authRes?.user?.displayName
-      if (displayName) {
-        const i = displayName.charAt(0).toUpperCase()
-        setNameInitial(i)
-      } else {
-        AuthAPI.getUsername(uid).then(val => {
-          if (val) {
-            setUsername(val)
-            const i = val.charAt(0).toUpperCase()
-            setNameInitial(i)
-          } else {
-            setNameInitial('null')
-          }
-        })
-      }
-    }
+  const { data } = useQuery({
+    queryKey: ['username', uid],
+    queryFn: () => AuthAPI.getUsername(uid!),
+    enabled: !!uid && !authRes?.user?.displayName,
+  })
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [uid])
+  const username = data ?? ''
+  const nameInitial = authRes?.user?.displayName
+    ? authRes.user.displayName.charAt(0).toUpperCase()
+    : data
+    ? data.charAt(0).toUpperCase()
+    : data === null
+    ? 'null'
+    : ''
 
   useEffect(() => {
     setCurrPath(location.pathname)

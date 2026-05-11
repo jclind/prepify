@@ -1,4 +1,5 @@
 import React, { FC, useState, useEffect } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useLocation } from 'react-router-dom'
 import './Recipes.scss'
 import RecipeThumbnail from 'src/Components/RecipeThumbnail/RecipeThumbnail'
@@ -16,8 +17,6 @@ const Recipes: FC = () => {
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [selectedCuisine, setSelectedCuisine] = useState('')
 
-  const [fetchRecipesLoading, setFetchRecipesLoading] = useState(false)
-  const [fetchRecipesError, setFetchRecipesError] = useState<string | null>(null)
   const [filtersLoading, setFiltersLoading] = useState(true)
 
   const [currPage, setCurrPage] = useState<number | null>(null)
@@ -27,56 +26,52 @@ const Recipes: FC = () => {
   const urlParams = new URLSearchParams(location.search)
   const param = urlParams.get('q')
   const query = param ? param.split('-').join(' ') : ''
+  const orderParam = urlParams.get('order')
+  const filter = orderParam || selectFilterVal
 
-  const getRecipes = (page: number) => {
-    const orderParam = urlParams.get('order')
-    const filter = orderParam || selectFilterVal
-    const recipesPerPage = 9
-
-    setFetchRecipesLoading(true)
-    setFetchRecipesError(null)
-    RecipeAPI.getAllRecipes(
-      page,
-      filter,
-      selectedTags,
-      selectedCuisine,
-      recipesPerPage,
-      query
-    )
-      .then(res => {
-        setTotalResults(res.total_results)
-
-        if (res.recipeList) {
-          if (page !== 0) {
-            setRecipeList(prev => [...prev, ...res.recipeList])
-          } else {
-            setRecipeList(res.recipeList)
-          }
-        } else {
-          setRecipeList([])
-        }
-      })
-      .catch(() => {
-        setFetchRecipesError('Failed to load recipes. Please try again.')
-      })
-      .finally(() => setFetchRecipesLoading(false))
-  }
+  const { data, isFetching, isError } = useQuery({
+    queryKey: [
+      'recipes',
+      {
+        page: currPage,
+        sort: filter,
+        tags: selectedTags,
+        cuisine: selectedCuisine,
+        search: query,
+      },
+    ],
+    queryFn: () =>
+      RecipeAPI.getAllRecipes(
+        currPage as number,
+        filter,
+        selectedTags,
+        selectedCuisine,
+        9,
+        query
+      ),
+    enabled: currPage !== null,
+    retry: false,
+  })
 
   useEffect(() => {
     if (!filtersLoading) {
       setRecipeList([])
       setCurrPage(0)
-      getRecipes(0)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectFilterVal, selectedTags, selectedCuisine, location.search])
 
   useEffect(() => {
-    if (currPage !== null && currPage !== 0) {
-      getRecipes(currPage)
+    if (data) {
+      setTotalResults(data.total_results)
+      if (data.page === 0) {
+        setRecipeList(data.recipeList || [])
+      } else {
+        setRecipeList(prev => [...prev, ...(data.recipeList || [])])
+      }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currPage])
+  }, [data])
+
   return (
     <>
       <Helmet>
@@ -101,8 +96,10 @@ const Recipes: FC = () => {
             filtersLoading={filtersLoading}
             setFiltersLoading={setFiltersLoading}
           />
-          {fetchRecipesError ? (
-            <div className='fetch-error'>{fetchRecipesError}</div>
+          {isError ? (
+            <div className='fetch-error'>
+              Failed to load recipes. Please try again.
+            </div>
           ) : totalResults === 0 ? (
             <div>No Results Found</div>
           ) : (
@@ -130,9 +127,9 @@ const Recipes: FC = () => {
             <button
               className='load-more-btn btn'
               onClick={() => setCurrPage(currPage + 1)}
-              disabled={fetchRecipesLoading}
+              disabled={isFetching}
             >
-              {fetchRecipesLoading ? (
+              {isFetching ? (
                 <TailSpin
                   height='30'
                   width='30'
