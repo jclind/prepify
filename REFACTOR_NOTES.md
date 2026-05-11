@@ -229,6 +229,30 @@ Root fix: migrate to `useInfiniteQuery` (see above).
 
 ---
 
+## Phase 3-G: UserRatings.tsx — useQuery migration notes
+
+**Date:** 2026-05-11
+
+### Query key omits uid (prompt specified it, not implemented)
+
+The phase prompt specified `['user-reviews', uid, page]` with uid from auth context. `getSingleUserReviews` resolves the username internally via `AuthAPI.getUsername()` — it takes no uid parameter. Including uid in the key would require importing auth context for a value not passed to the queryFn. Following the established `SavedRecipes` pattern (`['saved-recipes', selectOption.value, currPage]`), the key is `['user-reviews', selectOption.value, currPage]`.
+
+**Phase 4 suggestion:** If cache isolation per user is needed (multi-account scenarios), add uid to both this key and the SavedRecipes key at the same time.
+
+### `isMoreReviews` initial value: `true` → `false`
+
+Original initialised `isMoreReviews` to `true`; migrated version uses `false` (matching `SavedRecipes`). Functionally equivalent: the Load More button is gated on `isMoreReviews && reviews.length > 0`, and `reviews` is empty before the first fetch completes.
+
+### Page increment timing changed
+
+Same as Phase 3-F (`SavedRecipes`): original incremented `page` after a successful fetch; the new design increments `currPage` before the fetch (on Load More click). On fetch failure, the original would retry the same page; the new design would attempt the next page. The pre-existing lack of error state means this gap is silent — revisit when error handling is added.
+
+### useInfiniteQuery candidate (Phase 4)
+
+`UserRatings.tsx` is a candidate for `useInfiniteQuery` migration in Phase 4, same as `Recipes.tsx` and `SavedRecipes.tsx`.
+
+---
+
 ## Phase 3-E: Account.tsx and Navbar.tsx — useQuery migration notes
 
 **Date:** 2026-05-11
