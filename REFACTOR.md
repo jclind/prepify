@@ -10,7 +10,7 @@ Last updated: 2026-05-11
 | ----- | --------------------------- | -------------- |
 | 1     | Audit & Inventory           | ✅ Complete    |
 | 2     | Types & Contracts           | ✅ Complete    |
-| 3     | Data Fetching (React Query) | 🔲 Not started |
+| 3     | Data Fetching (React Query) | ✅ Complete    |
 | 4     | Component Architecture      | 🔲 Not started |
 | 5     | Server Cleanup              | 🔲 Not started |
 | 6     | Polish                      | 🔲 Not started |
@@ -135,30 +135,31 @@ Write these 5 test files before Phase 3 begins:
 
 ---
 
-## Phase 3 — Data Fetching (React Query) 🔲
+## Phase 3 — Data Fetching (React Query) ✅
 
-**Goal:** Replace all `useEffect`+`useState` data fetching with TanStack Query (React Query v5). Behavior identical before/after each task. Frontend-only PRs.
+**Completed:** 2026-05-11
+**Commit:** _(one commit per task, 3-Setup through 3-H)_
 
-**Pre-condition:** `@tanstack/react-query` and `@tanstack/react-query-devtools` installed; `QueryClientProvider` wired in `src/index.tsx`. Done in 3-Setup before any component task.
+### Tasks completed
 
-### Migration hit list
+- **3-Setup:** Installed `@tanstack/react-query` and `@tanstack/react-query-devtools`; wired `QueryClientProvider` in `src/index.tsx`
+- **3-A:** `Recipes.tsx` — `getAllRecipes()`, paginated + filtered accumulation via `useQuery` + data effect
+- **3-B:** `SingleRecipe.tsx` — `getRecipe(id)`, full three-state, `enabled: !!id`
+- **3-C:** `TrendingRecipes.tsx` — `getTrendingRecipes(4)`, loading class behavior preserved
+- **3-D:** `SearchRecipesInput.tsx` — `searchAutoCompleteRecipes()`, debounced with `enabled` guard
+- **3-E:** `Account.tsx` and `Navbar.tsx` — `AuthAPI.getUsername()`, shared `['username', uid]` key, deduplicated by React Query
+- **3-F:** `SavedRecipes.tsx` — `getSavedRecipes()`, paginated accumulation
+- **3-G:** `UserRatings.tsx` — `getSingleUserReviews()`, paginated accumulation
+- **3-H:** `RatingsAndReviews.tsx` and `ReviewsContainer.tsx` — `checkIfReviewed()` and `getReviews()`; `handleSortChange` atomically resets page + sort (replaces sort-change `useEffect`, avoids double-fetch race)
+- **3-Verify:** 109/109 frontend tests, 103/103 server tests, clean build, no migration misses
 
-| Task     | Component                | Fetch call                    | Complexity                                 |
-| -------- | ------------------------ | ----------------------------- | ------------------------------------------ |
-| 3-Setup  | —                        | —                             | Install + wire QueryClientProvider         |
-| 3-A      | `Recipes.tsx`            | `getAllRecipes()`             | Paginated + filtered, 2 effects, ✅ tested |
-| 3-B      | `SingleRecipe.tsx`       | `getRecipe(id)`               | Full three-state, 2 effects, ✅ tested     |
-| 3-C      | `TrendingRecipes.tsx`    | `getTrendingRecipes(4)`       | Loading only, no error handling            |
-| 3-D      | `SearchRecipesInput.tsx` | `searchAutoCompleteRecipes()` | Debounced, no state                        |
-| 3-E      | `Account.tsx`            | `AuthAPI.getUsername()`       | No state                                   |
-| 3-E      | `Navbar.tsx`             | `AuthAPI.getUsername()`       | No state, same query key as Account        |
-| 3-F      | `SavedRecipes.tsx`       | `getSavedRecipes()`           | Paginated, loading only                    |
-| 3-G      | `UserRatings.tsx`        | `getSingleUserReviews()`      | Paginated, loading only                    |
-| 3-H      | `RatingsAndReviews.tsx`  | `checkIfReviewed()`           | No state, parent orchestrator              |
-| 3-H      | `ReviewsContainer.tsx`   | `getReviews()`                | Paginated, no loading indicator            |
-| 3-Verify | —                        | —                             | Read-only audit, no code changes           |
+### Key outcomes
 
-### Query key conventions
+- All `useEffect`+`useState` data fetching replaced with `useQuery`
+- 7 remaining `useEffect` calls are correctly not migrated: `AuthContext.tsx` (auth gate, not a query), `UsernameInput.tsx` (form validation), and 5 Phase 4 candidates (see below)
+- `Recipes.tsx` noted as `useInfiniteQuery` candidate in Phase 4 — current `useQuery` + manual accumulation is a functional workaround
+
+### Query key conventions (for reference in Phase 4+)
 
 | Data                | Key                                           |
 | ------------------- | --------------------------------------------- |
@@ -172,29 +173,33 @@ Write these 5 test files before Phase 3 begins:
 | Recipe reviews      | `['reviews', recipeId, sort, page]`           |
 | Check made/reviewed | `['check-made', recipeId]`                    |
 
-### Shared constraints
-
-- No logic changes. No UI changes. Behavior identical before/after every task.
-- `staleTime`: `0` (default — do not set explicitly unless needed to preserve behavior).
-- Query key arrays only — never bare strings.
-- Plan-and-pause: output migration plan before touching any file. Wait for approval.
-- Flag pre-existing bugs in `REFACTOR_NOTES.md`. Do not fix them.
-- One commit per task. Format: `refactor(phase-3-X): migrate ComponentName to useQuery`
-
-**Prompts:** See `PHASE3_PROMPTS.md` (delete after Phase 3 complete)
-
 ---
 
 ## Phase 4 — Component Architecture 🔲
 
-**Goal:** Component composition, prop-drilling cleanup, and any structural refactors surfaced by PATTERN_AUDIT.md.
+**Goal:** Component composition, prop-drilling cleanup, structural refactors, and remaining React Query wiring deferred from Phase 3.
 
-**Known candidates from earlier phases:**
+### Migration candidates (from Phase 3 verify report)
 
-- react-select `onChange` handlers: specify `Select<T, false>` at JSX call sites
-- `ReviewsContainer` loading indicator — `isLoading` now available from React Query; wire it here (Phase 3 intentionally deferred as feature change)
+These 5 components still use `useEffect`+`useState` for data fetching and were out of scope for Phase 3. Each is a clean `useQuery` candidate:
 
-**Prompts:** _(to be written after Phase 3 complete)_
+| Component            | Fetch call                     | Notes                                                                                        |
+| -------------------- | ------------------------------ | -------------------------------------------------------------------------------------------- |
+| `Profile.tsx`        | `AuthAPI.getUsername()`        | Biggest win: one query replaces a `loading` flag + 5 data fields                             |
+| `MadeRecipeBtn.tsx`  | `RecipeAPI.checkMadeRecipe()`  | No fetch loading state currently; `isLoading` would enable a button skeleton for free        |
+| `SaveRecipeBtn.tsx`  | `RecipeAPI.getSavedRecipe()`   | No fetch loading state currently; same pattern as `MadeRecipeBtn`                            |
+| `RecipeControls.tsx` | `AuthAPI.getUsername(currUID)` | Drives `isUsersRecipe` (show/hide edit-delete); shares `['username', uid]` key — cached      |
+| `ReviewOptions.tsx`  | `AuthAPI.getUsername(uid)`     | Drives `currUsername` (show/hide edit-delete on review); shares `['username', uid]` — cached |
+
+Note on `RecipeControls` and `ReviewOptions`: both call `getUsername` with a uid — they will share the `['username', uid]` query key with `Account.tsx` and `Navbar.tsx` from Phase 3-E. React Query will serve these from cache with no extra network calls.
+
+### Other known candidates
+
+- `Recipes.tsx` — migrate from `useQuery` + manual accumulation to `useInfiniteQuery` (designed for load-more patterns); flagged during Phase 3-A
+- `ReviewsContainer` — wire `isLoading` to a loading indicator now that it's available from React Query (intentionally deferred in Phase 3-H as a feature change)
+- react-select `onChange` handlers — specify `Select<T, false>` at JSX call sites instead of casting `e as SingleValue<T>` (deferred from Phase 2-D)
+
+**Prompts:** _(to be written after Phase 3 complete — next step)_
 
 ---
 
