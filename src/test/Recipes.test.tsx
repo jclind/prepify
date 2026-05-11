@@ -4,6 +4,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { HelmetProvider } from 'react-helmet-async'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import Recipes from 'src/pages/Recipes/Recipes'
 import RecipeAPI from 'src/api/recipes'
 
@@ -70,13 +71,18 @@ const makeRecipe = (id: string) => ({
 
 const mockGetAllRecipes = RecipeAPI.getAllRecipes as ReturnType<typeof vi.fn>
 
+const createTestQueryClient = () =>
+  new QueryClient({ defaultOptions: { queries: { retry: false } } })
+
 const renderRecipes = (initialEntry = '/') =>
   render(
-    <MemoryRouter initialEntries={[initialEntry]}>
-      <HelmetProvider>
-        <Recipes />
-      </HelmetProvider>
-    </MemoryRouter>
+    <QueryClientProvider client={createTestQueryClient()}>
+      <MemoryRouter initialEntries={[initialEntry]}>
+        <HelmetProvider>
+          <Recipes />
+        </HelmetProvider>
+      </MemoryRouter>
+    </QueryClientProvider>
   )
 
 describe('Recipes (Browse) page', () => {
