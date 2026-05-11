@@ -1,5 +1,5 @@
 import { ParsedIngredient, IngredientData, IngredientResponse } from '@jclind/ingredient-parser'
-import { http } from './http-common'
+import { http } from 'src/api/http-common'
 
 export interface EnrichmentResult {
   source: 'cache' | 'spoonacular'

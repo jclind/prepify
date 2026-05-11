@@ -1,7 +1,7 @@
 import React, { Dispatch, FC, SetStateAction } from 'react'
 import { InstructionsType } from 'types'
-import { DndContext, Drag } from '../../Dnd'
-import InstructionItem from '../InstructionItem/InstructionItem'
+import { DndContext, Drag } from 'src/pages/AddRecipe/Dnd'
+import InstructionItem from 'src/pages/AddRecipe/Instructions/InstructionItem/InstructionItem'
 
 type InstructionListProps = {
   instructions: InstructionsType[]

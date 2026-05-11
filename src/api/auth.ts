@@ -1,5 +1,5 @@
-import { auth } from '../client/db'
-import { http } from './http-common'
+import { auth } from 'src/client/db'
+import { http } from 'src/api/http-common'
 
 class AuthAPIClass {
   getUID(): string | null {

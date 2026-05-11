@@ -1,8 +1,8 @@
 import React, { FC, useState } from 'react'
 import { IngredientsType } from 'types'
-import AddLabel from '../../../../pages/AddRecipe/AddLabel/AddLabel'
-import IngredientList from '../IngredientList/IngredientList'
-import IngredientsInput from '../IngredientsInput'
+import AddLabel from 'src/pages/AddRecipe/AddLabel/AddLabel'
+import IngredientList from 'src/pages/AddRecipe/Ingredients/IngredientList/IngredientList'
+import IngredientsInput from 'src/pages/AddRecipe/Ingredients/IngredientsInput'
 import './IngredientsContainer.scss'
 
 type IngredientsContainerProps = {

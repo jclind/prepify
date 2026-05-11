@@ -2,12 +2,12 @@ import React, { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CgTimer } from 'react-icons/cg'
 import { AiOutlineStar } from 'react-icons/ai'
-import { formatRating } from '../../util/formatRating'
+import { formatRating } from 'src/util/formatRating'
 import Skeleton from 'react-loading-skeleton'
 import 'react-loading-skeleton/dist/skeleton.css'
 
 import './RecipeThumbnail.scss'
-import { RecipeType } from '../../../types'
+import { RecipeType } from 'types'
 
 const skeletonColor = '#d6d6d6'
 

@@ -1,7 +1,7 @@
 import React, { Dispatch, FC, SetStateAction } from 'react'
 import { IngredientsType } from 'types'
-import { DndContext, Drag } from '../../Dnd'
-import IngredientItem from '../IngredientItem'
+import { DndContext, Drag } from 'src/pages/AddRecipe/Dnd'
+import IngredientItem from 'src/pages/AddRecipe/Ingredients/IngredientItem'
 import './IngredientList.scss'
 
 type IngredientListProps = {

@@ -1,6 +1,6 @@
 import React, { FC, ReactElement } from 'react'
-import Navbar from '../Navbar/Navbar'
-import Footer from '../Footer/Footer'
+import Navbar from 'src/Components/Navbar/Navbar'
+import Footer from 'src/Components/Footer/Footer'
 
 type LayoutProps = {
   children?: ReactElement

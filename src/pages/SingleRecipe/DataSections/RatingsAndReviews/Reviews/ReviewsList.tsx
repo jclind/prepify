@@ -1,6 +1,6 @@
 import React, { FC } from 'react'
 import { ReviewType } from 'types'
-import RecipeReview from './RecipeReview'
+import RecipeReview from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/RecipeReview'
 
 type ReviewsListProps = {
   recipeId: string

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { ReviewType } from 'types'
-import Ratings from './Ratings/Ratings'
-import ReviewsContainer from './Reviews/ReviewsContainer'
+import Ratings from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/Ratings/Ratings'
+import ReviewsContainer from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/ReviewsContainer'
 import RecipeAPI from 'src/api/recipes'
 import AuthAPI from 'src/api/auth'
 

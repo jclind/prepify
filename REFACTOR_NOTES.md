@@ -4,6 +4,77 @@ Issues flagged during refactor phases that require a decision or future action.
 
 ---
 
+## Phase 2-C: src/-Absolute Import Sweep
+
+**Date:** 2026-05-10
+
+### Flagged — left alone
+
+#### `package.json` imports (outside `src/`)
+
+Two files import `package.json` from the project root via deep relative paths:
+
+- `src/Components/Footer/Footer.tsx` — `import pjson from '../../../package.json'`
+- `src/Components/ReleaseNotes/ReleaseNotes.tsx` — `import packageJSON from '../../../package.json'`
+
+These resolve outside of `src/` and cannot be rewritten to a `src/`-absolute path.
+
+**Phase 6 suggestion:** Replace with a `VITE_APP_VERSION` env var (populated from `package.json` at build time via `vite.config.ts` `define`). This eliminates the cross-boundary import and works at runtime without bundling the whole manifest.
+
+### Skipped — barrel/index re-exports
+
+`src/pages/AddRecipe/Dnd/index.ts` — all three exports are same-directory re-exports (`./DndContext`, `./Drop`, `./Drag`). These are correct as-is and were not converted.
+
+### `types.d.ts` → `src/types.ts`
+
+The root `types.d.ts` was moved to `src/types.ts` (renamed from `.d.ts` to `.ts`).
+
+- `tsconfig.json` now has `"paths": { "types": ["src/types"] }` so the bare `'types'` specifier continues to resolve correctly for TypeScript.
+- `vite.config.ts` now has `types: path.resolve(__dirname, './src/types')` in the `resolve.alias` block so Vite resolves the bare specifier at bundle time.
+- `src/Components/RecipeThumbnail/RecipeThumbnail.tsx` was the only file using the old relative path (`'../../../types'`); updated to `'types'`.
+- All other files were already using the bare `'types'` specifier and required no change to their import lines.
+
+### `ignoreDeprecations: "6.0"` in tsconfig.json
+
+`tsconfig.json` now includes `"ignoreDeprecations": "6.0"` to suppress `TS5101`, a `baseUrl` deprecation warning that surfaced when the `paths` alias for `types` was added in Phase 2-C. The `paths` entry requires `baseUrl` to be set, and TypeScript 6.0 flags `baseUrl` as deprecated (slated to stop functioning in TS 7.0).
+
+**Phase 6 action required:** This must be resolved before any TypeScript major version upgrade. The fix is to migrate from `baseUrl` + `paths` to a `paths`-only setup with relative entries, or to adopt project-level aliases via `imports` in `package.json` (Node.js subpath imports).
+
+### Known type errors (pre-existing, not introduced by Phase 2-C)
+
+**`src/App.tsx:41` — TS2746**
+
+`AuthProvider` in `src/context/AuthContext.tsx` declares `children` as `React.ReactElement` (a single element), but `App.tsx` passes three children (`<Toaster>`, `<ScrollToTop>`, `<Routes>`). Pre-existing error — silently ignored because `tsc --noEmit` was not being run as a CI gate.
+
+Fix in Phase 2-D: change `children: React.ReactElement` to `children: React.ReactNode` in `AuthContext.tsx`.
+
+**`src/index.tsx:7` — TS2345**
+
+`document.getElementById('root')` returns `HTMLElement | null`, but `createRoot()` expects a non-null `Container`. The underlying code bug predates Phase 2-B, but was invisible to tsc when the file was `index.jsx` (not in tsc scope without `allowJs`/`checkJs`). The Phase 2-B rename to `index.tsx` brought it into scope.
+
+Fix in Phase 2-D: add a non-null assertion (`document.getElementById('root')!`) or a null guard.
+
+### Phase 2-D candidate: `any` fields in `src/types.ts`
+
+Several fields in `NutritionDataType` (and `RecipeType.nutritionData`) are typed as `any`. These should be addressed in Phase 2-D with concrete types derived from the Edamam API response shape:
+
+```ts
+// NutritionDataType
+yield: any           // should be number
+calories: any        // should be number
+totalWeight: any     // should be number
+cautions: any[]      // should be string[]
+totalNutrients: any  // should be Record<string, NutrientDetail>
+totalDaily: any      // should be Record<string, NutrientDetail>
+ingredients: any[]   // should be typed ingredient response objects
+totalNutrientsKCal: any // should be Record<string, NutrientDetail>
+
+// RecipeType
+nutritionData: any   // should be NutritionDataType | null
+```
+
+---
+
 ## Phase 2-B: Pre-existing tsc errors surfaced by index.jsx → index.tsx rename
 
 **Date:** 2026-05-10

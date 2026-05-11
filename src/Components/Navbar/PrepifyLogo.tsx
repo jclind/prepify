@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { NavLink } from 'react-router-dom'
-import ReleaseNotes from '../ReleaseNotes/ReleaseNotes'
+import ReleaseNotes from 'src/Components/ReleaseNotes/ReleaseNotes'
 
 const PrepifyLogo = () => {
   const [releaseNotesModalIsOpen, setReleaseNotesModalIsOpen] = useState(false)
