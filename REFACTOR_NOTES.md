@@ -226,3 +226,13 @@ The `useQuery` approach requires keeping `recipeList` and `totalResults` as sepa
 If `location.search` changes while `currPage > 0` (e.g., user navigates to `/?q=something` from page 2 of results), TanStack Query fires an interim query with the old page + new URL params before the filter reset effect resets `currPage` to 0. The original code never made this extra call. No current test exercises this path.
 
 Root fix: migrate to `useInfiniteQuery` (see above).
+
+---
+
+## Phase 3-E: Account.tsx and Navbar.tsx — useQuery migration notes
+
+**Date:** 2026-05-11
+
+### `enabled` condition mismatch between Account and Navbar
+
+Account.tsx and Navbar.tsx have different `enabled` conditions for the `['username', uid]` query — Account skips the fetch when `authRes?.user?.displayName` is set, Navbar does not. Deduplication only fires for users without a display name. Revisit in Phase 4 to decide if these should be aligned.
