@@ -75,6 +75,68 @@ nutritionData: any   // should be NutritionDataType | null
 
 ---
 
+## Phase 2-E-1: Frontend test baseline (new test files)
+
+**Date:** 2026-05-11
+
+### `TrendingRecipes` — always-false loading class condition
+
+`src/Components/TrendingRecipes/TrendingRecipes.tsx` line 23:
+
+```tsx
+className={`recipes ${recipes.length < 0 ? '' : 'loading'}`}
+```
+
+`recipes.length < 0` is always `false`, so the container div always carries the `loading` CSS class, even when recipes are fully loaded. The dead branch (`''`) is never reached.
+
+**Impact:** Cosmetic — a `loading` class is always present regardless of state. Tests document the rendered output; the class never switches.
+
+**Phase 4 suggestion:** Fix the condition to `recipes.length === 0 ? 'loading' : ''` or remove the class toggle entirely if unused by CSS.
+
+---
+
+### `TrendingRecipes` — no error state
+
+`TrendingRecipes` calls `RecipeAPI.getTrendingRecipes(4).then(...)` with no `.catch`. If the fetch fails (rejected Promise), the unhandled rejection is swallowed silently and the component stays in skeleton state indefinitely. No error UI exists.
+
+**Impact:** Users see an infinite loading spinner on network failure with no feedback.
+
+**Testing note:** The rejection case cannot be asserted in Vitest without triggering an unhandled-rejection warning (Vitest treats unhandled rejections as test errors because the source has no `.catch`). The test in `Home.test.tsx` documents the equivalent visible behavior using a resolved-empty case (`mockResolvedValue([])`), which also produces perpetual skeleton cards.
+
+**Phase 3/4 suggestion:** React Query migration will expose an `isError` state; add an error UI at that point.
+
+---
+
+### `ReviewsContainer` — no loading indicator
+
+`ReviewsContainer` has no loading state of its own. Between mount and when `ReviewFilters` sets `reviewListSort` (which triggers the first `getReviews` call), the component shows AddReview and an empty review list — visually identical to the "zero reviews" resolved state. There is no spinner or skeleton during the data fetch.
+
+**Impact:** Minor UX gap; pre-existing behavior. React Query migration (Phase 3) will surface `isLoading`.
+
+---
+
+## Phase 2-E-2: Server test — POST /api/ingredients/parse
+
+**Date:** 2026-05-11
+
+### Unauthenticated route
+
+`POST /api/ingredients/parse` has no `verifyToken` middleware guard. Every other route in the main server requires a Firebase Bearer token. This is the only route without auth. The test in `server/__tests__/ingredients.test.js` documents this as current behavior (not an endorsement). See the "Auth gap" test case.
+
+**Phase 4/5 suggestion:** Add `verifyToken` middleware to this route for consistency, or document intentionally that the parse endpoint is public.
+
+### `SPOONACULAR_API_KEY` is undefined during tests
+
+`dotenv` is loaded in `server/index.js` only — not in `server/app.js`. Test files import `app.js` directly, so `process.env.SPOONACULAR_API_KEY` is `undefined` at test time. Because `ingredientParser` is mocked this has no effect on test correctness, but the options-forwarding test explicitly documents this as current behavior.
+
+### Prompt template note — Jest vs Vitest
+
+The original Phase 2-E-2 prompt template said "use vitest (shared with server)." This was incorrect: the server uses Jest (configured via `server/jest.config.js`), and the root Vitest config explicitly excludes server files via `include: ['src/**/*.test.{ts,tsx}']`. Vitest is not installed in `server/node_modules`.
+
+**Action:** Future server test prompts must say **Jest** (not Vitest). Run server tests with `npm test --prefix server`.
+
+---
+
 ## Phase 2-B: Pre-existing tsc errors surfaced by index.jsx → index.tsx rename
 
 **Date:** 2026-05-10
