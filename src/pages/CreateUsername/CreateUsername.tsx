@@ -1,4 +1,4 @@
-import React, { ChangeEvent, useState } from 'react'
+import React, { ChangeEvent, FC, useState } from 'react'
 import '../../Components/Form/FormStyles.scss'
 import './CreateUsername.scss'
 import { TailSpin } from 'react-loader-spinner'
@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom'
 import UsernameInput from 'src/Components/Form/UsernameInput'
 import AuthAPI from 'src/api/auth'
 
-const CreateUsername = () => {
+const CreateUsername: FC = () => {
   const [currUsername, setCurrUsername] = useState('')
   const [isUsernameAvailable, setIsUsernameAvailable] = useState<
     boolean | null
@@ -35,9 +35,9 @@ const CreateUsername = () => {
           setSuccess('Username Created Successfully!')
           navigate('/')
         })
-        .catch((error: any) => {
+        .catch((error: unknown) => {
           setLoadingCreateUsername(false)
-          setError(error.message.toString())
+          setError(error instanceof Error ? error.message : String(error))
         })
     }
   }

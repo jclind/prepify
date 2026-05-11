@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { FC, useEffect } from 'react'
 import { Routes, Route, useLocation } from 'react-router-dom'
 import { HelmetProvider } from 'react-helmet-async'
 import AuthProvider from 'src/context/AuthContext'
@@ -28,14 +28,14 @@ import Profile from 'src/pages/Settings/SubSettings/Profile'
 import Password from 'src/pages/Settings/SubSettings/Password'
 // import RecipeAI from './pages/RecipeAI/RecipeAI'
 
-const ScrollToTop = () => {
+const ScrollToTop: FC = () => {
   const { pathname } = useLocation()
   useEffect(() => {
     document.querySelector('body')?.scrollTo(0, 0)
   }, [pathname])
   return null
 }
-function App() {
+const App: FC = () => {
   return (
     <HelmetProvider>
       <AuthProvider>

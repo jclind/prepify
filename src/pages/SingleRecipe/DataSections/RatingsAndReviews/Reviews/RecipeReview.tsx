@@ -1,4 +1,4 @@
-import React, { Component, useState, useEffect } from 'react'
+import React, { Component, FC, useState, useEffect } from 'react'
 import './RecipeReview.scss'
 import StarRating from 'src/Components/StarRating/StarRating'
 
@@ -31,11 +31,11 @@ type RecipeReviewProps = {
   recipeId?: string
 }
 
-const RecipeReview = ({
+const RecipeReview: FC<RecipeReviewProps> = ({
   review,
   setCurrUserReview,
   recipeId,
-}: RecipeReviewProps) => {
+}) => {
   const [rating, setRating] = useState(0)
   const [date, setDate] = useState('')
   const [username, setUsername] = useState('')

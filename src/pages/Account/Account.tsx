@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react'
+import React, { FC, useState, useEffect } from 'react'
 import { useLocation, useNavigate, Link, Outlet } from 'react-router-dom'
 import './Account.scss'
 import { Helmet } from 'react-helmet-async'
 import AuthAPI from 'src/api/auth'
 import { useAuth } from 'src/context/AuthContext'
 
-const Account = () => {
+const Account: FC = () => {
   const [nameInitial, setNameInitial] = useState('')
   const [username, setUsername] = useState('')
   const [currPath, setCurrPath] = useState('')

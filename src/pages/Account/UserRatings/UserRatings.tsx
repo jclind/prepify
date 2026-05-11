@@ -1,5 +1,5 @@
 import React, { FC, useEffect, useState } from 'react'
-import Select, { SingleValue } from 'react-select'
+import Select, { MultiValue, SingleValue } from 'react-select'
 import RecipeAPI from 'src/api/recipes'
 import { OptionalReviewType } from 'types'
 import { selectCustomStyles } from 'src/pages/Account/selectCustomStyles'
@@ -75,7 +75,7 @@ const options = [
   { value: 'negative', label: 'Rating: Least Positive' },
 ]
 const skeletonColor = '#d6d6d6'
-const Ratings = () => {
+const Ratings: FC = () => {
   const [reviews, setReviews] = useState<OptionalReviewType[]>([])
   const [page, setPage] = useState(0)
   const [isMoreReviews, setIsMoreReviews] = useState(true)
@@ -112,16 +112,13 @@ const Ratings = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
   const handleSelectChange = (
-    e: SingleValue<{
-      value: string
-      label: string
-    }>
+    e: MultiValue<{ value: string; label: string }> | SingleValue<{ value: string; label: string }>
   ) => {
-    if (e) {
-      setSelectOption(e)
-      setPage(0)
-      handleGetUserReviews(0, e.value)
-    }
+    const option = e as SingleValue<{ value: string; label: string }>
+    if (!option) return
+    setSelectOption(option)
+    setPage(0)
+    handleGetUserReviews(0, option.value)
   }
   const handleLoadMoreReviews = () => {
     handleGetUserReviews(page, selectOption.value)

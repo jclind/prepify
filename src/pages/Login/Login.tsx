@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { FC, useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import './Login.scss'
 import '../../Components/Form/FormStyles.scss'
@@ -9,7 +9,7 @@ import { MdOutlineEmail, MdOutlineLock } from 'react-icons/md'
 import PrepifyLogo from 'src/Components/Navbar/PrepifyLogo'
 import { Helmet } from 'react-helmet-async'
 
-const Login = () => {
+const Login: FC = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
 
@@ -17,7 +17,7 @@ const Login = () => {
 
   const authRes = useAuth()
 
-  const handleEmailAndPasswordFormSubmit = (e: any) => {
+  const handleEmailAndPasswordFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError('')
     authRes?.signInDefault(email, password, setError)

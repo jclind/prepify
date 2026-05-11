@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { FC, useEffect, useRef, useState } from 'react'
 import {
   AddRecipeErrorType,
   IngredientsType,
@@ -23,7 +23,7 @@ import styles from 'src/_exports.module.scss'
 import AddRecipeFormError from 'src/pages/AddRecipe/AddRecipeFormError'
 import { Helmet } from 'react-helmet-async'
 
-const AddRecipe = () => {
+const AddRecipe: FC = () => {
   const [addRecipeLoading, setAddRecipeLoading] = useState(false)
   const [loadingProgress, setLoadingProgress] = useState(0)
   const addRecipeFormRef = useRef<HTMLDivElement>(null)

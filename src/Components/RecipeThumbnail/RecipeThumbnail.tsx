@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { FC, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CgTimer } from 'react-icons/cg'
 import { AiOutlineStar } from 'react-icons/ai'
@@ -16,7 +16,7 @@ type RecipeThumbnailType = {
   loading?: boolean
 }
 
-const RecipeThumbnail = ({ recipe, loading }: RecipeThumbnailType) => {
+const RecipeThumbnail: FC<RecipeThumbnailType> = ({ recipe, loading }) => {
   const navigate = useNavigate()
   const handleOnClick = () => {
     if (!loading) {

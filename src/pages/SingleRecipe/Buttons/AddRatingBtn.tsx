@@ -1,11 +1,11 @@
-import React, { useState } from 'react'
+import React, { FC, useState } from 'react'
 import { BsStar, BsStarFill } from 'react-icons/bs'
 
 type AddRatingBtnProps = {
   currUserReview: { rating: string } | null
 }
 
-const AddRatingBtn = ({ currUserReview }: AddRatingBtnProps) => {
+const AddRatingBtn: FC<AddRatingBtnProps> = ({ currUserReview }) => {
   const [isHovered, setIsHovered] = useState(false)
 
   const handleClick = () => {

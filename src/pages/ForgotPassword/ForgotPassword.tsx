@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { FC, useState } from 'react'
 import { Link } from 'react-router-dom'
 import './ForgotPassword.scss'
 import '../../Components/Form/FormStyles.scss'
@@ -8,7 +8,7 @@ import { useAuth } from 'src/context/AuthContext'
 import PrepifyLogo from 'src/Components/Navbar/PrepifyLogo'
 import { Helmet } from 'react-helmet-async'
 
-const ForgotPassword = () => {
+const ForgotPassword: FC = () => {
   const [email, setEmail] = useState('')
 
   const authRes = useAuth()
@@ -16,7 +16,7 @@ const ForgotPassword = () => {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
-  const handleChangePasswordFormSubmit = (e: any) => {
+  const handleChangePasswordFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError('')
     setSuccess('')

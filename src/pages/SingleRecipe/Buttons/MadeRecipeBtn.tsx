@@ -31,8 +31,8 @@ const MadeRecipeBtn: FC<MadeRecipeBtnProps> = ({ recipeId }) => {
             duration: 3000,
           })
         })
-        .catch((error: any) => {
-          toast.error(`Error: ${error.toString()}`)
+        .catch((error: unknown) => {
+          toast.error(`Error: ${String(error)}`)
           setLoading(false)
         })
     } else if (lastDateMade) {
@@ -57,8 +57,8 @@ const MadeRecipeBtn: FC<MadeRecipeBtnProps> = ({ recipeId }) => {
             setLastDateMade(lastDate)
           }
         })
-        .catch((error: any) =>
-          toast.error(error.toString())
+        .catch((error: unknown) =>
+          toast.error(String(error))
         )
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

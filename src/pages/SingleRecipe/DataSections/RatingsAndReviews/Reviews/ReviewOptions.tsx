@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { FC, useEffect, useState } from 'react'
 import AuthAPI from 'src/api/auth'
 import ConfirmDeleteReviewModal from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/ConfirmDeleteReviewModal'
 import EditingReviewOptions from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/EditingReviewOptions'
@@ -13,14 +13,14 @@ type ReviewOptionsProps = {
   reviewAuthorUsername: string
 }
 
-const ReviewOptions = ({
+const ReviewOptions: FC<ReviewOptionsProps> = ({
   handleEditReview,
   editing,
   setEditing,
   handleDeleteReview,
   editLoading,
   reviewAuthorUsername,
-}: ReviewOptionsProps) => {
+}) => {
   const uid = AuthAPI.getUID()
 
   const [currUsername, setCurrUsername] = useState<string | null>(null)

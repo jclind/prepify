@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { FC, useState } from 'react'
 import { InstructionsType } from 'types'
 import RecipeFormInput from 'src/pages/AddRecipe/RecipeFormInput'
 import { v4 as uuidv4 } from 'uuid'
@@ -10,10 +10,10 @@ type InstructionsContainerProps = {
   setInstructions: React.Dispatch<React.SetStateAction<InstructionsType[]>>
 }
 
-const InstructionsContainer = ({
+const InstructionsContainer: FC<InstructionsContainerProps> = ({
   instructions,
   setInstructions,
-}: InstructionsContainerProps) => {
+}) => {
   const [inputVal, setInputVal] = useState('')
   const [reorderActive, setReorderActive] = useState(false)
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { FC, useState } from 'react'
 import { useReactToPrint } from 'react-to-print'
 import { TailSpin } from 'react-loader-spinner'
 
@@ -8,7 +8,7 @@ type PrintRecipeBtnProps = {
   printedRef: React.RefObject<HTMLInputElement | null>
 }
 
-const PrintRecipeBtn = ({ printedRef }: PrintRecipeBtnProps) => {
+const PrintRecipeBtn: FC<PrintRecipeBtnProps> = ({ printedRef }) => {
   const [isHovered, setIsHovered] = useState(false)
   const [loading, setLoading] = useState(false)
 

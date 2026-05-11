@@ -1,4 +1,8 @@
-export const selectCustomStyles = {
+import { StylesConfig } from 'react-select'
+
+type OptionType = { value: string; label: string }
+
+export const selectCustomStyles: StylesConfig<OptionType> = {
   control: (provided: any, state: any) => ({
     ...provided,
     background: '#eeeeee',

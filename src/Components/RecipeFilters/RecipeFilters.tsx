@@ -1,5 +1,5 @@
 import React, { useState, useEffect, FC, useRef } from 'react'
-import Select, { MultiValue, SingleValue } from 'react-select'
+import Select, { ActionMeta, MultiValue, SingleValue, StylesConfig } from 'react-select'
 import { useNavigate, useLocation } from 'react-router-dom'
 import './RecipeFilters.scss'
 import { dietLabelsOptions } from 'src/recipeData/dietLabels'
@@ -23,7 +23,7 @@ type OptionType = {
   label: string
 }
 
-const customDietLabelStyles = {
+const customDietLabelStyles: StylesConfig<OptionType> = {
   control: (provided: any) => ({
     ...provided,
     borderRadius: '20px',
@@ -177,7 +177,7 @@ const RecipeFilters: FC<RecipeFiltersProps> = ({
 
   const handleDietTagsChange = (
     newValues: MultiValue<OptionType> | null,
-    actionMeta: any
+    actionMeta: ActionMeta<OptionType>
   ) => {
     if (newValues && newValues.length > 0) {
       if (newValues.length >= 4) return
@@ -192,22 +192,18 @@ const RecipeFilters: FC<RecipeFiltersProps> = ({
     navigate(`/recipes?${urlParams}`)
   }
   const handleCuisineChange = (
-    e: SingleValue<{
-      value: string
-      label: string
-    }>
+    e: MultiValue<OptionType> | SingleValue<OptionType>
   ) => {
-    if (e) {
-      const value = e.value
-      if (!e.value) {
-        setSelectedCuisine('')
-        urlParams.delete('cuisine')
-      } else {
-        setSelectedCuisine(value)
-        urlParams.set('cuisine', value)
-      }
-      navigate(`/recipes?${urlParams}`)
+    const option = e as SingleValue<OptionType>
+    if (!option) return
+    if (!option.value) {
+      setSelectedCuisine('')
+      urlParams.delete('cuisine')
+    } else {
+      setSelectedCuisine(option.value)
+      urlParams.set('cuisine', option.value)
     }
+    navigate(`/recipes?${urlParams}`)
   }
 
   // const { getCollapseProps, getToggleProps, isExpanded } = useCollapse()

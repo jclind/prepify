@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react'
+import React, { FC, ReactNode, useState, useEffect, useContext } from 'react'
 import {
   signOut,
   getAuth,
@@ -60,13 +60,13 @@ type AuthContextValueType = {
 }
 
 type AuthProviderProps = {
-  children: React.ReactElement
+  children: ReactNode
 }
 
 const AuthContext = React.createContext<AuthContextValueType | null>(null)
 const auth = getAuth()
 
-const AuthProvider = ({ children }: AuthProviderProps) => {
+const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<UserCredential['user'] | null>(null)
   const [loading, setLoading] = useState(true)
 
