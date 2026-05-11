@@ -1,4 +1,5 @@
 import React, { FC, useState, useEffect, useRef } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useParams } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 
@@ -27,18 +28,24 @@ type LocalStorageRecipeType = {
 type Props = { recipe?: RecipeType | null }
 
 const SingleRecipe: FC<Props> = ({ recipe }) => {
-  const [currRecipe, setCurrRecipe] = useState<RecipeType | null>(
-    recipe || null
-  )
-  const [loading, setLoading] = useState(true)
-  const [recipe404, setRecipe404] = useState(false)
-  const [recipeError, setRecipeError] = useState<string | null>(null)
+  const { recipeId } = useParams<{ recipeId: string }>()
+
+  const { data: fetchedRecipe, isPending, isError } = useQuery({
+    queryKey: ['recipe', recipeId],
+    queryFn: () => RecipeAPI.getRecipe(recipeId!),
+    enabled: !!recipeId,
+  })
+
+  const loading = isPending
+  const recipe404 = !isPending && !isError && (!fetchedRecipe || !fetchedRecipe.title)
+  const recipeError = isError ? 'Failed to load recipe. Please try again.' : null
+  const currRecipe: RecipeType | null =
+    !isPending && fetchedRecipe && fetchedRecipe.title ? fetchedRecipe : recipe || null
+
   const [modIngredients, setModIngredients] = useState<IngredientsType[]>([])
   const [currUserReview, setCurrUserReview] = useState<ReviewType | null>(null)
   const [servingSize, setServingSize] = useState(0)
   const printedRef = useRef<HTMLInputElement>(null)
-
-  const { recipeId } = useParams<{ recipeId: string }>()
 
   const updateRecipeLocalStorage = (recipeId: string, numServings: number) => {
     const localStorageRecipeArr: LocalStorageRecipeType[] = JSON.parse(
@@ -74,40 +81,20 @@ const SingleRecipe: FC<Props> = ({ recipe }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [servingSize])
 
-  // Retrieve recipe data with recipeId
   useEffect(() => {
-    if (!recipeId) return
-    RecipeAPI.getRecipe(recipeId)
-      .then(res => {
-        if (!res || !res.title) {
-          setRecipe404(true)
-        } else {
-          setCurrRecipe(res)
-          const recipeServingsLS: LocalStorageRecipeType[] = JSON.parse(
-            localStorage.getItem('recipeServings') || '[]'
-          )
-
-          const currRecipeLocalStorageObj = recipeServingsLS.find(
-            item => item.recipeId === res._id
-          )
-
-          // Set currRecipeServings to saved local numServings value for current recipe if it exists, if not set to the default servings for the current recipe
-          const currRecipeServings: number = currRecipeLocalStorageObj
-            ? currRecipeLocalStorageObj.numServings
-            : res.servings
-
-          setServingSize(currRecipeServings)
-        }
-        setLoading(false)
-      })
-      .catch(err => {
-        console.log(err)
-        setRecipeError('Failed to load recipe. Please try again.')
-        setLoading(false)
-      })
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+    if (fetchedRecipe && fetchedRecipe.title) {
+      const recipeServingsLS: LocalStorageRecipeType[] = JSON.parse(
+        localStorage.getItem('recipeServings') || '[]'
+      )
+      const currRecipeLocalStorageObj = recipeServingsLS.find(
+        item => item.recipeId === fetchedRecipe._id
+      )
+      const currRecipeServings: number = currRecipeLocalStorageObj
+        ? currRecipeLocalStorageObj.numServings
+        : fetchedRecipe.servings
+      setServingSize(currRecipeServings)
+    }
+  }, [fetchedRecipe])
 
   return (
     <>
