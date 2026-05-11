@@ -236,3 +236,17 @@ Root fix: migrate to `useInfiniteQuery` (see above).
 ### `enabled` condition mismatch between Account and Navbar
 
 Account.tsx and Navbar.tsx have different `enabled` conditions for the `['username', uid]` query — Account skips the fetch when `authRes?.user?.displayName` is set, Navbar does not. Deduplication only fires for users without a display name. Revisit in Phase 4 to decide if these should be aligned.
+
+---
+
+## Phase 3-F: SavedRecipes.tsx — useQuery migration notes
+
+**Date:** 2026-05-11
+
+### Page increment timing changed
+
+Original incremented `recipesPage` after a successful fetch; the new design increments `currPage` before the fetch (on Load More click). On fetch failure, the original would retry the same page; the new design would attempt the next page. The pre-existing lack of error state means this gap was already silent — but worth revisiting when error handling is added in Phase 4 or 5.
+
+### useInfiniteQuery candidate (Phase 4)
+
+`SavedRecipes.tsx` is a candidate for `useInfiniteQuery` migration in Phase 4, same as `Recipes.tsx`. The `useQuery` + manual accumulation pattern is a workaround for the load-more pattern that `useInfiniteQuery` handles natively.
