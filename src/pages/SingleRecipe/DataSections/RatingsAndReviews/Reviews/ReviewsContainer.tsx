@@ -1,4 +1,5 @@
 import React, { FC, useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import AuthAPI from 'src/api/auth'
 import RecipeAPI from 'src/api/recipes'
 import { ReviewType } from 'types'
@@ -27,40 +28,37 @@ const ReviewsContainer: FC<ReviewsContainerProps> = ({
   const [isMoreReviews, setIsMoreReviews] = useState(false)
   const [reviewListSort, setReviewListSort] = useState<string>('')
 
-  const handleGetUserReviews = (recipesPage: number, selectValue: string) => {
-    if (recipesPage >= 0 && selectValue) {
-      RecipeAPI.getReviews(recipeId, selectValue, recipesPage, recipesPerPage)
-        .then(res => {
-          if (res) {
-            const updatedArr =
-              recipesPage === 0
-                ? [...res.reviews]
-                : [...reviewList, ...res.reviews]
-            // Remove elements that are only ratings and not reviews
-            const reviewArr = updatedArr.filter(review => review.reviewText)
-            setReviewList(reviewArr)
-
-            if (Number(res.totalCount) > updatedArr.length) {
-              setIsMoreReviews(true)
-            } else {
-              setIsMoreReviews(false)
-            }
-          }
-          setReviewListPage(reviewListPage + 1)
-        })
-        .catch((error: unknown) => console.log(error))
-    }
-  }
-
   const uid = AuthAPI.getUID()
 
+  const { data } = useQuery({
+    queryKey: ['reviews', recipeId, reviewListSort, reviewListPage],
+    queryFn: () =>
+      RecipeAPI.getReviews(recipeId, reviewListSort, reviewListPage, recipesPerPage),
+    enabled: reviewListPage >= 0 && !!reviewListSort,
+  })
+
   useEffect(() => {
-    if (reviewListSort) {
-      setReviewListPage(0)
-      handleGetUserReviews(0, reviewListSort)
+    if (data) {
+      const updatedArr =
+        reviewListPage === 0
+          ? [...data.reviews]
+          : [...reviewList, ...data.reviews]
+      // Remove elements that are only ratings and not reviews
+      const reviewArr = updatedArr.filter((r: ReviewType) => r.reviewText)
+      setReviewList(reviewArr)
+      setIsMoreReviews(Number(data.totalCount) > updatedArr.length)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reviewListSort])
+  }, [data])
+
+  const handleSortChange = (sort: string) => {
+    setReviewListPage(0)
+    setReviewListSort(sort)
+  }
+
+  const handleLoadMoreReviews = () => {
+    setReviewListPage(prev => prev + 1)
+  }
 
   return (
     <div className='reviews'>
@@ -86,16 +84,14 @@ const ReviewsContainer: FC<ReviewsContainerProps> = ({
       <div className='review-filters'>
         <ReviewFilters
           reviewListSort={reviewListSort}
-          setReviewListSort={setReviewListSort}
+          setReviewListSort={handleSortChange}
           isList={reviewList.length > 0}
         />
       </div>
       <ReviewsList
         recipeId={recipeId}
         currUserReview={currUserReview}
-        getNextReviewsPage={() =>
-          handleGetUserReviews(reviewListPage, reviewListSort)
-        }
+        getNextReviewsPage={handleLoadMoreReviews}
         isMoreReviews={isMoreReviews}
         reviewList={reviewList}
       />

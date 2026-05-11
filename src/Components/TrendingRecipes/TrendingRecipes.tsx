@@ -1,21 +1,18 @@
-import React, { FC, useState, useEffect } from 'react'
+import React, { FC } from 'react'
 import './TrendingRecipes.scss'
+import { useQuery } from '@tanstack/react-query'
 
 import RecipeThumbnail from 'src/Components/RecipeThumbnail/RecipeThumbnail'
 import RecipeAPI from 'src/api/recipes'
 import { RecipeType } from 'types'
 
 const TrendingRecipes: FC = () => {
-  const [recipes, setRecipes] = useState<RecipeType[]>([])
+  const { data } = useQuery<RecipeType[]>({
+    queryKey: ['trending-recipes'],
+    queryFn: () => RecipeAPI.getTrendingRecipes(4),
+  })
 
-  useEffect(() => {
-    RecipeAPI.getTrendingRecipes(4).then(res => {
-      const resData: RecipeType[] = res
-      setRecipes(resData)
-    })
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  const recipes = data ?? []
 
   return (
     <div className='trending-recipes'>

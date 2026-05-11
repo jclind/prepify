@@ -4,6 +4,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { HelmetProvider } from 'react-helmet-async'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import SingleRecipe from 'src/pages/SingleRecipe/SingleRecipe'
 import RecipeAPI from 'src/api/recipes'
 
@@ -88,13 +89,18 @@ const baseRecipe = {
   numTimesMade: 5,
 }
 
+const createTestQueryClient = () =>
+  new QueryClient({ defaultOptions: { queries: { retry: false } } })
+
 const renderSingleRecipe = () =>
   render(
-    <MemoryRouter initialEntries={['/recipes/recipe-1']}>
-      <HelmetProvider>
-        <SingleRecipe />
-      </HelmetProvider>
-    </MemoryRouter>
+    <QueryClientProvider client={createTestQueryClient()}>
+      <MemoryRouter initialEntries={['/recipes/recipe-1']}>
+        <HelmetProvider>
+          <SingleRecipe />
+        </HelmetProvider>
+      </MemoryRouter>
+    </QueryClientProvider>
   )
 
 describe('SingleRecipe page', () => {

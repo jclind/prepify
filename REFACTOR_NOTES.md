@@ -148,3 +148,174 @@ Running `tsc --noEmit` after the Phase 2-B rename reveals two pre-existing type 
 2. `src/index.tsx:7` — `HTMLElement | null` passed where `Container` is expected (strict null check on `document.getElementById('root')`). This code error existed in `src/index.jsx` but was silently ignored by tsc because `.jsx` files are not type-checked without `allowJs: true`. The rename to `.tsx` makes it visible to tsc.
 
 **Action needed (not in scope for Phase 2-B):** Fix both errors in a future pass. The `index.tsx` fix is a one-liner (`!` non-null assertion or a null guard). The `App.tsx` fix requires investigating the router/children structure.
+
+---
+
+## Phase 3-B: SingleRecipe.tsx — useQuery migration notes
+
+**Date:** 2026-05-11
+
+### Pre-existing bug — `updateRecipeLocalStorage` uses closure `servingSize` instead of `numServings` parameter
+
+`src/pages/SingleRecipe/SingleRecipe.tsx` — the `updateRecipeLocalStorage` helper:
+
+```ts
+if (currRecipeLocalStorageIndex !== -1) {
+  localStorageRecipeArr[currRecipeLocalStorageIndex].numServings = servingSize  // closure
+} else {
+  localStorageRecipeArr.push({ recipeId, numServings })  // parameter
+}
+```
+
+The `if` branch writes the closure variable `servingSize` instead of the `numServings` parameter. The `else` branch correctly uses the parameter. No observable effect today because the function is always called as `updateRecipeLocalStorage(currRecipe._id, servingSize)` — the two values are identical. The parameter is dead code in the update path.
+
+**Phase 4 suggestion:** Replace `servingSize` with `numServings` in the `if` branch to make the function self-contained.
+
+### Behavioral difference — background re-fetch re-reads serving size from localStorage
+
+The original `useEffect([], [])` fetched once on mount. The replacement `useEffect([fetchedRecipe])` runs whenever the query data reference changes — including TanStack Query background re-fetches (e.g., on window focus). On each re-run it re-reads `numServings` from localStorage and calls `setServingSize`.
+
+No practical impact: `updateRecipeLocalStorage` keeps localStorage in sync with `servingSize` state, so the re-read always produces the current value. However, if structural sharing is disabled or the server returns a structurally different object, a spurious `setServingSize` call (same value) would trigger a re-render cycle through the `[servingSize]` effect.
+
+**Phase 4 suggestion:** Guard with `useRef` (`servingSizeInitialized`) to match the original run-once semantics, or migrate to `useInfiniteQuery` / `initialData` pattern.
+
+---
+
+## Phase 3-C: TrendingRecipes.tsx — useQuery migration notes
+
+**Date:** 2026-05-11
+
+### Error behavior — renders skeleton on failure (same as loading)
+
+The original component had no `.catch`, so a rejected fetch left `recipes` at `[]` indefinitely (skeleton cards). With `useQuery`, on error `data` is `undefined`; `data ?? []` produces `[]`, so the component renders the same 4 skeleton `RecipeThumbnail` components. No error UI was added — this is intentional per the migration constraint. The documented "unhandled rejection" behavior in Phase 2-E-1 no longer produces an unhandled rejection warning; `useQuery` captures the error in `isError` silently.
+
+### `isLoading` not used
+
+`isLoading` is not destructured from `useQuery` because the existing className ternary (`recipes.length < 0 ? '' : 'loading'`) is always `'loading'` regardless of state (the always-false bug documented in Phase 2-E-1). Preserving that exact expression means `isLoading` is irrelevant to the class logic. The bug is intentionally preserved.
+
+---
+
+## Phase 3-D: SearchRecipesInput.tsx — useQuery migration notes
+
+**Date:** 2026-05-11
+
+### `enabled` threshold: prompt said `> 0`, implementation uses `> 2`
+
+The phase prompt specified `enabled: debouncedQuery.length > 0`, but the original code gates the fetch on `title.length > 2`. The implementation preserves `> 2` to honor the "no logic changes" rule. A query for 1–2 characters returns empty results in the original and continues to do so with the `> 2` guard.
+
+**Phase 4 suggestion:** Decide the intended minimum length and set it consistently in one place.
+
+### `debouncedQuery` initial value mirrors `defaultVal`
+
+`debouncedQuery` is initialised to `defaultVal || ''` — the same value as `searchRecipeVal`. If `defaultVal` is longer than 2 characters, `useQuery` will fire on mount (before any debounce timer). This mirrors the original behaviour where `getAutoCompleteResult` was called immediately after mount when `searchRecipeVal` was pre-populated, except the original also had the 300ms timer protecting the first call. The practical impact is negligible (autocomplete on a pre-filled search box), but it is a subtle difference from the debounced path.
+
+---
+
+## Phase 3-A: Recipes.tsx — useQuery migration notes
+
+**Date:** 2026-05-11
+
+### useInfiniteQuery candidate (Phase 4)
+
+`Recipes.tsx` is a candidate for `useInfiniteQuery` migration in Phase 4 — the current `useQuery` + manual accumulation pattern is a workaround for the load-more pattern that `useInfiniteQuery` handles natively.
+
+The `useQuery` approach requires keeping `recipeList` and `totalResults` as separate state that is manually updated via a `useEffect` on the query result. `useInfiniteQuery` would own the accumulated pages directly, eliminate the data-accumulation effect, and expose `fetchNextPage` / `hasNextPage` as first-class API surface.
+
+### Known behavior difference: extra query on URL navigation while paginated
+
+If `location.search` changes while `currPage > 0` (e.g., user navigates to `/?q=something` from page 2 of results), TanStack Query fires an interim query with the old page + new URL params before the filter reset effect resets `currPage` to 0. The original code never made this extra call. No current test exercises this path.
+
+Root fix: migrate to `useInfiniteQuery` (see above).
+
+---
+
+## Phase 3-H: RatingsAndReviews.tsx and ReviewsContainer.tsx — useQuery migration notes
+
+**Date:** 2026-05-11
+
+### `isLoading` available but not wired — Phase 4 candidate
+
+Both components now get `isLoading` from `useQuery` but neither has loading UI:
+
+- `RatingsAndReviews`: `isLoading` is not destructured from the `checkIfReviewed` query. No loading state existed before and none was added.
+- `ReviewsContainer`: `isLoading` is not destructured from the `getReviews` query. As documented in Phase 2-E-1, no loading indicator existed before migration. **Phase 4 candidate:** wire `isLoading` to a spinner or skeleton in ReviewsContainer.
+
+### `handleSortChange` replaces the `reviewListSort` useEffect
+
+The original `ReviewsContainer` had:
+
+```js
+useEffect(() => {
+  if (reviewListSort) {
+    setReviewListPage(0)
+    handleGetUserReviews(0, reviewListSort)
+  }
+}, [reviewListSort])
+```
+
+This was replaced by a `handleSortChange` wrapper passed to `ReviewFilters` as the `setReviewListSort` prop:
+
+```js
+const handleSortChange = (sort: string) => {
+  setReviewListPage(0)
+  setReviewListSort(sort)
+}
+```
+
+**Why:** With `useQuery`, the fetch is driven by the query key `['reviews', recipeId, reviewListSort, reviewListPage]`. If the sort-change useEffect was kept (running after render), there is a window where the new sort is already in the key but the page has not yet reset to 0 — `useQuery` fires an interim query with `[recipeId, newSort, oldPage]` before the page reset takes effect. The handler collapses both state updates into the same event, so the key transitions directly to `[recipeId, newSort, 0]` with no intermediate query.
+
+### Page increment timing changed
+
+Same pattern as Phase 3-F and Phase 3-G: "More Reviews" now increments `reviewListPage` before the fetch (on click), rather than after a successful fetch. On fetch failure, the original would retry the same page; the new design would attempt the next page. The pre-existing lack of error state means this gap is silent — revisit when error handling is added.
+
+### useInfiniteQuery candidate (Phase 4)
+
+`ReviewsContainer` is a candidate for `useInfiniteQuery` migration in Phase 4, same as `Recipes.tsx`, `SavedRecipes.tsx`, and `UserRatings.tsx`.
+
+---
+
+## Phase 3-G: UserRatings.tsx — useQuery migration notes
+
+**Date:** 2026-05-11
+
+### Query key omits uid (prompt specified it, not implemented)
+
+The phase prompt specified `['user-reviews', uid, page]` with uid from auth context. `getSingleUserReviews` resolves the username internally via `AuthAPI.getUsername()` — it takes no uid parameter. Including uid in the key would require importing auth context for a value not passed to the queryFn. Following the established `SavedRecipes` pattern (`['saved-recipes', selectOption.value, currPage]`), the key is `['user-reviews', selectOption.value, currPage]`.
+
+**Phase 4 suggestion:** If cache isolation per user is needed (multi-account scenarios), add uid to both this key and the SavedRecipes key at the same time.
+
+### `isMoreReviews` initial value: `true` → `false`
+
+Original initialised `isMoreReviews` to `true`; migrated version uses `false` (matching `SavedRecipes`). Functionally equivalent: the Load More button is gated on `isMoreReviews && reviews.length > 0`, and `reviews` is empty before the first fetch completes.
+
+### Page increment timing changed
+
+Same as Phase 3-F (`SavedRecipes`): original incremented `page` after a successful fetch; the new design increments `currPage` before the fetch (on Load More click). On fetch failure, the original would retry the same page; the new design would attempt the next page. The pre-existing lack of error state means this gap is silent — revisit when error handling is added.
+
+### useInfiniteQuery candidate (Phase 4)
+
+`UserRatings.tsx` is a candidate for `useInfiniteQuery` migration in Phase 4, same as `Recipes.tsx` and `SavedRecipes.tsx`.
+
+---
+
+## Phase 3-E: Account.tsx and Navbar.tsx — useQuery migration notes
+
+**Date:** 2026-05-11
+
+### `enabled` condition mismatch between Account and Navbar
+
+Account.tsx and Navbar.tsx have different `enabled` conditions for the `['username', uid]` query — Account skips the fetch when `authRes?.user?.displayName` is set, Navbar does not. Deduplication only fires for users without a display name. Revisit in Phase 4 to decide if these should be aligned.
+
+---
+
+## Phase 3-F: SavedRecipes.tsx — useQuery migration notes
+
+**Date:** 2026-05-11
+
+### Page increment timing changed
+
+Original incremented `recipesPage` after a successful fetch; the new design increments `currPage` before the fetch (on Load More click). On fetch failure, the original would retry the same page; the new design would attempt the next page. The pre-existing lack of error state means this gap was already silent — but worth revisiting when error handling is added in Phase 4 or 5.
+
+### useInfiniteQuery candidate (Phase 4)
+
+`SavedRecipes.tsx` is a candidate for `useInfiniteQuery` migration in Phase 4, same as `Recipes.tsx`. The `useQuery` + manual accumulation pattern is a workaround for the load-more pattern that `useInfiniteQuery` handles natively.
