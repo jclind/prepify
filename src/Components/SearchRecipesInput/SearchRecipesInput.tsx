@@ -8,6 +8,7 @@ import slugify from 'slugify'
 import RecipeAPI from 'src/api/recipes'
 import { RecipeSearchResponseType } from 'types'
 import Skeleton from 'react-loading-skeleton'
+import { useQuery } from '@tanstack/react-query'
 
 const skeletonColor = '#d6d6d6'
 
@@ -46,11 +47,15 @@ const SearchRecipesInput: FC<SearchRecipesInputProps> = ({
   autoComplete,
 }) => {
   const [searchRecipeVal, setSearchRecipeVal] = useState(defaultVal || '')
+  const [debouncedQuery, setDebouncedQuery] = useState(defaultVal || '')
 
-  const [autoCompleteResponse, setAutoCompleteResponse] = useState<
-    RecipeSearchResponseType[]
-  >([])
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  const { data } = useQuery<RecipeSearchResponseType[]>({
+    queryKey: ['recipe-autocomplete', debouncedQuery],
+    queryFn: () => RecipeAPI.searchAutoCompleteRecipes(debouncedQuery),
+    enabled: debouncedQuery.length > 2,
+  })
 
   const [isBlurred, setIsBlurred] = useState(true)
 
@@ -70,25 +75,11 @@ const SearchRecipesInput: FC<SearchRecipesInputProps> = ({
     setIsBlurred(true)
   }
 
-  const getAutoCompleteResult = (title: string) => {
-    if (title.length > 2) {
-      RecipeAPI.searchAutoCompleteRecipes(title)
-        .then(res => {
-          setAutoCompleteResponse(res)
-        })
-        .catch(e => {
-          console.log('Error:', e)
-        })
-    } else {
-      setAutoCompleteResponse([])
-    }
-  }
-
   useEffect(() => {
     if (autoComplete) {
       if (timeoutRef.current) clearTimeout(timeoutRef.current)
       timeoutRef.current = setTimeout(() => {
-        getAutoCompleteResult(searchRecipeVal)
+        setDebouncedQuery(searchRecipeVal)
       }, 300)
       return () => {
         if (timeoutRef.current) clearTimeout(timeoutRef.current)
@@ -124,10 +115,10 @@ const SearchRecipesInput: FC<SearchRecipesInputProps> = ({
           </div>
         )}
       </label>
-      {autoComplete && autoCompleteResponse.length > 0 && !isBlurred && (
+      {autoComplete && (data ?? []).length > 0 && !isBlurred && (
         <div className='auto-complete-results'>
           <div className='recipes-container'>
-            {autoCompleteResponse.map(recipe => {
+            {(data ?? []).map(recipe => {
               return (
                 <button
                   className='recipe'

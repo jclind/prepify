@@ -195,6 +195,22 @@ The original component had no `.catch`, so a rejected fetch left `recipes` at `[
 
 ---
 
+## Phase 3-D: SearchRecipesInput.tsx — useQuery migration notes
+
+**Date:** 2026-05-11
+
+### `enabled` threshold: prompt said `> 0`, implementation uses `> 2`
+
+The phase prompt specified `enabled: debouncedQuery.length > 0`, but the original code gates the fetch on `title.length > 2`. The implementation preserves `> 2` to honor the "no logic changes" rule. A query for 1–2 characters returns empty results in the original and continues to do so with the `> 2` guard.
+
+**Phase 4 suggestion:** Decide the intended minimum length and set it consistently in one place.
+
+### `debouncedQuery` initial value mirrors `defaultVal`
+
+`debouncedQuery` is initialised to `defaultVal || ''` — the same value as `searchRecipeVal`. If `defaultVal` is longer than 2 characters, `useQuery` will fire on mount (before any debounce timer). This mirrors the original behaviour where `getAutoCompleteResult` was called immediately after mount when `searchRecipeVal` was pre-populated, except the original also had the 300ms timer protecting the first call. The practical impact is negligible (autocomplete on a pre-filled search box), but it is a subtle difference from the debounced path.
+
+---
+
 ## Phase 3-A: Recipes.tsx — useQuery migration notes
 
 **Date:** 2026-05-11
