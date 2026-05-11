@@ -1,6 +1,6 @@
 # Prepify Refactor — Source of Truth
 
-Last updated: 2026-05-10
+Last updated: 2026-05-11
 
 ---
 
@@ -9,7 +9,7 @@ Last updated: 2026-05-10
 | Phase | Name                        | Status         |
 | ----- | --------------------------- | -------------- |
 | 1     | Audit & Inventory           | ✅ Complete    |
-| 2     | Types & Contracts           | 🔲 Not started |
+| 2     | Types & Contracts           | ✅ Complete    |
 | 3     | Data Fetching (React Query) | 🔲 Not started |
 | 4     | Component Architecture      | 🔲 Not started |
 | 5     | Server Cleanup              | 🔲 Not started |
@@ -83,84 +83,116 @@ Write these 5 test files before Phase 3 begins:
 
 ---
 
-## Phase 2 — Types & Contracts 🔲
+## Phase 2 — Types & Contracts ✅
 
-**Goal:** Establish shared TypeScript types, enforce import style, and remove dead code/artifacts. No logic changes. Frontend-only PR.
+**Completed:** 2026-05-11
+**Commit:** _(squash pending — tasks committed separately as 2-A through 2-E)_
 
-**Planned tasks (to be detailed in Claude Code prompts):**
+### Tasks completed
 
-- Remove dead code flagged in PROJECT_AUDIT.md (High confidence items only)
-  - `server-ingredients/` directory
-  - Root-level session artifact files
-  - Stale docs and config entries
-  - `decs.d.ts` stale entries
-- Fix structural anomalies: rename `RecipeNotFound.js/` → `RecipeNotFound/`, `index.jsx` → `index.tsx`
-- Sweep all frontend files to `src/`-absolute import style (mechanical, no logic changes)
-- Standardize component signature pattern: `type Props` + `const X: FC<Props>` everywhere
-- Fix `any` usages in TypeScript (event handlers, catch blocks, react-select style configs)
-- Add missing return type annotations in `src/api/recipes.ts` and `src/api/auth.ts`
-- Write 5 missing test files (see Phase 1 coverage gap list above)
+- **2-A:** Removed dead code — `server-ingredients/`, session artifacts, stale docs, stale `decs.d.ts` entries
+- **2-B:** Fixed structural anomalies — renamed `RecipeNotFound.js/` → `RecipeNotFound/`, `index.jsx` → `index.tsx`
+- **2-C:** Swept all frontend files to `src/`-absolute import style; moved `types.d.ts` → `src/types.ts`; updated `tsconfig.json` paths alias and `vite.config.ts` alias
+- **2-D:** TypeScript hygiene — fixed `any` in event handlers, catch blocks, react-select style configs; added missing return type annotations; `tsc --noEmit` passes clean
+- **2-E:** Wrote 5 missing test files; frontend now at 109 passing tests across 12 files; server Jest suite has new `server/__tests__/ingredients.test.js`
 
-**Prompts:** _(to be written — next step)_
+### Key outcomes
 
----
+- `src/types.ts` replaces root `types.d.ts`; `NutritionDataType` fields typed with concrete types or `unknown[]`; `NutrientInfo` interface added
+- `tsconfig.json` has `"ignoreDeprecations": "6.0"` — must be resolved before any TS major version upgrade (Phase 6)
+- Server tests use **Jest** (not Vitest) — `npm test --prefix server`. Vitest `include` glob excludes `server/`. Future server test prompts must say Jest explicitly.
+- `POST /api/ingredients/parse` has no `verifyToken` guard — unauthenticated gap documented, fix in Phase 5
 
-### Phase 2-D — TypeScript Hygiene (complete)
+### Deferred items (see REFACTOR_NOTES.md for full detail)
 
-**Completed:** 2026-05-11  
-**Commit:** _(pending)_  
-`tsc --noEmit` passes clean.
+- `src/api/recipes.ts` — 7 methods without explicit return types; revisit in Phase 5 once server shapes are finalized
+- `tsconfig.json` `ignoreDeprecations: "6.0"` / `baseUrl` deprecation — Phase 6
+- react-select `onChange` cast pattern — Phase 4 (specify `Select<T, false>` at call site)
+- Three bugs documented but not fixed: `recipes.length < 0` dead condition in `TrendingRecipes`, silent rejected-fetch swallow in `TrendingRecipes`, no loading indicator in `ReviewsContainer` — addressed naturally during Phase 3 React Query migration
 
-#### Deferred / flagged items
+### Phase 2-D detail — deferred type items
 
-**`src/api/recipes.ts` — methods without explicit return types (revisit in Phase 5 once server shapes are finalized):**
-- `checkMadeRecipe` — return type unknown (caller destructures `{ datesMade }`)
-- `checkIfReviewed` — return type unknown (unused in current UI; flagged in Phase 1 as unnecessary)
-- `searchRecipeTags` — return type unknown (unused in current UI)
-- `getRecipeTags` — return type unknown (unused in current UI)
-- `getReviews` — return type unknown (caller destructures `{ reviews, totalCount }`)
-- `getSavedRecipes` — return type unknown (caller destructures `{ recipes, totalCount }`)
-- `getSingleUserReviews` — return type unknown (caller destructures `{ reviews, totalCount }`)
+**`src/api/recipes.ts` — methods without explicit return types (revisit in Phase 5):**
+
+- `checkMadeRecipe`, `checkIfReviewed`, `searchRecipeTags`, `getRecipeTags`, `getReviews`, `getSavedRecipes`, `getSingleUserReviews` — return types unknown; callers destructure shaped objects but server shapes not yet finalized
 
 **`src/api/recipes.ts` — partially typed return values:**
-- `saveRecipe` / `unsaveRecipe` — return `Promise<AxiosResponse>`. Response body shape is untyped (generic `AxiosResponse` with no generic param). Revisit with `AxiosResponse<T>` once server response shapes are defined in Phase 5.
-- `deleteRecipe` / `madeRecipe` — return `Promise<unknown>`. Response shape not modeled on the frontend. In `RecipeControls.tsx`, the result is cast as `{ error?: string }` to access the error field. Revisit in Phase 5.
+
+- `saveRecipe` / `unsaveRecipe` — `Promise<AxiosResponse>` with no generic param; revisit with `AxiosResponse<T>` in Phase 5
+- `deleteRecipe` / `madeRecipe` — `Promise<unknown>`; cast as `{ error?: string }` at call site in `RecipeControls.tsx`
 
 **`src/types.ts` — `NutritionDataType.ingredients: unknown[]`:**
-- The Edamam API returns a parsed-ingredient array here but the field is never accessed directly in this codebase. Typed as `unknown[]` with a TODO comment. Revisit if the ingredient breakdown UI is ever built.
+
+- Edamam API field; never accessed in this codebase. Revisit if ingredient breakdown UI is built.
 
 **`src/context/client/db.ts` — `(window as any).__cy_signIn__`:**
-- Left unchanged. This is an intentional Cypress test hook that exposes a sign-in helper on the window object for E2E tests. The `as any` is load-bearing; `as unknown` would break the assignment pattern.
+
+- Intentional Cypress test hook. `as any` is load-bearing; left unchanged.
 
 **react-select `onChange` handler types:**
-- react-select's `onChange` prop signature is `(newValue: MultiValue<T> | SingleValue<T>, actionMeta: ActionMeta<T>) => void` regardless of `isMulti`. TypeScript 6's `Array.isArray` predicate (`arg is any[]`) does not narrow `MultiValue<T>` (which is `readonly T[]`), so narrowing with `Array.isArray` doesn't work. All single-select `onChange` handlers cast `e as SingleValue<T>` at the top of the handler — safe because none of these Select components use `isMulti`. Revisit in Phase 4 when refactoring component architecture; at that point, specify `Select<T, false>` at the JSX call site to make TypeScript infer the narrower `onChange` type automatically.
+
+- All single-select handlers cast `e as SingleValue<T>`. Safe — none use `isMulti`. Revisit in Phase 4: specify `Select<T, false>` at JSX call site.
 
 ---
 
 ## Phase 3 — Data Fetching (React Query) 🔲
 
-**Goal:** Replace all `useEffect`+`useState` data fetching with TanStack Query (React Query). Behavior identical before/after.
+**Goal:** Replace all `useEffect`+`useState` data fetching with TanStack Query (React Query v5). Behavior identical before/after each task. Frontend-only PRs.
 
-**Migration hit list (from PATTERN_AUDIT.md, priority order):**
+**Pre-condition:** `@tanstack/react-query` and `@tanstack/react-query-devtools` installed; `QueryClientProvider` wired in `src/index.tsx`. Done in 3-Setup before any component task.
 
-1. `Recipes.tsx` — `getAllRecipes()`, paginated + filtered, full three-state, 2 useEffects ✅ well-tested
-2. `SingleRecipe.tsx` — `getRecipe(id)`, full three-state, 2 useEffects ✅ well-tested
-3. `TrendingRecipes.tsx` — `getTrendingRecipes(4)`, loading only, missing error handling
-4. `SearchRecipesInput.tsx` — `searchAutoCompleteRecipes()`, debounced, no states at all
-5. `Account.tsx` — `AuthAPI.getUsername()`, no states
-6. `Navbar.tsx` — `AuthAPI.getUsername()`, no states
-7. `SavedRecipes.tsx` — `getSavedRecipes()`, paginated, loading only
-8. `UserRatings.tsx` — `getSingleUserReviews()`, paginated, loading only
-9. `RatingsAndReviews.tsx` — `checkIfReviewed()`, no states (parent orchestrator — needs tests first)
-10. `ReviewsContainer.tsx` — `getReviews()`, paginated (needs tests first)
+### Migration hit list
 
-**Prompts:** _(to be written after Phase 2 complete)_
+| Task     | Component                | Fetch call                    | Complexity                                 |
+| -------- | ------------------------ | ----------------------------- | ------------------------------------------ |
+| 3-Setup  | —                        | —                             | Install + wire QueryClientProvider         |
+| 3-A      | `Recipes.tsx`            | `getAllRecipes()`             | Paginated + filtered, 2 effects, ✅ tested |
+| 3-B      | `SingleRecipe.tsx`       | `getRecipe(id)`               | Full three-state, 2 effects, ✅ tested     |
+| 3-C      | `TrendingRecipes.tsx`    | `getTrendingRecipes(4)`       | Loading only, no error handling            |
+| 3-D      | `SearchRecipesInput.tsx` | `searchAutoCompleteRecipes()` | Debounced, no state                        |
+| 3-E      | `Account.tsx`            | `AuthAPI.getUsername()`       | No state                                   |
+| 3-E      | `Navbar.tsx`             | `AuthAPI.getUsername()`       | No state, same query key as Account        |
+| 3-F      | `SavedRecipes.tsx`       | `getSavedRecipes()`           | Paginated, loading only                    |
+| 3-G      | `UserRatings.tsx`        | `getSingleUserReviews()`      | Paginated, loading only                    |
+| 3-H      | `RatingsAndReviews.tsx`  | `checkIfReviewed()`           | No state, parent orchestrator              |
+| 3-H      | `ReviewsContainer.tsx`   | `getReviews()`                | Paginated, no loading indicator            |
+| 3-Verify | —                        | —                             | Read-only audit, no code changes           |
+
+### Query key conventions
+
+| Data                | Key                                           |
+| ------------------- | --------------------------------------------- |
+| Recipe list         | `['recipes', { page, sort, filter, search }]` |
+| Single recipe       | `['recipe', id]`                              |
+| Trending recipes    | `['trending-recipes']`                        |
+| Autocomplete        | `['recipe-autocomplete', debouncedQuery]`     |
+| Username            | `['username', uid]`                           |
+| Saved recipes       | `['saved-recipes', page]`                     |
+| User reviews        | `['user-reviews', uid, page]`                 |
+| Recipe reviews      | `['reviews', recipeId, sort, page]`           |
+| Check made/reviewed | `['check-made', recipeId]`                    |
+
+### Shared constraints
+
+- No logic changes. No UI changes. Behavior identical before/after every task.
+- `staleTime`: `0` (default — do not set explicitly unless needed to preserve behavior).
+- Query key arrays only — never bare strings.
+- Plan-and-pause: output migration plan before touching any file. Wait for approval.
+- Flag pre-existing bugs in `REFACTOR_NOTES.md`. Do not fix them.
+- One commit per task. Format: `refactor(phase-3-X): migrate ComponentName to useQuery`
+
+**Prompts:** See `PHASE3_PROMPTS.md` (delete after Phase 3 complete)
 
 ---
 
 ## Phase 4 — Component Architecture 🔲
 
 **Goal:** Component composition, prop-drilling cleanup, and any structural refactors surfaced by PATTERN_AUDIT.md.
+
+**Known candidates from earlier phases:**
+
+- react-select `onChange` handlers: specify `Select<T, false>` at JSX call sites
+- `ReviewsContainer` loading indicator — `isLoading` now available from React Query; wire it here (Phase 3 intentionally deferred as feature change)
 
 **Prompts:** _(to be written after Phase 3 complete)_
 
@@ -181,6 +213,7 @@ Write these 5 test files before Phase 3 begins:
 - Tag endpoints (`addRecipeTag`, `searchRecipeTags`, `getRecipeTags`) and `checkIfReviewed` — do not implement until there is a UI caller
 - HTTP methods: standardize review/rating mutations to `POST`/`DELETE` (currently all `PUT`)
 - Stale TODO comments in `server/routes/reviews.js` (4 comments on routes that are already protected) — remove
+- `POST /api/ingredients/parse` missing `verifyToken` — add in Phase 5
 
 **Client-generated `_id` migration plan:**
 
@@ -205,6 +238,8 @@ Write these 5 test files before Phase 3 begins:
 - Fix `checkUsernameAvailability` spurious `?&username=` double ampersand
 - Remove CORS headers from the `nutrition` axios instance client-side request (they're server-side response headers; harmless but misleading)
 - `src/api/http-common.ts` CORS comment cleanup
+- Resolve `tsconfig.json` `ignoreDeprecations: "6.0"` / `baseUrl` deprecation before any TS major upgrade
+- react-select `onChange` handlers: specify `Select<T, false>` at JSX call sites (if not done in Phase 4)
 
 **Prompts:** _(to be written after Phase 5 complete)_
 
