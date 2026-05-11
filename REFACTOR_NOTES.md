@@ -181,6 +181,20 @@ No practical impact: `updateRecipeLocalStorage` keeps localStorage in sync with 
 
 ---
 
+## Phase 3-C: TrendingRecipes.tsx — useQuery migration notes
+
+**Date:** 2026-05-11
+
+### Error behavior — renders skeleton on failure (same as loading)
+
+The original component had no `.catch`, so a rejected fetch left `recipes` at `[]` indefinitely (skeleton cards). With `useQuery`, on error `data` is `undefined`; `data ?? []` produces `[]`, so the component renders the same 4 skeleton `RecipeThumbnail` components. No error UI was added — this is intentional per the migration constraint. The documented "unhandled rejection" behavior in Phase 2-E-1 no longer produces an unhandled rejection warning; `useQuery` captures the error in `isError` silently.
+
+### `isLoading` not used
+
+`isLoading` is not destructured from `useQuery` because the existing className ternary (`recipes.length < 0 ? '' : 'loading'`) is always `'loading'` regardless of state (the always-false bug documented in Phase 2-E-1). Preserving that exact expression means `isLoading` is irrelevant to the class logic. The bug is intentionally preserved.
+
+---
+
 ## Phase 3-A: Recipes.tsx — useQuery migration notes
 
 **Date:** 2026-05-11
