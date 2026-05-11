@@ -1,26 +1,18 @@
-# Project Audit — 2026-05-09
+# Project Audit — 2026-05-10
 
 ## Summary
 
-Audited ~264 files across the frontend (`src/`), main server (`server/`), ingredient-parser service (`server-ingredients/`), Cypress suite, and project root. Approximately 30 files or groups are flagged across five categories. The most notable finding is an accumulation of session-generated diagnostic and one-time audit documents in the project root, alongside a fully-commented-out `RecipeContext.tsx`, an empty `src/shared/types/` directory, and dead exports in `src/client/db.ts` — all safe to remove. A more structural question is whether the `server-ingredients/` service is still intentional: no frontend code or main-server code calls its endpoints.
-
-> **Note:** A previous draft of this file existed and contained stale findings. This version is based on a fresh, ground-up investigation of the current codebase state.
-
-> **Important:** `server-ingredients/` is an **essential service** and must not be removed or modified as part of any audit action in this file, regardless of the analysis below.
+Audited ~278 files across the frontend (`src/`), main server (`server/`), ingredient-parser service (`server-ingredients/`), Cypress suite, and project root. Approximately 30 items are flagged across five categories. The most notable finding is that the previous audit's High-confidence dead-code items have all been resolved; what remains is a cluster of session-generated one-time documents at the project root (10+), `bson-objectid` still imported into the frontend to generate MongoDB IDs client-side, and `server-ingredients/` having no active callers from any part of the system.
 
 ---
 
 ## Dead Code
 
-> **Completed 2026-05-09** — All High/Medium dead-code items below have been removed.
+All High/Medium dead-code items from the 2026-05-09 audit have been resolved (`RecipeContext.tsx`, `src/assets/data/recipes.js`, `src/pages/Account/Selection.scss`, dead Firestore/analytics exports in `src/client/db.ts`).
 
-| File | Reason | Confidence | Status |
-|------|--------|------------|--------|
-| `src/context/RecipeContext.tsx` | Entire file is 100% commented out. No exports, no active code, and nothing in the codebase imports from it. Contains an old `bson-objectid` `ObjectID` pattern from the pre-Express architecture. | High | **Deleted** |
-| `src/assets/data/recipes.js` | Static hardcoded recipe seed data (4 objects with Unsplash URLs). Zero imports anywhere in `src/`. Was mock data from early development. | High | **Deleted** |
-| `src/shared/types/` | Empty directory — no files inside. Canonical types live in the root `types.d.ts`. This directory appears to be an unused placeholder. | High | **Deleted** |
-| `src/pages/Account/Selection.scss` | Zero-byte file. Not imported by any component. | High | **Deleted** |
-| `src/client/db.ts` — `app`, `storage`, `db`, `analytics` exports | The file exports five values. Only `auth` is ever imported (by `src/api/auth.ts`). `db` (Firestore) and `analytics` are never referenced anywhere in `src/`. `storage` is bypassed — `recipes.ts` calls `getStorage()` directly from `firebase/storage`. `app` is unused outside this file. The file itself is needed; the four dead exports are not. | Medium | **Removed dead exports; `app` made local, unused imports dropped** |
+| File | Reason | Confidence |
+|------|--------|------------|
+| `src/shared/types/` | Empty directory, no files. Present on the local filesystem but not tracked by git (git cannot track empty directories). The canonical types live in `types.d.ts`. | High |
 
 ---
 
@@ -28,13 +20,14 @@ Audited ~264 files across the frontend (`src/`), main server (`server/`), ingred
 
 | File | Reason | Confidence |
 |------|--------|------------|
-| `prepify-precheck.js` | One-off diagnostic script designed to preflight environment setup before a development session. Not referenced in `package.json` scripts or CI. A one-time utility that has no ongoing value. | High |
-| `prepify-db-diagnostic.txt` / `prepify-db-diagnostic-2.txt` | Raw output from a MongoDB connection debugging session (node version, TLS logs). Session artifacts, not living documents. | High |
-| `prepify-api-test-results.md` | One-time manual API test results table. Static snapshot; not maintained. | High |
-| `server-ingredients/` (entire service) | The frontend's ingredient enrichment call (`ingredientParserApi.ts` → `http.post('/api/ingredients/parse')`) targets the **main server** (port 4000), which is handled by `server/routes/ingredients.js`. Nothing in the frontend or main server calls the server-ingredients service endpoints (`GET /ingredient/:name`, `POST /ingredient` on port 4001). The service has its own `railway.json` for independent deployment, but it is not wired into any current call path. | Medium |
-| `src/INGREDIENT_PARSER_AUDIT.md` | Audits an older integration pattern (`ingredientParser` with `REACT_APP_SPOONACULAR_API_KEY` via webpack/CRA). Current code uses `parseIngredientString` + `fetchIngredientEnrichment` via Vite. The import paths, env var names, and API calls described no longer exist in the codebase. | High |
-| `INGREDIENT_PARSER.md` | Bug report for `axios.create is not a function` in `@jclind/ingredient-parser` under webpack 5. Project migrated to Vite; this class of CJS/ESM interop bug no longer applies. | Medium |
-| `src/INGREDIENT_PARSER_INTEGRATION_NOTES.md` | Documents the Railway ingredient-parser migration. References `REACT_APP_INGREDIENT_PARSER_URL` (renamed to `VITE_INGREDIENT_PARSER_URL` in the current `.env`) and describes a transitional state. The migration is now complete, making this a historical artifact. | Medium |
+| `src/api/recipes.ts:3,152` | Imports `bson-objectid` and calls `ObjectID()` to generate MongoDB document IDs client-side (`const recipeId = '' + ObjectID()`). Database ID generation is a server-side concern. This is a holdover from a pre-Express architecture where the client constructed full documents before insertion. | High |
+| `server-ingredients/` (entire service) | Exposes `GET /ingredient/:name` and `POST /ingredient` on port 4001. Nothing in the frontend or main server calls these endpoints. The frontend calls `http.post('/api/ingredients/parse')` which hits `server/routes/ingredients.js` on the main server (using the `@jclind/ingredient-parser` library inline). The `server-ingredients` service is architecturally coherent as a caching layer but is not wired into any current data path. | Medium |
+| `src/INGREDIENT_PARSER_AUDIT.md` | Audits the old Spoonacular-direct pattern (`ingredientParser` called with `REACT_APP_SPOONACULAR_API_KEY` via CRA/webpack). The current code uses `parseIngredientString` + `fetchIngredientEnrichment` under Vite. All import paths, env var names, and API calls described are gone. | High |
+| `INGREDIENT_PARSER.md` | Bug report for `axios.create is not a function` in `@jclind/ingredient-parser` under webpack 5. The project migrated to Vite; this class of CJS/ESM interop issue no longer applies and the bug surface area has changed significantly. | Medium |
+| `src/INGREDIENT_PARSER_INTEGRATION_NOTES.md` | Documents the Railway ingredient-parser migration and references `REACT_APP_INGREDIENT_PARSER_URL` (now `VITE_INGREDIENT_PARSER_URL`). The migration is complete; `ingredientParserApi.ts` targets the main server, not a Railway URL. This is a historical record, not living documentation. | Medium |
+| `prepify-precheck.js` | One-off environment preflight script for starting a development session. Not in `package.json` scripts or CI. Has no ongoing value. | High |
+| `prepify-db-diagnostic.txt` / `prepify-db-diagnostic-2.txt` | Raw output from a MongoDB connection debugging session (TLS logs, node version checks). Session artifacts; not maintained. | High |
+| `prepify-api-test-results.md` | One-time manual API test results table with pass/fail rows. Static snapshot never updated. | High |
 
 ---
 
@@ -42,16 +35,17 @@ Audited ~264 files across the frontend (`src/`), main server (`server/`), ingred
 
 | File | Reason | Confidence |
 |------|--------|------------|
-| `README.old.md` | Contains exactly one line: `"# perpify"` (13 bytes, typo in project name). Entirely superseded by the current `README.md`. | High |
-| `browser-audit.md` | One-time runtime observation report generated during a debugging session. Snapshot of app behavior at a point in time. Not a living document. | High |
-| `CYPRESS_AUDIT.md` | One-time Cypress test suite audit from a prior session. Static snapshot. | High |
-| `server-audit.md` | One-time auth/error-handling security audit listing specific route bugs. Valuable if unresolved issues haven't been fixed, but belongs in an issue tracker rather than committed as a permanent root-level file. | Medium |
-| `server/TESTING_IMPLEMENTATION_PLAN.md` | Test coverage plan. Some tests described in it now exist; the checklist status is not updated. | Medium |
-| `src/test/TEST_PLAN.md` | Explicitly states "Nothing below is implemented yet" — a planning doc committed to the test directory rather than converted to issues or deleted. | Medium |
-| `server-ingredients/SCAFFOLD_NOTES.md` | Notes from when the service was first scaffolded. Documents one-time decisions already encoded in the code. More relevant to delete if `server-ingredients/` is determined to be dead (see Legacy Artifacts). | Medium |
-| `UPGRADE_PLAN.md` | Dependency upgrade plan dated 2026-05-06. If upgrade work is actively in progress, keep it. If upgrades are complete or stalled, it becomes stale. Not flagged High because it is recent. | Low |
-| `.env` / `.env.example` — `VITE_INGREDIENT_PARSER_URL` | Defined in both files but never referenced via `import.meta.env` anywhere in `src/`. Was for a Railway-hosted parser that no longer receives frontend traffic. | Medium |
-| `.env` / `.env.example` — `VITE_OPEN_AI_API_KEY` | Defined in both files but not referenced anywhere in `src/`. No OpenAI integration code exists in the codebase. | High |
+| `README.old.md` | Contains exactly one line: `"# perpify"` (misspelled project name). Superseded by `README.md`. | High |
+| `browser-audit.md` | One-time runtime observation report generated during a debugging session (page loads, console errors, network failures). Not a living document. | High |
+| `CYPRESS_AUDIT.md` | References spec files that no longer exist: `home.cy.ts`, `login.cy.ts`, `signup.cy.ts`, `searchRecipes.cy.ts`, `singleRecipe.cy.ts`. Actual suite is `auth.cy.ts`, `browse.cy.ts`, `recipe.cy.ts`. Structurally inaccurate. | High |
+| `server-audit.md` | One-time auth/error-handling security audit listing specific route vulnerabilities. Snapshot; not maintained. Belongs in an issue tracker if the issues are unresolved. | Medium |
+| `TEST_BASELINE.md` | Session-generated snapshot of test suite results on 2026-05-10. Not a living document. | High |
+| `server/TESTING_IMPLEMENTATION_PLAN.md` | Pre-implementation test coverage plan. Server tests now exist; the plan's checklist is not updated to reflect what was implemented. | Medium |
+| `src/test/TEST_PLAN.md` | Explicitly states "Nothing below is implemented yet" at the top, but the tests described have since been written and live in `src/test/`. A planning artifact that was not removed when the plan was executed. | Medium |
+| `server-ingredients/SCAFFOLD_NOTES.md` | Documents scaffold decisions and references `routes/parse.js`, which does not exist. The actual route file is `ingredient.js` with different endpoints (`GET /:name`, `POST /`). Also tied to `server-ingredients/` which may itself be removed. | High |
+| `CLAUDE.md` — Frontend `.env` section | Documents `REACT_APP_API_URL`, `REACT_APP_EDAMAM_*`, `REACT_APP_FIREBASE_*` — all CRA-era `REACT_APP_` variable names. The project migrated to Vite; actual vars are `VITE_API_URL`, `VITE_EDAMAM_*`, `VITE_FIREBASE_*`. Also omits `VITE_OPEN_AI_API_KEY`, `VITE_INGREDIENT_PARSER_URL`, and `VITE_CYPRESS`. | Medium |
+| `.env` / `.env.example` — `VITE_OPEN_AI_API_KEY` | Defined in both files but not referenced via `import.meta.env` anywhere in `src/`. No OpenAI integration code exists in the codebase. | High |
+| `.env` / `.env.example` — `VITE_INGREDIENT_PARSER_URL` | Defined in both files but `ingredientParserApi.ts` uses the `http` instance (baseURL: `VITE_API_URL`), targeting the main server. The Railway URL env var is set but unreachable. | Medium |
 
 ---
 
@@ -59,7 +53,8 @@ Audited ~264 files across the frontend (`src/`), main server (`server/`), ingred
 
 | File | Reason | Confidence |
 |------|--------|------------|
-| `public/logo192.png` / `public/logo512.png` | Default React/CRA app logo icons. Referenced only by `public/manifest.json` (boilerplate, see Redundant Config) and `index.html`'s `apple-touch-icon`. Not Prepify-branded. If `manifest.json` is updated with correct app metadata, these should be replaced with actual app icons; they are currently placeholder assets. | Medium |
+| `public/logo192.png` / `public/logo512.png` | Default React/CRA logo icons. Referenced only by `public/manifest.json` (see Redundant Config), which has CRA boilerplate text. Not Prepify-branded. Placeholder assets. | Medium |
+| `public/sitemap.txt` | Lists URLs under two different domains: `prepifymeals.app` (lines 1–8) and `prepifymeals.com` (lines 9–11). Mixed-domain content suggests a rough draft. Superseded by `public/sitemap.xml`, which uses `prepifymeals.com` consistently. | High |
 
 All other `public/images/` files (`hero.jpg`, `404-plate.svg`, `form-submitted.svg`) are actively referenced in source components and are not orphaned.
 
@@ -69,25 +64,23 @@ All other `public/images/` files (`hero.jpg`, `404-plate.svg`, `form-submitted.s
 
 | File | Reason | Confidence |
 |------|--------|------------|
-| `public/manifest.json` | Unmodified CRA boilerplate: `"short_name": "React App"`, `"name": "Create React App Sample"`. Has never been customized for Prepify. Not a deletion candidate but needs to be updated before the app is meaningfully a PWA. | High |
-| `decs.d.ts` — stale entries | Declares `react-alert`, `react-helmet`, and `react-star-ratings` — none of which are imported anywhere in `src/` and none are in `package.json`. The project uses `react-helmet-async` (not `react-helmet`). The `uuid` declaration is also redundant since `@types/uuid` is in `package.json`. These four entries can be removed. | High |
-| `decs.d.ts` vs `src/declarations.d.ts` — `*.scss` overlap | Both files declare `*.scss` as a module. Only one declaration is needed. `decs.d.ts` handles runtime package shims; `src/declarations.d.ts` handles asset file types. The duplication is harmless but worth cleaning up during the `decs.d.ts` pruning pass. | Medium |
+| `public/manifest.json` | Unmodified CRA boilerplate: `"short_name": "React App"`, `"name": "Create React App Sample"`. Never customized for Prepify. Not a deletion candidate but must be updated before the app is a meaningful PWA. | High |
+| `decs.d.ts` — stale entries | Four of the eight declarations are dead: `react-alert` (not in `package.json`, not imported anywhere); `react-helmet` (project uses `react-helmet-async` which ships its own types); `react-star-ratings` (`StarRating.tsx` is a custom SVG component — the package is not installed or imported); `uuid` (`@types/uuid` is in `package.json`, making the ambient declaration redundant). Active entries — `react-loading-skeleton`, `react-collapse`, `react-modal` — are correctly needed. | High |
+| `decs.d.ts` vs `src/declarations.d.ts` — `*.scss` | Both files declare `declare module '*.scss'`. One is sufficient. `decs.d.ts` handles third-party package shims; `src/declarations.d.ts` handles asset imports. The duplication is harmless but worth resolving when pruning `decs.d.ts`. | Medium |
 
 ---
 
 ## Notes
 
-**`src/pages/SingleRecipe/RecipeNotFound.js/`** — This is a *directory* whose name ends in `.js`. It contains `RecipeNotFound.tsx` and `RecipeNotFound.scss`, which are actively imported by `SingleRecipe.tsx`. Not dead code, but the `.js` suffix on a directory name is a structural anomaly that can confuse editors, search tools, and developers. Worth renaming to `RecipeNotFound/`.
+**`src/pages/SingleRecipe/RecipeNotFound.js/`** — A directory whose name ends in `.js`. It contains `.tsx` and `.scss` files and is actively imported by `SingleRecipe.tsx` (via `import RecipeNotFound from './RecipeNotFound.js/RecipeNotFound'`). Not dead code — a structural anomaly. The `.js` suffix on a directory name confuses editors, shell glob tools, and developers. Should be renamed to `RecipeNotFound/`.
 
-**`server-ingredients/` vs `server/routes/ingredients.js`** — These serve architecturally different purposes: the main server's `ingredients.js` runs the `@jclind/ingredient-parser` library inline for a single parse call, while `server-ingredients/` is a MongoDB-backed caching service (GET/POST `/ingredient/`). The caching service makes architectural sense as a lookup-before-parse layer, but nothing currently calls it. Before removing it, confirm whether wiring it up as a cache is planned, or whether the caching responsibility was dropped.
+**`server-ingredients/` — architectural question** — The service is a MongoDB-backed ingredient store: `GET /ingredient/:name` retrieves a cached entry; `POST /ingredient` writes one. This is architecturally coherent as a lookup-before-parse caching layer sitting between the main server and Spoonacular. Currently, nothing calls it. Before removing the service, confirm: (a) was caching dropped intentionally in favor of calling Spoonacular on every request, or (b) the wiring was deferred? The `SCAFFOLD_NOTES.md` and `INGREDIENT_PARSER_INTEGRATION_NOTES.md` do not clearly resolve this.
 
-**`decs.d.ts` active entries** — `react-loading-skeleton`, `react-collapse`, and `react-modal` are actively imported in source files and legitimately need ambient declarations. Only the three stale package entries (`react-alert`, `react-helmet`, `react-star-ratings`) and the redundant `uuid` declaration should be removed.
+**`src/api/http-common.ts:19–22` — CORS headers on client axios instance** — The `nutrition` axios instance sets `Access-Control-Allow-Headers`, `Access-Control-Allow-Origin`, and `Access-Control-Allow-Methods` as *request* headers. These are server-side CORS *response* headers; browsers silently ignore them when sent as request headers. Not harmful but misleading — they should be on Edamam's server response, not the client request.
 
-**`src/client/db.ts` — Firestore vs MongoDB** — The file initializes and exports a Firestore `db` instance (`getFirestore(app)`) and Firebase `analytics`. The app stores all recipe and user data in MongoDB via the Express backend. There is no Firestore read/write anywhere in `src/`. The `analytics` export is similarly unused. These exports can be removed and the `getFirestore`/`getAnalytics` imports dropped, shrinking the Firebase bundle.
+**`decs.d.ts` active entries to keep** — `react-loading-skeleton`, `react-collapse`, and `react-modal` are all actively imported in source files and lack bundled TypeScript types. Their declarations must remain.
 
 **`cypress.env.json`** — Contains `FIREBASE_SERVICE_ACCOUNT` (a live credential). Correctly gitignored. No action needed beyond confirming it stays out of version control.
-
-**`UPGRADE_PLAN.md`** — Not flagged High because it is dated 2026-05-06 and may be actively referenced. If the upgrade work described is complete or abandoned, it should be deleted or archived.
 
 ---
 
