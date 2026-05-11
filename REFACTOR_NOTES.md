@@ -148,3 +148,21 @@ Running `tsc --noEmit` after the Phase 2-B rename reveals two pre-existing type 
 2. `src/index.tsx:7` — `HTMLElement | null` passed where `Container` is expected (strict null check on `document.getElementById('root')`). This code error existed in `src/index.jsx` but was silently ignored by tsc because `.jsx` files are not type-checked without `allowJs: true`. The rename to `.tsx` makes it visible to tsc.
 
 **Action needed (not in scope for Phase 2-B):** Fix both errors in a future pass. The `index.tsx` fix is a one-liner (`!` non-null assertion or a null guard). The `App.tsx` fix requires investigating the router/children structure.
+
+---
+
+## Phase 3-A: Recipes.tsx — useQuery migration notes
+
+**Date:** 2026-05-11
+
+### useInfiniteQuery candidate (Phase 4)
+
+`Recipes.tsx` is a candidate for `useInfiniteQuery` migration in Phase 4 — the current `useQuery` + manual accumulation pattern is a workaround for the load-more pattern that `useInfiniteQuery` handles natively.
+
+The `useQuery` approach requires keeping `recipeList` and `totalResults` as separate state that is manually updated via a `useEffect` on the query result. `useInfiniteQuery` would own the accumulated pages directly, eliminate the data-accumulation effect, and expose `fetchNextPage` / `hasNextPage` as first-class API surface.
+
+### Known behavior difference: extra query on URL navigation while paginated
+
+If `location.search` changes while `currPage > 0` (e.g., user navigates to `/?q=something` from page 2 of results), TanStack Query fires an interim query with the old page + new URL params before the filter reset effect resets `currPage` to 0. The original code never made this extra call. No current test exercises this path.
+
+Root fix: migrate to `useInfiniteQuery` (see above).
