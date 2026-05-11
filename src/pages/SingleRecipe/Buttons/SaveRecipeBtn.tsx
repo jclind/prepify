@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { FC, useState, useEffect } from 'react'
 import {
   BsBookmark,
   BsFillBookmarkFill,
@@ -11,7 +11,7 @@ import RecipeAPI from 'src/api/recipes'
 
 type SaveRecipeBtnProps = { recipeId: string }
 
-const SaveRecipeBtn = ({ recipeId }: SaveRecipeBtnProps) => {
+const SaveRecipeBtn: FC<SaveRecipeBtnProps> = ({ recipeId }) => {
   const [isHovered, setIsHovered] = useState(false)
   const [isSaved, setIsSaved] = useState(false)
 

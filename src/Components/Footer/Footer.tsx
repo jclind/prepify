@@ -1,11 +1,11 @@
-import React from 'react'
+import React, { FC } from 'react'
 import pjson from '../../../package.json'
 
 import './Footer.scss'
 
 const version = pjson.version
 
-const Footer = () => {
+const Footer: FC = () => {
   return (
     <footer>
       <div className='email'>JesseLindCS@gmail.com</div>

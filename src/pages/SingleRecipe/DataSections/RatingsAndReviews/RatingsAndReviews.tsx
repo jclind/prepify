@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { FC, useEffect, useState } from 'react'
 import { ReviewType } from 'types'
 import Ratings from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/Ratings/Ratings'
 import ReviewsContainer from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/ReviewsContainer'
@@ -15,13 +15,13 @@ type RatingsAndReviewsProps = {
   setCurrUserReview: (val: ReviewType | null) => void
 }
 
-const RatingsAndReviews = ({
+const RatingsAndReviews: FC<RatingsAndReviewsProps> = ({
   recipeId,
   ratingVal,
   ratingCount,
   currUserReview,
   setCurrUserReview,
-}: RatingsAndReviewsProps) => {
+}) => {
   const [rating, setRating] = useState(0)
 
   const uid = AuthAPI.getUID()

@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react'
+import React, { FC, useState, useEffect } from 'react'
 import RecipeThumbnail from 'src/Components/RecipeThumbnail/RecipeThumbnail'
-import Select, { SingleValue } from 'react-select'
+import Select, { MultiValue, SingleValue } from 'react-select'
 
 import './SavedRecipes.scss'
 import RecipeAPI from 'src/api/recipes'
@@ -17,7 +17,7 @@ const options = [
   { value: 'oldAdd', label: 'Save Time: Oldest' },
 ]
 
-const SavedRecipes = () => {
+const SavedRecipes: FC = () => {
   const [recipes, setRecipes] = useState<RecipeType[]>([])
   const [recipesPage, setRecipesPage] = useState(0)
   const [isMoreRecipes, setIsMoreRecipes] = useState(false)
@@ -54,16 +54,13 @@ const SavedRecipes = () => {
   }, [])
 
   const handleSelectChange = (
-    e: SingleValue<{
-      value: string
-      label: string
-    }>
+    e: MultiValue<{ value: string; label: string }> | SingleValue<{ value: string; label: string }>
   ) => {
-    if (e) {
-      setSelectOption(e)
-      setRecipesPage(0)
-      handleGetSavedRecipes(0, e.value)
-    }
+    const option = e as SingleValue<{ value: string; label: string }>
+    if (!option) return
+    setSelectOption(option)
+    setRecipesPage(0)
+    handleGetSavedRecipes(0, option.value)
   }
   const handleLoadMoreRecipes = () => {
     handleGetSavedRecipes(recipesPage, selectOption.value)

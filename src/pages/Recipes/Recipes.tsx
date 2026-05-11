@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { FC, useState, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import './Recipes.scss'
 import RecipeThumbnail from 'src/Components/RecipeThumbnail/RecipeThumbnail'
@@ -9,7 +9,7 @@ import RecipeAPI from 'src/api/recipes'
 import { RecipeType } from 'types'
 import { TailSpin } from 'react-loader-spinner'
 
-const Recipes = () => {
+const Recipes: FC = () => {
   const [recipeList, setRecipeList] = useState<RecipeType[]>([])
 
   const [selectFilterVal, setSelectFilterVal] = useState('')

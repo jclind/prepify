@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { FC, useState } from 'react'
 import { TailSpin } from 'react-loader-spinner'
 import RecipeAPI from 'src/api/recipes'
 import { IngredientsType } from 'types'
@@ -12,12 +12,12 @@ type IngredientsInputProps = {
   ingredientLoading: { isLoading: boolean; index: number }
 }
 
-const IngredientsInput = ({
+const IngredientsInput: FC<IngredientsInputProps> = ({
   addIngredientToList,
   setIngredientLoading,
   ingredientsLength,
   ingredientLoading,
-}: IngredientsInputProps) => {
+}) => {
   const [inputVal, setInputVal] = useState('')
   const [loading, setLoading] = useState(false)
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { FC, useState, useEffect, useRef } from 'react'
 import './Ingredients.scss'
 import Skeleton from 'react-loading-skeleton'
 import 'react-loading-skeleton/dist/skeleton.css'
@@ -12,7 +12,7 @@ type IngredientItemProps = {
   ingr: IngredientsType | null
   loading: boolean
 }
-const IngredientItem = ({ ingr, loading }: IngredientItemProps) => {
+const IngredientItem: FC<IngredientItemProps> = ({ ingr, loading }) => {
   const [checked, setChecked] = useState(false)
 
   const handleOnClick = () => {
@@ -78,12 +78,12 @@ type IngredientsProps = {
   loading: boolean
 }
 
-const Ingredients = ({
+const Ingredients: FC<IngredientsProps> = ({
   ingredients,
   servingSize,
   setServingSize,
   loading,
-}: IngredientsProps) => {
+}) => {
   const [modServingSize, setModServingSize] = useState(servingSize)
 
   const servingsInputRef = useRef<HTMLInputElement>(null)

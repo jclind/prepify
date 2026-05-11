@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { FC, useState, useEffect, useRef } from 'react'
 import { useParams } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 
@@ -24,7 +24,9 @@ type LocalStorageRecipeType = {
   numServings: number
 }
 
-const SingleRecipe = ({ recipe }: { recipe?: RecipeType | null }) => {
+type Props = { recipe?: RecipeType | null }
+
+const SingleRecipe: FC<Props> = ({ recipe }) => {
   const [currRecipe, setCurrRecipe] = useState<RecipeType | null>(
     recipe || null
   )

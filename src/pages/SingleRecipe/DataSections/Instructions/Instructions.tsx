@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { FC } from 'react'
 import './Instructions.scss'
 import Skeleton from 'react-loading-skeleton'
 import 'react-loading-skeleton/dist/skeleton.css'
@@ -11,7 +11,7 @@ type IntructionItemProps = {
   loading: boolean
 }
 
-const InstructionItem = ({ instruction, loading }: IntructionItemProps) => {
+const InstructionItem: FC<IntructionItemProps> = ({ instruction, loading }) => {
   // const [checked, setChecked] = useState(false)
 
   // const handleOnClick = () => {
@@ -56,7 +56,7 @@ type InstructionsProps = {
   loading: boolean
 }
 
-const Instructions = ({ instructions, loading }: InstructionsProps) => {
+const Instructions: FC<InstructionsProps> = ({ instructions, loading }) => {
   return (
     <div className='directions'>
       <h3 className='title'>

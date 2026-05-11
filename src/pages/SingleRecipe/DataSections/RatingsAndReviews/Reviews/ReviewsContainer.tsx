@@ -48,7 +48,7 @@ const ReviewsContainer: FC<ReviewsContainerProps> = ({
           }
           setReviewListPage(reviewListPage + 1)
         })
-        .catch((error: any) => console.log(error))
+        .catch((error: unknown) => console.log(error))
     }
   }
 

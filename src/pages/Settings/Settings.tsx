@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react'
+import React, { FC, useEffect, useState } from 'react'
 import './Settings.scss'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 
-const Settings = () => {
+const Settings: FC = () => {
   const settingsPages = [
     { name: 'Profile', path: '/settings' },
     { name: 'Password', path: '/settings/password' },

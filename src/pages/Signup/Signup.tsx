@@ -1,4 +1,4 @@
-import React, { ChangeEvent, useState } from 'react'
+import React, { ChangeEvent, FC, useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { AiOutlineGoogle, AiOutlineUser } from 'react-icons/ai'
 import { MdOutlineEmail, MdOutlineLock } from 'react-icons/md'
@@ -14,7 +14,7 @@ import '../../Components/Form/FormStyles.scss'
 import PrepifyLogo from 'src/Components/Navbar/PrepifyLogo'
 import FormInput from 'src/Components/Form/FormInput'
 
-const Signup = () => {
+const Signup: FC = () => {
   const [name, setName] = useState('')
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')

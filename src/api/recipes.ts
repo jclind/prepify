@@ -1,5 +1,5 @@
 import { parseIngredientString } from '@jclind/ingredient-parser'
-
+import type { AxiosResponse } from 'axios'
 import ObjectID from 'bson-objectid'
 import { getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage'
 import dietLabels from 'src/recipeData/dietLabels'
@@ -65,14 +65,14 @@ class RecipeAPIClass {
     const result = await http.get(`getRecipe?id=${id}`)
     return result.data
   }
-  async deleteRecipe(recipeId: string, userId: string) {
+  async deleteRecipe(recipeId: string, userId: string): Promise<unknown> {
     const result = await http.delete(
       `deleteRecipe?recipeId=${recipeId}&userId=${userId}`
     )
     return result.data
   }
 
-  async saveRecipe(userId = '', recipeId = '') {
+  async saveRecipe(userId = '', recipeId = ''): Promise<AxiosResponse> {
     return await http.put(`saveRecipe?userId=${userId}&recipeId=${recipeId}`)
   }
   async getSavedRecipe(
@@ -84,10 +84,10 @@ class RecipeAPIClass {
     )
     return result.data
   }
-  async unsaveRecipe(userId = '', recipeId = '') {
+  async unsaveRecipe(userId = '', recipeId = ''): Promise<AxiosResponse> {
     return await http.put(`unsaveRecipe?userId=${userId}&recipeId=${recipeId}`)
   }
-  async madeRecipe(recipeId: string) {
+  async madeRecipe(recipeId: string): Promise<unknown> {
     const userId = AuthAPI.getUID()
     if (!userId) return
 
@@ -183,11 +183,11 @@ class RecipeAPIClass {
       setProgress(90)
       await http.post('addRecipe', returnRecipeData)
       return recipeId
-    } catch (error) {
+    } catch (error: unknown) {
       return null
     }
   }
-  async getRecipeNutrition(ingrArr: IngredientsType[]) {
+  async getRecipeNutrition(ingrArr: IngredientsType[]): Promise<{ nutritionData: NutritionDataType | null; dietLabels: string[] | null }> {
     const ingrData: { title: string; ingr: string[] } = {
       title: 'recipe 1',
       ingr: [],
@@ -228,7 +228,7 @@ class RecipeAPIClass {
     return { nutritionData: nutritionResult, dietLabels: currDietLabels }
   }
 
-  async addRecipeTag(data: string) {
+  async addRecipeTag(data: string): Promise<AxiosResponse> {
     return await http.post('addRecipeTag', data)
   }
 
@@ -251,7 +251,7 @@ class RecipeAPIClass {
   }
 
   // Ratings / Reviews
-  async addRating(recipeId: string, rating: number) {
+  async addRating(recipeId: string, rating: number): Promise<AxiosResponse | null> {
     if (!AuthAPI.getUID()) return null
     return await http.put(`addRating?recipeId=${recipeId}&rating=${rating}`)
   }
@@ -277,11 +277,11 @@ class RecipeAPIClass {
     )
     return result.data
   }
-  async editReview(recipeId: string, text: string) {
+  async editReview(recipeId: string, text: string): Promise<AxiosResponse | null> {
     if (!AuthAPI.getUID()) return null
     return await http.put(`editReview?recipeId=${recipeId}&text=${text}`)
   }
-  async deleteReview(recipeId: string) {
+  async deleteReview(recipeId: string): Promise<AxiosResponse | null> {
     const userId = await AuthAPI.getUID()
     if (!userId) return null
     return await http.put(`deleteReview?userId=${userId}&recipeId=${recipeId}`)

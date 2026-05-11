@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { FC, useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AiOutlineSearch, AiOutlineStar, AiOutlineUser } from 'react-icons/ai'
 import { CgTimer } from 'react-icons/cg'
@@ -19,8 +19,8 @@ function useOutsideAlerter(
     /**
      * Alert if clicked on outside of element
      */
-    function handleClickOutside(event: any) {
-      if (ref.current && !ref.current.contains(event.target)) {
+    function handleClickOutside(event: MouseEvent) {
+      if (ref.current && !ref.current.contains(event.target as Node | null)) {
         setVal(true)
       }
     }
@@ -41,10 +41,10 @@ type SearchRecipesInputProps = {
   autoComplete: boolean
 }
 
-const SearchRecipesInput = ({
+const SearchRecipesInput: FC<SearchRecipesInputProps> = ({
   defaultVal,
   autoComplete,
-}: SearchRecipesInputProps) => {
+}) => {
   const [searchRecipeVal, setSearchRecipeVal] = useState(defaultVal || '')
 
   const [autoCompleteResponse, setAutoCompleteResponse] = useState<
@@ -59,7 +59,7 @@ const SearchRecipesInput = ({
   const wrapperRef = useRef<HTMLFormElement>(null)
   useOutsideAlerter(wrapperRef, setIsBlurred)
 
-  const handleSubmit = (e: any) => {
+  const handleSubmit = (e: React.SyntheticEvent) => {
     e.preventDefault()
 
     if (slugify(searchRecipeVal)) {

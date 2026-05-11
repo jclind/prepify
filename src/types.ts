@@ -12,7 +12,7 @@ export type RecipeType = {
   ingredients: IngredientsType[]
   instructions: InstructionsType[]
   recipeImage: string
-  nutritionData: any
+  nutritionData: NutritionDataType | null
   totalTime: number
   authorUsername: string
   rating: {
@@ -64,18 +64,24 @@ export type InstructionsType =
   | { content: string; index: number; id: string }
   | LabelType
 
+interface NutrientInfo {
+  label: string
+  quantity: number
+  unit: string
+}
+
 export interface NutritionDataType {
   uri: string
-  yield: any
-  calories: any
-  totalWeight: any
+  yield: number
+  calories: number
+  totalWeight: number
   dietLabels: string[]
   healthLabels: string[]
-  cautions: any[]
-  totalNutrients: any
-  totalDaily: any
-  ingredients: any[]
-  totalNutrientsKCal: any
+  cautions: string[]
+  totalNutrients: Record<string, NutrientInfo>
+  totalDaily: Record<string, NutrientInfo>
+  ingredients: unknown[] // TODO: Edamam parsed-ingredient shape — not accessed directly in this codebase
+  totalNutrientsKCal: Record<string, NutrientInfo>
 }
 
 export interface RecipeDBResponseType {

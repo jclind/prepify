@@ -1,4 +1,4 @@
-import React, { ChangeEvent, KeyboardEvent } from 'react'
+import React, { ChangeEvent, FC, KeyboardEvent } from 'react'
 import './RecipeFormInput.scss'
 
 type RecipeFormTextAreaProps = {
@@ -14,7 +14,7 @@ type RecipeFormTextAreaProps = {
   onBlur?: () => void
 }
 
-const RecipeFormTextArea = ({
+const RecipeFormTextArea: FC<RecipeFormTextAreaProps> = ({
   placeholder,
   name,
   val,
@@ -25,7 +25,7 @@ const RecipeFormTextArea = ({
   characterLimit,
   onEnter,
   onBlur,
-}: RecipeFormTextAreaProps) => {
+}) => {
   const handleChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     const val = e.target.value
 

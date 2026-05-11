@@ -21,7 +21,7 @@ const Ratings: FC<RatingsProps> = ({
   ratingCount,
   recipeId,
 }) => {
-  const changeRating = (e: any) => {
+  const changeRating = (e: number) => {
     RecipeAPI.addRating(recipeId, e)
     setRating(e)
   }

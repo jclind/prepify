@@ -1,8 +1,8 @@
-import React from 'react'
+import React, { FC } from 'react'
 import './HomeHero.scss'
 import SearchRecipesInput from 'src/Components/SearchRecipesInput/SearchRecipesInput'
 
-const HomeHero = () => {
+const HomeHero: FC = () => {
   return (
     <div className='home-hero'>
       <img

@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react'
+import React, { FC, useState, useEffect } from 'react'
 import './TrendingRecipes.scss'
 
 import RecipeThumbnail from 'src/Components/RecipeThumbnail/RecipeThumbnail'
 import RecipeAPI from 'src/api/recipes'
 import { RecipeType } from 'types'
 
-const TrendingRecipes = () => {
+const TrendingRecipes: FC = () => {
   const [recipes, setRecipes] = useState<RecipeType[]>([])
 
   useEffect(() => {

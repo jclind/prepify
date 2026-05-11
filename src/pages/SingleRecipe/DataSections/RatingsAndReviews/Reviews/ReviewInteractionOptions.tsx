@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { FC, useState } from 'react'
 import toast from 'react-hot-toast'
 import {
   AiOutlineLike,
@@ -7,7 +7,7 @@ import {
   AiTwotoneDislike,
 } from 'react-icons/ai'
 
-const ReviewInteractionOptions = () => {
+const ReviewInteractionOptions: FC = () => {
   const [isLikeHovered, setIsLikeHovered] = useState(false)
   const [isDislikeHovered, setIsDislikeHovered] = useState(false)
 
