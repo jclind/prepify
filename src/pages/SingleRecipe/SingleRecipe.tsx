@@ -15,7 +15,7 @@ import { capitalize } from '../../util/capitalize'
 
 import { IngredientsType, RecipeType, ReviewType } from 'types'
 import RecipeAPI from 'src/api/recipes'
-import RecipeNotFound from './RecipeNotFound.js/RecipeNotFound'
+import RecipeNotFound from './RecipeNotFound/RecipeNotFound'
 import RatingsAndReviews from './DataSections/RatingsAndReviews/RatingsAndReviews'
 import RecipeHeaderContent from './RecipeHeaderContent/RecipeHeaderContent'
 
