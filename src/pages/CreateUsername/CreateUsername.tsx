@@ -3,7 +3,7 @@ import '../../Components/Form/FormStyles.scss'
 import './CreateUsername.scss'
 import { TailSpin } from 'react-loader-spinner'
 import { useNavigate } from 'react-router-dom'
-import UsernameInput from '../../Components/Form/UsernameInput'
+import UsernameInput from 'src/Components/Form/UsernameInput'
 import AuthAPI from 'src/api/auth'
 
 const CreateUsername = () => {

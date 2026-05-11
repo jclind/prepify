@@ -1,6 +1,6 @@
 import React from 'react'
 import './HomeHero.scss'
-import SearchRecipesInput from '../../../Components/SearchRecipesInput/SearchRecipesInput'
+import SearchRecipesInput from 'src/Components/SearchRecipesInput/SearchRecipesInput'
 
 const HomeHero = () => {
   return (

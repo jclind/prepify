@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react'
-import RecipeThumbnail from '../../../Components/RecipeThumbnail/RecipeThumbnail'
+import RecipeThumbnail from 'src/Components/RecipeThumbnail/RecipeThumbnail'
 import Select, { SingleValue } from 'react-select'
 
 import './SavedRecipes.scss'
 import RecipeAPI from 'src/api/recipes'
 import { RecipeType } from 'types'
-import { selectCustomStyles } from '../selectCustomStyles'
+import { selectCustomStyles } from 'src/pages/Account/selectCustomStyles'
 
 const options = [
   // { value: 'popular', label: 'Popular' },

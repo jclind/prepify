@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import RecipeFormInput from '../RecipeFormInput'
+import RecipeFormInput from 'src/pages/AddRecipe/RecipeFormInput'
 import './TimeInput.scss'
 
 interface TimeInputProps {

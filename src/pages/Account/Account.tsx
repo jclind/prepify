@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useLocation, useNavigate, Link, Outlet } from 'react-router-dom'
 import './Account.scss'
 import { Helmet } from 'react-helmet-async'
-import AuthAPI from '../../api/auth'
+import AuthAPI from 'src/api/auth'
 import { useAuth } from 'src/context/AuthContext'
 
 const Account = () => {

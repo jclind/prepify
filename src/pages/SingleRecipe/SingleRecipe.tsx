@@ -4,20 +4,20 @@ import { Helmet } from 'react-helmet-async'
 
 import './SingleRecipe.scss'
 
-import Ingredients from './DataSections/Ingredients/Ingredients'
-import Instructions from './DataSections/Instructions/Instructions'
-import Tags from './DataSections/Tags'
-import RecipeControls from './DataSections/RecipeControls/RecipeControls'
-import MadeRecipeBtn from './Buttons/MadeRecipeBtn'
+import Ingredients from 'src/pages/SingleRecipe/DataSections/Ingredients/Ingredients'
+import Instructions from 'src/pages/SingleRecipe/DataSections/Instructions/Instructions'
+import Tags from 'src/pages/SingleRecipe/DataSections/Tags'
+import RecipeControls from 'src/pages/SingleRecipe/DataSections/RecipeControls/RecipeControls'
+import MadeRecipeBtn from 'src/pages/SingleRecipe/Buttons/MadeRecipeBtn'
 
-import { updateIngredients } from '../../util/updateIngredients'
-import { capitalize } from '../../util/capitalize'
+import { updateIngredients } from 'src/util/updateIngredients'
+import { capitalize } from 'src/util/capitalize'
 
 import { IngredientsType, RecipeType, ReviewType } from 'types'
 import RecipeAPI from 'src/api/recipes'
-import RecipeNotFound from './RecipeNotFound/RecipeNotFound'
-import RatingsAndReviews from './DataSections/RatingsAndReviews/RatingsAndReviews'
-import RecipeHeaderContent from './RecipeHeaderContent/RecipeHeaderContent'
+import RecipeNotFound from 'src/pages/SingleRecipe/RecipeNotFound/RecipeNotFound'
+import RatingsAndReviews from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/RatingsAndReviews'
+import RecipeHeaderContent from 'src/pages/SingleRecipe/RecipeHeaderContent/RecipeHeaderContent'
 
 type LocalStorageRecipeType = {
   recipeId: string

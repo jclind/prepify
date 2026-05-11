@@ -5,7 +5,7 @@ import AuthAPI from 'src/api/auth'
 import toast from 'react-hot-toast'
 import { TailSpin } from 'react-loader-spinner'
 import { AiOutlineClose } from 'react-icons/ai'
-import InputContainer from './InputContainer'
+import InputContainer from 'src/pages/Settings/SubSettings/InputContainer'
 
 const MAX_FILE_SIZE = 5000 * 1024
 

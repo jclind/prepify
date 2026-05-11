@@ -1,11 +1,11 @@
 import React, { Dispatch, FC, SetStateAction, useRef, useState } from 'react'
 import { DraggableProvided, DraggableStateSnapshot } from '@hello-pangea/dnd'
 import { InstructionsType } from 'types'
-import Handler from '../../ListComponents/Handler'
-import RemoveItem from '../../ListComponents/RemoveItem'
+import Handler from 'src/pages/AddRecipe/ListComponents/Handler'
+import RemoveItem from 'src/pages/AddRecipe/ListComponents/RemoveItem'
 import './InstructionItem.scss'
 import '../../ListComponents/Item.scss'
-import RecipeFormTextArea from '../../RecipeFormTextArea'
+import RecipeFormTextArea from 'src/pages/AddRecipe/RecipeFormTextArea'
 
 type InstructionItemProps = {
   instruction: InstructionsType

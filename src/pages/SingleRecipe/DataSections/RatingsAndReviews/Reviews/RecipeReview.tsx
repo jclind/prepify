@@ -21,7 +21,7 @@ class StarRatingErrorBoundary extends Component<
 import Modal from 'react-modal'
 import { ReviewType } from 'types'
 import RecipeAPI from 'src/api/recipes'
-import ReviewOptions from './ReviewOptions'
+import ReviewOptions from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/ReviewOptions'
 import { formatDate } from 'src/util/formatDate'
 Modal.setAppElement('#root')
 

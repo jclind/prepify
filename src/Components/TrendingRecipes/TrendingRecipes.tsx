@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import './TrendingRecipes.scss'
 
-import RecipeThumbnail from '../RecipeThumbnail/RecipeThumbnail'
-import RecipeAPI from '../../api/recipes'
+import RecipeThumbnail from 'src/Components/RecipeThumbnail/RecipeThumbnail'
+import RecipeAPI from 'src/api/recipes'
 import { RecipeType } from 'types'
 
 const TrendingRecipes = () => {

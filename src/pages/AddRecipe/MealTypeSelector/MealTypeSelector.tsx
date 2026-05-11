@@ -1,7 +1,7 @@
 import React, { FC } from 'react'
 import Select, { MultiValue } from 'react-select'
 import mealTypesList from 'src/recipeData/mealTypesList'
-import styles from '../../../_exports.module.scss'
+import styles from 'src/_exports.module.scss'
 
 type OptionType = {
   value: string

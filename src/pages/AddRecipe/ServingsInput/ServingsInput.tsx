@@ -1,5 +1,5 @@
 import React from 'react'
-import RecipeFormInput from '../RecipeFormInput'
+import RecipeFormInput from 'src/pages/AddRecipe/RecipeFormInput'
 
 interface ServingSizeInputProps {
   servings: number | ''

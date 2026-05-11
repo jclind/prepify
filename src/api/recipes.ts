@@ -16,9 +16,9 @@ import {
   RecipeType,
   ReviewType,
 } from 'types'
-import AuthAPI from './auth'
-import { fetchIngredientEnrichment } from './ingredientParserApi'
-import { http, nutrition } from './http-common'
+import AuthAPI from 'src/api/auth'
+import { fetchIngredientEnrichment } from 'src/api/ingredientParserApi'
+import { http, nutrition } from 'src/api/http-common'
 import { v4 as uuidv4 } from 'uuid'
 
 class RecipeAPIClass {

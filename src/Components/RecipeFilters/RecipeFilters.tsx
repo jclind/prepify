@@ -3,7 +3,7 @@ import Select, { MultiValue, SingleValue } from 'react-select'
 import { useNavigate, useLocation } from 'react-router-dom'
 import './RecipeFilters.scss'
 import { dietLabelsOptions } from 'src/recipeData/dietLabels'
-import styles from '../../_exports.module.scss'
+import styles from 'src/_exports.module.scss'
 import { cuisinesListOptions } from 'src/recipeData/cuisinesList'
 import { getWindowWidth } from 'src/util/getWindowWidth'
 

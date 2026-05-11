@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import './SubSettings.scss'
-import InputContainer from './InputContainer'
+import InputContainer from 'src/pages/Settings/SubSettings/InputContainer'
 import { useAuth } from 'src/context/AuthContext'
 import toast from 'react-hot-toast'
 import { TailSpin } from 'react-loader-spinner'

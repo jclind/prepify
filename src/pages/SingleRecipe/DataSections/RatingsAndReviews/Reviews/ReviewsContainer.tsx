@@ -2,10 +2,10 @@ import React, { FC, useEffect, useState } from 'react'
 import AuthAPI from 'src/api/auth'
 import RecipeAPI from 'src/api/recipes'
 import { ReviewType } from 'types'
-import ReviewFilters from './ReviewFilters'
-import ReviewsList from './ReviewsList'
-import AddReview from './AddReview'
-import RecipeReview from './RecipeReview'
+import ReviewFilters from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/ReviewFilters'
+import ReviewsList from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/ReviewsList'
+import AddReview from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/AddReview'
+import RecipeReview from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/RecipeReview'
 
 const recipesPerPage = 5
 

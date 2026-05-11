@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import AuthAPI from 'src/api/auth'
-import ConfirmDeleteReviewModal from './ConfirmDeleteReviewModal'
-import EditingReviewOptions from './EditingReviewOptions'
-import ReviewInteractionOptions from './ReviewInteractionOptions'
+import ConfirmDeleteReviewModal from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/ConfirmDeleteReviewModal'
+import EditingReviewOptions from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/EditingReviewOptions'
+import ReviewInteractionOptions from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/ReviewInteractionOptions'
 
 type ReviewOptionsProps = {
   handleEditReview: () => void
