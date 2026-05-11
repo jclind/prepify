@@ -151,6 +151,36 @@ Running `tsc --noEmit` after the Phase 2-B rename reveals two pre-existing type 
 
 ---
 
+## Phase 3-B: SingleRecipe.tsx — useQuery migration notes
+
+**Date:** 2026-05-11
+
+### Pre-existing bug — `updateRecipeLocalStorage` uses closure `servingSize` instead of `numServings` parameter
+
+`src/pages/SingleRecipe/SingleRecipe.tsx` — the `updateRecipeLocalStorage` helper:
+
+```ts
+if (currRecipeLocalStorageIndex !== -1) {
+  localStorageRecipeArr[currRecipeLocalStorageIndex].numServings = servingSize  // closure
+} else {
+  localStorageRecipeArr.push({ recipeId, numServings })  // parameter
+}
+```
+
+The `if` branch writes the closure variable `servingSize` instead of the `numServings` parameter. The `else` branch correctly uses the parameter. No observable effect today because the function is always called as `updateRecipeLocalStorage(currRecipe._id, servingSize)` — the two values are identical. The parameter is dead code in the update path.
+
+**Phase 4 suggestion:** Replace `servingSize` with `numServings` in the `if` branch to make the function self-contained.
+
+### Behavioral difference — background re-fetch re-reads serving size from localStorage
+
+The original `useEffect([], [])` fetched once on mount. The replacement `useEffect([fetchedRecipe])` runs whenever the query data reference changes — including TanStack Query background re-fetches (e.g., on window focus). On each re-run it re-reads `numServings` from localStorage and calls `setServingSize`.
+
+No practical impact: `updateRecipeLocalStorage` keeps localStorage in sync with `servingSize` state, so the re-read always produces the current value. However, if structural sharing is disabled or the server returns a structurally different object, a spurious `setServingSize` call (same value) would trigger a re-render cycle through the `[servingSize]` effect.
+
+**Phase 4 suggestion:** Guard with `useRef` (`servingSizeInitialized`) to match the original run-once semantics, or migrate to `useInfiniteQuery` / `initialData` pattern.
+
+---
+
 ## Phase 3-A: Recipes.tsx — useQuery migration notes
 
 **Date:** 2026-05-11
