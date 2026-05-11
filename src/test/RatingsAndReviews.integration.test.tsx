@@ -4,6 +4,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { HelmetProvider } from 'react-helmet-async'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import RatingsAndReviews from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/RatingsAndReviews'
 import RecipeAPI from 'src/api/recipes'
 import AuthAPI from 'src/api/auth'
@@ -70,6 +71,9 @@ const mockDeleteReview = RecipeAPI.deleteReview as ReturnType<typeof vi.fn>
 const mockGetUID = AuthAPI.getUID as ReturnType<typeof vi.fn>
 const mockGetUsername = AuthAPI.getUsername as ReturnType<typeof vi.fn>
 
+const createTestQueryClient = () =>
+  new QueryClient({ defaultOptions: { queries: { retry: false } } })
+
 const baseReview: ReviewType = {
   _id: 'rev-1',
   username: 'testuser',
@@ -90,17 +94,19 @@ const IntegrationWrapper: FC<{ initialReview?: ReviewType | null }> = ({
     initialReview ?? null
   )
   return (
-    <MemoryRouter>
-      <HelmetProvider>
-        <RatingsAndReviews
-          recipeId='recipe-1'
-          ratingVal={40}
-          ratingCount={10}
-          currUserReview={currUserReview}
-          setCurrUserReview={setCurrUserReview}
-        />
-      </HelmetProvider>
-    </MemoryRouter>
+    <QueryClientProvider client={createTestQueryClient()}>
+      <MemoryRouter>
+        <HelmetProvider>
+          <RatingsAndReviews
+            recipeId='recipe-1'
+            ratingVal={40}
+            ratingCount={10}
+            currUserReview={currUserReview}
+            setCurrUserReview={setCurrUserReview}
+          />
+        </HelmetProvider>
+      </MemoryRouter>
+    </QueryClientProvider>
   )
 }
 

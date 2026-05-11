@@ -229,6 +229,51 @@ Root fix: migrate to `useInfiniteQuery` (see above).
 
 ---
 
+## Phase 3-H: RatingsAndReviews.tsx and ReviewsContainer.tsx — useQuery migration notes
+
+**Date:** 2026-05-11
+
+### `isLoading` available but not wired — Phase 4 candidate
+
+Both components now get `isLoading` from `useQuery` but neither has loading UI:
+
+- `RatingsAndReviews`: `isLoading` is not destructured from the `checkIfReviewed` query. No loading state existed before and none was added.
+- `ReviewsContainer`: `isLoading` is not destructured from the `getReviews` query. As documented in Phase 2-E-1, no loading indicator existed before migration. **Phase 4 candidate:** wire `isLoading` to a spinner or skeleton in ReviewsContainer.
+
+### `handleSortChange` replaces the `reviewListSort` useEffect
+
+The original `ReviewsContainer` had:
+
+```js
+useEffect(() => {
+  if (reviewListSort) {
+    setReviewListPage(0)
+    handleGetUserReviews(0, reviewListSort)
+  }
+}, [reviewListSort])
+```
+
+This was replaced by a `handleSortChange` wrapper passed to `ReviewFilters` as the `setReviewListSort` prop:
+
+```js
+const handleSortChange = (sort: string) => {
+  setReviewListPage(0)
+  setReviewListSort(sort)
+}
+```
+
+**Why:** With `useQuery`, the fetch is driven by the query key `['reviews', recipeId, reviewListSort, reviewListPage]`. If the sort-change useEffect was kept (running after render), there is a window where the new sort is already in the key but the page has not yet reset to 0 — `useQuery` fires an interim query with `[recipeId, newSort, oldPage]` before the page reset takes effect. The handler collapses both state updates into the same event, so the key transitions directly to `[recipeId, newSort, 0]` with no intermediate query.
+
+### Page increment timing changed
+
+Same pattern as Phase 3-F and Phase 3-G: "More Reviews" now increments `reviewListPage` before the fetch (on click), rather than after a successful fetch. On fetch failure, the original would retry the same page; the new design would attempt the next page. The pre-existing lack of error state means this gap is silent — revisit when error handling is added.
+
+### useInfiniteQuery candidate (Phase 4)
+
+`ReviewsContainer` is a candidate for `useInfiniteQuery` migration in Phase 4, same as `Recipes.tsx`, `SavedRecipes.tsx`, and `UserRatings.tsx`.
+
+---
+
 ## Phase 3-G: UserRatings.tsx — useQuery migration notes
 
 **Date:** 2026-05-11
