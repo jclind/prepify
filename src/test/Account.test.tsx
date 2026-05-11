@@ -3,6 +3,7 @@ import { vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import { HelmetProvider } from 'react-helmet-async'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import Account from 'src/pages/Account/Account'
 import AuthAPI from 'src/api/auth'
 import { useAuth } from 'src/context/AuthContext'
@@ -22,30 +23,35 @@ const mockGetUID = AuthAPI.getUID as ReturnType<typeof vi.fn>
 const mockGetUsername = AuthAPI.getUsername as ReturnType<typeof vi.fn>
 const mockUseAuth = useAuth as ReturnType<typeof vi.fn>
 
+const createTestQueryClient = () =>
+  new QueryClient({ defaultOptions: { queries: { retry: false } } })
+
 // Account uses <Outlet /> — supply stub child routes so the router
 // tree is valid. The stubs need no logic; Account is what's under test.
 const renderAccount = (initialPath = '/account/saved-recipes') =>
   render(
-    <MemoryRouter initialEntries={[initialPath]}>
-      <HelmetProvider>
-        <Routes>
-          <Route path='/account/*' element={<Account />}>
-            <Route
-              path='saved-recipes'
-              element={<div data-testid='saved-outlet' />}
-            />
-            <Route
-              path='ratings'
-              element={<div data-testid='ratings-outlet' />}
-            />
-            <Route
-              path='your-recipes'
-              element={<div data-testid='your-recipes-outlet' />}
-            />
-          </Route>
-        </Routes>
-      </HelmetProvider>
-    </MemoryRouter>
+    <QueryClientProvider client={createTestQueryClient()}>
+      <MemoryRouter initialEntries={[initialPath]}>
+        <HelmetProvider>
+          <Routes>
+            <Route path='/account/*' element={<Account />}>
+              <Route
+                path='saved-recipes'
+                element={<div data-testid='saved-outlet' />}
+              />
+              <Route
+                path='ratings'
+                element={<div data-testid='ratings-outlet' />}
+              />
+              <Route
+                path='your-recipes'
+                element={<div data-testid='your-recipes-outlet' />}
+              />
+            </Route>
+          </Routes>
+        </HelmetProvider>
+      </MemoryRouter>
+    </QueryClientProvider>
   )
 
 describe('Account page', () => {
