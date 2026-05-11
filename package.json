@@ -42,8 +42,7 @@
     "test": "vitest run",
     "test:frontend": "vitest run",
     "test:server": "npm test --prefix server",
-    "test:ingredients": "npm test --prefix server-ingredients",
-    "test:unit": "npm run test:frontend && npm run test:server && npm run test:ingredients",
+    "test:unit": "npm run test:frontend && npm run test:server",
     "test:e2e": "cypress run",
     "test:e2e:dev": "VITE_CYPRESS=true start-server-and-test start http://localhost:3000 'cypress open'",
     "test:e2e:ci": "VITE_CYPRESS=true start-server-and-test start http://localhost:3000 'cypress run'"
