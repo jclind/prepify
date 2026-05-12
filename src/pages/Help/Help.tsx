@@ -1,5 +1,5 @@
 import React, { FC, useState } from 'react'
-import Select, { MultiValue, SingleValue, StylesConfig } from 'react-select'
+import Select, { SingleValue, StylesConfig } from 'react-select'
 import { useForm } from '@formspree/react'
 import './Help.scss'
 import { Helmet } from 'react-helmet-async'
@@ -66,8 +66,8 @@ const Help: FC = () => {
 
   const [formState, submitFormspree] = useForm('xknyboeq')
 
-  const handleSelectChange = (e: MultiValue<OptionType> | SingleValue<OptionType>) => {
-    setSelectOption(e as SingleValue<OptionType>)
+  const handleSelectChange = (e: SingleValue<OptionType>) => {
+    setSelectOption(e)
   }
   const clearForm = () => {
     setSelectOption(null)
@@ -114,7 +114,7 @@ const Help: FC = () => {
               {error && <div className='error'>{error}</div>}
               <div className='select-container'>
                 <div className='text'>Category</div>
-                <Select
+                <Select<OptionType, false>
                   options={options}
                   styles={customStyles}
                   isSearchable={false}
