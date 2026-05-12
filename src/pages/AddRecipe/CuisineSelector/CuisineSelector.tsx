@@ -1,5 +1,5 @@
 import React, { FC } from 'react'
-import Select, { MultiValue, SingleValue, StylesConfig } from 'react-select'
+import Select, { SingleValue, StylesConfig } from 'react-select'
 import cuisinesList from 'src/recipeData/cuisinesList'
 import styles from 'src/_exports.module.scss'
 
@@ -56,15 +56,14 @@ const getCuisineByString = (cuisineString: string): OptionType | null => {
 }
 
 const CuisineSelector: FC<CuisineSelectorProps> = ({ cuisine, setCuisine }) => {
-  const handleChange = (option: MultiValue<OptionType> | SingleValue<OptionType>) => {
-    const selected = option as SingleValue<OptionType>
-    const value = !selected?.value || selected.value === '-' ? '' : selected.value
+  const handleChange = (option: SingleValue<OptionType>) => {
+    const value = !option?.value || option.value === '-' ? '' : option.value
     setCuisine(value)
   }
 
   return (
     <div>
-      <Select
+      <Select<OptionType, false>
         value={getCuisineByString(cuisine)}
         onChange={handleChange}
         options={cuisineOptions}

@@ -1,5 +1,5 @@
 import React, { FC, useState, useEffect } from 'react'
-import Select, { MultiValue, SingleValue, StylesConfig } from 'react-select'
+import Select, { SingleValue, StylesConfig } from 'react-select'
 
 type OptionType = { value: string; label: string }
 
@@ -62,18 +62,17 @@ const ReviewFilters: FC<ReviewFiltersProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const handleSelectChange = (e: MultiValue<OptionType> | SingleValue<OptionType>) => {
-    const option = e as SingleValue<OptionType>
-    if (!option) return
-    setSelectValue(option)
-    setReviewListSort(option.value)
+  const handleSelectChange = (e: SingleValue<OptionType>) => {
+    if (!e) return
+    setSelectValue(e)
+    setReviewListSort(e.value)
   }
 
   return (
     <div>
       {isList && (
         <div className='review-filters'>
-          <Select
+          <Select<OptionType, false>
             options={options}
             styles={customStyles}
             isSearchable={false}
