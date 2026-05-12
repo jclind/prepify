@@ -191,17 +191,14 @@ const RecipeFilters: FC<RecipeFiltersProps> = ({
     }
     navigate(`/recipes?${urlParams}`)
   }
-  const handleCuisineChange = (
-    e: MultiValue<OptionType> | SingleValue<OptionType>
-  ) => {
-    const option = e as SingleValue<OptionType>
-    if (!option) return
-    if (!option.value) {
+  const handleCuisineChange = (e: SingleValue<OptionType>) => {
+    if (!e) return
+    if (!e.value) {
       setSelectedCuisine('')
       urlParams.delete('cuisine')
     } else {
-      setSelectedCuisine(option.value)
-      urlParams.set('cuisine', option.value)
+      setSelectedCuisine(e.value)
+      urlParams.set('cuisine', e.value)
     }
     navigate(`/recipes?${urlParams}`)
   }
@@ -216,7 +213,7 @@ const RecipeFilters: FC<RecipeFiltersProps> = ({
     <div className='filters'>
       {windowWidth > 815 ? (
         <>
-          <Select
+          <Select<OptionType, false>
             options={selectSortOptions}
             isSearchable={false}
             isClearable={false}
@@ -244,7 +241,7 @@ const RecipeFilters: FC<RecipeFiltersProps> = ({
             }}
           />
 
-          <Select
+          <Select<OptionType, false>
             options={cuisinesListOptions}
             isSearchable={false}
             placeholder='Cuisine'
@@ -284,7 +281,7 @@ const RecipeFilters: FC<RecipeFiltersProps> = ({
           >
             <div className='select-container'>
               <h5>Sort:</h5>
-              <Select
+              <Select<OptionType, false>
                 options={selectSortOptions}
                 isSearchable={false}
                 isClearable={false}
@@ -317,7 +314,7 @@ const RecipeFilters: FC<RecipeFiltersProps> = ({
             </div>
             <div className='select-container'>
               <h5>Select Cuisine:</h5>
-              <Select
+              <Select<OptionType, false>
                 options={cuisinesListOptions}
                 isSearchable={false}
                 placeholder='Cuisine'

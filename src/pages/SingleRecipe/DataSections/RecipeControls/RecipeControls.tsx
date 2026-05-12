@@ -1,10 +1,11 @@
-import React, { FC, useEffect, useState } from 'react'
+import React, { FC, useState } from 'react'
 import { AiOutlineClose } from 'react-icons/ai'
 import { TailSpin } from 'react-loader-spinner'
 import Modal from 'react-modal'
 import { useNavigate } from 'react-router-dom'
 import AuthAPI from 'src/api/auth'
 import RecipeAPI from 'src/api/recipes'
+import { useQuery } from '@tanstack/react-query'
 import './RecipeControls.scss'
 
 type RecipeControlsType = {
@@ -46,20 +47,17 @@ const RecipeControls: FC<RecipeControlsType> = ({
   const navigate = useNavigate()
 
   const [deleteLoading, setDeleteLoading] = useState(false)
-  const [isUsersRecipe, setIsUsersRecipe] = useState(false)
   const [deleteError, setDeleteError] = useState('')
 
   const currUID = AuthAPI.getUID()
-  useEffect(() => {
-    const checkIsUsersRecipe = async () => {
-      if (currUID) {
-        const currUsername = await AuthAPI.getUsername(currUID)
-        setIsUsersRecipe(currUsername === authorUsername)
-      }
-    }
-    checkIsUsersRecipe()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currUID])
+
+  const { data: currUsername } = useQuery({
+    queryKey: ['username', currUID],
+    queryFn: () => AuthAPI.getUsername(currUID!),
+    enabled: !!currUID,
+  })
+
+  const isUsersRecipe = currUsername === authorUsername
 
   if (!isUsersRecipe) return null
 

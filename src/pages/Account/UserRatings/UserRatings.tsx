@@ -1,6 +1,6 @@
 import React, { FC, useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import Select, { MultiValue, SingleValue } from 'react-select'
+import Select, { SingleValue } from 'react-select'
 import RecipeAPI from 'src/api/recipes'
 import { OptionalReviewType } from 'types'
 import { selectCustomStyles } from 'src/pages/Account/selectCustomStyles'
@@ -64,7 +64,9 @@ const SingleReview: FC<SingleReviewProps> = ({ review, loading }) => {
   )
 }
 
-const options = [
+type OptionType = { value: string; label: string }
+
+const options: OptionType[] = [
   // { value: 'popular', label: 'Popular' },
   // { value: 'new', label: 'Recipe Date: Newest' },
   // { value: 'old', label: 'Recipe Date: Oldest' },
@@ -103,12 +105,9 @@ const Ratings: FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data])
 
-  const handleSelectChange = (
-    e: MultiValue<{ value: string; label: string }> | SingleValue<{ value: string; label: string }>
-  ) => {
-    const option = e as SingleValue<{ value: string; label: string }>
-    if (!option) return
-    setSelectOption(option)
+  const handleSelectChange = (e: SingleValue<OptionType>) => {
+    if (!e) return
+    setSelectOption(e)
     setCurrPage(0)
   }
   const handleLoadMoreReviews = () => {
@@ -120,7 +119,7 @@ const Ratings: FC = () => {
       {reviews.length > 0 || isLoading ? (
         <>
           <div className='saved-filters'>
-            <Select
+            <Select<OptionType, false>
               options={options}
               styles={selectCustomStyles}
               isSearchable={false}

@@ -3,12 +3,16 @@ import { vi } from 'vitest'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import Ratings from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/Ratings/Ratings'
 import ReviewsList from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/ReviewsList'
 import AddReview from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/AddReview'
 import RecipeReview from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/RecipeReview'
 import RecipeAPI from 'src/api/recipes'
 import AuthAPI from 'src/api/auth'
+
+const createTestQueryClient = () =>
+  new QueryClient({ defaultOptions: { queries: { retry: false } } })
 
 vi.mock('src/api/recipes', () => ({
   default: {
@@ -125,13 +129,15 @@ describe('ReviewsList', () => {
     getNextReviewsPage = vi.fn(),
   } = {}) =>
     render(
-      <ReviewsList
-        recipeId='recipe-1'
-        reviewList={reviewList}
-        currUserReview={currUserReview}
-        isMoreReviews={isMoreReviews}
-        getNextReviewsPage={getNextReviewsPage}
-      />
+      <QueryClientProvider client={createTestQueryClient()}>
+        <ReviewsList
+          recipeId='recipe-1'
+          reviewList={reviewList}
+          currUserReview={currUserReview}
+          isMoreReviews={isMoreReviews}
+          getNextReviewsPage={getNextReviewsPage}
+        />
+      </QueryClientProvider>
     )
 
   it('shows "No Reviews" when reviewList is empty and no currUserReview', () => {
@@ -280,11 +286,13 @@ describe('RecipeReview', () => {
     setCurrUserReview = vi.fn(),
   } = {}) =>
     render(
-      <RecipeReview
-        review={review}
-        setCurrUserReview={setCurrUserReview}
-        recipeId='recipe-1'
-      />
+      <QueryClientProvider client={createTestQueryClient()}>
+        <RecipeReview
+          review={review}
+          setCurrUserReview={setCurrUserReview}
+          recipeId='recipe-1'
+        />
+      </QueryClientProvider>
     )
 
   beforeEach(() => {
