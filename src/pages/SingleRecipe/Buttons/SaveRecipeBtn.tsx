@@ -1,4 +1,4 @@
-import React, { FC, useState, useEffect } from 'react'
+import React, { FC, useState } from 'react'
 import {
   BsBookmark,
   BsFillBookmarkFill,
@@ -8,39 +8,39 @@ import {
 import toast from 'react-hot-toast'
 import AuthAPI from 'src/api/auth'
 import RecipeAPI from 'src/api/recipes'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 
 type SaveRecipeBtnProps = { recipeId: string }
 
 const SaveRecipeBtn: FC<SaveRecipeBtnProps> = ({ recipeId }) => {
   const [isHovered, setIsHovered] = useState(false)
-  const [isSaved, setIsSaved] = useState(false)
 
   const uid = AuthAPI.getUID()
+  const queryClient = useQueryClient()
+
+  const { data } = useQuery({
+    queryKey: ['savedRecipe', uid, recipeId],
+    queryFn: () => RecipeAPI.getSavedRecipe(uid!, recipeId),
+    enabled: !!uid,
+  })
+
+  const isSaved = data != null ? data.length > 0 : false
 
   const handleToggleSaveRecipe = (recipeId: string) => {
     if (uid) {
       if (isSaved) {
-        RecipeAPI.unsaveRecipe(uid, recipeId).then(() => setIsSaved(false))
+        RecipeAPI.unsaveRecipe(uid, recipeId).then(() =>
+          queryClient.setQueryData(['savedRecipe', uid, recipeId], [])
+        )
       } else {
-        RecipeAPI.saveRecipe(uid, recipeId).then(() => setIsSaved(true))
+        RecipeAPI.saveRecipe(uid, recipeId).then(() =>
+          queryClient.setQueryData(['savedRecipe', uid, recipeId], [recipeId])
+        )
       }
     } else {
       toast('Please login to save recipes.', { duration: 10000 })
     }
   }
-
-  useEffect(() => {
-    if (uid) {
-      const getIsRecipeSaved = async (recipeId: string) => {
-        return await RecipeAPI.getSavedRecipe(uid, recipeId)
-      }
-      getIsRecipeSaved(recipeId).then(res => {
-        const currIsSaved = res.length > 0
-        setIsSaved(currIsSaved)
-      })
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [uid])
 
   return (
     <div className='save-recipe'>

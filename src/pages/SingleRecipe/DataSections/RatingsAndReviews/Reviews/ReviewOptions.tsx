@@ -1,5 +1,6 @@
-import React, { FC, useEffect, useState } from 'react'
+import React, { FC, useState } from 'react'
 import AuthAPI from 'src/api/auth'
+import { useQuery } from '@tanstack/react-query'
 import ConfirmDeleteReviewModal from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/ConfirmDeleteReviewModal'
 import EditingReviewOptions from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/EditingReviewOptions'
 import ReviewInteractionOptions from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/ReviewInteractionOptions'
@@ -23,21 +24,11 @@ const ReviewOptions: FC<ReviewOptionsProps> = ({
 }) => {
   const uid = AuthAPI.getUID()
 
-  const [currUsername, setCurrUsername] = useState<string | null>(null)
-
-  useEffect(() => {
-    const abortController = new AbortController()
-    const getCurrUsername = async () => {
-      if (uid) {
-        const un = await AuthAPI.getUsername(uid)
-        setCurrUsername(un)
-      }
-    }
-    getCurrUsername()
-    return () => {
-      abortController.abort()
-    }
-  }, [uid])
+  const { data: currUsername } = useQuery({
+    queryKey: ['username', uid],
+    queryFn: () => AuthAPI.getUsername(uid!),
+    enabled: !!uid,
+  })
 
   const [deleteModalIsOpen, setDeleteModalIsOpen] = useState(false)
 

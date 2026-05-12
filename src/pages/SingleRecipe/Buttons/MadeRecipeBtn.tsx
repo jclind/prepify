@@ -1,8 +1,9 @@
-import React, { FC, useEffect, useState } from 'react'
+import React, { FC, useState } from 'react'
 import toast from 'react-hot-toast'
 import { TailSpin } from 'react-loader-spinner'
 import AuthAPI from 'src/api/auth'
 import RecipeAPI from 'src/api/recipes'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 
 const canMakeAgain = (lastDateMade: number | null): boolean => {
   const currDate = new Date().getTime()
@@ -14,18 +15,37 @@ type MadeRecipeBtnProps = {
   recipeId: string
 }
 
+type MadeRecipeData = { datesMade?: string[] }
+
 const MadeRecipeBtn: FC<MadeRecipeBtnProps> = ({ recipeId }) => {
   const uid = AuthAPI.getUID()
-  const [numTimesMade, setNumTimesMade] = useState(0)
-  const [lastDateMade, setLastDateMade] = useState<number | null>(null)
+  const queryClient = useQueryClient()
   const [loading, setLoading] = useState(false)
+
+  const { data } = useQuery({
+    queryKey: ['madeRecipe', recipeId],
+    queryFn: () => RecipeAPI.checkMadeRecipe(recipeId) as Promise<MadeRecipeData>,
+    enabled: !!(uid && recipeId),
+  })
+
+  const datesMade = data?.datesMade ?? []
+  const numTimesMade = datesMade.length
+  const lastDateMade: number | null =
+    numTimesMade > 0
+      ? Math.max(...datesMade.map(x => parseInt(x, 10)))
+      : null
+
   const handleMadeRecipe = () => {
     if (canMakeAgain(lastDateMade)) {
       setLoading(true)
       RecipeAPI.madeRecipe(recipeId)
         .then(() => {
-          setLastDateMade(new Date().getTime())
-          setNumTimesMade(prev => prev + 1)
+          queryClient.setQueryData(
+            ['madeRecipe', recipeId],
+            (old: MadeRecipeData | undefined) => ({
+              datesMade: [...(old?.datesMade ?? []), String(new Date().getTime())],
+            })
+          )
           setLoading(false)
           toast.success('Recipe marked as read, share your feedback below!', {
             duration: 3000,
@@ -43,26 +63,6 @@ const MadeRecipeBtn: FC<MadeRecipeBtnProps> = ({ recipeId }) => {
       toast.error('Something went wrong, try refreshing.', { duration: 10000 })
     }
   }
-
-  useEffect(() => {
-    if (uid && recipeId) {
-      RecipeAPI.checkMadeRecipe(recipeId)
-        .then(({ datesMade = [] } = {}) => {
-          const numTimesMade = datesMade.length
-          setNumTimesMade(numTimesMade)
-          if (numTimesMade > 0) {
-            const lastDate = Math.max(
-              ...datesMade.map((x: string) => parseInt(x, 10))
-            )
-            setLastDateMade(lastDate)
-          }
-        })
-        .catch((error: unknown) =>
-          toast.error(String(error))
-        )
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [uid])
 
   if (!uid) return null
 
