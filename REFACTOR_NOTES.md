@@ -339,3 +339,31 @@ Phase 4-B follows the **explicit pattern** for `ReviewsContainer` / `ReviewsList
 - The implicit pattern cannot distinguish "loading" from "zero reviews" without additional state.
 
 **Phase 5 suggestion:** Migrate `TrendingRecipes` to the explicit pattern (`isLoading` + `<Skeleton />`) for consistency. The always-false `recipes.length < 0` bug (documented in Phase 2-E-1) should be fixed at the same time.
+
+---
+
+## Phase 4-C: ReviewOptions.tsx — pre-existing bug
+
+**Date:** 2026-05-12
+
+### AbortController created but never connected to the API call
+
+`src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/ReviewOptions.tsx` — the `useEffect` creates an `AbortController` and calls `abortController.abort()` in the cleanup, but the controller is never passed to `AuthAPI.getUsername(uid)`. The cleanup does nothing; the in-flight request is not cancelled on unmount.
+
+```ts
+const abortController = new AbortController()
+const getCurrUsername = async () => {
+  if (uid) {
+    const un = await AuthAPI.getUsername(uid)  // controller not passed
+    setCurrUsername(un)
+  }
+}
+getCurrUsername()
+return () => {
+  abortController.abort()  // no-op
+}
+```
+
+**Impact:** If the component unmounts before the request resolves, `setCurrUsername` is called on an unmounted component. React 18 silently ignores this (the strict-mode warning was removed), so there is no observable crash, but the cleanup is dead code.
+
+**Fix:** Either pass an `AbortSignal` to the HTTP layer and honour it in `AuthAPI.getUsername`, or remove the AbortController entirely. The `useQuery` migration in Phase 4-C removes the effect entirely, eliminating the issue.

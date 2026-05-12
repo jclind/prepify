@@ -6,52 +6,42 @@ import toast from 'react-hot-toast'
 import { TailSpin } from 'react-loader-spinner'
 import { AiOutlineClose } from 'react-icons/ai'
 import InputContainer from 'src/pages/Settings/SubSettings/InputContainer'
+import { useQuery } from '@tanstack/react-query'
 
 const MAX_FILE_SIZE = 5000 * 1024
 
 const Profile: FC = () => {
-  const [loading, setLoading] = useState(true)
   const [saveLoading, setSaveLoading] = useState(false)
 
   const [imgURL, setImgURL] = useState('')
   const [imgFile, setImgFile] = useState<File | null>(null)
   const [displayName, setDisplayName] = useState('')
-  const [originalUsername, setOriginalUsername] = useState('')
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
 
-  const [nameInitial, setNameInitial] = useState('')
-
   const authRes = useAuth()
+  const uid = AuthAPI.getUID()
+
+  const { data: fetchedUsername, isLoading } = useQuery({
+    queryKey: ['username', uid],
+    queryFn: () => AuthAPI.getUsername(),
+    enabled: !!uid,
+  })
+
   useEffect(() => {
-    setLoading(true)
-    if (authRes?.user) {
-      AuthAPI.getUsername()
-        .then(usernameRes => {
-          setOriginalUsername(usernameRes || '')
-          setUsername(usernameRes || '')
-          setDisplayName(authRes.user?.displayName || '')
-          setImgURL(authRes.user?.photoURL || '')
-          setEmail(authRes.user?.email || '')
-
-          if (authRes?.user?.displayName) {
-            const i = authRes.user.displayName.charAt(0).toUpperCase()
-            setNameInitial(i)
-          } else {
-            const i = usernameRes?.charAt(0).toUpperCase()
-            setNameInitial(i || 'null')
-          }
-
-          setLoading(false)
-        })
-        .catch(err => {
-          toast.error('Something went wrong, try logging in again.')
-          setLoading(false)
-        })
+    if (fetchedUsername !== undefined && authRes?.user) {
+      setUsername(fetchedUsername || '')
+      setDisplayName(authRes.user.displayName || '')
+      setImgURL(authRes.user.photoURL || '')
+      setEmail(authRes.user.email || '')
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authRes?.user])
+  }, [fetchedUsername, authRes?.user])
+
+  const nameInitial = authRes?.user?.displayName
+    ? authRes.user.displayName.charAt(0).toUpperCase()
+    : fetchedUsername?.charAt(0).toUpperCase() || 'null'
 
   const handleFileSelected = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -86,7 +76,7 @@ const Profile: FC = () => {
       email === authRes?.user?.email &&
       imgURL === authRes?.user?.photoURL &&
       displayName === authRes?.user?.displayName &&
-      username === originalUsername
+      username === fetchedUsername
     ) {
       setSaveLoading(false)
       return toast.error('No Changes To Submit.', { duration: 3000 })
@@ -181,7 +171,7 @@ const Profile: FC = () => {
       </div>
       <div
         className={`input-row password-input-container ${
-          email !== authRes?.user?.email && !loading ? 'show' : 'hide'
+          email !== authRes?.user?.email && !isLoading ? 'show' : 'hide'
         }`}
       >
         <InputContainer
