@@ -30,7 +30,7 @@ const ReviewsContainer: FC<ReviewsContainerProps> = ({
 
   const uid = AuthAPI.getUID()
 
-  const { data } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ['reviews', recipeId, reviewListSort, reviewListPage],
     queryFn: () =>
       RecipeAPI.getReviews(recipeId, reviewListSort, reviewListPage, recipesPerPage),
@@ -94,6 +94,7 @@ const ReviewsContainer: FC<ReviewsContainerProps> = ({
         getNextReviewsPage={handleLoadMoreReviews}
         isMoreReviews={isMoreReviews}
         reviewList={reviewList}
+        loading={isLoading}
       />
     </div>
   )

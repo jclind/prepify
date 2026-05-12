@@ -1,14 +1,16 @@
 import React, { FC, useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import RecipeThumbnail from 'src/Components/RecipeThumbnail/RecipeThumbnail'
-import Select, { MultiValue, SingleValue } from 'react-select'
+import Select, { SingleValue } from 'react-select'
 
 import './SavedRecipes.scss'
 import RecipeAPI from 'src/api/recipes'
 import { RecipeType } from 'types'
 import { selectCustomStyles } from 'src/pages/Account/selectCustomStyles'
 
-const options = [
+type OptionType = { value: string; label: string }
+
+const options: OptionType[] = [
   // { value: 'popular', label: 'Popular' },
   // { value: 'new', label: 'Recipe Date: Newest' },
   // { value: 'old', label: 'Recipe Date: Oldest' },
@@ -44,12 +46,9 @@ const SavedRecipes: FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data])
 
-  const handleSelectChange = (
-    e: MultiValue<{ value: string; label: string }> | SingleValue<{ value: string; label: string }>
-  ) => {
-    const option = e as SingleValue<{ value: string; label: string }>
-    if (!option) return
-    setSelectOption(option)
+  const handleSelectChange = (e: SingleValue<OptionType>) => {
+    if (!e) return
+    setSelectOption(e)
     setCurrPage(0)
   }
 
@@ -62,7 +61,7 @@ const SavedRecipes: FC = () => {
       {recipes.length > 0 || isLoading ? (
         <>
           <div className='saved-recipes-filters'>
-            <Select
+            <Select<OptionType, false>
               options={options}
               styles={selectCustomStyles}
               isSearchable={false}

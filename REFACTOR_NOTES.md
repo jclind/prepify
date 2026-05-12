@@ -319,3 +319,51 @@ Original incremented `recipesPage` after a successful fetch; the new design incr
 ### useInfiniteQuery candidate (Phase 4)
 
 `SavedRecipes.tsx` is a candidate for `useInfiniteQuery` migration in Phase 4, same as `Recipes.tsx`. The `useQuery` + manual accumulation pattern is a workaround for the load-more pattern that `useInfiniteQuery` handles natively.
+
+---
+
+## Phase 4-B: ReviewsContainer — loading indicator
+
+**Date:** 2026-05-12
+
+### Loading pattern inconsistency: TrendingRecipes vs SingleRecipe sub-components
+
+Two distinct loading patterns coexist in the codebase:
+
+**Implicit pattern (`TrendingRecipes.tsx`):** No `isLoading` flag is used. The component initialises its list to `[]`, and the skeleton UI is rendered whenever the list is empty — covering both the "loading" and "zero results" states with the same branch. There is no distinction between "still fetching" and "fetched with no data."
+
+**Explicit pattern (`SingleRecipe` sub-components, `UserRatings.tsx`):** `isLoading` (or `isPending`) is destructured from `useQuery` and passed as a `loading` prop to child components. Children branch on `loading` to render `<Skeleton />` placeholders (via `react-loading-skeleton`) before data arrives, and show the real empty-state UI only after the query has settled.
+
+Phase 4-B follows the **explicit pattern** for `ReviewsContainer` / `ReviewsList` because:
+- `ReviewsList` has a meaningful empty state ("No Reviews") that must not show during loading.
+- The implicit pattern cannot distinguish "loading" from "zero reviews" without additional state.
+
+**Phase 5 suggestion:** Migrate `TrendingRecipes` to the explicit pattern (`isLoading` + `<Skeleton />`) for consistency. The always-false `recipes.length < 0` bug (documented in Phase 2-E-1) should be fixed at the same time.
+
+---
+
+## Phase 4-C: ReviewOptions.tsx — pre-existing bug
+
+**Date:** 2026-05-12
+
+### AbortController created but never connected to the API call
+
+`src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/ReviewOptions.tsx` — the `useEffect` creates an `AbortController` and calls `abortController.abort()` in the cleanup, but the controller is never passed to `AuthAPI.getUsername(uid)`. The cleanup does nothing; the in-flight request is not cancelled on unmount.
+
+```ts
+const abortController = new AbortController()
+const getCurrUsername = async () => {
+  if (uid) {
+    const un = await AuthAPI.getUsername(uid)  // controller not passed
+    setCurrUsername(un)
+  }
+}
+getCurrUsername()
+return () => {
+  abortController.abort()  // no-op
+}
+```
+
+**Impact:** If the component unmounts before the request resolves, `setCurrUsername` is called on an unmounted component. React 18 silently ignores this (the strict-mode warning was removed), so there is no observable crash, but the cleanup is dead code.
+
+**Fix:** Either pass an `AbortSignal` to the HTTP layer and honour it in `AuthAPI.getUsername`, or remove the AbortController entirely. The `useQuery` migration in Phase 4-C removes the effect entirely, eliminating the issue.
