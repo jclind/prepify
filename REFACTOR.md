@@ -13,7 +13,7 @@ Last updated: 2026-05-13
 | 3     | Data Fetching (React Query) | ✅ Complete    |
 | 4     | Component Architecture      | ✅ Complete    |
 | 5     | Server Cleanup              | ✅ Complete    |
-| 6     | Polish                      | 🔲 Not started |
+| 6     | Polish                      | ✅ Complete    |
 
 **Rules that apply to every phase:**
 
@@ -182,23 +182,57 @@ Server test note: Server tests use **Jest** (`npm test --prefix server`). Vitest
 
 ---
 
-## Phase 6 — Polish 🔲
+## Phase 6 — Polish ✅
+
+**Completed:** 2026-05-13
 
 **Goal:** Final cleanup, documentation updates, performance, and anything deferred from earlier phases.
 
-**Known items:**
+### Tasks completed
 
-- Update `CLAUDE.md` env var section: replace `REACT_APP_*` references with correct `VITE_*` names; add `VITE_OPEN_AI_API_KEY` note (defined but unused — decide keep or remove)
-- Update `public/manifest.json` from CRA boilerplate to Prepify branding
-- Fix `public/sitemap.txt` mixed-domain issue (or delete in favor of `sitemap.xml`)
-- Fix `uploadRecipeImage` to use unique filenames (hash or UUID prefix) to prevent overwrites
-- Fix `checkUsernameAvailability` spurious `?&username=` double ampersand
-- Remove CORS headers from the `nutrition` axios instance client-side request (they're server-side response headers; harmless but misleading)
-- `src/api/http-common.ts` CORS comment cleanup
-- Replace `package.json` cross-boundary imports in Footer/ReleaseNotes with `VITE_APP_VERSION` env var (flagged in Phase 2-C)
-- Resolve `ignoreDeprecations: "6.0"` in tsconfig.json — migrate off `baseUrl` + `paths` before any TS major version upgrade (flagged in Phase 2-C)
+- **6-A:** `CLAUDE.md` env vars (`REACT_APP_*` → `VITE_*`), expanded Firebase glob to explicit names, flagged `VITE_OPEN_AI_API_KEY` / `VITE_INGREDIENT_PARSER_URL` as defined-but-unused, dropped `SASS_PATH`, added `SPOONACULAR_API_KEY` to server doc + `server/.env.example`, fixed stale `tags`/`types.d.ts`/`src/shared/types/` references, "both servers" → "the server".
+- **6-B:** `public/manifest.json` rewritten with Prepify branding and brand colors (`#ff5722` / `#eeeeee`); `index.html` `<meta name="theme-color">` aligned; `public/sitemap.txt` deleted (mixed-domain; `sitemap.xml` is canonical).
+- **6-C:** `checkUsernameAvailability` URL fix (`?&` → `?`); gap flagged in `REFACTOR_NOTES.md` that `src/api/auth.ts` has no test file at all.
+- **6-D:** Removed bogus `Access-Control-Allow-*` request headers from the `nutrition` axios instance in `src/api/http-common.ts`; kept legitimate `Content-type`.
+- **6-E:** `GET /api/getUsername` returns `null` (200) on missing doc instead of 404 — eliminates signup-race 404 noise. Aligns runtime with the existing `Promise<string | null>` client type. Residual `/create-username` flash risk documented.
+- **6-F:** `TrendingRecipes` `.loading` className wired to `isLoading` from `useQuery`; the always-false `recipes.length < 0` guard removed. Regression test added.
+- **6-G:** `saveRecipe` / `unsaveRecipe` standardized to REST shape — `POST /api/recipes/:id/save` and `DELETE /api/recipes/:id/save`. Closes the Phase 5-E deferral. Server tests + Cypress intercepts updated; UI unchanged (encapsulated in `RecipeAPI`).
+- **Documentation breadcrumb:** added forward pointer from the Phase 2-E-2 historical "Auth gap" note to its Phase 5-F resolution so the entry isn't misread as an open item.
 
-**Prompts:** _(to be written after Phase 5 complete)_
+### Verification (close-out, 2026-05-13)
+
+- Server Jest: **97/97** passing
+- Frontend Vitest: **110/110** passing
+- `tsc --noEmit`: clean
+- `npm run build`: succeeds
+
+### Commits on this branch (in order)
+
+- `docs: fix CLAUDE.md env vars (REACT_APP_* → VITE_*) and other stale content` (6-A)
+- `chore(public): replace CRA boilerplate manifest, drop mixed-domain sitemap.txt` (6-B)
+- `fix(auth): drop spurious & from checkUsernameAvailability query string` (6-C)
+- `fix(api): drop bogus CORS response headers from nutrition axios instance` (6-D)
+- `fix(auth): return null from GET /getUsername on missing doc` (6-E)
+- `fix(trending): wire .loading className to isLoading, drop always-false guard` (6-F)
+- `docs(refactor-notes): cross-link Phase 2-E-2 auth-gap entry to Phase 5-F resolution` (breadcrumb)
+- `refactor(recipes): save/unsave PUT → POST/DELETE on /api/recipes/:id/save` (6-G)
+- `docs(refactor-notes): log pre-existing Cypress signIn failure (Phase 6 Cypress entry)` (Cypress 6-I prep)
+- _Phase 6 close-out commit (this one): marks Phase 6 ✅ Complete and records deferrals below._
+
+### Deferred from Phase 6 (not done)
+
+These items appeared on the original Phase 6 known-items list (or surfaced during the phase) but were not executed. None block close-out; each has a reason it didn't fit this phase.
+
+- **`uploadRecipeImage` unique filenames.** Originally listed at line 194. Fix touches the Firebase Storage upload path and may require a migration plan for any pre-existing colliding objects in the bucket. Better as its own focused PR than bundled with verb/URL polish.
+- **`VITE_APP_VERSION` env var for Footer / ReleaseNotes.** Originally listed at line 198 (and flagged in Phase 2-C). Removing the cross-boundary `package.json` import requires either a Vite plugin or a `define()` injection — small surface but a real architectural choice about how to expose build metadata. Worth one targeted PR.
+- **`ignoreDeprecations: "6.0"` in `tsconfig.json`.** Originally listed at line 199 (and flagged in Phase 2-C). Migrating off `baseUrl` + `paths` is a TypeScript-tooling refactor that should be tied to the next TS major-version upgrade — doing it now without that pressure invites re-doing it later.
+- **Cypress `signIn` config fix.** Confirmed pre-existing during Phase 6-G smoke-testing; rooted in `cypress.config.ts` `allowCypressEnv: false` (commit `ca03cde`) and missing `VITE_CYPRESS=true` in `.env`. Full diagnosis and two candidate fixes recorded in `REFACTOR_NOTES.md` under "Phase 6 — Cypress." Out of scope for any of the Phase 6 code fixes.
+- **Manual browser smoke-tests still owed:**
+  - **Phase 6-D Edamam nutrition:** create a recipe in a running dev server and confirm nutrition data loads with no CORS error.
+  - **Phase 6-E signup race:** sign up a fresh account and confirm no 404s on `/api/getUsername` and no `/create-username` flash.
+  - **Phase 6-G save/unsave end-to-end:** blocked on the Cypress `signIn` fix above; re-run `npx cypress run --spec cypress/e2e/recipe.cy.ts` once unblocked.
+
+Pick these up as a follow-on cleanup pass (or a Phase 7 if multiple land together).
 
 ---
 

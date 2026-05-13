@@ -125,6 +125,8 @@ className={`recipes ${recipes.length < 0 ? '' : 'loading'}`}
 
 **Phase 4/5 suggestion:** Add `verifyToken` middleware to this route for consistency, or document intentionally that the parse endpoint is public.
 
+> **Status update (2026-05-13):** resolved in Phase 5-F — `verifyToken` added to the route and the "Auth gap" test inverted to assert 401. See the Phase 5-F entry below for details.
+
 ### `SPOONACULAR_API_KEY` is undefined during tests
 
 `dotenv` is loaded in `server/index.js` only — not in `server/app.js`. Test files import `app.js` directly, so `process.env.SPOONACULAR_API_KEY` is `undefined` at test time. Because `ingredientParser` is mocked this has no effect on test correctness, but the options-forwarding test explicitly documents this as current behavior.
@@ -836,3 +838,317 @@ return () => {
 **Impact:** If the component unmounts before the request resolves, `setCurrUsername` is called on an unmounted component. React 18 silently ignores this (the strict-mode warning was removed), so there is no observable crash, but the cleanup is dead code.
 
 **Fix:** Either pass an `AbortSignal` to the HTTP layer and honour it in `AuthAPI.getUsername`, or remove the AbortController entirely. The `useQuery` migration in Phase 4-C removes the effect entirely, eliminating the issue.
+
+---
+
+## Phase 6-C: `checkUsernameAvailability` URL fix + missing `src/api/auth.ts` test coverage
+
+**Date:** 2026-05-13
+
+### Fix applied
+
+`src/api/auth.ts:19` had a malformed query string with a spurious `&` after the `?`:
+
+```diff
+-    `api/checkUsernameAvailability?&username=${username}`
++    `api/checkUsernameAvailability?username=${username}`
+```
+
+The URL parsed correctly in practice (Express/`URLSearchParams` discard the empty parameter before `&`), which is why it never broke. But it looked broken in network logs and was the kind of typo that quietly invites real bugs the next time someone copies the pattern.
+
+### Test-coverage gap (not closed in this commit)
+
+`src/api/auth.ts` has no test file. None of the three query-string-building methods are exercised by a test that asserts URL shape:
+
+- `getUsername` → `api/getUsername?userId=…`
+- `checkUsernameAvailability` → `api/checkUsernameAvailability?username=…` (the bug fixed above)
+- `setUsername` → `api/setUsername?username=…`
+
+UI callers (`src/context/AuthContext.tsx`, `src/Components/Form/UsernameInput.tsx`) are also untested, so nothing in the suite would have caught the `?&` typo.
+
+**Recommended follow-up (separate commit):** add `src/test/api/auth.test.ts` that mocks `http` and asserts the exact URL each method calls. Three small assertions would have caught this bug at write time and would protect the other two methods from the same class of error.
+
+---
+
+## Phase 6-D: removed bogus CORS response headers from `nutrition` axios instance
+
+**Date:** 2026-05-13
+
+### Fix applied
+
+`src/api/http-common.ts` — the `nutrition` axios instance (used for the Edamam `nutrition-details` POST in `src/api/recipes.ts:177`) was configured with three response-side CORS headers on its request config:
+
+```diff
+ export const nutrition = axios.create({
+   baseURL: 'https://api.edamam.com/api',
+   headers: {
+     'Content-type': 'application/json',
+-    'Access-Control-Allow-Headers': 'Content-Type',
+-    'Access-Control-Allow-Origin': 'http://localhost:3000',
+-    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET',
+   },
+ })
+```
+
+`Access-Control-Allow-*` headers are set by **servers in responses**, not by clients in requests. Setting them on an axios instance was a no-op at best: the browser still issues the request, and CORS is enforced by Edamam's response. At worst, sending these as custom request headers bloated the CORS preflight's `Access-Control-Request-Headers` list (it asked Edamam to permit four headers when only `content-type` was actually needed). Edamam's CORS policy happens to allow the bigger set, which is why the call has been working — the headers were misleading, not actively broken.
+
+`Content-type: application/json` is kept as it's a legitimate request header for the POST body.
+
+### Manual smoke-test owed before Phase 6-I
+
+This change cannot be verified by the automated suite — no test mocks or asserts the Edamam call (see grep: only `src/api/http-common.ts` referenced `Access-Control-Allow`, no test files). The CI checks (tsc, vitest) only confirm we didn't break compilation or existing tests.
+
+**Action required before Phase 6-I:** in a running dev server (`npm start`) with valid `VITE_EDAMAM_APP_ID` / `VITE_EDAMAM_APP_KEY` set, create a recipe through the AddRecipe flow and confirm:
+
+1. The POST to `https://api.edamam.com/api/nutrition-details` returns 200 (DevTools → Network).
+2. Nutrition data is populated on the resulting recipe (calories, dietLabels, etc. appear on the SingleRecipe page).
+3. No CORS error in the browser console.
+
+If any of those fail, the most likely culprit is that Edamam's CORS policy was specifically allowing the bogus headers and not `*` — in which case the fix is to file a Phase 6 note, not to revert (the headers were still wrong; the response handling would need a different fix).
+
+---
+
+## Phase 6-E: `GET /api/getUsername` returns `null` on missing doc (eliminates signup race 404s)
+
+**Date:** 2026-05-13
+
+### The bug
+
+During email/password signup in `src/context/AuthContext.tsx:123-172`:
+
+1. `createUserWithEmailAndPassword` resolves → Firebase fires `onAuthStateChanged` → `setUser(userInstance)`.
+2. `signUp`'s `.then` kicks off `AuthAPI.setUsername(username)` — POST in flight, not awaited.
+3. React rerenders. The `useEffect` at line 258 reacts to `[loading, user]` and calls `AuthAPI.getUsername(user.uid)`.
+4. The GET races the POST. The user doc usually doesn't exist yet → `GET /api/getUsername` returned **404**.
+5. Axios threw → unhandled promise rejection. `Navbar`, `Account`, and other mount-time `useQuery` callers each fired their own racing GETs, producing the visible "two 404 responses before the username resolves" symptom (TanStack Query's default retries eventually picked up the username once `setUsername` committed).
+
+This bug was not previously logged in any refactor doc — discovered during Phase 6 cleanup.
+
+### Fix applied (option-b)
+
+`server/routes/auth.js:16` — replace the 404 with a 200 + `null` body when the doc doesn't exist:
+
+```diff
+-    if (!doc) return res.status(404).json({ error: 'User not found' })
++    if (!doc) return res.json(null)
+```
+
+`server/__tests__/auth.test.js:30-33` — flipped from asserting `status: 404` to asserting `status: 200, body: null`.
+
+### Why option (b) over (a) or (c)
+
+- **(a) client retry/backoff**: Would have to be applied at each of the 8 `getUsername` call sites (or wrapped centrally). Doesn't fix the type-vs-reality mismatch.
+- **(c) sequence the calls**: Doesn't actually apply here — `signUp` does not itself call `getUsername`. The racing GET comes from a `useEffect` reacting to `setUser`, which Firebase fires independently. Properly sequencing would require a gating ref *on top of* the await chain — two changes.
+- **(b) server returns null**: One server line + one server test update. The client `AuthAPI.getUsername` is already typed `Promise<string | null>`; the null branch was unreachable before this fix. All 8 call sites (`AuthContext.tsx:196, 260`, `Navbar.tsx:40`, `Account.tsx:21`, `Profile.tsx:28`, `ReviewOptions.tsx:29`, `RecipeControls.tsx:56`, `recipes.ts:109, 238, 250`) already have null-handling and now correctly exercise it. Fewest moving parts.
+
+400 (missing/invalid `userId`) and 500 (server errors) are unchanged. Only the "doc not found" branch flipped.
+
+### Residual trade-off — potential `/create-username` flash on signup
+
+`AuthContext.tsx:260` previously read:
+
+```ts
+AuthAPI.getUsername(user.uid).then(username => {
+  if (!username) navigate('/create-username')
+})
+```
+
+Before this fix, the 404 threw → `.then` body never ran → no redirect.
+**After this fix**, the `.then` body runs with `null` during the race window → `navigate('/create-username')` fires. A beat later, `setUsername` commits and `signUp`'s own `.then` calls `navigate('/')`. Net effect on signup: brief flash of `/create-username` before landing on home (~50-200ms race window in production).
+
+For the *genuinely* missing-username case — first-time Google sign-in, etc. — this same redirect is the **correct** behavior and was silently broken before (the 404 was an unhandled rejection). So this fix repairs that path while introducing a transient flash on email/password signup.
+
+### Follow-up (not in this commit) — gating ref to suppress the flash
+
+If QA observes the flash, the smallest mitigation is a gating ref in `AuthProvider`:
+
+```ts
+const isSigningUpRef = useRef(false)
+// set to true at the top of signUp, false after setUsername commits or fails
+
+useEffect(() => {
+  if (isSigningUpRef.current) return
+  if (!loading && user && user.uid) {
+    AuthAPI.getUsername(user.uid).then(username => {
+      if (!username) navigate('/create-username')
+    })
+  }
+}, [loading, user])
+```
+
+This keeps the useEffect's redirect intact for the genuinely-no-username case while suppressing it for the duration of signup. Track as a Phase 6 candidate if observed.
+
+### Verification
+
+- `npm test --prefix server` → 97/97 (test updated in this commit).
+- `npm test` (Vitest) → 109/109 (no client tests assert against the 404 response shape).
+- `tsc --noEmit` → clean (server-only change; client types unchanged).
+
+Manual smoke-test owed before Phase 6-I: sign up a fresh account and confirm (a) no 404s in the Network panel for `/api/getUsername`, (b) no visible `/create-username` flash before landing on home. If the flash is visible, schedule the gating-ref follow-up.
+
+---
+
+## Phase 6-G: save/unsave routes — `PUT` → `POST/DELETE`, REST path params
+
+**Date:** 2026-05-13
+
+### Closes Phase 5-E deferral
+
+Phase 5-E standardized review/rating mutations to POST/DELETE but explicitly left `PUT /api/saveRecipe` and `PUT /api/unsaveRecipe` as out-of-scope toggles (REFACTOR.md:162, 169; REFACTOR_NOTES.md:598). Phase 6-G picks up that thread.
+
+### Server (`server/routes/recipes.js`)
+
+```diff
+-router.put('/saveRecipe', verifyToken, async (req, res) => {
+-  const { recipeId } = req.query
++router.post('/recipes/:id/save', verifyToken, async (req, res) => {
++  const recipeId = req.params.id
+```
+
+```diff
+-router.put('/unsaveRecipe', verifyToken, async (req, res) => {
+-  const { recipeId } = req.query
++router.delete('/recipes/:id/save', verifyToken, async (req, res) => {
++  const recipeId = req.params.id
+```
+
+Handler bodies unchanged aside from the source of `recipeId`. Identity still flows from `req.uid` (Phase 5-C). Response shapes (`{ saved: true }` / `{ unsaved: true }` with 200) kept as-is to minimize blast radius — no callers read the body.
+
+### Why same path + different verbs
+
+The resource being mutated is *the user's saved-state for a recipe* — one resource, two operations. REST convention: same path, different verb. `POST /recipes/:id/save` creates the saved-state entry; `DELETE /recipes/:id/save` removes it. Mirrors Phase 5-E's pattern.
+
+A `/save` + `/unsave` split (POST on one path, DELETE on another) was considered and rejected — `/unsave` reads as an action, `DELETE /save` reads as "remove the save," which is more idiomatic REST.
+
+### Client (`src/api/recipes.ts`)
+
+```diff
+-  return await http.put(`api/saveRecipe?recipeId=${recipeId}`)
++  return await http.post(`api/recipes/${recipeId}/save`)
+```
+
+```diff
+-  return await http.put(`api/unsaveRecipe?recipeId=${recipeId}`)
++  return await http.delete(`api/recipes/${recipeId}/save`)
+```
+
+### Tests updated
+
+- `server/__tests__/recipes.test.js` — 5 cases re-aimed at the new verb + path; describe headers renamed. Assertion logic unchanged (same 200/404/409, same DB-state checks).
+- `cypress/e2e/recipe.cy.ts:45-46` — intercepts re-aimed: `PUT … /api/saveRecipe*` → `POST … /api/recipes/*/save`; `PUT … /api/unsaveRecipe*` → `DELETE … /api/recipes/*/save`. Alias names unchanged.
+
+### UI — no changes
+
+`src/pages/SingleRecipe/Buttons/SaveRecipeBtn.tsx` is the only call site. It goes through `RecipeAPI.saveRecipe(recipeId)` / `unsaveRecipe(recipeId)`, doesn't read the response body, and only sets local React Query cache state. The verb/URL change is fully encapsulated in `RecipeAPI`.
+
+### Verification
+
+- `tsc --noEmit` → clean.
+- `npm test --prefix server` → 97/97.
+- `npm test` (Vitest) → 110/110.
+
+Cypress is not part of the default test pipeline (`npm test` only runs Vitest; server suite runs via `--prefix server`). **Manual verification owed before Phase 6-I:** run `npx cypress run --spec cypress/e2e/recipe.cy.ts` and confirm the save/unsave path passes with the new intercept verbs/paths.
+
+---
+
+## Phase 6-H (follow-up candidate): sibling save-related routes still on old shape
+
+**Date logged:** 2026-05-13 — **not done in this commit**.
+
+After Phase 6-G, the sibling save-related routes remain on the old flat-name + `?recipeId=` query-string shape, creating a stylistic inconsistency:
+
+- `GET /api/getSavedRecipe?recipeId=...`
+- `POST /api/madeRecipe?recipeId=...`
+- `GET /api/checkMadeRecipe?recipeId=...`
+
+A consistent REST refactor would land them at:
+
+- `GET /api/recipes/:id/save` (natural pair to the new POST/DELETE on the same path)
+- `POST /api/recipes/:id/made` and `GET /api/recipes/:id/made`
+
+Deferred because:
+
+1. `getSavedRecipe` has more callers than the save/unsave pair and a different response contract (returns array of save-entry objects, not a 200/saved boolean) — needs its own scoped pass with attention to caller shape.
+2. `madeRecipe` / `checkMadeRecipe` are a separate sub-feature ("I made this" tracking) and renaming them deserves its own commit, not a bundle with save.
+3. Bundling all four into Phase 6-G would triple the diff for what is a clean verb fix.
+
+Pick this up in a future Phase 6 task (or a Phase 7 server-API consistency pass if scope sprawls).
+
+---
+
+## Phase 6 — Cypress: pre-existing `signIn` failure unrelated to 6-G
+
+**Date:** 2026-05-13
+
+### Status
+
+The Cypress smoke-test owed before Phase 6-I (`npx cypress run --spec cypress/e2e/recipe.cy.ts`) was run after Phase 6-G. The save/unsave path failed at the `cy.signIn(...)` step. The same failure is confirmed pre-existing — identical error reproduced against the commit *before* 6-G — so it is **not a regression** introduced by the route refactor. The save/unsave intercepts themselves cannot be exercised end-to-end until `signIn` is unblocked.
+
+### Root cause (user investigation, 2026-05-13)
+
+The test-mode flag the app reads at `src/client/db.ts:17` (`import.meta.env.VITE_CYPRESS === 'true'`) is not being supplied to the Vite dev server when Cypress is launched directly:
+
+1. `VITE_CYPRESS` is not present in `.env`. `.env.example:13` has it as `VITE_CYPRESS=false`.
+2. Commit `ca03cde` (2026-05-10, "fix: replace deprecated Cypress.env() with typed constant and disable allowCypressEnv") removed the `env:` block from `cypress.config.ts` and added `allowCypressEnv: false` to silence the Cypress 15 deprecation warning. The `env:` block previously held `API_URL`; `VITE_CYPRESS` was never in it.
+
+The `npm run test:e2e:dev` and `test:e2e:ci` scripts in `package.json` set `VITE_CYPRESS=true` inline (`VITE_CYPRESS=true start-server-and-test start ...`), so end-to-end runs *through those scripts* work. Running `npx cypress run` directly against an already-running `npm start` (the more natural local workflow) does not propagate the var to Vite, so the app sees `VITE_CYPRESS === undefined` and `signIn` short-circuits.
+
+### Fix candidates (not in this commit)
+
+Per user investigation, two viable approaches — pick whichever fits the Cypress 15 deprecation posture better:
+
+1. **Add `env: { VITE_CYPRESS: 'true' }` to `cypress.config.ts`** alongside the existing `allowCypressEnv: false`. *Note for future implementer:* verify this actually reaches the Vite dev server at run time — Cypress's `env:` block is normally for Cypress's own runtime, not Vite's. May need to be combined with another mechanism (e.g. a Vite plugin reading from Cypress, or shelling out via `setupNodeEvents`).
+2. **Restore `allowCypressEnv: true`** in `cypress.config.ts` and **add `VITE_CYPRESS=true` to `.env`** (committed) or to the local dev shell environment. The dev server picks it up on next restart.
+
+Either way, validate by hitting `import.meta.env.VITE_CYPRESS` in the browser DevTools console after a fresh `npm start` and confirming the value is the string `'true'`.
+
+### Why not fix in this commit
+
+Out of scope for Phase 6-G (save/unsave verb refactor) and would conflate two unrelated changes in one diff. Logging here so a future Phase 6 commit (or Phase 7 if it sprawls) can pick it up cleanly.
+
+### Outstanding smoke tests still owed (does not block 6-I close-out, but tracking)
+
+- Phase 6-D: Edamam nutrition POST — verify in browser that creating a recipe still loads nutrition data with no CORS error.
+- Phase 6-E: signup race — verify in browser that signing up produces no 404s on `/api/getUsername` and no `/create-username` flash.
+- Phase 6-G: save/unsave end-to-end — blocked on the Cypress `signIn` fix above; re-run `npx cypress run --spec cypress/e2e/recipe.cy.ts` once unblocked.
+
+---
+
+## Phase 6-F: `TrendingRecipes` always-false `.loading` className fixed
+
+**Date:** 2026-05-13
+
+### Resolves Phase 2-E-1 bug + Phase 5 follow-up
+
+The condition `recipes.length < 0 ? '' : 'loading'` at `src/Components/TrendingRecipes/TrendingRecipes.tsx:20` was always-true (array lengths can't be negative), so the wrapper div carried the `.loading` class permanently — even after recipes were populated. Phase 2-E-1 flagged it; Phase 3-C intentionally preserved it during the React Query migration to keep behavior identical; Phase 5 line 341 listed the fix as a Phase 5/6 follow-up. Resolved here.
+
+### Fix
+
+Destructured `isLoading` from the existing `useQuery` and replaced the broken condition:
+
+```diff
+-  const { data } = useQuery<RecipeType[]>({
++  const { data, isLoading } = useQuery<RecipeType[]>({
+     queryKey: ['trending-recipes'],
+     queryFn: () => RecipeAPI.getTrendingRecipes(4),
+   })
+   ...
+-      <div className={`recipes ${recipes.length < 0 ? '' : 'loading'}`}>
++      <div className={`recipes ${isLoading ? 'loading' : ''}`}>
+```
+
+`isLoading` is true on initial fetch (no data yet) and false after resolution — including the empty-array case, which means the broken `recipes.length === 0` edge case never appears.
+
+### Regression test added
+
+`src/test/Home.test.tsx` — new test `does not carry the .loading class on the recipes wrapper after recipes resolve`. Renders with one mock recipe, awaits `recipe-thumb`, and asserts `.trending-recipes .recipes.loading` is absent. This is the first className-level assertion in the suite for TrendingRecipes and would have caught the original bug.
+
+### Pre-existing UX gap (intentionally untouched)
+
+The inner ternary `recipes.length > 0 ? thumbs : skeletons` still renders 4 skeletons indefinitely if a successful fetch resolves with an empty array (no "Trending" content yet). This is documented in Phase 2-E-1 line 100 and the Phase 5 notes at line 333-341 (no distinction between "still fetching" and "fetched with no data"). Out of scope for this commit; left as a future UX/empty-state design task.
+
+### Verification
+
+- `tsc --noEmit` → clean.
+- `npm test` (Vitest) → 110/110 (was 109, +1 regression test).
+- `npm test --prefix server` → 97/97 (no server changes, sanity-run).

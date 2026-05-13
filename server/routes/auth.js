@@ -13,7 +13,7 @@ router.get('/getUsername', async (req, res) => {
     }
     const db = getDB()
     const doc = await db.collection('usernames').findOne({ _id: userId })
-    if (!doc) return res.status(404).json({ error: 'User not found' })
+    if (!doc) return res.json(null)
     res.json(doc.username)
   } catch (err) {
     res.status(500).json({ error: err.message })

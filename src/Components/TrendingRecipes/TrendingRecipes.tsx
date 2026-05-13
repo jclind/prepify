@@ -7,7 +7,7 @@ import RecipeAPI from 'src/api/recipes'
 import { RecipeType } from 'types'
 
 const TrendingRecipes: FC = () => {
-  const { data } = useQuery<RecipeType[]>({
+  const { data, isLoading } = useQuery<RecipeType[]>({
     queryKey: ['trending-recipes'],
     queryFn: () => RecipeAPI.getTrendingRecipes(4),
   })
@@ -17,7 +17,7 @@ const TrendingRecipes: FC = () => {
   return (
     <div className='trending-recipes'>
       <h2 className='title'>Trending</h2>
-      <div className={`recipes ${recipes.length < 0 ? '' : 'loading'}`}>
+      <div className={`recipes ${isLoading ? 'loading' : ''}`}>
         {recipes.length > 0 ? (
           recipes.map(recipe => {
             return <RecipeThumbnail key={recipe._id} recipe={recipe} />
