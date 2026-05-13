@@ -1,6 +1,6 @@
 # Prepify Refactor — Source of Truth
 
-Last updated: 2026-05-12
+Last updated: 2026-05-13
 
 ---
 
@@ -12,7 +12,7 @@ Last updated: 2026-05-12
 | 2     | Types & Contracts           | ✅ Complete    |
 | 3     | Data Fetching (React Query) | ✅ Complete    |
 | 4     | Component Architecture      | ✅ Complete    |
-| 5     | Server Cleanup              | 🔲 Not started |
+| 5     | Server Cleanup              | ✅ Complete    |
 | 6     | Polish                      | 🔲 Not started |
 
 **Rules that apply to every phase:**
@@ -135,40 +135,50 @@ All 10 components from the PATTERN_AUDIT.md hit list migrated from `useEffect`+`
 
 ---
 
-## Phase 5 — Server Cleanup 🔲
+## Phase 5 — Server Cleanup ✅
 
-**Goal:** Rebuild/clean the Express backend using the API_CONTRACT.md as the source of truth.
+**Completed:** 2026-05-13
+
+**Goal:** Clean the Express backend against API_CONTRACT.md — fix the routing, identity, payload-shape, and HTTP-method inconsistencies that accumulated before this refactor.
 
 **Architecture:** Express + MongoDB Node.js driver + `firebase-admin` for server-side token verification.
 
-**Key backend decisions already made:**
+### Tasks completed
 
-- All routes use `/api/` prefix (standardizing from current mixed state)
-- Server generates `_id` on recipe creation; returns it to client
-- User identity always extracted from verified Firebase token; client-supplied `userId` ignored
-- `username` for review scoping resolved from token UID, not query param
-- Tag endpoints (`addRecipeTag`, `searchRecipeTags`, `getRecipeTags`) and `checkIfReviewed` — do not implement until there is a UI caller
-- HTTP methods: standardize review/rating mutations to `POST`/`DELETE` (currently all `PUT`)
-- Stale TODO comments in `server/routes/reviews.js` (4 comments on routes that are already protected) — remove
+- **5-A:** Audit current server against API_CONTRACT.md — gap table produced (output captured in this conversation's history; ambiguities flagged in `REFACTOR_NOTES.md` Phase 5 section).
+- **5-B:** Added `/api/` prefix to every server route via `app.js` mount path changes. Deleted `server/routes/tags.js` and `server/__tests__/tags.test.js` (no UI callers). Frontend axios calls (`src/api/recipes.ts`, `src/api/auth.ts`) and Cypress intercepts updated to match. Removed 4 unused frontend methods (`search`, `addRecipeTag`, `searchRecipeTags`, `getRecipeTags`). Audit-correction note added for `checkIfReviewed` (the Phase 1 audit incorrectly listed it as unused; it has an active caller in `RatingsAndReviews.tsx` and was kept).
+- **5-C:** Stripped client-supplied `userId`/`username` from every protected route. `req.uid` is the only source of identity. Frontend `RecipeAPI`/`AuthAPI` method signatures dropped their `userId` args. `NewReviewType.userId` field removed. `POST /api/addRecipe` now stamps `userId: req.uid` server-side.
+- **5-D:** Server generates `_id` via `new ObjectId()` on recipe creation. Response is `{ _id }` with 201. Frontend `bson-objectid` removed and dropped from `package.json`.
+- **5-E:** Review/rating HTTP methods standardized — `addRating`, `newReview`, `editReview` now POST; `deleteReview` now DELETE. 4 stale `// TODO: protect with verifyToken` comments deleted.
+- **5-F:** Added `verifyToken` to `POST /api/ingredients/parse`, closing the AUTH GAP flagged in 5-A.
+- **5-G:** Coverage pass — added 6 explicit assertions (3 × 401 for review/rating mutations, 1 spoofed-`username`-in-body test for `newReview`, 1 public-browse assertion for `GET /recipes`, 1 non-owner-403 test for `DELETE /deleteRecipe`). Also a real route fix: `DELETE /deleteRecipe` now does an ownership check (it previously allowed any authenticated user to delete any recipe).
 
-**Client-generated `_id` migration plan:**
+### Verification (close-out, 2026-05-13)
 
-- Existing recipe documents in MongoDB already have client-generated ObjectID `_id` values — these are valid BSON ObjectIDs and do not need to change
-- The change is purely in the creation flow: remove `bson-objectid` from the frontend, have the server generate `_id`, return it in the POST /addRecipe response, and update the client to read the ID from the response for navigation
-- No data migration needed
+- Server Jest: **97/97** passing
+- Frontend Vitest: **109/109** passing
+- `tsc --noEmit`: clean
+- `npm run build`: succeeds
+- Residual grep across `server/`: no `req.query.userId` or `req.body.userId` used for identity; no `router.put` on review/rating routes; no client-supplied `_id` accepted on creation. The two remaining `router.put` calls (`/saveRecipe`, `/unsaveRecipe`) are recipe-save toggles, explicitly out of 5-E scope.
 
-**Planned tasks (prompts in `PHASE5_PROMPTS.md`):**
+### Deferred to Phase 6
 
-- **5-A:** Audit current server against API_CONTRACT.md — produce gap table
-- **5-B:** Add `/api/` prefix to all routes via app.js mount path changes only
-- **5-C:** Strip client-supplied `userId`/`username` params; use `req.uid` everywhere
-- **5-D:** Server-generated `_id` on recipe creation; remove `bson-objectid` from frontend
-- **5-E:** Standardize review/rating HTTP methods (PUT → POST/DELETE); remove stale TODO comments
-- **5-F:** Add `verifyToken` to `POST /api/ingredients/parse` (AUTH GAP fix)
-- **5-G:** Server test coverage pass — Jest tests for all major route files
-- **5-H:** Final verification + REFACTOR.md update + git commit
+- **MongoDB `_id` migration:** Pre-Phase-5-D recipes have string `_id` values; new recipes have native `ObjectId` `_id`. All read routes filter `{ _id: <string> }` — works for old docs but won't match new docs without a coercion helper or a one-time data migration. Same story for `deleteRecipe`'s new ownership check (pre-Phase-5-D recipes lack a `userId` field and will 403 their own owners). One backfill addresses both.
+- **`GET /api/getReviews`** still reads `username` from query for its `isCurrentUser` per-row flag. Recommend moving that flag computation client-side and dropping the param — keeps anonymous review browsing working.
+- **`GET /api/getSingleUserReviews`** target-vs-identity ambiguity. Revisit when a public-profile UI is in scope.
+- **`PUT /api/saveRecipe`, `PUT /api/unsaveRecipe`** also non-idempotent mutations. Worth converting to POST/DELETE alongside a future round of recipe-save UX work.
 
-**Server test note:** Server tests use **Jest** (`npm test --prefix server`). Do not use Vitest for server tests — it is not installed in `server/node_modules`.
+### Commits on this branch (in order)
+
+- `refactor(api): standardize /api prefix on routes; remove dead tag endpoints (Phase 5-B)`
+- `refactor(api): trust the token — drop client userId/username for identity (Phase 5-C)`
+- `refactor(recipes): server-generate _id on creation, drop bson-objectid (Phase 5-D)`
+- `refactor(reviews): PUT → POST/DELETE on review/rating mutations (Phase 5-E)`
+- `refactor(ingredients): require auth on POST /api/ingredients/parse (Phase 5-F)`
+- `test(server): close coverage gaps + fix DELETE /deleteRecipe ownership (Phase 5-G)`
+- _5-H close-out commit (this one): updates REFACTOR.md, lands `PHASE5_PROMPTS.md` source._
+
+Server test note: Server tests use **Jest** (`npm test --prefix server`). Vitest is not installed in `server/node_modules`.
 
 ---
 
