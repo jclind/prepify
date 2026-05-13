@@ -166,9 +166,9 @@ describe('POST /addRecipe', () => {
   })
 })
 
-// ─── PUT /saveRecipe ──────────────────────────────────────────────────────────
+// ─── POST /recipes/:id/save ───────────────────────────────────────────────────
 
-describe('PUT /saveRecipe', () => {
+describe('POST /recipes/:id/save', () => {
   beforeEach(async () => {
     const db = getDB()
     await db.collection('recipes').insertOne({ ...BASE_RECIPE, numTimesSaved: 0 })
@@ -176,7 +176,7 @@ describe('PUT /saveRecipe', () => {
 
   it('saves a recipe and increments numTimesSaved', async () => {
     const res = await request(app)
-      .put(`/api/saveRecipe?recipeId=${RECIPE_ID}`)
+      .post(`/api/recipes/${RECIPE_ID}/save`)
       .set(AUTH_HEADER)
 
     expect(res.status).toBe(200)
@@ -190,12 +190,12 @@ describe('PUT /saveRecipe', () => {
   it('returns 409 on duplicate save attempt', async () => {
     // first save
     await request(app)
-      .put(`/api/saveRecipe?recipeId=${RECIPE_ID}`)
+      .post(`/api/recipes/${RECIPE_ID}/save`)
       .set(AUTH_HEADER)
 
     // second save — same recipe, same user
     const res = await request(app)
-      .put(`/api/saveRecipe?recipeId=${RECIPE_ID}`)
+      .post(`/api/recipes/${RECIPE_ID}/save`)
       .set(AUTH_HEADER)
 
     expect(res.status).toBe(409)
@@ -203,9 +203,9 @@ describe('PUT /saveRecipe', () => {
   })
 })
 
-// ─── PUT /unsaveRecipe ────────────────────────────────────────────────────────
+// ─── DELETE /recipes/:id/save ─────────────────────────────────────────────────
 
-describe('PUT /unsaveRecipe', () => {
+describe('DELETE /recipes/:id/save', () => {
   beforeEach(async () => {
     const db = getDB()
     await db.collection('recipes').insertOne({ ...BASE_RECIPE, numTimesSaved: 1 })
@@ -217,7 +217,7 @@ describe('PUT /unsaveRecipe', () => {
 
   it('returns 404 if recipe is not in the user\'s saved list', async () => {
     const res = await request(app)
-      .put(`/api/unsaveRecipe?recipeId=not-saved-id`)
+      .delete(`/api/recipes/not-saved-id/save`)
       .set(AUTH_HEADER)
 
     expect(res.status).toBe(404)
@@ -226,7 +226,7 @@ describe('PUT /unsaveRecipe', () => {
 
   it('unsaves a recipe and decrements numTimesSaved', async () => {
     const res = await request(app)
-      .put(`/api/unsaveRecipe?recipeId=${RECIPE_ID}`)
+      .delete(`/api/recipes/${RECIPE_ID}/save`)
       .set(AUTH_HEADER)
 
     expect(res.status).toBe(200)
@@ -243,7 +243,7 @@ describe('PUT /unsaveRecipe', () => {
     await db.collection('recipes').updateOne({ _id: RECIPE_ID }, { $set: { numTimesSaved: 0 } })
 
     const res = await request(app)
-      .put(`/api/unsaveRecipe?recipeId=${RECIPE_ID}`)
+      .delete(`/api/recipes/${RECIPE_ID}/save`)
       .set(AUTH_HEADER)
 
     expect(res.status).toBe(200)

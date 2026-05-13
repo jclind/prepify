@@ -59,14 +59,14 @@ class RecipeAPIClass {
   }
 
   async saveRecipe(recipeId = ''): Promise<AxiosResponse> {
-    return await http.put(`api/saveRecipe?recipeId=${recipeId}`)
+    return await http.post(`api/recipes/${recipeId}/save`)
   }
   async getSavedRecipe(recipeId = ''): Promise<GetSavedRecipesResponseType[]> {
     const result = await http.get(`api/getSavedRecipe?recipeId=${recipeId}`)
     return result.data
   }
   async unsaveRecipe(recipeId = ''): Promise<AxiosResponse> {
-    return await http.put(`api/unsaveRecipe?recipeId=${recipeId}`)
+    return await http.delete(`api/recipes/${recipeId}/save`)
   }
   async madeRecipe(recipeId: string): Promise<unknown> {
     if (!AuthAPI.getUID()) return
