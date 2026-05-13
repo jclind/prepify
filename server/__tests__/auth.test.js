@@ -27,9 +27,10 @@ describe('GET /getUsername', () => {
     expect(res.status).toBe(400)
   })
 
-  it('returns 404 if userId is not found', async () => {
+  it('returns 200 with null body if userId is not found', async () => {
     const res = await request(app).get('/api/getUsername?userId=unknown')
-    expect(res.status).toBe(404)
+    expect(res.status).toBe(200)
+    expect(res.body).toBeNull()
   })
 
   it('returns the username for a valid userId', async () => {
