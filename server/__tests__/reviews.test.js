@@ -261,15 +261,20 @@ describe('PUT /newReview', () => {
 // ─── GET /checkIfReviewed ─────────────────────────────────────────────────────
 
 describe('GET /checkIfReviewed', () => {
-  it('returns 400 if username or recipeId is missing', async () => {
-    const res = await request(app).get(`/api/checkIfReviewed?username=${TEST_USERNAME}`)
+  it('rejects request with no auth token (401)', async () => {
+    const res = await request(app).get(`/api/checkIfReviewed?recipeId=${RECIPE_ID}`)
+    expect(res.status).toBe(401)
+  })
+
+  it('returns 400 if recipeId is missing', async () => {
+    const res = await request(app).get('/api/checkIfReviewed').set(AUTH_HEADER)
     expect(res.status).toBe(400)
   })
 
   it('returns { reviewed: false } when no rating document exists', async () => {
-    const res = await request(app).get(
-      `/api/checkIfReviewed?username=${TEST_USERNAME}&recipeId=${RECIPE_ID}`
-    )
+    const res = await request(app)
+      .get(`/api/checkIfReviewed?recipeId=${RECIPE_ID}`)
+      .set(AUTH_HEADER)
     expect(res.status).toBe(200)
     expect(res.body).toEqual({ reviewed: false })
   })
@@ -277,9 +282,9 @@ describe('GET /checkIfReviewed', () => {
   it('returns { reviewed: false } when a rating exists but reviewText is empty', async () => {
     await seedRating({ username: TEST_USERNAME, recipeId: RECIPE_ID, rating: 3, reviewText: '' })
 
-    const res = await request(app).get(
-      `/api/checkIfReviewed?username=${TEST_USERNAME}&recipeId=${RECIPE_ID}`
-    )
+    const res = await request(app)
+      .get(`/api/checkIfReviewed?recipeId=${RECIPE_ID}`)
+      .set(AUTH_HEADER)
     expect(res.status).toBe(200)
     expect(res.body).toEqual({ reviewed: false })
   })
@@ -292,9 +297,9 @@ describe('GET /checkIfReviewed', () => {
       reviewText: 'Really good!',
     })
 
-    const res = await request(app).get(
-      `/api/checkIfReviewed?username=${TEST_USERNAME}&recipeId=${RECIPE_ID}`
-    )
+    const res = await request(app)
+      .get(`/api/checkIfReviewed?recipeId=${RECIPE_ID}`)
+      .set(AUTH_HEADER)
     expect(res.status).toBe(200)
     expect(res.body.reviewed).toBe(true)
     expect(res.body.reviewText).toBe('Really good!')

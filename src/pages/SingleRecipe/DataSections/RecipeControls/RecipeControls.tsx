@@ -64,7 +64,7 @@ const RecipeControls: FC<RecipeControlsType> = ({
   const handleDeleteRecipe = () => {
     if (currUID) {
       setDeleteLoading(true)
-      RecipeAPI.deleteRecipe(recipeId, currUID).then(res => {
+      RecipeAPI.deleteRecipe(recipeId).then(res => {
         const response = res as { error?: string }
         if (response.error) {
           setDeleteError(response.error)

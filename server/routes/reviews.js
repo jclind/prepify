@@ -86,14 +86,18 @@ router.put('/newReview', verifyToken, async (req, res) => {
   }
 })
 
-// GET /checkIfReviewed
-router.get('/checkIfReviewed', async (req, res) => {
+// GET /checkIfReviewed — scoped to the authenticated user
+router.get('/checkIfReviewed', verifyToken, async (req, res) => {
   try {
     const db = getDB()
-    const { username, recipeId } = req.query
-    if (!username || !recipeId) {
-      return res.status(400).json({ error: 'username and recipeId are required' })
+    const { recipeId } = req.query
+    if (!recipeId) {
+      return res.status(400).json({ error: 'recipeId is required' })
     }
+    const userDoc = await db.collection('usernames').findOne({ _id: req.uid })
+    if (!userDoc) return res.status(400).json({ error: 'Username not found for this user' })
+    const { username } = userDoc
+
     const doc = await db.collection('ratings').findOne({ username, recipeId })
     if (doc && doc.reviewText) {
       res.json({ reviewed: true, reviewText: doc.reviewText, rating: doc.rating })

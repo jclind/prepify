@@ -139,7 +139,6 @@ export type ReviewType = {
 }
 
 export interface NewReviewType {
-  userId: string
   recipeId: string
   reviewText: string
 }

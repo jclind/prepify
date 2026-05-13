@@ -34,27 +34,25 @@ router.get('/checkUsernameAvailability', async (req, res) => {
   }
 })
 
-// POST /setUsername?userId=...&username=...
-// Creates or updates the username for a uid
+// POST /setUsername?username=...
+// Creates or updates the username for the authenticated user
 router.post('/setUsername', verifyToken, async (req, res) => {
   try {
-    const { userId, username } = req.query
-    if (!userId || !username) {
-      return res.status(400).json({ error: 'userId and username are required' })
+    const { username } = req.query
+    if (!username) {
+      return res.status(400).json({ error: 'username is required' })
     }
-    if (userId !== req.uid) {
-      return res.status(403).json({ error: 'Forbidden' })
-    }
+    const uid = req.uid
     const db = getDB()
 
     // Check username is not already taken by someone else
     const existing = await db.collection('usernames').findOne({ username })
-    if (existing && existing._id !== userId) {
+    if (existing && existing._id !== uid) {
       return res.status(409).json({ error: 'Username already taken' })
     }
 
     await db.collection('usernames').updateOne(
-      { _id: userId },
+      { _id: uid },
       { $set: { username } },
       { upsert: true }
     )

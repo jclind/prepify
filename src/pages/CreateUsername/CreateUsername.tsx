@@ -29,7 +29,7 @@ const CreateUsername: FC = () => {
       setError('')
       setSuccess('')
 
-      AuthAPI.setUsername(uid, currUsername)
+      AuthAPI.setUsername(currUsername)
         .then(() => {
           setLoadingCreateUsername(false)
           setSuccess('Username Created Successfully!')
