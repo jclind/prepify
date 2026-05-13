@@ -697,3 +697,32 @@ return () => {
 **Impact:** If the component unmounts before the request resolves, `setCurrUsername` is called on an unmounted component. React 18 silently ignores this (the strict-mode warning was removed), so there is no observable crash, but the cleanup is dead code.
 
 **Fix:** Either pass an `AbortSignal` to the HTTP layer and honour it in `AuthAPI.getUsername`, or remove the AbortController entirely. The `useQuery` migration in Phase 4-C removes the effect entirely, eliminating the issue.
+
+---
+
+## Phase 6-C: `checkUsernameAvailability` URL fix + missing `src/api/auth.ts` test coverage
+
+**Date:** 2026-05-13
+
+### Fix applied
+
+`src/api/auth.ts:19` had a malformed query string with a spurious `&` after the `?`:
+
+```diff
+-    `api/checkUsernameAvailability?&username=${username}`
++    `api/checkUsernameAvailability?username=${username}`
+```
+
+The URL parsed correctly in practice (Express/`URLSearchParams` discard the empty parameter before `&`), which is why it never broke. But it looked broken in network logs and was the kind of typo that quietly invites real bugs the next time someone copies the pattern.
+
+### Test-coverage gap (not closed in this commit)
+
+`src/api/auth.ts` has no test file. None of the three query-string-building methods are exercised by a test that asserts URL shape:
+
+- `getUsername` → `api/getUsername?userId=…`
+- `checkUsernameAvailability` → `api/checkUsernameAvailability?username=…` (the bug fixed above)
+- `setUsername` → `api/setUsername?username=…`
+
+UI callers (`src/context/AuthContext.tsx`, `src/Components/Form/UsernameInput.tsx`) are also untested, so nothing in the suite would have caught the `?&` typo.
+
+**Recommended follow-up (separate commit):** add `src/test/api/auth.test.ts` that mocks `http` and asserts the exact URL each method calls. Three small assertions would have caught this bug at write time and would protect the other two methods from the same class of error.
