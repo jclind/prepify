@@ -334,12 +334,14 @@ describe('GET /checkIfReviewed', () => {
     expect(res.body.reviewText).toBe('')
   })
 
-  it('returns { reviewed: true, reviewText, rating } when a review exists', async () => {
+  it('returns the full ratings doc plus reviewed:true when a review exists', async () => {
     await seedRating({
       username: TEST_USERNAME,
       recipeId: RECIPE_ID,
       rating: 5,
       reviewText: 'Really good!',
+      reviewCreatedAt: '1700000000000',
+      reviewLastUpdated: '1700000000000',
     })
 
     const res = await request(app)
@@ -349,6 +351,11 @@ describe('GET /checkIfReviewed', () => {
     expect(res.body.reviewed).toBe(true)
     expect(res.body.reviewText).toBe('Really good!')
     expect(res.body.rating).toBe(5)
+    // RecipeReview reads these fields off currUserReview — if any is missing,
+    // formatDate(undefined) crashes downstream on Invalid Date → undefined.substring.
+    expect(res.body.username).toBe(TEST_USERNAME)
+    expect(res.body.recipeId).toBe(RECIPE_ID)
+    expect(res.body.reviewCreatedAt).toBe('1700000000000')
   })
 })
 

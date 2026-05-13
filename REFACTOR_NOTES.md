@@ -740,6 +740,63 @@ Manual verification (intended, but to be confirmed by the user on the actual dep
 
 ---
 
+## Phase 5 — Bug Fix: `checkIfReviewed` response missing fields (RecipeReview crash on refresh)
+
+**Date:** 2026-05-13
+**Branch:** `fix/review-text-substring-crash`
+
+### Symptom
+
+On the single recipe page, refreshing after submitting a review crashed with `TypeError: Cannot read properties of undefined (reading 'substring')`.
+
+### Crash chain
+
+1. Refresh hits `RatingsAndReviews.tsx` which `useQuery`'s `RecipeAPI.checkIfReviewed(recipeId)`.
+2. Server (`GET /api/checkIfReviewed`) was returning a **picked subset** of the ratings doc: `{reviewed: true, reviewText, rating}` only. Date and user fields were omitted.
+3. `RatingsAndReviews.tsx:42` — when `reviewText` is truthy, passes `checkData` straight into `setCurrUserReview`.
+4. `ReviewsContainer.tsx:76` renders `<RecipeReview review={currUserReview} />`.
+5. `RecipeReview.tsx:49-54` reads `review.reviewCreatedAt` (undefined) and `review.username` (undefined), then calls `formatDate(review.reviewCreatedAt, true)`.
+6. `formatDate(undefined, true)` — `Number.isNaN(undefined)` is `false`, so it takes `new Date(Number(undefined))` = `new Date(NaN)` = Invalid Date. `date.getMonth()` returns `NaN`, `monthNames[NaN]` is `undefined`, `month.substring(0, 3)` → crash.
+
+### Was this caused by the Bug 2a fix? — No
+
+The Bug 2a fix only widened *which* docs return `{reviewed: true, ...}` (it included rating-only docs that the consumer's `reviewText` gate then ignores). It did not change the picked-field list. The crash path (user has a written review, refreshes) returned the same abridged shape both before and after Bug 2a. This bug pre-dated Phase 5 entirely — surfaced now during thorough manual testing of the post-Phase-5 build.
+
+### Fix
+
+`server/routes/reviews.js` — `GET /checkIfReviewed` now spreads the full ratings doc into the response:
+
+```js
+if (doc) {
+  res.json({ reviewed: true, ...doc })
+} else {
+  res.json({ reviewed: false })
+}
+```
+
+The ratings doc carries only public fields (`_id, username, recipeId, rating, ratingLastUpdated, reviewCreatedAt, reviewLastUpdated, reviewText`) — nothing sensitive. Consumers (`RecipeReview`, `AddRatingBtn`, etc.) now have all the fields they read on `currUserReview`.
+
+### Rejected alternatives
+
+- **Add only `reviewCreatedAt` / `username` to the picked list:** fixes the symptom but leaves the contract fragile; any future consumer field-access has the same problem.
+- **Defensive `formatDate` (handle Invalid Date):** wider blast radius; util is shared, papers over the real contract bug.
+- **Guard `RecipeReview`'s effect with `review.reviewCreatedAt &&`:** same paper-over; multiple call sites.
+
+### Tests
+
+`server/__tests__/reviews.test.js`:
+- The `checkIfReviewed > "returns the full ratings doc plus reviewed:true when a review exists"` case (renamed from its pre-fix title) now seeds `reviewCreatedAt`/`reviewLastUpdated` and asserts `res.body.username`, `res.body.recipeId`, `res.body.reviewCreatedAt`. If a future change re-introduces field-picking, this test fires.
+
+### Verification
+
+- `npm test --prefix server` → 98/98.
+- `npm test -- --run` → 109/109.
+- `tsc --noEmit` → clean.
+
+Manual production verification (intended): on a deployed build, submit a review on a single-recipe page → refresh → page renders without crashing and the existing review shows correctly.
+
+---
+
 ## Phase 5 — Manual Testing
 
 **Date:** 2026-05-13
