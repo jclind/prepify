@@ -764,3 +764,83 @@ This change cannot be verified by the automated suite — no test mocks or asser
 3. No CORS error in the browser console.
 
 If any of those fail, the most likely culprit is that Edamam's CORS policy was specifically allowing the bogus headers and not `*` — in which case the fix is to file a Phase 6 note, not to revert (the headers were still wrong; the response handling would need a different fix).
+
+---
+
+## Phase 6-E: `GET /api/getUsername` returns `null` on missing doc (eliminates signup race 404s)
+
+**Date:** 2026-05-13
+
+### The bug
+
+During email/password signup in `src/context/AuthContext.tsx:123-172`:
+
+1. `createUserWithEmailAndPassword` resolves → Firebase fires `onAuthStateChanged` → `setUser(userInstance)`.
+2. `signUp`'s `.then` kicks off `AuthAPI.setUsername(username)` — POST in flight, not awaited.
+3. React rerenders. The `useEffect` at line 258 reacts to `[loading, user]` and calls `AuthAPI.getUsername(user.uid)`.
+4. The GET races the POST. The user doc usually doesn't exist yet → `GET /api/getUsername` returned **404**.
+5. Axios threw → unhandled promise rejection. `Navbar`, `Account`, and other mount-time `useQuery` callers each fired their own racing GETs, producing the visible "two 404 responses before the username resolves" symptom (TanStack Query's default retries eventually picked up the username once `setUsername` committed).
+
+This bug was not previously logged in any refactor doc — discovered during Phase 6 cleanup.
+
+### Fix applied (option-b)
+
+`server/routes/auth.js:16` — replace the 404 with a 200 + `null` body when the doc doesn't exist:
+
+```diff
+-    if (!doc) return res.status(404).json({ error: 'User not found' })
++    if (!doc) return res.json(null)
+```
+
+`server/__tests__/auth.test.js:30-33` — flipped from asserting `status: 404` to asserting `status: 200, body: null`.
+
+### Why option (b) over (a) or (c)
+
+- **(a) client retry/backoff**: Would have to be applied at each of the 8 `getUsername` call sites (or wrapped centrally). Doesn't fix the type-vs-reality mismatch.
+- **(c) sequence the calls**: Doesn't actually apply here — `signUp` does not itself call `getUsername`. The racing GET comes from a `useEffect` reacting to `setUser`, which Firebase fires independently. Properly sequencing would require a gating ref *on top of* the await chain — two changes.
+- **(b) server returns null**: One server line + one server test update. The client `AuthAPI.getUsername` is already typed `Promise<string | null>`; the null branch was unreachable before this fix. All 8 call sites (`AuthContext.tsx:196, 260`, `Navbar.tsx:40`, `Account.tsx:21`, `Profile.tsx:28`, `ReviewOptions.tsx:29`, `RecipeControls.tsx:56`, `recipes.ts:109, 238, 250`) already have null-handling and now correctly exercise it. Fewest moving parts.
+
+400 (missing/invalid `userId`) and 500 (server errors) are unchanged. Only the "doc not found" branch flipped.
+
+### Residual trade-off — potential `/create-username` flash on signup
+
+`AuthContext.tsx:260` previously read:
+
+```ts
+AuthAPI.getUsername(user.uid).then(username => {
+  if (!username) navigate('/create-username')
+})
+```
+
+Before this fix, the 404 threw → `.then` body never ran → no redirect.
+**After this fix**, the `.then` body runs with `null` during the race window → `navigate('/create-username')` fires. A beat later, `setUsername` commits and `signUp`'s own `.then` calls `navigate('/')`. Net effect on signup: brief flash of `/create-username` before landing on home (~50-200ms race window in production).
+
+For the *genuinely* missing-username case — first-time Google sign-in, etc. — this same redirect is the **correct** behavior and was silently broken before (the 404 was an unhandled rejection). So this fix repairs that path while introducing a transient flash on email/password signup.
+
+### Follow-up (not in this commit) — gating ref to suppress the flash
+
+If QA observes the flash, the smallest mitigation is a gating ref in `AuthProvider`:
+
+```ts
+const isSigningUpRef = useRef(false)
+// set to true at the top of signUp, false after setUsername commits or fails
+
+useEffect(() => {
+  if (isSigningUpRef.current) return
+  if (!loading && user && user.uid) {
+    AuthAPI.getUsername(user.uid).then(username => {
+      if (!username) navigate('/create-username')
+    })
+  }
+}, [loading, user])
+```
+
+This keeps the useEffect's redirect intact for the genuinely-no-username case while suppressing it for the duration of signup. Track as a Phase 6 candidate if observed.
+
+### Verification
+
+- `npm test --prefix server` → 97/97 (test updated in this commit).
+- `npm test` (Vitest) → 109/109 (no client tests assert against the 404 response shape).
+- `tsc --noEmit` → clean (server-only change; client types unchanged).
+
+Manual smoke-test owed before Phase 6-I: sign up a fresh account and confirm (a) no 404s in the Network panel for `/api/getUsername`, (b) no visible `/create-username` flash before landing on home. If the flash is visible, schedule the gating-ref follow-up.
