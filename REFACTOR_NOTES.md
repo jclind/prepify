@@ -726,3 +726,41 @@ The URL parsed correctly in practice (Express/`URLSearchParams` discard the empt
 UI callers (`src/context/AuthContext.tsx`, `src/Components/Form/UsernameInput.tsx`) are also untested, so nothing in the suite would have caught the `?&` typo.
 
 **Recommended follow-up (separate commit):** add `src/test/api/auth.test.ts` that mocks `http` and asserts the exact URL each method calls. Three small assertions would have caught this bug at write time and would protect the other two methods from the same class of error.
+
+---
+
+## Phase 6-D: removed bogus CORS response headers from `nutrition` axios instance
+
+**Date:** 2026-05-13
+
+### Fix applied
+
+`src/api/http-common.ts` — the `nutrition` axios instance (used for the Edamam `nutrition-details` POST in `src/api/recipes.ts:177`) was configured with three response-side CORS headers on its request config:
+
+```diff
+ export const nutrition = axios.create({
+   baseURL: 'https://api.edamam.com/api',
+   headers: {
+     'Content-type': 'application/json',
+-    'Access-Control-Allow-Headers': 'Content-Type',
+-    'Access-Control-Allow-Origin': 'http://localhost:3000',
+-    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET',
+   },
+ })
+```
+
+`Access-Control-Allow-*` headers are set by **servers in responses**, not by clients in requests. Setting them on an axios instance was a no-op at best: the browser still issues the request, and CORS is enforced by Edamam's response. At worst, sending these as custom request headers bloated the CORS preflight's `Access-Control-Request-Headers` list (it asked Edamam to permit four headers when only `content-type` was actually needed). Edamam's CORS policy happens to allow the bigger set, which is why the call has been working — the headers were misleading, not actively broken.
+
+`Content-type: application/json` is kept as it's a legitimate request header for the POST body.
+
+### Manual smoke-test owed before Phase 6-I
+
+This change cannot be verified by the automated suite — no test mocks or asserts the Edamam call (see grep: only `src/api/http-common.ts` referenced `Access-Control-Allow`, no test files). The CI checks (tsc, vitest) only confirm we didn't break compilation or existing tests.
+
+**Action required before Phase 6-I:** in a running dev server (`npm start`) with valid `VITE_EDAMAM_APP_ID` / `VITE_EDAMAM_APP_KEY` set, create a recipe through the AddRecipe flow and confirm:
+
+1. The POST to `https://api.edamam.com/api/nutrition-details` returns 200 (DevTools → Network).
+2. Nutrition data is populated on the resulting recipe (calories, dietLabels, etc. appear on the SingleRecipe page).
+3. No CORS error in the browser console.
+
+If any of those fail, the most likely culprit is that Edamam's CORS policy was specifically allowing the bogus headers and not `*` — in which case the fix is to file a Phase 6 note, not to revert (the headers were still wrong; the response handling would need a different fix).
