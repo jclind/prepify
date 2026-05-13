@@ -552,6 +552,51 @@ This was not in scope for 5-D and existing data was the only consideration. The 
 
 ---
 
+## Phase 5-E: REST verb standardization on review/rating mutations
+
+**Date:** 2026-05-13
+
+### Verb changes
+
+`server/routes/reviews.js`:
+
+| Route | Was | Now | Rationale |
+|---|---|---|---|
+| `/addRating` | PUT | **POST** | Upsert write. Recompute of `recipe.rating` aggregate per call → not idempotent. |
+| `/newReview` | PUT | **POST** | Upsert. Server stamps `reviewCreatedAt`/`reviewLastUpdated` to `Date.now()`. |
+| `/editReview` | PUT | **POST** | Server stamps `reviewLastUpdated` to `Date.now().toString()` on every call → not idempotent. The prompt's "PUT if truly idempotent" exception does not apply. |
+| `/deleteReview` | PUT | **DELETE** | Clears `reviewText` (soft delete). |
+
+URLs and handler logic untouched — only the verb on the `router.<verb>(...)` registration changes.
+
+### Frontend (`src/api/recipes.ts`)
+
+- `addRating`, `newReview`, `editReview`: `http.put(...)` → `http.post(...)`
+- `deleteReview`: `http.put(...)` → `http.delete(...)`
+
+### Stale comments removed
+
+All four review/rating routes already had `verifyToken` middleware applied (since Phase 5-A or earlier). The four `// TODO: protect with verifyToken` comments sitting above them were stale — deleted. The `// PUT /xxx` summary comments updated to the new verb in the same edits so the file documents itself accurately.
+
+### Server tests
+
+`server/__tests__/reviews.test.js`: all `request(app).put(...)` calls updated to `.post(...)` or `.delete(...)` to match the new server verbs. `describe('PUT /xxx', ...)` and `// ─── PUT /xxx ───` section comments updated to `POST` / `DELETE` for accuracy. No assertion changes.
+
+No Cypress intercepts targeted these four routes (grep returned zero matches), so no e2e changes were needed.
+
+### Verification
+
+- `tsc --noEmit` → clean.
+- `npm test --prefix server` → 91/91.
+- `npm test -- --run` → 109/109.
+
+### Out of scope (called out so it's clear what isn't moving)
+
+- Path renames toward REST-canonical shapes like `/reviews/:id`, `/ratings/:id`. Prompt explicitly said "Do not change the URL paths — only the method." The current paths (`/addRating`, `/newReview`, `/editReview`, `/deleteReview`) remain.
+- `PUT /api/saveRecipe` and `PUT /api/unsaveRecipe` in `recipes.js` — also non-idempotent mutations, but recipe-save toggles aren't review/rating routes. Phase 5-E scope was explicit.
+
+---
+
 ## Phase 4-C: ReviewOptions.tsx — pre-existing bug
 
 **Date:** 2026-05-12

@@ -65,12 +65,12 @@ afterEach(async () => {
   ])
 })
 
-// ─── PUT /addRating ───────────────────────────────────────────────────────────
+// ─── POST /addRating ───────────────────────────────────────────────────────────
 
-describe('PUT /addRating', () => {
+describe('POST /addRating', () => {
   it('rejects non-numeric rating (400)', async () => {
     const res = await request(app)
-      .put(`/api/addRating?recipeId=${RECIPE_ID}&rating=abc`)
+      .post(`/api/addRating?recipeId=${RECIPE_ID}&rating=abc`)
       .set(AUTH_HEADER)
     expect(res.status).toBe(400)
     expect(res.body.error).toBe('Invalid rating')
@@ -78,7 +78,7 @@ describe('PUT /addRating', () => {
 
   it('rejects rating above 5 (400)', async () => {
     const res = await request(app)
-      .put(`/api/addRating?recipeId=${RECIPE_ID}&rating=6`)
+      .post(`/api/addRating?recipeId=${RECIPE_ID}&rating=6`)
       .set(AUTH_HEADER)
     expect(res.status).toBe(400)
     expect(res.body.error).toMatch(/between 1 and 5/)
@@ -86,7 +86,7 @@ describe('PUT /addRating', () => {
 
   it('rejects rating below 1 (400)', async () => {
     const res = await request(app)
-      .put(`/api/addRating?recipeId=${RECIPE_ID}&rating=0`)
+      .post(`/api/addRating?recipeId=${RECIPE_ID}&rating=0`)
       .set(AUTH_HEADER)
     expect(res.status).toBe(400)
     expect(res.body.error).toMatch(/between 1 and 5/)
@@ -94,7 +94,7 @@ describe('PUT /addRating', () => {
 
   it('accepts a valid rating and updates the recipe rating stats', async () => {
     const res = await request(app)
-      .put(`/api/addRating?recipeId=${RECIPE_ID}&rating=4`)
+      .post(`/api/addRating?recipeId=${RECIPE_ID}&rating=4`)
       .set(AUTH_HEADER)
     expect(res.status).toBe(200)
     expect(res.body).toEqual({ rated: true })
@@ -106,9 +106,9 @@ describe('PUT /addRating', () => {
   })
 })
 
-// ─── PUT /editReview ──────────────────────────────────────────────────────────
+// ─── POST /editReview ──────────────────────────────────────────────────────────
 
-describe('PUT /editReview', () => {
+describe('POST /editReview', () => {
   beforeEach(async () => {
     const db = getDB()
     await db.collection('ratings').insertOne({
@@ -129,7 +129,7 @@ describe('PUT /editReview', () => {
     })
 
     const res = await request(app)
-      .put(`/api/editReview?recipeId=${RECIPE_ID}&text=Modified`)
+      .post(`/api/editReview?recipeId=${RECIPE_ID}&text=Modified`)
       .set(AUTH_HEADER)
 
     expect(res.status).toBe(403)
@@ -137,7 +137,7 @@ describe('PUT /editReview', () => {
 
   it('allows the author to edit their own review', async () => {
     const res = await request(app)
-      .put(`/api/editReview?recipeId=${RECIPE_ID}&text=Updated+review`)
+      .post(`/api/editReview?recipeId=${RECIPE_ID}&text=Updated+review`)
       .set(AUTH_HEADER)
 
     expect(res.status).toBe(200)
@@ -151,9 +151,9 @@ describe('PUT /editReview', () => {
   })
 })
 
-// ─── PUT /deleteReview ────────────────────────────────────────────────────────
+// ─── DELETE /deleteReview ────────────────────────────────────────────────────────
 
-describe('PUT /deleteReview', () => {
+describe('DELETE /deleteReview', () => {
   beforeEach(async () => {
     const db = getDB()
     await db.collection('ratings').insertOne({
@@ -172,7 +172,7 @@ describe('PUT /deleteReview', () => {
     })
 
     const res = await request(app)
-      .put(`/api/deleteReview?recipeId=${RECIPE_ID}`)
+      .delete(`/api/deleteReview?recipeId=${RECIPE_ID}`)
       .set(AUTH_HEADER)
 
     expect(res.status).toBe(403)
@@ -180,7 +180,7 @@ describe('PUT /deleteReview', () => {
 
   it('allows the author to delete their own review', async () => {
     const res = await request(app)
-      .put(`/api/deleteReview?recipeId=${RECIPE_ID}`)
+      .delete(`/api/deleteReview?recipeId=${RECIPE_ID}`)
       .set(AUTH_HEADER)
 
     expect(res.status).toBe(200)
@@ -194,19 +194,19 @@ describe('PUT /deleteReview', () => {
   })
 })
 
-// ─── PUT /newReview ───────────────────────────────────────────────────────────
+// ─── POST /newReview ───────────────────────────────────────────────────────────
 
-describe('PUT /newReview', () => {
+describe('POST /newReview', () => {
   it('rejects request with no auth token (401)', async () => {
     const res = await request(app)
-      .put('/api/newReview')
+      .post('/api/newReview')
       .send({ recipeId: RECIPE_ID, reviewText: 'Great!' })
     expect(res.status).toBe(401)
   })
 
   it('returns 400 if reviewText is missing from body', async () => {
     const res = await request(app)
-      .put('/api/newReview')
+      .post('/api/newReview')
       .set(AUTH_HEADER)
       .send({ recipeId: RECIPE_ID })
     expect(res.status).toBe(400)
@@ -218,7 +218,7 @@ describe('PUT /newReview', () => {
     })
 
     const res = await request(app)
-      .put('/api/newReview')
+      .post('/api/newReview')
       .set(AUTH_HEADER)
       .send({ recipeId: RECIPE_ID, reviewText: 'Text' })
 
@@ -228,7 +228,7 @@ describe('PUT /newReview', () => {
 
   it('creates a new review and returns the saved document', async () => {
     const res = await request(app)
-      .put('/api/newReview')
+      .post('/api/newReview')
       .set(AUTH_HEADER)
       .send({ recipeId: RECIPE_ID, reviewText: 'Amazing dish!' })
 
@@ -249,7 +249,7 @@ describe('PUT /newReview', () => {
     })
 
     const res = await request(app)
-      .put('/api/newReview')
+      .post('/api/newReview')
       .set(AUTH_HEADER)
       .send({ recipeId: RECIPE_ID, reviewText: 'Updated text' })
 
