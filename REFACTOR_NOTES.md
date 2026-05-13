@@ -125,6 +125,8 @@ className={`recipes ${recipes.length < 0 ? '' : 'loading'}`}
 
 **Phase 4/5 suggestion:** Add `verifyToken` middleware to this route for consistency, or document intentionally that the parse endpoint is public.
 
+> **Status update (2026-05-13):** resolved in Phase 5-F — `verifyToken` added to the route and the "Auth gap" test inverted to assert 401. See the Phase 5-F entry below for details.
+
 ### `SPOONACULAR_API_KEY` is undefined during tests
 
 `dotenv` is loaded in `server/index.js` only — not in `server/app.js`. Test files import `app.js` directly, so `process.env.SPOONACULAR_API_KEY` is `undefined` at test time. Because `ingredientParser` is mocked this has no effect on test correctness, but the options-forwarding test explicitly documents this as current behavior.
