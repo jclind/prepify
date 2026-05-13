@@ -202,7 +202,7 @@ class RecipeAPIClass {
   // Ratings / Reviews
   async addRating(recipeId: string, rating: number): Promise<AxiosResponse | null> {
     if (!AuthAPI.getUID()) return null
-    return await http.put(`api/addRating?recipeId=${recipeId}&rating=${rating}`)
+    return await http.post(`api/addRating?recipeId=${recipeId}&rating=${rating}`)
   }
 
   async newReview(recipeId: string, text: string): Promise<ReviewType | null> {
@@ -212,7 +212,7 @@ class RecipeAPIClass {
       recipeId,
       reviewText: text,
     }
-    const result = await http.put(`api/newReview`, data)
+    const result = await http.post(`api/newReview`, data)
     return result.data
   }
   async checkIfReviewed(recipeId: string) {
@@ -223,11 +223,11 @@ class RecipeAPIClass {
   }
   async editReview(recipeId: string, text: string): Promise<AxiosResponse | null> {
     if (!AuthAPI.getUID()) return null
-    return await http.put(`api/editReview?recipeId=${recipeId}&text=${text}`)
+    return await http.post(`api/editReview?recipeId=${recipeId}&text=${text}`)
   }
   async deleteReview(recipeId: string): Promise<AxiosResponse | null> {
     if (!AuthAPI.getUID()) return null
-    return await http.put(`api/deleteReview?recipeId=${recipeId}`)
+    return await http.delete(`api/deleteReview?recipeId=${recipeId}`)
   }
   async getReviews(
     recipeId: string,

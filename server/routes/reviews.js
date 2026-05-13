@@ -4,9 +4,8 @@ const { verifyToken } = require('../middleware/auth')
 
 const router = Router()
 
-// PUT /addRating
-// TODO: protect with verifyToken
-router.put('/addRating', verifyToken, async (req, res) => {
+// POST /addRating
+router.post('/addRating', verifyToken, async (req, res) => {
   try {
     const { recipeId, rating } = req.query
     const db = getDB()
@@ -57,9 +56,8 @@ router.put('/addRating', verifyToken, async (req, res) => {
   }
 })
 
-// PUT /newReview
-// TODO: protect with verifyToken
-router.put('/newReview', verifyToken, async (req, res) => {
+// POST /newReview
+router.post('/newReview', verifyToken, async (req, res) => {
   try {
     const db = getDB()
     const { recipeId, reviewText } = req.body
@@ -109,9 +107,8 @@ router.get('/checkIfReviewed', verifyToken, async (req, res) => {
   }
 })
 
-// PUT /editReview
-// TODO: protect with verifyToken
-router.put('/editReview', verifyToken, async (req, res) => {
+// POST /editReview
+router.post('/editReview', verifyToken, async (req, res) => {
   try {
     const { recipeId, text } = req.query
     const db = getDB()
@@ -134,9 +131,8 @@ router.put('/editReview', verifyToken, async (req, res) => {
   }
 })
 
-// PUT /deleteReview
-// TODO: protect with verifyToken
-router.put('/deleteReview', verifyToken, async (req, res) => {
+// DELETE /deleteReview
+router.delete('/deleteReview', verifyToken, async (req, res) => {
   try {
     const db = getDB()
     const { recipeId } = req.query
