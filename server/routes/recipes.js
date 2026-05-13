@@ -174,11 +174,11 @@ router.delete('/deleteRecipe', verifyToken, async (req, res) => {
   }
 })
 
-// PUT /saveRecipe
-router.put('/saveRecipe', verifyToken, async (req, res) => {
+// POST /recipes/:id/save
+router.post('/recipes/:id/save', verifyToken, async (req, res) => {
   try {
     const db = getDB()
-    const { recipeId } = req.query
+    const recipeId = req.params.id
     if (!recipeId) {
       return res.status(400).json({ error: 'recipeId is required' })
     }
@@ -221,11 +221,11 @@ router.get('/getSavedRecipe', verifyToken, async (req, res) => {
   }
 })
 
-// PUT /unsaveRecipe
-router.put('/unsaveRecipe', verifyToken, async (req, res) => {
+// DELETE /recipes/:id/save
+router.delete('/recipes/:id/save', verifyToken, async (req, res) => {
   try {
     const db = getDB()
-    const { recipeId } = req.query
+    const recipeId = req.params.id
     if (!recipeId) {
       return res.status(400).json({ error: 'recipeId is required' })
     }
