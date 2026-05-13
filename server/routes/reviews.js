@@ -97,7 +97,7 @@ router.get('/checkIfReviewed', verifyToken, async (req, res) => {
     const { username } = userDoc
 
     const doc = await db.collection('ratings').findOne({ username, recipeId })
-    if (doc && doc.reviewText) {
+    if (doc) {
       res.json({ reviewed: true, reviewText: doc.reviewText, rating: doc.rating })
     } else {
       res.json({ reviewed: false })
@@ -197,7 +197,7 @@ router.get('/getSingleUserReviews', async (req, res) => {
 
     const skip = parseInt(page) * parseInt(reviewsPerPage)
     const limit = parseInt(reviewsPerPage)
-    const query = { username, reviewText: { $exists: true, $ne: '' } }
+    const query = { username }
 
     let sort = {}
     if (filter === 'new') sort = { reviewCreatedAt: -1 }

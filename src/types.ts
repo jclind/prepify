@@ -104,17 +104,6 @@ export interface RecipeSearchResponseType {
   nutritionLabels: string[]
   servings: number
 }
-export interface GetSavedRecipesResponseType {
-  _id: string
-  userRecipes: {
-    recipeId: string
-  }[]
-  savedRecipes: {
-    recipeId: string
-    dateSaved: string
-  }[]
-}
-
 export type OptionalReviewType = {
   _id: string
   username: string

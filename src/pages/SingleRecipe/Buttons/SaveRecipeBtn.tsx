@@ -24,17 +24,20 @@ const SaveRecipeBtn: FC<SaveRecipeBtnProps> = ({ recipeId }) => {
     enabled: !!uid,
   })
 
-  const isSaved = data != null ? data.length > 0 : false
+  const isSaved = data != null
 
   const handleToggleSaveRecipe = (recipeId: string) => {
     if (uid) {
       if (isSaved) {
         RecipeAPI.unsaveRecipe(recipeId).then(() =>
-          queryClient.setQueryData(['savedRecipe', uid, recipeId], [])
+          queryClient.setQueryData(['savedRecipe', uid, recipeId], null)
         )
       } else {
         RecipeAPI.saveRecipe(recipeId).then(() =>
-          queryClient.setQueryData(['savedRecipe', uid, recipeId], [recipeId])
+          queryClient.setQueryData(['savedRecipe', uid, recipeId], {
+            recipeId,
+            dateSaved: Date.now().toString(),
+          })
         )
       }
     } else {

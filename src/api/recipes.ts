@@ -4,7 +4,6 @@ import { getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage'
 import dietLabels from 'src/recipeData/dietLabels'
 import { calculateServingPrice } from 'src/util/calculateServingPrice'
 import {
-  GetSavedRecipesResponseType,
   IngredientsType,
   NewReviewType,
   NutritionDataType,
@@ -61,7 +60,9 @@ class RecipeAPIClass {
   async saveRecipe(recipeId = ''): Promise<AxiosResponse> {
     return await http.put(`api/saveRecipe?recipeId=${recipeId}`)
   }
-  async getSavedRecipe(recipeId = ''): Promise<GetSavedRecipesResponseType[]> {
+  async getSavedRecipe(
+    recipeId = ''
+  ): Promise<{ recipeId: string; dateSaved: string } | null> {
     const result = await http.get(`api/getSavedRecipe?recipeId=${recipeId}`)
     return result.data
   }

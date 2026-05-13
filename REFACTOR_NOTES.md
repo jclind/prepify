@@ -672,6 +672,88 @@ The prompt said "Mock MongoDB collection calls using jest.fn() — do not connec
 
 ---
 
+## Phase 5 — Bug Fixes (manual testing)
+
+**Date:** 2026-05-13
+**Branch:** `refactor/phase-5-fixes`
+
+Three production bugs surfaced during Phase 5 manual testing: a save indicator that never showed "saved" after refresh, a star rating that didn't pre-fill on refresh, and rating-only entries missing from the Account → "rated recipes" tab. All three writes were succeeding — the reads were wrong (or the consumer of the read was wrong). None were Phase 5 regressions; the underlying bugs predated this refactor.
+
+### Bug 1 — `getSavedRecipe` response shape mismatch
+
+Three-way contract disagreement between the server return shape, the frontend's declared type, and the consumer's check.
+
+- **Server** (`server/routes/recipes.js`, `GET /getSavedRecipe`) — returns the matched entry object `{recipeId, dateSaved}` or `null`. (Correct, unchanged.)
+- **Frontend type** (`src/api/recipes.ts`) — was declaring `Promise<GetSavedRecipesResponseType[]>` (an array of full `userRecipeData` documents). Wrong on both axes — wrong shape, wrong arity.
+- **Consumer** (`src/pages/SingleRecipe/Buttons/SaveRecipeBtn.tsx`) — was doing `data.length > 0` on the response. Since `data` is an object (not an array), `data.length` is `undefined`, and `isSaved` was permanently `false`.
+
+**Fix:**
+- `RecipeAPI.getSavedRecipe` signature tightened to `Promise<{recipeId: string; dateSaved: string} | null>` — honest about what the route actually returns.
+- `SaveRecipeBtn`: `isSaved = data != null` (the route already encodes "saved? yes/no" by returning the entry or null).
+- The `queryClient.setQueryData` optimistic updates after save/unsave updated to match the new shape (`{recipeId, dateSaved}` for save, `null` for unsave).
+- Dead `GetSavedRecipesResponseType` deleted from `src/types.ts` — only had one usage, which was the buggy one.
+
+### Bug 2a — `checkIfReviewed` gated rating return on `reviewText` presence
+
+`server/routes/reviews.js`, `GET /checkIfReviewed`. The handler was:
+
+```js
+if (doc && doc.reviewText) {
+  res.json({ reviewed: true, reviewText, rating })
+} else {
+  res.json({ reviewed: false })
+}
+```
+
+`POST /addRating` writes new ratings docs with `reviewText: ''` (the data model unifies ratings and reviews in one doc; review text is filled in later by `POST /newReview` if the user writes one). The `&& doc.reviewText` clause was treating rating-only entries as if the user hadn't rated at all — the response said `{reviewed: false}` with no rating field, and the consumer (`RatingsAndReviews.tsx`) pre-filled the star at 0.
+
+**Fix:** drop `&& doc.reviewText`. The handler now returns `{reviewed: true, reviewText, rating}` whenever the doc exists, and the consumer decides what to render (`RatingsAndReviews.tsx` already had a separate `checkData?.reviewText ? checkData : null` check before populating the review UI — that logic was correct and is now reachable).
+
+### Bug 2b — `getSingleUserReviews` filtered out rating-only docs
+
+`server/routes/reviews.js`, `GET /getSingleUserReviews`. The query was:
+
+```js
+const query = { username, reviewText: { $exists: true, $ne: '' } }
+```
+
+`$ne: ''` excludes docs where `reviewText` is the empty string, which is exactly the shape `addRating` writes. The Account → "rated recipes" tab silently dropped every rating-only entry.
+
+**Fix:** filter is now just `{ username }`. The tab's name reflects its actual job — "show me everything this user has rated." If a future UI wants only-with-reviews, it can pass an explicit flag or use a different route.
+
+### Tests
+
+`server/__tests__/reviews.test.js`:
+- The `checkIfReviewed > "returns { reviewed: false } when a rating exists but reviewText is empty"` case was asserting the bug. Rewritten as `"returns { reviewed: true, rating } when a rating exists with empty reviewText (rating-only)"`.
+- New `getSingleUserReviews > "includes rating-only entries (empty reviewText)"` case explicitly seeds a rating with `reviewText: ''` and asserts it appears in the response.
+
+### Verification
+
+- `npm test --prefix server` → **98/98** (was 97; net +1 for the rating-only `getSingleUserReviews` assertion).
+- `npm test -- --run` → **109/109**.
+- `tsc --noEmit` → clean.
+
+Manual verification (intended, but to be confirmed by the user on the actual deployment):
+- Save a recipe → refresh → save indicator persists.
+- Add a star rating → refresh → rating pre-fills on the recipe page.
+- Account → "rated recipes" tab → rating-only entries appear.
+
+---
+
+## Phase 5 — Manual Testing
+
+**Date:** 2026-05-13
+
+### Sign-up flow: `getUsername` races `setUsername`, fires 404 twice
+
+Immediately after a user signs up, the Navbar and home page call `getUsername` before `setUsername` has finished writing to the `usernames` collection. The race is visible in the network tab as: two `getUsername` 404s → `setUsername` 200 → subsequent `getUsername` calls succeed.
+
+**Status:** Pre-existing issue. Not a Phase 5 regression — none of the Phase 5 work touched the sign-up sequencing.
+
+**Fix in Phase 6:** The sign-up flow should `await setUsername` before navigating to any page that calls `getUsername` (currently it kicks off `setUsername` and navigates concurrently). `AuthContext.signup` is the likely site — its `.then(...)` block calls `navigate('/')` inside the `setUsername` promise chain but `updateProfile` runs in parallel without being awaited; the navigation timing relative to the username write should be made deterministic.
+
+---
+
 ## Phase 4-C: ReviewOptions.tsx — pre-existing bug
 
 **Date:** 2026-05-12
