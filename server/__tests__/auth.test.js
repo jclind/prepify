@@ -68,22 +68,15 @@ describe('GET /checkUsernameAvailability', () => {
 
 describe('POST /setUsername', () => {
   it('rejects request with no auth token (401)', async () => {
-    const res = await request(app).post(`/api/setUsername?userId=${TEST_UID}&username=newuser`)
+    const res = await request(app).post(`/api/setUsername?username=newuser`)
     expect(res.status).toBe(401)
-  })
-
-  it('rejects if userId does not match token uid (403)', async () => {
-    const res = await request(app)
-      .post('/api/setUsername?userId=different-uid&username=newuser')
-      .set(AUTH_HEADER)
-    expect(res.status).toBe(403)
   })
 
   it('returns 409 if username is taken by another user', async () => {
     await seedUser('other-uid', 'taken')
 
     const res = await request(app)
-      .post(`/api/setUsername?userId=${TEST_UID}&username=taken`)
+      .post(`/api/setUsername?username=taken`)
       .set(AUTH_HEADER)
 
     expect(res.status).toBe(409)
@@ -92,7 +85,7 @@ describe('POST /setUsername', () => {
 
   it('creates a new username entry and returns success', async () => {
     const res = await request(app)
-      .post(`/api/setUsername?userId=${TEST_UID}&username=newuser`)
+      .post(`/api/setUsername?username=newuser`)
       .set(AUTH_HEADER)
 
     expect(res.status).toBe(200)
@@ -106,7 +99,7 @@ describe('POST /setUsername', () => {
     await seedUser(TEST_UID, 'oldname')
 
     const res = await request(app)
-      .post(`/api/setUsername?userId=${TEST_UID}&username=newname`)
+      .post(`/api/setUsername?username=newname`)
       .set(AUTH_HEADER)
 
     expect(res.status).toBe(200)
@@ -119,7 +112,7 @@ describe('POST /setUsername', () => {
     await seedUser(TEST_UID, 'myname')
 
     const res = await request(app)
-      .post(`/api/setUsername?userId=${TEST_UID}&username=myname`)
+      .post(`/api/setUsername?username=myname`)
       .set(AUTH_HEADER)
 
     expect(res.status).toBe(200)

@@ -427,6 +427,83 @@ The following remain present in this commit, by design (deferred to the listed s
 
 ---
 
+## Phase 5-C: Token-only identity — drop client-supplied userId/username
+
+**Date:** 2026-05-13
+
+### Server routes updated
+
+Every protected route that previously read `userId` (query/body) for ownership/scoping now uses `req.uid` from `verifyToken`. The redundant `userId === req.uid` guards (which only ever produced 403s if the client lied to itself) are gone.
+
+- `POST /api/setUsername` — query.userId dropped; uses `req.uid`. Param signature: `?username=...`
+- `GET /api/getSavedRecipes` — query.userId dropped; uses `req.uid`.
+- `POST /api/addRecipe` — body.userId no longer trusted. Server stamps `userId: req.uid` on the inserted doc (overrides anything client sends). `userRecipeData` keyed by `req.uid`.
+- `DELETE /api/deleteRecipe` — query.userId dropped; `userRecipeData` $pull keyed by `req.uid`.
+- `PUT /api/saveRecipe`, `GET /api/getSavedRecipe`, `PUT /api/unsaveRecipe`, `POST /api/madeRecipe`, `GET /api/checkMadeRecipe` — same pattern; query.userId dropped, `req.uid` used.
+- `GET /api/checkIfReviewed` — now requires `verifyToken`. Drops query.username. Resolves username server-side from `req.uid` via the `usernames` collection (matches the pattern already used by addRating/newReview/editReview/deleteReview). Recipe pages still pre-fill the user's existing rating; anonymous viewers no longer see this query at all (`enabled: !!uid` on the React Query caller already gates this).
+
+### Server routes already correct (no change)
+
+These review/rating mutations already resolved username server-side from `req.uid` before this phase — confirmed:
+- `PUT /api/addRating`, `PUT /api/newReview`, `PUT /api/editReview`, `PUT /api/deleteReview`
+
+### Server routes deliberately not touched (target-vs-identity exception)
+
+- `GET /api/getUsername?userId=...` — public lookup; userId is a target ("name for uid X"), not identity.
+- `GET /api/checkUsernameAvailability?username=...` — public; username is a target.
+
+### Frontend changes (signatures + URL bodies)
+
+`RecipeAPI` and `AuthAPI` methods whose `userId` arg was identity-only now drop the arg entirely. Callers updated:
+
+- `AuthAPI.setUsername(uid, username)` → `setUsername(username)` — callers: `AuthContext.signup`, `AuthContext.updateProfileData`, `CreateUsername`.
+- `RecipeAPI.deleteRecipe(recipeId, userId)` → `deleteRecipe(recipeId)` — caller: `RecipeControls`.
+- `RecipeAPI.saveRecipe(userId, recipeId)`, `getSavedRecipe(userId, recipeId)`, `unsaveRecipe(userId, recipeId)` → all single-arg `(recipeId)` — caller: `SaveRecipeBtn`.
+- `RecipeAPI.madeRecipe`, `checkMadeRecipe`, `getSavedRecipes`, `addRecipe`, `newReview`, `checkIfReviewed`, `deleteReview` — signatures unchanged externally (already single-arg or shape-stable), but internal request URLs/bodies dropped the now-dead `userId`/`username` params.
+- `NewReviewType` (src/types.ts): dropped `userId` field. `RecipeAPI.addRecipe` no longer types its body literal with `& { userId: string }` — server stamps it now.
+
+### Server tests
+
+4 dead test cases removed (asserted 403 on userId/token mismatch — that code path is gone):
+- `POST /setUsername > rejects if userId does not match token uid (403)`
+- `DELETE /deleteRecipe > rejects if userId does not match token uid (403)`
+- `GET /getSavedRecipe > rejects if userId does not match token uid (403)`
+- `POST /madeRecipe > rejects if userId does not match token uid (403)`
+
+1 dead "missing userId → 400" removed: `GET /getSavedRecipes > returns 400 if userId is missing` (userId param no longer exists).
+
+`?userId=${TEST_UID}` stripped from all remaining test URLs. New positive assertion in `POST /addRecipe`: stored doc's `userId` equals the verified token UID, regardless of body payload.
+
+`GET /checkIfReviewed` tests updated: now require `AUTH_HEADER`; new 401 test added; username query param dropped.
+
+### Verification
+
+- `npm test --prefix server` → 91/91 (was 95; -4 dead tests removed).
+- `npm test -- --run` → 109/109.
+- `tsc --noEmit` → clean.
+
+### Flagged for later (NOT changed in this pass)
+
+#### `GET /api/getReviews` — anonymous viewer + `isCurrentUser` flag
+
+Still uses `req.query.username` to compute the per-row `isCurrentUser` flag. Currently unprotected; allows logged-out users to browse reviews on a recipe page (which is desirable). Strictly applying Phase 5 decision #4 would require `verifyToken` here, which would break anonymous browsing.
+
+Decision recommended for a future phase: keep this route public, move `isCurrentUser` computation client-side (compare each `review.username` to the authed user's resolved username on the frontend, in `ReviewsContainer` or below). Then drop the username query param.
+
+#### `GET /api/getSingleUserReviews` — target lookup or self-scope?
+
+Reads `req.query.username` (no auth). Route shape says "reviews by user X" (target), but the only current UI caller is the Account → UserRatings tab fetching the **current user's** reviews. Two plausible directions:
+- Treat as target — keep public, no change. Future Public-profile pages can reuse.
+- Treat as self-scope — add verifyToken, drop the username param, resolve from token. Breaks future public-profile use case.
+
+Decision not load-bearing now (current caller works either way). Revisit when a public-profile UI is in scope.
+
+### No `users` collection — note for future
+
+The username lookup pattern uses the existing `usernames` collection (`{_id: uid, username}`), not a `users` collection. This was already established before Phase 5-C and continues to be load-bearing. If a richer user profile is later needed, those fields can live alongside in `usernames` or in a new `users` collection — at which point this assumption needs revisiting.
+
+---
+
 ## Phase 4-C: ReviewOptions.tsx — pre-existing bug
 
 **Date:** 2026-05-12

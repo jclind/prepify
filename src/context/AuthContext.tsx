@@ -148,8 +148,7 @@ const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
       }
       createUserWithEmailAndPassword(auth, email, password)
         .then(cred => {
-          const uid = cred.user.uid
-          AuthAPI.setUsername(uid, username).then(() => {
+          AuthAPI.setUsername(username).then(() => {
             setLoading(false)
             setSuccess('Username successfully created!')
             return navigate('/')
@@ -205,7 +204,7 @@ const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
         profilePhotoURL = await getDownloadURL(profilePhotosRef)
       }
       if (username && username !== currUsername) {
-        await AuthAPI.setUsername(user.uid, username)
+        await AuthAPI.setUsername(username)
       }
       if (email && user.email && email !== user.email) {
         if (!password) {

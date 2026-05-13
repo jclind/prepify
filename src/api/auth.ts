@@ -20,8 +20,8 @@ class AuthAPIClass {
     )
     return result.data
   }
-  async setUsername(userId: string, username: string) {
-    await http.post(`api/setUsername?userId=${userId}&username=${username}`)
+  async setUsername(username: string) {
+    await http.post(`api/setUsername?username=${username}`)
   }
 }
 

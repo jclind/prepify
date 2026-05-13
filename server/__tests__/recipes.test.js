@@ -6,9 +6,6 @@
  * { uid: 'test-uid' }, so any request carrying an Authorization header
  * (any Bearer value) passes verifyToken and receives req.uid = 'test-uid'.
  *
- * Routes that compare query.userId to req.uid (saveRecipe, unsaveRecipe, etc.)
- * must include userId=test-uid in the query string to avoid a 403.
- *
  * None of these test groups need a different uid, so the default mock is
  * sufficient throughout this file.
  */
@@ -117,7 +114,7 @@ describe('POST /addRecipe', () => {
     const res = await request(app)
       .post('/api/addRecipe')
       .set(AUTH_HEADER)
-      .send({ userId: TEST_UID }) // passes auth check, fails field validation
+      .send({})
     expect(res.status).toBe(400)
     expect(res.body.error).toMatch(/Missing required fields/)
   })
@@ -125,7 +122,6 @@ describe('POST /addRecipe', () => {
   it('creates recipe and enforces numTimesSaved/numTimesMade/views = 0 regardless of client payload', async () => {
     const payload = {
       _id: 'new-recipe-001',
-      userId: TEST_UID,
       title: 'Test Recipe',
       description: 'A test recipe',
       ingredients: [{ id: 'i1', name: 'salt' }],
@@ -150,6 +146,8 @@ describe('POST /addRecipe', () => {
     expect(stored.numTimesSaved).toBe(0)
     expect(stored.numTimesMade).toBe(0)
     expect(stored.views).toBe(0)
+    // Server should stamp userId from the verified token, regardless of body
+    expect(stored.userId).toBe(TEST_UID)
   })
 })
 
@@ -163,7 +161,7 @@ describe('PUT /saveRecipe', () => {
 
   it('saves a recipe and increments numTimesSaved', async () => {
     const res = await request(app)
-      .put(`/api/saveRecipe?userId=${TEST_UID}&recipeId=${RECIPE_ID}`)
+      .put(`/api/saveRecipe?recipeId=${RECIPE_ID}`)
       .set(AUTH_HEADER)
 
     expect(res.status).toBe(200)
@@ -177,12 +175,12 @@ describe('PUT /saveRecipe', () => {
   it('returns 409 on duplicate save attempt', async () => {
     // first save
     await request(app)
-      .put(`/api/saveRecipe?userId=${TEST_UID}&recipeId=${RECIPE_ID}`)
+      .put(`/api/saveRecipe?recipeId=${RECIPE_ID}`)
       .set(AUTH_HEADER)
 
     // second save — same recipe, same user
     const res = await request(app)
-      .put(`/api/saveRecipe?userId=${TEST_UID}&recipeId=${RECIPE_ID}`)
+      .put(`/api/saveRecipe?recipeId=${RECIPE_ID}`)
       .set(AUTH_HEADER)
 
     expect(res.status).toBe(409)
@@ -204,7 +202,7 @@ describe('PUT /unsaveRecipe', () => {
 
   it('returns 404 if recipe is not in the user\'s saved list', async () => {
     const res = await request(app)
-      .put(`/api/unsaveRecipe?userId=${TEST_UID}&recipeId=not-saved-id`)
+      .put(`/api/unsaveRecipe?recipeId=not-saved-id`)
       .set(AUTH_HEADER)
 
     expect(res.status).toBe(404)
@@ -213,7 +211,7 @@ describe('PUT /unsaveRecipe', () => {
 
   it('unsaves a recipe and decrements numTimesSaved', async () => {
     const res = await request(app)
-      .put(`/api/unsaveRecipe?userId=${TEST_UID}&recipeId=${RECIPE_ID}`)
+      .put(`/api/unsaveRecipe?recipeId=${RECIPE_ID}`)
       .set(AUTH_HEADER)
 
     expect(res.status).toBe(200)
@@ -230,7 +228,7 @@ describe('PUT /unsaveRecipe', () => {
     await db.collection('recipes').updateOne({ _id: RECIPE_ID }, { $set: { numTimesSaved: 0 } })
 
     const res = await request(app)
-      .put(`/api/unsaveRecipe?userId=${TEST_UID}&recipeId=${RECIPE_ID}`)
+      .put(`/api/unsaveRecipe?recipeId=${RECIPE_ID}`)
       .set(AUTH_HEADER)
 
     expect(res.status).toBe(200)
@@ -284,27 +282,20 @@ describe('DELETE /deleteRecipe', () => {
   })
 
   it('rejects request with no auth token (401)', async () => {
-    const res = await request(app).delete(`/api/deleteRecipe?recipeId=${RECIPE_ID}&userId=${TEST_UID}`)
+    const res = await request(app).delete(`/api/deleteRecipe?recipeId=${RECIPE_ID}`)
     expect(res.status).toBe(401)
-  })
-
-  it('rejects if userId does not match token uid (403)', async () => {
-    const res = await request(app)
-      .delete(`/api/deleteRecipe?recipeId=${RECIPE_ID}&userId=other-uid`)
-      .set(AUTH_HEADER)
-    expect(res.status).toBe(403)
   })
 
   it('returns 404 if the recipe does not exist', async () => {
     const res = await request(app)
-      .delete(`/api/deleteRecipe?recipeId=nonexistent&userId=${TEST_UID}`)
+      .delete(`/api/deleteRecipe?recipeId=nonexistent`)
       .set(AUTH_HEADER)
     expect(res.status).toBe(404)
   })
 
   it('deletes the recipe and removes it from userRecipes', async () => {
     const res = await request(app)
-      .delete(`/api/deleteRecipe?recipeId=${RECIPE_ID}&userId=${TEST_UID}`)
+      .delete(`/api/deleteRecipe?recipeId=${RECIPE_ID}`)
       .set(AUTH_HEADER)
 
     expect(res.status).toBe(200)
@@ -328,20 +319,13 @@ describe('GET /getSavedRecipe', () => {
   })
 
   it('rejects request with no auth token (401)', async () => {
-    const res = await request(app).get(`/api/getSavedRecipe?userId=${TEST_UID}&recipeId=${RECIPE_ID}`)
+    const res = await request(app).get(`/api/getSavedRecipe?recipeId=${RECIPE_ID}`)
     expect(res.status).toBe(401)
-  })
-
-  it('rejects if userId does not match token uid (403)', async () => {
-    const res = await request(app)
-      .get(`/api/getSavedRecipe?userId=other-uid&recipeId=${RECIPE_ID}`)
-      .set(AUTH_HEADER)
-    expect(res.status).toBe(403)
   })
 
   it('returns the saved entry when the recipe is in the saved list', async () => {
     const res = await request(app)
-      .get(`/api/getSavedRecipe?userId=${TEST_UID}&recipeId=${RECIPE_ID}`)
+      .get(`/api/getSavedRecipe?recipeId=${RECIPE_ID}`)
       .set(AUTH_HEADER)
     expect(res.status).toBe(200)
     expect(res.body.recipeId).toBe(RECIPE_ID)
@@ -350,7 +334,7 @@ describe('GET /getSavedRecipe', () => {
 
   it('returns null when the recipe is not in the saved list', async () => {
     const res = await request(app)
-      .get(`/api/getSavedRecipe?userId=${TEST_UID}&recipeId=not-saved`)
+      .get(`/api/getSavedRecipe?recipeId=not-saved`)
       .set(AUTH_HEADER)
     expect(res.status).toBe(200)
     expect(res.body).toBeNull()
@@ -365,20 +349,13 @@ describe('POST /madeRecipe', () => {
   })
 
   it('rejects request with no auth token (401)', async () => {
-    const res = await request(app).post(`/api/madeRecipe?userId=${TEST_UID}&recipeId=${RECIPE_ID}`)
+    const res = await request(app).post(`/api/madeRecipe?recipeId=${RECIPE_ID}`)
     expect(res.status).toBe(401)
-  })
-
-  it('rejects if userId does not match token uid (403)', async () => {
-    const res = await request(app)
-      .post(`/api/madeRecipe?userId=other-uid&recipeId=${RECIPE_ID}`)
-      .set(AUTH_HEADER)
-    expect(res.status).toBe(403)
   })
 
   it('increments numTimesMade and adds to madeRecipes', async () => {
     const res = await request(app)
-      .post(`/api/madeRecipe?userId=${TEST_UID}&recipeId=${RECIPE_ID}`)
+      .post(`/api/madeRecipe?recipeId=${RECIPE_ID}`)
       .set(AUTH_HEADER)
 
     expect(res.status).toBe(200)
@@ -393,8 +370,8 @@ describe('POST /madeRecipe', () => {
   })
 
   it('does not double-add to madeRecipes on repeated calls ($addToSet)', async () => {
-    await request(app).post(`/api/madeRecipe?userId=${TEST_UID}&recipeId=${RECIPE_ID}`).set(AUTH_HEADER)
-    await request(app).post(`/api/madeRecipe?userId=${TEST_UID}&recipeId=${RECIPE_ID}`).set(AUTH_HEADER)
+    await request(app).post(`/api/madeRecipe?recipeId=${RECIPE_ID}`).set(AUTH_HEADER)
+    await request(app).post(`/api/madeRecipe?recipeId=${RECIPE_ID}`).set(AUTH_HEADER)
 
     const db = getDB()
     const userData = await db.collection('userRecipeData').findOne({ _id: TEST_UID })
@@ -407,13 +384,13 @@ describe('POST /madeRecipe', () => {
 
 describe('GET /checkMadeRecipe', () => {
   it('rejects request with no auth token (401)', async () => {
-    const res = await request(app).get(`/api/checkMadeRecipe?userId=${TEST_UID}&recipeId=${RECIPE_ID}`)
+    const res = await request(app).get(`/api/checkMadeRecipe?recipeId=${RECIPE_ID}`)
     expect(res.status).toBe(401)
   })
 
   it('returns { made: false } when user has not made the recipe', async () => {
     const res = await request(app)
-      .get(`/api/checkMadeRecipe?userId=${TEST_UID}&recipeId=${RECIPE_ID}`)
+      .get(`/api/checkMadeRecipe?recipeId=${RECIPE_ID}`)
       .set(AUTH_HEADER)
     expect(res.status).toBe(200)
     expect(res.body).toEqual({ made: false })
@@ -423,7 +400,7 @@ describe('GET /checkMadeRecipe', () => {
     await seedUserRecipeData(TEST_UID, { madeRecipes: [{ recipeId: RECIPE_ID }] })
 
     const res = await request(app)
-      .get(`/api/checkMadeRecipe?userId=${TEST_UID}&recipeId=${RECIPE_ID}`)
+      .get(`/api/checkMadeRecipe?recipeId=${RECIPE_ID}`)
       .set(AUTH_HEADER)
     expect(res.status).toBe(200)
     expect(res.body).toEqual({ made: true })

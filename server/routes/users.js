@@ -5,14 +5,13 @@ const { verifyToken } = require('../middleware/auth')
 const router = Router()
 
 // GET /getSavedRecipes — with dateSaved sorting
-// TODO: protect with verifyToken
 router.get('/getSavedRecipes', verifyToken, async (req, res) => {
   try {
     const db = getDB()
-    const { userId, page = 0, recipesPerPage = 5, order } = req.query
-    if (!userId) return res.status(400).json({ error: 'userId is required' })
+    const { page = 0, recipesPerPage = 5, order } = req.query
+    const uid = req.uid
 
-    const userData = await db.collection('userRecipeData').findOne({ _id: userId })
+    const userData = await db.collection('userRecipeData').findOne({ _id: uid })
     let savedRecipes = userData?.savedRecipes ?? []
     const totalCount = savedRecipes.length
 

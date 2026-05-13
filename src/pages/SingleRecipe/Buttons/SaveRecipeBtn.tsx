@@ -20,7 +20,7 @@ const SaveRecipeBtn: FC<SaveRecipeBtnProps> = ({ recipeId }) => {
 
   const { data } = useQuery({
     queryKey: ['savedRecipe', uid, recipeId],
-    queryFn: () => RecipeAPI.getSavedRecipe(uid!, recipeId),
+    queryFn: () => RecipeAPI.getSavedRecipe(recipeId),
     enabled: !!uid,
   })
 
@@ -29,11 +29,11 @@ const SaveRecipeBtn: FC<SaveRecipeBtnProps> = ({ recipeId }) => {
   const handleToggleSaveRecipe = (recipeId: string) => {
     if (uid) {
       if (isSaved) {
-        RecipeAPI.unsaveRecipe(uid, recipeId).then(() =>
+        RecipeAPI.unsaveRecipe(recipeId).then(() =>
           queryClient.setQueryData(['savedRecipe', uid, recipeId], [])
         )
       } else {
-        RecipeAPI.saveRecipe(uid, recipeId).then(() =>
+        RecipeAPI.saveRecipe(recipeId).then(() =>
           queryClient.setQueryData(['savedRecipe', uid, recipeId], [recipeId])
         )
       }
