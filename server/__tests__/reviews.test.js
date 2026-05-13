@@ -322,14 +322,16 @@ describe('GET /checkIfReviewed', () => {
     expect(res.body).toEqual({ reviewed: false })
   })
 
-  it('returns { reviewed: false } when a rating exists but reviewText is empty', async () => {
+  it('returns { reviewed: true, rating } when a rating exists with empty reviewText (rating-only)', async () => {
     await seedRating({ username: TEST_USERNAME, recipeId: RECIPE_ID, rating: 3, reviewText: '' })
 
     const res = await request(app)
       .get(`/api/checkIfReviewed?recipeId=${RECIPE_ID}`)
       .set(AUTH_HEADER)
     expect(res.status).toBe(200)
-    expect(res.body).toEqual({ reviewed: false })
+    expect(res.body.reviewed).toBe(true)
+    expect(res.body.rating).toBe(3)
+    expect(res.body.reviewText).toBe('')
   })
 
   it('returns { reviewed: true, reviewText, rating } when a review exists', async () => {
@@ -494,6 +496,25 @@ describe('GET /getSingleUserReviews', () => {
     const res = await request(app).get(`/api/getSingleUserReviews?username=${TEST_USERNAME}`)
     expect(res.status).toBe(200)
     expect(res.body.reviews[0].recipeData).toBeUndefined()
+  })
+
+  // The "rated recipes" tab on the Account page needs rating-only docs to
+  // show up. Earlier the filter required reviewText to exist and be non-empty,
+  // which silently dropped any rating without a written review.
+  it('includes rating-only entries (empty reviewText)', async () => {
+    await seedRating({
+      username: TEST_USERNAME,
+      recipeId: RECIPE_ID,
+      rating: 4,
+      reviewText: '',
+      ratingLastUpdated: new Date(),
+    })
+
+    const res = await request(app).get(`/api/getSingleUserReviews?username=${TEST_USERNAME}`)
+    expect(res.status).toBe(200)
+    expect(res.body.totalCount).toBe(1)
+    expect(res.body.reviews[0].rating).toBe(4)
+    expect(res.body.reviews[0].reviewText).toBe('')
   })
 
   it('paginates results', async () => {
