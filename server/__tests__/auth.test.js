@@ -18,22 +18,22 @@ describe('GET /getUsername', () => {
   })
 
   it('returns 400 if userId is missing', async () => {
-    const res = await request(app).get('/getUsername')
+    const res = await request(app).get('/api/getUsername')
     expect(res.status).toBe(400)
   })
 
   it('returns 400 if userId is the string "null"', async () => {
-    const res = await request(app).get('/getUsername?userId=null')
+    const res = await request(app).get('/api/getUsername?userId=null')
     expect(res.status).toBe(400)
   })
 
   it('returns 404 if userId is not found', async () => {
-    const res = await request(app).get('/getUsername?userId=unknown')
+    const res = await request(app).get('/api/getUsername?userId=unknown')
     expect(res.status).toBe(404)
   })
 
   it('returns the username for a valid userId', async () => {
-    const res = await request(app).get(`/getUsername?userId=${TEST_UID}`)
+    const res = await request(app).get(`/api/getUsername?userId=${TEST_UID}`)
     expect(res.status).toBe(200)
     expect(res.body).toBe('testuser')
   })
@@ -47,18 +47,18 @@ describe('GET /checkUsernameAvailability', () => {
   })
 
   it('returns 400 if username is missing', async () => {
-    const res = await request(app).get('/checkUsernameAvailability')
+    const res = await request(app).get('/api/checkUsernameAvailability')
     expect(res.status).toBe(400)
   })
 
   it('returns true if username is available', async () => {
-    const res = await request(app).get('/checkUsernameAvailability?username=available')
+    const res = await request(app).get('/api/checkUsernameAvailability?username=available')
     expect(res.status).toBe(200)
     expect(res.body).toBe(true)
   })
 
   it('returns false if username is already taken', async () => {
-    const res = await request(app).get('/checkUsernameAvailability?username=taken')
+    const res = await request(app).get('/api/checkUsernameAvailability?username=taken')
     expect(res.status).toBe(200)
     expect(res.body).toBe(false)
   })
@@ -68,13 +68,13 @@ describe('GET /checkUsernameAvailability', () => {
 
 describe('POST /setUsername', () => {
   it('rejects request with no auth token (401)', async () => {
-    const res = await request(app).post(`/setUsername?userId=${TEST_UID}&username=newuser`)
+    const res = await request(app).post(`/api/setUsername?userId=${TEST_UID}&username=newuser`)
     expect(res.status).toBe(401)
   })
 
   it('rejects if userId does not match token uid (403)', async () => {
     const res = await request(app)
-      .post('/setUsername?userId=different-uid&username=newuser')
+      .post('/api/setUsername?userId=different-uid&username=newuser')
       .set(AUTH_HEADER)
     expect(res.status).toBe(403)
   })
@@ -83,7 +83,7 @@ describe('POST /setUsername', () => {
     await seedUser('other-uid', 'taken')
 
     const res = await request(app)
-      .post(`/setUsername?userId=${TEST_UID}&username=taken`)
+      .post(`/api/setUsername?userId=${TEST_UID}&username=taken`)
       .set(AUTH_HEADER)
 
     expect(res.status).toBe(409)
@@ -92,7 +92,7 @@ describe('POST /setUsername', () => {
 
   it('creates a new username entry and returns success', async () => {
     const res = await request(app)
-      .post(`/setUsername?userId=${TEST_UID}&username=newuser`)
+      .post(`/api/setUsername?userId=${TEST_UID}&username=newuser`)
       .set(AUTH_HEADER)
 
     expect(res.status).toBe(200)
@@ -106,7 +106,7 @@ describe('POST /setUsername', () => {
     await seedUser(TEST_UID, 'oldname')
 
     const res = await request(app)
-      .post(`/setUsername?userId=${TEST_UID}&username=newname`)
+      .post(`/api/setUsername?userId=${TEST_UID}&username=newname`)
       .set(AUTH_HEADER)
 
     expect(res.status).toBe(200)
@@ -119,7 +119,7 @@ describe('POST /setUsername', () => {
     await seedUser(TEST_UID, 'myname')
 
     const res = await request(app)
-      .post(`/setUsername?userId=${TEST_UID}&username=myname`)
+      .post(`/api/setUsername?userId=${TEST_UID}&username=myname`)
       .set(AUTH_HEADER)
 
     expect(res.status).toBe(200)

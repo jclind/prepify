@@ -11,10 +11,10 @@ describe('Single Recipe', () => {
   })
 
   beforeEach(() => {
-    cy.intercept('GET', `${api()}/getRecipe*`, { fixture: 'single-recipe.json' }).as('getRecipe')
-    cy.intercept('GET', `${api()}/getReviews*`, { fixture: 'recipe-reviews.json' })
-    cy.intercept('GET', `${api()}/checkIfReviewed*`, { body: null })
-    cy.intercept('GET', `${api()}/getUsername*`, { body: null })
+    cy.intercept('GET', `${api()}/api/getRecipe*`, { fixture: 'single-recipe.json' }).as('getRecipe')
+    cy.intercept('GET', `${api()}/api/getReviews*`, { fixture: 'recipe-reviews.json' })
+    cy.intercept('GET', `${api()}/api/checkIfReviewed*`, { body: null })
+    cy.intercept('GET', `${api()}/api/getUsername*`, { body: null })
   })
 
   it('renders title, ingredients, and instructions', () => {
@@ -26,9 +26,9 @@ describe('Single Recipe', () => {
   })
 
   it('save/unsave button toggles correctly when logged in', () => {
-    cy.intercept('GET', `${api()}/getTrendingRecipes*`, { fixture: 'trending-recipes.json' })
-    cy.intercept('GET', `${api()}/getSavedRecipe*`, { body: [] }).as('getSavedRecipe')
-    cy.intercept('GET', `${api()}/getUsername*`, { body: 'testinguser' })
+    cy.intercept('GET', `${api()}/api/getTrendingRecipes*`, { fixture: 'trending-recipes.json' })
+    cy.intercept('GET', `${api()}/api/getSavedRecipe*`, { body: [] }).as('getSavedRecipe')
+    cy.intercept('GET', `${api()}/api/getUsername*`, { body: 'testinguser' })
 
     // Load the app first (required for __cy_signIn__ to be on window), then sign in.
     // Firebase stores auth in IndexedDB which persists across same-origin cy.visit() calls,
@@ -42,8 +42,8 @@ describe('Single Recipe', () => {
     cy.wait('@getSavedRecipe')
     cy.get('button.save-recipe-btn', { timeout: 5000 }).should('be.visible').and('not.have.class', 'saved')
 
-    cy.intercept('PUT', `${api()}/saveRecipe*`, { fixture: 'save-recipe.json' }).as('saveRecipe')
-    cy.intercept('PUT', `${api()}/unsaveRecipe*`, { body: {} }).as('unsaveRecipe')
+    cy.intercept('PUT', `${api()}/api/saveRecipe*`, { fixture: 'save-recipe.json' }).as('saveRecipe')
+    cy.intercept('PUT', `${api()}/api/unsaveRecipe*`, { body: {} }).as('unsaveRecipe')
 
     cy.get('button.save-recipe-btn').click()
     cy.wait('@saveRecipe')

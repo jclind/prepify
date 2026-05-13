@@ -36,63 +36,52 @@ class RecipeAPIClass {
     }
 
     const result = await http.get(
-      `recipes?q=${query}&page=${page}&recipesPerPage=${recipesPerPage}&order=${order}&cuisine=${cuisine}${tagsArrParam}`
+      `api/recipes?q=${query}&page=${page}&recipesPerPage=${recipesPerPage}&order=${order}&cuisine=${cuisine}${tagsArrParam}`
     )
     return result.data
-  }
-  search(
-    query: string,
-    tag = '',
-    page = 0,
-    order = 'new',
-    recipesPerPage = 5
-  ): Promise<RecipeDBResponseType[]> {
-    return http.get(
-      `recipes?q=${query.toString()}&page=${page}&tag=${tag}&order=${order}&recipesPerPage=${recipesPerPage}`
-    )
   }
   async searchAutoCompleteRecipes(
     title = ''
   ): Promise<RecipeSearchResponseType[]> {
-    const result = await http.get(`searchAutoCompleteRecipes?title=${title}`)
+    const result = await http.get(`api/searchAutoCompleteRecipes?title=${title}`)
     return result.data
   }
   async getTrendingRecipes(limit = 4): Promise<RecipeType[]> {
-    const result = await http.get(`getTrendingRecipes?limit=${limit}`)
+    const result = await http.get(`api/getTrendingRecipes?limit=${limit}`)
     return result.data
   }
   async getRecipe(id: string): Promise<RecipeType> {
-    const result = await http.get(`getRecipe?id=${id}`)
+    const result = await http.get(`api/getRecipe?id=${id}`)
     return result.data
   }
   async deleteRecipe(recipeId: string, userId: string): Promise<unknown> {
     const result = await http.delete(
-      `deleteRecipe?recipeId=${recipeId}&userId=${userId}`
+      `api/deleteRecipe?recipeId=${recipeId}&userId=${userId}`
     )
     return result.data
   }
 
   async saveRecipe(userId = '', recipeId = ''): Promise<AxiosResponse> {
-    return await http.put(`saveRecipe?userId=${userId}&recipeId=${recipeId}`)
+    return await http.put(`api/saveRecipe?userId=${userId}&recipeId=${recipeId}`)
   }
   async getSavedRecipe(
     userId = '',
     recipeId = ''
   ): Promise<GetSavedRecipesResponseType[]> {
     const result = await http.get(
-      `getSavedRecipe?userId=${userId}&recipeId=${recipeId}`
+      `api/getSavedRecipe?userId=${userId}&recipeId=${recipeId}`
     )
     return result.data
   }
   async unsaveRecipe(userId = '', recipeId = ''): Promise<AxiosResponse> {
-    return await http.put(`unsaveRecipe?userId=${userId}&recipeId=${recipeId}`)
+    return await http.put(`api/unsaveRecipe?userId=${userId}&recipeId=${recipeId}`)
   }
   async madeRecipe(recipeId: string): Promise<unknown> {
     const userId = AuthAPI.getUID()
     if (!userId) return
 
     const result = await http.post(
-      `madeRecipe?userId=${userId}&recipeId=${recipeId}`
+      `api/madeRecipe?userId=${userId}&recipeId=${recipeId}`
     )
     return result.data
   }
@@ -101,7 +90,7 @@ class RecipeAPIClass {
     if (!userId) return
 
     const result = await http.get(
-      `checkMadeRecipe?userId=${userId}&recipeId=${recipeId}`
+      `api/checkMadeRecipe?userId=${userId}&recipeId=${recipeId}`
     )
     return result.data
   }
@@ -181,7 +170,7 @@ class RecipeAPIClass {
         numTimesMade: 0,
       }
       setProgress(90)
-      await http.post('addRecipe', returnRecipeData)
+      await http.post('api/addRecipe', returnRecipeData)
       return recipeId
     } catch (error: unknown) {
       return null
@@ -228,32 +217,10 @@ class RecipeAPIClass {
     return { nutritionData: nutritionResult, dietLabels: currDietLabels }
   }
 
-  async addRecipeTag(data: string): Promise<AxiosResponse> {
-    return await http.post('addRecipeTag', data)
-  }
-
-  async searchRecipeTags(query: string, tagsArr: { text: string }[]) {
-    const tagsArrText =
-      tagsArr && tagsArr.length > 0 ? tagsArr.map(tag => tag.text) : []
-    let tagsArrParam = '' // For tags that have already been chosen
-    if (tagsArrText.length > 0) {
-      tagsArrParam += '&selectedTags='
-      tagsArrText.forEach(tag => {
-        tagsArrParam += `${tag},`
-      })
-    }
-
-    return await http.get(`searchRecipeTags?q=${query}${tagsArrParam}`)
-  }
-
-  async getRecipeTags(limit = 5) {
-    return await http.get(`getRecipeTags?limit=${limit}`)
-  }
-
   // Ratings / Reviews
   async addRating(recipeId: string, rating: number): Promise<AxiosResponse | null> {
     if (!AuthAPI.getUID()) return null
-    return await http.put(`addRating?recipeId=${recipeId}&rating=${rating}`)
+    return await http.put(`api/addRating?recipeId=${recipeId}&rating=${rating}`)
   }
 
   async newReview(recipeId: string, text: string): Promise<ReviewType | null> {
@@ -265,7 +232,7 @@ class RecipeAPIClass {
       recipeId,
       reviewText: text,
     }
-    const result = await http.put(`newReview`, data)
+    const result = await http.put(`api/newReview`, data)
     return result.data
   }
   async checkIfReviewed(recipeId: string) {
@@ -273,18 +240,18 @@ class RecipeAPIClass {
     if (!username) return null
 
     const result = await http.get(
-      `checkIfReviewed?username=${username}&recipeId=${recipeId}`
+      `api/checkIfReviewed?username=${username}&recipeId=${recipeId}`
     )
     return result.data
   }
   async editReview(recipeId: string, text: string): Promise<AxiosResponse | null> {
     if (!AuthAPI.getUID()) return null
-    return await http.put(`editReview?recipeId=${recipeId}&text=${text}`)
+    return await http.put(`api/editReview?recipeId=${recipeId}&text=${text}`)
   }
   async deleteReview(recipeId: string): Promise<AxiosResponse | null> {
     const userId = await AuthAPI.getUID()
     if (!userId) return null
-    return await http.put(`deleteReview?userId=${userId}&recipeId=${recipeId}`)
+    return await http.put(`api/deleteReview?userId=${userId}&recipeId=${recipeId}`)
   }
   async getReviews(
     recipeId: string,
@@ -294,7 +261,7 @@ class RecipeAPIClass {
   ) {
     const username = await AuthAPI.getUsername()
     const result = await http.get(
-      `getReviews?username=${username}&recipeId=${recipeId}&page=${page}&reviewsPerPage=${reviewsPerPage}&filter=${filter}`
+      `api/getReviews?username=${username}&recipeId=${recipeId}&page=${page}&reviewsPerPage=${reviewsPerPage}&filter=${filter}`
     )
     return result.data
   }
@@ -307,7 +274,7 @@ class RecipeAPIClass {
     const username = await AuthAPI.getUsername()
     if (!username) return null
     const reviewResult = await http.get(
-      `getSingleUserReviews?username=${username}&page=${page}&reviewsPerPage=${reviewsPerPage}&filter=${filter}&returnRecipeData=${returnRecipeData}`
+      `api/getSingleUserReviews?username=${username}&page=${page}&reviewsPerPage=${reviewsPerPage}&filter=${filter}&returnRecipeData=${returnRecipeData}`
     )
     return reviewResult.data
   }
@@ -342,7 +309,7 @@ class RecipeAPIClass {
     const uid = AuthAPI.getUID()
     if (!uid) return null
     const result = await http.get(
-      `getSavedRecipes?userId=${uid}&page=${page}&recipesPerPage=${recipesPerPage}&order=${order}`
+      `api/getSavedRecipes?userId=${uid}&page=${page}&recipesPerPage=${recipesPerPage}&order=${order}`
     )
     return result.data
   }

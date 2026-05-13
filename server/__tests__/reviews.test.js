@@ -70,7 +70,7 @@ afterEach(async () => {
 describe('PUT /addRating', () => {
   it('rejects non-numeric rating (400)', async () => {
     const res = await request(app)
-      .put(`/addRating?recipeId=${RECIPE_ID}&rating=abc`)
+      .put(`/api/addRating?recipeId=${RECIPE_ID}&rating=abc`)
       .set(AUTH_HEADER)
     expect(res.status).toBe(400)
     expect(res.body.error).toBe('Invalid rating')
@@ -78,7 +78,7 @@ describe('PUT /addRating', () => {
 
   it('rejects rating above 5 (400)', async () => {
     const res = await request(app)
-      .put(`/addRating?recipeId=${RECIPE_ID}&rating=6`)
+      .put(`/api/addRating?recipeId=${RECIPE_ID}&rating=6`)
       .set(AUTH_HEADER)
     expect(res.status).toBe(400)
     expect(res.body.error).toMatch(/between 1 and 5/)
@@ -86,7 +86,7 @@ describe('PUT /addRating', () => {
 
   it('rejects rating below 1 (400)', async () => {
     const res = await request(app)
-      .put(`/addRating?recipeId=${RECIPE_ID}&rating=0`)
+      .put(`/api/addRating?recipeId=${RECIPE_ID}&rating=0`)
       .set(AUTH_HEADER)
     expect(res.status).toBe(400)
     expect(res.body.error).toMatch(/between 1 and 5/)
@@ -94,7 +94,7 @@ describe('PUT /addRating', () => {
 
   it('accepts a valid rating and updates the recipe rating stats', async () => {
     const res = await request(app)
-      .put(`/addRating?recipeId=${RECIPE_ID}&rating=4`)
+      .put(`/api/addRating?recipeId=${RECIPE_ID}&rating=4`)
       .set(AUTH_HEADER)
     expect(res.status).toBe(200)
     expect(res.body).toEqual({ rated: true })
@@ -129,7 +129,7 @@ describe('PUT /editReview', () => {
     })
 
     const res = await request(app)
-      .put(`/editReview?recipeId=${RECIPE_ID}&text=Modified`)
+      .put(`/api/editReview?recipeId=${RECIPE_ID}&text=Modified`)
       .set(AUTH_HEADER)
 
     expect(res.status).toBe(403)
@@ -137,7 +137,7 @@ describe('PUT /editReview', () => {
 
   it('allows the author to edit their own review', async () => {
     const res = await request(app)
-      .put(`/editReview?recipeId=${RECIPE_ID}&text=Updated+review`)
+      .put(`/api/editReview?recipeId=${RECIPE_ID}&text=Updated+review`)
       .set(AUTH_HEADER)
 
     expect(res.status).toBe(200)
@@ -172,7 +172,7 @@ describe('PUT /deleteReview', () => {
     })
 
     const res = await request(app)
-      .put(`/deleteReview?recipeId=${RECIPE_ID}`)
+      .put(`/api/deleteReview?recipeId=${RECIPE_ID}`)
       .set(AUTH_HEADER)
 
     expect(res.status).toBe(403)
@@ -180,7 +180,7 @@ describe('PUT /deleteReview', () => {
 
   it('allows the author to delete their own review', async () => {
     const res = await request(app)
-      .put(`/deleteReview?recipeId=${RECIPE_ID}`)
+      .put(`/api/deleteReview?recipeId=${RECIPE_ID}`)
       .set(AUTH_HEADER)
 
     expect(res.status).toBe(200)
@@ -199,14 +199,14 @@ describe('PUT /deleteReview', () => {
 describe('PUT /newReview', () => {
   it('rejects request with no auth token (401)', async () => {
     const res = await request(app)
-      .put('/newReview')
+      .put('/api/newReview')
       .send({ recipeId: RECIPE_ID, reviewText: 'Great!' })
     expect(res.status).toBe(401)
   })
 
   it('returns 400 if reviewText is missing from body', async () => {
     const res = await request(app)
-      .put('/newReview')
+      .put('/api/newReview')
       .set(AUTH_HEADER)
       .send({ recipeId: RECIPE_ID })
     expect(res.status).toBe(400)
@@ -218,7 +218,7 @@ describe('PUT /newReview', () => {
     })
 
     const res = await request(app)
-      .put('/newReview')
+      .put('/api/newReview')
       .set(AUTH_HEADER)
       .send({ recipeId: RECIPE_ID, reviewText: 'Text' })
 
@@ -228,7 +228,7 @@ describe('PUT /newReview', () => {
 
   it('creates a new review and returns the saved document', async () => {
     const res = await request(app)
-      .put('/newReview')
+      .put('/api/newReview')
       .set(AUTH_HEADER)
       .send({ recipeId: RECIPE_ID, reviewText: 'Amazing dish!' })
 
@@ -249,7 +249,7 @@ describe('PUT /newReview', () => {
     })
 
     const res = await request(app)
-      .put('/newReview')
+      .put('/api/newReview')
       .set(AUTH_HEADER)
       .send({ recipeId: RECIPE_ID, reviewText: 'Updated text' })
 
@@ -262,13 +262,13 @@ describe('PUT /newReview', () => {
 
 describe('GET /checkIfReviewed', () => {
   it('returns 400 if username or recipeId is missing', async () => {
-    const res = await request(app).get(`/checkIfReviewed?username=${TEST_USERNAME}`)
+    const res = await request(app).get(`/api/checkIfReviewed?username=${TEST_USERNAME}`)
     expect(res.status).toBe(400)
   })
 
   it('returns { reviewed: false } when no rating document exists', async () => {
     const res = await request(app).get(
-      `/checkIfReviewed?username=${TEST_USERNAME}&recipeId=${RECIPE_ID}`
+      `/api/checkIfReviewed?username=${TEST_USERNAME}&recipeId=${RECIPE_ID}`
     )
     expect(res.status).toBe(200)
     expect(res.body).toEqual({ reviewed: false })
@@ -278,7 +278,7 @@ describe('GET /checkIfReviewed', () => {
     await seedRating({ username: TEST_USERNAME, recipeId: RECIPE_ID, rating: 3, reviewText: '' })
 
     const res = await request(app).get(
-      `/checkIfReviewed?username=${TEST_USERNAME}&recipeId=${RECIPE_ID}`
+      `/api/checkIfReviewed?username=${TEST_USERNAME}&recipeId=${RECIPE_ID}`
     )
     expect(res.status).toBe(200)
     expect(res.body).toEqual({ reviewed: false })
@@ -293,7 +293,7 @@ describe('GET /checkIfReviewed', () => {
     })
 
     const res = await request(app).get(
-      `/checkIfReviewed?username=${TEST_USERNAME}&recipeId=${RECIPE_ID}`
+      `/api/checkIfReviewed?username=${TEST_USERNAME}&recipeId=${RECIPE_ID}`
     )
     expect(res.status).toBe(200)
     expect(res.body.reviewed).toBe(true)
@@ -306,7 +306,7 @@ describe('GET /checkIfReviewed', () => {
 
 describe('GET /getReviews', () => {
   it('returns 400 if recipeId is missing', async () => {
-    const res = await request(app).get('/getReviews')
+    const res = await request(app).get('/api/getReviews')
     expect(res.status).toBe(400)
   })
 
@@ -326,7 +326,7 @@ describe('GET /getReviews', () => {
       reviewCreatedAt: '2000',
     })
 
-    const res = await request(app).get(`/getReviews?recipeId=${RECIPE_ID}`)
+    const res = await request(app).get(`/api/getReviews?recipeId=${RECIPE_ID}`)
     expect(res.status).toBe(200)
     expect(res.body.totalCount).toBe(2)
     expect(res.body.reviews).toHaveLength(2)
@@ -346,7 +346,7 @@ describe('GET /getReviews', () => {
       reviewText: '',
     })
 
-    const res = await request(app).get(`/getReviews?recipeId=${RECIPE_ID}`)
+    const res = await request(app).get(`/api/getReviews?recipeId=${RECIPE_ID}`)
     expect(res.status).toBe(200)
     expect(res.body.totalCount).toBe(1)
   })
@@ -361,7 +361,7 @@ describe('GET /getReviews', () => {
     })
 
     const res = await request(app).get(
-      `/getReviews?recipeId=${RECIPE_ID}&username=${TEST_USERNAME}`
+      `/api/getReviews?recipeId=${RECIPE_ID}&username=${TEST_USERNAME}`
     )
     expect(res.status).toBe(200)
     expect(res.body.reviews[0].isCurrentUser).toBe(true)
@@ -379,7 +379,7 @@ describe('GET /getReviews', () => {
     }
 
     const res = await request(app).get(
-      `/getReviews?recipeId=${RECIPE_ID}&page=0&reviewsPerPage=2`
+      `/api/getReviews?recipeId=${RECIPE_ID}&page=0&reviewsPerPage=2`
     )
     expect(res.status).toBe(200)
     expect(res.body.reviews).toHaveLength(2)
@@ -391,7 +391,7 @@ describe('GET /getReviews', () => {
 
 describe('GET /getSingleUserReviews', () => {
   it('returns 400 if username is missing', async () => {
-    const res = await request(app).get('/getSingleUserReviews')
+    const res = await request(app).get('/api/getSingleUserReviews')
     expect(res.status).toBe(400)
   })
 
@@ -411,7 +411,7 @@ describe('GET /getSingleUserReviews', () => {
       reviewCreatedAt: '2000',
     })
 
-    const res = await request(app).get(`/getSingleUserReviews?username=${TEST_USERNAME}`)
+    const res = await request(app).get(`/api/getSingleUserReviews?username=${TEST_USERNAME}`)
     expect(res.status).toBe(200)
     expect(res.body.totalCount).toBe(1)
     expect(res.body.reviews[0].username).toBe(TEST_USERNAME)
@@ -427,7 +427,7 @@ describe('GET /getSingleUserReviews', () => {
     })
 
     const res = await request(app).get(
-      `/getSingleUserReviews?username=${TEST_USERNAME}&returnRecipeData=true`
+      `/api/getSingleUserReviews?username=${TEST_USERNAME}&returnRecipeData=true`
     )
     expect(res.status).toBe(200)
     expect(res.body.reviews[0].recipeData).toBeDefined()
@@ -443,7 +443,7 @@ describe('GET /getSingleUserReviews', () => {
       reviewCreatedAt: '1000',
     })
 
-    const res = await request(app).get(`/getSingleUserReviews?username=${TEST_USERNAME}`)
+    const res = await request(app).get(`/api/getSingleUserReviews?username=${TEST_USERNAME}`)
     expect(res.status).toBe(200)
     expect(res.body.reviews[0].recipeData).toBeUndefined()
   })
@@ -460,7 +460,7 @@ describe('GET /getSingleUserReviews', () => {
     }
 
     const res = await request(app).get(
-      `/getSingleUserReviews?username=${TEST_USERNAME}&page=0&reviewsPerPage=2`
+      `/api/getSingleUserReviews?username=${TEST_USERNAME}&page=0&reviewsPerPage=2`
     )
     expect(res.status).toBe(200)
     expect(res.body.reviews).toHaveLength(2)

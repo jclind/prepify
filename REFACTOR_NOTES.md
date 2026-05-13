@@ -342,6 +342,91 @@ Phase 4-B follows the **explicit pattern** for `ReviewsContainer` / `ReviewsList
 
 ---
 
+## Phase 5: API contract gap analysis — open questions
+
+**Date:** 2026-05-13
+
+The Phase 5 decisions (`/api/` prefix, server-generated `_id`, `req.uid`-only identity, server-side username resolution, no PUT for mutations, drop tag/checkIfReviewed endpoints, add auth to ingredient parser) were checked against the current server. Five ambiguities surfaced that the stated decisions do not resolve:
+
+### Public read endpoints — should they require auth?
+
+These routes currently have **no** `verifyToken` middleware. The frontend interceptor sends a Bearer token when a user is logged in, but the server does not enforce one:
+
+- `GET /getUsername`
+- `GET /checkUsernameAvailability`
+- `GET /recipes`
+- `GET /searchAutoCompleteRecipes`
+- `GET /getTrendingRecipes`
+- `GET /getRecipe`
+
+Phase 5 says "all routes must use `/api/` prefix" but does not say whether browse/read endpoints should be locked behind auth. Logged-out users can hit the recipe browse pages today, which suggests these should stay public, but the decision is not explicit.
+
+### `getReviews` — `isCurrentUser` flag for anonymous viewers
+
+`GET /getReviews` currently uses a client-supplied `username` to compute `isCurrentUser` on each review row (used by `ReviewsContainer` to highlight the user's own review). If Phase 5 #4 is applied strictly — resolve username from token, add `verifyToken` — then anonymous viewers cannot read reviews at all. If we want anonymous viewers to read reviews (but never see an `isCurrentUser: true` row), the auth guard needs to be optional on this route, or the `isCurrentUser` flag needs to move client-side.
+
+### `editReview` HTTP verb
+
+Phase 5 #6 lists "POST or DELETE" as the allowed mutation verbs. `editReview` is neither a create nor a delete — it is an update. POST is the only listed option, but PATCH would be more conventional. Decide whether to use POST (per the stated decision) or relax the rule to allow PATCH.
+
+### Mount-level vs. route-level `/api/` prefix
+
+Two ways to add the `/api/` prefix:
+- (a) Change `app.use('/', recipeRoutes)` → `app.use('/api', recipeRoutes)` in `server/app.js`. Routes inside each router stay as `/getRecipe`, etc.
+- (b) Rewrite every route definition inside each router file to include `/api/`.
+
+(a) is much smaller and matches how the ingredient router is already mounted (`app.use('/api/ingredients', …)`). The frontend's `src/api/*.ts` callers must be updated in either case.
+
+### Frontend changes are co-required
+
+Every Phase 5 server change forces a corresponding frontend change (path prefix, drop `userId`/`username` query params, read server-returned `_id`, switch HTTP verbs). The gap analysis lists server-side fixes only — the client work in `src/api/recipes.ts`, `src/api/auth.ts`, and `src/api/ingredientParserApi.ts` is the same task and must ship together to avoid a broken intermediate state.
+
+---
+
+## Phase 5-B: /api/ prefix migration + dead-route cleanup
+
+**Date:** 2026-05-13
+
+### Scope of changes
+
+- `server/app.js` — every router now mounted at `/api/*` (was bare `/`). The ingredient router is already at `/api/ingredients` and unchanged.
+- `server/routes/tags.js` — deleted (no UI callers).
+- `server/__tests__/tags.test.js` — deleted (target routes are gone).
+- `src/api/recipes.ts` — every bare http call re-prefixed with `api/`. Four genuinely-unused methods removed: `search`, `addRecipeTag`, `searchRecipeTags`, `getRecipeTags`.
+- `src/api/auth.ts` — `getUsername`, `checkUsernameAvailability`, `setUsername` re-prefixed with `api/`.
+- `src/api/ingredientParserApi.ts` — untouched (already on `/api/ingredients/parse`).
+- `server/__tests__/{auth,recipes,reviews,users}.test.js` — all `request(app).<verb>('/<path>')` paths bulk-rewritten to `'/api/<path>'`. `/health` and `/api/ingredients/parse` were left alone.
+- `cypress/e2e/{auth,browse,recipe}.cy.ts` — all 14 `cy.intercept(...)` URLs bulk-rewritten from `${api()}/<path>*` to `${api()}/api/<path>*` so the network stubs match the new frontend call paths. `cy.visit(...)` URLs are SPA routes (not API), left alone.
+
+Verification:
+- `npm test --prefix server` → 95/95 passing (5 suites).
+- `npm test -- --run` → 109/109 passing.
+- `tsc --noEmit` → clean.
+
+### Audit correction — `checkIfReviewed` is NOT unused
+
+The Phase 1 audit (recorded in `REFACTOR.md` under "API contract flags") listed `checkIfReviewed()` as one of five "unused API functions" and the Phase 5 decision log carried this through as "do not implement." This was incorrect.
+
+`src/pages/SingleRecipe/DataSections/RatingsAndReviews/RatingsAndReviews.tsx:32` calls `RecipeAPI.checkIfReviewed(recipeId)` inside a TanStack `useQuery` to pre-fill the user's existing rating and review on the recipe page. This was migrated to `useQuery` in Phase 3-H and remained an active production caller throughout.
+
+**Action taken in 5-B:**
+- The `GET /checkIfReviewed` handler in `server/routes/reviews.js` was restored after being deleted in the initial staged diff for this phase.
+- `RecipeAPI.checkIfReviewed` kept in `src/api/recipes.ts` (re-prefixed to `/api/`).
+- Only the four genuinely-unused functions were removed.
+
+**Correction to record elsewhere:** the Phase 1 finding "Five unused API functions" should read "Four unused API functions: `search()`, `addRecipeTag()`, `searchRecipeTags()`, `getRecipeTags()`." The `REFACTOR.md` decision-log/audit entries that group `checkIfReviewed` into "DO NOT IMPLEMENT" should be treated as superseded by this note.
+
+### Things deliberately left for later 5-* sub-phases
+
+The following remain present in this commit, by design (deferred to the listed sub-phase):
+- Client-supplied `userId`/`username` query params (5-C)
+- All review/rating mutations still on `PUT` (5-E)
+- Client-generated `_id` in `RecipeAPI.addRecipe` via `bson-objectid` (5-D)
+- `POST /api/ingredients/parse` still un-guarded (5-F)
+- Four stale `// TODO: protect with verifyToken` comments above already-protected routes in `server/routes/reviews.js` (5-E)
+
+---
+
 ## Phase 4-C: ReviewOptions.tsx — pre-existing bug
 
 **Date:** 2026-05-12
