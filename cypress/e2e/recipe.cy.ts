@@ -27,7 +27,9 @@ describe('Single Recipe', () => {
 
   it('save/unsave button toggles correctly when logged in', () => {
     cy.intercept('GET', `${api()}/api/getTrendingRecipes*`, { fixture: 'trending-recipes.json' })
-    cy.intercept('GET', `${api()}/api/getSavedRecipe*`, { body: [] }).as('getSavedRecipe')
+    // getSavedRecipe returns the matched savedRecipes entry {recipeId, dateSaved}
+    // or null. Stub null here so the recipe starts in the "not saved" state.
+    cy.intercept('GET', `${api()}/api/getSavedRecipe*`, { body: null }).as('getSavedRecipe')
     cy.intercept('GET', `${api()}/api/getUsername*`, { body: 'testinguser' })
 
     // Load the app first (required for __cy_signIn__ to be on window), then sign in.
