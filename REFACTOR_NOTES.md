@@ -597,6 +597,31 @@ No Cypress intercepts targeted these four routes (grep returned zero matches), s
 
 ---
 
+## Phase 5-F: AUTH GAP closed on POST /api/ingredients/parse
+
+**Date:** 2026-05-13
+
+The ingredient parser route was the only protected-feature route in the server without `verifyToken`. The Phase 5-A audit flagged this as an AUTH GAP; the unauthenticated-behavior test in `ingredients.test.js` was documenting it explicitly ("not an endorsement"). This phase closes it.
+
+### Server (`server/routes/ingredients.js`)
+
+`router.post('/parse', verifyToken, ...)` — middleware added in the same position used by every other protected route. Handler body untouched.
+
+### Tests (`server/__tests__/ingredients.test.js`)
+
+- "Auth gap" test (asserted 200 with no Authorization header) flipped polarity: now `rejects request with no auth token (401)`, and the "documents current behaviour — not an endorsement" comment block deleted.
+- `AUTH_HEADER = { Authorization: 'Bearer fake-test-token' }` added; `.set(AUTH_HEADER)` applied to the seven existing 200/400/500 cases that previously didn't carry a token. The firebase-admin auto-mock resolves any Bearer token to `{ uid: 'test-uid' }`, so no other test wiring changed.
+
+### No frontend changes
+
+`src/api/ingredientParserApi.ts` uses the same `http` axios instance whose request interceptor (`src/api/http-common.ts`) attaches the Firebase ID token whenever a user is signed in. Per API_CONTRACT.md, the call site already runs from an authenticated context (AddRecipe page is gated by sign-in).
+
+### Verification
+
+- `npm test --prefix server` → 91/91 (net zero: one test replaced, not added/removed).
+
+---
+
 ## Phase 4-C: ReviewOptions.tsx — pre-existing bug
 
 **Date:** 2026-05-12

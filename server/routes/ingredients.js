@@ -1,9 +1,10 @@
 const { Router } = require('express')
 const { ingredientParser } = require('@jclind/ingredient-parser')
+const { verifyToken } = require('../middleware/auth')
 
 const router = Router()
 
-router.post('/parse', async (req, res) => {
+router.post('/parse', verifyToken, async (req, res) => {
   const { ingredientString, options } = req.body
   if (!ingredientString || typeof ingredientString !== 'string') {
     return res.status(400).json({ error: 'ingredientString must be a non-empty string' })

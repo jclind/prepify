@@ -30,6 +30,8 @@ const request = require('supertest')
 const app = require('../app')
 const { ingredientParser } = require('@jclind/ingredient-parser')
 
+const AUTH_HEADER = { Authorization: 'Bearer fake-test-token' }
+
 // Minimal valid IngredientResponse shape (mirrors the package's TypeScript types)
 const PARSED_RESULT = {
   parsedIngredient: {
@@ -54,10 +56,23 @@ describe('POST /api/ingredients/parse', () => {
     ingredientParser.mockResolvedValue(PARSED_RESULT)
   })
 
+  // ── Auth ─────────────────────────────────────────────────────────────────────
+
+  it('rejects request with no auth token (401)', async () => {
+    const res = await request(app)
+      .post('/api/ingredients/parse')
+      .send({ ingredientString: '2 cups flour' })
+    expect(res.status).toBe(401)
+    expect(ingredientParser).not.toHaveBeenCalled()
+  })
+
   // ── Validation ──────────────────────────────────────────────────────────────
 
   it('returns 400 when ingredientString is absent from the body', async () => {
-    const res = await request(app).post('/api/ingredients/parse').send({})
+    const res = await request(app)
+      .post('/api/ingredients/parse')
+      .set(AUTH_HEADER)
+      .send({})
     expect(res.status).toBe(400)
     expect(res.body).toHaveProperty('error')
     expect(ingredientParser).not.toHaveBeenCalled()
@@ -66,6 +81,7 @@ describe('POST /api/ingredients/parse', () => {
   it('returns 400 when ingredientString is an empty string', async () => {
     const res = await request(app)
       .post('/api/ingredients/parse')
+      .set(AUTH_HEADER)
       .send({ ingredientString: '' })
     expect(res.status).toBe(400)
     expect(res.body).toHaveProperty('error')
@@ -75,6 +91,7 @@ describe('POST /api/ingredients/parse', () => {
   it('returns 400 when ingredientString is not a string (number)', async () => {
     const res = await request(app)
       .post('/api/ingredients/parse')
+      .set(AUTH_HEADER)
       .send({ ingredientString: 42 })
     expect(res.status).toBe(400)
     expect(res.body).toHaveProperty('error')
@@ -86,6 +103,7 @@ describe('POST /api/ingredients/parse', () => {
   it('returns 200 with the full parser result for a valid ingredientString', async () => {
     const res = await request(app)
       .post('/api/ingredients/parse')
+      .set(AUTH_HEADER)
       .send({ ingredientString: '2 cups flour' })
     expect(res.status).toBe(200)
     expect(res.body).toEqual(PARSED_RESULT)
@@ -94,6 +112,7 @@ describe('POST /api/ingredients/parse', () => {
   it('response body contains parsedIngredient with the expected shape', async () => {
     const res = await request(app)
       .post('/api/ingredients/parse')
+      .set(AUTH_HEADER)
       .send({ ingredientString: '2 cups flour' })
     const { parsedIngredient } = res.body
     expect(parsedIngredient).toHaveProperty('ingredient', 'flour')
@@ -108,6 +127,7 @@ describe('POST /api/ingredients/parse', () => {
     const options = { servings: 4 }
     await request(app)
       .post('/api/ingredients/parse')
+      .set(AUTH_HEADER)
       .send({ ingredientString: '2 cups flour', options })
     // SPOONACULAR_API_KEY is process.env.SPOONACULAR_API_KEY (undefined in test
     // env — dotenv is not loaded when tests import app.js directly).
@@ -124,20 +144,9 @@ describe('POST /api/ingredients/parse', () => {
     ingredientParser.mockRejectedValue(new Error('parser exploded'))
     const res = await request(app)
       .post('/api/ingredients/parse')
+      .set(AUTH_HEADER)
       .send({ ingredientString: '2 cups flour' })
     expect(res.status).toBe(500)
     expect(res.body).toHaveProperty('error', 'parser exploded')
-  })
-
-  // ── Auth gap ─────────────────────────────────────────────────────────────────
-
-  // NOTE: This test documents current behaviour — not an endorsement.
-  // Every other route in this server requires a Bearer token via verifyToken
-  // middleware. This route has no auth guard. See REFACTOR_NOTES.md.
-  it('succeeds without an Authorization header (route is unauthenticated)', async () => {
-    const res = await request(app)
-      .post('/api/ingredients/parse')
-      .send({ ingredientString: '2 cups flour' })
-    expect(res.status).toBe(200)
   })
 })
