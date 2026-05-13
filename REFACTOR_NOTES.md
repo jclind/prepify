@@ -844,3 +844,44 @@ This keeps the useEffect's redirect intact for the genuinely-no-username case wh
 - `tsc --noEmit` → clean (server-only change; client types unchanged).
 
 Manual smoke-test owed before Phase 6-I: sign up a fresh account and confirm (a) no 404s in the Network panel for `/api/getUsername`, (b) no visible `/create-username` flash before landing on home. If the flash is visible, schedule the gating-ref follow-up.
+
+---
+
+## Phase 6-F: `TrendingRecipes` always-false `.loading` className fixed
+
+**Date:** 2026-05-13
+
+### Resolves Phase 2-E-1 bug + Phase 5 follow-up
+
+The condition `recipes.length < 0 ? '' : 'loading'` at `src/Components/TrendingRecipes/TrendingRecipes.tsx:20` was always-true (array lengths can't be negative), so the wrapper div carried the `.loading` class permanently — even after recipes were populated. Phase 2-E-1 flagged it; Phase 3-C intentionally preserved it during the React Query migration to keep behavior identical; Phase 5 line 341 listed the fix as a Phase 5/6 follow-up. Resolved here.
+
+### Fix
+
+Destructured `isLoading` from the existing `useQuery` and replaced the broken condition:
+
+```diff
+-  const { data } = useQuery<RecipeType[]>({
++  const { data, isLoading } = useQuery<RecipeType[]>({
+     queryKey: ['trending-recipes'],
+     queryFn: () => RecipeAPI.getTrendingRecipes(4),
+   })
+   ...
+-      <div className={`recipes ${recipes.length < 0 ? '' : 'loading'}`}>
++      <div className={`recipes ${isLoading ? 'loading' : ''}`}>
+```
+
+`isLoading` is true on initial fetch (no data yet) and false after resolution — including the empty-array case, which means the broken `recipes.length === 0` edge case never appears.
+
+### Regression test added
+
+`src/test/Home.test.tsx` — new test `does not carry the .loading class on the recipes wrapper after recipes resolve`. Renders with one mock recipe, awaits `recipe-thumb`, and asserts `.trending-recipes .recipes.loading` is absent. This is the first className-level assertion in the suite for TrendingRecipes and would have caught the original bug.
+
+### Pre-existing UX gap (intentionally untouched)
+
+The inner ternary `recipes.length > 0 ? thumbs : skeletons` still renders 4 skeletons indefinitely if a successful fetch resolves with an empty array (no "Trending" content yet). This is documented in Phase 2-E-1 line 100 and the Phase 5 notes at line 333-341 (no distinction between "still fetching" and "fetched with no data"). Out of scope for this commit; left as a future UX/empty-state design task.
+
+### Verification
+
+- `tsc --noEmit` → clean.
+- `npm test` (Vitest) → 110/110 (was 109, +1 regression test).
+- `npm test --prefix server` → 97/97 (no server changes, sanity-run).

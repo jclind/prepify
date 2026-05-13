@@ -117,5 +117,12 @@ describe('Home page', () => {
         expect(screen.getAllByTestId('recipe-thumb-loading')).toHaveLength(4)
       })
     })
+
+    it('does not carry the .loading class on the recipes wrapper after recipes resolve', async () => {
+      mockGetTrendingRecipes.mockResolvedValue([makeRecipe('a')])
+      const { container } = renderHome()
+      await screen.findByTestId('recipe-thumb')
+      expect(container.querySelector('.trending-recipes .recipes.loading')).toBeNull()
+    })
   })
 })
