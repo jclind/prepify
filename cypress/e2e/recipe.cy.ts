@@ -42,8 +42,8 @@ describe('Single Recipe', () => {
     cy.wait('@getSavedRecipe')
     cy.get('button.save-recipe-btn', { timeout: 5000 }).should('be.visible').and('not.have.class', 'saved')
 
-    cy.intercept('PUT', `${api()}/api/saveRecipe*`, { fixture: 'save-recipe.json' }).as('saveRecipe')
-    cy.intercept('PUT', `${api()}/api/unsaveRecipe*`, { body: {} }).as('unsaveRecipe')
+    cy.intercept('POST', `${api()}/api/recipes/*/save`, { fixture: 'save-recipe.json' }).as('saveRecipe')
+    cy.intercept('DELETE', `${api()}/api/recipes/*/save`, { body: {} }).as('unsaveRecipe')
 
     cy.get('button.save-recipe-btn').click()
     cy.wait('@saveRecipe')

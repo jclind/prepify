@@ -849,6 +849,94 @@ Manual smoke-test owed before Phase 6-I: sign up a fresh account and confirm (a)
 
 ---
 
+## Phase 6-G: save/unsave routes — `PUT` → `POST/DELETE`, REST path params
+
+**Date:** 2026-05-13
+
+### Closes Phase 5-E deferral
+
+Phase 5-E standardized review/rating mutations to POST/DELETE but explicitly left `PUT /api/saveRecipe` and `PUT /api/unsaveRecipe` as out-of-scope toggles (REFACTOR.md:162, 169; REFACTOR_NOTES.md:598). Phase 6-G picks up that thread.
+
+### Server (`server/routes/recipes.js`)
+
+```diff
+-router.put('/saveRecipe', verifyToken, async (req, res) => {
+-  const { recipeId } = req.query
++router.post('/recipes/:id/save', verifyToken, async (req, res) => {
++  const recipeId = req.params.id
+```
+
+```diff
+-router.put('/unsaveRecipe', verifyToken, async (req, res) => {
+-  const { recipeId } = req.query
++router.delete('/recipes/:id/save', verifyToken, async (req, res) => {
++  const recipeId = req.params.id
+```
+
+Handler bodies unchanged aside from the source of `recipeId`. Identity still flows from `req.uid` (Phase 5-C). Response shapes (`{ saved: true }` / `{ unsaved: true }` with 200) kept as-is to minimize blast radius — no callers read the body.
+
+### Why same path + different verbs
+
+The resource being mutated is *the user's saved-state for a recipe* — one resource, two operations. REST convention: same path, different verb. `POST /recipes/:id/save` creates the saved-state entry; `DELETE /recipes/:id/save` removes it. Mirrors Phase 5-E's pattern.
+
+A `/save` + `/unsave` split (POST on one path, DELETE on another) was considered and rejected — `/unsave` reads as an action, `DELETE /save` reads as "remove the save," which is more idiomatic REST.
+
+### Client (`src/api/recipes.ts`)
+
+```diff
+-  return await http.put(`api/saveRecipe?recipeId=${recipeId}`)
++  return await http.post(`api/recipes/${recipeId}/save`)
+```
+
+```diff
+-  return await http.put(`api/unsaveRecipe?recipeId=${recipeId}`)
++  return await http.delete(`api/recipes/${recipeId}/save`)
+```
+
+### Tests updated
+
+- `server/__tests__/recipes.test.js` — 5 cases re-aimed at the new verb + path; describe headers renamed. Assertion logic unchanged (same 200/404/409, same DB-state checks).
+- `cypress/e2e/recipe.cy.ts:45-46` — intercepts re-aimed: `PUT … /api/saveRecipe*` → `POST … /api/recipes/*/save`; `PUT … /api/unsaveRecipe*` → `DELETE … /api/recipes/*/save`. Alias names unchanged.
+
+### UI — no changes
+
+`src/pages/SingleRecipe/Buttons/SaveRecipeBtn.tsx` is the only call site. It goes through `RecipeAPI.saveRecipe(recipeId)` / `unsaveRecipe(recipeId)`, doesn't read the response body, and only sets local React Query cache state. The verb/URL change is fully encapsulated in `RecipeAPI`.
+
+### Verification
+
+- `tsc --noEmit` → clean.
+- `npm test --prefix server` → 97/97.
+- `npm test` (Vitest) → 110/110.
+
+Cypress is not part of the default test pipeline (`npm test` only runs Vitest; server suite runs via `--prefix server`). **Manual verification owed before Phase 6-I:** run `npx cypress run --spec cypress/e2e/recipe.cy.ts` and confirm the save/unsave path passes with the new intercept verbs/paths.
+
+---
+
+## Phase 6-H (follow-up candidate): sibling save-related routes still on old shape
+
+**Date logged:** 2026-05-13 — **not done in this commit**.
+
+After Phase 6-G, the sibling save-related routes remain on the old flat-name + `?recipeId=` query-string shape, creating a stylistic inconsistency:
+
+- `GET /api/getSavedRecipe?recipeId=...`
+- `POST /api/madeRecipe?recipeId=...`
+- `GET /api/checkMadeRecipe?recipeId=...`
+
+A consistent REST refactor would land them at:
+
+- `GET /api/recipes/:id/save` (natural pair to the new POST/DELETE on the same path)
+- `POST /api/recipes/:id/made` and `GET /api/recipes/:id/made`
+
+Deferred because:
+
+1. `getSavedRecipe` has more callers than the save/unsave pair and a different response contract (returns array of save-entry objects, not a 200/saved boolean) — needs its own scoped pass with attention to caller shape.
+2. `madeRecipe` / `checkMadeRecipe` are a separate sub-feature ("I made this" tracking) and renaming them deserves its own commit, not a bundle with save.
+3. Bundling all four into Phase 6-G would triple the diff for what is a clean verb fix.
+
+Pick this up in a future Phase 6 task (or a Phase 7 server-API consistency pass if scope sprawls).
+
+---
+
 ## Phase 6-F: `TrendingRecipes` always-false `.loading` className fixed
 
 **Date:** 2026-05-13
