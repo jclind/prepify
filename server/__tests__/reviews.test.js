@@ -68,6 +68,11 @@ afterEach(async () => {
 // ─── POST /addRating ───────────────────────────────────────────────────────────
 
 describe('POST /addRating', () => {
+  it('rejects request with no auth token (401)', async () => {
+    const res = await request(app).post(`/api/addRating?recipeId=${RECIPE_ID}&rating=4`)
+    expect(res.status).toBe(401)
+  })
+
   it('rejects non-numeric rating (400)', async () => {
     const res = await request(app)
       .post(`/api/addRating?recipeId=${RECIPE_ID}&rating=abc`)
@@ -121,6 +126,11 @@ describe('POST /editReview', () => {
     })
   })
 
+  it('rejects request with no auth token (401)', async () => {
+    const res = await request(app).post(`/api/editReview?recipeId=${RECIPE_ID}&text=Modified`)
+    expect(res.status).toBe(401)
+  })
+
   it('rejects request from non-author (403)', async () => {
     // Next admin.auth() call in verifyToken returns other-uid →
     // route looks up 'otheruser' → no ratings doc matches → matchedCount 0 → 403
@@ -164,6 +174,11 @@ describe('DELETE /deleteReview', () => {
       reviewCreatedAt: '1000',
       reviewLastUpdated: '1000',
     })
+  })
+
+  it('rejects request with no auth token (401)', async () => {
+    const res = await request(app).delete(`/api/deleteReview?recipeId=${RECIPE_ID}`)
+    expect(res.status).toBe(401)
   })
 
   it('rejects request from non-author (403)', async () => {
@@ -255,6 +270,34 @@ describe('POST /newReview', () => {
 
     expect(res.status).toBe(200)
     expect(res.body.reviewText).toBe('Updated text')
+  })
+
+  // Identity is resolved server-side from req.uid → usernames collection.
+  // Anything the client puts in body.username must be ignored.
+  it('ignores client-supplied username in body and stores token-resolved username', async () => {
+    const res = await request(app)
+      .post('/api/newReview')
+      .set(AUTH_HEADER)
+      .send({
+        recipeId: RECIPE_ID,
+        reviewText: 'Identity spoofing attempt',
+        username: OTHER_USERNAME, // attacker tries to write as another user
+      })
+
+    expect(res.status).toBe(200)
+    expect(res.body.username).toBe(TEST_USERNAME)
+
+    const db = getDB()
+    const stored = await db
+      .collection('ratings')
+      .findOne({ recipeId: RECIPE_ID, reviewText: 'Identity spoofing attempt' })
+    expect(stored).not.toBeNull()
+    expect(stored.username).toBe(TEST_USERNAME)
+    // And no doc was written under the attacker's username
+    const spoofed = await db
+      .collection('ratings')
+      .findOne({ username: OTHER_USERNAME, recipeId: RECIPE_ID })
+    expect(spoofed).toBeNull()
   })
 })
 

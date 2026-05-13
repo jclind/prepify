@@ -65,6 +65,15 @@ describe('GET /recipes', () => {
     expect(typeof res.body.total_results).toBe('number')
   })
 
+  // Browse is intentionally public — anonymous visitors can view recipes.
+  // Explicit assertion so a future stray verifyToken doesn't silently break it.
+  it('succeeds without an Authorization header (route is public)', async () => {
+    const res = await request(app).get('/api/recipes')
+    expect(res.status).toBe(200)
+    expect(res.body).toHaveProperty('recipeList')
+    expect(res.body).toHaveProperty('total_results')
+  })
+
   it('filters results by search query (q)', async () => {
     const res = await request(app).get('/api/recipes?q=chicken')
     expect(res.status).toBe(200)
@@ -283,7 +292,7 @@ describe('GET /getRecipe', () => {
 
 describe('DELETE /deleteRecipe', () => {
   beforeEach(async () => {
-    await seedRecipe({ ...BASE_RECIPE })
+    await seedRecipe({ ...BASE_RECIPE, userId: TEST_UID })
     await seedUserRecipeData(TEST_UID, { userRecipes: [{ recipeId: RECIPE_ID }] })
   })
 
@@ -297,6 +306,21 @@ describe('DELETE /deleteRecipe', () => {
       .delete(`/api/deleteRecipe?recipeId=nonexistent`)
       .set(AUTH_HEADER)
     expect(res.status).toBe(404)
+  })
+
+  it('rejects deletion attempt by non-owner (403)', async () => {
+    const db = getDB()
+    // Re-seed the recipe with a different owner
+    await db.collection('recipes').deleteOne({ _id: RECIPE_ID })
+    await seedRecipe({ ...BASE_RECIPE, userId: 'someone-else' })
+
+    const res = await request(app)
+      .delete(`/api/deleteRecipe?recipeId=${RECIPE_ID}`)
+      .set(AUTH_HEADER)
+
+    expect(res.status).toBe(403)
+    // Recipe must still exist
+    expect(await db.collection('recipes').findOne({ _id: RECIPE_ID })).not.toBeNull()
   })
 
   it('deletes the recipe and removes it from userRecipes', async () => {

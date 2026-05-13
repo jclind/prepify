@@ -622,6 +622,56 @@ The ingredient parser route was the only protected-feature route in the server w
 
 ---
 
+## Phase 5-G: Test-coverage pass + DELETE /deleteRecipe ownership fix
+
+**Date:** 2026-05-13
+
+### Coverage audit summary
+
+Five test files (`auth`, `recipes`, `reviews`, `users`, `ingredients`) cover every route. The prompt's five coverage targets were mostly already covered by the Phase 5-B → 5-F test churn. Two genuine gaps surfaced — one of which was a real security bug in the route, not just a missing assertion.
+
+### Route fix — `DELETE /deleteRecipe` ownership check
+
+The handler used to delete by `recipeId` only, with no check that the requester owns the recipe. Any authenticated user could delete any recipe. Fixed:
+
+```js
+const recipe = await db.collection('recipes').findOne({ _id: recipeId })
+if (!recipe) return res.status(404).json({ error: 'Recipe not found' })
+if (recipe.userId !== uid) return res.status(403).json({ error: 'Forbidden' })
+await db.collection('recipes').deleteOne({ _id: recipeId })
+```
+
+This relies on the `userId` field that Phase 5-D started stamping on inserts. Existing recipes in production that pre-date Phase 5-D may not have this field — they would now match `recipe.userId !== uid` (undefined !== anything) and 403, effectively locking the owner out. **Flagged for Phase 6** under the existing _id-migration note: same one-time backfill needed (stamp `userId` on pre-Phase-5-D recipes from whatever source-of-truth exists — likely `userRecipeData.userRecipes`).
+
+### Tests added
+
+`recipes.test.js`:
+- `GET /recipes` — explicit "succeeds without an Authorization header (route is public)" assertion. Documents the intentional anonymous-browse behavior so a future stray `verifyToken` can't silently break it.
+- `DELETE /deleteRecipe` — "rejects deletion attempt by non-owner (403)". Re-seeds the recipe with a different `userId`, expects 403, asserts the recipe still exists.
+- Existing positive-path test now seeds `userId: TEST_UID` on the recipe (otherwise the new ownership check would 403 it).
+
+`reviews.test.js`:
+- `POST /addRating` — explicit 401 without auth.
+- `POST /editReview` — explicit 401 without auth.
+- `DELETE /deleteReview` — explicit 401 without auth.
+- `POST /newReview` — "ignores client-supplied username in body and stores token-resolved username". Sends `username: OTHER_USERNAME` in the body; asserts the stored ratings doc has `TEST_USERNAME` and that no doc was written under `OTHER_USERNAME`.
+
+### Audit-vs-reality discrepancy — GET /recipes is public
+
+The prompt's coverage target #2 said `GET /api/recipes` should be "auth required". The route is intentionally public — the browse endpoint serves anonymous visitors (homepage, trending). Decision: test reality, not the prompt. The new public-route assertion documents this.
+
+### Prompt mocking instructions vs established infra — followed established infra
+
+The prompt said "Mock MongoDB collection calls using jest.fn() — do not connect to a real database" and "Mock verifyToken middleware to inject req.uid = 'test-uid'". Every existing test file in the suite uses `mongodb-memory-server` (started in `setup.js`) plus the `server/__mocks__/firebase-admin.js` auto-mock that resolves any Bearer token to `{ uid: 'test-uid' }`. Mixing two strategies in one test suite would be confusing; the prompt also said "Use the same patterns as server/__tests__/ingredients.test.js" — which uses the established infra. Followed the latter.
+
+### Verification
+
+- `npm test --prefix server` → 97/97 (was 91; +6 new cases).
+- `npm test -- --run` → 109/109.
+- `tsc --noEmit` → clean.
+
+---
+
 ## Phase 4-C: ReviewOptions.tsx — pre-existing bug
 
 **Date:** 2026-05-12
