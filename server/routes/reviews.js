@@ -98,7 +98,7 @@ router.get('/checkIfReviewed', verifyToken, async (req, res) => {
 
     const doc = await db.collection('ratings').findOne({ username, recipeId })
     if (doc) {
-      res.json({ reviewed: true, reviewText: doc.reviewText, rating: doc.rating })
+      res.json({ reviewed: true, ...doc })
     } else {
       res.json({ reviewed: false })
     }
