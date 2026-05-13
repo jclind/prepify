@@ -504,6 +504,54 @@ The username lookup pattern uses the existing `usernames` collection (`{_id: uid
 
 ---
 
+## Phase 5-D: Server-generated _id on recipe creation
+
+**Date:** 2026-05-13
+
+### Server (`server/routes/recipes.js`)
+
+`POST /api/addRecipe` now generates `_id` server-side via `new ObjectId()` from the native MongoDB driver. The handler explicitly overrides any client-supplied `_id` after spreading `req.body` into the insert document — symmetric with how `userId` is overridden from `req.uid` (Phase 5-C).
+
+- `_id` removed from `requiredFields`.
+- Response shape: `{ _id }` with status `201 Created` (was `{ insertedId }` at `200`).
+- `userRecipeData.userRecipes` $push now uses the server-generated `newId` instead of `body._id`.
+
+### Frontend (`src/api/recipes.ts`)
+
+- `bson-objectid` import removed (the only usage in the codebase).
+- `RecipeAPI.addRecipe` no longer pre-generates `_id`. The body literal is now typed as `Omit<RecipeType, '_id'>`. After `http.post`, the new id is read from `result.data._id` and returned to the caller (signature stays `Promise<string | null>`).
+- `AddRecipe.tsx` caller is unchanged — it only checks the truthy/null return; the value is the new server-generated 24-char hex id instead of a client-generated one.
+
+### Server tests
+
+`POST /addRecipe > creates recipe...` updated:
+- Sends `_id: 'client-supplied-id-should-be-ignored'` in the payload — server must ignore.
+- Asserts `res.status === 201`, `res.body._id` matches `/^[a-f0-9]{24}$/`, and `_id !== payload._id`.
+- Uses `new ObjectId(res.body._id)` for the subsequent `findOne` lookup.
+
+### Dependency cleanup
+
+`bson-objectid@^2.0.2` removed from root `package.json` dependencies. `npm install` regenerated the lockfile — no remaining references in either file.
+
+### Existing data — no migration needed
+
+Existing recipe documents in MongoDB already use client-generated ObjectID strings (24-char hex), which are valid BSON ObjectIDs. New recipes will have `_id` stored as a true BSON `ObjectId` value (not a string). Reads via `findOne({ _id: '<24-char hex>' })` may need attention later — MongoDB does not implicitly cast strings to ObjectIds in queries. Currently `GET /api/getRecipe?id=<string>` uses `{ _id: id }` with the string id verbatim; this works for the existing string-typed `_id` documents but will fail to match new ObjectId-typed `_id` documents.
+
+**Flagged for follow-up (out of strict 5-D scope):** all read paths that filter recipes by `_id` (`getRecipe`, `deleteRecipe`, `saveRecipe`, `unsaveRecipe`, `madeRecipe`, `checkMadeRecipe`, `getSavedRecipes`, `getSavedRecipe`) currently use the raw string. To handle both old (string) and new (ObjectId) documents during a transition, those routes need either:
+- An ObjectId-or-string coercion helper applied to each query, or
+- A one-time data migration converting old `_id` strings to ObjectId values, after which all queries can wrap incoming ids in `new ObjectId()`.
+
+This was not in scope for 5-D and existing data was the only consideration. The server tests use string `_id` values for seed fixtures (e.g. `recipe-001`), which still match the existing string-typed lookups — so tests pass without coercion. The 5-D `addRecipe` test wraps the returned id in `new ObjectId()` for its findOne, confirming the new docs are queryable by ObjectId.
+
+### Verification
+
+- `npm test --prefix server` → 91/91.
+- `npm test -- --run` → 109/109.
+- `tsc --noEmit` → clean.
+- `npm run build` → succeeds.
+
+---
+
 ## Phase 4-C: ReviewOptions.tsx — pre-existing bug
 
 **Date:** 2026-05-12

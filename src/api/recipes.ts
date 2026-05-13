@@ -1,6 +1,5 @@
 import { parseIngredientString } from '@jclind/ingredient-parser'
 import type { AxiosResponse } from 'axios'
-import ObjectID from 'bson-objectid'
 import { getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage'
 import dietLabels from 'src/recipeData/dietLabels'
 import { calculateServingPrice } from 'src/util/calculateServingPrice'
@@ -124,9 +123,7 @@ class RecipeAPIClass {
       )
       const nutritionData = nutritionDataRes.nutritionData
       const nutritionLabels = nutritionDataRes.dietLabels
-      const recipeId = '' + ObjectID()
-      const returnRecipeData: RecipeType = {
-        _id: recipeId,
+      const returnRecipeData: Omit<RecipeType, '_id'> = {
         title: recipeData.title,
         prepTime: recipeData.prepTime,
         cookTime: recipeData.cookTime,
@@ -155,8 +152,8 @@ class RecipeAPIClass {
         numTimesMade: 0,
       }
       setProgress(90)
-      await http.post('api/addRecipe', returnRecipeData)
-      return recipeId
+      const result = await http.post<{ _id: string }>('api/addRecipe', returnRecipeData)
+      return result.data._id
     } catch (error: unknown) {
       return null
     }

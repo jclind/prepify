@@ -1,4 +1,5 @@
 const { Router } = require('express')
+const { ObjectId } = require('mongodb')
 const { getDB } = require('../db')
 const { verifyToken } = require('../middleware/auth')
 
@@ -123,7 +124,7 @@ router.post('/addRecipe', verifyToken, async (req, res) => {
     const db = getDB()
     const body = req.body
     const uid = req.uid
-    const requiredFields = ['_id', 'title', 'ingredients', 'instructions', 'mealTypes']
+    const requiredFields = ['title', 'ingredients', 'instructions', 'mealTypes']
     const missing = requiredFields.filter(f => {
       const val = body[f]
       return val == null || val === '' || (Array.isArray(val) && val.length === 0)
@@ -131,15 +132,16 @@ router.post('/addRecipe', verifyToken, async (req, res) => {
     if (missing.length > 0) {
       return res.status(400).json({ error: `Missing required fields: ${missing.join(', ')}` })
     }
-    // Enforce safe defaults — don't trust client-supplied counters or identity
-    const docToInsert = { ...body, userId: uid, numTimesSaved: 0, numTimesMade: 0, views: 0 }
-    const result = await db.collection('recipes').insertOne(docToInsert)
+    // Server stamps _id, userId, and counters — client-supplied values are discarded
+    const newId = new ObjectId()
+    const docToInsert = { ...body, _id: newId, userId: uid, numTimesSaved: 0, numTimesMade: 0, views: 0 }
+    await db.collection('recipes').insertOne(docToInsert)
     await db.collection('userRecipeData').updateOne(
       { _id: uid },
-      { $push: { userRecipes: { recipeId: body._id } } },
+      { $push: { userRecipes: { recipeId: newId } } },
       { upsert: true }
     )
-    res.json({ insertedId: result.insertedId })
+    res.status(201).json({ _id: newId })
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
