@@ -937,6 +937,44 @@ Pick this up in a future Phase 6 task (or a Phase 7 server-API consistency pass 
 
 ---
 
+## Phase 6 — Cypress: pre-existing `signIn` failure unrelated to 6-G
+
+**Date:** 2026-05-13
+
+### Status
+
+The Cypress smoke-test owed before Phase 6-I (`npx cypress run --spec cypress/e2e/recipe.cy.ts`) was run after Phase 6-G. The save/unsave path failed at the `cy.signIn(...)` step. The same failure is confirmed pre-existing — identical error reproduced against the commit *before* 6-G — so it is **not a regression** introduced by the route refactor. The save/unsave intercepts themselves cannot be exercised end-to-end until `signIn` is unblocked.
+
+### Root cause (user investigation, 2026-05-13)
+
+The test-mode flag the app reads at `src/client/db.ts:17` (`import.meta.env.VITE_CYPRESS === 'true'`) is not being supplied to the Vite dev server when Cypress is launched directly:
+
+1. `VITE_CYPRESS` is not present in `.env`. `.env.example:13` has it as `VITE_CYPRESS=false`.
+2. Commit `ca03cde` (2026-05-10, "fix: replace deprecated Cypress.env() with typed constant and disable allowCypressEnv") removed the `env:` block from `cypress.config.ts` and added `allowCypressEnv: false` to silence the Cypress 15 deprecation warning. The `env:` block previously held `API_URL`; `VITE_CYPRESS` was never in it.
+
+The `npm run test:e2e:dev` and `test:e2e:ci` scripts in `package.json` set `VITE_CYPRESS=true` inline (`VITE_CYPRESS=true start-server-and-test start ...`), so end-to-end runs *through those scripts* work. Running `npx cypress run` directly against an already-running `npm start` (the more natural local workflow) does not propagate the var to Vite, so the app sees `VITE_CYPRESS === undefined` and `signIn` short-circuits.
+
+### Fix candidates (not in this commit)
+
+Per user investigation, two viable approaches — pick whichever fits the Cypress 15 deprecation posture better:
+
+1. **Add `env: { VITE_CYPRESS: 'true' }` to `cypress.config.ts`** alongside the existing `allowCypressEnv: false`. *Note for future implementer:* verify this actually reaches the Vite dev server at run time — Cypress's `env:` block is normally for Cypress's own runtime, not Vite's. May need to be combined with another mechanism (e.g. a Vite plugin reading from Cypress, or shelling out via `setupNodeEvents`).
+2. **Restore `allowCypressEnv: true`** in `cypress.config.ts` and **add `VITE_CYPRESS=true` to `.env`** (committed) or to the local dev shell environment. The dev server picks it up on next restart.
+
+Either way, validate by hitting `import.meta.env.VITE_CYPRESS` in the browser DevTools console after a fresh `npm start` and confirming the value is the string `'true'`.
+
+### Why not fix in this commit
+
+Out of scope for Phase 6-G (save/unsave verb refactor) and would conflate two unrelated changes in one diff. Logging here so a future Phase 6 commit (or Phase 7 if it sprawls) can pick it up cleanly.
+
+### Outstanding smoke tests still owed (does not block 6-I close-out, but tracking)
+
+- Phase 6-D: Edamam nutrition POST — verify in browser that creating a recipe still loads nutrition data with no CORS error.
+- Phase 6-E: signup race — verify in browser that signing up produces no 404s on `/api/getUsername` and no `/create-username` flash.
+- Phase 6-G: save/unsave end-to-end — blocked on the Cypress `signIn` fix above; re-run `npx cypress run --spec cypress/e2e/recipe.cy.ts` once unblocked.
+
+---
+
 ## Phase 6-F: `TrendingRecipes` always-false `.loading` className fixed
 
 **Date:** 2026-05-13
