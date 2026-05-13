@@ -16,7 +16,7 @@ class AuthAPIClass {
   }
   async checkUsernameAvailability(username: string): Promise<boolean> {
     const result = await http.get(
-      `api/checkUsernameAvailability?&username=${username}`
+      `api/checkUsernameAvailability?username=${username}`
     )
     return result.data
   }
