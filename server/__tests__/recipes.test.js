@@ -119,9 +119,10 @@ describe('POST /addRecipe', () => {
     expect(res.body.error).toMatch(/Missing required fields/)
   })
 
-  it('creates recipe and enforces numTimesSaved/numTimesMade/views = 0 regardless of client payload', async () => {
+  it('creates recipe, generates _id server-side, and enforces safe defaults regardless of client payload', async () => {
     const payload = {
-      _id: 'new-recipe-001',
+      // Client tries to dictate the _id — server must ignore it
+      _id: 'client-supplied-id-should-be-ignored',
       title: 'Test Recipe',
       description: 'A test recipe',
       ingredients: [{ id: 'i1', name: 'salt' }],
@@ -138,11 +139,16 @@ describe('POST /addRecipe', () => {
       .set(AUTH_HEADER)
       .send(payload)
 
-    expect(res.status).toBe(200)
-    expect(res.body).toHaveProperty('insertedId')
+    expect(res.status).toBe(201)
+    expect(res.body).toHaveProperty('_id')
+    expect(res.body._id).toMatch(/^[a-f0-9]{24}$/)
+    expect(res.body._id).not.toBe('client-supplied-id-should-be-ignored')
 
+    const newId = res.body._id
     const db = getDB()
-    const stored = await db.collection('recipes').findOne({ _id: 'new-recipe-001' })
+    const { ObjectId } = require('mongodb')
+    const stored = await db.collection('recipes').findOne({ _id: new ObjectId(newId) })
+    expect(stored).not.toBeNull()
     expect(stored.numTimesSaved).toBe(0)
     expect(stored.numTimesMade).toBe(0)
     expect(stored.views).toBe(0)
