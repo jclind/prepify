@@ -18,18 +18,18 @@ afterEach(async () => {
 
 describe('GET /getSavedRecipes', () => {
   it('rejects request with no auth token (401)', async () => {
-    const res = await request(app).get(`/getSavedRecipes?userId=${TEST_UID}`)
+    const res = await request(app).get(`/api/getSavedRecipes?userId=${TEST_UID}`)
     expect(res.status).toBe(401)
   })
 
   it('returns 400 if userId is missing', async () => {
-    const res = await request(app).get('/getSavedRecipes').set(AUTH_HEADER)
+    const res = await request(app).get('/api/getSavedRecipes').set(AUTH_HEADER)
     expect(res.status).toBe(400)
   })
 
   it('returns empty recipes and totalCount 0 when user has no saved recipes', async () => {
     const res = await request(app)
-      .get(`/getSavedRecipes?userId=${TEST_UID}`)
+      .get(`/api/getSavedRecipes?userId=${TEST_UID}`)
       .set(AUTH_HEADER)
 
     expect(res.status).toBe(200)
@@ -49,7 +49,7 @@ describe('GET /getSavedRecipes', () => {
     })
 
     const res = await request(app)
-      .get(`/getSavedRecipes?userId=${TEST_UID}`)
+      .get(`/api/getSavedRecipes?userId=${TEST_UID}`)
       .set(AUTH_HEADER)
 
     expect(res.status).toBe(200)
@@ -72,7 +72,7 @@ describe('GET /getSavedRecipes', () => {
     })
 
     const res = await request(app)
-      .get(`/getSavedRecipes?userId=${TEST_UID}&page=0&recipesPerPage=2`)
+      .get(`/api/getSavedRecipes?userId=${TEST_UID}&page=0&recipesPerPage=2`)
       .set(AUTH_HEADER)
 
     expect(res.status).toBe(200)
@@ -93,7 +93,7 @@ describe('GET /getSavedRecipes', () => {
     })
 
     const res = await request(app)
-      .get(`/getSavedRecipes?userId=${TEST_UID}&order=new&page=0&recipesPerPage=1`)
+      .get(`/api/getSavedRecipes?userId=${TEST_UID}&order=new&page=0&recipesPerPage=1`)
       .set(AUTH_HEADER)
 
     expect(res.status).toBe(200)
@@ -114,7 +114,7 @@ describe('GET /getSavedRecipes', () => {
     })
 
     const res = await request(app)
-      .get(`/getSavedRecipes?userId=${TEST_UID}&order=old&page=0&recipesPerPage=1`)
+      .get(`/api/getSavedRecipes?userId=${TEST_UID}&order=old&page=0&recipesPerPage=1`)
       .set(AUTH_HEADER)
 
     expect(res.status).toBe(200)

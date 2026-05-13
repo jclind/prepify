@@ -3,9 +3,9 @@ const api = () => API_URL
 
 describe('Auth', () => {
   beforeEach(() => {
-    cy.intercept('GET', `${api()}/getTrendingRecipes*`, { fixture: 'trending-recipes.json' })
-    cy.intercept('GET', `${api()}/getUsername*`, { body: 'testinguser' })
-    cy.intercept('GET', `${api()}/recipes*`, { fixture: 'recipes.json' })
+    cy.intercept('GET', `${api()}/api/getTrendingRecipes*`, { fixture: 'trending-recipes.json' })
+    cy.intercept('GET', `${api()}/api/getUsername*`, { body: 'testinguser' })
+    cy.intercept('GET', `${api()}/api/recipes*`, { fixture: 'recipes.json' })
   })
 
   it('login flow completes and nav shows username', () => {

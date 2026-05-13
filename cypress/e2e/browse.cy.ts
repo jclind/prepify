@@ -3,9 +3,9 @@ const api = () => API_URL
 
 describe('Browse', () => {
   beforeEach(() => {
-    cy.intercept('GET', `${api()}/getTrendingRecipes*`, { fixture: 'trending-recipes.json' })
-    cy.intercept('GET', `${api()}/recipes*`, { fixture: 'recipes.json' }).as('getRecipes')
-    cy.intercept('GET', `${api()}/searchAutoCompleteRecipes*`, {
+    cy.intercept('GET', `${api()}/api/getTrendingRecipes*`, { fixture: 'trending-recipes.json' })
+    cy.intercept('GET', `${api()}/api/recipes*`, { fixture: 'recipes.json' }).as('getRecipes')
+    cy.intercept('GET', `${api()}/api/searchAutoCompleteRecipes*`, {
       fixture: 'search-auto-complete-recipes.json',
     })
   })
@@ -29,9 +29,9 @@ describe('Browse', () => {
   })
 
   it('clicking a recipe navigates to the single recipe page', () => {
-    cy.intercept('GET', `${api()}/getRecipe*`, { fixture: 'single-recipe.json' }).as('getRecipe')
-    cy.intercept('GET', `${api()}/getReviews*`, { fixture: 'recipe-reviews.json' })
-    cy.intercept('GET', `${api()}/checkIfReviewed*`, { body: null })
+    cy.intercept('GET', `${api()}/api/getRecipe*`, { fixture: 'single-recipe.json' }).as('getRecipe')
+    cy.intercept('GET', `${api()}/api/getReviews*`, { fixture: 'recipe-reviews.json' })
+    cy.intercept('GET', `${api()}/api/checkIfReviewed*`, { body: null })
     cy.visit('/recipes')
     cy.wait('@getRecipes')
     cy.contains('.recipe-thumbnail', 'Tuscan Chicken Skillet', { timeout: 5000 }).should('be.visible').click()
