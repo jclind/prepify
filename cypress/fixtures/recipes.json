@@ -33,7 +33,7 @@
             "ingredientId": 1102047,
             "names": ["salt and pepper", "salt and black pepper"],
             "dateAdded": 1678127400482,
-            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/salt-and-pepper.jpg",
+            "imagePath": "https://img.spoonacular.com/ingredients_100x100/salt-and-pepper.jpg",
             "totalPriceUSACents": 0
           },
           "parsedIngredient": {
@@ -64,7 +64,7 @@
             "ingredientId": 10020409,
             "names": ["fettucini", "fettuccine"],
             "dateAdded": 1678298836360,
-            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/egg-noodles.jpg",
+            "imagePath": "https://img.spoonacular.com/ingredients_100x100/egg-noodles.jpg",
             "totalPriceUSACents": 74.52
           },
           "parsedIngredient": {
@@ -103,7 +103,7 @@
             "image": "raw-bacon.png",
             "ingredientId": 10123,
             "_id": "6408d06da8590f68419a05ad",
-            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/raw-bacon.png",
+            "imagePath": "https://img.spoonacular.com/ingredients_100x100/raw-bacon.png",
             "totalPriceUSACents": 113.16
           },
           "parsedIngredient": {
@@ -132,7 +132,7 @@
             "image": "chicken-tenders-or-fingers.png",
             "ingredientId": 1015062,
             "_id": "6408d072554b0508f9356aa4",
-            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/chicken-tenders-or-fingers.png",
+            "imagePath": "https://img.spoonacular.com/ingredients_100x100/chicken-tenders-or-fingers.png",
             "totalPriceUSACents": 585.14
           },
           "parsedIngredient": {
@@ -172,7 +172,7 @@
             "ingredientId": 11215,
             "names": ["garlic"],
             "dateAdded": 1678136497817,
-            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/garlic.png",
+            "imagePath": "https://img.spoonacular.com/ingredients_100x100/garlic.png",
             "totalPriceUSACents": 13.34
           },
           "parsedIngredient": {
@@ -201,7 +201,7 @@
             "image": "plum-tomatoes.png",
             "ingredientId": 10411529,
             "_id": "6408d07a70e05494f85b6aad",
-            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/plum-tomatoes.png",
+            "imagePath": "https://img.spoonacular.com/ingredients_100x100/plum-tomatoes.png",
             "totalPriceUSACents": 93.12
           },
           "parsedIngredient": {
@@ -239,7 +239,7 @@
             "image": "fluid-cream.jpg",
             "ingredientId": 1053,
             "_id": "6408d07d0743cef57dafe4ea",
-            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/fluid-cream.jpg",
+            "imagePath": "https://img.spoonacular.com/ingredients_100x100/fluid-cream.jpg",
             "totalPriceUSACents": 127.76
           },
           "parsedIngredient": {
@@ -278,7 +278,7 @@
             "image": "spinach.jpg",
             "ingredientId": 11457,
             "_id": "6408d0807b9822764cfe9f27",
-            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/spinach.jpg",
+            "imagePath": "https://img.spoonacular.com/ingredients_100x100/spinach.jpg",
             "totalPriceUSACents": 174.47
           },
           "parsedIngredient": {
@@ -314,7 +314,7 @@
             "image": "parmesan.jpg",
             "ingredientId": 1032,
             "_id": "6408d08570e05494f85b7307",
-            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/parmesan.jpg",
+            "imagePath": "https://img.spoonacular.com/ingredients_100x100/parmesan.jpg",
             "totalPriceUSACents": 374.41
           },
           "parsedIngredient": {
@@ -356,7 +356,7 @@
             "image": "fresh-basil.jpg",
             "ingredientId": 2044,
             "_id": "6408d08f554b0508f9358de1",
-            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/fresh-basil.jpg",
+            "imagePath": "https://img.spoonacular.com/ingredients_100x100/fresh-basil.jpg",
             "totalPriceUSACents": 174.26
           },
           "parsedIngredient": {
@@ -457,7 +457,7 @@
             "image": "vanilla-yogurt.png",
             "ingredientId": 99033,
             "_id": "63fe343cd36b2cfd1eb3f302",
-            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/vanilla-yogurt.png",
+            "imagePath": "https://img.spoonacular.com/ingredients_100x100/vanilla-yogurt.png",
             "totalPriceUSACents": 809.14
           },
           "parsedIngredient": {
@@ -500,7 +500,7 @@
             "image": "strawberries.png",
             "ingredientId": 9316,
             "_id": "63fe3476e03b994e26750d35",
-            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/strawberries.png",
+            "imagePath": "https://img.spoonacular.com/ingredients_100x100/strawberries.png",
             "totalPriceUSACents": 2533.86
           },
           "parsedIngredient": {
@@ -538,7 +538,7 @@
             "ingredientId": 9042,
             "names": ["blackberries"],
             "dateAdded": 1677013118622,
-            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/blackberries.jpg",
+            "imagePath": "https://img.spoonacular.com/ingredients_100x100/blackberries.jpg",
             "totalPriceUSACents": 837.53
           },
           "parsedIngredient": {
@@ -575,7 +575,7 @@
             "ingredientId": 8212,
             "names": ["granola"],
             "dateAdded": 1677013138540,
-            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/granola.jpg",
+            "imagePath": "https://img.spoonacular.com/ingredients_100x100/granola.jpg",
             "totalPriceUSACents": 160.88
           },
           "parsedIngredient": {
@@ -676,7 +676,7 @@
             "ingredientId": 11215,
             "names": ["garlic"],
             "dateAdded": 1677604709001,
-            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/garlic.png",
+            "imagePath": "https://img.spoonacular.com/ingredients_100x100/garlic.png",
             "totalPriceUSACents": 13.34
           },
           "parsedIngredient": {
@@ -714,7 +714,7 @@
             "ingredientId": 1082047,
             "names": ["kosher salt"],
             "dateAdded": 1677604719847,
-            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/salt.jpg",
+            "imagePath": "https://img.spoonacular.com/ingredients_100x100/salt.jpg",
             "totalPriceUSACents": 0
           },
           "parsedIngredient": {
@@ -752,7 +752,7 @@
             "ingredientId": 1034053,
             "names": ["extra-virgin olive oil"],
             "dateAdded": 1677604741117,
-            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/olive-oil.jpg",
+            "imagePath": "https://img.spoonacular.com/ingredients_100x100/olive-oil.jpg",
             "totalPriceUSACents": 17.59
           },
           "parsedIngredient": {
@@ -796,7 +796,7 @@
             "ingredientId": 10115076,
             "names": ["salmon fillet"],
             "dateAdded": 1677604785124,
-            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/salmon.png",
+            "imagePath": "https://img.spoonacular.com/ingredients_100x100/salmon.png",
             "totalPriceUSACents": 377.4
           },
           "parsedIngredient": {
@@ -839,7 +839,7 @@
             "ingredientId": 2044,
             "names": ["basil"],
             "dateAdded": 1677604857701,
-            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/fresh-basil.jpg",
+            "imagePath": "https://img.spoonacular.com/ingredients_100x100/fresh-basil.jpg",
             "totalPriceUSACents": 122.58
           },
           "parsedIngredient": {
@@ -887,7 +887,7 @@
             "ingredientId": 11529,
             "names": ["tomatoes"],
             "dateAdded": 1677604870433,
-            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/tomato.png",
+            "imagePath": "https://img.spoonacular.com/ingredients_100x100/tomato.png",
             "totalPriceUSACents": 72.16
           },
           "parsedIngredient": {
@@ -921,7 +921,7 @@
             "aisle": "Spices and Seasonings",
             "image": "pepper.jpg",
             "ingredientId": 1002030,
-            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/pepper.jpg",
+            "imagePath": "https://img.spoonacular.com/ingredients_100x100/pepper.jpg",
             "totalPriceUSACents": 3.69
           },
           "parsedIngredient": {
@@ -1042,7 +1042,7 @@
             "ingredientId": 1034053,
             "names": ["extra-virgin olive oil"],
             "dateAdded": 1678127268291,
-            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/olive-oil.jpg",
+            "imagePath": "https://img.spoonacular.com/ingredients_100x100/olive-oil.jpg",
             "totalPriceUSACents": 11.71
           },
           "parsedIngredient": {
@@ -1081,7 +1081,7 @@
             "ingredientId": 1055062,
             "names": ["boneless skinless chicken breasts"],
             "dateAdded": 1678123572755,
-            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/chicken-breasts.png",
+            "imagePath": "https://img.spoonacular.com/ingredients_100x100/chicken-breasts.png",
             "totalPriceUSACents": 605.55
           },
           "parsedIngredient": {
@@ -1120,7 +1120,7 @@
             "ingredientId": 1102047,
             "names": ["salt and pepper", "salt and black pepper"],
             "dateAdded": 1678127400482,
-            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/salt-and-pepper.jpg",
+            "imagePath": "https://img.spoonacular.com/ingredients_100x100/salt-and-pepper.jpg",
             "totalPriceUSACents": 0
           },
           "parsedIngredient": {
@@ -1160,7 +1160,7 @@
             "ingredientId": 19296,
             "names": ["honey"],
             "dateAdded": 1678136477135,
-            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/honey.png",
+            "imagePath": "https://img.spoonacular.com/ingredients_100x100/honey.png",
             "totalPriceUSACents": 54.1
           },
           "parsedIngredient": {
@@ -1191,7 +1191,7 @@
             "ingredientId": 16424,
             "names": ["low-sodium soy sauce"],
             "dateAdded": 1678136486356,
-            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/soy-sauce.jpg",
+            "imagePath": "https://img.spoonacular.com/ingredients_100x100/soy-sauce.jpg",
             "totalPriceUSACents": 45.23
           },
           "parsedIngredient": {
@@ -1231,7 +1231,7 @@
             "ingredientId": 11215,
             "names": ["garlic"],
             "dateAdded": 1678136497817,
-            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/garlic.png",
+            "imagePath": "https://img.spoonacular.com/ingredients_100x100/garlic.png",
             "totalPriceUSACents": 20.009999999999998
           },
           "parsedIngredient": {
@@ -1271,7 +1271,7 @@
             "ingredientId": 1032009,
             "names": ["red pepper flakes"],
             "dateAdded": 1678137240965,
-            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/red-pepper-flakes.jpg",
+            "imagePath": "https://img.spoonacular.com/ingredients_100x100/red-pepper-flakes.jpg",
             "totalPriceUSACents": 6.38
           },
           "parsedIngredient": {
@@ -1396,7 +1396,7 @@
               "boneless skinless chicken breast"
             ],
             "dateAdded": 1678123572755,
-            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/chicken-breasts.png",
+            "imagePath": "https://img.spoonacular.com/ingredients_100x100/chicken-breasts.png",
             "totalPriceUSACents": 400.76
           },
           "parsedIngredient": {
@@ -1436,7 +1436,7 @@
             "image": "egg.png",
             "ingredientId": 1123,
             "_id": "6408da8fe7f904cbc026e319",
-            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/egg.png",
+            "imagePath": "https://img.spoonacular.com/ingredients_100x100/egg.png",
             "totalPriceUSACents": 72
           },
           "parsedIngredient": {
@@ -1465,7 +1465,7 @@
             "image": "white-powder.jpg",
             "ingredientId": 20027,
             "_id": "6408da969162972ab36cd522",
-            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/white-powder.jpg",
+            "imagePath": "https://img.spoonacular.com/ingredients_100x100/white-powder.jpg",
             "totalPriceUSACents": 33.58
           },
           "parsedIngredient": {
@@ -1503,7 +1503,7 @@
             "ingredientId": 20081,
             "names": ["flour"],
             "dateAdded": 1678218434796,
-            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/flour.png",
+            "imagePath": "https://img.spoonacular.com/ingredients_100x100/flour.png",
             "totalPriceUSACents": 10.15
           },
           "parsedIngredient": {
@@ -1540,7 +1540,7 @@
             "image": "salt.jpg",
             "ingredientId": 2047,
             "_id": "6408da9e7b9822764c0d5912",
-            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/salt.jpg",
+            "imagePath": "https://img.spoonacular.com/ingredients_100x100/salt.jpg",
             "totalPriceUSACents": 0
           },
           "parsedIngredient": {
@@ -1585,7 +1585,7 @@
             "image": "lemon-juice.jpg",
             "ingredientId": 9152,
             "_id": "6408dabb9162972ab36d0864",
-            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/lemon-juice.jpg",
+            "imagePath": "https://img.spoonacular.com/ingredients_100x100/lemon-juice.jpg",
             "totalPriceUSACents": 160.88
           },
           "parsedIngredient": {
@@ -1625,7 +1625,7 @@
             "image": "sugar-in-bowl.png",
             "ingredientId": 19335,
             "_id": "6408dac07139b02725df3b65",
-            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/sugar-in-bowl.png",
+            "imagePath": "https://img.spoonacular.com/ingredients_100x100/sugar-in-bowl.png",
             "totalPriceUSACents": 21.87
           },
           "parsedIngredient": {
@@ -1663,7 +1663,7 @@
             "ingredientId": 2053,
             "names": ["vinegar"],
             "dateAdded": 1678301952290,
-            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/vinegar-(white).jpg",
+            "imagePath": "https://img.spoonacular.com/ingredients_100x100/vinegar-(white).jpg",
             "totalPriceUSACents": 4.59
           },
           "parsedIngredient": {
@@ -1699,7 +1699,7 @@
             "image": "soy-sauce.jpg",
             "ingredientId": 16124,
             "_id": "6408df5a7139b02725e691bd",
-            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/soy-sauce.jpg",
+            "imagePath": "https://img.spoonacular.com/ingredients_100x100/soy-sauce.jpg",
             "totalPriceUSACents": 20.11
           },
           "parsedIngredient": {
@@ -1738,7 +1738,7 @@
             "image": "ginger.png",
             "ingredientId": 2021,
             "_id": "6408df5f7139b02725e69720",
-            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/ginger.png",
+            "imagePath": "https://img.spoonacular.com/ingredients_100x100/ginger.png",
             "totalPriceUSACents": 14.9
           },
           "parsedIngredient": {
@@ -1774,7 +1774,7 @@
             "image": "garlic-powder.png",
             "ingredientId": 1022020,
             "_id": "6408df640743cef57dc4da0a",
-            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/garlic-powder.png",
+            "imagePath": "https://img.spoonacular.com/ingredients_100x100/garlic-powder.png",
             "totalPriceUSACents": 3.74
           },
           "parsedIngredient": {
@@ -1814,7 +1814,7 @@
             "ingredientId": 1032009,
             "names": ["red pepper flakes"],
             "dateAdded": 1678137240965,
-            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/red-pepper-flakes.jpg",
+            "imagePath": "https://img.spoonacular.com/ingredients_100x100/red-pepper-flakes.jpg",
             "totalPriceUSACents": 12.75
           },
           "parsedIngredient": {
@@ -1852,7 +1852,7 @@
             "image": "zest-lemon.jpg",
             "ingredientId": 9156,
             "_id": "6408df6e0743cef57dc4e385",
-            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/zest-lemon.jpg",
+            "imagePath": "https://img.spoonacular.com/ingredients_100x100/zest-lemon.jpg",
             "totalPriceUSACents": 50
           },
           "parsedIngredient": {
@@ -1883,7 +1883,7 @@
             "ingredientId": 20027,
             "names": ["cornstarch"],
             "dateAdded": 1678301846559,
-            "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/white-powder.jpg",
+            "imagePath": "https://img.spoonacular.com/ingredients_100x100/white-powder.jpg",
             "totalPriceUSACents": 6.36
           },
           "parsedIngredient": {
