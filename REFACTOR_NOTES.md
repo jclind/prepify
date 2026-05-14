@@ -1363,3 +1363,43 @@ The `__cy_signIn__` bridge (`src/client/db.ts`) and the `uploadRecipeImage` brid
 ### Fresh clone checklist
 
 After this fix, no manual `.env.local` step is needed for E2E tests. `npm run test:e2e:ci` works on a fresh clone as long as the other required env vars are present (`VITE_FIREBASE_*`, etc.).
+
+---
+
+## Phase 5-D follow-up: _id coercion helper landed
+
+**Date:** 2026-05-14
+
+The coercion helper described in the Phase 5-D deferral was implemented in
+`server/util/recipeIdQuery.js` as `recipeIdQuery(id)` (single id) and
+`recipeIdInQuery(ids)` (sibling for `$in: [...]` queries). They use `$or` /
+expanded `$in` to match both legacy string `_id`s and new BSON ObjectId
+`_id`s during the transition period.
+
+Applied to **9 recipes-collection `_id` query sites** across 3 route files:
+- `server/routes/recipes.js`: `GET /getRecipe`, both queries in `DELETE /deleteRecipe`, `POST /recipes/:id/save`, `DELETE /recipes/:id/save`, `POST /madeRecipe`
+- `server/routes/reviews.js`: `POST /addRating`, `GET /getSingleUserReviews`
+- `server/routes/users.js`: `GET /getSavedRecipes` (the `$in` array case)
+
+The original prompt's route list also included `GET /getSavedRecipe` and
+`GET /checkMadeRecipe`, but those handlers don't query the `recipes`
+collection at all — they only filter `userRecipeData.savedRecipes[]` /
+`madeRecipes[]` arrays via JS, and both sides are stored as strings, so
+they work as-is for post-5-D recipes.
+
+The one-time MongoDB backfill (converting pre-Phase-5-D string `_id`s to
+ObjectIds) is still outstanding. Once run, the `$or` / expanded-`$in`
+branches become no-ops but are safe to leave in place indefinitely.
+
+### SingleRecipe page — missing error handling (flagged, not fixed)
+
+`src/pages/SingleRecipe/SingleRecipe.tsx` has no error state for a failed
+`getRecipe` query. When `GET /api/getRecipe` returns a non-2xx response
+(404, 500 etc.), the page renders nothing or hangs in a loading state with
+no user feedback.
+
+Recommended fix: destructure `isError` from the `useQuery` call and render
+a `<RecipeNotFound />` component (already exists at
+`src/pages/SingleRecipe/RecipeNotFound/`) when `isError` is true. Medium
+priority — no data is lost, but the user has no indication whether the page
+is still loading or permanently broken.

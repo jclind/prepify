@@ -2,6 +2,7 @@ const { Router } = require('express')
 const { ObjectId } = require('mongodb')
 const { getDB } = require('../db')
 const { verifyToken } = require('../middleware/auth')
+const { recipeIdQuery } = require('../util/recipeIdQuery')
 
 const router = Router()
 
@@ -110,7 +111,7 @@ router.get('/getRecipe', async (req, res) => {
     if (!id) return res.status(400).json({ error: 'id is required' })
 
     const recipe = await db.collection('recipes').findOneAndUpdate(
-      { _id: id },
+      recipeIdQuery(id),
       { $inc: { views: 1 } },
       { returnDocument: 'after' }
     )
@@ -167,14 +168,14 @@ router.delete('/deleteRecipe', verifyToken, async (req, res) => {
       return res.status(400).json({ error: 'recipeId is required' })
     }
     const uid = req.uid
-    const recipe = await db.collection('recipes').findOne({ _id: recipeId })
+    const recipe = await db.collection('recipes').findOne(recipeIdQuery(recipeId))
     if (!recipe) {
       return res.status(404).json({ error: 'Recipe not found' })
     }
     if (recipe.userId !== uid) {
       return res.status(403).json({ error: 'Forbidden' })
     }
-    await db.collection('recipes').deleteOne({ _id: recipeId })
+    await db.collection('recipes').deleteOne(recipeIdQuery(recipeId))
     await db.collection('userRecipeData').updateOne(
       { _id: uid },
       { $pull: { userRecipes: { recipeId } } }
@@ -205,7 +206,7 @@ router.post('/recipes/:id/save', verifyToken, async (req, res) => {
       { upsert: true }
     )
     await db.collection('recipes').updateOne(
-      { _id: recipeId },
+      recipeIdQuery(recipeId),
       { $inc: { numTimesSaved: 1 } }
     )
     res.json({ saved: true })
@@ -251,7 +252,7 @@ router.delete('/recipes/:id/save', verifyToken, async (req, res) => {
       { $pull: { savedRecipes: { recipeId } } }
     )
     await db.collection('recipes').updateOne(
-      { _id: recipeId },
+      recipeIdQuery(recipeId),
       [{ $set: { numTimesSaved: { $max: [{ $subtract: ['$numTimesSaved', 1] }, 0] } } }]
     )
     res.json({ unsaved: true })
@@ -270,7 +271,7 @@ router.post('/madeRecipe', verifyToken, async (req, res) => {
     }
     const uid = req.uid
     await db.collection('recipes').updateOne(
-      { _id: recipeId },
+      recipeIdQuery(recipeId),
       { $inc: { numTimesMade: 1 } }
     )
     await db.collection('userRecipeData').updateOne(

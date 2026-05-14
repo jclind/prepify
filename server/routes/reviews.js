@@ -1,6 +1,7 @@
 const { Router } = require('express')
 const { getDB } = require('../db')
 const { verifyToken } = require('../middleware/auth')
+const { recipeIdQuery } = require('../util/recipeIdQuery')
 
 const router = Router()
 
@@ -46,7 +47,7 @@ router.post('/addRating', verifyToken, async (req, res) => {
     const avg = allRatings.reduce((sum, r) => sum + parseFloat(r.rating), 0) / count
 
     await db.collection('recipes').updateOne(
-      { _id: recipeId },
+      recipeIdQuery(recipeId),
       { $set: { rating: { rateCount: count, rateValue: avg } } }
     )
 
@@ -212,7 +213,7 @@ router.get('/getSingleUserReviews', async (req, res) => {
     if (returnRecipeData === 'true') {
       reviews = await Promise.all(
         rawReviews.map(async (r) => {
-          const recipeData = await db.collection('recipes').findOne({ _id: r.recipeId })
+          const recipeData = await db.collection('recipes').findOne(recipeIdQuery(r.recipeId))
           return { ...r, recipeData }
         })
       )
