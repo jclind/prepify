@@ -24,7 +24,17 @@ const InstructionsContainer: FC<InstructionsContainerProps> = ({
     })
   }
   const removeInstruction = (removeId: string) => {
-    setInstructions(prev => prev.filter(instr => instr.id !== removeId))
+    setInstructions(prev => {
+      const filtered = prev.filter(instr => instr.id !== removeId)
+      let indexCounter: number = 0
+      return filtered.map(instr => {
+        if ('index' in instr) {
+          indexCounter++
+          return { ...instr, index: indexCounter }
+        }
+        return instr
+      })
+    })
   }
 
   const addInstruction = (data: { label: string } | { content: string }) => {
