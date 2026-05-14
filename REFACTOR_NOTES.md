@@ -1242,3 +1242,122 @@ Reverted to `disabled={addRecipeLoading}` only. Visual `valid`/`invalid` classNa
 ### What the full hardening would require
 
 The `disabled={!isFormValid}` half can ship once errors fire progressively (e.g., `validate(true)` on field blur after first interaction), so the user has another channel for discovering invalid state.
+
+---
+
+## Add Recipe audit follow-up: unknown sentinel gap in submit handler
+
+**Date:** 2026-05-13
+
+`AddRecipe.tsx:131` (`else if (newId)`) treats any truthy non-AUTH string as a valid `_id` and navigates to `/recipes/<that-string>`. A future `ADD_RECIPE_AUTH_ERROR` shape change or a newly introduced sentinel would silently navigate the user to a bad URL.
+
+### Fix direction
+
+Narrow the success branch to only navigate when `newId` doesn't match any known sentinel constant — e.g., maintain a `RECIPE_RESULT_SENTINELS` set and treat anything in it as a failure path. Alternatively, validate the shape of `_id` (MongoDB ObjectId regex) before navigating.
+
+### Test coverage
+
+`src/test/AddRecipe.test.tsx` has an `it.skip(...)` under `describe('error discrimination')` named "treats an unknown non-AUTH sentinel as a failure (generic error, no navigate)". Un-skip once the source is narrowed.
+
+---
+
+## Add Recipe audit follow-up: ServingsInput decimal-rejection unit coverage missing
+
+**Date:** 2026-05-13
+
+The `inputVal % 1 === 0` guard in `src/pages/AddRecipe/ServingsInput/ServingsInput.tsx` is not covered by unit tests. Attempting to exercise it through `src/test/AddRecipe.test.tsx`'s mocked `RecipeFormInput` is unreliable: typing `"1.5"` character-by-character leaks the intermediate value `"1."` through the guard (`"1." % 1 === 0`), so the form-level required-check passes on a truthy string and no error surfaces.
+
+### Fix direction
+
+Add a dedicated `src/test/ServingsInput.test.tsx` that drives `ServingsInput` directly (not via `AddRecipe`) and asserts the guard rejects decimals, negatives, and out-of-range values without relying on the broader form's mock chain.
+
+### Test coverage
+
+`src/test/AddRecipe.test.tsx` has an `it.skip(...)` under `describe('validation edge cases')` named "servings of 1.5 (decimal) is rejected by ServingsInput". Un-skip — or move the assertion to the new ServingsInput test file and delete the skip — once the dedicated unit suite exists.
+
+---
+
+## Spoonacular CDN URL Migration
+
+**Date:** 2026-05-14
+
+### What changed
+
+Spoonacular migrated their image CDN from `spoonacular.com/cdn/` to `img.spoonacular.com`. The old path returns 404.
+
+The fix was applied as a **post-parse transform in `server/routes/ingredients.js`** — a `.replace()` call between `ingredientParser()` and `res.json()`, guarded against null `ingredientData`. This means the fix applies regardless of what `@jclind/ingredient-parser` returns.
+
+**Why not fix it in the package?** The package (`@jclind/ingredient-parser`) is owned by the project author and could be updated. The server-side transform was chosen for speed — no package publish or version bump required. The transform is belt-and-suspenders: if the package is later updated to use the correct CDN, the `.replace()` call becomes a no-op (idempotent by design — tested in `server/__tests__/ingredients.test.js`).
+
+**If you update `@jclind/ingredient-parser`:** Update the CDN base URL in the package source, publish, bump the dependency in `package.json`, and consider whether the server-side transform should be kept as a guard or removed.
+
+### MongoDB migration (existing data)
+
+Pre-fix recipes in MongoDB have the old broken URL baked into `ingredients.ingredientData.imagePath`. Run this in Atlas to fix existing data:
+
+```js
+// Count affected recipes first
+db.recipes.countDocuments({
+  "ingredients.ingredientData.imagePath": { $regex: "spoonacular\\.com/cdn" }
+})
+
+// Then update
+db.recipes.updateMany(
+  { "ingredients.ingredientData.imagePath": { $regex: "spoonacular.com/cdn" } },
+  [{
+    $set: {
+      "ingredients": {
+        $map: {
+          input: "$ingredients",
+          as: "ing",
+          in: {
+            $mergeObjects: [
+              "$$ing",
+              {
+                "ingredientData": {
+                  $mergeObjects: [
+                    "$$ing.ingredientData",
+                    {
+                      "imagePath": {
+                        $replaceOne: {
+                          input: "$$ing.ingredientData.imagePath",
+                          find: "https://spoonacular.com/cdn/ingredients_100x100/",
+                          replacement: "https://img.spoonacular.com/ingredients_100x100/"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  }]
+)
+```
+
+If any recipes used other sizes (250x250, 500x500), broaden the `find` string or run the update once per size variant.
+
+---
+
+## Vite v8 — VITE_CYPRESS shell env no longer surfaces to client bundle
+
+**Date:** 2026-05-14
+
+### The problem
+
+Vite v8 stopped propagating shell-level `VITE_*` environment variables to `import.meta.env` in the client bundle. They must now come from `.env*` files. The `test:e2e:ci` script was passing `VITE_CYPRESS=true` as a shell prefix — this worked in earlier Vite versions but silently stopped populating the variable in the browser.
+
+The `__cy_signIn__` bridge (`src/client/db.ts`) and the `uploadRecipeImage` bridge (`src/api/recipes.ts`) both gate on `import.meta.env.VITE_CYPRESS === 'true'`. When the variable is missing, both bridges are inactive and Cypress E2E tests fail at the auth step.
+
+### The fix
+
+- Created `.env.test` (committed) with `VITE_CYPRESS=true`
+- Updated `test:e2e:ci` and `test:e2e:dev` scripts to launch Vite with `--mode test`, which causes Vite to load `.env.test` automatically
+- Removed the now-redundant shell-level `VITE_CYPRESS=true` prefix from both scripts
+
+### Fresh clone checklist
+
+After this fix, no manual `.env.local` step is needed for E2E tests. `npm run test:e2e:ci` works on a fresh clone as long as the other required env vars are present (`VITE_FIREBASE_*`, etc.).
