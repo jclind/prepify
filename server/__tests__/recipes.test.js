@@ -540,3 +540,46 @@ describe('GET /getTrendingRecipes', () => {
     expect(res.body.length).toBeLessThanOrEqual(20)
   })
 })
+
+// ─── Phase 5-D _id coercion regression tests ─────────────────────────────────
+
+describe('Phase 5-D — recipeIdQuery coercion', () => {
+  const { ObjectId } = require('mongodb')
+
+  it('GET /getRecipe finds a recipe stored with a native ObjectId _id', async () => {
+    const oid = new ObjectId()
+    const hex = oid.toHexString()
+    await seedRecipe({ ...BASE_RECIPE, _id: oid, views: 5 })
+
+    const res = await request(app).get(`/api/getRecipe?id=${hex}`)
+    expect(res.status).toBe(200)
+    // BSON ObjectId serialises to its hex string over JSON
+    expect(res.body._id).toBe(hex)
+    expect(res.body.views).toBe(6)
+  })
+
+  it('GET /getSavedRecipes returns recipes saved as both string and ObjectId _ids', async () => {
+    const stringId = 'legacy-recipe-001'
+    const oid = new ObjectId()
+    const oidHex = oid.toHexString()
+
+    await seedRecipe({ ...BASE_RECIPE, _id: stringId, title: 'Legacy' })
+    await seedRecipe({ ...BASE_RECIPE, _id: oid, title: 'New' })
+    await seedUserRecipeData(TEST_UID, {
+      savedRecipes: [
+        { recipeId: stringId, dateSaved: '1000' },
+        // The save flow stamps recipeId as the hex string of the ObjectId
+        { recipeId: oidHex, dateSaved: '2000' },
+      ],
+    })
+
+    const res = await request(app)
+      .get('/api/getSavedRecipes?page=0&recipesPerPage=10&order=new')
+      .set(AUTH_HEADER)
+
+    expect(res.status).toBe(200)
+    expect(res.body.totalCount).toBe(2)
+    const titles = res.body.recipes.map((r) => r.title).sort()
+    expect(titles).toEqual(['Legacy', 'New'])
+  })
+})

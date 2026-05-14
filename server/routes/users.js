@@ -1,6 +1,7 @@
 const { Router } = require('express')
 const { getDB } = require('../db')
 const { verifyToken } = require('../middleware/auth')
+const { recipeIdInQuery } = require('../util/recipeIdQuery')
 
 const router = Router()
 
@@ -28,7 +29,7 @@ router.get('/getSavedRecipes', verifyToken, async (req, res) => {
 
     const recipes =
       recipeIds.length > 0
-        ? await db.collection('recipes').find({ _id: { $in: recipeIds } }).toArray()
+        ? await db.collection('recipes').find(recipeIdInQuery(recipeIds)).toArray()
         : []
 
     res.json({ recipes, totalCount })
