@@ -20,22 +20,35 @@ const IngredientsInput: FC<IngredientsInputProps> = ({
 }) => {
   const [inputVal, setInputVal] = useState('')
   const [loading, setLoading] = useState(false)
+  const [enrichmentWarning, setEnrichmentWarning] = useState('')
 
   const handleAddIngredient = async () => {
-    setIngredientLoading({ isLoading: true, index: ingredientsLength })
+    // Phase A: guard BEFORE we touch loading state. Previously the empty-input
+    // path set isLoading=true and returned without clearing it, sticking the
+    // spinner on the parent IngredientsContainer.
     if (loading || !inputVal) return
 
+    setEnrichmentWarning('')
     setLoading(true)
+    setIngredientLoading({ isLoading: true, index: ingredientsLength })
 
-    const data: IngredientsType = await RecipeAPI.getIngredientData(inputVal)
-    if (data) {
+    try {
+      const data: IngredientsType = await RecipeAPI.getIngredientData(inputVal)
+      // getIngredientData is soft-fail: always returns a valid IngredientsType,
+      // even on enrichment failure (ingredientData: null + error). Per the
+      // ingredient-enrichment-failures-are-non-fatal policy, we add the
+      // ingredient either way and surface a small warning if enrichment failed.
       addIngredientToList(data)
       setInputVal('')
-    } else {
-      // !! ERROR
+      if ('error' in data && data.error) {
+        setEnrichmentWarning(
+          `Added "${inputVal}", but couldn't fetch nutrition/image data. You can edit or remove it.`
+        )
+      }
+    } finally {
+      setLoading(false)
+      setIngredientLoading({ isLoading: false, index: -1 })
     }
-    setLoading(false)
-    setIngredientLoading({ isLoading: false, index: -1 })
   }
 
   return (
@@ -54,6 +67,11 @@ const IngredientsInput: FC<IngredientsInputProps> = ({
             color={styles.primaryText}
             ariaLabel='loading'
           />
+        </div>
+      )}
+      {enrichmentWarning && (
+        <div className='error' role='status'>
+          {enrichmentWarning}
         </div>
       )}
     </div>
