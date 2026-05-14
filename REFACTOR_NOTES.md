@@ -1224,3 +1224,21 @@ The inner ternary `recipes.length > 0 ? thumbs : skeletons` still renders 4 skel
 - `tsc --noEmit` → clean.
 - `npm test` (Vitest) → 110/110 (was 109, +1 regression test).
 - `npm test --prefix server` → 97/97 (no server changes, sanity-run).
+
+---
+
+## Add Recipe audit follow-up: progressive validation deferred
+
+**Date:** 2026-05-13
+
+Progressive validation deferred — AddRecipe submit button is disabled during loading only (not when invalid). Error visibility relies on `validate(true)` firing on submit click. Full `disabled={!isFormValid}` requires blur-time validation first (Medium finding, Phase 4).
+
+### Context
+
+The audit (`ADD_RECIPE_AUDIT.md`) recommended `disabled={addRecipeLoading || !isFormValid}` for High #2 (submit-button hardening). On implementation, this turned out to be incompatible with the existing error-surfacing pattern: errors are only set inside `handleAddRecipe` via `validate(true)`, which never runs if the disabled prop blocks the click. The deadlock leaves the user unable to discover *why* their form is invalid.
+
+Reverted to `disabled={addRecipeLoading}` only. Visual `valid`/`invalid` className still signals readiness; the early-return guard in `handleAddRecipe` still blocks duplicate submissions during pending. Click-to-see-errors UX preserved.
+
+### What the full hardening would require
+
+The `disabled={!isFormValid}` half can ship once errors fire progressively (e.g., `validate(true)` on field blur after first interaction), so the user has another channel for discovering invalid state.

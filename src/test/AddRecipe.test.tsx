@@ -6,8 +6,18 @@ import { HelmetProvider } from 'react-helmet-async'
 import AddRecipe from 'src/pages/AddRecipe/AddRecipe'
 import RecipeAPI from 'src/api/recipes'
 
+const { navigateFn } = vi.hoisted(() => ({ navigateFn: vi.fn() }))
+
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual<typeof import('react-router-dom')>(
+    'react-router-dom'
+  )
+  return { ...actual, useNavigate: () => navigateFn }
+})
+
 vi.mock('src/api/recipes', () => ({
   default: { addRecipe: vi.fn() },
+  ADD_RECIPE_AUTH_ERROR: 'AUTH_ERROR',
 }))
 
 vi.mock('src/api/auth', () => ({
@@ -131,7 +141,10 @@ describe('AddRecipe form', () => {
     HTMLElement.prototype.scrollTo = vi.fn() as any
   })
 
-  beforeEach(() => mockAddRecipe.mockReset())
+  beforeEach(() => {
+    mockAddRecipe.mockReset()
+    navigateFn.mockReset()
+  })
 
   it('submit button has the "invalid" CSS class on initial empty render', () => {
     renderAddRecipe()
@@ -194,7 +207,7 @@ describe('AddRecipe form', () => {
 
   it('clicking "Create Recipe" when valid calls RecipeAPI.addRecipe', async () => {
     const user = userEvent.setup()
-    mockAddRecipe.mockResolvedValue({ _id: 'new-1', title: 'My Great Recipe' })
+    mockAddRecipe.mockResolvedValue('new-1')
     renderAddRecipe()
     await fillAllFields(user)
     await waitFor(() =>
@@ -204,20 +217,18 @@ describe('AddRecipe form', () => {
     await waitFor(() => expect(mockAddRecipe).toHaveBeenCalledTimes(1))
   })
 
-  it('resets all form fields to empty defaults after a successful submission', async () => {
+  it('navigates to the new recipe page after a successful submission', async () => {
     const user = userEvent.setup()
-    mockAddRecipe.mockResolvedValue({ _id: 'new-1', title: 'My Great Recipe' })
+    mockAddRecipe.mockResolvedValue('new-1')
     renderAddRecipe()
     await fillAllFields(user)
     await waitFor(() =>
       expect(screen.getByText('Create Recipe').closest('button')).toHaveClass('valid')
     )
     await user.click(screen.getByText('Create Recipe'))
-    await waitFor(() => {
-      const titleInput = screen.getByPlaceholderText('Add a title to your recipe.') as HTMLInputElement
-      expect(titleInput.value).toBe('')
-    })
-    expect(screen.getByText('Create Recipe').closest('button')).toHaveClass('invalid')
+    await waitFor(() =>
+      expect(navigateFn).toHaveBeenCalledWith('/recipes/new-1')
+    )
   })
 
   it('shows error message when addRecipe returns null', async () => {
@@ -244,7 +255,7 @@ describe('AddRecipe form', () => {
     await user.click(screen.getByText('Create Recipe'))
     // After clicking, handleAddRecipe awaits addRecipe — "Create Recipe" text is replaced
     expect(screen.queryByText('Create Recipe')).toBeNull()
-    resolveAddRecipe!({ _id: 'new-1' })
+    resolveAddRecipe!('new-1')
     await waitFor(() => expect(screen.getByText('Create Recipe')).toBeInTheDocument())
   })
 
@@ -258,7 +269,7 @@ describe('AddRecipe form', () => {
 
   it('does not block submission when cookTime is absent', async () => {
     const user = userEvent.setup()
-    mockAddRecipe.mockResolvedValue({ _id: 'new-1' })
+    mockAddRecipe.mockResolvedValue('new-1')
     renderAddRecipe()
     await fillAllFields(user) // fillAllFields does not set cookTime
     await waitFor(() =>

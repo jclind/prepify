@@ -19,7 +19,7 @@ import InstructionsContainer from 'src/pages/AddRecipe/Instructions/Instructions
 import CuisineSelector from 'src/pages/AddRecipe/CuisineSelector/CuisineSelector'
 import MealTypeSelector from 'src/pages/AddRecipe/MealTypeSelector/MealTypeSelector'
 import { hrMinToMin } from 'src/util/hrMinToMin'
-import RecipeAPI from 'src/api/recipes'
+import RecipeAPI, { ADD_RECIPE_AUTH_ERROR } from 'src/api/recipes'
 import styles from 'src/_exports.module.scss'
 import AddRecipeFormError from 'src/pages/AddRecipe/AddRecipeFormError'
 import { Helmet } from 'react-helmet-async'
@@ -124,7 +124,11 @@ const AddRecipe: FC = () => {
         mealTypes,
       }
       const newId = await RecipeAPI.addRecipe(recipeData, setLoadingProgress)
-      if (newId) {
+      if (newId === ADD_RECIPE_AUTH_ERROR) {
+        setAddRecipeError(
+          'Your session has expired — please sign in again and retry.'
+        )
+      } else if (newId) {
         navigate(`/recipes/${newId}`)
       } else {
         setAddRecipeError('Failed to create recipe. Please try again.')
@@ -252,7 +256,7 @@ const AddRecipe: FC = () => {
             )}
             <button
               className={`submit-btn ${isFormValid ? 'valid' : 'invalid'}`}
-              disabled={addRecipeLoading || !isFormValid}
+              disabled={addRecipeLoading}
               onClick={handleAddRecipe}
             >
               {addRecipeLoading ? (
