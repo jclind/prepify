@@ -144,14 +144,14 @@ const SearchRecipesInput: FC<SearchRecipesInputProps> = ({
                       <div className='rating item'>
                         <AiOutlineStar className='icon' />{' '}
                         {formatRating(
-                          Number(recipe.rating.rateValue),
-                          Number(recipe.rating.rateCount)
+                          Number(recipe.rating?.rateValue ?? 0),
+                          Number(recipe.rating?.rateCount ?? 0)
                         )}
                       </div>
                     </div>
                   </div>
                   <div className='tags'>
-                    {recipe.nutritionLabels.slice(0, 4).map(tag => {
+                    {(recipe.nutritionLabels ?? []).slice(0, 4).map(tag => {
                       return (
                         <div className='tag' key={tag}>
                           {tag}

@@ -457,11 +457,35 @@ describe('GET /searchAutoCompleteRecipes', () => {
     expect(titles).toContain('Apple Crumble')
   })
 
-  it('returns only _id, title, and recipeImage fields', async () => {
-    const res = await request(app).get('/api/searchAutoCompleteRecipes?title=banana')
+  it('projects all RecipeSearchResponseType fields when present on the doc', async () => {
+    const db = getDB()
+    await db.collection('recipes').insertOne({
+      _id: 'ac-full',
+      title: 'Full Doc',
+      recipeImage: 'full.jpg',
+      totalTime: 30,
+      servings: 4,
+      rating: { rateCount: 2, rateValue: 4.5 },
+      nutritionLabels: ['vegan', 'gluten-free'],
+      servingPrice: 250,
+      // fields NOT in RecipeSearchResponseType — should be excluded:
+      ingredients: [],
+      instructions: [],
+    })
+    const res = await request(app).get('/api/searchAutoCompleteRecipes?title=Full')
     expect(res.status).toBe(200)
     expect(res.body).toHaveLength(1)
-    expect(Object.keys(res.body[0]).sort()).toEqual(['_id', 'recipeImage', 'title'])
+    expect(Object.keys(res.body[0]).sort()).toEqual([
+      '_id',
+      'nutritionLabels',
+      'rating',
+      'recipeImage',
+      'servingPrice',
+      'servings',
+      'title',
+      'totalTime',
+    ])
+    expect(res.body[0].rating).toEqual({ rateCount: 2, rateValue: 4.5 })
   })
 
   it('is case-insensitive', async () => {
