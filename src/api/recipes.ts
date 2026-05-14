@@ -89,6 +89,16 @@ class RecipeAPIClass {
     setProgress: (val: number) => void
   ): Promise<string> => {
     if (imageFile) {
+      // Cypress bridge: skip the real Firebase Storage SDK during E2E runs so
+      // tests don't need to intercept multipart/preflight upload protocol.
+      // VITE_CYPRESS is inlined at build time, so production bundles tree-shake
+      // this branch entirely (the condition becomes `'false' === 'true'`).
+      if (import.meta.env.VITE_CYPRESS === 'true') {
+        setProgress(40)
+        setProgress(50)
+        setProgress(70)
+        return 'https://cypress.test/fake-recipe-image.jpg'
+      }
       const storage = getStorage()
 
       const recipeImagesRef = ref(storage, `recipeImages/${imageFile.name}`)
