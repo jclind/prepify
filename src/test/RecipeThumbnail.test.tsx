@@ -18,7 +18,7 @@ const recipe = {
   servingPrice: 350,
   servings: 4,
   totalTime: 30,
-  rating: { rateValue: 45, rateCount: 10 },
+  rating: { rateValue: 4.5, rateCount: 10 },
   prepTime: 15,
   cookTime: 15,
   fridgeLife: 5,

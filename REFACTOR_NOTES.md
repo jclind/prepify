@@ -4,6 +4,78 @@ Issues flagged during refactor phases that require a decision or future action.
 
 ---
 
+## Post-Phase-6: `formatRating` double-division fix
+
+**Date:** 2026-05-13
+
+### The bug
+
+`src/util/formatRating.ts` was dividing its first argument by its second (`Math.round((tot / count) * 10) / 10`), treating the first argument as a running sum of all ratings. That made sense under an older server contract, but the current server route `POST /addRating` (`server/routes/reviews.js:44-50`) stores a **pre-computed average** in `recipes.rating.rateValue`:
+
+```js
+const allRatings = await db.collection('ratings').find({ recipeId }).toArray()
+const count = allRatings.length
+const avg = allRatings.reduce((sum, r) => sum + parseFloat(r.rating), 0) / count
+await db.collection('recipes').updateOne(
+  { _id: recipeId },
+  { $set: { rating: { rateCount: count, rateValue: avg } } }
+)
+```
+
+All four `formatRating` call sites (`SearchRecipesInput`, `RecipeThumbnail`, `RecipeHeaderContent`, `Ratings`) pass `rating.rateValue` as the first arg. So the divide-by-`rateCount` was a second division — e.g. a recipe with two 5-star ratings (`rateValue: 5, rateCount: 2`) was displayed as `5/2 = 2.5` instead of `5.0`.
+
+### The fix
+
+`src/util/formatRating.ts` — remove the division, rename the first param `tot` → `avg`:
+
+```diff
+-export const formatRating = (tot: number, count: number) => {
+-  if (tot === 0 || count === 0) {
++export const formatRating = (avg: number, count: number) => {
++  if (avg === 0 || count === 0) {
+     return 'No Ratings'
+   }
+-  const roundedNumber = Math.round((Number(tot) / Number(count)) * 10) / 10
+-
++  const roundedNumber = Math.round(Number(avg) * 10) / 10
+   return roundedNumber.toFixed(1)
+ }
+```
+
+No call-site changes — every caller was already passing the pre-computed average.
+
+### Test fixtures updated
+
+Three fixtures encoded the old sum-of-ratings interpretation (`rateValue` greater than the 1–5 ceiling). All updated to realistic post-fix values:
+
+- `src/test/RecipeThumbnail.test.tsx:21`: `rateValue: 45, rateCount: 10` → `rateValue: 4.5, rateCount: 10`. The `/4\.5/` assertion at line 61 stays unchanged — it now matches a fixture that reflects the real server contract. **This fixture would have broken the suite without the update**: under the fix, `formatRating(45, 10)` returns `'45.0'` and no longer matches `/4\.5/`.
+- `src/test/RatingsAndReviews.test.tsx:116`: `renderRatings(null, 40, 10) // 40/10 = 4.0` → `renderRatings(null, 4, 10)`. The `/4\.0/` assertion stays unchanged; the inline comment encoding the old divide-by-count logic was removed. **Also a hard breakage without the update.**
+- `src/test/RatingsAndReviews.integration.test.tsx:102`: `ratingVal={40}` → `ratingVal={4}`. No assertion depended on the displayed value, so this was consistency-only — but `40` was misleading.
+
+Other rating-related test fixtures use `rateValue: 0, rateCount: 0`, which hits `formatRating`'s early-return branch and is unaffected.
+
+### Data-state concern — checked clean
+
+A subtle risk: if any legacy recipe doc still stored `rateValue` as a sum (pre-server-fix data), the double-bug was *cancelling out* and showing the right value. The `formatRating` fix would have regressed those docs from accidentally-correct to wrongly-high.
+
+Diagnostic run before applying:
+
+```js
+db.recipes.find({ 'rating.rateValue': { $gt: 5 } }, { _id: 1, rating: 1 }).toArray()
+```
+
+Returned an **empty array** — no legacy sum docs exist. Fix is safe to land standalone.
+
+(One specific doc, `_id: '65302e782ea38768dea80749'`, had been manually corrected in Atlas before this fix to `rateValue: 5, rateCount: 2`.)
+
+### Verification
+
+- `tsc --noEmit` → clean
+- `npm test -- --run` (Vitest) → 110/110
+- `npm test --prefix server` → 98/98
+
+---
+
 ## Phase 2-C: src/-Absolute Import Sweep
 
 **Date:** 2026-05-10

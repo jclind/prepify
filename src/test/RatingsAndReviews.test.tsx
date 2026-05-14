@@ -113,7 +113,7 @@ describe('Ratings', () => {
   })
 
   it('average rating is formatted correctly for a non-zero count', () => {
-    renderRatings(null, 40, 10) // 40/10 = 4.0
+    renderRatings(null, 4, 10)
     expect(screen.getByText(/4\.0/)).toBeInTheDocument()
     expect(screen.getByText('(10)')).toBeInTheDocument()
   })
