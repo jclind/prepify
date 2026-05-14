@@ -1,5 +1,5 @@
 import { parseIngredientString } from '@jclind/ingredient-parser'
-import type { AxiosResponse } from 'axios'
+import axios, { type AxiosResponse } from 'axios'
 import { getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage'
 import dietLabels from 'src/recipeData/dietLabels'
 import { calculateServingPrice } from 'src/util/calculateServingPrice'
@@ -18,6 +18,8 @@ import AuthAPI from 'src/api/auth'
 import { fetchIngredientEnrichment } from 'src/api/ingredientParserApi'
 import { http, nutrition } from 'src/api/http-common'
 import { v4 as uuidv4 } from 'uuid'
+
+export const ADD_RECIPE_AUTH_ERROR = 'AUTH_ERROR'
 
 class RecipeAPIClass {
   async getAllRecipes(
@@ -156,48 +158,57 @@ class RecipeAPIClass {
       const result = await http.post<{ _id: string }>('api/addRecipe', returnRecipeData)
       return result.data._id
     } catch (error: unknown) {
+      console.error('addRecipe failed:', error)
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        return ADD_RECIPE_AUTH_ERROR
+      }
       return null
     }
   }
   async getRecipeNutrition(ingrArr: IngredientsType[]): Promise<{ nutritionData: NutritionDataType | null; dietLabels: string[] | null }> {
-    const ingrData: { title: string; ingr: string[] } = {
-      title: 'recipe 1',
-      ingr: [],
-    }
+    try {
+      const ingrData: { title: string; ingr: string[] } = {
+        title: 'recipe 1',
+        ingr: [],
+      }
 
-    ingrArr.forEach(ingr => {
-      if ('parsedIngredient' in ingr) {
-        const { quantity, unit, ingredient } = ingr.parsedIngredient
+      ingrArr.forEach(ingr => {
+        if ('parsedIngredient' in ingr) {
+          const { quantity, unit, ingredient } = ingr.parsedIngredient
 
-        if (quantity) {
-          const str = `${quantity} ${unit || ''} ${ingredient}`
-          ingrData.ingr.push(str)
+          if (quantity) {
+            const str = `${quantity} ${unit || ''} ${ingredient}`
+            ingrData.ingr.push(str)
+          }
         }
-      }
-    })
-    const nutritionResultRes = await nutrition.post(
-      `nutrition-details?app_id=${import.meta.env.VITE_EDAMAM_APP_ID}&app_key=${import.meta.env.VITE_EDAMAM_APP_KEY}`,
-      ingrData
-    )
+      })
+      const nutritionResultRes = await nutrition.post(
+        `nutrition-details?app_id=${import.meta.env.VITE_EDAMAM_APP_ID}&app_key=${import.meta.env.VITE_EDAMAM_APP_KEY}`,
+        ingrData
+      )
 
-    const nutritionResult: NutritionDataType = nutritionResultRes.data
+      const nutritionResult: NutritionDataType = nutritionResultRes.data
 
-    if (!nutritionResult) return { nutritionData: null, dietLabels: null }
+      if (!nutritionResult) return { nutritionData: null, dietLabels: null }
 
-    const currDietLabels: string[] = []
+      const currDietLabels: string[] = []
 
-    const returnedNutritionLabels = [
-      ...nutritionResult.dietLabels,
-      ...nutritionResult.healthLabels,
-    ]
+      const returnedNutritionLabels = [
+        ...nutritionResult.dietLabels,
+        ...nutritionResult.healthLabels,
+      ]
 
-    dietLabels.forEach(l => {
-      if (returnedNutritionLabels.includes(l.toUpperCase())) {
-        currDietLabels.push(l)
-      }
-    })
+      dietLabels.forEach(l => {
+        if (returnedNutritionLabels.includes(l.toUpperCase())) {
+          currDietLabels.push(l)
+        }
+      })
 
-    return { nutritionData: nutritionResult, dietLabels: currDietLabels }
+      return { nutritionData: nutritionResult, dietLabels: currDietLabels }
+    } catch (error: unknown) {
+      console.error('getRecipeNutrition failed:', error)
+      return { nutritionData: null, dietLabels: null }
+    }
   }
 
   // Ratings / Reviews
