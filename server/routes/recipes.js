@@ -64,7 +64,18 @@ router.get('/searchAutoCompleteRecipes', async (req, res) => {
       .collection('recipes')
       .find(
         { title: { $regex: escapeRegex(title || ''), $options: 'i' } },
-        { projection: { _id: 1, title: 1, recipeImage: 1 } }
+        {
+          projection: {
+            _id: 1,
+            title: 1,
+            recipeImage: 1,
+            totalTime: 1,
+            servings: 1,
+            rating: 1,
+            nutritionLabels: 1,
+            servingPrice: 1,
+          },
+        }
       )
       .limit(8)
       .toArray()
