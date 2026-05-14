@@ -98,8 +98,11 @@ const IngredientItem: FC<IngredientItemProps> = ({
       const currIndex = getIndexById(ingredients, ingredient.id)
       setLoading({ isLoading: true, index: currIndex })
       const ingredientDataRes = await RecipeAPI.getIngredientData(editedVal)
-      if ('error' in ingredientDataRes) {
-      }
+      // Phase A: soft-fail by design — whether enrichment succeeded or returned
+      // an error variant, we overwrite the existing ingredient with the new
+      // parse result so the edit takes effect either way. The error is carried
+      // through on the IngredientsType payload itself; no extra handling needed
+      // here.
       editIngredient(ingredient.id, { ...ingredientDataRes })
       setLoading({ isLoading: false, index: -1 })
     }

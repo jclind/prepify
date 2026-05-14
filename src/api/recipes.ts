@@ -259,21 +259,36 @@ class RecipeAPIClass {
   // Ingredients
   async getIngredientData(val: string): Promise<IngredientsType> {
     const parsedIngredient = parseIngredientString(val)
-    const enrichment = await fetchIngredientEnrichment(parsedIngredient)
+    // Phase A: enrichment is soft-fail. A thrown network error (server down, timeout,
+    // 5xx surfaced as axios rejection) must not bubble up — callers stick on the
+    // loading state and the ingredient never appears. Wrap and degrade to the
+    // parsed-only IngredientsType so the ingredient is still added to the recipe.
+    try {
+      const enrichment = await fetchIngredientEnrichment(parsedIngredient)
 
-    if (enrichment.error || !enrichment.data) {
+      if (enrichment.error || !enrichment.data) {
+        return {
+          error: enrichment.error ?? { message: 'No ingredient data returned' },
+          parsedIngredient,
+          ingredientData: null,
+          id: uuidv4(),
+        }
+      }
+
       return {
-        error: enrichment.error ?? { message: 'No ingredient data returned' },
+        parsedIngredient,
+        ingredientData: enrichment.data,
+        id: uuidv4(),
+      }
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : 'Ingredient enrichment request failed'
+      return {
+        error: { message },
         parsedIngredient,
         ingredientData: null,
         id: uuidv4(),
       }
-    }
-
-    return {
-      parsedIngredient,
-      ingredientData: enrichment.data,
-      id: uuidv4(),
     }
   }
 
