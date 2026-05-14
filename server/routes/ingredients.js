@@ -15,6 +15,16 @@ router.post('/parse', verifyToken, async (req, res) => {
       process.env.SPOONACULAR_API_KEY,
       options
     )
+    // Spoonacular migrated CDN: spoonacular.com/cdn → img.spoonacular.com.
+    // The @jclind/ingredient-parser package still constructs the old URL
+    // (node_modules/@jclind/ingredient-parser/dist/src/funcs/ingredientParser.js:47).
+    // Rewrite here, at the funnel, before the response leaves the server.
+    if (result && result.ingredientData && typeof result.ingredientData.imagePath === 'string') {
+      result.ingredientData.imagePath = result.ingredientData.imagePath.replace(
+        'https://spoonacular.com/cdn/ingredients_',
+        'https://img.spoonacular.com/ingredients_'
+      )
+    }
     // Phase A: structured warn when enrichment didn't fully succeed.
     // Soft-fail by design — we still return 200 with the parsed-only payload —
     // but log so we can see in prod which ingredient strings are missing enrichment.

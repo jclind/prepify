@@ -21,7 +21,7 @@
     "aisle": "Baking",
     "image": "flour.png",
     "ingredientId": 20081,
-    "imagePath": "https://spoonacular.com/cdn/ingredients_100x100/flour.png",
+    "imagePath": "https://img.spoonacular.com/ingredients_100x100/flour.png",
     "totalPriceUSACents": 42
   },
   "id": "fixture-id-1"

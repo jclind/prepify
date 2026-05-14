@@ -149,4 +149,83 @@ describe('POST /api/ingredients/parse', () => {
     expect(res.status).toBe(500)
     expect(res.body).toHaveProperty('error', 'parser exploded')
   })
+
+  // ── Spoonacular CDN URL rewrite ──────────────────────────────────────────────
+
+  describe('Spoonacular CDN URL rewrite', () => {
+    it('rewrites spoonacular.com/cdn → img.spoonacular.com on the returned imagePath', async () => {
+      ingredientParser.mockResolvedValue({
+        ...PARSED_RESULT,
+        ingredientData: {
+          ...PARSED_RESULT.ingredientData,
+          imagePath: 'https://spoonacular.com/cdn/ingredients_100x100/flour.png',
+        },
+      })
+
+      const res = await request(app)
+        .post('/api/ingredients/parse')
+        .set(AUTH_HEADER)
+        .send({ ingredientString: '2 cups flour' })
+
+      expect(res.status).toBe(200)
+      expect(res.body.ingredientData.imagePath).toBe(
+        'https://img.spoonacular.com/ingredients_100x100/flour.png'
+      )
+    })
+
+    it('preserves the configurable image-size segment (e.g., 250x250)', async () => {
+      ingredientParser.mockResolvedValue({
+        ...PARSED_RESULT,
+        ingredientData: {
+          ...PARSED_RESULT.ingredientData,
+          imagePath: 'https://spoonacular.com/cdn/ingredients_250x250/garlic.png',
+        },
+      })
+
+      const res = await request(app)
+        .post('/api/ingredients/parse')
+        .set(AUTH_HEADER)
+        .send({ ingredientString: '2 cloves garlic' })
+
+      expect(res.body.ingredientData.imagePath).toBe(
+        'https://img.spoonacular.com/ingredients_250x250/garlic.png'
+      )
+    })
+
+    it('does not touch the response when ingredientData is null (soft-fail / error branch)', async () => {
+      ingredientParser.mockResolvedValue({
+        parsedIngredient: PARSED_RESULT.parsedIngredient,
+        ingredientData: null,
+        error: { message: 'Ingredient not formatted correctly' },
+      })
+
+      const res = await request(app)
+        .post('/api/ingredients/parse')
+        .set(AUTH_HEADER)
+        .send({ ingredientString: 'asdf' })
+
+      expect(res.status).toBe(200)
+      expect(res.body.ingredientData).toBeNull()
+      expect(res.body.error).toEqual({ message: 'Ingredient not formatted correctly' })
+    })
+
+    it('leaves an already-new-format URL untouched (idempotent)', async () => {
+      ingredientParser.mockResolvedValue({
+        ...PARSED_RESULT,
+        ingredientData: {
+          ...PARSED_RESULT.ingredientData,
+          imagePath: 'https://img.spoonacular.com/ingredients_100x100/flour.png',
+        },
+      })
+
+      const res = await request(app)
+        .post('/api/ingredients/parse')
+        .set(AUTH_HEADER)
+        .send({ ingredientString: '2 cups flour' })
+
+      expect(res.body.ingredientData.imagePath).toBe(
+        'https://img.spoonacular.com/ingredients_100x100/flour.png'
+      )
+    })
+  })
 })
