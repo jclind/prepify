@@ -99,7 +99,7 @@ const IntegrationWrapper: FC<{ initialReview?: ReviewType | null }> = ({
         <HelmetProvider>
           <RatingsAndReviews
             recipeId='recipe-1'
-            ratingVal={40}
+            ratingVal={4}
             ratingCount={10}
             currUserReview={currUserReview}
             setCurrUserReview={setCurrUserReview}
