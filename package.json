@@ -45,8 +45,8 @@
     "test:server": "npm test --prefix server",
     "test:unit": "npm run test:frontend && npm run test:server",
     "test:e2e": "cypress run",
-    "test:e2e:dev": "VITE_CYPRESS=true start-server-and-test start http://localhost:3000 'cypress open'",
-    "test:e2e:ci": "VITE_CYPRESS=true start-server-and-test start http://localhost:3000 'cypress run'"
+    "test:e2e:dev": "start-server-and-test 'vite --mode test' http://localhost:3000 'cypress open'",
+    "test:e2e:ci": "start-server-and-test 'vite --mode test' http://localhost:3000 'cypress run'"
   },
   "devDependencies": {
     "@tanstack/react-query-devtools": "^5.100.10",
