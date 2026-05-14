@@ -1152,6 +1152,8 @@ Pick this up in a future Phase 6 task (or a Phase 7 server-API consistency pass 
 
 **Date:** 2026-05-13
 
+> **Resolved 2026-05-14** — see "Vite v8 — VITE_CYPRESS shell env no longer surfaces to client bundle" later in this file. Fix landed via `.env.test` + `vite --mode test`; neither of the two candidate fixes below was used.
+
 ### Status
 
 The Cypress smoke-test owed before Phase 6-I (`npx cypress run --spec cypress/e2e/recipe.cy.ts`) was run after Phase 6-G. The save/unsave path failed at the `cy.signIn(...)` step. The same failure is confirmed pre-existing — identical error reproduced against the commit *before* 6-G — so it is **not a regression** introduced by the route refactor. The save/unsave intercepts themselves cannot be exercised end-to-end until `signIn` is unblocked.
