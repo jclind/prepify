@@ -1,4 +1,5 @@
 import React, { FC, useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   AddRecipeErrorType,
   IngredientsType,
@@ -49,6 +50,8 @@ const AddRecipe: FC = () => {
 
   const [isFormValid, setIsFormValid] = useState(false)
   const [addRecipeError, setAddRecipeError] = useState<string | null>(null)
+
+  const navigate = useNavigate()
 
   const validate = (assignErrors: boolean = false) => {
     let newErrors: Partial<AddRecipeErrorType> = {}
@@ -102,6 +105,7 @@ const AddRecipe: FC = () => {
     mealTypes,
   ])
   const handleAddRecipe = async () => {
+    if (addRecipeLoading) return
     if (validate(true)) {
       setAddRecipeLoading(true)
       setAddRecipeError(null)
@@ -119,9 +123,9 @@ const AddRecipe: FC = () => {
         cuisine,
         mealTypes,
       }
-      const result = await RecipeAPI.addRecipe(recipeData, setLoadingProgress)
-      if (result) {
-        clearForm()
+      const newId = await RecipeAPI.addRecipe(recipeData, setLoadingProgress)
+      if (newId) {
+        navigate(`/recipes/${newId}`)
       } else {
         setAddRecipeError('Failed to create recipe. Please try again.')
       }
@@ -248,6 +252,7 @@ const AddRecipe: FC = () => {
             )}
             <button
               className={`submit-btn ${isFormValid ? 'valid' : 'invalid'}`}
+              disabled={addRecipeLoading || !isFormValid}
               onClick={handleAddRecipe}
             >
               {addRecipeLoading ? (
