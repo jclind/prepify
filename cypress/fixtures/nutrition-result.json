@@ -1,0 +1,19 @@
+{
+  "uri": "http://www.edamam.com/ontologies/edamam.owl#recipe_cypress-fixture",
+  "yield": 4,
+  "calories": 1800,
+  "totalWeight": 950,
+  "dietLabels": ["BALANCED"],
+  "healthLabels": ["VEGETARIAN", "PEANUT_FREE", "TREE_NUT_FREE"],
+  "cautions": [],
+  "totalNutrients": {
+    "ENERC_KCAL": { "label": "Energy", "quantity": 1800, "unit": "kcal" }
+  },
+  "totalDaily": {
+    "ENERC_KCAL": { "label": "Energy", "quantity": 90, "unit": "%" }
+  },
+  "ingredients": [],
+  "totalNutrientsKCal": {
+    "ENERC_KCAL": { "label": "Energy", "quantity": 1800, "unit": "kcal" }
+  }
+}
