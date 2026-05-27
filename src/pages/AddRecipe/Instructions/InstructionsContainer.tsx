@@ -4,6 +4,7 @@ import RecipeFormInput from 'src/pages/AddRecipe/RecipeFormInput'
 import { v4 as uuidv4 } from 'uuid'
 import AddLabel from 'src/pages/AddRecipe/AddLabel/AddLabel'
 import InstructionList from 'src/pages/AddRecipe/Instructions/InstructionList/InstructionList'
+import { INSTRUCTION_MAX_LENGTH } from 'src/util/recipeLimits'
 
 type InstructionsContainerProps = {
   instructions: InstructionsType[]
@@ -72,6 +73,7 @@ const InstructionsContainer: FC<InstructionsContainerProps> = ({
         val={inputVal}
         setVal={setInputVal}
         onEnter={handleEnter}
+        characterLimit={INSTRUCTION_MAX_LENGTH}
       />
       <InstructionList
         instructions={instructions}
