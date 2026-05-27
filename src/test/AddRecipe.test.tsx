@@ -6,7 +6,11 @@ import { HelmetProvider } from 'react-helmet-async'
 import AddRecipe from 'src/pages/AddRecipe/AddRecipe'
 import RecipeAPI from 'src/api/recipes'
 
-const { navigateFn } = vi.hoisted(() => ({ navigateFn: vi.fn() }))
+const { navigateFn, toastSuccess, toastError } = vi.hoisted(() => ({
+  navigateFn: vi.fn(),
+  toastSuccess: vi.fn(),
+  toastError: vi.fn(),
+}))
 
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual<typeof import('react-router-dom')>(
@@ -14,6 +18,11 @@ vi.mock('react-router-dom', async () => {
   )
   return { ...actual, useNavigate: () => navigateFn }
 })
+
+vi.mock('react-hot-toast', () => ({
+  toast: { success: toastSuccess, error: toastError },
+  default: { success: toastSuccess, error: toastError },
+}))
 
 vi.mock('src/api/recipes', () => ({
   default: { addRecipe: vi.fn() },
@@ -149,6 +158,8 @@ describe('AddRecipe form', () => {
   beforeEach(() => {
     mockAddRecipe.mockReset()
     navigateFn.mockReset()
+    toastSuccess.mockReset()
+    toastError.mockReset()
   })
 
   it('submit button has the "invalid" CSS class on initial empty render', () => {
@@ -234,6 +245,7 @@ describe('AddRecipe form', () => {
     await waitFor(() =>
       expect(navigateFn).toHaveBeenCalledWith('/recipes/new-1')
     )
+    expect(toastSuccess).toHaveBeenCalledWith('Recipe published!')
   })
 
   it('shows error message when addRecipe returns null', async () => {
@@ -245,7 +257,9 @@ describe('AddRecipe form', () => {
       expect(screen.getByText('Create Recipe').closest('button')).toHaveClass('valid')
     )
     await user.click(screen.getByText('Create Recipe'))
-    await screen.findByText('Failed to create recipe. Please try again.')
+    await waitFor(() =>
+      expect(toastError).toHaveBeenCalledWith('Failed to create recipe. Please try again.')
+    )
   })
 
   it('shows a loading indicator in the button while submission is in progress', async () => {
@@ -356,7 +370,9 @@ describe('AddRecipe form', () => {
       )
       await user.click(screen.getByText('Create Recipe'))
       // Match by intent ("session" or "sign in") rather than the exact string
-      await screen.findByText(/session|sign in/i)
+      await waitFor(() =>
+        expect(toastError).toHaveBeenCalledWith(expect.stringMatching(/session|sign in/i))
+      )
       expect(navigateFn).not.toHaveBeenCalled()
     })
 
@@ -369,7 +385,9 @@ describe('AddRecipe form', () => {
         expect(screen.getByText('Create Recipe').closest('button')).toHaveClass('valid')
       )
       await user.click(screen.getByText('Create Recipe'))
-      await screen.findByText('Failed to create recipe. Please try again.')
+      await waitFor(() =>
+        expect(toastError).toHaveBeenCalledWith('Failed to create recipe. Please try again.')
+      )
       expect(navigateFn).not.toHaveBeenCalled()
     })
 
@@ -389,7 +407,9 @@ describe('AddRecipe form', () => {
         expect(screen.getByText('Create Recipe').closest('button')).toHaveClass('valid')
       )
       await user.click(screen.getByText('Create Recipe'))
-      await screen.findByText('Failed to create recipe. Please try again.')
+      await waitFor(() =>
+        expect(toastError).toHaveBeenCalledWith('Failed to create recipe. Please try again.')
+      )
       expect(navigateFn).not.toHaveBeenCalled()
     })
   })

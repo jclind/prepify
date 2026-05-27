@@ -23,6 +23,7 @@ import RecipeAPI, { ADD_RECIPE_AUTH_ERROR } from 'src/api/recipes'
 import styles from 'src/_exports.module.scss'
 import AddRecipeFormError from 'src/pages/AddRecipe/AddRecipeFormError'
 import { Helmet } from 'react-helmet-async'
+import { toast } from 'react-hot-toast'
 
 const AddRecipe: FC = () => {
   const [addRecipeLoading, setAddRecipeLoading] = useState(false)
@@ -49,7 +50,6 @@ const AddRecipe: FC = () => {
   const [errors, setErrors] = useState<Partial<AddRecipeErrorType>>({})
 
   const [isFormValid, setIsFormValid] = useState(false)
-  const [addRecipeError, setAddRecipeError] = useState<string | null>(null)
 
   const navigate = useNavigate()
 
@@ -108,7 +108,6 @@ const AddRecipe: FC = () => {
     if (addRecipeLoading) return
     if (validate(true)) {
       setAddRecipeLoading(true)
-      setAddRecipeError(null)
       const recipeData: RecipeFormType = {
         title,
         prepTime: hrMinToMin(prepTime),
@@ -125,13 +124,12 @@ const AddRecipe: FC = () => {
       }
       const newId = await RecipeAPI.addRecipe(recipeData, setLoadingProgress)
       if (newId === ADD_RECIPE_AUTH_ERROR) {
-        setAddRecipeError(
-          'Your session has expired — please sign in again and retry.'
-        )
+        toast.error('Your session has expired — please sign in again and retry.')
       } else if (newId) {
+        toast.success('Recipe published!')
         navigate(`/recipes/${newId}`)
       } else {
-        setAddRecipeError('Failed to create recipe. Please try again.')
+        toast.error('Failed to create recipe. Please try again.')
       }
       setAddRecipeLoading(false)
       setLoadingProgress(100)
@@ -251,9 +249,6 @@ const AddRecipe: FC = () => {
                 setMealTypes={setMealTypes}
               />
             </div>
-            {addRecipeError && (
-              <p className='submit-error'>{addRecipeError}</p>
-            )}
             <button
               className={`submit-btn ${isFormValid ? 'valid' : 'invalid'}`}
               disabled={addRecipeLoading}
