@@ -213,9 +213,6 @@ const AddRecipe: FC = () => {
             </div>
             <div className='cook-time input-field'>
               <h2 className='recipe-form-input-label'>Cook Time</h2>
-              {errors.cookTime && (
-                <AddRecipeFormError error={errors.cookTime} />
-              )}
               <TimeInput
                 label={'How long will your recipe take to cook?'}
                 val={cookTime}
