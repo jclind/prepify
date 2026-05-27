@@ -201,6 +201,22 @@ describe('AddRecipe form', () => {
     expect(screen.queryByText('Description is required')).toBeNull()
   })
 
+  it('links field errors to their inputs for screen readers (alert role + aria-describedby)', async () => {
+    const user = userEvent.setup()
+    renderAddRecipe()
+    await user.click(screen.getByText('Create Recipe'))
+
+    // The error renders as an announced alert with a stable id.
+    const descError = screen.getByText('Description is required')
+    expect(descError).toHaveAttribute('id', 'error-description')
+    expect(descError).toHaveAttribute('role', 'alert')
+
+    // ...and the description field points at that id and is marked invalid.
+    const descInput = screen.getByPlaceholderText('Add a description to your recipe')
+    expect(descInput).toHaveAttribute('aria-invalid', 'true')
+    expect(descInput).toHaveAttribute('aria-describedby', 'error-description')
+  })
+
   it('clears a field error reactively once the field is fixed, without re-submitting', async () => {
     const user = userEvent.setup()
     renderAddRecipe()
