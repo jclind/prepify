@@ -19,6 +19,13 @@ import InstructionsContainer from 'src/pages/AddRecipe/Instructions/Instructions
 import CuisineSelector from 'src/pages/AddRecipe/CuisineSelector/CuisineSelector'
 import MealTypeSelector from 'src/pages/AddRecipe/MealTypeSelector/MealTypeSelector'
 import { hrMinToMin } from 'src/util/hrMinToMin'
+import {
+  TITLE_MAX_LENGTH,
+  DESCRIPTION_MAX_LENGTH,
+  INSTRUCTION_MAX_LENGTH,
+  MAX_INGREDIENTS,
+  MAX_INSTRUCTIONS,
+} from 'src/util/recipeLimits'
 import RecipeAPI, { ADD_RECIPE_AUTH_ERROR } from 'src/api/recipes'
 import styles from 'src/_exports.module.scss'
 import AddRecipeFormError from 'src/pages/AddRecipe/AddRecipeFormError'
@@ -59,18 +66,28 @@ const AddRecipe: FC = () => {
 
     if (!title) {
       newErrors.title = 'Title is required'
-    } else if (title.length > 50) {
-      newErrors.title = 'Title cannot exceed 50 characters'
+    } else if (title.length > TITLE_MAX_LENGTH) {
+      newErrors.title = `Title cannot exceed ${TITLE_MAX_LENGTH} characters`
     }
 
     if (!recipeImage) newErrors.image = 'Image is required'
-    if (!description) newErrors.description = 'Description is required'
+    if (!description) {
+      newErrors.description = 'Description is required'
+    } else if (description.length > DESCRIPTION_MAX_LENGTH) {
+      newErrors.description = `Description cannot exceed ${DESCRIPTION_MAX_LENGTH} characters`
+    }
     if (!servings) newErrors.servings = 'Servings amount is required'
     if (!prepTime) newErrors.prepTime = 'Prep time is required'
-    if (ingredients.length <= 0)
+    if (ingredients.length <= 0) {
       newErrors.ingredients = 'Recipe must contain ingredients'
-    if (instructions.length <= 0)
+    } else if (ingredients.length > MAX_INGREDIENTS) {
+      newErrors.ingredients = `A recipe cannot have more than ${MAX_INGREDIENTS} ingredients`
+    }
+    if (instructions.length <= 0) {
       newErrors.instructions = 'Instructions are required'
+    } else if (instructions.length > MAX_INSTRUCTIONS) {
+      newErrors.instructions = `A recipe cannot have more than ${MAX_INSTRUCTIONS} instructions`
+    }
     if (mealTypes.length <= 0) newErrors.mealType = 'Meal type required'
 
     assignErrors && setErrors(newErrors)
@@ -176,7 +193,7 @@ const AddRecipe: FC = () => {
                 placeholder='Add a title to your recipe.'
                 val={title}
                 setVal={setTitle}
-                characterLimit={50}
+                characterLimit={TITLE_MAX_LENGTH}
                 invalid={!!errors.title}
                 describedBy={errors.title ? 'error-title' : undefined}
               />
@@ -200,6 +217,7 @@ const AddRecipe: FC = () => {
                 placeholder='Add a description to your recipe'
                 val={description}
                 setVal={setDescription}
+                characterLimit={DESCRIPTION_MAX_LENGTH}
                 invalid={!!errors.description}
                 describedBy={errors.description ? 'error-description' : undefined}
               />

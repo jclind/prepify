@@ -6,6 +6,7 @@ import RemoveItem from 'src/pages/AddRecipe/ListComponents/RemoveItem'
 import './InstructionItem.scss'
 import '../../ListComponents/Item.scss'
 import RecipeFormTextArea from 'src/pages/AddRecipe/RecipeFormTextArea'
+import { INSTRUCTION_MAX_LENGTH } from 'src/util/recipeLimits'
 
 type InstructionItemProps = {
   instruction: InstructionsType
@@ -105,6 +106,7 @@ const InstructionItem: FC<InstructionItemProps> = ({
             onBlur={handleEditSubmit}
             onEnter={handleEditSubmit}
             smallTextArea={true}
+            characterLimit={INSTRUCTION_MAX_LENGTH}
           />
         </div>
       )}
