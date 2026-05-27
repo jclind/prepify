@@ -12,6 +12,9 @@ type RecipeFormTextAreaProps = {
   characterLimit?: number
   onEnter?: () => void
   onBlur?: () => void
+  // Accessibility: flag the field as invalid and point it at its error message.
+  invalid?: boolean
+  describedBy?: string
 }
 
 const RecipeFormTextArea: FC<RecipeFormTextAreaProps> = ({
@@ -25,6 +28,8 @@ const RecipeFormTextArea: FC<RecipeFormTextAreaProps> = ({
   characterLimit,
   onEnter,
   onBlur,
+  invalid,
+  describedBy,
 }) => {
   const handleChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     const val = e.target.value
@@ -50,6 +55,8 @@ const RecipeFormTextArea: FC<RecipeFormTextAreaProps> = ({
             if (e.key === 'Enter' && onEnter) onEnter()
           }}
           onBlur={onBlur}
+          aria-invalid={invalid || undefined}
+          aria-describedby={describedBy}
         />
       </div>
     </label>

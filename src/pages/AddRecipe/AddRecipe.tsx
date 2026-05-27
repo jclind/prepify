@@ -169,41 +169,57 @@ const AddRecipe: FC = () => {
           <div className='container-inner' ref={addRecipeFormRef}>
             <div className='title input-field'>
               <h2 className='recipe-form-input-label'>Title </h2>
-              {errors.title && <AddRecipeFormError error={errors.title} />}
+              {errors.title && (
+                <AddRecipeFormError error={errors.title} id='error-title' />
+              )}
               <RecipeFormInput
                 placeholder='Add a title to your recipe.'
                 val={title}
                 setVal={setTitle}
                 characterLimit={50}
+                invalid={!!errors.title}
+                describedBy={errors.title ? 'error-title' : undefined}
               />
             </div>
             <div className='image-picker input-field'>
               <h2 className='recipe-form-input-label'>Select Image</h2>
-              {errors.image && <AddRecipeFormError error={errors.image} />}
+              {errors.image && (
+                <AddRecipeFormError error={errors.image} id='error-image' />
+              )}
               <ImagePicker image={recipeImage} setImage={setRecipeImage} />
             </div>
             <div className='description input-field'>
               <h2 className='recipe-form-input-label'>Description</h2>
               {errors.description && (
-                <AddRecipeFormError error={errors.description} />
+                <AddRecipeFormError
+                  error={errors.description}
+                  id='error-description'
+                />
               )}
               <RecipeFormTextArea
                 placeholder='Add a description to your recipe'
                 val={description}
                 setVal={setDescription}
+                invalid={!!errors.description}
+                describedBy={errors.description ? 'error-description' : undefined}
               />
             </div>
             <div className='servings input-field'>
               <h2 className='recipe-form-input-label'>Servings</h2>
               {errors.servings && (
-                <AddRecipeFormError error={errors.servings} />
+                <AddRecipeFormError error={errors.servings} id='error-servings' />
               )}
-              <ServingsInput servings={servings} setServings={setServings} />
+              <ServingsInput
+                servings={servings}
+                setServings={setServings}
+                invalid={!!errors.servings}
+                describedBy={errors.servings ? 'error-servings' : undefined}
+              />
             </div>
             <div className='prep-time input-field'>
               <h2 className='recipe-form-input-label'>Prep Time</h2>
               {errors.prepTime && (
-                <AddRecipeFormError error={errors.prepTime} />
+                <AddRecipeFormError error={errors.prepTime} id='error-prepTime' />
               )}
               <TimeInput
                 label={'How long will your recipe take to prepare?'}
@@ -222,7 +238,10 @@ const AddRecipe: FC = () => {
             <div className='ingredients input-field'>
               <h2 className='recipe-form-input-label'>Ingredients</h2>
               {errors.ingredients && (
-                <AddRecipeFormError error={errors.ingredients} />
+                <AddRecipeFormError
+                  error={errors.ingredients}
+                  id='error-ingredients'
+                />
               )}
               <IngredientsContainer
                 ingredients={ingredients}
@@ -232,7 +251,10 @@ const AddRecipe: FC = () => {
             <div className='instructions input-field'>
               <h2 className='recipe-form-input-label'>Instructions</h2>
               {errors.instructions && (
-                <AddRecipeFormError error={errors.instructions} />
+                <AddRecipeFormError
+                  error={errors.instructions}
+                  id='error-instructions'
+                />
               )}
               <InstructionsContainer
                 instructions={instructions}
@@ -246,7 +268,7 @@ const AddRecipe: FC = () => {
             <div className='course input-field'>
               <h2 className='recipe-form-input-label'>Course</h2>
               {errors.mealType && (
-                <AddRecipeFormError error={errors.mealType} />
+                <AddRecipeFormError error={errors.mealType} id='error-mealType' />
               )}
               <MealTypeSelector
                 mealTypes={mealTypes}
@@ -256,6 +278,7 @@ const AddRecipe: FC = () => {
             <button
               className={`submit-btn ${isFormValid ? 'valid' : 'invalid'}`}
               disabled={addRecipeLoading}
+              aria-busy={addRecipeLoading}
               onClick={handleAddRecipe}
             >
               {addRecipeLoading ? (
