@@ -188,6 +188,38 @@ describe('AddRecipe form', () => {
     expect(screen.getByText('Title is required')).toBeInTheDocument()
   })
 
+  it('does not surface field errors before the first submit attempt', async () => {
+    const user = userEvent.setup()
+    renderAddRecipe()
+    // Typing into a still-incomplete form must not pre-emptively show errors.
+    await user.type(
+      screen.getByPlaceholderText('Add a title to your recipe.'),
+      'My Great Recipe'
+    )
+    expect(screen.queryByText('Title is required')).toBeNull()
+    expect(screen.queryByText('Image is required')).toBeNull()
+    expect(screen.queryByText('Description is required')).toBeNull()
+  })
+
+  it('clears a field error reactively once the field is fixed, without re-submitting', async () => {
+    const user = userEvent.setup()
+    renderAddRecipe()
+    // First submit on an empty form surfaces the errors.
+    await user.click(screen.getByText('Create Recipe'))
+    expect(screen.getByText('Title is required')).toBeInTheDocument()
+    expect(screen.getByText('Description is required')).toBeInTheDocument()
+
+    // Fixing only the title should drop its error while the others remain.
+    await user.type(
+      screen.getByPlaceholderText('Add a title to your recipe.'),
+      'My Great Recipe'
+    )
+    await waitFor(() =>
+      expect(screen.queryByText('Title is required')).toBeNull()
+    )
+    expect(screen.getByText('Description is required')).toBeInTheDocument()
+  })
+
   it('shows title error when title exceeds 50 characters', async () => {
     const user = userEvent.setup()
     renderAddRecipe()

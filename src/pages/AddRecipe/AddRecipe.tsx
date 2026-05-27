@@ -50,6 +50,7 @@ const AddRecipe: FC = () => {
   const [errors, setErrors] = useState<Partial<AddRecipeErrorType>>({})
 
   const [isFormValid, setIsFormValid] = useState(false)
+  const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false)
 
   const navigate = useNavigate()
 
@@ -91,7 +92,11 @@ const AddRecipe: FC = () => {
     setErrors({})
   }
   useEffect(() => {
-    if (validate()) setIsFormValid(true)
+    // Once the user has attempted a submit, keep the displayed errors in sync as
+    // fields are fixed (assignErrors=true) so a corrected field clears its message
+    // immediately instead of lingering until the next submit click. Before the
+    // first attempt we only compute validity, never surface errors.
+    if (validate(hasAttemptedSubmit)) setIsFormValid(true)
     else setIsFormValid(false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
@@ -103,9 +108,11 @@ const AddRecipe: FC = () => {
     ingredients,
     instructions,
     mealTypes,
+    hasAttemptedSubmit,
   ])
   const handleAddRecipe = async () => {
     if (addRecipeLoading) return
+    setHasAttemptedSubmit(true)
     if (validate(true)) {
       setAddRecipeLoading(true)
       const recipeData: RecipeFormType = {
