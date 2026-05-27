@@ -70,7 +70,7 @@ const IngredientsInput: FC<IngredientsInputProps> = ({
         </div>
       )}
       {enrichmentWarning && (
-        <div className='error' role='status'>
+        <div className='warning' role='status'>
           {enrichmentWarning}
         </div>
       )}
