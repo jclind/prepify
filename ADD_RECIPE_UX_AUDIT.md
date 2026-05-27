@@ -33,6 +33,33 @@ correctness. Three things stand out:
 
 ---
 
+## Resolution status
+
+_Updated 2026-05-27. All findings below were worked through in branch
+`audit/add-recipe-flow`; each is annotated inline in Section 3 with its commit._
+
+| Finding | Status |
+|---|---|
+| HIGH — inconsistent/unstyled feedback channel | ✅ Resolved (`519c9df`) |
+| HIGH — no success confirmation | ✅ Resolved (`519c9df`) |
+| HIGH — warning styled as error | ✅ Resolved (`1967e43`) |
+| MEDIUM — stale field errors after failed submit | ✅ Resolved (`bd15098`) |
+| MEDIUM — no length/count caps | ✅ Resolved (`90f0938`) |
+| MEDIUM — accessibility gaps | ◑ Core resolved (`2bd186b`); follow-ups remain — see note |
+| MEDIUM — no image validation | ✅ Resolved (`90f0938`) |
+| LOW — wrong placeholder copy | ✅ Resolved (`f027eed`) |
+| LOW — dead `errors.cookTime` UI | ✅ Resolved (`f027eed`) |
+| LOW — redundant cuisine placeholder | ✅ Resolved (`f027eed`) |
+| LOW — no empty-input feedback on Add Ingredient | ✅ Resolved (`f027eed`) |
+
+**Accessibility follow-ups still open:** `aria-describedby` wiring on the heterogeneous
+inputs (TimeInput's two fields, the react-select cuisine/meal-type pickers, ImagePicker,
+and the ingredient/instruction list containers), plus associating each visible `<h2>`
+field label via `aria-labelledby`. The announced-error (`role='alert'`) and the
+shared-primitive wiring (RecipeFormInput / RecipeFormTextArea / ServingsInput) are done.
+
+---
+
 ## 1. Flow walkthrough (current behavior)
 
 **Layout & entry.** Single centered card (`max-width: 800px`, inner column `500px`), one
@@ -107,18 +134,25 @@ Each is framed as a reusable principle plus the specific instance here.
 - **Principle:** Pick one feedback system per app and use it everywhere.
 - **Fix direction:** Route submit success/failure and session-expiry through toast, or at
   minimum give `.submit-error` a real style consistent with `.error`.
+- **✅ Resolved (`519c9df`):** Submit success, session-expiry, and generic failure now route
+  through `react-hot-toast`. The `.submit-error` element and `addRecipeError` state were
+  removed. Field-level validation errors stay inline by design.
 
 #### [HIGH] No success confirmation
 - **Where:** `AddRecipe.tsx:131-132` — success navigates away silently.
 - **Principle:** Confirm completion of a creative/destructive action, even when navigating.
 - **Fix direction:** Fire a success toast ("Recipe published!") that survives the route
   change to `/recipes/:id`.
+- **✅ Resolved (`519c9df`):** `toast.success('Recipe published!')` fires before navigating;
+  the toast persists across the route change (Toaster is at app root).
 
 #### [HIGH] Warning styled as an error
 - **Where:** `IngredientsInput.tsx:73` uses the red `.error` alert for the enrichment notice.
 - **Principle:** Visual severity must match semantic severity (error = red/blocking,
   warning = amber/non-blocking, info = neutral).
 - **Fix direction:** Add a `.warning` style and use it for soft-fail notices.
+- **✅ Resolved (`1967e43`):** Added the amber `$alert-warning-amber` token family and a
+  `.warning` alert rule; the enrichment notice now uses `.warning`.
 
 ### Medium
 
@@ -128,12 +162,19 @@ Each is framed as a reusable principle plus the specific instance here.
   submit click.
 - **Principle:** Once errors are shown, validate reactively so they clear as the user fixes
   them.
+- **✅ Resolved (`bd15098`):** A `hasAttemptedSubmit` flag gates error display — none shown
+  before the first submit; afterward the live validation effect keeps them in sync so a
+  fixed field clears immediately.
 
 #### [MEDIUM] No length/count caps beyond title
 - **Where:** description, ingredient count, instruction count, and step length are unbounded
   (front and back).
 - **Principle:** Every free-text / list input needs a sane max, enforced client- and
   server-side.
+- **✅ Resolved (`90f0938`):** Shared limits in `src/util/recipeLimits.ts` + mirrored
+  `server/util/recipeLimits.js` (title 50, description 2000, instruction 1000, max 50
+  ingredients/instructions). Client caps inputs + validates counts; `POST /addRecipe` 400s
+  on out-of-bounds payloads.
 
 #### [MEDIUM] Accessibility gaps
 - **Where:** field errors aren't linked to inputs (`aria-describedby`); the submit error
@@ -141,27 +182,43 @@ Each is framed as a reusable principle plus the specific instance here.
   (only `cursor`).
 - **Principle:** Errors should be programmatically associated and announced; disabled
   controls must look disabled.
+- **◑ Core resolved (`2bd186b`):** Errors render as `role='alert'` with stable ids;
+  `RecipeFormInput` / `RecipeFormTextArea` / `ServingsInput` wire `aria-invalid` +
+  `aria-describedby` (used by title/description/servings); submit button gets `aria-busy`
+  and a real `:disabled` visual state. **Follow-ups open:** `aria-describedby` on the
+  heterogeneous inputs (TimeInput, react-select pickers, ImagePicker, list containers) and
+  `aria-labelledby` to tie the `<h2>` field labels to their inputs.
 
 #### [MEDIUM] No image validation
 - **Where:** `ImagePicker.tsx` — `accept="image/*"` only; no size/type/dimension guard
   before upload.
 - **Principle:** Validate file inputs (size, type) before kicking off an upload.
+- **✅ Resolved (`90f0938`):** `ImagePicker` rejects non-image types and >5MB files with a
+  toast before any work, and resets the input on rejection/removal so a corrected file can
+  be re-picked (mirrors the existing `Profile.tsx` pattern).
 
 ### Low
+
+_All four resolved in `f027eed`._
 
 #### [LOW] Wrong placeholder copy
 - **Where:** `MealTypeSelector.tsx:76` placeholder reads "Select a cuisine…" (copy-paste
   bug, user-visible).
+- **✅ Resolved:** Now reads "Select meal type(s)…".
 
 #### [LOW] Dead `errors.cookTime` UI
 - **Where:** `AddRecipe.tsx:211` — `cookTime` is never validated; the branch is unreachable.
+- **✅ Resolved:** Unreachable `errors.cookTime` render removed (cook time stays optional).
 
 #### [LOW] Redundant cuisine placeholder
 - **Where:** `CuisineSelector.tsx` has both a dummy `'-'` option and a `placeholder`.
+- **✅ Resolved:** Dummy `'-'` option dropped; the placeholder covers the empty state.
 
 #### [LOW] No empty-input feedback on Add Ingredient
 - **Where:** `IngredientsInput.tsx:29` — clicking Add with a blank field silently no-ops; a
   disabled-add or subtle shake would close the loop.
+- **✅ Resolved:** Empty/whitespace-only input shows a hint instead of a silent no-op, and
+  the value is trimmed before parsing.
 
 ---
 
