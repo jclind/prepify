@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Create Recipe · Guided Wizard</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#f4f6f8; --card:#fff; --ink:#1f2933; --ink-2:#7b8794; --accent:#ff5722; --teal:#00adb5;
+    --line:#e6eaee; --ok:#28a745; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:"Montserrat",sans-serif; background:var(--bg); color:var(--ink); min-height:100vh;
+    display:flex; flex-direction:column; }
+
+  .topbar { background:var(--card); border-bottom:1px solid var(--line); padding:18px 32px;
+    display:flex; align-items:center; justify-content:space-between; }
+  .topbar .brand { font-weight:700; font-size:18px; }
+  .topbar .brand span { color:var(--accent); }
+  .topbar .exit { color:var(--ink-2); font-size:14px; cursor:pointer; }
+
+  /* progress rail */
+  .rail { background:var(--card); border-bottom:1px solid var(--line); padding:22px 32px; }
+  .rail .inner { max-width:760px; margin:0 auto; display:flex; align-items:center; }
+  .node { display:flex; align-items:center; flex:1; }
+  .node:last-child { flex:none; }
+  .dot { width:34px; height:34px; border-radius:50%; display:grid; place-items:center; font-size:14px; font-weight:600;
+    background:#eef1f4; color:var(--ink-2); border:2px solid #eef1f4; flex:none; transition:.3s; }
+  .dot.done { background:var(--ok); border-color:var(--ok); color:#fff; }
+  .dot.cur { background:var(--accent); border-color:var(--accent); color:#fff; box-shadow:0 0 0 5px rgba(255,87,34,.15); }
+  .node .name { font-size:12px; font-weight:600; margin-left:10px; white-space:nowrap; color:var(--ink-2); }
+  .node .name.cur { color:var(--accent); }
+  .node .name.done { color:var(--ink); }
+  .bar { flex:1; height:3px; background:#eef1f4; margin:0 14px; border-radius:3px; position:relative; overflow:hidden; }
+  .bar.fill::after { content:''; position:absolute; inset:0; background:var(--ok); }
+
+  .stage { flex:1; display:flex; align-items:flex-start; justify-content:center; padding:56px 24px; }
+  .panel { width:100%; max-width:620px; background:var(--card); border:1px solid var(--line); border-radius:20px;
+    padding:44px; box-shadow:0 24px 60px -30px rgba(31,41,51,.25); }
+  .step-tag { font-size:13px; font-weight:600; color:var(--accent); letter-spacing:.05em; }
+  .panel h1 { font-size:30px; font-weight:700; margin:8px 0 6px; letter-spacing:-.02em; }
+  .panel .hint { color:var(--ink-2); font-size:15px; margin-bottom:30px; }
+
+  .field { margin-bottom:22px; }
+  .field label { display:block; font-size:13px; font-weight:600; margin-bottom:8px; }
+  .field input, .field textarea { width:100%; padding:14px 16px; border:1.5px solid var(--line); border-radius:12px;
+    font-family:inherit; font-size:16px; color:var(--ink); outline:none; transition:.2s; resize:none; }
+  .field input:focus, .field textarea:focus { border-color:var(--accent); box-shadow:0 0 0 4px rgba(255,87,34,.1); }
+  .counter { text-align:right; font-size:12px; color:var(--ink-2); margin-top:6px; }
+
+  .drop { border:2px dashed #cfd6dd; border-radius:14px; height:200px; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:10px; color:var(--ink-2); cursor:pointer; transition:.2s;
+    background:linear-gradient(180deg,#fafbfc,#f4f6f8); }
+  .drop:hover { border-color:var(--accent); color:var(--accent); background:#fff7f4; }
+  .drop .ic { font-size:40px; }
+
+  .nav { display:flex; justify-content:space-between; align-items:center; margin-top:36px; }
+  .btn { padding:14px 26px; border-radius:12px; font-family:inherit; font-size:15px; font-weight:600; cursor:pointer; border:none; transition:.2s; }
+  .btn.ghost { background:transparent; color:var(--ink-2); }
+  .btn.ghost:hover { color:var(--ink); }
+  .btn.next { background:var(--accent); color:#fff; box-shadow:0 10px 24px -8px rgba(255,87,34,.6); display:flex; align-items:center; gap:8px; }
+  .btn.next:hover { transform:translateY(-1px); }
+  .skip { font-size:13px; color:var(--ink-2); text-align:center; margin-top:14px; cursor:pointer; }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">Prep<span>ify</span></div>
+    <div class="exit">Save &amp; exit ✕</div>
+  </div>
+
+  <div class="rail">
+    <div class="inner">
+      <div class="node"><div class="dot done">✓</div><span class="name done">Basics</span><div class="bar fill"></div></div>
+      <div class="node"><div class="dot done">✓</div><span class="name done">Photo</span><div class="bar fill"></div></div>
+      <div class="node"><div class="dot cur">3</div><span class="name cur">Ingredients</span><div class="bar"></div></div>
+      <div class="node"><div class="dot">4</div><span class="name">Steps</span><div class="bar"></div></div>
+      <div class="node"><div class="dot">5</div><span class="name">Tags</span></div>
+    </div>
+  </div>
+
+  <div class="stage">
+    <div class="panel">
+      <div class="step-tag">STEP 3 OF 5</div>
+      <h1>What goes in it?</h1>
+      <p class="hint">Type ingredients one per line — we'll parse the amounts and pull nutrition automatically.</p>
+
+      <div class="field">
+        <label>Ingredients</label>
+        <textarea rows="8">4 boneless chicken breasts
+2 tbsp olive oil
+1 cup heavy cream
+½ cup chicken broth
+½ cup sun-dried tomatoes
+2 cups fresh spinach
+½ cup grated parmesan
+3 cloves garlic, minced</textarea>
+        <div class="counter">8 ingredients · max 40</div>
+      </div>
+
+      <div class="nav">
+        <button class="btn ghost">← Back</button>
+        <button class="btn next">Continue to steps →</button>
+      </div>
+      <div class="skip">Press Enter to add the next line</div>
+    </div>
+  </div>
+</body>
+</html>

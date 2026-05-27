@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Refined #11 · 10 Focused Variations</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0f1115;--card:#171a21;--ink:#eef1f6;--ink-2:#9aa2b1;--line:#262a33;--accent:#ff5722;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:"Inter",sans-serif;background:var(--bg);color:var(--ink);padding:48px 28px 100px;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1280px;margin:0 auto;}
+  a.back{color:var(--ink-2);text-decoration:none;font-size:13px;font-weight:600;}a.back:hover{color:var(--accent);}
+  header h1{font-size:36px;font-weight:800;letter-spacing:-.025em;margin:14px 0 8px;}
+  header h1 span{color:var(--accent);}
+  header p{color:var(--ink-2);font-size:15px;max-width:74ch;line-height:1.6;}
+  header .note{margin-top:12px;font-size:13px;color:var(--ink-2);}
+  header .note b{color:#ffce4d;}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:24px;margin-top:36px;}
+  .tile{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;text-decoration:none;color:inherit;transition:.2s;display:flex;flex-direction:column;}
+  .tile:hover{transform:translateY(-4px);border-color:var(--accent);box-shadow:0 24px 50px -24px rgba(255,87,34,.4);}
+  .frame{height:300px;overflow:hidden;background:#fff;border-bottom:1px solid var(--line);position:relative;}
+  .frame iframe{width:1280px;height:1560px;border:0;transform:scale(.32);transform-origin:top left;pointer-events:none;}
+  .frame .veil{position:absolute;inset:0;}
+  .meta{padding:16px 18px;}
+  .meta .row{display:flex;align-items:center;gap:10px;}
+  .num{font-size:12px;font-weight:700;color:var(--accent);background:rgba(255,87,34,.12);border-radius:6px;padding:3px 8px;}
+  .meta h3{font-size:16px;font-weight:700;}
+  .meta p{font-size:13px;color:var(--ink-2);margin-top:8px;line-height:1.55;}
+  .open{margin-top:12px;font-size:13px;font-weight:600;color:var(--accent);}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <a class="back" href="../index.html">← All directions</a>
+    <header>
+      <h1><span>#11</span> Refined Classic — 10 Focused Variations</h1>
+      <p>All ten keep the exact #11 identity — centered card, orange-divider sections, boxed inputs, dark circular step numbers, dashed dropzone, chips and the sticky bottom summary bar. They differ only in <b>spacing / rhythm</b> and <b>how inputs are arranged</b>. No new special features.</p>
+      <div class="note">Open two in side-by-side tabs to feel the spacing differences — <b>f01 compact</b> vs <b>f02 spacious</b> is the clearest pair.</div>
+    </header>
+    <div class="grid">
+      <a class="tile" href="f01-compact.html"><div class="frame"><iframe src="f01-compact.html" scrolling="no"></iframe><div class="veil"></div></div><div class="meta"><div class="row"><span class="num">f01</span><h3>Compact</h3></div><p>Tighter vertical rhythm — smaller paddings, slimmer fields, dense but calm. Fits more above the fold.</p><div class="open">Open →</div></div></a>
+      <a class="tile" href="f02-spacious.html"><div class="frame"><iframe src="f02-spacious.html" scrolling="no"></iframe><div class="veil"></div></div><div class="meta"><div class="row"><span class="num">f02</span><h3>Spacious</h3></div><p>Airy and generous — big section gaps, larger inputs and step numbers. Premium, unhurried feel.</p><div class="open">Open →</div></div></a>
+      <a class="tile" href="f03-row-meta.html"><div class="frame"><iframe src="f03-row-meta.html" scrolling="no"></iframe><div class="veil"></div></div><div class="meta"><div class="row"><span class="num">f03</span><h3>Row Meta</h3></div><p>Servings / prep / cook condensed into one 3-up row; cuisine &amp; course paired. Much less scrolling.</p><div class="open">Open →</div></div></a>
+      <a class="tile" href="f04-narrow.html"><div class="frame"><iframe src="f04-narrow.html" scrolling="no"></iframe><div class="veil"></div></div><div class="meta"><div class="row"><span class="num">f04</span><h3>Narrow Column</h3></div><p>Tight ~420px reading column, everything stacked. Focused and form-like.</p><div class="open">Open →</div></div></a>
+      <a class="tile" href="f05-wide-hero.html"><div class="frame"><iframe src="f05-wide-hero.html" scrolling="no"></iframe><div class="veil"></div></div><div class="meta"><div class="row"><span class="num">f05</span><h3>Wide + Hero Pair</h3></div><p>Wider card; photo and title/description sit side-by-side on top, rest single column.</p><div class="open">Open →</div></div></a>
+      <a class="tile" href="f06-inline-labels.html"><div class="frame"><iframe src="f06-inline-labels.html" scrolling="no"></iframe><div class="veil"></div></div><div class="meta"><div class="row"><span class="num">f06</span><h3>Inline Labels</h3></div><p>Labels sit to the left of each field (label column + field column) instead of above.</p><div class="open">Open →</div></div></a>
+      <a class="tile" href="f07-grouped.html"><div class="frame"><iframe src="f07-grouped.html" scrolling="no"></iframe><div class="veil"></div></div><div class="meta"><div class="row"><span class="num">f07</span><h3>Grouped Clusters</h3></div><p>Sections bundled into 4 labeled groups — tight within, big gap + hairline between.</p><div class="open">Open →</div></div></a>
+      <a class="tile" href="f08-centered.html"><div class="frame"><iframe src="f08-centered.html" scrolling="no"></iframe><div class="veil"></div></div><div class="meta"><div class="row"><span class="num">f08</span><h3>Centered Symmetric</h3></div><p>Section labels centered with dividers on both sides; content balanced down the middle.</p><div class="open">Open →</div></div></a>
+      <a class="tile" href="f09-left-accent.html"><div class="frame"><iframe src="f09-left-accent.html" scrolling="no"></iframe><div class="veil"></div></div><div class="meta"><div class="row"><span class="num">f09</span><h3>Left-Accent Headers</h3></div><p>Orange left bar on each section header (no full divider); content indents to align.</p><div class="open">Open →</div></div></a>
+      <a class="tile" href="f10-hairline.html"><div class="frame"><iframe src="f10-hairline.html" scrolling="no"></iframe><div class="veil"></div></div><div class="meta"><div class="row"><span class="num">f10</span><h3>Hairline Rhythm</h3></div><p>Settings-style: label-left / control-right rows separated by even hairlines, with helper hints.</p><div class="open">Open →</div></div></a>
+    </div>
+  </div>
+</body></html>

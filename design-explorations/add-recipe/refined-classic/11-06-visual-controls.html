@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Refined · Visual Controls</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--orange:#ff5722;--teal:#00adb5;--ink:#303841;--ink-2:#595f66;--ink-3:#979ba0;
+    --bg:#d6d6d6;--card:#eeeeee;--white:#fff;--g300:#e6e6e6;--g400:#d6d6d6;--radius:10px;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:"Montserrat",sans-serif;background:var(--bg);color:var(--ink);padding:48px 16px 120px;}
+  .page-h{text-align:center;margin-bottom:24px;}.page-h h1{font-size:28px;font-weight:700;}.page-h p{color:var(--ink-2);font-size:14px;margin-top:6px;}
+  .container{max-width:760px;margin:0 auto;background:var(--card);border-radius:var(--radius);padding:44px;}
+  .sec{display:flex;align-items:center;gap:.6rem;margin:28px 0 14px;}.sec:first-of-type{margin-top:0;}
+  .sec .text{color:var(--orange);font-weight:700;font-size:.95rem;text-transform:uppercase;letter-spacing:.06em;}
+  .sec .divider{height:1px;flex:1;background:var(--g400);}
+  input,textarea{width:100%;border:1px solid var(--g400);border-radius:var(--radius);padding:11px 13px;font-family:inherit;font-size:.95rem;font-weight:500;color:var(--ink);outline:none;resize:none;background:var(--white);}
+  input:focus,textarea:focus{border-color:var(--orange);box-shadow:0 0 0 3px rgba(255,87,34,.12);}
+  /* DISTINCTIVE: servings slider with floating value bubble */
+  .slider{padding:8px 0;}
+  .slider .track{position:relative;height:8px;background:var(--g400);border-radius:8px;}
+  .slider .track .fill{position:absolute;left:0;top:0;bottom:0;width:33%;background:var(--orange);border-radius:8px;}
+  .slider .track .knob{position:absolute;left:33%;top:50%;transform:translate(-50%,-50%);width:24px;height:24px;background:#fff;border:3px solid var(--orange);border-radius:50%;}
+  .slider .track .bubble{position:absolute;left:33%;top:-34px;transform:translateX(-50%);background:var(--orange);color:#fff;font-weight:700;font-size:.8rem;padding:4px 10px;border-radius:8px;}
+  .slider .ticks{display:flex;justify-content:space-between;font-size:.7rem;color:var(--ink-3);margin-top:10px;}
+  /* DISTINCTIVE: time as quick-pick chips */
+  .qpick{display:flex;flex-wrap:wrap;gap:.5rem;}
+  .qpick span{border:1px solid var(--g400);background:var(--white);border-radius:var(--radius);padding:9px 16px;font-size:.85rem;font-weight:600;cursor:pointer;}
+  .qpick span.on{background:var(--orange);border-color:var(--orange);color:#fff;}
+  /* DISTINCTIVE: difficulty + spice visual selectors */
+  .visual-row{display:grid;grid-template-columns:1fr 1fr;gap:24px;}
+  .picker .lab{font-size:.78rem;font-weight:600;color:var(--ink-2);margin-bottom:8px;}
+  .levels{display:flex;gap:8px;}
+  .levels .lv{flex:1;text-align:center;border:1px solid var(--g400);background:var(--white);border-radius:var(--radius);padding:10px 4px;cursor:pointer;font-size:.8rem;font-weight:600;}
+  .levels .lv.on{background:var(--orange);border-color:var(--orange);color:#fff;}
+  .spice{display:flex;gap:6px;font-size:22px;}
+  .spice span{cursor:pointer;filter:grayscale(1);opacity:.4;}
+  .spice span.on{filter:none;opacity:1;}
+  .ing{display:flex;align-items:center;gap:.7rem;padding:.5rem .4rem;border-radius:var(--radius);}.ing:hover{background:var(--g300);}
+  .ing .grip{color:var(--ink-3);cursor:grab;}.ing .q{font-weight:700;min-width:78px;}.ing .x{margin-left:auto;color:var(--ink-3);cursor:pointer;}
+  .add{display:inline-flex;gap:6px;color:var(--orange);font-weight:700;font-size:.85rem;margin-top:10px;cursor:pointer;}
+  .step{display:flex;gap:1rem;padding:.5rem 0;align-items:flex-start;}
+  .step .n{width:25px;height:25px;flex:none;margin-top:2px;background:var(--ink);color:#fff;font-weight:700;font-size:.85rem;border-radius:50%;display:grid;place-items:center;}
+  .step .c{flex:1;font-size:.95rem;line-height:1.5;}
+  .drop{border:2px dashed #ccc;background:#f0f0f0;border-radius:var(--radius);min-height:130px;display:flex;align-items:center;justify-content:center;gap:8px;color:#666;cursor:pointer;font-weight:600;}
+  .drop:hover{border-color:var(--orange);color:var(--orange);}
+  .bar{position:fixed;left:0;right:0;bottom:0;background:var(--white);border-top:1px solid var(--g400);box-shadow:0 -3px 12px rgba(0,0,0,.08);}
+  .bar .in{max-width:760px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;gap:24px;}
+  .sum{display:flex;gap:22px;flex:1;}.sum .s .k{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3);font-weight:700;}
+  .sum .s .v{font-size:15px;font-weight:700;}.sum .s .v.p{color:var(--orange);}
+  .submit{background:var(--orange);color:#fff;border:none;border-radius:var(--radius);height:44px;padding:0 28px;font-family:inherit;font-size:1rem;font-weight:600;cursor:pointer;}
+</style>
+</head>
+<body>
+  <div class="page-h"><h1>Create New Recipe</h1><p>Refined Classic · slider, quick-picks, difficulty &amp; spice meters</p></div>
+  <div class="container">
+    <div class="sec"><span class="text">Title</span><span class="divider"></span></div>
+    <input value="Creamy Tuscan Garlic Chicken" />
+    <div class="sec"><span class="text">Photo</span><span class="divider"></span></div>
+    <div class="drop">🖼 Add a cover photo</div>
+    <div class="sec"><span class="text">Description</span><span class="divider"></span></div>
+    <textarea rows="2">Juicy pan-seared chicken in a rich sun-dried tomato cream sauce with spinach and parmesan. On the table in 30 minutes.</textarea>
+    <div class="sec"><span class="text">Servings</span><span class="divider"></span></div>
+    <div class="slider"><div class="track"><div class="fill"></div><div class="bubble">4 servings</div><div class="knob"></div></div>
+      <div class="ticks"><span>1</span><span>4</span><span>8</span><span>12</span></div></div>
+    <div class="sec"><span class="text">Prep + cook time</span><span class="divider"></span></div>
+    <div class="qpick"><span>15 min</span><span class="on">30 min</span><span>45 min</span><span>1 hr</span><span>1.5 hr</span><span>2 hr+</span></div>
+    <div class="sec"><span class="text">At a glance</span><span class="divider"></span></div>
+    <div class="visual-row">
+      <div class="picker"><div class="lab">Difficulty</div><div class="levels"><span class="lv on">Easy</span><span class="lv">Medium</span><span class="lv">Hard</span></div></div>
+      <div class="picker"><div class="lab">Spice level</div><div class="spice"><span class="on">🌶️</span><span>🌶️</span><span>🌶️</span></div></div>
+    </div>
+    <div class="sec"><span class="text">Ingredients</span><span class="divider"></span></div>
+    <div class="ing"><span class="grip">⋮⋮</span><span class="q">4</span><span>boneless chicken breasts</span><span class="x">✕</span></div>
+    <div class="ing"><span class="grip">⋮⋮</span><span class="q">1 cup</span><span>heavy cream</span><span class="x">✕</span></div>
+    <div class="ing"><span class="grip">⋮⋮</span><span class="q">½ cup</span><span>sun-dried tomatoes</span><span class="x">✕</span></div>
+    <div class="add">＋ Add ingredient</div>
+    <div class="sec"><span class="text">Instructions</span><span class="divider"></span></div>
+    <div class="step"><span class="n">1</span><span class="c">Season chicken and sear until golden, then set aside.</span></div>
+    <div class="step"><span class="n">2</span><span class="c">Bloom garlic and build the cream sauce with broth and parmesan.</span></div>
+    <div class="step"><span class="n">3</span><span class="c">Fold in tomatoes and spinach, return chicken, simmer to finish.</span></div>
+    <div class="add">＋ Add step</div>
+  </div>
+  <div class="bar"><div class="in"><div class="sum">
+    <div class="s"><div class="k">Serves</div><div class="v">4</div></div>
+    <div class="s"><div class="k">Time</div><div class="v">30 min</div></div>
+    <div class="s"><div class="k">Difficulty</div><div class="v">Easy</div></div>
+    <div class="s"><div class="k">/ serving</div><div class="v p">$3.40</div></div>
+  </div><button class="submit">Create Recipe</button></div></div>
+</body></html>

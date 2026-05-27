@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Create Recipe · Smart Compose</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --orange:#ff5722; --teal:#00adb5;
+    --ink:#303841; --ink-2:#595f66; --ink-3:#979ba0;
+    --bg:#d6d6d6; --card:#eeeeee; --white:#fff; --g300:#e6e6e6; --g400:#d6d6d6;
+    --radius:10px; --shadow:rgba(0,0,0,0.24) 0px 3px 8px; --ok:#28a745;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:"Montserrat",sans-serif; background:var(--bg); color:var(--ink); padding:44px 16px 60px; }
+  .wrap { max-width:760px; margin:0 auto; }
+  .head { text-align:center; margin-bottom:26px; }
+  .head h1 { font-size:30px; font-weight:700; }
+  .head p { color:var(--ink-2); font-size:15px; margin-top:8px; }
+
+  .card { background:var(--card); border-radius:var(--radius); padding:36px; }
+  .sec { display:flex; align-items:center; gap:.6rem; margin:28px 0 14px; }
+  .sec:first-child { margin-top:0; }
+  .sec .text { color:var(--orange); font-weight:700; font-size:1rem; }
+  .sec .divider { height:1px; flex:1; background:var(--g400); }
+  .sec .smart { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--teal);
+    background:#e2f5f6; padding:3px 9px; border-radius:999px; }
+
+  input, textarea { width:100%; border:1px solid var(--g400); border-radius:var(--radius); padding:12px 14px; font-family:inherit;
+    font-size:.95rem; font-weight:500; color:var(--ink); outline:none; resize:none; background:var(--white); transition:.15s; }
+  input:focus, textarea:focus { border-color:var(--orange); box-shadow:0 0 0 3px rgba(255,87,34,.12); }
+  .dropzone { border:2px dashed #ccc; background:#f0f0f0; border-radius:var(--radius); min-height:160px; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:8px; color:#666; cursor:pointer; font-weight:600; }
+  .dropzone:hover { border-color:var(--orange); color:var(--orange); }
+  .dropzone .ic { font-size:28px; }
+
+  /* SMART: paste-a-list ingredient box that parses into rich rows */
+  .paste { display:flex; gap:10px; align-items:stretch; }
+  .paste textarea { flex:1; height:96px; }
+  .paste .parse-btn { background:var(--teal); color:#fff; border:none; border-radius:var(--radius); padding:0 18px; font-family:inherit;
+    font-weight:700; cursor:pointer; white-space:nowrap; }
+  .paste .parse-btn:hover { filter:brightness(1.05); }
+  .parsed { margin-top:14px; }
+  .ing { display:flex; align-items:center; gap:.7rem; padding:.55rem .5rem; border-radius:var(--radius); }
+  .ing:hover { background:var(--g300); }
+  .ing .bubble { width:40px; height:40px; flex:none; border-radius:50%; background:var(--white); border:1px solid var(--g400); display:grid; place-items:center; font-size:18px; }
+  .ing .q { font-weight:700; min-width:74px; }
+  .ing .chips-inline { margin-left:auto; display:flex; gap:6px; }
+  .ing .tagpill { font-size:10px; font-weight:700; padding:3px 8px; border-radius:999px; }
+  .ing .tagpill.cal { background:#fff3cd; color:#856404; }
+  .ing .tagpill.cost { background:#fbe7df; color:var(--orange); }
+
+  /* live nutrition + cost panel (the payoff of parsing) */
+  .insight { display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--g400); border-radius:var(--radius);
+    overflow:hidden; margin-top:18px; }
+  .insight .cell { background:var(--white); padding:16px; text-align:center; }
+  .insight .cell .k { font-size:10px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3); font-weight:700; }
+  .insight .cell .v { font-size:1.3rem; font-weight:700; margin-top:4px; }
+  .insight .cell .v.accent { color:var(--orange); }
+  .insight .cell .v.teal { color:var(--teal); }
+
+  .step { display:flex; gap:1rem; padding:.55rem 0; align-items:flex-start; }
+  .step .n { width:25px; height:25px; flex:none; margin-top:2px; background:var(--ink); color:#fff; font-weight:700; font-size:.85rem; border-radius:50%; display:grid; place-items:center; }
+  .step .grip { color:var(--ink-3); cursor:grab; margin-top:5px; }
+  .step textarea { flex:1; font-size:.95rem; line-height:1.5; }
+  .add { display:inline-flex; gap:6px; align-items:center; color:var(--orange); font-size:.85rem; font-weight:700; margin-top:10px; cursor:pointer; }
+
+  .row2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .chips { display:flex; flex-wrap:wrap; gap:.5rem; }
+  .chip { border:1px solid var(--g400); background:var(--white); border-radius:999px; padding:7px 13px; font-size:.85rem; font-weight:600; cursor:pointer; }
+  .chip.on { background:var(--orange); border-color:var(--orange); color:#fff; }
+  .chip.suggest { border-style:dashed; color:var(--teal); border-color:var(--teal); }
+
+  .submit { width:100%; background:var(--orange); color:#fff; border:none; border-radius:var(--radius); height:48px; font-family:inherit;
+    font-size:1.05rem; font-weight:600; cursor:pointer; margin-top:30px; }
+  .submit:hover { filter:brightness(1.08); }
+  label.l { font-size:.8rem; font-weight:600; color:var(--ink-2); display:block; margin-bottom:6px; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="head">
+      <h1>Create New Recipe</h1>
+      <p>Same form, smarter. Paste your ingredient list and we parse amounts, cost &amp; nutrition instantly.</p>
+    </div>
+
+    <div class="card">
+      <div class="sec"><span class="text">Title &amp; photo</span><span class="divider"></span></div>
+      <input value="Creamy Tuscan Garlic Chicken" style="margin-bottom:14px" />
+      <div class="dropzone"><span class="ic">🖼</span><span>Add a cover photo</span></div>
+
+      <div class="sec"><span class="text">Description</span><span class="divider"></span></div>
+      <textarea rows="2">Juicy pan-seared chicken in a rich sun-dried tomato cream sauce with spinach and parmesan. On the table in 30 minutes.</textarea>
+
+      <div class="sec"><span class="text">Ingredients</span><span class="divider"></span><span class="smart">⚡ Auto-parse</span></div>
+      <div class="paste">
+        <textarea placeholder="Paste your whole list — one per line…">4 boneless chicken breasts
+1 cup heavy cream
+½ cup sun-dried tomatoes
+2 cups fresh spinach</textarea>
+        <button class="parse-btn">Parse →</button>
+      </div>
+      <div class="parsed">
+        <div class="ing"><span class="bubble">🍗</span><span class="q">4</span><span>boneless chicken breasts</span><span class="chips-inline"><span class="tagpill cal">920 cal</span><span class="tagpill cost">$6.80</span></span></div>
+        <div class="ing"><span class="bubble">🥛</span><span class="q">1 cup</span><span>heavy cream</span><span class="chips-inline"><span class="tagpill cal">810 cal</span><span class="tagpill cost">$1.20</span></span></div>
+        <div class="ing"><span class="bubble">🍅</span><span class="q">½ cup</span><span>sun-dried tomatoes</span><span class="chips-inline"><span class="tagpill cal">70 cal</span><span class="tagpill cost">$2.40</span></span></div>
+        <div class="ing"><span class="bubble">🥬</span><span class="q">2 cups</span><span>fresh spinach</span><span class="chips-inline"><span class="tagpill cal">14 cal</span><span class="tagpill cost">$1.10</span></span></div>
+      </div>
+      <div class="insight">
+        <div class="cell"><div class="k">Per serving</div><div class="v accent">$3.40</div></div>
+        <div class="cell"><div class="k">Calories</div><div class="v">454</div></div>
+        <div class="cell"><div class="k">Protein</div><div class="v teal">38g</div></div>
+        <div class="cell"><div class="k">Total cost</div><div class="v">$13.60</div></div>
+      </div>
+
+      <div class="sec"><span class="text">Instructions</span><span class="divider"></span></div>
+      <div class="step"><span class="grip">⋮⋮</span><span class="n">1</span><textarea rows="2">Season chicken, then sear in olive oil over medium-high heat, 4–5 min per side until golden. Set aside.</textarea></div>
+      <div class="step"><span class="grip">⋮⋮</span><span class="n">2</span><textarea rows="2">Add garlic and cook until fragrant. Stir in cream, broth, parmesan, and Italian seasoning.</textarea></div>
+      <div class="step"><span class="grip">⋮⋮</span><span class="n">3</span><textarea rows="2">Fold in tomatoes and spinach; simmer until thickened. Return chicken and serve hot.</textarea></div>
+      <div class="add">＋ Add step</div>
+
+      <div class="row2" style="margin-top:8px">
+        <div>
+          <div class="sec"><span class="text">Servings &amp; time</span><span class="divider"></span></div>
+          <div class="row2"><input value="4 servings" /><input value="30 min" /></div>
+        </div>
+        <div>
+          <div class="sec"><span class="text">Cuisine</span><span class="divider"></span></div>
+          <input value="Italian" />
+        </div>
+      </div>
+
+      <div class="sec"><span class="text">Course</span><span class="divider"></span><span class="smart">⚡ Suggested</span></div>
+      <div class="chips">
+        <span class="chip on">Dinner</span><span class="chip on">Main course</span>
+        <span class="chip suggest">＋ High-protein</span><span class="chip suggest">＋ 30-minute</span><span class="chip">Lunch</span>
+      </div>
+
+      <button class="submit">Publish recipe</button>
+    </div>
+  </div>
+</body>
+</html>

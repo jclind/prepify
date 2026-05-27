@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Create Recipe · Native Cards</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --orange:#ff5722; --teal:#00adb5;
+    --ink:#303841; --ink-2:#595f66; --ink-3:#979ba0;
+    --bg:#d6d6d6; --white:#fff; --g300:#e6e6e6; --g400:#d6d6d6;
+    --radius:10px; --shadow:rgba(0,0,0,0.24) 0px 3px 8px; --ok:#28a745;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:"Montserrat",sans-serif; background:var(--bg); color:var(--ink); padding:44px 20px 60px; }
+
+  .shell { max-width:1040px; margin:0 auto; display:grid; grid-template-columns:1fr 280px; gap:28px; align-items:start; }
+  .head { grid-column:1 / -1; }
+  .head h1 { font-size:30px; font-weight:700; }
+  .head p { color:var(--ink-2); font-size:15px; margin-top:6px; }
+
+  /* each section is a white thumbnail-style card */
+  .card { background:var(--white); border-radius:var(--radius); box-shadow:var(--shadow); padding:24px 26px; margin-bottom:22px; }
+  .card .sec { display:flex; align-items:center; gap:.6rem; margin-bottom:16px; }
+  .card .sec .badge { width:26px; height:26px; border-radius:50%; background:var(--orange); color:#fff; font-weight:700; font-size:.8rem; display:grid; place-items:center; flex:none; }
+  .card .sec .text { color:var(--orange); font-weight:700; font-size:1rem; }
+  .card .sec .divider { height:1px; flex:1; background:var(--g400); }
+  .card .sec .done { color:var(--ok); font-size:.85rem; font-weight:700; }
+
+  label.l { font-size:.8rem; font-weight:600; color:var(--ink-2); display:block; margin-bottom:6px; }
+  input, textarea { width:100%; border:1px solid var(--g400); border-radius:var(--radius); padding:11px 13px; font-family:inherit;
+    font-size:.95rem; font-weight:500; color:var(--ink); outline:none; resize:none; transition:.15s; }
+  input:focus, textarea:focus { border-color:var(--orange); box-shadow:0 0 0 3px rgba(255,87,34,.12); }
+  .field + .field { margin-top:16px; }
+  .row2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .row3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; }
+
+  .dropzone { border:2px dashed #ccc; background:#f0f0f0; border-radius:var(--radius); min-height:180px; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:8px; color:#666; cursor:pointer; font-weight:600; transition:.15s; }
+  .dropzone:hover { border-color:var(--orange); color:var(--orange); background:#fbf1ec; }
+  .dropzone .ic { font-size:30px; }
+
+  .ing { display:flex; align-items:center; gap:.7rem; padding:.55rem .4rem; border-radius:var(--radius); }
+  .ing:hover { background:var(--g300); }
+  .ing .grip { color:var(--ink-3); cursor:grab; }
+  .ing .q { font-weight:700; min-width:80px; }
+  .ing .x { margin-left:auto; color:var(--ink-3); cursor:pointer; }
+  .add { display:inline-flex; gap:7px; align-items:center; color:var(--orange); font-size:.85rem; font-weight:700; margin-top:12px; cursor:pointer; }
+
+  .step { display:flex; gap:1rem; padding:.55rem 0; align-items:flex-start; }
+  .step .n { width:25px; height:25px; flex:none; margin-top:2px; background:var(--ink); color:#fff; font-weight:700; font-size:.85rem; border-radius:50%; display:grid; place-items:center; }
+  .step .c { flex:1; font-size:.95rem; line-height:1.5; }
+
+  .chips { display:flex; flex-wrap:wrap; gap:.5rem; }
+  .chip { border:1px solid var(--g400); background:var(--white); border-radius:999px; padding:7px 13px; font-size:.85rem; font-weight:600; cursor:pointer; }
+  .chip.on { background:var(--orange); border-color:var(--orange); color:#fff; }
+
+  /* right rail: live summary card (sticky) */
+  .rail { position:sticky; top:24px; }
+  .rail .card { padding:20px; }
+  .rail .preview-img { height:120px; border-radius:8px; background:linear-gradient(135deg,#ffb89c,#ff7b54); margin-bottom:14px; }
+  .rail h3 { font-size:1.05rem; font-weight:700; text-transform:capitalize; }
+  .rail .price { font-size:.7rem; font-weight:700; color:var(--orange); text-transform:uppercase; letter-spacing:1.2px; margin-top:4px; }
+  .rail .stats { display:flex; justify-content:space-between; margin:16px 0; }
+  .rail .stats .s { text-align:center; }
+  .rail .stats .k { font-size:10px; text-transform:uppercase; color:var(--ink-3); font-weight:700; }
+  .rail .stats .v { font-size:1.05rem; font-weight:700; margin-top:2px; }
+  .rail .checklist { border-top:1px solid var(--g400); padding-top:14px; }
+  .rail .checklist .c { display:flex; align-items:center; gap:8px; font-size:.8rem; padding:4px 0; color:var(--ink-2); }
+  .rail .checklist .c .b { width:16px; height:16px; border-radius:4px; display:grid; place-items:center; font-size:10px; color:#fff; }
+  .rail .checklist .c .b.ok { background:var(--ok); }
+  .rail .checklist .c .b.no { background:var(--g400); }
+  .rail .publish { width:100%; background:var(--orange); color:#fff; border:none; border-radius:var(--radius); height:46px; font-family:inherit;
+    font-size:1rem; font-weight:600; cursor:pointer; margin-top:16px; }
+  .rail .publish:hover { filter:brightness(1.08); }
+
+  @media (max-width:880px){ .shell{grid-template-columns:1fr} .rail{position:static} }
+</style>
+</head>
+<body>
+  <div class="shell">
+    <div class="head">
+      <h1>Create New Recipe</h1>
+      <p>Each section in its own card, with a live preview and checklist alongside.</p>
+    </div>
+
+    <div class="main">
+      <div class="card">
+        <div class="sec"><span class="badge">1</span><span class="text">The basics</span><span class="divider"></span><span class="done">✓ Done</span></div>
+        <div class="field"><label class="l">Recipe title</label><input value="Creamy Tuscan Garlic Chicken" /></div>
+        <div class="field"><label class="l">Description</label><textarea rows="2">Juicy pan-seared chicken in a rich sun-dried tomato cream sauce with spinach and parmesan. On the table in 30 minutes.</textarea></div>
+      </div>
+
+      <div class="card">
+        <div class="sec"><span class="badge">2</span><span class="text">Photo</span><span class="divider"></span></div>
+        <div class="dropzone"><span class="ic">🖼</span><span>Click to upload or drag a photo here</span></div>
+      </div>
+
+      <div class="card">
+        <div class="sec"><span class="badge">3</span><span class="text">Details</span><span class="divider"></span><span class="done">✓ Done</span></div>
+        <div class="row3">
+          <div class="field"><label class="l">Servings</label><input value="4" /></div>
+          <div class="field"><label class="l">Prep time</label><input value="10 min" /></div>
+          <div class="field"><label class="l">Cook time</label><input value="20 min" /></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="sec"><span class="badge">4</span><span class="text">Ingredients</span><span class="divider"></span><span class="done">4 added</span></div>
+        <div class="ing"><span class="grip">⋮⋮</span><span class="q">4</span><span>boneless chicken breasts</span><span class="x">✕</span></div>
+        <div class="ing"><span class="grip">⋮⋮</span><span class="q">1 cup</span><span>heavy cream</span><span class="x">✕</span></div>
+        <div class="ing"><span class="grip">⋮⋮</span><span class="q">½ cup</span><span>sun-dried tomatoes</span><span class="x">✕</span></div>
+        <div class="ing"><span class="grip">⋮⋮</span><span class="q">2 cups</span><span>fresh spinach</span><span class="x">✕</span></div>
+        <div class="add">＋ Add ingredient</div>
+      </div>
+
+      <div class="card">
+        <div class="sec"><span class="badge">5</span><span class="text">Instructions</span><span class="divider"></span><span class="done">3 steps</span></div>
+        <div class="step"><span class="n">1</span><span class="c">Season chicken and sear in olive oil until golden, 4–5 min per side. Set aside.</span></div>
+        <div class="step"><span class="n">2</span><span class="c">Bloom the garlic, then build the cream sauce with broth and parmesan.</span></div>
+        <div class="step"><span class="n">3</span><span class="c">Fold in tomatoes and spinach, return the chicken, and simmer to finish.</span></div>
+        <div class="add">＋ Add step</div>
+      </div>
+
+      <div class="card">
+        <div class="sec"><span class="badge">6</span><span class="text">Cuisine &amp; course</span><span class="divider"></span></div>
+        <div class="field"><label class="l">Cuisine</label><div class="chips"><span class="chip on">Italian</span><span class="chip">Mexican</span><span class="chip">Asian</span><span class="chip">American</span></div></div>
+        <div class="field"><label class="l">Course</label><div class="chips"><span class="chip on">Dinner</span><span class="chip on">Main course</span><span class="chip">Lunch</span><span class="chip">Dessert</span></div></div>
+      </div>
+    </div>
+
+    <aside class="rail">
+      <div class="card">
+        <div class="preview-img"></div>
+        <h3>Creamy Tuscan Garlic Chicken</h3>
+        <div class="price">$3.40 / serving</div>
+        <div class="stats">
+          <div class="s"><div class="k">Serves</div><div class="v">4</div></div>
+          <div class="s"><div class="k">Time</div><div class="v">30m</div></div>
+          <div class="s"><div class="k">Items</div><div class="v">4</div></div>
+        </div>
+        <div class="checklist">
+          <div class="c"><span class="b ok">✓</span> Title &amp; description</div>
+          <div class="c"><span class="b no"></span> Photo</div>
+          <div class="c"><span class="b ok">✓</span> Servings &amp; time</div>
+          <div class="c"><span class="b ok">✓</span> Ingredients</div>
+          <div class="c"><span class="b ok">✓</span> Instructions</div>
+          <div class="c"><span class="b ok">✓</span> Course</div>
+        </div>
+        <button class="publish">Publish recipe</button>
+      </div>
+    </aside>
+  </div>
+</body>
+</html>

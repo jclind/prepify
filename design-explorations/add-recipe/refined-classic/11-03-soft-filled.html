@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Refined · Soft Filled + 3-field adder</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--orange:#ff5722;--teal:#00adb5;--ink:#303841;--ink-2:#595f66;--ink-3:#979ba0;
+    --bg:#d6d6d6;--card:#eeeeee;--white:#fff;--soft:#f4f4f4;--g300:#e6e6e6;--g400:#d6d6d6;--radius:12px;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:"Montserrat",sans-serif;background:var(--bg);color:var(--ink);padding:48px 16px 120px;}
+  .page-h{text-align:center;margin-bottom:24px;}.page-h h1{font-size:28px;font-weight:700;}.page-h p{color:var(--ink-2);font-size:14px;margin-top:6px;}
+  .container{max-width:760px;margin:0 auto;background:var(--card);border-radius:var(--radius);padding:44px 0 32px;}
+  .inner{max-width:540px;margin:0 auto;padding:0 1rem;}
+  .sec{display:flex;align-items:center;gap:.6rem;margin:30px 0 12px;}.sec:first-of-type{margin-top:0;}
+  .sec .text{color:var(--orange);font-weight:700;font-size:.95rem;text-transform:uppercase;letter-spacing:.06em;}
+  .sec .divider{height:1px;flex:1;background:var(--g400);}
+  /* DISTINCTIVE: soft pill-filled inputs, big targets, no visible border until focus */
+  input.s,textarea.s,select.s{width:100%;background:var(--soft);border:2px solid transparent;border-radius:var(--radius);
+    padding:14px 16px;font-family:inherit;font-size:1rem;font-weight:500;color:var(--ink);outline:none;resize:none;transition:.15s;}
+  input.s:focus,textarea.s:focus,select.s:focus{border-color:var(--orange);background:var(--white);}
+  .stepper{display:inline-flex;align-items:center;background:var(--soft);border-radius:999px;padding:6px;}
+  .stepper button{width:40px;height:40px;border:none;border-radius:50%;background:var(--white);font-size:18px;cursor:pointer;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.1);}
+  .stepper .v{font-size:1.3rem;font-weight:700;min-width:48px;text-align:center;}
+  .twocol{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  /* DISTINCTIVE feature: 3-field structured ingredient adder */
+  .adder{display:grid;grid-template-columns:90px 110px 1fr auto;gap:8px;margin-top:6px;}
+  .adder .addbtn{background:var(--orange);color:#fff;border:none;border-radius:var(--radius);padding:0 18px;font-weight:700;cursor:pointer;}
+  .ing{display:flex;align-items:center;gap:.75rem;padding:.55rem .5rem;border-radius:var(--radius);margin-top:4px;}
+  .ing:hover{background:var(--g300);}
+  .ing .amt{background:var(--white);border:1px solid var(--g400);border-radius:8px;padding:3px 10px;font-weight:700;font-size:.85rem;}
+  .ing .x{margin-left:auto;color:var(--ink-3);cursor:pointer;}
+  .step{display:flex;gap:1rem;padding:.55rem 0;align-items:flex-start;}
+  .step .n{width:25px;height:25px;flex:none;margin-top:2px;background:var(--ink);color:#fff;font-weight:700;font-size:.85rem;border-radius:50%;display:grid;place-items:center;}
+  .step textarea{flex:1;}
+  .add{display:inline-flex;gap:6px;color:var(--orange);font-weight:700;font-size:.85rem;margin-top:10px;cursor:pointer;}
+  .chips{display:flex;flex-wrap:wrap;gap:.5rem;}
+  .chip{border:none;background:var(--soft);border-radius:999px;padding:9px 16px;font-size:.85rem;font-weight:600;cursor:pointer;}
+  .chip.on{background:var(--orange);color:#fff;}
+  .drop{border:2px dashed #ccc;background:var(--soft);border-radius:var(--radius);min-height:150px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#888;cursor:pointer;font-weight:600;}
+  .drop:hover{border-color:var(--orange);color:var(--orange);}.drop .ic{font-size:28px;}
+  .bar{position:fixed;left:0;right:0;bottom:0;background:var(--white);border-top:1px solid var(--g400);box-shadow:0 -3px 12px rgba(0,0,0,.08);}
+  .bar .in{max-width:760px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;gap:24px;}
+  .sum{display:flex;gap:22px;flex:1;}.sum .s .k{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3);font-weight:700;}
+  .sum .s .v{font-size:15px;font-weight:700;}.sum .s .v.p{color:var(--orange);}
+  .submit{background:var(--orange);color:#fff;border:none;border-radius:var(--radius);height:46px;padding:0 30px;font-family:inherit;font-size:1rem;font-weight:600;cursor:pointer;}
+</style>
+</head>
+<body>
+  <div class="page-h"><h1>Create New Recipe</h1><p>Refined Classic · soft filled inputs + structured ingredient adder</p></div>
+  <div class="container"><div class="inner">
+    <div class="sec"><span class="text">Title</span><span class="divider"></span></div>
+    <input class="s" value="Creamy Tuscan Garlic Chicken" />
+    <div class="sec"><span class="text">Photo</span><span class="divider"></span></div>
+    <div class="drop"><span class="ic">🖼</span><span>Add a cover photo</span></div>
+    <div class="sec"><span class="text">Description</span><span class="divider"></span></div>
+    <textarea class="s" rows="2">Juicy pan-seared chicken in a rich sun-dried tomato cream sauce with spinach and parmesan. On the table in 30 minutes.</textarea>
+    <div class="twocol" style="margin-top:16px">
+      <div><div class="sec"><span class="text">Servings</span></div><div class="stepper"><button>−</button><span class="v">4</span><button>+</button></div></div>
+      <div><div class="sec"><span class="text">Total time</span></div><input class="s" value="30 min" /></div>
+    </div>
+    <div class="sec"><span class="text">Ingredients</span><span class="divider"></span></div>
+    <div class="adder">
+      <input class="s" placeholder="Amt" value="" /><select class="s"><option>unit</option><option>cup</option><option>tbsp</option><option>clove</option></select>
+      <input class="s" placeholder="Ingredient name" /><button class="addbtn">Add</button>
+    </div>
+    <div class="ing"><span class="amt">4</span><span>boneless chicken breasts</span><span class="x">✕</span></div>
+    <div class="ing"><span class="amt">1 cup</span><span>heavy cream</span><span class="x">✕</span></div>
+    <div class="ing"><span class="amt">½ cup</span><span>sun-dried tomatoes</span><span class="x">✕</span></div>
+    <div class="ing"><span class="amt">2 cups</span><span>fresh spinach</span><span class="x">✕</span></div>
+    <div class="sec"><span class="text">Instructions</span><span class="divider"></span></div>
+    <div class="step"><span class="n">1</span><textarea class="s" rows="2">Season chicken and sear in olive oil until golden, then set aside.</textarea></div>
+    <div class="step"><span class="n">2</span><textarea class="s" rows="2">Bloom the garlic and build the cream sauce with broth and parmesan.</textarea></div>
+    <div class="add">＋ Add step</div>
+    <div class="sec"><span class="text">Cuisine &amp; course</span><span class="divider"></span></div>
+    <div class="chips"><span class="chip on">Italian</span><span class="chip on">Dinner</span><span class="chip on">Main course</span><span class="chip">Quick</span></div>
+  </div></div>
+  <div class="bar"><div class="in"><div class="sum">
+    <div class="s"><div class="k">Serves</div><div class="v">4</div></div>
+    <div class="s"><div class="k">Total time</div><div class="v">30 min</div></div>
+    <div class="s"><div class="k">Ingredients</div><div class="v">4</div></div>
+    <div class="s"><div class="k">Est. / serving</div><div class="v p">$3.40</div></div>
+  </div><button class="submit">Create Recipe</button></div></div>
+</body></html>

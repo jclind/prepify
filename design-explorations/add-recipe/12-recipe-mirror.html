@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Create Recipe · Recipe Mirror</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --orange:#ff5722; --teal:#00adb5;
+    --ink:#303841; --ink-2:#595f66; --ink-3:#979ba0;
+    --bg:#d6d6d6; --card:#eeeeee; --white:#fff; --g300:#e6e6e6; --g400:#d6d6d6;
+    --radius:10px; --shadow:rgba(0,0,0,0.24) 0px 3px 8px;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:"Montserrat",sans-serif; background:var(--bg); color:var(--ink); padding:40px 16px 100px; }
+  .editing-flag { max-width:1000px; margin:0 auto 18px; display:flex; align-items:center; gap:10px; }
+  .editing-flag .dot { width:9px; height:9px; border-radius:50%; background:var(--teal); }
+  .editing-flag .t { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--ink-2); }
+  .editing-flag .hint { font-size:13px; color:var(--ink-3); margin-left:auto; }
+
+  /* mirrors .single-recipe-page max-width 1000 */
+  .recipe-page { max-width:1000px; margin:0 auto; background:var(--card); border-radius:var(--radius); padding:40px; }
+
+  /* header-content: image left, description right (matches recipe page) */
+  .header-content { display:flex; gap:3rem; padding-bottom:2rem; margin-bottom:2rem; border-bottom:1px solid var(--g400); }
+  .image-box { width:400px; height:400px; flex:none; border:2px dashed #ccc; background:#f0f0f0; border-radius:var(--radius);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; color:#666; cursor:pointer; font-weight:600; }
+  .image-box .ic { font-size:42px; }
+  .image-box:hover { border-color:var(--orange); color:var(--orange); }
+  .desc-content { display:flex; flex-direction:column; gap:1rem; flex:1; }
+  .recipe-price { font-size:.75rem; font-weight:700; color:var(--orange); text-transform:uppercase; letter-spacing:1.2px; }
+  .title-in { font-size:2rem; font-weight:600; border:none; border-bottom:2px solid transparent; background:none; font-family:inherit;
+    color:var(--ink); outline:none; padding:2px 0; }
+  .title-in:focus, .desc-in:focus { border-color:var(--orange); }
+  .field-tag { font-size:11px; color:var(--ink-3); font-weight:600; text-transform:uppercase; letter-spacing:.06em; margin-bottom:2px; }
+  .desc-in { flex:1; font-size:1rem; font-weight:500; line-height:1.5; border:1px solid transparent; border-radius:var(--radius);
+    background:var(--white); padding:12px; font-family:inherit; color:var(--ink); outline:none; resize:none; }
+  .desc-in:focus { border-color:var(--orange); }
+
+  /* recipe-data row: icon + label + editable value (matches .data-element) */
+  .recipe-data { display:flex; gap:1.5rem; margin-top:auto; }
+  .data-element { display:flex; flex-direction:column; align-items:center; gap:.4rem; }
+  .data-element .icon { font-size:26px; }
+  .data-element h2 { font-size:1rem; font-weight:700; }
+  .data-element .data-edit { display:flex; align-items:center; border:1px solid var(--g400); border-radius:var(--radius); background:var(--white); }
+  .data-element .data-edit button { width:28px; height:30px; border:none; background:none; cursor:pointer; color:var(--ink-2); }
+  .data-element .data-edit button:hover { color:var(--orange); }
+  .data-element .data-edit .v { min-width:34px; text-align:center; font-weight:600; }
+  .data-element .data-time { color:var(--ink-2); font-weight:600; }
+
+  /* body: orange-label + divider sections (Ingredients / Instructions) */
+  .body-content { max-width:800px; margin:0 auto; }
+  .sec-title { display:flex; align-items:center; gap:.5rem; margin:2.5rem 0 1.25rem; }
+  .sec-title .text { color:var(--orange); font-weight:700; font-size:1rem; text-transform:capitalize; white-space:nowrap; }
+  .sec-title .divider { height:1px; flex:1; background:var(--g400); }
+  .sec-title .addlink { font-size:13px; color:var(--ink-2); font-weight:600; cursor:pointer; }
+
+  .ing { display:flex; align-items:center; gap:.75rem; padding:.7rem; border-radius:var(--radius); transition:.1s; }
+  .ing:hover { background:var(--g300); }
+  .ing .grip { color:var(--ink-3); cursor:grab; }
+  .ing .bubble { width:46px; height:46px; flex:none; border-radius:50%; background:var(--white); border:1px solid var(--g400);
+    display:grid; place-items:center; font-size:20px; }
+  .ing .lab { font-weight:700; }
+  .ing .lab::after { content:':'; }
+  .ing .x { margin-left:auto; color:var(--ink-3); cursor:pointer; }
+
+  .step { display:flex; gap:1.5rem; padding:.9rem 0; align-items:flex-start; }
+  .step .n { width:25px; height:25px; flex:none; margin-top:2px; background:var(--ink); color:#fff; font-weight:700; border-radius:50%; display:grid; place-items:center; font-size:.9rem; }
+  .step .c { font-size:1rem; font-weight:500; line-height:1.5; flex:1; border:1px solid transparent; border-radius:8px; padding:6px 8px; }
+  .step .c:focus { border-color:var(--orange); outline:none; background:var(--white); }
+
+  .tags-container { margin-top:3rem; }
+  .tag-label { font-size:1rem; color:var(--orange); font-weight:700; }
+  .tags { display:flex; flex-wrap:wrap; gap:.6rem; margin-top:1rem; }
+  .tag { padding:8px 14px; border:1px solid var(--g400); border-radius:999px; background:var(--white); font-size:.85rem; font-weight:600; cursor:pointer; }
+  .tag.on { background:var(--orange); border-color:var(--orange); color:#fff; }
+
+  .footer-actions { display:flex; justify-content:center; gap:1rem; margin-top:3rem; }
+  .btn-secondary { border:1px solid var(--ink); color:var(--ink); background:none; border-radius:var(--radius); padding:.6rem 1.4rem; font-family:inherit; font-weight:600; cursor:pointer; }
+  .btn-secondary:hover { background:var(--ink); color:var(--white); }
+  .btn-primary { background:var(--orange); color:#fff; border:none; border-radius:var(--radius); padding:.6rem 2rem; font-family:inherit; font-size:1rem; font-weight:600; cursor:pointer; }
+  .btn-primary:hover { filter:brightness(1.08); }
+
+  @media (max-width:956px){ .header-content{flex-direction:column;align-items:center} .image-box{width:100%;max-width:400px} }
+</style>
+</head>
+<body>
+  <div class="editing-flag">
+    <span class="dot"></span><span class="t">Editing — this is exactly how readers will see it</span>
+    <span class="hint">Fill in the fields right on the recipe layout</span>
+  </div>
+
+  <div class="recipe-page">
+    <div class="header-content">
+      <div class="image-box"><span class="ic">📷</span><span>Add cover photo</span></div>
+      <div class="desc-content">
+        <span class="recipe-price">$3.40 / serving · 1,124 cal</span>
+        <div>
+          <div class="field-tag">Title</div>
+          <input class="title-in" value="Creamy Tuscan Garlic Chicken" />
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column">
+          <div class="field-tag">Description</div>
+          <textarea class="desc-in" rows="4">Juicy pan-seared chicken in a rich sun-dried tomato cream sauce with spinach and parmesan. On the table in 30 minutes.</textarea>
+        </div>
+        <div class="recipe-data">
+          <div class="data-element"><span class="icon">🍽️</span><h2>Servings</h2>
+            <div class="data-edit"><button>−</button><span class="v">4</span><button>+</button></div></div>
+          <div class="data-element"><span class="icon">⏱️</span><h2>Prep</h2><span class="data-time">10 min</span></div>
+          <div class="data-element"><span class="icon">🔥</span><h2>Cook</h2><span class="data-time">20 min</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="body-content">
+      <div class="sec-title"><span class="text">Ingredients</span><span class="divider"></span><span class="addlink">＋ add ingredient</span></div>
+      <div class="ing"><span class="grip">⋮⋮</span><span class="bubble">🍗</span><span><span class="lab">4</span> boneless chicken breasts</span><span class="x">✕</span></div>
+      <div class="ing"><span class="grip">⋮⋮</span><span class="bubble">🥛</span><span><span class="lab">1 cup</span> heavy cream</span><span class="x">✕</span></div>
+      <div class="ing"><span class="grip">⋮⋮</span><span class="bubble">🍅</span><span><span class="lab">½ cup</span> sun-dried tomatoes</span><span class="x">✕</span></div>
+      <div class="ing"><span class="grip">⋮⋮</span><span class="bubble">🥬</span><span><span class="lab">2 cups</span> fresh spinach</span><span class="x">✕</span></div>
+
+      <div class="sec-title"><span class="text">Directions</span><span class="divider"></span><span class="addlink">＋ add step</span></div>
+      <div class="step"><span class="n">1</span><div class="c" contenteditable="true">Season chicken, then sear in olive oil over medium-high heat, 4–5 min per side until golden. Set aside.</div></div>
+      <div class="step"><span class="n">2</span><div class="c" contenteditable="true">Add garlic and cook until fragrant. Stir in cream, broth, parmesan, and Italian seasoning.</div></div>
+      <div class="step"><span class="n">3</span><div class="c" contenteditable="true">Fold in sun-dried tomatoes and spinach; simmer until thickened. Return chicken and serve hot.</div></div>
+
+      <div class="tags-container">
+        <div class="tag-label">Cuisine &amp; course</div>
+        <div class="tags"><span class="tag on">Italian</span><span class="tag on">Dinner</span><span class="tag on">Main course</span><span class="tag">Quick</span><span class="tag">High-protein</span></div>
+      </div>
+
+      <div class="footer-actions">
+        <button class="btn-secondary">Save draft</button>
+        <button class="btn-primary">Publish recipe</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

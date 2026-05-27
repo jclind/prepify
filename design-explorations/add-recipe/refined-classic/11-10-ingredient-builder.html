@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Refined · Smart Ingredient Builder</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--orange:#ff5722;--teal:#00adb5;--ink:#303841;--ink-2:#595f66;--ink-3:#979ba0;
+    --bg:#d6d6d6;--card:#eeeeee;--white:#fff;--g300:#e6e6e6;--g400:#d6d6d6;--radius:10px;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:"Montserrat",sans-serif;background:var(--bg);color:var(--ink);padding:48px 16px 130px;}
+  .page-h{text-align:center;margin-bottom:24px;}.page-h h1{font-size:28px;font-weight:700;}.page-h p{color:var(--ink-2);font-size:14px;margin-top:6px;}
+  .container{max-width:760px;margin:0 auto;background:var(--card);border-radius:var(--radius);padding:40px;}
+  .sec{display:flex;align-items:center;gap:.6rem;margin:28px 0 14px;}.sec:first-of-type{margin-top:0;}
+  .sec .text{color:var(--orange);font-weight:700;font-size:.95rem;text-transform:uppercase;letter-spacing:.06em;}
+  .sec .divider{height:1px;flex:1;background:var(--g400);}
+  .sec .smart{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--teal);background:#e2f5f6;padding:3px 9px;border-radius:999px;}
+  input,textarea,select{width:100%;border:1px solid var(--g400);border-radius:var(--radius);padding:11px 13px;font-family:inherit;font-size:.95rem;font-weight:500;color:var(--ink);outline:none;resize:none;background:var(--white);}
+  input:focus,textarea:focus,select:focus{border-color:var(--orange);box-shadow:0 0 0 3px rgba(255,87,34,.12);}
+  .drop{border:2px dashed #ccc;background:#f0f0f0;border-radius:var(--radius);min-height:130px;display:flex;align-items:center;justify-content:center;gap:8px;color:#666;cursor:pointer;font-weight:600;}
+  /* DISTINCTIVE: structured builder row — qty | unit | ingredient | note | add */
+  .builder{background:var(--white);border:1px solid var(--g400);border-radius:var(--radius);padding:14px;}
+  .builder .grid{display:grid;grid-template-columns:80px 110px 1fr 130px auto;gap:8px;}
+  .builder .addbtn{background:var(--orange);color:#fff;border:none;border-radius:var(--radius);padding:0 18px;font-weight:700;cursor:pointer;}
+  .builder .hint{font-size:11px;color:var(--ink-3);margin-top:8px;}
+  .ing{display:flex;align-items:center;gap:.7rem;padding:.6rem .5rem;border-radius:var(--radius);margin-top:4px;}
+  .ing:hover{background:var(--g300);}
+  .ing .grip{color:var(--ink-3);cursor:grab;}
+  .ing .q{font-weight:700;min-width:74px;}
+  .ing .note{font-size:.8rem;color:var(--ink-3);font-style:italic;}
+  .ing .pills{margin-left:auto;display:flex;gap:6px;}
+  .ing .pill{font-size:10px;font-weight:700;padding:3px 8px;border-radius:999px;}
+  .ing .pill.cal{background:#fff3cd;color:#856404;}
+  .ing .pill.cost{background:#fbe7df;color:var(--orange);}
+  .ing .x{color:var(--ink-3);cursor:pointer;padding-left:6px;}
+  .step{display:flex;gap:1rem;padding:.5rem 0;align-items:flex-start;}
+  .step .n{width:25px;height:25px;flex:none;margin-top:2px;background:var(--ink);color:#fff;font-weight:700;font-size:.85rem;border-radius:50%;display:grid;place-items:center;}
+  .step .c{flex:1;font-size:.95rem;line-height:1.5;}
+  .add{display:inline-flex;gap:6px;color:var(--orange);font-weight:700;font-size:.85rem;margin-top:10px;cursor:pointer;}
+  .chips{display:flex;flex-wrap:wrap;gap:.5rem;}
+  .chip{border:1px solid var(--g400);background:var(--white);border-radius:999px;padding:7px 13px;font-size:.85rem;font-weight:600;cursor:pointer;}
+  .chip.on{background:var(--orange);border-color:var(--orange);color:#fff;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+  /* DISTINCTIVE: expandable nutrition in the bottom bar */
+  .bar{position:fixed;left:0;right:0;bottom:0;background:var(--white);border-top:1px solid var(--g400);box-shadow:0 -3px 12px rgba(0,0,0,.08);}
+  .bar .nut{max-width:760px;margin:0 auto;padding:10px 24px 0;display:flex;gap:24px;font-size:12px;color:var(--ink-2);border-bottom:1px dashed var(--g400);}
+  .bar .nut b{color:var(--ink);}
+  .bar .in{max-width:760px;margin:0 auto;padding:12px 24px;display:flex;align-items:center;gap:24px;}
+  .sum{display:flex;gap:22px;flex:1;}.sum .s .k{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3);font-weight:700;}
+  .sum .s .v{font-size:15px;font-weight:700;}.sum .s .v.p{color:var(--orange);}
+  .submit{background:var(--orange);color:#fff;border:none;border-radius:var(--radius);height:44px;padding:0 28px;font-family:inherit;font-size:1rem;font-weight:600;cursor:pointer;}
+</style>
+</head>
+<body>
+  <div class="page-h"><h1>Create New Recipe</h1><p>Refined Classic · structured ingredient builder with live cost &amp; nutrition</p></div>
+  <div class="container">
+    <div class="sec"><span class="text">Title &amp; photo</span><span class="divider"></span></div>
+    <input value="Creamy Tuscan Garlic Chicken" style="margin-bottom:14px" />
+    <div class="drop">🖼 Add a cover photo</div>
+    <div class="sec"><span class="text">Description</span><span class="divider"></span></div>
+    <textarea rows="2">Juicy pan-seared chicken in a rich sun-dried tomato cream sauce with spinach and parmesan. On the table in 30 minutes.</textarea>
+    <div class="sec"><span class="text">Ingredients</span><span class="divider"></span><span class="smart">⚡ auto cost + nutrition</span></div>
+    <div class="builder">
+      <div class="grid">
+        <input placeholder="Qty" /><select><option>unit</option><option>cup</option><option>tbsp</option><option>tsp</option><option>clove</option><option>g</option></select>
+        <input placeholder="Ingredient (e.g. garlic)" /><input placeholder="note (minced)" /><button class="addbtn">Add</button>
+      </div>
+      <div class="hint">Pick a unit and we'll match it to nutrition &amp; price data automatically.</div>
+    </div>
+    <div class="ing"><span class="grip">⋮⋮</span><span class="q">4</span><span>boneless chicken breasts</span><span class="pills"><span class="pill cal">920 cal</span><span class="pill cost">$6.80</span></span><span class="x">✕</span></div>
+    <div class="ing"><span class="grip">⋮⋮</span><span class="q">1 cup</span><span>heavy cream</span><span class="pills"><span class="pill cal">810 cal</span><span class="pill cost">$1.20</span></span><span class="x">✕</span></div>
+    <div class="ing"><span class="grip">⋮⋮</span><span class="q">½ cup</span><span>sun-dried tomatoes</span><span class="pills"><span class="pill cal">70 cal</span><span class="pill cost">$2.40</span></span><span class="x">✕</span></div>
+    <div class="ing"><span class="grip">⋮⋮</span><span class="q">3 cloves</span><span>garlic <span class="note">minced</span></span><span class="pills"><span class="pill cal">13 cal</span><span class="pill cost">$0.20</span></span><span class="x">✕</span></div>
+    <div class="sec"><span class="text">Instructions</span><span class="divider"></span></div>
+    <div class="step"><span class="n">1</span><span class="c">Season chicken and sear in olive oil until golden, then set aside.</span></div>
+    <div class="step"><span class="n">2</span><span class="c">Bloom garlic and build the cream sauce with broth and parmesan.</span></div>
+    <div class="step"><span class="n">3</span><span class="c">Fold in tomatoes and spinach, return chicken, simmer to finish.</span></div>
+    <div class="add">＋ Add step</div>
+    <div class="grid2" style="margin-top:8px">
+      <div><div class="sec"><span class="text">Servings &amp; time</span></div><div class="grid2"><input value="4 servings" /><input value="30 min" /></div></div>
+      <div><div class="sec"><span class="text">Course</span></div><div class="chips"><span class="chip on">Dinner</span><span class="chip on">Main</span><span class="chip">Lunch</span></div></div>
+    </div>
+  </div>
+  <div class="bar">
+    <div class="nut"><span>Per serving — <b>454 cal</b></span><span>Protein <b>38g</b></span><span>Carbs <b>9g</b></span><span>Fat <b>30g</b></span><span style="margin-left:auto;color:var(--teal);font-weight:700;cursor:pointer">▾ nutrition details</span></div>
+    <div class="in"><div class="sum">
+      <div class="s"><div class="k">Serves</div><div class="v">4</div></div>
+      <div class="s"><div class="k">Time</div><div class="v">30 min</div></div>
+      <div class="s"><div class="k">Total cost</div><div class="v">$13.60</div></div>
+      <div class="s"><div class="k">/ serving</div><div class="v p">$3.40</div></div>
+    </div><button class="submit">Create Recipe</button></div>
+  </div>
+</body></html>

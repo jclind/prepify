@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Guided · Vertical Timeline Form</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--orange:#ff5722;--teal:#00adb5;--ink:#303841;--ink-2:#595f66;--ink-3:#979ba0;
+    --bg:#d6d6d6;--card:#eeeeee;--white:#fff;--g300:#e6e6e6;--g400:#d6d6d6;--radius:10px;--ok:#28a745;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:"Montserrat",sans-serif;background:var(--bg);color:var(--ink);padding:48px 16px 80px;}
+  .page-h{text-align:center;margin-bottom:28px;}.page-h h1{font-size:28px;font-weight:700;}.page-h p{color:var(--ink-2);font-size:14px;margin-top:6px;}
+  .container{max-width:720px;margin:0 auto;background:var(--card);border-radius:var(--radius);padding:40px 40px 40px 36px;}
+  /* DISTINCTIVE: the nav IS a vertical timeline; each section is a stop on it */
+  .timeline{position:relative;padding-left:54px;}
+  .timeline::before{content:'';position:absolute;left:18px;top:6px;bottom:6px;width:3px;background:var(--g400);border-radius:3px;}
+  .stop{position:relative;padding-bottom:32px;}
+  .stop:last-child{padding-bottom:0;}
+  .stop .marker{position:absolute;left:-54px;top:0;width:38px;height:38px;border-radius:50%;background:var(--white);border:3px solid var(--g400);display:grid;place-items:center;font-size:1rem;z-index:1;}
+  .stop.done .marker{background:var(--ok);border-color:var(--ok);color:#fff;}
+  .stop.active .marker{background:var(--orange);border-color:var(--orange);color:#fff;box-shadow:0 0 0 5px rgba(255,87,34,.16);}
+  .stop .sec-title{display:flex;align-items:baseline;gap:10px;margin-bottom:12px;}
+  .stop .sec-title .text{color:var(--orange);font-weight:700;font-size:1.1rem;}
+  .stop .sec-title .meta{font-size:.78rem;color:var(--ink-3);font-weight:600;text-transform:uppercase;letter-spacing:.05em;}
+  label.l{font-size:.8rem;font-weight:600;color:var(--ink-2);display:block;margin-bottom:6px;}
+  input,textarea{width:100%;border:1px solid var(--g400);border-radius:var(--radius);padding:11px 13px;font-family:inherit;font-size:.95rem;font-weight:500;color:var(--ink);outline:none;resize:none;background:var(--white);}
+  input:focus,textarea:focus{border-color:var(--orange);box-shadow:0 0 0 3px rgba(255,87,34,.12);}
+  .field+.field{margin-top:12px;}.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+  .drop{border:2px dashed #ccc;background:#f0f0f0;border-radius:var(--radius);min-height:120px;display:flex;align-items:center;justify-content:center;gap:8px;color:#666;cursor:pointer;font-weight:600;}
+  .ing{display:flex;align-items:center;gap:.7rem;padding:.45rem .4rem;border-radius:var(--radius);}.ing:hover{background:var(--g300);}
+  .ing .grip{color:var(--ink-3);cursor:grab;}.ing .q{font-weight:700;min-width:78px;}.ing .x{margin-left:auto;color:var(--ink-3);cursor:pointer;}
+  .add{display:inline-flex;gap:6px;color:var(--orange);font-weight:700;font-size:.85rem;margin-top:8px;cursor:pointer;}
+  .step{display:flex;gap:.8rem;padding:.4rem 0;align-items:flex-start;}.step .n{width:23px;height:23px;flex:none;margin-top:2px;background:var(--ink);color:#fff;font-weight:700;font-size:.8rem;border-radius:50%;display:grid;place-items:center;}.step .c{flex:1;font-size:.95rem;line-height:1.5;}
+  .chips{display:flex;flex-wrap:wrap;gap:.5rem;}.chip{border:1px solid var(--g400);background:var(--white);border-radius:999px;padding:7px 13px;font-size:.85rem;font-weight:600;cursor:pointer;}.chip.on{background:var(--orange);border-color:var(--orange);color:#fff;}
+  .submit{background:var(--orange);color:#fff;border:none;border-radius:var(--radius);height:48px;padding:0 32px;font-family:inherit;font-size:1.05rem;font-weight:600;cursor:pointer;}
+</style>
+</head>
+<body>
+  <div class="page-h"><h1>Create New Recipe</h1><p>Guided · build it down a vertical timeline, stop by stop</p></div>
+  <div class="container">
+    <div class="timeline">
+      <div class="stop done"><span class="marker">✓</span>
+        <div class="sec-title"><span class="text">Basics</span><span class="meta">Done</span></div>
+        <div class="field"><label class="l">Title</label><input value="Creamy Tuscan Garlic Chicken" /></div>
+        <div class="field"><label class="l">Description</label><textarea rows="2">Juicy pan-seared chicken in a rich sun-dried tomato cream sauce with spinach and parmesan.</textarea></div>
+      </div>
+      <div class="stop active"><span class="marker">2</span>
+        <div class="sec-title"><span class="text">Photo</span><span class="meta">You're here</span></div>
+        <div class="drop">🖼 Click to upload or drag a photo here</div>
+      </div>
+      <div class="stop done"><span class="marker">✓</span>
+        <div class="sec-title"><span class="text">Details</span></div>
+        <div class="row3"><div class="field"><label class="l">Servings</label><input value="4" /></div><div class="field"><label class="l">Prep</label><input value="10 min" /></div><div class="field"><label class="l">Cook</label><input value="20 min" /></div></div>
+      </div>
+      <div class="stop done"><span class="marker">✓</span>
+        <div class="sec-title"><span class="text">Ingredients</span></div>
+        <div class="ing"><span class="grip">⋮⋮</span><span class="q">4</span><span>boneless chicken breasts</span><span class="x">✕</span></div>
+        <div class="ing"><span class="grip">⋮⋮</span><span class="q">1 cup</span><span>heavy cream</span><span class="x">✕</span></div>
+        <div class="ing"><span class="grip">⋮⋮</span><span class="q">½ cup</span><span>sun-dried tomatoes</span><span class="x">✕</span></div>
+        <div class="add">＋ Add ingredient</div>
+      </div>
+      <div class="stop done"><span class="marker">✓</span>
+        <div class="sec-title"><span class="text">Instructions</span></div>
+        <div class="step"><span class="n">1</span><span class="c">Season chicken and sear until golden, then set aside.</span></div>
+        <div class="step"><span class="n">2</span><span class="c">Bloom garlic and build the cream sauce with broth and parmesan.</span></div>
+        <div class="step"><span class="n">3</span><span class="c">Fold in tomatoes and spinach, return chicken, simmer to finish.</span></div>
+        <div class="add">＋ Add step</div>
+      </div>
+      <div class="stop active"><span class="marker">6</span>
+        <div class="sec-title"><span class="text">Cuisine &amp; course</span></div>
+        <div class="chips"><span class="chip on">Italian</span><span class="chip on">Dinner</span><span class="chip on">Main course</span><span class="chip">Quick</span></div>
+        <button class="submit" style="margin-top:20px">Create Recipe</button>
+      </div>
+    </div>
+  </div>
+</body></html>

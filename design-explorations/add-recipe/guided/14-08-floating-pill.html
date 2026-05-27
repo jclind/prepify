@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Guided · Floating Progress Pill</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--orange:#ff5722;--teal:#00adb5;--ink:#303841;--ink-2:#595f66;--ink-3:#979ba0;
+    --bg:#d6d6d6;--card:#eeeeee;--white:#fff;--g300:#e6e6e6;--g400:#d6d6d6;--radius:10px;--ok:#28a745;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:"Montserrat",sans-serif;background:var(--bg);color:var(--ink);padding:36px 16px 80px;}
+  /* DISTINCTIVE: floating segmented progress pill, centered at top, click dots to jump */
+  .pill{position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:20;background:var(--white);border:1px solid var(--g400);
+    box-shadow:0 8px 24px rgba(0,0,0,.16);border-radius:999px;padding:8px 10px;display:flex;align-items:center;gap:6px;}
+  .pill .d{display:flex;align-items:center;gap:7px;padding:6px 12px;border-radius:999px;font-size:.8rem;font-weight:600;color:var(--ink-2);cursor:pointer;white-space:nowrap;}
+  .pill .d .b{width:9px;height:9px;border-radius:50%;background:var(--g400);}
+  .pill .d.done .b{background:var(--ok);}
+  .pill .d.active{background:#fbe7df;color:var(--orange);}
+  .pill .d.active .b{background:var(--orange);}
+  .pill .pub{background:var(--orange);color:#fff;border:none;border-radius:999px;padding:9px 18px;font-family:inherit;font-weight:600;cursor:pointer;font-size:.82rem;margin-left:4px;}
+  .page-h{text-align:center;margin:64px 0 24px;}.page-h h1{font-size:28px;font-weight:700;}.page-h p{color:var(--ink-2);font-size:14px;margin-top:6px;}
+  .container{max-width:720px;margin:0 auto;background:var(--card);border-radius:var(--radius);padding:36px;}
+  .block{padding:22px 0;border-bottom:1px solid var(--g400);scroll-margin-top:80px;}.block:last-child{border-bottom:none;}
+  .sec{display:flex;align-items:center;gap:.6rem;margin-bottom:14px;}
+  .sec .text{color:var(--orange);font-weight:700;font-size:1.05rem;}
+  .sec .divider{height:1px;flex:1;background:var(--g400);}
+  label.l{font-size:.8rem;font-weight:600;color:var(--ink-2);display:block;margin-bottom:6px;}
+  input,textarea{width:100%;border:1px solid var(--g400);border-radius:var(--radius);padding:11px 13px;font-family:inherit;font-size:.95rem;font-weight:500;color:var(--ink);outline:none;resize:none;background:var(--white);}
+  input:focus,textarea:focus{border-color:var(--orange);box-shadow:0 0 0 3px rgba(255,87,34,.12);}
+  .field+.field{margin-top:14px;}.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+  .drop{border:2px dashed #ccc;background:#f0f0f0;border-radius:var(--radius);min-height:130px;display:flex;align-items:center;justify-content:center;gap:8px;color:#666;cursor:pointer;font-weight:600;}
+  .ing{display:flex;align-items:center;gap:.7rem;padding:.5rem .4rem;border-radius:var(--radius);}.ing:hover{background:var(--g300);}
+  .ing .grip{color:var(--ink-3);cursor:grab;}.ing .q{font-weight:700;min-width:78px;}.ing .x{margin-left:auto;color:var(--ink-3);cursor:pointer;}
+  .add{display:inline-flex;gap:6px;color:var(--orange);font-weight:700;font-size:.85rem;margin-top:10px;cursor:pointer;}
+  .step{display:flex;gap:1rem;padding:.5rem 0;align-items:flex-start;}.step .n{width:25px;height:25px;flex:none;margin-top:2px;background:var(--ink);color:#fff;font-weight:700;font-size:.85rem;border-radius:50%;display:grid;place-items:center;}.step .c{flex:1;font-size:.95rem;line-height:1.5;}
+  .chips{display:flex;flex-wrap:wrap;gap:.5rem;}.chip{border:1px solid var(--g400);background:var(--white);border-radius:999px;padding:7px 13px;font-size:.85rem;font-weight:600;cursor:pointer;}.chip.on{background:var(--orange);border-color:var(--orange);color:#fff;}
+</style>
+</head>
+<body>
+  <div class="pill">
+    <span class="d done"><span class="b"></span>Basics</span>
+    <span class="d active"><span class="b"></span>Photo</span>
+    <span class="d done"><span class="b"></span>Details</span>
+    <span class="d done"><span class="b"></span>Items</span>
+    <span class="d done"><span class="b"></span>Steps</span>
+    <span class="d"><span class="b"></span>Tags</span>
+    <button class="pub">Publish</button>
+  </div>
+  <div class="page-h"><h1>Create New Recipe</h1><p>Guided · a floating pill tracks &amp; jumps between sections</p></div>
+  <div class="container">
+    <section class="block"><div class="sec"><span class="text">Basics</span><span class="divider"></span></div>
+      <div class="field"><label class="l">Title</label><input value="Creamy Tuscan Garlic Chicken" /></div>
+      <div class="field"><label class="l">Description</label><textarea rows="2">Juicy pan-seared chicken in a rich sun-dried tomato cream sauce with spinach and parmesan.</textarea></div></section>
+    <section class="block"><div class="sec"><span class="text">Photo</span><span class="divider"></span></div><div class="drop">🖼 Click to upload or drag a photo here</div></section>
+    <section class="block"><div class="sec"><span class="text">Details</span><span class="divider"></span></div>
+      <div class="row3"><div class="field"><label class="l">Servings</label><input value="4" /></div><div class="field"><label class="l">Prep</label><input value="10 min" /></div><div class="field"><label class="l">Cook</label><input value="20 min" /></div></div></section>
+    <section class="block"><div class="sec"><span class="text">Ingredients</span><span class="divider"></span></div>
+      <div class="ing"><span class="grip">⋮⋮</span><span class="q">4</span><span>boneless chicken breasts</span><span class="x">✕</span></div>
+      <div class="ing"><span class="grip">⋮⋮</span><span class="q">1 cup</span><span>heavy cream</span><span class="x">✕</span></div>
+      <div class="ing"><span class="grip">⋮⋮</span><span class="q">½ cup</span><span>sun-dried tomatoes</span><span class="x">✕</span></div>
+      <div class="add">＋ Add ingredient</div></section>
+    <section class="block"><div class="sec"><span class="text">Instructions</span><span class="divider"></span></div>
+      <div class="step"><span class="n">1</span><span class="c">Season chicken and sear until golden, then set aside.</span></div>
+      <div class="step"><span class="n">2</span><span class="c">Bloom garlic and build the cream sauce with broth and parmesan.</span></div>
+      <div class="step"><span class="n">3</span><span class="c">Fold in tomatoes and spinach, return chicken, simmer to finish.</span></div>
+      <div class="add">＋ Add step</div></section>
+    <section class="block"><div class="sec"><span class="text">Cuisine &amp; course</span><span class="divider"></span></div>
+      <div class="chips"><span class="chip on">Italian</span><span class="chip on">Dinner</span><span class="chip on">Main course</span><span class="chip">Quick</span></div></section>
+  </div>
+</body></html>

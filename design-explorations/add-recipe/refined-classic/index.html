@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Refined Classic · 10 Variations</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0f1115;--card:#171a21;--ink:#eef1f6;--ink-2:#9aa2b1;--line:#262a33;--accent:#ff5722;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:"Inter",sans-serif;background:var(--bg);color:var(--ink);padding:48px 28px 100px;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1280px;margin:0 auto;}
+  a.back{color:var(--ink-2);text-decoration:none;font-size:13px;font-weight:600;}
+  a.back:hover{color:var(--accent);}
+  header h1{font-size:36px;font-weight:800;letter-spacing:-.025em;margin:14px 0 8px;}
+  header h1 span{color:var(--accent);}
+  header p{color:var(--ink-2);font-size:15px;max-width:70ch;line-height:1.6;}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:24px;margin-top:36px;}
+  .tile{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;text-decoration:none;color:inherit;transition:.2s;display:flex;flex-direction:column;}
+  .tile:hover{transform:translateY(-4px);border-color:var(--accent);box-shadow:0 24px 50px -24px rgba(255,87,34,.4);}
+  .frame{height:280px;overflow:hidden;background:#fff;border-bottom:1px solid var(--line);position:relative;}
+  .frame iframe{width:1280px;height:1560px;border:0;transform:scale(.32);transform-origin:top left;pointer-events:none;}
+  .frame .veil{position:absolute;inset:0;}
+  .meta{padding:16px 18px;}
+  .meta .row{display:flex;align-items:center;gap:10px;}
+  .num{font-size:12px;font-weight:700;color:var(--accent);background:rgba(255,87,34,.12);border-radius:6px;padding:3px 8px;}
+  .meta h3{font-size:16px;font-weight:700;}
+  .meta p{font-size:13px;color:var(--ink-2);margin-top:8px;line-height:1.55;}
+  .swap{margin-top:10px;font-size:12px;color:var(--ink-2);}
+  .swap b{color:#ffce4d;}
+  .open{margin-top:12px;font-size:13px;font-weight:600;color:var(--accent);}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <a class="back" href="../index.html">← All directions</a>
+    <header>
+      <h1><span>#11</span> Refined Classic — 10 Variations</h1>
+      <p>The familiar single-column form on the centered card, with orange-divider sections, dark step numbers and a sticky summary. Each variation swaps the <b>input style</b> and one <b>feature</b>.</p>
+    </header>
+    <div class="grid">
+      <a class="tile" href="11-01-underlined.html"><div class="frame"><iframe src="11-01-underlined.html" scrolling="no"></iframe><div class="veil"></div></div><div class="meta"><div class="row"><span class="num">11·01</span><h3>Underlined &amp; Airy</h3></div><p>Borderless underline inputs, lots of breathing room.</p><div class="swap">Inputs: <b>underline</b> · Servings: <b>inline stepper</b> · Summary: bottom bar</div><div class="open">Open →</div></div></a>
+      <a class="tile" href="11-02-floating-labels.html"><div class="frame"><iframe src="11-02-floating-labels.html" scrolling="no"></iframe><div class="veil"></div></div><div class="meta"><div class="row"><span class="num">11·02</span><h3>Floating Labels</h3></div><p>Labels tucked inside filled fields; summary lives up top.</p><div class="swap">Inputs: <b>floating label</b> · Servings: <b>slider</b> · Time: <b>preset segments</b> · Summary: top bar</div><div class="open">Open →</div></div></a>
+      <a class="tile" href="11-03-soft-filled.html"><div class="frame"><iframe src="11-03-soft-filled.html" scrolling="no"></iframe><div class="veil"></div></div><div class="meta"><div class="row"><span class="num">11·03</span><h3>Soft Filled</h3></div><p>Big rounded filled inputs; structured 3-field ingredient adder.</p><div class="swap">Inputs: <b>soft fill</b> · Ingredients: <b>amt/unit/name adder</b></div><div class="open">Open →</div></div></a>
+      <a class="tile" href="11-04-paired-table.html"><div class="frame"><iframe src="11-04-paired-table.html" scrolling="no"></iframe><div class="veil"></div></div><div class="meta"><div class="row"><span class="num">11·04</span><h3>Paired Grid + Cost Table</h3></div><p>Fields paired in a grid; ingredients in a table with a cost column.</p><div class="swap">Layout: <b>2-col pairs</b> · Ingredients: <b>cost table</b> · Bar: <b>cost-focused</b></div><div class="open">Open →</div></div></a>
+      <a class="tile" href="11-05-inset-timeline.html"><div class="frame"><iframe src="11-05-inset-timeline.html" scrolling="no"></iframe><div class="veil"></div></div><div class="meta"><div class="row"><span class="num">11·05</span><h3>Inset Panels + Timeline</h3></div><p>Each section in an inset panel; steps as a connected timeline.</p><div class="swap">Sections: <b>inset panels</b> · Steps: <b>timeline</b> · Publish: <b>floating pill</b></div><div class="open">Open →</div></div></a>
+      <a class="tile" href="11-06-visual-controls.html"><div class="frame"><iframe src="11-06-visual-controls.html" scrolling="no"></iframe><div class="veil"></div></div><div class="meta"><div class="row"><span class="num">11·06</span><h3>Visual Controls</h3></div><p>Servings slider, time quick-picks, difficulty &amp; spice meters.</p><div class="swap">Servings: <b>slider+bubble</b> · Extras: <b>difficulty + spice</b></div><div class="open">Open →</div></div></a>
+      <a class="tile" href="11-07-compact-inline.html"><div class="frame"><iframe src="11-07-compact-inline.html" scrolling="no"></iframe><div class="veil"></div></div><div class="meta"><div class="row"><span class="num">11·07</span><h3>Compact Inline</h3></div><p>Dense label-left/field-right rows for power users.</p><div class="swap">Layout: <b>inline rows</b> · Ingredients: <b>tight table</b></div><div class="open">Open →</div></div></a>
+      <a class="tile" href="11-08-big-friendly.html"><div class="frame"><iframe src="11-08-big-friendly.html" scrolling="no"></iframe><div class="veil"></div></div><div class="meta"><div class="row"><span class="num">11·08</span><h3>Big &amp; Friendly</h3></div><p>Photo hero first with title overlaid; oversized controls.</p><div class="swap">Photo: <b>hero on top</b> · Servings: <b>big ± circles</b></div><div class="open">Open →</div></div></a>
+      <a class="tile" href="11-09-segmented.html"><div class="frame"><iframe src="11-09-segmented.html" scrolling="no"></iframe><div class="veil"></div></div><div class="meta"><div class="row"><span class="num">11·09</span><h3>Segmented Everything</h3></div><p>iOS-style segmented controls; top meter doubles as summary.</p><div class="swap">Controls: <b>segmented</b> · Summary: <b>top progress meter</b></div><div class="open">Open →</div></div></a>
+      <a class="tile" href="11-10-ingredient-builder.html"><div class="frame"><iframe src="11-10-ingredient-builder.html" scrolling="no"></iframe><div class="veil"></div></div><div class="meta"><div class="row"><span class="num">11·10</span><h3>Smart Ingredient Builder</h3></div><p>Qty/unit/name/note builder with live cal &amp; cost pills.</p><div class="swap">Ingredients: <b>structured builder</b> · Bar: <b>expandable nutrition</b></div><div class="open">Open →</div></div></a>
+    </div>
+  </div>
+</body></html>

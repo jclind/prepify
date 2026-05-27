@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Add Recipe · 10 Design Explorations</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#0f1115; --card:#171a21; --ink:#eef1f6; --ink-2:#9aa2b1; --line:#262a33; --accent:#ff5722; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:"Inter",sans-serif; background:var(--bg); color:var(--ink); padding:56px 28px 100px; -webkit-font-smoothing:antialiased; }
+  .wrap { max-width:1280px; margin:0 auto; }
+
+  header .ey { font-size:13px; font-weight:600; letter-spacing:.12em; text-transform:uppercase; color:var(--accent); }
+  header h1 { font-size:40px; font-weight:800; letter-spacing:-.025em; margin:10px 0 10px; }
+  header p { color:var(--ink-2); font-size:16px; max-width:62ch; line-height:1.6; }
+  header .legend { color:var(--ink-2); font-size:13px; margin-top:14px; }
+  header .legend b { color:var(--ink); }
+
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(330px,1fr)); gap:24px; margin-top:40px; }
+  .tile { background:var(--card); border:1px solid var(--line); border-radius:16px; overflow:hidden; text-decoration:none; color:inherit;
+    transition:.2s; display:flex; flex-direction:column; }
+  .tile:hover { transform:translateY(-4px); border-color:var(--accent); box-shadow:0 24px 50px -24px rgba(255,87,34,.4); }
+  .frame { height:300px; position:relative; overflow:hidden; background:#fff; border-bottom:1px solid var(--line); }
+  /* scale a full-size page down into the thumbnail */
+  .frame iframe { width:1280px; height:1500px; border:0; transform:scale(.31); transform-origin:top left; pointer-events:none; }
+  .frame .veil { position:absolute; inset:0; }
+  .meta { padding:16px 18px; }
+  .meta .row { display:flex; align-items:center; gap:10px; }
+  .num { font-size:12px; font-weight:700; color:var(--accent); background:rgba(255,87,34,.12); border-radius:6px; padding:3px 8px; }
+  .batch { margin:48px 0 4px; display:flex; align-items:center; gap:14px; }
+  .batch h2 { font-size:22px; font-weight:800; letter-spacing:-.02em; white-space:nowrap; }
+  .batch .ln { height:1px; flex:1; background:var(--line); }
+  .batch p { color:var(--ink-2); font-size:14px; max-width:60ch; margin:6px 0 0; }
+  .batch-wrap { margin-bottom:8px; }
+  .pinned { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:#0f1115;
+    background:#ffce4d; border-radius:6px; padding:3px 8px; }
+  .deepdive { display:flex; gap:16px; flex-wrap:wrap; margin-top:22px; }
+  .deepdive a { flex:1; min-width:280px; display:flex; align-items:center; gap:14px; text-decoration:none;
+    background:linear-gradient(120deg,rgba(255,87,34,.14),rgba(255,87,34,.04)); border:1px solid rgba(255,87,34,.4);
+    border-radius:14px; padding:16px 18px; color:var(--ink); transition:.2s; }
+  .deepdive a:hover { border-color:var(--accent); transform:translateY(-2px); }
+  .deepdive a .big { font-size:26px; font-weight:800; color:var(--accent); }
+  .deepdive a .tt { font-weight:700; font-size:15px; }
+  .deepdive a .ds { font-size:12px; color:var(--ink-2); margin-top:2px; }
+  .deepdive a .arr { margin-left:auto; color:var(--accent); font-weight:700; }
+  .vlink { display:inline-block; margin-top:10px; font-size:12px; font-weight:700; color:#ffce4d;
+    border:1px solid rgba(255,206,77,.5); border-radius:7px; padding:5px 10px; }
+  .vlink:hover { background:rgba(255,206,77,.12); }
+  .meta h3 { font-size:17px; font-weight:700; letter-spacing:-.01em; }
+  .meta p { font-size:13px; color:var(--ink-2); margin-top:8px; line-height:1.55; }
+  .tags { display:flex; gap:6px; flex-wrap:wrap; margin-top:12px; }
+  .tag { font-size:11px; color:var(--ink-2); border:1px solid var(--line); border-radius:999px; padding:3px 9px; }
+  .open { margin-top:14px; font-size:13px; font-weight:600; color:var(--accent); }
+  footer { color:var(--ink-2); font-size:13px; margin-top:48px; line-height:1.7; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="ey">Prepify · Design Studio</div>
+      <h1>Create Recipe — 15 Directions</h1>
+      <p>Fifteen takes on the Add Recipe page, each built around the same sample recipe so the
+         aesthetics — not the content — are what differ. Click any tile to open the full mockup.</p>
+      <div class="legend">Same recipe throughout: <b>Creamy Tuscan Garlic Chicken</b> · live previews below are scaled-down real pages.</div>
+      <div class="deepdive">
+        <a href="refined-focused/index.html" style="border-color:#ffce4d;background:linear-gradient(120deg,rgba(255,206,77,.16),rgba(255,206,77,.04))"><span class="big" style="color:#ffce4d">11★</span><span><span class="tt">Refined Classic — 10 FOCUSED variations</span><span class="ds">Same #11 identity, only spacing &amp; input layout varied · newest</span></span><span class="arr" style="color:#ffce4d">→</span></a>
+        <a href="refined-classic/index.html"><span class="big">11</span><span><span class="tt">Refined Classic — 10 variations</span><span class="ds">Input styles &amp; features swapped, same single-column identity</span></span><span class="arr">→</span></a>
+        <a href="guided/index.html"><span class="big">14</span><span><span class="tt">Guided Single-Page — 10 variations</span><span class="ds">Same form, ten different navigation / progress mechanisms</span></span><span class="arr">→</span></a>
+      </div>
+    </header>
+
+    <div class="batch-wrap">
+      <div class="batch"><h2>Honed-in</h2><span class="pinned">★ native to Prepify</span><span class="ln"></span></div>
+      <p style="color:var(--ink-2);font-size:14px;max-width:70ch;margin-top:8px">Round two: built from Prepify's real design language — Montserrat, the gray→card surfaces, the orange section-label + divider, dark circular step numbers, the dashed image dropzone and brand palette. Polished versions of the current page, each adding or removing one idea.</p>
+    </div>
+
+    <div class="grid">
+      <a class="tile" href="11-refined-classic.html">
+        <div class="frame"><iframe src="11-refined-classic.html" scrolling="no"></iframe><div class="veil"></div></div>
+        <div class="meta">
+          <div class="row"><span class="num">11</span><h3>Refined Classic</h3></div>
+          <p>The current single-column form, honed: orange divider sections, dark step numbers, character counters, and a sticky publish bar with a live summary (serves · time · items · est. $/serving).</p>
+          <div class="tags"><span class="tag">closest to current</span><span class="tag">+live summary</span><span class="tag">polished</span></div>
+          <div class="open">Open mockup →</div>
+        </div>
+      </a>
+
+      <a class="tile" href="12-recipe-mirror.html">
+        <div class="frame"><iframe src="12-recipe-mirror.html" scrolling="no"></iframe><div class="veil"></div></div>
+        <div class="meta">
+          <div class="row"><span class="num">12</span><h3>Recipe Mirror</h3></div>
+          <p>Edit inside the exact SingleRecipe layout — image + data header on top, ingredient bubbles and numbered directions below. You build it in the shape readers will see it. True WYSIWYG, zero new chrome.</p>
+          <div class="tags"><span class="tag">reuses recipe page</span><span class="tag">WYSIWYG</span><span class="tag">−separate form</span></div>
+          <div class="open">Open mockup →</div>
+        </div>
+      </a>
+
+      <a class="tile" href="13-native-cards.html">
+        <div class="frame"><iframe src="13-native-cards.html" scrolling="no"></iframe><div class="veil"></div></div>
+        <div class="meta">
+          <div class="row"><span class="num">13</span><h3>Native Cards</h3></div>
+          <p>Each section becomes a white card with the real thumbnail shadow, on the gray page. A sticky right rail shows a live preview card + completion checklist + publish button. Organized and scannable.</p>
+          <div class="tags"><span class="tag">sectioned</span><span class="tag">+preview rail</span><span class="tag">+checklist</span></div>
+          <div class="open">Open mockup →</div>
+        </div>
+      </a>
+
+      <a class="tile" href="14-toc-scrollspy.html">
+        <div class="frame"><iframe src="14-toc-scrollspy.html" scrolling="no"></iframe><div class="veil"></div></div>
+        <div class="meta">
+          <div class="row"><span class="num">14</span><h3>Guided Single-Page</h3></div>
+          <p>Keeps every field on one familiar card, but adds a sticky table-of-contents with progress bar, icons and per-section ✓ states (orange active). Wayfinding for a long form — without splitting it into steps.</p>
+          <div class="tags"><span class="tag">+jump nav</span><span class="tag">+progress</span><span class="tag">nothing hidden</span></div>
+          <div class="open">Open mockup →</div>
+        </div>
+      </a>
+
+      <a class="tile" href="15-smart-compose.html">
+        <div class="frame"><iframe src="15-smart-compose.html" scrolling="no"></iframe><div class="veil"></div></div>
+        <div class="meta">
+          <div class="row"><span class="num">15</span><h3>Smart Compose</h3></div>
+          <p>Leans into the parser you already have: paste a whole ingredient list → parsed rows with per-item cal &amp; cost, a live nutrition/cost panel, drag-reorder steps, and suggested course tags. Feature-forward, still native.</p>
+          <div class="tags"><span class="tag">+paste-to-parse</span><span class="tag">+cost/nutrition</span><span class="tag">+suggestions</span></div>
+          <div class="open">Open mockup →</div>
+        </div>
+      </a>
+    </div>
+
+    <div class="batch-wrap">
+      <div class="batch"><h2>Exploratory</h2><span class="ln"></span></div>
+      <p style="color:var(--ink-2);font-size:14px;max-width:70ch;margin-top:8px">Round one: wider-ranging aesthetics that step away from the current look — useful for stealing ideas even if the whole direction isn't adopted.</p>
+    </div>
+
+    <div class="grid">
+      <a class="tile" href="01-apple.html">
+        <div class="frame"><iframe src="01-apple.html" scrolling="no"></iframe><div class="veil"></div></div>
+        <div class="meta">
+          <div class="row"><span class="num">01</span><h3>Cupertino</h3></div>
+          <p>How Apple would build it. Frosted-glass cards, generous whitespace, segmented controls, system type, one warm accent.</p>
+          <div class="tags"><span class="tag">minimal</span><span class="tag">glassmorphism</span><span class="tag">premium</span></div>
+          <div class="open">Open mockup →</div>
+        </div>
+      </a>
+
+      <a class="tile" href="02-editorial.html">
+        <div class="frame"><iframe src="02-editorial.html" scrolling="no"></iframe><div class="veil"></div></div>
+        <div class="meta">
+          <div class="row"><span class="num">02</span><h3>Editorial</h3></div>
+          <p>A food-magazine spread. Fraunces serif display, cream paper, masthead, columned method &amp; ingredients like a printed feature.</p>
+          <div class="tags"><span class="tag">serif</span><span class="tag">magazine</span><span class="tag">elegant</span></div>
+          <div class="open">Open mockup →</div>
+        </div>
+      </a>
+
+      <a class="tile" href="03-wizard.html">
+        <div class="frame"><iframe src="03-wizard.html" scrolling="no"></iframe><div class="veil"></div></div>
+        <div class="meta">
+          <div class="row"><span class="num">03</span><h3>Guided Wizard</h3></div>
+          <p>One thing at a time. A progress rail with done/current states walks first-time creators through five focused steps. Low overwhelm.</p>
+          <div class="tags"><span class="tag">multi-step</span><span class="tag">onboarding</span><span class="tag">functional</span></div>
+          <div class="open">Open mockup →</div>
+        </div>
+      </a>
+
+      <a class="tile" href="04-split-preview.html">
+        <div class="frame"><iframe src="04-split-preview.html" scrolling="no"></iframe><div class="veil"></div></div>
+        <div class="meta">
+          <div class="row"><span class="num">04</span><h3>Live Preview</h3></div>
+          <p>Edit left, see the real recipe card render right — exactly as readers will see it. WYSIWYG confidence with a device toggle.</p>
+          <div class="tags"><span class="tag">split-screen</span><span class="tag">WYSIWYG</span><span class="tag">functional</span></div>
+          <div class="open">Open mockup →</div>
+        </div>
+      </a>
+
+      <a class="tile" href="05-cozy-kitchen.html">
+        <div class="frame"><iframe src="05-cozy-kitchen.html" scrolling="no"></iframe><div class="veil"></div></div>
+        <div class="meta">
+          <div class="row"><span class="num">05</span><h3>Cozy Kitchen</h3></div>
+          <p>Warm and human. Terracotta &amp; sage, recipe-card pins, Caveat handwriting, dashed dividers — like jotting in a family cookbook.</p>
+          <div class="tags"><span class="tag">warm</span><span class="tag">friendly</span><span class="tag">playful</span></div>
+          <div class="open">Open mockup →</div>
+        </div>
+      </a>
+
+      <a class="tile" href="06-dark-premium.html">
+        <div class="frame"><iframe src="06-dark-premium.html" scrolling="no"></iframe><div class="veil"></div></div>
+        <div class="meta">
+          <div class="row"><span class="num">06</span><h3>Dark Premium</h3></div>
+          <p>Studio-grade and moody. Deep slate, glass panels, glowing orange/teal accents, gradient text. Feels like a pro creator tool.</p>
+          <div class="tags"><span class="tag">dark mode</span><span class="tag">glow</span><span class="tag">premium</span></div>
+          <div class="open">Open mockup →</div>
+        </div>
+      </a>
+
+      <a class="tile" href="07-notion-doc.html">
+        <div class="frame"><iframe src="07-notion-doc.html" scrolling="no"></iframe><div class="veil"></div></div>
+        <div class="meta">
+          <div class="row"><span class="num">07</span><h3>Doc Editor</h3></div>
+          <p>Notion-style block document. Cover, emoji icon, property rows, hover handles, slash-command hint — writing a recipe as a living doc.</p>
+          <div class="tags"><span class="tag">blocks</span><span class="tag">inline edit</span><span class="tag">minimal</span></div>
+          <div class="open">Open mockup →</div>
+        </div>
+      </a>
+
+      <a class="tile" href="08-linear-saas.html">
+        <div class="frame"><iframe src="08-linear-saas.html" scrolling="no"></iframe><div class="veil"></div></div>
+        <div class="meta">
+          <div class="row"><span class="num">08</span><h3>Modern SaaS</h3></div>
+          <p>Linear-inspired. Crisp sectioned cards with icons, completion meter, keyboard hints, sticky publish bar. Tidy and efficient.</p>
+          <div class="tags"><span class="tag">clean</span><span class="tag">sectioned</span><span class="tag">functional</span></div>
+          <div class="open">Open mockup →</div>
+        </div>
+      </a>
+
+      <a class="tile" href="09-neo-brutalist.html">
+        <div class="frame"><iframe src="09-neo-brutalist.html" scrolling="no"></iframe><div class="veil"></div></div>
+        <div class="meta">
+          <div class="row"><span class="num">09</span><h3>Neo-Brutalist</h3></div>
+          <p>Loud and confident. Thick black borders, hard offset shadows, color blocks, Archivo Black + Space Mono. Maximum personality.</p>
+          <div class="tags"><span class="tag">bold</span><span class="tag">high-contrast</span><span class="tag">distinctive</span></div>
+          <div class="open">Open mockup →</div>
+        </div>
+      </a>
+
+      <a class="tile" href="10-sidebar-dashboard.html">
+        <div class="frame"><iframe src="10-sidebar-dashboard.html" scrolling="no"></iframe><div class="veil"></div></div>
+        <div class="meta">
+          <div class="row"><span class="num">10</span><h3>Studio Dashboard</h3></div>
+          <p>App-like workspace. Dark section nav with completion ring &amp; per-step status, grouped panels, sticky action header. Best for power users.</p>
+          <div class="tags"><span class="tag">sidebar</span><span class="tag">progress</span><span class="tag">functional</span></div>
+          <div class="open">Open mockup →</div>
+        </div>
+      </a>
+    </div>
+
+    <footer>
+      Built on branch <b>design/add-recipe-explorations</b> · purely visual mockups, not wired to the React app.<br/>
+      Pick the directions you like and I'll implement them properly against the real form components.
+    </footer>
+  </div>
+</body>
+</html>

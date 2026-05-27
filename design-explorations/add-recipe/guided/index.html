@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Guided Single-Page · 10 Variations</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0f1115;--card:#171a21;--ink:#eef1f6;--ink-2:#9aa2b1;--line:#262a33;--accent:#ff5722;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:"Inter",sans-serif;background:var(--bg);color:var(--ink);padding:48px 28px 100px;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1280px;margin:0 auto;}
+  a.back{color:var(--ink-2);text-decoration:none;font-size:13px;font-weight:600;}
+  a.back:hover{color:var(--accent);}
+  header h1{font-size:36px;font-weight:800;letter-spacing:-.025em;margin:14px 0 8px;}
+  header h1 span{color:var(--accent);}
+  header p{color:var(--ink-2);font-size:15px;max-width:70ch;line-height:1.6;}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:24px;margin-top:36px;}
+  .tile{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;text-decoration:none;color:inherit;transition:.2s;display:flex;flex-direction:column;}
+  .tile:hover{transform:translateY(-4px);border-color:var(--accent);box-shadow:0 24px 50px -24px rgba(255,87,34,.4);}
+  .frame{height:280px;overflow:hidden;background:#fff;border-bottom:1px solid var(--line);position:relative;}
+  .frame iframe{width:1280px;height:1320px;border:0;transform:scale(.32);transform-origin:top left;pointer-events:none;}
+  .frame .veil{position:absolute;inset:0;}
+  .meta{padding:16px 18px;}
+  .meta .row{display:flex;align-items:center;gap:10px;}
+  .num{font-size:12px;font-weight:700;color:var(--accent);background:rgba(255,87,34,.12);border-radius:6px;padding:3px 8px;}
+  .meta h3{font-size:16px;font-weight:700;}
+  .meta p{font-size:13px;color:var(--ink-2);margin-top:8px;line-height:1.55;}
+  .swap{margin-top:10px;font-size:12px;color:var(--ink-2);}
+  .swap b{color:#ffce4d;}
+  .open{margin-top:12px;font-size:13px;font-weight:600;color:var(--accent);}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <a class="back" href="../index.html">← All directions</a>
+    <header>
+      <h1><span>#14</span> Guided Single-Page — 10 Variations</h1>
+      <p>Everything stays on one page (nothing hidden), but each variation uses a different <b>navigation / progress mechanism</b> to make a long form feel manageable.</p>
+    </header>
+    <div class="grid">
+      <a class="tile" href="14-01-dotted-rail.html"><div class="frame"><iframe src="14-01-dotted-rail.html" scrolling="no"></iframe><div class="veil"></div></div><div class="meta"><div class="row"><span class="num">14·01</span><h3>Dotted Progress Rail</h3></div><p>Left nav with a vertical line connecting done/current dots.</p><div class="swap">Nav: <b>left rail + connecting line</b></div><div class="open">Open →</div></div></a>
+      <a class="tile" href="14-02-completion-ring.html"><div class="frame"><iframe src="14-02-completion-ring.html" scrolling="no"></iframe><div class="veil"></div></div><div class="meta"><div class="row"><span class="num">14·02</span><h3>Completion Ring</h3></div><p>A big % ring tops the nav; sections render as cards.</p><div class="swap">Nav: <b>% ring + checklist</b> · Sections: <b>cards</b></div><div class="open">Open →</div></div></a>
+      <a class="tile" href="14-03-right-summary.html"><div class="frame"><iframe src="14-03-right-summary.html" scrolling="no"></iframe><div class="veil"></div></div><div class="meta"><div class="row"><span class="num">14·03</span><h3>Right Rail + Summary</h3></div><p>Nav on the right, fused with live stats and the publish button.</p><div class="swap">Nav: <b>right</b> · Adds: <b>live summary + publish</b></div><div class="open">Open →</div></div></a>
+      <a class="tile" href="14-04-top-tabs.html"><div class="frame"><iframe src="14-04-top-tabs.html" scrolling="no"></iframe><div class="veil"></div></div><div class="meta"><div class="row"><span class="num">14·04</span><h3>Top Tab Stepper</h3></div><p>Sticky horizontal tab bar with done/current states; content scrolls.</p><div class="swap">Nav: <b>top tabs</b> (no sidebar)</div><div class="open">Open →</div></div></a>
+      <a class="tile" href="14-05-accordion.html"><div class="frame"><iframe src="14-05-accordion.html" scrolling="no"></iframe><div class="veil"></div></div><div class="meta"><div class="row"><span class="num">14·05</span><h3>Accordion + Index</h3></div><p>Sections collapse to a one-line summary; one open at a time, side index jumps.</p><div class="swap">Sections: <b>accordion</b> · Nav: <b>side index</b></div><div class="open">Open →</div></div></a>
+      <a class="tile" href="14-06-timeline.html"><div class="frame"><iframe src="14-06-timeline.html" scrolling="no"></iframe><div class="veil"></div></div><div class="meta"><div class="row"><span class="num">14·06</span><h3>Vertical Timeline</h3></div><p>The nav <em>is</em> the timeline — each section is a stop with a marker.</p><div class="swap">Nav: <b>inline timeline markers</b></div><div class="open">Open →</div></div></a>
+      <a class="tile" href="14-07-bottom-progress.html"><div class="frame"><iframe src="14-07-bottom-progress.html" scrolling="no"></iframe><div class="veil"></div></div><div class="meta"><div class="row"><span class="num">14·07</span><h3>Bottom Progress Bar</h3></div><p>Minimal numbered nav + sticky bottom bar with a "jump to next incomplete" button.</p><div class="swap">Adds: <b>bottom progress + jump-to-next</b></div><div class="open">Open →</div></div></a>
+      <a class="tile" href="14-08-floating-pill.html"><div class="frame"><iframe src="14-08-floating-pill.html" scrolling="no"></iframe><div class="veil"></div></div><div class="meta"><div class="row"><span class="num">14·08</span><h3>Floating Progress Pill</h3></div><p>A centered floating pill of step dots; click to jump, publish inline.</p><div class="swap">Nav: <b>floating pill (top center)</b></div><div class="open">Open →</div></div></a>
+      <a class="tile" href="14-09-contextual-tips.html"><div class="frame"><iframe src="14-09-contextual-tips.html" scrolling="no"></iframe><div class="veil"></div></div><div class="meta"><div class="row"><span class="num">14·09</span><h3>Contextual Tips</h3></div><p>Three panes: nav, form, and a help rail that changes per section.</p><div class="swap">Adds: <b>per-section tips rail</b></div><div class="open">Open →</div></div></a>
+      <a class="tile" href="14-10-wizard-lite.html"><div class="frame"><iframe src="14-10-wizard-lite.html" scrolling="no"></iframe><div class="veil"></div></div><div class="meta"><div class="row"><span class="num">14·10</span><h3>Wizard-Lite</h3></div><p>Current section is expanded &amp; focused; finished ones collapse to a peek row.</p><div class="swap">Focus: <b>current expanded, others peek</b></div><div class="open">Open →</div></div></a>
+    </div>
+  </div>
+</body></html>

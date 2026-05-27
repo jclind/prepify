@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Guided · Nav + Form + Contextual Tips</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--orange:#ff5722;--teal:#00adb5;--ink:#303841;--ink-2:#595f66;--ink-3:#979ba0;
+    --bg:#d6d6d6;--card:#eeeeee;--white:#fff;--g300:#e6e6e6;--g400:#d6d6d6;--radius:10px;--ok:#28a745;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:"Montserrat",sans-serif;background:var(--bg);color:var(--ink);}
+  /* DISTINCTIVE: three panes — nav | form | contextual help that changes per section */
+  .layout{max-width:1180px;margin:0 auto;padding:48px 20px 80px;display:grid;grid-template-columns:190px 1fr 280px;gap:30px;align-items:start;}
+  .toc{position:sticky;top:48px;}
+  .toc .ttl{font-size:.7rem;text-transform:uppercase;letter-spacing:.12em;font-weight:700;color:var(--ink-3);margin-bottom:14px;}
+  .toc a{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink-2);font-size:.9rem;font-weight:600;padding:9px 12px;border-radius:8px;margin-bottom:2px;border-left:3px solid transparent;}
+  .toc a:hover{background:var(--g300);}
+  .toc a.active{background:var(--white);color:var(--orange);border-left-color:var(--orange);box-shadow:rgba(0,0,0,0.24) 0px 3px 8px;}
+  .toc a .chk{margin-left:auto;font-size:.8rem;color:var(--ok);}.toc a .chk.no{color:var(--g400);}
+  .form{background:var(--card);border-radius:var(--radius);padding:38px 40px;}
+  .form>h1{font-size:24px;font-weight:700;margin-bottom:6px;}
+  .block{padding:22px 0;border-bottom:1px solid var(--g400);scroll-margin-top:30px;}.block:last-child{border-bottom:none;}
+  .sec{display:flex;align-items:center;gap:.6rem;margin-bottom:14px;}
+  .sec .ico{width:28px;height:28px;border-radius:7px;background:#fbe7df;color:var(--orange);display:grid;place-items:center;flex:none;}
+  .sec .text{color:var(--orange);font-weight:700;font-size:1.02rem;}
+  label.l{font-size:.8rem;font-weight:600;color:var(--ink-2);display:block;margin-bottom:6px;}
+  input,textarea{width:100%;border:1px solid var(--g400);border-radius:var(--radius);padding:11px 13px;font-family:inherit;font-size:.95rem;font-weight:500;color:var(--ink);outline:none;resize:none;background:var(--white);}
+  input:focus,textarea:focus{border-color:var(--orange);box-shadow:0 0 0 3px rgba(255,87,34,.12);}
+  .field+.field{margin-top:14px;}.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+  .drop{border:2px dashed #ccc;background:#f0f0f0;border-radius:var(--radius);min-height:130px;display:flex;align-items:center;justify-content:center;gap:8px;color:#666;cursor:pointer;font-weight:600;}
+  .ing{display:flex;align-items:center;gap:.7rem;padding:.5rem .4rem;border-radius:var(--radius);}.ing:hover{background:var(--g300);}
+  .ing .grip{color:var(--ink-3);cursor:grab;}.ing .q{font-weight:700;min-width:78px;}.ing .x{margin-left:auto;color:var(--ink-3);cursor:pointer;}
+  .add{display:inline-flex;gap:6px;color:var(--orange);font-weight:700;font-size:.85rem;margin-top:10px;cursor:pointer;}
+  .step{display:flex;gap:1rem;padding:.5rem 0;align-items:flex-start;}.step .n{width:25px;height:25px;flex:none;margin-top:2px;background:var(--ink);color:#fff;font-weight:700;font-size:.85rem;border-radius:50%;display:grid;place-items:center;}.step .c{flex:1;font-size:.95rem;line-height:1.5;}
+  .chips{display:flex;flex-wrap:wrap;gap:.5rem;}.chip{border:1px solid var(--g400);background:var(--white);border-radius:999px;padding:7px 13px;font-size:.85rem;font-weight:600;cursor:pointer;}.chip.on{background:var(--orange);border-color:var(--orange);color:#fff;}
+  /* tips rail */
+  .tips{position:sticky;top:48px;}
+  .tips .card{background:var(--white);border-radius:var(--radius);box-shadow:rgba(0,0,0,0.24) 0px 3px 8px;padding:20px;margin-bottom:16px;}
+  .tips .tag{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--teal);margin-bottom:10px;}
+  .tips h4{font-size:1rem;font-weight:700;margin-bottom:8px;display:flex;gap:8px;align-items:center;}
+  .tips p{font-size:.85rem;color:var(--ink-2);line-height:1.55;}
+  .tips ul{margin:10px 0 0 0;padding-left:16px;}
+  .tips li{font-size:.82rem;color:var(--ink-2);line-height:1.6;}
+  .tips .ex{background:#f0f0f0;border-radius:8px;padding:10px 12px;font-size:.82rem;color:var(--ink-2);margin-top:10px;}
+  .tips .ex b{color:var(--ink);}
+  @media (max-width:1000px){.layout{grid-template-columns:1fr}.toc,.tips{position:static}}
+</style>
+</head>
+<body>
+  <div class="layout">
+    <nav class="toc">
+      <div class="ttl">Recipe</div>
+      <a class="active"><span>Basics</span><span class="chk">✓</span></a>
+      <a><span>Photo</span><span class="chk no">○</span></a>
+      <a><span>Details</span><span class="chk">✓</span></a>
+      <a><span>Ingredients</span><span class="chk">✓</span></a>
+      <a><span>Instructions</span><span class="chk">✓</span></a>
+      <a><span>Cuisine &amp; course</span><span class="chk">✓</span></a>
+    </nav>
+    <div class="form">
+      <h1>Create New Recipe</h1>
+      <section class="block"><div class="sec"><span class="ico">✎</span><span class="text">Basics</span></div>
+        <div class="field"><label class="l">Title</label><input value="Creamy Tuscan Garlic Chicken" /></div>
+        <div class="field"><label class="l">Description</label><textarea rows="2">Juicy pan-seared chicken in a rich sun-dried tomato cream sauce with spinach and parmesan.</textarea></div></section>
+      <section class="block"><div class="sec"><span class="ico">🖼</span><span class="text">Photo</span></div><div class="drop">🖼 Upload a cover photo</div></section>
+      <section class="block"><div class="sec"><span class="ico">⏱</span><span class="text">Details</span></div>
+        <div class="row3"><div class="field"><label class="l">Servings</label><input value="4" /></div><div class="field"><label class="l">Prep</label><input value="10 min" /></div><div class="field"><label class="l">Cook</label><input value="20 min" /></div></div></section>
+      <section class="block"><div class="sec"><span class="ico">🧺</span><span class="text">Ingredients</span></div>
+        <div class="ing"><span class="grip">⋮⋮</span><span class="q">4</span><span>boneless chicken breasts</span><span class="x">✕</span></div>
+        <div class="ing"><span class="grip">⋮⋮</span><span class="q">1 cup</span><span>heavy cream</span><span class="x">✕</span></div>
+        <div class="add">＋ Add ingredient</div></section>
+      <section class="block"><div class="sec"><span class="ico">📋</span><span class="text">Instructions</span></div>
+        <div class="step"><span class="n">1</span><span class="c">Season chicken and sear until golden, then set aside.</span></div>
+        <div class="step"><span class="n">2</span><span class="c">Bloom garlic and build the cream sauce with broth and parmesan.</span></div>
+        <div class="add">＋ Add step</div></section>
+      <section class="block"><div class="sec"><span class="ico">🏷</span><span class="text">Cuisine &amp; course</span></div>
+        <div class="chips"><span class="chip on">Italian</span><span class="chip on">Dinner</span><span class="chip on">Main course</span><span class="chip">Quick</span></div></section>
+    </div>
+    <aside class="tips">
+      <div class="card">
+        <div class="tag">💡 Tip for this section</div>
+        <h4>Write a title that sells</h4>
+        <p>Lead with the star ingredient and what makes it special. Specific beats clever for search.</p>
+        <div class="ex"><b>Good:</b> Creamy Tuscan Garlic Chicken<br/><b>Skip:</b> My Favorite Dinner</div>
+      </div>
+      <div class="card">
+        <div class="tag">✓ Quick checklist</div>
+        <ul>
+          <li>Title under 60 characters</li>
+          <li>1–2 sentence description</li>
+          <li>Mention cook time or diet if relevant</li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+</body></html>

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Refined · Compact Inline</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--orange:#ff5722;--teal:#00adb5;--ink:#303841;--ink-2:#595f66;--ink-3:#979ba0;
+    --bg:#d6d6d6;--card:#eeeeee;--white:#fff;--g300:#e6e6e6;--g400:#d6d6d6;--radius:8px;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:"Montserrat",sans-serif;background:var(--bg);color:var(--ink);padding:40px 16px 90px;font-size:14px;}
+  .page-h{text-align:center;margin-bottom:18px;}.page-h h1{font-size:24px;font-weight:700;}.page-h p{color:var(--ink-2);font-size:13px;margin-top:4px;}
+  .container{max-width:680px;margin:0 auto;background:var(--card);border-radius:var(--radius);padding:28px 32px;}
+  .sec{display:flex;align-items:center;gap:.5rem;margin:20px 0 10px;}.sec:first-of-type{margin-top:0;}
+  .sec .text{color:var(--orange);font-weight:700;font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;}
+  .sec .divider{height:1px;flex:1;background:var(--g400);}
+  /* DISTINCTIVE: dense, label-left / field-right rows */
+  .row{display:grid;grid-template-columns:130px 1fr;align-items:center;gap:12px;padding:7px 0;border-bottom:1px solid var(--g400);}
+  .row .l{font-size:.78rem;font-weight:600;color:var(--ink-2);}
+  .row input,.row textarea{width:100%;border:1px solid var(--g400);border-radius:var(--radius);padding:7px 10px;font-family:inherit;font-size:.85rem;font-weight:500;color:var(--ink);outline:none;resize:none;background:var(--white);}
+  .row input:focus,.row textarea:focus{border-color:var(--orange);}
+  .inline-mini{display:flex;gap:8px;align-items:center;}
+  .inline-mini input{width:60px;text-align:center;}
+  .inline-mini .u{font-size:.78rem;color:var(--ink-2);font-weight:600;}
+  table.ing{width:100%;border-collapse:collapse;}
+  table.ing td{padding:6px 6px;border-bottom:1px solid var(--g400);font-size:.85rem;}
+  table.ing td .q{font-weight:700;}
+  table.ing tr:hover td{background:var(--g300);}
+  .add{display:inline-flex;gap:6px;color:var(--orange);font-weight:700;font-size:.8rem;margin-top:8px;cursor:pointer;}
+  .step{display:flex;gap:.7rem;padding:5px 0;align-items:flex-start;border-bottom:1px solid var(--g400);}
+  .step .n{width:20px;height:20px;flex:none;margin-top:2px;background:var(--ink);color:#fff;font-weight:700;font-size:.7rem;border-radius:50%;display:grid;place-items:center;}
+  .step .c{flex:1;font-size:.85rem;line-height:1.45;}
+  .chips{display:flex;flex-wrap:wrap;gap:.4rem;}
+  .chip{border:1px solid var(--g400);background:var(--white);border-radius:999px;padding:5px 11px;font-size:.78rem;font-weight:600;cursor:pointer;}
+  .chip.on{background:var(--orange);border-color:var(--orange);color:#fff;}
+  .drop{border:1.5px dashed #ccc;background:#f0f0f0;border-radius:var(--radius);height:60px;display:flex;align-items:center;justify-content:center;gap:6px;color:#666;cursor:pointer;font-weight:600;font-size:.8rem;width:100%;}
+  .bar{position:fixed;left:0;right:0;bottom:0;background:var(--white);border-top:1px solid var(--g400);}
+  .bar .in{max-width:680px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:18px;}
+  .sum{display:flex;gap:18px;flex:1;}.sum .s .k{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);font-weight:700;}
+  .sum .s .v{font-size:13px;font-weight:700;}.sum .s .v.p{color:var(--orange);}
+  .submit{background:var(--orange);color:#fff;border:none;border-radius:var(--radius);height:38px;padding:0 22px;font-family:inherit;font-size:.9rem;font-weight:600;cursor:pointer;}
+</style>
+</head>
+<body>
+  <div class="page-h"><h1>Create New Recipe</h1><p>Refined Classic · compact, dense, power-user layout</p></div>
+  <div class="container">
+    <div class="sec"><span class="text">Basics</span><span class="divider"></span></div>
+    <div class="row"><span class="l">Title</span><input value="Creamy Tuscan Garlic Chicken" /></div>
+    <div class="row"><span class="l">Description</span><textarea rows="2">Juicy pan-seared chicken in a sun-dried tomato cream sauce with spinach and parmesan.</textarea></div>
+    <div class="row"><span class="l">Cover photo</span><div class="drop">🖼 Upload image</div></div>
+    <div class="sec"><span class="text">Details</span><span class="divider"></span></div>
+    <div class="row"><span class="l">Servings</span><div class="inline-mini"><input value="4" /></div></div>
+    <div class="row"><span class="l">Prep time</span><div class="inline-mini"><input value="0" /><span class="u">hr</span><input value="10" /><span class="u">min</span></div></div>
+    <div class="row"><span class="l">Cook time</span><div class="inline-mini"><input value="0" /><span class="u">hr</span><input value="20" /><span class="u">min</span></div></div>
+    <div class="row"><span class="l">Cuisine</span><input value="Italian" /></div>
+    <div class="sec"><span class="text">Ingredients</span><span class="divider"></span></div>
+    <table class="ing">
+      <tr><td style="width:18px">⋮⋮</td><td style="width:70px"><span class="q">4</span></td><td>boneless chicken breasts</td><td style="width:18px;text-align:right">✕</td></tr>
+      <tr><td>⋮⋮</td><td><span class="q">1 cup</span></td><td>heavy cream</td><td style="text-align:right">✕</td></tr>
+      <tr><td>⋮⋮</td><td><span class="q">½ cup</span></td><td>sun-dried tomatoes</td><td style="text-align:right">✕</td></tr>
+      <tr><td>⋮⋮</td><td><span class="q">2 cups</span></td><td>fresh spinach</td><td style="text-align:right">✕</td></tr>
+    </table>
+    <div class="add">＋ Add ingredient</div>
+    <div class="sec"><span class="text">Instructions</span><span class="divider"></span></div>
+    <div class="step"><span class="n">1</span><span class="c">Season chicken and sear in olive oil until golden, then set aside.</span></div>
+    <div class="step"><span class="n">2</span><span class="c">Bloom garlic and build the cream sauce with broth and parmesan.</span></div>
+    <div class="step"><span class="n">3</span><span class="c">Fold in tomatoes and spinach, return chicken, simmer to finish.</span></div>
+    <div class="add">＋ Add step</div>
+    <div class="sec"><span class="text">Course</span><span class="divider"></span></div>
+    <div class="chips"><span class="chip on">Dinner</span><span class="chip on">Main course</span><span class="chip">Lunch</span><span class="chip">Dessert</span></div>
+  </div>
+  <div class="bar"><div class="in"><div class="sum">
+    <div class="s"><div class="k">Serves</div><div class="v">4</div></div>
+    <div class="s"><div class="k">Time</div><div class="v">30m</div></div>
+    <div class="s"><div class="k">Items</div><div class="v">4</div></div>
+    <div class="s"><div class="k">/ serving</div><div class="v p">$3.40</div></div>
+  </div><button class="submit">Create Recipe</button></div></div>
+</body></html>

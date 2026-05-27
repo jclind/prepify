@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Create Recipe · Doc Editor</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --ink:#37352f; --ink-2:#9b9a97; --ink-3:#c0bfbb; --accent:#ff5722; --hover:#f1f1ef; --line:#ededec; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:"Inter",-apple-system,sans-serif; color:var(--ink); background:#fff; }
+
+  /* faux top controls */
+  .bar { height:45px; display:flex; align-items:center; gap:16px; padding:0 18px; border-bottom:1px solid var(--line); font-size:13px; color:var(--ink-2); }
+  .bar .crumb { color:var(--ink); }
+  .bar .spacer { flex:1; }
+  .bar .pill { padding:5px 10px; border-radius:6px; }
+  .bar .pill:hover { background:var(--hover); cursor:pointer; }
+  .bar .share { background:var(--accent); color:#fff; font-weight:600; }
+
+  .doc { max-width:720px; margin:0 auto; padding:60px 40px 160px; }
+  .cover { height:200px; border-radius:8px; margin-bottom:30px; background:linear-gradient(120deg,#ffd9c9,#ffece4 60%,#dff4f5);
+    display:flex; align-items:flex-end; padding:14px; position:relative; }
+  .cover .opt { font-size:13px; color:#7a5c4e; background:rgba(255,255,255,.7); padding:6px 12px; border-radius:6px; cursor:pointer; }
+  .icon-emoji { font-size:64px; margin-bottom:6px; line-height:1; }
+
+  h1.title { font-size:40px; font-weight:700; letter-spacing:-.02em; outline:none; border:none; }
+  h1.title:empty:before { content:"Untitled recipe"; color:var(--ink-3); }
+
+  .props { margin:18px 0 8px; }
+  .prop { display:flex; align-items:center; gap:10px; font-size:14px; padding:6px 8px; border-radius:6px; }
+  .prop:hover { background:var(--hover); }
+  .prop .k { width:120px; color:var(--ink-2); display:flex; align-items:center; gap:8px; }
+  .prop .v { color:var(--ink); }
+  .prop .v .token { background:#fbe4d5; color:#8a4b29; padding:2px 9px; border-radius:5px; margin-right:6px; font-size:13px; }
+  .prop .v .token.teal { background:#d8f1f2; color:#1c6e72; }
+
+  .callout { background:#faf9f7; border:1px solid var(--line); border-radius:8px; padding:14px 16px; display:flex; gap:12px;
+    font-size:15px; color:#5c5a55; margin:20px 0 26px; }
+  .callout .e { font-size:18px; }
+
+  h2.block { font-size:22px; font-weight:600; margin:34px 0 6px; letter-spacing:-.01em; }
+  .desc { font-size:16px; line-height:1.7; color:#46443f; }
+
+  .line { display:flex; align-items:flex-start; gap:8px; padding:4px 0 4px 4px; border-radius:5px; font-size:16px; line-height:1.6; }
+  .line:hover { background:var(--hover); }
+  .line .handle { color:var(--ink-3); opacity:0; cursor:grab; padding-top:3px; }
+  .line:hover .handle { opacity:1; }
+  .line .bullet { color:var(--ink); padding-top:1px; }
+  .line .q { font-weight:600; }
+  .line .chk { width:18px; height:18px; border:1.5px solid var(--ink-3); border-radius:4px; flex:none; margin-top:3px; }
+  .num { width:22px; flex:none; color:var(--ink-2); padding-top:1px; }
+
+  .addblock { display:flex; align-items:center; gap:8px; color:var(--ink-3); font-size:15px; padding:6px 4px; margin-top:4px; cursor:pointer; border-radius:5px; }
+  .addblock:hover { background:var(--hover); color:var(--ink-2); }
+  .addblock .plus { width:20px; height:20px; border-radius:4px; display:grid; place-items:center; }
+
+  .slash-hint { font-size:12px; color:var(--ink-3); margin-top:40px; border-top:1px solid var(--line); padding-top:14px; }
+  .slash-hint kbd { background:var(--hover); border:1px solid var(--line); border-radius:4px; padding:1px 6px; font-family:inherit; }
+</style>
+</head>
+<body>
+  <div class="bar">
+    <span>Recipes</span><span>/</span><span class="crumb">Creamy Tuscan Garlic Chicken</span>
+    <span class="spacer"></span>
+    <span class="pill">Edited just now</span>
+    <span class="pill">💬</span>
+    <span class="pill share">Publish</span>
+  </div>
+
+  <div class="doc">
+    <div class="cover"><span class="opt">🖼 Change cover</span></div>
+    <div class="icon-emoji">🍗</div>
+    <h1 class="title" contenteditable="true">Creamy Tuscan Garlic Chicken</h1>
+
+    <div class="props">
+      <div class="prop"><span class="k">🍽 Servings</span><span class="v">4</span></div>
+      <div class="prop"><span class="k">⏱ Prep · Cook</span><span class="v">10 min · 20 min</span></div>
+      <div class="prop"><span class="k">🌍 Cuisine</span><span class="v"><span class="token teal">Italian</span></span></div>
+      <div class="prop"><span class="k">📂 Course</span><span class="v"><span class="token">Dinner</span><span class="token">Main course</span></span></div>
+    </div>
+
+    <div class="callout"><span class="e">💡</span><span>Type <strong>/</strong> for a command, or just start writing. Ingredients and steps autosave and reorder by dragging.</span></div>
+
+    <h2 class="block">Description</h2>
+    <p class="desc" contenteditable="true">Juicy pan-seared chicken in a rich sun-dried tomato cream sauce with spinach and aged parmesan. Weeknight comfort, on the table in thirty minutes.</p>
+
+    <h2 class="block">Ingredients</h2>
+    <div class="line"><span class="handle">⋮⋮</span><span class="chk"></span><span><span class="q">4</span> boneless chicken breasts</span></div>
+    <div class="line"><span class="handle">⋮⋮</span><span class="chk"></span><span><span class="q">2 tbsp</span> olive oil</span></div>
+    <div class="line"><span class="handle">⋮⋮</span><span class="chk"></span><span><span class="q">1 cup</span> heavy cream</span></div>
+    <div class="line"><span class="handle">⋮⋮</span><span class="chk"></span><span><span class="q">½ cup</span> sun-dried tomatoes</span></div>
+    <div class="line"><span class="handle">⋮⋮</span><span class="chk"></span><span><span class="q">2 cups</span> fresh spinach</span></div>
+    <div class="line"><span class="handle">⋮⋮</span><span class="chk"></span><span><span class="q">½ cup</span> grated parmesan</span></div>
+    <div class="addblock"><span class="plus">+</span> Add ingredient</div>
+
+    <h2 class="block">Method</h2>
+    <div class="line"><span class="handle">⋮⋮</span><span class="num">1.</span><span>Season the chicken, then sear in olive oil over medium-high heat until golden, 4–5 minutes per side. Set aside.</span></div>
+    <div class="line"><span class="handle">⋮⋮</span><span class="num">2.</span><span>Add the garlic to the pan and cook until fragrant, then pour in cream and broth and whisk in the parmesan.</span></div>
+    <div class="line"><span class="handle">⋮⋮</span><span class="num">3.</span><span>Stir in the sun-dried tomatoes and spinach; simmer until the sauce thickens and the spinach wilts.</span></div>
+    <div class="line"><span class="handle">⋮⋮</span><span class="num">4.</span><span>Return the chicken, spoon the sauce over the top, and simmer two minutes more before serving.</span></div>
+    <div class="addblock"><span class="plus">+</span> Add step</div>
+
+    <div class="slash-hint">Tip: press <kbd>/</kbd> for blocks · <kbd>⌘</kbd>+<kbd>Enter</kbd> to publish</div>
+  </div>
+</body>
+</html>

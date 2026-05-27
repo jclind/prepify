@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Create Recipe · Editorial</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #fbf7f0;
+    --ink: #221e1a;
+    --ink-2: #6b6258;
+    --rule: #ddd2c2;
+    --accent: #ff5722;
+    --accent-ink: #b5350f;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--paper); color: var(--ink); font-family: "Inter", sans-serif; padding-bottom: 120px; }
+  .serif { font-family: "Fraunces", Georgia, serif; }
+
+  .masthead { border-bottom: 2px solid var(--ink); padding: 16px 0; }
+  .masthead .inner { max-width: 1040px; margin: 0 auto; padding: 0 28px;
+    display: flex; align-items: baseline; justify-content: space-between; }
+  .masthead .name { font-family: "Fraunces", serif; font-weight: 600; font-size: 22px; letter-spacing: 0.02em; }
+  .masthead .meta { font-size: 12px; text-transform: uppercase; letter-spacing: 0.18em; color: var(--ink-2); }
+
+  .hero { max-width: 1040px; margin: 0 auto; padding: 56px 28px 40px; text-align: center; border-bottom: 1px solid var(--rule); }
+  .kicker { font-size: 12px; text-transform: uppercase; letter-spacing: 0.28em; color: var(--accent-ink); margin-bottom: 18px; }
+  .hero h1 { font-family: "Fraunces", serif; font-weight: 400; font-size: 68px; line-height: 1.02; letter-spacing: -0.02em; }
+  .hero .dek { font-family: "Fraunces", serif; font-style: italic; font-size: 22px; color: var(--ink-2); margin-top: 18px; }
+
+  .body { max-width: 1040px; margin: 0 auto; padding: 0 28px; }
+  .feature { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 0; border-bottom: 1px solid var(--rule); }
+  .feature .photo {
+    min-height: 460px; background:
+      linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,0.04)),
+      repeating-linear-gradient(45deg, #efe6d6 0 14px, #ece1cf 14px 28px);
+    border-right: 1px solid var(--rule); display: flex; align-items: flex-end; padding: 24px;
+  }
+  .feature .photo .tag { font-size: 12px; text-transform: uppercase; letter-spacing: 0.2em; color: var(--ink-2);
+    background: var(--paper); padding: 10px 16px; border: 1px solid var(--ink); }
+  .feature .lede { padding: 40px; }
+  .feature .lede label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.2em; color: var(--ink-2); display: block; margin-bottom: 6px; }
+  .feature .lede input, .feature .lede textarea {
+    width: 100%; border: none; background: transparent; font-family: "Fraunces", serif; outline: none; resize: none; color: var(--ink);
+  }
+  .feature .lede .title-in { font-size: 40px; line-height: 1.05; border-bottom: 1px solid var(--rule); padding-bottom: 16px; margin-bottom: 24px; }
+  .feature .lede .desc-in { font-size: 19px; line-height: 1.55; font-style: italic; color: #4a423a; }
+
+  .specs { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid var(--rule); }
+  .specs .cell { padding: 26px; text-align: center; border-right: 1px solid var(--rule); }
+  .specs .cell:last-child { border-right: none; }
+  .specs .cell .k { font-size: 11px; text-transform: uppercase; letter-spacing: 0.2em; color: var(--ink-2); margin-bottom: 8px; }
+  .specs .cell .v { font-family: "Fraunces", serif; font-size: 34px; }
+  .specs .cell .v small { font-size: 16px; color: var(--ink-2); }
+
+  .cols { display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 0; }
+  .cols .left { padding: 44px 44px 44px 0; border-right: 1px solid var(--rule); }
+  .cols .right { padding: 44px 0 44px 44px; }
+  h2.sec { font-family: "Fraunces", serif; font-size: 13px; text-transform: uppercase; letter-spacing: 0.22em;
+    border-bottom: 2px solid var(--ink); padding-bottom: 10px; margin-bottom: 22px; display: flex; justify-content: space-between; align-items: baseline; }
+  h2.sec .add { font-family: "Inter"; font-size: 12px; letter-spacing: 0.05em; color: var(--accent-ink); text-transform: none; cursor: pointer; }
+
+  ul.ings { list-style: none; }
+  ul.ings li { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px dotted var(--rule); font-size: 17px; align-items: baseline; }
+  ul.ings li .q { font-family: "Fraunces", serif; font-weight: 600; min-width: 96px; }
+  ol.steps { list-style: none; counter-reset: s; }
+  ol.steps li { counter-increment: s; position: relative; padding: 0 0 26px 56px; }
+  ol.steps li::before { content: counter(s); position: absolute; left: 0; top: -6px; font-family: "Fraunces", serif;
+    font-size: 40px; color: var(--accent); line-height: 1; }
+  ol.steps li p { font-size: 17px; line-height: 1.6; color: #36302a; padding-top: 4px; }
+
+  .publish { max-width: 1040px; margin: 48px auto 0; padding: 0 28px; display: flex; align-items: center; justify-content: center; gap: 24px; }
+  .publish button { font-family: "Fraunces", serif; font-size: 20px; padding: 18px 48px; background: var(--ink); color: var(--paper);
+    border: none; cursor: pointer; letter-spacing: 0.02em; transition: 0.2s; }
+  .publish button:hover { background: var(--accent-ink); }
+  .publish .note { font-size: 13px; color: var(--ink-2); font-style: italic; }
+</style>
+</head>
+<body>
+  <header class="masthead">
+    <div class="inner">
+      <div class="name">Prepify <span style="color:var(--accent)">·</span> Kitchen</div>
+      <div class="meta">Recipe Draft · Spring Issue</div>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="kicker">Compose Your Recipe</div>
+    <h1 class="serif">A New Dish,<br/>Beautifully Told</h1>
+    <p class="dek">Write it like the feature it deserves to be.</p>
+  </section>
+
+  <div class="body">
+    <div class="feature">
+      <div class="photo"><span class="tag">＋ Add hero photograph</span></div>
+      <div class="lede">
+        <label>Headline</label>
+        <input class="title-in" value="Creamy Tuscan Garlic Chicken" />
+        <label>Standfirst</label>
+        <textarea class="desc-in" rows="4">Juicy pan-seared chicken nestled in a rich sun-dried tomato cream sauce, brightened with spinach and aged parmesan — on the table in thirty unhurried minutes.</textarea>
+      </div>
+    </div>
+
+    <div class="specs">
+      <div class="cell"><div class="k">Serves</div><div class="v">4</div></div>
+      <div class="cell"><div class="k">Prep</div><div class="v">10<small> min</small></div></div>
+      <div class="cell"><div class="k">Cook</div><div class="v">20<small> min</small></div></div>
+      <div class="cell"><div class="k">Cuisine</div><div class="v" style="font-size:24px">Italian</div></div>
+    </div>
+
+    <div class="cols">
+      <div class="left">
+        <h2 class="sec">Ingredients <span class="add">＋ add</span></h2>
+        <ul class="ings">
+          <li><span class="q">4</span><span>boneless chicken breasts</span></li>
+          <li><span class="q">2 tbsp</span><span>olive oil</span></li>
+          <li><span class="q">1 cup</span><span>heavy cream</span></li>
+          <li><span class="q">½ cup</span><span>sun-dried tomatoes</span></li>
+          <li><span class="q">2 cups</span><span>fresh spinach</span></li>
+          <li><span class="q">½ cup</span><span>grated parmesan</span></li>
+          <li><span class="q">3 cloves</span><span>garlic, minced</span></li>
+        </ul>
+      </div>
+      <div class="right">
+        <h2 class="sec">Method <span class="add">＋ add step</span></h2>
+        <ol class="steps">
+          <li><p>Season the chicken generously. Sear in olive oil over medium-high heat, 4–5 minutes per side, until deeply golden. Set aside to rest.</p></li>
+          <li><p>Lower the heat, add the garlic, and let it bloom. Pour in the cream and broth, then whisk in parmesan and Italian seasoning.</p></li>
+          <li><p>Fold through the sun-dried tomatoes and spinach; simmer gently until the sauce coats a spoon and the greens collapse.</p></li>
+          <li><p>Return the chicken to the pan, spoon the sauce over, and simmer two minutes more. Serve at once.</p></li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <div class="publish">
+    <button>Publish to Prepify</button>
+    <span class="note">Saved as draft · last edited just now</span>
+  </div>
+</body>
+</html>

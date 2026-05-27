@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Guided · Completion Ring</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--orange:#ff5722;--teal:#00adb5;--ink:#303841;--ink-2:#595f66;--ink-3:#979ba0;
+    --bg:#d6d6d6;--card:#eeeeee;--white:#fff;--g300:#e6e6e6;--g400:#d6d6d6;--radius:10px;--ok:#28a745;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:"Montserrat",sans-serif;background:var(--bg);color:var(--ink);}
+  .layout{max-width:1000px;margin:0 auto;padding:48px 20px 80px;display:grid;grid-template-columns:250px 1fr;gap:40px;align-items:start;}
+  .toc{position:sticky;top:48px;background:var(--white);border-radius:var(--radius);box-shadow:rgba(0,0,0,0.24) 0px 3px 8px;padding:22px;}
+  /* DISTINCTIVE: big completion ring at top of nav */
+  .ring{display:flex;flex-direction:column;align-items:center;margin-bottom:20px;}
+  .ring .c{width:96px;height:96px;border-radius:50%;background:conic-gradient(var(--orange) 0 288deg,var(--g300) 288deg 360deg);display:grid;place-items:center;}
+  .ring .c b{width:74px;height:74px;border-radius:50%;background:var(--white);display:grid;place-items:center;font-size:1.4rem;font-weight:700;}
+  .ring .t{font-size:.8rem;color:var(--ink-2);margin-top:10px;font-weight:600;}
+  .toc a{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink-2);font-size:.9rem;font-weight:600;padding:9px 12px;border-radius:8px;margin-bottom:2px;}
+  .toc a:hover{background:var(--g300);}
+  .toc a.active{background:#fbe7df;color:var(--orange);}
+  .toc a .num{width:22px;height:22px;border-radius:50%;border:2px solid var(--g400);font-size:.7rem;display:grid;place-items:center;flex:none;color:var(--ink-3);}
+  .toc a.done .num{background:var(--ok);border-color:var(--ok);color:#fff;}
+  .toc a.active .num{border-color:var(--orange);color:var(--orange);}
+  .toc a .chk{margin-left:auto;color:var(--ok);font-size:.8rem;}
+  .form{background:var(--card);border-radius:var(--radius);padding:40px 44px;}
+  .form>h1{font-size:26px;font-weight:700;margin-bottom:6px;}
+  /* sections as light cards */
+  .block{background:var(--white);border-radius:var(--radius);padding:24px;margin-bottom:18px;}
+  .sec{display:flex;align-items:center;gap:.6rem;margin-bottom:14px;}
+  .sec .ico{width:28px;height:28px;border-radius:7px;background:#fbe7df;color:var(--orange);display:grid;place-items:center;flex:none;}
+  .sec .text{color:var(--orange);font-weight:700;font-size:1rem;}
+  .sec .req{margin-left:auto;font-size:11px;color:var(--ink-3);font-weight:600;text-transform:uppercase;}
+  label.l{font-size:.8rem;font-weight:600;color:var(--ink-2);display:block;margin-bottom:6px;}
+  input,textarea{width:100%;border:1px solid var(--g400);border-radius:var(--radius);padding:11px 13px;font-family:inherit;font-size:.95rem;font-weight:500;color:var(--ink);outline:none;resize:none;}
+  input:focus,textarea:focus{border-color:var(--orange);box-shadow:0 0 0 3px rgba(255,87,34,.12);}
+  .field+.field{margin-top:14px;}.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+  .drop{border:2px dashed #ccc;background:#f0f0f0;border-radius:var(--radius);min-height:130px;display:flex;align-items:center;justify-content:center;gap:8px;color:#666;cursor:pointer;font-weight:600;}
+  .ing{display:flex;align-items:center;gap:.7rem;padding:.5rem .4rem;border-radius:var(--radius);}.ing:hover{background:var(--g300);}
+  .ing .grip{color:var(--ink-3);cursor:grab;}.ing .q{font-weight:700;min-width:78px;}.ing .x{margin-left:auto;color:var(--ink-3);cursor:pointer;}
+  .add{display:inline-flex;gap:6px;color:var(--orange);font-weight:700;font-size:.85rem;margin-top:10px;cursor:pointer;}
+  .step{display:flex;gap:1rem;padding:.5rem 0;align-items:flex-start;}.step .n{width:25px;height:25px;flex:none;margin-top:2px;background:var(--ink);color:#fff;font-weight:700;font-size:.85rem;border-radius:50%;display:grid;place-items:center;}.step .c{flex:1;font-size:.95rem;line-height:1.5;}
+  .chips{display:flex;flex-wrap:wrap;gap:.5rem;}.chip{border:1px solid var(--g400);background:var(--white);border-radius:999px;padding:7px 13px;font-size:.85rem;font-weight:600;cursor:pointer;}.chip.on{background:var(--orange);border-color:var(--orange);color:#fff;}
+  .submit{background:var(--orange);color:#fff;border:none;border-radius:var(--radius);height:46px;padding:0 32px;font-family:inherit;font-size:1rem;font-weight:600;cursor:pointer;}
+  @media (max-width:820px){.layout{grid-template-columns:1fr}.toc{position:static}}
+</style>
+</head>
+<body>
+  <div class="layout">
+    <nav class="toc">
+      <div class="ring"><div class="c"><b>80%</b></div><div class="t">Almost done — 1 left</div></div>
+      <a class="done"><span class="num">✓</span> Basics <span class="chk">✓</span></a>
+      <a class="active"><span class="num">2</span> Photo</a>
+      <a class="done"><span class="num">✓</span> Details <span class="chk">✓</span></a>
+      <a class="done"><span class="num">✓</span> Ingredients <span class="chk">✓</span></a>
+      <a class="done"><span class="num">✓</span> Steps <span class="chk">✓</span></a>
+      <a class="done"><span class="num">✓</span> Tags <span class="chk">✓</span></a>
+    </nav>
+    <div class="form">
+      <h1>Create New Recipe</h1>
+      <div class="block"><div class="sec"><span class="ico">✎</span><span class="text">Basics</span><span class="req">Required</span></div>
+        <div class="field"><label class="l">Title</label><input value="Creamy Tuscan Garlic Chicken" /></div>
+        <div class="field"><label class="l">Description</label><textarea rows="2">Juicy pan-seared chicken in a rich sun-dried tomato cream sauce with spinach and parmesan.</textarea></div></div>
+      <div class="block"><div class="sec"><span class="ico">🖼</span><span class="text">Photo</span><span class="req">Required</span></div>
+        <div class="drop">🖼 Click to upload or drag a photo here</div></div>
+      <div class="block"><div class="sec"><span class="ico">⏱</span><span class="text">Details</span></div>
+        <div class="row3"><div class="field"><label class="l">Servings</label><input value="4" /></div><div class="field"><label class="l">Prep</label><input value="10 min" /></div><div class="field"><label class="l">Cook</label><input value="20 min" /></div></div></div>
+      <div class="block"><div class="sec"><span class="ico">🧺</span><span class="text">Ingredients</span></div>
+        <div class="ing"><span class="grip">⋮⋮</span><span class="q">4</span><span>boneless chicken breasts</span><span class="x">✕</span></div>
+        <div class="ing"><span class="grip">⋮⋮</span><span class="q">1 cup</span><span>heavy cream</span><span class="x">✕</span></div>
+        <div class="ing"><span class="grip">⋮⋮</span><span class="q">½ cup</span><span>sun-dried tomatoes</span><span class="x">✕</span></div>
+        <div class="add">＋ Add ingredient</div></div>
+      <div class="block"><div class="sec"><span class="ico">📋</span><span class="text">Instructions</span></div>
+        <div class="step"><span class="n">1</span><span class="c">Season chicken and sear until golden, then set aside.</span></div>
+        <div class="step"><span class="n">2</span><span class="c">Bloom garlic and build the cream sauce with broth and parmesan.</span></div>
+        <div class="step"><span class="n">3</span><span class="c">Fold in tomatoes and spinach, return chicken, simmer to finish.</span></div>
+        <div class="add">＋ Add step</div></div>
+      <div class="block"><div class="sec"><span class="ico">🏷</span><span class="text">Cuisine &amp; course</span></div>
+        <div class="chips"><span class="chip on">Italian</span><span class="chip on">Dinner</span><span class="chip on">Main course</span><span class="chip">Quick</span></div></div>
+      <button class="submit">Create Recipe</button>
+    </div>
+  </div>
+</body></html>

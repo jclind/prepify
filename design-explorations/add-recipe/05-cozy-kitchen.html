@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Create Recipe · Cozy Kitchen</title>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream:#fdf6ec; --paper:#fffaf2; --terra:#d2691e; --terra-deep:#b8541a;
+    --sage:#7c9070; --ink:#4a3f35; --ink-2:#8a7c6d; --line:#ece0cf;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:"Nunito",sans-serif; background:var(--cream); color:var(--ink); padding-bottom:120px;
+    background-image:radial-gradient(circle at 20% 0, #fbeede 0, transparent 40%),
+                     radial-gradient(circle at 90% 10%, #eef3e9 0, transparent 35%); }
+  .hand { font-family:"Caveat",cursive; }
+
+  .top { text-align:center; padding:56px 20px 10px; }
+  .top .hand { color:var(--terra); font-size:30px; transform:rotate(-2deg); display:inline-block; }
+  .top h1 { font-size:42px; font-weight:800; letter-spacing:-.02em; margin-top:4px; }
+  .top p { color:var(--ink-2); font-size:17px; margin-top:10px; }
+  .wrap { max-width:680px; margin:0 auto; padding:0 20px; }
+
+  .card { background:var(--paper); border:1.5px solid var(--line); border-radius:24px; padding:28px 30px;
+    margin-top:24px; box-shadow:0 12px 30px -18px rgba(120,90,50,.4); position:relative; }
+  .card::before { content:''; position:absolute; left:30px; right:30px; top:0; height:5px;
+    background:repeating-linear-gradient(90deg,var(--terra) 0 16px, transparent 16px 26px); border-radius:0 0 4px 4px; opacity:.25; }
+  .card .pin { position:absolute; top:-12px; left:50%; transform:translateX(-50%); width:26px; height:26px; border-radius:50%;
+    background:var(--terra); box-shadow:inset 0 -3px 5px rgba(0,0,0,.25), 0 4px 8px rgba(0,0,0,.2); }
+  .lbl { font-family:"Caveat",cursive; font-size:24px; color:var(--terra-deep); margin-bottom:6px; }
+  input, textarea { width:100%; border:none; background:transparent; font-family:"Nunito"; font-size:18px; color:var(--ink);
+    outline:none; resize:none; border-bottom:2px dashed var(--line); padding:8px 2px; }
+  input:focus, textarea:focus { border-color:var(--terra); }
+  textarea { border:2px dashed var(--line); border-radius:14px; padding:14px; }
+
+  .photo { height:200px; border:2.5px dashed #d8b58a; border-radius:18px; background:#fdf2e4;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; color:var(--terra-deep); cursor:pointer; }
+  .photo .ic { font-size:42px; }
+  .photo .hand { font-size:22px; }
+
+  .duo { display:grid; grid-template-columns:1fr 1fr; gap:26px; }
+  .pill-row { display:flex; align-items:center; gap:14px; }
+  .step-btn { width:40px; height:40px; border-radius:50%; border:2px solid var(--terra); color:var(--terra);
+    background:#fff; font-size:20px; cursor:pointer; font-weight:700; }
+  .step-btn:hover { background:var(--terra); color:#fff; }
+  .step-val { font-size:30px; font-weight:800; }
+
+  .ing-list { margin-top:6px; }
+  .ing-item { display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1.5px dotted var(--line); font-size:17px; }
+  .ing-item .check { width:22px; height:22px; border:2px solid var(--sage); border-radius:7px; flex:none; }
+  .ing-item .q { font-weight:800; color:var(--terra-deep); min-width:84px; }
+  .add { display:inline-flex; align-items:center; gap:8px; margin-top:14px; color:var(--terra-deep); font-weight:700; cursor:pointer; font-size:16px; }
+
+  .step { display:flex; gap:16px; padding:14px 0; }
+  .step .n { width:36px; height:36px; flex:none; border-radius:50%; background:var(--sage); color:#fff; font-weight:800;
+    display:grid; place-items:center; font-family:"Caveat"; font-size:22px; }
+  .step p { font-size:16px; line-height:1.6; }
+
+  .tags { display:flex; flex-wrap:wrap; gap:10px; }
+  .tag { padding:9px 16px; border-radius:999px; border:2px solid var(--line); background:#fff; cursor:pointer; font-weight:600; font-size:14px; }
+  .tag.on { background:var(--sage); color:#fff; border-color:var(--sage); }
+
+  .finish { text-align:center; margin-top:36px; }
+  .finish button { font-family:"Nunito"; font-weight:800; font-size:19px; color:#fff; background:var(--terra);
+    border:none; padding:18px 44px; border-radius:999px; cursor:pointer; box-shadow:0 12px 26px -8px rgba(210,105,30,.6); transition:.2s; }
+  .finish button:hover { background:var(--terra-deep); transform:translateY(-2px); }
+  .finish .hand { display:block; color:var(--ink-2); font-size:22px; margin-top:14px; }
+</style>
+</head>
+<body>
+  <div class="top">
+    <span class="hand">from your kitchen to theirs…</span>
+    <h1>Add a New Recipe</h1>
+    <p>Pour a little love into every field.</p>
+  </div>
+
+  <div class="wrap">
+    <div class="card"><span class="pin"></span>
+      <div class="lbl">What are we making?</div>
+      <input value="Creamy Tuscan Garlic Chicken" />
+    </div>
+
+    <div class="card">
+      <div class="lbl">A photo to make mouths water</div>
+      <div class="photo"><div class="ic">📷</div><span class="hand">drop a cozy photo here</span></div>
+    </div>
+
+    <div class="card">
+      <div class="lbl">Tell us about it</div>
+      <textarea rows="3">Juicy pan-seared chicken in a rich sun-dried tomato cream sauce with spinach and parmesan. Comfort food, on the table in 30 minutes.</textarea>
+    </div>
+
+    <div class="duo">
+      <div class="card">
+        <div class="lbl">How many bowls?</div>
+        <div class="pill-row"><button class="step-btn">−</button><span class="step-val">4</span><button class="step-btn">+</button></div>
+      </div>
+      <div class="card">
+        <div class="lbl">Time at the stove</div>
+        <input value="10 min prep · 20 min cook" />
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="lbl">In the basket</div>
+      <div class="ing-list">
+        <div class="ing-item"><span class="check"></span><span class="q">4</span><span>boneless chicken breasts</span></div>
+        <div class="ing-item"><span class="check"></span><span class="q">1 cup</span><span>heavy cream</span></div>
+        <div class="ing-item"><span class="check"></span><span class="q">½ cup</span><span>sun-dried tomatoes</span></div>
+        <div class="ing-item"><span class="check"></span><span class="q">2 cups</span><span>fresh spinach</span></div>
+      </div>
+      <span class="add">🧺 add another</span>
+    </div>
+
+    <div class="card">
+      <div class="lbl">Step by step</div>
+      <div class="step"><span class="n">1</span><p>Season the chicken and sear in olive oil until golden on both sides. Set aside to rest.</p></div>
+      <div class="step"><span class="n">2</span><p>Soften the garlic, then stir in cream, broth, and parmesan until silky.</p></div>
+      <div class="step"><span class="n">3</span><p>Add the tomatoes and spinach, slip the chicken back in, and let it all bubble together.</p></div>
+      <span class="add">🥄 add a step</span>
+    </div>
+
+    <div class="card">
+      <div class="lbl">Pop it in a category</div>
+      <div class="tags"><span class="tag on">Italian</span><span class="tag on">Dinner</span><span class="tag">Comfort</span><span class="tag">Family</span><span class="tag">Weeknight</span></div>
+    </div>
+
+    <div class="finish">
+      <button>Share my recipe 🍲</button>
+      <span class="hand">don't worry — you can always tweak it later</span>
+    </div>
+  </div>
+</body>
+</html>
