@@ -23,17 +23,23 @@ const IngredientsInput: FC<IngredientsInputProps> = ({
   const [enrichmentWarning, setEnrichmentWarning] = useState('')
 
   const handleAddIngredient = async () => {
-    // Phase A: guard BEFORE we touch loading state. Previously the empty-input
-    // path set isLoading=true and returned without clearing it, sticking the
-    // spinner on the parent IngredientsContainer.
-    if (loading || !inputVal) return
+    if (loading) return
+
+    // Empty / whitespace-only input: close the loop with a hint instead of
+    // silently no-opping, and never fire a parse request for nothing. (Guard
+    // BEFORE touching loading state so we never strand the parent spinner.)
+    const trimmed = inputVal.trim()
+    if (!trimmed) {
+      setEnrichmentWarning('Enter an ingredient before adding it.')
+      return
+    }
 
     setEnrichmentWarning('')
     setLoading(true)
     setIngredientLoading({ isLoading: true, index: ingredientsLength })
 
     try {
-      const data: IngredientsType = await RecipeAPI.getIngredientData(inputVal)
+      const data: IngredientsType = await RecipeAPI.getIngredientData(trimmed)
       // getIngredientData is soft-fail: always returns a valid IngredientsType,
       // even on enrichment failure (ingredientData: null + error). Per the
       // ingredient-enrichment-failures-are-non-fatal policy, we add the
@@ -42,7 +48,7 @@ const IngredientsInput: FC<IngredientsInputProps> = ({
       setInputVal('')
       if ('error' in data && data.error) {
         setEnrichmentWarning(
-          `Added "${inputVal}", but couldn't fetch nutrition/image data. You can edit or remove it.`
+          `Added "${trimmed}", but couldn't fetch nutrition/image data. You can edit or remove it.`
         )
       }
     } finally {
