@@ -134,6 +134,7 @@ a {
 }
 
 .error,
+.warning,
 .success {
   display: flex;
   align-items: center;
@@ -147,6 +148,11 @@ a {
   background: s.$alert-error-red;
   color: s.$alert-error-red-text;
   border: 1px solid s.$alert-error-red-border;
+}
+.warning {
+  background: s.$alert-warning-amber;
+  color: s.$alert-warning-amber-text;
+  border: 1px solid s.$alert-warning-amber-border;
 }
 .success {
   background: s.$alert-success-green;
