@@ -6,14 +6,12 @@ import InstructionItem from 'src/pages/AddRecipe/Instructions/InstructionItem/In
 type InstructionListProps = {
   instructions: InstructionsType[]
   setInstructions: Dispatch<SetStateAction<InstructionsType[]>>
-  reorderActive: boolean
   removeInstruction: (id: string) => void
 }
 
 const InstructionList: FC<InstructionListProps> = ({
   instructions,
   setInstructions,
-  reorderActive,
   removeInstruction,
 }) => {
   const handleListChange = (updatedList: InstructionsType[]) => {
@@ -36,7 +34,6 @@ const InstructionList: FC<InstructionListProps> = ({
           <Drag key={instr.id} id={instr.id} index={idx}>
             <InstructionItem
               instruction={instr}
-              reorderActive={reorderActive}
               removeInstruction={removeInstruction}
               setInstructions={setInstructions}
             />
