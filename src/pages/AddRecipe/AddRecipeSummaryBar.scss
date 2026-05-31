@@ -1,0 +1,115 @@
+@use '../../helpers.scss' as s;
+
+.add-recipe-summary-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  background: s.$white;
+  border-top: 1px solid s.$gray-400;
+  box-shadow: 0 -3px 12px rgba(0, 0, 0, 0.08);
+
+  .summary-inner {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0.85rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  .summary-stats {
+    flex: 1;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.75rem;
+
+    .stat {
+      display: flex;
+      flex-direction: column;
+
+      dt {
+        font-size: 0.625rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: s.$tertiary-text;
+      }
+      dd {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 700;
+        color: s.$primary-text;
+
+        &.price {
+          color: s.$primary;
+        }
+      }
+    }
+  }
+
+  .submit-btn {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-shrink: 0;
+    width: 170px;
+    height: 46px;
+    border-radius: s.$border-radius;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.1s linear;
+
+    &:focus {
+      @include s.outline();
+    }
+  }
+  .submit-btn.invalid {
+    background: none;
+    color: s.$secondary-text;
+    border: 1px solid s.$tertiary-background;
+
+    &:hover {
+      color: s.$primary-text;
+      border-color: s.$tertiary-text;
+    }
+  }
+  .submit-btn.valid {
+    background: s.$primary;
+    color: s.$primary-background;
+    border: 1px solid s.$primary;
+
+    &:hover {
+      filter: brightness(110%);
+    }
+  }
+  .submit-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+
+    &:hover {
+      filter: none;
+      color: inherit;
+      border-color: inherit;
+    }
+  }
+
+  @media screen and (max-width: 600px) {
+    .summary-inner {
+      padding: 0.7rem 1rem;
+      gap: 1rem;
+    }
+    .summary-stats {
+      gap: 1rem 1.25rem;
+    }
+    .submit-btn {
+      width: 132px;
+      height: 42px;
+      font-size: 0.9rem;
+    }
+  }
+}
