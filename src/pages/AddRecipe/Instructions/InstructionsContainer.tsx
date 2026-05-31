@@ -16,7 +16,6 @@ const InstructionsContainer: FC<InstructionsContainerProps> = ({
   setInstructions,
 }) => {
   const [inputVal, setInputVal] = useState('')
-  const [reorderActive, setReorderActive] = useState(false)
 
   const addInstructionToList = (data: InstructionsType) => {
     setInstructions((prev: InstructionsType[]) => {
@@ -66,6 +65,8 @@ const InstructionsContainer: FC<InstructionsContainerProps> = ({
     addInstruction({ content: inputVal })
   }
 
+  const stepCount = instructions.filter(instr => 'content' in instr).length
+
   return (
     <div className='ingredients-container'>
       <RecipeFormInput
@@ -79,15 +80,15 @@ const InstructionsContainer: FC<InstructionsContainerProps> = ({
         instructions={instructions}
         setInstructions={setInstructions}
         removeInstruction={removeInstruction}
-        reorderActive={reorderActive}
       />
-      <button
-        className='reorder-btn'
-        onClick={() => setReorderActive(prev => !prev)}
-      >
-        {reorderActive ? 'Done' : 'Reorder'}
-      </button>
-      <AddLabel addToList={addInstructionToList} />
+      <div className='ingredients-footer'>
+        <AddLabel addToList={addInstructionToList} />
+        {stepCount > 0 && (
+          <span className='footer-meta'>
+            {stepCount} {stepCount === 1 ? 'step' : 'steps'}
+          </span>
+        )}
+      </div>
     </div>
   )
 }

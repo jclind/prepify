@@ -1,8 +1,8 @@
 import React, { Dispatch, FC, SetStateAction, useRef, useState } from 'react'
 import { DraggableProvided, DraggableStateSnapshot } from '@hello-pangea/dnd'
+import { MdDragIndicator } from 'react-icons/md'
+import { AiOutlineClose } from 'react-icons/ai'
 import { InstructionsType } from 'types'
-import Handler from 'src/pages/AddRecipe/ListComponents/Handler'
-import RemoveItem from 'src/pages/AddRecipe/ListComponents/RemoveItem'
 import './InstructionItem.scss'
 import '../../ListComponents/Item.scss'
 import RecipeFormTextArea from 'src/pages/AddRecipe/RecipeFormTextArea'
@@ -10,7 +10,6 @@ import { INSTRUCTION_MAX_LENGTH } from 'src/util/recipeLimits'
 
 type InstructionItemProps = {
   instruction: InstructionsType
-  reorderActive?: boolean
   provided?: DraggableProvided
   snapshot?: DraggableStateSnapshot
   removeInstruction: (id: string) => void
@@ -19,7 +18,6 @@ type InstructionItemProps = {
 
 const InstructionItem: FC<InstructionItemProps> = ({
   instruction,
-  reorderActive,
   provided,
   snapshot,
   removeInstruction,
@@ -33,10 +31,8 @@ const InstructionItem: FC<InstructionItemProps> = ({
   })
 
   const handleInstrClick = () => {
-    if (!reorderActive) {
-      setIsEditing(true)
-      textAreaRef?.current && textAreaRef.current.focus()
-    }
+    setIsEditing(true)
+    textAreaRef?.current && textAreaRef.current.focus()
   }
   const editInstruction = (id: string, updatedItem: InstructionsType) => {
     setInstructions(prev =>
@@ -60,44 +56,51 @@ const InstructionItem: FC<InstructionItemProps> = ({
     setIsEditing(false)
   }
 
+  const isContent = 'content' in instruction
+
   return (
     <div
       ref={provided?.innerRef}
-      className={`instructions-container item ${
+      className={`instructions-container item instruction-row ${
         snapshot?.isDragging ? 'dragging' : ''
       }`}
       {...provided?.draggableProps}
     >
-      <Handler provided={provided} reorderActive={reorderActive} />
-      {instruction && (
-        <RemoveItem
-          removeItem={removeInstruction}
-          id={instruction.id}
-          reorderActive={reorderActive ?? false}
-        />
-      )}
-      {isEditing ? null : 'content' in instruction ? (
+      {/* Always-visible drag handle (the only drag target, so clicking the step
+          text still opens inline edit). Reorder any time — no mode. */}
+      <div
+        className='drag-handle'
+        aria-label='Drag to reorder'
+        {...provided?.dragHandleProps}
+      >
+        <MdDragIndicator className='icon' />
+      </div>
+
+      {isEditing ? null : isContent ? (
         <button className='item-btn' onClick={handleInstrClick}>
-          <div className={`index ${reorderActive ? 'margin-active' : ''}`}>
-            {instruction.index}
-          </div>
+          <div className='index'>{instruction.index}</div>
           <div className='content'>{instruction.content}</div>
         </button>
       ) : (
-        <button
-          className={`label-text-container ${
-            reorderActive ? 'margin-active' : ''
-          }`}
-          onClick={handleInstrClick}
-        >
+        <button className='label-text-container' onClick={handleInstrClick}>
           <h4 className='text'>{instruction.label}</h4>
         </button>
       )}
+
+      <button
+        className='instr-remove'
+        aria-label='Remove step'
+        onClick={e => {
+          e.stopPropagation()
+          removeInstruction(instruction.id)
+        }}
+      >
+        <AiOutlineClose className='icon' />
+      </button>
+
       {!snapshot?.isDragging && (
         <div
-          className={`text-area-container ${
-            isEditing && !reorderActive ? 'edit-input' : 'hidden'
-          }`}
+          className={`text-area-container ${isEditing ? 'edit-input' : 'hidden'}`}
         >
           <RecipeFormTextArea
             val={editedVal}
