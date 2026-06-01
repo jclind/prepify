@@ -325,6 +325,17 @@ class RecipeAPIClass {
     )
     return result.data
   }
+  async getCreatedRecipes(
+    page: number,
+    recipesPerPage: number,
+    order: string
+  ): Promise<{ recipes: RecipeType[]; totalCount: number } | null> {
+    if (!AuthAPI.getUID()) return null
+    const result = await http.get(
+      `api/getCreatedRecipes?page=${page}&recipesPerPage=${recipesPerPage}&order=${order}`
+    )
+    return result.data
+  }
 }
 
 const RecipeAPI = new RecipeAPIClass()
