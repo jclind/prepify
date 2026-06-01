@@ -164,6 +164,64 @@ describe('POST /addRecipe', () => {
     // Server should stamp userId from the verified token, regardless of body
     expect(stored.userId).toBe(TEST_UID)
   })
+
+  describe('input bounds (defense-in-depth)', () => {
+    const validBody = () => ({
+      title: 'Test Recipe',
+      description: 'A test recipe',
+      ingredients: [{ id: 'i1', name: 'salt' }],
+      instructions: [{ content: 'Add salt', index: 1, id: 's1' }],
+      mealTypes: ['dinner'],
+    })
+
+    const expectRejected = async (overrides, pattern) => {
+      const res = await request(app)
+        .post('/api/addRecipe')
+        .set(AUTH_HEADER)
+        .send({ ...validBody(), ...overrides })
+      expect(res.status).toBe(400)
+      expect(res.body.error).toMatch(pattern)
+    }
+
+    it('rejects a title over 50 characters', async () => {
+      await expectRejected({ title: 'A'.repeat(51) }, /Title cannot exceed/)
+    })
+
+    it('rejects a description over 2000 characters', async () => {
+      await expectRejected({ description: 'A'.repeat(2001) }, /Description cannot exceed/)
+    })
+
+    it('rejects more than 50 ingredients', async () => {
+      const ingredients = Array.from({ length: 51 }, (_, i) => ({ id: `i${i}`, name: 'x' }))
+      await expectRejected({ ingredients }, /more than 50 ingredients/)
+    })
+
+    it('rejects more than 50 instructions', async () => {
+      const instructions = Array.from({ length: 51 }, (_, i) => ({
+        content: 'step',
+        index: i + 1,
+        id: `s${i}`,
+      }))
+      await expectRejected({ instructions }, /more than 50 instructions/)
+    })
+
+    it('rejects an instruction over 1000 characters', async () => {
+      const instructions = [{ content: 'A'.repeat(1001), index: 1, id: 's1' }]
+      await expectRejected({ instructions }, /instruction cannot exceed/i)
+    })
+
+    it('accepts a payload exactly at the limits (201)', async () => {
+      const res = await request(app)
+        .post('/api/addRecipe')
+        .set(AUTH_HEADER)
+        .send({
+          ...validBody(),
+          title: 'A'.repeat(50),
+          description: 'A'.repeat(2000),
+        })
+      expect(res.status).toBe(201)
+    })
+  })
 })
 
 // ─── POST /recipes/:id/save ───────────────────────────────────────────────────

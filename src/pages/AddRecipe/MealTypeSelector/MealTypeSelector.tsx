@@ -73,7 +73,7 @@ const MealTypeSelector: FC<MealTypeSelectorProps> = ({
         onChange={handleChange}
         options={mealTypeOptions}
         styles={customStyles}
-        placeholder='Select a cuisine...'
+        placeholder='Select meal type(s)...'
         closeMenuOnSelect={false}
       />
     </div>

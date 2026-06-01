@@ -168,13 +168,14 @@ independently.
   The API must be called with the assembled recipe data. Mocking `addRecipe`
   lets the test confirm the call without network I/O.
 
-- **On a successful submission, all form fields reset to their empty defaults**
-  `clearForm()` must run after a successful API call. Stale form state would let
-  users accidentally submit duplicates.
+- **On a successful submission, navigates to the new recipe and confirms with a toast**
+  `navigate('/recipes/<newId>')` must run after a successful API call, and a
+  `toast.success('Recipe published!')` must fire (it persists across the route change).
 
-- **On API failure (`addRecipe` returns `null`), shows "Failed to create recipe. Please try again."**
-  The error state `addRecipeError` must be set and the message must appear in the
-  DOM. This is the only user-visible feedback for a server-side failure.
+- **On API failure (`addRecipe` returns `null`), fires `toast.error('Failed to create recipe. Please try again.')`**
+  Flow-level outcomes route through `react-hot-toast`, not inline state. This is the
+  only user-visible feedback for a server-side failure. (Session-expiry returns the
+  `AUTH_ERROR` sentinel → a distinct `toast.error` about signing in again.)
 
 - **A loading spinner replaces the "Create Recipe" button text during submission**
   `addRecipeLoading=true` swaps the label for `<TailSpin>`. Users need to know the

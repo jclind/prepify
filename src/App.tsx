@@ -111,7 +111,7 @@ const App: FC = () => {
               <Route
                 path='/add-recipe'
                 element={
-                  <Layout darkNavLinks={true} navBackgroundColor='gray'>
+                  <Layout darkNavLinks={true}>
                     <AddRecipe />
                   </Layout>
                 }

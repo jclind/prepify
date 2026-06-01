@@ -3,6 +3,7 @@ const { ObjectId } = require('mongodb')
 const { getDB } = require('../db')
 const { verifyToken } = require('../middleware/auth')
 const { recipeIdQuery } = require('../util/recipeIdQuery')
+const { validateRecipeBounds } = require('../util/recipeLimits')
 
 const router = Router()
 
@@ -143,6 +144,10 @@ router.post('/addRecipe', verifyToken, async (req, res) => {
     })
     if (missing.length > 0) {
       return res.status(400).json({ error: `Missing required fields: ${missing.join(', ')}` })
+    }
+    const boundsError = validateRecipeBounds(body)
+    if (boundsError) {
+      return res.status(400).json({ error: boundsError })
     }
     // Server stamps _id, userId, and counters — client-supplied values are discarded
     const newId = new ObjectId()
