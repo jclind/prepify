@@ -1,0 +1,138 @@
+@use '../../../helpers.scss' as s;
+
+.user-recipe-thumbnail {
+  display: block;
+  border: none;
+  box-shadow: s.$card-box-shadow;
+  border-radius: s.$border-radius;
+  padding-bottom: 0.5rem;
+  text-decoration: none;
+  color: s.$primary-text;
+  width: 300px;
+  max-width: 300px;
+  text-align: center;
+  cursor: pointer;
+  background: s.$white;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+
+  &:focus {
+    @include s.outline();
+  }
+  &:hover {
+    transform: translateY(-3px);
+  }
+
+  .img-container {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+
+    .img {
+      border-radius: s.$border-radius;
+      border-bottom-left-radius: 0;
+      border-bottom-right-radius: 0;
+      object-fit: cover;
+      width: 100%;
+      height: 200px;
+    }
+
+    .date-pill {
+      position: absolute;
+      top: 0.625rem;
+      left: 0.625rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.3rem 0.6rem;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(2px);
+      color: s.$white;
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      white-space: nowrap;
+
+      .icon {
+        height: 0.85rem;
+        width: 0.85rem;
+      }
+    }
+  }
+
+  .title {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 auto;
+    margin-top: 1rem;
+    margin-bottom: 0.25rem;
+    height: 3ch;
+    text-transform: capitalize;
+    max-width: 90%;
+    font-weight: 500;
+    font-size: 1.12rem;
+  }
+
+  .price {
+    display: flex;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: s.$primary;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    padding-top: 0.5rem;
+    padding-bottom: 0.75rem;
+  }
+
+  .info {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 1rem;
+
+    .single-info {
+      display: flex;
+      align-items: center;
+      gap: 0.313rem;
+      font-weight: 600;
+      font-size: 1rem;
+      height: 1.375rem;
+
+      .skeleton {
+        height: 1.375rem;
+      }
+      .icon {
+        height: 1.375rem;
+        width: 1.375rem;
+      }
+    }
+  }
+
+  @media screen and (max-width: 725px) {
+    width: 400px;
+    max-width: 400px;
+
+    .img-container .img {
+      height: 250px;
+    }
+    .title {
+      font-weight: 600;
+    }
+  }
+  @media screen and (max-width: 550px) {
+    width: 325px;
+    max-width: 325px;
+
+    .img-container .img {
+      height: 215px;
+    }
+  }
+  @media screen and (max-width: 375px) {
+    max-width: 250px;
+
+    .img-container .img {
+      height: 175px;
+    }
+  }
+}
