@@ -52,6 +52,90 @@ const fillRequiredFields = (opts: { skipImage?: boolean } = {}) => {
   setMealType()
 }
 
+// ---- Filled-out smoke scenarios ----
+// Each scenario fills the entire form with a distinct, realistic recipe and submits.
+// They share the happy-path backend stubs (the parse intercept always returns the same
+// fixture regardless of input, so the assertions key off form state, not parsed output).
+
+type RecipeScenario = {
+  title: string
+  description: string
+  servings: string
+  prepTime: { hours: string; minutes: string }
+  cookTime?: { hours: string; minutes: string }
+  cuisine?: string
+  ingredients: string[]
+  instructions: string[]
+  mealTypes: string[]
+}
+
+const setCookTime = (hours: string, minutes: string) => {
+  cy.get('.cook-time .recipe-form-input input').first().clear().type(hours)
+  cy.get('.cook-time .recipe-form-input input').last().clear().type(minutes)
+}
+
+const setCuisine = (cuisine: string) => {
+  // CuisineSelector is a single-select react-select; type to filter then Enter to pick.
+  cy.get('.cuisine').within(() => {
+    cy.get('input').first().type(cuisine, { force: true })
+    cy.get('input').first().type('{enter}', { force: true })
+  })
+}
+
+const setMealTypes = (mealTypes: string[]) => {
+  // MealTypeSelector has closeMenuOnSelect={false}, so add each then Escape once at the
+  // end — otherwise the open dropdown overlays and blocks the submit button.
+  cy.get('.course').within(() => {
+    mealTypes.forEach(mealType => {
+      cy.get('input').first().type(mealType, { force: true })
+      cy.get('input').first().type('{enter}', { force: true })
+    })
+    cy.get('input').first().type('{esc}', { force: true })
+  })
+}
+
+const fillScenario = (s: RecipeScenario) => {
+  cy.get('input[placeholder="Add a title to your recipe."]').type(s.title)
+  selectImage()
+  cy.get('textarea[placeholder="Add a description to your recipe"]').type(s.description)
+  cy.get('input[placeholder="How many servings does your recipe make?"]').type(s.servings)
+
+  cy.get('.prep-time .recipe-form-input input').first().clear().type(s.prepTime.hours)
+  cy.get('.prep-time .recipe-form-input input').last().clear().type(s.prepTime.minutes)
+  if (s.cookTime) setCookTime(s.cookTime.hours, s.cookTime.minutes)
+
+  s.ingredients.forEach(ingredient => {
+    cy.get('input[placeholder="Add ingredients to your recipe."]').type(`${ingredient}{enter}`)
+    cy.wait('@parseIngredient')
+  })
+  s.instructions.forEach(instruction => {
+    cy.get('input[placeholder="Add instruction for your recipe."]').type(`${instruction}{enter}`)
+  })
+
+  if (s.cuisine) setCuisine(s.cuisine)
+  setMealTypes(s.mealTypes)
+}
+
+// A maximal recipe: multiple ingredients/instructions, a cuisine, a cook time, and
+// multiple meal types — i.e. all the ground the minimal happy-path test above doesn't
+// cover. One scenario is enough; extra near-identical full submits add runtime without
+// new coverage.
+const fullRecipeScenario: RecipeScenario = {
+  title: 'Weeknight Veggie Stir-Fry',
+  description: 'A quick, colourful stir-fry packed with vegetables over rice.',
+  servings: '4',
+  prepTime: { hours: '0', minutes: '20' },
+  cookTime: { hours: '0', minutes: '15' },
+  cuisine: 'Asian',
+  ingredients: ['2 cups broccoli', '1 red bell pepper', '3 tbsp soy sauce', '2 cups rice'],
+  instructions: [
+    'Cook the rice according to package directions.',
+    'Heat oil and stir-fry the vegetables until tender-crisp.',
+    'Add soy sauce, toss, and serve over the rice.',
+  ],
+  mealTypes: ['Dinner', 'Quick'],
+}
+
 const loginAndVisitAddRecipe = () => {
   // The Cypress sign-in bridge (window.__cy_signIn__) is only attached after the
   // app loads with VITE_CYPRESS=true. Visit once to mount the bridge, sign in,
@@ -176,8 +260,9 @@ describe('Add Recipe', () => {
       expect(labels).to.deep.equal(['1', '2', '3'])
     })
 
-    // Click the remove button on the second item.
-    cy.get('.instructions .item').eq(1).find('.remove-ingredient-btn').click({ force: true })
+    // Click the remove button on the second item. (InstructionItem renders the remove
+    // control as button.instr-remove with aria-label "Remove step".)
+    cy.get('.instructions .item').eq(1).find('[aria-label="Remove step"]').click({ force: true })
 
     // Survivors must show 1 and 2, not 1 and 3.
     cy.get('.instructions .item .index').then(($indices) => {
@@ -187,6 +272,26 @@ describe('Add Recipe', () => {
     cy.contains('.instructions .item', 'Step one').should('be.visible')
     cy.contains('.instructions .item', 'Step three').should('be.visible')
     cy.contains('.instructions .item', 'Step two').should('not.exist')
+  })
+
+  // Filled-out smoke test: fills the whole form with a realistic, maximal recipe and
+  // submits, asserting the outgoing payload reflects everything entered (counts, numeric
+  // servings, multi-select meal types) — coverage the minimal happy path above lacks.
+  it('creates a fully filled-out recipe and submits the entered values', () => {
+    loginAndVisitAddRecipe()
+    fillScenario(fullRecipeScenario)
+
+    cy.get('.submit-btn').should('have.class', 'valid').click()
+    cy.wait('@addRecipe').its('request.body').should(body => {
+      // The submitted payload reflects what was filled in, not stale/empty state.
+      expect(body.title).to.eq(fullRecipeScenario.title)
+      expect(body.description).to.eq(fullRecipeScenario.description)
+      expect(body.servings).to.eq(Number(fullRecipeScenario.servings))
+      expect(body.ingredients).to.have.length(fullRecipeScenario.ingredients.length)
+      expect(body.instructions).to.have.length(fullRecipeScenario.instructions.length)
+      expect(body.mealTypes).to.have.members(fullRecipeScenario.mealTypes)
+    })
+    cy.url({ timeout: 10000 }).should('include', '/recipes/cy-recipe-1')
   })
 
   // Reordering via drag-and-drop in @hello-pangea/dnd requires simulating a specific
