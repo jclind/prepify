@@ -10,9 +10,9 @@
   max-width: 100% !important;
   // Match the body / home / account background instead of overriding to the
   // darker gray; the inner form card becomes white so it still reads as a
-  // distinct surface.
+  // distinct surface. Keep the global .page's top padding so the h1 sits at
+  // the same height as headers on other pages (e.g. Recipes).
   background: s.$primary-background;
-  padding-top: 0;
   // Clear the fixed summary bar at the bottom of the page.
   padding-bottom: 130px;
 
