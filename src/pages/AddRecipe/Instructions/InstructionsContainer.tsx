@@ -4,6 +4,7 @@ import RecipeFormInput from 'src/pages/AddRecipe/RecipeFormInput'
 import { v4 as uuidv4 } from 'uuid'
 import AddLabel from 'src/pages/AddRecipe/AddLabel/AddLabel'
 import InstructionList from 'src/pages/AddRecipe/Instructions/InstructionList/InstructionList'
+import { INSTRUCTION_MAX_LENGTH } from 'src/util/recipeLimits'
 
 type InstructionsContainerProps = {
   instructions: InstructionsType[]
@@ -15,7 +16,6 @@ const InstructionsContainer: FC<InstructionsContainerProps> = ({
   setInstructions,
 }) => {
   const [inputVal, setInputVal] = useState('')
-  const [reorderActive, setReorderActive] = useState(false)
 
   const addInstructionToList = (data: InstructionsType) => {
     setInstructions((prev: InstructionsType[]) => {
@@ -65,6 +65,8 @@ const InstructionsContainer: FC<InstructionsContainerProps> = ({
     addInstruction({ content: inputVal })
   }
 
+  const stepCount = instructions.filter(instr => 'content' in instr).length
+
   return (
     <div className='ingredients-container'>
       <RecipeFormInput
@@ -72,20 +74,21 @@ const InstructionsContainer: FC<InstructionsContainerProps> = ({
         val={inputVal}
         setVal={setInputVal}
         onEnter={handleEnter}
+        characterLimit={INSTRUCTION_MAX_LENGTH}
       />
       <InstructionList
         instructions={instructions}
         setInstructions={setInstructions}
         removeInstruction={removeInstruction}
-        reorderActive={reorderActive}
       />
-      <button
-        className='reorder-btn'
-        onClick={() => setReorderActive(prev => !prev)}
-      >
-        {reorderActive ? 'Done' : 'Reorder'}
-      </button>
-      <AddLabel addToList={addInstructionToList} />
+      <div className='ingredients-footer'>
+        <AddLabel addToList={addInstructionToList} />
+        {stepCount > 0 && (
+          <span className='footer-meta'>
+            {stepCount} {stepCount === 1 ? 'step' : 'steps'}
+          </span>
+        )}
+      </div>
     </div>
   )
 }

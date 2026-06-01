@@ -6,214 +6,112 @@
   justify-content: center;
   align-items: center;
   gap: 2rem;
-  justify-content: center;
   width: 100% !important;
   max-width: 100% !important;
-  background: s.$secondary-background;
-  padding-bottom: 75px;
-  padding-top: 0;
+  // Match the body / home / account background instead of overriding to the
+  // darker gray; the inner form card becomes white so it still reads as a
+  // distinct surface. Keep the global .page's top padding so the h1 sits at
+  // the same height as headers on other pages (e.g. Recipes).
+  background: s.$primary-background;
+  // Clear the fixed summary bar at the bottom of the page.
+  padding-bottom: 130px;
+
+  h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    text-align: center;
+  }
+
   .container {
     display: flex;
     justify-content: center;
     max-width: 800px;
     width: 95%;
-    background: s.$primary-background;
+    background: s.$white;
     border-radius: s.$border-radius;
-    padding: 50px 0;
+    // f02: generous, airy vertical rhythm.
+    padding: 64px 0 48px;
+
     .container-inner {
-      max-width: 500px;
+      max-width: 540px;
       width: 100%;
-      padding: 0 1rem;
+      padding: 0 1.5rem;
+
+      // Each section gets generous breathing room from the next.
       .input-field {
         position: relative;
-        padding-top: 15px;
-        padding-bottom: 15px;
-      }
-      .recipe-form-input-label {
-        font-size: 1.15rem;
-        font-weight: 700;
-        padding-bottom: 0.5rem;
-      }
-      .submit-btn {
-        outline: none;
-        background: none;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        width: 160px;
-        height: 42px;
-        border-radius: s.$border-radius;
-        font-size: 1rem;
-        font-weight: 600;
-        margin-top: 1rem;
-        cursor: pointer;
-        transition: all 0.1s linear;
-      }
-      .submit-btn.invalid {
-        color: s.$secondary-text;
-        border: 1px solid s.$tertiary-background;
-        &:hover {
-          color: s.$primary-text;
-          border-color: s.$tertiary-text;
+
+        &:not(:last-child) {
+          margin-bottom: 2.75rem;
         }
       }
-      .submit-btn.valid {
-        background: s.$primary;
-        color: s.$primary-background;
-        border: 1px solid s.$primary;
-        &:hover {
-          filter: brightness(110%);
+
+      // Section label styled like the recipe page: orange uppercase label
+      // followed by a divider rule (+ optional "Required" tag).
+      .section-header {
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        margin-bottom: 1rem;
+
+        .text {
+          color: s.$primary;
+          font-weight: 700;
+          font-size: 1rem;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          white-space: nowrap;
+        }
+        .divider {
+          flex: 1;
+          height: 1px;
+          background: s.$gray-400;
+        }
+        .req {
+          font-size: 0.7rem;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+          color: s.$tertiary-text;
+        }
+      }
+
+      // f02: slightly larger, airier inputs. Scoped to this page so the shared
+      // RecipeFormInput / RecipeFormTextArea stay unchanged elsewhere.
+      .recipe-form-input .input-container {
+        height: 48px;
+      }
+      .recipe-form-input,
+      .recipe-form-textarea {
+        .input-container {
+          input,
+          textarea {
+            font-size: 1rem;
+            border-radius: s.$border-radius;
+          }
+          textarea {
+            min-height: 8ch;
+          }
         }
       }
     }
   }
+
   .form-error {
     margin-bottom: 0.5rem;
   }
+
+  @media screen and (max-width: 600px) {
+    .container {
+      padding: 40px 0 32px;
+
+      .container-inner {
+        padding: 0 1rem;
+
+        .input-field:not(:last-child) {
+          margin-bottom: 2rem;
+        }
+      }
+    }
+  }
 }
-
-// .add-recipe-page {
-//   width: 100% !important;
-//   // background: red;
-//   max-width: 100% !important;
-//   .title {
-//     text-align: center;
-//   }
-//   .form-container {
-//     width: 100%;
-//     background: s.$primary;
-//     padding: 3rem 0;
-//     margin-top: 2rem;
-//   }
-//   form {
-//     display: flex;
-//     flex-direction: column;
-//     gap: 2rem;
-//     margin: 0 auto;
-//     padding: 3rem;
-//     max-width: 750px;
-//     width: 95%;
-//     box-sizing: border-box;
-//     background: s.$primary-background;
-//     border-radius: s.$border-radius;
-
-//     .recipe-data {
-//       display: flex;
-//       justify-content: space-around;
-//       gap: 2rem;
-//       @media screen and (max-width: 725px) {
-//         gap: 0.5rem;
-//       }
-//     }
-//     .recipe-data.times {
-//       flex-direction: column;
-//       gap: 2rem;
-//     }
-//     .ingredients-container,
-//     .instructions-container {
-//       margin-top: 2rem;
-//       padding-top: 2rem;
-//       border-top: 1px solid s.$gray-400;
-//       .label-title {
-//         font-weight: 600;
-//         font-size: 0.875rem;
-//         text-transform: capitalize;
-//         color: s.$primary;
-//       }
-//       .ingredients-list-container {
-//         margin: 2rem 0 2rem 0;
-//       }
-//       .add-ingredient-list-btn {
-//         display: flex;
-//         align-items: center;
-//         gap: 0.5rem;
-//         font-size: 1rem;
-//         color: s.$tertiary-text;
-
-//         .icon {
-//           height: 25px;
-//           width: 25px;
-//         }
-//       }
-//     }
-
-//     .recipe-image {
-//       margin-top: 2rem;
-//     }
-//     .recipe-image-dropzone {
-//       display: flex;
-//       justify-content: center;
-//       align-items: center;
-//       width: 100%;
-//       height: 100px;
-//       border: 2px dashed s.$secondary-background;
-//       box-sizing: border-box;
-//       cursor: pointer;
-//     }
-//     .recipe-image-container {
-//       width: 100%;
-//       max-width: 450px;
-//       .recipe-image {
-//         object-fit: fit;
-//         width: 100%;
-//       }
-//     }
-//     .add-recipe-btn {
-//       display: flex;
-//       justify-content: center;
-//       align-items: center;
-//       background: s.$primary;
-//       width: 200px;
-//       height: 45px;
-//       padding: 0.75rem 1.25rem;
-//       border-radius: s.$border-radius;
-//       margin: 0 auto;
-//       margin-top: 2rem;
-//       color: s.$white;
-//       font-weight: 600;
-//       font-size: 1.125rem;
-//     }
-
-//     @media screen and (max-width: 724px) {
-//       padding: 3rem 2rem;
-//     }
-//     @media screen and (max-width: 450px) {
-//       padding: 3rem 1rem;
-//     }
-//   }
-//   .test {
-//     textarea {
-//       height: 200px;
-//     }
-//   }
-// }
-// .recipe-created-modal {
-//   .heading {
-//     font-size: toRem(26) !important;
-//     font-weight: 600;
-//     padding-bottom: 0.5rem;
-//   }
-//   .text {
-//     font-size: 1.125rem;
-//     margin-bottom: 1.5rem;
-//   }
-//   .options {
-//     display: flex;
-//     gap: 1.5rem;
-
-//     button {
-//       font-size: 1.125rem;
-//       font-weight: 600;
-//       border-radius: s.$border-radius;
-//       padding: 0.5rem 1rem;
-//     }
-//   }
-//   .home-btn {
-//     color: s.$secondary-text;
-//     border: 1px solid s.$secondary-text;
-//   }
-//   .view-recipe-btn {
-//     background: s.$primary;
-//     color: s.$white;
-//   }
-// }

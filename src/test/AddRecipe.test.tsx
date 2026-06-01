@@ -6,7 +6,11 @@ import { HelmetProvider } from 'react-helmet-async'
 import AddRecipe from 'src/pages/AddRecipe/AddRecipe'
 import RecipeAPI from 'src/api/recipes'
 
-const { navigateFn } = vi.hoisted(() => ({ navigateFn: vi.fn() }))
+const { navigateFn, toastSuccess, toastError } = vi.hoisted(() => ({
+  navigateFn: vi.fn(),
+  toastSuccess: vi.fn(),
+  toastError: vi.fn(),
+}))
 
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual<typeof import('react-router-dom')>(
@@ -14,6 +18,11 @@ vi.mock('react-router-dom', async () => {
   )
   return { ...actual, useNavigate: () => navigateFn }
 })
+
+vi.mock('react-hot-toast', () => ({
+  toast: { success: toastSuccess, error: toastError },
+  default: { success: toastSuccess, error: toastError },
+}))
 
 vi.mock('src/api/recipes', () => ({
   default: { addRecipe: vi.fn() },
@@ -149,6 +158,8 @@ describe('AddRecipe form', () => {
   beforeEach(() => {
     mockAddRecipe.mockReset()
     navigateFn.mockReset()
+    toastSuccess.mockReset()
+    toastError.mockReset()
   })
 
   it('submit button has the "invalid" CSS class on initial empty render', () => {
@@ -175,6 +186,54 @@ describe('AddRecipe form', () => {
     renderAddRecipe()
     await user.click(screen.getByText('Create Recipe'))
     expect(screen.getByText('Title is required')).toBeInTheDocument()
+  })
+
+  it('does not surface field errors before the first submit attempt', async () => {
+    const user = userEvent.setup()
+    renderAddRecipe()
+    // Typing into a still-incomplete form must not pre-emptively show errors.
+    await user.type(
+      screen.getByPlaceholderText('Add a title to your recipe.'),
+      'My Great Recipe'
+    )
+    expect(screen.queryByText('Title is required')).toBeNull()
+    expect(screen.queryByText('Image is required')).toBeNull()
+    expect(screen.queryByText('Description is required')).toBeNull()
+  })
+
+  it('links field errors to their inputs for screen readers (alert role + aria-describedby)', async () => {
+    const user = userEvent.setup()
+    renderAddRecipe()
+    await user.click(screen.getByText('Create Recipe'))
+
+    // The error renders as an announced alert with a stable id.
+    const descError = screen.getByText('Description is required')
+    expect(descError).toHaveAttribute('id', 'error-description')
+    expect(descError).toHaveAttribute('role', 'alert')
+
+    // ...and the description field points at that id and is marked invalid.
+    const descInput = screen.getByPlaceholderText('Add a description to your recipe')
+    expect(descInput).toHaveAttribute('aria-invalid', 'true')
+    expect(descInput).toHaveAttribute('aria-describedby', 'error-description')
+  })
+
+  it('clears a field error reactively once the field is fixed, without re-submitting', async () => {
+    const user = userEvent.setup()
+    renderAddRecipe()
+    // First submit on an empty form surfaces the errors.
+    await user.click(screen.getByText('Create Recipe'))
+    expect(screen.getByText('Title is required')).toBeInTheDocument()
+    expect(screen.getByText('Description is required')).toBeInTheDocument()
+
+    // Fixing only the title should drop its error while the others remain.
+    await user.type(
+      screen.getByPlaceholderText('Add a title to your recipe.'),
+      'My Great Recipe'
+    )
+    await waitFor(() =>
+      expect(screen.queryByText('Title is required')).toBeNull()
+    )
+    expect(screen.getByText('Description is required')).toBeInTheDocument()
   })
 
   it('shows title error when title exceeds 50 characters', async () => {
@@ -234,6 +293,7 @@ describe('AddRecipe form', () => {
     await waitFor(() =>
       expect(navigateFn).toHaveBeenCalledWith('/recipes/new-1')
     )
+    expect(toastSuccess).toHaveBeenCalledWith('Recipe published!')
   })
 
   it('shows error message when addRecipe returns null', async () => {
@@ -245,7 +305,9 @@ describe('AddRecipe form', () => {
       expect(screen.getByText('Create Recipe').closest('button')).toHaveClass('valid')
     )
     await user.click(screen.getByText('Create Recipe'))
-    await screen.findByText('Failed to create recipe. Please try again.')
+    await waitFor(() =>
+      expect(toastError).toHaveBeenCalledWith('Failed to create recipe. Please try again.')
+    )
   })
 
   it('shows a loading indicator in the button while submission is in progress', async () => {
@@ -356,7 +418,9 @@ describe('AddRecipe form', () => {
       )
       await user.click(screen.getByText('Create Recipe'))
       // Match by intent ("session" or "sign in") rather than the exact string
-      await screen.findByText(/session|sign in/i)
+      await waitFor(() =>
+        expect(toastError).toHaveBeenCalledWith(expect.stringMatching(/session|sign in/i))
+      )
       expect(navigateFn).not.toHaveBeenCalled()
     })
 
@@ -369,7 +433,9 @@ describe('AddRecipe form', () => {
         expect(screen.getByText('Create Recipe').closest('button')).toHaveClass('valid')
       )
       await user.click(screen.getByText('Create Recipe'))
-      await screen.findByText('Failed to create recipe. Please try again.')
+      await waitFor(() =>
+        expect(toastError).toHaveBeenCalledWith('Failed to create recipe. Please try again.')
+      )
       expect(navigateFn).not.toHaveBeenCalled()
     })
 
@@ -389,7 +455,9 @@ describe('AddRecipe form', () => {
         expect(screen.getByText('Create Recipe').closest('button')).toHaveClass('valid')
       )
       await user.click(screen.getByText('Create Recipe'))
-      await screen.findByText('Failed to create recipe. Please try again.')
+      await waitFor(() =>
+        expect(toastError).toHaveBeenCalledWith('Failed to create recipe. Please try again.')
+      )
       expect(navigateFn).not.toHaveBeenCalled()
     })
   })

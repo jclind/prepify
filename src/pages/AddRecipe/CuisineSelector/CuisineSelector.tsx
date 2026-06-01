@@ -8,16 +8,10 @@ type OptionType = {
   label: string
 }
 
-const cuisineOptions: OptionType[] = [
-  {
-    value: '-',
-    label: 'Select a cuisine...',
-  },
-  ...cuisinesList.map(c => ({
-    value: c,
-    label: c,
-  })),
-]
+const cuisineOptions: OptionType[] = cuisinesList.map(c => ({
+  value: c,
+  label: c,
+}))
 const customStyles: StylesConfig<OptionType> = {
   control: (provided: any, state: any) => ({
     ...provided,
@@ -57,8 +51,7 @@ const getCuisineByString = (cuisineString: string): OptionType | null => {
 
 const CuisineSelector: FC<CuisineSelectorProps> = ({ cuisine, setCuisine }) => {
   const handleChange = (option: SingleValue<OptionType>) => {
-    const value = !option?.value || option.value === '-' ? '' : option.value
-    setCuisine(value)
+    setCuisine(option?.value ?? '')
   }
 
   return (

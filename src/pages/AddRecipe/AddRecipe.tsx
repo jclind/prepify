@@ -6,7 +6,6 @@ import {
   InstructionsType,
   RecipeFormType,
 } from 'types'
-import { TailSpin } from 'react-loader-spinner'
 import LoadingBar from 'react-top-loading-bar'
 import RecipeFormInput from 'src/pages/AddRecipe/RecipeFormInput'
 import ImagePicker from 'src/pages/AddRecipe/ImagePicker/ImagePicker'
@@ -19,10 +18,20 @@ import InstructionsContainer from 'src/pages/AddRecipe/Instructions/Instructions
 import CuisineSelector from 'src/pages/AddRecipe/CuisineSelector/CuisineSelector'
 import MealTypeSelector from 'src/pages/AddRecipe/MealTypeSelector/MealTypeSelector'
 import { hrMinToMin } from 'src/util/hrMinToMin'
+import {
+  TITLE_MAX_LENGTH,
+  DESCRIPTION_MAX_LENGTH,
+  INSTRUCTION_MAX_LENGTH,
+  MAX_INGREDIENTS,
+  MAX_INSTRUCTIONS,
+} from 'src/util/recipeLimits'
 import RecipeAPI, { ADD_RECIPE_AUTH_ERROR } from 'src/api/recipes'
 import styles from 'src/_exports.module.scss'
 import AddRecipeFormError from 'src/pages/AddRecipe/AddRecipeFormError'
+import SectionHeader from 'src/pages/AddRecipe/SectionHeader'
+import AddRecipeSummaryBar from 'src/pages/AddRecipe/AddRecipeSummaryBar'
 import { Helmet } from 'react-helmet-async'
+import { toast } from 'react-hot-toast'
 
 const AddRecipe: FC = () => {
   const [addRecipeLoading, setAddRecipeLoading] = useState(false)
@@ -49,7 +58,7 @@ const AddRecipe: FC = () => {
   const [errors, setErrors] = useState<Partial<AddRecipeErrorType>>({})
 
   const [isFormValid, setIsFormValid] = useState(false)
-  const [addRecipeError, setAddRecipeError] = useState<string | null>(null)
+  const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false)
 
   const navigate = useNavigate()
 
@@ -58,18 +67,28 @@ const AddRecipe: FC = () => {
 
     if (!title) {
       newErrors.title = 'Title is required'
-    } else if (title.length > 50) {
-      newErrors.title = 'Title cannot exceed 50 characters'
+    } else if (title.length > TITLE_MAX_LENGTH) {
+      newErrors.title = `Title cannot exceed ${TITLE_MAX_LENGTH} characters`
     }
 
     if (!recipeImage) newErrors.image = 'Image is required'
-    if (!description) newErrors.description = 'Description is required'
+    if (!description) {
+      newErrors.description = 'Description is required'
+    } else if (description.length > DESCRIPTION_MAX_LENGTH) {
+      newErrors.description = `Description cannot exceed ${DESCRIPTION_MAX_LENGTH} characters`
+    }
     if (!servings) newErrors.servings = 'Servings amount is required'
     if (!prepTime) newErrors.prepTime = 'Prep time is required'
-    if (ingredients.length <= 0)
+    if (ingredients.length <= 0) {
       newErrors.ingredients = 'Recipe must contain ingredients'
-    if (instructions.length <= 0)
+    } else if (ingredients.length > MAX_INGREDIENTS) {
+      newErrors.ingredients = `A recipe cannot have more than ${MAX_INGREDIENTS} ingredients`
+    }
+    if (instructions.length <= 0) {
       newErrors.instructions = 'Instructions are required'
+    } else if (instructions.length > MAX_INSTRUCTIONS) {
+      newErrors.instructions = `A recipe cannot have more than ${MAX_INSTRUCTIONS} instructions`
+    }
     if (mealTypes.length <= 0) newErrors.mealType = 'Meal type required'
 
     assignErrors && setErrors(newErrors)
@@ -91,7 +110,11 @@ const AddRecipe: FC = () => {
     setErrors({})
   }
   useEffect(() => {
-    if (validate()) setIsFormValid(true)
+    // Once the user has attempted a submit, keep the displayed errors in sync as
+    // fields are fixed (assignErrors=true) so a corrected field clears its message
+    // immediately instead of lingering until the next submit click. Before the
+    // first attempt we only compute validity, never surface errors.
+    if (validate(hasAttemptedSubmit)) setIsFormValid(true)
     else setIsFormValid(false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
@@ -103,12 +126,13 @@ const AddRecipe: FC = () => {
     ingredients,
     instructions,
     mealTypes,
+    hasAttemptedSubmit,
   ])
   const handleAddRecipe = async () => {
     if (addRecipeLoading) return
+    setHasAttemptedSubmit(true)
     if (validate(true)) {
       setAddRecipeLoading(true)
-      setAddRecipeError(null)
       const recipeData: RecipeFormType = {
         title,
         prepTime: hrMinToMin(prepTime),
@@ -125,13 +149,12 @@ const AddRecipe: FC = () => {
       }
       const newId = await RecipeAPI.addRecipe(recipeData, setLoadingProgress)
       if (newId === ADD_RECIPE_AUTH_ERROR) {
-        setAddRecipeError(
-          'Your session has expired — please sign in again and retry.'
-        )
+        toast.error('Your session has expired — please sign in again and retry.')
       } else if (newId) {
+        toast.success('Recipe published!')
         navigate(`/recipes/${newId}`)
       } else {
-        setAddRecipeError('Failed to create recipe. Please try again.')
+        toast.error('Failed to create recipe. Please try again.')
       }
       setAddRecipeLoading(false)
       setLoadingProgress(100)
@@ -163,42 +186,59 @@ const AddRecipe: FC = () => {
         <div className='container'>
           <div className='container-inner' ref={addRecipeFormRef}>
             <div className='title input-field'>
-              <h2 className='recipe-form-input-label'>Title </h2>
-              {errors.title && <AddRecipeFormError error={errors.title} />}
+              <SectionHeader label='Title' required />
+              {errors.title && (
+                <AddRecipeFormError error={errors.title} id='error-title' />
+              )}
               <RecipeFormInput
                 placeholder='Add a title to your recipe.'
                 val={title}
                 setVal={setTitle}
-                characterLimit={50}
+                characterLimit={TITLE_MAX_LENGTH}
+                invalid={!!errors.title}
+                describedBy={errors.title ? 'error-title' : undefined}
               />
             </div>
             <div className='image-picker input-field'>
-              <h2 className='recipe-form-input-label'>Select Image</h2>
-              {errors.image && <AddRecipeFormError error={errors.image} />}
+              <SectionHeader label='Select Image' required />
+              {errors.image && (
+                <AddRecipeFormError error={errors.image} id='error-image' />
+              )}
               <ImagePicker image={recipeImage} setImage={setRecipeImage} />
             </div>
             <div className='description input-field'>
-              <h2 className='recipe-form-input-label'>Description</h2>
+              <SectionHeader label='Description' required />
               {errors.description && (
-                <AddRecipeFormError error={errors.description} />
+                <AddRecipeFormError
+                  error={errors.description}
+                  id='error-description'
+                />
               )}
               <RecipeFormTextArea
                 placeholder='Add a description to your recipe'
                 val={description}
                 setVal={setDescription}
+                characterLimit={DESCRIPTION_MAX_LENGTH}
+                invalid={!!errors.description}
+                describedBy={errors.description ? 'error-description' : undefined}
               />
             </div>
             <div className='servings input-field'>
-              <h2 className='recipe-form-input-label'>Servings</h2>
+              <SectionHeader label='Servings' required />
               {errors.servings && (
-                <AddRecipeFormError error={errors.servings} />
+                <AddRecipeFormError error={errors.servings} id='error-servings' />
               )}
-              <ServingsInput servings={servings} setServings={setServings} />
+              <ServingsInput
+                servings={servings}
+                setServings={setServings}
+                invalid={!!errors.servings}
+                describedBy={errors.servings ? 'error-servings' : undefined}
+              />
             </div>
             <div className='prep-time input-field'>
-              <h2 className='recipe-form-input-label'>Prep Time</h2>
+              <SectionHeader label='Prep Time' required />
               {errors.prepTime && (
-                <AddRecipeFormError error={errors.prepTime} />
+                <AddRecipeFormError error={errors.prepTime} id='error-prepTime' />
               )}
               <TimeInput
                 label={'How long will your recipe take to prepare?'}
@@ -207,10 +247,7 @@ const AddRecipe: FC = () => {
               />
             </div>
             <div className='cook-time input-field'>
-              <h2 className='recipe-form-input-label'>Cook Time</h2>
-              {errors.cookTime && (
-                <AddRecipeFormError error={errors.cookTime} />
-              )}
+              <SectionHeader label='Cook Time' />
               <TimeInput
                 label={'How long will your recipe take to cook?'}
                 val={cookTime}
@@ -218,9 +255,12 @@ const AddRecipe: FC = () => {
               />
             </div>
             <div className='ingredients input-field'>
-              <h2 className='recipe-form-input-label'>Ingredients</h2>
+              <SectionHeader label='Ingredients' required />
               {errors.ingredients && (
-                <AddRecipeFormError error={errors.ingredients} />
+                <AddRecipeFormError
+                  error={errors.ingredients}
+                  id='error-ingredients'
+                />
               )}
               <IngredientsContainer
                 ingredients={ingredients}
@@ -228,9 +268,12 @@ const AddRecipe: FC = () => {
               />
             </div>
             <div className='instructions input-field'>
-              <h2 className='recipe-form-input-label'>Instructions</h2>
+              <SectionHeader label='Instructions' required />
               {errors.instructions && (
-                <AddRecipeFormError error={errors.instructions} />
+                <AddRecipeFormError
+                  error={errors.instructions}
+                  id='error-instructions'
+                />
               )}
               <InstructionsContainer
                 instructions={instructions}
@@ -238,40 +281,30 @@ const AddRecipe: FC = () => {
               />
             </div>
             <div className='cuisine input-field'>
-              <h2 className='recipe-form-input-label'>Cuisine</h2>
+              <SectionHeader label='Cuisine' />
               <CuisineSelector cuisine={cuisine} setCuisine={setCuisine} />
             </div>
             <div className='course input-field'>
-              <h2 className='recipe-form-input-label'>Course</h2>
+              <SectionHeader label='Course' required />
               {errors.mealType && (
-                <AddRecipeFormError error={errors.mealType} />
+                <AddRecipeFormError error={errors.mealType} id='error-mealType' />
               )}
               <MealTypeSelector
                 mealTypes={mealTypes}
                 setMealTypes={setMealTypes}
               />
             </div>
-            {addRecipeError && (
-              <p className='submit-error'>{addRecipeError}</p>
-            )}
-            <button
-              className={`submit-btn ${isFormValid ? 'valid' : 'invalid'}`}
-              disabled={addRecipeLoading}
-              onClick={handleAddRecipe}
-            >
-              {addRecipeLoading ? (
-                <TailSpin
-                  height='30'
-                  width='30'
-                  color='white'
-                  ariaLabel='loading'
-                />
-              ) : (
-                'Create Recipe'
-              )}
-            </button>
           </div>
         </div>
+        <AddRecipeSummaryBar
+          servings={servings}
+          prepTime={prepTime}
+          cookTime={cookTime}
+          ingredients={ingredients}
+          isValid={isFormValid}
+          loading={addRecipeLoading}
+          onSubmit={handleAddRecipe}
+        />
       </div>
     </>
   )
