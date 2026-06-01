@@ -5,6 +5,36 @@ const { recipeIdInQuery } = require('../util/recipeIdQuery')
 
 const router = Router()
 
+// GET /getCreatedRecipes — recipes authored by the current user, with pagination
+router.get('/getCreatedRecipes', verifyToken, async (req, res) => {
+  try {
+    const db = getDB()
+    const { page = 0, recipesPerPage = 6, order } = req.query
+    const uid = req.uid
+
+    const sort = order === 'old' ? { createdAt: 1 } : { createdAt: -1 }
+
+    const pageNum = parseInt(page)
+    const perPage = parseInt(recipesPerPage)
+
+    const collection = db.collection('recipes')
+    const filter = { userId: uid }
+    const [recipes, totalCount] = await Promise.all([
+      collection
+        .find(filter)
+        .sort(sort)
+        .skip(pageNum * perPage)
+        .limit(perPage)
+        .toArray(),
+      collection.countDocuments(filter),
+    ])
+
+    res.json({ recipes, totalCount })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 // GET /getSavedRecipes — with dateSaved sorting
 router.get('/getSavedRecipes', verifyToken, async (req, res) => {
   try {
