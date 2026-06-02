@@ -363,6 +363,11 @@ const AddRecipe: FC<AddRecipeProps> = ({ initialRecipe }) => {
           loading={addRecipeLoading}
           onSubmit={handleSubmit}
           submitLabel={isEditMode ? 'Save Changes' : 'Create Recipe'}
+          onCancel={
+            isEditMode && initialRecipe
+              ? () => navigate(`/recipes/${initialRecipe._id}`)
+              : undefined
+          }
         />
       </div>
     </>
