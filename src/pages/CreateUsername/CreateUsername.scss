@@ -1,0 +1,23 @@
+@use '../../helpers.scss' as s;
+
+.create-username-page {
+  .loading-state {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 200px;
+  }
+
+  .logout-prompt {
+    margin-top: 1rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-decoration: underline;
+    font-weight: 500;
+    font-size: 0.875rem;
+    color: s.$secondary-text;
+    width: fit-content;
+    align-self: center;
+  }
+}
