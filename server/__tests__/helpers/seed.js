@@ -9,7 +9,9 @@ async function seedRecipes(recipes) {
 }
 
 async function seedUser(uid, username) {
-  await getDB().collection('usernames').insertOne({ _id: uid, username })
+  await getDB()
+    .collection('usernames')
+    .insertOne({ _id: uid, username, username_lower: username.toLowerCase() })
 }
 
 async function seedUserRecipeData(uid, data) {

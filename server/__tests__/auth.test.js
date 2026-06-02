@@ -13,28 +13,32 @@ afterEach(async () => {
 // ─── GET /getUsername ─────────────────────────────────────────────────────────
 
 describe('GET /getUsername', () => {
-  beforeEach(async () => {
-    await seedUser(TEST_UID, 'testuser')
-  })
-
-  it('returns 400 if userId is missing', async () => {
+  it('rejects request with no auth token (401)', async () => {
     const res = await request(app).get('/api/getUsername')
-    expect(res.status).toBe(400)
+    expect(res.status).toBe(401)
   })
 
-  it('returns 400 if userId is the string "null"', async () => {
-    const res = await request(app).get('/api/getUsername?userId=null')
-    expect(res.status).toBe(400)
+  it("returns the authenticated user's own username", async () => {
+    await seedUser(TEST_UID, 'testuser')
+    const res = await request(app).get('/api/getUsername').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(res.body).toBe('testuser')
   })
 
-  it('returns 200 with null body if userId is not found', async () => {
-    const res = await request(app).get('/api/getUsername?userId=unknown')
+  it('returns null when the authenticated user has no username yet', async () => {
+    const res = await request(app).get('/api/getUsername').set(AUTH_HEADER)
     expect(res.status).toBe(200)
     expect(res.body).toBeNull()
   })
 
-  it('returns the username for a valid userId', async () => {
-    const res = await request(app).get(`/api/getUsername?userId=${TEST_UID}`)
+  it('ignores a userId query param and only returns the caller\'s own username', async () => {
+    await seedUser(TEST_UID, 'testuser')
+    await seedUser('other-uid', 'otheruser')
+
+    const res = await request(app)
+      .get('/api/getUsername?userId=other-uid')
+      .set(AUTH_HEADER)
+
     expect(res.status).toBe(200)
     expect(res.body).toBe('testuser')
   })
@@ -60,6 +64,12 @@ describe('GET /checkUsernameAvailability', () => {
 
   it('returns false if username is already taken', async () => {
     const res = await request(app).get('/api/checkUsernameAvailability?username=taken')
+    expect(res.status).toBe(200)
+    expect(res.body).toBe(false)
+  })
+
+  it('treats availability case-insensitively', async () => {
+    const res = await request(app).get('/api/checkUsernameAvailability?username=TAKEN')
     expect(res.status).toBe(200)
     expect(res.body).toBe(false)
   })
@@ -94,6 +104,53 @@ describe('POST /setUsername', () => {
 
     const doc = await getDB().collection('usernames').findOne({ _id: TEST_UID })
     expect(doc.username).toBe('newuser')
+    expect(doc.username_lower).toBe('newuser')
+  })
+
+  it('stores a lowercased username_lower while preserving original casing', async () => {
+    const res = await request(app)
+      .post(`/api/setUsername?username=NewUser`)
+      .set(AUTH_HEADER)
+
+    expect(res.status).toBe(200)
+
+    const doc = await getDB().collection('usernames').findOne({ _id: TEST_UID })
+    expect(doc.username).toBe('NewUser')
+    expect(doc.username_lower).toBe('newuser')
+  })
+
+  it('returns 409 for a case-variant of a name taken by another user', async () => {
+    await seedUser('other-uid', 'taken')
+
+    const res = await request(app)
+      .post(`/api/setUsername?username=TAKEN`)
+      .set(AUTH_HEADER)
+
+    expect(res.status).toBe(409)
+  })
+
+  it('rejects a username with whitespace (400)', async () => {
+    const res = await request(app)
+      .post(`/api/setUsername?username=${encodeURIComponent('has space')}`)
+      .set(AUTH_HEADER)
+
+    expect(res.status).toBe(400)
+  })
+
+  it('rejects a username shorter than 3 characters (400)', async () => {
+    const res = await request(app)
+      .post(`/api/setUsername?username=ab`)
+      .set(AUTH_HEADER)
+
+    expect(res.status).toBe(400)
+  })
+
+  it('rejects a username longer than 30 characters (400)', async () => {
+    const res = await request(app)
+      .post(`/api/setUsername?username=${'a'.repeat(31)}`)
+      .set(AUTH_HEADER)
+
+    expect(res.status).toBe(400)
   })
 
   it('updates an existing username entry', async () => {
