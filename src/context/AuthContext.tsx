@@ -262,7 +262,6 @@ const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
     if (loading || !user || !user.uid) return
 
     let cancelled = false
-    const uid = user.uid
     const MAX_ATTEMPTS = 3
     const BASE_DELAY_MS = 500
     const delay = (ms: number) =>
@@ -271,7 +270,7 @@ const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
     const verifyUsername = async () => {
       for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
         try {
-          const username = await AuthAPI.getUsername(uid)
+          const username = await AuthAPI.getUsername()
           if (cancelled) return
           if (!username) navigate('/create-username')
           return

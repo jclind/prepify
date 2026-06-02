@@ -53,7 +53,7 @@ const RecipeControls: FC<RecipeControlsType> = ({
 
   const { data: currUsername } = useQuery({
     queryKey: ['username', currUID],
-    queryFn: () => AuthAPI.getUsername(currUID!),
+    queryFn: () => AuthAPI.getUsername(),
     enabled: !!currUID,
   })
 
