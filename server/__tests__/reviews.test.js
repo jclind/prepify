@@ -41,8 +41,8 @@ const AUTH_HEADER = { Authorization: 'Bearer fake-test-token' }
 beforeEach(async () => {
   const db = getDB()
   await db.collection('usernames').insertMany([
-    { _id: TEST_UID, username: TEST_USERNAME },
-    { _id: OTHER_UID, username: OTHER_USERNAME },
+    { _id: TEST_UID, username: TEST_USERNAME, username_lower: TEST_USERNAME.toLowerCase() },
+    { _id: OTHER_UID, username: OTHER_USERNAME, username_lower: OTHER_USERNAME.toLowerCase() },
   ])
   await db.collection('recipes').insertOne({
     _id: RECIPE_ID,

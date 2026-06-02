@@ -3,6 +3,28 @@ const router = express.Router()
 const { getDB } = require('../db')
 const { verifyToken } = require('../middleware/auth')
 
+const USERNAME_MIN_LENGTH = 3
+const USERNAME_MAX_LENGTH = 30
+
+// Mirrors the client-side rules in src/Components/Form/UsernameInput.tsx so the
+// API can't be bypassed by calling it directly. Returns an error string, or
+// null when the username is valid.
+function validateUsername(username) {
+  if (typeof username !== 'string' || !username) {
+    return 'username is required'
+  }
+  if (/\s/.test(username)) {
+    return 'Username cannot contain whitespace'
+  }
+  if (username.length < USERNAME_MIN_LENGTH) {
+    return `Username must be at least ${USERNAME_MIN_LENGTH} characters`
+  }
+  if (username.length > USERNAME_MAX_LENGTH) {
+    return `Username must be at most ${USERNAME_MAX_LENGTH} characters`
+  }
+  return null
+}
+
 // GET /getUsername?userId=...
 // Returns the username for a given uid
 router.get('/getUsername', async (req, res) => {
@@ -27,7 +49,9 @@ router.get('/checkUsernameAvailability', async (req, res) => {
     const { username } = req.query
     if (!username) return res.status(400).json({ error: 'username is required' })
     const db = getDB()
-    const existing = await db.collection('usernames').findOne({ username })
+    const existing = await db
+      .collection('usernames')
+      .findOne({ username_lower: username.toLowerCase() })
     res.json(existing === null)
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -39,23 +63,37 @@ router.get('/checkUsernameAvailability', async (req, res) => {
 router.post('/setUsername', verifyToken, async (req, res) => {
   try {
     const { username } = req.query
-    if (!username) {
-      return res.status(400).json({ error: 'username is required' })
+    const validationError = validateUsername(username)
+    if (validationError) {
+      return res.status(400).json({ error: validationError })
     }
+    const usernameLower = username.toLowerCase()
     const uid = req.uid
     const db = getDB()
 
-    // Check username is not already taken by someone else
-    const existing = await db.collection('usernames').findOne({ username })
+    // Check the name isn't already taken by someone else (case-insensitive).
+    const existing = await db
+      .collection('usernames')
+      .findOne({ username_lower: usernameLower })
     if (existing && existing._id !== uid) {
       return res.status(409).json({ error: 'Username already taken' })
     }
 
-    await db.collection('usernames').updateOne(
-      { _id: uid },
-      { $set: { username } },
-      { upsert: true }
-    )
+    try {
+      await db.collection('usernames').updateOne(
+        { _id: uid },
+        { $set: { username, username_lower: usernameLower } },
+        { upsert: true }
+      )
+    } catch (err) {
+      // The unique index on username_lower is the source of truth: it closes
+      // the race between the check above and this write, where two concurrent
+      // requests could both pass the findOne.
+      if (err.code === 11000) {
+        return res.status(409).json({ error: 'Username already taken' })
+      }
+      throw err
+    }
     res.json({ success: true })
   } catch (err) {
     res.status(500).json({ error: err.message })
