@@ -20,22 +20,23 @@ const EditRecipe: FC = () => {
 
   const {
     data: recipe,
-    isPending: recipePending,
+    isPending,
     isError,
   } = useQuery({
     queryKey: ['recipe', recipeId],
     queryFn: () => RecipeAPI.getRecipe(recipeId!),
     enabled: !!recipeId,
+    // Reuse the copy SingleRecipe already cached. GET /getRecipe increments the
+    // public view counter, so refetching just to open the editor would inflate
+    // it; serving the cache avoids that on the common (click-Edit) path.
+    staleTime: Infinity,
   })
 
-  const { data: currUsername, isPending: usernamePending } = useQuery({
-    queryKey: ['username', currUID],
-    queryFn: () => AuthAPI.getUsername(),
-    enabled: !!currUID,
-  })
-
-  const loading = recipePending || (!!currUID && usernamePending)
-  const isOwner = !!recipe && recipe.authorUsername === currUsername
+  const loading = isPending
+  // Key ownership on the Firebase uid, matching the server's `userId === uid`
+  // check. authorUsername is a creation-time snapshot that goes stale after a
+  // rename, which would otherwise lock a legitimate owner out of editing.
+  const isOwner = !!recipe && !!currUID && recipe.userId === currUID
 
   useEffect(() => {
     if (loading) return

@@ -175,17 +175,19 @@ const AddRecipe: FC<AddRecipeProps> = ({ initialRecipe }) => {
         initialRecipe,
         setLoadingProgress
       )
-      if (result === ADD_RECIPE_AUTH_ERROR) {
+      if (result.status === 'auth-error') {
         toast.error('Your session has expired — please sign in again and retry.')
-      } else if (result) {
-        // Drop stale cached copies so the recipe page and the user's created
-        // list reflect the edit immediately.
-        queryClient.invalidateQueries({ queryKey: ['recipe', initialRecipe._id] })
+      } else if (result.status === 'success') {
+        // Write the server's updated recipe straight into the cache rather than
+        // invalidating: invalidation would refetch GET /getRecipe (which bumps
+        // the public view counter) and briefly flash stale data. The created
+        // list still needs a refetch to reorder/relabel.
+        queryClient.setQueryData(['recipe', initialRecipe._id], result.recipe)
         queryClient.invalidateQueries({ queryKey: ['created-recipes'] })
         toast.success('Recipe updated!')
         navigate(`/recipes/${initialRecipe._id}`)
       } else {
-        toast.error('Failed to update recipe. Please try again.')
+        toast.error(result.message)
       }
     } else {
       const recipeData: RecipeFormType = {

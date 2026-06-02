@@ -22,6 +22,11 @@ import { v4 as uuidv4 } from 'uuid'
 
 export const ADD_RECIPE_AUTH_ERROR = 'AUTH_ERROR'
 
+export type EditRecipeResult =
+  | { status: 'success'; recipe: RecipeType }
+  | { status: 'auth-error' }
+  | { status: 'error'; message: string }
+
 class RecipeAPIClass {
   async getAllRecipes(
     page = 0,
@@ -182,7 +187,7 @@ class RecipeAPIClass {
     recipeData: RecipeEditFormType,
     originalRecipe: RecipeType,
     setProgress: (val: number) => void
-  ): Promise<boolean | typeof ADD_RECIPE_AUTH_ERROR> {
+  ): Promise<EditRecipeResult> {
     try {
       setProgress(10)
       // Image: only upload when the user picked a new file. Otherwise the recipe
@@ -216,8 +221,14 @@ class RecipeAPIClass {
         const nutritionDataRes = await this.getRecipeNutrition(
           recipeData.ingredients
         )
-        nutritionData = nutritionDataRes.nutritionData
-        nutritionLabels = nutritionDataRes.dietLabels
+        // getRecipeNutrition soft-fails to null when Edamam is unreachable. Only
+        // overwrite when it actually returned data — otherwise a transient lookup
+        // failure during an ingredient edit would erase the recipe's existing
+        // nutrition facts for all viewers.
+        if (nutritionDataRes.nutritionData) {
+          nutritionData = nutritionDataRes.nutritionData
+          nutritionLabels = nutritionDataRes.dietLabels
+        }
       }
       setProgress(90)
       // Only the editable fields are sent; the server whitelists these and never
@@ -240,14 +251,24 @@ class RecipeAPIClass {
         servingPrice,
         totalTime,
       }
-      await http.put(`api/editRecipe?recipeId=${recipeId}`, payload)
-      return true
+      const res = await http.put<RecipeType>(
+        `api/editRecipe?recipeId=${recipeId}`,
+        payload
+      )
+      return { status: 'success', recipe: res.data }
     } catch (error: unknown) {
       console.error('editRecipe failed:', error)
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
-        return ADD_RECIPE_AUTH_ERROR
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 401) return { status: 'auth-error' }
+        // Surface the server's reason (e.g. 403 Forbidden, 404 Not found) so a
+        // stale edit page doesn't show a misleading "try again" for an error a
+        // retry can't fix.
+        const message =
+          error.response?.data?.error ??
+          'Failed to update recipe. Please try again.'
+        return { status: 'error', message }
       }
-      return false
+      return { status: 'error', message: 'Failed to update recipe. Please try again.' }
     }
   }
   // The exact ingredient strings sent to Edamam for nutrition lookup. Shared by
