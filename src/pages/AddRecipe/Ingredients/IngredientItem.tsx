@@ -1,16 +1,16 @@
 import React, { Dispatch, SetStateAction, FC, useState, useRef } from 'react'
-import { DraggableProvided, DraggableStateSnapshot } from 'react-beautiful-dnd'
+import { DraggableProvided, DraggableStateSnapshot } from '@hello-pangea/dnd'
 import { CiShoppingBasket } from 'react-icons/ci'
+import { MdDragIndicator } from 'react-icons/md'
+import { AiOutlineClose } from 'react-icons/ai'
 import Skeleton from 'react-loading-skeleton'
 import RecipeAPI from 'src/api/recipes'
 import { getIndexById } from 'src/util/getIndexById'
 import { IngredientsType } from 'types'
-import Handler from '../ListComponents/Handler'
-import RecipeFormInput from '../RecipeFormInput'
+import RecipeFormInput from 'src/pages/AddRecipe/RecipeFormInput'
 import '../ListComponents/Item.scss'
-import RemoveItem from '../ListComponents/RemoveItem'
 import { TailSpin } from 'react-loader-spinner'
-import styles from '../../../_exports.scss'
+import styles from 'src/_exports.module.scss'
 import IngredientItemText from 'src/Components/IngredientItemText/IngredientItemText'
 
 const skeletonColor = '#d6d6d6'
@@ -18,7 +18,6 @@ const skeletonColor = '#d6d6d6'
 type IngredientItemProps = {
   ingredients: IngredientsType[]
   ingredient?: IngredientsType
-  reorderActive?: boolean
   setLoading: Dispatch<
     SetStateAction<{
       isLoading: boolean
@@ -31,10 +30,24 @@ type IngredientItemProps = {
   removeIngredient: (id: string) => void
   setIngredients: Dispatch<SetStateAction<IngredientsType[]>>
 }
+
+// Per-ingredient price label from the enriched parser data. Returns '—' when
+// pricing couldn't be fetched (soft-fail) so a row never looks broken.
+const priceLabel = (ingredient?: IngredientsType): string => {
+  if (
+    ingredient &&
+    'ingredientData' in ingredient &&
+    ingredient.ingredientData
+  ) {
+    const cents = Number(ingredient.ingredientData.totalPriceUSACents)
+    if (!isNaN(cents)) return `$${(cents / 100).toFixed(2)}`
+  }
+  return '—'
+}
+
 const IngredientItem: FC<IngredientItemProps> = ({
   ingredients,
   ingredient,
-  reorderActive,
   setLoading,
   loading,
   provided,
@@ -71,7 +84,7 @@ const IngredientItem: FC<IngredientItemProps> = ({
     return null
   }
   const handleIngrClick = () => {
-    if (editInputRef?.current && !reorderActive) {
+    if (editInputRef?.current) {
       setIsEditing(true)
       editInputRef.current.focus()
     }
@@ -98,8 +111,11 @@ const IngredientItem: FC<IngredientItemProps> = ({
       const currIndex = getIndexById(ingredients, ingredient.id)
       setLoading({ isLoading: true, index: currIndex })
       const ingredientDataRes = await RecipeAPI.getIngredientData(editedVal)
-      if ('error' in ingredientDataRes) {
-      }
+      // Phase A: soft-fail by design — whether enrichment succeeded or returned
+      // an error variant, we overwrite the existing ingredient with the new
+      // parse result so the edit takes effect either way. The error is carried
+      // through on the IngredientsType payload itself; no extra handling needed
+      // here.
       editIngredient(ingredient.id, { ...ingredientDataRes })
       setLoading({ isLoading: false, index: -1 })
     }
@@ -109,26 +125,30 @@ const IngredientItem: FC<IngredientItemProps> = ({
   }
 
   if (!ingredient) return null
+
+  const isParsed = 'parsedIngredient' in ingredient
+
   return (
     <div
-      className={`ingredients-container item ${
+      ref={provided?.innerRef}
+      className={`ingredients-container item ingredient-row ${
         snapshot?.isDragging ? 'dragging' : ''
       }`}
       {...provided?.draggableProps}
     >
-      <Handler provided={provided} reorderActive={reorderActive} />
-      {ingredient && (
-        <RemoveItem
-          removeItem={removeIngredient}
-          id={ingredient.id}
-          reorderActive={reorderActive ?? false}
-        />
-      )}
-      {isEditing ? null : 'parsedIngredient' in ingredient ? (
+      {/* Always-visible drag handle (the only drag target, so the row text
+          stays click-to-edit). Reorder is available any time — no mode. */}
+      <div
+        className='drag-handle'
+        aria-label='Drag to reorder'
+        {...provided?.dragHandleProps}
+      >
+        <MdDragIndicator className='icon' />
+      </div>
+
+      {isEditing ? null : isParsed ? (
         <button className='item-btn' onClick={handleIngrClick}>
-          <div
-            className={`img-container ${reorderActive ? 'margin-active' : ''}`}
-          >
+          <div className='img-container'>
             {loading ? (
               <Skeleton className='img' baseColor={skeletonColor} />
             ) : (
@@ -155,15 +175,29 @@ const IngredientItem: FC<IngredientItemProps> = ({
         </button>
       ) : (
         <button className='label-text-container' onClick={handleIngrClick}>
-          <h4 className={`text ${reorderActive ? 'margin-active' : ''}`}>
-            {ingredient.label}
-          </h4>
+          <h4 className='text'>{ingredient.label}</h4>
         </button>
       )}
+
+      {!isEditing && isParsed && (
+        <span className={`ingr-price ${loading ? 'na' : ''}`}>
+          {loading ? '' : priceLabel(ingredient)}
+        </span>
+      )}
+
+      <button
+        className='ingr-remove'
+        aria-label='Remove ingredient'
+        onClick={e => {
+          e.stopPropagation()
+          removeIngredient(ingredient.id)
+        }}
+      >
+        <AiOutlineClose className='icon' />
+      </button>
+
       {!snapshot?.isDragging && (
-        <div
-          className={`${isEditing && !reorderActive ? 'edit-input' : 'hidden'}`}
-        >
+        <div className={`${isEditing ? 'edit-input' : 'hidden'}`}>
           <RecipeFormInput
             val={editedVal}
             setVal={setEditedVal}

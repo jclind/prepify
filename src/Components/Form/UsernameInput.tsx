@@ -1,5 +1,5 @@
 import React, { useEffect, FC, useState } from 'react'
-import FormInput from './FormInput'
+import FormInput from 'src/Components/Form/FormInput'
 import { MdAlternateEmail } from 'react-icons/md'
 import AuthAPI from 'src/api/auth'
 

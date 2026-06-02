@@ -1,9 +1,9 @@
 import React, { useState, useEffect, FC, useRef } from 'react'
-import Select, { MultiValue, SingleValue } from 'react-select'
+import Select, { ActionMeta, MultiValue, SingleValue, StylesConfig } from 'react-select'
 import { useNavigate, useLocation } from 'react-router-dom'
 import './RecipeFilters.scss'
 import { dietLabelsOptions } from 'src/recipeData/dietLabels'
-import styles from '../../_exports.scss'
+import styles from 'src/_exports.module.scss'
 import { cuisinesListOptions } from 'src/recipeData/cuisinesList'
 import { getWindowWidth } from 'src/util/getWindowWidth'
 
@@ -23,7 +23,7 @@ type OptionType = {
   label: string
 }
 
-const customDietLabelStyles = {
+const customDietLabelStyles: StylesConfig<OptionType> = {
   control: (provided: any) => ({
     ...provided,
     borderRadius: '20px',
@@ -177,7 +177,7 @@ const RecipeFilters: FC<RecipeFiltersProps> = ({
 
   const handleDietTagsChange = (
     newValues: MultiValue<OptionType> | null,
-    actionMeta: any
+    actionMeta: ActionMeta<OptionType>
   ) => {
     if (newValues && newValues.length > 0) {
       if (newValues.length >= 4) return
@@ -191,23 +191,16 @@ const RecipeFilters: FC<RecipeFiltersProps> = ({
     }
     navigate(`/recipes?${urlParams}`)
   }
-  const handleCuisineChange = (
-    e: SingleValue<{
-      value: string
-      label: string
-    }>
-  ) => {
-    if (e) {
-      const value = e.value
-      if (!e.value) {
-        setSelectedCuisine('')
-        urlParams.delete('cuisine')
-      } else {
-        setSelectedCuisine(value)
-        urlParams.set('cuisine', value)
-      }
-      navigate(`/recipes?${urlParams}`)
+  const handleCuisineChange = (e: SingleValue<OptionType>) => {
+    if (!e) return
+    if (!e.value) {
+      setSelectedCuisine('')
+      urlParams.delete('cuisine')
+    } else {
+      setSelectedCuisine(e.value)
+      urlParams.set('cuisine', e.value)
     }
+    navigate(`/recipes?${urlParams}`)
   }
 
   // const { getCollapseProps, getToggleProps, isExpanded } = useCollapse()
@@ -220,7 +213,7 @@ const RecipeFilters: FC<RecipeFiltersProps> = ({
     <div className='filters'>
       {windowWidth > 815 ? (
         <>
-          <Select
+          <Select<OptionType, false>
             options={selectSortOptions}
             isSearchable={false}
             isClearable={false}
@@ -248,7 +241,7 @@ const RecipeFilters: FC<RecipeFiltersProps> = ({
             }}
           />
 
-          <Select
+          <Select<OptionType, false>
             options={cuisinesListOptions}
             isSearchable={false}
             placeholder='Cuisine'
@@ -288,7 +281,7 @@ const RecipeFilters: FC<RecipeFiltersProps> = ({
           >
             <div className='select-container'>
               <h5>Sort:</h5>
-              <Select
+              <Select<OptionType, false>
                 options={selectSortOptions}
                 isSearchable={false}
                 isClearable={false}
@@ -321,7 +314,7 @@ const RecipeFilters: FC<RecipeFiltersProps> = ({
             </div>
             <div className='select-container'>
               <h5>Select Cuisine:</h5>
-              <Select
+              <Select<OptionType, false>
                 options={cuisinesListOptions}
                 isSearchable={false}
                 placeholder='Cuisine'

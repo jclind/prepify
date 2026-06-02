@@ -1,33 +1,130 @@
-@import '../../../../helpers.scss';
+@use '../../../../helpers.scss' as s;
 
-.instructions-container {
-  .item-btn {
-    // height: fit-content;
-    // display: flex;
-    // transition: all 0.1s linear;
-    padding: 0.5rem 0 !important;
-    .index {
-      display: flex;
-      flex-shrink: 0;
-      justify-content: center;
-      align-items: center;
-      height: 30px;
-      width: 30px;
-      background: $tertiary-background;
-      border-radius: 50%;
-      color: $primary-text;
-      font-weight: 700;
-      font-size: 1.25rem;
-      transition: all 0.1s linear;
+// Instruction step rendered as the same flex row as an ingredient (R2-1):
+// [handle] [number circle + text] [remove]. Drag-first — the handle is always
+// visible and is the only drag target, so the step text stays click-to-edit.
+.instructions-container.instruction-row {
+  display: flex;
+  // Guard against any inherited column direction from shared container rules.
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.5rem 0.4rem;
+  border-radius: s.$border-radius;
+  transition: background 0.12s linear;
+
+  &:hover {
+    background: s.$gray-300;
+  }
+
+  .drag-handle {
+    display: flex;
+    align-items: center;
+    flex: none;
+    margin-top: 4px;
+    color: s.$tertiary-text;
+    cursor: grab;
+    .icon {
+      height: 22px;
+      width: 22px;
     }
-    .content {
-      text-align: start;
-      font-size: 0.9rem;
-      font-weight: 500;
-      padding-right: 2rem;
+    &:hover {
+      color: s.$primary;
     }
   }
+
+  .item-btn {
+    flex: 1;
+    width: auto;
+    min-width: 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0;
+  }
+
+  // Dark numbered circle (matches the recipe page's directions).
+  .index {
+    display: flex;
+    flex-shrink: 0;
+    justify-content: center;
+    align-items: center;
+    margin-top: 1px;
+    height: 30px;
+    width: 30px;
+    background: s.$primary-text;
+    color: s.$white;
+    font-weight: 700;
+    font-size: 1rem;
+    border-radius: 50%;
+  }
+
+  .content {
+    flex: 1;
+    min-width: 0;
+    text-align: start;
+    font-size: 0.95rem;
+    font-weight: 500;
+    line-height: 1.55;
+    padding-top: 4px;
+  }
+
+  // Group/phase label rendered as an in-list header: bold orange text + a
+  // divider rule, matching the ingredient list and the recipe page.
+  .label-text-container {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    min-height: 30px;
+    padding: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    .text {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: s.$primary;
+      white-space: nowrap;
+    }
+    &::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: s.$gray-400;
+    }
+  }
+
+  .instr-remove {
+    flex: none;
+    margin-top: 2px;
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border: none;
+    border-radius: 7px;
+    background: none;
+    color: s.$tertiary-text;
+    cursor: pointer;
+    transition: all 0.1s linear;
+    .icon {
+      height: 16px;
+      width: 16px;
+    }
+    &:hover {
+      color: s.$primary;
+      background: s.$white;
+    }
+    &:focus {
+      @include s.outline();
+    }
+  }
+
   .text-area-container {
     height: fit-content !important;
+    &.edit-input {
+      flex: 1;
+    }
   }
 }

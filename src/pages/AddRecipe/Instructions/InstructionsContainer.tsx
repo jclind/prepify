@@ -1,21 +1,21 @@
-import React, { useState } from 'react'
+import React, { FC, useState } from 'react'
 import { InstructionsType } from 'types'
-import RecipeFormInput from '../RecipeFormInput'
+import RecipeFormInput from 'src/pages/AddRecipe/RecipeFormInput'
 import { v4 as uuidv4 } from 'uuid'
-import AddLabel from '../../../pages/AddRecipe/AddLabel/AddLabel'
-import InstructionList from './InstructionList/InstructionList'
+import AddLabel from 'src/pages/AddRecipe/AddLabel/AddLabel'
+import InstructionList from 'src/pages/AddRecipe/Instructions/InstructionList/InstructionList'
+import { INSTRUCTION_MAX_LENGTH } from 'src/util/recipeLimits'
 
 type InstructionsContainerProps = {
   instructions: InstructionsType[]
   setInstructions: React.Dispatch<React.SetStateAction<InstructionsType[]>>
 }
 
-const InstructionsContainer = ({
+const InstructionsContainer: FC<InstructionsContainerProps> = ({
   instructions,
   setInstructions,
-}: InstructionsContainerProps) => {
+}) => {
   const [inputVal, setInputVal] = useState('')
-  const [reorderActive, setReorderActive] = useState(false)
 
   const addInstructionToList = (data: InstructionsType) => {
     setInstructions((prev: InstructionsType[]) => {
@@ -24,7 +24,17 @@ const InstructionsContainer = ({
     })
   }
   const removeInstruction = (removeId: string) => {
-    setInstructions(prev => prev.filter(instr => instr.id !== removeId))
+    setInstructions(prev => {
+      const filtered = prev.filter(instr => instr.id !== removeId)
+      let indexCounter: number = 0
+      return filtered.map(instr => {
+        if ('index' in instr) {
+          indexCounter++
+          return { ...instr, index: indexCounter }
+        }
+        return instr
+      })
+    })
   }
 
   const addInstruction = (data: { label: string } | { content: string }) => {
@@ -55,6 +65,8 @@ const InstructionsContainer = ({
     addInstruction({ content: inputVal })
   }
 
+  const stepCount = instructions.filter(instr => 'content' in instr).length
+
   return (
     <div className='ingredients-container'>
       <RecipeFormInput
@@ -62,20 +74,21 @@ const InstructionsContainer = ({
         val={inputVal}
         setVal={setInputVal}
         onEnter={handleEnter}
+        characterLimit={INSTRUCTION_MAX_LENGTH}
       />
       <InstructionList
         instructions={instructions}
         setInstructions={setInstructions}
         removeInstruction={removeInstruction}
-        reorderActive={reorderActive}
       />
-      <button
-        className='reorder-btn'
-        onClick={() => setReorderActive(prev => !prev)}
-      >
-        {reorderActive ? 'Done' : 'Reorder'}
-      </button>
-      <AddLabel addToList={addInstructionToList} />
+      <div className='ingredients-footer'>
+        <AddLabel addToList={addInstructionToList} />
+        {stepCount > 0 && (
+          <span className='footer-meta'>
+            {stepCount} {stepCount === 1 ? 'step' : 'steps'}
+          </span>
+        )}
+      </div>
     </div>
   )
 }

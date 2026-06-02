@@ -1,4 +1,4 @@
-import React, { ChangeEvent, KeyboardEvent } from 'react'
+import React, { ChangeEvent, FC, KeyboardEvent } from 'react'
 import './RecipeFormInput.scss'
 
 type RecipeFormTextAreaProps = {
@@ -7,14 +7,17 @@ type RecipeFormTextAreaProps = {
   val: string
   smallTextArea?: boolean
   setVal: (val: string) => void
-  textAreaRef?: React.RefObject<HTMLTextAreaElement>
+  textAreaRef?: React.RefObject<HTMLTextAreaElement | null>
   handleKeyPress?: (event: KeyboardEvent<HTMLTextAreaElement>) => void
   characterLimit?: number
   onEnter?: () => void
   onBlur?: () => void
+  // Accessibility: flag the field as invalid and point it at its error message.
+  invalid?: boolean
+  describedBy?: string
 }
 
-const RecipeFormTextArea = ({
+const RecipeFormTextArea: FC<RecipeFormTextAreaProps> = ({
   placeholder,
   name,
   val,
@@ -25,7 +28,9 @@ const RecipeFormTextArea = ({
   characterLimit,
   onEnter,
   onBlur,
-}: RecipeFormTextAreaProps) => {
+  invalid,
+  describedBy,
+}) => {
   const handleChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     const val = e.target.value
 
@@ -50,6 +55,8 @@ const RecipeFormTextArea = ({
             if (e.key === 'Enter' && onEnter) onEnter()
           }}
           onBlur={onBlur}
+          aria-invalid={invalid || undefined}
+          aria-describedby={describedBy}
         />
       </div>
     </label>

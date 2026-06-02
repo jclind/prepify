@@ -1,10 +1,10 @@
-import React, { useState } from 'react'
+import React, { FC, useState } from 'react'
 import { NavLink } from 'react-router-dom'
-import ReleaseNotes from '../ReleaseNotes/ReleaseNotes'
+import ReleaseNotes from 'src/Components/ReleaseNotes/ReleaseNotes'
 
-const PrepifyLogo = () => {
+const PrepifyLogo: FC = () => {
   const [releaseNotesModalIsOpen, setReleaseNotesModalIsOpen] = useState(false)
-  const handleOpenReleaseNotes = (e: any) => {
+  const handleOpenReleaseNotes = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation()
     e.preventDefault()
     setReleaseNotesModalIsOpen(true)

@@ -1,4 +1,4 @@
-@import '../../../helpers.scss';
+@use '../../../../helpers.scss' as s;
 
 .recipe-nutrition-data {
   width: 100%;
@@ -10,7 +10,7 @@
     width: 100%;
     text-align: left;
     padding: 1rem 1rem 1rem 0;
-    border-bottom: 1px solid $gray-400;
+    border-bottom: 1px solid s.$gray-400;
     .icon {
       height: 25px;
       width: 25px;
@@ -30,7 +30,7 @@
     color: black !important;
     margin-top: 1rem;
     font-weight: 500;
-    background: $white;
+    background: s.$white;
 
     .nutrition-facts {
       font-family: $font-black;

@@ -1,8 +1,9 @@
-import React, { FC, useEffect, useState } from 'react'
-import { useAlert } from 'react-alert'
+import React, { FC, useState } from 'react'
+import toast from 'react-hot-toast'
 import { TailSpin } from 'react-loader-spinner'
 import AuthAPI from 'src/api/auth'
 import RecipeAPI from 'src/api/recipes'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 
 const canMakeAgain = (lastDateMade: number | null): boolean => {
   const currDate = new Date().getTime()
@@ -14,72 +15,54 @@ type MadeRecipeBtnProps = {
   recipeId: string
 }
 
+type MadeRecipeData = { datesMade?: string[] }
+
 const MadeRecipeBtn: FC<MadeRecipeBtnProps> = ({ recipeId }) => {
   const uid = AuthAPI.getUID()
-  const [numTimesMade, setNumTimesMade] = useState(0)
-  const [lastDateMade, setLastDateMade] = useState<number | null>(null)
+  const queryClient = useQueryClient()
   const [loading, setLoading] = useState(false)
-  const alert = useAlert()
+
+  const { data } = useQuery({
+    queryKey: ['madeRecipe', recipeId],
+    queryFn: () => RecipeAPI.checkMadeRecipe(recipeId) as Promise<MadeRecipeData>,
+    enabled: !!(uid && recipeId),
+  })
+
+  const datesMade = data?.datesMade ?? []
+  const numTimesMade = datesMade.length
+  const lastDateMade: number | null =
+    numTimesMade > 0
+      ? Math.max(...datesMade.map(x => parseInt(x, 10)))
+      : null
 
   const handleMadeRecipe = () => {
     if (canMakeAgain(lastDateMade)) {
       setLoading(true)
       RecipeAPI.madeRecipe(recipeId)
         .then(() => {
-          setLastDateMade(new Date().getTime())
-          setNumTimesMade(prev => prev + 1)
+          queryClient.setQueryData(
+            ['madeRecipe', recipeId],
+            (old: MadeRecipeData | undefined) => ({
+              datesMade: [...(old?.datesMade ?? []), String(new Date().getTime())],
+            })
+          )
           setLoading(false)
-          alert.show('Recipe marked as read, share your feedback below!', {
-            timeout: 3000,
-            type: 'success',
+          toast.success('Recipe marked as read, share your feedback below!', {
+            duration: 3000,
           })
         })
-        .catch((error: any) => {
-          alert.show(<div>Error: {error.toString()}</div>, {
-            timeout: 5000,
-            type: 'error',
-          })
+        .catch((error: unknown) => {
+          toast.error(`Error: ${String(error)}`)
           setLoading(false)
         })
     } else if (lastDateMade) {
-      alert.show(
-        <div>
-          Recipe can only be marked as read once an hour. Try again in{' '}
-          {60 - Math.ceil((new Date().getTime() - lastDateMade) / (1000 * 60))}{' '}
-          minutes.
-        </div>,
-        {
-          timeout: 5000,
-          type: 'error',
-        }
+      toast.error(
+        `Recipe can only be marked as read once an hour. Try again in ${60 - Math.ceil((new Date().getTime() - lastDateMade) / (1000 * 60))} minutes.`
       )
     } else {
-      alert.show('Something went wrong, try refreshing.', {
-        timeout: 10000,
-        type: 'error',
-      })
+      toast.error('Something went wrong, try refreshing.', { duration: 10000 })
     }
   }
-
-  useEffect(() => {
-    if (uid && recipeId) {
-      RecipeAPI.checkMadeRecipe(recipeId)
-        .then(({ datesMade = [] } = {}) => {
-          const numTimesMade = datesMade.length
-          setNumTimesMade(numTimesMade)
-          if (numTimesMade > 0) {
-            const lastDate = Math.max(
-              ...datesMade.map((x: string) => parseInt(x, 10))
-            )
-            setLastDateMade(lastDate)
-          }
-        })
-        .catch((error: any) =>
-          alert(error.toString(), { timeout: 5000, type: 'error' })
-        )
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [uid])
 
   if (!uid) return null
 

@@ -1,13 +1,16 @@
-import React, { useState, useEffect } from 'react'
-import RecipeThumbnail from '../../../Components/RecipeThumbnail/RecipeThumbnail'
+import React, { FC, useState, useEffect } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import RecipeThumbnail from 'src/Components/RecipeThumbnail/RecipeThumbnail'
 import Select, { SingleValue } from 'react-select'
 
 import './SavedRecipes.scss'
 import RecipeAPI from 'src/api/recipes'
 import { RecipeType } from 'types'
-import { selectCustomStyles } from '../selectCustomStyles'
+import { selectCustomStyles } from 'src/pages/Account/selectCustomStyles'
 
-const options = [
+type OptionType = { value: string; label: string }
+
+const options: OptionType[] = [
   // { value: 'popular', label: 'Popular' },
   // { value: 'new', label: 'Recipe Date: Newest' },
   // { value: 'old', label: 'Recipe Date: Oldest' },
@@ -17,64 +20,48 @@ const options = [
   { value: 'oldAdd', label: 'Save Time: Oldest' },
 ]
 
-const SavedRecipes = () => {
+const SavedRecipes: FC = () => {
   const [recipes, setRecipes] = useState<RecipeType[]>([])
-  const [recipesPage, setRecipesPage] = useState(0)
+  const [currPage, setCurrPage] = useState(0)
   const [isMoreRecipes, setIsMoreRecipes] = useState(false)
 
   const [selectOption, setSelectOption] = useState(options[0])
 
-  const [loading, setLoading] = useState(true)
-
-  const handleGetSavedRecipes = (recipesPage: number, selectValue: string) => {
-    if (recipesPage >= 0 && selectValue) {
-      setLoading(true)
-      RecipeAPI.getSavedRecipes(recipesPage, 6, selectValue).then(res => {
-        if (res) {
-          const updatedArr =
-            recipesPage === 0 ? [...res.recipes] : [...recipes, ...res.recipes]
-          setRecipes([...updatedArr])
-
-          if (Number(res.totalCount) > updatedArr.length) {
-            setIsMoreRecipes(true)
-          } else {
-            setIsMoreRecipes(false)
-          }
-
-          setRecipesPage(recipesPage + 1)
-        }
-        setLoading(false)
-      })
-    }
-  }
+  const { data, isLoading } = useQuery({
+    queryKey: ['saved-recipes', selectOption.value, currPage],
+    queryFn: () => RecipeAPI.getSavedRecipes(currPage, 6, selectOption.value),
+  })
 
   useEffect(() => {
-    handleGetSavedRecipes(recipesPage, selectOption.value)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  const handleSelectChange = (
-    e: SingleValue<{
-      value: string
-      label: string
-    }>
-  ) => {
-    if (e) {
-      setSelectOption(e)
-      setRecipesPage(0)
-      handleGetSavedRecipes(0, e.value)
+    if (data) {
+      if (currPage === 0) {
+        setRecipes([...data.recipes])
+        setIsMoreRecipes(Number(data.totalCount) > data.recipes.length)
+      } else {
+        const updated = [...recipes, ...data.recipes]
+        setRecipes(updated)
+        setIsMoreRecipes(Number(data.totalCount) > updated.length)
+      }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data])
+
+  const handleSelectChange = (e: SingleValue<OptionType>) => {
+    if (!e) return
+    setSelectOption(e)
+    setCurrPage(0)
   }
+
   const handleLoadMoreRecipes = () => {
-    handleGetSavedRecipes(recipesPage, selectOption.value)
+    setCurrPage(prev => prev + 1)
   }
 
   return (
     <div className='saved-recipes'>
-      {recipes.length > 0 || loading ? (
+      {recipes.length > 0 || isLoading ? (
         <>
           <div className='saved-recipes-filters'>
-            <Select
+            <Select<OptionType, false>
               options={options}
               styles={selectCustomStyles}
               isSearchable={false}
@@ -85,7 +72,7 @@ const SavedRecipes = () => {
             />
           </div>
           <div className='thumbnails-container'>
-            {!loading ? (
+            {!isLoading ? (
               recipes.map(recipe => {
                 return <RecipeThumbnail key={recipe._id} recipe={recipe} />
               })

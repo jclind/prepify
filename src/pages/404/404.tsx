@@ -1,8 +1,8 @@
-import React from 'react'
+import React, { FC } from 'react'
 import './404.scss'
 import { Link, useNavigate } from 'react-router-dom'
 
-const NotFound = () => {
+const NotFound: FC = () => {
   const navigate = useNavigate()
 
   return (

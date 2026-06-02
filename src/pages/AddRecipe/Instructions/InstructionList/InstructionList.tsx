@@ -1,19 +1,17 @@
 import React, { Dispatch, FC, SetStateAction } from 'react'
 import { InstructionsType } from 'types'
-import { DndContext, Drag } from '../../Dnd'
-import InstructionItem from '../InstructionItem/InstructionItem'
+import { DndContext, Drag } from 'src/pages/AddRecipe/Dnd'
+import InstructionItem from 'src/pages/AddRecipe/Instructions/InstructionItem/InstructionItem'
 
 type InstructionListProps = {
   instructions: InstructionsType[]
   setInstructions: Dispatch<SetStateAction<InstructionsType[]>>
-  reorderActive: boolean
   removeInstruction: (id: string) => void
 }
 
 const InstructionList: FC<InstructionListProps> = ({
   instructions,
   setInstructions,
-  reorderActive,
   removeInstruction,
 }) => {
   const handleListChange = (updatedList: InstructionsType[]) => {
@@ -36,7 +34,6 @@ const InstructionList: FC<InstructionListProps> = ({
           <Drag key={instr.id} id={instr.id} index={idx}>
             <InstructionItem
               instruction={instr}
-              reorderActive={reorderActive}
               removeInstruction={removeInstruction}
               setInstructions={setInstructions}
             />

@@ -1,6 +1,10 @@
 import React, { FC } from 'react'
+import Skeleton from 'react-loading-skeleton'
+import 'react-loading-skeleton/dist/skeleton.css'
 import { ReviewType } from 'types'
-import RecipeReview from './RecipeReview'
+import RecipeReview from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/RecipeReview'
+
+const skeletonColor = '#d6d6d6'
 
 type ReviewsListProps = {
   recipeId: string
@@ -8,6 +12,7 @@ type ReviewsListProps = {
   currUserReview: ReviewType | null
   isMoreReviews: boolean
   getNextReviewsPage: () => void
+  loading?: boolean
 }
 
 const ReviewsList: FC<ReviewsListProps> = ({
@@ -16,6 +21,7 @@ const ReviewsList: FC<ReviewsListProps> = ({
   currUserReview,
   isMoreReviews,
   getNextReviewsPage,
+  loading = false,
 }) => {
   return (
     <div className='reviews-list-container'>
@@ -23,6 +29,11 @@ const ReviewsList: FC<ReviewsListProps> = ({
         reviewList.map(review => {
           return <RecipeReview key={review._id} review={review} />
         })
+      ) : loading ? (
+        <>
+          <Skeleton baseColor={skeletonColor} height={80} />
+          <Skeleton baseColor={skeletonColor} height={80} />
+        </>
       ) : !currUserReview ? (
         <div className='no-reviews'>No Reviews</div>
       ) : null}

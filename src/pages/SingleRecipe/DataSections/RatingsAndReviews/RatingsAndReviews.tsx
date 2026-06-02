@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react'
+import React, { FC, useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { ReviewType } from 'types'
-import Ratings from './Ratings/Ratings'
-import ReviewsContainer from './Reviews/ReviewsContainer'
+import Ratings from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/Ratings/Ratings'
+import ReviewsContainer from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/ReviewsContainer'
 import RecipeAPI from 'src/api/recipes'
 import AuthAPI from 'src/api/auth'
 
@@ -15,30 +16,33 @@ type RatingsAndReviewsProps = {
   setCurrUserReview: (val: ReviewType | null) => void
 }
 
-const RatingsAndReviews = ({
+const RatingsAndReviews: FC<RatingsAndReviewsProps> = ({
   recipeId,
   ratingVal,
   ratingCount,
   currUserReview,
   setCurrUserReview,
-}: RatingsAndReviewsProps) => {
+}) => {
   const [rating, setRating] = useState(0)
 
   const uid = AuthAPI.getUID()
 
+  const { data: checkData } = useQuery({
+    queryKey: ['check-made', recipeId],
+    queryFn: () => RecipeAPI.checkIfReviewed(recipeId),
+    enabled: !!uid,
+  })
+
   useEffect(() => {
-    if (uid) {
-      RecipeAPI.checkIfReviewed(recipeId).then(res => {
-        const userRating = res?.rating
-        if (!isNaN(userRating)) {
-          setRating(Number(userRating))
-        }
-        const reviewData = res?.reviewText ? res : null
-        setCurrUserReview(reviewData ?? null)
-      })
+    if (checkData === undefined) return
+    const userRating = checkData?.rating
+    if (!isNaN(userRating)) {
+      setRating(Number(userRating))
     }
+    const reviewData = checkData?.reviewText ? checkData : null
+    setCurrUserReview(reviewData ?? null)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [uid])
+  }, [checkData])
 
   return (
     <div className='recipe-ratings' id='recipeReviews'>

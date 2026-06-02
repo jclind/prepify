@@ -1,75 +1,47 @@
-import React, { useEffect } from 'react'
+import React, { FC, useEffect } from 'react'
 import { Routes, Route, useLocation } from 'react-router-dom'
 import { HelmetProvider } from 'react-helmet-async'
-import AuthProvider from './context/AuthContext'
+import AuthProvider from 'src/context/AuthContext'
 
-import Home from './pages/Home/Home'
-import Recipes from './pages/Recipes/Recipes'
-import Login from './pages/Login/Login'
-import Signup from './pages/Signup/Signup'
-import ForgotPassword from './pages/ForgotPassword/ForgotPassword'
-import PrivateRoute from './Components/PrivateRoute'
-import CreateUsername from './pages/CreateUsername/CreateUsername'
+import Home from 'src/pages/Home/Home'
+import Recipes from 'src/pages/Recipes/Recipes'
+import Login from 'src/pages/Login/Login'
+import Signup from 'src/pages/Signup/Signup'
+import ForgotPassword from 'src/pages/ForgotPassword/ForgotPassword'
+import PrivateRoute from 'src/Components/PrivateRoute'
+import CreateUsername from 'src/pages/CreateUsername/CreateUsername'
 
-import Account from './pages/Account/Account'
-import SavedRecipes from './pages/Account/SavedRecipes/SavedRecipes'
-import UserRatings from './pages/Account/UserRatings/UserRatings'
-import UserRecipes from './pages/Account/UserRecipes/UserRecipes'
+import Account from 'src/pages/Account/Account'
+import SavedRecipes from 'src/pages/Account/SavedRecipes/SavedRecipes'
+import UserRatings from 'src/pages/Account/UserRatings/UserRatings'
+import UserRecipes from 'src/pages/Account/UserRecipes/UserRecipes'
 
-import AddRecipe from './pages/AddRecipe/AddRecipe'
-import Layout from './Components/Layout/Layout'
-import Help from './pages/Help/Help'
-import NotFound from './pages/404/404'
-import SingleRecipe from './pages/SingleRecipe/SingleRecipe'
+import AddRecipe from 'src/pages/AddRecipe/AddRecipe'
+import Layout from 'src/Components/Layout/Layout'
+import Help from 'src/pages/Help/Help'
+import NotFound from 'src/pages/404/404'
+import SingleRecipe from 'src/pages/SingleRecipe/SingleRecipe'
 
-import { transitions, positions, Provider as AlertProvider } from 'react-alert'
-import {
-  AiOutlineInfoCircle,
-  AiOutlineCheckCircle,
-  AiOutlineClose,
-} from 'react-icons/ai'
-import { BiError } from 'react-icons/bi'
-import Settings from './pages/Settings/Settings'
-import Profile from './pages/Settings/SubSettings/Profile'
-import Password from './pages/Settings/SubSettings/Password'
+import { Toaster } from 'react-hot-toast'
+import Settings from 'src/pages/Settings/Settings'
+import Profile from 'src/pages/Settings/SubSettings/Profile'
+import Password from 'src/pages/Settings/SubSettings/Password'
 // import RecipeAI from './pages/RecipeAI/RecipeAI'
 
-const alertOptions = {
-  // you can also just use 'bottom center'
-  position: positions.BOTTOM_CENTER,
-  timeout: 5000,
-  offset: '30px',
-  // you can also just use 'scale'
-  transition: transitions.SCALE,
-}
-const AlertTemplate = ({ style, options, message, close }: any) => {
-  return (
-    <div style={style} className='alert'>
-      {options.type === 'info' && <AiOutlineInfoCircle className='icon info' />}
-      {options.type === 'success' && (
-        <AiOutlineCheckCircle className='icon success' />
-      )}
-      {options.type === 'error' && <BiError className='icon error' />}
-      <div className='content'>{message}</div>
-      <AiOutlineClose className='close-icon' onClick={close} />
-    </div>
-  )
-}
-
-const ScrollToTop = () => {
+const ScrollToTop: FC = () => {
   const { pathname } = useLocation()
   useEffect(() => {
     document.querySelector('body')?.scrollTo(0, 0)
   }, [pathname])
   return null
 }
-function App() {
+const App: FC = () => {
   return (
     <HelmetProvider>
       <AuthProvider>
-        <AlertProvider template={AlertTemplate} {...alertOptions}>
-          <ScrollToTop />
-          <Routes>
+        <Toaster position='bottom-center' toastOptions={{ duration: 5000 }} />
+        <ScrollToTop />
+        <Routes>
             <Route
               path='*'
               element={
@@ -139,7 +111,7 @@ function App() {
               <Route
                 path='/add-recipe'
                 element={
-                  <Layout darkNavLinks={true} navBackgroundColor='gray'>
+                  <Layout darkNavLinks={true}>
                     <AddRecipe />
                   </Layout>
                 }
@@ -158,7 +130,6 @@ function App() {
             <Route path='/create-username' element={<CreateUsername />} />
             <Route path='/forgot-password' element={<ForgotPassword />} />
           </Routes>
-        </AlertProvider>
       </AuthProvider>
     </HelmetProvider>
   )

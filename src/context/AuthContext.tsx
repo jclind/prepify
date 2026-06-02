@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react'
+import React, { FC, ReactNode, useState, useEffect, useContext } from 'react'
 import {
   signOut,
   getAuth,
@@ -60,13 +60,13 @@ type AuthContextValueType = {
 }
 
 type AuthProviderProps = {
-  children: React.ReactElement
+  children: ReactNode
 }
 
 const AuthContext = React.createContext<AuthContextValueType | null>(null)
 const auth = getAuth()
 
-const AuthProvider = ({ children }: AuthProviderProps) => {
+const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<UserCredential['user'] | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -148,8 +148,7 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
       }
       createUserWithEmailAndPassword(auth, email, password)
         .then(cred => {
-          const uid = cred.user.uid
-          AuthAPI.setUsername(uid, username).then(() => {
+          AuthAPI.setUsername(username).then(() => {
             setLoading(false)
             setSuccess('Username successfully created!')
             return navigate('/')
@@ -205,7 +204,7 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
         profilePhotoURL = await getDownloadURL(profilePhotosRef)
       }
       if (username && username !== currUsername) {
-        await AuthAPI.setUsername(user.uid, username)
+        await AuthAPI.setUsername(username)
       }
       if (email && user.email && email !== user.email) {
         if (!password) {

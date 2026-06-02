@@ -1,16 +1,18 @@
 import React, { FC, useState } from 'react'
-import Select from 'react-select'
+import Select, { SingleValue, StylesConfig } from 'react-select'
 import { useForm } from '@formspree/react'
 import './Help.scss'
 import { Helmet } from 'react-helmet-async'
 
-const options = [
+type OptionType = { value: string; label: string }
+
+const options: OptionType[] = [
   { value: 'bug', label: 'Reporting A Bug' },
   { value: 'feature', label: 'Requesting A Feature' },
   { value: 'question', label: 'Asking A Question' },
   { value: 'other', label: 'Other' },
 ]
-const customStyles = {
+const customStyles: StylesConfig<OptionType> = {
   control: (provided: any, state: any) => ({
     ...provided,
     background: 'white',
@@ -56,7 +58,7 @@ const customStyles = {
 }
 
 const Help: FC = () => {
-  const [selectOption, setSelectOption] = useState(null)
+  const [selectOption, setSelectOption] = useState<OptionType | null>(null)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
 
@@ -64,7 +66,7 @@ const Help: FC = () => {
 
   const [formState, submitFormspree] = useForm('xknyboeq')
 
-  const handleSelectChange = (e: any) => {
+  const handleSelectChange = (e: SingleValue<OptionType>) => {
     setSelectOption(e)
   }
   const clearForm = () => {
@@ -72,7 +74,7 @@ const Help: FC = () => {
     setTitle('')
     setDescription('')
   }
-  const handleSubmit = (e: any) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!selectOption) return setError('Please Enter Category')
 
@@ -112,7 +114,7 @@ const Help: FC = () => {
               {error && <div className='error'>{error}</div>}
               <div className='select-container'>
                 <div className='text'>Category</div>
-                <Select
+                <Select<OptionType, false>
                   options={options}
                   styles={customStyles}
                   isSearchable={false}

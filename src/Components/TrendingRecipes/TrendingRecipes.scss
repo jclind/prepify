@@ -1,4 +1,4 @@
-@import '../../helpers.scss';
+@use '../../helpers.scss' as s;
 
 .trending-recipes {
   display: flex;

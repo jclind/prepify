@@ -1,57 +1,49 @@
-import React, { useState, useEffect } from 'react'
+import React, { FC, useState } from 'react'
 import {
   BsBookmark,
   BsFillBookmarkFill,
   BsFillBookmarkCheckFill,
 } from 'react-icons/bs'
-import { Link } from 'react-router-dom'
 
-import { useAlert } from 'react-alert'
+import toast from 'react-hot-toast'
 import AuthAPI from 'src/api/auth'
 import RecipeAPI from 'src/api/recipes'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 
 type SaveRecipeBtnProps = { recipeId: string }
 
-const SaveRecipeBtn = ({ recipeId }: SaveRecipeBtnProps) => {
+const SaveRecipeBtn: FC<SaveRecipeBtnProps> = ({ recipeId }) => {
   const [isHovered, setIsHovered] = useState(false)
-  const [isSaved, setIsSaved] = useState(false)
 
   const uid = AuthAPI.getUID()
+  const queryClient = useQueryClient()
 
-  const alert = useAlert()
+  const { data } = useQuery({
+    queryKey: ['savedRecipe', uid, recipeId],
+    queryFn: () => RecipeAPI.getSavedRecipe(recipeId),
+    enabled: !!uid,
+  })
+
+  const isSaved = data != null
 
   const handleToggleSaveRecipe = (recipeId: string) => {
     if (uid) {
       if (isSaved) {
-        RecipeAPI.unsaveRecipe(uid, recipeId).then(() => setIsSaved(false))
+        RecipeAPI.unsaveRecipe(recipeId).then(() =>
+          queryClient.setQueryData(['savedRecipe', uid, recipeId], null)
+        )
       } else {
-        RecipeAPI.saveRecipe(uid, recipeId).then(() => setIsSaved(true))
+        RecipeAPI.saveRecipe(recipeId).then(() =>
+          queryClient.setQueryData(['savedRecipe', uid, recipeId], {
+            recipeId,
+            dateSaved: Date.now().toString(),
+          })
+        )
       }
     } else {
-      alert.show(
-        <div>
-          Please <Link to='/login'>login</Link> to save recipes.
-        </div>,
-        {
-          timeout: 10000,
-          type: 'info',
-        }
-      )
+      toast('Please login to save recipes.', { duration: 10000 })
     }
   }
-
-  useEffect(() => {
-    if (uid) {
-      const getIsRecipeSaved = async (recipeId: string) => {
-        return await RecipeAPI.getSavedRecipe(uid, recipeId)
-      }
-      getIsRecipeSaved(recipeId).then(res => {
-        const currIsSaved = res.length > 0
-        setIsSaved(currIsSaved)
-      })
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [uid])
 
   return (
     <div className='save-recipe'>

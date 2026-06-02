@@ -1,20 +1,20 @@
-import React, { ChangeEvent, useState } from 'react'
+import React, { ChangeEvent, FC, useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { AiOutlineGoogle, AiOutlineUser } from 'react-icons/ai'
 import { MdOutlineEmail, MdOutlineLock } from 'react-icons/md'
-import { useAuth } from '../../context/AuthContext'
+import { useAuth } from 'src/context/AuthContext'
 import { TailSpin } from 'react-loader-spinner'
-import { Helmet } from 'react-helmet'
+import { Helmet } from 'react-helmet-async'
 
-import UsernameInput from '../../Components/Form/UsernameInput'
+import UsernameInput from 'src/Components/Form/UsernameInput'
 
 import './Signup.scss'
 import '../../Components/Form/FormStyles.scss'
 
-import PrepifyLogo from '../../Components/Navbar/PrepifyLogo'
-import FormInput from '../../Components/Form/FormInput'
+import PrepifyLogo from 'src/Components/Navbar/PrepifyLogo'
+import FormInput from 'src/Components/Form/FormInput'
 
-const Signup = () => {
+const Signup: FC = () => {
   const [name, setName] = useState('')
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')

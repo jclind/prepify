@@ -1,8 +1,8 @@
 import React, { useState } from 'react'
 import './SubSettings.scss'
-import InputContainer from './InputContainer'
+import InputContainer from 'src/pages/Settings/SubSettings/InputContainer'
 import { useAuth } from 'src/context/AuthContext'
-import { useAlert } from 'react-alert'
+import toast from 'react-hot-toast'
 import { TailSpin } from 'react-loader-spinner'
 
 const Password = () => {
@@ -21,7 +21,6 @@ const Password = () => {
   const [showPasswords, setShowPasswords] = useState(false)
 
   const authRes = useAuth()
-  const alert = useAlert()
 
   const clearPasswords = () => {
     setCurrPass('')
@@ -70,10 +69,7 @@ const Password = () => {
         .then(() => {
           setUpdateLoading(false)
           clearPasswords()
-          alert.show('Password Successfully Changed!', {
-            timeout: 5000,
-            type: 'success',
-          })
+          toast.success('Password Successfully Changed!')
         })
         .catch(err => {
           if (err.code === 'auth/wrong-password') {

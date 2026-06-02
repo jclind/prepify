@@ -1,9 +1,9 @@
-import React from 'react'
-import { Helmet } from 'react-helmet'
+import React, { FC } from 'react'
+import { Helmet } from 'react-helmet-async'
 import TrendingRecipes from 'src/Components/TrendingRecipes/TrendingRecipes'
-import HomeHero from './HomeHero/HomeHero'
+import HomeHero from 'src/pages/Home/HomeHero/HomeHero'
 
-const Home = () => {
+const Home: FC = () => {
   return (
     <>
       <Helmet>

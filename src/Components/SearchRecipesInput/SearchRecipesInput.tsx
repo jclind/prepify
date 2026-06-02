@@ -1,26 +1,27 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { FC, useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AiOutlineSearch, AiOutlineStar, AiOutlineUser } from 'react-icons/ai'
 import { CgTimer } from 'react-icons/cg'
 import './SearchRecipesInput.scss'
-import { formatRating } from '../../util/formatRating'
+import { formatRating } from 'src/util/formatRating'
 import slugify from 'slugify'
 import RecipeAPI from 'src/api/recipes'
 import { RecipeSearchResponseType } from 'types'
 import Skeleton from 'react-loading-skeleton'
+import { useQuery } from '@tanstack/react-query'
 
 const skeletonColor = '#d6d6d6'
 
 function useOutsideAlerter(
-  ref: React.RefObject<HTMLFormElement>,
+  ref: React.RefObject<HTMLFormElement | null>,
   setVal: (val: boolean) => void
 ) {
   useEffect(() => {
     /**
      * Alert if clicked on outside of element
      */
-    function handleClickOutside(event: any) {
-      if (ref.current && !ref.current.contains(event.target)) {
+    function handleClickOutside(event: MouseEvent) {
+      if (ref.current && !ref.current.contains(event.target as Node | null)) {
         setVal(true)
       }
     }
@@ -41,16 +42,20 @@ type SearchRecipesInputProps = {
   autoComplete: boolean
 }
 
-const SearchRecipesInput = ({
+const SearchRecipesInput: FC<SearchRecipesInputProps> = ({
   defaultVal,
   autoComplete,
-}: SearchRecipesInputProps) => {
+}) => {
   const [searchRecipeVal, setSearchRecipeVal] = useState(defaultVal || '')
+  const [debouncedQuery, setDebouncedQuery] = useState(defaultVal || '')
 
-  const [autoCompleteResponse, setAutoCompleteResponse] = useState<
-    RecipeSearchResponseType[]
-  >([])
-  const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null)
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  const { data } = useQuery<RecipeSearchResponseType[]>({
+    queryKey: ['recipe-autocomplete', debouncedQuery],
+    queryFn: () => RecipeAPI.searchAutoCompleteRecipes(debouncedQuery),
+    enabled: debouncedQuery.length > 2,
+  })
 
   const [isBlurred, setIsBlurred] = useState(true)
 
@@ -59,7 +64,7 @@ const SearchRecipesInput = ({
   const wrapperRef = useRef<HTMLFormElement>(null)
   useOutsideAlerter(wrapperRef, setIsBlurred)
 
-  const handleSubmit = (e: any) => {
+  const handleSubmit = (e: React.SyntheticEvent) => {
     e.preventDefault()
 
     if (slugify(searchRecipeVal)) {
@@ -70,33 +75,14 @@ const SearchRecipesInput = ({
     setIsBlurred(true)
   }
 
-  const getAutoCompleteResult = (title: string) => {
-    if (title.length > 2) {
-      RecipeAPI.searchAutoCompleteRecipes(title)
-        .then(res => {
-          setAutoCompleteResponse(res)
-        })
-        .catch(e => {
-          console.log('Error:', e)
-        })
-    } else {
-      setAutoCompleteResponse([])
-    }
-  }
-
   useEffect(() => {
-    // If the autocomplete property passed through exists and is true, show auto complete results
     if (autoComplete) {
-      if (timeoutId) clearTimeout(timeoutId)
-
-      const newTimeoutId = setTimeout(() => {
-        getAutoCompleteResult(searchRecipeVal)
+      if (timeoutRef.current) clearTimeout(timeoutRef.current)
+      timeoutRef.current = setTimeout(() => {
+        setDebouncedQuery(searchRecipeVal)
       }, 300)
-
-      setTimeoutId(newTimeoutId)
-      // cleanup function to clear timeout on unmount or username change
       return () => {
-        if (timeoutId) clearTimeout(timeoutId)
+        if (timeoutRef.current) clearTimeout(timeoutRef.current)
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -129,10 +115,10 @@ const SearchRecipesInput = ({
           </div>
         )}
       </label>
-      {autoComplete && autoCompleteResponse.length > 0 && !isBlurred && (
+      {autoComplete && (data ?? []).length > 0 && !isBlurred && (
         <div className='auto-complete-results'>
           <div className='recipes-container'>
-            {autoCompleteResponse.map(recipe => {
+            {(data ?? []).map(recipe => {
               return (
                 <button
                   className='recipe'
@@ -158,14 +144,14 @@ const SearchRecipesInput = ({
                       <div className='rating item'>
                         <AiOutlineStar className='icon' />{' '}
                         {formatRating(
-                          Number(recipe.rating.rateValue),
-                          Number(recipe.rating.rateCount)
+                          Number(recipe.rating?.rateValue ?? 0),
+                          Number(recipe.rating?.rateCount ?? 0)
                         )}
                       </div>
                     </div>
                   </div>
                   <div className='tags'>
-                    {recipe.nutritionLabels.slice(0, 4).map(tag => {
+                    {(recipe.nutritionLabels ?? []).slice(0, 4).map(tag => {
                       return (
                         <div className='tag' key={tag}>
                           {tag}

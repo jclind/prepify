@@ -5,19 +5,19 @@ import Skeleton from 'react-loading-skeleton'
 import { formatRating } from 'src/util/formatRating'
 import { getWindowWidth } from 'src/util/getWindowWidth'
 import { RecipeType, ReviewType } from 'types'
-import AddRatingBtn from '../Buttons/AddRatingBtn'
-import PrintRecipeBtn from '../Buttons/PrintRecipeBtn'
-import SaveRecipeBtn from '../Buttons/SaveRecipeBtn'
-import DesktopTitleContent from './DesktopTitleContent'
-import MobileTitleContent from './MobileTitleContent'
-import RecipeDataElement from './RecipeDataElement'
+import AddRatingBtn from 'src/pages/SingleRecipe/Buttons/AddRatingBtn'
+import PrintRecipeBtn from 'src/pages/SingleRecipe/Buttons/PrintRecipeBtn'
+import SaveRecipeBtn from 'src/pages/SingleRecipe/Buttons/SaveRecipeBtn'
+import DesktopTitleContent from 'src/pages/SingleRecipe/RecipeHeaderContent/DesktopTitleContent'
+import MobileTitleContent from 'src/pages/SingleRecipe/RecipeHeaderContent/MobileTitleContent'
+import RecipeDataElement from 'src/pages/SingleRecipe/RecipeHeaderContent/RecipeDataElement'
 
 type RecipeHeaderContentProps = {
   loading: boolean
   currRecipe: RecipeType | null
   servingSize: number
   currUserReview: ReviewType | null
-  printedRef: React.MutableRefObject<HTMLInputElement>
+  printedRef: React.RefObject<HTMLInputElement | null>
 }
 
 const skeletonColor = '#d6d6d6'

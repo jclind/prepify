@@ -1,9 +1,10 @@
 import React, { FC, useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import Select, { SingleValue } from 'react-select'
 import RecipeAPI from 'src/api/recipes'
 import { OptionalReviewType } from 'types'
-import { selectCustomStyles } from '../selectCustomStyles'
-import StarRatings from 'react-star-ratings'
+import { selectCustomStyles } from 'src/pages/Account/selectCustomStyles'
+import StarRating from 'src/Components/StarRating/StarRating'
 import './UserRatings.scss'
 import { timeElapsedSince } from 'src/util/timeElapsedSince'
 import Skeleton from 'react-loading-skeleton'
@@ -45,12 +46,10 @@ const SingleReview: FC<SingleReviewProps> = ({ review, loading }) => {
           <Skeleton baseColor={skeletonColor} width={'20ch'} height={'22px'} />
         ) : (
           <>
-            <StarRatings
+            <StarRating
               rating={Number(review?.rating)}
-              starRatedColor='#ff5722'
-              starDimension='16px'
-              starSpacing='1px'
-              name='rating'
+              size={16}
+              spacing={1}
             />
             <div className='date'>
               {timeElapsedSince(review?.ratingLastUpdated ?? '')}
@@ -65,7 +64,9 @@ const SingleReview: FC<SingleReviewProps> = ({ review, loading }) => {
   )
 }
 
-const options = [
+type OptionType = { value: string; label: string }
+
+const options: OptionType[] = [
   // { value: 'popular', label: 'Popular' },
   // { value: 'new', label: 'Recipe Date: Newest' },
   // { value: 'old', label: 'Recipe Date: Oldest' },
@@ -77,64 +78,48 @@ const options = [
   { value: 'negative', label: 'Rating: Least Positive' },
 ]
 const skeletonColor = '#d6d6d6'
-const Ratings = () => {
+const Ratings: FC = () => {
   const [reviews, setReviews] = useState<OptionalReviewType[]>([])
-  const [page, setPage] = useState(0)
-  const [isMoreReviews, setIsMoreReviews] = useState(true)
+  const [currPage, setCurrPage] = useState(0)
+  const [isMoreReviews, setIsMoreReviews] = useState(false)
 
   const [selectOption, setSelectOption] = useState(options[0])
-  const [loading, setLoading] = useState(true)
 
-  const handleGetUserReviews = (recipesPage: number, selectValue: string) => {
-    if (recipesPage >= 0 && selectValue) {
-      RecipeAPI.getSingleUserReviews(recipesPage, 5, selectValue, true).then(
-        res => {
-          if (res) {
-            const updatedArr =
-              recipesPage === 0
-                ? [...res.reviews]
-                : [...reviews, ...res.reviews]
-            setReviews(updatedArr)
+  const { data, isLoading } = useQuery({
+    queryKey: ['user-reviews', selectOption.value, currPage],
+    queryFn: () =>
+      RecipeAPI.getSingleUserReviews(currPage, 5, selectOption.value, true),
+  })
 
-            if (Number(res.totalCount) > updatedArr.length) {
-              setIsMoreReviews(true)
-            } else {
-              setIsMoreReviews(false)
-            }
-
-            setPage(recipesPage + 1)
-          }
-          setLoading(false)
-        }
-      )
-    }
-  }
   useEffect(() => {
-    handleGetUserReviews(page, selectOption.value)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-  const handleSelectChange = (
-    e: SingleValue<{
-      value: string
-      label: string
-    }>
-  ) => {
-    if (e) {
-      setSelectOption(e)
-      setPage(0)
-      handleGetUserReviews(0, e.value)
+    if (data) {
+      if (currPage === 0) {
+        setReviews([...data.reviews])
+        setIsMoreReviews(Number(data.totalCount) > data.reviews.length)
+      } else {
+        const updated = [...reviews, ...data.reviews]
+        setReviews(updated)
+        setIsMoreReviews(Number(data.totalCount) > updated.length)
+      }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data])
+
+  const handleSelectChange = (e: SingleValue<OptionType>) => {
+    if (!e) return
+    setSelectOption(e)
+    setCurrPage(0)
   }
   const handleLoadMoreReviews = () => {
-    handleGetUserReviews(page, selectOption.value)
+    setCurrPage(prev => prev + 1)
   }
 
   return (
     <div className='user-ratings'>
-      {reviews.length > 0 || loading ? (
+      {reviews.length > 0 || isLoading ? (
         <>
           <div className='saved-filters'>
-            <Select
+            <Select<OptionType, false>
               options={options}
               styles={selectCustomStyles}
               isSearchable={false}
@@ -145,7 +130,7 @@ const Ratings = () => {
             />
           </div>
           <div className='thumbnails-container'>
-            {loading ? (
+            {isLoading ? (
               <>
                 <SingleReview loading={true} />
                 <SingleReview loading={true} />
@@ -156,7 +141,7 @@ const Ratings = () => {
                   <SingleReview
                     key={review._id}
                     review={review}
-                    loading={loading}
+                    loading={isLoading}
                   />
                 )
               })

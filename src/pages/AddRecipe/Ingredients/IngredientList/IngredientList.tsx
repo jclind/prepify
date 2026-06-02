@@ -1,7 +1,7 @@
 import React, { Dispatch, FC, SetStateAction } from 'react'
 import { IngredientsType } from 'types'
-import { DndContext, Drag } from '../../Dnd'
-import IngredientItem from '../IngredientItem'
+import { DndContext, Drag } from 'src/pages/AddRecipe/Dnd'
+import IngredientItem from 'src/pages/AddRecipe/Ingredients/IngredientItem'
 import './IngredientList.scss'
 
 type IngredientListProps = {
@@ -14,7 +14,6 @@ type IngredientListProps = {
     }>
   >
   ingredientLoading: { isLoading: boolean; index: number }
-  reorderActive: boolean
   removeIngredient: (id: string) => void
 }
 const IngredientList: FC<IngredientListProps> = ({
@@ -22,7 +21,6 @@ const IngredientList: FC<IngredientListProps> = ({
   setIngredients,
   setIngredientLoading,
   ingredientLoading,
-  reorderActive,
   removeIngredient,
 }) => {
   const handlListChange = (updatedList: IngredientsType[]) =>
@@ -40,7 +38,6 @@ const IngredientList: FC<IngredientListProps> = ({
               <IngredientItem
                 ingredients={ingredients}
                 ingredient={ingr}
-                reorderActive={reorderActive}
                 setLoading={setIngredientLoading}
                 loading={isCurrIngredientLoading}
                 removeIngredient={removeIngredient}
@@ -56,7 +53,6 @@ const IngredientList: FC<IngredientListProps> = ({
                 ingredients={ingredients}
                 setLoading={setIngredientLoading}
                 loading={true}
-                reorderActive={reorderActive}
                 removeIngredient={removeIngredient}
                 setIngredients={setIngredients}
               />

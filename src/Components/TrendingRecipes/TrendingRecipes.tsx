@@ -1,26 +1,23 @@
-import React, { useState, useEffect } from 'react'
+import React, { FC } from 'react'
 import './TrendingRecipes.scss'
+import { useQuery } from '@tanstack/react-query'
 
-import RecipeThumbnail from '../RecipeThumbnail/RecipeThumbnail'
-import RecipeAPI from '../../api/recipes'
+import RecipeThumbnail from 'src/Components/RecipeThumbnail/RecipeThumbnail'
+import RecipeAPI from 'src/api/recipes'
 import { RecipeType } from 'types'
 
-const TrendingRecipes = () => {
-  const [recipes, setRecipes] = useState<RecipeType[]>([])
+const TrendingRecipes: FC = () => {
+  const { data, isLoading } = useQuery<RecipeType[]>({
+    queryKey: ['trending-recipes'],
+    queryFn: () => RecipeAPI.getTrendingRecipes(4),
+  })
 
-  useEffect(() => {
-    RecipeAPI.getTrendingRecipes(4).then(res => {
-      const resData: RecipeType[] = res
-      setRecipes(resData)
-    })
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  const recipes = data ?? []
 
   return (
     <div className='trending-recipes'>
       <h2 className='title'>Trending</h2>
-      <div className={`recipes ${recipes.length < 0 ? '' : 'loading'}`}>
+      <div className={`recipes ${isLoading ? 'loading' : ''}`}>
         {recipes.length > 0 ? (
           recipes.map(recipe => {
             return <RecipeThumbnail key={recipe._id} recipe={recipe} />

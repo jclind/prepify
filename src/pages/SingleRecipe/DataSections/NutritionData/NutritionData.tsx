@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { FC, useState } from 'react'
 import { Collapse } from 'react-collapse'
 import { MdKeyboardArrowUp, MdKeyboardArrowDown } from 'react-icons/md'
 import { NutritionDataType } from 'types'
@@ -16,7 +16,7 @@ type NutritionDataProps = {
   servings: number
 }
 
-const NutritionData = ({ data, servings }: NutritionDataProps) => {
+const NutritionData: FC<NutritionDataProps> = ({ data, servings }) => {
   const [isOpen, setIsOpen] = useState(false)
   const tNutr = data.totalNutrients
   const tDay = data.totalDaily

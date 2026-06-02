@@ -1,19 +1,17 @@
 import React, { FC } from 'react'
-import { Draggable } from 'react-beautiful-dnd'
+import { Draggable } from '@hello-pangea/dnd'
 
 type DragProps = {
   id: string
   index: number
-  children: React.ReactElement
+  children: React.ReactElement<any>
 }
 const Drag: FC<DragProps> = ({ id, index, children }) => {
   return (
     <Draggable draggableId={id} index={index}>
-      {(provided, snapshot) => (
-        <div ref={provided.innerRef}>
-          {React.cloneElement(children, { provided, snapshot })}
-        </div>
-      )}
+      {(provided, snapshot) =>
+        React.cloneElement(children, { provided, snapshot })
+      }
     </Draggable>
   )
 }

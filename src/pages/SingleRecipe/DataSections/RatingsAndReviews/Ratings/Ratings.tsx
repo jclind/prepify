@@ -1,7 +1,7 @@
 import React, { FC } from 'react'
 import { BsStar } from 'react-icons/bs'
 import { Link } from 'react-router-dom'
-import StarRatings from 'react-star-ratings'
+import StarRating from 'src/Components/StarRating/StarRating'
 import AuthAPI from 'src/api/auth'
 import RecipeAPI from 'src/api/recipes'
 import { formatRating } from 'src/util/formatRating'
@@ -21,7 +21,7 @@ const Ratings: FC<RatingsProps> = ({
   ratingCount,
   recipeId,
 }) => {
-  const changeRating = (e: any) => {
+  const changeRating = (e: number) => {
     RecipeAPI.addRating(recipeId, e)
     setRating(e)
   }
@@ -46,15 +46,12 @@ const Ratings: FC<RatingsProps> = ({
         <span className='text'>Your Rating:</span>
         <div className='user-rate-container'>
           {uid ? (
-            <StarRatings
+            <StarRating
               rating={rating}
-              starRatedColor='#ff5722'
-              changeRating={changeRating}
-              numberOfStars={5}
-              starDimension='30px'
-              starSpacing='2px'
-              name='rating'
-              tabIndex={1}
+              size={30}
+              spacing={2}
+              interactive={true}
+              onChange={changeRating}
             />
           ) : (
             <Link to='/login' className='text'>

@@ -1,20 +1,9 @@
-@import '../../../../helpers.scss';
+@use '../../../../helpers.scss' as s;
 
 .ingredients-container {
   display: flex;
   flex-direction: column;
-  .reorder-btn {
-    position: absolute;
-    z-index: 1000;
-    top: 1rem;
-    right: 0;
-    border: none;
-    outline: none;
-    font-weight: 700;
-    background: none;
-    color: $primary;
-    cursor: pointer;
-  }
+
   .input-container {
     position: relative;
   }
@@ -23,5 +12,44 @@
     right: 10px;
     top: 50%;
     transform: translateY(-50%);
+  }
+
+  // Footer holds the "Add group label" affordance and a running ingredient
+  // subtotal (per-serving cost lives in the page summary bar). One clean row,
+  // separated from the list by a hairline so it doesn't float in whitespace.
+  .ingredients-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: 0.5rem;
+    padding-top: 0.85rem;
+    border-top: 1px solid s.$gray-400;
+
+    // Neutralise AddLabel's own top padding so the row stays aligned, and let
+    // the container grow with the row so the input doesn't clip its placeholder
+    // when it swaps in for the button.
+    .add-label-container {
+      flex: 1;
+      min-width: 0;
+      padding-top: 0;
+    }
+
+    .ingredients-subtotal {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: s.$secondary-text;
+      b {
+        color: s.$primary;
+        font-weight: 700;
+      }
+    }
+
+    // Generic right-aligned meta (e.g. instruction step count).
+    .footer-meta {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: s.$secondary-text;
+    }
   }
 }

@@ -1,11 +1,9 @@
-import { IngredientResponse, ingredientParser } from '@jclind/ingredient-parser'
-
-import ObjectID from 'bson-objectid'
+import { parseIngredientString } from '@jclind/ingredient-parser'
+import axios, { type AxiosResponse } from 'axios'
 import { getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage'
 import dietLabels from 'src/recipeData/dietLabels'
 import { calculateServingPrice } from 'src/util/calculateServingPrice'
 import {
-  GetSavedRecipesResponseType,
   IngredientsType,
   NewReviewType,
   NutritionDataType,
@@ -16,9 +14,12 @@ import {
   RecipeType,
   ReviewType,
 } from 'types'
-import AuthAPI from './auth'
-import { http, nutrition } from './http-common'
+import AuthAPI from 'src/api/auth'
+import { fetchIngredientEnrichment } from 'src/api/ingredientParserApi'
+import { http, nutrition } from 'src/api/http-common'
 import { v4 as uuidv4 } from 'uuid'
+
+export const ADD_RECIPE_AUTH_ERROR = 'AUTH_ERROR'
 
 class RecipeAPIClass {
   async getAllRecipes(
@@ -35,73 +36,51 @@ class RecipeAPIClass {
     }
 
     const result = await http.get(
-      `recipes?q=${query}&page=${page}&recipesPerPage=${recipesPerPage}&order=${order}&cuisine=${cuisine}${tagsArrParam}`
+      `api/recipes?q=${query}&page=${page}&recipesPerPage=${recipesPerPage}&order=${order}&cuisine=${cuisine}${tagsArrParam}`
     )
     return result.data
-  }
-  search(
-    query: string,
-    tag = '',
-    page = 0,
-    order = 'new',
-    recipesPerPage = 5
-  ): Promise<RecipeDBResponseType[]> {
-    return http.get(
-      `recipes?q=${query.toString()}&page=${page}&tag=${tag}&order=${order}&recipesPerPage=${recipesPerPage}`
-    )
   }
   async searchAutoCompleteRecipes(
     title = ''
   ): Promise<RecipeSearchResponseType[]> {
-    const result = await http.get(`searchAutoCompleteRecipes?title=${title}`)
+    const result = await http.get(`api/searchAutoCompleteRecipes?title=${title}`)
     return result.data
   }
   async getTrendingRecipes(limit = 4): Promise<RecipeType[]> {
-    const result = await http.get(`getTrendingRecipes?limit=${limit}`)
+    const result = await http.get(`api/getTrendingRecipes?limit=${limit}`)
     return result.data
   }
   async getRecipe(id: string): Promise<RecipeType> {
-    const result = await http.get(`getRecipe?id=${id}`)
+    const result = await http.get(`api/getRecipe?id=${id}`)
     return result.data
   }
-  async deleteRecipe(recipeId: string, userId: string) {
-    const result = await http.delete(
-      `deleteRecipe?recipeId=${recipeId}&userId=${userId}`
-    )
+  async deleteRecipe(recipeId: string): Promise<unknown> {
+    const result = await http.delete(`api/deleteRecipe?recipeId=${recipeId}`)
     return result.data
   }
 
-  async saveRecipe(userId = '', recipeId = '') {
-    return await http.put(`saveRecipe?userId=${userId}&recipeId=${recipeId}`)
+  async saveRecipe(recipeId = ''): Promise<AxiosResponse> {
+    return await http.post(`api/recipes/${recipeId}/save`)
   }
   async getSavedRecipe(
-    userId = '',
     recipeId = ''
-  ): Promise<GetSavedRecipesResponseType[]> {
-    const result = await http.get(
-      `getSavedRecipe?userId=${userId}&recipeId=${recipeId}`
-    )
+  ): Promise<{ recipeId: string; dateSaved: string } | null> {
+    const result = await http.get(`api/getSavedRecipe?recipeId=${recipeId}`)
     return result.data
   }
-  async unsaveRecipe(userId = '', recipeId = '') {
-    return await http.put(`unsaveRecipe?userId=${userId}&recipeId=${recipeId}`)
+  async unsaveRecipe(recipeId = ''): Promise<AxiosResponse> {
+    return await http.delete(`api/recipes/${recipeId}/save`)
   }
-  async madeRecipe(recipeId: string) {
-    const userId = AuthAPI.getUID()
-    if (!userId) return
+  async madeRecipe(recipeId: string): Promise<unknown> {
+    if (!AuthAPI.getUID()) return
 
-    const result = await http.post(
-      `madeRecipe?userId=${userId}&recipeId=${recipeId}`
-    )
+    const result = await http.post(`api/madeRecipe?recipeId=${recipeId}`)
     return result.data
   }
   async checkMadeRecipe(recipeId: string) {
-    const userId = AuthAPI.getUID()
-    if (!userId) return
+    if (!AuthAPI.getUID()) return
 
-    const result = await http.get(
-      `checkMadeRecipe?userId=${userId}&recipeId=${recipeId}`
-    )
+    const result = await http.get(`api/checkMadeRecipe?recipeId=${recipeId}`)
     return result.data
   }
 
@@ -110,6 +89,16 @@ class RecipeAPIClass {
     setProgress: (val: number) => void
   ): Promise<string> => {
     if (imageFile) {
+      // Cypress bridge: skip the real Firebase Storage SDK during E2E runs so
+      // tests don't need to intercept multipart/preflight upload protocol.
+      // VITE_CYPRESS is inlined at build time, so production bundles tree-shake
+      // this branch entirely (the condition becomes `'false' === 'true'`).
+      if (import.meta.env.VITE_CYPRESS === 'true') {
+        setProgress(40)
+        setProgress(50)
+        setProgress(70)
+        return 'https://cypress.test/fake-recipe-image.jpg'
+      }
       const storage = getStorage()
 
       const recipeImagesRef = ref(storage, `recipeImages/${imageFile.name}`)
@@ -131,8 +120,7 @@ class RecipeAPIClass {
     try {
       setProgress(10)
       const authorUsername: string | null = await AuthAPI.getUsername()
-      const userId = await AuthAPI.getUID()
-      if (!authorUsername || !userId) throw Error('User does not exist')
+      if (!authorUsername) throw Error('User does not exist')
       const recipeImage: string = await this.uploadRecipeImage(
         recipeData.recipeImage,
         setProgress
@@ -148,10 +136,7 @@ class RecipeAPIClass {
       )
       const nutritionData = nutritionDataRes.nutritionData
       const nutritionLabels = nutritionDataRes.dietLabels
-      const recipeId = '' + ObjectID()
-      const returnRecipeData: RecipeType & { userId: string } = {
-        _id: recipeId,
-        userId,
+      const returnRecipeData: Omit<RecipeType, '_id'> = {
         title: recipeData.title,
         prepTime: recipeData.prepTime,
         cookTime: recipeData.cookTime,
@@ -180,110 +165,91 @@ class RecipeAPIClass {
         numTimesMade: 0,
       }
       setProgress(90)
-      await http.post('addRecipe', returnRecipeData)
-      return recipeId
-    } catch (error) {
+      const result = await http.post<{ _id: string }>('api/addRecipe', returnRecipeData)
+      return result.data._id
+    } catch (error: unknown) {
+      console.error('addRecipe failed:', error)
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        return ADD_RECIPE_AUTH_ERROR
+      }
       return null
     }
   }
-  async getRecipeNutrition(ingrArr: IngredientsType[]) {
-    const ingrData: { title: string; ingr: string[] } = {
-      title: 'recipe 1',
-      ingr: [],
-    }
+  async getRecipeNutrition(ingrArr: IngredientsType[]): Promise<{ nutritionData: NutritionDataType | null; dietLabels: string[] | null }> {
+    try {
+      const ingrData: { title: string; ingr: string[] } = {
+        title: 'recipe 1',
+        ingr: [],
+      }
 
-    ingrArr.forEach(ingr => {
-      if ('parsedIngredient' in ingr) {
-        const { quantity, unit, ingredient } = ingr.parsedIngredient
+      ingrArr.forEach(ingr => {
+        if ('parsedIngredient' in ingr) {
+          const { quantity, unit, ingredient } = ingr.parsedIngredient
 
-        if (quantity) {
-          const str = `${quantity} ${unit || ''} ${ingredient}`
-          ingrData.ingr.push(str)
+          if (quantity) {
+            const str = `${quantity} ${unit || ''} ${ingredient}`
+            ingrData.ingr.push(str)
+          }
         }
-      }
-    })
-    const nutritionResultRes = await nutrition.post(
-      `nutrition-details?app_id=${process.env.REACT_APP_EDAMAM_APP_ID}&app_key=${process.env.REACT_APP_EDAMAM_APP_KEY}`,
-      ingrData
-    )
-
-    const nutritionResult: NutritionDataType = nutritionResultRes.data
-
-    if (!nutritionResult) return { nutritionData: null, dietLabels: null }
-
-    const currDietLabels: string[] = []
-
-    const returnedNutritionLabels = [
-      ...nutritionResult.dietLabels,
-      ...nutritionResult.healthLabels,
-    ]
-
-    dietLabels.forEach(l => {
-      if (returnedNutritionLabels.includes(l.toUpperCase())) {
-        currDietLabels.push(l)
-      }
-    })
-
-    return { nutritionData: nutritionResult, dietLabels: currDietLabels }
-  }
-
-  async addRecipeTag(data: string) {
-    return await http.post('addRecipeTag', data)
-  }
-
-  async searchRecipeTags(query: string, tagsArr: { text: string }[]) {
-    const tagsArrText =
-      tagsArr && tagsArr.length > 0 ? tagsArr.map(tag => tag.text) : []
-    let tagsArrParam = '' // For tags that have already been chosen
-    if (tagsArrText.length > 0) {
-      tagsArrParam += '&selectedTags='
-      tagsArrText.forEach(tag => {
-        tagsArrParam += `${tag},`
       })
+      const nutritionResultRes = await nutrition.post(
+        `nutrition-details?app_id=${import.meta.env.VITE_EDAMAM_APP_ID}&app_key=${import.meta.env.VITE_EDAMAM_APP_KEY}`,
+        ingrData
+      )
+
+      const nutritionResult: NutritionDataType = nutritionResultRes.data
+
+      if (!nutritionResult) return { nutritionData: null, dietLabels: null }
+
+      const currDietLabels: string[] = []
+
+      const returnedNutritionLabels = [
+        ...nutritionResult.dietLabels,
+        ...nutritionResult.healthLabels,
+      ]
+
+      dietLabels.forEach(l => {
+        if (returnedNutritionLabels.includes(l.toUpperCase())) {
+          currDietLabels.push(l)
+        }
+      })
+
+      return { nutritionData: nutritionResult, dietLabels: currDietLabels }
+    } catch (error: unknown) {
+      console.error('getRecipeNutrition failed:', error)
+      return { nutritionData: null, dietLabels: null }
     }
-
-    return await http.get(`searchRecipeTags?q=${query}${tagsArrParam}`)
-  }
-
-  async getRecipeTags(limit = 5) {
-    return await http.get(`getRecipeTags?limit=${limit}`)
   }
 
   // Ratings / Reviews
-  async addRating(recipeId: string, rating: number) {
+  async addRating(recipeId: string, rating: number): Promise<AxiosResponse | null> {
     if (!AuthAPI.getUID()) return null
-    return await http.put(`addRating?recipeId=${recipeId}&rating=${rating}`)
+    return await http.post(`api/addRating?recipeId=${recipeId}&rating=${rating}`)
   }
 
   async newReview(recipeId: string, text: string): Promise<ReviewType | null> {
-    const uid = AuthAPI.getUID()
-    if (!uid) return null
+    if (!AuthAPI.getUID()) return null
 
     const data: NewReviewType = {
-      userId: uid,
       recipeId,
       reviewText: text,
     }
-    const result = await http.put(`newReview`, data)
+    const result = await http.post(`api/newReview`, data)
     return result.data
   }
   async checkIfReviewed(recipeId: string) {
-    const username = await AuthAPI.getUsername()
-    if (!username) return null
+    if (!AuthAPI.getUID()) return null
 
-    const result = await http.get(
-      `checkIfReviewed?username=${username}&recipeId=${recipeId}`
-    )
+    const result = await http.get(`api/checkIfReviewed?recipeId=${recipeId}`)
     return result.data
   }
-  async editReview(recipeId: string, text: string) {
+  async editReview(recipeId: string, text: string): Promise<AxiosResponse | null> {
     if (!AuthAPI.getUID()) return null
-    return await http.put(`editReview?recipeId=${recipeId}&text=${text}`)
+    return await http.post(`api/editReview?recipeId=${recipeId}&text=${text}`)
   }
-  async deleteReview(recipeId: string) {
-    const userId = await AuthAPI.getUID()
-    if (!userId) return null
-    return await http.put(`deleteReview?userId=${userId}&recipeId=${recipeId}`)
+  async deleteReview(recipeId: string): Promise<AxiosResponse | null> {
+    if (!AuthAPI.getUID()) return null
+    return await http.delete(`api/deleteReview?recipeId=${recipeId}`)
   }
   async getReviews(
     recipeId: string,
@@ -293,7 +259,7 @@ class RecipeAPIClass {
   ) {
     const username = await AuthAPI.getUsername()
     const result = await http.get(
-      `getReviews?username=${username}&recipeId=${recipeId}&page=${page}&reviewsPerPage=${reviewsPerPage}&filter=${filter}`
+      `api/getReviews?username=${username}&recipeId=${recipeId}&page=${page}&reviewsPerPage=${reviewsPerPage}&filter=${filter}`
     )
     return result.data
   }
@@ -306,26 +272,45 @@ class RecipeAPIClass {
     const username = await AuthAPI.getUsername()
     if (!username) return null
     const reviewResult = await http.get(
-      `getSingleUserReviews?username=${username}&page=${page}&reviewsPerPage=${reviewsPerPage}&filter=${filter}&returnRecipeData=${returnRecipeData}`
+      `api/getSingleUserReviews?username=${username}&page=${page}&reviewsPerPage=${reviewsPerPage}&filter=${filter}&returnRecipeData=${returnRecipeData}`
     )
     return reviewResult.data
   }
 
   // Ingredients
   async getIngredientData(val: string): Promise<IngredientsType> {
-    const apiKey = process.env.REACT_APP_SPOONACULAR_API_KEY
+    const parsedIngredient = parseIngredientString(val)
+    // Phase A: enrichment is soft-fail. A thrown network error (server down, timeout,
+    // 5xx surfaced as axios rejection) must not bubble up — callers stick on the
+    // loading state and the ingredient never appears. Wrap and degrade to the
+    // parsed-only IngredientsType so the ingredient is still added to the recipe.
+    try {
+      const enrichment = await fetchIngredientEnrichment(parsedIngredient)
 
-    if (!apiKey) {
-      throw new Error('Spoonacular API key is not defined')
+      if (enrichment.error || !enrichment.data) {
+        return {
+          error: enrichment.error ?? { message: 'No ingredient data returned' },
+          parsedIngredient,
+          ingredientData: null,
+          id: uuidv4(),
+        }
+      }
+
+      return {
+        parsedIngredient,
+        ingredientData: enrichment.data,
+        id: uuidv4(),
+      }
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : 'Ingredient enrichment request failed'
+      return {
+        error: { message },
+        parsedIngredient,
+        ingredientData: null,
+        id: uuidv4(),
+      }
     }
-
-    const result: IngredientResponse = await ingredientParser(val, apiKey, {
-      serverUrl: process.env.REACT_APP_INGREDIENT_PARSER_URL || 'https://ingredient-parser-service-production-2635.up.railway.app'
-    })
-
-    const data: IngredientsType = { ...result, id: uuidv4() }
-
-    return data
   }
 
   // User
@@ -334,10 +319,20 @@ class RecipeAPIClass {
     recipesPerPage: number,
     order: string
   ): Promise<{ recipes: RecipeType[]; totalCount: number } | null> {
-    const uid = AuthAPI.getUID()
-    if (!uid) return null
+    if (!AuthAPI.getUID()) return null
     const result = await http.get(
-      `getSavedRecipes?userId=${uid}&page=${page}&recipesPerPage=${recipesPerPage}&order=${order}`
+      `api/getSavedRecipes?page=${page}&recipesPerPage=${recipesPerPage}&order=${order}`
+    )
+    return result.data
+  }
+  async getCreatedRecipes(
+    page: number,
+    recipesPerPage: number,
+    order: string
+  ): Promise<{ recipes: RecipeType[]; totalCount: number } | null> {
+    if (!AuthAPI.getUID()) return null
+    const result = await http.get(
+      `api/getCreatedRecipes?page=${page}&recipesPerPage=${recipesPerPage}&order=${order}`
     )
     return result.data
   }

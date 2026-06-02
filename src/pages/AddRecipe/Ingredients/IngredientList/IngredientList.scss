@@ -1,42 +1,147 @@
-@import '../../../../helpers.scss';
+@use '../../../../helpers.scss' as s;
 
 .ingredient-list {
   display: flex;
   flex-direction: column;
-  // min-height: 100px;
-  gap: 1rem;
-  padding: 1rem 0;
-  .ingredients-container {
+  gap: 0.25rem;
+  padding: 0.75rem 0;
+
+  // Each ingredient is a flex row: [handle] [image + text] [price] [remove].
+  // Drag-first: the handle is always visible and is the only drag target, so
+  // clicking the row text still opens inline edit.
+  .ingredients-container.ingredient-row {
+    display: flex;
+    // The item also carries the `ingredients-container` class, whose global
+    // rule sets flex-direction: column — override it back to a row.
+    flex-direction: row;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.4rem 0.4rem;
+    border-radius: s.$border-radius;
+    transition: background 0.12s linear;
+
+    &:hover {
+      background: s.$gray-300;
+    }
+
+    .drag-handle {
+      display: flex;
+      align-items: center;
+      flex: none;
+      color: s.$tertiary-text;
+      cursor: grab;
+      .icon {
+        height: 22px;
+        width: 22px;
+      }
+      &:hover {
+        color: s.$primary;
+      }
+    }
+
     .item-btn {
+      flex: 1;
+      width: auto;
+      min-width: 0;
       align-items: center;
     }
+
     .img-container {
       display: flex;
+      flex-shrink: 0;
       overflow: hidden;
       justify-content: center;
       align-items: center;
-      height: 60px;
-      width: 60px;
-      background: $white;
+      height: 46px;
+      width: 46px;
+      background: s.$white;
       border-radius: 50%;
-      transition: margin 0.1s linear;
       .img {
-        height: 50px;
-        width: 50px;
+        height: 38px;
+        width: 38px;
         object-fit: contain;
       }
       .no-img {
-        height: 35px;
-        width: 35px;
+        height: 28px;
+        width: 28px;
       }
     }
 
     .text-container {
       flex: 1;
+      min-width: 0;
       text-align: start;
       font-size: 1rem;
       font-weight: 500;
-      padding-right: 2rem;
+      padding-right: 0;
+    }
+
+    // Group label rendered as an in-list header: bold orange text + a divider
+    // rule filling the row (mirrors the section headers and the recipe page).
+    .label-text-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      min-height: 46px;
+      padding: 0;
+      background: none;
+      border: none;
+      cursor: pointer;
+      .text {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: s.$primary;
+        white-space: nowrap;
+      }
+      &::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: s.$gray-400;
+      }
+    }
+
+    .ingr-price {
+      flex: none;
+      min-width: 56px;
+      text-align: right;
+      font-weight: 700;
+      font-size: 0.9rem;
+      color: s.$secondary-text;
+      &.na {
+        color: s.$tertiary-text;
+        font-weight: 500;
+      }
+    }
+
+    .ingr-remove {
+      flex: none;
+      display: grid;
+      place-items: center;
+      width: 30px;
+      height: 30px;
+      border: none;
+      border-radius: 7px;
+      background: none;
+      color: s.$tertiary-text;
+      cursor: pointer;
+      transition: all 0.1s linear;
+      .icon {
+        height: 16px;
+        width: 16px;
+      }
+      &:hover {
+        color: s.$primary;
+        background: s.$white;
+      }
+      &:focus {
+        @include s.outline();
+      }
+    }
+
+    .edit-input {
+      flex: 1;
     }
   }
 }

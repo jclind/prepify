@@ -10,8 +10,11 @@ interface RecipeFormInputProps<T extends string | number | undefined> {
   characterLimit?: number
   inputBeginningText?: string
   onEnter?: () => void
-  inputRef?: React.RefObject<HTMLInputElement>
+  inputRef?: React.RefObject<HTMLInputElement | null>
   onBlur?: () => void
+  // Accessibility: flag the field as invalid and point it at its error message.
+  invalid?: boolean
+  describedBy?: string
 }
 
 const RecipeFormInput = <T extends string | number | undefined>({
@@ -25,6 +28,8 @@ const RecipeFormInput = <T extends string | number | undefined>({
   onEnter,
   inputRef,
   onBlur,
+  invalid,
+  describedBy,
 }: RecipeFormInputProps<T>) => {
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value
@@ -57,6 +62,8 @@ const RecipeFormInput = <T extends string | number | undefined>({
           }}
           ref={inputRef}
           onBlur={onBlur}
+          aria-invalid={invalid || undefined}
+          aria-describedby={describedBy}
         />
       </div>
     </label>

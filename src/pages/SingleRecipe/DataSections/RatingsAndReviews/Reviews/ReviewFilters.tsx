@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from 'react'
-import Select from 'react-select'
+import React, { FC, useState, useEffect } from 'react'
+import Select, { SingleValue, StylesConfig } from 'react-select'
 
-const options: { value: string; label: string }[] = [
+type OptionType = { value: string; label: string }
+
+const options: OptionType[] = [
   { value: 'new', label: 'Date: Newest' },
   { value: 'old', label: 'Date: Oldest' },
   { value: 'positive', label: 'Most Positive' },
   { value: 'negative', label: 'Most Negative' },
 ]
-const customStyles = {
+const customStyles: StylesConfig<OptionType> = {
   control: (provided: any, state: any) => ({
     ...provided,
     background: '#eeeeee',
@@ -48,22 +50,20 @@ type ReviewFiltersProps = {
   isList: boolean
 }
 
-const ReviewFilters = ({
+const ReviewFilters: FC<ReviewFiltersProps> = ({
   reviewListSort,
   setReviewListSort,
   isList,
-}: ReviewFiltersProps) => {
-  const [selectValue, setSelectValue] = useState<{
-    value: string
-    label: string
-  }>(options[0])
+}) => {
+  const [selectValue, setSelectValue] = useState<OptionType>(options[0])
 
   useEffect(() => {
     setReviewListSort(options[0].value)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const handleSelectChange = (e: any) => {
+  const handleSelectChange = (e: SingleValue<OptionType>) => {
+    if (!e) return
     setSelectValue(e)
     setReviewListSort(e.value)
   }
@@ -72,7 +72,7 @@ const ReviewFilters = ({
     <div>
       {isList && (
         <div className='review-filters'>
-          <Select
+          <Select<OptionType, false>
             options={options}
             styles={customStyles}
             isSearchable={false}

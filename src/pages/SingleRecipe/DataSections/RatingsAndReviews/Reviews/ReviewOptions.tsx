@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react'
+import React, { FC, useState } from 'react'
 import AuthAPI from 'src/api/auth'
-import ConfirmDeleteReviewModal from './ConfirmDeleteReviewModal'
-import EditingReviewOptions from './EditingReviewOptions'
-import ReviewInteractionOptions from './ReviewInteractionOptions'
+import { useQuery } from '@tanstack/react-query'
+import ConfirmDeleteReviewModal from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/ConfirmDeleteReviewModal'
+import EditingReviewOptions from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/EditingReviewOptions'
+import ReviewInteractionOptions from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/ReviewInteractionOptions'
 
 type ReviewOptionsProps = {
   handleEditReview: () => void
@@ -13,31 +14,21 @@ type ReviewOptionsProps = {
   reviewAuthorUsername: string
 }
 
-const ReviewOptions = ({
+const ReviewOptions: FC<ReviewOptionsProps> = ({
   handleEditReview,
   editing,
   setEditing,
   handleDeleteReview,
   editLoading,
   reviewAuthorUsername,
-}: ReviewOptionsProps) => {
+}) => {
   const uid = AuthAPI.getUID()
 
-  const [currUsername, setCurrUsername] = useState<string | null>(null)
-
-  useEffect(() => {
-    const abortController = new AbortController()
-    const getCurrUsername = async () => {
-      if (uid) {
-        const un = await AuthAPI.getUsername(uid)
-        setCurrUsername(un)
-      }
-    }
-    getCurrUsername()
-    return () => {
-      abortController.abort()
-    }
-  }, [uid])
+  const { data: currUsername } = useQuery({
+    queryKey: ['username', uid],
+    queryFn: () => AuthAPI.getUsername(uid!),
+    enabled: !!uid,
+  })
 
   const [deleteModalIsOpen, setDeleteModalIsOpen] = useState(false)
 

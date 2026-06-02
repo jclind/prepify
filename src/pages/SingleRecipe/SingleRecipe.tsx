@@ -1,41 +1,51 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { FC, useState, useEffect, useRef } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useParams } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 
 import './SingleRecipe.scss'
 
-import Ingredients from './DataSections/Ingredients/Ingredients'
-import Instructions from './DataSections/Instructions/Instructions'
-import Tags from './DataSections/Tags'
-import RecipeControls from './DataSections/RecipeControls/RecipeControls'
-import MadeRecipeBtn from './Buttons/MadeRecipeBtn'
+import Ingredients from 'src/pages/SingleRecipe/DataSections/Ingredients/Ingredients'
+import Instructions from 'src/pages/SingleRecipe/DataSections/Instructions/Instructions'
+import Tags from 'src/pages/SingleRecipe/DataSections/Tags'
+import RecipeControls from 'src/pages/SingleRecipe/DataSections/RecipeControls/RecipeControls'
+import MadeRecipeBtn from 'src/pages/SingleRecipe/Buttons/MadeRecipeBtn'
 
-import { updateIngredients } from '../../util/updateIngredients'
-import { capitalize } from '../../util/capitalize'
+import { updateIngredients } from 'src/util/updateIngredients'
+import { capitalize } from 'src/util/capitalize'
 
 import { IngredientsType, RecipeType, ReviewType } from 'types'
 import RecipeAPI from 'src/api/recipes'
-import RecipeNotFound from './RecipeNotFound.js/RecipeNotFound'
-import RatingsAndReviews from './DataSections/RatingsAndReviews/RatingsAndReviews'
-import RecipeHeaderContent from './RecipeHeaderContent/RecipeHeaderContent'
+import RecipeNotFound from 'src/pages/SingleRecipe/RecipeNotFound/RecipeNotFound'
+import RatingsAndReviews from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/RatingsAndReviews'
+import RecipeHeaderContent from 'src/pages/SingleRecipe/RecipeHeaderContent/RecipeHeaderContent'
 
 type LocalStorageRecipeType = {
   recipeId: string
   numServings: number
 }
 
-const SingleRecipe = ({ recipe }: { recipe?: RecipeType | null }) => {
-  const [currRecipe, setCurrRecipe] = useState<RecipeType | null>(
-    recipe || null
-  )
-  const [loading, setLoading] = useState(true)
-  const [recipe404, setRecipe404] = useState(false)
+type Props = { recipe?: RecipeType | null }
+
+const SingleRecipe: FC<Props> = ({ recipe }) => {
+  const { recipeId } = useParams<{ recipeId: string }>()
+
+  const { data: fetchedRecipe, isPending, isError } = useQuery({
+    queryKey: ['recipe', recipeId],
+    queryFn: () => RecipeAPI.getRecipe(recipeId!),
+    enabled: !!recipeId,
+  })
+
+  const loading = isPending
+  const recipe404 = !isPending && !isError && (!fetchedRecipe || !fetchedRecipe.title)
+  const recipeError = isError ? 'Failed to load recipe. Please try again.' : null
+  const currRecipe: RecipeType | null =
+    !isPending && fetchedRecipe && fetchedRecipe.title ? fetchedRecipe : recipe || null
+
   const [modIngredients, setModIngredients] = useState<IngredientsType[]>([])
   const [currUserReview, setCurrUserReview] = useState<ReviewType | null>(null)
   const [servingSize, setServingSize] = useState(0)
-  const printedRef = useRef() as React.MutableRefObject<HTMLInputElement>
-
-  const { recipeId } = useParams<{ recipeId: string }>()
+  const printedRef = useRef<HTMLInputElement>(null)
 
   const updateRecipeLocalStorage = (recipeId: string, numServings: number) => {
     const localStorageRecipeArr: LocalStorageRecipeType[] = JSON.parse(
@@ -71,38 +81,20 @@ const SingleRecipe = ({ recipe }: { recipe?: RecipeType | null }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [servingSize])
 
-  // Retrieve recipe data with recipeId
   useEffect(() => {
-    if (!recipeId) return
-    RecipeAPI.getRecipe(recipeId)
-      .then(res => {
-        if (!res || !res.title) {
-          setRecipe404(true)
-        } else {
-          setCurrRecipe(res)
-          const recipeServingsLS: LocalStorageRecipeType[] = JSON.parse(
-            localStorage.getItem('recipeServings') || '[]'
-          )
-
-          const currRecipeLocalStorageObj = recipeServingsLS.find(
-            item => item.recipeId === res._id
-          )
-
-          // Set currRecipeServings to saved local numServings value for current recipe if it exists, if not set to the default servings for the current recipe
-          const currRecipeServings: number = currRecipeLocalStorageObj
-            ? currRecipeLocalStorageObj.numServings
-            : res.servings
-
-          setServingSize(currRecipeServings)
-        }
-        setLoading(false)
-      })
-      .catch(err => {
-        console.log(err)
-      })
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+    if (fetchedRecipe && fetchedRecipe.title) {
+      const recipeServingsLS: LocalStorageRecipeType[] = JSON.parse(
+        localStorage.getItem('recipeServings') || '[]'
+      )
+      const currRecipeLocalStorageObj = recipeServingsLS.find(
+        item => item.recipeId === fetchedRecipe._id
+      )
+      const currRecipeServings: number = currRecipeLocalStorageObj
+        ? currRecipeLocalStorageObj.numServings
+        : fetchedRecipe.servings
+      setServingSize(currRecipeServings)
+    }
+  }, [fetchedRecipe])
 
   return (
     <>
@@ -118,7 +110,9 @@ const SingleRecipe = ({ recipe }: { recipe?: RecipeType | null }) => {
         </title>
         <meta name='description' content={currRecipe?.description} />
       </Helmet>
-      {recipe404 ? (
+      {recipeError ? (
+        <div className='recipe-fetch-error'>{recipeError}</div>
+      ) : recipe404 ? (
         <RecipeNotFound />
       ) : (
         <>

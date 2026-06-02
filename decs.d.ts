@@ -1,8 +1,4 @@
 declare module 'react-loading-skeleton'
-declare module 'react-alert'
 declare module 'react-collapse'
-declare module 'react-helmet'
-declare module 'react-star-ratings'
 declare module 'react-modal'
-declare module 'uuid'
 declare module '*.scss'

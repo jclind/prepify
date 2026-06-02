@@ -1,12 +1,12 @@
 const { Router } = require('express')
 const { getDB } = require('../db')
 const { verifyToken } = require('../middleware/auth')
+const { recipeIdQuery } = require('../util/recipeIdQuery')
 
 const router = Router()
 
-// PUT /addRating
-// TODO: protect with verifyToken
-router.put('/addRating', verifyToken, async (req, res) => {
+// POST /addRating
+router.post('/addRating', verifyToken, async (req, res) => {
   try {
     const { recipeId, rating } = req.query
     const db = getDB()
@@ -47,7 +47,7 @@ router.put('/addRating', verifyToken, async (req, res) => {
     const avg = allRatings.reduce((sum, r) => sum + parseFloat(r.rating), 0) / count
 
     await db.collection('recipes').updateOne(
-      { _id: recipeId },
+      recipeIdQuery(recipeId),
       { $set: { rating: { rateCount: count, rateValue: avg } } }
     )
 
@@ -57,9 +57,8 @@ router.put('/addRating', verifyToken, async (req, res) => {
   }
 })
 
-// PUT /newReview
-// TODO: protect with verifyToken
-router.put('/newReview', verifyToken, async (req, res) => {
+// POST /newReview
+router.post('/newReview', verifyToken, async (req, res) => {
   try {
     const db = getDB()
     const { recipeId, reviewText } = req.body
@@ -86,17 +85,21 @@ router.put('/newReview', verifyToken, async (req, res) => {
   }
 })
 
-// GET /checkIfReviewed
-router.get('/checkIfReviewed', async (req, res) => {
+// GET /checkIfReviewed — scoped to the authenticated user
+router.get('/checkIfReviewed', verifyToken, async (req, res) => {
   try {
     const db = getDB()
-    const { username, recipeId } = req.query
-    if (!username || !recipeId) {
-      return res.status(400).json({ error: 'username and recipeId are required' })
+    const { recipeId } = req.query
+    if (!recipeId) {
+      return res.status(400).json({ error: 'recipeId is required' })
     }
+    const userDoc = await db.collection('usernames').findOne({ _id: req.uid })
+    if (!userDoc) return res.status(400).json({ error: 'Username not found for this user' })
+    const { username } = userDoc
+
     const doc = await db.collection('ratings').findOne({ username, recipeId })
-    if (doc && doc.reviewText) {
-      res.json({ reviewed: true, reviewText: doc.reviewText, rating: doc.rating })
+    if (doc) {
+      res.json({ reviewed: true, ...doc })
     } else {
       res.json({ reviewed: false })
     }
@@ -105,9 +108,8 @@ router.get('/checkIfReviewed', async (req, res) => {
   }
 })
 
-// PUT /editReview
-// TODO: protect with verifyToken
-router.put('/editReview', verifyToken, async (req, res) => {
+// POST /editReview
+router.post('/editReview', verifyToken, async (req, res) => {
   try {
     const { recipeId, text } = req.query
     const db = getDB()
@@ -117,19 +119,21 @@ router.put('/editReview', verifyToken, async (req, res) => {
     if (!recipeId || text == null) {
       return res.status(400).json({ error: 'recipeId and text are required' })
     }
-    await db.collection('ratings').updateOne(
+    const editResult = await db.collection('ratings').updateOne(
       { username, recipeId },
       { $set: { reviewText: text, reviewLastUpdated: Date.now().toString() } }
     )
+    if (editResult.matchedCount === 0) {
+      return res.status(403).json({ error: 'Review not found or not authorized' })
+    }
     res.json({ edited: true })
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
 })
 
-// PUT /deleteReview
-// TODO: protect with verifyToken
-router.put('/deleteReview', verifyToken, async (req, res) => {
+// DELETE /deleteReview
+router.delete('/deleteReview', verifyToken, async (req, res) => {
   try {
     const db = getDB()
     const { recipeId } = req.query
@@ -141,10 +145,13 @@ router.put('/deleteReview', verifyToken, async (req, res) => {
     if (!usernameDoc) return res.status(400).json({ error: 'Username not found for this user' })
     const { username } = usernameDoc
 
-    await db.collection('ratings').updateOne(
+    const deleteResult = await db.collection('ratings').updateOne(
       { username, recipeId },
       { $set: { reviewText: '', reviewLastUpdated: '' } }
     )
+    if (deleteResult.matchedCount === 0) {
+      return res.status(403).json({ error: 'Review not found or not authorized' })
+    }
     res.json({ deleted: true })
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -191,7 +198,7 @@ router.get('/getSingleUserReviews', async (req, res) => {
 
     const skip = parseInt(page) * parseInt(reviewsPerPage)
     const limit = parseInt(reviewsPerPage)
-    const query = { username, reviewText: { $exists: true, $ne: '' } }
+    const query = { username }
 
     let sort = {}
     if (filter === 'new') sort = { reviewCreatedAt: -1 }
@@ -206,7 +213,7 @@ router.get('/getSingleUserReviews', async (req, res) => {
     if (returnRecipeData === 'true') {
       reviews = await Promise.all(
         rawReviews.map(async (r) => {
-          const recipeData = await db.collection('recipes').findOne({ _id: r.recipeId })
+          const recipeData = await db.collection('recipes').findOne(recipeIdQuery(r.recipeId))
           return { ...r, recipeData }
         })
       )

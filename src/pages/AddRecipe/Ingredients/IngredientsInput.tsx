@@ -1,9 +1,9 @@
-import React, { useState } from 'react'
+import React, { FC, useState } from 'react'
 import { TailSpin } from 'react-loader-spinner'
 import RecipeAPI from 'src/api/recipes'
 import { IngredientsType } from 'types'
-import RecipeFormInput from '../RecipeFormInput'
-import styles from '../../../_exports.scss'
+import RecipeFormInput from 'src/pages/AddRecipe/RecipeFormInput'
+import styles from 'src/_exports.module.scss'
 
 type IngredientsInputProps = {
   addIngredientToList: (data: IngredientsType) => void
@@ -12,30 +12,49 @@ type IngredientsInputProps = {
   ingredientLoading: { isLoading: boolean; index: number }
 }
 
-const IngredientsInput = ({
+const IngredientsInput: FC<IngredientsInputProps> = ({
   addIngredientToList,
   setIngredientLoading,
   ingredientsLength,
   ingredientLoading,
-}: IngredientsInputProps) => {
+}) => {
   const [inputVal, setInputVal] = useState('')
   const [loading, setLoading] = useState(false)
+  const [enrichmentWarning, setEnrichmentWarning] = useState('')
 
   const handleAddIngredient = async () => {
-    setIngredientLoading({ isLoading: true, index: ingredientsLength })
-    if (loading || !inputVal) return
+    if (loading) return
 
+    // Empty / whitespace-only input: close the loop with a hint instead of
+    // silently no-opping, and never fire a parse request for nothing. (Guard
+    // BEFORE touching loading state so we never strand the parent spinner.)
+    const trimmed = inputVal.trim()
+    if (!trimmed) {
+      setEnrichmentWarning('Enter an ingredient before adding it.')
+      return
+    }
+
+    setEnrichmentWarning('')
     setLoading(true)
+    setIngredientLoading({ isLoading: true, index: ingredientsLength })
 
-    const data: IngredientsType = await RecipeAPI.getIngredientData(inputVal)
-    if (data) {
+    try {
+      const data: IngredientsType = await RecipeAPI.getIngredientData(trimmed)
+      // getIngredientData is soft-fail: always returns a valid IngredientsType,
+      // even on enrichment failure (ingredientData: null + error). Per the
+      // ingredient-enrichment-failures-are-non-fatal policy, we add the
+      // ingredient either way and surface a small warning if enrichment failed.
       addIngredientToList(data)
       setInputVal('')
-    } else {
-      // !! ERROR
+      if ('error' in data && data.error) {
+        setEnrichmentWarning(
+          `Added "${trimmed}", but couldn't fetch nutrition/image data. You can edit or remove it.`
+        )
+      }
+    } finally {
+      setLoading(false)
+      setIngredientLoading({ isLoading: false, index: -1 })
     }
-    setLoading(false)
-    setIngredientLoading({ isLoading: false, index: -1 })
   }
 
   return (
@@ -54,6 +73,11 @@ const IngredientsInput = ({
             color={styles.primaryText}
             ariaLabel='loading'
           />
+        </div>
+      )}
+      {enrichmentWarning && (
+        <div className='warning' role='status'>
+          {enrichmentWarning}
         </div>
       )}
     </div>

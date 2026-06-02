@@ -1,6 +1,9 @@
 const { Router } = require('express')
+const { ObjectId } = require('mongodb')
 const { getDB } = require('../db')
 const { verifyToken } = require('../middleware/auth')
+const { recipeIdQuery } = require('../util/recipeIdQuery')
+const { validateRecipeBounds } = require('../util/recipeLimits')
 
 const router = Router()
 
@@ -63,7 +66,18 @@ router.get('/searchAutoCompleteRecipes', async (req, res) => {
       .collection('recipes')
       .find(
         { title: { $regex: escapeRegex(title || ''), $options: 'i' } },
-        { projection: { _id: 1, title: 1, recipeImage: 1 } }
+        {
+          projection: {
+            _id: 1,
+            title: 1,
+            recipeImage: 1,
+            totalTime: 1,
+            servings: 1,
+            rating: 1,
+            nutritionLabels: 1,
+            servingPrice: 1,
+          },
+        }
       )
       .limit(8)
       .toArray()
@@ -98,7 +112,7 @@ router.get('/getRecipe', async (req, res) => {
     if (!id) return res.status(400).json({ error: 'id is required' })
 
     const recipe = await db.collection('recipes').findOneAndUpdate(
-      { _id: id },
+      recipeIdQuery(id),
       { $inc: { views: 1 } },
       { returnDocument: 'after' }
     )
@@ -118,41 +132,57 @@ router.get('/getRecipe', async (req, res) => {
 })
 
 // POST /addRecipe
-// TODO: protect with auth middleware — verify body.userId matches token uid
 router.post('/addRecipe', verifyToken, async (req, res) => {
   try {
     const db = getDB()
     const body = req.body
-    if (body.userId !== req.uid) {
-      return res.status(403).json({ error: 'Forbidden' })
+    const uid = req.uid
+    const requiredFields = ['title', 'ingredients', 'instructions', 'mealTypes']
+    const missing = requiredFields.filter(f => {
+      const val = body[f]
+      return val == null || val === '' || (Array.isArray(val) && val.length === 0)
+    })
+    if (missing.length > 0) {
+      return res.status(400).json({ error: `Missing required fields: ${missing.join(', ')}` })
     }
-    const result = await db.collection('recipes').insertOne(body)
+    const boundsError = validateRecipeBounds(body)
+    if (boundsError) {
+      return res.status(400).json({ error: boundsError })
+    }
+    // Server stamps _id, userId, and counters — client-supplied values are discarded
+    const newId = new ObjectId()
+    const docToInsert = { ...body, _id: newId, userId: uid, numTimesSaved: 0, numTimesMade: 0, views: 0 }
+    await db.collection('recipes').insertOne(docToInsert)
     await db.collection('userRecipeData').updateOne(
-      { _id: body.userId },
-      { $push: { userRecipes: { recipeId: body._id } } },
+      { _id: uid },
+      { $push: { userRecipes: { recipeId: newId } } },
       { upsert: true }
     )
-    res.json({ insertedId: result.insertedId })
+    res.status(201).json({ _id: newId })
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
 })
 
 // DELETE /deleteRecipe
-// TODO: protect with auth middleware — verify userId matches token uid
 router.delete('/deleteRecipe', verifyToken, async (req, res) => {
   try {
     const db = getDB()
-    const { recipeId, userId } = req.query
-    if (!recipeId || !userId) {
-      return res.status(400).json({ error: 'recipeId and userId are required' })
+    const { recipeId } = req.query
+    if (!recipeId) {
+      return res.status(400).json({ error: 'recipeId is required' })
     }
-    if (userId !== req.uid) {
+    const uid = req.uid
+    const recipe = await db.collection('recipes').findOne(recipeIdQuery(recipeId))
+    if (!recipe) {
+      return res.status(404).json({ error: 'Recipe not found' })
+    }
+    if (recipe.userId !== uid) {
       return res.status(403).json({ error: 'Forbidden' })
     }
-    await db.collection('recipes').deleteOne({ _id: recipeId })
+    await db.collection('recipes').deleteOne(recipeIdQuery(recipeId))
     await db.collection('userRecipeData').updateOne(
-      { _id: userId },
+      { _id: uid },
       { $pull: { userRecipes: { recipeId } } }
     )
     res.json({ deleted: true })
@@ -161,30 +191,27 @@ router.delete('/deleteRecipe', verifyToken, async (req, res) => {
   }
 })
 
-// PUT /saveRecipe
-// TODO: protect with auth middleware
-router.put('/saveRecipe', verifyToken, async (req, res) => {
+// POST /recipes/:id/save
+router.post('/recipes/:id/save', verifyToken, async (req, res) => {
   try {
     const db = getDB()
-    const { userId, recipeId } = req.query
-    if (!userId || !recipeId) {
-      return res.status(400).json({ error: 'userId and recipeId are required' })
+    const recipeId = req.params.id
+    if (!recipeId) {
+      return res.status(400).json({ error: 'recipeId is required' })
     }
-    if (req.query.userId !== req.uid) {
-      return res.status(403).json({ error: 'Forbidden' })
-    }
-    const existingData = await db.collection('userRecipeData').findOne({ _id: userId })
+    const uid = req.uid
+    const existingData = await db.collection('userRecipeData').findOne({ _id: uid })
     const alreadySaved = existingData?.savedRecipes?.some(e => e.recipeId === recipeId) ?? false
     if (alreadySaved) {
       return res.status(409).json({ error: 'Recipe already saved' })
     }
     await db.collection('userRecipeData').updateOne(
-      { _id: userId },
+      { _id: uid },
       { $push: { savedRecipes: { recipeId, dateSaved: Date.now().toString() } } },
       { upsert: true }
     )
     await db.collection('recipes').updateOne(
-      { _id: recipeId },
+      recipeIdQuery(recipeId),
       { $inc: { numTimesSaved: 1 } }
     )
     res.json({ saved: true })
@@ -197,14 +224,12 @@ router.put('/saveRecipe', verifyToken, async (req, res) => {
 router.get('/getSavedRecipe', verifyToken, async (req, res) => {
   try {
     const db = getDB()
-    const { userId, recipeId } = req.query
-    if (!userId || !recipeId) {
-      return res.status(400).json({ error: 'userId and recipeId are required' })
+    const { recipeId } = req.query
+    if (!recipeId) {
+      return res.status(400).json({ error: 'recipeId is required' })
     }
-    if (req.query.userId !== req.uid) {
-      return res.status(403).json({ error: 'Forbidden' })
-    }
-    const userData = await db.collection('userRecipeData').findOne({ _id: userId })
+    const uid = req.uid
+    const userData = await db.collection('userRecipeData').findOne({ _id: uid })
     const match =
       userData?.savedRecipes?.find((entry) => entry.recipeId === recipeId) ?? null
     res.json(match)
@@ -213,29 +238,26 @@ router.get('/getSavedRecipe', verifyToken, async (req, res) => {
   }
 })
 
-// PUT /unsaveRecipe
-// TODO: protect with auth middleware
-router.put('/unsaveRecipe', verifyToken, async (req, res) => {
+// DELETE /recipes/:id/save
+router.delete('/recipes/:id/save', verifyToken, async (req, res) => {
   try {
     const db = getDB()
-    const { userId, recipeId } = req.query
-    if (!userId || !recipeId) {
-      return res.status(400).json({ error: 'userId and recipeId are required' })
+    const recipeId = req.params.id
+    if (!recipeId) {
+      return res.status(400).json({ error: 'recipeId is required' })
     }
-    if (req.query.userId !== req.uid) {
-      return res.status(403).json({ error: 'Forbidden' })
-    }
-    const savedData = await db.collection('userRecipeData').findOne({ _id: userId })
+    const uid = req.uid
+    const savedData = await db.collection('userRecipeData').findOne({ _id: uid })
     const isSaved = savedData?.savedRecipes?.some(e => e.recipeId === recipeId) ?? false
     if (!isSaved) {
       return res.status(404).json({ error: 'Recipe not in saved list' })
     }
     await db.collection('userRecipeData').updateOne(
-      { _id: userId },
+      { _id: uid },
       { $pull: { savedRecipes: { recipeId } } }
     )
     await db.collection('recipes').updateOne(
-      { _id: recipeId },
+      recipeIdQuery(recipeId),
       [{ $set: { numTimesSaved: { $max: [{ $subtract: ['$numTimesSaved', 1] }, 0] } } }]
     )
     res.json({ unsaved: true })
@@ -245,23 +267,20 @@ router.put('/unsaveRecipe', verifyToken, async (req, res) => {
 })
 
 // POST /madeRecipe
-// TODO: protect with auth middleware
 router.post('/madeRecipe', verifyToken, async (req, res) => {
   try {
     const db = getDB()
-    const { userId, recipeId } = req.query
-    if (!userId || !recipeId) {
-      return res.status(400).json({ error: 'userId and recipeId are required' })
+    const { recipeId } = req.query
+    if (!recipeId) {
+      return res.status(400).json({ error: 'recipeId is required' })
     }
-    if (req.query.userId !== req.uid) {
-      return res.status(403).json({ error: 'Forbidden' })
-    }
+    const uid = req.uid
     await db.collection('recipes').updateOne(
-      { _id: recipeId },
+      recipeIdQuery(recipeId),
       { $inc: { numTimesMade: 1 } }
     )
     await db.collection('userRecipeData').updateOne(
-      { _id: userId },
+      { _id: uid },
       { $addToSet: { madeRecipes: { recipeId } } },
       { upsert: true }
     )
@@ -275,14 +294,12 @@ router.post('/madeRecipe', verifyToken, async (req, res) => {
 router.get('/checkMadeRecipe', verifyToken, async (req, res) => {
   try {
     const db = getDB()
-    const { userId, recipeId } = req.query
-    if (!userId || !recipeId) {
-      return res.status(400).json({ error: 'userId and recipeId are required' })
+    const { recipeId } = req.query
+    if (!recipeId) {
+      return res.status(400).json({ error: 'recipeId is required' })
     }
-    if (req.query.userId !== req.uid) {
-      return res.status(403).json({ error: 'Forbidden' })
-    }
-    const userData = await db.collection('userRecipeData').findOne({ _id: userId })
+    const uid = req.uid
+    const userData = await db.collection('userRecipeData').findOne({ _id: uid })
     const made =
       userData?.madeRecipes?.some((entry) => entry.recipeId === recipeId) ?? false
     res.json({ made })

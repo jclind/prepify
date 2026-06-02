@@ -1,13 +1,13 @@
-import React, { useEffect } from 'react'
+import React, { FC, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CgTimer } from 'react-icons/cg'
 import { AiOutlineStar } from 'react-icons/ai'
-import { formatRating } from '../../util/formatRating'
+import { formatRating } from 'src/util/formatRating'
 import Skeleton from 'react-loading-skeleton'
 import 'react-loading-skeleton/dist/skeleton.css'
 
 import './RecipeThumbnail.scss'
-import { RecipeType } from '../../../types'
+import { RecipeType } from 'types'
 
 const skeletonColor = '#d6d6d6'
 
@@ -16,7 +16,7 @@ type RecipeThumbnailType = {
   loading?: boolean
 }
 
-const RecipeThumbnail = ({ recipe, loading }: RecipeThumbnailType) => {
+const RecipeThumbnail: FC<RecipeThumbnailType> = ({ recipe, loading }) => {
   const navigate = useNavigate()
   const handleOnClick = () => {
     if (!loading) {
@@ -53,7 +53,7 @@ const RecipeThumbnail = ({ recipe, loading }: RecipeThumbnailType) => {
           )}
         </h3>
         <div className='price'>
-          {loading || !recipe || !recipe.servingPrice || !recipe.servings ? (
+          {loading || !recipe || recipe.servingPrice == null || !recipe.servings ? (
             <Skeleton baseColor={skeletonColor} height={30} />
           ) : (
             `Serving: $${(recipe.servingPrice / 100).toFixed(2)} | Recipe: $${(

@@ -1,77 +1,64 @@
-import React, { useState, useEffect } from 'react'
+import React, { FC, useState } from 'react'
+import { useInfiniteQuery } from '@tanstack/react-query'
 import { useLocation } from 'react-router-dom'
 import './Recipes.scss'
-import RecipeThumbnail from '../../Components/RecipeThumbnail/RecipeThumbnail'
-import RecipeFilters from '../../Components/RecipeFilters/RecipeFilters'
-import SearchRecipesInput from '../../Components/SearchRecipesInput/SearchRecipesInput'
+import RecipeThumbnail from 'src/Components/RecipeThumbnail/RecipeThumbnail'
+import RecipeFilters from 'src/Components/RecipeFilters/RecipeFilters'
+import SearchRecipesInput from 'src/Components/SearchRecipesInput/SearchRecipesInput'
 import { Helmet } from 'react-helmet-async'
 import RecipeAPI from 'src/api/recipes'
-import { RecipeType } from 'types'
 import { TailSpin } from 'react-loader-spinner'
 
-const Recipes = () => {
-  const [recipeList, setRecipeList] = useState<RecipeType[]>([])
-
+const Recipes: FC = () => {
   const [selectFilterVal, setSelectFilterVal] = useState('')
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [selectedCuisine, setSelectedCuisine] = useState('')
-
-  const [fetchRecipesLoading, setFetchRecipesLoading] = useState(false)
   const [filtersLoading, setFiltersLoading] = useState(true)
-
-  const [currPage, setCurrPage] = useState<number | null>(null)
-  const [totalResults, setTotalResults] = useState<number | null>(null)
 
   const location = useLocation()
   const urlParams = new URLSearchParams(location.search)
   const param = urlParams.get('q')
   const query = param ? param.split('-').join(' ') : ''
+  const orderParam = urlParams.get('order')
+  const filter = orderParam || selectFilterVal
 
-  const getRecipes = (page: number) => {
-    const orderParam = urlParams.get('order')
-    const filter = orderParam || selectFilterVal
-    const recipesPerPage = 9
+  const { data, isFetching, isError, fetchNextPage, hasNextPage } =
+    useInfiniteQuery({
+      queryKey: [
+        'recipes',
+        {
+          sort: filter,
+          tags: selectedTags,
+          cuisine: selectedCuisine,
+          search: query,
+        },
+      ],
+      queryFn: ({ pageParam }) =>
+        RecipeAPI.getAllRecipes(
+          pageParam as number,
+          filter,
+          selectedTags,
+          selectedCuisine,
+          9,
+          query
+        ),
+      initialPageParam: 0,
+      getNextPageParam: (lastPage, allPages) => {
+        const totalFetched = allPages.reduce(
+          (sum, p) => sum + p.recipeList.length,
+          0
+        )
+        return totalFetched < lastPage.total_results
+          ? lastPage.page + 1
+          : undefined
+      },
+      enabled: !filtersLoading,
+      retry: false,
+    })
 
-    setFetchRecipesLoading(true)
-    RecipeAPI.getAllRecipes(
-      page,
-      filter,
-      selectedTags,
-      selectedCuisine,
-      recipesPerPage,
-      query
-    )
-      .then(res => {
-        setTotalResults(res.total_results)
+  const recipeList = data?.pages.flatMap(p => p.recipeList) ?? []
+  const totalResults = data?.pages[0]?.total_results ?? null
 
-        if (res.recipeList) {
-          if (page !== 0) {
-            setRecipeList(prev => [...prev, ...res.recipeList])
-          } else {
-            setRecipeList(res.recipeList)
-          }
-        } else {
-          setRecipeList([])
-        }
-      })
-      .finally(() => setFetchRecipesLoading(false))
-  }
-
-  useEffect(() => {
-    if (!filtersLoading) {
-      setRecipeList([])
-      setCurrPage(0)
-      getRecipes(0)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectFilterVal, selectedTags, selectedCuisine, location.search])
-
-  useEffect(() => {
-    if (currPage !== null && currPage !== 0) {
-      getRecipes(currPage)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currPage])
   return (
     <>
       <Helmet>
@@ -96,7 +83,11 @@ const Recipes = () => {
             filtersLoading={filtersLoading}
             setFiltersLoading={setFiltersLoading}
           />
-          {totalResults === 0 ? (
+          {isError ? (
+            <div className='fetch-error'>
+              Failed to load recipes. Please try again.
+            </div>
+          ) : totalResults === 0 ? (
             <div>No Results Found</div>
           ) : (
             <>
@@ -117,15 +108,13 @@ const Recipes = () => {
             </>
           )}
 
-          {totalResults &&
-          totalResults > recipeList.length &&
-          currPage !== null ? (
+          {hasNextPage ? (
             <button
               className='load-more-btn btn'
-              onClick={() => setCurrPage(currPage + 1)}
-              disabled={fetchRecipesLoading}
+              onClick={() => fetchNextPage()}
+              disabled={isFetching}
             >
-              {fetchRecipesLoading ? (
+              {isFetching ? (
                 <TailSpin
                   height='30'
                   width='30'

@@ -1,8 +1,8 @@
 import React, { FC, useState } from 'react'
 import { IngredientsType } from 'types'
-import AddLabel from '../../../../pages/AddRecipe/AddLabel/AddLabel'
-import IngredientList from '../IngredientList/IngredientList'
-import IngredientsInput from '../IngredientsInput'
+import AddLabel from 'src/pages/AddRecipe/AddLabel/AddLabel'
+import IngredientList from 'src/pages/AddRecipe/Ingredients/IngredientList/IngredientList'
+import IngredientsInput from 'src/pages/AddRecipe/Ingredients/IngredientsInput'
 import './IngredientsContainer.scss'
 
 type IngredientsContainerProps = {
@@ -18,7 +18,6 @@ const IngredientsContainer: FC<IngredientsContainerProps> = ({
     isLoading: boolean
     index: number
   }>({ isLoading: false, index: -1 })
-  const [reorderActive, setReorderActive] = useState(false)
 
   const addIngredientToList = (data: IngredientsType) => {
     setIngredients((prev: IngredientsType[]) => {
@@ -29,6 +28,17 @@ const IngredientsContainer: FC<IngredientsContainerProps> = ({
   const removeIngredient = (removeId: string) => {
     setIngredients(prev => prev.filter(ingr => ingr.id !== removeId))
   }
+
+  // Sum of the enriched per-ingredient prices (cents). Shown as a subtotal so
+  // the cook sees the total grocery cost; the page's summary bar handles the
+  // per-serving figure separately.
+  const subtotalCents = ingredients.reduce((sum, ingr) => {
+    if ('ingredientData' in ingr && ingr.ingredientData) {
+      const cents = Number(ingr.ingredientData.totalPriceUSACents)
+      if (!isNaN(cents)) return sum + cents
+    }
+    return sum
+  }, 0)
 
   return (
     <div className='ingredients-container'>
@@ -43,18 +53,16 @@ const IngredientsContainer: FC<IngredientsContainerProps> = ({
         setIngredients={setIngredients}
         ingredientLoading={ingredientLoading}
         setIngredientLoading={setIngredientLoading}
-        reorderActive={reorderActive}
         removeIngredient={removeIngredient}
       />
-      <button
-        className='reorder-btn'
-        onClick={() => setReorderActive(prev => !prev)}
-      >
-        {reorderActive ? 'Done' : 'Reorder'}
-      </button>
-      {/* <button className="add-header-btn" onClick={}> */}
-      <AddLabel addToList={addIngredientToList} />
-      {/* </button> */}
+      <div className='ingredients-footer'>
+        <AddLabel addToList={addIngredientToList} />
+        {subtotalCents > 0 && (
+          <span className='ingredients-subtotal'>
+            Subtotal <b>${(subtotalCents / 100).toFixed(2)}</b>
+          </span>
+        )}
+      </div>
     </div>
   )
 }

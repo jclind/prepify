@@ -1,7 +1,7 @@
 import React, { FC } from 'react'
-import Select, { MultiValue } from 'react-select'
+import Select, { ActionMeta, MultiValue, StylesConfig } from 'react-select'
 import mealTypesList from 'src/recipeData/mealTypesList'
-import styles from '../../../_exports.scss'
+import styles from 'src/_exports.module.scss'
 
 type OptionType = {
   value: string
@@ -13,7 +13,7 @@ const mealTypeOptions: OptionType[] = mealTypesList.map(m => ({
   label: m,
 }))
 
-const customStyles = {
+const customStyles: StylesConfig<OptionType> = {
   control: (provided: any, state: any) => ({
     ...provided,
     borderColor: state.isFocused ? styles.primary : provided.borderColor,
@@ -55,7 +55,7 @@ const MealTypeSelector: FC<MealTypeSelectorProps> = ({
 }) => {
   const handleChange = (
     newValue: MultiValue<OptionType> | null,
-    actionMeta: any
+    actionMeta: ActionMeta<OptionType>
   ) => {
     if (newValue) {
       const newValues = newValue.map((value: OptionType) => value.value)
@@ -73,7 +73,7 @@ const MealTypeSelector: FC<MealTypeSelectorProps> = ({
         onChange={handleChange}
         options={mealTypeOptions}
         styles={customStyles}
-        placeholder='Select a cuisine...'
+        placeholder='Select meal type(s)...'
         closeMenuOnSelect={false}
       />
     </div>

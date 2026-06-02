@@ -1,15 +1,15 @@
-import React, { useState } from 'react'
+import React, { FC, useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import './Login.scss'
 import '../../Components/Form/FormStyles.scss'
-import FormInput from '../../Components/Form/FormInput'
-import { useAuth } from '../../context/AuthContext'
+import FormInput from 'src/Components/Form/FormInput'
+import { useAuth } from 'src/context/AuthContext'
 import { AiOutlineGoogle } from 'react-icons/ai'
 import { MdOutlineEmail, MdOutlineLock } from 'react-icons/md'
-import PrepifyLogo from '../../Components/Navbar/PrepifyLogo'
-import { Helmet } from 'react-helmet'
+import PrepifyLogo from 'src/Components/Navbar/PrepifyLogo'
+import { Helmet } from 'react-helmet-async'
 
-const Login = () => {
+const Login: FC = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
 
@@ -17,7 +17,7 @@ const Login = () => {
 
   const authRes = useAuth()
 
-  const handleEmailAndPasswordFormSubmit = (e: any) => {
+  const handleEmailAndPasswordFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError('')
     authRes?.signInDefault(email, password, setError)

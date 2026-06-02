@@ -1,6 +1,10 @@
 import React, { useState, useRef } from 'react'
 import { AiOutlineClose } from 'react-icons/ai'
+import toast from 'react-hot-toast'
 import './ImagePicker.scss'
+
+const MAX_IMAGE_SIZE = 5000 * 1024 // 5MB
+const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 
 interface ImagePickerProps {
   image: File | undefined
@@ -11,10 +15,28 @@ const ImagePicker: React.FC<ImagePickerProps> = ({ image, setImage }) => {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [imagePreview, setImagePreview] = useState<string | undefined>()
 
+  const resetInput = () => {
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files && event.target.files[0]
 
     if (file) {
+      // Validate before doing any work: reject non-image types and oversized
+      // files so we never upload junk to storage. Clear the input on rejection
+      // so the same corrected file can be re-picked.
+      if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+        toast.error('Please choose a JPEG, PNG, or WebP image.')
+        resetInput()
+        return
+      }
+      if (file.size > MAX_IMAGE_SIZE) {
+        toast.error('Image cannot be more than 5MB in size.')
+        resetInput()
+        return
+      }
+
       setImage(file)
 
       const reader = new FileReader()
@@ -59,6 +81,7 @@ const ImagePicker: React.FC<ImagePickerProps> = ({ image, setImage }) => {
   const removeImage = () => {
     setImage(undefined)
     setImagePreview(undefined)
+    resetInput()
   }
 
   return (
