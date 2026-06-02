@@ -80,7 +80,7 @@ const RecipeControls: FC<RecipeControlsType> = ({
       queryClient.invalidateQueries({ queryKey: ['created-recipes'] })
       closeDeleteModal()
       // Toaster is mounted at the app root, so the toast survives the redirect.
-      toast.success('Recipe deleted.')
+      toast.success(`"${recipeTitle}" deleted.`)
       navigate('/')
     } catch (err: unknown) {
       const message = isAxiosError(err)
