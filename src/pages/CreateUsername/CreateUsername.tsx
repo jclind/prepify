@@ -3,6 +3,7 @@ import '../../Components/Form/FormStyles.scss'
 import './CreateUsername.scss'
 import { TailSpin } from 'react-loader-spinner'
 import { useNavigate } from 'react-router-dom'
+import toast from 'react-hot-toast'
 import UsernameInput from 'src/Components/Form/UsernameInput'
 import AuthAPI from 'src/api/auth'
 import { useAuth } from 'src/context/AuthContext'
@@ -19,7 +20,6 @@ const CreateUsername: FC = () => {
   const [checkingExisting, setCheckingExisting] = useState(true)
 
   const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
 
   const navigate = useNavigate()
 
@@ -64,12 +64,13 @@ const CreateUsername: FC = () => {
 
     setLoadingCreateUsername(true)
     setError('')
-    setSuccess('')
 
     AuthAPI.setUsername(currUsername)
       .then(() => {
         setLoadingCreateUsername(false)
-        setSuccess('Username Created Successfully!')
+        // A toast (rendered at the app root) survives the redirect, unlike an
+        // inline message on a page we immediately navigate away from.
+        toast.success('Username created successfully!')
         navigate('/')
       })
       .catch((error: unknown) => {
@@ -96,13 +97,12 @@ const CreateUsername: FC = () => {
           <p className='prompt'>
             Create a unique username to identify yourself with.
           </p>
-          {success ? <div className='success'>{success}</div> : null}
           {error ? <div className='error'>{error}</div> : null}
           <div className='input-fields'>
             <UsernameInput
               username={currUsername}
               setUsername={setCurrUsername}
-              setSuccess={setSuccess}
+              setSuccess={() => {}}
               setError={setError}
               isUsernameAvailable={isUsernameAvailable}
               setIsUsernameAvailable={setIsUsernameAvailable}
