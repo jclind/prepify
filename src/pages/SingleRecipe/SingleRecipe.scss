@@ -186,6 +186,11 @@
             }
           }
         }
+        .edited-marker {
+          font-size: 0.85rem;
+          font-style: italic;
+          color: s.$secondary-text;
+        }
       }
 
       @media screen and (max-width: 1100px) {

@@ -233,6 +233,148 @@ describe('POST /addRecipe', () => {
   })
 })
 
+// ─── PUT /editRecipe ──────────────────────────────────────────────────────────
+
+describe('PUT /editRecipe', () => {
+  const OWNED_RECIPE = {
+    ...BASE_RECIPE,
+    userId: TEST_UID,
+    rating: { rateCount: 12, rateValue: 4.5 },
+    numTimesSaved: 7,
+    numTimesMade: 3,
+    views: 99,
+    editedAt: null,
+  }
+
+  const validEdit = () => ({
+    title: 'Updated Title',
+    description: 'An updated description',
+    ingredients: [{ id: 'i1', name: 'chicken' }],
+    instructions: [{ content: 'Cook it well', index: 1, id: 's1' }],
+    mealTypes: ['dinner'],
+  })
+
+  beforeEach(async () => {
+    await seedRecipe({ ...OWNED_RECIPE })
+  })
+
+  it('rejects request with no auth token (401)', async () => {
+    const res = await request(app)
+      .put(`/api/editRecipe?recipeId=${RECIPE_ID}`)
+      .send(validEdit())
+    expect(res.status).toBe(401)
+  })
+
+  it('returns 400 when recipeId is missing', async () => {
+    const res = await request(app)
+      .put('/api/editRecipe')
+      .set(AUTH_HEADER)
+      .send(validEdit())
+    expect(res.status).toBe(400)
+  })
+
+  it('returns 404 if the recipe does not exist', async () => {
+    const res = await request(app)
+      .put('/api/editRecipe?recipeId=nonexistent')
+      .set(AUTH_HEADER)
+      .send(validEdit())
+    expect(res.status).toBe(404)
+  })
+
+  it('rejects an edit by a non-owner (403) and leaves the recipe unchanged', async () => {
+    const db = getDB()
+    await db.collection('recipes').deleteOne({ _id: RECIPE_ID })
+    await seedRecipe({ ...OWNED_RECIPE, userId: 'someone-else' })
+
+    const res = await request(app)
+      .put(`/api/editRecipe?recipeId=${RECIPE_ID}`)
+      .set(AUTH_HEADER)
+      .send(validEdit())
+
+    expect(res.status).toBe(403)
+    const stored = await db.collection('recipes').findOne({ _id: RECIPE_ID })
+    expect(stored.title).toBe(OWNED_RECIPE.title)
+    expect(stored.editedAt).toBeNull()
+  })
+
+  it('rejects missing required fields (400)', async () => {
+    const res = await request(app)
+      .put(`/api/editRecipe?recipeId=${RECIPE_ID}`)
+      .set(AUTH_HEADER)
+      .send({ description: 'no title/ingredients/etc' })
+    expect(res.status).toBe(400)
+    expect(res.body.error).toMatch(/Missing required fields/)
+  })
+
+  it('enforces input bounds (400)', async () => {
+    const res = await request(app)
+      .put(`/api/editRecipe?recipeId=${RECIPE_ID}`)
+      .set(AUTH_HEADER)
+      .send({ ...validEdit(), title: 'A'.repeat(51) })
+    expect(res.status).toBe(400)
+    expect(res.body.error).toMatch(/Title cannot exceed/)
+  })
+
+  it('updates editable fields and stamps editedAt', async () => {
+    const res = await request(app)
+      .put(`/api/editRecipe?recipeId=${RECIPE_ID}`)
+      .set(AUTH_HEADER)
+      .send(validEdit())
+
+    expect(res.status).toBe(200)
+
+    const db = getDB()
+    const stored = await db.collection('recipes').findOne({ _id: RECIPE_ID })
+    expect(stored.title).toBe('Updated Title')
+    expect(stored.description).toBe('An updated description')
+    expect(typeof stored.editedAt).toBe('string')
+    expect(stored.editedAt).not.toBeNull()
+  })
+
+  it('never resets ratings, saves, made-count, views, or createdAt on edit', async () => {
+    await request(app)
+      .put(`/api/editRecipe?recipeId=${RECIPE_ID}`)
+      .set(AUTH_HEADER)
+      .send(validEdit())
+
+    const db = getDB()
+    const stored = await db.collection('recipes').findOne({ _id: RECIPE_ID })
+    expect(stored.rating).toEqual({ rateCount: 12, rateValue: 4.5 })
+    expect(stored.numTimesSaved).toBe(7)
+    expect(stored.numTimesMade).toBe(3)
+    expect(stored.views).toBe(99)
+    expect(stored.createdAt).toBe(OWNED_RECIPE.createdAt)
+  })
+
+  it('ignores attempts to overwrite protected fields via the payload', async () => {
+    const res = await request(app)
+      .put(`/api/editRecipe?recipeId=${RECIPE_ID}`)
+      .set(AUTH_HEADER)
+      .send({
+        ...validEdit(),
+        // Malicious / stray fields the whitelist must drop:
+        rating: { rateCount: 9999, rateValue: 1 },
+        numTimesSaved: 0,
+        numTimesMade: 0,
+        views: 0,
+        userId: 'someone-else',
+        _id: 'hijacked-id',
+        createdAt: '1',
+      })
+
+    expect(res.status).toBe(200)
+    const db = getDB()
+    const stored = await db.collection('recipes').findOne({ _id: RECIPE_ID })
+    expect(stored.rating).toEqual({ rateCount: 12, rateValue: 4.5 })
+    expect(stored.numTimesSaved).toBe(7)
+    expect(stored.numTimesMade).toBe(3)
+    expect(stored.views).toBe(99)
+    expect(stored.userId).toBe(TEST_UID)
+    expect(stored._id).toBe(RECIPE_ID)
+    expect(stored.createdAt).toBe(OWNED_RECIPE.createdAt)
+  })
+})
+
 // ─── POST /recipes/:id/save ───────────────────────────────────────────────────
 
 describe('POST /recipes/:id/save', () => {

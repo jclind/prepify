@@ -12,12 +12,12 @@ import { isAxiosError } from 'axios'
 import toast from 'react-hot-toast'
 import AuthAPI from 'src/api/auth'
 import RecipeAPI from 'src/api/recipes'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import './RecipeControls.scss'
 
 type RecipeControlsType = {
   recipeId: string
-  authorUsername: string
+  recipeUserId?: string
   recipeTitle: string
 }
 
@@ -43,7 +43,7 @@ const customStyles = {
 
 const RecipeControls: FC<RecipeControlsType> = ({
   recipeId,
-  authorUsername,
+  recipeUserId,
   recipeTitle,
 }) => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
@@ -59,13 +59,10 @@ const RecipeControls: FC<RecipeControlsType> = ({
 
   const currUID = AuthAPI.getUID()
 
-  const { data: currUsername } = useQuery({
-    queryKey: ['username', currUID],
-    queryFn: () => AuthAPI.getUsername(),
-    enabled: !!currUID,
-  })
-
-  const isUsersRecipe = currUsername === authorUsername
+  // Key ownership on the Firebase uid (what the server authorizes against), not
+  // the snapshotted authorUsername which goes stale after a rename and would
+  // hide these controls from the legitimate owner.
+  const isUsersRecipe = !!currUID && currUID === recipeUserId
 
   if (!isUsersRecipe) return null
 
@@ -103,9 +100,8 @@ const RecipeControls: FC<RecipeControlsType> = ({
       <div className='btns-container'>
         <button
           className='edit-btn'
-          disabled
-          title='Editing is coming soon'
-          aria-label='Edit recipe (coming soon)'
+          onClick={() => navigate(`/recipes/${recipeId}/edit`)}
+          aria-label='Edit recipe'
         >
           <AiOutlineEdit className='icon' aria-hidden='true' />
           Edit

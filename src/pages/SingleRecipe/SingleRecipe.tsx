@@ -122,7 +122,7 @@ const SingleRecipe: FC<Props> = ({ recipe }) => {
               {currRecipe && (
                 <RecipeControls
                   recipeId={currRecipe._id}
-                  authorUsername={currRecipe.authorUsername}
+                  recipeUserId={currRecipe.userId}
                   recipeTitle={currRecipe.title}
                 />
               )}
