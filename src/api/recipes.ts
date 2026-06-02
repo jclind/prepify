@@ -119,6 +119,40 @@ class RecipeAPIClass {
     }
   }
 
+  // The editable subset of a recipe document, assembled from the form data plus
+  // the values computed at submit time. addRecipe layers creation-only fields
+  // (authorUsername, rating, counters…) on top; editRecipe sends it as-is. Single
+  // source for the field list so the two paths can't drift.
+  private buildEditableRecipeFields(
+    data: RecipeFormType | RecipeEditFormType,
+    computed: {
+      recipeImage: string
+      nutritionData: NutritionDataType | null
+      nutritionLabels: string[] | null
+      servingPrice: number
+      totalTime: number
+    }
+  ) {
+    return {
+      title: data.title,
+      prepTime: data.prepTime,
+      cookTime: data.cookTime,
+      servings: data.servings,
+      fridgeLife: data.fridgeLife,
+      freezerLife: data.freezerLife,
+      description: data.description,
+      ingredients: data.ingredients,
+      instructions: data.instructions,
+      cuisine: data.cuisine,
+      mealTypes: data.mealTypes,
+      recipeImage: computed.recipeImage,
+      nutritionData: computed.nutritionData,
+      nutritionLabels: computed.nutritionLabels,
+      servingPrice: computed.servingPrice,
+      totalTime: computed.totalTime,
+    }
+  }
+
   async addRecipe(
     recipeData: RecipeFormType,
     setProgress: (val: number) => void
@@ -143,18 +177,13 @@ class RecipeAPIClass {
       const nutritionData = nutritionDataRes.nutritionData
       const nutritionLabels = nutritionDataRes.dietLabels
       const returnRecipeData: Omit<RecipeType, '_id'> = {
-        title: recipeData.title,
-        prepTime: recipeData.prepTime,
-        cookTime: recipeData.cookTime,
-        servings: recipeData.servings,
-        fridgeLife: recipeData.fridgeLife,
-        freezerLife: recipeData.freezerLife,
-        description: recipeData.description,
-        ingredients: recipeData.ingredients,
-        instructions: recipeData.instructions,
-        recipeImage,
-        nutritionData,
-        totalTime,
+        ...this.buildEditableRecipeFields(recipeData, {
+          recipeImage,
+          nutritionData,
+          nutritionLabels,
+          servingPrice,
+          totalTime,
+        }),
         authorUsername,
         rating: {
           rateCount: 0,
@@ -162,10 +191,6 @@ class RecipeAPIClass {
         },
         createdAt: new Date().getTime().toString(),
         editedAt: null,
-        servingPrice,
-        cuisine: recipeData.cuisine,
-        mealTypes: recipeData.mealTypes,
-        nutritionLabels,
         views: 0,
         numTimesSaved: 0,
         numTimesMade: 0,
@@ -210,10 +235,13 @@ class RecipeAPIClass {
 
       // Nutrition is a paid Edamam call, so only re-run it when the ingredient set
       // actually changed; minor edits (title, instructions, times) reuse the
-      // stored nutrition data and labels.
+      // stored nutrition data and labels. Compare the exact strings the lookup
+      // would send, element-wise.
+      const newIngredients = this.buildNutritionIngredients(recipeData.ingredients)
+      const oldIngredients = this.buildNutritionIngredients(originalRecipe.ingredients)
       const ingredientsChanged =
-        JSON.stringify(this.buildNutritionIngredients(recipeData.ingredients)) !==
-        JSON.stringify(this.buildNutritionIngredients(originalRecipe.ingredients))
+        newIngredients.length !== oldIngredients.length ||
+        newIngredients.some((ingr, i) => ingr !== oldIngredients[i])
 
       let nutritionData = originalRecipe.nutritionData
       let nutritionLabels = originalRecipe.nutritionLabels
@@ -233,24 +261,13 @@ class RecipeAPIClass {
       setProgress(90)
       // Only the editable fields are sent; the server whitelists these and never
       // lets ratings/saves/counters be overwritten.
-      const payload = {
-        title: recipeData.title,
-        prepTime: recipeData.prepTime,
-        cookTime: recipeData.cookTime,
-        servings: recipeData.servings,
-        fridgeLife: recipeData.fridgeLife,
-        freezerLife: recipeData.freezerLife,
-        description: recipeData.description,
-        ingredients: recipeData.ingredients,
-        instructions: recipeData.instructions,
+      const payload = this.buildEditableRecipeFields(recipeData, {
         recipeImage,
-        cuisine: recipeData.cuisine,
-        mealTypes: recipeData.mealTypes,
         nutritionData,
         nutritionLabels,
         servingPrice,
         totalTime,
-      }
+      })
       const res = await http.put<RecipeType>(
         `api/editRecipe?recipeId=${recipeId}`,
         payload

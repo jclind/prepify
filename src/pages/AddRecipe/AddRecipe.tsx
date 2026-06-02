@@ -154,21 +154,23 @@ const AddRecipe: FC<AddRecipeProps> = ({ initialRecipe }) => {
     }
 
     setAddRecipeLoading(true)
+    // Shared form-state → payload mapping; the two branches differ only in the
+    // image field (optional on edit, required on create) and which API they call.
+    const formData = {
+      title,
+      prepTime: hrMinToMin(prepTime),
+      cookTime: hrMinToMin(cookTime),
+      servings: Number(servings),
+      fridgeLife,
+      freezerLife,
+      description,
+      ingredients,
+      instructions,
+      cuisine,
+      mealTypes,
+    }
     if (isEditMode && initialRecipe) {
-      const editData: RecipeEditFormType = {
-        title,
-        prepTime: hrMinToMin(prepTime),
-        cookTime: hrMinToMin(cookTime),
-        servings: Number(servings),
-        fridgeLife,
-        freezerLife,
-        description,
-        ingredients,
-        instructions,
-        recipeImage,
-        cuisine,
-        mealTypes,
-      }
+      const editData: RecipeEditFormType = { ...formData, recipeImage }
       const result = await RecipeAPI.editRecipe(
         initialRecipe._id,
         editData,
@@ -190,20 +192,7 @@ const AddRecipe: FC<AddRecipeProps> = ({ initialRecipe }) => {
         toast.error(result.message)
       }
     } else {
-      const recipeData: RecipeFormType = {
-        title,
-        prepTime: hrMinToMin(prepTime),
-        cookTime: hrMinToMin(cookTime),
-        servings: Number(servings),
-        fridgeLife,
-        freezerLife,
-        description,
-        ingredients,
-        instructions,
-        recipeImage: recipeImage!,
-        cuisine,
-        mealTypes,
-      }
+      const recipeData: RecipeFormType = { ...formData, recipeImage: recipeImage! }
       const newId = await RecipeAPI.addRecipe(recipeData, setLoadingProgress)
       if (newId === ADD_RECIPE_AUTH_ERROR) {
         toast.error('Your session has expired — please sign in again and retry.')
@@ -224,7 +213,11 @@ const AddRecipe: FC<AddRecipeProps> = ({ initialRecipe }) => {
         <title>{isEditMode ? 'Edit Recipe' : 'Create New Recipe'}</title>
         <link
           rel='canonical'
-          href='https://www.prepifymeals.com/add-recipe'
+          href={
+            isEditMode && initialRecipe
+              ? `https://www.prepifymeals.com/recipes/${initialRecipe._id}`
+              : 'https://www.prepifymeals.com/add-recipe'
+          }
         />
         <meta
           name='description'
