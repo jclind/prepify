@@ -25,16 +25,14 @@ function validateUsername(username) {
   return null
 }
 
-// GET /getUsername?userId=...
-// Returns the username for a given uid
-router.get('/getUsername', async (req, res) => {
+// GET /getUsername
+// Returns the authenticated user's own username, or null if not set yet.
+// Scoped to req.uid so a user can't enumerate other users' usernames by id;
+// other users' usernames are surfaced through the reviews endpoints instead.
+router.get('/getUsername', verifyToken, async (req, res) => {
   try {
-    const { userId } = req.query
-    if (!userId || userId === 'null') {
-      return res.status(400).json({ error: 'userId is required' })
-    }
     const db = getDB()
-    const doc = await db.collection('usernames').findOne({ _id: userId })
+    const doc = await db.collection('usernames').findOne({ _id: req.uid })
     if (!doc) return res.json(null)
     res.json(doc.username)
   } catch (err) {
