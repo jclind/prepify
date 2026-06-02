@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Author Stats &amp; Controls · Single Recipe Explorations</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --primary:#ff5722; --secondary:#00adb5;
+    --primary-text:#303841; --secondary-text:#595f66; --tertiary-text:#979ba0;
+    --white:#fff; --gray-50:#fafafa; --gray-200:#eeeeee; --gray-300:#e6e6e6;
+    --gray-400:#d6d6d6; --gray-500:#bebebe; --gray-600:#a6a6a6;
+    --success-green:#28a745; --error-red:#dc3545; --error-red-hover:#b02a37;
+    --radius:10px; --shadow:rgba(0,0,0,0.24) 0px 3px 8px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Montserrat',sans-serif;background:var(--gray-200);color:var(--primary-text);-webkit-font-smoothing:antialiased;}
+
+  /* ---------- switcher ---------- */
+  .switcher{position:sticky;top:0;z-index:50;background:var(--primary-text);color:#fff;
+    display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;padding:.85rem 1.25rem;box-shadow:0 2px 10px rgba(0,0,0,.25);}
+  .switcher .brand{font-weight:800;letter-spacing:-.01em;margin-right:.5rem;}
+  .switcher .brand span{color:var(--primary);}
+  .switcher button{font-family:inherit;font-weight:700;font-size:.85rem;color:#fff;background:rgba(255,255,255,.08);
+    border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:.4rem .9rem;cursor:pointer;transition:.12s;}
+  .switcher button:hover{background:rgba(255,255,255,.18);}
+  .switcher button.active{background:var(--primary);border-color:var(--primary);}
+  .switcher .hint{margin-left:auto;font-size:.75rem;color:var(--gray-500);font-weight:600;}
+
+  .desc-strip{background:var(--gray-50);border-bottom:1px solid var(--gray-400);padding:.85rem 1.25rem;}
+  .desc-strip .v-name{font-weight:800;font-size:1rem;}
+  .desc-strip .v-name b{color:var(--primary);}
+  .desc-strip p{font-size:.85rem;color:var(--secondary-text);font-weight:500;margin-top:.2rem;max-width:90ch;}
+
+  /* ---------- mock page chrome (shared) ---------- */
+  .stage{padding:2.5rem 1.25rem 6rem;}
+  .page{max-width:1000px;margin:0 auto;background:var(--gray-200);}
+  .recipe-header{display:flex;gap:3rem;padding-bottom:2rem;margin-bottom:2rem;border-bottom:1px solid var(--gray-400);}
+  .recipe-header .img{flex:0 0 320px;height:320px;border-radius:6px;
+    background:linear-gradient(135deg,#f6b59c,#ff5722 70%);position:relative;overflow:hidden;}
+  .recipe-header .img::after{content:'recipe photo';position:absolute;inset:auto 0 12px 0;text-align:center;
+    color:rgba(255,255,255,.85);font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;}
+  .desc{display:flex;flex-direction:column;gap:.9rem;flex:1;}
+  .price{font-size:.75rem;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:1.2px;}
+  .title{font-size:2rem;font-weight:600;line-height:1.1;}
+  .description{font-size:1rem;font-weight:500;color:var(--primary-text);max-width:560px;flex:1;}
+  .recipe-data{display:flex;gap:2.5rem;}
+  .recipe-data .rd{display:flex;flex-direction:column;align-items:center;gap:.4rem;}
+  .recipe-data .rd .icon{height:26px;width:26px;color:var(--primary-text);}
+  .recipe-data .rd h4{font-size:.95rem;font-weight:700;}
+  .recipe-data .rd .d{font-size:.9rem;color:var(--secondary-text);}
+  .body-spacer{text-align:center;color:var(--gray-600);font-weight:700;font-size:.8rem;letter-spacing:2px;
+    text-transform:uppercase;padding:3rem 0;border-bottom:1px dashed var(--gray-500);margin-bottom:2.5rem;}
+
+  /* shared building blocks */
+  .section-label{font-size:.8rem;color:var(--primary);font-weight:700;text-transform:uppercase;letter-spacing:1.2px;}
+  .icon{display:inline-block;vertical-align:middle;}
+  .btn{display:inline-flex;align-items:center;gap:.45rem;font-family:inherit;font-weight:600;font-size:.9rem;
+    border-radius:var(--radius);cursor:pointer;transition:all .12s linear;}
+  .btn .icon{height:17px;width:17px;}
+
+  .variation{display:none;}
+  .variation.active{display:block;}
+
+  /* ========================================================= */
+  /* V1 — Owner banner (top) + clean icon stat row (bottom)    */
+  /* ========================================================= */
+  #v1 .owner-banner{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;
+    background:var(--gray-50);border:1px solid var(--gray-400);border-radius:var(--radius);
+    padding:.7rem 1.25rem;margin-bottom:2rem;}
+  #v1 .owner-banner .who{display:flex;align-items:center;gap:.6rem;font-weight:600;color:var(--secondary-text);font-size:.9rem;}
+  #v1 .owner-banner .who .icon{height:20px;width:20px;color:var(--secondary);}
+  #v1 .owner-banner .who b{color:var(--primary-text);}
+  #v1 .owner-banner .acts{display:flex;gap:.6rem;}
+  #v1 .owner-banner .btn{border:1px solid var(--gray-500);background:transparent;padding:.4rem .8rem;color:var(--primary-text);}
+  #v1 .owner-banner .btn.delete:hover{background:var(--error-red);border-color:var(--error-red);color:#fff;}
+  #v1 .owner-banner .btn.edit:disabled{opacity:.5;cursor:not-allowed;}
+  #v1 .stats{margin-top:1rem;}
+  #v1 .stats .section-label{display:block;margin-bottom:1.5rem;}
+  #v1 .stat-row{display:flex;justify-content:space-around;flex-wrap:wrap;gap:1.5rem;}
+  #v1 .stat{display:flex;flex-direction:column;align-items:center;gap:.4rem;}
+  #v1 .stat .icon{height:28px;width:28px;color:var(--secondary-text);}
+  #v1 .stat .num{font-size:1.6rem;font-weight:700;color:var(--primary-text);}
+  #v1 .stat .lbl{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--secondary-text);}
+
+  /* ========================================================= */
+  /* V2 — Title pill badge (top) + refined stat cards (bottom) */
+  /* ========================================================= */
+  #v2 .owner-pill{display:inline-flex;align-items:center;gap:.4rem;align-self:flex-start;
+    border:1.5px solid var(--primary);color:var(--primary);border-radius:999px;
+    padding:.28rem .8rem;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;}
+  #v2 .owner-pill .icon{height:14px;width:14px;}
+  #v2 .stats .section-label{display:block;margin-bottom:1.25rem;}
+  #v2 .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;}
+  #v2 .stat{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);
+    padding:1.25rem 1rem;display:flex;flex-direction:column;align-items:center;gap:.35rem;}
+  #v2 .stat .icon{height:24px;width:24px;color:var(--primary);}
+  #v2 .stat .num{font-size:1.5rem;font-weight:700;}
+  #v2 .stat .lbl{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--secondary-text);}
+  #v2 .controls{display:flex;justify-content:flex-end;gap:.75rem;margin-top:1.25rem;}
+  #v2 .controls .btn{padding:.5rem 1rem;border:1px solid var(--primary-text);background:transparent;color:var(--primary-text);}
+  #v2 .controls .btn.edit:disabled{opacity:.45;cursor:not-allowed;}
+  #v2 .controls .btn.delete{border-color:var(--error-red);color:var(--error-red);}
+  #v2 .controls .btn.delete:hover{background:var(--error-red);color:#fff;}
+
+  /* ========================================================= */
+  /* V3 — Accent label (top) + divided inline bar w/ controls  */
+  /* ========================================================= */
+  #v3 .owner-tag{font-size:.75rem;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:1.5px;
+    display:flex;align-items:center;gap:.4rem;}
+  #v3 .owner-tag .icon{height:14px;width:14px;}
+  #v3 .stats-bar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1.5rem;
+    border:1px solid var(--gray-400);border-radius:var(--radius);background:var(--gray-50);padding:1.1rem 1.75rem;}
+  #v3 .stats-inline{display:flex;}
+  #v3 .stats-inline .stat{display:flex;flex-direction:column;align-items:center;gap:.2rem;padding:0 1.75rem;
+    border-right:1px solid var(--gray-400);}
+  #v3 .stats-inline .stat:last-child{border-right:none;}
+  #v3 .stats-inline .stat:first-child{padding-left:0;}
+  #v3 .stat .num{font-size:1.4rem;font-weight:700;}
+  #v3 .stat .lbl{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--secondary-text);}
+  #v3 .stat .num .star{color:var(--primary);}
+  #v3 .controls{display:flex;gap:.6rem;}
+  #v3 .controls .btn{padding:.45rem .85rem;border:1px solid var(--gray-500);background:var(--white);color:var(--primary-text);}
+  #v3 .controls .btn.edit:disabled{opacity:.45;cursor:not-allowed;}
+  #v3 .controls .btn.delete:hover{background:var(--error-red);border-color:var(--error-red);color:#fff;}
+
+  /* ========================================================= */
+  /* V4 — Image corner chip (top) + combined owner card        */
+  /* ========================================================= */
+  #v4 .recipe-header .img .chip{position:absolute;top:12px;left:12px;z-index:2;
+    display:flex;align-items:center;gap:.35rem;background:rgba(48,56,65,.92);color:#fff;
+    padding:.3rem .7rem;border-radius:999px;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;}
+  #v4 .recipe-header .img .chip .icon{height:13px;width:13px;}
+  #v4 .owner-card{background:var(--white);border-left:4px solid var(--primary);border-radius:var(--radius);
+    box-shadow:var(--shadow);padding:1.5rem 1.75rem;}
+  #v4 .owner-card .head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;
+    padding-bottom:1.25rem;margin-bottom:1.25rem;border-bottom:1px solid var(--gray-300);}
+  #v4 .owner-card .head .ttl{font-size:1.1rem;font-weight:700;}
+  #v4 .owner-card .head .sub{font-size:.8rem;color:var(--secondary-text);font-weight:500;margin-top:.15rem;}
+  #v4 .owner-card .head .acts{display:flex;gap:.6rem;}
+  #v4 .owner-card .btn{padding:.5rem 1rem;border:1px solid var(--primary-text);background:transparent;color:var(--primary-text);}
+  #v4 .owner-card .btn.edit:disabled{opacity:.45;cursor:not-allowed;}
+  #v4 .owner-card .btn.delete{border-color:var(--error-red);color:var(--error-red);}
+  #v4 .owner-card .btn.delete:hover{background:var(--error-red);color:#fff;}
+  #v4 .owner-card .stat-row{display:flex;gap:3rem;flex-wrap:wrap;}
+  #v4 .stat{display:flex;align-items:center;gap:.7rem;}
+  #v4 .stat .icon{height:26px;width:26px;color:var(--primary);}
+  #v4 .stat .num{font-size:1.35rem;font-weight:700;line-height:1;}
+  #v4 .stat .lbl{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--secondary-text);}
+
+  /* ========================================================= */
+  /* V5 — Minimal editorial line (top) + light inline stats    */
+  /* ========================================================= */
+  #v5 .owner-line{font-size:.85rem;color:var(--secondary-text);font-weight:600;display:flex;align-items:center;gap:.5rem;}
+  #v5 .owner-line .dot{color:var(--gray-500);}
+  #v5 .owner-line a{color:var(--primary);text-decoration:none;font-weight:700;}
+  #v5 .owner-line a:hover{text-decoration:underline;}
+  #v5 .stats-foot{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1.25rem;
+    padding-top:1.5rem;border-top:1px solid var(--gray-400);}
+  #v5 .stats-minimal{display:flex;align-items:center;gap:1.1rem;color:var(--secondary-text);font-weight:600;font-size:.95rem;}
+  #v5 .stats-minimal .stat{display:flex;align-items:center;gap:.45rem;}
+  #v5 .stats-minimal .stat .icon{height:18px;width:18px;color:var(--tertiary-text);}
+  #v5 .stats-minimal .stat b{color:var(--primary-text);font-weight:700;}
+  #v5 .stats-minimal .star{color:var(--primary);}
+  #v5 .stats-minimal .sep{color:var(--gray-500);}
+  #v5 .controls{display:flex;gap:1.25rem;}
+  #v5 .controls .btn{background:none;border:none;padding:0;font-weight:700;font-size:.9rem;color:var(--secondary-text);}
+  #v5 .controls .btn:hover{text-decoration:underline;}
+  #v5 .controls .btn.delete{color:var(--error-red);}
+  #v5 .controls .btn.edit:disabled{opacity:.5;cursor:not-allowed;text-decoration:none;}
+
+  @media(max-width:760px){
+    .recipe-header{flex-direction:column;gap:1.5rem;}
+    .recipe-header .img{flex-basis:auto;width:100%;height:240px;}
+    #v2 .stat-grid{grid-template-columns:repeat(2,1fr);}
+  }
+</style>
+</head>
+<body>
+  <!-- icon symbols -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-bookmark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+  </svg>
+
+  <div class="switcher">
+    <span class="brand">Prep<span>ify</span> · Author stats</span>
+    <button data-v="1" class="active">V1 · Banner</button>
+    <button data-v="2">V2 · Pill + cards</button>
+    <button data-v="3">V3 · Inline bar</button>
+    <button data-v="4">V4 · Owner card</button>
+    <button data-v="5">V5 · Minimal</button>
+    <span class="hint">press 1–5 to switch</span>
+  </div>
+
+  <div class="desc-strip" id="desc"></div>
+
+  <div class="stage">
+
+    <!-- ============ V1 ============ -->
+    <section class="variation active" id="v1">
+      <div class="page">
+        <div class="owner-banner">
+          <div class="who"><svg class="icon"><use href="#i-user"/></svg><span><b>You</b> created this recipe</span></div>
+          <div class="acts">
+            <button class="btn edit" disabled title="Editing coming soon"><svg class="icon"><use href="#i-edit"/></svg>Edit</button>
+            <button class="btn delete"><svg class="icon"><use href="#i-trash"/></svg>Delete</button>
+          </div>
+        </div>
+        <div class="recipe-header">
+          <div class="img"></div>
+          <div class="desc">
+            <p class="price">$2.00 / serving</p>
+            <h1 class="title">Chicken Tacos</h1>
+            <p class="description">Tender spiced chicken, crisp slaw, and a quick lime crema folded into warm corn tortillas — a 30-minute weeknight favorite.</p>
+            <div class="recipe-data">
+              <div class="rd"><svg class="icon"><use href="#i-clock"/></svg><h4>Prep</h4><span class="d">15 min</span></div>
+              <div class="rd"><svg class="icon"><use href="#i-clock"/></svg><h4>Cook</h4><span class="d">15 min</span></div>
+              <div class="rd"><svg class="icon"><use href="#i-user"/></svg><h4>Serves</h4><span class="d">4</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="body-spacer">ingredients · instructions · tags</div>
+        <div class="stats">
+          <span class="section-label">Recipe Stats</span>
+          <div class="stat-row">
+            <div class="stat"><svg class="icon"><use href="#i-eye"/></svg><span class="num">1,234</span><span class="lbl">Views</span></div>
+            <div class="stat"><svg class="icon"><use href="#i-bookmark"/></svg><span class="num">1</span><span class="lbl">Save</span></div>
+            <div class="stat"><svg class="icon"><use href="#i-check"/></svg><span class="num">5</span><span class="lbl">Made</span></div>
+            <div class="stat"><svg class="icon"><use href="#i-star"/></svg><span class="num">4.2</span><span class="lbl">8 Ratings</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ V2 ============ -->
+    <section class="variation" id="v2">
+      <div class="page">
+        <div class="recipe-header">
+          <div class="img"></div>
+          <div class="desc">
+            <span class="owner-pill"><svg class="icon"><use href="#i-user"/></svg>Your recipe</span>
+            <p class="price">$2.00 / serving</p>
+            <h1 class="title">Chicken Tacos</h1>
+            <p class="description">Tender spiced chicken, crisp slaw, and a quick lime crema folded into warm corn tortillas — a 30-minute weeknight favorite.</p>
+            <div class="recipe-data">
+              <div class="rd"><svg class="icon"><use href="#i-clock"/></svg><h4>Prep</h4><span class="d">15 min</span></div>
+              <div class="rd"><svg class="icon"><use href="#i-clock"/></svg><h4>Cook</h4><span class="d">15 min</span></div>
+              <div class="rd"><svg class="icon"><use href="#i-user"/></svg><h4>Serves</h4><span class="d">4</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="body-spacer">ingredients · instructions · tags</div>
+        <div class="stats">
+          <span class="section-label">Recipe Stats</span>
+          <div class="stat-grid">
+            <div class="stat"><svg class="icon"><use href="#i-eye"/></svg><span class="num">1,234</span><span class="lbl">Views</span></div>
+            <div class="stat"><svg class="icon"><use href="#i-bookmark"/></svg><span class="num">1</span><span class="lbl">Save</span></div>
+            <div class="stat"><svg class="icon"><use href="#i-check"/></svg><span class="num">5</span><span class="lbl">Made</span></div>
+            <div class="stat"><svg class="icon"><use href="#i-star"/></svg><span class="num">4.2</span><span class="lbl">8 Ratings</span></div>
+          </div>
+          <div class="controls">
+            <button class="btn edit" disabled title="Editing coming soon"><svg class="icon"><use href="#i-edit"/></svg>Edit</button>
+            <button class="btn delete"><svg class="icon"><use href="#i-trash"/></svg>Delete</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ V3 ============ -->
+    <section class="variation" id="v3">
+      <div class="page">
+        <div class="recipe-header">
+          <div class="img"></div>
+          <div class="desc">
+            <span class="owner-tag"><svg class="icon"><use href="#i-user"/></svg>Your recipe</span>
+            <p class="price">$2.00 / serving</p>
+            <h1 class="title">Chicken Tacos</h1>
+            <p class="description">Tender spiced chicken, crisp slaw, and a quick lime crema folded into warm corn tortillas — a 30-minute weeknight favorite.</p>
+            <div class="recipe-data">
+              <div class="rd"><svg class="icon"><use href="#i-clock"/></svg><h4>Prep</h4><span class="d">15 min</span></div>
+              <div class="rd"><svg class="icon"><use href="#i-clock"/></svg><h4>Cook</h4><span class="d">15 min</span></div>
+              <div class="rd"><svg class="icon"><use href="#i-user"/></svg><h4>Serves</h4><span class="d">4</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="body-spacer">ingredients · instructions · tags</div>
+        <div class="stats-bar">
+          <div class="stats-inline">
+            <div class="stat"><span class="num">1,234</span><span class="lbl">Views</span></div>
+            <div class="stat"><span class="num">1</span><span class="lbl">Save</span></div>
+            <div class="stat"><span class="num">5</span><span class="lbl">Made</span></div>
+            <div class="stat"><span class="num"><span class="star">★</span> 4.2</span><span class="lbl">8 Ratings</span></div>
+          </div>
+          <div class="controls">
+            <button class="btn edit" disabled title="Editing coming soon"><svg class="icon"><use href="#i-edit"/></svg>Edit</button>
+            <button class="btn delete"><svg class="icon"><use href="#i-trash"/></svg>Delete</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ V4 ============ -->
+    <section class="variation" id="v4">
+      <div class="page">
+        <div class="recipe-header">
+          <div class="img"><span class="chip"><svg class="icon"><use href="#i-user"/></svg>Your recipe</span></div>
+          <div class="desc">
+            <p class="price">$2.00 / serving</p>
+            <h1 class="title">Chicken Tacos</h1>
+            <p class="description">Tender spiced chicken, crisp slaw, and a quick lime crema folded into warm corn tortillas — a 30-minute weeknight favorite.</p>
+            <div class="recipe-data">
+              <div class="rd"><svg class="icon"><use href="#i-clock"/></svg><h4>Prep</h4><span class="d">15 min</span></div>
+              <div class="rd"><svg class="icon"><use href="#i-clock"/></svg><h4>Cook</h4><span class="d">15 min</span></div>
+              <div class="rd"><svg class="icon"><use href="#i-user"/></svg><h4>Serves</h4><span class="d">4</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="body-spacer">ingredients · instructions · tags</div>
+        <div class="owner-card">
+          <div class="head">
+            <div>
+              <div class="ttl">Your Recipe</div>
+              <div class="sub">Only you can see these controls and stats.</div>
+            </div>
+            <div class="acts">
+              <button class="btn edit" disabled title="Editing coming soon"><svg class="icon"><use href="#i-edit"/></svg>Edit</button>
+              <button class="btn delete"><svg class="icon"><use href="#i-trash"/></svg>Delete</button>
+            </div>
+          </div>
+          <div class="stat-row">
+            <div class="stat"><svg class="icon"><use href="#i-eye"/></svg><div><div class="num">1,234</div><div class="lbl">Views</div></div></div>
+            <div class="stat"><svg class="icon"><use href="#i-bookmark"/></svg><div><div class="num">1</div><div class="lbl">Save</div></div></div>
+            <div class="stat"><svg class="icon"><use href="#i-check"/></svg><div><div class="num">5</div><div class="lbl">Made</div></div></div>
+            <div class="stat"><svg class="icon"><use href="#i-star"/></svg><div><div class="num">4.2</div><div class="lbl">8 Ratings</div></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ V5 ============ -->
+    <section class="variation" id="v5">
+      <div class="page">
+        <div class="recipe-header">
+          <div class="img"></div>
+          <div class="desc">
+            <p class="price">$2.00 / serving</p>
+            <h1 class="title">Chicken Tacos</h1>
+            <div class="owner-line"><svg class="icon" style="height:16px;width:16px;color:var(--secondary)"><use href="#i-user"/></svg>By you <span class="dot">·</span> <a href="#">Manage recipe</a></div>
+            <p class="description">Tender spiced chicken, crisp slaw, and a quick lime crema folded into warm corn tortillas — a 30-minute weeknight favorite.</p>
+            <div class="recipe-data">
+              <div class="rd"><svg class="icon"><use href="#i-clock"/></svg><h4>Prep</h4><span class="d">15 min</span></div>
+              <div class="rd"><svg class="icon"><use href="#i-clock"/></svg><h4>Cook</h4><span class="d">15 min</span></div>
+              <div class="rd"><svg class="icon"><use href="#i-user"/></svg><h4>Serves</h4><span class="d">4</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="body-spacer">ingredients · instructions · tags</div>
+        <div class="stats-foot">
+          <div class="stats-minimal">
+            <span class="stat"><svg class="icon"><use href="#i-eye"/></svg><b>1,234</b> views</span>
+            <span class="sep">·</span>
+            <span class="stat"><svg class="icon"><use href="#i-bookmark"/></svg><b>1</b> save</span>
+            <span class="sep">·</span>
+            <span class="stat"><svg class="icon"><use href="#i-check"/></svg><b>5</b> made</span>
+            <span class="sep">·</span>
+            <span class="stat"><span class="star">★</span> <b>4.2</b> (8)</span>
+          </div>
+          <div class="controls">
+            <button class="btn edit" disabled title="Editing coming soon">Edit</button>
+            <button class="btn delete">Delete</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <script>
+    const descriptions = {
+      1: ['<span class="v-name">V1 · <b>Owner banner</b></span>','A slim ownership bar sits above the recipe with the Edit/Delete actions on the right; stats live at the bottom as a clean centered icon row (mirrors the existing prep/cook/serves data row). Controls are up top where you notice them first.'],
+      2: ['<span class="v-name">V2 · <b>Pill badge + cards</b></span>','A small orange-outline "Your recipe" pill tucks in beside the title. Stats become elevated white cards with the page\'s card shadow; Edit/Delete sit as a tidy button group beneath them.'],
+      3: ['<span class="v-name">V3 · <b>Inline divided bar</b></span>','An orange uppercase "Your recipe" tag (same treatment as the price label) marks ownership near the title. Stats + controls share one bordered bar at the bottom, stats divided by thin rules, actions on the right.'],
+      4: ['<span class="v-name">V4 · <b>Owner card</b></span>','A subtle dark chip on the photo flags ownership. Everything author-only is consolidated into one shadowed card with an orange accent edge: a titled header with Edit/Delete, and the stats laid out as labeled rows below.'],
+      5: ['<span class="v-name">V5 · <b>Minimal editorial</b></span>','The lightest touch — a "By you · Manage recipe" line under the title, and a single understated stats line with text buttons at the bottom. Closest to a content-first, low-chrome feel.'],
+    };
+    const buttons = [...document.querySelectorAll('.switcher button')];
+    const desc = document.getElementById('desc');
+    function show(v){
+      document.querySelectorAll('.variation').forEach(s=>s.classList.toggle('active', s.id==='v'+v));
+      buttons.forEach(b=>b.classList.toggle('active', b.dataset.v===String(v)));
+      desc.innerHTML = '<div>'+descriptions[v][0]+'</div><p>'+descriptions[v][1]+'</p>';
+      window.scrollTo({top:0,behavior:'smooth'});
+    }
+    buttons.forEach(b=>b.addEventListener('click',()=>show(b.dataset.v)));
+    window.addEventListener('keydown',e=>{ if(e.key>='1'&&e.key<='5') show(e.key); });
+    show(1);
+  </script>
+</body>
+</html>
