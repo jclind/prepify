@@ -2,21 +2,53 @@
 
 .recipe-controls-container {
   display: flex;
-  justify-content: flex-end;
-  padding-bottom: 1rem;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  padding: 0.7rem 1.25rem;
   width: 100%;
+  background: s.$gray-50;
+  border: 1px solid s.$gray-400;
+  border-radius: s.$border-radius;
+  .who {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: s.$secondary-text;
+    .icon {
+      height: 20px;
+      width: 20px;
+      color: s.$secondary;
+    }
+    strong {
+      color: s.$primary-text;
+      font-weight: 700;
+    }
+  }
   .btns-container {
     display: flex;
-    gap: 1rem;
+    gap: 0.6rem;
   }
   button {
-    border: 1px solid s.$secondary-text;
-    padding: 0.5rem 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    border: 1px solid s.$gray-500;
+    padding: 0.4rem 0.8rem;
     border-radius: s.$border-radius;
     cursor: pointer;
     font-size: 0.9rem;
     font-weight: 600;
     color: s.$primary-text;
+    background: transparent;
+    .icon {
+      height: 17px;
+      width: 17px;
+    }
     &:focus {
       @include s.outline();
     }
@@ -28,10 +60,16 @@
       color: s.$primary-background;
       background: s.$primary-text;
     }
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      &:hover {
+        color: s.$primary-text;
+        background: none;
+      }
+    }
   }
   button.delete-btn {
-    // background: s.$primary-text;
-    // color: s.$primary-background;
     background: none;
     transition: all 0.1s linear;
     &:hover {
