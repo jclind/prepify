@@ -1,9 +1,10 @@
 const { Router } = require('express')
 const { ObjectId } = require('mongodb')
-const { getDB } = require('../db')
+const { getDB, getClient } = require('../db')
 const { verifyToken } = require('../middleware/auth')
 const { recipeIdQuery } = require('../util/recipeIdQuery')
 const { validateRecipeBounds } = require('../util/recipeLimits')
+const { deleteRecipeImage } = require('../util/firebaseStorage')
 
 const router = Router()
 
@@ -180,11 +181,36 @@ router.delete('/deleteRecipe', verifyToken, async (req, res) => {
     if (recipe.userId !== uid) {
       return res.status(403).json({ error: 'Forbidden' })
     }
-    await db.collection('recipes').deleteOne(recipeIdQuery(recipeId))
-    await db.collection('userRecipeData').updateOne(
-      { _id: uid },
-      { $pull: { userRecipes: { recipeId } } }
-    )
+
+    // Remove the recipe and every reference to it atomically: its ratings/
+    // reviews, and the recipeId entry from any user's saved/made/created lists.
+    // userRecipes only ever lives on the owner's doc, but pulling it across all
+    // docs in the same updateMany is harmless and keeps this to one write.
+    const session = getClient().startSession()
+    try {
+      await session.withTransaction(async () => {
+        await db.collection('recipes').deleteOne(recipeIdQuery(recipeId), { session })
+        await db.collection('ratings').deleteMany({ recipeId }, { session })
+        await db.collection('userRecipeData').updateMany(
+          {},
+          {
+            $pull: {
+              savedRecipes: { recipeId },
+              madeRecipes: { recipeId },
+              userRecipes: { recipeId },
+            },
+          },
+          { session }
+        )
+      })
+    } finally {
+      await session.endSession()
+    }
+
+    // External side effect — runs after the transaction commits and never
+    // fails the request (an orphaned image is preferable to a 500 here).
+    await deleteRecipeImage(recipe.recipeImage)
+
     res.json({ deleted: true })
   } catch (err) {
     res.status(500).json({ error: err.message })
