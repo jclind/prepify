@@ -11,17 +11,19 @@ class AuthAPIClass {
       uid = this.getUID()
     }
     if (!uid) return null
-    const result = await http.get(`api/getUsername?userId=${uid}`)
+    const result = await http.get(
+      `api/getUsername?userId=${encodeURIComponent(uid)}`
+    )
     return result.data
   }
   async checkUsernameAvailability(username: string): Promise<boolean> {
     const result = await http.get(
-      `api/checkUsernameAvailability?username=${username}`
+      `api/checkUsernameAvailability?username=${encodeURIComponent(username)}`
     )
     return result.data
   }
   async setUsername(username: string) {
-    await http.post(`api/setUsername?username=${username}`)
+    await http.post(`api/setUsername?username=${encodeURIComponent(username)}`)
   }
 }
 

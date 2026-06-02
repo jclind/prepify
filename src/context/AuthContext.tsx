@@ -257,11 +257,18 @@ const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
   // Check if user has username after auth is loaded and user exists
   useEffect(() => {
     if (!loading && user && user.uid) {
-      AuthAPI.getUsername(user.uid).then(username => {
-        if (!username) {
-          navigate('/create-username')
-        }
-      })
+      AuthAPI.getUsername(user.uid)
+        .then(username => {
+          if (!username) {
+            navigate('/create-username')
+          }
+        })
+        .catch(err => {
+          // Don't silently swallow the failure: if we can't confirm the user
+          // has a username we surface it rather than letting them proceed in a
+          // half-onboarded state that breaks username-dependent features.
+          console.error('Failed to verify username on auth load:', err)
+        })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, user])
