@@ -13,28 +13,32 @@ afterEach(async () => {
 // ─── GET /getUsername ─────────────────────────────────────────────────────────
 
 describe('GET /getUsername', () => {
-  beforeEach(async () => {
-    await seedUser(TEST_UID, 'testuser')
-  })
-
-  it('returns 400 if userId is missing', async () => {
+  it('rejects request with no auth token (401)', async () => {
     const res = await request(app).get('/api/getUsername')
-    expect(res.status).toBe(400)
+    expect(res.status).toBe(401)
   })
 
-  it('returns 400 if userId is the string "null"', async () => {
-    const res = await request(app).get('/api/getUsername?userId=null')
-    expect(res.status).toBe(400)
+  it("returns the authenticated user's own username", async () => {
+    await seedUser(TEST_UID, 'testuser')
+    const res = await request(app).get('/api/getUsername').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(res.body).toBe('testuser')
   })
 
-  it('returns 200 with null body if userId is not found', async () => {
-    const res = await request(app).get('/api/getUsername?userId=unknown')
+  it('returns null when the authenticated user has no username yet', async () => {
+    const res = await request(app).get('/api/getUsername').set(AUTH_HEADER)
     expect(res.status).toBe(200)
     expect(res.body).toBeNull()
   })
 
-  it('returns the username for a valid userId', async () => {
-    const res = await request(app).get(`/api/getUsername?userId=${TEST_UID}`)
+  it('ignores a userId query param and only returns the caller\'s own username', async () => {
+    await seedUser(TEST_UID, 'testuser')
+    await seedUser('other-uid', 'otheruser')
+
+    const res = await request(app)
+      .get('/api/getUsername?userId=other-uid')
+      .set(AUTH_HEADER)
+
     expect(res.status).toBe(200)
     expect(res.body).toBe('testuser')
   })
