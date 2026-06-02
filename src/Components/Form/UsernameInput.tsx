@@ -1,4 +1,4 @@
-import React, { useEffect, FC, useState } from 'react'
+import React, { useEffect, FC } from 'react'
 import FormInput from 'src/Components/Form/FormInput'
 import { MdAlternateEmail } from 'react-icons/md'
 import AuthAPI from 'src/api/auth'
@@ -20,9 +20,7 @@ const UsernameInput: FC<UsernameInputProps> = ({
   isUsernameAvailable,
   setIsUsernameAvailable,
 }) => {
-  const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null)
-
-  // on username change, check username availability against firestore 'usernames' collection
+  // on username change, check availability against the 'usernames' collection
   useEffect(() => {
     setError('')
     setSuccess('')
@@ -31,21 +29,25 @@ const UsernameInput: FC<UsernameInputProps> = ({
       return setError('Cannot have white space in username')
     if (!username || username.length < 3) return setIsUsernameAvailable(null)
 
-    if (timeoutId) clearTimeout(timeoutId)
+    // `cancelled` guards against a slow in-flight request resolving after a
+    // newer keystroke's request and clobbering the result with stale data.
+    let cancelled = false
 
-    const newTimeoutId = setTimeout(() => {
+    const timeoutId = setTimeout(() => {
       AuthAPI.checkUsernameAvailability(username)
         .then(val => {
-          setIsUsernameAvailable(val)
+          if (!cancelled) setIsUsernameAvailable(val)
         })
-        .catch(err => setError(err.code))
+        .catch(err => {
+          if (!cancelled) setError(err.code)
+        })
     }, 500) // 500 milliseconds debounce time
 
-    setTimeoutId(newTimeoutId)
-
-    // cleanup function to clear timeout on unmount or username change
+    // Clears the pending debounce and ignores any in-flight response on the
+    // next keystroke or unmount.
     return () => {
-      if (timeoutId) clearTimeout(timeoutId)
+      cancelled = true
+      clearTimeout(timeoutId)
     }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
