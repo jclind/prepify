@@ -50,6 +50,40 @@
     }
   }
 
+  .summary-actions {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .cancel-btn {
+    flex-shrink: 0;
+    height: 46px;
+    padding: 0 1.25rem;
+    border-radius: s.$border-radius;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    outline: none;
+    background: none;
+    color: s.$secondary-text;
+    border: 1px solid s.$tertiary-background;
+    transition: all 0.1s linear;
+
+    &:hover {
+      color: s.$primary-text;
+      border-color: s.$tertiary-text;
+    }
+    &:focus {
+      @include s.outline();
+    }
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+
   .submit-btn {
     display: flex;
     justify-content: center;
@@ -109,6 +143,11 @@
     .submit-btn {
       width: 132px;
       height: 42px;
+      font-size: 0.9rem;
+    }
+    .cancel-btn {
+      height: 42px;
+      padding: 0 0.9rem;
       font-size: 0.9rem;
     }
   }

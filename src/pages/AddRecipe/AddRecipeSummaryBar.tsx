@@ -16,6 +16,8 @@ interface AddRecipeSummaryBarProps {
   loading: boolean
   onSubmit: () => void
   submitLabel?: string
+  // When provided (edit mode), renders a Cancel button alongside submit.
+  onCancel?: () => void
 }
 
 const formatTime = (totalMin: number): string => {
@@ -41,6 +43,7 @@ const AddRecipeSummaryBar: FC<AddRecipeSummaryBarProps> = ({
   loading,
   onSubmit,
   submitLabel = 'Create Recipe',
+  onCancel,
 }) => {
   const ingredientCount = useMemo(
     () => ingredients.filter(ingr => 'parsedIngredient' in ingr).length,
@@ -77,23 +80,35 @@ const AddRecipeSummaryBar: FC<AddRecipeSummaryBarProps> = ({
             </dd>
           </div>
         </dl>
-        <button
-          className={`submit-btn ${isValid ? 'valid' : 'invalid'}`}
-          disabled={loading}
-          aria-busy={loading}
-          onClick={onSubmit}
-        >
-          {loading ? (
-            <TailSpin
-              height='28'
-              width='28'
-              color='white'
-              ariaLabel='loading'
-            />
-          ) : (
-            submitLabel
+        <div className='summary-actions'>
+          {onCancel && (
+            <button
+              type='button'
+              className='cancel-btn'
+              disabled={loading}
+              onClick={onCancel}
+            >
+              Cancel
+            </button>
           )}
-        </button>
+          <button
+            className={`submit-btn ${isValid ? 'valid' : 'invalid'}`}
+            disabled={loading}
+            aria-busy={loading}
+            onClick={onSubmit}
+          >
+            {loading ? (
+              <TailSpin
+                height='28'
+                width='28'
+                color='white'
+                ariaLabel='loading'
+              />
+            ) : (
+              submitLabel
+            )}
+          </button>
+        </div>
       </div>
     </div>
   )
