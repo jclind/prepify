@@ -207,8 +207,9 @@ Tested in isolation from the full form since the list logic is independent.
   The `removeIngredient` callback calls `filter(ingr => ingr.id !== removeId)`.
   The removed item must disappear; other items must remain.
 
-- **The "Reorder" button toggles reorder mode**
-  Clicking once activates reorder (shows "Done"); clicking again deactivates.
+- **Each ingredient row exposes an always-available drag-to-reorder handle**
+  Reordering has no mode toggle — every row renders a "Drag to reorder" handle
+  at all times (no "Reorder"/"Done" button).
 
 ---
 
