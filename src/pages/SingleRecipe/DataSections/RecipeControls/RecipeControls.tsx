@@ -9,6 +9,7 @@ import { TailSpin } from 'react-loader-spinner'
 import Modal from 'react-modal'
 import { useNavigate } from 'react-router-dom'
 import { isAxiosError } from 'axios'
+import toast from 'react-hot-toast'
 import AuthAPI from 'src/api/auth'
 import RecipeAPI from 'src/api/recipes'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -78,6 +79,8 @@ const RecipeControls: FC<RecipeControlsType> = ({
       queryClient.removeQueries({ queryKey: ['recipe', recipeId] })
       queryClient.invalidateQueries({ queryKey: ['created-recipes'] })
       closeDeleteModal()
+      // Toaster is mounted at the app root, so the toast survives the redirect.
+      toast.success('Recipe deleted.')
       navigate('/')
     } catch (err: unknown) {
       const message = isAxiosError(err)
