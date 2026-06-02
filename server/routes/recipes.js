@@ -3,7 +3,7 @@ const { ObjectId } = require('mongodb')
 const { getDB, getClient } = require('../db')
 const { verifyToken } = require('../middleware/auth')
 const { recipeIdQuery } = require('../util/recipeIdQuery')
-const { validateRecipeBounds } = require('../util/recipeLimits')
+const { validateRequiredRecipeFields, validateRecipeBounds } = require('../util/recipeLimits')
 const { deleteRecipeImage } = require('../util/firebaseStorage')
 
 const router = Router()
@@ -138,13 +138,9 @@ router.post('/addRecipe', verifyToken, async (req, res) => {
     const db = getDB()
     const body = req.body
     const uid = req.uid
-    const requiredFields = ['title', 'ingredients', 'instructions', 'mealTypes']
-    const missing = requiredFields.filter(f => {
-      const val = body[f]
-      return val == null || val === '' || (Array.isArray(val) && val.length === 0)
-    })
-    if (missing.length > 0) {
-      return res.status(400).json({ error: `Missing required fields: ${missing.join(', ')}` })
+    const requiredError = validateRequiredRecipeFields(body)
+    if (requiredError) {
+      return res.status(400).json({ error: requiredError })
     }
     const boundsError = validateRecipeBounds(body)
     if (boundsError) {
@@ -205,13 +201,9 @@ router.put('/editRecipe', verifyToken, async (req, res) => {
     }
 
     const body = req.body
-    const requiredFields = ['title', 'ingredients', 'instructions', 'mealTypes']
-    const missing = requiredFields.filter(f => {
-      const val = body[f]
-      return val == null || val === '' || (Array.isArray(val) && val.length === 0)
-    })
-    if (missing.length > 0) {
-      return res.status(400).json({ error: `Missing required fields: ${missing.join(', ')}` })
+    const requiredError = validateRequiredRecipeFields(body)
+    if (requiredError) {
+      return res.status(400).json({ error: requiredError })
     }
     const boundsError = validateRecipeBounds(body)
     if (boundsError) {
