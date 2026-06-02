@@ -9,6 +9,7 @@ import {
   NutritionDataType,
   OptionalReviewType,
   RecipeDBResponseType,
+  RecipeEditFormType,
   RecipeFormType,
   RecipeSearchResponseType,
   RecipeType,
@@ -175,23 +176,101 @@ class RecipeAPIClass {
       return null
     }
   }
+
+  async editRecipe(
+    recipeId: string,
+    recipeData: RecipeEditFormType,
+    originalRecipe: RecipeType,
+    setProgress: (val: number) => void
+  ): Promise<boolean | typeof ADD_RECIPE_AUTH_ERROR> {
+    try {
+      setProgress(10)
+      // Image: only upload when the user picked a new file. Otherwise the recipe
+      // keeps its existing stored image URL.
+      let recipeImage = originalRecipe.recipeImage
+      if (recipeData.recipeImage) {
+        recipeImage = await this.uploadRecipeImage(
+          recipeData.recipeImage,
+          setProgress
+        )
+      }
+      setProgress(80)
+      // Serving price is a local calculation (no API cost), so always recompute —
+      // it depends on both ingredients and servings.
+      const servingPrice: number = calculateServingPrice(
+        recipeData.ingredients,
+        recipeData.servings
+      )
+      const totalTime: number = recipeData.prepTime + (recipeData.cookTime ?? 0)
+
+      // Nutrition is a paid Edamam call, so only re-run it when the ingredient set
+      // actually changed; minor edits (title, instructions, times) reuse the
+      // stored nutrition data and labels.
+      const ingredientsChanged =
+        JSON.stringify(this.buildNutritionIngredients(recipeData.ingredients)) !==
+        JSON.stringify(this.buildNutritionIngredients(originalRecipe.ingredients))
+
+      let nutritionData = originalRecipe.nutritionData
+      let nutritionLabels = originalRecipe.nutritionLabels
+      if (ingredientsChanged) {
+        const nutritionDataRes = await this.getRecipeNutrition(
+          recipeData.ingredients
+        )
+        nutritionData = nutritionDataRes.nutritionData
+        nutritionLabels = nutritionDataRes.dietLabels
+      }
+      setProgress(90)
+      // Only the editable fields are sent; the server whitelists these and never
+      // lets ratings/saves/counters be overwritten.
+      const payload = {
+        title: recipeData.title,
+        prepTime: recipeData.prepTime,
+        cookTime: recipeData.cookTime,
+        servings: recipeData.servings,
+        fridgeLife: recipeData.fridgeLife,
+        freezerLife: recipeData.freezerLife,
+        description: recipeData.description,
+        ingredients: recipeData.ingredients,
+        instructions: recipeData.instructions,
+        recipeImage,
+        cuisine: recipeData.cuisine,
+        mealTypes: recipeData.mealTypes,
+        nutritionData,
+        nutritionLabels,
+        servingPrice,
+        totalTime,
+      }
+      await http.put(`api/editRecipe?recipeId=${recipeId}`, payload)
+      return true
+    } catch (error: unknown) {
+      console.error('editRecipe failed:', error)
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        return ADD_RECIPE_AUTH_ERROR
+      }
+      return false
+    }
+  }
+  // The exact ingredient strings sent to Edamam for nutrition lookup. Shared by
+  // getRecipeNutrition and editRecipe so the "did the ingredients change?" check
+  // compares the same representation that actually drives the nutrition result.
+  buildNutritionIngredients(ingrArr: IngredientsType[]): string[] {
+    const ingr: string[] = []
+    ingrArr.forEach(ing => {
+      if ('parsedIngredient' in ing) {
+        const { quantity, unit, ingredient } = ing.parsedIngredient
+        if (quantity) {
+          ingr.push(`${quantity} ${unit || ''} ${ingredient}`)
+        }
+      }
+    })
+    return ingr
+  }
   async getRecipeNutrition(ingrArr: IngredientsType[]): Promise<{ nutritionData: NutritionDataType | null; dietLabels: string[] | null }> {
     try {
       const ingrData: { title: string; ingr: string[] } = {
         title: 'recipe 1',
-        ingr: [],
+        ingr: this.buildNutritionIngredients(ingrArr),
       }
-
-      ingrArr.forEach(ingr => {
-        if ('parsedIngredient' in ingr) {
-          const { quantity, unit, ingredient } = ingr.parsedIngredient
-
-          if (quantity) {
-            const str = `${quantity} ${unit || ''} ${ingredient}`
-            ingrData.ingr.push(str)
-          }
-        }
-      })
       const nutritionResultRes = await nutrition.post(
         `nutrition-details?app_id=${import.meta.env.VITE_EDAMAM_APP_ID}&app_key=${import.meta.env.VITE_EDAMAM_APP_KEY}`,
         ingrData

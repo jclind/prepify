@@ -15,6 +15,7 @@ interface AddRecipeSummaryBarProps {
   isValid: boolean
   loading: boolean
   onSubmit: () => void
+  submitLabel?: string
 }
 
 const formatTime = (totalMin: number): string => {
@@ -39,6 +40,7 @@ const AddRecipeSummaryBar: FC<AddRecipeSummaryBarProps> = ({
   isValid,
   loading,
   onSubmit,
+  submitLabel = 'Create Recipe',
 }) => {
   const ingredientCount = useMemo(
     () => ingredients.filter(ingr => 'parsedIngredient' in ingr).length,
@@ -89,7 +91,7 @@ const AddRecipeSummaryBar: FC<AddRecipeSummaryBarProps> = ({
               ariaLabel='loading'
             />
           ) : (
-            'Create Recipe'
+            submitLabel
           )}
         </button>
       </div>

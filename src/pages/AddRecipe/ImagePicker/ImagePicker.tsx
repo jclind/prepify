@@ -9,11 +9,24 @@ const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 interface ImagePickerProps {
   image: File | undefined
   setImage: React.Dispatch<React.SetStateAction<File | undefined>>
+  // Edit mode: the recipe's existing image URL, shown as the initial preview so
+  // the field isn't empty when no new file has been picked yet.
+  initialPreviewUrl?: string
+  // Edit mode: fires when the user clears the image, so the parent can drop the
+  // existing-image URL it tracks for validation.
+  onRemove?: () => void
 }
 
-const ImagePicker: React.FC<ImagePickerProps> = ({ image, setImage }) => {
+const ImagePicker: React.FC<ImagePickerProps> = ({
+  image,
+  setImage,
+  initialPreviewUrl,
+  onRemove,
+}) => {
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const [imagePreview, setImagePreview] = useState<string | undefined>()
+  const [imagePreview, setImagePreview] = useState<string | undefined>(
+    initialPreviewUrl
+  )
 
   const resetInput = () => {
     if (fileInputRef.current) fileInputRef.current.value = ''
@@ -82,6 +95,7 @@ const ImagePicker: React.FC<ImagePickerProps> = ({ image, setImage }) => {
     setImage(undefined)
     setImagePreview(undefined)
     resetInput()
+    onRemove?.()
   }
 
   return (

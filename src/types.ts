@@ -44,6 +44,12 @@ export type RecipeFormType = {
   mealTypes: string[]
 }
 
+// Same shape as RecipeFormType, but the image is optional: when editing, an
+// unchanged recipe keeps its existing stored image URL and no new File is set.
+export type RecipeEditFormType = Omit<RecipeFormType, 'recipeImage'> & {
+  recipeImage?: File
+}
+
 export type LabelType = { label: string; id: string }
 export type IngredientsType =
   | {
