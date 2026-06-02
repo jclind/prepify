@@ -36,7 +36,7 @@ const CreateUsername: FC = () => {
       return
     }
     let cancelled = false
-    AuthAPI.getUsername(user.uid)
+    AuthAPI.getUsername()
       .then(username => {
         if (cancelled) return
         if (username) navigate('/')

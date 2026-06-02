@@ -5,15 +5,12 @@ class AuthAPIClass {
   getUID(): string | null {
     return auth?.currentUser?.uid ?? null
   }
-  async getUsername(userId?: string): Promise<string | null> {
-    let uid: string | null = userId ?? null
-    if (!userId) {
-      uid = this.getUID()
-    }
-    if (!uid) return null
-    const result = await http.get(
-      `api/getUsername?userId=${encodeURIComponent(uid)}`
-    )
+  // The server resolves the username from the auth token, so this always
+  // returns the current user's own username. Skip the request when nobody is
+  // signed in (it would just 401).
+  async getUsername(): Promise<string | null> {
+    if (!this.getUID()) return null
+    const result = await http.get('api/getUsername')
     return result.data
   }
   async checkUsernameAvailability(username: string): Promise<boolean> {

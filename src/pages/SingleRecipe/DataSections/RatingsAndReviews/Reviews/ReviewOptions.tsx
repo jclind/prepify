@@ -26,7 +26,7 @@ const ReviewOptions: FC<ReviewOptionsProps> = ({
 
   const { data: currUsername } = useQuery({
     queryKey: ['username', uid],
-    queryFn: () => AuthAPI.getUsername(uid!),
+    queryFn: () => AuthAPI.getUsername(),
     enabled: !!uid,
   })
 
