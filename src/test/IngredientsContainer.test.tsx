@@ -3,6 +3,7 @@ import { vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import IngredientsContainer from 'src/pages/AddRecipe/Ingredients/IngredientsContainer/IngredientsContainer'
+import IngredientItem from 'src/pages/AddRecipe/Ingredients/IngredientItem'
 
 vi.mock('src/api/recipes', () => ({
   default: { getIngredientData: vi.fn() },
@@ -89,13 +90,34 @@ describe('IngredientsContainer', () => {
     expect(screen.queryByText('Sugar')).toBeNull()
   })
 
-  it('"Reorder" button toggles reorder mode (shows "Done" while active)', async () => {
-    const user = userEvent.setup()
-    render(<Wrapper />)
-    expect(screen.getByText('Reorder')).toBeInTheDocument()
-    await user.click(screen.getByText('Reorder'))
-    expect(screen.getByText('Done')).toBeInTheDocument()
-    await user.click(screen.getByText('Done'))
-    expect(screen.getByText('Reorder')).toBeInTheDocument()
+  // Reordering is now always available via a per-row drag handle — there is no
+  // "Reorder"/"Done" mode toggle (see IngredientItem: "Reorder is available any
+  // time — no mode"). This asserts that always-on affordance is present.
+  it('each ingredient row exposes an always-available drag-to-reorder handle', () => {
+    const sugar = {
+      id: 'sugar-1',
+      parsedIngredient: {
+        ingredient: 'Sugar',
+        quantity: 1,
+        unit: 'cup',
+        comment: null,
+        originalIngredientString: '1 cup Sugar',
+      },
+      ingredientData: null,
+    } as any
+
+    render(
+      <IngredientItem
+        ingredients={[sugar]}
+        ingredient={sugar}
+        setLoading={vi.fn()}
+        removeIngredient={vi.fn()}
+        setIngredients={vi.fn()}
+      />
+    )
+
+    expect(screen.getByLabelText('Drag to reorder')).toBeInTheDocument()
+    expect(screen.queryByText('Reorder')).toBeNull()
+    expect(screen.queryByText('Done')).toBeNull()
   })
 })
