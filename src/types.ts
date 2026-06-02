@@ -2,6 +2,10 @@ import { IngredientData, ParsedIngredient } from '@jclind/ingredient-parser'
 
 export type RecipeType = {
   _id: string
+  // Firebase uid of the author. Stamped server-side and returned by GET
+  // /getRecipe; the source of truth for ownership checks (authorUsername is a
+  // display snapshot that goes stale if the user renames).
+  userId?: string
   title: string
   prepTime: number
   cookTime: number | null

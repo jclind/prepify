@@ -168,15 +168,18 @@ describe('RecipeAPI.editRecipe', () => {
     nutritionPost.mockReset()
   })
 
-  it('PUTs to the edit endpoint and resolves true on success', async () => {
-    httpPut.mockResolvedValue({ data: {} })
+  it('PUTs to the edit endpoint and returns the updated recipe on success', async () => {
+    httpPut.mockResolvedValue({ data: { _id: 'recipe-1', title: 'Edited Title' } })
     const result = await RecipeAPI.editRecipe(
       'recipe-1',
       makeEditData(),
       makeOriginal(),
       () => {}
     )
-    expect(result).toBe(true)
+    expect(result).toEqual({
+      status: 'success',
+      recipe: { _id: 'recipe-1', title: 'Edited Title' },
+    })
     expect(httpPut.mock.calls[0][0]).toBe('api/editRecipe?recipeId=recipe-1')
     expect(httpPut.mock.calls[0][1].title).toBe('Edited Title')
   })
@@ -239,5 +242,66 @@ describe('RecipeAPI.editRecipe', () => {
     // original image being reused.
     expect(payload.recipeImage).toBe('https://cypress.test/fake-recipe-image.jpg')
     expect(payload.recipeImage).not.toBe('https://cdn/original.jpg')
+  })
+
+  it('keeps the existing nutrition when an ingredient edit hits a failed Edamam lookup', async () => {
+    // Edamam unreachable => getRecipeNutrition soft-fails to null.
+    nutritionPost.mockRejectedValue(new Error('Edamam down'))
+    httpPut.mockResolvedValue({ data: {} })
+
+    const changed = makeEditData({
+      ingredients: [
+        {
+          ...sharedIngredient(),
+          parsedIngredient: {
+            ...sharedIngredient().parsedIngredient,
+            ingredient: 'Sugar',
+            quantity: 1,
+            unit: 'cup',
+            originalIngredientString: '1 cup sugar',
+          },
+        },
+      ],
+    })
+
+    await RecipeAPI.editRecipe('recipe-1', changed, makeOriginal(), () => {})
+
+    expect(nutritionPost).toHaveBeenCalledTimes(1)
+    const payload = httpPut.mock.calls[0][1]
+    // The soft-fail must NOT erase the recipe's stored nutrition.
+    expect(payload.nutritionData).toEqual({ uri: 'orig' })
+    expect(payload.nutritionLabels).toEqual(['Vegan'])
+  })
+
+  it('returns auth-error on a 401', async () => {
+    httpPut.mockRejectedValue(
+      Object.assign(new Error('unauthorized'), {
+        isAxiosError: true,
+        response: { status: 401, data: {} },
+      })
+    )
+    const result = await RecipeAPI.editRecipe(
+      'recipe-1',
+      makeEditData(),
+      makeOriginal(),
+      () => {}
+    )
+    expect(result).toEqual({ status: 'auth-error' })
+  })
+
+  it('surfaces the server error message on a non-auth failure (e.g. 403)', async () => {
+    httpPut.mockRejectedValue(
+      Object.assign(new Error('request failed'), {
+        isAxiosError: true,
+        response: { status: 403, data: { error: 'Forbidden' } },
+      })
+    )
+    const result = await RecipeAPI.editRecipe(
+      'recipe-1',
+      makeEditData(),
+      makeOriginal(),
+      () => {}
+    )
+    expect(result).toEqual({ status: 'error', message: 'Forbidden' })
   })
 })
