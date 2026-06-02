@@ -51,4 +51,9 @@ function getDB() {
   return db
 }
 
-module.exports = { connectDB, closeDB, getDB }
+function getClient() {
+  if (!client) throw new Error('DB not initialized. Call connectDB() first.')
+  return client
+}
+
+module.exports = { connectDB, closeDB, getDB, getClient }
