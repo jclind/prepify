@@ -7,6 +7,22 @@ const INSTRUCTION_MAX_LENGTH = 1000
 const MAX_INGREDIENTS = 50
 const MAX_INSTRUCTIONS = 50
 
+// Fields a recipe must carry to be created or edited. Shared by both routes so
+// the requirement can't drift between create and edit.
+const REQUIRED_RECIPE_FIELDS = ['title', 'ingredients', 'instructions', 'mealTypes']
+
+// Returns an error string when a required field is missing/empty, or null when
+// all are present. An array field counts as missing when empty.
+function validateRequiredRecipeFields(body) {
+  const missing = REQUIRED_RECIPE_FIELDS.filter(f => {
+    const val = body[f]
+    return val == null || val === '' || (Array.isArray(val) && val.length === 0)
+  })
+  return missing.length > 0
+    ? `Missing required fields: ${missing.join(', ')}`
+    : null
+}
+
 // Returns an error string when `body` violates a bound, or null when it's within
 // limits. Only checks fields that are present — required-field presence is
 // validated separately by the route.
@@ -46,5 +62,7 @@ module.exports = {
   INSTRUCTION_MAX_LENGTH,
   MAX_INGREDIENTS,
   MAX_INSTRUCTIONS,
+  REQUIRED_RECIPE_FIELDS,
+  validateRequiredRecipeFields,
   validateRecipeBounds,
 }

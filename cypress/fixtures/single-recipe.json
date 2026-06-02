@@ -444,8 +444,8 @@
   },
   "totalTime": 40,
   "rating": {
-    "rateCount": "3",
-    "rateValue": "13"
+    "rateCount": 3,
+    "rateValue": 4.3
   },
   "createdAt": "1678299721258",
   "editedAt": null,

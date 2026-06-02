@@ -2,6 +2,10 @@ import { IngredientData, ParsedIngredient } from '@jclind/ingredient-parser'
 
 export type RecipeType = {
   _id: string
+  // Firebase uid of the author. Stamped server-side and returned by GET
+  // /getRecipe; the source of truth for ownership checks (authorUsername is a
+  // display snapshot that goes stale if the user renames).
+  userId?: string
   title: string
   prepTime: number
   cookTime: number | null
@@ -42,6 +46,12 @@ export type RecipeFormType = {
   recipeImage: File
   cuisine: string
   mealTypes: string[]
+}
+
+// Same shape as RecipeFormType, but the image is optional: when editing, an
+// unchanged recipe keeps its existing stored image URL and no new File is set.
+export type RecipeEditFormType = Omit<RecipeFormType, 'recipeImage'> & {
+  recipeImage?: File
 }
 
 export type LabelType = { label: string; id: string }
