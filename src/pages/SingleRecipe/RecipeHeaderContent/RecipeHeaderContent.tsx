@@ -4,6 +4,7 @@ import { BsStar } from 'react-icons/bs'
 import Skeleton from 'react-loading-skeleton'
 import { formatRating } from 'src/util/formatRating'
 import { getWindowWidth } from 'src/util/getWindowWidth'
+import { timeElapsedSince } from 'src/util/timeElapsedSince'
 import { RecipeType, ReviewType } from 'types'
 import AddRatingBtn from 'src/pages/SingleRecipe/Buttons/AddRatingBtn'
 import PrintRecipeBtn from 'src/pages/SingleRecipe/Buttons/PrintRecipeBtn'
@@ -95,6 +96,11 @@ const RecipeHeaderContent: FC<RecipeHeaderContentProps> = ({
             }
           />
         </div>
+        {!loading && currRecipe?.editedAt && (
+          <div className='edited-marker'>
+            Edited {timeElapsedSince(new Date(Number(currRecipe.editedAt)))}
+          </div>
+        )}
         <div className='actions'>
           {loading || !currRecipe?._id ? (
             <Skeleton baseColor={skeletonColor} className='action skeleton' />

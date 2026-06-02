@@ -165,6 +165,79 @@ router.post('/addRecipe', verifyToken, async (req, res) => {
   }
 })
 
+// PUT /editRecipe — owner-only edit. Social/derived counters and immutable
+// metadata are never writable here (see EDITABLE_FIELDS), so an edit can never
+// reset a recipe's ratings, saves, or made-count. editedAt is stamped so the UI
+// can surface that the recipe changed after people saved it.
+const EDITABLE_FIELDS = [
+  'title',
+  'prepTime',
+  'cookTime',
+  'servings',
+  'fridgeLife',
+  'freezerLife',
+  'description',
+  'ingredients',
+  'instructions',
+  'recipeImage',
+  'cuisine',
+  'mealTypes',
+  'nutritionData',
+  'nutritionLabels',
+  'servingPrice',
+  'totalTime',
+]
+
+router.put('/editRecipe', verifyToken, async (req, res) => {
+  try {
+    const db = getDB()
+    const { recipeId } = req.query
+    if (!recipeId) {
+      return res.status(400).json({ error: 'recipeId is required' })
+    }
+    const uid = req.uid
+    const recipe = await db.collection('recipes').findOne(recipeIdQuery(recipeId))
+    if (!recipe) {
+      return res.status(404).json({ error: 'Recipe not found' })
+    }
+    if (recipe.userId !== uid) {
+      return res.status(403).json({ error: 'Forbidden' })
+    }
+
+    const body = req.body
+    const requiredFields = ['title', 'ingredients', 'instructions', 'mealTypes']
+    const missing = requiredFields.filter(f => {
+      const val = body[f]
+      return val == null || val === '' || (Array.isArray(val) && val.length === 0)
+    })
+    if (missing.length > 0) {
+      return res.status(400).json({ error: `Missing required fields: ${missing.join(', ')}` })
+    }
+    const boundsError = validateRecipeBounds(body)
+    if (boundsError) {
+      return res.status(400).json({ error: boundsError })
+    }
+
+    // Whitelist: copy only editable fields from the client payload. Anything
+    // else the client sends (rating, numTimesSaved, views, userId, _id, …) is
+    // ignored.
+    const update = {}
+    for (const field of EDITABLE_FIELDS) {
+      if (field in body) update[field] = body[field]
+    }
+    update.editedAt = Date.now().toString()
+
+    const updated = await db.collection('recipes').findOneAndUpdate(
+      recipeIdQuery(recipeId),
+      { $set: update },
+      { returnDocument: 'after' }
+    )
+    res.json(updated)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 // DELETE /deleteRecipe
 router.delete('/deleteRecipe', verifyToken, async (req, res) => {
   try {

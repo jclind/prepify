@@ -17,6 +17,7 @@ import UserRatings from 'src/pages/Account/UserRatings/UserRatings'
 import UserRecipes from 'src/pages/Account/UserRecipes/UserRecipes'
 
 import AddRecipe from 'src/pages/AddRecipe/AddRecipe'
+import EditRecipe from 'src/pages/EditRecipe/EditRecipe'
 import Layout from 'src/Components/Layout/Layout'
 import Help from 'src/pages/Help/Help'
 import NotFound from 'src/pages/404/404'
@@ -113,6 +114,14 @@ const App: FC = () => {
                 element={
                   <Layout darkNavLinks={true}>
                     <AddRecipe />
+                  </Layout>
+                }
+              />
+              <Route
+                path='/recipes/:recipeId/edit'
+                element={
+                  <Layout darkNavLinks={true}>
+                    <EditRecipe />
                   </Layout>
                 }
               />

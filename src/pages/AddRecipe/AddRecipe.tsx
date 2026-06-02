@@ -1,10 +1,13 @@
 import React, { FC, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import {
   AddRecipeErrorType,
   IngredientsType,
   InstructionsType,
+  RecipeEditFormType,
   RecipeFormType,
+  RecipeType,
 } from 'types'
 import LoadingBar from 'react-top-loading-bar'
 import RecipeFormInput from 'src/pages/AddRecipe/RecipeFormInput'
@@ -18,6 +21,7 @@ import InstructionsContainer from 'src/pages/AddRecipe/Instructions/Instructions
 import CuisineSelector from 'src/pages/AddRecipe/CuisineSelector/CuisineSelector'
 import MealTypeSelector from 'src/pages/AddRecipe/MealTypeSelector/MealTypeSelector'
 import { hrMinToMin } from 'src/util/hrMinToMin'
+import { minToHrMin } from 'src/util/minToHrMin'
 import {
   TITLE_MAX_LENGTH,
   DESCRIPTION_MAX_LENGTH,
@@ -33,34 +37,59 @@ import AddRecipeSummaryBar from 'src/pages/AddRecipe/AddRecipeSummaryBar'
 import { Helmet } from 'react-helmet-async'
 import { toast } from 'react-hot-toast'
 
-const AddRecipe: FC = () => {
+type TimeVal = { hours: number; minutes: number } | null
+
+// When `initialRecipe` is supplied the form runs in edit mode: every field is
+// pre-populated from the existing recipe and submitting updates it (preserving
+// ratings/saves) instead of creating a new one.
+type AddRecipeProps = { initialRecipe?: RecipeType }
+
+const AddRecipe: FC<AddRecipeProps> = ({ initialRecipe }) => {
+  const isEditMode = !!initialRecipe
+
   const [addRecipeLoading, setAddRecipeLoading] = useState(false)
   const [loadingProgress, setLoadingProgress] = useState(0)
   const addRecipeFormRef = useRef<HTMLDivElement>(null)
-  const [title, setTitle] = useState('')
+  const [title, setTitle] = useState(initialRecipe?.title ?? '')
   const [recipeImage, setRecipeImage] = useState<File | undefined>()
-  const [description, setDescription] = useState('')
-  const [servings, setServings] = useState<number | ''>('')
-  const [prepTime, setPrepTime] = useState<{
-    hours: number
-    minutes: number
-  } | null>(null)
-  const [cookTime, setCookTime] = useState<{
-    hours: number
-    minutes: number
-  } | null>(null)
-  const [fridgeLife, setFridgeLife] = useState<number>(0)
-  const [freezerLife, setFreezerLife] = useState<number>(0)
-  const [ingredients, setIngredients] = useState<IngredientsType[]>([])
-  const [instructions, setInstructions] = useState<InstructionsType[]>([])
-  const [cuisine, setCuisine] = useState('')
-  const [mealTypes, setMealTypes] = useState<string[]>([])
+  // Edit mode only: the recipe's current image URL, kept when the user doesn't
+  // pick a new file. Cleared if they remove the image (forcing a new pick).
+  const [existingImageUrl, setExistingImageUrl] = useState<string | undefined>(
+    initialRecipe?.recipeImage
+  )
+  const [description, setDescription] = useState(initialRecipe?.description ?? '')
+  const [servings, setServings] = useState<number | ''>(
+    initialRecipe?.servings ?? ''
+  )
+  const [prepTime, setPrepTime] = useState<TimeVal>(
+    initialRecipe ? minToHrMin(initialRecipe.prepTime) : null
+  )
+  const [cookTime, setCookTime] = useState<TimeVal>(
+    initialRecipe ? minToHrMin(initialRecipe.cookTime) : null
+  )
+  const [fridgeLife, setFridgeLife] = useState<number>(
+    initialRecipe?.fridgeLife ?? 0
+  )
+  const [freezerLife, setFreezerLife] = useState<number>(
+    initialRecipe?.freezerLife ?? 0
+  )
+  const [ingredients, setIngredients] = useState<IngredientsType[]>(
+    initialRecipe?.ingredients ?? []
+  )
+  const [instructions, setInstructions] = useState<InstructionsType[]>(
+    initialRecipe?.instructions ?? []
+  )
+  const [cuisine, setCuisine] = useState(initialRecipe?.cuisine ?? '')
+  const [mealTypes, setMealTypes] = useState<string[]>(
+    initialRecipe?.mealTypes ?? []
+  )
   const [errors, setErrors] = useState<Partial<AddRecipeErrorType>>({})
 
   const [isFormValid, setIsFormValid] = useState(false)
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false)
 
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
 
   const validate = (assignErrors: boolean = false) => {
     let newErrors: Partial<AddRecipeErrorType> = {}
@@ -71,7 +100,9 @@ const AddRecipe: FC = () => {
       newErrors.title = `Title cannot exceed ${TITLE_MAX_LENGTH} characters`
     }
 
-    if (!recipeImage) newErrors.image = 'Image is required'
+    // In edit mode a recipe with no newly-picked file is still valid as long as
+    // it has its existing stored image.
+    if (!recipeImage && !existingImageUrl) newErrors.image = 'Image is required'
     if (!description) {
       newErrors.description = 'Description is required'
     } else if (description.length > DESCRIPTION_MAX_LENGTH) {
@@ -94,21 +125,6 @@ const AddRecipe: FC = () => {
     assignErrors && setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
-  const clearForm = () => {
-    setTitle('')
-    setRecipeImage(undefined)
-    setDescription('')
-    setServings('')
-    setPrepTime(null)
-    setCookTime(null)
-    setFridgeLife(0)
-    setFreezerLife(0)
-    setIngredients([])
-    setInstructions([])
-    setCuisine('')
-    setMealTypes([])
-    setErrors({})
-  }
   useEffect(() => {
     // Once the user has attempted a submit, keep the displayed errors in sync as
     // fields are fixed (assignErrors=true) so a corrected field clears its message
@@ -120,6 +136,7 @@ const AddRecipe: FC = () => {
   }, [
     title,
     recipeImage,
+    existingImageUrl,
     description,
     servings,
     prepTime,
@@ -128,11 +145,49 @@ const AddRecipe: FC = () => {
     mealTypes,
     hasAttemptedSubmit,
   ])
-  const handleAddRecipe = async () => {
+  const handleSubmit = async () => {
     if (addRecipeLoading) return
     setHasAttemptedSubmit(true)
-    if (validate(true)) {
-      setAddRecipeLoading(true)
+    if (!validate(true)) {
+      addRecipeFormRef?.current && addRecipeFormRef.current.scrollTo(0, 0)
+      return
+    }
+
+    setAddRecipeLoading(true)
+    if (isEditMode && initialRecipe) {
+      const editData: RecipeEditFormType = {
+        title,
+        prepTime: hrMinToMin(prepTime),
+        cookTime: hrMinToMin(cookTime),
+        servings: Number(servings),
+        fridgeLife,
+        freezerLife,
+        description,
+        ingredients,
+        instructions,
+        recipeImage,
+        cuisine,
+        mealTypes,
+      }
+      const result = await RecipeAPI.editRecipe(
+        initialRecipe._id,
+        editData,
+        initialRecipe,
+        setLoadingProgress
+      )
+      if (result === ADD_RECIPE_AUTH_ERROR) {
+        toast.error('Your session has expired — please sign in again and retry.')
+      } else if (result) {
+        // Drop stale cached copies so the recipe page and the user's created
+        // list reflect the edit immediately.
+        queryClient.invalidateQueries({ queryKey: ['recipe', initialRecipe._id] })
+        queryClient.invalidateQueries({ queryKey: ['created-recipes'] })
+        toast.success('Recipe updated!')
+        navigate(`/recipes/${initialRecipe._id}`)
+      } else {
+        toast.error('Failed to update recipe. Please try again.')
+      }
+    } else {
       const recipeData: RecipeFormType = {
         title,
         prepTime: hrMinToMin(prepTime),
@@ -156,17 +211,15 @@ const AddRecipe: FC = () => {
       } else {
         toast.error('Failed to create recipe. Please try again.')
       }
-      setAddRecipeLoading(false)
-      setLoadingProgress(100)
-    } else {
-      addRecipeFormRef?.current && addRecipeFormRef.current.scrollTo(0, 0)
     }
+    setAddRecipeLoading(false)
+    setLoadingProgress(100)
   }
 
   return (
     <>
       <Helmet>
-        <title>Create New Recipe</title>
+        <title>{isEditMode ? 'Edit Recipe' : 'Create New Recipe'}</title>
         <link
           rel='canonical'
           href='https://www.prepifymeals.com/add-recipe'
@@ -182,7 +235,7 @@ const AddRecipe: FC = () => {
           progress={loadingProgress}
           onLoaderFinished={() => setLoadingProgress(0)}
         />
-        <h1>Create New Recipe</h1>
+        <h1>{isEditMode ? 'Edit Recipe' : 'Create New Recipe'}</h1>
         <div className='container'>
           <div className='container-inner' ref={addRecipeFormRef}>
             <div className='title input-field'>
@@ -204,7 +257,12 @@ const AddRecipe: FC = () => {
               {errors.image && (
                 <AddRecipeFormError error={errors.image} id='error-image' />
               )}
-              <ImagePicker image={recipeImage} setImage={setRecipeImage} />
+              <ImagePicker
+                image={recipeImage}
+                setImage={setRecipeImage}
+                initialPreviewUrl={existingImageUrl}
+                onRemove={() => setExistingImageUrl(undefined)}
+              />
             </div>
             <div className='description input-field'>
               <SectionHeader label='Description' required />
@@ -303,7 +361,8 @@ const AddRecipe: FC = () => {
           ingredients={ingredients}
           isValid={isFormValid}
           loading={addRecipeLoading}
-          onSubmit={handleAddRecipe}
+          onSubmit={handleSubmit}
+          submitLabel={isEditMode ? 'Save Changes' : 'Create Recipe'}
         />
       </div>
     </>

@@ -103,9 +103,8 @@ const RecipeControls: FC<RecipeControlsType> = ({
       <div className='btns-container'>
         <button
           className='edit-btn'
-          disabled
-          title='Editing is coming soon'
-          aria-label='Edit recipe (coming soon)'
+          onClick={() => navigate(`/recipes/${recipeId}/edit`)}
+          aria-label='Edit recipe'
         >
           <AiOutlineEdit className='icon' aria-hidden='true' />
           Edit

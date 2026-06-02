@@ -3,6 +3,7 @@ import { vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { HelmetProvider } from 'react-helmet-async'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import AddRecipe from 'src/pages/AddRecipe/AddRecipe'
 import RecipeAPI from 'src/api/recipes'
 
@@ -125,12 +126,16 @@ vi.mock('src/pages/AddRecipe/TimeInput/TimeInput', () => ({
 
 const mockAddRecipe = RecipeAPI.addRecipe as ReturnType<typeof vi.fn>
 
-const renderAddRecipe = () =>
-  render(
-    <HelmetProvider>
-      <AddRecipe />
-    </HelmetProvider>
+const renderAddRecipe = () => {
+  const queryClient = new QueryClient()
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <HelmetProvider>
+        <AddRecipe />
+      </HelmetProvider>
+    </QueryClientProvider>
   )
+}
 
 const fillAllFields = async (user: ReturnType<typeof userEvent.setup>) => {
   await user.type(screen.getByPlaceholderText('Add a title to your recipe.'), 'My Great Recipe')
