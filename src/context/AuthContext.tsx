@@ -254,21 +254,44 @@ const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
     return () => unsubscribe()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-  // Check if user has username after auth is loaded and user exists
+  // Check if user has username after auth is loaded and user exists. A failed
+  // lookup leaves a username-less user (e.g. a fresh Google sign-in) stranded
+  // without the redirect, so retry transient failures with backoff before
+  // giving up rather than surfacing a non-actionable error to the user.
   useEffect(() => {
-    if (!loading && user && user.uid) {
-      AuthAPI.getUsername(user.uid)
-        .then(username => {
-          if (!username) {
-            navigate('/create-username')
+    if (loading || !user || !user.uid) return
+
+    let cancelled = false
+    const uid = user.uid
+    const MAX_ATTEMPTS = 3
+    const BASE_DELAY_MS = 500
+    const delay = (ms: number) =>
+      new Promise(resolve => setTimeout(resolve, ms))
+
+    const verifyUsername = async () => {
+      for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+        try {
+          const username = await AuthAPI.getUsername(uid)
+          if (cancelled) return
+          if (!username) navigate('/create-username')
+          return
+        } catch (err) {
+          if (cancelled) return
+          if (attempt === MAX_ATTEMPTS) {
+            console.error('Failed to verify username on auth load:', err)
+            return
           }
-        })
-        .catch(err => {
-          // Don't silently swallow the failure: if we can't confirm the user
-          // has a username we surface it rather than letting them proceed in a
-          // half-onboarded state that breaks username-dependent features.
-          console.error('Failed to verify username on auth load:', err)
-        })
+          // Exponential backoff: 500ms, then 1000ms.
+          await delay(BASE_DELAY_MS * 2 ** (attempt - 1))
+          if (cancelled) return
+        }
+      }
+    }
+
+    verifyUsername()
+
+    return () => {
+      cancelled = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, user])
