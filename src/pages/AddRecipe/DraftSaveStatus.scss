@@ -1,0 +1,27 @@
+@use '../../helpers.scss' as s;
+
+.draft-save-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  // Reserve the line height even when idle/empty so showing or hiding the
+  // status never nudges the form below it.
+  min-height: 1.25rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: s.$tertiary-text;
+
+  svg {
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+
+  &.saved {
+    color: s.$primary;
+  }
+
+  &.error {
+    color: s.$error-red;
+  }
+}

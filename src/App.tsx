@@ -15,6 +15,7 @@ import Account from 'src/pages/Account/Account'
 import SavedRecipes from 'src/pages/Account/SavedRecipes/SavedRecipes'
 import UserRatings from 'src/pages/Account/UserRatings/UserRatings'
 import UserRecipes from 'src/pages/Account/UserRecipes/UserRecipes'
+import Drafts from 'src/pages/Account/Drafts/Drafts'
 
 import AddRecipe from 'src/pages/AddRecipe/AddRecipe'
 import EditRecipe from 'src/pages/EditRecipe/EditRecipe'
@@ -89,6 +90,7 @@ const App: FC = () => {
                 <Route path='saved-recipes' element={<SavedRecipes />} />
                 <Route path='ratings' element={<UserRatings />} />
                 <Route path='your-recipes' element={<UserRecipes />} />
+                <Route path='drafts' element={<Drafts />} />
               </Route>
               <Route
                 path='/settings'

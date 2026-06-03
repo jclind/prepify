@@ -102,6 +102,16 @@ const Account: FC = () => {
             >
               Your Recipes
             </Link>
+            <Link
+              to='/account/drafts'
+              className={
+                currPath === '/account/drafts'
+                  ? 'active selection'
+                  : 'selection'
+              }
+            >
+              Drafts
+            </Link>
           </div>
           <Outlet />
         </div>

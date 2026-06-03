@@ -16,10 +16,34 @@
   // Clear the fixed summary bar at the bottom of the page.
   padding-bottom: 130px;
 
+  .add-recipe-heading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
   h1 {
     font-size: 2rem;
     font-weight: 700;
     text-align: center;
+  }
+
+  // Reminder shown on a resumed draft: the image isn't persisted in drafts, so
+  // prompt the user to re-add it before publishing.
+  .draft-image-hint {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0 0 0.65rem;
+    font-size: 0.85rem;
+    color: s.$secondary-text;
+
+    .icon {
+      flex-shrink: 0;
+      font-size: 1rem;
+      color: s.$primary;
+    }
   }
 
   .container {
