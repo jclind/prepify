@@ -8,6 +8,7 @@ import './SingleRecipe.scss'
 import Ingredients from 'src/pages/SingleRecipe/DataSections/Ingredients/Ingredients'
 import Instructions from 'src/pages/SingleRecipe/DataSections/Instructions/Instructions'
 import Tags from 'src/pages/SingleRecipe/DataSections/Tags'
+import NutritionData from 'src/pages/SingleRecipe/DataSections/NutritionData/NutritionData'
 import RecipeControls from 'src/pages/SingleRecipe/DataSections/RecipeControls/RecipeControls'
 import RecipeStats from 'src/pages/SingleRecipe/DataSections/RecipeStats/RecipeStats'
 import MadeRecipeBtn from 'src/pages/SingleRecipe/Buttons/MadeRecipeBtn'
@@ -145,6 +146,12 @@ const SingleRecipe: FC<Props> = ({ recipe }) => {
                   loading={loading}
                 />
                 <Tags loading={loading} currRecipe={currRecipe} />
+                {currRecipe?.nutritionData && (
+                  <NutritionData
+                    data={currRecipe.nutritionData}
+                    servings={currRecipe.servings}
+                  />
+                )}
                 {recipeId && <MadeRecipeBtn recipeId={recipeId} />}
                 <div className='recipe-stats'>
                   <RecipeStats currRecipe={currRecipe} loading={loading} />
