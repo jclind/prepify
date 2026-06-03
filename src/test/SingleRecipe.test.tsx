@@ -89,6 +89,24 @@ const baseRecipe = {
   numTimesMade: 5,
 }
 
+// Minimal Edamam-shaped nutrition payload covering every nutrient the
+// NutritionData table reads, so the component renders without throwing.
+const nutrientKeys = [
+  'FAT', 'FASAT', 'FATRN', 'CHOLE', 'NA', 'CHOCDF',
+  'FIBTG', 'SUGAR', 'PROCNT', 'VITD', 'CA', 'FE', 'K',
+]
+const buildNutrientMap = () =>
+  Object.fromEntries(
+    nutrientKeys.map(k => [k, { label: k, quantity: 40, unit: 'g' }])
+  )
+const nutritionDataFixture = {
+  calories: 800,
+  totalNutrients: buildNutrientMap(),
+  totalDaily: buildNutrientMap(),
+  dietLabels: [],
+  healthLabels: [],
+}
+
 const createTestQueryClient = () =>
   new QueryClient({ defaultOptions: { queries: { retry: false } } })
 
@@ -183,6 +201,29 @@ describe('SingleRecipe page', () => {
         ])
       )
     })
+  })
+
+  it('renders the nutrition facts table when the recipe has nutritionData', async () => {
+    mockGetRecipe.mockResolvedValue({
+      ...baseRecipe,
+      nutritionData: nutritionDataFixture,
+    })
+    renderSingleRecipe()
+    await screen.findByText('Chicken Tacos')
+    expect(
+      screen.getByRole('button', { name: /nutrition data/i })
+    ).toBeInTheDocument()
+    // calories per serving = round(800 / 4 servings) = 200
+    expect(screen.getByText('200')).toBeInTheDocument()
+  })
+
+  it('omits the nutrition facts table when nutritionData is null', async () => {
+    mockGetRecipe.mockResolvedValue(baseRecipe)
+    renderSingleRecipe()
+    await screen.findByText('Chicken Tacos')
+    expect(
+      screen.queryByRole('button', { name: /nutrition data/i })
+    ).toBeNull()
   })
 
   it('shows error message and does not crash when getRecipe throws', async () => {
