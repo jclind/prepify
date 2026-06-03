@@ -37,7 +37,7 @@ const Navbar: FC<NavbarProps> = ({
 
   const { data } = useQuery({
     queryKey: ['username', uid],
-    queryFn: () => AuthAPI.getUsername(uid!),
+    queryFn: () => AuthAPI.getUsername(),
     enabled: !!uid && !!authRes?.user,
   })
 

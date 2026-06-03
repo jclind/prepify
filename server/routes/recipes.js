@@ -1,9 +1,11 @@
 const { Router } = require('express')
 const { ObjectId } = require('mongodb')
-const { getDB } = require('../db')
+const { getDB, getClient } = require('../db')
 const { verifyToken } = require('../middleware/auth')
 const { recipeIdQuery } = require('../util/recipeIdQuery')
-const { validateRecipeBounds } = require('../util/recipeLimits')
+const { validateRequiredRecipeFields, validateRecipeBounds } = require('../util/recipeLimits')
+const { EDITABLE_RECIPE_FIELDS, pickFields } = require('../util/recipeFields')
+const { deleteRecipeImage } = require('../util/firebaseStorage')
 
 const router = Router()
 
@@ -137,13 +139,9 @@ router.post('/addRecipe', verifyToken, async (req, res) => {
     const db = getDB()
     const body = req.body
     const uid = req.uid
-    const requiredFields = ['title', 'ingredients', 'instructions', 'mealTypes']
-    const missing = requiredFields.filter(f => {
-      const val = body[f]
-      return val == null || val === '' || (Array.isArray(val) && val.length === 0)
-    })
-    if (missing.length > 0) {
-      return res.status(400).json({ error: `Missing required fields: ${missing.join(', ')}` })
+    const requiredError = validateRequiredRecipeFields(body)
+    if (requiredError) {
+      return res.status(400).json({ error: requiredError })
     }
     const boundsError = validateRecipeBounds(body)
     if (boundsError) {
@@ -159,6 +157,55 @@ router.post('/addRecipe', verifyToken, async (req, res) => {
       { upsert: true }
     )
     res.status(201).json({ _id: newId })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// PUT /editRecipe — owner-only edit. Social/derived counters and immutable
+// metadata are never writable here (only EDITABLE_RECIPE_FIELDS are copied), so
+// an edit can never reset a recipe's ratings, saves, or made-count. editedAt is
+// stamped so the UI can surface that the recipe changed after people saved it.
+router.put('/editRecipe', verifyToken, async (req, res) => {
+  try {
+    const db = getDB()
+    const { recipeId } = req.query
+    if (!recipeId) {
+      return res.status(400).json({ error: 'recipeId is required' })
+    }
+    const uid = req.uid
+    const recipe = await db.collection('recipes').findOne(recipeIdQuery(recipeId))
+    if (!recipe) {
+      return res.status(404).json({ error: 'Recipe not found' })
+    }
+    if (recipe.userId !== uid) {
+      return res.status(403).json({ error: 'Forbidden' })
+    }
+
+    const body = req.body
+    const requiredError = validateRequiredRecipeFields(body)
+    if (requiredError) {
+      return res.status(400).json({ error: requiredError })
+    }
+    const boundsError = validateRecipeBounds(body)
+    if (boundsError) {
+      return res.status(400).json({ error: boundsError })
+    }
+
+    // Whitelist: copy only editable fields from the client payload. Anything
+    // else the client sends (rating, numTimesSaved, views, userId, _id, …) is
+    // ignored.
+    const update = {
+      ...pickFields(body, EDITABLE_RECIPE_FIELDS),
+      editedAt: Date.now().toString(),
+    }
+
+    const updated = await db.collection('recipes').findOneAndUpdate(
+      recipeIdQuery(recipeId),
+      { $set: update },
+      { returnDocument: 'after' }
+    )
+    res.json(updated)
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
@@ -180,11 +227,36 @@ router.delete('/deleteRecipe', verifyToken, async (req, res) => {
     if (recipe.userId !== uid) {
       return res.status(403).json({ error: 'Forbidden' })
     }
-    await db.collection('recipes').deleteOne(recipeIdQuery(recipeId))
-    await db.collection('userRecipeData').updateOne(
-      { _id: uid },
-      { $pull: { userRecipes: { recipeId } } }
-    )
+
+    // Remove the recipe and every reference to it atomically: its ratings/
+    // reviews, and the recipeId entry from any user's saved/made/created lists.
+    // userRecipes only ever lives on the owner's doc, but pulling it across all
+    // docs in the same updateMany is harmless and keeps this to one write.
+    const session = getClient().startSession()
+    try {
+      await session.withTransaction(async () => {
+        await db.collection('recipes').deleteOne(recipeIdQuery(recipeId), { session })
+        await db.collection('ratings').deleteMany({ recipeId }, { session })
+        await db.collection('userRecipeData').updateMany(
+          {},
+          {
+            $pull: {
+              savedRecipes: { recipeId },
+              madeRecipes: { recipeId },
+              userRecipes: { recipeId },
+            },
+          },
+          { session }
+        )
+      })
+    } finally {
+      await session.endSession()
+    }
+
+    // External side effect — runs after the transaction commits and never
+    // fails the request (an orphaned image is preferable to a 500 here).
+    await deleteRecipeImage(recipe.recipeImage)
+
     res.json({ deleted: true })
   } catch (err) {
     res.status(500).json({ error: err.message })

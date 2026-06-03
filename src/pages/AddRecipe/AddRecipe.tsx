@@ -1,10 +1,17 @@
-import React, { FC, useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import React, { FC, useEffect, useMemo, useRef, useState } from 'react'
+import axios from 'axios'
+import { AiOutlineInfoCircle } from 'react-icons/ai'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import {
   AddRecipeErrorType,
   IngredientsType,
   InstructionsType,
+  RecipeDraftContent,
+  RecipeDraftType,
+  RecipeEditFormType,
   RecipeFormType,
+  RecipeType,
 } from 'types'
 import LoadingBar from 'react-top-loading-bar'
 import RecipeFormInput from 'src/pages/AddRecipe/RecipeFormInput'
@@ -18,6 +25,7 @@ import InstructionsContainer from 'src/pages/AddRecipe/Instructions/Instructions
 import CuisineSelector from 'src/pages/AddRecipe/CuisineSelector/CuisineSelector'
 import MealTypeSelector from 'src/pages/AddRecipe/MealTypeSelector/MealTypeSelector'
 import { hrMinToMin } from 'src/util/hrMinToMin'
+import { minToHrMin } from 'src/util/minToHrMin'
 import {
   TITLE_MAX_LENGTH,
   DESCRIPTION_MAX_LENGTH,
@@ -32,35 +40,206 @@ import SectionHeader from 'src/pages/AddRecipe/SectionHeader'
 import AddRecipeSummaryBar from 'src/pages/AddRecipe/AddRecipeSummaryBar'
 import { Helmet } from 'react-helmet-async'
 import { toast } from 'react-hot-toast'
+import DraftAPI from 'src/api/drafts'
+import { useDraftAutosave } from 'src/pages/AddRecipe/useDraftAutosave'
+import DraftSaveStatus from 'src/pages/AddRecipe/DraftSaveStatus'
+import DraftResumeBanner from 'src/pages/AddRecipe/DraftResumeBanner'
 
-const AddRecipe: FC = () => {
+type TimeVal = { hours: number; minutes: number } | null
+
+// When `initialRecipe` is supplied the form runs in edit mode: every field is
+// pre-populated from the existing recipe and submitting updates it (preserving
+// ratings/saves) instead of creating a new one.
+type AddRecipeProps = { initialRecipe?: RecipeType }
+
+const AddRecipe: FC<AddRecipeProps> = ({ initialRecipe }) => {
+  const isEditMode = !!initialRecipe
+
   const [addRecipeLoading, setAddRecipeLoading] = useState(false)
   const [loadingProgress, setLoadingProgress] = useState(0)
   const addRecipeFormRef = useRef<HTMLDivElement>(null)
-  const [title, setTitle] = useState('')
+  const [title, setTitle] = useState(initialRecipe?.title ?? '')
   const [recipeImage, setRecipeImage] = useState<File | undefined>()
-  const [description, setDescription] = useState('')
-  const [servings, setServings] = useState<number | ''>('')
-  const [prepTime, setPrepTime] = useState<{
-    hours: number
-    minutes: number
-  } | null>(null)
-  const [cookTime, setCookTime] = useState<{
-    hours: number
-    minutes: number
-  } | null>(null)
-  const [fridgeLife, setFridgeLife] = useState<number>(0)
-  const [freezerLife, setFreezerLife] = useState<number>(0)
-  const [ingredients, setIngredients] = useState<IngredientsType[]>([])
-  const [instructions, setInstructions] = useState<InstructionsType[]>([])
-  const [cuisine, setCuisine] = useState('')
-  const [mealTypes, setMealTypes] = useState<string[]>([])
+  // Edit mode only: the recipe's current image URL, kept when the user doesn't
+  // pick a new file. Cleared if they remove the image (forcing a new pick).
+  const [existingImageUrl, setExistingImageUrl] = useState<string | undefined>(
+    initialRecipe?.recipeImage
+  )
+  const [description, setDescription] = useState(initialRecipe?.description ?? '')
+  const [servings, setServings] = useState<number | ''>(
+    initialRecipe?.servings ?? ''
+  )
+  const [prepTime, setPrepTime] = useState<TimeVal>(
+    initialRecipe ? minToHrMin(initialRecipe.prepTime) : null
+  )
+  const [cookTime, setCookTime] = useState<TimeVal>(
+    initialRecipe ? minToHrMin(initialRecipe.cookTime) : null
+  )
+  const [fridgeLife, setFridgeLife] = useState<number>(
+    initialRecipe?.fridgeLife ?? 0
+  )
+  const [freezerLife, setFreezerLife] = useState<number>(
+    initialRecipe?.freezerLife ?? 0
+  )
+  const [ingredients, setIngredients] = useState<IngredientsType[]>(
+    initialRecipe?.ingredients ?? []
+  )
+  const [instructions, setInstructions] = useState<InstructionsType[]>(
+    initialRecipe?.instructions ?? []
+  )
+  const [cuisine, setCuisine] = useState(initialRecipe?.cuisine ?? '')
+  const [mealTypes, setMealTypes] = useState<string[]>(
+    initialRecipe?.mealTypes ?? []
+  )
   const [errors, setErrors] = useState<Partial<AddRecipeErrorType>>({})
 
   const [isFormValid, setIsFormValid] = useState(false)
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false)
 
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
+
+  // ─── Draft autosave (create flow only) ──────────────────────────────────────
+  // Edit mode never touches drafts. In create mode the form is autosaved to a
+  // server-side draft so unfinished recipes survive a refresh or navigating
+  // away. The image is intentionally not part of a draft — it's re-picked on
+  // resume (publish validation still requires one).
+  const [searchParams, setSearchParams] = useSearchParams()
+  const urlDraftId = isEditMode ? null : searchParams.get('draftId')
+  const [draftId, setDraftId] = useState<string | null>(urlDraftId)
+  // "Hydrated" gates autosave: true for a fresh create, briefly false while a
+  // resumed draft loads into the fields.
+  const [hydrated, setHydrated] = useState(!urlDraftId)
+  // Draft ids whose content is already on screen — either just loaded here, or
+  // just created by autosave. The hydration effect skips these so our own URL
+  // updates (and a resume of the draft we're already editing) don't trigger a
+  // redundant reload.
+  const ownedDraftsRef = useRef<Set<string>>(new Set())
+  // True once a draft was resumed (loaded from the server) this session, used to
+  // remind the user to re-add the image — drafts don't persist it. Not set for
+  // drafts created in the current session (the user never had an image to lose).
+  const [resumedFromDraft, setResumedFromDraft] = useState(false)
+
+  // Load the draft named in the URL whenever it points at one we haven't loaded
+  // yet. Runs on mount for `?draftId=…`, and again when the resume banner
+  // navigates to a draft while this page is already mounted — same route, so no
+  // remount happens on its own and a mount-only effect would never re-fire.
+  useEffect(() => {
+    if (isEditMode || !urlDraftId || ownedDraftsRef.current.has(urlDraftId)) return
+    let cancelled = false
+    setHydrated(false)
+    DraftAPI.getDraft(urlDraftId)
+      .then(draft => {
+        if (cancelled) return
+        ownedDraftsRef.current.add(urlDraftId)
+        if (draft) {
+          setDraftId(urlDraftId)
+          setTitle(draft.title ?? '')
+          setDescription(draft.description ?? '')
+          setServings(draft.servings ?? '')
+          setPrepTime(draft.prepTime != null ? minToHrMin(draft.prepTime) : null)
+          setCookTime(draft.cookTime != null ? minToHrMin(draft.cookTime) : null)
+          setFridgeLife(draft.fridgeLife ?? 0)
+          setFreezerLife(draft.freezerLife ?? 0)
+          setIngredients(draft.ingredients ?? [])
+          setInstructions(draft.instructions ?? [])
+          setCuisine(draft.cuisine ?? '')
+          setMealTypes(draft.mealTypes ?? [])
+          setResumedFromDraft(true)
+        }
+        setHydrated(true)
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return
+        const status = axios.isAxiosError(err) ? err.response?.status : undefined
+        if (status === 404 || status === 403) {
+          // The draft is genuinely gone or not the caller's. Drop only the
+          // draftId param (preserving any other query params) and let the user
+          // start a fresh draft.
+          toast.error("Couldn't load that draft — starting a new one.")
+          setDraftId(null)
+          const next = new URLSearchParams(searchParams)
+          next.delete('draftId')
+          setSearchParams(next, { replace: true })
+          setHydrated(true)
+        } else {
+          // Transient failure (network/5xx) on a draft that likely still
+          // exists. Leave autosave disabled (hydrated stays false) so we don't
+          // create a duplicate or overwrite the unloaded draft with a partial
+          // form; ask the user to retry.
+          toast.error('Could not load your draft. Refresh to try again.')
+        }
+      })
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlDraftId])
+
+  // Serializable draft content mirrored from form state. Times are stored as
+  // minutes (matching the recipe shape); empty values are omitted.
+  const draftContent: RecipeDraftContent = useMemo(
+    () => ({
+      title,
+      description,
+      // Send explicit null (not undefined) when empty so clearing a field is
+      // persisted rather than silently dropped from the payload — see
+      // RecipeDraftContent.
+      servings: servings === '' ? null : Number(servings),
+      prepTime: prepTime ? hrMinToMin(prepTime) : null,
+      cookTime: cookTime ? hrMinToMin(cookTime) : null,
+      fridgeLife,
+      freezerLife,
+      ingredients,
+      instructions,
+      cuisine,
+      mealTypes,
+    }),
+    [
+      title,
+      description,
+      servings,
+      prepTime,
+      cookTime,
+      fridgeLife,
+      freezerLife,
+      ingredients,
+      instructions,
+      cuisine,
+      mealTypes,
+    ]
+  )
+
+  // A brand-new draft is only created once the recipe has a title. This gates
+  // out throwaway drafts from a stray keystroke (keeping the Drafts list and the
+  // per-user draft count clean); updating an existing draft is unaffected.
+  const canCreateDraft = !!title.trim()
+
+  const { status: draftStatus, clearDraft } = useDraftAutosave({
+    content: draftContent,
+    enabled: !isEditMode && hydrated,
+    canCreate: canCreateDraft,
+    draftId,
+    onDraftCreated: (draft: RecipeDraftType) => {
+      // Mark as owned before the URL sync below points the URL at it, so the
+      // hydration effect doesn't reload the draft we just created.
+      ownedDraftsRef.current.add(draft._id)
+      setDraftId(draft._id)
+      queryClient.invalidateQueries({ queryKey: ['drafts'] })
+    },
+    onLimitReached: (message: string) => toast.error(message),
+  })
+
+  // Reflect the active draft id in the URL (replace) so a refresh resumes the
+  // same draft rather than starting a second one.
+  useEffect(() => {
+    if (isEditMode || !draftId) return
+    if (searchParams.get('draftId') === draftId) return
+    const next = new URLSearchParams(searchParams)
+    next.set('draftId', draftId)
+    setSearchParams(next, { replace: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftId])
 
   const validate = (assignErrors: boolean = false) => {
     let newErrors: Partial<AddRecipeErrorType> = {}
@@ -71,7 +250,9 @@ const AddRecipe: FC = () => {
       newErrors.title = `Title cannot exceed ${TITLE_MAX_LENGTH} characters`
     }
 
-    if (!recipeImage) newErrors.image = 'Image is required'
+    // In edit mode a recipe with no newly-picked file is still valid as long as
+    // it has its existing stored image.
+    if (!recipeImage && !existingImageUrl) newErrors.image = 'Image is required'
     if (!description) {
       newErrors.description = 'Description is required'
     } else if (description.length > DESCRIPTION_MAX_LENGTH) {
@@ -94,21 +275,6 @@ const AddRecipe: FC = () => {
     assignErrors && setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
-  const clearForm = () => {
-    setTitle('')
-    setRecipeImage(undefined)
-    setDescription('')
-    setServings('')
-    setPrepTime(null)
-    setCookTime(null)
-    setFridgeLife(0)
-    setFreezerLife(0)
-    setIngredients([])
-    setInstructions([])
-    setCuisine('')
-    setMealTypes([])
-    setErrors({})
-  }
   useEffect(() => {
     // Once the user has attempted a submit, keep the displayed errors in sync as
     // fields are fixed (assignErrors=true) so a corrected field clears its message
@@ -120,6 +286,7 @@ const AddRecipe: FC = () => {
   }, [
     title,
     recipeImage,
+    existingImageUrl,
     description,
     servings,
     prepTime,
@@ -128,48 +295,83 @@ const AddRecipe: FC = () => {
     mealTypes,
     hasAttemptedSubmit,
   ])
-  const handleAddRecipe = async () => {
+  const handleSubmit = async () => {
     if (addRecipeLoading) return
     setHasAttemptedSubmit(true)
-    if (validate(true)) {
-      setAddRecipeLoading(true)
-      const recipeData: RecipeFormType = {
-        title,
-        prepTime: hrMinToMin(prepTime),
-        cookTime: hrMinToMin(cookTime),
-        servings: Number(servings),
-        fridgeLife,
-        freezerLife,
-        description,
-        ingredients,
-        instructions,
-        recipeImage: recipeImage!,
-        cuisine,
-        mealTypes,
+    if (!validate(true)) {
+      addRecipeFormRef?.current && addRecipeFormRef.current.scrollTo(0, 0)
+      return
+    }
+
+    setAddRecipeLoading(true)
+    // Shared form-state → payload mapping; the two branches differ only in the
+    // image field (optional on edit, required on create) and which API they call.
+    const formData = {
+      title,
+      prepTime: hrMinToMin(prepTime),
+      cookTime: hrMinToMin(cookTime),
+      servings: Number(servings),
+      fridgeLife,
+      freezerLife,
+      description,
+      ingredients,
+      instructions,
+      cuisine,
+      mealTypes,
+    }
+    if (isEditMode && initialRecipe) {
+      const editData: RecipeEditFormType = { ...formData, recipeImage }
+      const result = await RecipeAPI.editRecipe(
+        initialRecipe._id,
+        editData,
+        initialRecipe,
+        setLoadingProgress
+      )
+      if (result.status === 'auth-error') {
+        toast.error('Your session has expired — please sign in again and retry.')
+      } else if (result.status === 'success') {
+        // Write the server's updated recipe straight into the cache rather than
+        // invalidating: invalidation would refetch GET /getRecipe (which bumps
+        // the public view counter) and briefly flash stale data. The created
+        // list still needs a refetch to reorder/relabel.
+        queryClient.setQueryData(['recipe', initialRecipe._id], result.recipe)
+        queryClient.invalidateQueries({ queryKey: ['created-recipes'] })
+        toast.success('Recipe updated!')
+        navigate(`/recipes/${initialRecipe._id}`)
+      } else {
+        toast.error(result.message)
       }
+    } else {
+      const recipeData: RecipeFormType = { ...formData, recipeImage: recipeImage! }
       const newId = await RecipeAPI.addRecipe(recipeData, setLoadingProgress)
       if (newId === ADD_RECIPE_AUTH_ERROR) {
         toast.error('Your session has expired — please sign in again and retry.')
       } else if (newId) {
+        // Recipe is live — remove the now-redundant draft (and stop autosave
+        // from recreating it on unmount) before navigating away.
+        await clearDraft()
+        queryClient.invalidateQueries({ queryKey: ['drafts'] })
         toast.success('Recipe published!')
         navigate(`/recipes/${newId}`)
       } else {
         toast.error('Failed to create recipe. Please try again.')
       }
-      setAddRecipeLoading(false)
-      setLoadingProgress(100)
-    } else {
-      addRecipeFormRef?.current && addRecipeFormRef.current.scrollTo(0, 0)
     }
+    setAddRecipeLoading(false)
+    setLoadingProgress(100)
   }
 
   return (
     <>
       <Helmet>
-        <title>Create New Recipe</title>
+        <title>{isEditMode ? 'Edit Recipe' : 'Create New Recipe'}</title>
         <link
           rel='canonical'
-          href='https://www.prepifymeals.com/add-recipe'
+          href={
+            isEditMode && initialRecipe
+              ? `https://www.prepifymeals.com/recipes/${initialRecipe._id}`
+              : 'https://www.prepifymeals.com/add-recipe'
+          }
         />
         <meta
           name='description'
@@ -182,7 +384,11 @@ const AddRecipe: FC = () => {
           progress={loadingProgress}
           onLoaderFinished={() => setLoadingProgress(0)}
         />
-        <h1>Create New Recipe</h1>
+        <div className='add-recipe-heading'>
+          <h1>{isEditMode ? 'Edit Recipe' : 'Create New Recipe'}</h1>
+          {!isEditMode && <DraftSaveStatus status={draftStatus} />}
+        </div>
+        {!isEditMode && !draftId && <DraftResumeBanner />}
         <div className='container'>
           <div className='container-inner' ref={addRecipeFormRef}>
             <div className='title input-field'>
@@ -204,7 +410,18 @@ const AddRecipe: FC = () => {
               {errors.image && (
                 <AddRecipeFormError error={errors.image} id='error-image' />
               )}
-              <ImagePicker image={recipeImage} setImage={setRecipeImage} />
+              {resumedFromDraft && !recipeImage && (
+                <p className='draft-image-hint'>
+                  <AiOutlineInfoCircle className='icon' />
+                  Drafts don't save your image — add it again before publishing.
+                </p>
+              )}
+              <ImagePicker
+                image={recipeImage}
+                setImage={setRecipeImage}
+                initialPreviewUrl={existingImageUrl}
+                onRemove={() => setExistingImageUrl(undefined)}
+              />
             </div>
             <div className='description input-field'>
               <SectionHeader label='Description' required />
@@ -303,7 +520,13 @@ const AddRecipe: FC = () => {
           ingredients={ingredients}
           isValid={isFormValid}
           loading={addRecipeLoading}
-          onSubmit={handleAddRecipe}
+          onSubmit={handleSubmit}
+          submitLabel={isEditMode ? 'Save Changes' : 'Create Recipe'}
+          onCancel={
+            isEditMode && initialRecipe
+              ? () => navigate(`/recipes/${initialRecipe._id}`)
+              : undefined
+          }
         />
       </div>
     </>

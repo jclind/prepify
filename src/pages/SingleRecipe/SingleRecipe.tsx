@@ -9,6 +9,7 @@ import Ingredients from 'src/pages/SingleRecipe/DataSections/Ingredients/Ingredi
 import Instructions from 'src/pages/SingleRecipe/DataSections/Instructions/Instructions'
 import Tags from 'src/pages/SingleRecipe/DataSections/Tags'
 import RecipeControls from 'src/pages/SingleRecipe/DataSections/RecipeControls/RecipeControls'
+import RecipeStats from 'src/pages/SingleRecipe/DataSections/RecipeStats/RecipeStats'
 import MadeRecipeBtn from 'src/pages/SingleRecipe/Buttons/MadeRecipeBtn'
 
 import { updateIngredients } from 'src/util/updateIngredients'
@@ -121,7 +122,7 @@ const SingleRecipe: FC<Props> = ({ recipe }) => {
               {currRecipe && (
                 <RecipeControls
                   recipeId={currRecipe._id}
-                  authorUsername={currRecipe.authorUsername}
+                  recipeUserId={currRecipe.userId}
                   recipeTitle={currRecipe.title}
                 />
               )}
@@ -145,7 +146,9 @@ const SingleRecipe: FC<Props> = ({ recipe }) => {
                 />
                 <Tags loading={loading} currRecipe={currRecipe} />
                 {recipeId && <MadeRecipeBtn recipeId={recipeId} />}
-                <div className='recipe-stats'></div>
+                <div className='recipe-stats'>
+                  <RecipeStats currRecipe={currRecipe} loading={loading} />
+                </div>
               </div>
               {!loading && currRecipe && (
                 <RatingsAndReviews

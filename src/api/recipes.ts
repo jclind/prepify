@@ -9,6 +9,7 @@ import {
   NutritionDataType,
   OptionalReviewType,
   RecipeDBResponseType,
+  RecipeEditFormType,
   RecipeFormType,
   RecipeSearchResponseType,
   RecipeType,
@@ -20,6 +21,11 @@ import { http, nutrition } from 'src/api/http-common'
 import { v4 as uuidv4 } from 'uuid'
 
 export const ADD_RECIPE_AUTH_ERROR = 'AUTH_ERROR'
+
+export type EditRecipeResult =
+  | { status: 'success'; recipe: RecipeType }
+  | { status: 'auth-error' }
+  | { status: 'error'; message: string }
 
 class RecipeAPIClass {
   async getAllRecipes(
@@ -113,6 +119,40 @@ class RecipeAPIClass {
     }
   }
 
+  // The editable subset of a recipe document, assembled from the form data plus
+  // the values computed at submit time. addRecipe layers creation-only fields
+  // (authorUsername, rating, counters…) on top; editRecipe sends it as-is. Single
+  // source for the field list so the two paths can't drift.
+  private buildEditableRecipeFields(
+    data: RecipeFormType | RecipeEditFormType,
+    computed: {
+      recipeImage: string
+      nutritionData: NutritionDataType | null
+      nutritionLabels: string[] | null
+      servingPrice: number
+      totalTime: number
+    }
+  ) {
+    return {
+      title: data.title,
+      prepTime: data.prepTime,
+      cookTime: data.cookTime,
+      servings: data.servings,
+      fridgeLife: data.fridgeLife,
+      freezerLife: data.freezerLife,
+      description: data.description,
+      ingredients: data.ingredients,
+      instructions: data.instructions,
+      cuisine: data.cuisine,
+      mealTypes: data.mealTypes,
+      recipeImage: computed.recipeImage,
+      nutritionData: computed.nutritionData,
+      nutritionLabels: computed.nutritionLabels,
+      servingPrice: computed.servingPrice,
+      totalTime: computed.totalTime,
+    }
+  }
+
   async addRecipe(
     recipeData: RecipeFormType,
     setProgress: (val: number) => void
@@ -137,18 +177,13 @@ class RecipeAPIClass {
       const nutritionData = nutritionDataRes.nutritionData
       const nutritionLabels = nutritionDataRes.dietLabels
       const returnRecipeData: Omit<RecipeType, '_id'> = {
-        title: recipeData.title,
-        prepTime: recipeData.prepTime,
-        cookTime: recipeData.cookTime,
-        servings: recipeData.servings,
-        fridgeLife: recipeData.fridgeLife,
-        freezerLife: recipeData.freezerLife,
-        description: recipeData.description,
-        ingredients: recipeData.ingredients,
-        instructions: recipeData.instructions,
-        recipeImage,
-        nutritionData,
-        totalTime,
+        ...this.buildEditableRecipeFields(recipeData, {
+          recipeImage,
+          nutritionData,
+          nutritionLabels,
+          servingPrice,
+          totalTime,
+        }),
         authorUsername,
         rating: {
           rateCount: 0,
@@ -156,10 +191,6 @@ class RecipeAPIClass {
         },
         createdAt: new Date().getTime().toString(),
         editedAt: null,
-        servingPrice,
-        cuisine: recipeData.cuisine,
-        mealTypes: recipeData.mealTypes,
-        nutritionLabels,
         views: 0,
         numTimesSaved: 0,
         numTimesMade: 0,
@@ -175,23 +206,109 @@ class RecipeAPIClass {
       return null
     }
   }
+
+  async editRecipe(
+    recipeId: string,
+    recipeData: RecipeEditFormType,
+    originalRecipe: RecipeType,
+    setProgress: (val: number) => void
+  ): Promise<EditRecipeResult> {
+    try {
+      setProgress(10)
+      // Image: only upload when the user picked a new file. Otherwise the recipe
+      // keeps its existing stored image URL.
+      let recipeImage = originalRecipe.recipeImage
+      if (recipeData.recipeImage) {
+        recipeImage = await this.uploadRecipeImage(
+          recipeData.recipeImage,
+          setProgress
+        )
+      }
+      setProgress(80)
+      // Serving price is a local calculation (no API cost), so always recompute —
+      // it depends on both ingredients and servings.
+      const servingPrice: number = calculateServingPrice(
+        recipeData.ingredients,
+        recipeData.servings
+      )
+      const totalTime: number = recipeData.prepTime + (recipeData.cookTime ?? 0)
+
+      // Nutrition is a paid Edamam call, so only re-run it when the ingredient set
+      // actually changed; minor edits (title, instructions, times) reuse the
+      // stored nutrition data and labels. Compare the exact strings the lookup
+      // would send, element-wise.
+      const newIngredients = this.buildNutritionIngredients(recipeData.ingredients)
+      const oldIngredients = this.buildNutritionIngredients(originalRecipe.ingredients)
+      const ingredientsChanged =
+        newIngredients.length !== oldIngredients.length ||
+        newIngredients.some((ingr, i) => ingr !== oldIngredients[i])
+
+      let nutritionData = originalRecipe.nutritionData
+      let nutritionLabels = originalRecipe.nutritionLabels
+      if (ingredientsChanged) {
+        const nutritionDataRes = await this.getRecipeNutrition(
+          recipeData.ingredients
+        )
+        // getRecipeNutrition soft-fails to null when Edamam is unreachable. Only
+        // overwrite when it actually returned data — otherwise a transient lookup
+        // failure during an ingredient edit would erase the recipe's existing
+        // nutrition facts for all viewers.
+        if (nutritionDataRes.nutritionData) {
+          nutritionData = nutritionDataRes.nutritionData
+          nutritionLabels = nutritionDataRes.dietLabels
+        }
+      }
+      setProgress(90)
+      // Only the editable fields are sent; the server whitelists these and never
+      // lets ratings/saves/counters be overwritten.
+      const payload = this.buildEditableRecipeFields(recipeData, {
+        recipeImage,
+        nutritionData,
+        nutritionLabels,
+        servingPrice,
+        totalTime,
+      })
+      const res = await http.put<RecipeType>(
+        `api/editRecipe?recipeId=${recipeId}`,
+        payload
+      )
+      return { status: 'success', recipe: res.data }
+    } catch (error: unknown) {
+      console.error('editRecipe failed:', error)
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 401) return { status: 'auth-error' }
+        // Surface the server's reason (e.g. 403 Forbidden, 404 Not found) so a
+        // stale edit page doesn't show a misleading "try again" for an error a
+        // retry can't fix.
+        const message =
+          error.response?.data?.error ??
+          'Failed to update recipe. Please try again.'
+        return { status: 'error', message }
+      }
+      return { status: 'error', message: 'Failed to update recipe. Please try again.' }
+    }
+  }
+  // The exact ingredient strings sent to Edamam for nutrition lookup. Shared by
+  // getRecipeNutrition and editRecipe so the "did the ingredients change?" check
+  // compares the same representation that actually drives the nutrition result.
+  buildNutritionIngredients(ingrArr: IngredientsType[]): string[] {
+    const ingr: string[] = []
+    ingrArr.forEach(ing => {
+      if ('parsedIngredient' in ing) {
+        const { quantity, unit, ingredient } = ing.parsedIngredient
+        if (quantity) {
+          ingr.push(`${quantity} ${unit || ''} ${ingredient}`)
+        }
+      }
+    })
+    return ingr
+  }
   async getRecipeNutrition(ingrArr: IngredientsType[]): Promise<{ nutritionData: NutritionDataType | null; dietLabels: string[] | null }> {
     try {
       const ingrData: { title: string; ingr: string[] } = {
         title: 'recipe 1',
-        ingr: [],
+        ingr: this.buildNutritionIngredients(ingrArr),
       }
-
-      ingrArr.forEach(ingr => {
-        if ('parsedIngredient' in ingr) {
-          const { quantity, unit, ingredient } = ingr.parsedIngredient
-
-          if (quantity) {
-            const str = `${quantity} ${unit || ''} ${ingredient}`
-            ingrData.ingr.push(str)
-          }
-        }
-      })
       const nutritionResultRes = await nutrition.post(
         `nutrition-details?app_id=${import.meta.env.VITE_EDAMAM_APP_ID}&app_key=${import.meta.env.VITE_EDAMAM_APP_KEY}`,
         ingrData

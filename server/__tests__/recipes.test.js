@@ -11,9 +11,15 @@
  */
 
 const request = require('supertest')
+const admin = require('firebase-admin') // auto-mocked (server/__mocks__/firebase-admin.js)
 const app = require('../app')
 const { getDB } = require('../db')
-const { seedRecipe, seedRecipes, seedUserRecipeData } = require('./helpers/seed')
+const {
+  seedRecipe,
+  seedRecipes,
+  seedUserRecipeData,
+  seedRating,
+} = require('./helpers/seed')
 
 const TEST_UID = 'test-uid'
 const AUTH_HEADER = { Authorization: 'Bearer fake-test-token' }
@@ -33,6 +39,8 @@ const BASE_RECIPE = {
   description: 'A great dish',
   ingredients: [{ id: 'i1', name: 'chicken' }],
   instructions: [{ step: 'Cook the chicken' }],
+  recipeImage:
+    'https://firebasestorage.googleapis.com/v0/b/test-bucket/o/recipeImages%2Ftuscan.jpg?alt=media&token=abc',
 }
 
 afterEach(async () => {
@@ -41,6 +49,7 @@ afterEach(async () => {
     db.collection('recipes').deleteMany({}),
     db.collection('userRecipeData').deleteMany({}),
     db.collection('stats').deleteMany({}),
+    db.collection('ratings').deleteMany({}),
   ])
 })
 
@@ -224,6 +233,148 @@ describe('POST /addRecipe', () => {
   })
 })
 
+// ─── PUT /editRecipe ──────────────────────────────────────────────────────────
+
+describe('PUT /editRecipe', () => {
+  const OWNED_RECIPE = {
+    ...BASE_RECIPE,
+    userId: TEST_UID,
+    rating: { rateCount: 12, rateValue: 4.5 },
+    numTimesSaved: 7,
+    numTimesMade: 3,
+    views: 99,
+    editedAt: null,
+  }
+
+  const validEdit = () => ({
+    title: 'Updated Title',
+    description: 'An updated description',
+    ingredients: [{ id: 'i1', name: 'chicken' }],
+    instructions: [{ content: 'Cook it well', index: 1, id: 's1' }],
+    mealTypes: ['dinner'],
+  })
+
+  beforeEach(async () => {
+    await seedRecipe({ ...OWNED_RECIPE })
+  })
+
+  it('rejects request with no auth token (401)', async () => {
+    const res = await request(app)
+      .put(`/api/editRecipe?recipeId=${RECIPE_ID}`)
+      .send(validEdit())
+    expect(res.status).toBe(401)
+  })
+
+  it('returns 400 when recipeId is missing', async () => {
+    const res = await request(app)
+      .put('/api/editRecipe')
+      .set(AUTH_HEADER)
+      .send(validEdit())
+    expect(res.status).toBe(400)
+  })
+
+  it('returns 404 if the recipe does not exist', async () => {
+    const res = await request(app)
+      .put('/api/editRecipe?recipeId=nonexistent')
+      .set(AUTH_HEADER)
+      .send(validEdit())
+    expect(res.status).toBe(404)
+  })
+
+  it('rejects an edit by a non-owner (403) and leaves the recipe unchanged', async () => {
+    const db = getDB()
+    await db.collection('recipes').deleteOne({ _id: RECIPE_ID })
+    await seedRecipe({ ...OWNED_RECIPE, userId: 'someone-else' })
+
+    const res = await request(app)
+      .put(`/api/editRecipe?recipeId=${RECIPE_ID}`)
+      .set(AUTH_HEADER)
+      .send(validEdit())
+
+    expect(res.status).toBe(403)
+    const stored = await db.collection('recipes').findOne({ _id: RECIPE_ID })
+    expect(stored.title).toBe(OWNED_RECIPE.title)
+    expect(stored.editedAt).toBeNull()
+  })
+
+  it('rejects missing required fields (400)', async () => {
+    const res = await request(app)
+      .put(`/api/editRecipe?recipeId=${RECIPE_ID}`)
+      .set(AUTH_HEADER)
+      .send({ description: 'no title/ingredients/etc' })
+    expect(res.status).toBe(400)
+    expect(res.body.error).toMatch(/Missing required fields/)
+  })
+
+  it('enforces input bounds (400)', async () => {
+    const res = await request(app)
+      .put(`/api/editRecipe?recipeId=${RECIPE_ID}`)
+      .set(AUTH_HEADER)
+      .send({ ...validEdit(), title: 'A'.repeat(51) })
+    expect(res.status).toBe(400)
+    expect(res.body.error).toMatch(/Title cannot exceed/)
+  })
+
+  it('updates editable fields and stamps editedAt', async () => {
+    const res = await request(app)
+      .put(`/api/editRecipe?recipeId=${RECIPE_ID}`)
+      .set(AUTH_HEADER)
+      .send(validEdit())
+
+    expect(res.status).toBe(200)
+
+    const db = getDB()
+    const stored = await db.collection('recipes').findOne({ _id: RECIPE_ID })
+    expect(stored.title).toBe('Updated Title')
+    expect(stored.description).toBe('An updated description')
+    expect(typeof stored.editedAt).toBe('string')
+    expect(stored.editedAt).not.toBeNull()
+  })
+
+  it('never resets ratings, saves, made-count, views, or createdAt on edit', async () => {
+    await request(app)
+      .put(`/api/editRecipe?recipeId=${RECIPE_ID}`)
+      .set(AUTH_HEADER)
+      .send(validEdit())
+
+    const db = getDB()
+    const stored = await db.collection('recipes').findOne({ _id: RECIPE_ID })
+    expect(stored.rating).toEqual({ rateCount: 12, rateValue: 4.5 })
+    expect(stored.numTimesSaved).toBe(7)
+    expect(stored.numTimesMade).toBe(3)
+    expect(stored.views).toBe(99)
+    expect(stored.createdAt).toBe(OWNED_RECIPE.createdAt)
+  })
+
+  it('ignores attempts to overwrite protected fields via the payload', async () => {
+    const res = await request(app)
+      .put(`/api/editRecipe?recipeId=${RECIPE_ID}`)
+      .set(AUTH_HEADER)
+      .send({
+        ...validEdit(),
+        // Malicious / stray fields the whitelist must drop:
+        rating: { rateCount: 9999, rateValue: 1 },
+        numTimesSaved: 0,
+        numTimesMade: 0,
+        views: 0,
+        userId: 'someone-else',
+        _id: 'hijacked-id',
+        createdAt: '1',
+      })
+
+    expect(res.status).toBe(200)
+    const db = getDB()
+    const stored = await db.collection('recipes').findOne({ _id: RECIPE_ID })
+    expect(stored.rating).toEqual({ rateCount: 12, rateValue: 4.5 })
+    expect(stored.numTimesSaved).toBe(7)
+    expect(stored.numTimesMade).toBe(3)
+    expect(stored.views).toBe(99)
+    expect(stored.userId).toBe(TEST_UID)
+    expect(stored._id).toBe(RECIPE_ID)
+    expect(stored.createdAt).toBe(OWNED_RECIPE.createdAt)
+  })
+})
+
 // ─── POST /recipes/:id/save ───────────────────────────────────────────────────
 
 describe('POST /recipes/:id/save', () => {
@@ -349,9 +500,32 @@ describe('GET /getRecipe', () => {
 // ─── DELETE /deleteRecipe ─────────────────────────────────────────────────────
 
 describe('DELETE /deleteRecipe', () => {
+  const OTHER_UID = 'other-user'
+  const KEEP_ID = 'recipe-keep'
+
   beforeEach(async () => {
+    admin.__deleteFile.mockClear()
     await seedRecipe({ ...BASE_RECIPE, userId: TEST_UID })
-    await seedUserRecipeData(TEST_UID, { userRecipes: [{ recipeId: RECIPE_ID }] })
+
+    // Owner's created/saved/made lists all reference the recipe.
+    await seedUserRecipeData(TEST_UID, {
+      userRecipes: [{ recipeId: RECIPE_ID }],
+      savedRecipes: [{ recipeId: RECIPE_ID, dateSaved: '1000' }],
+      madeRecipes: [{ recipeId: RECIPE_ID }],
+    })
+    // A different user who saved and made it — plus an unrelated recipe that
+    // must survive the delete.
+    await seedUserRecipeData(OTHER_UID, {
+      savedRecipes: [
+        { recipeId: RECIPE_ID, dateSaved: '2000' },
+        { recipeId: KEEP_ID, dateSaved: '3000' },
+      ],
+      madeRecipes: [{ recipeId: RECIPE_ID }],
+    })
+    // Ratings/reviews for the recipe, and one for an unrelated recipe.
+    await seedRating({ username: 'someone', recipeId: RECIPE_ID, rating: 5, reviewText: 'Great' })
+    await seedRating({ username: 'another', recipeId: RECIPE_ID, rating: 4 })
+    await seedRating({ username: 'someone', recipeId: KEEP_ID, rating: 3 })
   })
 
   it('rejects request with no auth token (401)', async () => {
@@ -377,11 +551,13 @@ describe('DELETE /deleteRecipe', () => {
       .set(AUTH_HEADER)
 
     expect(res.status).toBe(403)
-    // Recipe must still exist
+    // Recipe must still exist, and nothing should have been cleaned up.
     expect(await db.collection('recipes').findOne({ _id: RECIPE_ID })).not.toBeNull()
+    expect(await db.collection('ratings').countDocuments({ recipeId: RECIPE_ID })).toBe(2)
+    expect(admin.__deleteFile).not.toHaveBeenCalled()
   })
 
-  it('deletes the recipe and removes it from userRecipes', async () => {
+  it('deletes the recipe and removes it from the owner\'s created/saved/made lists', async () => {
     const res = await request(app)
       .delete(`/api/deleteRecipe?recipeId=${RECIPE_ID}`)
       .set(AUTH_HEADER)
@@ -394,6 +570,62 @@ describe('DELETE /deleteRecipe', () => {
 
     const userData = await db.collection('userRecipeData').findOne({ _id: TEST_UID })
     expect(userData.userRecipes).toHaveLength(0)
+    expect(userData.savedRecipes).toHaveLength(0)
+    expect(userData.madeRecipes).toHaveLength(0)
+  })
+
+  it('removes the recipe\'s ratings/reviews but leaves other recipes\' ratings', async () => {
+    await request(app)
+      .delete(`/api/deleteRecipe?recipeId=${RECIPE_ID}`)
+      .set(AUTH_HEADER)
+
+    const db = getDB()
+    expect(await db.collection('ratings').countDocuments({ recipeId: RECIPE_ID })).toBe(0)
+    expect(await db.collection('ratings').countDocuments({ recipeId: KEEP_ID })).toBe(1)
+  })
+
+  it('removes the recipeId from other users\' saved/made lists without touching unrelated entries', async () => {
+    await request(app)
+      .delete(`/api/deleteRecipe?recipeId=${RECIPE_ID}`)
+      .set(AUTH_HEADER)
+
+    const db = getDB()
+    const other = await db.collection('userRecipeData').findOne({ _id: OTHER_UID })
+    expect(other.savedRecipes).toEqual([{ recipeId: KEEP_ID, dateSaved: '3000' }])
+    expect(other.madeRecipes).toHaveLength(0)
+  })
+
+  it('deletes the recipe image from storage', async () => {
+    await request(app)
+      .delete(`/api/deleteRecipe?recipeId=${RECIPE_ID}`)
+      .set(AUTH_HEADER)
+
+    expect(admin.__deleteFile).toHaveBeenCalledTimes(1)
+  })
+
+  it('succeeds (200) and still deletes the recipe when there is no stored image', async () => {
+    const db = getDB()
+    await db.collection('recipes').updateOne({ _id: RECIPE_ID }, { $set: { recipeImage: '' } })
+
+    const res = await request(app)
+      .delete(`/api/deleteRecipe?recipeId=${RECIPE_ID}`)
+      .set(AUTH_HEADER)
+
+    expect(res.status).toBe(200)
+    expect(admin.__deleteFile).not.toHaveBeenCalled()
+    expect(await db.collection('recipes').findOne({ _id: RECIPE_ID })).toBeNull()
+  })
+
+  it('succeeds (200) even if storage image deletion fails', async () => {
+    admin.__deleteFile.mockRejectedValueOnce(new Error('storage down'))
+
+    const res = await request(app)
+      .delete(`/api/deleteRecipe?recipeId=${RECIPE_ID}`)
+      .set(AUTH_HEADER)
+
+    expect(res.status).toBe(200)
+    const db = getDB()
+    expect(await db.collection('recipes').findOne({ _id: RECIPE_ID })).toBeNull()
   })
 })
 

@@ -18,7 +18,7 @@ const Account: FC = () => {
 
   const { data } = useQuery({
     queryKey: ['username', uid],
-    queryFn: () => AuthAPI.getUsername(uid!),
+    queryFn: () => AuthAPI.getUsername(),
     enabled: !!uid && !authRes?.user?.displayName,
   })
 
@@ -101,6 +101,16 @@ const Account: FC = () => {
               }
             >
               Your Recipes
+            </Link>
+            <Link
+              to='/account/drafts'
+              className={
+                currPath === '/account/drafts'
+                  ? 'active selection'
+                  : 'selection'
+              }
+            >
+              Drafts
             </Link>
           </div>
           <Outlet />

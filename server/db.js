@@ -13,6 +13,38 @@ async function connectDB(uri) {
   await client.connect()
   db = client.db('prepify')
   console.log('Connected to MongoDB')
+  await ensureIndexes()
+}
+
+// Enforces case-insensitive username uniqueness at the database level. Legacy
+// docs created before `username_lower` existed are backfilled first so the
+// unique index can be built over the whole collection.
+async function ensureIndexes() {
+  const usernames = db.collection('usernames')
+  await usernames.updateMany(
+    { username_lower: { $exists: false }, username: { $type: 'string' } },
+    [{ $set: { username_lower: { $toLower: '$username' } } }]
+  )
+  try {
+    await usernames.createIndex({ username_lower: 1 }, { unique: true })
+  } catch (err) {
+    // Pre-existing case-variant duplicates would make the unique index fail to
+    // build. Log it rather than crashing startup; the duplicates need manual
+    // cleanup, but the rest of the server should still come up.
+    console.error(
+      'Failed to create unique index on usernames.username_lower:',
+      err.message
+    )
+  }
+
+  // Backs GET /api/drafts, which lists a user's drafts newest-updated first
+  // (find({ userId }).sort({ updatedAt: -1 })). Without it that query is a full
+  // collection scan plus an in-memory sort on every Drafts-tab load.
+  try {
+    await db.collection('recipeDrafts').createIndex({ userId: 1, updatedAt: -1 })
+  } catch (err) {
+    console.error('Failed to create index on recipeDrafts.userId:', err.message)
+  }
 }
 
 async function closeDB() {
@@ -28,4 +60,9 @@ function getDB() {
   return db
 }
 
-module.exports = { connectDB, closeDB, getDB }
+function getClient() {
+  if (!client) throw new Error('DB not initialized. Call connectDB() first.')
+  return client
+}
+
+module.exports = { connectDB, closeDB, getDB, getClient }

@@ -124,7 +124,7 @@ describe('Account page', () => {
       })
       mockGetUsername.mockResolvedValue('johndoe')
       renderAccount()
-      await waitFor(() => expect(mockGetUsername).toHaveBeenCalledWith('u1'))
+      await waitFor(() => expect(mockGetUsername).toHaveBeenCalled())
     })
 
     it('displays the resolved username in the h1.username element', async () => {

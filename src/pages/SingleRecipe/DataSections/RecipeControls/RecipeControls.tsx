@@ -1,16 +1,23 @@
 import React, { FC, useState } from 'react'
-import { AiOutlineClose } from 'react-icons/ai'
+import {
+  AiOutlineClose,
+  AiOutlineEdit,
+  AiOutlineDelete,
+  AiOutlineUser,
+} from 'react-icons/ai'
 import { TailSpin } from 'react-loader-spinner'
 import Modal from 'react-modal'
 import { useNavigate } from 'react-router-dom'
+import { isAxiosError } from 'axios'
+import toast from 'react-hot-toast'
 import AuthAPI from 'src/api/auth'
 import RecipeAPI from 'src/api/recipes'
-import { useQuery } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import './RecipeControls.scss'
 
 type RecipeControlsType = {
   recipeId: string
-  authorUsername: string
+  recipeUserId?: string
   recipeTitle: string
 }
 
@@ -36,7 +43,7 @@ const customStyles = {
 
 const RecipeControls: FC<RecipeControlsType> = ({
   recipeId,
-  authorUsername,
+  recipeUserId,
   recipeTitle,
 }) => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
@@ -45,46 +52,65 @@ const RecipeControls: FC<RecipeControlsType> = ({
   }
 
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
 
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [deleteError, setDeleteError] = useState('')
 
   const currUID = AuthAPI.getUID()
 
-  const { data: currUsername } = useQuery({
-    queryKey: ['username', currUID],
-    queryFn: () => AuthAPI.getUsername(currUID!),
-    enabled: !!currUID,
-  })
-
-  const isUsersRecipe = currUsername === authorUsername
+  // Key ownership on the Firebase uid (what the server authorizes against), not
+  // the snapshotted authorUsername which goes stale after a rename and would
+  // hide these controls from the legitimate owner.
+  const isUsersRecipe = !!currUID && currUID === recipeUserId
 
   if (!isUsersRecipe) return null
 
-  const handleDeleteRecipe = () => {
-    if (currUID) {
-      setDeleteLoading(true)
-      RecipeAPI.deleteRecipe(recipeId).then(res => {
-        const response = res as { error?: string }
-        if (response.error) {
-          setDeleteError(response.error)
-        } else {
-          closeDeleteModal()
-          navigate('/')
-        }
-        setDeleteLoading(false)
-      })
+  const handleDeleteRecipe = async () => {
+    if (!currUID) return
+    setDeleteLoading(true)
+    setDeleteError('')
+    try {
+      await RecipeAPI.deleteRecipe(recipeId)
+      // Drop cached copies so lists/pages don't show the deleted recipe.
+      queryClient.removeQueries({ queryKey: ['recipe', recipeId] })
+      queryClient.invalidateQueries({ queryKey: ['created-recipes'] })
+      closeDeleteModal()
+      // Toaster is mounted at the app root, so the toast survives the redirect.
+      toast.success(`"${recipeTitle}" deleted.`)
+      navigate('/')
+    } catch (err: unknown) {
+      const message = isAxiosError(err)
+        ? err.response?.data?.error ?? err.message
+        : 'Failed to delete recipe. Please try again.'
+      setDeleteError(message)
+    } finally {
+      setDeleteLoading(false)
     }
   }
 
   return (
     <div className='recipe-controls-container'>
+      <span className='who'>
+        <AiOutlineUser className='icon' aria-hidden='true' />
+        <span>
+          <strong>You</strong> created this recipe
+        </span>
+      </span>
       <div className='btns-container'>
-        {/* <button className='edit-btn'>Edit</button> */}
+        <button
+          className='edit-btn'
+          onClick={() => navigate(`/recipes/${recipeId}/edit`)}
+          aria-label='Edit recipe'
+        >
+          <AiOutlineEdit className='icon' aria-hidden='true' />
+          Edit
+        </button>
         <button
           className='delete-btn'
           onClick={() => setIsDeleteModalOpen(true)}
         >
+          <AiOutlineDelete className='icon' aria-hidden='true' />
           Delete
         </button>
       </div>

@@ -110,11 +110,22 @@
       gap: 2rem;
       padding-bottom: 1rem;
       border-bottom: 1px solid s.$tertiary-text;
+      // With four tabs, let the bar scroll on narrow screens instead of
+      // wrapping or shrinking the labels to the point of being unreadable.
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+
+      &::-webkit-scrollbar {
+        display: none;
+      }
 
       .selection {
         text-decoration: none;
         font-weight: 700;
         color: s.$tertiary-text;
+        white-space: nowrap;
       }
       @media screen and (max-width: 450px) {
         justify-content: space-around;
