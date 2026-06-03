@@ -16,6 +16,13 @@
   // Clear the fixed summary bar at the bottom of the page.
   padding-bottom: 130px;
 
+  .add-recipe-heading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
   h1 {
     font-size: 2rem;
     font-weight: 700;

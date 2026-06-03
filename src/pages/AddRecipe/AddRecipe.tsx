@@ -1,10 +1,13 @@
-import React, { FC, useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import React, { FC, useEffect, useMemo, useRef, useState } from 'react'
+import axios from 'axios'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import {
   AddRecipeErrorType,
   IngredientsType,
   InstructionsType,
+  RecipeDraftContent,
+  RecipeDraftType,
   RecipeEditFormType,
   RecipeFormType,
   RecipeType,
@@ -36,6 +39,10 @@ import SectionHeader from 'src/pages/AddRecipe/SectionHeader'
 import AddRecipeSummaryBar from 'src/pages/AddRecipe/AddRecipeSummaryBar'
 import { Helmet } from 'react-helmet-async'
 import { toast } from 'react-hot-toast'
+import DraftAPI from 'src/api/drafts'
+import { useDraftAutosave } from 'src/pages/AddRecipe/useDraftAutosave'
+import DraftSaveStatus from 'src/pages/AddRecipe/DraftSaveStatus'
+import DraftResumeBanner from 'src/pages/AddRecipe/DraftResumeBanner'
 
 type TimeVal = { hours: number; minutes: number } | null
 
@@ -90,6 +97,143 @@ const AddRecipe: FC<AddRecipeProps> = ({ initialRecipe }) => {
 
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+
+  // ─── Draft autosave (create flow only) ──────────────────────────────────────
+  // Edit mode never touches drafts. In create mode the form is autosaved to a
+  // server-side draft so unfinished recipes survive a refresh or navigating
+  // away. The image is intentionally not part of a draft — it's re-picked on
+  // resume (publish validation still requires one).
+  const [searchParams, setSearchParams] = useSearchParams()
+  const urlDraftId = isEditMode ? null : searchParams.get('draftId')
+  const [draftId, setDraftId] = useState<string | null>(urlDraftId)
+  // "Hydrated" gates autosave: true for a fresh create, briefly false while a
+  // resumed draft loads into the fields.
+  const [hydrated, setHydrated] = useState(!urlDraftId)
+  // Draft ids whose content is already on screen — either just loaded here, or
+  // just created by autosave. The hydration effect skips these so our own URL
+  // updates (and a resume of the draft we're already editing) don't trigger a
+  // redundant reload.
+  const ownedDraftsRef = useRef<Set<string>>(new Set())
+
+  // Load the draft named in the URL whenever it points at one we haven't loaded
+  // yet. Runs on mount for `?draftId=…`, and again when the resume banner
+  // navigates to a draft while this page is already mounted — same route, so no
+  // remount happens on its own and a mount-only effect would never re-fire.
+  useEffect(() => {
+    if (isEditMode || !urlDraftId || ownedDraftsRef.current.has(urlDraftId)) return
+    let cancelled = false
+    setHydrated(false)
+    DraftAPI.getDraft(urlDraftId)
+      .then(draft => {
+        if (cancelled) return
+        ownedDraftsRef.current.add(urlDraftId)
+        if (draft) {
+          setDraftId(urlDraftId)
+          setTitle(draft.title ?? '')
+          setDescription(draft.description ?? '')
+          setServings(draft.servings ?? '')
+          setPrepTime(draft.prepTime != null ? minToHrMin(draft.prepTime) : null)
+          setCookTime(draft.cookTime != null ? minToHrMin(draft.cookTime) : null)
+          setFridgeLife(draft.fridgeLife ?? 0)
+          setFreezerLife(draft.freezerLife ?? 0)
+          setIngredients(draft.ingredients ?? [])
+          setInstructions(draft.instructions ?? [])
+          setCuisine(draft.cuisine ?? '')
+          setMealTypes(draft.mealTypes ?? [])
+        }
+        setHydrated(true)
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return
+        const status = axios.isAxiosError(err) ? err.response?.status : undefined
+        if (status === 404 || status === 403) {
+          // The draft is genuinely gone or not the caller's. Drop only the
+          // draftId param (preserving any other query params) and let the user
+          // start a fresh draft.
+          toast.error("Couldn't load that draft — starting a new one.")
+          setDraftId(null)
+          const next = new URLSearchParams(searchParams)
+          next.delete('draftId')
+          setSearchParams(next, { replace: true })
+          setHydrated(true)
+        } else {
+          // Transient failure (network/5xx) on a draft that likely still
+          // exists. Leave autosave disabled (hydrated stays false) so we don't
+          // create a duplicate or overwrite the unloaded draft with a partial
+          // form; ask the user to retry.
+          toast.error('Could not load your draft. Refresh to try again.')
+        }
+      })
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlDraftId])
+
+  // Serializable draft content mirrored from form state. Times are stored as
+  // minutes (matching the recipe shape); empty values are omitted.
+  const draftContent: RecipeDraftContent = useMemo(
+    () => ({
+      title,
+      description,
+      // Send explicit null (not undefined) when empty so clearing a field is
+      // persisted rather than silently dropped from the payload — see
+      // RecipeDraftContent.
+      servings: servings === '' ? null : Number(servings),
+      prepTime: prepTime ? hrMinToMin(prepTime) : null,
+      cookTime: cookTime ? hrMinToMin(cookTime) : null,
+      fridgeLife,
+      freezerLife,
+      ingredients,
+      instructions,
+      cuisine,
+      mealTypes,
+    }),
+    [
+      title,
+      description,
+      servings,
+      prepTime,
+      cookTime,
+      fridgeLife,
+      freezerLife,
+      ingredients,
+      instructions,
+      cuisine,
+      mealTypes,
+    ]
+  )
+
+  // A brand-new draft is only created once the recipe has a title. This gates
+  // out throwaway drafts from a stray keystroke (keeping the Drafts list and the
+  // per-user draft count clean); updating an existing draft is unaffected.
+  const canCreateDraft = !!title.trim()
+
+  const { status: draftStatus, clearDraft } = useDraftAutosave({
+    content: draftContent,
+    enabled: !isEditMode && hydrated,
+    canCreate: canCreateDraft,
+    draftId,
+    onDraftCreated: (draft: RecipeDraftType) => {
+      // Mark as owned before the URL sync below points the URL at it, so the
+      // hydration effect doesn't reload the draft we just created.
+      ownedDraftsRef.current.add(draft._id)
+      setDraftId(draft._id)
+      queryClient.invalidateQueries({ queryKey: ['drafts'] })
+    },
+    onLimitReached: (message: string) => toast.error(message),
+  })
+
+  // Reflect the active draft id in the URL (replace) so a refresh resumes the
+  // same draft rather than starting a second one.
+  useEffect(() => {
+    if (isEditMode || !draftId) return
+    if (searchParams.get('draftId') === draftId) return
+    const next = new URLSearchParams(searchParams)
+    next.set('draftId', draftId)
+    setSearchParams(next, { replace: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftId])
 
   const validate = (assignErrors: boolean = false) => {
     let newErrors: Partial<AddRecipeErrorType> = {}
@@ -197,6 +341,10 @@ const AddRecipe: FC<AddRecipeProps> = ({ initialRecipe }) => {
       if (newId === ADD_RECIPE_AUTH_ERROR) {
         toast.error('Your session has expired — please sign in again and retry.')
       } else if (newId) {
+        // Recipe is live — remove the now-redundant draft (and stop autosave
+        // from recreating it on unmount) before navigating away.
+        await clearDraft()
+        queryClient.invalidateQueries({ queryKey: ['drafts'] })
         toast.success('Recipe published!')
         navigate(`/recipes/${newId}`)
       } else {
@@ -230,7 +378,11 @@ const AddRecipe: FC<AddRecipeProps> = ({ initialRecipe }) => {
           progress={loadingProgress}
           onLoaderFinished={() => setLoadingProgress(0)}
         />
-        <h1>{isEditMode ? 'Edit Recipe' : 'Create New Recipe'}</h1>
+        <div className='add-recipe-heading'>
+          <h1>{isEditMode ? 'Edit Recipe' : 'Create New Recipe'}</h1>
+          {!isEditMode && <DraftSaveStatus status={draftStatus} />}
+        </div>
+        {!isEditMode && !draftId && <DraftResumeBanner />}
         <div className='container'>
           <div className='container-inner' ref={addRecipeFormRef}>
             <div className='title input-field'>
