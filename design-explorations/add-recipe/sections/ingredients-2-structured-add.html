@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ingredients · 2 · Structured quick-add</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--orange:#ff5722;--teal:#00adb5;--ink:#303841;--ink-2:#595f66;--ink-3:#979ba0;--bg:#d6d6d6;--card:#eeeeee;--white:#fff;--g300:#e6e6e6;--g400:#d6d6d6;--radius:10px;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:"Montserrat",sans-serif;background:var(--bg);color:var(--ink);padding:40px 16px 60px;}
+  .notes{max-width:620px;margin:0 auto 16px;font-size:12.5px;color:var(--ink-2);line-height:1.55;background:#fff;border-left:3px solid var(--orange);border-radius:6px;padding:12px 14px;}
+  .notes b{color:var(--ink);}
+  .card{max-width:620px;margin:0 auto;background:var(--card);border-radius:var(--radius);padding:40px;}
+  .section-header{display:flex;align-items:center;gap:.7rem;margin-bottom:1.25rem;}
+  .section-header .text{color:var(--orange);font-weight:700;font-size:1rem;text-transform:uppercase;letter-spacing:.08em;white-space:nowrap;}
+  .section-header .divider{flex:1;height:1px;background:var(--g400);}
+  .section-header .req{font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);}
+
+  /* mode toggle */
+  .modes{display:inline-flex;background:var(--g300);border-radius:8px;padding:3px;margin-bottom:14px;}
+  .modes span{padding:7px 14px;border-radius:6px;font-size:.8rem;font-weight:600;color:var(--ink-2);cursor:pointer;}
+  .modes span.on{background:var(--white);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.1);}
+
+  /* structured add bar */
+  .builder{display:grid;grid-template-columns:70px 110px 1fr 120px auto;gap:8px;}
+  .builder input,.builder select{border:1px solid var(--g400);border-radius:8px;padding:11px 12px;font-family:inherit;font-size:.9rem;color:var(--ink);outline:none;background:var(--white);}
+  .builder input:focus,.builder select:focus{border-color:var(--orange);}
+  .builder .add{background:var(--orange);color:#fff;border:none;border-radius:8px;padding:0 16px;font-family:inherit;font-weight:700;cursor:pointer;}
+  .hint{font-size:12px;color:var(--ink-3);margin:8px 2px 18px;}
+
+  .list{display:flex;flex-direction:column;gap:4px;}
+  .row{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:var(--radius);}
+  .row:hover{background:var(--g300);}
+  .row .grip{color:var(--ink-3);cursor:grab;}
+  .row .chip{background:var(--white);border:1px solid var(--g400);border-radius:7px;padding:4px 10px;font-weight:700;font-size:.82rem;min-width:74px;text-align:center;}
+  .row .name{flex:1;font-weight:500;}
+  .row .name .note{color:var(--ink-3);font-style:italic;}
+  .row .x{color:var(--ink-3);cursor:pointer;opacity:0;}
+  .row:hover .x{opacity:1;}
+  .footer{display:flex;gap:18px;margin-top:18px;padding-top:16px;border-top:1px solid var(--g400);}
+  .ghost{display:inline-flex;align-items:center;gap:7px;background:none;border:none;color:var(--ink-2);font-family:inherit;font-weight:600;font-size:.85rem;cursor:pointer;}
+  .ghost:hover{color:var(--orange);}.ghost.primary{color:var(--orange);}
+</style>
+</head>
+<body>
+  <div class="notes"><b>2 · Structured quick-add + paste.</b> Pick amount &amp; unit explicitly (dropdown) so the parser never guesses — fewer mis-parses. The <b>"Paste a list"</b> mode lets you drop a whole ingredient block at once and we parse each line. Rows show a clean amount chip. Still fully editable &amp; reorderable; group labels stay.</div>
+  <div class="card">
+    <div class="section-header"><span class="text">Ingredients</span><span class="divider"></span><span class="req">Required</span></div>
+    <div class="modes"><span class="on">Quick add</span><span>Paste a list</span></div>
+    <div class="builder">
+      <input placeholder="Qty" /><select><option>unit</option><option>cup</option><option>tbsp</option><option>tsp</option><option>clove</option><option>g</option></select>
+      <input placeholder="Ingredient (e.g. garlic)" /><input placeholder="note (minced)" /><button class="add">Add</button>
+    </div>
+    <div class="hint">Tip: leave the unit blank for whole items like "4 chicken breasts".</div>
+    <div class="list">
+      <div class="row"><span class="grip">⋮⋮</span><span class="chip">4</span><span class="name">boneless chicken breasts</span><span class="x">✕</span></div>
+      <div class="row"><span class="grip">⋮⋮</span><span class="chip">2 tbsp</span><span class="name">olive oil</span><span class="x">✕</span></div>
+      <div class="row"><span class="grip">⋮⋮</span><span class="chip">1 cup</span><span class="name">heavy cream</span><span class="x">✕</span></div>
+      <div class="row"><span class="grip">⋮⋮</span><span class="chip">½ cup</span><span class="name">sun-dried tomatoes</span><span class="x">✕</span></div>
+      <div class="row"><span class="grip">⋮⋮</span><span class="chip">3 cloves</span><span class="name">garlic, <span class="note">minced</span></span><span class="x">✕</span></div>
+    </div>
+    <div class="footer"><button class="ghost">↕ Reorder</button><button class="ghost primary">＋ Add group label</button></div>
+  </div>
+</body></html>

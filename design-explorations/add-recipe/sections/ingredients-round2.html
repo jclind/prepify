@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ingredients · Round 2 (drag-first + price)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0f1115;--card:#171a21;--ink:#eef1f6;--ink-2:#9aa2b1;--line:#262a33;--accent:#ff5722;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:"Inter",sans-serif;background:var(--bg);color:var(--ink);padding:48px 28px 100px;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1280px;margin:0 auto;}
+  a.back{color:var(--ink-2);text-decoration:none;font-size:13px;font-weight:600;}a.back:hover{color:var(--accent);}
+  header h1{font-size:34px;font-weight:800;letter-spacing:-.025em;margin:14px 0 8px;}
+  header p{color:var(--ink-2);font-size:15px;max-width:80ch;line-height:1.6;}
+  header .common{margin-top:12px;font-size:13px;color:var(--ink-2);background:rgba(255,87,34,.08);border:1px solid rgba(255,87,34,.3);border-radius:8px;padding:10px 14px;}
+  header .common b{color:#ffce4d;}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:24px;margin-top:30px;}
+  .tile{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;text-decoration:none;color:inherit;transition:.2s;display:flex;flex-direction:column;}
+  .tile:hover{transform:translateY(-4px);border-color:var(--accent);box-shadow:0 24px 50px -24px rgba(255,87,34,.4);}
+  .frame{height:300px;overflow:hidden;background:#d6d6d6;border-bottom:1px solid var(--line);position:relative;}
+  .frame iframe{width:1000px;height:880px;border:0;transform:scale(.40);transform-origin:top left;pointer-events:none;}
+  .frame .veil{position:absolute;inset:0;}
+  .meta{padding:16px 18px;}
+  .meta .row{display:flex;align-items:center;gap:10px;}
+  .num{font-size:12px;font-weight:700;color:var(--accent);background:rgba(255,87,34,.12);border-radius:6px;padding:3px 8px;}
+  .meta h3{font-size:16px;font-weight:700;}
+  .meta p{font-size:13px;color:var(--ink-2);margin-top:8px;line-height:1.55;}
+  .open{margin-top:12px;font-size:13px;font-weight:600;color:var(--accent);}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <a class="back" href="index.html">← Back to section explorations</a>
+    <header>
+      <h1>Ingredients — Round 2 · drag-first &amp; priced</h1>
+      <p>Five refinements of the "Rich rows" direction you liked, exploring an always-available drag handle, a per-row price, and inline delete.</p>
+      <div class="common">Shared across all five: <b>⠿ drag handle on the left, visible at all times — reorder anytime, no "Reorder" button</b> · per-ingredient <b>price on the right</b> (real parser data; "—" if unavailable) · <b>✕ delete per row</b> · click text to edit · keep "Add group label".</div>
+    </header>
+    <div class="grid">
+      <a class="tile" href="ing-r2-1-handle-price.html"><div class="frame"><iframe src="ing-r2-1-handle-price.html" scrolling="no"></iframe><div class="veil"></div></div><div class="meta"><div class="row"><span class="num">R2·1</span><h3>Handle + price</h3></div><p>The core: persistent left handle, thumbnail, price right, persistent delete, subtotal in the footer.</p><div class="open">Open →</div></div></a>
+      <a class="tile" href="ing-r2-2-hover-delete.html"><div class="frame"><iframe src="ing-r2-2-hover-delete.html" scrolling="no"></iframe><div class="veil"></div></div><div class="meta"><div class="row"><span class="num">R2·2</span><h3>Clean rest</h3></div><p>Same, but the handle is faint and ✕ only appears on hover — calmest resting list.</p><div class="open">Open →</div></div></a>
+      <a class="tile" href="ing-r2-3-card-rows.html"><div class="frame"><iframe src="ing-r2-3-card-rows.html" scrolling="no"></iframe><div class="veil"></div></div><div class="meta"><div class="row"><span class="num">R2·3</span><h3>Card rows + pill</h3></div><p>Each ingredient a defined white card; price as a rounded pill badge. Sturdier to drag.</p><div class="open">Open →</div></div></a>
+      <a class="tile" href="ing-r2-4-cost-forward.html"><div class="frame"><iframe src="ing-r2-4-cost-forward.html" scrolling="no"></iframe><div class="veil"></div></div><div class="meta"><div class="row"><span class="num">R2·4</span><h3>Cost-forward</h3></div><p>Price-led right column + a prominent total / per-serving rollup. For budgeting.</p><div class="open">Open →</div></div></a>
+      <a class="tile" href="ing-r2-5-compact.html"><div class="frame"><iframe src="ing-r2-5-compact.html" scrolling="no"></iframe><div class="veil"></div></div><div class="meta"><div class="row"><span class="num">R2·5</span><h3>Compact aligned</h3></div><p>Dense, receipt-style: qty column + right-aligned price column. Best for long lists.</p><div class="open">Open →</div></div></a>
+    </div>
+  </div>
+</body></html>

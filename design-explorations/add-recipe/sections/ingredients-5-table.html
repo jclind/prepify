@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ingredients · 5 · Inline-editable table</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--orange:#ff5722;--teal:#00adb5;--ink:#303841;--ink-2:#595f66;--ink-3:#979ba0;--bg:#d6d6d6;--card:#eeeeee;--white:#fff;--g300:#e6e6e6;--g400:#d6d6d6;--radius:10px;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:"Montserrat",sans-serif;background:var(--bg);color:var(--ink);padding:40px 16px 60px;}
+  .notes{max-width:640px;margin:0 auto 16px;font-size:12.5px;color:var(--ink-2);line-height:1.55;background:#fff;border-left:3px solid var(--orange);border-radius:6px;padding:12px 14px;}
+  .notes b{color:var(--ink);}
+  .card{max-width:640px;margin:0 auto;background:var(--card);border-radius:var(--radius);padding:40px;}
+  .section-header{display:flex;align-items:center;gap:.7rem;margin-bottom:1.25rem;}
+  .section-header .text{color:var(--orange);font-weight:700;font-size:1rem;text-transform:uppercase;letter-spacing:.08em;white-space:nowrap;}
+  .section-header .divider{flex:1;height:1px;background:var(--g400);}
+  .section-header .req{font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);}
+
+  table{width:100%;border-collapse:collapse;}
+  thead th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-3);font-weight:700;padding:0 8px 8px;}
+  tbody td{padding:5px 6px;border-top:1px solid var(--g400);vertical-align:middle;}
+  tbody tr:hover{background:var(--g300);}
+  .grip{color:var(--ink-3);cursor:grab;}
+  .img{width:32px;height:32px;border-radius:50%;background:var(--white);border:1px solid var(--g400);display:grid;place-items:center;font-size:16px;}
+  td input,td select{width:100%;border:1px solid transparent;border-radius:7px;padding:8px 9px;font-family:inherit;font-size:.88rem;font-weight:500;color:var(--ink);background:none;outline:none;}
+  td input:hover,td select:hover{border-color:var(--g400);background:var(--white);}
+  td input:focus,td select:focus{border-color:var(--orange);background:var(--white);box-shadow:0 0 0 2px rgba(255,87,34,.12);}
+  td.qty input{font-weight:700;}
+  .x{color:var(--ink-3);cursor:pointer;text-align:center;}
+  tr.add-row td{border-top:1px dashed var(--g400);}
+  tr.add-row input::placeholder{color:var(--orange);font-weight:600;}
+  .footer{display:flex;gap:18px;margin-top:18px;padding-top:16px;border-top:1px solid var(--g400);}
+  .ghost{display:inline-flex;align-items:center;gap:7px;background:none;border:none;color:var(--ink-2);font-family:inherit;font-weight:600;font-size:.85rem;cursor:pointer;}
+  .ghost:hover{color:var(--orange);}.ghost.primary{color:var(--orange);}
+</style>
+</head>
+<body>
+  <div class="notes"><b>5 · Inline-editable table.</b> A spreadsheet-style grid — every cell (qty, unit, ingredient, note) is directly editable in place, no click-into-edit mode. Best for precise control and quick fixes across many rows. The empty bottom row is always ready for the next ingredient; Tab moves across, Enter starts a new row. Thumbnails still come from the parser; rows drag to reorder.</div>
+  <div class="card">
+    <div class="section-header"><span class="text">Ingredients</span><span class="divider"></span><span class="req">Required</span></div>
+    <table>
+      <thead><tr><th style="width:24px"></th><th style="width:40px"></th><th style="width:64px">Qty</th><th style="width:84px">Unit</th><th>Ingredient</th><th style="width:110px">Note</th><th style="width:24px"></th></tr></thead>
+      <tbody>
+        <tr><td class="grip">⋮⋮</td><td><span class="img">🍗</span></td><td class="qty"><input value="4" /></td><td><input value="" placeholder="—" /></td><td><input value="boneless chicken breasts" /></td><td><input value="" /></td><td class="x">✕</td></tr>
+        <tr><td class="grip">⋮⋮</td><td><span class="img">🥛</span></td><td class="qty"><input value="1" /></td><td><input value="cup" /></td><td><input value="heavy cream" /></td><td><input value="" /></td><td class="x">✕</td></tr>
+        <tr><td class="grip">⋮⋮</td><td><span class="img">🍅</span></td><td class="qty"><input value="½" /></td><td><input value="cup" /></td><td><input value="sun-dried tomatoes" /></td><td><input value="" /></td><td class="x">✕</td></tr>
+        <tr><td class="grip">⋮⋮</td><td><span class="img">🧄</span></td><td class="qty"><input value="3" /></td><td><input value="cloves" /></td><td><input value="garlic" /></td><td><input value="minced" /></td><td class="x">✕</td></tr>
+        <tr class="add-row"><td>＋</td><td></td><td class="qty"><input placeholder="Qty" /></td><td><input placeholder="unit" /></td><td><input placeholder="Add ingredient…" /></td><td><input placeholder="note" /></td><td></td></tr>
+      </tbody>
+    </table>
+    <div class="footer"><button class="ghost">↕ Reorder</button><button class="ghost primary">＋ Add group label</button></div>
+  </div>
+</body></html>

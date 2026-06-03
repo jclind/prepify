@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ingredients R2 · 1 · Left handle + price</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--orange:#ff5722;--teal:#00adb5;--ink:#303841;--ink-2:#595f66;--ink-3:#979ba0;--bg:#d6d6d6;--card:#eeeeee;--white:#fff;--g300:#e6e6e6;--g400:#d6d6d6;--radius:10px;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:"Montserrat",sans-serif;background:var(--bg);color:var(--ink);padding:40px 16px 60px;}
+  .notes{max-width:620px;margin:0 auto 16px;font-size:12.5px;color:var(--ink-2);line-height:1.55;background:#fff;border-left:3px solid var(--orange);border-radius:6px;padding:12px 14px;}
+  .notes b{color:var(--ink);}
+  .card{max-width:620px;margin:0 auto;background:var(--card);border-radius:var(--radius);padding:40px;}
+  .section-header{display:flex;align-items:center;gap:.7rem;margin-bottom:1.25rem;}
+  .section-header .text{color:var(--orange);font-weight:700;font-size:1rem;text-transform:uppercase;letter-spacing:.08em;white-space:nowrap;}
+  .section-header .divider{flex:1;height:1px;background:var(--g400);}
+  .section-header .req{font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);}
+
+  .add-input{display:flex;align-items:center;gap:10px;border:1px solid var(--ink-3);border-radius:var(--radius);background:var(--white);padding:0 14px;height:50px;}
+  .add-input .plus{color:var(--orange);font-size:20px;font-weight:700;}
+  .add-input input{flex:1;border:none;outline:none;font-family:inherit;font-size:.95rem;font-weight:500;color:var(--ink);background:none;}
+  .add-input .enter{font-size:11px;color:var(--ink-3);font-weight:600;border:1px solid var(--g400);border-radius:5px;padding:3px 7px;}
+  .hint{font-size:12px;color:var(--ink-3);margin:8px 2px 18px;}
+
+  .list{display:flex;flex-direction:column;gap:2px;}
+  .row{display:flex;align-items:center;gap:12px;padding:10px 8px 10px 6px;border-radius:var(--radius);transition:background .12s;}
+  .row:hover{background:var(--g300);}
+  /* always-visible drag handle on the LEFT — reorder any time, no mode button */
+  .grip{color:var(--ink-3);cursor:grab;font-size:18px;line-height:1;padding:0 2px;flex:none;}
+  .grip:hover{color:var(--orange);}
+  .bubble{width:42px;height:42px;flex:none;border-radius:50%;background:var(--white);border:1px solid var(--g400);display:grid;place-items:center;font-size:20px;}
+  .txt{flex:1;line-height:1.4;}
+  .txt .q{font-weight:700;color:var(--ink);}
+  .txt .name{font-weight:500;}
+  .txt .comment{color:var(--ink-3);font-style:italic;}
+  /* price on the RIGHT */
+  .price{font-weight:700;color:var(--ink-2);font-size:.9rem;min-width:56px;text-align:right;}
+  .price.na{color:var(--ink-3);font-weight:500;}
+  /* delete always available (no reorder mode needed) */
+  .del{width:30px;height:30px;border:none;background:none;border-radius:7px;color:var(--ink-3);cursor:pointer;font-size:14px;flex:none;}
+  .del:hover{background:var(--white);color:var(--orange);}
+
+  .footer{display:flex;align-items:center;gap:18px;margin-top:16px;padding-top:14px;border-top:1px solid var(--g400);}
+  .ghost{display:inline-flex;align-items:center;gap:7px;background:none;border:none;color:var(--orange);font-family:inherit;font-weight:600;font-size:.85rem;cursor:pointer;}
+  .total{margin-left:auto;font-size:.82rem;color:var(--ink-2);font-weight:600;}
+  .total b{color:var(--orange);}
+</style>
+</head>
+<body>
+  <div class="notes"><b>1 · Left handle + price (the core idea).</b> The <b>⠿ grip on the left is always visible</b>, so any row can be dragged to reorder at any time — no "Reorder" button. Each row shows its parsed thumbnail, amount &amp; name, the <b>estimated price on the right</b> (real per-item data from the parser), and a persistent <b>✕ to delete</b>. Click the text to edit. Items where pricing couldn't be fetched show "—".</div>
+  <div class="card">
+    <div class="section-header"><span class="text">Ingredients</span><span class="divider"></span><span class="req">Required</span></div>
+    <div class="add-input"><span class="plus">＋</span><input placeholder="Add an ingredient — e.g. 3 cloves garlic, minced" /><span class="enter">↵ Enter</span></div>
+    <div class="hint">Drag the ⠿ handle to reorder anytime · click a row to edit · ✕ to remove.</div>
+    <div class="list">
+      <div class="row"><span class="grip">⠿</span><span class="bubble">🍗</span><span class="txt"><span class="q">4</span> <span class="name">boneless chicken breasts</span></span><span class="price">$6.80</span><button class="del">✕</button></div>
+      <div class="row"><span class="grip">⠿</span><span class="bubble">🫒</span><span class="txt"><span class="q">2 tbsp</span> <span class="name">olive oil</span></span><span class="price">$0.30</span><button class="del">✕</button></div>
+      <div class="row"><span class="grip">⠿</span><span class="bubble">🥛</span><span class="txt"><span class="q">1 cup</span> <span class="name">heavy cream</span></span><span class="price">$1.20</span><button class="del">✕</button></div>
+      <div class="row"><span class="grip">⠿</span><span class="bubble">🍅</span><span class="txt"><span class="q">½ cup</span> <span class="name">sun-dried tomatoes</span></span><span class="price">$2.40</span><button class="del">✕</button></div>
+      <div class="row"><span class="grip">⠿</span><span class="bubble">🧄</span><span class="txt"><span class="q">3 cloves</span> <span class="name">garlic</span>, <span class="comment">minced</span></span><span class="price na">—</span><button class="del">✕</button></div>
+    </div>
+    <div class="footer"><button class="ghost">＋ Add group label</button><span class="total">Subtotal <b>$10.70</b> · $2.68/serving</span></div>
+  </div>
+</body></html>

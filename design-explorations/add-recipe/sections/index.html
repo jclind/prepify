@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ingredients &amp; Instructions · Section Explorations</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0f1115;--card:#171a21;--ink:#eef1f6;--ink-2:#9aa2b1;--line:#262a33;--accent:#ff5722;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:"Inter",sans-serif;background:var(--bg);color:var(--ink);padding:48px 28px 100px;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1280px;margin:0 auto;}
+  header h1{font-size:36px;font-weight:800;letter-spacing:-.025em;margin-bottom:8px;}
+  header p{color:var(--ink-2);font-size:15px;max-width:78ch;line-height:1.6;}
+  .batch{margin:42px 0 4px;display:flex;align-items:center;gap:14px;}
+  .batch h2{font-size:22px;font-weight:800;letter-spacing:-.02em;white-space:nowrap;}
+  .batch h2 .accent{color:var(--accent);}
+  .batch .ln{height:1px;flex:1;background:var(--line);}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:24px;margin-top:22px;}
+  .tile{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;text-decoration:none;color:inherit;transition:.2s;display:flex;flex-direction:column;}
+  .tile:hover{transform:translateY(-4px);border-color:var(--accent);box-shadow:0 24px 50px -24px rgba(255,87,34,.4);}
+  .frame{height:300px;overflow:hidden;background:#d6d6d6;border-bottom:1px solid var(--line);position:relative;}
+  .frame iframe{width:1000px;height:937px;border:0;transform:scale(.40);transform-origin:top left;pointer-events:none;}
+  .frame .veil{position:absolute;inset:0;}
+  .meta{padding:16px 18px;}
+  .meta .row{display:flex;align-items:center;gap:10px;}
+  .num{font-size:12px;font-weight:700;color:var(--accent);background:rgba(255,87,34,.12);border-radius:6px;padding:3px 8px;}
+  .meta h3{font-size:16px;font-weight:700;}
+  .meta p{font-size:13px;color:var(--ink-2);margin-top:8px;line-height:1.55;}
+  .open{margin-top:12px;font-size:13px;font-weight:600;color:var(--accent);}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Ingredients &amp; Instructions — Section Explorations</h1>
+      <p>Five takes each for the two sections of the f02 Create-Recipe page, in the same visual language. Every option preserves the real behaviour — parse-on-add, inline edit, drag reorder, group labels, remove — and only rethinks layout &amp; interaction. Each mockup has a notes strip explaining how it works. <b>Pick one per section.</b></p>
+    </header>
+
+    <div class="batch"><h2><span class="accent">Ingredients</span> · 5 options</h2><span class="ln"></span></div>
+    <div class="grid">
+      <a class="tile" href="ingredients-1-rich-rows.html"><div class="frame"><iframe src="ingredients-1-rich-rows.html" scrolling="no"></iframe><div class="veil"></div></div><div class="meta"><div class="row"><span class="num">I·1</span><h3>Rich rows</h3></div><p>Polished current model: thumbnail, bold amount, hover edit/drag/remove, live parse skeleton.</p><div class="open">Open →</div></div></a>
+      <a class="tile" href="ingredients-2-structured-add.html"><div class="frame"><iframe src="ingredients-2-structured-add.html" scrolling="no"></iframe><div class="veil"></div></div><div class="meta"><div class="row"><span class="num">I·2</span><h3>Structured quick-add</h3></div><p>Qty + unit dropdown + name so the parser never guesses; plus a "paste a list" bulk mode.</p><div class="open">Open →</div></div></a>
+      <a class="tile" href="ingredients-3-grouped.html"><div class="frame"><iframe src="ingredients-3-grouped.html" scrolling="no"></iframe><div class="veil"></div></div><div class="meta"><div class="row"><span class="num">I·3</span><h3>Grouped sections</h3></div><p>Group labels as first-class collapsible cards ("For the sauce") each with its own add row.</p><div class="open">Open →</div></div></a>
+      <a class="tile" href="ingredients-4-two-column.html"><div class="frame"><iframe src="ingredients-4-two-column.html" scrolling="no"></iframe><div class="veil"></div></div><div class="meta"><div class="row"><span class="num">I·4</span><h3>Two-column list</h3></div><p>Printed-cookbook density — two columns keep long lists short and scannable.</p><div class="open">Open →</div></div></a>
+      <a class="tile" href="ingredients-5-table.html"><div class="frame"><iframe src="ingredients-5-table.html" scrolling="no"></iframe><div class="veil"></div></div><div class="meta"><div class="row"><span class="num">I·5</span><h3>Inline-editable table</h3></div><p>Spreadsheet grid — every qty/unit/name cell editable in place; empty bottom row ready to go.</p><div class="open">Open →</div></div></a>
+    </div>
+
+    <div class="batch"><h2><span class="accent">Instructions</span> · 5 options</h2><span class="ln"></span></div>
+    <div class="grid">
+      <a class="tile" href="instructions-1-timeline.html"><div class="frame"><iframe src="instructions-1-timeline.html" scrolling="no"></iframe><div class="veil"></div></div><div class="meta"><div class="row"><span class="num">S·1</span><h3>Connected timeline</h3></div><p>Dark numbered steps joined by a line; bottom composer always shows the next number.</p><div class="open">Open →</div></div></a>
+      <a class="tile" href="instructions-2-cards.html"><div class="frame"><iframe src="instructions-2-cards.html" scrolling="no"></iframe><div class="veil"></div></div><div class="meta"><div class="row"><span class="num">S·2</span><h3>Step cards</h3></div><p>Each step a card with a square badge and its own action bar; optional time chips.</p><div class="open">Open →</div></div></a>
+      <a class="tile" href="instructions-3-phases.html"><div class="frame"><iframe src="instructions-3-phases.html" scrolling="no"></iframe><div class="veil"></div></div><div class="meta"><div class="row"><span class="num">S·3</span><h3>Grouped phases</h3></div><p>Labels as phase headers (Prep · Cook · Finish); steps numbered continuously across phases.</p><div class="open">Open →</div></div></a>
+      <a class="tile" href="instructions-4-always-edit.html"><div class="frame"><iframe src="instructions-4-always-edit.html" scrolling="no"></iframe><div class="veil"></div></div><div class="meta"><div class="row"><span class="num">S·4</span><h3>Always-editable</h3></div><p>No edit mode — every step is a live auto-grow textarea; trailing field spawns the next.</p><div class="open">Open →</div></div></a>
+      <a class="tile" href="instructions-5-compact.html"><div class="frame"><iframe src="instructions-5-compact.html" scrolling="no"></iframe><div class="veil"></div></div><div class="meta"><div class="row"><span class="num">S·5</span><h3>Compact drag-first</h3></div><p>Tight enclosed list, handle always visible, composer pinned at the bottom. Densest.</p><div class="open">Open →</div></div></a>
+    </div>
+  </div>
+</body></html>

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Instructions to match R2-1</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0f1115;--card:#171a21;--ink:#eef1f6;--ink-2:#9aa2b1;--line:#262a33;--accent:#ff5722;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:"Inter",sans-serif;background:var(--bg);color:var(--ink);padding:48px 28px 100px;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1280px;margin:0 auto;}
+  a.back{color:var(--ink-2);text-decoration:none;font-size:13px;font-weight:600;}a.back:hover{color:var(--accent);}
+  header h1{font-size:34px;font-weight:800;letter-spacing:-.025em;margin:14px 0 8px;}
+  header p{color:var(--ink-2);font-size:15px;max-width:80ch;line-height:1.6;}
+  header .common{margin-top:12px;font-size:13px;color:var(--ink-2);background:rgba(255,87,34,.08);border:1px solid rgba(255,87,34,.3);border-radius:8px;padding:10px 14px;}
+  header .common b{color:#ffce4d;}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:24px;margin-top:30px;}
+  .tile{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;text-decoration:none;color:inherit;transition:.2s;display:flex;flex-direction:column;}
+  .tile:hover{transform:translateY(-4px);border-color:var(--accent);box-shadow:0 24px 50px -24px rgba(255,87,34,.4);}
+  .tile.ref{border-style:dashed;border-color:#ffce4d;}
+  .frame{height:300px;overflow:hidden;background:#d6d6d6;border-bottom:1px solid var(--line);position:relative;}
+  .frame iframe{width:1000px;height:880px;border:0;transform:scale(.40);transform-origin:top left;pointer-events:none;}
+  .frame .veil{position:absolute;inset:0;}
+  .meta{padding:16px 18px;}
+  .meta .row{display:flex;align-items:center;gap:10px;}
+  .num{font-size:12px;font-weight:700;color:var(--accent);background:rgba(255,87,34,.12);border-radius:6px;padding:3px 8px;}
+  .num.ref{color:#0f1115;background:#ffce4d;}
+  .meta h3{font-size:16px;font-weight:700;}
+  .meta p{font-size:13px;color:var(--ink-2);margin-top:8px;line-height:1.55;}
+  .open{margin-top:12px;font-size:13px;font-weight:600;color:var(--accent);}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <a class="back" href="index.html">← Back to section explorations</a>
+    <header>
+      <h1>Instructions — matched to your R2-1 ingredients</h1>
+      <p>Three instruction layouts that share R2-1's exact visual language, so the two sections read as one cohesive page.</p>
+      <div class="common">Shared with R2-1: <b>pill add-input with ↵ Enter + hint · always-visible ⠿ left handle (reorder anytime, no mode button) · hover rows · persistent ✕ delete · orange footer action</b>. (Instructions show a step count instead of a price.)</div>
+    </header>
+    <div class="grid">
+      <a class="tile ref" href="ing-r2-1-handle-price.html"><div class="frame"><iframe src="ing-r2-1-handle-price.html" scrolling="no"></iframe><div class="veil"></div></div><div class="meta"><div class="row"><span class="num ref">REF</span><h3>R2-1 ingredients (your pick)</h3></div><p>Shown here for side-by-side comparison — the instruction options are built to sit beneath this.</p><div class="open">Open →</div></div></a>
+      <a class="tile" href="instr-r2-1-timeline.html"><div class="frame"><iframe src="instr-r2-1-timeline.html" scrolling="no"></iframe><div class="veil"></div></div><div class="meta"><div class="row"><span class="num">1</span><h3>Timeline</h3></div><p>S-1 reimagined in R2-1's chrome: numbered circles joined by a connecting line; left handle + ✕.</p><div class="open">Open →</div></div></a>
+      <a class="tile" href="instr-r2-2-flat-rows.html"><div class="frame"><iframe src="instr-r2-2-flat-rows.html" scrolling="no"></iframe><div class="veil"></div></div><div class="meta"><div class="row"><span class="num">2</span><h3>Flat rows (twin)</h3></div><p>The literal twin of R2-1 rows — number circle where the thumbnail goes, no line. Most cohesive.</p><div class="open">Open →</div></div></a>
+      <a class="tile" href="instr-r2-3-timeline-composer.html"><div class="frame"><iframe src="instr-r2-3-timeline-composer.html" scrolling="no"></iframe><div class="veil"></div></div><div class="meta"><div class="row"><span class="num">3</span><h3>Timeline + bottom composer</h3></div><p>Same timeline, but the add field lives at the end of the line and shows the next number.</p><div class="open">Open →</div></div></a>
+    </div>
+  </div>
+</body></html>

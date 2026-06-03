@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ingredients R2 · 4 · Cost-forward</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--orange:#ff5722;--teal:#00adb5;--ink:#303841;--ink-2:#595f66;--ink-3:#979ba0;--bg:#d6d6d6;--card:#eeeeee;--white:#fff;--g300:#e6e6e6;--g400:#d6d6d6;--radius:10px;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:"Montserrat",sans-serif;background:var(--bg);color:var(--ink);padding:40px 16px 60px;}
+  .notes{max-width:620px;margin:0 auto 16px;font-size:12.5px;color:var(--ink-2);line-height:1.55;background:#fff;border-left:3px solid var(--orange);border-radius:6px;padding:12px 14px;}
+  .notes b{color:var(--ink);}
+  .card{max-width:620px;margin:0 auto;background:var(--card);border-radius:var(--radius);padding:40px;}
+  .section-header{display:flex;align-items:center;gap:.7rem;margin-bottom:1rem;}
+  .section-header .text{color:var(--orange);font-weight:700;font-size:1rem;text-transform:uppercase;letter-spacing:.08em;white-space:nowrap;}
+  .section-header .divider{flex:1;height:1px;background:var(--g400);}
+  .section-header .req{font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);}
+
+  .add-input{display:flex;align-items:center;gap:10px;border:1px solid var(--ink-3);border-radius:var(--radius);background:var(--white);padding:0 14px;height:48px;}
+  .add-input .plus{color:var(--orange);font-size:20px;font-weight:700;}
+  .add-input input{flex:1;border:none;outline:none;font-family:inherit;font-size:.95rem;font-weight:500;color:var(--ink);background:none;}
+  .colhead{display:flex;align-items:center;margin:16px 6px 4px;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3);font-weight:700;}
+  .colhead .sp{flex:1;}
+
+  .list{display:flex;flex-direction:column;}
+  .row{display:flex;align-items:center;gap:12px;padding:11px 8px 11px 6px;border-bottom:1px solid var(--g400);transition:background .12s;}
+  .row:hover{background:var(--g300);}
+  .grip{color:var(--ink-3);cursor:grab;font-size:18px;line-height:1;flex:none;}.grip:hover{color:var(--orange);}
+  .txt{flex:1;line-height:1.35;}
+  .txt .name{font-weight:600;display:block;}
+  .txt .sub{font-size:.8rem;color:var(--ink-3);}
+  /* price-forward right column with a faint per-unit note */
+  .pcol{text-align:right;min-width:74px;}
+  .pcol .p{font-weight:700;color:var(--ink);font-size:.95rem;}
+  .pcol .per{font-size:.7rem;color:var(--ink-3);}
+  .pcol .na{color:var(--ink-3);font-weight:500;}
+  .del{width:28px;height:28px;border:none;background:none;border-radius:7px;color:var(--ink-3);cursor:pointer;font-size:14px;flex:none;opacity:0;transition:.12s;}
+  .row:hover .del{opacity:1;}.del:hover{background:var(--white);color:var(--orange);}
+
+  /* prominent cost rollup footer */
+  .rollup{display:flex;gap:14px;margin-top:16px;background:var(--white);border:1px solid var(--g400);border-radius:var(--radius);padding:14px 16px;}
+  .rollup .cell{flex:1;text-align:center;}
+  .rollup .cell+.cell{border-left:1px solid var(--g400);}
+  .rollup .k{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-3);font-weight:700;}
+  .rollup .v{font-size:1.25rem;font-weight:700;margin-top:3px;}
+  .rollup .v.accent{color:var(--orange);}
+  .ghost{display:inline-flex;align-items:center;gap:7px;background:none;border:none;color:var(--orange);font-family:inherit;font-weight:600;font-size:.85rem;cursor:pointer;margin-top:14px;}
+</style>
+</head>
+<body>
+  <div class="notes"><b>4 · Cost-forward.</b> For budget-minded cooks: the right column leads with price, and a <b>cost rollup</b> (total · per serving) sits beneath the list and updates as you add/remove. Drag-first left ⠿ handle, delete on hover. Reuses the same per-item price data — just surfaces it more prominently.</div>
+  <div class="card">
+    <div class="section-header"><span class="text">Ingredients</span><span class="divider"></span><span class="req">Required</span></div>
+    <div class="add-input"><span class="plus">＋</span><input placeholder="Add an ingredient — type and press Enter" /></div>
+    <div class="colhead"><span>Item</span><span class="sp"></span><span>Est. cost</span></div>
+    <div class="list">
+      <div class="row"><span class="grip">⠿</span><span class="txt"><span class="name">Boneless chicken breasts</span><span class="sub">4 whole</span></span><span class="pcol"><div class="p">$6.80</div><div class="per">$1.70 ea</div></span><button class="del">✕</button></div>
+      <div class="row"><span class="grip">⠿</span><span class="txt"><span class="name">Heavy cream</span><span class="sub">1 cup</span></span><span class="pcol"><div class="p">$1.20</div></span><button class="del">✕</button></div>
+      <div class="row"><span class="grip">⠿</span><span class="txt"><span class="name">Sun-dried tomatoes</span><span class="sub">½ cup</span></span><span class="pcol"><div class="p">$2.40</div></span><button class="del">✕</button></div>
+      <div class="row"><span class="grip">⠿</span><span class="txt"><span class="name">Grated parmesan</span><span class="sub">½ cup</span></span><span class="pcol"><div class="p">$1.60</div></span><button class="del">✕</button></div>
+      <div class="row"><span class="grip">⠿</span><span class="txt"><span class="name">Garlic</span><span class="sub">3 cloves, minced</span></span><span class="pcol"><div class="p na">—</div></span><button class="del">✕</button></div>
+    </div>
+    <div class="rollup">
+      <div class="cell"><div class="k">Items</div><div class="v">5</div></div>
+      <div class="cell"><div class="k">Total cost</div><div class="v">$12.00</div></div>
+      <div class="cell"><div class="k">Per serving</div><div class="v accent">$3.00</div></div>
+    </div>
+    <button class="ghost">＋ Add group label</button>
+  </div>
+</body></html>

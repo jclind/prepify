@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Instructions · 3 · Grouped phases</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--orange:#ff5722;--teal:#00adb5;--ink:#303841;--ink-2:#595f66;--ink-3:#979ba0;--bg:#d6d6d6;--card:#eeeeee;--white:#fff;--g300:#e6e6e6;--g400:#d6d6d6;--radius:10px;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:"Montserrat",sans-serif;background:var(--bg);color:var(--ink);padding:40px 16px 60px;}
+  .notes{max-width:620px;margin:0 auto 16px;font-size:12.5px;color:var(--ink-2);line-height:1.55;background:#fff;border-left:3px solid var(--orange);border-radius:6px;padding:12px 14px;}
+  .notes b{color:var(--ink);}
+  .card{max-width:620px;margin:0 auto;background:var(--card);border-radius:var(--radius);padding:40px;}
+  .section-header{display:flex;align-items:center;gap:.7rem;margin-bottom:1.25rem;}
+  .section-header .text{color:var(--orange);font-weight:700;font-size:1rem;text-transform:uppercase;letter-spacing:.08em;white-space:nowrap;}
+  .section-header .divider{flex:1;height:1px;background:var(--g400);}
+  .section-header .req{font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);}
+
+  /* phase = group label as a header that organises steps under it */
+  .phase{margin-bottom:22px;}
+  .phase-head{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+  .phase-head .tag{background:var(--teal);color:#fff;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:4px 10px;border-radius:999px;}
+  .phase-head .name{font-weight:700;font-size:.95rem;}
+  .phase-head .grip{margin-left:auto;color:var(--ink-3);cursor:grab;font-size:.85rem;}
+  .step{display:flex;gap:14px;padding:9px 8px;border-radius:8px;align-items:flex-start;}
+  .step:hover{background:var(--g300);}
+  .step .num{width:26px;height:26px;flex:none;margin-top:1px;background:var(--ink);color:#fff;font-weight:700;font-size:.82rem;border-radius:50%;display:grid;place-items:center;}
+  .step p{flex:1;font-size:.93rem;line-height:1.5;}
+  .step .x{color:var(--ink-3);cursor:pointer;opacity:0;font-size:.85rem;}.step:hover .x{opacity:1;}
+  .phase-add{display:inline-flex;align-items:center;gap:7px;margin:4px 0 0 40px;color:var(--ink-3);font-size:.82rem;cursor:text;}
+  .add-phase{display:inline-flex;align-items:center;gap:7px;background:none;border:1px dashed var(--orange);color:var(--orange);font-family:inherit;font-weight:600;font-size:.85rem;cursor:pointer;border-radius:8px;padding:10px 16px;}
+</style>
+</head>
+<body>
+  <div class="notes"><b>3 · Grouped phases.</b> Makes the existing label feature shine for method: steps live under phase headers like <b>Prep · Cook · Finish</b>, numbered continuously across the whole recipe (so removing a step still renumbers correctly). Great for involved recipes; simple ones just use a single default phase. Phases and steps both drag to reorder.</div>
+  <div class="card">
+    <div class="section-header"><span class="text">Instructions</span><span class="divider"></span><span class="req">Required</span></div>
+    <div class="phase">
+      <div class="phase-head"><span class="tag">Prep</span><span class="name">Sear the chicken</span><span class="grip">⋮⋮</span></div>
+      <div class="step"><span class="num">1</span><p>Season chicken with salt and pepper. Sear in olive oil over medium-high heat, 4–5 min per side until golden. Set aside.</p><span class="x">✕</span></div>
+      <div class="phase-add">＋ Add step to this phase…</div>
+    </div>
+    <div class="phase">
+      <div class="phase-head"><span class="tag">Cook</span><span class="name">Build the sauce</span><span class="grip">⋮⋮</span></div>
+      <div class="step"><span class="num">2</span><p>In the same pan, add garlic and cook until fragrant. Stir in cream, broth, parmesan, and Italian seasoning.</p><span class="x">✕</span></div>
+      <div class="step"><span class="num">3</span><p>Add sun-dried tomatoes and spinach; simmer until the spinach wilts and the sauce thickens.</p><span class="x">✕</span></div>
+      <div class="phase-add">＋ Add step to this phase…</div>
+    </div>
+    <div class="phase">
+      <div class="phase-head"><span class="tag">Finish</span><span class="name">Combine &amp; serve</span><span class="grip">⋮⋮</span></div>
+      <div class="step"><span class="num">4</span><p>Return chicken to the pan, spoon sauce over, and simmer 2–3 minutes. Serve hot.</p><span class="x">✕</span></div>
+      <div class="phase-add">＋ Add step to this phase…</div>
+    </div>
+    <button class="add-phase">＋ Add phase</button>
+  </div>
+</body></html>

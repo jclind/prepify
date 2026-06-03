@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ingredients · 4 · Two-column list</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--orange:#ff5722;--teal:#00adb5;--ink:#303841;--ink-2:#595f66;--ink-3:#979ba0;--bg:#d6d6d6;--card:#eeeeee;--white:#fff;--g300:#e6e6e6;--g400:#d6d6d6;--radius:10px;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:"Montserrat",sans-serif;background:var(--bg);color:var(--ink);padding:40px 16px 60px;}
+  .notes{max-width:620px;margin:0 auto 16px;font-size:12.5px;color:var(--ink-2);line-height:1.55;background:#fff;border-left:3px solid var(--orange);border-radius:6px;padding:12px 14px;}
+  .notes b{color:var(--ink);}
+  .card{max-width:620px;margin:0 auto;background:var(--card);border-radius:var(--radius);padding:40px;}
+  .section-header{display:flex;align-items:center;gap:.7rem;margin-bottom:1.25rem;}
+  .section-header .text{color:var(--orange);font-weight:700;font-size:1rem;text-transform:uppercase;letter-spacing:.08em;white-space:nowrap;}
+  .section-header .divider{flex:1;height:1px;background:var(--g400);}
+  .section-header .req{font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);}
+
+  .add-input{display:flex;align-items:center;gap:10px;border:1px solid var(--ink-3);border-radius:var(--radius);background:var(--white);padding:0 14px;height:48px;margin-bottom:6px;}
+  .add-input .plus{color:var(--orange);font-size:20px;font-weight:700;}
+  .add-input input{flex:1;border:none;outline:none;font-family:inherit;font-size:.95rem;font-weight:500;color:var(--ink);background:none;}
+  .hint{font-size:12px;color:var(--ink-3);margin:8px 2px 18px;}
+
+  /* printed-cookbook two-column grid, dense */
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:2px 28px;}
+  .row{display:flex;align-items:baseline;gap:10px;padding:9px 8px;border-radius:8px;border-bottom:1px solid var(--g400);}
+  .row:hover{background:var(--g300);}
+  .row .dot{width:7px;height:7px;border-radius:50%;background:var(--orange);flex:none;transform:translateY(-2px);}
+  .row .q{font-weight:700;min-width:64px;}
+  .row .name{flex:1;font-weight:500;font-size:.92rem;}.row .name .note{color:var(--ink-3);font-style:italic;}
+  .row .x{color:var(--ink-3);cursor:pointer;opacity:0;font-size:.85rem;}.row:hover .x{opacity:1;}
+  .footer{display:flex;gap:18px;margin-top:18px;padding-top:16px;border-top:1px solid var(--g400);}
+  .ghost{display:inline-flex;align-items:center;gap:7px;background:none;border:none;color:var(--ink-2);font-family:inherit;font-weight:600;font-size:.85rem;cursor:pointer;}
+  .ghost:hover{color:var(--orange);}.ghost.primary{color:var(--orange);}
+  .count{margin-left:auto;font-size:12px;color:var(--ink-3);font-weight:600;}
+  @media (max-width:520px){.grid{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+  <div class="notes"><b>4 · Two-column list.</b> Reads like a printed cookbook — compact rows in two columns so even a 15-item list stays short and scannable. Amount is emphasized; notes are muted. Best density for long ingredient lists. Hover reveals remove; "Reorder" mode swaps the bullet for a drag handle. (Falls back to one column on mobile.)</div>
+  <div class="card">
+    <div class="section-header"><span class="text">Ingredients</span><span class="divider"></span><span class="req">Required</span></div>
+    <div class="add-input"><span class="plus">＋</span><input placeholder="Add an ingredient — type and press Enter" /></div>
+    <div class="hint">We'll parse the amount and fetch nutrition automatically.</div>
+    <div class="grid">
+      <div class="row"><span class="dot"></span><span class="q">4</span><span class="name">boneless chicken breasts</span><span class="x">✕</span></div>
+      <div class="row"><span class="dot"></span><span class="q">½ cup</span><span class="name">sun-dried tomatoes</span><span class="x">✕</span></div>
+      <div class="row"><span class="dot"></span><span class="q">2 tbsp</span><span class="name">olive oil</span><span class="x">✕</span></div>
+      <div class="row"><span class="dot"></span><span class="q">2 cups</span><span class="name">fresh spinach</span><span class="x">✕</span></div>
+      <div class="row"><span class="dot"></span><span class="q">1 cup</span><span class="name">heavy cream</span><span class="x">✕</span></div>
+      <div class="row"><span class="dot"></span><span class="q">½ cup</span><span class="name">grated parmesan</span><span class="x">✕</span></div>
+      <div class="row"><span class="dot"></span><span class="q">½ cup</span><span class="name">chicken broth</span><span class="x">✕</span></div>
+      <div class="row"><span class="dot"></span><span class="q">3 cloves</span><span class="name">garlic, <span class="note">minced</span></span><span class="x">✕</span></div>
+    </div>
+    <div class="footer"><button class="ghost">↕ Reorder</button><button class="ghost primary">＋ Add group label</button><span class="count">8 ingredients</span></div>
+  </div>
+</body></html>
