@@ -1,5 +1,6 @@
 import React, { FC, useEffect, useMemo, useRef, useState } from 'react'
 import axios from 'axios'
+import { AiOutlineInfoCircle } from 'react-icons/ai'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import {
@@ -114,6 +115,10 @@ const AddRecipe: FC<AddRecipeProps> = ({ initialRecipe }) => {
   // updates (and a resume of the draft we're already editing) don't trigger a
   // redundant reload.
   const ownedDraftsRef = useRef<Set<string>>(new Set())
+  // True once a draft was resumed (loaded from the server) this session, used to
+  // remind the user to re-add the image — drafts don't persist it. Not set for
+  // drafts created in the current session (the user never had an image to lose).
+  const [resumedFromDraft, setResumedFromDraft] = useState(false)
 
   // Load the draft named in the URL whenever it points at one we haven't loaded
   // yet. Runs on mount for `?draftId=…`, and again when the resume banner
@@ -140,6 +145,7 @@ const AddRecipe: FC<AddRecipeProps> = ({ initialRecipe }) => {
           setInstructions(draft.instructions ?? [])
           setCuisine(draft.cuisine ?? '')
           setMealTypes(draft.mealTypes ?? [])
+          setResumedFromDraft(true)
         }
         setHydrated(true)
       })
@@ -403,6 +409,12 @@ const AddRecipe: FC<AddRecipeProps> = ({ initialRecipe }) => {
               <SectionHeader label='Select Image' required />
               {errors.image && (
                 <AddRecipeFormError error={errors.image} id='error-image' />
+              )}
+              {resumedFromDraft && !recipeImage && (
+                <p className='draft-image-hint'>
+                  <AiOutlineInfoCircle className='icon' />
+                  Drafts don't save your image — add it again before publishing.
+                </p>
               )}
               <ImagePicker
                 image={recipeImage}
