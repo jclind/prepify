@@ -3,6 +3,7 @@ const { ObjectId } = require('mongodb')
 const { getDB } = require('../db')
 const { verifyToken } = require('../middleware/auth')
 const { validateRecipeBounds } = require('../util/recipeLimits')
+const { RECIPE_CONTENT_FIELDS, pickFields } = require('../util/recipeFields')
 
 const router = Router()
 
@@ -16,30 +17,10 @@ const MAX_DRAFTS_PER_USER = 25
 // only the bounds (max lengths/counts) are validated, never required-field
 // presence. The recipe image is *not* part of a draft — it's re-picked when the
 // user resumes (publishing still requires an image). See src/api/drafts.ts.
-
-// The content fields a draft persists. Whitelisted on write so the client can't
-// stash arbitrary keys (or spoof userId / timestamps) on a draft document.
-const DRAFT_FIELDS = [
-  'title',
-  'prepTime',
-  'cookTime',
-  'servings',
-  'fridgeLife',
-  'freezerLife',
-  'description',
-  'ingredients',
-  'instructions',
-  'cuisine',
-  'mealTypes',
-]
-
-function pickDraftFields(body) {
-  const out = {}
-  for (const field of DRAFT_FIELDS) {
-    if (field in body) out[field] = body[field]
-  }
-  return out
-}
+//
+// Writes are whitelisted to RECIPE_CONTENT_FIELDS (shared with the recipe-edit
+// route via util/recipeFields) so the client can't stash arbitrary keys or
+// spoof userId / timestamps on a draft document.
 
 // POST /drafts — create a new draft for the current user. Returns the new _id
 // so the client can switch to update-on-autosave from then on.
@@ -65,7 +46,7 @@ router.post('/', verifyToken, async (req, res) => {
     const doc = {
       _id: new ObjectId(),
       userId: req.uid,
-      ...pickDraftFields(req.body),
+      ...pickFields(req.body, RECIPE_CONTENT_FIELDS),
       createdAt: now,
       updatedAt: now,
     }
@@ -121,11 +102,10 @@ router.put('/:id', verifyToken, async (req, res) => {
     if (!ObjectId.isValid(req.params.id)) {
       return res.status(404).json({ error: 'Draft not found' })
     }
-    const boundsError = validateRecipeBounds(req.body)
-    if (boundsError) {
-      return res.status(400).json({ error: boundsError })
-    }
     const _id = new ObjectId(req.params.id)
+    // Check existence and ownership before validating the payload, so a caller
+    // can't probe bounds-validity for a draft they don't own or that doesn't
+    // exist (matches the editRecipe route's ordering).
     const draft = await db.collection('recipeDrafts').findOne({ _id })
     if (!draft) {
       return res.status(404).json({ error: 'Draft not found' })
@@ -133,7 +113,14 @@ router.put('/:id', verifyToken, async (req, res) => {
     if (draft.userId !== req.uid) {
       return res.status(403).json({ error: 'Forbidden' })
     }
-    const update = { ...pickDraftFields(req.body), updatedAt: Date.now().toString() }
+    const boundsError = validateRecipeBounds(req.body)
+    if (boundsError) {
+      return res.status(400).json({ error: boundsError })
+    }
+    const update = {
+      ...pickFields(req.body, RECIPE_CONTENT_FIELDS),
+      updatedAt: Date.now().toString(),
+    }
     const updated = await db
       .collection('recipeDrafts')
       .findOneAndUpdate({ _id }, { $set: update }, { returnDocument: 'after' })

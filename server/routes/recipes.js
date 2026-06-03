@@ -4,6 +4,7 @@ const { getDB, getClient } = require('../db')
 const { verifyToken } = require('../middleware/auth')
 const { recipeIdQuery } = require('../util/recipeIdQuery')
 const { validateRequiredRecipeFields, validateRecipeBounds } = require('../util/recipeLimits')
+const { EDITABLE_RECIPE_FIELDS, pickFields } = require('../util/recipeFields')
 const { deleteRecipeImage } = require('../util/firebaseStorage')
 
 const router = Router()
@@ -162,28 +163,9 @@ router.post('/addRecipe', verifyToken, async (req, res) => {
 })
 
 // PUT /editRecipe — owner-only edit. Social/derived counters and immutable
-// metadata are never writable here (see EDITABLE_FIELDS), so an edit can never
-// reset a recipe's ratings, saves, or made-count. editedAt is stamped so the UI
-// can surface that the recipe changed after people saved it.
-const EDITABLE_FIELDS = [
-  'title',
-  'prepTime',
-  'cookTime',
-  'servings',
-  'fridgeLife',
-  'freezerLife',
-  'description',
-  'ingredients',
-  'instructions',
-  'recipeImage',
-  'cuisine',
-  'mealTypes',
-  'nutritionData',
-  'nutritionLabels',
-  'servingPrice',
-  'totalTime',
-]
-
+// metadata are never writable here (only EDITABLE_RECIPE_FIELDS are copied), so
+// an edit can never reset a recipe's ratings, saves, or made-count. editedAt is
+// stamped so the UI can surface that the recipe changed after people saved it.
 router.put('/editRecipe', verifyToken, async (req, res) => {
   try {
     const db = getDB()
@@ -213,11 +195,10 @@ router.put('/editRecipe', verifyToken, async (req, res) => {
     // Whitelist: copy only editable fields from the client payload. Anything
     // else the client sends (rating, numTimesSaved, views, userId, _id, …) is
     // ignored.
-    const update = {}
-    for (const field of EDITABLE_FIELDS) {
-      if (field in body) update[field] = body[field]
+    const update = {
+      ...pickFields(body, EDITABLE_RECIPE_FIELDS),
+      editedAt: Date.now().toString(),
     }
-    update.editedAt = Date.now().toString()
 
     const updated = await db.collection('recipes').findOneAndUpdate(
       recipeIdQuery(recipeId),

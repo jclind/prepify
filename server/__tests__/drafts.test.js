@@ -214,6 +214,23 @@ describe('PUT /api/drafts/:id', () => {
       .send({ title: 'a'.repeat(51) })
     expect(res.status).toBe(400)
   })
+
+  it("checks ownership before bounds (403, not 400, for another user's draft)", async () => {
+    const draft = await seedDraft({ userId: 'other-uid' })
+    const res = await request(app)
+      .put(`/api/drafts/${draft._id}`)
+      .set(AUTH_HEADER)
+      .send({ title: 'a'.repeat(51) })
+    expect(res.status).toBe(403)
+  })
+
+  it('checks existence before bounds (404, not 400, for a missing draft)', async () => {
+    const res = await request(app)
+      .put(`/api/drafts/${new ObjectId()}`)
+      .set(AUTH_HEADER)
+      .send({ title: 'a'.repeat(51) })
+    expect(res.status).toBe(404)
+  })
 })
 
 describe('DELETE /api/drafts/:id', () => {
