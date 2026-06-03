@@ -54,6 +54,39 @@ export type RecipeEditFormType = Omit<RecipeFormType, 'recipeImage'> & {
   recipeImage?: File
 }
 
+// An in-progress recipe autosaved during the create flow. Every content field
+// is optional — a draft is intentionally incomplete — and the image is *not*
+// persisted (it's re-picked when the user resumes; publishing still requires
+// one). `RecipeDraftContent` is what the client sends on autosave;
+// `RecipeDraftType` is the stored document the server returns.
+//
+// Clearable numeric fields are `number | null` (not just optional): autosave
+// sends an explicit `null` when the user empties them so the clear is
+// persisted. Omitting the key (sending `undefined`) would be dropped by
+// JSON.stringify, and the server's field-present `$set` whitelist would then
+// leave the stale value in place — a cleared field would silently resurrect on
+// resume.
+export type RecipeDraftContent = {
+  title?: string
+  description?: string
+  servings?: number | null
+  prepTime?: number | null
+  cookTime?: number | null
+  fridgeLife?: number | null
+  freezerLife?: number | null
+  ingredients?: IngredientsType[]
+  instructions?: InstructionsType[]
+  cuisine?: string
+  mealTypes?: string[]
+}
+
+export type RecipeDraftType = RecipeDraftContent & {
+  _id: string
+  userId: string
+  createdAt: string
+  updatedAt: string
+}
+
 export type LabelType = { label: string; id: string }
 export type IngredientsType =
   | {

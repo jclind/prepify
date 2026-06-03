@@ -4,6 +4,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { HelmetProvider } from 'react-helmet-async'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { MemoryRouter } from 'react-router-dom'
 import AddRecipe from 'src/pages/AddRecipe/AddRecipe'
 import RecipeAPI from 'src/api/recipes'
 
@@ -131,7 +132,9 @@ const renderAddRecipe = () => {
   return render(
     <QueryClientProvider client={queryClient}>
       <HelmetProvider>
-        <AddRecipe />
+        <MemoryRouter>
+          <AddRecipe />
+        </MemoryRouter>
       </HelmetProvider>
     </QueryClientProvider>
   )
