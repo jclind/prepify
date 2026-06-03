@@ -36,6 +36,15 @@ async function ensureIndexes() {
       err.message
     )
   }
+
+  // Backs GET /api/drafts, which lists a user's drafts newest-updated first
+  // (find({ userId }).sort({ updatedAt: -1 })). Without it that query is a full
+  // collection scan plus an in-memory sort on every Drafts-tab load.
+  try {
+    await db.collection('recipeDrafts').createIndex({ userId: 1, updatedAt: -1 })
+  } catch (err) {
+    console.error('Failed to create index on recipeDrafts.userId:', err.message)
+  }
 }
 
 async function closeDB() {
