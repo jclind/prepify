@@ -200,6 +200,21 @@ describe('AddRecipe draft autosave', () => {
     )
     // Resuming alone must not create a brand-new draft.
     expect(mockedDraftAPI.createDraft).not.toHaveBeenCalled()
+    // Drafts don't persist the image, so resuming prompts the user to re-add it.
+    expect(
+      screen.getByText(/Drafts don't save your image/i)
+    ).toBeInTheDocument()
+  })
+
+  it('does not show the re-add-image hint on a fresh create form', async () => {
+    const user = userEvent.setup()
+    renderAt(<AddRecipe />)
+    await user.type(
+      screen.getByPlaceholderText('Add a title to your recipe.'),
+      'Brand New'
+    )
+    // The user never had an image to lose on a fresh draft.
+    expect(screen.queryByText(/Drafts don't save your image/i)).toBeNull()
   })
 
   it('on a transient load error keeps the draftId and does NOT start a duplicate (finding #3)', async () => {
