@@ -5,6 +5,7 @@ import Ratings from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/Ratin
 import ReviewsContainer from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/ReviewsContainer'
 import RecipeAPI from 'src/api/recipes'
 import AuthAPI from 'src/api/auth'
+import { formatRating } from 'src/util/formatRating'
 
 import './RatingsAndReviews.scss'
 
@@ -14,6 +15,7 @@ type RatingsAndReviewsProps = {
   ratingCount: number
   currUserReview: ReviewType | null
   setCurrUserReview: (val: ReviewType | null) => void
+  isOwner?: boolean
 }
 
 const RatingsAndReviews: FC<RatingsAndReviewsProps> = ({
@@ -22,6 +24,7 @@ const RatingsAndReviews: FC<RatingsAndReviewsProps> = ({
   ratingCount,
   currUserReview,
   setCurrUserReview,
+  isOwner = false,
 }) => {
   const [rating, setRating] = useState(0)
 
@@ -44,22 +47,47 @@ const RatingsAndReviews: FC<RatingsAndReviewsProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [checkData])
 
+  const roundedStars = Math.round(Number(ratingVal) || 0)
+
   return (
     <div className='recipe-ratings' id='recipeReviews'>
-      <h2 className='title'>Ratings & Reviews</h2>
+      <div className='rr-header'>
+        <h2 className='title'>Ratings &amp; Reviews</h2>
+        {ratingCount > 0 && (
+          <div className='rr-avg'>
+            <div className='big'>{formatRating(ratingVal, ratingCount)}</div>
+            <div className='rr-avg-meta'>
+              <div className='stars' aria-hidden='true'>
+                {'★'.repeat(roundedStars)}
+                {'☆'.repeat(5 - roundedStars)}
+              </div>
+              <div className='count'>
+                {ratingCount} {ratingCount === 1 ? 'rating' : 'ratings'}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
       <div className='ratings-reviews-container'>
-        <Ratings
-          rating={rating}
-          setRating={setRating}
-          ratingCount={ratingCount}
-          ratingVal={ratingVal}
-          recipeId={recipeId}
-        />
+        {isOwner ? (
+          <div className='owner-review-note'>
+            This is your recipe — you can’t leave a rating or review.
+          </div>
+        ) : (
+          <Ratings
+            rating={rating}
+            setRating={setRating}
+            ratingCount={ratingCount}
+            ratingVal={ratingVal}
+            recipeId={recipeId}
+          />
+        )}
         <ReviewsContainer
           currUserReview={currUserReview}
           setCurrUserReview={setCurrUserReview}
           rating={rating}
           recipeId={recipeId}
+          isOwner={isOwner}
         />
       </div>
     </div>

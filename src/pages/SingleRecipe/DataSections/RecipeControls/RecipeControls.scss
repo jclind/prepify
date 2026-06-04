@@ -7,17 +7,18 @@
   justify-content: space-between;
   gap: 1rem;
   margin-bottom: 2rem;
-  padding: 0.7rem 1.25rem;
+  padding: 0.9rem 1.4rem;
   width: 100%;
-  background: s.$gray-50;
-  border: 1px solid s.$gray-400;
-  border-radius: s.$border-radius;
+  background: linear-gradient(135deg, rgba(s.$secondary, 0.13), rgba(s.$primary, 0.09));
+  border: 1.5px solid rgba(s.$primary, 0.22);
+  border-radius: 16px;
+  box-shadow: rgba(48, 56, 65, 0.06) 0px 8px 22px;
   .who {
     display: flex;
     align-items: center;
     gap: 0.6rem;
-    font-size: 0.9rem;
-    font-weight: 600;
+    font-size: 0.92rem;
+    font-weight: 700;
     color: s.$secondary-text;
     .icon {
       height: 20px;
@@ -33,18 +34,37 @@
     display: flex;
     gap: 0.6rem;
   }
+  .owner-stats {
+    flex-basis: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.5rem;
+    padding-top: 0.85rem;
+    margin-top: 0.15rem;
+    border-top: 1px solid rgba(s.$primary, 0.15);
+    .stat {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: s.$secondary-text;
+      .icon { height: 17px; width: 17px; color: s.$secondary; }
+      b { color: s.$primary-text; font-weight: 800; }
+    }
+  }
   button {
     display: flex;
     align-items: center;
     gap: 0.4rem;
-    border: 1px solid s.$gray-500;
-    padding: 0.4rem 0.8rem;
-    border-radius: s.$border-radius;
+    border: 1.5px solid s.$gray-300;
+    padding: 0.5rem 0.95rem;
+    border-radius: 10px;
     cursor: pointer;
     font-size: 0.9rem;
-    font-weight: 600;
+    font-weight: 700;
     color: s.$primary-text;
-    background: transparent;
+    background: s.$white;
     .icon {
       height: 17px;
       width: 17px;

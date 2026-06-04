@@ -47,19 +47,6 @@ vi.mock('src/Components/StarRating/StarRating', () => ({
   default: ({ rating }: any) => <div data-testid='star-rating'>{rating}</div>,
 }))
 
-// RecipeHeaderContent renders title, image, and action buttons
-vi.mock('src/pages/SingleRecipe/RecipeHeaderContent/RecipeHeaderContent', () => ({
-  default: ({ currRecipe, loading }: any) => (
-    <div data-testid='recipe-header'>
-      {loading ? (
-        <span data-testid='header-loading'>Loading header...</span>
-      ) : (
-        <h1>{currRecipe?.title}</h1>
-      )}
-    </div>
-  ),
-}))
-
 const mockGetRecipe = RecipeAPI.getRecipe as ReturnType<typeof vi.fn>
 
 const baseRecipe = {
@@ -210,20 +197,35 @@ describe('SingleRecipe page', () => {
     })
     renderSingleRecipe()
     await screen.findByText('Chicken Tacos')
-    expect(
-      screen.getByRole('button', { name: /nutrition data/i })
-    ).toBeInTheDocument()
-    // calories per serving = round(800 / 4 servings) = 200
-    expect(screen.getByText('200')).toBeInTheDocument()
+    // The inline facts table renders its rows.
+    expect(screen.getByText('Total Fat')).toBeInTheDocument()
+    // calories per serving = round(800 / 4 servings) = 200; shown in both the
+    // macro summary and the facts table.
+    expect(screen.getAllByText('200').length).toBeGreaterThan(0)
   })
 
-  it('omits the nutrition facts table when nutritionData is null', async () => {
+  it('shows a calories-only nutrition view when only calories are present', async () => {
+    // Stored recipes can have a `nutritionData` object with just a calorie
+    // count (no `totalNutrients`); it renders the calories-only view, not an
+    // empty facts table, and must not throw.
+    mockGetRecipe.mockResolvedValue({
+      ...baseRecipe,
+      nutritionData: { calories: 800 },
+    })
+    renderSingleRecipe()
+    await screen.findByText('Chicken Tacos')
+    expect(screen.getByText('Nutrition')).toBeInTheDocument()
+    // 800 / 4 servings = 200 calories per serving
+    expect(screen.getByText('200')).toBeInTheDocument()
+    // no detailed facts table without nutrient maps
+    expect(screen.queryByText('Total Fat')).toBeNull()
+  })
+
+  it('omits the nutrition section when nutritionData is null', async () => {
     mockGetRecipe.mockResolvedValue(baseRecipe)
     renderSingleRecipe()
     await screen.findByText('Chicken Tacos')
-    expect(
-      screen.queryByRole('button', { name: /nutrition data/i })
-    ).toBeNull()
+    expect(screen.queryByText('Total Fat')).toBeNull()
   })
 
   it('shows error message and does not crash when getRecipe throws', async () => {

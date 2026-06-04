@@ -4,7 +4,9 @@ import {
   AiOutlineEdit,
   AiOutlineDelete,
   AiOutlineUser,
+  AiOutlineEye,
 } from 'react-icons/ai'
+import { BsBookmark, BsCheck2Circle } from 'react-icons/bs'
 import { TailSpin } from 'react-loader-spinner'
 import Modal from 'react-modal'
 import { useNavigate } from 'react-router-dom'
@@ -19,7 +21,13 @@ type RecipeControlsType = {
   recipeId: string
   recipeUserId?: string
   recipeTitle: string
+  views?: number
+  numTimesSaved?: number
+  numTimesMade?: number
 }
+
+const formatCount = (n: number | null | undefined): string =>
+  (n ?? 0).toLocaleString()
 
 const customStyles = {
   content: {
@@ -45,6 +53,9 @@ const RecipeControls: FC<RecipeControlsType> = ({
   recipeId,
   recipeUserId,
   recipeTitle,
+  views,
+  numTimesSaved,
+  numTimesMade,
 }) => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const closeDeleteModal = () => {
@@ -113,6 +124,22 @@ const RecipeControls: FC<RecipeControlsType> = ({
           <AiOutlineDelete className='icon' aria-hidden='true' />
           Delete
         </button>
+      </div>
+
+      <div className='owner-stats' aria-label='Recipe statistics'>
+        <span className='stat'>
+          <AiOutlineEye className='icon' aria-hidden='true' />
+          <b>{formatCount(views)}</b> {views === 1 ? 'view' : 'views'}
+        </span>
+        <span className='stat'>
+          <BsBookmark className='icon' aria-hidden='true' />
+          <b>{formatCount(numTimesSaved)}</b>{' '}
+          {numTimesSaved === 1 ? 'save' : 'saves'}
+        </span>
+        <span className='stat'>
+          <BsCheck2Circle className='icon' aria-hidden='true' />
+          <b>{formatCount(numTimesMade)}</b> made
+        </span>
       </div>
 
       <Modal

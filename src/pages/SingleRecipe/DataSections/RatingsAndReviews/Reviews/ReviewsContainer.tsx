@@ -15,6 +15,7 @@ type ReviewsContainerProps = {
   setCurrUserReview: (val: ReviewType | null) => void
   rating: number
   recipeId: string
+  isOwner?: boolean
 }
 
 const ReviewsContainer: FC<ReviewsContainerProps> = ({
@@ -22,6 +23,7 @@ const ReviewsContainer: FC<ReviewsContainerProps> = ({
   setCurrUserReview,
   rating,
   recipeId,
+  isOwner = false,
 }) => {
   const [reviewList, setReviewList] = useState<ReviewType[]>([])
   const [reviewListPage, setReviewListPage] = useState(0)
@@ -62,25 +64,27 @@ const ReviewsContainer: FC<ReviewsContainerProps> = ({
 
   return (
     <div className='reviews'>
-      <div className='leave-review-input-container'>
-        {!currUserReview ? (
-          <AddReview
-            rating={rating}
-            recipeId={recipeId}
-            uid={uid}
-            setCurrUserReview={setCurrUserReview}
-          />
-        ) : (
-          <div className='curr-user-review'>
-            <h4 className='heading'>Your Review:</h4>
-            <RecipeReview
-              review={currUserReview}
-              setCurrUserReview={setCurrUserReview}
+      {!isOwner && (
+        <div className='leave-review-input-container'>
+          {!currUserReview ? (
+            <AddReview
+              rating={rating}
               recipeId={recipeId}
+              uid={uid}
+              setCurrUserReview={setCurrUserReview}
             />
-          </div>
-        )}
-      </div>
+          ) : (
+            <div className='curr-user-review'>
+              <h4 className='heading'>Your Review:</h4>
+              <RecipeReview
+                review={currUserReview}
+                setCurrUserReview={setCurrUserReview}
+                recipeId={recipeId}
+              />
+            </div>
+          )}
+        </div>
+      )}
       <div className='review-filters'>
         <ReviewFilters
           reviewListSort={reviewListSort}

@@ -6,6 +6,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import ReviewsContainer from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/ReviewsContainer'
 import RecipeAPI from 'src/api/recipes'
+import AuthAPI from 'src/api/auth'
 
 // ReviewFilters calls setReviewListSort on mount — that's the trigger for the first
 // data fetch inside ReviewsContainer. Mock it to call through immediately so tests
@@ -53,6 +54,7 @@ const mockToast = vi.hoisted(() =>
 vi.mock('react-hot-toast', () => ({ default: mockToast }))
 
 const mockGetReviews = RecipeAPI.getReviews as ReturnType<typeof vi.fn>
+const mockGetUID = AuthAPI.getUID as ReturnType<typeof vi.fn>
 
 const createTestQueryClient = () =>
   new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -91,6 +93,7 @@ describe('ReviewsContainer', () => {
   beforeEach(() => {
     mockGetReviews.mockReset()
     mockGetReviews.mockResolvedValue({ reviews: [], totalCount: 0 })
+    mockGetUID.mockReturnValue(null)
   })
 
   it('renders without crashing', () => {
@@ -133,9 +136,15 @@ describe('ReviewsContainer', () => {
     await screen.findByText('No Reviews')
   })
 
-  it('shows AddReview when currUserReview is null', () => {
-    renderContainer({ currUserReview: null })
-    expect(screen.getByText('Add Review')).toBeInTheDocument()
+  it('shows the write-review box once a signed-in user has rated', () => {
+    mockGetUID.mockReturnValue('user-1')
+    renderContainer({ currUserReview: null, rating: 4 })
+    expect(screen.getByRole('textbox')).toBeInTheDocument()
+  })
+
+  it('does not show the write-review box before the user has rated', () => {
+    renderContainer({ currUserReview: null, rating: 0 })
+    expect(screen.queryByRole('textbox')).toBeNull()
   })
 
   it('shows the user\'s existing review and hides AddReview when currUserReview is set', async () => {

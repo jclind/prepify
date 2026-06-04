@@ -76,10 +76,10 @@ const RecipeReview: FC<RecipeReviewProps> = ({
   const renderReviewHeader = () => (
     <div className='head'>
       <div className='name-content'>
-        <div className='name'>{username}</div>
+        <div className='name'>{username ? `@${username}` : ''}</div>
         <div className='rating'>
           <StarRatingErrorBoundary>
-            <StarRating rating={rating} size={15} spacing={1} />
+            <StarRating rating={rating} size={14} spacing={1} />
           </StarRatingErrorBoundary>
         </div>
       </div>

@@ -3,7 +3,6 @@ import AuthAPI from 'src/api/auth'
 import { useQuery } from '@tanstack/react-query'
 import ConfirmDeleteReviewModal from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/ConfirmDeleteReviewModal'
 import EditingReviewOptions from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/EditingReviewOptions'
-import ReviewInteractionOptions from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/ReviewInteractionOptions'
 
 type ReviewOptionsProps = {
   handleEditReview: () => void
@@ -34,7 +33,6 @@ const ReviewOptions: FC<ReviewOptionsProps> = ({
 
   return (
     <div className='review-options'>
-      <ReviewInteractionOptions />
       {currUsername === reviewAuthorUsername ? (
         <>
           <ConfirmDeleteReviewModal

@@ -1,418 +1,620 @@
 @use '../../helpers.scss' as s;
 
+// ── Single recipe — "Bar 2 / 2-col news" design ─────────────────────────────
+// Self-contained: the presentational sections (hero, action bar, ingredients,
+// instructions, tags) are rendered inline with this markup, so nothing competes
+// with these styles. Reused functional subsystems (Save/Rate/Print, Made-It,
+// owner controls, nutrition facts, ratings & reviews) are styled within their
+// own containers below.
+
+$soft-border: s.$gray-200;
+$soft-radius: 16px;
+$soft-shadow: rgba(48, 56, 65, 0.05) 0px 6px 20px;
+$danger: #d23f31;
+
 .single-recipe-page {
-  max-width: s.$recipe-page-max-width;
+  max-width: 1080px;
+  color: s.$primary-text;
 
-  h3.title {
-    font-weight: 600;
-  }
-
-  .loading-container {
+  // ── controls / owner banner ─────────────────────────────────────────────────
+  .sr-controls {
     display: flex;
-    justify-content: center;
     align-items: center;
-    width: 100%;
+    margin-bottom: 1.25rem;
+    .sr-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-weight: 700;
+      font-size: 0.9rem;
+      color: s.$secondary-text;
+      text-decoration: none;
+      svg { font-size: 1.2rem; }
+      &:hover { color: s.$primary; }
+      &:focus { @include s.outline(); }
+    }
   }
-  .recipe-container {
+  > .recipe-controls-container { margin-bottom: 1.5rem; }
+
+  // ── hero (bar header, author pinned to bottom) ──────────────────────────────
+  .hero {
+    display: grid;
+    grid-template-columns: 400px 1fr;
+    gap: 3.25rem;
+    align-items: stretch;
+    @media screen and (max-width: 820px) {
+      grid-template-columns: 1fr;
+      gap: 1.75rem;
+    }
+  }
+  .hero-img {
+    img, .img-skeleton {
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      object-fit: cover;
+      border-radius: $soft-radius;
+      box-shadow: rgba(48, 56, 65, 0.1) 0px 12px 28px;
+      display: block;
+    }
+    .img-skeleton { height: 100%; min-height: 280px; }
+  }
+  .hero-text {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    width: 100%;
-    .header-content {
+    gap: 1.35rem;
+    padding: 0.5rem 0;
+    h1 {
+      font-size: 2.3rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.18;
+      text-transform: capitalize;
+      margin: 0;
+    }
+    .eyebrow {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: s.$secondary;
+    }
+    .description { color: s.$secondary-text; line-height: 1.7; font-size: 1rem; }
+    .author-row {
+      margin-top: auto;
       display: flex;
-      width: 100%;
-      justify-content: center;
-      padding-bottom: 2rem;
-      margin-bottom: 2rem;
-      border-bottom: 1px solid s.$gray-400;
-      gap: 3rem;
-
-      .actions {
-        display: flex;
-        gap: 1rem;
-
-        .action.skeleton {
-          height: 35px;
-          min-width: 100px;
-        }
-        .save-recipe .save-recipe-btn,
-        .add-rating .add-rating-btn,
-        .print-recipe .print-recipe-btn {
-          position: relative;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          gap: 0.5rem;
-          font-size: 1.125rem;
-          border: 1px solid s.$gray-400;
-          background: s.$gray-300;
-          padding: 0.35rem 0.75rem;
-          border-radius: s.$border-radius;
-          height: 35px !important;
-
-          &:focus {
-            @include s.outline();
-          }
-
-          .loading {
-            z-index: 10;
-            position: absolute;
-            top: 0;
-            left: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100%;
-            width: 100%;
-            position: absolute;
-            overflow: hidden;
-            background: rgba(255, 255, 255, 0.5);
-            .spinner {
-              height: 100%;
-              width: 100%;
-            }
-          }
-
-          .disabled-overlay {
-            z-index: 10;
-            position: absolute;
-            top: 0;
-            left: 0;
-            height: 100%;
-            width: 100%;
-            border-radius: s.$border-radius;
-            background: rgba(255, 255, 255, 0.5);
-
-            &:hover {
-              border: 0px !important;
-              cursor: default !important;
-            }
-          }
-
-          &:hover {
-            border: 1px solid s.$secondary-text;
-          }
-
-          .icon {
-            height: 20px;
-            width: 20px;
-          }
-        }
-      }
-
-      .save-recipe .save-recipe-btn.disabled,
-      .add-rating .add-rating-btn.disabled,
-      .print-recipe .print-recipe-btn.disabled {
-        &:hover {
-          border: 1px solid s.$gray-400 !important;
-        }
-      }
-
-      .recipe-image-container {
-        display: flex;
-        // justify-content: flex-start;
-        width: 400px;
-        height: 400px;
-        .img {
-          width: 400px;
-          height: 400px;
-          overflow: hidden;
-
-          object-fit: cover;
-        }
-        .img.skeleton {
-          width: 400px;
-          height: 400px;
-        }
-      }
-      .description-content {
-        display: flex;
-        flex-direction: column;
-        align-items: space-between;
-        gap: 1rem;
-        min-height: 400px;
-        width: 100%;
-        max-width: 670px;
-        // background: red;
-        .title {
-          text-transform: capitalize;
-          padding: 0;
-          margin: 0;
-        }
-        .recipe-price {
-          font-size: 0.75rem;
-          font-weight: 700;
-          color: s.$primary;
-          text-transform: uppercase;
-          letter-spacing: 1.2px;
-        }
-        .description {
-          font-size: 1rem;
-          font-weight: 500;
-          max-width: 600px;
-          flex: 1;
-          // background: red;
-        }
-        .recipe-data {
-          display: flex;
-          flex: 1;
-          width: 90%;
-          max-width: 500px;
-          justify-content: space-between;
-          align-items: center;
-          // margin-top: 2rem;
-
-          .data-element {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 0.5rem;
-
-            .skeleton {
-              min-width: 95px;
-              min-height: 85px;
-            }
-            .icon {
-              height: 30px;
-              width: 30px;
-            }
-            h2 {
-              font-size: 1rem;
-              font-weight: 700;
-            }
-            .data {
-              font-size: 1rem;
-              color: s.$secondary-text;
-            }
-          }
-        }
-        .edited-marker {
-          font-size: 0.85rem;
-          font-style: italic;
-          color: s.$secondary-text;
-        }
-      }
-
-      @media screen and (max-width: 1100px) {
-        gap: 2rem;
-        .recipe-image-container {
-          width: 350px;
-          height: 350px;
-          .img {
-            width: 350px;
-            height: 350px;
-          }
-          .img.skeleton {
-            width: 400px;
-            height: 400px;
-          }
-        }
-      }
-      @media screen and (max-width: 1000px) {
-        .actions {
-          gap: 1rem;
-          button {
-            font-size: 1rem !important;
-          }
-        }
-      }
-      @media screen and (max-width: 956px) {
-        flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      color: s.$tertiary-text;
+      strong { color: s.$primary-text; font-weight: 700; }
+      .avatar {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: s.$secondary;
+        color: s.$white;
+        display: inline-flex;
         align-items: center;
-        justify-self: flex-start;
-
-        .mobile-title-content {
-          display: flex;
-          flex-direction: column;
-          align-items: space-between;
-          width: 100%;
-          max-width: 670px;
-          text-align: center;
-          .title {
-            padding-bottom: 1rem;
-            text-transform: capitalize;
-          }
-          .recipe-price {
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: s.$primary;
-            text-transform: uppercase;
-            padding-top: 0.5rem;
-            letter-spacing: 1.2px;
-          }
-          .description {
-            max-width: 700px;
-            width: 90%;
-            margin: 0 auto;
-          }
-        }
-        .description-content {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 2rem;
-          min-height: 0px;
-          width: 100%;
-          max-width: 670px;
-        }
-        .actions {
-          gap: 1rem;
-          button {
-            font-size: 1.125rem !important;
-          }
-        }
-      }
-      @media screen and (max-width: 600px) {
-        .description-content {
-          width: 90%;
-        }
-        .actions {
-          justify-content: center;
-          button {
-            font-size: 1rem !important;
-          }
-          .action.skeleton {
-            height: 35px;
-            min-width: 80px;
-          }
-        }
-      }
-      @media screen and (max-width: 450px) {
-        .description-content {
-          width: 100%;
-        }
-        .recipe-image-container {
-          width: 300px;
-          height: 300px;
-          .img {
-            width: 300px;
-            height: 300px;
-          }
-          .img.skeleton {
-            width: 300px;
-            height: 300px;
-          }
-        }
-      }
-      @media screen and (max-width: 375px) {
-        .description-content {
-          width: 100%;
-          .recipe-data {
-            .data-element {
-              h3,
-              .data {
-                font-size: 0.875rem;
-              }
-              .skeleton {
-                min-width: 82px;
-                min-height: 82px;
-              }
-            }
-          }
-        }
-        .recipe-image-container {
-          width: 275px;
-          height: 275px;
-          .img {
-            width: 275px;
-            height: 275px;
-          }
-          .img.skeleton {
-            width: 275px;
-            height: 275px;
-          }
-        }
-        .actions {
-          gap: 0.5rem;
-          button {
-            font-size: 0.875rem !important;
-          }
-        }
-      }
-    }
-    .body-content {
-      width: 100%;
-      max-width: s.$recipe-body-max-width;
-
-      .tags-container {
-        margin: 0 auto;
-        margin-top: 4rem;
-        max-width: 700px;
-        width: 90%;
-        .tag-label {
-          font-size: 1rem;
-          color: s.$primary;
-          font-weight: 700;
-        }
-        .tags {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 0.5rem;
-          margin-top: 1.5rem;
-          .tag {
-            padding-right: 0.5rem;
-            cursor: pointer;
-            text-decoration: none;
-
-            &:focus {
-              @include s.outline();
-            }
-          }
-          .tag.skeleton {
-            height: 24px;
-            width: 70px;
-            border: none;
-          }
-        }
-        @media screen and (max-width: 500px) {
-          .tags {
-            .tag {
-              font-size: 0.8rem;
-            }
-          }
-        }
-      }
-    }
-    .made-this-recipe {
-      margin: 0 auto;
-      margin-top: 4rem;
-      max-width: 700px;
-      width: 90%;
-      .content {
-        display: flex;
-        flex-direction: column;
-        width: fit-content;
-        align-items: center;
-        gap: 0.25rem;
-      }
-      .made-recipe {
-        display: flex;
         justify-content: center;
-        align-items: center;
-        border: 1px solid s.$primary-text;
-        border-radius: s.$border-radius;
-        color: s.$primary-text;
-        padding: 0.5rem 1rem;
-        font-size: 1rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.1s linear;
-        width: 105px;
-        height: 40px;
-
-        &:hover {
-          background: s.$primary-text;
-          color: s.$primary-background;
-        }
-        &:focus {
-          @include s.outline();
-        }
-      }
-      span {
-        font-size: 0.75rem;
-        font-weight: 700;
-        color: s.$secondary-text;
+        font-size: 0.85rem;
+        font-weight: 800;
+        flex-shrink: 0;
       }
     }
+  }
+
+  // ── action bar (meta + actions) ─────────────────────────────────────────────
+  .action-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.25rem 2rem;
+    flex-wrap: wrap;
+    margin-top: 1.5rem;
+    padding: 1rem 1.5rem;
+    background: s.$white;
+    border: 1.5px solid $soft-border;
+    border-radius: $soft-radius;
+    box-shadow: $soft-shadow;
+  }
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    row-gap: 0.5rem;
+    .m-item {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 0.45rem;
+      padding: 0 1.4rem;
+      &:first-child { padding-left: 0; }
+      & + .m-item { border-left: 1px solid s.$gray-300; }
+    }
+    .m-ic { align-self: center; color: s.$primary; font-size: 1.1rem; }
+    .m-v { font-weight: 800; font-size: 1.1rem; }
+    .m-l {
+      font-size: 0.72rem;
+      color: s.$tertiary-text;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+  }
+  .sr-actions {
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    .save-recipe, .add-rating, .print-recipe { display: inline-flex; }
+    .save-recipe-btn, .add-rating-btn, .print-recipe-btn {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-family: inherit;
+      font-weight: 700;
+      font-size: 0.95rem;
+      padding: 0.7rem 1.25rem;
+      border-radius: 10px;
+      cursor: pointer;
+      height: auto !important;
+      border: 1.5px solid s.$gray-300;
+      background: s.$white;
+      color: s.$primary-text;
+      transition: all 0.12s ease;
+      .icon { height: 18px; width: 18px; }
+      &:hover { border-color: s.$primary-text; }
+      &:focus { @include s.outline(); }
+    }
+    .save-recipe-btn {
+      background: s.$primary;
+      border-color: s.$primary;
+      color: s.$white;
+      &:hover { background: #e74e1d; border-color: #e74e1d; }
+      &.saved {
+        background: s.$secondary;
+        border-color: s.$secondary;
+        &:hover { background: #009aa1; border-color: #009aa1; }
+      }
+    }
+    .print-recipe-btn .loading {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.6);
+      border-radius: 10px;
+    }
+  }
+
+  // ── body / cards ────────────────────────────────────────────────────────────
+  .body {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    margin-top: 1.5rem;
+  }
+  .card {
+    background: s.$white;
+    border: 1.5px solid $soft-border;
+    border-radius: $soft-radius;
+    box-shadow: $soft-shadow;
+    padding: 1.5rem 1.75rem;
+    @media screen and (max-width: 540px) { padding: 1.25rem; }
+    > h2 { font-size: 1.35rem; font-weight: 700; margin-bottom: 1.1rem; }
+  }
+
+  // ── ingredients (two-up grid, square thumb, left check, servings pill) ──────
+  .ingredients-card {
+    .sec-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.1rem;
+      h2 { margin-bottom: 0; }
+    }
+    .servings-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.15rem;
+      background: s.$primary-background;
+      border-radius: 999px;
+      padding: 0.2rem;
+      font-weight: 700;
+      .step-btn {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        border: none;
+        background: s.$white;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.05rem;
+        color: s.$primary-text;
+        &:hover { background: s.$primary; color: s.$white; }
+      }
+      .serv-input {
+        width: 1.7ch;
+        border: none;
+        background: none;
+        text-align: center;
+        font-weight: 700;
+        font-size: 0.9rem;
+        outline: none;
+        color: s.$primary-text;
+        padding: 0;
+      }
+      .serv-unit { font-size: 0.85rem; color: s.$secondary-text; margin: 0 0.35rem 0 0.05rem; }
+    }
+    .ing-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.25rem 1.75rem;
+      @media screen and (max-width: 640px) { grid-template-columns: 1fr; }
+
+      .ing {
+        display: grid;
+        grid-template-columns: 22px 40px auto 1fr;
+        align-items: center;
+        gap: 0.65rem;
+        padding: 0.5rem 0.4rem;
+        border-radius: 10px;
+        cursor: pointer;
+        font-size: 0.94rem;
+        &:hover { background: s.$primary-background; }
+        .box {
+          width: 20px;
+          height: 20px;
+          border: 1.5px solid s.$gray-400;
+          border-radius: 5px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: transparent;
+          font-size: 1.2rem;
+        }
+        .thumb {
+          width: 40px;
+          height: 40px;
+          border-radius: 9px;
+          border: 1px solid s.$gray-200;
+          overflow: hidden;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: s.$white;
+          // contain + slightly smaller so the product photo isn't cropped tight
+          img { width: 32px; height: 32px; object-fit: contain; }
+          .no-img { width: 22px; height: 22px; color: s.$gray-500; }
+        }
+        .qty { font-weight: 700; white-space: nowrap; }
+        .name { color: s.$secondary-text; }
+        &.checked {
+          .box { background: s.$secondary; border-color: s.$secondary; color: s.$white; }
+          .qty, .name { text-decoration: line-through; color: s.$tertiary-text; }
+        }
+      }
+      .ing-group-label {
+        grid-column: 1 / -1;
+        font-weight: 700;
+        color: s.$primary;
+        margin: 0.5rem 0 0.1rem;
+      }
+      .skeleton-row { display: block; padding: 0.35rem 0; }
+    }
+    .price-line {
+      margin-top: 1rem;
+      font-size: 0.88rem;
+      color: s.$tertiary-text;
+      strong { color: s.$primary; }
+    }
+  }
+
+  // ── instructions (two-column newspaper flow) ────────────────────────────────
+  .instructions-card {
+    .step-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      column-count: 2;
+      column-gap: 2.75rem;
+      @media screen and (max-width: 720px) { column-count: 1; }
+
+      .step {
+        display: grid;
+        grid-template-columns: 38px 1fr;
+        gap: 1rem;
+        align-items: start;
+        break-inside: avoid;
+        margin-bottom: 1.6rem;
+        .num {
+          width: 34px;
+          height: 34px;
+          border-radius: 50%;
+          background: s.$primary;
+          color: s.$white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 800;
+        }
+        p { line-height: 1.7; }
+      }
+      .step-group-label {
+        break-inside: avoid;
+        font-weight: 700;
+        color: s.$primary;
+        margin-bottom: 0.75rem;
+      }
+    }
+  }
+
+  // ── tags ────────────────────────────────────────────────────────────────────
+  .tags-card .tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    .tag {
+      background: rgba(s.$secondary, 0.12);
+      color: s.$secondary;
+      padding: 0.35rem 0.85rem;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-decoration: none;
+      &:hover { background: rgba(s.$secondary, 0.2); }
+      &:focus { @include s.outline(); }
+    }
+  }
+
+  // ── made-it (reused MadeRecipeBtn) ──────────────────────────────────────────
+  .made-row .made-this-recipe {
+    margin: 0;
+    width: auto;
+    max-width: none;
+    .made-recipe {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.45rem;
+      width: auto;
+      height: auto;
+      padding: 0.75rem 1.5rem;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      background: rgba(s.$secondary, 0.12);
+      color: s.$secondary;
+      border: 1.5px solid rgba(s.$secondary, 0.4);
+      &:hover { background: rgba(s.$secondary, 0.2); color: s.$secondary; }
+    }
+  }
+
+  // ── nutrition (macro bars + simple inline facts table) ──────────────────────
+  .nutrition-card .recipe-nutrition-data {
+    .nd-head {
+      display: flex;
+      align-items: baseline;
+      gap: 0.6rem;
+      margin-bottom: 1rem;
+      h3 { font-size: 1.35rem; font-weight: 700; }
+      .nd-per {
+        font-size: 0.72rem;
+        color: s.$tertiary-text;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+    }
+    .nd-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem 2.5rem;
+      align-items: start;
+      @media screen and (max-width: 700px) { grid-template-columns: 1fr; }
+    }
+    .nd-cal {
+      font-size: 0.95rem;
+      color: s.$secondary-text;
+      margin-bottom: 1rem;
+      strong { font-size: 1.6rem; color: s.$primary-text; }
+      &.solo { margin-bottom: 0; strong { font-size: 2rem; } }
+    }
+    .nd-facts-only { max-width: 420px; }
+    .nd-macros { display: flex; flex-direction: column; gap: 0.65rem; }
+    .nd-macro {
+      .nd-macro-top {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.85rem;
+        font-weight: 700;
+        margin-bottom: 0.3rem;
+        span:last-child { color: s.$secondary; }
+      }
+      .nd-track { height: 8px; background: s.$primary-background; border-radius: 999px; overflow: hidden; }
+      .nd-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, s.$secondary, #2fd0d8); }
+    }
+    .nd-facts {
+      width: 100%;
+      border-collapse: collapse;
+      td {
+        padding: 0.5rem 0;
+        border-bottom: 1px solid s.$gray-200;
+        font-size: 0.9rem;
+        &:last-child { text-align: right; font-weight: 700; }
+      }
+      tr:first-child td { font-weight: 800; font-size: 0.95rem; }
+      tr:last-child td { border-bottom: none; }
+    }
+  }
+
+  // ── stats (subtle footer line) ──────────────────────────────────────────────
+  .recipe-stats-foot { margin-top: 0; }
+
+  // ── ratings & reviews (reused subsystem, restyled) ──────────────────────────
+  .recipe-ratings {
+    margin-top: 3rem;
+    padding-top: 2.5rem;
+    border-top: 1px solid s.$gray-300;
+
+    // header: title left, average block right
+    .rr-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+      margin-bottom: 1.5rem;
+      .title { width: auto; text-align: left; font-size: 1.45rem; font-weight: 700; margin: 0; }
+      .rr-avg {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        .big { font-size: 2.4rem; font-weight: 800; line-height: 1; color: s.$primary; }
+        .stars { color: s.$primary; font-size: 1rem; letter-spacing: 0.05em; }
+        .count { font-size: 0.8rem; color: s.$tertiary-text; font-weight: 600; }
+      }
+    }
+
+    .ratings-reviews-container { gap: 1.75rem; }
+
+    // overview → "rate this recipe" card (the average now lives in the header).
+    // Selector nested under .ratings-reviews-container to outrank the component's
+    // own .overview rules.
+    .ratings-reviews-container .overview {
+      justify-content: flex-start;
+      align-items: center;
+      gap: 2rem;
+      padding: 1.25rem 1.5rem;
+      background: s.$gray-50;
+      border: 1.5px dashed s.$gray-400;
+      border-radius: $soft-radius;
+      box-shadow: none;
+      flex-wrap: wrap;
+      .average-rating-container { display: none; }
+      .user-rating.rate-card {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.55rem;
+        height: auto;
+        .rate-heading { font-size: 0.95rem; font-weight: 700; color: s.$primary-text; }
+        .rate-active {
+          display: flex;
+          align-items: center;
+          gap: 0.6rem;
+          .rate-hint { font-size: 0.8rem; color: s.$tertiary-text; font-weight: 700; }
+        }
+        .signin-rate {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.6rem;
+          text-decoration: none;
+          .signin-label {
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: none;
+            letter-spacing: 0;
+            color: s.$primary;
+            border: 1.5px solid rgba(s.$primary, 0.4);
+            border-radius: 999px;
+            padding: 0.4rem 0.95rem;
+            transition: background 0.12s ease;
+          }
+          &:hover .signin-label { background: rgba(s.$primary, 0.08); }
+        }
+      }
+    }
+
+    // owner can't review their own recipe
+    .owner-review-note {
+      padding: 1.1rem 1.4rem;
+      background: linear-gradient(135deg, rgba(s.$secondary, 0.1), rgba(s.$primary, 0.06));
+      border: 1.5px solid $soft-border;
+      border-radius: $soft-radius;
+      font-size: 0.92rem;
+      font-weight: 600;
+      color: s.$secondary-text;
+    }
+    // nested under .ratings-reviews-container to outrank the component's own
+    // .reviews rule (full-width review column, no sort dropdown)
+    .ratings-reviews-container .reviews {
+      max-width: none;
+      margin: 0;
+      gap: 0.85rem;
+      // omit the sort dropdown to match the design (default sort = newest, set
+      // on mount by ReviewFilters regardless of visibility)
+      .review-filters { display: none; }
+    }
+    .recipe-review {
+      border-top: none;
+      padding: 1rem 1.25rem;
+      background: s.$white;
+      border: 1px solid $soft-border;
+      border-radius: 12px;
+      margin-bottom: 1rem;
+      .body .text { color: s.$secondary-text; line-height: 1.6; font-size: 0.92rem; }
+      // hide the empty options bar on others' reviews (the beta like/dislike was
+      // removed); owners still get their edit/delete row
+      .review-options:empty { display: none; }
+    }
+
+    // write-a-review — appears in-flow after a signed-in user taps a star
+    .leave-review-input-container {
+      display: block;
+      margin-bottom: 0.85rem;
+      &:empty { display: none; }
+    }
+    .write-review {
+      padding: 1.25rem 1.5rem;
+      background: s.$white;
+      border: 1px solid $soft-border;
+      border-radius: $soft-radius;
+      .write-review-title {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: s.$primary-text;
+        margin-bottom: 0.6rem;
+        span { color: s.$tertiary-text; font-weight: 600; }
+      }
+      .error { color: $danger; font-size: 0.85rem; margin-bottom: 0.6rem; }
+      .review-text-area {
+        width: 100%;
+        min-height: 72px;
+        resize: vertical;
+        border: 1.5px solid s.$gray-300;
+        border-radius: 10px;
+        padding: 0.65rem 0.8rem;
+        font-family: inherit;
+        font-size: 0.9rem;
+        color: s.$primary-text;
+        box-sizing: border-box;
+        &:focus { outline: none; border-color: s.$primary; }
+      }
+      .submit-review-btn {
+        margin-top: 0.85rem;
+        background: s.$primary;
+        color: s.$white;
+        border: none;
+        border-radius: 10px;
+        padding: 0.6rem 1.25rem;
+        font-family: inherit;
+        font-weight: 700;
+        font-size: 0.9rem;
+        cursor: pointer;
+        &:hover { background: #e74e1d; }
+      }
+    }
+  }
+
+  // ── responsive ──────────────────────────────────────────────────────────────
+  @media screen and (max-width: 600px) {
+    .hero-text h1 { font-size: 1.9rem; }
+    .action-bar { padding: 1rem 1.15rem; }
   }
 }
