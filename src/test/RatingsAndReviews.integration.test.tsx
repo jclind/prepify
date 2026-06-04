@@ -170,10 +170,11 @@ describe('RatingsAndReviews integration', () => {
       mockNewReview.mockResolvedValue(baseReview)
 
       render(<IntegrationWrapper />)
-      // Confirm rating=4 has propagated through the component tree before interacting
+      // Confirm rating=4 has propagated through the component tree before interacting.
+      // Once a signed-in user has a rating, the review textarea appears in-flow
+      // (no separate "Add Review" toggle).
       await screen.findByText('4 stars')
 
-      await user.click(screen.getByText('Add Review'))
       await user.type(screen.getByRole('textbox'), 'Really great recipe!')
       await user.click(screen.getByText('Submit Review'))
 
@@ -238,8 +239,9 @@ describe('RatingsAndReviews integration', () => {
       await waitFor(() =>
         expect(mockDeleteReview).toHaveBeenCalledWith('recipe-1')
       )
-      // setCurrUserReview(null) causes ReviewsContainer to switch back to AddReview
-      await screen.findByText('Add Review')
+      // setCurrUserReview(null) switches ReviewsContainer back to the write-review
+      // box (the user still has their rating, so the textarea reappears in-flow)
+      await screen.findByText(/Add a written review/i)
       expect(screen.queryByText('Your Review:')).toBeNull()
     })
   })
