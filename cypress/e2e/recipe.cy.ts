@@ -20,9 +20,9 @@ describe('Single Recipe', () => {
   it('renders title, ingredients, and instructions', () => {
     cy.visit(`/recipes/${recipeId}`)
     cy.wait('@getRecipe')
-    cy.contains('h1.title', 'Tuscan Chicken Skillet', { timeout: 5000 }).should('be.visible')
-    cy.contains('.ingredient', 'fettuccine', { timeout: 5000 }).should('be.visible')
-    cy.contains('.instruction', 'Bring a large pot of salted water to a boil', { timeout: 5000 }).should('be.visible')
+    cy.contains('h1', 'Tuscan Chicken Skillet', { timeout: 5000 }).should('be.visible')
+    cy.contains('.ing', 'fettuccine', { timeout: 5000 }).should('be.visible')
+    cy.contains('.step', 'Bring a large pot of salted water to a boil', { timeout: 5000 }).should('be.visible')
   })
 
   it('save/unsave button toggles correctly when logged in', () => {
