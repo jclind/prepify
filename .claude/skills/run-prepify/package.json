@@ -1,0 +1,9 @@
+{
+  "name": "run-prepify-driver",
+  "private": true,
+  "type": "module",
+  "description": "Headless browser driver for the Prepify run skill (isolated from the app's deps).",
+  "dependencies": {
+    "playwright-core": "^1.49.0"
+  }
+}
