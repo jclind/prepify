@@ -200,7 +200,7 @@ $danger: #d23f31;
     border-radius: $soft-radius;
     box-shadow: $soft-shadow;
     padding: 1.5rem 1.75rem;
-    @media screen and (max-width: 540px) { padding: 1.25rem; }
+    @media screen and (max-width: 600px) { padding: 1.25rem 1rem; }
     > h2 { font-size: 1.35rem; font-weight: 700; margin-bottom: 1.1rem; }
   }
 
@@ -259,7 +259,7 @@ $danger: #d23f31;
 
       .ing {
         display: grid;
-        grid-template-columns: 22px 40px auto 1fr;
+        grid-template-columns: 22px 40px 1fr;
         align-items: center;
         gap: 0.65rem;
         padding: 0.5rem 0.4rem;
@@ -267,6 +267,9 @@ $danger: #d23f31;
         cursor: pointer;
         font-size: 0.94rem;
         &:hover { background: s.$primary-background; }
+        // qty + name flow as one inline text block, so a long name wraps
+        // naturally under the quantity instead of in its own cramped column
+        .ing-text { line-height: 1.45; }
         .box {
           width: 20px;
           height: 20px;
@@ -481,7 +484,7 @@ $danger: #d23f31;
       }
     }
 
-    .ratings-reviews-container { gap: 1.75rem; }
+    .ratings-reviews-container { gap: 0.5rem; }
 
     // overview → "rate this recipe" card (the average now lives in the header).
     // Selector nested under .ratings-reviews-container to outrank the component's
@@ -503,21 +506,32 @@ $danger: #d23f31;
         align-items: flex-start;
         gap: 0.55rem;
         height: auto;
+        // The shared RatingsAndReviews.scss clamps .user-rating to width:170px at
+        // ≤450px (old layout). That squeezes the star row + pill on phones, so
+        // reset it here for the redesigned card.
+        width: auto;
+        max-width: none;
+        .user-rate-container { width: auto; height: auto !important; }
         .rate-heading { font-size: 0.95rem; font-weight: 700; color: s.$primary-text; }
         .rate-active {
           display: flex;
           align-items: center;
-          gap: 0.6rem;
+          flex-wrap: wrap;
+          gap: 0.4rem 0.6rem;
           .rate-hint { font-size: 0.8rem; color: s.$tertiary-text; font-weight: 700; }
         }
         .signin-rate {
           display: inline-flex;
           align-items: center;
-          gap: 0.6rem;
+          flex-wrap: wrap;
+          gap: 0.4rem 0.6rem;
           text-decoration: none;
           .signin-label {
             font-size: 0.85rem;
             font-weight: 700;
+            // keep the pill on one line; flex-wrap drops it below the stars when
+            // space is tight rather than collapsing it into a circle
+            white-space: nowrap;
             text-transform: none;
             letter-spacing: 0;
             color: s.$primary;
@@ -613,8 +627,63 @@ $danger: #d23f31;
   }
 
   // ── responsive ──────────────────────────────────────────────────────────────
+  // Pull the page in toward the screen edges on phones — the global .page is
+  // 90% wide (≈19px gutter at 375px), which wastes room the cards need. Scoped
+  // to ≤640px so tablets keep a comfortable margin.
+  @media screen and (max-width: 640px) {
+    width: calc(100% - 1.5rem); // 0.75rem (12px) gutter each side
+  }
+
   @media screen and (max-width: 600px) {
     .hero-text h1 { font-size: 1.9rem; }
-    .action-bar { padding: 1rem 1.15rem; }
+
+    // ── action bar: stack the meta over a full-width, equal 3-up button row ──
+    .action-bar {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 1rem;
+      padding: 1rem 1.1rem;
+    }
+    // Evenly space the meta stats; drop the left-border separators (and their
+    // 1.4rem inset) that misalign once items wrap.
+    .meta {
+      width: 100%;
+      justify-content: space-between;
+      column-gap: 0.75rem;
+      row-gap: 0.6rem;
+      .m-item {
+        padding: 0;
+        & + .m-item { border-left: none; }
+      }
+    }
+    .sr-actions {
+      width: 100%;
+      gap: 0.5rem;
+      .save-recipe, .add-rating, .print-recipe { flex: 1 1 0; min-width: 0; }
+      .save-recipe-btn, .add-rating-btn, .print-recipe-btn {
+        width: 100%;
+        justify-content: center;
+        padding: 0.7rem 0.5rem;
+      }
+    }
+
+    // ── ingredients: smaller checkbox + thumb, tighter gaps → more name room ──
+    .ingredients-card .ing-list .ing {
+      grid-template-columns: 18px 30px 1fr;
+      gap: 0.45rem;
+      padding: 0.45rem 0.1rem;
+      font-size: 0.92rem;
+      .box { width: 18px; height: 18px; }
+      .thumb { width: 30px; height: 30px; img { width: 24px; height: 24px; } }
+    }
+
+    // ── instructions: smaller number badge, less inset → wider text column ──
+    .instructions-card .step-list .step {
+      grid-template-columns: 26px 1fr;
+      gap: 0.7rem;
+      margin-bottom: 1.25rem;
+      .num { width: 26px; height: 26px; font-size: 0.8rem; }
+      p { line-height: 1.6; }
+    }
   }
 }

@@ -145,13 +145,15 @@ const SingleRecipe: FC = () => {
               <CiShoppingBasket className='no-img' />
             )}
           </span>
-          <span className='qty'>
-            {quantity ? closestFraction(quantity) : ''}
-            {unit ? ` ${unit}` : ''}
-          </span>
-          <span className='name'>
-            {ingredient}
-            {comment ? `, ${comment}` : ''}
+          <span className='ing-text'>
+            <span className='qty'>
+              {quantity ? closestFraction(quantity) : ''}
+              {unit ? ` ${unit}` : ''}
+            </span>{' '}
+            <span className='name'>
+              {ingredient}
+              {comment ? `, ${comment}` : ''}
+            </span>
           </span>
         </li>
       )
