@@ -33,9 +33,15 @@ const AddReview: FC<AddReviewProps> = ({
         'Review is too short. Please make sure to add 5 or more characters.'
       )
     }
-    RecipeAPI.newReview(recipeId, newReviewText).then(res => {
-      setCurrUserReview(res ?? null)
-    })
+    RecipeAPI.newReview(recipeId, newReviewText)
+      .then(res => {
+        setCurrUserReview(res ?? null)
+      })
+      .catch(() => {
+        setNewReviewError(
+          'Something went wrong submitting your review. Please try again.'
+        )
+      })
   }
 
   // The textarea only appears after a signed-in user rates.

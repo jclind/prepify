@@ -34,7 +34,9 @@ type LocalStorageRecipeType = { recipeId: string; numServings: number }
 const skeletonColor = '#d6d6d6'
 
 const formatMonthYear = (iso: string): string => {
-  const d = new Date(iso)
+  // `createdAt` is stored as an epoch-ms string (see RecipeAPI.addRecipe), so it
+  // must be coerced with Number() — `new Date(msString)` yields Invalid Date.
+  const d = new Date(Number(iso))
   return Number.isNaN(d.getTime())
     ? ''
     : d.toLocaleDateString('en', { month: 'long', year: 'numeric' })
@@ -61,6 +63,9 @@ const SingleRecipe: FC = () => {
   const [modIngredients, setModIngredients] = useState<IngredientsType[]>([])
   const [currUserReview, setCurrUserReview] = useState<ReviewType | null>(null)
   const [servingSize, setServingSize] = useState(0)
+  // Draft string for the servings input so the field can be cleared or hold an
+  // in-progress value while typing; the committed numeric value is servingSize.
+  const [servDraft, setServDraft] = useState('')
   const [checked, setChecked] = useState<Set<string>>(new Set())
   const printedRef = useRef<HTMLInputElement>(null)
 
@@ -69,7 +74,7 @@ const SingleRecipe: FC = () => {
       localStorage.getItem('recipeServings') || '[]'
     )
     const idx = arr.findIndex(item => item.recipeId === recipeId)
-    if (idx !== -1) arr[idx].numServings = servingSize
+    if (idx !== -1) arr[idx].numServings = numServings
     else arr.push({ recipeId, numServings })
     localStorage.setItem('recipeServings', JSON.stringify(arr))
   }
@@ -93,6 +98,12 @@ const SingleRecipe: FC = () => {
       setServingSize(obj ? obj.numServings : fetchedRecipe.servings)
     }
   }, [fetchedRecipe])
+
+  // Keep the input's draft in sync when servingSize changes elsewhere (initial
+  // load, the +/− steppers) without clobbering what the user is typing.
+  useEffect(() => {
+    setServDraft(servingSize ? String(servingSize) : '')
+  }, [servingSize])
 
   const toggleChecked = (id: string) => {
     setChecked(prev => {
@@ -266,7 +277,7 @@ const SingleRecipe: FC = () => {
               <div className='m-item'>
                 <BsStar className='m-ic' />
                 <span className='m-v'>
-                  {currRecipe ? formatRating(currRecipe.rating.rateValue, ratingCount) : '—'}
+                  {currRecipe ? formatRating(currRecipe.rating?.rateValue, ratingCount) : '—'}
                 </span>
                 <span className='m-l'>{ratingCount > 0 ? `(${ratingCount})` : 'Rating'}</span>
               </div>
@@ -298,11 +309,16 @@ const SingleRecipe: FC = () => {
                     <input
                       type='tel'
                       className='serv-input'
-                      value={servingSize || ''}
+                      value={servDraft}
                       onChange={e => {
-                        const v = Number(e.target.value)
-                        if (Number.isInteger(v)) changeServings(v)
+                        const raw = e.target.value
+                        setServDraft(raw)
+                        const v = Number(raw)
+                        if (raw !== '' && Number.isInteger(v)) changeServings(v)
                       }}
+                      onBlur={() =>
+                        setServDraft(servingSize ? String(servingSize) : '')
+                      }
                     />
                     <span className='serv-unit'>serv</span>
                     <button

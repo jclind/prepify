@@ -2,7 +2,9 @@ import React, { FC } from 'react'
 import { NutritionDataType } from 'types'
 
 const getQuantity = (num: number | undefined, servings: number) => {
-  if (!num) {
+  // Only treat genuinely-missing data as null; a real 0 (fat-free, sugar-free,
+  // etc.) is a valid value and must render as "0", not be hidden.
+  if (num == null || !servings) {
     return null
   }
   return Math.round(num / servings)
@@ -85,7 +87,7 @@ const NutritionData: FC<NutritionDataProps> = ({ data, servings }) => {
   const factsTable = showFactsTable && (
     <table className='nd-facts'>
       <tbody>
-        {allFacts.map(f => (
+        {detailFacts.map(f => (
           <tr key={f.label}>
             <td>{f.label}</td>
             <td>{f.value}</td>
@@ -120,7 +122,10 @@ const NutritionData: FC<NutritionDataProps> = ({ data, servings }) => {
           </div>
         ) : showFactsTable ? (
           // facts only (no macro breakdown)
-          <div className='nd-facts-only'>{factsTable}</div>
+          <div className='nd-facts-only'>
+            {caloriesEl}
+            {factsTable}
+          </div>
         ) : (
           // calories only
           <div className='nd-cal solo'>

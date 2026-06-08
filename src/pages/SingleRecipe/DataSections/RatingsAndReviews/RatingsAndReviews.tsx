@@ -1,6 +1,7 @@
 import React, { FC, useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ReviewType } from 'types'
+import StarRating from 'src/Components/StarRating/StarRating'
 import Ratings from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/Ratings/Ratings'
 import ReviewsContainer from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/ReviewsContainer'
 import RecipeAPI from 'src/api/recipes'
@@ -47,8 +48,6 @@ const RatingsAndReviews: FC<RatingsAndReviewsProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [checkData])
 
-  const roundedStars = Math.round(Number(ratingVal) || 0)
-
   return (
     <div className='recipe-ratings' id='recipeReviews'>
       <div className='rr-header'>
@@ -57,9 +56,8 @@ const RatingsAndReviews: FC<RatingsAndReviewsProps> = ({
           <div className='rr-avg'>
             <div className='big'>{formatRating(ratingVal, ratingCount)}</div>
             <div className='rr-avg-meta'>
-              <div className='stars' aria-hidden='true'>
-                {'★'.repeat(roundedStars)}
-                {'☆'.repeat(5 - roundedStars)}
+              <div className='stars'>
+                <StarRating rating={Number(ratingVal) || 0} size={16} />
               </div>
               <div className='count'>
                 {ratingCount} {ratingCount === 1 ? 'rating' : 'ratings'}

@@ -45,10 +45,12 @@ vi.mock('src/api/auth', () => ({
   },
 }))
 
+// The interactive star widget (user's own rating) and the read-only header
+// average both render StarRating, so distinguish them by testid.
 vi.mock('src/Components/StarRating/StarRating', () => ({
   default: ({ rating, onChange, interactive }: any) => (
     <div
-      data-testid='star-ratings-rating'
+      data-testid={interactive ? 'star-ratings-rating' : 'star-ratings-display'}
       onClick={() => interactive && onChange?.(4)}
       aria-label={`${rating} stars`}
     >
@@ -147,8 +149,12 @@ describe('RatingsAndReviews integration', () => {
       mockGetUID.mockReturnValue('user-1')
       mockCheckIfReviewed.mockResolvedValue({ rating: '4', reviewText: null })
       render(<IntegrationWrapper />)
-      // StarRating mock renders "{rating} stars"; initial is "0 stars", becomes "4 stars"
-      await screen.findByText('4 stars')
+      // Interactive star mock renders "{rating} stars"; starts "0 stars", becomes "4 stars"
+      await waitFor(() =>
+        expect(screen.getByTestId('star-ratings-rating')).toHaveTextContent(
+          '4 stars'
+        )
+      )
     })
 
     it('shows RecipeReview (not AddReview) when checkIfReviewed returns a review with text', async () => {
@@ -173,7 +179,11 @@ describe('RatingsAndReviews integration', () => {
       // Confirm rating=4 has propagated through the component tree before interacting.
       // Once a signed-in user has a rating, the review textarea appears in-flow
       // (no separate "Add Review" toggle).
-      await screen.findByText('4 stars')
+      await waitFor(() =>
+        expect(screen.getByTestId('star-ratings-rating')).toHaveTextContent(
+          '4 stars'
+        )
+      )
 
       await user.type(screen.getByRole('textbox'), 'Really great recipe!')
       await user.click(screen.getByText('Submit Review'))

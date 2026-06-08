@@ -476,7 +476,7 @@ $danger: #d23f31;
         align-items: center;
         gap: 0.85rem;
         .big { font-size: 2.4rem; font-weight: 800; line-height: 1; color: s.$primary; }
-        .stars { color: s.$primary; font-size: 1rem; letter-spacing: 0.05em; }
+        .stars { display: flex; align-items: center; }
         .count { font-size: 0.8rem; color: s.$tertiary-text; font-weight: 600; }
       }
     }
