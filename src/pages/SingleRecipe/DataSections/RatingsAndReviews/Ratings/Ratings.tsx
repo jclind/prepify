@@ -42,20 +42,24 @@ const Ratings: FC<RatingsProps> = ({
           <span className='count'>({ratingCount})</span>
         </div>
       </div>
-      <div className='user-rating'>
-        <span className='text'>Your Rating:</span>
+      <div className='user-rating rate-card'>
+        <span className='rate-heading'>Rate this recipe</span>
         <div className='user-rate-container'>
           {uid ? (
-            <StarRating
-              rating={rating}
-              size={30}
-              spacing={2}
-              interactive={true}
-              onChange={changeRating}
-            />
+            <div className='rate-active'>
+              <StarRating
+                rating={rating}
+                size={24}
+                spacing={2}
+                interactive={true}
+                onChange={changeRating}
+              />
+              <span className='rate-hint'>{rating > 0 ? `${rating} / 5` : 'Tap a star'}</span>
+            </div>
           ) : (
-            <Link to='/login' className='text'>
-              Sign In To Rate
+            <Link to='/login' className='signin-rate'>
+              <StarRating rating={0} size={24} spacing={2} />
+              <span className='text signin-label'>Sign In To Rate</span>
             </Link>
           )}
         </div>

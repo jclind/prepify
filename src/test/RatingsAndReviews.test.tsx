@@ -88,10 +88,13 @@ describe('Ratings', () => {
     mockGetUID.mockReturnValue(null)
   })
 
-  it('shows "Sign In To Rate" link when no uid is available', () => {
+  it('shows "Sign In To Rate" with non-interactive display stars when no uid is available', async () => {
+    const user = userEvent.setup()
     renderRatings(null)
     expect(screen.getByText('Sign In To Rate')).toBeInTheDocument()
-    expect(screen.queryByTestId('star-ratings-rating')).toBeNull()
+    // logged-out shows display stars as a prompt, but they don't submit a rating
+    await user.click(screen.getByTestId('star-ratings-rating'))
+    expect(mockAddRating).not.toHaveBeenCalled()
   })
 
   it('renders star widget when a uid is present', () => {
@@ -203,52 +206,34 @@ describe('AddReview', () => {
     mockToast.mockClear()
   })
 
-  it('"Add Review" button is visible regardless of auth state', () => {
-    renderAddReview({ uid: null })
-    expect(screen.getByText('Add Review')).toBeInTheDocument()
+  it('renders nothing before a rating is given', () => {
+    const { container } = renderAddReview({ uid: 'user-1', rating: 0 })
+    expect(container).toBeEmptyDOMElement()
   })
 
-  it('clicking "Add Review" without a uid shows an alert, not the textarea', async () => {
-    const user = userEvent.setup()
-    const { container } = renderAddReview({ uid: null })
-    await user.click(screen.getByText('Add Review'))
-    expect(mockToast).toHaveBeenCalledTimes(1)
-    expect(container.querySelector('.review-open')).not.toHaveClass('visible')
+  it('renders nothing when logged out, even after a rating', () => {
+    const { container } = renderAddReview({ uid: null, rating: 4 })
+    expect(container).toBeEmptyDOMElement()
   })
 
-  it('clicking "Add Review" with a uid opens the review textarea', async () => {
-    const user = userEvent.setup()
-    const { container } = renderAddReview({ uid: 'user-1' })
-    expect(container.querySelector('.review-open')).not.toHaveClass('visible')
-    await user.click(screen.getByText('Add Review'))
-    expect(container.querySelector('.review-open')).toHaveClass('visible')
-  })
-
-  it('submitting with rating=0 shows the "Please add a rating" error', async () => {
-    const user = userEvent.setup()
-    renderAddReview({ uid: 'user-1', rating: 0 })
-    await user.click(screen.getByText('Add Review'))
-    await user.type(screen.getByRole('textbox'), 'This is my review')
-    await user.click(screen.getByText('Submit Review'))
-    expect(screen.getByText(/Please add a rating before submitting/)).toBeInTheDocument()
-    expect(mockNewReview).not.toHaveBeenCalled()
+  it('shows the review textarea once a signed-in user has rated', () => {
+    renderAddReview({ uid: 'user-1', rating: 4 })
+    expect(screen.getByRole('textbox')).toBeInTheDocument()
   })
 
   it('submitting review text shorter than 5 chars shows a length error', async () => {
     const user = userEvent.setup()
     renderAddReview({ uid: 'user-1', rating: 4 })
-    await user.click(screen.getByText('Add Review'))
     await user.type(screen.getByRole('textbox'), 'Hi')
     await user.click(screen.getByText('Submit Review'))
     expect(screen.getByText(/5 or more characters/)).toBeInTheDocument()
     expect(mockNewReview).not.toHaveBeenCalled()
   })
 
-  it('submitting with valid rating and text ≥ 5 chars calls RecipeAPI.newReview', async () => {
+  it('submitting valid text ≥ 5 chars calls RecipeAPI.newReview', async () => {
     const user = userEvent.setup()
     mockNewReview.mockResolvedValue(baseReview)
     renderAddReview({ uid: 'user-1', rating: 4 })
-    await user.click(screen.getByText('Add Review'))
     await user.type(screen.getByRole('textbox'), 'Really great recipe!')
     await user.click(screen.getByText('Submit Review'))
     await waitFor(() =>
@@ -261,20 +246,9 @@ describe('AddReview', () => {
     const setCurrUserReview = vi.fn()
     mockNewReview.mockResolvedValue(baseReview)
     renderAddReview({ uid: 'user-1', rating: 4, setCurrUserReview })
-    await user.click(screen.getByText('Add Review'))
     await user.type(screen.getByRole('textbox'), 'Really great recipe!')
     await user.click(screen.getByText('Submit Review'))
     await waitFor(() => expect(setCurrUserReview).toHaveBeenCalledWith(baseReview))
-  })
-
-  it('clicking "close" hides the textarea without calling RecipeAPI.newReview', async () => {
-    const user = userEvent.setup()
-    const { container } = renderAddReview({ uid: 'user-1', rating: 4 })
-    await user.click(screen.getByText('Add Review'))
-    expect(container.querySelector('.review-open')).toHaveClass('visible')
-    await user.click(screen.getByText('close'))
-    expect(container.querySelector('.review-open')).not.toHaveClass('visible')
-    expect(mockNewReview).not.toHaveBeenCalled()
   })
 })
 
@@ -308,7 +282,7 @@ describe('RecipeReview', () => {
     // reviewText is set from useState(review.reviewText) — immediately visible
     expect(screen.getByText('Really great recipe!')).toBeInTheDocument()
     // username is set in useEffect after mount
-    await screen.findByText('testuser')
+    await screen.findByText('@testuser')
     // star-ratings mock renders "{rating} stars" — after useEffect: 4 stars
     await screen.findByText(/4 stars/)
   })
@@ -317,7 +291,7 @@ describe('RecipeReview', () => {
     mockGetUID.mockReturnValue('other-uid')
     mockGetUsername.mockResolvedValue('someone-else')
     renderRecipeReview()
-    await screen.findByText('testuser')
+    await screen.findByText('@testuser')
     await waitFor(() => expect(screen.queryByText('Edit')).toBeNull())
     expect(screen.queryByText(/^Delete$/)).toBeNull()
   })

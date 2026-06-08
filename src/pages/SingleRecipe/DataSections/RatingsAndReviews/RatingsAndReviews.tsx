@@ -1,10 +1,12 @@
 import React, { FC, useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ReviewType } from 'types'
+import StarRating from 'src/Components/StarRating/StarRating'
 import Ratings from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/Ratings/Ratings'
 import ReviewsContainer from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/ReviewsContainer'
 import RecipeAPI from 'src/api/recipes'
 import AuthAPI from 'src/api/auth'
+import { formatRating } from 'src/util/formatRating'
 
 import './RatingsAndReviews.scss'
 
@@ -14,6 +16,7 @@ type RatingsAndReviewsProps = {
   ratingCount: number
   currUserReview: ReviewType | null
   setCurrUserReview: (val: ReviewType | null) => void
+  isOwner?: boolean
 }
 
 const RatingsAndReviews: FC<RatingsAndReviewsProps> = ({
@@ -22,6 +25,7 @@ const RatingsAndReviews: FC<RatingsAndReviewsProps> = ({
   ratingCount,
   currUserReview,
   setCurrUserReview,
+  isOwner = false,
 }) => {
   const [rating, setRating] = useState(0)
 
@@ -46,20 +50,42 @@ const RatingsAndReviews: FC<RatingsAndReviewsProps> = ({
 
   return (
     <div className='recipe-ratings' id='recipeReviews'>
-      <h2 className='title'>Ratings & Reviews</h2>
+      <div className='rr-header'>
+        <h2 className='title'>Ratings &amp; Reviews</h2>
+        {ratingCount > 0 && (
+          <div className='rr-avg'>
+            <div className='big'>{formatRating(ratingVal, ratingCount)}</div>
+            <div className='rr-avg-meta'>
+              <div className='stars'>
+                <StarRating rating={Number(ratingVal) || 0} size={16} />
+              </div>
+              <div className='count'>
+                {ratingCount} {ratingCount === 1 ? 'rating' : 'ratings'}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
       <div className='ratings-reviews-container'>
-        <Ratings
-          rating={rating}
-          setRating={setRating}
-          ratingCount={ratingCount}
-          ratingVal={ratingVal}
-          recipeId={recipeId}
-        />
+        {isOwner ? (
+          <div className='owner-review-note'>
+            This is your recipe — you can’t leave a rating or review.
+          </div>
+        ) : (
+          <Ratings
+            rating={rating}
+            setRating={setRating}
+            ratingCount={ratingCount}
+            ratingVal={ratingVal}
+            recipeId={recipeId}
+          />
+        )}
         <ReviewsContainer
           currUserReview={currUserReview}
           setCurrUserReview={setCurrUserReview}
           rating={rating}
           recipeId={recipeId}
+          isOwner={isOwner}
         />
       </div>
     </div>
