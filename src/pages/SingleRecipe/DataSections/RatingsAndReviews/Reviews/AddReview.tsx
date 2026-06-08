@@ -1,6 +1,5 @@
-import React, { FC, useRef, useState } from 'react'
+import React, { FC, useState } from 'react'
 import RecipeAPI from 'src/api/recipes'
-import toast from 'react-hot-toast'
 import { ReviewType } from 'types'
 
 type AddReviewProps = {
@@ -10,16 +9,17 @@ type AddReviewProps = {
   setCurrUserReview: (val: ReviewType | null) => void
 }
 
+// Shown once a logged-in user has tapped a star to rate. The written review is
+// optional — they've already left the rating — but posting one needs >= 5
+// characters.
 const AddReview: FC<AddReviewProps> = ({
   rating,
   recipeId,
   uid,
   setCurrUserReview,
 }) => {
-  const [isReviewOpen, setIsReviewOpen] = useState(false)
   const [newReviewText, setNewReviewText] = useState('')
   const [newReviewError, setNewReviewError] = useState('')
-  const addReviewTextAreaRef = useRef<HTMLTextAreaElement>(null)
 
   const handleSubmitReview = () => {
     setNewReviewError('')
@@ -33,59 +33,37 @@ const AddReview: FC<AddReviewProps> = ({
         'Review is too short. Please make sure to add 5 or more characters.'
       )
     }
-    setIsReviewOpen(false)
-    RecipeAPI.newReview(recipeId, newReviewText).then(res => {
-      setCurrUserReview(res ?? null)
-    })
+    RecipeAPI.newReview(recipeId, newReviewText)
+      .then(res => {
+        setCurrUserReview(res ?? null)
+      })
+      .catch(() => {
+        setNewReviewError(
+          'Something went wrong submitting your review. Please try again.'
+        )
+      })
   }
 
+  // The textarea only appears after a signed-in user rates.
+  if (!uid || rating === 0) return null
+
   return (
-    <>
-      <div className={`review-open ${isReviewOpen ? 'visible' : ''}`}>
-        <h3 className='review-input-title'>Write Review:</h3>
-        {newReviewError && <div className='error'>{newReviewError}</div>}
-        <textarea
-          name='review'
-          className='review-text-area'
-          value={newReviewText}
-          onChange={e => setNewReviewText(e.target.value)}
-          ref={addReviewTextAreaRef}
-          // tabIndex={isReviewOpen ? 1 : -1}
-        />
-        <div className='btns-container'>
-          <button
-            className='close-review-textarea-btn'
-            onClick={() => setIsReviewOpen(false)}
-            // tabIndex={isReviewOpen ? 1 : -1}
-          >
-            close
-          </button>
-          <button
-            className='submit-review-btn btn'
-            onClick={handleSubmitReview}
-            // tabIndex={isReviewOpen ? 1 : -1}
-          >
-            Submit Review
-          </button>
-        </div>
-      </div>
-      <button
-        className={`leave-review-btn btn ${isReviewOpen ? '' : 'visible'}`}
-        // tabIndex={isReviewOpen ? 1 : -1}
-        onClick={() => {
-          if (uid) {
-            setNewReviewText('')
-            setIsReviewOpen(true)
-            addReviewTextAreaRef?.current &&
-              addReviewTextAreaRef.current.focus()
-          } else {
-            toast('Please login to add a review.', { duration: 10000 })
-          }
-        }}
-      >
-        Add Review
+    <div className='write-review'>
+      <h4 className='write-review-title'>
+        Add a written review <span>(optional)</span>
+      </h4>
+      {newReviewError && <div className='error'>{newReviewError}</div>}
+      <textarea
+        name='review'
+        className='review-text-area'
+        placeholder='Share how it turned out…'
+        value={newReviewText}
+        onChange={e => setNewReviewText(e.target.value)}
+      />
+      <button className='submit-review-btn btn' onClick={handleSubmitReview}>
+        Submit Review
       </button>
-    </>
+    </div>
   )
 }
 

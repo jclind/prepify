@@ -37,6 +37,6 @@ describe('Browse', () => {
     cy.contains('.recipe-thumbnail', 'Tuscan Chicken Skillet', { timeout: 5000 }).should('be.visible').click()
     cy.wait('@getRecipe')
     cy.url().should('include', '/recipes/')
-    cy.contains('h1.title', 'Tuscan Chicken Skillet', { timeout: 5000 }).should('be.visible')
+    cy.contains('h1', 'Tuscan Chicken Skillet', { timeout: 5000 }).should('be.visible')
   })
 })
