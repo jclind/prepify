@@ -28,4 +28,7 @@ cypress.env.json
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-.claude/
+# Ignore local Claude Code state, but track committed skills (run-* etc.).
+# Each skill dir has its own .gitignore for node_modules/ and screenshots/.
+.claude/*
+!.claude/skills/
