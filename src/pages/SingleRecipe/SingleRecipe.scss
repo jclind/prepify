@@ -130,6 +130,7 @@ $danger: #d23f31;
       &:first-child { padding-left: 0; }
       & + .m-item { border-left: 1px solid s.$gray-300; }
     }
+    .m-top { display: inline-flex; align-items: baseline; gap: 0.45rem; }
     .m-ic { align-self: center; color: s.$primary; font-size: 1.1rem; }
     .m-v { font-weight: 800; font-size: 1.1rem; }
     .m-l {
@@ -644,16 +645,33 @@ $danger: #d23f31;
       gap: 1rem;
       padding: 1rem 1.1rem;
     }
-    // Evenly space the meta stats; drop the left-border separators (and their
-    // 1.4rem inset) that misalign once items wrap.
+    // Variation A — stats as centered tiles in a soft inset panel. Each tile is
+    // a flex column: the icon + value sit on one centered row (.m-top), with the
+    // label centered beneath.
     .meta {
       width: 100%;
-      justify-content: space-between;
-      column-gap: 0.75rem;
-      row-gap: 0.6rem;
+      // no global border-box reset, so the panel's padding + border would push
+      // it ~14px past the right edge (out of line with the buttons below)
+      box-sizing: border-box;
+      flex-wrap: nowrap;
+      gap: 0;
+      background: s.$gray-50;
+      border: 1px solid s.$gray-200;
+      border-radius: 12px;
+      padding: 0.7rem 0.35rem;
       .m-item {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.12rem;
         padding: 0;
-        & + .m-item { border-left: none; }
+        .m-top { display: inline-flex; align-items: center; gap: 0.3rem; }
+        .m-ic { font-size: 0.9rem; }
+        .m-v { font-size: 1rem; white-space: nowrap; }
+        .m-l { text-align: center; font-size: 0.62rem; }
+        & + .m-item { border-left: 1px solid s.$gray-300; }
       }
     }
     .sr-actions {
