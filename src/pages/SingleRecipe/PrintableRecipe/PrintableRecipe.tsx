@@ -7,6 +7,7 @@ import { closestFraction } from 'src/util/validateIngredientQuantityStr'
 import { formatRating } from 'src/util/formatRating'
 import { formatMonthYear } from 'src/util/formatDate'
 import { formatPrice } from 'src/util/formatPrice'
+import { getQuantity, safeNutrientMap } from 'src/util/nutrition'
 
 import { IngredientsType, InstructionsType, RecipeType } from 'types'
 
@@ -21,38 +22,29 @@ type PrintableRecipeProps = {
 
 // Per-serving nutrition rows derived from the recipe's *total* nutrients, which
 // are stored across the recipe's original serving count (see NutritionData).
+// Uses the shared getQuantity/safeNutrientMap so the math matches the on-screen
+// card; only the (compact) labels differ.
 const nutritionRows = (recipe: RecipeType): { label: string; value: string }[] => {
   const data = recipe.nutritionData
   if (!data) return []
   const servings = recipe.servings
   if (!servings) return []
+  const tNutr = safeNutrientMap(data.totalNutrients)
 
-  const perServing = (num: number | undefined): number | null =>
-    num == null ? null : Math.round(num / servings)
+  const row = (label: string, num: number | undefined, unit: string) => {
+    const q = getQuantity(num, servings)
+    return q == null ? null : { label, value: unit ? `${q} ${unit}` : `${q}` }
+  }
 
-  const nutrient = (key: string) => data.totalNutrients?.[key]?.quantity
-  const cal = perServing(data.calories)
-
-  const rows: ({ label: string; value: string } | null)[] = [
-    cal != null ? { label: 'Calories', value: `${cal}` } : null,
-    fmt('Fat', nutrient('FAT'), 'g', servings),
-    fmt('Carbs', nutrient('CHOCDF'), 'g', servings),
-    fmt('Fiber', nutrient('FIBTG'), 'g', servings),
-    fmt('Sugars', nutrient('SUGAR'), 'g', servings),
-    fmt('Protein', nutrient('PROCNT'), 'g', servings),
-    fmt('Sodium', nutrient('NA'), 'mg', servings),
-  ]
-  return rows.filter((r): r is { label: string; value: string } => r != null)
-}
-
-const fmt = (
-  label: string,
-  num: number | undefined,
-  unit: string,
-  servings: number
-): { label: string; value: string } | null => {
-  if (num == null || !servings) return null
-  return { label, value: `${Math.round(num / servings)} ${unit}` }
+  return [
+    row('Calories', data.calories, ''),
+    row('Fat', tNutr['FAT']?.quantity, 'g'),
+    row('Carbs', tNutr['CHOCDF']?.quantity, 'g'),
+    row('Fiber', tNutr['FIBTG']?.quantity, 'g'),
+    row('Sugars', tNutr['SUGAR']?.quantity, 'g'),
+    row('Protein', tNutr['PROCNT']?.quantity, 'g'),
+    row('Sodium', tNutr['NA']?.quantity, 'mg'),
+  ].filter((r): r is { label: string; value: string } => r != null)
 }
 
 const PrintableRecipe: FC<PrintableRecipeProps> = ({
