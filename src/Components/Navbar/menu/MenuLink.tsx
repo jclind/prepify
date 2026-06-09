@@ -5,11 +5,10 @@ import { NavItem } from './types'
 type MenuLinkProps = {
   item: NavItem
   onClose: () => void
-  showIcon?: boolean
 }
 
-/** A single nav row (icon + label) used across variants. */
-const MenuLink: FC<MenuLinkProps> = ({ item, onClose, showIcon = true }) => {
+/** A single nav row (icon + label) in the mobile menu. */
+const MenuLink: FC<MenuLinkProps> = ({ item, onClose }) => {
   const Icon = item.icon
   return (
     <NavLink
@@ -18,7 +17,7 @@ const MenuLink: FC<MenuLinkProps> = ({ item, onClose, showIcon = true }) => {
       onClick={onClose}
       className={({ isActive }) => (isActive ? 'menu-link is-active' : 'menu-link')}
     >
-      {showIcon && <Icon className='menu-link__icon' />}
+      <Icon className='menu-link__icon' />
       <span className='menu-link__label'>{item.label}</span>
     </NavLink>
   )

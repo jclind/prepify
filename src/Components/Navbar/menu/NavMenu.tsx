@@ -5,14 +5,14 @@ import MenuLink from './MenuLink'
 import AccountCard from './AccountCard'
 import SearchRecipesInput from 'src/Components/SearchRecipesInput/SearchRecipesInput'
 import { getNavGroups } from './navItems'
-import { NavMenuVariantProps } from './types'
+import { NavMenuProps } from './types'
 
 /**
  * Mobile navigation menu (≤725px): full-screen panel with a subtle brand
  * gradient, an in-menu recipe search, frosted cards grouping the nav, and an
  * account card. Data comes from `useNavMenu` (see Navbar.tsx).
  */
-const NavMenu: FC<NavMenuVariantProps> = ({ open, onClose, ...menu }) => (
+const NavMenu: FC<NavMenuProps> = ({ open, onClose, ...menu }) => (
   <MenuShell open={open} onClose={onClose}>
     <div className='menu-search'>
       <SearchRecipesInput autoComplete={true} />

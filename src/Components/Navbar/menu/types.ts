@@ -1,6 +1,6 @@
 import { IconType } from 'react-icons'
 
-/** Data every mobile-nav variant needs, produced once by `useNavMenu`. */
+/** Auth/profile data the mobile nav menu needs, produced once by `useNavMenu`. */
 export type NavMenuData = {
   isLoggedIn: boolean
   authLoading: boolean
@@ -12,8 +12,8 @@ export type NavMenuData = {
   logout: () => void
 }
 
-/** Props shared by all variant components. */
-export type NavMenuVariantProps = NavMenuData & {
+/** Props for the mobile nav menu: profile data plus open/close control. */
+export type NavMenuProps = NavMenuData & {
   open: boolean
   onClose: () => void
 }

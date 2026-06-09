@@ -1,4 +1,4 @@
-import React, { FC } from 'react'
+import React, { FC, useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { BiLogOut } from 'react-icons/bi'
 import { NavMenuData } from './types'
@@ -12,7 +12,7 @@ type AccountCardProps = Pick<
 
 /**
  * Logged-in: profile identity (avatar + name + email) and a logout button.
- * Logged-out: prominent Login / Signup CTAs. Skinned via CSS variables per variant.
+ * Logged-out: prominent Login / Signup CTAs. Skinned via CSS variables in NavMenu.scss.
  */
 const AccountCard: FC<AccountCardProps> = ({
   isLoggedIn,
@@ -23,6 +23,9 @@ const AccountCard: FC<AccountCardProps> = ({
   logout,
   onClose,
 }) => {
+  // Fall back to the initial avatar if the profile image fails to load.
+  const [imgFailed, setImgFailed] = useState(false)
+
   if (!isLoggedIn) {
     return (
       <div className='account-card account-card--logged-out'>
@@ -51,8 +54,13 @@ const AccountCard: FC<AccountCardProps> = ({
         className='account-card__identity'
         onClick={onClose}
       >
-        {photoURL ? (
-          <img src={photoURL} alt='Profile' className='account-card__avatar' />
+        {photoURL && !imgFailed ? (
+          <img
+            src={photoURL}
+            alt='Profile'
+            className='account-card__avatar'
+            onError={() => setImgFailed(true)}
+          />
         ) : (
           <div className='account-card__avatar account-card__avatar--initial'>
             {nameInitial}
