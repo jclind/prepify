@@ -53,13 +53,18 @@ a feature flag. Do these together:
 - `[ ]` **Empty / error / loading states sweep** — every page that fetches data (Recipes, SingleRecipe,
   Account, Home) should have a sensible empty state, an error state, and a loading skeleton. Spot-check
   by loading with the API down. **(nice-to-have, but high-impact)**
-- `[ ]` **Broken-link & dead-route check** — click every nav item, footer link, and CTA; confirm no
-  404s or dead `href="#"`. Check the "View All Release Notes" link in `ReleaseNotes.tsx:145`
-  (`github.com/jclind/prepify/releases`) actually resolves. **(blocker)**
-- `[ ]` **404 / not-found page** — confirm an unknown route renders a real 404, not a blank screen.
-  **(blocker)**
-- `[ ]` **Mobile pass** — walk the core flows (browse, view recipe, add recipe, auth) at phone width.
-  **(blocker)**
+- `[~]` **Broken-link & dead-route check** — click every nav item, footer link, and CTA; confirm no
+  404s or dead `href="#"`. **Audit found:** the 404 page's "contact our support team" link points to
+  `/` (home), not a support page — `src/pages/404/404.tsx:22` (`<Link to='/'>`). Repoint it to `/help`
+  (note `/help` is itself login-gated — see Section D). Still to verify: the "View All Release Notes"
+  link in `ReleaseNotes.tsx:145` (`github.com/jclind/prepify/releases`). **(blocker)**
+- `[x]` **404 / not-found page** — a real designed 404 exists (`src/pages/404/404.tsx` — food-plate
+  graphic, Return Home button) and renders correctly on an unknown route. *Copy nit:* the heading
+  reads "Something went wrong!", which sounds like a crash rather than a missing page — consider
+  "Page not found." **(blocker → done; copy tweak is nice-to-have)**
+- `[~]` **Mobile pass** — runtime audit at 390px confirmed Home, Recipes browse, Single Recipe (incl.
+  the Nutrition card) and the hamburger menu all render cleanly with **zero console errors**. Still to
+  eyeball by hand: Add Recipe and Account/Settings flows. **(blocker)**
 - `[ ]` **Copy / typo review** — read every user-facing string once with fresh eyes. **(nice-to-have)**
 - `[ ]` **Favicon, page titles, social/OG meta** — verify `index.html` + per-page titles
   (`react-helmet-async` is already a dependency) and an OG image for link previews. **(nice-to-have)**
@@ -88,14 +93,28 @@ a feature flag. Do these together:
 - `[ ]` **Firebase Auth + Storage rules review** — confirm Storage rules only let authenticated users
   write their own recipe images, and there are no permissive `allow read, write: if true` rules.
   **(blocker)**
-- `[ ]` **Server input validation on write routes** — review `server/routes/*` (recipes, reviews,
-  users) for validation of request bodies before they hit MongoDB. **(blocker)**
+- `[x]` **Server input validation & ownership on write routes** — re-verified 2026-06-09 against
+  `server/routes/*`. The high-severity holes from `server-audit.md` are **closed**: `addRecipe` stamps
+  `userId`/`_id` server-side and discards client values (`recipes.js:150-152`); `editRecipe` /
+  `deleteRecipe` enforce `recipe.userId === req.uid` → 403 (`recipes.js:181,227`); ratings/reviews
+  derive `username` from the verified token, not query params (`reviews.js:13,116`); `rating` is
+  range-validated (`reviews.js:19-25`); search params are regex-escaped (`recipes.js:12`); save/unsave
+  have dup-checks and a `$max[…,0]` floor; the previously-unprotected `addRecipeTag` route is gone.
+  **(blocker → resolved)**
 - `[ ]` **Rate limiting on the API** — public write endpoints (reviews, recipe creation) should have
   basic rate limiting to prevent abuse. **(nice-to-have)**
-- `[ ]` **Tight CORS allowlist** — confirm `FRONTEND_URLS` on the server lists only the real
-  production origin(s), not `*` or stale localhost. **(blocker)**
+- `[~]` **Tight CORS allowlist** — mechanism is sound (`server/app.js`: allowlist built from
+  `FRONTEND_URLS` + a `deploy-preview-*--prepify.netlify.app` regex + `credentials: true`, default
+  `localhost:3000`). Just confirm the **production** `FRONTEND_URLS` value is the real origin(s) only.
+  **(blocker)**
 - `[ ]` **Dependency audit** — run `npm audit` for both root and `server/`, and the `dep-audit` skill
   for an upgrade triage. Resolve high/critical advisories. **(blocker for high/critical)**
+- `[ ]` **Residual low-severity API issues** — surfaced by the audit, not release-blocking: (a)
+  `getReviews` derives `isCurrentUser` from the `username` *query param* rather than the token
+  (`reviews.js:165,183`) — cosmetic, since edit/delete are token-scoped; (b) `newReview` upserts with
+  `$set` only, so a review doc created before any rating has no `rating` field (`reviews.js:75`); (c)
+  `getSingleUserReviews` returns `recipeData: null` for deleted recipes with no signal
+  (`reviews.js:216`). **(post-1.0)**
 
 ---
 
@@ -148,6 +167,8 @@ Chunky design efforts that are bigger than a single checkbox. Tag each as **(blo
     no purpose-built mobile menu, just the desktop links reflowed. `Navbar.scss` is already ~8 KB.
     Logged-out users see recipes/login/signup; logged-in users get an account dropdown holding Help +
     logout.
+  - **Audit (2026-06-09):** functional — the menu opens to a clean full-screen overlay
+    (Recipes/Login/Signup) with no console errors. This is discretionary polish, **not** a bug fix.
   - **Goal:** _(fill in)_ — a dedicated mobile nav (e.g. full-screen / slide-in panel, larger tap
     targets, clearer hierarchy) rather than the reflowed desktop links.
   - **Touches:** `src/Components/Navbar/Navbar.tsx`, `src/Components/Navbar/Navbar.scss`, and
@@ -191,5 +212,26 @@ the actual flip. Deploy is currently manual (Firebase Hosting frontend + Railway
 ---
 
 ## Audit log
+
+### 2026-06-09 — full release audit (static + runtime)
+Four-pass audit: reconciled the dated audit docs, read the server security surface, and drove the live
+app (desktop + mobile) via the run-prepify skill.
+
+- **Security — big win.** Nearly every high-severity finding in `server-audit.md` (May) is now
+  **closed**: ownership checks on recipe edit/delete, token-derived usernames on ratings/reviews,
+  regex escaping, save/unsave guards, and removal of the unprotected `addRecipeTag` route. Section B's
+  "input validation & ownership" item flipped to `[x]`. Only three low-severity, non-blocking API
+  nits remain (recorded as a post-1.0 item).
+- **Runtime — clean.** Home, Recipes, Single Recipe, Login, Signup, Forgot-Password, and 404 all
+  render with **zero console errors**, desktop and at 390px mobile (incl. the Nutrition card and the
+  hamburger menu). No runtime breakage found.
+- **New product findings:** (1) 404 page's "contact our support team" link points to `/` not `/help`
+  (`404.tsx:22`); (2) 404 heading copy "Something went wrong!" reads as a crash, not a missing page.
+- **Confirmed known blockers:** beta tag visible (logo badge + footer `version 2.6.3-beta`); `/help`
+  redirects to `/login` when logged out (support unreachable — Section D item).
+- **Not a bug (verified):** mobile single-recipe initially looked blank in a full-page screenshot but
+  all sections render correctly on-screen — a capture artifact. Mobile nav works.
+- **Data note (not code):** a recipe titled "Egg Friend Rice" looks like a typo in user content.
+- Scope was release-blocking only; pure code-quality stays in `REFACTOR.md` / `PATTERN_AUDIT.md`.
 
 _`/release-readiness` appends dated run summaries here._
