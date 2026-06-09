@@ -6,36 +6,27 @@ import { CgTimer } from 'react-icons/cg'
 import Skeleton from 'react-loading-skeleton'
 import 'react-loading-skeleton/dist/skeleton.css'
 import RecipeAPI from 'src/api/recipes'
-import { formatRating } from 'src/util/formatRating'
 import { RecipeType } from 'types'
+import { skeletonColor, fmtPrice, ratingLabel } from './homeFormat'
 
-const skeletonColor = '#e6e6e6'
-const fmtPrice = (cents: number) => `$${(cents / 100).toFixed(2)}`
-
-const TrendingCard: FC<{ recipe: RecipeType }> = ({ recipe }) => {
-  const ratingCount = Number(recipe.rating?.rateCount) || 0
-  return (
-    <Link to={`/recipes/${recipe._id}`} className='home-recipe-card'>
-      <div className='thumb'>
-        <img src={recipe.recipeImage} alt={recipe.title} />
-        {recipe.servingPrice != null && (
-          <span className='price-chip'>{fmtPrice(recipe.servingPrice)}/serv</span>
-        )}
+const TrendingCard: FC<{ recipe: RecipeType }> = ({ recipe }) => (
+  <Link to={`/recipes/${recipe._id}`} className='home-recipe-card'>
+    <div className='thumb'>
+      <img src={recipe.recipeImage} alt={recipe.title} />
+      {recipe.servingPrice != null && (
+        <span className='price-chip'>{fmtPrice(recipe.servingPrice)}/serv</span>
+      )}
+    </div>
+    <div className='body'>
+      <h3>{recipe.title}</h3>
+      <div className='meta'>
+        <span><CgTimer /> {recipe.totalTime}m</span>
+        <span><AiOutlineStar /> {ratingLabel(recipe.rating)}</span>
+        {recipe.cuisine && <span className='cuisine'>{recipe.cuisine}</span>}
       </div>
-      <div className='body'>
-        <h3>{recipe.title}</h3>
-        <div className='meta'>
-          <span><CgTimer /> {recipe.totalTime}m</span>
-          <span>
-            <AiOutlineStar />{' '}
-            {ratingCount === 0 ? 'New' : formatRating(recipe.rating.rateValue, ratingCount)}
-          </span>
-          {recipe.cuisine && <span className='cuisine'>{recipe.cuisine}</span>}
-        </div>
-      </div>
-    </Link>
-  )
-}
+    </div>
+  </Link>
+)
 
 const TrendingCardSkeleton: FC = () => (
   <div className='home-recipe-card'>
@@ -50,18 +41,34 @@ const TrendingCardSkeleton: FC = () => (
 )
 
 const HomeTrending: FC = () => {
-  const { data, isLoading } = useQuery<RecipeType[]>({
+  const { data, isLoading, isError } = useQuery<RecipeType[]>({
     queryKey: ['trending-recipes'],
     queryFn: () => RecipeAPI.getTrendingRecipes(4),
   })
 
   const recipes = data ?? []
 
+  if (isLoading) {
+    return (
+      <div className='home-trending-grid'>
+        {Array.from({ length: 4 }).map((_, i) => <TrendingCardSkeleton key={i} />)}
+      </div>
+    )
+  }
+
+  if (isError || recipes.length === 0) {
+    return (
+      <p className='home-empty'>
+        {isError
+          ? 'Couldn’t load trending recipes. Please try again later.'
+          : 'No trending recipes yet.'}
+      </p>
+    )
+  }
+
   return (
-    <div className={`home-trending-grid ${isLoading ? 'loading' : ''}`}>
-      {recipes.length > 0
-        ? recipes.map(r => <TrendingCard recipe={r} key={r._id} />)
-        : Array.from({ length: 4 }).map((_, i) => <TrendingCardSkeleton key={i} />)}
+    <div className='home-trending-grid'>
+      {recipes.map(r => <TrendingCard recipe={r} key={r._id} />)}
     </div>
   )
 }
