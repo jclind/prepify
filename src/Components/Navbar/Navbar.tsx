@@ -9,6 +9,8 @@ import { AiOutlineUser } from 'react-icons/ai'
 import { BiHelpCircle, BiLogOut } from 'react-icons/bi'
 import AuthAPI from 'src/api/auth'
 import Skeleton from 'react-loading-skeleton'
+import NavMenu from 'src/Components/Navbar/menu/NavMenu'
+import { useNavMenu } from 'src/Components/Navbar/menu/useNavMenu'
 
 const skeletonColor = '#d6d6d6'
 
@@ -30,6 +32,9 @@ const Navbar: FC<NavbarProps> = ({
   const uid = AuthAPI.getUID()
 
   const location = useLocation()
+
+  // Mobile menu (redesign): shared auth/profile data for the menu.
+  const menu = useNavMenu()
 
   useEffect(() => {
     setNavOpen(false)
@@ -143,6 +148,7 @@ const Navbar: FC<NavbarProps> = ({
   )
 
   return (
+    <>
     <nav className={`nav background-${navBackgroundColor}`}>
       <div className='nav-center'>
         <div className='nav-header'>
@@ -168,6 +174,11 @@ const Navbar: FC<NavbarProps> = ({
         </div>
       </div>
     </nav>
+
+      {/* Redesigned mobile menu — rendered outside <nav> so the bar (logo +
+          hamburger/X) stays above the overlay and remains tappable to close. */}
+      <NavMenu open={navOpen} onClose={() => setNavOpen(false)} {...menu} />
+    </>
   )
 }
 

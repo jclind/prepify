@@ -1,0 +1,242 @@
+@use '../../../helpers.scss' as s;
+
+// =============================================================
+// Mobile navigation menu (≤725px): full-screen panel with a subtle brand
+// gradient, frosted cards grouping the nav, an in-menu recipe search, and an
+// account card. Desktop nav is untouched; the legacy .nav-content overlay is
+// disabled below 725px in Navbar.scss.
+// =============================================================
+
+.nav-menu {
+  // theming knobs
+  --menu-text: #{s.$primary-text};
+  --menu-muted: #{s.$secondary-text};
+  --menu-accent: #{s.$primary};
+  --menu-border: #{s.$gray-300};
+  --menu-link-hover: #{s.$gray-50};
+  --menu-active-bg: #{rgba(s.$primary, 0.12)};
+  --menu-avatar-bg: #{s.$primary-text};
+  --menu-avatar-text: #{s.$white};
+  --menu-radius: #{s.$border-radius};
+
+  position: fixed;
+  inset: 0;
+  z-index: 90; // below the bar (z-index 100) so the hamburger/X stays tappable
+  visibility: hidden;
+  pointer-events: none;
+
+  // mobile only — desktop keeps the inline nav links
+  @media screen and (min-width: 726px) {
+    display: none;
+  }
+
+  &.is-open {
+    visibility: visible;
+    pointer-events: auto;
+  }
+
+  // ---- full-screen panel ----
+  .nav-menu__panel {
+    position: absolute;
+    inset: 0;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    max-width: s.$max-width;
+    margin: 0 auto;
+    padding: calc(#{s.$nav-height} + env(safe-area-inset-top, 0px)) 2rem
+      calc(2rem + env(safe-area-inset-bottom, 0px));
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    color: var(--menu-text);
+
+    // solid base + subtle diagonal brand gradient (base keeps the page from
+    // bleeding through, since there's no backdrop behind a full-screen panel)
+    background-color: s.$white;
+    background-image: linear-gradient(
+      170deg,
+      #{rgba(s.$primary, 0.12)} 0%,
+      #{rgba(s.$secondary, 0.06)} 45%,
+      #{rgba(s.$white, 0)} 100%
+    );
+
+    opacity: 0;
+    transform: scale(1.03);
+    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.25s ease;
+  }
+  &.is-open .nav-menu__panel {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  // ---- search slot ----
+  .menu-search {
+    width: 100%;
+    margin-bottom: 0.25rem;
+
+    // SearchRecipesInput is sized for page layouts (90% / max 800px); inside
+    // the menu it should fill the column so it lines up with the cards below.
+    .search-recipes-form {
+      width: 100%;
+      max-width: none;
+    }
+  }
+
+  // ---- grouped sections (frosted cards) ----
+  .menu-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding: 0.85rem 0.75rem;
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    border-radius: var(--menu-radius);
+    box-shadow: 0 4px 16px rgba(48, 56, 65, 0.08);
+  }
+  .menu-group__heading {
+    margin: 0 0 0.35rem 0.5rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--menu-muted);
+  }
+
+  // ---- nav rows ----
+  .menu-link {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.85rem 1rem;
+    border-radius: var(--menu-radius);
+    color: var(--menu-text);
+    text-decoration: none;
+    font-size: 1.25rem;
+    font-weight: 600;
+    transition: background 0.12s linear, color 0.12s linear;
+
+    .menu-link__icon {
+      flex-shrink: 0;
+      height: 22px;
+      width: 22px;
+      color: var(--menu-accent);
+    }
+    &:hover {
+      background: var(--menu-link-hover);
+    }
+    &.is-active {
+      background: var(--menu-active-bg);
+      color: var(--menu-accent);
+    }
+  }
+
+  // ---- account card ----
+  .account-card {
+    margin-top: auto;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--menu-border);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .account-card__identity {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    text-decoration: none;
+    color: var(--menu-text);
+  }
+  .account-card__avatar {
+    flex-shrink: 0;
+    height: 48px;
+    width: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+    overflow: hidden;
+  }
+  .account-card__avatar--initial {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--menu-avatar-bg);
+    color: var(--menu-avatar-text);
+    font-size: 1.4rem;
+    font-weight: 600;
+  }
+  .account-card__meta {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .account-card__name {
+    font-weight: 700;
+    font-size: 1.05rem;
+  }
+  .account-card__email {
+    font-size: 0.82rem;
+    color: var(--menu-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .account-card__logout {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--menu-border);
+    border-radius: var(--menu-radius);
+    background: none;
+    color: var(--menu-text);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color 0.12s linear, background 0.12s linear;
+    .icon {
+      height: 20px;
+      width: 20px;
+    }
+    &:hover {
+      border-color: var(--menu-accent);
+      color: var(--menu-accent);
+    }
+  }
+
+  // ---- logged-out CTAs ----
+  .account-card--logged-out {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .account-cta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.85rem;
+    border-radius: var(--menu-radius);
+    font-size: 1.05rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: filter 0.12s linear, background 0.12s linear;
+  }
+  .account-cta--signup {
+    background: var(--menu-accent);
+    color: #fff;
+    &:hover {
+      filter: brightness(1.07);
+    }
+  }
+  .account-cta--login {
+    background: none;
+    color: var(--menu-text);
+    border: 2px solid var(--menu-border);
+    &:hover {
+      border-color: var(--menu-accent);
+      color: var(--menu-accent);
+    }
+  }
+}
