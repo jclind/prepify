@@ -19,10 +19,13 @@ import AddRatingBtn from 'src/pages/SingleRecipe/Buttons/AddRatingBtn'
 import PrintRecipeBtn from 'src/pages/SingleRecipe/Buttons/PrintRecipeBtn'
 import RatingsAndReviews from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/RatingsAndReviews'
 import RecipeNotFound from 'src/pages/SingleRecipe/RecipeNotFound/RecipeNotFound'
+import PrintableRecipe from 'src/pages/SingleRecipe/PrintableRecipe/PrintableRecipe'
 
 import { updateIngredients } from 'src/util/updateIngredients'
 import { capitalize } from 'src/util/capitalize'
 import { formatRating } from 'src/util/formatRating'
+import { formatMonthYear } from 'src/util/formatDate'
+import { formatPrice } from 'src/util/formatPrice'
 import { closestFraction } from 'src/util/validateIngredientQuantityStr'
 
 import { IngredientsType, InstructionsType, RecipeType, ReviewType } from 'types'
@@ -32,17 +35,6 @@ import AuthAPI from 'src/api/auth'
 type LocalStorageRecipeType = { recipeId: string; numServings: number }
 
 const skeletonColor = '#d6d6d6'
-
-const formatMonthYear = (iso: string): string => {
-  // `createdAt` is stored as an epoch-ms string (see RecipeAPI.addRecipe), so it
-  // must be coerced with Number() — `new Date(msString)` yields Invalid Date.
-  const d = new Date(Number(iso))
-  return Number.isNaN(d.getTime())
-    ? ''
-    : d.toLocaleDateString('en', { month: 'long', year: 'numeric' })
-}
-
-const formatPrice = (cents: number) => `$${(cents / 100).toFixed(2)}`
 
 const SingleRecipe: FC = () => {
   const { recipeId } = useParams<{ recipeId: string }>()
@@ -67,7 +59,7 @@ const SingleRecipe: FC = () => {
   // in-progress value while typing; the committed numeric value is servingSize.
   const [servDraft, setServDraft] = useState('')
   const [checked, setChecked] = useState<Set<string>>(new Set())
-  const printedRef = useRef<HTMLInputElement>(null)
+  const printedRef = useRef<HTMLDivElement>(null)
 
   const updateRecipeLocalStorage = (recipeId: string, numServings: number) => {
     const arr: LocalStorageRecipeType[] = JSON.parse(
@@ -201,7 +193,7 @@ const SingleRecipe: FC = () => {
       ) : recipe404 ? (
         <RecipeNotFound />
       ) : (
-        <div className='page single-recipe-page' ref={printedRef}>
+        <div className='page single-recipe-page'>
           <div className='sr-controls'>
             <Link to='/recipes' className='sr-back'>
               <BiLeftArrowAlt /> All recipes
@@ -409,6 +401,16 @@ const SingleRecipe: FC = () => {
               currUserReview={currUserReview}
               setCurrUserReview={setCurrUserReview}
               isOwner={isOwner}
+            />
+          )}
+
+          {!loading && currRecipe && (
+            <PrintableRecipe
+              ref={printedRef}
+              recipe={currRecipe}
+              ingredients={ingredients}
+              instructions={instructions}
+              servingSize={servingSize}
             />
           )}
         </div>

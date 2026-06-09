@@ -5,7 +5,7 @@ import { TailSpin } from 'react-loader-spinner'
 import { BsPrinter, BsFillPrinterFill } from 'react-icons/bs'
 
 type PrintRecipeBtnProps = {
-  printedRef: React.RefObject<HTMLInputElement | null>
+  printedRef: React.RefObject<HTMLDivElement | null>
 }
 
 const PrintRecipeBtn: FC<PrintRecipeBtnProps> = ({ printedRef }) => {
