@@ -9,6 +9,9 @@
   margin-bottom: 2rem;
   padding: 0.9rem 1.4rem;
   width: 100%;
+  // there's no global border-box reset, so without this the padding + border
+  // push the 100%-wide banner past its parent (clipped by #root overflow:hidden)
+  box-sizing: border-box;
   background: linear-gradient(135deg, rgba(s.$secondary, 0.13), rgba(s.$primary, 0.09));
   border: 1.5px solid rgba(s.$primary, 0.22);
   border-radius: 16px;
@@ -96,6 +99,32 @@
       color: s.$primary-background;
       background: s.$error-red;
       border-color: s.$error-red;
+    }
+  }
+
+  // ── mobile: stack into a tidy card — heading, equal Edit/Delete row, evenly
+  // spaced stats ──────────────────────────────────────────────────────────────
+  @media screen and (max-width: 600px) {
+    gap: 0.85rem;
+    padding: 1rem 1.1rem;
+    .who {
+      flex-basis: 100%;
+      font-size: 0.88rem;
+    }
+    .btns-container {
+      width: 100%;
+      gap: 0.6rem;
+      button {
+        flex: 1;
+        justify-content: center;
+        padding: 0.55rem 0.5rem;
+      }
+    }
+    .owner-stats {
+      justify-content: space-between;
+      gap: 0.5rem 0.75rem;
+      padding-top: 0.8rem;
+      .stat { font-size: 0.8rem; }
     }
   }
 }
