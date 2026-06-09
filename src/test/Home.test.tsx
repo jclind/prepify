@@ -10,23 +10,17 @@ import RecipeAPI from 'src/api/recipes'
 vi.mock('src/api/recipes', () => ({
   default: {
     getTrendingRecipes: vi.fn(),
+    getAllRecipes: vi.fn(),
   },
 }))
 
+// HomeHero renders the real search input; stub it so we don't pull in Firebase/network.
 vi.mock('src/Components/SearchRecipesInput/SearchRecipesInput', () => ({
   default: () => null,
 }))
 
-vi.mock('src/Components/RecipeThumbnail/RecipeThumbnail', () => ({
-  default: ({ recipe, loading }: any) =>
-    loading ? (
-      <div data-testid='recipe-thumb-loading' />
-    ) : (
-      <div data-testid='recipe-thumb'>{recipe?.title}</div>
-    ),
-}))
-
 const mockGetTrendingRecipes = RecipeAPI.getTrendingRecipes as ReturnType<typeof vi.fn>
+const mockGetAllRecipes = RecipeAPI.getAllRecipes as ReturnType<typeof vi.fn>
 
 const makeRecipe = (id: string) => ({
   _id: id,
@@ -55,6 +49,11 @@ const makeRecipe = (id: string) => ({
   numTimesMade: 0,
 })
 
+const mealResult = (recipes: ReturnType<typeof makeRecipe>[]) => ({
+  recipeList: recipes,
+  total_results: recipes.length,
+})
+
 const createTestQueryClient = () =>
   new QueryClient({ defaultOptions: { queries: { retry: false } } })
 
@@ -72,57 +71,90 @@ const renderHome = () =>
 describe('Home page', () => {
   beforeEach(() => {
     mockGetTrendingRecipes.mockReset()
+    mockGetAllRecipes.mockReset()
+    // Neutral defaults; individual tests override the section they exercise.
+    mockGetTrendingRecipes.mockReturnValue(new Promise(() => {}))
+    mockGetAllRecipes.mockResolvedValue(mealResult([]))
   })
 
   it('renders without crashing', () => {
-    mockGetTrendingRecipes.mockReturnValue(new Promise(() => {}))
     renderHome()
   })
 
   it('renders the hero heading text', () => {
-    mockGetTrendingRecipes.mockReturnValue(new Promise(() => {}))
     renderHome()
     expect(
       screen.getByText('Save money. Reduce stress. Be healthy.')
     ).toBeInTheDocument()
   })
 
-  describe('TrendingRecipes', () => {
+  describe('Trending this week', () => {
     it('shows 4 skeleton cards while the API call is pending', () => {
       mockGetTrendingRecipes.mockReturnValue(new Promise(() => {}))
-      renderHome()
-      expect(screen.getAllByTestId('recipe-thumb-loading')).toHaveLength(4)
+      const { container } = renderHome()
+      expect(container.querySelectorAll('.home-trending-grid .home-recipe-card')).toHaveLength(4)
     })
 
-    it('replaces skeleton cards with recipe cards after getTrendingRecipes resolves', async () => {
+    it('replaces skeletons with recipe cards after getTrendingRecipes resolves', async () => {
       mockGetTrendingRecipes.mockResolvedValue([makeRecipe('a'), makeRecipe('b')])
-      renderHome()
-      // findAllByTestId handles multiple matches; findByTestId throws when >1 element is found
-      const thumbs = await screen.findAllByTestId('recipe-thumb')
-      expect(thumbs).toHaveLength(2)
-      expect(screen.getByText('Recipe a')).toBeInTheDocument()
+      const { container } = renderHome()
+      expect(await screen.findByText('Recipe a')).toBeInTheDocument()
       expect(screen.getByText('Recipe b')).toBeInTheDocument()
-      expect(screen.queryByTestId('recipe-thumb-loading')).toBeNull()
+      expect(container.querySelectorAll('.home-trending-grid .home-recipe-card')).toHaveLength(2)
     })
 
-    // TrendingRecipes has no .catch and no empty-state UI — when the fetch resolves
-    // with no recipes the component silently stays in skeleton state indefinitely.
-    // A rejected fetch has the same visible result but can't be tested directly
-    // without triggering an unhandled-rejection warning (no .catch on the Promise).
-    // See REFACTOR_NOTES.md.
-    it('stays in skeleton state when getTrendingRecipes resolves with empty data (no error state)', async () => {
+    it('shows an empty-state message when getTrendingRecipes resolves with no recipes', async () => {
       mockGetTrendingRecipes.mockResolvedValue([])
       renderHome()
-      await waitFor(() => {
-        expect(screen.getAllByTestId('recipe-thumb-loading')).toHaveLength(4)
-      })
+      expect(await screen.findByText(/no trending recipes/i)).toBeInTheDocument()
     })
 
-    it('does not carry the .loading class on the recipes wrapper after recipes resolve', async () => {
-      mockGetTrendingRecipes.mockResolvedValue([makeRecipe('a')])
-      const { container } = renderHome()
-      await screen.findByTestId('recipe-thumb')
-      expect(container.querySelector('.trending-recipes .recipes.loading')).toBeNull()
+    it('shows an error message when getTrendingRecipes rejects', async () => {
+      mockGetTrendingRecipes.mockRejectedValue(new Error('boom'))
+      renderHome()
+      expect(await screen.findByText(/couldn.t load trending recipes/i)).toBeInTheDocument()
+    })
+  })
+
+  describe('Browse by meal', () => {
+    it('renders the three meal columns', () => {
+      renderHome()
+      expect(screen.getByText('Breakfast')).toBeInTheDocument()
+      expect(screen.getByText('Lunch')).toBeInTheDocument()
+      expect(screen.getByText('Dinner')).toBeInTheDocument()
+    })
+
+    it('renders each meal column with its recipes', async () => {
+      mockGetAllRecipes.mockImplementation((_p: number, _o: string, tags: string[]) =>
+        Promise.resolve(mealResult([makeRecipe(`${tags[0]}1`)]))
+      )
+      renderHome()
+      expect(await screen.findByText('Recipe Breakfast1')).toBeInTheDocument()
+      expect(screen.getByText('Recipe Lunch1')).toBeInTheDocument()
+      expect(screen.getByText('Recipe Dinner1')).toBeInTheDocument()
+    })
+
+    it('does not repeat a recipe that is tagged for multiple meals', async () => {
+      mockGetAllRecipes.mockImplementation((_p: number, _o: string, tags: string[]) => {
+        const meal = tags[0]
+        if (meal === 'Breakfast') return Promise.resolve(mealResult([makeRecipe('shared'), makeRecipe('bk')]))
+        if (meal === 'Lunch') return Promise.resolve(mealResult([makeRecipe('shared'), makeRecipe('ln')]))
+        return Promise.resolve(mealResult([]))
+      })
+      renderHome()
+      // Breakfast claims "shared"; Lunch should fall back to its own unique recipe.
+      expect(await screen.findByText('Recipe bk')).toBeInTheDocument()
+      expect(screen.getByText('Recipe ln')).toBeInTheDocument()
+      expect(screen.getAllByText('Recipe shared')).toHaveLength(1)
+      expect(screen.getByText(/no dinner recipes yet/i)).toBeInTheDocument()
+    })
+
+    it('shows an error message in each column when the fetch rejects', async () => {
+      mockGetAllRecipes.mockRejectedValue(new Error('boom'))
+      renderHome()
+      await waitFor(() => {
+        expect(screen.getAllByText(/couldn.t load recipes/i)).toHaveLength(3)
+      })
     })
   })
 })

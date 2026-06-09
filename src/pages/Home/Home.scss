@@ -1,0 +1,177 @@
+@use '../../helpers.scss' as s;
+
+// Home builds on the shared `.page home-page` wrapper, which provides the top
+// offset/hero math; HomeHero supplies the full-bleed header styles.
+.home-page {
+  color: s.$primary-text;
+
+  .home-section {
+    margin: 3.5rem 0;
+    &:first-of-type { margin-top: 3rem; }
+  }
+
+  // Empty / error message for a section that has no data to show.
+  .home-empty {
+    color: s.$tertiary-text;
+    font-weight: 600;
+    padding: 1rem 0;
+  }
+
+  .home-section-header {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "title see"
+      "desc  see";
+    align-items: end;
+    column-gap: 1rem;
+    margin-bottom: 1.35rem;
+    h2 { grid-area: title; font-size: 1.7rem; font-weight: 700; letter-spacing: -0.015em; }
+    p { grid-area: desc; color: s.$tertiary-text; font-size: 0.95rem; margin-top: 0.2rem; }
+    .see-all {
+      grid-area: see;
+      align-self: end;
+      display: inline-flex; align-items: center; gap: 0.2rem;
+      text-decoration: none; color: s.$primary; font-weight: 700; font-size: 0.95rem;
+      white-space: nowrap;
+      &:hover { text-decoration: underline; }
+    }
+    // On narrow screens let the title use the full width and drop "See all"
+    // beside the description instead of reserving a tall right-hand column.
+    @media (max-width: 560px) {
+      grid-template-areas:
+        "title title"
+        "desc  see";
+      column-gap: 0.75rem;
+    }
+  }
+
+  // Recipe card (trending grid)
+  .home-trending-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.25rem;
+    @media (max-width: 1100px) { grid-template-columns: repeat(2, 1fr); }
+    @media (max-width: 520px) { grid-template-columns: 1fr; }
+  }
+  .home-recipe-card {
+    display: block;
+    background: s.$white;
+    border-radius: 14px;
+    overflow: hidden;
+    text-decoration: none;
+    color: s.$primary-text;
+    box-shadow: rgba(0, 0, 0, 0.06) 0px 6px 18px;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    &:hover { transform: translateY(-3px); box-shadow: rgba(0, 0, 0, 0.12) 0px 12px 26px; }
+    .thumb {
+      position: relative;
+      img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; }
+      .price-chip {
+        position: absolute; bottom: 0.6rem; right: 0.6rem;
+        background: rgba(255, 255, 255, 0.95); color: s.$primary;
+        font-weight: 800; font-size: 0.78rem; padding: 0.28rem 0.6rem;
+        border-radius: 999px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+      }
+    }
+    .body { padding: 0.85rem 1rem 1rem; }
+    h3 {
+      font-size: 1.02rem; font-weight: 600; line-height: 1.3;
+      text-transform: capitalize; margin-bottom: 0.55rem; min-height: 2.6em;
+    }
+    .meta {
+      display: flex; align-items: center; gap: 0.85rem;
+      font-size: 0.82rem; color: s.$secondary-text; font-weight: 600; flex-wrap: wrap;
+      svg { vertical-align: -2px; margin-right: 0.15rem; }
+      .cuisine { margin-left: auto; color: s.$tertiary-text; }
+    }
+  }
+
+  // Browse by meal
+  .home-meal-cols {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    // Mid-range: three columns get tight — pull the gap in before collapsing.
+    @media (max-width: 1100px) { gap: 1rem; }
+    @media (max-width: 850px) { grid-template-columns: 1fr; gap: 1.5rem; }
+  }
+  .home-meal-col {
+    background: s.$white;
+    border: 1px solid #efe6db;
+    border-radius: 16px;
+    padding: 1.25rem;
+    box-shadow: rgba(0, 0, 0, 0.04) 0px 4px 14px;
+
+    .meal-col-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.9rem;
+      padding-bottom: 0.6rem;
+      border-bottom: 2px solid s.$primary;
+      h3 { font-size: 1.1rem; font-weight: 700; }
+      .meal-see-all { font-size: 0.82rem; font-weight: 700; color: s.$primary; text-decoration: none; &:hover { text-decoration: underline; } }
+    }
+    ul { list-style: none; }
+    li + li { margin-top: 0.5rem; }
+    a {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+      text-decoration: none;
+      color: s.$primary-text;
+      border-radius: 10px;
+      padding: 0.4rem;
+      transition: background 0.12s ease;
+      &:hover { background: #fbf7f2; }
+      img { width: 56px; height: 56px; border-radius: 10px; object-fit: cover; flex-shrink: 0; }
+    }
+    .info { display: flex; flex-direction: column; gap: 0.2rem; min-width: 0; }
+    .title { font-weight: 600; font-size: 0.92rem; text-transform: capitalize; line-height: 1.25; }
+    .sub {
+      font-size: 0.74rem; color: s.$tertiary-text; font-weight: 600;
+      svg { vertical-align: -2px; }
+    }
+    .skeleton-row {
+      display: flex; gap: 0.75rem; align-items: center; padding: 0.4rem;
+      .info { flex: 1; display: flex; flex-direction: column; gap: 0.35rem; }
+    }
+    .empty-row {
+      padding: 0.6rem 0.4rem; color: s.$tertiary-text; font-size: 0.85rem; font-weight: 600;
+    }
+
+    // Mid-range (3 narrow columns): tighten padding and shrink rows so recipe
+    // titles keep enough width to breathe. Must come after the base nested
+    // rules above — same specificity, so source order decides.
+    @media (min-width: 851px) and (max-width: 1100px) {
+      padding: 0.85rem;
+      .meal-col-head h3 { font-size: 1rem; }
+      a { gap: 0.6rem; padding: 0.3rem; img { width: 44px; height: 44px; } }
+      .title { font-size: 0.85rem; }
+      .sub { font-size: 0.7rem; }
+    }
+  }
+
+  // View all
+  .home-view-all-section {
+    display: flex;
+    justify-content: center;
+    margin-top: 2.5rem;
+  }
+  .home-view-all {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    background: s.$primary;
+    color: s.$white;
+    padding: 0.95rem 2rem;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 1rem;
+    text-decoration: none;
+    transition: background 0.12s ease, transform 0.12s ease;
+    svg { font-size: 1.3rem; }
+    &:hover { background: #e74e1d; transform: translateY(-2px); }
+  }
+}
