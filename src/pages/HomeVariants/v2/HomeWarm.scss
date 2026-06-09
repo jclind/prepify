@@ -1,0 +1,115 @@
+@use '../../../helpers.scss' as s;
+
+// Warm builds on the standard `.page home-page` wrapper so the hero + navbar
+// behave exactly like the live home page (full-bleed header behind the nav).
+.home-warm {
+  color: s.$primary-text;
+
+  .warm-section {
+    margin: 3.5rem 0;
+    &:first-of-type { margin-top: 3rem; }
+  }
+
+  .warm-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 1rem;
+    margin-bottom: 1.35rem;
+    h2 { font-size: 1.7rem; font-weight: 700; letter-spacing: -0.015em; }
+    p { color: s.$tertiary-text; font-size: 0.95rem; margin-top: 0.2rem; }
+    .see-all {
+      flex-shrink: 0;
+      display: inline-flex; align-items: center; gap: 0.2rem;
+      text-decoration: none; color: s.$primary; font-weight: 700; font-size: 0.95rem;
+      white-space: nowrap;
+      &:hover { text-decoration: underline; }
+    }
+  }
+
+  .trending-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.25rem;
+    @media (max-width: 1100px) { grid-template-columns: repeat(2, 1fr); }
+    @media (max-width: 520px) { grid-template-columns: 1fr; }
+  }
+
+  .meal-cols {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    @media (max-width: 850px) { grid-template-columns: 1fr; }
+  }
+  .meal-col {
+    background: s.$white;
+    border: 1px solid #efe6db;
+    border-radius: 16px;
+    padding: 1.25rem;
+    box-shadow: rgba(0, 0, 0, 0.04) 0px 4px 14px;
+  }
+  .meal-col-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.9rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 2px solid s.$primary;
+    h3 { font-size: 1.1rem; font-weight: 700; }
+    .meal-see-all { font-size: 0.82rem; font-weight: 700; color: s.$primary; text-decoration: none; &:hover { text-decoration: underline; } }
+  }
+  .meal-col ul { list-style: none; }
+  .meal-col li + li { margin-top: 0.5rem; }
+  .meal-col a {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    text-decoration: none;
+    color: s.$primary-text;
+    border-radius: 10px;
+    padding: 0.4rem;
+    transition: background 0.12s ease;
+    &:hover { background: #fbf7f2; }
+    img { width: 56px; height: 56px; border-radius: 10px; object-fit: cover; flex-shrink: 0; }
+  }
+  .meal-col .info { display: flex; flex-direction: column; gap: 0.2rem; min-width: 0; }
+  .meal-col .title { font-weight: 600; font-size: 0.92rem; text-transform: capitalize; line-height: 1.25; }
+  .meal-col .sub {
+    font-size: 0.74rem; color: s.$tertiary-text; font-weight: 600;
+    svg { vertical-align: -2px; }
+  }
+  .meal-col .skeleton-row {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    padding: 0.4rem;
+    .info { flex: 1; display: flex; flex-direction: column; gap: 0.35rem; }
+  }
+  .meal-col .empty-row {
+    padding: 0.6rem 0.4rem;
+    color: s.$tertiary-text;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  .view-all-section {
+    display: flex;
+    justify-content: center;
+    margin-top: 2.5rem;
+  }
+  .view-all-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    background: s.$primary;
+    color: s.$white;
+    padding: 0.95rem 2rem;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 1rem;
+    text-decoration: none;
+    transition: background 0.12s ease, transform 0.12s ease;
+    svg { font-size: 1.3rem; }
+    &:hover { background: #e74e1d; transform: translateY(-2px); }
+  }
+}

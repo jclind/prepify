@@ -1,0 +1,169 @@
+@use '../../helpers.scss' as s;
+
+.home-feed {
+  position: relative;
+  height: calc(100vh - #{s.$nav-height});
+  margin-top: s.$nav-height;
+  overflow: hidden;
+  background: s.$primary-text;
+
+  .feed-stack {
+    height: 100%;
+    overflow-y: auto;
+    scroll-snap-type: y mandatory;
+    &::-webkit-scrollbar { display: none; }
+    scrollbar-width: none;
+  }
+  .feed-card {
+    position: relative;
+    height: calc(100vh - #{s.$nav-height});
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+    background-size: cover;
+    background-position: center;
+  }
+  .feed-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.1) 30%, rgba(0,0,0,0) 50%, rgba(0,0,0,0.85) 100%);
+    color: s.$white;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 2rem 6%;
+  }
+  .feed-top {
+    display: flex;
+    justify-content: space-between;
+    .feed-cuisine {
+      background: s.$primary;
+      padding: 0.4rem 0.95rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+    .feed-counter {
+      background: rgba(255,255,255,0.15);
+      backdrop-filter: blur(8px);
+      padding: 0.4rem 0.85rem;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+  }
+  .feed-bottom {
+    max-width: 720px;
+    h1 {
+      font-size: 3rem;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      line-height: 1.05;
+      text-transform: capitalize;
+      margin-bottom: 0.5rem;
+      text-shadow: 0 2px 16px rgba(0,0,0,0.25);
+      @media (max-width: 700px) { font-size: 2rem; }
+    }
+    p {
+      font-size: 1rem;
+      opacity: 0.92;
+      margin-bottom: 1rem;
+    }
+  }
+  .feed-meta {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    svg { vertical-align: -2px; margin-right: 0.2rem; }
+    .price {
+      background: s.$primary;
+      padding: 0.2rem 0.75rem;
+      border-radius: 999px;
+      font-weight: 700;
+    }
+  }
+  .feed-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    flex-wrap: wrap;
+    .primary {
+      background: s.$white;
+      color: s.$primary-text;
+      padding: 0.85rem 1.5rem;
+      border-radius: 999px;
+      font-weight: 700;
+      text-decoration: none;
+      &:hover { background: s.$primary; color: s.$white; }
+    }
+    .icon-btn {
+      width: 46px; height: 46px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.15);
+      backdrop-filter: blur(6px);
+      border: 1.5px solid rgba(255,255,255,0.3);
+      color: s.$white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+      &:hover { background: rgba(255,255,255,0.3); }
+    }
+  }
+
+  .feed-nav {
+    position: absolute;
+    right: 1.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.85rem;
+    z-index: 10;
+    @media (max-width: 700px) { right: 0.75rem; }
+  }
+  .feed-nav-btn {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(8px);
+    border: 1.5px solid rgba(255,255,255,0.3);
+    color: s.$white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    &:hover:not(:disabled) { background: rgba(255,255,255,0.3); }
+    &:disabled { opacity: 0.3; cursor: not-allowed; }
+  }
+  .feed-dots {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    padding: 0.6rem 0.3rem;
+    background: rgba(255,255,255,0.1);
+    backdrop-filter: blur(8px);
+    border-radius: 999px;
+  }
+  .feed-dot {
+    width: 6px;
+    height: 18px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.4);
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    transition: all 0.2s ease;
+    &.active {
+      background: s.$white;
+      height: 28px;
+    }
+  }
+}

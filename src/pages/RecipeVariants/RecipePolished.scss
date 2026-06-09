@@ -1,0 +1,306 @@
+@use '../../helpers.scss' as s;
+
+.recipe-polished {
+  width: 92%;
+  max-width: 1100px;
+  margin: 0 auto;
+  margin-top: s.$nav-height;
+  padding: 1.5rem 0 6rem;
+  color: s.$primary-text;
+
+  // hero
+  .hero {
+    display: grid;
+    grid-template-columns: 400px 1fr;
+    gap: 2.5rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid s.$gray-300;
+    @media (max-width: 850px) { grid-template-columns: 1fr; }
+  }
+  .hero-img {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    border-radius: 16px;
+  }
+  .hero-text {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    justify-content: center;
+  }
+  .cuisine {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: s.$secondary;
+  }
+  h1 {
+    font-size: 2.4rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    text-transform: capitalize;
+  }
+  .description {
+    color: s.$secondary-text;
+    line-height: 1.6;
+    font-size: 1rem;
+  }
+  .author-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: s.$tertiary-text;
+    .avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; }
+    strong { color: s.$primary-text; }
+    .dot { opacity: 0.5; }
+  }
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.65rem;
+    margin-top: 0.5rem;
+    @media (max-width: 500px) { grid-template-columns: repeat(2, 1fr); }
+  }
+  .stat {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.7rem 0.85rem;
+    background: s.$primary-background;
+    border-radius: 12px;
+    .icon { font-size: 1.35rem; color: s.$primary; flex-shrink: 0; }
+    .dollar { font-size: 1.35rem; color: s.$primary; font-weight: 700; }
+    .num { font-size: 1.05rem; font-weight: 700; line-height: 1; }
+    .label { font-size: 0.7rem; color: s.$tertiary-text; font-weight: 600; margin-top: 0.15rem; }
+  }
+  .actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: 0.5rem;
+    button {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.7rem 1.15rem;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      cursor: pointer;
+      font-family: inherit;
+      border: 1.5px solid transparent;
+      transition: all 0.12s ease;
+    }
+    .primary {
+      background: s.$primary;
+      color: s.$white;
+      &:hover { background: #e74e1d; }
+    }
+    .secondary {
+      background: s.$white;
+      color: s.$primary-text;
+      border-color: s.$gray-300;
+      &:hover { border-color: s.$primary-text; }
+    }
+  }
+
+  // body
+  .body {
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    gap: 2.5rem;
+    padding: 2.5rem 0;
+    @media (max-width: 850px) { grid-template-columns: 1fr; }
+  }
+  .ingredients-pane {
+    position: sticky;
+    top: calc(#{s.$nav-height} + 1rem);
+    align-self: start;
+    @media (max-width: 850px) { position: static; }
+  }
+  .pane-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    h2 { font-size: 1.4rem; font-weight: 700; }
+  }
+  .servings-control {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: s.$primary-background;
+    border-radius: 999px;
+    padding: 0.2rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    button {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: none;
+      background: s.$white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: s.$primary-text;
+      &:hover { background: s.$primary; color: s.$white; }
+    }
+    span { padding: 0 0.4rem; }
+  }
+  .ing-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+
+    li {
+      display: grid;
+      grid-template-columns: 22px 36px auto 1fr;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.5rem 0.6rem;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 0.92rem;
+      transition: background 0.1s ease;
+      &:hover { background: s.$primary-background; }
+      img { width: 36px; height: 36px; border-radius: 8px; object-fit: cover; }
+      .box {
+        width: 20px; height: 20px;
+        border: 1.5px solid s.$gray-400;
+        border-radius: 5px;
+        display: flex; align-items: center; justify-content: center;
+        color: transparent;
+        font-size: 1.1rem;
+      }
+      .qty { font-weight: 700; color: s.$primary-text; white-space: nowrap; }
+      .name { color: s.$secondary-text; }
+      &.checked {
+        .box { background: s.$secondary; border-color: s.$secondary; color: s.$white; }
+        .qty, .name { text-decoration: line-through; color: s.$tertiary-text; }
+      }
+    }
+  }
+  .price-card {
+    margin-top: 1.25rem;
+    padding: 1rem;
+    background: linear-gradient(135deg, s.$primary, #ff7849);
+    color: s.$white;
+    border-radius: 12px;
+    .price-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.9; }
+    .price-value { font-size: 1.8rem; font-weight: 800; line-height: 1.1; }
+    .price-sub { font-size: 0.8rem; opacity: 0.95; margin-top: 0.2rem; }
+  }
+
+  // instructions
+  .instructions-pane {
+    h2 { font-size: 1.4rem; font-weight: 700; margin-bottom: 1.25rem; }
+  }
+  .step-list {
+    list-style: none;
+    padding: 0; margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    li {
+      display: grid;
+      grid-template-columns: 44px 1fr;
+      gap: 1rem;
+      padding: 1rem 1.15rem;
+      background: s.$white;
+      border: 1px solid s.$gray-300;
+      border-radius: 12px;
+    }
+    .num {
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      background: s.$primary;
+      color: s.$white;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800;
+      font-size: 1.05rem;
+    }
+    .step-meta {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 0.45rem;
+      .phase {
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        font-weight: 800;
+        padding: 0.15rem 0.45rem;
+        border-radius: 4px;
+        &.prep { background: rgba(s.$secondary, 0.15); color: s.$secondary; }
+        &.cook { background: rgba(s.$primary, 0.12); color: s.$primary; }
+      }
+      .dur {
+        font-size: 0.7rem;
+        color: s.$tertiary-text;
+        font-weight: 700;
+      }
+    }
+    p { line-height: 1.6; color: s.$primary-text; }
+  }
+
+  // tags & reviews
+  .tags-section {
+    margin-top: 2rem;
+    h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.75rem; }
+  }
+  .tags { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+  .tag {
+    background: rgba(s.$secondary, 0.12);
+    color: s.$secondary;
+    padding: 0.35rem 0.85rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  .reviews {
+    margin-top: 3.5rem;
+    padding-top: 2.5rem;
+    border-top: 1px solid s.$gray-300;
+    h2 { font-size: 1.5rem; font-weight: 700; }
+  }
+  .reviews-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    .avg {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      .big { font-size: 2.5rem; font-weight: 800; line-height: 1; color: s.$primary; }
+      .stars { color: s.$primary; font-size: 0.95rem; letter-spacing: 0.05em; }
+      .count { font-size: 0.8rem; color: s.$tertiary-text; font-weight: 600; }
+    }
+  }
+  .review-list { display: flex; flex-direction: column; gap: 1rem; }
+  .review {
+    background: s.$white;
+    border: 1px solid s.$gray-300;
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    .review-head {
+      display: flex;
+      gap: 0.65rem;
+      align-items: baseline;
+      margin-bottom: 0.5rem;
+      flex-wrap: wrap;
+      .stars { color: s.$primary; font-size: 0.85rem; }
+      .date { color: s.$tertiary-text; font-size: 0.8rem; margin-left: auto; }
+    }
+    p { line-height: 1.6; color: s.$secondary-text; font-size: 0.92rem; }
+  }
+}

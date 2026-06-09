@@ -1,0 +1,16 @@
+@use './bordered/softPlus' as soft;
+
+// Steps flow newspaper-style: 1–4 down the left column, 5–8 down the right.
+.recipe-instr-twocol-news {
+  @include soft.soft-plus;
+  @include soft.bar-balanced;
+
+  .instructions .step-list {
+    display: block;
+    column-count: 2;
+    column-gap: 2.75rem;
+    li { break-inside: avoid; margin-bottom: 1.6rem; }
+    li:last-child { margin-bottom: 0; }
+    p { max-width: none; }
+  }
+}

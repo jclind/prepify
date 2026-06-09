@@ -1,0 +1,32 @@
+@use '../../helpers.scss' as s;
+@use './bordered/softPlus' as soft;
+
+// Single column of steps with a sticky "cook's notes" tips panel on the right.
+.recipe-instr-sidebar-notes {
+  @include soft.soft-plus;
+  @include soft.bar-balanced;
+
+  .instructions-layout {
+    display: grid; grid-template-columns: 1fr 280px; gap: 2.5rem; align-items: start;
+    @media (max-width: 820px) { grid-template-columns: 1fr; }
+  }
+  .step-list p { max-width: none; }
+
+  .step-aside {
+    position: sticky; top: calc(#{s.$nav-height} + 1rem);
+    @media (max-width: 820px) { position: static; }
+  }
+  .aside-card {
+    background: linear-gradient(135deg, rgba(s.$secondary, 0.08), rgba(s.$primary, 0.05));
+    border: 1.5px solid s.$gray-200; border-radius: 14px; padding: 1.15rem 1.3rem;
+    h3 { font-size: 1rem; font-weight: 800; margin-bottom: 0.8rem; }
+    .tips {
+      list-style: none; padding: 0; margin: 0 0 1rem; display: flex; flex-direction: column; gap: 0.7rem;
+      li {
+        position: relative; padding-left: 1.1rem; font-size: 0.86rem; line-height: 1.5; color: s.$secondary-text;
+        &::before { content: ''; position: absolute; left: 0; top: 0.5rem; width: 6px; height: 6px; border-radius: 50%; background: s.$primary; }
+      }
+    }
+    .yield { font-size: 0.78rem; font-weight: 700; color: s.$tertiary-text; border-top: 1px solid s.$gray-200; padding-top: 0.8rem; }
+  }
+}

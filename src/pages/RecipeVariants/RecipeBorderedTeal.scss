@@ -1,0 +1,17 @@
+@use '../../helpers.scss' as s;
+@use './bordered/borderedBase' as base;
+
+// Teal-forward color identity; the "Your recipe" tint leans teal.
+.recipe-bordered-teal {
+  @include base.bordered-base(
+    $accent: s.$secondary,
+    $tint-a: rgba(s.$secondary, 0.16),
+    $tint-b: rgba(s.$secondary, 0.05),
+    $tint-border: rgba(s.$secondary, 0.3)
+  );
+
+  // keep the step phase chips legible against the teal accent
+  .step-list .step-meta .phase.cook { background: rgba(s.$secondary, 0.14); color: s.$secondary; }
+  .made-row .made-btn { background: rgba(s.$primary, 0.1); color: s.$primary; border-color: rgba(s.$primary, 0.35);
+    &:hover { background: rgba(s.$primary, 0.18); } }
+}

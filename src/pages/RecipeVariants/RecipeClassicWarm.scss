@@ -1,0 +1,13 @@
+@use '../../helpers.scss' as s;
+@use './classic/classicBase' as base;
+
+// Warm, soft-card treatment — cream surfaces, rounder corners, gentle shadow.
+.recipe-classic-warm {
+  @include base.classic-base($surface: #fffaf6, $border: #f1e4db, $radius: 18px);
+
+  .section { box-shadow: rgba(255, 87, 34, 0.05) 0px 8px 24px; }
+  .data-row .data { background: #fdeee7; }
+  .image-wrap img { box-shadow: rgba(255, 87, 34, 0.12) 0px 12px 30px; }
+  .made-row .made-btn { border-radius: 12px; }
+  .add-review { background: #fffaf6; border-color: #f1d9cd; }
+}

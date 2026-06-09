@@ -1,0 +1,19 @@
+@use '../../helpers.scss' as s;
+@use './bordered/borderedBase' as base;
+
+// Colored left-accent on every section + a tinted header when it's yours.
+.recipe-bordered-accent {
+  @include base.bordered-base();
+
+  .section { border-left: 4px solid s.$primary; }
+  .nutrition.section { border-left-color: s.$secondary; }
+  .owner-banner { border-left: 4px solid s.$primary; }
+
+  // when viewing as the owner, tint the header too
+  &.is-owner .header {
+    background: linear-gradient(135deg, rgba(s.$secondary, 0.08), rgba(s.$primary, 0.06));
+    border-radius: 12px;
+    padding: 1.25rem 1.25rem 2rem;
+    border-bottom: none;
+  }
+}

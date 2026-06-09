@@ -1,0 +1,10 @@
+@use '../../helpers.scss' as s;
+@use './classic/classicBase' as base;
+
+// Faithful, clean polish of the current page — open sections, no card chrome.
+.recipe-classic {
+  @include base.classic-base($card-sections: false);
+
+  .body > .section { padding-bottom: 2.5rem; border-bottom: 1px solid s.$gray-200; }
+  .body > .section:last-child { border-bottom: none; }
+}

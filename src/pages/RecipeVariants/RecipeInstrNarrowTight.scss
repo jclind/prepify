@@ -1,0 +1,13 @@
+@use './bordered/softPlus' as soft;
+
+// Tighter article-width column — ingredients and nutrition collapse to a single
+// column so everything reads as one calm centered flow.
+.recipe-instr-narrow-tight {
+  @include soft.soft-plus;
+  @include soft.bar-balanced;
+
+  max-width: 680px;
+  .step-list p { max-width: none; }
+  .ing-list { grid-template-columns: 1fr; }
+  .nutrition .nut-grid { grid-template-columns: 1fr; }
+}

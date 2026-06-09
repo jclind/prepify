@@ -1,0 +1,170 @@
+@use '../../helpers.scss' as s;
+
+.account-polished {
+  width: 92%;
+  max-width: 1100px;
+  margin: 0 auto;
+  margin-top: s.$nav-height;
+  padding: 2.5rem 0 6rem;
+  color: s.$primary-text;
+
+  .profile-header {
+    display: grid;
+    grid-template-columns: 110px 1fr auto;
+    gap: 1.75rem;
+    align-items: center;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid s.$gray-300;
+    @media (max-width: 700px) {
+      grid-template-columns: 80px 1fr;
+      .edit-btn { grid-column: 1 / -1; justify-self: start; }
+    }
+    .avatar {
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      object-fit: cover;
+      @media (max-width: 700px) { width: 80px; height: 80px; }
+    }
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.015em;
+    }
+    .bio {
+      color: s.$secondary-text;
+      line-height: 1.55;
+      margin-top: 0.35rem;
+      font-size: 0.93rem;
+      max-width: 600px;
+    }
+    .stat-row {
+      display: flex;
+      gap: 1.25rem;
+      margin-top: 0.85rem;
+      flex-wrap: wrap;
+      font-size: 0.88rem;
+      color: s.$tertiary-text;
+      font-weight: 600;
+      strong { color: s.$primary-text; font-weight: 800; font-size: 1rem; margin-right: 0.25rem; }
+    }
+    .edit-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: s.$white;
+      border: 1.5px solid s.$gray-300;
+      padding: 0.65rem 1.1rem;
+      border-radius: 10px;
+      cursor: pointer;
+      font-family: inherit;
+      font-weight: 700;
+      color: s.$primary-text;
+      &:hover { border-color: s.$primary-text; }
+    }
+  }
+
+  .tab-bar {
+    display: flex;
+    gap: 0.4rem;
+    margin: 1.75rem 0 1rem;
+    border-bottom: 1px solid s.$gray-300;
+    .tab {
+      background: none;
+      border: none;
+      padding: 0.85rem 1.1rem;
+      font-family: inherit;
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: s.$tertiary-text;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -1px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      &:hover { color: s.$primary-text; }
+      &.active {
+        color: s.$primary;
+        border-bottom-color: s.$primary;
+      }
+      .count {
+        background: s.$primary-background;
+        color: s.$secondary-text;
+        padding: 0.1rem 0.55rem;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 800;
+      }
+      &.active .count { background: rgba(s.$primary, 0.12); color: s.$primary; }
+    }
+  }
+
+  .filter-bar {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    .filter-input {
+      flex: 1;
+      min-width: 200px;
+      padding: 0.6rem 1rem;
+      border: 1px solid s.$gray-300;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 0.9rem;
+      &:focus { outline: none; border-color: s.$primary; }
+    }
+    .filter-chip {
+      background: s.$white;
+      border: 1.5px solid s.$gray-300;
+      padding: 0.5rem 0.95rem;
+      border-radius: 999px;
+      font-family: inherit;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      color: s.$secondary-text;
+      &:hover { border-color: s.$primary; color: s.$primary; }
+    }
+  }
+
+  .recipe-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.25rem;
+    @media (max-width: 1100px) { grid-template-columns: repeat(3, 1fr); }
+    @media (max-width: 800px) { grid-template-columns: repeat(2, 1fr); }
+    @media (max-width: 500px) { grid-template-columns: 1fr; }
+  }
+  .polished-card {
+    background: s.$white;
+    border-radius: 12px;
+    overflow: hidden;
+    text-decoration: none;
+    color: s.$primary-text;
+    box-shadow: rgba(0,0,0,0.06) 0px 6px 18px;
+    transition: transform 0.15s ease;
+    &:hover { transform: translateY(-3px); }
+    img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
+    .body { padding: 0.85rem 1rem 1rem; }
+    h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      line-height: 1.3;
+      text-transform: capitalize;
+      margin-bottom: 0.5rem;
+      min-height: 2.6em;
+    }
+    .meta {
+      display: flex;
+      gap: 0.85rem;
+      font-size: 0.82rem;
+      color: s.$secondary-text;
+      font-weight: 600;
+      flex-wrap: wrap;
+      svg { vertical-align: -2px; margin-right: 0.1rem; }
+      .price { margin-left: auto; color: s.$primary; font-weight: 700; }
+    }
+  }
+}

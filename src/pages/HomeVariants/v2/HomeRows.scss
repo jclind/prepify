@@ -1,0 +1,23 @@
+@use '../../../helpers.scss' as s;
+
+.home-rows {
+  .rail {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 250px;
+    gap: 1.25rem;
+    overflow-x: auto;
+    padding: 0.5rem 0.25rem 1.25rem;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: s.$gray-400 transparent;
+    &::-webkit-scrollbar { height: 8px; }
+    &::-webkit-scrollbar-thumb { background: s.$gray-400; border-radius: 999px; }
+    &::-webkit-scrollbar-track { background: transparent; }
+  }
+  .rail-item {
+    scroll-snap-align: start;
+    .v2-card h3 { min-height: 2.6em; }
+  }
+}

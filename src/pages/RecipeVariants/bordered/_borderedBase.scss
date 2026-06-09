@@ -1,0 +1,59 @@
+@use '../../../helpers.scss' as s;
+@use '../classic/classicBase' as classic;
+
+// Shared baseline for the Classic Bordered family: crisp bordered sections,
+// ingredient thumbnails, and a tinted "Your recipe" owner banner (the Plus
+// treatment). Each variant includes this with its own accent / tint, then
+// layers on a few overrides.
+@mixin bordered-base(
+  $accent: s.$primary,
+  $radius: 10px,
+  $tint-a: rgba(s.$secondary, 0.13),
+  $tint-b: rgba(s.$primary, 0.09),
+  $tint-border: rgba(s.$primary, 0.22)
+) {
+  @include classic.classic-base($accent: $accent, $radius: $radius);
+
+  // bordered crispness
+  .header { padding-bottom: 2.25rem; border-bottom: 2px solid s.$gray-300; }
+  .section { border-width: 1.5px; }
+  .data-row .data { background: s.$white; border: 1.5px solid s.$gray-300; }
+  .sec-head { padding-bottom: 0.85rem; border-bottom: 1.5px solid s.$gray-200; margin-bottom: 1.1rem; }
+  .review { border-width: 1.5px; }
+
+  // ingredient thumbnails
+  .ing-list li {
+    grid-template-columns: 22px 38px auto 1fr;
+    .ing-img { width: 38px; height: 38px; border-radius: 8px; object-fit: cover; }
+  }
+
+  // tinted "Your recipe" owner banner
+  .owner-banner {
+    margin-top: 1.75rem;
+    padding: 1.05rem 1.4rem;
+    border-radius: $radius;
+    background: linear-gradient(135deg, $tint-a, $tint-b);
+    border: 1.5px solid $tint-border;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem 2rem;
+    flex-wrap: wrap;
+
+    .ob-label { display: inline-flex; align-items: center; gap: 0.45rem; font-weight: 800; font-size: 0.98rem; color: $accent;
+      svg { font-size: 1.25rem; } }
+    .ob-stats { display: flex; gap: 1.75rem; flex-wrap: wrap; margin-left: auto; }
+    .ob-stat { display: inline-flex; align-items: baseline; gap: 0.4rem;
+      .ob-ic { align-self: center; font-size: 1.1rem; color: $accent; }
+      .ob-n { font-weight: 800; font-size: 1.1rem; }
+      .ob-l { font-size: 0.74rem; color: s.$tertiary-text; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; } }
+  }
+
+  // split body (ingredients sidebar + instructions)
+  &.split .split-grid {
+    display: grid; grid-template-columns: 360px 1fr; gap: 1.75rem; align-items: start;
+    @media (max-width: 850px) { grid-template-columns: 1fr; }
+    .ingredients { position: sticky; top: calc(#{s.$nav-height} + 1rem);
+      @media (max-width: 850px) { position: static; } }
+    .ing-list { grid-template-columns: 1fr; }
+  }
+}

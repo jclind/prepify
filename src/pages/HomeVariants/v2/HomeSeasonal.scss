@@ -1,0 +1,45 @@
+@use '../../../helpers.scss' as s;
+
+.home-seasonal {
+  .season-band-wrap { margin-top: 0 !important; }
+  .season-band {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    align-items: center;
+    background: linear-gradient(120deg, #fef3e9 0%, #eafaf6 100%);
+    border: 1px solid #f1e2d4;
+    border-radius: 20px;
+    padding: 2.5rem;
+    @media (max-width: 800px) { grid-template-columns: 1fr; }
+  }
+  .season-intro {
+    .eyebrow {
+      font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.14em;
+      font-weight: 800; color: s.$secondary;
+    }
+    h2 { font-size: 1.7rem; font-weight: 700; letter-spacing: -0.015em; margin: 0.5rem 0; }
+    p { color: s.$secondary-text; line-height: 1.6; }
+  }
+  .season-chips { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+  .season-chip {
+    background: s.$white;
+    border: 1px solid s.$gray-300;
+    color: s.$primary-text;
+    padding: 0.65rem 1.15rem;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 0.92rem;
+    text-decoration: none;
+    transition: all 0.12s ease;
+    &:hover { border-color: s.$secondary; color: s.$secondary; transform: translateY(-2px); }
+  }
+
+  .grid-4 {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.25rem;
+    @media (max-width: 1100px) { grid-template-columns: repeat(2, 1fr); }
+    @media (max-width: 520px) { grid-template-columns: 1fr; }
+  }
+}

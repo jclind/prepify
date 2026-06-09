@@ -1,0 +1,8 @@
+@use '../../helpers.scss' as s;
+@use './bordered/borderedBase' as base;
+
+// The clean default of the family: crisp borders, ingredient thumbnails,
+// Plus-style tinted "Your recipe" banner.
+.recipe-bordered-refined {
+  @include base.bordered-base();
+}

@@ -1,0 +1,11 @@
+@use './bordered/softPlus' as soft;
+
+// Narrows the whole reading column so the full-width instructions land at a
+// comfortable measure with no dead space. Ingredients stay two-up.
+.recipe-instr-narrow {
+  @include soft.soft-plus;
+  @include soft.bar-balanced;
+
+  max-width: 780px;
+  .step-list p { max-width: none; }
+}

@@ -1,0 +1,260 @@
+@use '../../helpers.scss' as s;
+
+.recipe-cards-dense {
+  width: 92%;
+  max-width: 1200px;
+  margin: 0 auto;
+  margin-top: s.$nav-height;
+  padding: 1.5rem 0 5rem;
+  color: s.$primary-text;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+
+  .hero {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 1.5rem;
+    background: s.$white;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid s.$gray-300;
+    @media (max-width: 800px) { grid-template-columns: 1fr; }
+    img { width: 100%; height: 100%; object-fit: cover; min-height: 240px; }
+  }
+  .hero-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    padding: 1.25rem 1.5rem 1.25rem 0;
+    justify-content: center;
+    @media (max-width: 800px) { padding: 1.25rem 1.25rem; }
+  }
+  .cuisine-pill {
+    display: inline-block;
+    width: fit-content;
+    background: rgba(s.$secondary, 0.12);
+    color: s.$secondary;
+    padding: 0.2rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  h1 {
+    font-size: 1.65rem;
+    line-height: 1.1;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    text-transform: capitalize;
+  }
+  p { color: s.$secondary-text; line-height: 1.5; font-size: 0.92rem; }
+  .stat-strip {
+    display: flex;
+    gap: 0.85rem;
+    padding: 0.5rem 0;
+    border-top: 1px solid s.$gray-300;
+    border-bottom: 1px solid s.$gray-300;
+    flex-wrap: wrap;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: s.$secondary-text;
+    > div { display: flex; align-items: center; gap: 0.25rem; }
+    svg { color: s.$primary; }
+    .price { margin-left: auto; color: s.$primary; font-weight: 800; }
+  }
+  .actions {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    button {
+      display: inline-flex; align-items: center; gap: 0.3rem;
+      padding: 0.5rem 0.95rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 700;
+      font-family: inherit;
+      font-size: 0.83rem;
+      background: s.$primary-background;
+      border: none;
+      color: s.$primary-text;
+      &:hover { background: s.$gray-300; }
+    }
+    .primary {
+      background: s.$primary;
+      color: s.$white;
+      &:hover { background: #e74e1d; }
+    }
+  }
+
+  .grid.two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.85rem;
+    @media (max-width: 900px) { grid-template-columns: 1fr; }
+  }
+
+  .card {
+    background: s.$white;
+    border-radius: 14px;
+    border: 1px solid s.$gray-300;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .card-header {
+    display: grid;
+    grid-template-columns: 40px 1fr auto;
+    gap: 0.7rem;
+    align-items: center;
+    padding: 0.85rem 1.1rem;
+    border-bottom: 1px solid s.$gray-200;
+  }
+  .card-icon {
+    width: 36px; height: 36px;
+    border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.15rem;
+    &.ingredients { background: rgba(s.$secondary, 0.15); color: s.$secondary; }
+    &.instructions { background: rgba(s.$primary, 0.12); color: s.$primary; }
+    &.nutrition { background: rgba(40, 167, 69, 0.15); color: #28a745; }
+    &.tags { background: rgba(48, 56, 65, 0.1); color: s.$primary-text; }
+    &.reviews { background: rgba(241, 181, 13, 0.18); color: #b8870a; }
+  }
+  .card-header h2 {
+    font-size: 1.1rem;
+    font-weight: 700;
+  }
+  .count {
+    background: s.$primary;
+    color: s.$white;
+    padding: 0.15rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 800;
+  }
+  .count-text {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 700;
+    color: s.$tertiary-text;
+  }
+  .rating-aside {
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: s.$primary-text;
+    .star { color: #f1b50d; margin: 0 0.15rem; }
+  }
+  .card-body { padding: 0.85rem 1.1rem 1.1rem; flex: 1; }
+
+  .ing-list {
+    list-style: none;
+    padding: 0; margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    li {
+      display: grid;
+      grid-template-columns: 32px 1fr;
+      gap: 0.55rem;
+      align-items: center;
+      padding: 0.35rem 0.5rem;
+      border-radius: 7px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      &:hover { background: s.$primary-background; }
+      img { width: 32px; height: 32px; object-fit: cover; border-radius: 6px; }
+      strong { font-weight: 800; margin-right: 0.25rem; }
+    }
+  }
+
+  .steps {
+    list-style: none; padding: 0; margin: 0;
+    display: flex; flex-direction: column;
+    gap: 0.7rem;
+    li {
+      display: grid;
+      grid-template-columns: 28px 1fr;
+      gap: 0.7rem;
+      align-items: start;
+    }
+    .step-num {
+      width: 26px; height: 26px;
+      border-radius: 7px;
+      background: s.$primary;
+      color: s.$white;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800;
+      font-size: 0.82rem;
+    }
+    p { line-height: 1.55; margin-bottom: 0.3rem; font-size: 0.88rem; }
+    .step-time {
+      display: inline-block;
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 0.12rem 0.45rem;
+      border-radius: 3px;
+      &.prep { background: rgba(s.$secondary, 0.15); color: s.$secondary; }
+      &.cook { background: rgba(s.$primary, 0.12); color: s.$primary; }
+    }
+  }
+
+  .nutrition-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.4rem;
+  }
+  .nutrient {
+    background: s.$primary-background;
+    border-radius: 8px;
+    padding: 0.55rem 0.4rem;
+    text-align: center;
+    .val { font-size: 0.95rem; font-weight: 800; line-height: 1.1; }
+    .lbl { font-size: 0.62rem; color: s.$tertiary-text; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; margin-top: 0.15rem; }
+    &.calories {
+      background: s.$primary;
+      color: s.$white;
+      .lbl { color: rgba(255,255,255,0.85); }
+    }
+  }
+
+  .tag-row {
+    display: flex; gap: 0.3rem; flex-wrap: wrap;
+    .tag {
+      background: s.$primary-background;
+      color: s.$secondary-text;
+      padding: 0.28rem 0.7rem;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      &:hover { background: s.$primary; color: s.$white; }
+    }
+  }
+
+  .review-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .review {
+    background: s.$primary-background;
+    border-radius: 9px;
+    padding: 0.7rem 0.95rem;
+    .review-head {
+      display: flex;
+      gap: 0.5rem;
+      align-items: baseline;
+      margin-bottom: 0.3rem;
+      flex-wrap: wrap;
+      strong { font-weight: 800; font-size: 0.85rem; }
+      .stars { color: #f1b50d; font-size: 0.78rem; }
+      .date { margin-left: auto; color: s.$tertiary-text; font-size: 0.72rem; font-weight: 600; }
+    }
+    p { line-height: 1.55; color: s.$secondary-text; font-size: 0.85rem; }
+  }
+}

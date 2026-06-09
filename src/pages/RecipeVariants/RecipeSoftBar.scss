@@ -1,0 +1,8 @@
+@use './bordered/softPlus' as soft;
+
+// Header carries only the read content; meta + actions move to one full-width
+// soft bar below, so the narrow column stops feeling crowded.
+.recipe-soft-bar {
+  @include soft.soft-plus;
+  @include soft.bar-header;
+}

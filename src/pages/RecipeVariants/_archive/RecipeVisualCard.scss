@@ -1,0 +1,342 @@
+@use '../../helpers.scss' as s;
+
+.recipe-visual {
+  margin-top: s.$nav-height;
+  background: linear-gradient(180deg, s.$primary-background 0%, s.$gray-300 100%);
+  min-height: calc(100vh - #{s.$nav-height});
+  padding: 2.5rem 1rem 6rem;
+  color: s.$primary-text;
+
+  .card-frame {
+    max-width: 520px;
+    margin: 0 auto;
+    background: s.$white;
+    border-radius: 22px;
+    overflow: hidden;
+    box-shadow:
+      rgba(0, 0, 0, 0.12) 0px 24px 60px,
+      rgba(0, 0, 0, 0.08) 0px 4px 16px;
+  }
+
+  .card-image {
+    position: relative;
+    aspect-ratio: 4 / 5;
+    img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+  }
+  .card-image-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0) 30%, rgba(0,0,0,0) 50%, rgba(0,0,0,0.85) 100%);
+    color: s.$white;
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .floating-actions {
+    align-self: flex-end;
+    display: flex;
+    gap: 0.4rem;
+    .float-btn {
+      width: 42px; height: 42px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.95);
+      color: s.$primary-text;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.15rem;
+      transition: transform 0.12s ease;
+      &:hover { transform: scale(1.1); }
+      &.primary {
+        background: s.$primary;
+        color: s.$white;
+      }
+    }
+  }
+  .cuisine-stamp {
+    align-self: flex-start;
+    background: s.$primary;
+    color: s.$white;
+    padding: 0.4rem 0.9rem;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    transform: rotate(-3deg);
+    box-shadow: rgba(0,0,0,0.2) 0px 3px 8px;
+    width: fit-content;
+  }
+  .image-bottom {
+    h1 {
+      font-size: 2rem;
+      line-height: 1.1;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      text-transform: capitalize;
+      margin-bottom: 0.5rem;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    }
+    p {
+      font-size: 0.92rem;
+      line-height: 1.5;
+      opacity: 0.94;
+    }
+  }
+
+  .block {
+    padding: 1.1rem 1.5rem;
+    border-bottom: 1px solid s.$gray-200;
+    &:last-child { border-bottom: none; }
+  }
+  .block-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    font-weight: 800;
+    color: s.$tertiary-text;
+    margin-bottom: 0.85rem;
+  }
+
+  .author-block {
+    display: grid;
+    grid-template-columns: 44px 1fr auto;
+    gap: 0.75rem;
+    align-items: center;
+    img { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; }
+    .auth-label { font-size: 0.7rem; color: s.$tertiary-text; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; }
+    .auth-name { font-weight: 800; font-size: 0.95rem; }
+    .auth-stats {
+      display: flex;
+      gap: 0.6rem;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: s.$secondary-text;
+      > div { display: flex; align-items: center; gap: 0.25rem; }
+      svg { color: s.$primary; }
+    }
+    @media (max-width: 420px) {
+      .auth-stats {
+        grid-column: 1 / -1;
+        margin-top: 0.5rem;
+      }
+    }
+  }
+
+  .stats-block {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.4rem;
+    padding: 1.1rem 1.1rem;
+    @media (max-width: 420px) { grid-template-columns: repeat(2, 1fr); }
+  }
+  .stat-tile {
+    padding: 0.85rem 0.6rem;
+    border-radius: 12px;
+    text-align: center;
+    color: s.$white;
+    .stat-num {
+      font-size: 1.65rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1;
+      span { font-size: 1.1rem; vertical-align: 4px; margin-left: 0.05rem; }
+    }
+    .stat-lbl {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 700;
+      margin-top: 0.35rem;
+      opacity: 0.92;
+    }
+    &.primary { background: s.$primary; }
+    &.secondary { background: s.$secondary; }
+    &.gold { background: #f1b50d; color: s.$primary-text; }
+    &.dark { background: s.$primary-text; }
+  }
+
+  .badges-block {
+    .badges-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      font-weight: 800;
+      color: s.$tertiary-text;
+      margin-bottom: 0.7rem;
+    }
+    .badges {
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+    .badge {
+      background: rgba(s.$secondary, 0.15);
+      color: s.$secondary;
+      padding: 0.35rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      &.alt {
+        background: rgba(s.$primary, 0.12);
+        color: s.$primary;
+      }
+    }
+  }
+
+  .nutri-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.4rem;
+  }
+  .nutri {
+    background: s.$primary-background;
+    border-radius: 10px;
+    padding: 0.75rem 0.5rem;
+    text-align: center;
+    .val {
+      font-size: 1.25rem;
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      span { font-size: 0.85rem; opacity: 0.7; }
+    }
+    .lbl {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: s.$tertiary-text;
+      font-weight: 700;
+      margin-top: 0.25rem;
+    }
+  }
+
+  .ing-chips {
+    display: flex;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+  }
+  .ing-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    background: s.$primary-background;
+    padding: 0.3rem 0.7rem 0.3rem 0.3rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    img { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; }
+    strong { font-weight: 800; margin-right: 0.2rem; }
+  }
+
+  .step-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .step-tile {
+    background: s.$primary-background;
+    border-radius: 12px;
+    padding: 0.85rem 1rem;
+    border-left: 4px solid s.$gray-400;
+    &.prep { border-left-color: s.$secondary; }
+    &.cook { border-left-color: s.$primary; }
+  }
+  .step-tile-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.45rem;
+    .step-num {
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 800;
+      font-size: 1.05rem;
+      letter-spacing: -0.02em;
+      color: s.$primary-text;
+    }
+    .step-tags {
+      display: flex;
+      gap: 0.4rem;
+      .phase {
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        font-weight: 800;
+        padding: 0.15rem 0.5rem;
+        border-radius: 4px;
+        &.prep { background: rgba(s.$secondary, 0.18); color: s.$secondary; }
+        &.cook { background: rgba(s.$primary, 0.15); color: s.$primary; }
+      }
+      .dur {
+        font-size: 0.72rem;
+        font-weight: 800;
+        color: s.$tertiary-text;
+      }
+    }
+  }
+  .step-tile p {
+    font-size: 0.9rem;
+    line-height: 1.55;
+    color: s.$primary-text;
+  }
+
+  .review-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .mini-review {
+    background: s.$primary-background;
+    border-radius: 10px;
+    padding: 0.7rem 0.9rem;
+    .rev-head {
+      display: flex;
+      gap: 0.5rem;
+      align-items: baseline;
+      margin-bottom: 0.3rem;
+      strong { font-weight: 800; font-size: 0.85rem; }
+      .stars { color: s.$primary; font-size: 0.78rem; }
+    }
+    p {
+      font-style: italic;
+      font-size: 0.85rem;
+      line-height: 1.5;
+      color: s.$secondary-text;
+    }
+  }
+
+  .cta-block {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    padding: 1rem 1.5rem 1.4rem;
+    button {
+      padding: 0.85rem 1rem;
+      border-radius: 12px;
+      font-family: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      font-size: 0.92rem;
+      background: s.$primary-background;
+      border: none;
+      color: s.$primary-text;
+      &:hover { background: s.$gray-300; }
+    }
+    .primary {
+      background: s.$primary;
+      color: s.$white;
+      &:hover { background: #e74e1d; }
+    }
+    @media (max-width: 420px) { grid-template-columns: 1fr; }
+  }
+}

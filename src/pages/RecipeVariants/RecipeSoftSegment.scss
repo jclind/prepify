@@ -1,0 +1,24 @@
+@use '../../helpers.scss' as s;
+@use './bordered/softPlus' as soft;
+
+// Merges the three stats into a single segmented pill (one element, not three
+// competing cards) and shortens the image so the column reads calmer.
+.recipe-soft-segment {
+  @include soft.soft-plus;
+
+  .header { align-items: start; }
+  .image-wrap img { aspect-ratio: 4 / 5; }
+
+  .meta-segment {
+    display: inline-flex; align-self: flex-start; margin-top: 0.4rem;
+    background: s.$white; border: 1.5px solid s.$gray-200; border-radius: 14px; overflow: hidden;
+    box-shadow: rgba(48, 56, 65, 0.04) 0px 4px 14px;
+    flex-wrap: wrap;
+
+    .seg { display: flex; align-items: center; gap: 0.65rem; padding: 0.7rem 1.15rem; }
+    .seg + .seg { border-left: 1.5px solid s.$gray-200; }
+    .seg-ic { display: inline-flex; color: s.$primary; font-size: 1.25rem; }
+    .seg-v { font-weight: 800; font-size: 1.05rem; line-height: 1.1; }
+    .seg-t { font-size: 0.66rem; color: s.$tertiary-text; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+  }
+}

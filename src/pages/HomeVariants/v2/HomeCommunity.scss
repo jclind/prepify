@@ -1,0 +1,71 @@
+@use '../../../helpers.scss' as s;
+
+.home-community {
+  .community-layout {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 1.5rem;
+    align-items: start;
+    @media (max-width: 850px) { grid-template-columns: 1fr; }
+  }
+
+  .feed {
+    background: s.$white;
+    border: 1px solid s.$gray-300;
+    border-radius: 16px;
+    padding: 1.5rem 1.75rem;
+    h2 {
+      display: flex; align-items: center; gap: 0.6rem;
+      font-size: 1.3rem; font-weight: 700; margin-bottom: 1rem;
+    }
+    .live-dot {
+      width: 10px; height: 10px; border-radius: 50%; background: #2ecc71;
+      box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.6);
+      animation: pulse 1.8s infinite;
+    }
+    ul { list-style: none; }
+    li {
+      display: flex; align-items: center; gap: 0.85rem; padding: 0.9rem 0;
+      border-top: 1px solid s.$gray-200;
+      &:first-child { border-top: none; }
+    }
+    .badge {
+      width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
+      display: grid; place-items: center; color: s.$white; font-size: 1rem;
+      &.cook { background: s.$primary; }
+      &.star { background: #f5a623; }
+      &.save { background: s.$secondary; }
+    }
+    .text { flex: 1; font-size: 0.95rem; color: s.$secondary-text; line-height: 1.4;
+      strong { color: s.$primary-text; } a { color: s.$primary; font-weight: 600; text-decoration: none; text-transform: capitalize; &:hover { text-decoration: underline; } } }
+    .when { font-size: 0.76rem; color: s.$tertiary-text; font-weight: 600; white-space: nowrap; }
+  }
+
+  .leaderboard {
+    background: s.$primary-text; color: s.$white;
+    border-radius: 16px; padding: 1.5rem 1.6rem;
+    h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 1rem; }
+    .leader {
+      display: flex; align-items: center; gap: 0.75rem; padding: 0.65rem 0;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      &:first-of-type { border-top: none; }
+      .rank { font-weight: 800; color: #ffb59e; width: 1rem; }
+      .avatar { width: 34px; height: 34px; border-radius: 50%; background: s.$primary;
+        display: grid; place-items: center; font-weight: 800; font-size: 0.9rem; }
+      .name { flex: 1; font-weight: 600; font-size: 0.92rem; }
+      .cooks { font-size: 0.76rem; opacity: 0.7; font-weight: 600; }
+    }
+  }
+
+  .grid-4 {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem;
+    @media (max-width: 1100px) { grid-template-columns: repeat(2, 1fr); }
+    @media (max-width: 520px) { grid-template-columns: 1fr; }
+  }
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.6); }
+  70% { box-shadow: 0 0 0 8px rgba(46, 204, 113, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0); }
+}

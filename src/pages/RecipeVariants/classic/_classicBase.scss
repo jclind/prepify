@@ -1,0 +1,109 @@
+@use '../../../helpers.scss' as s;
+
+// Shared baseline for the Batch B "polished current page" variants. Each variant
+// includes this inside its own root class and then layers on a few overrides.
+@mixin classic-base(
+  $accent: s.$primary,
+  $surface: s.$white,
+  $border: s.$gray-300,
+  $radius: 14px,
+  $section-gap: 2.5rem,
+  $max-width: 1080px,
+  $card-sections: true
+) {
+  width: 92%;
+  max-width: $max-width;
+  margin: 0 auto;
+  margin-top: s.$nav-height;
+  padding: 1.5rem 0 6rem;
+  color: s.$primary-text;
+
+  // controls
+  .controls {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem;
+    .back { display: inline-flex; align-items: center; gap: 0.3rem; background: none; border: none; cursor: pointer;
+      font-family: inherit; font-weight: 700; font-size: 0.9rem; color: s.$secondary-text; padding: 0;
+      svg { font-size: 1.2rem; } &:hover { color: $accent; } }
+    .owner-badge { font-size: 0.65rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
+      color: $accent; background: rgba($accent, 0.12); padding: 0.25rem 0.6rem; border-radius: 999px; }
+  }
+
+  // header
+  .header {
+    display: grid; grid-template-columns: 400px 1fr; gap: 2.5rem; align-items: center;
+    @media (max-width: 820px) { grid-template-columns: 1fr; }
+  }
+  .image-wrap img { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; border-radius: $radius; }
+  .desc { display: flex; flex-direction: column; gap: 0.9rem; }
+  .eyebrow { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: s.$secondary; }
+  h1 { font-size: 2.3rem; font-weight: 700; letter-spacing: -0.02em; line-height: 1.12; text-transform: capitalize; }
+  .description { color: s.$secondary-text; line-height: 1.6; }
+  .author-row { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: s.$tertiary-text;
+    .avatar { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; } strong { color: s.$primary-text; } }
+  .data-row { display: flex; gap: 0.75rem; flex-wrap: wrap;
+    .data { display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 0.9rem; background: s.$primary-background; border-radius: 10px;
+      .icon { font-size: 1.3rem; color: $accent; } .t { font-size: 0.68rem; color: s.$tertiary-text; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; } .v { font-size: 0.95rem; font-weight: 700; } } }
+  .actions { display: flex; gap: 0.5rem; flex-wrap: wrap;
+    button { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.65rem 1.1rem; border-radius: 10px; font-weight: 700; font-size: 0.92rem; cursor: pointer; font-family: inherit; border: 1.5px solid transparent; transition: all 0.12s ease; }
+    .primary { background: $accent; color: s.$white; &:hover { filter: brightness(0.93); } }
+    .secondary { background: s.$white; color: s.$primary-text; border-color: $border; &:hover { border-color: s.$primary-text; } }
+    .danger { background: s.$white; color: #d23f31; border-color: $border; &:hover { border-color: #d23f31; } } }
+
+  // body
+  .body { display: flex; flex-direction: column; gap: $section-gap; margin-top: $section-gap; }
+  .section {
+    @if $card-sections {
+      background: $surface; border: 1px solid $border; border-radius: $radius; padding: 1.5rem 1.75rem;
+    }
+    h2 { font-size: 1.35rem; font-weight: 700; margin-bottom: 1.1rem; }
+  }
+  .sec-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.1rem; h2 { margin-bottom: 0; } }
+  .servings-control { display: inline-flex; align-items: center; gap: 0.35rem; background: s.$primary-background; border-radius: 999px; padding: 0.2rem; font-size: 0.85rem; font-weight: 700;
+    button { width: 26px; height: 26px; border-radius: 50%; border: none; background: s.$white; cursor: pointer; display: flex; align-items: center; justify-content: center; color: s.$primary-text; &:hover { background: $accent; color: s.$white; } }
+    span { padding: 0 0.4rem; } }
+
+  .ing-list { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 0.2rem 1.25rem;
+    @media (max-width: 600px) { grid-template-columns: 1fr; }
+    li { display: grid; grid-template-columns: 22px auto 1fr; align-items: center; gap: 0.6rem; padding: 0.5rem 0.3rem; border-bottom: 1px solid s.$gray-200; cursor: pointer; font-size: 0.94rem;
+      .box { width: 20px; height: 20px; border: 1.5px solid s.$gray-400; border-radius: 5px; display: flex; align-items: center; justify-content: center; color: transparent; font-size: 1.1rem; }
+      .qty { font-weight: 700; white-space: nowrap; } .name { color: s.$secondary-text; }
+      &.checked { .box { background: s.$secondary; border-color: s.$secondary; color: s.$white; } .qty, .name { text-decoration: line-through; color: s.$tertiary-text; } } } }
+  .price-line { margin-top: 1rem; font-size: 0.88rem; color: s.$tertiary-text; strong { color: $accent; } }
+
+  .step-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 1rem;
+    li { display: grid; grid-template-columns: 40px 1fr; gap: 1rem; align-items: start; }
+    .num { width: 36px; height: 36px; border-radius: 50%; background: $accent; color: s.$white; display: flex; align-items: center; justify-content: center; font-weight: 800; }
+    .step-meta { display: flex; gap: 0.5rem; margin-bottom: 0.4rem;
+      .phase { font-size: 0.64rem; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 800; padding: 0.15rem 0.45rem; border-radius: 4px;
+        &.prep { background: rgba(s.$secondary, 0.15); color: s.$secondary; } &.cook { background: rgba($accent, 0.12); color: $accent; } }
+      .dur { font-size: 0.7rem; color: s.$tertiary-text; font-weight: 700; } }
+    p { line-height: 1.65; } }
+
+  .tag-list { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+  .tag { background: rgba(s.$secondary, 0.12); color: s.$secondary; padding: 0.35rem 0.85rem; border-radius: 999px; font-size: 0.85rem; font-weight: 600; }
+
+  .made-row { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+    .made-btn { display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.75rem 1.5rem; border-radius: 10px; font-family: inherit; font-weight: 700; cursor: pointer;
+      background: rgba(s.$secondary, 0.12); color: s.$secondary; border: 1.5px solid rgba(s.$secondary, 0.4); &:hover { background: rgba(s.$secondary, 0.2); } svg { font-size: 1.1rem; } }
+    .owner-stats { display: flex; gap: 1.1rem; flex-wrap: wrap; margin-left: auto;
+      span { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.85rem; font-weight: 700; color: s.$secondary-text; svg { color: s.$secondary; } } } }
+
+  .nutrition .nut-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;
+    @media (max-width: 700px) { grid-template-columns: 1fr; }
+    .cal { margin-bottom: 0.85rem; font-size: 0.9rem; color: s.$secondary-text; strong { font-size: 1.5rem; color: s.$primary-text; } }
+    .macro { margin-bottom: 0.55rem; .macro-top { display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: 700; margin-bottom: 0.25rem; span:last-child { color: s.$secondary; } }
+      .track { height: 7px; background: s.$primary-background; border-radius: 999px; overflow: hidden; } .fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, s.$secondary, #2fd0d8); } }
+    .diet-labels { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.85rem; .diet { font-size: 0.72rem; font-weight: 700; color: s.$secondary; background: rgba(s.$secondary, 0.12); padding: 0.25rem 0.6rem; border-radius: 999px; } }
+    .facts { width: 100%; border-collapse: collapse; td { padding: 0.5rem 0; border-bottom: 1px solid s.$gray-200; font-size: 0.88rem; &:last-child { text-align: right; font-weight: 700; } } tr:last-child td { border-bottom: none; } } }
+
+  // reviews
+  .reviews { margin-top: $section-gap; padding-top: 2.5rem; border-top: 1px solid $border;
+    h2 { font-size: 1.45rem; font-weight: 700; } }
+  .reviews-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;
+    .avg { display: flex; align-items: center; gap: 0.85rem; .big { font-size: 2.4rem; font-weight: 800; line-height: 1; color: $accent; } .stars { color: $accent; } .count { font-size: 0.8rem; color: s.$tertiary-text; font-weight: 600; } } }
+  .add-review { margin-bottom: 1.5rem; padding: 1.25rem 1.5rem; border: 1.5px dashed s.$gray-400; border-radius: $radius; background: s.$gray-50; }
+  .review-list { display: flex; flex-direction: column; gap: 1rem; }
+  .review { background: $surface; border: 1px solid $border; border-radius: 12px; padding: 1rem 1.25rem;
+    .review-head { display: flex; gap: 0.65rem; align-items: baseline; margin-bottom: 0.5rem; flex-wrap: wrap; .stars { color: $accent; font-size: 0.85rem; } .date { color: s.$tertiary-text; font-size: 0.8rem; margin-left: auto; } }
+    p { line-height: 1.6; color: s.$secondary-text; font-size: 0.92rem; } }
+}

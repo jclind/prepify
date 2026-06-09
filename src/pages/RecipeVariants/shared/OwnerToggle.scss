@@ -1,0 +1,60 @@
+@use '../../../helpers.scss' as s;
+
+.owner-toggle {
+  position: fixed;
+  top: calc(#{s.$nav-height} + 0.75rem);
+  right: 1rem;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: s.$white;
+  border: 1px solid s.$gray-300;
+  border-radius: 999px;
+  padding: 0.3rem 0.3rem 0.3rem 0.85rem;
+  box-shadow: rgba(0, 0, 0, 0.12) 0px 6px 22px;
+
+  .ot-label {
+    font-size: 0.65rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: s.$tertiary-text;
+  }
+
+  .ot-switch {
+    display: inline-flex;
+    background: s.$primary-background;
+    border-radius: 999px;
+    padding: 0.15rem;
+
+    button {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      border: none;
+      background: none;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: s.$secondary-text;
+      padding: 0.35rem 0.7rem;
+      border-radius: 999px;
+      transition: all 0.12s ease;
+
+      svg { font-size: 0.95rem; }
+
+      &.active {
+        background: s.$white;
+        color: s.$primary;
+        box-shadow: rgba(0, 0, 0, 0.1) 0px 1px 3px;
+      }
+    }
+  }
+
+  @media (max-width: 600px) {
+    .ot-label { display: none; }
+    padding: 0.3rem;
+  }
+}

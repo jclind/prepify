@@ -1,0 +1,94 @@
+@use '../../helpers.scss' as s;
+
+.recipe-design-switcher {
+  position: fixed;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  background: s.$white;
+  border: 1px solid s.$gray-300;
+  border-radius: 16px;
+  box-shadow: rgba(0, 0, 0, 0.18) 0px 8px 30px;
+  max-width: calc(100vw - 2rem);
+
+  .toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    width: 100%;
+    background: none;
+    border: none;
+    padding: 0.55rem 1rem;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: s.$secondary-text;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    .chev {
+      transition: transform 0.15s ease;
+      font-size: 1.2rem;
+      &.down { transform: rotate(180deg); }
+    }
+    &:hover { color: s.$primary-text; }
+  }
+
+  .panel {
+    padding: 0 0.85rem 0.85rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  .group-label {
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: s.$tertiary-text;
+    padding-right: 0.5rem;
+    border-right: 1px solid s.$gray-300;
+    min-width: 60px;
+    &.polished { color: s.$secondary; }
+    &.cards { color: #28a745; }
+    &.rethought { color: s.$primary; }
+  }
+  .pills {
+    display: flex;
+    gap: 0.25rem;
+    flex-wrap: wrap;
+  }
+  .pill {
+    text-decoration: none;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: s.$secondary-text;
+    padding: 0.3rem 0.7rem;
+    border-radius: 999px;
+    background: s.$primary-background;
+    transition: all 0.12s ease;
+    &:hover { background: s.$gray-300; color: s.$primary-text; }
+    &.active {
+      background: s.$primary;
+      color: s.$white;
+    }
+  }
+
+  @media screen and (max-width: 700px) {
+    .group {
+      flex-direction: column;
+      align-items: flex-start;
+      .group-label {
+        border-right: none;
+        padding-right: 0;
+      }
+    }
+  }
+}

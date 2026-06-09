@@ -1,0 +1,9 @@
+@use './bordered/softPlus' as soft;
+
+// Same as Bar, but the text column stretches to the image height and the author
+// row is pinned to the bottom — mirroring the eyebrow at the top for a
+// symmetrical, balanced header.
+.recipe-soft-bar-balanced {
+  @include soft.soft-plus;
+  @include soft.bar-balanced;
+}

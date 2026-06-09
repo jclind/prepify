@@ -1,0 +1,19 @@
+@use '../../helpers.scss' as s;
+@use './bordered/borderedBase' as base;
+
+// Softer bordered take — bigger radius, lighter borders, gentle shadows, warm tint.
+.recipe-bordered-soft {
+  @include base.bordered-base(
+    $radius: 16px,
+    $tint-a: rgba(#ff8a4c, 0.14),
+    $tint-b: rgba(s.$primary, 0.06),
+    $tint-border: rgba(s.$primary, 0.18)
+  );
+
+  .section { border-color: s.$gray-200; box-shadow: rgba(48, 56, 65, 0.05) 0px 6px 20px; }
+  .data-row .data { border-color: s.$gray-200; }
+  .header { border-bottom-color: s.$gray-200; }
+  .image-wrap img { box-shadow: rgba(48, 56, 65, 0.1) 0px 12px 28px; }
+  .review { border-color: s.$gray-200; }
+  .owner-banner { box-shadow: rgba(255, 87, 34, 0.06) 0px 8px 22px; }
+}

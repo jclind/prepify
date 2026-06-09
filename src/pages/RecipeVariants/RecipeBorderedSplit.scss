@@ -1,0 +1,11 @@
+@use '../../helpers.scss' as s;
+@use './bordered/borderedBase' as base;
+
+// Two-column body — sticky ingredient sidebar beside the instructions.
+.recipe-bordered-split {
+  @include base.bordered-base();
+
+  // compact the owner banner so the split grid reads as the focus
+  .owner-banner { padding: 0.85rem 1.25rem;
+    .ob-stats { gap: 1.25rem; } .ob-stat .ob-n { font-size: 1rem; } }
+}

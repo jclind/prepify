@@ -1,0 +1,165 @@
+@use '../../helpers.scss' as s;
+
+.home-pantry {
+  margin-top: s.$nav-height;
+  padding-bottom: 6rem;
+  color: s.$primary-text;
+
+  .pantry-hero {
+    background: s.$white;
+    padding: 3rem 6%;
+    text-align: center;
+    border-bottom: 1px solid s.$gray-300;
+    .kicker {
+      font-size: 0.75rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      font-weight: 800;
+      color: s.$secondary;
+      margin-bottom: 1rem;
+    }
+    h1 {
+      font-size: 2.6rem;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      line-height: 1.1;
+      margin-bottom: 0.75rem;
+      @media (max-width: 700px) { font-size: 2rem; }
+    }
+    p {
+      color: s.$secondary-text;
+      font-size: 1.05rem;
+      margin-bottom: 1.75rem;
+    }
+  }
+  .pantry-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+    justify-content: center;
+    max-width: 1000px;
+    margin: 0 auto 1.25rem;
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: s.$primary-background;
+      border: 1.5px solid transparent;
+      padding: 0.55rem 1rem;
+      border-radius: 999px;
+      font-size: 0.92rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      color: s.$secondary-text;
+      transition: all 0.12s ease;
+      .emoji { font-size: 1.15rem; }
+      .check { font-size: 1rem; color: s.$white; }
+      &:hover { border-color: s.$gray-400; }
+      &.active {
+        background: s.$primary;
+        color: s.$white;
+        border-color: s.$primary;
+      }
+      &.add {
+        background: transparent;
+        border: 1.5px dashed s.$gray-400;
+        color: s.$tertiary-text;
+        &:hover { border-color: s.$primary; color: s.$primary; }
+      }
+    }
+  }
+  .pantry-summary {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: s.$tertiary-text;
+    strong { color: s.$primary; font-weight: 800; }
+  }
+
+  .matches-section {
+    width: 92%;
+    max-width: s.$max-width;
+    margin: 3rem auto 0;
+    h2 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.015em;
+      margin-bottom: 1.5rem;
+    }
+  }
+  .matches-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.25rem;
+    @media (max-width: 1100px) { grid-template-columns: repeat(3, 1fr); }
+    @media (max-width: 800px) { grid-template-columns: repeat(2, 1fr); }
+    @media (max-width: 500px) { grid-template-columns: 1fr; }
+  }
+  .match-card {
+    background: s.$white;
+    border-radius: 14px;
+    overflow: hidden;
+    text-decoration: none;
+    color: s.$primary-text;
+    border: 1px solid s.$gray-300;
+    transition: all 0.15s ease;
+    &:hover {
+      transform: translateY(-3px);
+      box-shadow: rgba(0,0,0,0.08) 0px 12px 28px;
+    }
+  }
+  .match-img {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  }
+  .match-badge {
+    position: absolute;
+    top: 0.65rem;
+    right: 0.65rem;
+    padding: 0.3rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: s.$white;
+    &.full { background: #28a745; }
+    &.half { background: s.$secondary; }
+    &.low { background: rgba(48,56,65,0.85); }
+  }
+  .match-body {
+    padding: 0.85rem 1rem 1rem;
+    h3 {
+      font-size: 1.02rem;
+      font-weight: 600;
+      line-height: 1.3;
+      text-transform: capitalize;
+      margin-bottom: 0.55rem;
+      min-height: 2.6em;
+    }
+  }
+  .match-meta {
+    display: flex;
+    gap: 0.85rem;
+    font-size: 0.82rem;
+    color: s.$secondary-text;
+    font-weight: 600;
+    flex-wrap: wrap;
+    margin-bottom: 0.55rem;
+    svg { vertical-align: -2px; margin-right: 0.1rem; }
+    .price { margin-left: auto; color: s.$primary; font-weight: 700; }
+  }
+  .match-bar {
+    height: 4px;
+    background: s.$gray-200;
+    border-radius: 999px;
+    overflow: hidden;
+    .match-fill {
+      height: 100%;
+      background: linear-gradient(90deg, s.$secondary, #28a745);
+      transition: width 0.3s ease;
+    }
+  }
+}

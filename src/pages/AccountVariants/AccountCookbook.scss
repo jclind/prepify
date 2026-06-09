@@ -1,0 +1,236 @@
+@use '../../helpers.scss' as s;
+
+.account-cookbook {
+  margin-top: s.$nav-height;
+  background: #f0e8d6;
+  min-height: calc(100vh - #{s.$nav-height});
+  padding: 3rem 1.5rem 6rem;
+  font-family: 'Georgia', 'Times New Roman', serif;
+  color: #2a2520;
+
+  .cookbook-frame {
+    max-width: 900px;
+    margin: 0 auto;
+    background: #fbf8f3;
+    box-shadow:
+      rgba(0,0,0,0.18) 0px 24px 60px,
+      rgba(0,0,0,0.08) 0px 4px 16px;
+    padding: 4rem 4rem 3rem;
+    border: 1px solid #d8d3c5;
+    @media (max-width: 700px) { padding: 2.5rem 1.5rem; }
+  }
+
+  .cookbook-cover {
+    text-align: center;
+    border-bottom: 2px solid #2a2520;
+    padding-bottom: 2.5rem;
+    margin-bottom: 2.5rem;
+    .kicker {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 0.72rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: s.$primary;
+      display: block;
+      margin-bottom: 1.5rem;
+    }
+    h1 {
+      font-size: 3.4rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.05;
+      margin-bottom: 1.25rem;
+      @media (max-width: 700px) { font-size: 2.4rem; }
+    }
+    .subtitle {
+      font-size: 1.15rem;
+      font-style: italic;
+      color: #4a4035;
+      max-width: 580px;
+      margin: 0 auto 2rem;
+      line-height: 1.55;
+    }
+    .cover-meta {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.8rem;
+      img {
+        width: 50px; height: 50px;
+        border-radius: 50%;
+        object-fit: cover;
+      }
+      .by {
+        font-family: 'Montserrat', sans-serif;
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #2a2520;
+        text-align: left;
+      }
+      .cover-pub {
+        font-family: 'Montserrat', sans-serif;
+        font-size: 0.72rem;
+        color: #7a6f60;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        font-weight: 600;
+        margin-top: 0.2rem;
+        text-align: left;
+      }
+    }
+  }
+
+  .table-of-contents {
+    margin-bottom: 3.5rem;
+    padding: 1.75rem 0;
+    border-top: 1px solid #c8c2af;
+    border-bottom: 1px solid #c8c2af;
+    .toc-title {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 0.75rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      font-weight: 800;
+      color: #7a6f60;
+      text-align: center;
+      margin-bottom: 1.25rem;
+    }
+    .toc-line {
+      display: grid;
+      grid-template-columns: 110px 1fr auto auto;
+      gap: 0.5rem;
+      align-items: baseline;
+      padding: 0.5rem 0;
+      text-decoration: none;
+      color: #2a2520;
+      transition: opacity 0.12s ease;
+      &:hover { opacity: 0.7; }
+    }
+    .toc-num {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: s.$primary;
+      font-weight: 800;
+    }
+    .toc-name {
+      font-size: 1.15rem;
+      font-weight: 500;
+    }
+    .toc-dots {
+      border-bottom: 2px dotted #c8c2af;
+      transform: translateY(-4px);
+    }
+    .toc-page {
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: #7a6f60;
+    }
+  }
+
+  .chapter {
+    margin-bottom: 3.5rem;
+    scroll-margin-top: calc(#{s.$nav-height} + 1.5rem);
+  }
+  .chapter-head {
+    text-align: center;
+    margin-bottom: 2rem;
+    .chapter-n {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 0.7rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      font-weight: 800;
+      color: s.$primary;
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+    h2 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      letter-spacing: -0.015em;
+      margin-bottom: 0.4rem;
+    }
+    p {
+      font-style: italic;
+      color: #4a4035;
+      font-size: 1rem;
+    }
+  }
+  .chapter-recipes {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .chapter-entry {
+    display: grid;
+    grid-template-columns: 50px 80px 1fr;
+    gap: 1rem;
+    align-items: center;
+    padding: 0.85rem 0;
+    border-bottom: 1px dotted #c8c2af;
+    text-decoration: none;
+    color: #2a2520;
+    transition: background 0.12s ease;
+    &:hover { background: rgba(0,0,0,0.025); }
+    &:last-child { border-bottom: none; }
+    .entry-num {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: s.$primary;
+      letter-spacing: -0.02em;
+    }
+    img {
+      width: 80px;
+      height: 80px;
+      object-fit: cover;
+      border-radius: 4px;
+    }
+    .entry-body {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: baseline;
+      gap: 0.85rem;
+    }
+    h3 {
+      font-size: 1.15rem;
+      font-weight: 500;
+      text-transform: capitalize;
+    }
+    .dots {
+      border-bottom: 2px dotted #c8c2af;
+      transform: translateY(-4px);
+    }
+    .entry-page {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #7a6f60;
+      grid-column: 1 / -1;
+      text-align: right;
+      letter-spacing: 0.05em;
+    }
+  }
+
+  .cookbook-footer {
+    text-align: center;
+    margin-top: 3rem;
+    .footer-rule {
+      width: 50px;
+      height: 2px;
+      background: s.$primary;
+      margin: 0 auto 1rem;
+    }
+    p {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #7a6f60;
+      font-weight: 600;
+    }
+  }
+}

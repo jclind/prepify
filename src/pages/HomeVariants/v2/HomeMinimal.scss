@@ -1,0 +1,42 @@
+@use '../../../helpers.scss' as s;
+
+.home-minimal {
+  background: s.$white;
+
+  .grid-4 {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+    @media (max-width: 1100px) { grid-template-columns: repeat(2, 1fr); }
+    @media (max-width: 520px) { grid-template-columns: 1fr; }
+  }
+
+  .load-more { text-align: center; margin-top: 2.5rem; }
+  .ghost-btn {
+    display: inline-block;
+    border: 1.5px solid s.$gray-400;
+    color: s.$primary-text;
+    background: s.$white;
+    padding: 0.85rem 1.6rem;
+    border-radius: 999px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all 0.12s ease;
+    &:hover { border-color: s.$primary; color: s.$primary; }
+  }
+
+  .tags-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    .label { font-weight: 700; color: s.$secondary-text; }
+  }
+  .tag-cloud { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .tag {
+    background: s.$gray-50; border: 1px solid s.$gray-300; color: s.$secondary-text;
+    padding: 0.5rem 1rem; border-radius: 999px; text-decoration: none;
+    font-weight: 600; font-size: 0.9rem; transition: all 0.12s ease;
+    &:hover { background: s.$primary; color: s.$white; border-color: s.$primary; }
+  }
+}

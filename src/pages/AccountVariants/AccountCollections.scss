@@ -1,0 +1,158 @@
+@use '../../helpers.scss' as s;
+
+.account-collections {
+  width: 94%;
+  max-width: 1200px;
+  margin: 0 auto;
+  margin-top: s.$nav-height;
+  padding: 2.5rem 0 6rem;
+  color: s.$primary-text;
+
+  .coll-header {
+    display: grid;
+    grid-template-columns: 80px 1fr auto;
+    gap: 1.25rem;
+    align-items: center;
+    margin-bottom: 2.5rem;
+    @media (max-width: 700px) {
+      grid-template-columns: 60px 1fr;
+      .edit-btn { grid-column: 1 / -1; justify-self: start; }
+    }
+    .avatar { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; }
+    .handle {
+      font-size: 0.85rem;
+      color: s.$tertiary-text;
+      font-weight: 700;
+    }
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: -0.015em;
+      margin-top: 0.15rem;
+    }
+    p {
+      font-size: 0.88rem;
+      color: s.$tertiary-text;
+      margin-top: 0.2rem;
+      font-weight: 600;
+    }
+    .edit-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: s.$white;
+      border: 1px solid s.$gray-300;
+      padding: 0.65rem 1.1rem;
+      border-radius: 10px;
+      font-family: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      &:hover { border-color: s.$primary-text; }
+    }
+  }
+
+  .collections-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    @media (max-width: 900px) { grid-template-columns: repeat(2, 1fr); }
+    @media (max-width: 550px) { grid-template-columns: 1fr; }
+  }
+
+  .collection-card {
+    background: s.$white;
+    border-radius: 16px;
+    overflow: hidden;
+    text-decoration: none;
+    color: s.$primary-text;
+    border: 1px solid s.$gray-300;
+    transition: all 0.18s ease;
+    &:hover {
+      transform: translateY(-4px);
+      box-shadow: rgba(0,0,0,0.1) 0px 16px 36px;
+    }
+  }
+  .cover-grid {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    aspect-ratio: 4 / 3;
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+  }
+  .cover-overlay {
+    position: absolute;
+    bottom: 0.7rem;
+    right: 0.7rem;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(8px);
+    color: s.$white;
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    svg { font-size: 0.95rem; }
+  }
+  .coll-body {
+    padding: 1.1rem 1.25rem 1.25rem;
+    border-top: 5px solid s.$primary;
+    h3 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      margin-bottom: 0.35rem;
+    }
+    p {
+      font-size: 0.9rem;
+      color: s.$secondary-text;
+      line-height: 1.5;
+      margin-bottom: 0.85rem;
+    }
+    .coll-foot {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.82rem;
+      color: s.$tertiary-text;
+      font-weight: 700;
+      .arrow {
+        color: s.$primary;
+        font-weight: 700;
+      }
+    }
+  }
+
+  .new-collection {
+    background: transparent;
+    border: 2px dashed s.$gray-400;
+    border-radius: 16px;
+    padding: 2rem 1.5rem;
+    cursor: pointer;
+    font-family: inherit;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    color: s.$tertiary-text;
+    text-align: center;
+    min-height: 340px;
+    transition: all 0.15s ease;
+    &:hover {
+      border-color: s.$primary;
+      color: s.$primary;
+      background: rgba(s.$primary, 0.04);
+    }
+    .plus { font-size: 3rem; }
+    .new-label { font-weight: 800; font-size: 1.05rem; }
+    .new-sub { font-size: 0.85rem; max-width: 220px; font-weight: 600; }
+  }
+}

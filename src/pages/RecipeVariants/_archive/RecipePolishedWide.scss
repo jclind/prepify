@@ -1,0 +1,308 @@
+@use '../../helpers.scss' as s;
+
+.recipe-polished-wide {
+  width: 92%;
+  max-width: 1280px;
+  margin: 0 auto;
+  margin-top: s.$nav-height;
+  padding: 2.5rem 0 7rem;
+  color: s.$primary-text;
+
+  .hero {
+    display: grid;
+    grid-template-columns: 480px 1fr;
+    gap: 3.5rem;
+    padding-bottom: 3rem;
+    border-bottom: 1px solid s.$gray-300;
+    @media (max-width: 950px) { grid-template-columns: 1fr; }
+  }
+  .hero-img {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    border-radius: 20px;
+    box-shadow:
+      rgba(0, 0, 0, 0.12) 0px 28px 60px,
+      rgba(0, 0, 0, 0.06) 0px 8px 20px;
+  }
+  .hero-text {
+    display: flex;
+    flex-direction: column;
+    gap: 1.35rem;
+    justify-content: center;
+  }
+  .cuisine {
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: s.$secondary;
+  }
+  h1 {
+    font-size: 3rem;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    line-height: 1.05;
+    text-transform: capitalize;
+    @media (max-width: 700px) { font-size: 2.2rem; }
+  }
+  .description {
+    color: s.$secondary-text;
+    line-height: 1.7;
+    font-size: 1.1rem;
+    max-width: 620px;
+  }
+  .author-row {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    font-size: 0.9rem;
+    color: s.$tertiary-text;
+    .avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
+    strong { color: s.$primary-text; }
+    .dot { opacity: 0.5; }
+  }
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.85rem;
+    margin-top: 0.75rem;
+    @media (max-width: 500px) { grid-template-columns: repeat(2, 1fr); }
+  }
+  .stat {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 1rem 1.15rem;
+    background: s.$white;
+    border: 1px solid s.$gray-300;
+    border-radius: 14px;
+    .icon { font-size: 1.65rem; color: s.$primary; flex-shrink: 0; }
+    .dollar { font-size: 1.6rem; color: s.$primary; font-weight: 700; }
+    .num { font-size: 1.35rem; font-weight: 800; line-height: 1; letter-spacing: -0.01em; }
+    .label { font-size: 0.7rem; color: s.$tertiary-text; font-weight: 700; margin-top: 0.25rem; text-transform: uppercase; letter-spacing: 0.06em; }
+  }
+  .actions {
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    margin-top: 0.75rem;
+    button {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.9rem 1.5rem;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      font-family: inherit;
+      border: 1.5px solid transparent;
+      transition: all 0.12s ease;
+    }
+    .primary {
+      background: s.$primary;
+      color: s.$white;
+      &:hover { background: #e74e1d; transform: translateY(-1px); }
+    }
+    .secondary {
+      background: s.$white;
+      color: s.$primary-text;
+      border-color: s.$gray-300;
+      &:hover { border-color: s.$primary-text; }
+    }
+  }
+
+  .body {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 4rem;
+    padding: 3.5rem 0;
+    @media (max-width: 950px) { grid-template-columns: 1fr; }
+  }
+  .ingredients-pane {
+    position: sticky;
+    top: calc(#{s.$nav-height} + 1.5rem);
+    align-self: start;
+    @media (max-width: 950px) { position: static; }
+  }
+  .pane-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    h2 { font-size: 1.7rem; font-weight: 700; letter-spacing: -0.01em; }
+  }
+  .servings-control {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: s.$primary-background;
+    border-radius: 999px;
+    padding: 0.3rem;
+    font-size: 0.9rem;
+    font-weight: 700;
+    button {
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      border: none;
+      background: s.$white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: s.$primary-text;
+      &:hover { background: s.$primary; color: s.$white; }
+    }
+    span { padding: 0 0.45rem; }
+  }
+  .ing-list {
+    list-style: none;
+    padding: 0; margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    li {
+      display: grid;
+      grid-template-columns: 24px 44px auto 1fr;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.65rem 0.75rem;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 0.98rem;
+      transition: background 0.1s ease;
+      &:hover { background: s.$primary-background; }
+      img { width: 44px; height: 44px; border-radius: 10px; object-fit: cover; }
+      .box {
+        width: 22px; height: 22px;
+        border: 1.5px solid s.$gray-400;
+        border-radius: 6px;
+        display: flex; align-items: center; justify-content: center;
+        color: transparent;
+        font-size: 1.2rem;
+      }
+      .qty { font-weight: 700; color: s.$primary-text; white-space: nowrap; }
+      .name { color: s.$secondary-text; }
+      &.checked {
+        .box { background: s.$secondary; border-color: s.$secondary; color: s.$white; }
+        .qty, .name { text-decoration: line-through; color: s.$tertiary-text; }
+      }
+    }
+  }
+  .price-card {
+    margin-top: 1.5rem;
+    padding: 1.25rem 1.4rem;
+    background: linear-gradient(135deg, s.$primary, #ff7849);
+    color: s.$white;
+    border-radius: 14px;
+    box-shadow: rgba(s.$primary, 0.3) 0px 12px 28px;
+    .price-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.12em; opacity: 0.9; font-weight: 700; }
+    .price-value { font-size: 2.2rem; font-weight: 800; line-height: 1.1; letter-spacing: -0.02em; }
+    .price-sub { font-size: 0.85rem; opacity: 0.95; margin-top: 0.25rem; }
+  }
+
+  .instructions-pane {
+    h2 { font-size: 1.7rem; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 1.75rem; }
+  }
+  .step-list {
+    list-style: none;
+    padding: 0; margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1.4rem;
+    li {
+      display: grid;
+      grid-template-columns: 56px 1fr;
+      gap: 1.5rem;
+      padding: 1.5rem 1.75rem;
+      background: s.$white;
+      border: 1px solid s.$gray-300;
+      border-radius: 16px;
+      box-shadow: rgba(0,0,0,0.03) 0px 4px 12px;
+    }
+    .num {
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      background: s.$primary;
+      color: s.$white;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800;
+      font-size: 1.2rem;
+    }
+    .step-meta {
+      display: flex;
+      gap: 0.55rem;
+      margin-bottom: 0.6rem;
+      .phase {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        font-weight: 800;
+        padding: 0.2rem 0.55rem;
+        border-radius: 4px;
+        &.prep { background: rgba(s.$secondary, 0.15); color: s.$secondary; }
+        &.cook { background: rgba(s.$primary, 0.12); color: s.$primary; }
+      }
+      .dur {
+        font-size: 0.78rem;
+        color: s.$tertiary-text;
+        font-weight: 700;
+      }
+    }
+    p { line-height: 1.7; color: s.$primary-text; font-size: 1.05rem; }
+  }
+
+  .tags-section {
+    margin-top: 2.5rem;
+    h3 { font-size: 1.2rem; font-weight: 700; margin-bottom: 1rem; }
+  }
+  .tags { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .tag {
+    background: rgba(s.$secondary, 0.12);
+    color: s.$secondary;
+    padding: 0.45rem 1rem;
+    border-radius: 999px;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  .reviews {
+    margin-top: 4.5rem;
+    padding-top: 3rem;
+    border-top: 1px solid s.$gray-300;
+    h2 { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.01em; }
+  }
+  .reviews-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    .avg {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      .big { font-size: 3rem; font-weight: 800; line-height: 1; color: s.$primary; letter-spacing: -0.02em; }
+      .stars { color: s.$primary; font-size: 1.05rem; letter-spacing: 0.05em; }
+      .count { font-size: 0.85rem; color: s.$tertiary-text; font-weight: 600; }
+    }
+  }
+  .review-list { display: flex; flex-direction: column; gap: 1.25rem; }
+  .review {
+    background: s.$white;
+    border: 1px solid s.$gray-300;
+    border-radius: 14px;
+    padding: 1.25rem 1.5rem;
+    box-shadow: rgba(0,0,0,0.03) 0px 4px 12px;
+    .review-head {
+      display: flex;
+      gap: 0.7rem;
+      align-items: baseline;
+      margin-bottom: 0.6rem;
+      flex-wrap: wrap;
+      .stars { color: s.$primary; font-size: 0.9rem; }
+      .date { color: s.$tertiary-text; font-size: 0.82rem; margin-left: auto; }
+    }
+    p { line-height: 1.7; color: s.$secondary-text; font-size: 1rem; }
+  }
+}

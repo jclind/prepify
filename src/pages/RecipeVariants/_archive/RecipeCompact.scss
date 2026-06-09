@@ -1,0 +1,238 @@
+@use '../../helpers.scss' as s;
+
+.recipe-compact {
+  width: 94%;
+  max-width: 1200px;
+  margin: 0 auto;
+  margin-top: s.$nav-height;
+  padding: 2rem 0 6rem;
+  color: s.$primary-text;
+
+  .hero {
+    display: grid;
+    grid-template-columns: 280px 1fr 280px;
+    gap: 1.75rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid s.$gray-300;
+    @media (max-width: 1050px) {
+      grid-template-columns: 240px 1fr;
+      .hero-aside { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    }
+    @media (max-width: 700px) {
+      grid-template-columns: 1fr;
+      .hero-aside { grid-template-columns: 1fr; }
+    }
+  }
+  .hero-img {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    border-radius: 14px;
+  }
+  .hero-main {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    justify-content: center;
+  }
+  .cuisine {
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: s.$secondary;
+  }
+  h1 {
+    font-size: 2rem;
+    line-height: 1.1;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    text-transform: capitalize;
+  }
+  .desc {
+    color: s.$secondary-text;
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+  .author-card {
+    display: grid;
+    grid-template-columns: 42px 1fr auto;
+    gap: 0.7rem;
+    align-items: center;
+    padding: 0.7rem 0.85rem;
+    background: s.$primary-background;
+    border-radius: 10px;
+    img { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; }
+    .author-name { font-weight: 700; font-size: 0.95rem; }
+    .author-sub { font-size: 0.78rem; color: s.$tertiary-text; }
+    .follow-btn {
+      background: s.$primary-text;
+      color: s.$white;
+      border: none;
+      padding: 0.5rem 0.95rem;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 0.8rem;
+      cursor: pointer;
+      font-family: inherit;
+      &:hover { background: #1f262d; }
+    }
+  }
+  .tags {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    .nutri {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      background: rgba(s.$secondary, 0.12);
+      color: s.$secondary;
+      padding: 0.3rem 0.7rem;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+    .tag {
+      background: s.$primary-background;
+      color: s.$secondary-text;
+      padding: 0.3rem 0.7rem;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+  }
+  .actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    button {
+      display: inline-flex; align-items: center; gap: 0.3rem;
+      padding: 0.7rem 1.15rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 700;
+      font-family: inherit;
+      font-size: 0.9rem;
+      background: s.$white;
+      border: 1.5px solid s.$gray-300;
+      color: s.$primary-text;
+      &:hover { border-color: s.$primary-text; }
+    }
+    .primary {
+      background: s.$primary;
+      color: s.$white;
+      border-color: s.$primary;
+      &:hover { background: #e74e1d; }
+    }
+  }
+
+  // sidebar
+  .hero-aside {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+  .aside-card {
+    background: s.$white;
+    border: 1px solid s.$gray-300;
+    border-radius: 14px;
+    padding: 1rem 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+  .aside-row {
+    display: grid;
+    grid-template-columns: 38px 1fr;
+    gap: 0.65rem;
+    align-items: center;
+    .icon { font-size: 1.7rem; color: s.$primary; }
+    .dollar-icon {
+      width: 28px; height: 28px;
+      background: s.$primary;
+      color: s.$white;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800;
+      font-size: 0.95rem;
+    }
+    .aside-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: s.$tertiary-text;
+      font-weight: 700;
+    }
+    .aside-val {
+      font-size: 1.05rem;
+      font-weight: 800;
+      letter-spacing: -0.005em;
+    }
+    .aside-sub {
+      font-size: 0.78rem;
+      color: s.$tertiary-text;
+      font-weight: 600;
+    }
+  }
+  .community-card {
+    background: s.$primary-text;
+    color: s.$white;
+    border-radius: 14px;
+    padding: 1rem 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    .comm-row {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      font-size: 0.9rem;
+      svg { font-size: 1.15rem; color: s.$primary; }
+      strong { font-size: 1.05rem; font-weight: 800; }
+    }
+  }
+
+  .body {
+    display: grid;
+    grid-template-columns: 1fr 1.8fr;
+    gap: 3rem;
+    padding-top: 2.5rem;
+    @media (max-width: 850px) { grid-template-columns: 1fr; }
+    h2 { font-size: 1.35rem; font-weight: 700; margin-bottom: 1rem; }
+  }
+  .ingredients ul {
+    list-style: none; padding: 0; margin: 0;
+    li {
+      display: grid;
+      grid-template-columns: 22px auto 1fr;
+      gap: 0.6rem;
+      padding: 0.55rem 0;
+      border-bottom: 1px dotted s.$gray-400;
+      font-size: 0.92rem;
+      align-items: baseline;
+      cursor: pointer;
+      &:last-child { border-bottom: none; }
+      input { margin: 0; accent-color: s.$primary; width: 16px; height: 16px; }
+      .qty { font-weight: 700; }
+      .name { color: s.$secondary-text; }
+    }
+  }
+  .instructions ol {
+    list-style: none; padding: 0; margin: 0;
+    display: flex; flex-direction: column;
+    gap: 1.1rem;
+    li {
+      display: grid;
+      grid-template-columns: 30px 1fr;
+      gap: 0.85rem;
+      align-items: start;
+      .num {
+        font-weight: 800;
+        font-size: 1.1rem;
+        color: s.$primary;
+      }
+      p { line-height: 1.7; }
+    }
+  }
+}

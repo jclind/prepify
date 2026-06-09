@@ -1,0 +1,20 @@
+@use '../../helpers.scss' as s;
+@use './bordered/softPlus' as soft;
+
+// Moves the meta onto a frosted strip at the bottom of the image, leaving the
+// right column for just title, description, author, and actions.
+.recipe-soft-overlay {
+  @include soft.soft-plus;
+
+  .header { align-items: start; }
+  .image-wrap { position: relative; line-height: 0; }
+  .img-meta {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    display: flex; flex-wrap: wrap; gap: 0.5rem 1.4rem; padding: 1.5rem 1.15rem 1rem;
+    background: linear-gradient(to top, rgba(20, 16, 14, 0.82), rgba(20, 16, 14, 0));
+    border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;
+    color: s.$white; line-height: 1.2;
+    .im-item { display: inline-flex; align-items: center; gap: 0.4rem; font-weight: 700; font-size: 0.95rem; }
+    .im-ic { display: inline-flex; font-size: 1.1rem; }
+  }
+}

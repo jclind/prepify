@@ -1,0 +1,82 @@
+@use '../../../helpers.scss' as s;
+
+.rate-widget {
+  .rw-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: s.$primary-text;
+    margin-bottom: 0.5rem;
+  }
+
+  .rw-stars {
+    display: flex;
+    align-items: center;
+    gap: 0.15rem;
+
+    .rw-star {
+      background: none;
+      border: none;
+      padding: 0.1rem;
+      cursor: pointer;
+      line-height: 0;
+      color: s.$primary;
+      transition: transform 0.08s ease;
+      &:hover { transform: scale(1.15); }
+      svg { font-size: 1.5rem; }
+      .off { color: s.$gray-400; }
+    }
+
+    .rw-hint {
+      margin-left: 0.6rem;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: s.$tertiary-text;
+    }
+  }
+
+  &.sm .rw-stars .rw-star svg { font-size: 1.15rem; }
+
+  .rw-review {
+    margin-top: 0.85rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+
+    textarea {
+      width: 100%;
+      min-height: 72px;
+      resize: vertical;
+      border: 1.5px solid s.$gray-300;
+      border-radius: 10px;
+      padding: 0.65rem 0.8rem;
+      font-family: inherit;
+      font-size: 0.9rem;
+      color: s.$primary-text;
+      &:focus { outline: none; border-color: s.$primary; }
+    }
+
+    .rw-submit {
+      align-self: flex-start;
+      background: s.$primary;
+      color: s.$white;
+      border: none;
+      border-radius: 10px;
+      padding: 0.6rem 1.25rem;
+      font-family: inherit;
+      font-weight: 700;
+      font-size: 0.9rem;
+      cursor: pointer;
+      &:hover { background: #e74e1d; }
+    }
+  }
+
+  &.submitted .rw-thanks {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    .rw-stars.filled svg { font-size: 1.25rem; }
+    .on { color: s.$primary; }
+    .off { color: s.$gray-400; }
+    p { font-size: 0.9rem; color: s.$secondary-text; font-weight: 600; }
+  }
+}

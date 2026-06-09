@@ -1,0 +1,19 @@
+@use '../../helpers.scss' as s;
+@use './bordered/softPlus' as soft;
+
+// Replaces the three boxy stat cards with one light inline meta line.
+.recipe-soft-strip {
+  @include soft.soft-plus;
+
+  .header { align-items: start; }
+
+  .meta-strip {
+    display: flex; flex-wrap: wrap; align-items: center; row-gap: 0.5rem; margin-top: 0.4rem;
+    .ms-item { display: inline-flex; align-items: baseline; gap: 0.45rem; padding: 0 1.4rem; }
+    .ms-item:first-child { padding-left: 0; }
+    .ms-item + .ms-item { border-left: 1px solid s.$gray-300; }
+    .ms-ic { align-self: center; display: inline-flex; color: s.$primary; font-size: 1.1rem; }
+    .ms-v { font-weight: 800; font-size: 1.1rem; }
+    .ms-t { font-size: 0.72rem; color: s.$tertiary-text; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+  }
+}

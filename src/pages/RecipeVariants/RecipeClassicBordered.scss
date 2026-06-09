@@ -1,0 +1,13 @@
+@use '../../helpers.scss' as s;
+@use './classic/classicBase' as base;
+
+// Structured, crisp-bordered take — tighter radius, stronger dividers.
+.recipe-classic-bordered {
+  @include base.classic-base($radius: 10px);
+
+  .header { padding-bottom: 2.25rem; border-bottom: 2px solid s.$gray-300; }
+  .section { border-width: 1.5px; }
+  .data-row .data { background: s.$white; border: 1.5px solid s.$gray-300; }
+  .sec-head { padding-bottom: 0.85rem; border-bottom: 1.5px solid s.$gray-200; margin-bottom: 1.1rem; }
+  .review { border-width: 1.5px; }
+}

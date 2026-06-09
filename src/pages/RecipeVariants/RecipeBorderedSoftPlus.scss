@@ -1,0 +1,6 @@
+@use './bordered/softPlus' as soft;
+
+// Soft borders + shadows, Refined's tinted owner banner, roomier header.
+.recipe-bordered-soft-plus {
+  @include soft.soft-plus;
+}

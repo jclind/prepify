@@ -1,0 +1,16 @@
+@use './bordered/softPlus' as soft;
+
+// Steps pair across rows: 1 & 2 on the top row, 3 & 4 next, and so on.
+.recipe-instr-twocol-rows {
+  @include soft.soft-plus;
+  @include soft.bar-balanced;
+
+  .instructions .step-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.75rem 2.75rem;
+    align-items: start;
+    @media (max-width: 700px) { grid-template-columns: 1fr; }
+    p { max-width: none; }
+  }
+}
