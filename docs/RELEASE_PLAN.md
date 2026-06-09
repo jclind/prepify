@@ -54,10 +54,10 @@ a feature flag. Do these together:
   Account, Home) should have a sensible empty state, an error state, and a loading skeleton. Spot-check
   by loading with the API down. **(nice-to-have, but high-impact)**
 - `[~]` **Broken-link & dead-route check** — click every nav item, footer link, and CTA; confirm no
-  404s or dead `href="#"`. **Audit found:** the 404 page's "contact our support team" link points to
-  `/` (home), not a support page — `src/pages/404/404.tsx:22` (`<Link to='/'>`). Repoint it to `/help`
-  (note `/help` is itself login-gated — see Section D). Still to verify: the "View All Release Notes"
-  link in `ReleaseNotes.tsx:145` (`github.com/jclind/prepify/releases`). **(blocker)**
+  404s or dead `href="#"`. **Fixed 2026-06-09:** the 404 page's "contact our support team" link now
+  points to `/help` instead of `/` (`src/pages/404/404.tsx`) — note `/help` is still login-gated, so
+  this fully lands once the Help page goes public (Section D). Still to verify: the "View All Release
+  Notes" link in `ReleaseNotes.tsx:145` (`github.com/jclind/prepify/releases`). **(blocker)**
 - `[x]` **404 / not-found page** — a real designed 404 exists (`src/pages/404/404.tsx` — food-plate
   graphic, Return Home button) and renders correctly on an unknown route. *Copy nit:* the heading
   reads "Something went wrong!", which sounds like a crash rather than a missing page — consider
