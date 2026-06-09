@@ -11,19 +11,31 @@
   }
 
   .home-section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-    gap: 1rem;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "title see"
+      "desc  see";
+    align-items: end;
+    column-gap: 1rem;
     margin-bottom: 1.35rem;
-    h2 { font-size: 1.7rem; font-weight: 700; letter-spacing: -0.015em; }
-    p { color: s.$tertiary-text; font-size: 0.95rem; margin-top: 0.2rem; }
+    h2 { grid-area: title; font-size: 1.7rem; font-weight: 700; letter-spacing: -0.015em; }
+    p { grid-area: desc; color: s.$tertiary-text; font-size: 0.95rem; margin-top: 0.2rem; }
     .see-all {
-      flex-shrink: 0;
+      grid-area: see;
+      align-self: end;
       display: inline-flex; align-items: center; gap: 0.2rem;
       text-decoration: none; color: s.$primary; font-weight: 700; font-size: 0.95rem;
       white-space: nowrap;
       &:hover { text-decoration: underline; }
+    }
+    // On narrow screens let the title use the full width and drop "See all"
+    // beside the description instead of reserving a tall right-hand column.
+    @media (max-width: 560px) {
+      grid-template-areas:
+        "title title"
+        "desc  see";
+      column-gap: 0.75rem;
     }
   }
 
