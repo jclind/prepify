@@ -145,13 +145,15 @@ const SingleRecipe: FC = () => {
               <CiShoppingBasket className='no-img' />
             )}
           </span>
-          <span className='qty'>
-            {quantity ? closestFraction(quantity) : ''}
-            {unit ? ` ${unit}` : ''}
-          </span>
-          <span className='name'>
-            {ingredient}
-            {comment ? `, ${comment}` : ''}
+          <span className='ing-text'>
+            <span className='qty'>
+              {quantity ? closestFraction(quantity) : ''}
+              {unit ? ` ${unit}` : ''}
+            </span>{' '}
+            <span className='name'>
+              {ingredient}
+              {comment ? `, ${comment}` : ''}
+            </span>
           </span>
         </li>
       )
@@ -265,21 +267,29 @@ const SingleRecipe: FC = () => {
           <div className='action-bar'>
             <div className='meta'>
               <div className='m-item'>
-                <AiOutlineClockCircle className='m-ic' />
-                <span className='m-v'>{currRecipe?.totalTime ?? '—'} min</span>
+                <span className='m-top'>
+                  <AiOutlineClockCircle className='m-ic' />
+                  <span className='m-v'>{currRecipe?.totalTime ?? '—'} min</span>
+                </span>
                 <span className='m-l'>Total time</span>
               </div>
               <div className='m-item'>
-                <AiOutlineUsergroupAdd className='m-ic' />
-                <span className='m-v'>{servingSize || currRecipe?.servings || '—'}</span>
+                <span className='m-top'>
+                  <AiOutlineUsergroupAdd className='m-ic' />
+                  <span className='m-v'>{servingSize || currRecipe?.servings || '—'}</span>
+                </span>
                 <span className='m-l'>Servings</span>
               </div>
               <div className='m-item'>
-                <BsStar className='m-ic' />
-                <span className='m-v'>
-                  {currRecipe ? formatRating(currRecipe.rating?.rateValue, ratingCount) : '—'}
+                <span className='m-top'>
+                  <BsStar className='m-ic' />
+                  <span className='m-v'>
+                    {currRecipe && ratingCount > 0
+                      ? formatRating(currRecipe.rating?.rateValue, ratingCount)
+                      : '—'}
+                  </span>
                 </span>
-                <span className='m-l'>{ratingCount > 0 ? `(${ratingCount})` : 'Rating'}</span>
+                <span className='m-l'>{ratingCount > 0 ? `(${ratingCount})` : 'No ratings'}</span>
               </div>
             </div>
             <div className='sr-actions'>
