@@ -161,18 +161,32 @@ Chunky design efforts that are bigger than a single checkbox. Tag each as **(blo
     (`Footer.tsx:16`, see blockers section), and (2) adding the Privacy/Terms links that Section C
     requires. If you do the overhaul before 1.0, do those here rather than twice.
 
-- `[ ]` **Mobile Nav Bar redesign** — **(blocker)**
-  - **Now:** `src/Components/Navbar/Navbar.tsx` toggles a `hamburger-react` button (`navOpen` state)
-    that simply shows/hides the *same* desktop `nav-links` via a `.nav-content.show` CSS class — there's
-    no purpose-built mobile menu, just the desktop links reflowed. `Navbar.scss` is already ~8 KB.
-    Logged-out users see recipes/login/signup; logged-in users get an account dropdown holding Help +
-    logout.
-  - **Audit (2026-06-09):** functional — the menu opens to a clean full-screen overlay
-    (Recipes/Login/Signup) with no console errors. This is discretionary polish, **not** a bug fix.
-  - **Goal:** _(fill in)_ — a dedicated mobile nav (e.g. full-screen / slide-in panel, larger tap
-    targets, clearer hierarchy) rather than the reflowed desktop links.
-  - **Touches:** `src/Components/Navbar/Navbar.tsx`, `src/Components/Navbar/Navbar.scss`, and
-    `src/Components/Navbar/PrepifyLogo.tsx` (where the `Beta` button decision also lives).
+- `[~]` **Mobile Nav Bar redesign** — **(blocker)**
+  - **Done (on `feat/mobile-nav-redesign`, pending merge):** replaced the reflowed-desktop-links
+    overlay with a purpose-built mobile menu — a full-screen panel with a subtle brand gradient,
+    frosted cards grouping the nav (Browse / Create / Account), an in-menu recipe search, larger
+    tap-target rows with icons + active-route highlighting, an account card (avatar + username +
+    email + logout when signed in; prominent Login/Signup CTAs when signed out), backdrop blur,
+    body-scroll lock, Esc-to-close, and safe-area padding. Desktop nav is unchanged. Built under
+    `src/Components/Navbar/menu/`; the legacy `.nav-content` overlay is disabled below 725px.
+  - **Still to do:** merge to `development`. The in-menu search reuses the shared `SearchRecipesInput`
+    autocomplete as-is — its visual overhaul is split out as its own item below.
+  - **Touches:** `src/Components/Navbar/Navbar.tsx`, `src/Components/Navbar/Navbar.scss`,
+    `src/Components/Navbar/menu/*`, and `src/Components/Navbar/PrepifyLogo.tsx` (where the `Beta`
+    button decision also lives).
+
+- `[ ]` **Search autocomplete redesign** — **(nice-to-have)**
+  - **Now:** `src/Components/SearchRecipesInput/SearchRecipesInput.tsx` (+ `.scss`) is shared by the
+    Home hero and the new mobile nav menu. Its autocomplete dropdown renders recipe result cards
+    (thumbnail, cook time, servings, rating) in an absolutely-positioned panel below the input.
+  - **Goal:** _(planned for a dedicated session)_ — overhaul the autocomplete designs across the app
+    (home hero + in-menu): rethink the dropdown styling/layout and result-card design, add proper
+    empty / loading / no-results states, and improve how it floats inside the mobile menu (it
+    currently overlays the nav cards as a plain white box — wants a card-style treatment matching the
+    menu).
+  - **Touches:** `src/Components/SearchRecipesInput/SearchRecipesInput.tsx` (+ `.scss`) and its
+    usages (Home hero, `src/Components/Navbar/menu/`).
+  - Gates nothing for 1.0 — tracked here so it isn't lost.
 
 - `[ ]` **Homepage redesign** — **(blocker)**
   - **Now:** `src/pages/Home/Home.tsx` is sparse — it renders only `<HomeHero />` and
