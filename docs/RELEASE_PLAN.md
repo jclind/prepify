@@ -142,6 +142,36 @@ Chunky design efforts that are bigger than a single checkbox. Tag each as **(blo
     (`Footer.tsx:16`, see blockers section), and (2) adding the Privacy/Terms links that Section C
     requires. If you do the overhaul before 1.0, do those here rather than twice.
 
+- `[ ]` **Mobile Nav Bar redesign** — **(blocker)**
+  - **Now:** `src/Components/Navbar/Navbar.tsx` toggles a `hamburger-react` button (`navOpen` state)
+    that simply shows/hides the *same* desktop `nav-links` via a `.nav-content.show` CSS class — there's
+    no purpose-built mobile menu, just the desktop links reflowed. `Navbar.scss` is already ~8 KB.
+    Logged-out users see recipes/login/signup; logged-in users get an account dropdown holding Help +
+    logout.
+  - **Goal:** _(fill in)_ — a dedicated mobile nav (e.g. full-screen / slide-in panel, larger tap
+    targets, clearer hierarchy) rather than the reflowed desktop links.
+  - **Touches:** `src/Components/Navbar/Navbar.tsx`, `src/Components/Navbar/Navbar.scss`, and
+    `src/Components/Navbar/PrepifyLogo.tsx` (where the `Beta` button decision also lives).
+
+- `[ ]` **Homepage redesign** — **(blocker)**
+  - **Now:** `src/pages/Home/Home.tsx` is sparse — it renders only `<HomeHero />` and
+    `<TrendingRecipes />`. No value-prop sections, feature highlights, or rich link/data blocks.
+  - **Goal:** _(fill in)_ — a richer landing page with more sections, links, and website data
+    (value prop, featured/seasonal content, etc.).
+  - **Touches:** `src/pages/Home/Home.tsx`, `src/pages/Home/HomeHero/HomeHero.tsx` (+ `.scss`), and
+    likely `src/Components/TrendingRecipes/`.
+
+- `[ ]` **Help / Contact Support page** — **(blocker)**
+  - **Now:** the page already exists — `src/pages/Help/Help.tsx` (routed `/help`) is a Formspree form
+    (category / title / description). **But it's gated:** the route sits inside the `PrivateRoute`
+    block (`src/App.tsx:130`), so it requires login, and it's only linked from the logged-in account
+    dropdown (`src/Components/Navbar/Navbar.tsx:127`). A logged-out visitor can't reach support at all.
+  - **Goal:** _(fill in)_ — redesign as a proper *public* contact/support page: make it reachable when
+    logged out (move the route out of `PrivateRoute`, add a public link — e.g. from the new footer) and
+    refresh the layout.
+  - **Touches:** `src/pages/Help/Help.tsx` (+ `Help.scss`), the route in `src/App.tsx:130`, and the
+    nav link in `src/Components/Navbar/Navbar.tsx:127`.
+
 ---
 
 ## Release-day cutover (light)
