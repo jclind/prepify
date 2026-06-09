@@ -19,7 +19,7 @@ const NotFound: FC = () => {
         <p className='text'>
           It seems like we can't find the page you are looking for, if you think
           this is a mistake, please{' '}
-          <Link to='/' className='contact-link'>
+          <Link to='/help' className='contact-link'>
             contact our support team
           </Link>
           .
