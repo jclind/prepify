@@ -1,7 +1,11 @@
 import React, { FC } from 'react'
 import { Helmet } from 'react-helmet-async'
-import TrendingRecipes from 'src/Components/TrendingRecipes/TrendingRecipes'
+import { Link } from 'react-router-dom'
+import { BiChevronRight } from 'react-icons/bi'
 import HomeHero from 'src/pages/Home/HomeHero/HomeHero'
+import HomeTrending from 'src/pages/Home/HomeTrending'
+import HomeBrowseByMeal from 'src/pages/Home/HomeBrowseByMeal'
+import './Home.scss'
 
 const Home: FC = () => {
   return (
@@ -13,7 +17,29 @@ const Home: FC = () => {
       </Helmet>
       <div className='page home-page'>
         <HomeHero />
-        <TrendingRecipes />
+
+        <section className='home-section'>
+          <div className='home-section-header'>
+            <h2>Trending this week</h2>
+            <p>What the community is cooking right now</p>
+            <Link to='/recipes' className='see-all'>See all <BiChevronRight /></Link>
+          </div>
+          <HomeTrending />
+        </section>
+
+        <section className='home-section'>
+          <div className='home-section-header'>
+            <h2>Browse by meal</h2>
+            <p>Pick a slot and go</p>
+          </div>
+          <HomeBrowseByMeal />
+        </section>
+
+        <section className='home-section home-view-all-section'>
+          <Link to='/recipes' className='home-view-all'>
+            View all recipes <BiChevronRight />
+          </Link>
+        </section>
       </div>
     </>
   )
