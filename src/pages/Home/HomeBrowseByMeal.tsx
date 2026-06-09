@@ -5,34 +5,28 @@ import { AiOutlineClockCircle, AiOutlineStar } from 'react-icons/ai'
 import Skeleton from 'react-loading-skeleton'
 import 'react-loading-skeleton/dist/skeleton.css'
 import RecipeAPI from 'src/api/recipes'
-import { formatRating } from 'src/util/formatRating'
 import { RecipeType } from 'types'
+import { skeletonColor, fmtPrice, ratingLabel } from './homeFormat'
 
 const MEALS = ['Breakfast', 'Lunch', 'Dinner'] as const
 const PER_COL = 4
-const skeletonColor = '#e6e6e6'
-const fmtPrice = (cents: number) => `$${(cents / 100).toFixed(2)}`
 
-const MealRow: FC<{ recipe: RecipeType }> = ({ recipe }) => {
-  const ratingCount = Number(recipe.rating?.rateCount) || 0
-  return (
-    <li>
-      <Link to={`/recipes/${recipe._id}`}>
-        <img src={recipe.recipeImage} alt='' />
-        <div className='info'>
-          <span className='title'>{recipe.title}</span>
-          <span className='sub'>
-            <AiOutlineClockCircle /> {recipe.totalTime}m
-            {' · '}
-            <AiOutlineStar />{' '}
-            {ratingCount === 0 ? 'New' : formatRating(recipe.rating.rateValue, ratingCount)}
-            {recipe.servingPrice != null && <> {' · '} {fmtPrice(recipe.servingPrice)}</>}
-          </span>
-        </div>
-      </Link>
-    </li>
-  )
-}
+const MealRow: FC<{ recipe: RecipeType }> = ({ recipe }) => (
+  <li>
+    <Link to={`/recipes/${recipe._id}`}>
+      <img src={recipe.recipeImage} alt='' />
+      <div className='info'>
+        <span className='title'>{recipe.title}</span>
+        <span className='sub'>
+          <AiOutlineClockCircle /> {recipe.totalTime}m
+          {' · '}
+          <AiOutlineStar /> {ratingLabel(recipe.rating)}
+          {recipe.servingPrice != null && <> {' · '} {fmtPrice(recipe.servingPrice)}</>}
+        </span>
+      </div>
+    </Link>
+  </li>
+)
 
 const SkeletonRow: FC = () => (
   <li className='skeleton-row'>
@@ -66,12 +60,12 @@ const HomeBrowseByMeal: FC = () => {
       claimed.add(r._id)
       picks.push(r)
     }
-    return { meal, picks, isLoading: results[i].isLoading }
+    return { meal, picks, isLoading: results[i].isLoading, isError: results[i].isError }
   })
 
   return (
     <div className='home-meal-cols'>
-      {columns.map(({ meal, picks, isLoading }) => (
+      {columns.map(({ meal, picks, isLoading, isError }) => (
         <div className='home-meal-col' key={meal}>
           <div className='meal-col-head'>
             <h3>{meal}</h3>
@@ -80,6 +74,8 @@ const HomeBrowseByMeal: FC = () => {
           <ul>
             {isLoading ? (
               Array.from({ length: PER_COL }).map((_, k) => <SkeletonRow key={k} />)
+            ) : isError ? (
+              <li className='empty-row'>Couldn’t load recipes.</li>
             ) : picks.length > 0 ? (
               picks.map(r => <MealRow recipe={r} key={r._id} />)
             ) : (

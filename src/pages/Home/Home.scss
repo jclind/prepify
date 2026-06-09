@@ -10,6 +10,13 @@
     &:first-of-type { margin-top: 3rem; }
   }
 
+  // Empty / error message for a section that has no data to show.
+  .home-empty {
+    color: s.$tertiary-text;
+    font-weight: 600;
+    padding: 1rem 0;
+  }
+
   .home-section-header {
     display: grid;
     grid-template-columns: 1fr auto;
