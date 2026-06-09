@@ -20,10 +20,8 @@ const Home: FC = () => {
 
         <section className='home-section'>
           <div className='home-section-header'>
-            <div>
-              <h2>Trending this week</h2>
-              <p>What the community is cooking right now</p>
-            </div>
+            <h2>Trending this week</h2>
+            <p>What the community is cooking right now</p>
             <Link to='/recipes' className='see-all'>See all <BiChevronRight /></Link>
           </div>
           <HomeTrending />
@@ -31,10 +29,8 @@ const Home: FC = () => {
 
         <section className='home-section'>
           <div className='home-section-header'>
-            <div>
-              <h2>Browse by meal</h2>
-              <p>Pick a slot and go</p>
-            </div>
+            <h2>Browse by meal</h2>
+            <p>Pick a slot and go</p>
           </div>
           <HomeBrowseByMeal />
         </section>
