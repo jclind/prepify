@@ -1,12 +1,17 @@
 import React from 'react'
+import { vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import Footer from 'src/Components/Footer/Footer'
 
-// The footer is presentational, but FooterLinkItem branches on `link.external`
-// to render a client-side <Link> vs a plain <a> — the one bit of real logic
-// worth pinning so a refactor can't silently break in-app routing or the
-// external/mailto/social links.
+// The footer reads auth state to swap the Account column between signed-in and
+// signed-out links; mock useAuth so we can drive both states. (Mocking the whole
+// module also keeps Firebase out of these presentational tests.)
+const authState = vi.hoisted(() => ({ user: null as unknown }))
+vi.mock('src/context/AuthContext', () => ({
+  useAuth: () => ({ user: authState.user }),
+}))
+
 const renderFooter = () =>
   render(
     <MemoryRouter>
@@ -15,15 +20,19 @@ const renderFooter = () =>
   )
 
 describe('Footer', () => {
+  beforeEach(() => {
+    authState.user = null // default: signed out
+  })
+
   it('renders internal nav links as client-side routes (href = path)', () => {
     renderFooter()
     expect(screen.getByRole('link', { name: 'All recipes' })).toHaveAttribute(
       'href',
       '/recipes'
     )
-    expect(screen.getByRole('link', { name: 'Sign in' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Add a recipe' })).toHaveAttribute(
       'href',
-      '/login'
+      '/add-recipe'
     )
   })
 
@@ -59,5 +68,36 @@ describe('Footer', () => {
     expect(
       screen.getByText(`© ${new Date().getFullYear()} Prepify`)
     ).toBeInTheDocument()
+  })
+
+  describe('Account column by auth state', () => {
+    it('shows Sign in / Create account when signed out', () => {
+      authState.user = null
+      renderFooter()
+      expect(screen.getByRole('link', { name: 'Sign in' })).toBeInTheDocument()
+      expect(
+        screen.getByRole('link', { name: 'Create account' })
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByRole('link', { name: 'My recipes' })
+      ).not.toBeInTheDocument()
+    })
+
+    it('swaps to the account pages when signed in', () => {
+      authState.user = { uid: 'abc123' }
+      renderFooter()
+      expect(
+        screen.getByRole('link', { name: 'My recipes' })
+      ).toHaveAttribute('href', '/account/your-recipes')
+      expect(
+        screen.getByRole('link', { name: 'Saved recipes' })
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByRole('link', { name: 'Sign in' })
+      ).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole('link', { name: 'Create account' })
+      ).not.toBeInTheDocument()
+    })
   })
 })

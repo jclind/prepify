@@ -12,7 +12,13 @@ export const contactEmail = 'JesseLindCS@gmail.com'
 export const longTagline =
   'Real recipes with the prices and nutrition baked in — so you can plan, shop, and cook with zero guesswork.'
 
-export type FooterLink = { label: string; to: string; external?: boolean }
+export type FooterLink = {
+  label: string
+  to: string
+  external?: boolean
+  /** Auth visibility: 'in' = only signed in, 'out' = only signed out, omit = always. */
+  auth?: 'in' | 'out'
+}
 export type FooterColumn = { heading: string; links: FooterLink[] }
 
 /** Primary nav columns. Links marked `external: true` are placeholders ('#'). */
@@ -29,10 +35,10 @@ export const footerColumns: FooterColumn[] = [
   {
     heading: 'Account',
     links: [
-      { label: 'Sign in', to: '/login' },
-      { label: 'Create account', to: '/signup' },
-      { label: 'My recipes', to: '/account/your-recipes' },
-      { label: 'Saved recipes', to: '/account/saved-recipes' },
+      { label: 'Sign in', to: '/login', auth: 'out' },
+      { label: 'Create account', to: '/signup', auth: 'out' },
+      { label: 'My recipes', to: '/account/your-recipes', auth: 'in' },
+      { label: 'Saved recipes', to: '/account/saved-recipes', auth: 'in' },
     ],
   },
   {
