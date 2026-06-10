@@ -120,6 +120,9 @@ a feature flag. Do these together:
 
 ## Section C — Launch & legal
 
+- `[ ]` **Rewrite the About page (personally)** — the current About copy is placeholder/AI-drafted and
+  must be rewritten by Jesse personally before launch — it's the site's voice and shouldn't ship
+  generated. **Owner: Jesse (do not delegate/auto-generate.)** **(blocker)**
 - `[ ]` **Privacy Policy page** — required once you collect accounts / personal data via Firebase Auth.
   **(blocker)**
 - `[ ]` **Terms of Service page** — for user-generated content (recipes, reviews) you want ToS.
