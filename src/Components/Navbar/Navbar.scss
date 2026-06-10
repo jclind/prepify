@@ -269,6 +269,16 @@ nav {
     // gap: 5rem;
   }
 
+  // Mobile menu is now handled by the redesigned <NavMenu> overlay
+  // (src/Components/Navbar/menu). The legacy full-screen .nav-content overlay
+  // is disabled below 725px; desktop keeps using it for the inline links.
+  @media screen and (max-width: 725px) {
+    .nav-content,
+    .nav-content.show {
+      display: none !important;
+    }
+  }
+
   .nav-links.dark-nav-links {
     .nav-link {
       color: s.$primary-text !important;
