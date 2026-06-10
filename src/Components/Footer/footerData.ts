@@ -3,9 +3,8 @@ import { FaInstagram, FaPinterestP, FaTiktok, FaYoutube } from 'react-icons/fa'
 import pjson from '../../../package.json'
 
 // ---------------------------------------------------------------------------
-// Shared footer content. Every design variant pulls from this single source so
-// flipping between them in the dev switcher never changes the underlying data —
-// only the layout/skin. When the winning variant is promoted, this file stays.
+// Shared footer content — single source of truth for the footer's links, blurb,
+// socials, and version. Keeping it data-driven keeps the Footer components thin.
 // ---------------------------------------------------------------------------
 
 export const version = pjson.version
@@ -45,13 +44,6 @@ export const footerColumns: FooterColumn[] = [
       { label: 'Terms', to: '#', external: true },
     ],
   },
-]
-
-/** Legal strip links (placeholders until real pages exist). */
-export const legalLinks: FooterLink[] = [
-  { label: 'Privacy', to: '#', external: true },
-  { label: 'Terms', to: '#', external: true },
-  { label: 'About', to: '#', external: true },
 ]
 
 export type SocialLink = { label: string; href: string; Icon: IconType }
