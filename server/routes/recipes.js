@@ -52,10 +52,23 @@ router.get('/recipes', async (req, res) => {
       }
     }
 
-    let sort = {}
-    if (order === 'new') sort = { createdAt: -1 }
-    else if (order === 'top') sort = { 'rating.rateValue': -1 }
-    else if (order === 'trending') sort = { views: -1 }
+    // Sort options exposed by the browse UI. `createdAt` is a millisecond-epoch
+    // string of fixed (13-digit) width, so a lexicographic sort matches
+    // chronological order. `_id` is a final tiebreak so pagination is stable
+    // when the primary key ties (e.g. many recipes with 0 saves / same price).
+    const SORTS = {
+      popular: { numTimesSaved: -1, views: -1, _id: -1 },
+      new: { createdAt: -1, _id: -1 },
+      old: { createdAt: 1, _id: 1 },
+      cheapest: { servingPrice: 1, _id: 1 },
+      expensive: { servingPrice: -1, _id: -1 },
+      shortest: { totalTime: 1, _id: 1 },
+      longest: { totalTime: -1, _id: -1 },
+      // Retained for any non-UI callers.
+      top: { 'rating.rateValue': -1, _id: -1 },
+      trending: { views: -1, _id: -1 },
+    }
+    const sort = SORTS[order] || SORTS.popular
 
     const collection = db.collection('recipes')
     const [recipes, totalCount] = await Promise.all([
