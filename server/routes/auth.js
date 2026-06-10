@@ -6,6 +6,32 @@ const { verifyToken } = require('../middleware/auth')
 const USERNAME_MIN_LENGTH = 3
 const USERNAME_MAX_LENGTH = 30
 
+const BIO_MAX_LENGTH = 300
+const LOCATION_MAX_LENGTH = 80
+
+// Validates the optional profile fields. bio/location are both optional and may
+// be empty (an empty string clears the field). Length is checked against the
+// trimmed value so trailing whitespace can't be used to exceed the limit.
+// Returns an error string, or null when valid.
+function validateProfile(bio, location) {
+  if (bio != null && typeof bio !== 'string') {
+    return 'bio must be a string'
+  }
+  if (location != null && typeof location !== 'string') {
+    return 'location must be a string'
+  }
+  if (typeof bio === 'string' && bio.trim().length > BIO_MAX_LENGTH) {
+    return `bio must be at most ${BIO_MAX_LENGTH} characters`
+  }
+  if (
+    typeof location === 'string' &&
+    location.trim().length > LOCATION_MAX_LENGTH
+  ) {
+    return `location must be at most ${LOCATION_MAX_LENGTH} characters`
+  }
+  return null
+}
+
 // Mirrors the client-side rules in src/Components/Form/UsernameInput.tsx so the
 // API can't be bypassed by calling it directly. Returns an error string, or
 // null when the username is valid.
@@ -92,6 +118,48 @@ router.post('/setUsername', verifyToken, async (req, res) => {
       }
       throw err
     }
+    res.json({ success: true })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// GET /getProfile
+// Returns the authenticated user's own profile fields (bio + location), or
+// empty strings when nothing has been saved yet. Scoped to req.uid like
+// /getUsername so a user only ever reads their own profile.
+router.get('/getProfile', verifyToken, async (req, res) => {
+  try {
+    const db = getDB()
+    const doc = await db.collection('userProfiles').findOne({ _id: req.uid })
+    res.json({ bio: doc?.bio ?? '', location: doc?.location ?? '' })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// POST /updateProfile
+// Upserts the authenticated user's bio + location. Empty strings are allowed
+// and clear the field. Values are trimmed before storage.
+router.post('/updateProfile', verifyToken, async (req, res) => {
+  try {
+    const { bio, location } = req.body || {}
+    const validationError = validateProfile(bio, location)
+    if (validationError) {
+      return res.status(400).json({ error: validationError })
+    }
+    const db = getDB()
+    await db.collection('userProfiles').updateOne(
+      { _id: req.uid },
+      {
+        $set: {
+          bio: typeof bio === 'string' ? bio.trim() : '',
+          location: typeof location === 'string' ? location.trim() : '',
+          updatedAt: new Date(),
+        },
+      },
+      { upsert: true }
+    )
     res.json({ success: true })
   } catch (err) {
     res.status(500).json({ error: err.message })

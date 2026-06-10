@@ -1,6 +1,11 @@
 import { auth } from 'src/client/db'
 import { http } from 'src/api/http-common'
 
+export type UserProfile = {
+  bio: string
+  location: string
+}
+
 class AuthAPIClass {
   getUID(): string | null {
     return auth?.currentUser?.uid ?? null
@@ -21,6 +26,16 @@ class AuthAPIClass {
   }
   async setUsername(username: string) {
     await http.post(`api/setUsername?username=${encodeURIComponent(username)}`)
+  }
+  // The server resolves the profile from the auth token, so this returns the
+  // current user's own bio/location. Skip the request when nobody is signed in.
+  async getProfile(): Promise<UserProfile | null> {
+    if (!this.getUID()) return null
+    const result = await http.get('api/getProfile')
+    return result.data
+  }
+  async updateProfile(profile: UserProfile) {
+    await http.post('api/updateProfile', profile)
   }
 }
 

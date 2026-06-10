@@ -12,6 +12,7 @@ vi.mock('src/api/auth', () => ({
   default: {
     getUID: vi.fn().mockReturnValue(null),
     getUsername: vi.fn().mockResolvedValue(null),
+    getProfile: vi.fn().mockResolvedValue({ bio: '', location: '' }),
   },
 }))
 

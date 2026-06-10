@@ -1,11 +1,10 @@
 import React, { FC, useEffect } from 'react'
-import { useLocation, useNavigate, Outlet } from 'react-router-dom'
+import { useLocation, useNavigate, Outlet, Link } from 'react-router-dom'
 import './Account.scss'
 import { Helmet } from 'react-helmet-async'
 import { useQuery } from '@tanstack/react-query'
 import AuthAPI from 'src/api/auth'
 import { useAuth } from 'src/context/AuthContext'
-import { profilePlaceholders } from 'src/pages/Account/accountPlaceholders'
 import LevelCard from 'src/pages/Account/components/LevelCard'
 import ProfileControls from 'src/pages/Account/components/ProfileControls'
 import SegmentedNav from 'src/pages/Account/components/SegmentedNav'
@@ -33,13 +32,19 @@ const Account: FC = () => {
     enabled: !!uid && !user?.displayName,
   })
 
+  const { data: profile } = useQuery({
+    queryKey: ['profile', uid],
+    queryFn: () => AuthAPI.getProfile(),
+    enabled: !!uid,
+  })
+
   const username = user?.displayName ?? data ?? ''
   const displayName = user?.displayName ?? username
   const nameInitial = displayName ? displayName.charAt(0).toUpperCase() : ''
 
   const memberSince = formatMemberSince(user?.metadata?.creationTime)
-  // TODO(Phase 2): location/bio are placeholders until the profile API lands.
-  const { location: place, bio } = profilePlaceholders
+  const place = profile?.location ?? ''
+  const bio = profile?.bio ?? ''
   // Name and username collapse to the same string today (displayName falls back
   // to the username), so a separate `@handle` would just duplicate the title.
   // Revisit when public profiles (Phase 5) give the handle independent meaning.
@@ -73,12 +78,20 @@ const Account: FC = () => {
             )}
             <div className='acct-id-text'>
               <h1 className='acct-name'>{displayName}</h1>
-              {/* Hold the meta/bio until the name resolves, so the placeholder
-                  location doesn't flash beneath a blank header on first paint. */}
+              {/* Hold the meta/bio until the name resolves, so nothing flashes
+                  beneath a blank header on first paint. */}
               {displayName && (
                 <>
-                  <p className='acct-meta'>{metaParts.join(' · ')}</p>
-                  <p className='acct-bio'>{bio}</p>
+                  {metaParts.length > 0 && (
+                    <p className='acct-meta'>{metaParts.join(' · ')}</p>
+                  )}
+                  {bio ? (
+                    <p className='acct-bio'>{bio}</p>
+                  ) : (
+                    <Link to='/settings' className='acct-bio-empty'>
+                      + Add a bio
+                    </Link>
+                  )}
                 </>
               )}
             </div>

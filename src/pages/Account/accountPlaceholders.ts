@@ -8,17 +8,12 @@
 // replace it with a real API, so the swap is a one-liner per feature.
 //
 // IMPORTANT: nothing here is real user data. The /account page is private (only
-// the signed-in user sees their own), so placeholder bio/location/level are only
-// ever shown to the person they describe.
+// the signed-in user sees their own), so placeholder level/counts are only ever
+// shown to the person they describe.
+//
+// Phase 2 (DONE) wired bio + location to a real API (AuthAPI.getProfile), so
+// their placeholders were removed from here. Level/XP and tab counts remain.
 // ──────────────────────────────────────────────────────────────────────────
-
-// TODO(Phase 2 — profile fields): replace with the user profile API
-// (server `users` doc → bio + location). `memberSince` already comes from the
-// real Firebase `creationTime` in Account.tsx, so it is not placeheld here.
-export const profilePlaceholders = {
-  location: 'Portland, OR',
-  bio: 'Home cook chasing weeknight dinners that don’t break the bank. Big on one-pan meals, bold sauces, and anything with too much garlic.',
-}
 
 // TODO(Phase 4 — XP/level engine): replace with the gamification API
 // (level + rank + XP-to-next, derived from saves / reviews / publishes / cooks).
