@@ -81,11 +81,15 @@
 .nav--condensed {
   height: 4rem;
 
-  .nav-logo {
+  // Scoped through `.prepify-logo.nav-link` so these beat the base logo rules
+  // (which are themselves `.prepify-logo.nav-link .nav-logo`, 0-3-0); a bare
+  // `.nav--condensed .nav-logo` (0-2-0) loses to them and the shrink is silently
+  // dropped.
+  .prepify-logo.nav-link .nav-logo {
     font-size: 1.7rem;
     transition: font-size 0.2s ease;
   }
-  .beta-tag {
+  .prepify-logo.nav-link .beta-tag {
     font-size: 0.7rem;
     padding: 0.15rem 0.4rem;
   }
