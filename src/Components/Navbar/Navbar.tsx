@@ -11,7 +11,6 @@ import { useScrolled } from 'src/Components/Navbar/desktop/useScrolled'
 
 type NavbarProps = {
   darkNavLinks: boolean
-  loading: boolean
   navBackgroundColor: 'white' | 'gray' | 'none'
 }
 
