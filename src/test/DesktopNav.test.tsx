@@ -99,6 +99,50 @@ describe('DesktopNav structure', () => {
       screen.getByRole('navigation', { name: 'Primary' })
     ).toBeInTheDocument()
   })
+
+  it('keeps an accessible name on the icon-collapsible links', () => {
+    // Recipes/Create collapse to icon-only below 1000px; the aria-label has to
+    // carry the name since the icon SVG has none and the label is display:none.
+    renderNav(baseProps({ isLoggedIn: true, username: 'chef', nameInitial: 'C' }))
+    expect(screen.getByRole('link', { name: 'Recipes' })).toHaveAttribute(
+      'aria-label',
+      'Recipes'
+    )
+    expect(screen.getByRole('link', { name: 'Create Recipe' })).toHaveAttribute(
+      'aria-label',
+      'Create Recipe'
+    )
+  })
+})
+
+describe('DesktopNav routes', () => {
+  it('points the primary links at the right routes', () => {
+    renderNav(baseProps({ isLoggedIn: true, username: 'chef', nameInitial: 'C' }))
+    expect(screen.getByRole('link', { name: 'Recipes' })).toHaveAttribute(
+      'href',
+      '/recipes'
+    )
+    expect(screen.getByRole('link', { name: 'Create Recipe' })).toHaveAttribute(
+      'href',
+      '/add-recipe'
+    )
+    expect(screen.getByRole('link', { name: 'Saved recipes' })).toHaveAttribute(
+      'href',
+      '/account/saved-recipes'
+    )
+  })
+
+  it('points the logged-out CTAs at login/signup', () => {
+    renderNav(baseProps({ isLoggedIn: false }))
+    expect(screen.getByRole('link', { name: 'Log in' })).toHaveAttribute(
+      'href',
+      '/login'
+    )
+    expect(screen.getByRole('link', { name: 'Sign up' })).toHaveAttribute(
+      'href',
+      '/signup'
+    )
+  })
 })
 
 describe('DesktopAccountMenu (Profile Card)', () => {
@@ -119,27 +163,37 @@ describe('DesktopAccountMenu (Profile Card)', () => {
     return btn
   }
 
-  it('toggles open/closed and exposes aria-expanded', () => {
+  it('is a disclosure: trigger controls a panel and toggles aria-expanded', () => {
     renderLoggedIn()
     const btn = screen.getByRole('button', { name: 'Account menu' })
+    expect(btn).toHaveAttribute('aria-haspopup', 'true')
+    expect(btn).toHaveAttribute('aria-controls')
     expect(btn).toHaveAttribute('aria-expanded', 'false')
     fireEvent.click(btn)
     expect(btn).toHaveAttribute('aria-expanded', 'true')
   })
 
-  it('exposes all account actions as menuitems', () => {
+  it('exposes all account actions as links + a logout button', () => {
     renderLoggedIn()
     open()
-    expect(screen.getByRole('menuitem', { name: 'Account' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Account' })).toHaveAttribute(
+      'href',
+      '/account'
+    )
+    expect(screen.getByRole('link', { name: 'Your recipes' })).toHaveAttribute(
+      'href',
+      '/account/your-recipes'
+    )
+    expect(screen.getByRole('link', { name: 'Settings' })).toHaveAttribute(
+      'href',
+      '/settings'
+    )
+    expect(screen.getByRole('link', { name: 'Help' })).toHaveAttribute(
+      'href',
+      '/help'
+    )
     expect(
-      screen.getByRole('menuitem', { name: 'Your recipes' })
-    ).toBeInTheDocument()
-    expect(
-      screen.getByRole('menuitem', { name: 'Settings' })
-    ).toBeInTheDocument()
-    expect(screen.getByRole('menuitem', { name: 'Help' })).toBeInTheDocument()
-    expect(
-      screen.getByRole('menuitem', { name: /log out/i })
+      screen.getByRole('button', { name: /log out/i })
     ).toBeInTheDocument()
   })
 
@@ -150,26 +204,36 @@ describe('DesktopAccountMenu (Profile Card)', () => {
     expect(screen.getByText('chef@x.com')).toBeInTheDocument()
   })
 
-  it('falls back to "Your account" when no username is present', () => {
-    renderLoggedIn({ username: '' })
+  it('falls back to "Your account" and hides email when those are empty', () => {
+    renderLoggedIn({ username: '', email: '' })
     open()
     expect(screen.getByText('Your account')).toBeInTheDocument()
+    expect(screen.queryByText('chef@x.com')).not.toBeInTheDocument()
   })
 
   it('logs out from the menu', () => {
     const logout = vi.fn()
     renderLoggedIn({ logout })
     open()
-    fireEvent.click(screen.getByRole('menuitem', { name: /log out/i }))
+    fireEvent.click(screen.getByRole('button', { name: /log out/i }))
     expect(logout).toHaveBeenCalledTimes(1)
   })
 
-  it('closes on Escape', () => {
+  it('closes when a menu link is clicked', () => {
+    renderLoggedIn()
+    const btn = open()
+    expect(btn).toHaveAttribute('aria-expanded', 'true')
+    fireEvent.click(screen.getByRole('link', { name: 'Settings' }))
+    expect(btn).toHaveAttribute('aria-expanded', 'false')
+  })
+
+  it('closes on Escape and returns focus to the trigger', () => {
     renderLoggedIn()
     const btn = open()
     expect(btn).toHaveAttribute('aria-expanded', 'true')
     fireEvent.keyDown(document, { key: 'Escape' })
     expect(btn).toHaveAttribute('aria-expanded', 'false')
+    expect(btn).toHaveFocus()
   })
 
   it('closes on outside click', () => {
@@ -180,9 +244,13 @@ describe('DesktopAccountMenu (Profile Card)', () => {
     expect(btn).toHaveAttribute('aria-expanded', 'false')
   })
 
-  it('renders the initial avatar when there is no photo', () => {
-    renderLoggedIn({ photoURL: null, nameInitial: 'C' })
-    // initial appears on the trigger avatar + the dropdown profile avatar
+  it('renders the photo avatar, falling back to the initial on load error', () => {
+    renderLoggedIn({ photoURL: 'https://x.test/p.png', nameInitial: 'C' })
+    const imgs = screen.getAllByAltText('Profile')
+    expect(imgs.length).toBeGreaterThan(0)
+
+    fireEvent.error(imgs[0])
+    expect(screen.queryByAltText('Profile')).not.toBeInTheDocument()
     expect(screen.getAllByText('C').length).toBeGreaterThan(0)
   })
 })

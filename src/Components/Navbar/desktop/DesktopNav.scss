@@ -263,8 +263,8 @@
   }
   &__avatar {
     flex-shrink: 0;
-    height: 44px;
-    width: 44px;
+    height: 42px;
+    width: 42px;
     border-radius: 50%;
     object-fit: cover;
     overflow: hidden;
@@ -353,6 +353,10 @@
     &.is-active {
       color: s.$primary;
     }
+    &:focus-visible {
+      @include s.outline();
+      outline-offset: -2px;
+    }
   }
 }
 
@@ -360,6 +364,9 @@
 .dnav-account__links {
   display: flex;
   flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 .dnav-account__profile {
   display: flex;
@@ -370,6 +377,10 @@
   border-bottom: 1px solid s.$gray-300;
   &:hover {
     background: s.$gray-200;
+  }
+  &:focus-visible {
+    @include s.outline();
+    outline-offset: -2px;
   }
 }
 .dnav-account__profile-avatar {

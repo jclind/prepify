@@ -1,4 +1,4 @@
-import React, { FC, useEffect, useRef, useState } from 'react'
+import React, { FC, useEffect, useId, useRef, useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { AiOutlineUser, AiOutlineSetting } from 'react-icons/ai'
 import { BiHelpCircle, BiLogOut } from 'react-icons/bi'
@@ -16,7 +16,12 @@ type LinkItem = { to: string; label: string; Icon: IconType }
 /**
  * Accessible avatar dropdown ("Profile Card"): a profile header (avatar + name +
  * email linking to /account), the account links, and an outlined Log out button.
- * Opens on click, closes on outside-click and Escape, exposes aria-expanded.
+ *
+ * Built as a disclosure (a button with `aria-expanded`/`aria-controls` revealing
+ * a panel of links) rather than an ARIA `menu` — site-nav dropdowns don't have
+ * the application-menu keyboard model (arrow navigation / roving focus), so the
+ * lighter disclosure semantics are the honest, correct fit. Opens on click,
+ * closes on outside-click and Escape (which returns focus to the trigger).
  */
 const DesktopAccountMenu: FC<DesktopAccountMenuProps> = ({
   username,
@@ -28,6 +33,8 @@ const DesktopAccountMenu: FC<DesktopAccountMenuProps> = ({
   const [open, setOpen] = useState(false)
   const [imgFailed, setImgFailed] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const btnRef = useRef<HTMLButtonElement>(null)
+  const panelId = useId()
   const close = () => setOpen(false)
 
   useEffect(() => {
@@ -36,7 +43,10 @@ const DesktopAccountMenu: FC<DesktopAccountMenuProps> = ({
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
     }
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false)
+      if (e.key === 'Escape') {
+        setOpen(false)
+        btnRef.current?.focus()
+      }
     }
     document.addEventListener('mousedown', onDocClick)
     document.addEventListener('keydown', onKey)
@@ -68,10 +78,12 @@ const DesktopAccountMenu: FC<DesktopAccountMenuProps> = ({
   return (
     <div className={`dnav-account${open ? ' is-open' : ''}`} ref={ref}>
       <button
+        ref={btnRef}
         type='button'
         className='dnav-account__btn'
-        aria-haspopup='menu'
+        aria-haspopup='true'
         aria-expanded={open}
+        aria-controls={panelId}
         aria-label='Account menu'
         onClick={() => setOpen(o => !o)}
       >
@@ -79,10 +91,9 @@ const DesktopAccountMenu: FC<DesktopAccountMenuProps> = ({
         <MdKeyboardArrowDown className='dnav-account__caret' />
       </button>
 
-      <div className='dnav-account__menu' role='menu'>
+      <div className='dnav-account__menu' id={panelId}>
         <NavLink
           to='/account'
-          role='menuitem'
           className='dnav-account__profile'
           onClick={close}
         >
@@ -95,24 +106,19 @@ const DesktopAccountMenu: FC<DesktopAccountMenuProps> = ({
           </span>
         </NavLink>
 
-        <div className='dnav-account__links'>
+        <ul className='dnav-account__links'>
           {linkItems.map(({ to, label, Icon }) => (
-            <NavLink
-              key={to}
-              to={to}
-              role='menuitem'
-              className='dnav-account__item'
-              onClick={close}
-            >
-              <Icon className='icon' />
-              <span>{label}</span>
-            </NavLink>
+            <li key={to}>
+              <NavLink to={to} className='dnav-account__item' onClick={close}>
+                <Icon className='icon' />
+                <span>{label}</span>
+              </NavLink>
+            </li>
           ))}
-        </div>
+        </ul>
 
         <button
           type='button'
-          role='menuitem'
           className='dnav-account__logout-btn'
           onClick={() => {
             close()
