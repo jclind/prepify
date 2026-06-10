@@ -15,9 +15,20 @@ const allowedOrigins = (process.env.FRONTEND_URLS || 'http://localhost:3000')
 
 const netlifyPreviewPattern = /^https:\/\/deploy-preview-\d+--prepify\.netlify\.app$/
 
+// Outside production, allow any localhost/127.0.0.1 dev client on ports 3000-3010
+// so git worktrees (each Vite picks the next free port) reach the API without
+// editing FRONTEND_URLS each time. Never applied when NODE_ENV=production.
+const isProduction = process.env.NODE_ENV === 'production'
+const localhostDevPattern = /^http:\/\/(localhost|127\.0\.0\.1):30(0\d|10)$/
+
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin) || netlifyPreviewPattern.test(origin)) {
+    if (
+      !origin ||
+      allowedOrigins.includes(origin) ||
+      netlifyPreviewPattern.test(origin) ||
+      (!isProduction && localhostDevPattern.test(origin))
+    ) {
       callback(null, true)
     } else {
       callback(new Error('Not allowed by CORS'))
