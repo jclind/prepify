@@ -1,4 +1,4 @@
-import React, { useState, useEffect, FC } from 'react'
+import React, { useState, useEffect, useCallback, FC } from 'react'
 import './Navbar.scss'
 import { NavLink, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -9,6 +9,9 @@ import { AiOutlineUser } from 'react-icons/ai'
 import { BiHelpCircle, BiLogOut } from 'react-icons/bi'
 import AuthAPI from 'src/api/auth'
 import Skeleton from 'react-loading-skeleton'
+import NavMenu from 'src/Components/Navbar/menu/NavMenu'
+import { useNavMenu } from 'src/Components/Navbar/menu/useNavMenu'
+import { useIsMobile } from 'src/Components/Navbar/menu/useIsMobile'
 
 const skeletonColor = '#d6d6d6'
 
@@ -30,6 +33,11 @@ const Navbar: FC<NavbarProps> = ({
   const uid = AuthAPI.getUID()
 
   const location = useLocation()
+
+  // Mobile menu (redesign): shared auth/profile data + mobile-only mount.
+  const menu = useNavMenu()
+  const isMobile = useIsMobile()
+  const closeNav = useCallback(() => setNavOpen(false), [])
 
   useEffect(() => {
     setNavOpen(false)
@@ -143,6 +151,7 @@ const Navbar: FC<NavbarProps> = ({
   )
 
   return (
+    <>
     <nav className={`nav background-${navBackgroundColor}`}>
       <div className='nav-center'>
         <div className='nav-header'>
@@ -168,6 +177,12 @@ const Navbar: FC<NavbarProps> = ({
         </div>
       </div>
     </nav>
+
+      {/* Redesigned mobile menu — rendered outside <nav> so the bar (logo +
+          hamburger/X) stays above the overlay and remains tappable to close.
+          Mounted only at mobile widths, where the hamburger is reachable. */}
+      {isMobile && <NavMenu open={navOpen} onClose={closeNav} {...menu} />}
+    </>
   )
 }
 

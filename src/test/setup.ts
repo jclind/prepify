@@ -14,3 +14,19 @@ configure({
 const rootEl = document.createElement('div')
 rootEl.id = 'root'
 document.body.appendChild(rootEl)
+
+// jsdom doesn't implement matchMedia; stub it (defaults to "not mobile" so the
+// mobile nav menu doesn't mount in component/app tests unless a test overrides).
+if (typeof window.matchMedia !== 'function') {
+  window.matchMedia = (query: string) =>
+    ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+    } as unknown as MediaQueryList)
+}
