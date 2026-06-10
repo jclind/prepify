@@ -1,0 +1,970 @@
+@use '../../../helpers.scss' as s;
+
+// =============================================================================
+// Desktop nav (>725px). Shared markup lives in <DesktopBar>; this file holds the
+// shared base styling plus one skin block per variant (scoped to `.dnav--<id>`
+// and, for full-bar looks, `.nav[data-variant="<id>"]`). Hidden below 725px,
+// where the mobile <NavMenu> takes over.
+//
+// Layout: logo (in the shell) · prominent centered search · Recipes + Create ·
+// Saved icon · account menu / CTAs (right).
+//
+// Color theming uses CSS custom props that flip with the bar surface:
+//   transparent over the Home hero  -> light text
+//   solid (scrolled, or any non-hero page) -> dark text
+// The `.nav--solid` class is set on the <nav> shell by Navbar.tsx.
+//
+// Round-2 skin set. The first-round skins are archived in DesktopNav.archive.scss.
+// =============================================================================
+
+.dnav {
+  // theming knobs (defaults = transparent-over-hero: light text)
+  --dnav-text: #{s.$white};
+  --dnav-accent: #{s.$primary};
+  --dnav-muted: #{rgba(s.$white, 0.85)};
+  --dnav-border: #{rgba(s.$white, 0.55)};
+  --dnav-hover: #{rgba(s.$white, 0.16)};
+  --dnav-active-bg: #{rgba(s.$white, 0.18)};
+
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+
+  @media screen and (max-width: 725px) {
+    display: none;
+  }
+}
+
+// Solid surface -> dark text. (Set on the shell; applies to every variant.)
+.nav--solid .dnav {
+  --dnav-text: #{s.$primary-text};
+  --dnav-muted: #{s.$secondary-text};
+  --dnav-border: #{s.$gray-400};
+  --dnav-hover: #{s.$gray-200};
+  --dnav-active-bg: #{rgba(s.$primary, 0.12)};
+}
+
+// ---- search (always present, prominent) ----------------------------------
+.dnav__search {
+  flex: 0 1 560px;
+  min-width: 0;
+  margin: 0 auto; // center the search between the logo and the right-hand cluster
+
+  .search-recipes-form {
+    width: 100%;
+    max-width: none;
+  }
+
+  // Compact nav search: the shared input reserves ~7rem on the right for a
+  // floating "Search" text button, which clips the placeholder once the field
+  // narrows in the bar. Drop the button here (Enter and the autocomplete
+  // results submit) and tighten the padding so the placeholder always fits.
+  .search-recipes-form .search-recipes-input-label .search-recipes-btn {
+    display: none;
+  }
+  .search-recipes-form .search-recipes-input-label input {
+    padding-left: 2.6rem;
+    padding-right: 1rem;
+  }
+}
+
+// On the Home hero the bar is transparent (not yet solid) and the hero already
+// has a big search field. Hide the nav search there to avoid two stacked
+// searches; it "docks" into the bar once you scroll (bar goes solid). With the
+// search hidden, pin the links/actions to the right so there's no empty gap.
+// Only the Home hero is ever non-solid, so this targets exactly that case.
+.nav:not(.nav--solid) {
+  .dnav__search {
+    display: none;
+  }
+  .dnav__links {
+    margin-left: auto;
+  }
+}
+
+// Home hero legibility (desktop): the bar sits over a bright, busy food photo,
+// so light text fails contrast. A top scrim guarantees a dark backing, inactive
+// links go full-white (Quiet etc. mute them, which hurts here), and a soft
+// shadow handles high-contrast spots. Scoped to desktop so the mobile bar is
+// untouched; only the Home hero is ever non-solid.
+@media screen and (min-width: 726px) {
+  .nav:not(.nav--solid) {
+    background: linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0.5) 0%,
+      rgba(0, 0, 0, 0.32) 50%,
+      rgba(0, 0, 0, 0) 100%
+    );
+
+    .dnav {
+      --dnav-muted: #{s.$white};
+    }
+    .dnav__link,
+    .dnav__cta--login {
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+    }
+    .dnav__icon-link,
+    .dnav-account__caret {
+      filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
+    }
+    .nav-logo,
+    .beta-tag {
+      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+    }
+  }
+}
+
+// ---- primary links -------------------------------------------------------
+.dnav__links {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+.dnav__link {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.4rem 0.25rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+  color: var(--dnav-text);
+  transition: color 0.12s linear, background 0.12s linear, opacity 0.12s linear,
+    border-color 0.12s linear, filter 0.12s linear;
+
+  .dnav__link-icon {
+    display: none; // shown by skins that want icon+label, and at narrow widths
+    height: 20px;
+    width: 20px;
+    flex-shrink: 0;
+  }
+  &:hover {
+    opacity: 0.85;
+  }
+  &.is-active {
+    color: var(--dnav-accent);
+  }
+  &:focus-visible {
+    @include s.outline();
+  }
+}
+
+// Create — promoted (filled accent button) vs balanced (ghost/outline).
+.dnav__create {
+  border-radius: s.$border-radius;
+  .dnav__link-icon {
+    display: block;
+  }
+}
+.dnav__create--promoted {
+  padding: 0.5rem 1.05rem;
+  background: var(--dnav-accent);
+  color: #fff;
+  .dnav__link-icon {
+    color: #fff;
+  }
+  &:hover {
+    opacity: 1;
+    filter: brightness(1.07);
+  }
+  &.is-active {
+    color: #fff;
+  }
+}
+.dnav__create--balanced {
+  padding: 0.38rem 0.9rem;
+  border: 2px solid var(--dnav-border);
+  color: var(--dnav-text);
+  .dnav__link-icon {
+    color: var(--dnav-accent);
+  }
+  &:hover {
+    opacity: 1;
+    border-color: var(--dnav-accent);
+    color: var(--dnav-accent);
+    .dnav__link-icon {
+      color: var(--dnav-accent);
+    }
+  }
+  &.is-active {
+    color: var(--dnav-accent);
+    border-color: var(--dnav-accent);
+  }
+}
+
+// ---- actions (saved icon, account / CTAs) --------------------------------
+.dnav__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.dnav__actions-loading {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+}
+
+.dnav__icon-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 42px;
+  width: 42px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  color: var(--dnav-text);
+  font-size: 1.35rem;
+  text-decoration: none;
+  transition: background 0.12s linear, color 0.12s linear;
+  &:hover {
+    background: var(--dnav-hover);
+  }
+  &.is-active {
+    color: var(--dnav-accent);
+  }
+  &:focus-visible {
+    @include s.outline();
+  }
+}
+
+.dnav__cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1.1rem;
+  border-radius: s.$border-radius;
+  font-size: 1rem;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: filter 0.12s linear, background 0.12s linear, border-color 0.12s linear,
+    color 0.12s linear;
+  &:focus-visible {
+    @include s.outline();
+  }
+}
+.dnav__cta--login {
+  color: var(--dnav-text);
+  border: 2px solid var(--dnav-border);
+  background: none;
+  &:hover {
+    border-color: var(--dnav-accent);
+    color: var(--dnav-accent);
+  }
+}
+.dnav__cta--signup {
+  color: #fff;
+  background: var(--dnav-accent);
+  border: 2px solid var(--dnav-accent);
+  &:hover {
+    filter: brightness(1.07);
+  }
+}
+
+// ---- account dropdown (trigger + base menu card) -------------------------
+.dnav-account {
+  position: relative;
+
+  &__btn {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--dnav-text);
+    &:focus-visible {
+      @include s.outline();
+    }
+  }
+  &__avatar {
+    flex-shrink: 0;
+    height: 44px;
+    width: 44px;
+    border-radius: 50%;
+    object-fit: cover;
+    overflow: hidden;
+  }
+  &__avatar--initial {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: s.$primary-text;
+    color: s.$white;
+    font-size: 1.4rem;
+    font-weight: 600;
+    border: 1px solid #{rgba(s.$white, 0.6)};
+  }
+  &__name {
+    display: none; // shown only by skins that surface the name beside the avatar
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--dnav-text);
+    max-width: 9rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  &__caret {
+    height: 20px;
+    width: 20px;
+    color: var(--dnav-text);
+    transition: transform 0.15s ease;
+  }
+  &.is-open &__caret {
+    transform: rotate(180deg);
+  }
+
+  &__menu {
+    position: absolute;
+    top: calc(100% + 0.6rem);
+    right: 0;
+    width: 220px;
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 0.4rem;
+    background: s.$white;
+    border: 1px solid s.$gray-300;
+    border-radius: s.$border-radius;
+    box-shadow: 0 12px 28px rgba(48, 56, 65, 0.18);
+
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(-4px);
+    pointer-events: none;
+    transition: opacity 0.12s linear, transform 0.12s ease, visibility 0s linear 0.12s;
+  }
+  &.is-open &__menu {
+    visibility: visible;
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+    transition: opacity 0.12s linear, transform 0.12s ease;
+  }
+
+  &__identity {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid s.$gray-300;
+    .icon {
+      height: 20px;
+      width: 20px;
+      flex-shrink: 0;
+      color: s.$primary-text;
+      margin-top: 0.1rem;
+    }
+    .text {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: s.$primary-text;
+      line-height: 1.3;
+    }
+  }
+  &__email {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: s.$secondary-text;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 170px;
+  }
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.65rem 1rem;
+    background: none;
+    border: none;
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: s.$primary-text;
+    .icon {
+      height: 20px;
+      width: 20px;
+      flex-shrink: 0;
+      color: s.$secondary-text;
+    }
+    &:hover {
+      background: s.$gray-200;
+    }
+    &.is-active {
+      color: s.$primary;
+    }
+  }
+  &__logout:hover {
+    color: s.$error-red;
+    .icon {
+      color: s.$error-red;
+    }
+  }
+}
+
+// ---- account dropdown: design variants -----------------------------------
+.dnav-account__links {
+  display: flex;
+  flex-direction: column;
+}
+.dnav-account__group-heading {
+  margin: 0.6rem 1rem 0.1rem;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: s.$tertiary-text;
+}
+.dnav-account__profile {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.9rem 1rem;
+  text-decoration: none;
+  border-bottom: 1px solid s.$gray-300;
+  &:hover {
+    background: s.$gray-200;
+  }
+}
+.dnav-account__profile-avatar {
+  flex-shrink: 0;
+  height: 42px;
+  width: 42px;
+  border-radius: 50%;
+  object-fit: cover;
+  overflow: hidden;
+}
+.dnav-account__profile-avatar--initial {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: s.$primary-text;
+  color: s.$white;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+.dnav-account__profile-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.dnav-account__profile-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: s.$primary-text;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dnav-account__logout-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 0.5rem 0.75rem 0.25rem;
+  padding: 0.6rem;
+  border: 1px solid s.$gray-300;
+  border-radius: s.$border-radius;
+  background: none;
+  color: s.$primary-text;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.12s linear, color 0.12s linear, background 0.12s linear;
+  .icon {
+    height: 20px;
+    width: 20px;
+  }
+  &:hover {
+    border-color: s.$error-red;
+    color: s.$error-red;
+  }
+  &:focus-visible {
+    @include s.outline();
+  }
+}
+.dnav-account--profile .dnav-account__menu,
+.dnav-account--rich .dnav-account__menu {
+  width: 252px;
+}
+.dnav-account--compact .dnav-account__menu {
+  width: 200px;
+  padding-bottom: 0.3rem;
+}
+.dnav-account--compact .dnav-account__item {
+  padding-top: 0.55rem;
+  padding-bottom: 0.55rem;
+}
+.dnav-account--rich .dnav-account__links {
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid s.$gray-300;
+}
+
+// =============================================================================
+// VARIANT SKINS — round 2
+// =============================================================================
+
+// ===== GROUP A: Refined (built on the locked IA) =====
+
+// (1) Editorial — content-forward magazine feel: hairline divider, quiet
+//     uppercase links with a thin active underline, outlined search + Create.
+.nav[data-variant='editorial'].nav--solid {
+  background: s.$white;
+  border-bottom: 1px solid s.$gray-300;
+  box-shadow: none;
+}
+.dnav--editorial {
+  .dnav__link:not(.dnav__create) {
+    position: relative;
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--dnav-muted);
+    &:hover {
+      opacity: 1;
+      color: var(--dnav-text);
+    }
+    &.is-active {
+      color: var(--dnav-text);
+    }
+    &.is-active::after {
+      content: '';
+      position: absolute;
+      left: 0.25rem;
+      right: 0.25rem;
+      bottom: -1px;
+      height: 2px;
+      background: var(--dnav-accent);
+    }
+  }
+  .search-recipes-input {
+    border: 1px solid s.$gray-400;
+    border-radius: 6px;
+  }
+  .dnav__create--promoted {
+    background: none;
+    color: var(--dnav-accent);
+    border: 1.5px solid var(--dnav-accent);
+    .dnav__link-icon {
+      color: var(--dnav-accent);
+    }
+    &:hover {
+      filter: none;
+      background: #{rgba(s.$primary, 0.08)};
+    }
+  }
+}
+
+// (2) Warm Soft — friendly cooking app: warm surface, soft shadow, everything
+//     rounded (pill search, pill links, round controls).
+.nav[data-variant='warm-soft'].nav--solid {
+  background: #fffdfb;
+  border-bottom: none;
+  box-shadow: 0 4px 20px rgba(48, 56, 65, 0.09);
+}
+.dnav--warm-soft {
+  .search-recipes-input {
+    border-radius: 999px;
+    background: s.$gray-50;
+    border: 1px solid transparent;
+  }
+  .dnav__link:not(.dnav__create) {
+    padding: 0.45rem 0.9rem;
+    border-radius: 999px;
+    font-weight: 600;
+    &:hover {
+      opacity: 1;
+      background: s.$gray-200;
+    }
+    &.is-active {
+      color: var(--dnav-accent);
+      background: var(--dnav-active-bg);
+    }
+  }
+  .dnav__create--promoted {
+    border-radius: 999px;
+  }
+}
+
+// (3) Tabbed — app-style underline tabs (active = accent underline).
+.dnav--tabbed {
+  .dnav__links {
+    gap: 1.5rem;
+  }
+  .dnav__link:not(.dnav__create) {
+    position: relative;
+    padding-bottom: 0.55rem;
+    font-weight: 600;
+    color: var(--dnav-muted);
+    &:hover {
+      opacity: 1;
+      color: var(--dnav-text);
+    }
+    &::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 2px;
+      background: transparent;
+      transition: background 0.15s ease;
+    }
+    &:hover::after {
+      background: var(--dnav-border);
+    }
+    &.is-active {
+      color: var(--dnav-text);
+    }
+    &.is-active::after {
+      background: var(--dnav-accent);
+      height: 3px;
+    }
+  }
+  .search-recipes-input {
+    border-radius: 8px;
+    border: 1px solid s.$gray-300;
+  }
+}
+
+// (4) Command Bar — search-as-hero: a wide command-palette-style input.
+.dnav--command {
+  .search-recipes-input {
+    border-radius: 8px;
+    background: s.$gray-50;
+    border: 1px solid s.$gray-300;
+    box-shadow: inset 0 1px 2px rgba(48, 56, 65, 0.06);
+  }
+  .dnav__link:not(.dnav__create) {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--dnav-muted);
+    &:hover {
+      opacity: 1;
+      color: var(--dnav-text);
+    }
+    &.is-active {
+      color: var(--dnav-accent);
+    }
+  }
+  @media screen and (min-width: 1241px) {
+    .dnav__search {
+      flex-basis: 680px;
+    }
+  }
+}
+
+// (5) Split Rail — a thin vertical rule separates the search zone from the nav.
+.dnav--split-rail {
+  .dnav__links {
+    padding-left: 1.25rem;
+    border-left: 1px solid var(--dnav-border);
+  }
+  .dnav__link:not(.dnav__create) {
+    font-weight: 600;
+  }
+  .search-recipes-input {
+    border-radius: 8px;
+    border: 1px solid s.$gray-300;
+  }
+}
+
+// ===== GROUP B: Concept — "how would Apple design it" =====
+
+// (6) Apple Clear — ultra-thin translucent blur, light weights, lots of air,
+//     monochrome with a single restrained accent.
+.nav[data-variant='apple-clear'].nav--solid {
+  background: #{rgba(s.$white, 0.72)};
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid #{rgba(s.$primary-text, 0.08)};
+  box-shadow: none;
+}
+.dnav--apple-clear {
+  gap: 1.75rem;
+  .dnav__link:not(.dnav__create) {
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    color: var(--dnav-text);
+    opacity: 0.78;
+    &:hover {
+      opacity: 1;
+    }
+    &.is-active {
+      color: var(--dnav-accent);
+      opacity: 1;
+    }
+  }
+  .search-recipes-input {
+    border-radius: 999px;
+    background: #{rgba(s.$primary-text, 0.05)};
+    border: none;
+    height: 40px;
+    font-size: 0.95rem;
+  }
+  .dnav__create--promoted {
+    border-radius: 999px;
+    padding: 0.42rem 0.95rem;
+    font-weight: 600;
+  }
+  .dnav-account__avatar {
+    height: 36px;
+    width: 36px;
+  }
+  .dnav__icon-link {
+    height: 40px;
+    width: 40px;
+    font-size: 1.2rem;
+  }
+}
+
+// (7) Apple Mono — black & white restraint; active = weight not color; the only
+//     filled control is a monochrome (not orange) Create.
+.nav[data-variant='apple-mono'].nav--solid {
+  background: s.$white;
+  border-bottom: 1px solid #{rgba(s.$primary-text, 0.1)};
+  box-shadow: none;
+}
+.dnav--apple-mono {
+  gap: 1.6rem;
+  .dnav__link:not(.dnav__create) {
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    color: var(--dnav-text);
+    opacity: 0.72;
+    &:hover {
+      opacity: 1;
+    }
+    &.is-active {
+      opacity: 1;
+      font-weight: 700;
+    }
+  }
+  .search-recipes-input {
+    border-radius: 8px;
+    background: s.$gray-50;
+    border: 1px solid s.$gray-300;
+  }
+  .dnav__create--promoted {
+    background: s.$primary-text;
+    color: #fff;
+    border: 1px solid s.$primary-text;
+    .dnav__link-icon {
+      color: #fff;
+    }
+    &:hover {
+      filter: brightness(1.4);
+    }
+  }
+}
+
+// ===== GROUP B: Concept — "consistency-obsessed minimalist" =====
+
+// (8) Unified Pills — every control shares one shape/height/radius for total
+//     visual consistency; a single accent marks active/primary.
+.dnav--unified {
+  --u-h: 40px;
+  gap: 0.9rem;
+  .dnav__links {
+    gap: 0.6rem;
+  }
+  .search-recipes-input {
+    height: var(--u-h);
+    border-radius: 999px;
+    background: s.$gray-50;
+    border: 1px solid s.$gray-300;
+  }
+  .dnav__link {
+    height: var(--u-h);
+    padding: 0 1rem;
+    border-radius: 999px;
+    border: 1px solid var(--dnav-border);
+    color: var(--dnav-text);
+    &:hover {
+      opacity: 1;
+      background: var(--dnav-hover);
+    }
+    &.is-active {
+      color: #fff;
+      background: var(--dnav-accent);
+      border-color: var(--dnav-accent);
+    }
+  }
+  .dnav__create--promoted {
+    height: var(--u-h);
+    border-radius: 999px;
+    border-color: var(--dnav-accent);
+  }
+  .dnav__icon-link {
+    height: var(--u-h);
+    width: var(--u-h);
+    border: 1px solid var(--dnav-border);
+  }
+  .dnav-account__avatar {
+    height: var(--u-h);
+    width: var(--u-h);
+  }
+}
+
+// (9) Grid Aligned — one systematic rhythm: consistent 44px control height, 8px
+//     radius everywhere (incl. a rounded-square avatar), even gaps.
+.nav[data-variant='grid'].nav--solid {
+  background: s.$white;
+  border-bottom: 1px solid s.$gray-300;
+  box-shadow: none;
+}
+.dnav--grid {
+  gap: 1rem;
+  .dnav__links {
+    gap: 1rem;
+  }
+  .search-recipes-input {
+    height: 44px;
+    border-radius: 8px;
+    border: 1px solid s.$gray-300;
+  }
+  .dnav__link:not(.dnav__create) {
+    height: 44px;
+    padding: 0 0.85rem;
+    border-radius: 8px;
+    font-weight: 600;
+    color: var(--dnav-muted);
+    &:hover {
+      opacity: 1;
+      background: s.$gray-50;
+      color: var(--dnav-text);
+    }
+    &.is-active {
+      color: var(--dnav-accent);
+      background: var(--dnav-active-bg);
+    }
+  }
+  .dnav__create--promoted {
+    height: 44px;
+    border-radius: 8px;
+  }
+  .dnav__icon-link {
+    height: 44px;
+    width: 44px;
+    border-radius: 8px;
+  }
+  .dnav-account__avatar {
+    height: 40px;
+    width: 40px;
+    border-radius: 8px;
+  }
+}
+
+// (10) Quiet — maximum restraint: monochrome, identical weights, the accent
+//      reserved only for the active state's text and the outlined Create.
+.dnav--quiet {
+  .dnav__link:not(.dnav__create) {
+    font-weight: 600;
+    color: var(--dnav-muted);
+    &:hover {
+      opacity: 1;
+      color: var(--dnav-text);
+    }
+    &.is-active {
+      color: var(--dnav-accent);
+    }
+  }
+  .search-recipes-input {
+    border: 1px solid s.$gray-300;
+    border-radius: 8px;
+  }
+  .dnav__create--promoted {
+    background: none;
+    color: var(--dnav-accent);
+    border: 1.5px solid var(--dnav-accent);
+    .dnav__link-icon {
+      color: var(--dnav-accent);
+    }
+    &:hover {
+      filter: none;
+      background: #{rgba(s.$primary, 0.08)};
+    }
+  }
+  .dnav__icon-link {
+    color: var(--dnav-muted);
+    &:hover {
+      color: var(--dnav-text);
+    }
+  }
+}
+
+// =============================================================================
+// RESPONSIVE — the bar carries a lot (search · Recipes · Create · Saved ·
+// avatar). Shrink the search, then collapse link labels to icons, so it never
+// overflows or wraps between the mobile breakpoint (725px) and ~1240px.
+// Placed last so it wins over skin rules of equal specificity.
+// =============================================================================
+@media screen and (max-width: 1240px) {
+  .dnav {
+    gap: 1rem;
+  }
+  .dnav__search {
+    flex-basis: 420px;
+  }
+}
+@media screen and (max-width: 1080px) {
+  .dnav {
+    gap: 0.8rem;
+  }
+  .dnav__links {
+    gap: 0.9rem;
+  }
+  .dnav__search {
+    flex-basis: 300px;
+  }
+}
+@media screen and (max-width: 1000px) {
+  // search now fills the remaining space (not a fixed centered width) so it
+  // doesn't collapse to a sliver as the bar narrows
+  .dnav__search {
+    flex: 1 1 auto;
+    margin: 0;
+  }
+  // collapse link labels to icons to reclaim horizontal space
+  .dnav__link .dnav__link-label {
+    display: none;
+  }
+  .dnav__link .dnav__link-icon {
+    display: block;
+  }
+  .dnav__link:not(.dnav__create) {
+    gap: 0;
+    padding: 0.45rem;
+  }
+  .dnav__create {
+    padding-left: 0.6rem;
+    padding-right: 0.6rem;
+  }
+  .dnav-account__name {
+    display: none !important;
+  }
+}
+@media screen and (max-width: 860px) {
+  .dnav {
+    gap: 0.5rem;
+  }
+  .dnav__links {
+    gap: 0.5rem;
+  }
+  // smaller search text so "Search All Recipes" isn't clipped in the tight band
+  .dnav__search .search-recipes-form .search-recipes-input-label input {
+    font-size: 0.95rem;
+    padding-left: 2.4rem;
+  }
+}
