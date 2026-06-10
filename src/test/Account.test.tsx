@@ -73,15 +73,15 @@ describe('Account page', () => {
     renderAccount('/account')
     // navigate('/account/saved-recipes') fires in useEffect; active class confirms arrival
     await waitFor(() => {
-      expect(screen.getByText('Saved Recipe')).toHaveClass('active')
+      expect(screen.getByText('Saved')).toHaveClass('active')
     })
   })
 
   describe('tab active states', () => {
-    it('"Saved Recipe" link has active class at /account/saved-recipes', async () => {
+    it('"Saved" link has active class at /account/saved-recipes', async () => {
       renderAccount('/account/saved-recipes')
       await waitFor(() =>
-        expect(screen.getByText('Saved Recipe')).toHaveClass('active')
+        expect(screen.getByText('Saved')).toHaveClass('active')
       )
       expect(screen.getByText('Ratings')).not.toHaveClass('active')
       expect(screen.getByText('Your Recipes')).not.toHaveClass('active')
@@ -92,7 +92,7 @@ describe('Account page', () => {
       await waitFor(() =>
         expect(screen.getByText('Ratings')).toHaveClass('active')
       )
-      expect(screen.getByText('Saved Recipe')).not.toHaveClass('active')
+      expect(screen.getByText('Saved')).not.toHaveClass('active')
     })
 
     it('"Your Recipes" link has active class at /account/your-recipes', async () => {
@@ -100,7 +100,7 @@ describe('Account page', () => {
       await waitFor(() =>
         expect(screen.getByText('Your Recipes')).toHaveClass('active')
       )
-      expect(screen.getByText('Saved Recipe')).not.toHaveClass('active')
+      expect(screen.getByText('Saved')).not.toHaveClass('active')
     })
   })
 
@@ -112,7 +112,7 @@ describe('Account page', () => {
       })
       renderAccount()
       await waitFor(() => {
-        const profileEl = document.querySelector('.profile-image.not-set')
+        const profileEl = document.querySelector('.acct-avatar.not-set')
         expect(profileEl?.textContent).toBe('J')
       })
     })
@@ -141,9 +141,9 @@ describe('Account page', () => {
       mockGetUID.mockReturnValue(null)
       mockUseAuth.mockReturnValue({ user: null })
       renderAccount()
-      // Wait for getReviews to be called as evidence that effects have settled
+      // No uid → the username query never runs; the avatar initial stays empty.
       await waitFor(() => {
-        const profileEl = document.querySelector('.profile-image.not-set')
+        const profileEl = document.querySelector('.acct-avatar.not-set')
         expect(profileEl?.textContent).toBe('')
       })
       expect(mockGetUsername).not.toHaveBeenCalled()

@@ -1,38 +1,53 @@
-import React, { FC, useState, useEffect } from 'react'
-import { useLocation, useNavigate, Link, Outlet } from 'react-router-dom'
+import React, { FC, useEffect } from 'react'
+import { useLocation, useNavigate, Outlet } from 'react-router-dom'
 import './Account.scss'
 import { Helmet } from 'react-helmet-async'
 import { useQuery } from '@tanstack/react-query'
 import AuthAPI from 'src/api/auth'
 import { useAuth } from 'src/context/AuthContext'
+import { profilePlaceholders } from 'src/pages/Account/accountPlaceholders'
+import LevelCard from 'src/pages/Account/components/LevelCard'
+import ProfileControls from 'src/pages/Account/components/ProfileControls'
+import SegmentedNav from 'src/pages/Account/components/SegmentedNav'
+
+// Format Firebase's `creationTime` ("Tue, 22 Mar 2023 …") as "March 2023".
+const formatMemberSince = (creationTime?: string | null): string | null => {
+  if (!creationTime) return null
+  const d = new Date(creationTime)
+  if (isNaN(d.getTime())) return null
+  return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+}
 
 const Account: FC = () => {
-  const [currPath, setCurrPath] = useState('')
-
   const uid = AuthAPI.getUID()
 
   const location = useLocation()
   const navigate = useNavigate()
 
   const authRes = useAuth()
+  const user = authRes?.user
 
   const { data } = useQuery({
     queryKey: ['username', uid],
     queryFn: () => AuthAPI.getUsername(),
-    enabled: !!uid && !authRes?.user?.displayName,
+    enabled: !!uid && !user?.displayName,
   })
 
-  const username = data ?? ''
-  const nameInitial = authRes?.user?.displayName
-    ? authRes.user.displayName.charAt(0).toUpperCase()
-    : data
-    ? data.charAt(0).toUpperCase()
-    : data === null
-    ? 'null'
-    : ''
+  const username = user?.displayName ?? data ?? ''
+  const displayName = user?.displayName ?? username
+  const nameInitial = displayName ? displayName.charAt(0).toUpperCase() : ''
+
+  const memberSince = formatMemberSince(user?.metadata?.creationTime)
+  // TODO(Phase 2): location/bio are placeholders until the profile API lands.
+  const { location: place, bio } = profilePlaceholders
+  // Name and username collapse to the same string today (displayName falls back
+  // to the username), so a separate `@handle` would just duplicate the title.
+  // Revisit when public profiles (Phase 5) give the handle independent meaning.
+  const metaParts = [place, memberSince ? `Since ${memberSince}` : null].filter(
+    Boolean
+  )
 
   useEffect(() => {
-    setCurrPath(location.pathname)
     if (location.pathname === '/account') {
       navigate('/account/saved-recipes')
     }
@@ -45,74 +60,39 @@ const Account: FC = () => {
         <title>Prepify | Your Account</title>
       </Helmet>
       <div className='page account-page'>
-        <section className='account-header'>
-          <div className='info-container'>
-            {authRes?.user?.photoURL ? (
+        <header className='acct-head'>
+          <div className='acct-id'>
+            {user?.photoURL ? (
               <img
-                src={authRes.user.photoURL}
-                alt='Profile Avatar'
-                className='profile-image'
+                src={user.photoURL}
+                alt='Profile avatar'
+                className='acct-avatar'
               />
             ) : (
-              <div className='profile-image not-set'>{nameInitial}</div>
+              <div className='acct-avatar not-set'>{nameInitial}</div>
             )}
-
-            <div className='content'>
-              <h1 className='username'>{username && username}</h1>
-              <div className='actions'>
-                <button
-                  className='edit-profile-btn btn'
-                  onClick={() => navigate('/settings')}
-                >
-                  Edit Profile
-                </button>
-              </div>
+            <div className='acct-id-text'>
+              <h1 className='acct-name'>{displayName}</h1>
+              {/* Hold the meta/bio until the name resolves, so the placeholder
+                  location doesn't flash beneath a blank header on first paint. */}
+              {displayName && (
+                <>
+                  <p className='acct-meta'>{metaParts.join(' · ')}</p>
+                  <p className='acct-bio'>{bio}</p>
+                </>
+              )}
             </div>
           </div>
-        </section>
-        <div className='account-body'>
-          <div className='options-bar'>
-            <Link
-              to='/account/saved-recipes'
-              className={
-                currPath === '/account/saved-recipes'
-                  ? 'active selection'
-                  : 'selection'
-              }
-            >
-              Saved Recipe
-            </Link>
-            <Link
-              to='/account/ratings'
-              className={
-                currPath === '/account/ratings'
-                  ? 'active selection'
-                  : 'selection'
-              }
-            >
-              Ratings
-            </Link>
-            <Link
-              to='/account/your-recipes'
-              className={
-                currPath === '/account/your-recipes'
-                  ? 'active selection'
-                  : 'selection'
-              }
-            >
-              Your Recipes
-            </Link>
-            <Link
-              to='/account/drafts'
-              className={
-                currPath === '/account/drafts'
-                  ? 'active selection'
-                  : 'selection'
-              }
-            >
-              Drafts
-            </Link>
+
+          <div className='acct-side'>
+            <LevelCard />
+            <ProfileControls />
           </div>
+        </header>
+
+        <SegmentedNav />
+
+        <div className='account-body'>
           <Outlet />
         </div>
       </div>
