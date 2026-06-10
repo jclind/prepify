@@ -82,8 +82,21 @@ router.get('/getAccountCounts', verifyToken, async (req, res) => {
     const usernameDoc = await db.collection('usernames').findOne({ _id: uid })
     const username = usernameDoc?.username
 
-    const [savedData, recipes, drafts, ratings] = await Promise.all([
-      db.collection('userRecipeData').findOne({ _id: uid }),
+    const [savedAgg, recipes, drafts, ratings] = await Promise.all([
+      // Count saved recipes with $size so Mongo returns just the length rather
+      // than transferring the whole savedRecipes array to count it in Node.
+      db
+        .collection('userRecipeData')
+        .aggregate([
+          { $match: { _id: uid } },
+          {
+            $project: {
+              _id: 0,
+              count: { $size: { $ifNull: ['$savedRecipes', []] } },
+            },
+          },
+        ])
+        .toArray(),
       db.collection('recipes').countDocuments({ userId: uid }),
       db.collection('recipeDrafts').countDocuments({ userId: uid }),
       username
@@ -92,7 +105,7 @@ router.get('/getAccountCounts', verifyToken, async (req, res) => {
     ])
 
     res.json({
-      saved: savedData?.savedRecipes?.length ?? 0,
+      saved: savedAgg[0]?.count ?? 0,
       ratings,
       recipes,
       drafts,

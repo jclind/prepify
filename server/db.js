@@ -45,6 +45,23 @@ async function ensureIndexes() {
   } catch (err) {
     console.error('Failed to create index on recipeDrafts.userId:', err.message)
   }
+
+  // Backs GET /api/getCreatedRecipes (find/sort by author, newest first) and the
+  // recipes count in GET /api/getAccountCounts. Without it both are full
+  // collection scans over every recipe on the site.
+  try {
+    await db.collection('recipes').createIndex({ userId: 1, createdAt: -1 })
+  } catch (err) {
+    console.error('Failed to create index on recipes.userId:', err.message)
+  }
+
+  // Backs GET /api/getSingleUserReviews (a user's ratings) and the ratings count
+  // in GET /api/getAccountCounts, both of which filter ratings by username.
+  try {
+    await db.collection('ratings').createIndex({ username: 1 })
+  } catch (err) {
+    console.error('Failed to create index on ratings.username:', err.message)
+  }
 }
 
 async function closeDB() {
