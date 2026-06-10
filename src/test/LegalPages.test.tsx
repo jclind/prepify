@@ -38,6 +38,11 @@ describe('Legal / company pages', () => {
     expect(
       screen.getByText(/reviewed by a qualified\s+legal professional/i)
     ).toBeInTheDocument()
+    // Page-specific section, so the test fails if the actual policy body is lost
+    // (the draft note above comes from the shared LegalDocument, not Privacy).
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'Information we collect' })
+    ).toBeInTheDocument()
   })
 
   it('Terms renders its heading and the draft/professional-review note', () => {
@@ -47,6 +52,11 @@ describe('Legal / company pages', () => {
     ).toBeInTheDocument()
     expect(
       screen.getByText(/reviewed by a qualified\s+legal professional/i)
+    ).toBeInTheDocument()
+    // Page-specific section (see Privacy test above): guards the Terms body, in
+    // particular the estimates-not-advice disclaimer's home section.
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'Nutrition and price estimates' })
     ).toBeInTheDocument()
   })
 })

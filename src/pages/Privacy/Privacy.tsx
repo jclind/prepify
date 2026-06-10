@@ -1,7 +1,6 @@
 import React, { FC } from 'react'
 import LegalDocument from 'src/pages/legal/LegalDocument'
-
-const SUPPORT_EMAIL = 'JesseLindCS@gmail.com'
+import { contactEmail } from 'src/Components/Footer/footerData'
 
 // Privacy Policy. Boilerplate tailored to how Prepify actually handles data
 // (Firebase auth, MongoDB, Firebase Storage, Edamam/Spoonacular). Draft — see
@@ -137,7 +136,7 @@ const Privacy: FC = () => (
       <h2>Contact us</h2>
       <p>
         Questions about this policy? Email us at{' '}
-        <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.
+        <a href={`mailto:${contactEmail}`}>{contactEmail}</a>.
       </p>
     </section>
   </LegalDocument>
