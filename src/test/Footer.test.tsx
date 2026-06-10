@@ -49,13 +49,6 @@ describe('Footer', () => {
     )
   })
 
-  it('exposes accessible labels on social icons and opens them safely', () => {
-    renderFooter()
-    const instagram = screen.getByRole('link', { name: 'Instagram' })
-    expect(instagram).toHaveAttribute('target', '_blank')
-    expect(instagram).toHaveAttribute('rel', 'noopener noreferrer')
-  })
-
   it('groups the link columns under a single labelled nav landmark', () => {
     renderFooter()
     expect(

@@ -1,5 +1,3 @@
-import { IconType } from 'react-icons'
-import { FaInstagram, FaPinterestP, FaTiktok, FaYoutube } from 'react-icons/fa'
 import pjson from '../../../package.json'
 
 // ---------------------------------------------------------------------------
@@ -52,16 +50,6 @@ export const footerColumns: FooterColumn[] = [
       { label: 'Terms', to: '/terms' },
     ],
   },
-]
-
-export type SocialLink = { label: string; href: string; Icon: IconType }
-
-/** Recipe-discovery platforms. Hrefs are '#' placeholders for now. */
-export const socialLinks: SocialLink[] = [
-  { label: 'Instagram', href: '#', Icon: FaInstagram },
-  { label: 'Pinterest', href: '#', Icon: FaPinterestP },
-  { label: 'TikTok', href: '#', Icon: FaTiktok },
-  { label: 'YouTube', href: '#', Icon: FaYoutube },
 ]
 
 export const currentYear = new Date().getFullYear()
