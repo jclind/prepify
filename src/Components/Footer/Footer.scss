@@ -34,7 +34,10 @@ $inner-max: s.$max-width;
 
   .ftr-top {
     display: grid;
-    grid-template-columns: 1.3fr 2fr;
+    // Brand gets the wider share so the link columns spread across a narrower
+    // band on the right — keeps their gaps tight on wide screens rather than
+    // stretching across the full half.
+    grid-template-columns: 1.6fr 1.4fr;
     gap: 3rem;
     @media (max-width: 768px) {
       grid-template-columns: 1fr;
@@ -72,13 +75,22 @@ $inner-max: s.$max-width;
 
 // ---- Link columns ---------------------------------------------------------
 .footer-columns {
-  // Content-width columns spread edge-to-edge: first flush-left, last flush-
-  // right against the footer bound (1fr columns left a gap on the right because
-  // their text was left-aligned within a wide, filled cell).
+  // Content-width columns spread with space-between, but the group is capped and
+  // pinned to the footer's right bound. The cap stops the inter-column gaps from
+  // ballooning on very wide screens (without it space-between stretches them to
+  // fill the whole band); the last column stays flush-right.
   display: grid;
   grid-template-columns: repeat(3, max-content);
   justify-content: space-between;
   gap: 1.5rem 2.5rem;
+  // Definite width (not max-width) so space-between spreads the columns across a
+  // fixed band — moderate, even gaps at every screen size — pinned to the right.
+  width: min(520px, 100%);
+  margin-left: auto;
+  @media (max-width: 768px) {
+    width: 100%;
+    margin-left: 0;
+  }
   @media (max-width: 560px) {
     grid-template-columns: repeat(2, 1fr);
     justify-content: normal;
