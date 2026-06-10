@@ -1,186 +1,74 @@
 import React, { useState, useEffect, useCallback, FC } from 'react'
 import './Navbar.scss'
-import { NavLink, useLocation } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
-import { useAuth } from 'src/context/AuthContext'
+import { useLocation } from 'react-router-dom'
 import PrepifyLogo from 'src/Components/Navbar/PrepifyLogo'
 import Hamburger from 'hamburger-react'
-import { AiOutlineUser } from 'react-icons/ai'
-import { BiHelpCircle, BiLogOut } from 'react-icons/bi'
-import AuthAPI from 'src/api/auth'
-import Skeleton from 'react-loading-skeleton'
 import NavMenu from 'src/Components/Navbar/menu/NavMenu'
 import { useNavMenu } from 'src/Components/Navbar/menu/useNavMenu'
 import { useIsMobile } from 'src/Components/Navbar/menu/useIsMobile'
-
-const skeletonColor = '#d6d6d6'
+import DesktopNav from 'src/Components/Navbar/desktop/DesktopNav'
+import { useScrolled } from 'src/Components/Navbar/desktop/useScrolled'
 
 type NavbarProps = {
   darkNavLinks: boolean
-  loading: boolean
   navBackgroundColor: 'white' | 'gray' | 'none'
 }
 
-const Navbar: FC<NavbarProps> = ({
-  darkNavLinks,
-  navBackgroundColor,
-  loading,
-}) => {
+const Navbar: FC<NavbarProps> = ({ darkNavLinks, navBackgroundColor }) => {
   const [navOpen, setNavOpen] = useState(false)
-
-  const authRes = useAuth()
-  // const { user, logout, getUsername } = useAuth()
-  const uid = AuthAPI.getUID()
 
   const location = useLocation()
 
-  // Mobile menu (redesign): shared auth/profile data + mobile-only mount.
+  // Shared auth/profile data (one source for the desktop bar + mobile menu).
   const menu = useNavMenu()
   const isMobile = useIsMobile()
+  const scrolled = useScrolled()
   const closeNav = useCallback(() => setNavOpen(false), [])
 
   useEffect(() => {
     setNavOpen(false)
   }, [location])
 
-  const { data } = useQuery({
-    queryKey: ['username', uid],
-    queryFn: () => AuthAPI.getUsername(),
-    enabled: !!uid && !!authRes?.user,
-  })
+  // Desktop bar is transparent over the Home hero (darkNavLinks=false) and goes
+  // solid once scrolled or on any non-hero page. Mobile bar is left untouched.
+  const solid = !isMobile && (scrolled || darkNavLinks)
+  // ...and condenses to a slim bar once scrolled (desktop only).
+  const condensed = !isMobile && scrolled
 
-  const username = data ?? ''
-  const nameInitial = data
-    ? data.charAt(0).toUpperCase()
-    : data === null
-    ? (authRes?.user?.email ? authRes.user.email.charAt(0).toUpperCase() : '')
-    : ''
-
-  const loggedOutLinks = (
-    <>
-      <NavLink
-        to='/recipes'
-        className={({ isActive }) => {
-          return isActive ? 'nav-link active' : 'nav-link'
-        }}
-      >
-        recipes
-      </NavLink>
-      <NavLink
-        to='/login'
-        className={({ isActive }) => {
-          return isActive ? 'nav-link active login' : 'nav-link login'
-        }}
-      >
-        login
-      </NavLink>
-      <NavLink
-        to='/signup'
-        className={({ isActive }) => {
-          return isActive ? 'nav-link active signup' : 'nav-link signup'
-        }}
-      >
-        signup
-      </NavLink>
-    </>
-  )
-  const loggedInLinks = (
-    <>
-      <NavLink
-        to='/recipes'
-        className={({ isActive }) => {
-          return isActive ? 'nav-link active' : 'nav-link'
-        }}
-      >
-        recipes
-      </NavLink>
-      <NavLink
-        to='/add-recipe'
-        className={({ isActive }) => {
-          return isActive ? 'nav-link active' : 'nav-link'
-        }}
-      >
-        Create Recipe
-      </NavLink>
-      <div className='dropdown'>
-        <div className='dropdown-btn'>
-          {authRes?.authLoading ? (
-            <Skeleton
-              className='account-link-loading'
-              baseColor={skeletonColor}
-            />
-          ) : (
-            <NavLink to='/account' className='account-link'>
-              {authRes?.user?.photoURL ? (
-                <img
-                  src={authRes.user.photoURL}
-                  alt='Profile Avatar'
-                  className='profile-image'
-                />
-              ) : (
-                <div className='profile-image not-set'>{nameInitial}</div>
-              )}
-            </NavLink>
-          )}
-        </div>
-        <div className='dropdown-links'>
-          <div className='dropdown-section'>
-            <div className='signed-in-as'>
-              <AiOutlineUser className='icon' />
-              <div className='text'>
-                Signed in as <strong>{username}</strong>
-              </div>
-            </div>
-          </div>
-          <NavLink
-            to='/help'
-            className={({ isActive }) => {
-              return isActive ? 'nav-link active' : 'nav-link'
-            }}
-          >
-            <BiHelpCircle className='icon' />
-            <div className='text'>Help</div>
-          </NavLink>
-          <button className='nav-link btn logout' onClick={authRes?.logout}>
-            <BiLogOut className='icon' />
-            <div className='text'>logout</div>
-          </button>
-        </div>
-      </div>
-    </>
-  )
+  const navClassName = [
+    'nav',
+    `background-${navBackgroundColor}`,
+    solid ? 'nav--solid' : '',
+    condensed ? 'nav--condensed' : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
 
   return (
     <>
-    <nav className={`nav background-${navBackgroundColor}`}>
-      <div className='nav-center'>
-        <div className='nav-header'>
-          <PrepifyLogo />
-          <div
-            className={
-              !navOpen && !darkNavLinks ? 'hamburger light' : 'hamburger'
-            }
-          >
-            <Hamburger toggled={navOpen} toggle={setNavOpen} />
+      <nav className={navClassName}>
+        <div className='nav-center'>
+          <div className='nav-header'>
+            <PrepifyLogo />
+            <div className={!navOpen && !darkNavLinks ? 'hamburger light' : 'hamburger'}>
+              <Hamburger toggled={navOpen} toggle={setNavOpen} />
+            </div>
           </div>
-        </div>
-        <div className={navOpen ? 'nav-content show' : 'nav-content'}>
-          <div
-            className={darkNavLinks ? 'nav-links dark-nav-links' : 'nav-links'}
-          >
-            {authRes?.authLoading
-              ? null
-              : authRes?.user
-              ? loggedInLinks
-              : loggedOutLinks}
-          </div>
-        </div>
-      </div>
-    </nav>
 
-      {/* Redesigned mobile menu — rendered outside <nav> so the bar (logo +
-          hamburger/X) stays above the overlay and remains tappable to close.
-          Mounted only at mobile widths, where the hamburger is reachable. */}
+          {/* Desktop nav variant (>725px). Mounted only on desktop so its
+              optional search input isn't kept alive behind the mobile menu. */}
+          {!isMobile && (
+            <DesktopNav
+              darkNavLinks={darkNavLinks}
+              scrolled={scrolled}
+              {...menu}
+            />
+          )}
+        </div>
+      </nav>
+
+      {/* Redesigned mobile menu (≤725px) — rendered outside <nav> so the bar
+          stays tappable above the overlay. Unchanged by the desktop redesign. */}
       {isMobile && <NavMenu open={navOpen} onClose={closeNav} {...menu} />}
     </>
   )
