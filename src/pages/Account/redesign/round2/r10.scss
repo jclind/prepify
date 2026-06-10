@@ -1,0 +1,29 @@
+@use '../../../../helpers.scss' as s;
+
+.r10 {
+  background: radial-gradient(120% 55% at 50% 0%, #fff3ec 0%, var(--acc-canvas) 55%);
+  min-height: calc(100vh - 52px);
+  padding: 2.75rem 1.25rem 4rem;
+
+  .r10-wrap { max-width: 1120px; margin: 0 auto; }
+
+  .r10-head { display: flex; flex-direction: column; align-items: center; text-align: center; margin-bottom: 1.75rem; }
+  .r10-ring {
+    padding: 5px; border-radius: 50%; background: linear-gradient(135deg, #ffb39a, s.$primary);
+    box-shadow: 0 12px 30px rgba(255, 87, 34, 0.25);
+    img { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 4px solid #fff; display: block; }
+  }
+  h1 { font-size: 1.85rem; font-weight: 800; margin-top: 1rem; }
+  .r10-bio { max-width: 520px; color: s.$secondary-text; line-height: 1.55; margin-top: 0.55rem; font-size: 0.94rem; }
+  .r10-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; margin-top: 0.9rem;
+    span { font-size: 0.8rem; font-weight: 700; color: s.$secondary-text; background: #fff; border: 1px solid #f0e1d4; border-radius: 999px; padding: 0.4rem 0.9rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03); } }
+  .r10-edit {
+    display: inline-flex; align-items: center; gap: 0.45rem; margin-top: 1.2rem; font-weight: 800; font-size: 0.9rem;
+    color: #fff; background: s.$primary; border: none; border-radius: 999px; padding: 0.65rem 1.6rem; cursor: pointer;
+    box-shadow: 0 10px 22px rgba(255, 87, 34, 0.3); transition: transform 0.12s ease; &:hover { transform: translateY(-2px); }
+  }
+
+  .r2-stats { max-width: 680px; margin: 0 auto; }
+  .r10-ach { max-width: 680px; margin: 1rem auto 0; }
+  .r10-tabs { display: flex; justify-content: center; margin: 2rem 0; }
+}

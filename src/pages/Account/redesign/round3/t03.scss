@@ -1,0 +1,11 @@
+@use '../../../../helpers.scss' as s;
+
+.t3 {
+  .t3-row {
+    display: flex; align-items: center; gap: 1rem; margin-top: 1.25rem; flex-wrap: wrap; justify-content: center;
+    .r3soft-edit { margin-top: 0; }
+    // Thin divider between the badges and the edit button.
+    .badges-inline { padding-right: 1rem; border-right: 1px solid #ecddcc; }
+    @media (max-width: 480px) { .badges-inline { border-right: none; padding-right: 0; } }
+  }
+}

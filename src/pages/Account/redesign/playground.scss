@@ -1,0 +1,132 @@
+@use '../../../helpers.scss' as s;
+
+// Switcher chrome for the redesign preview harness. The variants themselves
+// own everything below .arp-stage.
+.acct-redesign-playground {
+  min-height: 100vh;
+  background: #fbf8f4;
+  color: s.$primary-text;
+  font-family: s.$font-family;
+
+  .arp-bar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: saturate(180%) blur(12px);
+    border-bottom: 1px solid #eadfd2;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+  }
+  .arp-bar-inner {
+    max-width: 1320px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.55rem 1rem;
+  }
+  .arp-nav {
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: 1px solid #e6dccd;
+    background: #fff;
+    color: s.$primary-text;
+    cursor: pointer;
+    font-size: 1.4rem;
+    transition: background 0.12s ease, transform 0.12s ease;
+    &:hover { background: s.$primary; color: #fff; border-color: s.$primary; transform: translateY(-1px); }
+  }
+  .arp-meta {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+  }
+  .arp-badge {
+    flex-shrink: 0;
+    white-space: nowrap;
+    font-size: 0.66rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 0.28rem 0.55rem;
+    border-radius: 999px;
+    background: #fce7df;
+    color: s.$primary;
+    &.grp-creative { background: #ece6ff; color: #7b61ff; }
+    &.grp-r2 { background: #d8f3ec; color: #0f9d8a; }
+    &.grp-r3 { background: #ffe9c7; color: #b9760a; }
+    &.grp-r4 { background: #ffe0d6; color: #d84d20; }
+    &.grp-r5 { background: #e2ecff; color: #3b6bd6; }
+  }
+  .arp-select {
+    flex-shrink: 0;
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: s.$primary-text;
+    padding: 0.4rem 0.6rem;
+    border-radius: 8px;
+    border: 1px solid #e6dccd;
+    background: #fff;
+    cursor: pointer;
+    max-width: 230px;
+  }
+  .arp-blurb {
+    color: s.$secondary-text;
+    font-size: 0.85rem;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .arp-count {
+    flex-shrink: 0;
+    font-weight: 800;
+    font-size: 0.85rem;
+    color: s.$tertiary-text;
+    font-variant-numeric: tabular-nums;
+  }
+
+  // Stage: a neutral canvas. Each variant manages its own width + padding so
+  // full-bleed concepts (covers, gradients, bento) can break out freely.
+  // NOTE: the app ships a GLOBAL, unscoped `nav { position:absolute; top:0;
+  // z-index:100; height:nav-height }` rule (src/Components/Navbar/Navbar.scss)
+  // that leaks onto every <nav> because this project's SCSS isn't module-scoped.
+  // The variants therefore deliberately use <div role="navigation"> for their
+  // tab bars instead of <nav>, so that rule can never match them.
+  .arp-stage {
+    width: 100%;
+  }
+
+  @media (max-width: 760px) {
+    .arp-blurb { display: none; }
+    .arp-select { max-width: 160px; }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Shared tokens for the variants. Exposed as custom properties so individual
+// variant stylesheets can lean on a consistent warm palette without re-importing
+// the SCSS partial everywhere.
+// ---------------------------------------------------------------------------
+.arp-stage {
+  --acc-primary: #{s.$primary};
+  --acc-primary-press: #e74e1d;
+  --acc-secondary: #{s.$secondary};
+  --acc-ink: #{s.$primary-text};
+  --acc-ink-2: #{s.$secondary-text};
+  --acc-ink-3: #{s.$tertiary-text};
+  --acc-canvas: #fbf8f4;
+  --acc-surface: #ffffff;
+  --acc-line: #ece2d6;
+  --acc-warm-tint: #fbf3ec;
+  --acc-shadow-sm: 0 4px 14px rgba(0, 0, 0, 0.05);
+  --acc-shadow-md: 0 10px 30px rgba(0, 0, 0, 0.08);
+  --acc-radius: 16px;
+}

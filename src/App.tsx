@@ -12,6 +12,7 @@ import PrivateRoute from 'src/Components/PrivateRoute'
 import CreateUsername from 'src/pages/CreateUsername/CreateUsername'
 
 import Account from 'src/pages/Account/Account'
+import AccountRedesignPlayground from 'src/pages/Account/redesign/AccountRedesignPlayground'
 import SavedRecipes from 'src/pages/Account/SavedRecipes/SavedRecipes'
 import UserRatings from 'src/pages/Account/UserRatings/UserRatings'
 import UserRecipes from 'src/pages/Account/UserRecipes/UserRecipes'
@@ -60,6 +61,12 @@ const App: FC = () => {
                 </Layout>
               }
             />
+
+            {/* Dev-only preview harness for the account-page redesign. Public,
+                unwrapped (no site Layout) so each variant owns the full canvas.
+                Remove once a design is chosen and promoted. */}
+            <Route path='/account-redesign' element={<AccountRedesignPlayground />} />
+
             <Route
               path='/recipes'
               element={

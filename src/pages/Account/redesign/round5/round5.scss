@@ -1,0 +1,84 @@
+@use '../../../../helpers.scss' as s;
+
+// Round 5 — tightened structural takes of Q4. Goal: fewer stacked bands, a clear
+// hierarchy, recipes higher. Shared identity bits, then per-layout structure.
+.r5 {
+  background: radial-gradient(120% 45% at 50% 0%, #fff3ec 0%, var(--acc-canvas) 50%);
+  min-height: calc(100vh - 52px);
+  color: s.$primary-text;
+}
+.r5-wrap { max-width: 1140px; margin: 0 auto; padding: 0 1.25rem; }
+.r5-name { font-size: 1.7rem; font-weight: 800; letter-spacing: -0.02em; }
+.r5-meta { color: s.$tertiary-text; font-weight: 600; font-size: 0.84rem; margin-top: 0.25rem; }
+.r5-bio { color: s.$secondary-text; line-height: 1.55; font-size: 0.93rem; margin-top: 0.6rem; max-width: 600px; }
+
+// Left-align the XP card + segmented control in these layouts (they default to
+// centered elsewhere).
+.r5 .r4-xpcard { margin-top: 0; }
+.r5 .r2-segment { margin: 0; }
+
+// ── P1 — Left identity + top-right controls ──────────────────────────────────
+.p1 {
+  padding: 2.25rem 0 4rem;
+  .p1-head {
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 1.5rem; margin-bottom: 1.35rem;
+    @media (max-width: 640px) { flex-direction: column; }
+  }
+  .p1-id { display: flex; align-items: flex-start; gap: 1.25rem; min-width: 0; }
+  .p1-avatar { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; flex-shrink: 0; box-shadow: 0 8px 22px rgba(255, 87, 34, 0.18); }
+  .p1-controls { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
+  .p1-xp { margin-bottom: 1.5rem; }
+  .p1-tabs { display: flex; justify-content: flex-start; margin-bottom: 1.5rem; }
+}
+
+// ── P2 — Compact two-column header ───────────────────────────────────────────
+.p2 {
+  padding: 2.25rem 0 4rem;
+  .p2-head {
+    display: grid; grid-template-columns: 1.4fr 340px; gap: 1.75rem; align-items: center;
+    background: #fff; border: 1px solid #ece2d6; border-radius: 20px; padding: 1.5rem; box-shadow: var(--acc-shadow-sm);
+    margin-bottom: 1.75rem;
+    @media (max-width: 880px) { grid-template-columns: 1fr; }
+  }
+  .p2-id { display: flex; align-items: flex-start; gap: 1.25rem; min-width: 0; }
+  .p2-avatar { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; flex-shrink: 0; box-shadow: 0 8px 22px rgba(255, 87, 34, 0.18); }
+
+  // Right column: card + controls share one width so their edges line up.
+  .p2-side {
+    display: flex; flex-direction: column; align-items: stretch; gap: 0.75rem;
+    @media (max-width: 880px) { border-top: 1px solid #f0e8dd; padding-top: 1.25rem; }
+  }
+  .p2-xpcard {
+    width: 100%; text-align: left; font-family: inherit; cursor: pointer;
+    background: #fdfaf6; border: 1px solid #f0e6da; border-radius: 14px; padding: 0.85rem 1rem;
+    transition: border-color 0.12s ease, box-shadow 0.12s ease;
+    &:hover { border-color: #ffd9b8; box-shadow: 0 6px 18px rgba(255, 87, 34, 0.1); }
+  }
+  .p2-xptop {
+    display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.7rem;
+  }
+  .p2-xpcta { font-weight: 800; font-size: 0.8rem; color: s.$primary; white-space: nowrap; span { font-size: 1rem; } }
+  // Full-width bar; the label reads on one clean line beneath it.
+  .p2-xpcard .xp-bar { max-width: none; width: 100%; }
+
+  .p2-controls { display: flex; align-items: center; justify-content: flex-end; gap: 0.5rem; }
+  .p2-tabs { display: flex; justify-content: center; margin-bottom: 1.5rem; }
+}
+
+// ── P3 — Slim cover band ─────────────────────────────────────────────────────
+.p3 {
+  background: var(--acc-canvas);
+  padding-bottom: 4rem;
+  .p3-cover { background: linear-gradient(135deg, #ffe7db 0%, #ffd6c4 100%); padding: 1.5rem 1.25rem; }
+  .p3-cover-inner {
+    max-width: 1140px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    @media (max-width: 560px) { flex-direction: column; align-items: flex-start; }
+  }
+  .p3-coverleft { display: flex; align-items: center; gap: 1rem; min-width: 0; }
+  .p3-avatar { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; border: 3px solid #fff; box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12); flex-shrink: 0; }
+  .p3-controls { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
+  .r5-wrap { padding-top: 1.5rem; }
+  .p3-meta { margin-top: 0; }
+  .p3-xp { margin: 1.25rem 0 1.5rem; }
+  .p3-tabs { display: flex; justify-content: flex-start; margin-bottom: 1.5rem; }
+}
