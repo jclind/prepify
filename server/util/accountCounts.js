@@ -3,13 +3,18 @@
 // engine, which derives XP / level / achievements from these same counts.
 
 // Returns { saved, ratings, recipes, drafts } for the given uid. All real
-// counts; 0 where the user has none.
-async function getAccountCountsFor(db, uid) {
+// counts; 0 where the user has none. Callers that already hold the username
+// (e.g. the public-profile route, which resolved it to find the uid) can pass
+// it as `knownUsername` to skip the lookup.
+async function getAccountCountsFor(db, uid, knownUsername) {
   // Ratings live in the `ratings` collection keyed by username (there is no uid
   // on a rating), so resolve the caller's username first. A user with no
   // username yet simply has 0 ratings.
-  const usernameDoc = await db.collection('usernames').findOne({ _id: uid })
-  const username = usernameDoc?.username
+  let username = knownUsername
+  if (username === undefined) {
+    const usernameDoc = await db.collection('usernames').findOne({ _id: uid })
+    username = usernameDoc?.username
+  }
 
   const [savedAgg, recipes, drafts, ratings] = await Promise.all([
     // Count saved recipes with $size so Mongo returns just the length rather

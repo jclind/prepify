@@ -1,0 +1,98 @@
+@use '../../../helpers.scss' as s;
+
+// Achievements gallery modal opened from the LevelCard "Rewards" CTA. Lists all
+// achievements; earned ones are highlighted, locked ones dimmed with their
+// criteria. Classes are `am-`-prefixed (global SCSS).
+
+.am-card {
+  width: 90vw;
+  max-width: 440px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+
+  .am-head {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1.1rem 1.25rem;
+    border-bottom: 1px solid #f0e8dd;
+  }
+  .am-title {
+    font-size: 1.2rem;
+    font-weight: 800;
+  }
+  .am-progress {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: s.$tertiary-text;
+    background: #efe6da;
+    border-radius: 999px;
+    padding: 0.2rem 0.65rem;
+  }
+  .am-close {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 1px solid #e3d9ca;
+    background: #fff;
+    color: s.$secondary-text;
+    cursor: pointer;
+    transition: all 0.12s ease;
+    svg {
+      font-size: 1.1rem;
+    }
+    &:hover {
+      border-color: s.$primary;
+      color: s.$primary;
+    }
+  }
+
+  .am-list {
+    list-style: none;
+    margin: 0;
+    padding: 0.5rem;
+    overflow-y: auto;
+  }
+  .am-item {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.7rem 0.75rem;
+    border-radius: 12px;
+
+    &.locked {
+      opacity: 0.55;
+      filter: grayscale(1);
+    }
+    & + .am-item {
+      margin-top: 0.15rem;
+    }
+  }
+  .am-icon {
+    font-size: 1.4rem;
+    flex-shrink: 0;
+  }
+  .am-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .am-name {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: s.$primary-text;
+  }
+  .am-desc {
+    font-size: 0.82rem;
+    color: s.$secondary-text;
+  }
+}

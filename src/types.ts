@@ -217,3 +217,21 @@ export type Gamification = {
   earned: string[]
   newlyUnlocked: string[]
 }
+
+// Public, read-only profile returned by GET /getPublicProfile. Identity comes
+// from Firebase Auth (displayName/photoURL); `achievements` are earned-only.
+export type PublicProfile = {
+  username: string
+  displayName: string
+  photoURL: string | null
+  bio: string
+  location: string
+  level: number
+  rank: string
+  xp: number
+  xpNext: number
+  pct: number
+  achievements: Achievement[]
+  recipes: RecipeType[]
+  recipesTotalCount: number
+}

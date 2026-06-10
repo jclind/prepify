@@ -1,13 +1,9 @@
 import React, { FC } from 'react'
-import toast from 'react-hot-toast'
 
 // LevelCard — the right-column level/XP card from the P2 header. A tappable card
 // that shows the cook's level + rank, a "Rewards" affordance, and an XP bar with
 // a one-line label beneath it. Level/XP are real (GET /getGamification, derived
-// from the user's activity).
-//
-// TODO(Phase 5): the click toasts for now — wire to the rewards/achievements
-// gallery when that screen lands.
+// from the user's activity); clicking opens the achievements gallery.
 
 type LevelCardProps = {
   level: number
@@ -15,11 +11,17 @@ type LevelCardProps = {
   xp: number // progress within the current level
   xpNext: number // XP needed to clear the current level
   pct: number
+  onRewards: () => void
 }
 
-const onRewards = () => toast('Rewards & badges coming soon')
-
-const LevelCard: FC<LevelCardProps> = ({ level, rank, xp, xpNext, pct }) => (
+const LevelCard: FC<LevelCardProps> = ({
+  level,
+  rank,
+  xp,
+  xpNext,
+  pct,
+  onRewards,
+}) => (
   <button className='acct-levelcard' onClick={onRewards}>
     <div className='acct-levelcard-top'>
       <span className='acct-lvl-chip'>

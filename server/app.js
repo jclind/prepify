@@ -7,6 +7,7 @@ const authRoutes = require('./routes/auth')
 const ingredientRoutes = require('./routes/ingredients')
 const draftRoutes = require('./routes/drafts')
 const gamificationRoutes = require('./routes/gamification')
+const publicProfileRoutes = require('./routes/publicProfile')
 
 const app = express()
 
@@ -35,6 +36,7 @@ app.use('/api', reviewRoutes)
 app.use('/api', userRoutes)
 app.use('/api', authRoutes)
 app.use('/api', gamificationRoutes)
+app.use('/api', publicProfileRoutes)
 app.use('/api/ingredients', ingredientRoutes)
 app.use('/api/drafts', draftRoutes)
 

@@ -1,4 +1,4 @@
-import React, { FC, useEffect } from 'react'
+import React, { FC, useEffect, useState } from 'react'
 import { useLocation, useNavigate, Outlet, Link } from 'react-router-dom'
 import './Account.scss'
 import { Helmet } from 'react-helmet-async'
@@ -11,6 +11,7 @@ import { useAuth } from 'src/context/AuthContext'
 import LevelCard from 'src/pages/Account/components/LevelCard'
 import ProfileControls from 'src/pages/Account/components/ProfileControls'
 import SegmentedNav from 'src/pages/Account/components/SegmentedNav'
+import AchievementsModal from 'src/pages/Account/components/AchievementsModal'
 
 // Format Firebase's `creationTime` ("Tue, 22 Mar 2023 …") as "March 2023".
 const formatMemberSince = (creationTime?: string | null): string | null => {
@@ -26,14 +27,21 @@ const Account: FC = () => {
   const location = useLocation()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const [rewardsOpen, setRewardsOpen] = useState(false)
+  // Fall back to the initial if the avatar URL fails to load instead of showing
+  // a broken image.
+  const [avatarError, setAvatarError] = useState(false)
 
   const authRes = useAuth()
   const user = authRes?.user
 
+  // Always fetch the real username handle (even when a Firebase displayName
+  // exists): the Share link and public profile route resolve by handle, not by
+  // display name, so we need it regardless of what we show in the header.
   const { data } = useQuery({
     queryKey: ['username', uid],
     queryFn: () => AuthAPI.getUsername(),
-    enabled: !!uid && !user?.displayName,
+    enabled: !!uid,
   })
 
   const { data: profile } = useQuery({
@@ -78,8 +86,8 @@ const Account: FC = () => {
       })
   }, [gamification, uid, queryClient])
 
-  const username = user?.displayName ?? data ?? ''
-  const displayName = user?.displayName ?? username
+  const handle = data ?? '' // the real @username, used for the share/public link
+  const displayName = user?.displayName ?? handle
   const nameInitial = displayName ? displayName.charAt(0).toUpperCase() : ''
 
   const memberSince = formatMemberSince(user?.metadata?.creationTime)
@@ -98,6 +106,9 @@ const Account: FC = () => {
     }
   }, [location.pathname, navigate])
 
+  // Reset the avatar fallback when the photo changes.
+  useEffect(() => setAvatarError(false), [user?.photoURL])
+
   return (
     <>
       <Helmet>
@@ -107,11 +118,12 @@ const Account: FC = () => {
       <div className='page account-page'>
         <header className='acct-head'>
           <div className='acct-id'>
-            {user?.photoURL ? (
+            {user?.photoURL && !avatarError ? (
               <img
                 src={user.photoURL}
                 alt='Profile avatar'
                 className='acct-avatar'
+                onError={() => setAvatarError(true)}
               />
             ) : (
               <div className='acct-avatar not-set'>{nameInitial}</div>
@@ -145,9 +157,10 @@ const Account: FC = () => {
                 xp={gamification.xp}
                 xpNext={gamification.xpNext}
                 pct={gamification.pct}
+                onRewards={() => setRewardsOpen(true)}
               />
             )}
-            <ProfileControls />
+            <ProfileControls username={handle || undefined} />
           </div>
         </header>
 
@@ -157,6 +170,12 @@ const Account: FC = () => {
           <Outlet />
         </div>
       </div>
+
+      <AchievementsModal
+        isOpen={rewardsOpen}
+        onClose={() => setRewardsOpen(false)}
+        achievements={gamification?.achievements ?? []}
+      />
     </>
   )
 }
