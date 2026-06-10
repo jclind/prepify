@@ -72,11 +72,16 @@ $inner-max: s.$max-width;
 
 // ---- Link columns ---------------------------------------------------------
 .footer-columns {
+  // Content-width columns spread edge-to-edge: first flush-left, last flush-
+  // right against the footer bound (1fr columns left a gap on the right because
+  // their text was left-aligned within a wide, filled cell).
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(3, max-content);
+  justify-content: space-between;
   gap: 1.5rem 2.5rem;
   @media (max-width: 560px) {
     grid-template-columns: repeat(2, 1fr);
+    justify-content: normal;
     gap: 1.5rem;
   }
 }
