@@ -8,11 +8,12 @@
 // replace it with a real API, so the swap is a one-liner per feature.
 //
 // IMPORTANT: nothing here is real user data. The /account page is private (only
-// the signed-in user sees their own), so placeholder level/counts are only ever
-// shown to the person they describe.
+// the signed-in user sees their own), so the placeholder level is only ever
+// shown to the person it describes.
 //
-// Phase 2 (DONE) wired bio + location to a real API (AuthAPI.getProfile), so
-// their placeholders were removed from here. Level/XP and tab counts remain.
+// Phase 2 wired bio + location (AuthAPI.getProfile) and Phase 3 wired the tab
+// counts (RecipeAPI.getAccountCounts), so those placeholders were removed. Only
+// the level/XP layer remains placeheld, until the Phase 4 gamification engine.
 // ──────────────────────────────────────────────────────────────────────────
 
 // TODO(Phase 4 — XP/level engine): replace with the gamification API
@@ -30,22 +31,4 @@ export const levelPlaceholder: AccountLevel = {
   xp: 1280,
   xpNext: 2000,
   pct: 64,
-}
-
-// TODO(Phase 3 — aggregate counts): replace with a real counts endpoint (or the
-// per-tab `totalCount` already returned by each sub-page query). The segmented
-// nav hides a count entirely when its value is null, so wiring a real number is
-// a drop-in. These placeholder values keep the approved "counts in the nav" look
-// intact until then.
-export type AccountTabCounts = {
-  saved: number | null
-  ratings: number | null
-  recipes: number | null
-  drafts: number | null
-}
-export const tabCountsPlaceholder: AccountTabCounts = {
-  saved: 48,
-  ratings: 23,
-  recipes: 12,
-  drafts: 3,
 }

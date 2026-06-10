@@ -4,6 +4,7 @@ import './Account.scss'
 import { Helmet } from 'react-helmet-async'
 import { useQuery } from '@tanstack/react-query'
 import AuthAPI from 'src/api/auth'
+import RecipeAPI from 'src/api/recipes'
 import { useAuth } from 'src/context/AuthContext'
 import LevelCard from 'src/pages/Account/components/LevelCard'
 import ProfileControls from 'src/pages/Account/components/ProfileControls'
@@ -35,6 +36,12 @@ const Account: FC = () => {
   const { data: profile } = useQuery({
     queryKey: ['profile', uid],
     queryFn: () => AuthAPI.getProfile(),
+    enabled: !!uid,
+  })
+
+  const { data: counts } = useQuery({
+    queryKey: ['account-counts', uid],
+    queryFn: () => RecipeAPI.getAccountCounts(),
     enabled: !!uid,
   })
 
@@ -103,7 +110,7 @@ const Account: FC = () => {
           </div>
         </header>
 
-        <SegmentedNav />
+        <SegmentedNav counts={counts} />
 
         <div className='account-body'>
           <Outlet />

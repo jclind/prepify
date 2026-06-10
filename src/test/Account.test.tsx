@@ -6,6 +6,7 @@ import { HelmetProvider } from 'react-helmet-async'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import Account from 'src/pages/Account/Account'
 import AuthAPI from 'src/api/auth'
+import RecipeAPI from 'src/api/recipes'
 import { useAuth } from 'src/context/AuthContext'
 
 vi.mock('src/api/auth', () => ({
@@ -16,12 +17,23 @@ vi.mock('src/api/auth', () => ({
   },
 }))
 
+vi.mock('src/api/recipes', () => ({
+  default: {
+    getAccountCounts: vi
+      .fn()
+      .mockResolvedValue({ saved: 0, ratings: 0, recipes: 0, drafts: 0 }),
+  },
+}))
+
 vi.mock('src/context/AuthContext', () => ({
   useAuth: vi.fn().mockReturnValue({ user: null }),
 }))
 
 const mockGetUID = AuthAPI.getUID as ReturnType<typeof vi.fn>
 const mockGetUsername = AuthAPI.getUsername as ReturnType<typeof vi.fn>
+const mockGetAccountCounts = RecipeAPI.getAccountCounts as ReturnType<
+  typeof vi.fn
+>
 const mockUseAuth = useAuth as ReturnType<typeof vi.fn>
 
 const createTestQueryClient = () =>
@@ -63,6 +75,13 @@ describe('Account page', () => {
     mockGetUID.mockReturnValue(null)
     mockGetUsername.mockReset()
     mockGetUsername.mockResolvedValue(null)
+    mockGetAccountCounts.mockReset()
+    mockGetAccountCounts.mockResolvedValue({
+      saved: 0,
+      ratings: 0,
+      recipes: 0,
+      drafts: 0,
+    })
     mockUseAuth.mockReturnValue({ user: null })
   })
 
@@ -102,6 +121,28 @@ describe('Account page', () => {
         expect(screen.getByText('Your Recipes')).toHaveClass('active')
       )
       expect(screen.getByText('Saved')).not.toHaveClass('active')
+    })
+  })
+
+  describe('tab counts', () => {
+    it('shows a badge for non-zero counts and hides zero counts', async () => {
+      mockGetUID.mockReturnValue('u1')
+      mockUseAuth.mockReturnValue({
+        user: { displayName: 'Jane', photoURL: null, uid: 'u1' },
+      })
+      mockGetAccountCounts.mockResolvedValue({
+        saved: 5,
+        ratings: 0,
+        recipes: 2,
+        drafts: 0,
+      })
+      renderAccount()
+
+      // Non-zero counts render their number...
+      expect(await screen.findByText('5')).toBeInTheDocument()
+      expect(screen.getByText('2')).toBeInTheDocument()
+      // ...while zero counts render no badge (0 is never shown).
+      expect(screen.queryByText('0')).not.toBeInTheDocument()
     })
   })
 

@@ -187,3 +187,12 @@ export interface AddRecipeErrorType {
   cuisine: string
   mealType: string
 }
+
+// Aggregate item counts for the account-page tabs, returned by
+// GET /getAccountCounts. All fields are real counts (0 when the user has none).
+export type AccountTabCounts = {
+  saved: number
+  ratings: number
+  recipes: number
+  drafts: number
+}

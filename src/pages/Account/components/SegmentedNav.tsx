@@ -1,16 +1,15 @@
 import React, { FC } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { tabCountsPlaceholder } from 'src/pages/Account/accountPlaceholders'
+import { AccountTabCounts } from 'types'
 
 // SegmentedNav — the centered segmented control from the P2 header, wired to the
 // real account sub-routes. The four tabs are URL routes (so deep-links keep
-// working); the sliding indicator follows the active route.
-//
-// TODO(Phase 3): counts come from accountPlaceholders for now — swap for real
-// aggregate counts. A null count hides the little number entirely.
+// working); the sliding indicator follows the active route. Counts come from the
+// aggregate GET /getAccountCounts query (passed in by Account); a tab shows its
+// number only once counts have loaded and the count is non-zero.
 
 type Tab = {
-  key: keyof typeof tabCountsPlaceholder
+  key: keyof AccountTabCounts
   label: string
   to: string
 }
@@ -22,7 +21,11 @@ const tabs: Tab[] = [
   { key: 'drafts', label: 'Drafts', to: '/account/drafts' },
 ]
 
-const SegmentedNav: FC = () => {
+type SegmentedNavProps = {
+  counts?: AccountTabCounts | null
+}
+
+const SegmentedNav: FC<SegmentedNavProps> = ({ counts }) => {
   const { pathname } = useLocation()
   // The bare /account path redirects to saved-recipes, so treat it as "saved".
   const activeIndex = Math.max(
@@ -46,7 +49,7 @@ const SegmentedNav: FC = () => {
     >
       <div className='acct-seg-indicator' />
       {tabs.map((t, i) => {
-        const count = tabCountsPlaceholder[t.key]
+        const count = counts?.[t.key]
         return (
           <Link
             key={t.key}
@@ -55,7 +58,7 @@ const SegmentedNav: FC = () => {
             aria-current={i === activeIndex ? 'page' : undefined}
           >
             {t.label}
-            {count != null && <span>{count}</span>}
+            {count != null && count > 0 && <span>{count}</span>}
           </Link>
         )
       })}
