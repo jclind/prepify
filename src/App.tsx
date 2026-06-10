@@ -164,15 +164,15 @@ const App: FC = () => {
                   </Layout>
                 }
               />
-              <Route
-                path='/help'
-                element={
-                  <Layout darkNavLinks={true}>
-                    <Help />
-                  </Layout>
-                }
-              />
             </Route>
+            <Route
+              path='/help'
+              element={
+                <Layout darkNavLinks={true}>
+                  <Help />
+                </Layout>
+              }
+            />
             <Route path='/login' element={<Login />} />
             <Route path='/signup' element={<Signup />} />
             <Route path='/create-username' element={<CreateUsername />} />
