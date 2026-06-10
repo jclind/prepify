@@ -9,25 +9,18 @@ import {
 } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import DesktopNav from 'src/Components/Navbar/desktop/DesktopNav'
-import DesktopNavSwitcher from 'src/Components/Navbar/desktop/DesktopNavSwitcher'
-import { DESKTOP_VARIANTS } from 'src/Components/Navbar/desktop/registry'
-import { DROPDOWN_VARIANTS } from 'src/Components/Navbar/desktop/dropdownRegistry'
-import { setDesktopDropdown } from 'src/Components/Navbar/desktop/dropdownStore'
-import { setDesktopCreateStyle } from 'src/Components/Navbar/desktop/createStore'
-import { setAuthPreview } from 'src/Components/Navbar/desktop/authPreviewStore'
 import { useScrolled } from 'src/Components/Navbar/desktop/useScrolled'
 import { DesktopNavProps } from 'src/Components/Navbar/desktop/types'
 
-// The search variants pull in RecipeAPI + autocomplete; stub it so these tests
+// The search input pulls in RecipeAPI + autocomplete; stub it so these tests
 // focus on the bar's own structure/behavior.
 vi.mock('src/Components/SearchRecipesInput/SearchRecipesInput', () => ({
   default: () => <div data-testid='search-stub' />,
 }))
 
-type Props = DesktopNavProps & { variantId: string }
-
-const baseProps = (overrides: Partial<Props> = {}): Props => ({
-  variantId: 'editorial',
+const baseProps = (
+  overrides: Partial<DesktopNavProps> = {}
+): DesktopNavProps => ({
   darkNavLinks: true,
   scrolled: false,
   isLoggedIn: false,
@@ -40,18 +33,21 @@ const baseProps = (overrides: Partial<Props> = {}): Props => ({
   ...overrides,
 })
 
-const renderNav = (props: Props) =>
+const renderNav = (props: DesktopNavProps) =>
   render(
     <MemoryRouter>
       <DesktopNav {...props} />
     </MemoryRouter>
   )
 
-// Every variant shares the same markup, so the same structural contract should
-// hold for all of them regardless of skin.
-describe.each(DESKTOP_VARIANTS)('DesktopNav variant: $id', variant => {
+describe('DesktopNav structure', () => {
+  it('always renders the persistent search', () => {
+    renderNav(baseProps())
+    expect(screen.getByTestId('search-stub')).toBeInTheDocument()
+  })
+
   it('logged out: shows Recipes + Login/Signup CTAs, no account menu', () => {
-    renderNav(baseProps({ variantId: variant.id, isLoggedIn: false }))
+    renderNav(baseProps({ isLoggedIn: false }))
 
     expect(screen.getByRole('link', { name: 'Recipes' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Log in' })).toBeInTheDocument()
@@ -68,14 +64,9 @@ describe.each(DESKTOP_VARIANTS)('DesktopNav variant: $id', variant => {
     ).not.toBeInTheDocument()
   })
 
-  it('logged in: shows Create Recipe + account menu, no CTAs', () => {
+  it('logged in: shows Create Recipe + Saved + account menu, no CTAs', () => {
     renderNav(
-      baseProps({
-        variantId: variant.id,
-        isLoggedIn: true,
-        username: 'chef',
-        nameInitial: 'C',
-      })
+      baseProps({ isLoggedIn: true, username: 'chef', nameInitial: 'C' })
     )
 
     expect(
@@ -87,11 +78,41 @@ describe.each(DESKTOP_VARIANTS)('DesktopNav variant: $id', variant => {
     expect(
       screen.getByRole('button', { name: 'Account menu' })
     ).toBeInTheDocument()
-    expect(screen.queryByRole('link', { name: 'Log in' })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('link', { name: 'Log in' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('shows a loading skeleton while auth resolves (no CTAs or menu yet)', () => {
+    renderNav(baseProps({ isLoggedIn: false, authLoading: true }))
+    expect(
+      screen.queryByRole('link', { name: 'Log in' })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Account menu' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('the primary links live in a labelled <nav> landmark', () => {
+    renderNav(baseProps({ isLoggedIn: true, username: 'chef', nameInitial: 'C' }))
+    expect(
+      screen.getByRole('navigation', { name: 'Primary' })
+    ).toBeInTheDocument()
   })
 })
 
-describe('DesktopAccountMenu (via DesktopNav)', () => {
+describe('DesktopAccountMenu (Profile Card)', () => {
+  const renderLoggedIn = (overrides: Partial<DesktopNavProps> = {}) =>
+    renderNav(
+      baseProps({
+        isLoggedIn: true,
+        username: 'chef',
+        email: 'chef@x.com',
+        nameInitial: 'C',
+        ...overrides,
+      })
+    )
+
   const open = () => {
     const btn = screen.getByRole('button', { name: 'Account menu' })
     fireEvent.click(btn)
@@ -99,119 +120,82 @@ describe('DesktopAccountMenu (via DesktopNav)', () => {
   }
 
   it('toggles open/closed and exposes aria-expanded', () => {
-    renderNav(baseProps({ isLoggedIn: true, username: 'chef', nameInitial: 'C' }))
+    renderLoggedIn()
     const btn = screen.getByRole('button', { name: 'Account menu' })
     expect(btn).toHaveAttribute('aria-expanded', 'false')
     fireEvent.click(btn)
     expect(btn).toHaveAttribute('aria-expanded', 'true')
   })
 
-  it('shows Account/Help/Logout when open', () => {
-    renderNav(baseProps({ isLoggedIn: true, username: 'chef', nameInitial: 'C' }))
+  it('exposes all account actions as menuitems', () => {
+    renderLoggedIn()
     open()
     expect(screen.getByRole('menuitem', { name: 'Account' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('menuitem', { name: 'Your recipes' })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('menuitem', { name: 'Settings' })
+    ).toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: 'Help' })).toBeInTheDocument()
     expect(
       screen.getByRole('menuitem', { name: /log out/i })
     ).toBeInTheDocument()
   })
 
+  it('shows the profile header (name + email) in the dropdown', () => {
+    renderLoggedIn()
+    open()
+    expect(screen.getByText('chef')).toBeInTheDocument()
+    expect(screen.getByText('chef@x.com')).toBeInTheDocument()
+  })
+
+  it('falls back to "Your account" when no username is present', () => {
+    renderLoggedIn({ username: '' })
+    open()
+    expect(screen.getByText('Your account')).toBeInTheDocument()
+  })
+
   it('logs out from the menu', () => {
     const logout = vi.fn()
-    renderNav(
-      baseProps({ isLoggedIn: true, username: 'chef', nameInitial: 'C', logout })
-    )
+    renderLoggedIn({ logout })
     open()
     fireEvent.click(screen.getByRole('menuitem', { name: /log out/i }))
     expect(logout).toHaveBeenCalledTimes(1)
   })
 
   it('closes on Escape', () => {
-    renderNav(baseProps({ isLoggedIn: true, username: 'chef', nameInitial: 'C' }))
+    renderLoggedIn()
     const btn = open()
     expect(btn).toHaveAttribute('aria-expanded', 'true')
     fireEvent.keyDown(document, { key: 'Escape' })
     expect(btn).toHaveAttribute('aria-expanded', 'false')
   })
-})
 
-describe('Account dropdown design variants', () => {
-  afterEach(() => setDesktopDropdown('classic'))
-
-  const openLoggedIn = () => {
-    renderNav(
-      baseProps({ isLoggedIn: true, username: 'chef', email: 'chef@x.com', nameInitial: 'C' })
-    )
-    fireEvent.click(screen.getByRole('button', { name: 'Account menu' }))
-  }
-
-  // Every design exposes the core actions, accessibly.
-  it.each(DROPDOWN_VARIANTS)('$id: exposes Account, Help, Log out', variant => {
-    setDesktopDropdown(variant.id)
-    openLoggedIn()
-    expect(screen.getByRole('menuitem', { name: 'Account' })).toBeInTheDocument()
-    expect(screen.getByRole('menuitem', { name: 'Help' })).toBeInTheDocument()
-    expect(
-      screen.getByRole('menuitem', { name: /log out/i })
-    ).toBeInTheDocument()
+  it('closes on outside click', () => {
+    renderLoggedIn()
+    const btn = open()
+    expect(btn).toHaveAttribute('aria-expanded', 'true')
+    fireEvent.mouseDown(document.body)
+    expect(btn).toHaveAttribute('aria-expanded', 'false')
   })
 
-  it('every design exposes Your recipes + Settings', () => {
-    setDesktopDropdown('classic')
-    openLoggedIn()
-    expect(
-      screen.getByRole('menuitem', { name: 'Your recipes' })
-    ).toBeInTheDocument()
-    expect(screen.getByRole('menuitem', { name: 'Settings' })).toBeInTheDocument()
-  })
-
-  it('logout still fires from a button-style design (profile)', () => {
-    const logout = vi.fn()
-    setDesktopDropdown('profile')
-    renderNav(
-      baseProps({ isLoggedIn: true, username: 'chef', nameInitial: 'C', logout })
-    )
-    fireEvent.click(screen.getByRole('button', { name: 'Account menu' }))
-    fireEvent.click(screen.getByRole('menuitem', { name: /log out/i }))
-    expect(logout).toHaveBeenCalledTimes(1)
-  })
-})
-
-describe('Create style', () => {
-  afterEach(() => setDesktopCreateStyle('promoted'))
-
-  it('balanced vs promoted swaps the Create button skin class', () => {
-    setDesktopCreateStyle('balanced')
-    renderNav(baseProps({ isLoggedIn: true, username: 'chef', nameInitial: 'C' }))
-    expect(
-      screen.getByRole('link', { name: 'Create Recipe' }).className
-    ).toContain('dnav__create--balanced')
-  })
-})
-
-describe('Auth preview (dev override)', () => {
-  afterEach(() => setAuthPreview('auto'))
-
-  it("'Signed in' forces the account menu even when the prop says logged out", () => {
-    setAuthPreview('in')
-    renderNav(baseProps({ isLoggedIn: false }))
-    expect(
-      screen.getByRole('button', { name: 'Account menu' })
-    ).toBeInTheDocument()
-    expect(screen.queryByRole('link', { name: 'Log in' })).not.toBeInTheDocument()
-  })
-
-  it("'Signed out' forces the CTAs even when the prop says logged in", () => {
-    setAuthPreview('out')
-    renderNav(baseProps({ isLoggedIn: true, username: 'chef', nameInitial: 'C' }))
-    expect(screen.getByRole('link', { name: 'Log in' })).toBeInTheDocument()
-    expect(
-      screen.queryByRole('button', { name: 'Account menu' })
-    ).not.toBeInTheDocument()
+  it('renders the initial avatar when there is no photo', () => {
+    renderLoggedIn({ photoURL: null, nameInitial: 'C' })
+    // initial appears on the trigger avatar + the dropdown profile avatar
+    expect(screen.getAllByText('C').length).toBeGreaterThan(0)
   })
 })
 
 describe('useScrolled', () => {
+  afterEach(() => {
+    Object.defineProperty(window, 'scrollY', {
+      value: 0,
+      configurable: true,
+      writable: true,
+    })
+  })
+
   it('flips true once scrolled past the threshold', () => {
     const { result } = renderHook(() => useScrolled(10))
     expect(result.current).toBe(false)
@@ -225,31 +209,5 @@ describe('useScrolled', () => {
       window.dispatchEvent(new Event('scroll'))
     })
     expect(result.current).toBe(true)
-  })
-})
-
-describe('DesktopNavSwitcher', () => {
-  afterEach(() => vi.unstubAllEnvs())
-
-  it('renders the variant catalog in dev', () => {
-    vi.stubEnv('DEV', true)
-    render(
-      <MemoryRouter>
-        <DesktopNavSwitcher />
-      </MemoryRouter>
-    )
-    expect(
-      screen.getByRole('button', { name: /Editorial/ })
-    ).toBeInTheDocument()
-  })
-
-  it('renders nothing in production', () => {
-    vi.stubEnv('DEV', false)
-    const { container } = render(
-      <MemoryRouter>
-        <DesktopNavSwitcher />
-      </MemoryRouter>
-    )
-    expect(container).toBeEmptyDOMElement()
   })
 })

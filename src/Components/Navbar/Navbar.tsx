@@ -7,9 +7,7 @@ import NavMenu from 'src/Components/Navbar/menu/NavMenu'
 import { useNavMenu } from 'src/Components/Navbar/menu/useNavMenu'
 import { useIsMobile } from 'src/Components/Navbar/menu/useIsMobile'
 import DesktopNav from 'src/Components/Navbar/desktop/DesktopNav'
-import DesktopNavSwitcher from 'src/Components/Navbar/desktop/DesktopNavSwitcher'
 import { useScrolled } from 'src/Components/Navbar/desktop/useScrolled'
-import { useDesktopVariant } from 'src/Components/Navbar/desktop/variantStore'
 
 type NavbarProps = {
   darkNavLinks: boolean
@@ -26,7 +24,6 @@ const Navbar: FC<NavbarProps> = ({ darkNavLinks, navBackgroundColor }) => {
   const menu = useNavMenu()
   const isMobile = useIsMobile()
   const scrolled = useScrolled()
-  const variantId = useDesktopVariant()
   const closeNav = useCallback(() => setNavOpen(false), [])
 
   useEffect(() => {
@@ -50,7 +47,7 @@ const Navbar: FC<NavbarProps> = ({ darkNavLinks, navBackgroundColor }) => {
 
   return (
     <>
-      <nav className={navClassName} data-variant={isMobile ? undefined : variantId}>
+      <nav className={navClassName}>
         <div className='nav-center'>
           <div className='nav-header'>
             <PrepifyLogo />
@@ -63,7 +60,6 @@ const Navbar: FC<NavbarProps> = ({ darkNavLinks, navBackgroundColor }) => {
               optional search input isn't kept alive behind the mobile menu. */}
           {!isMobile && (
             <DesktopNav
-              variantId={variantId}
               darkNavLinks={darkNavLinks}
               scrolled={scrolled}
               {...menu}
@@ -75,9 +71,6 @@ const Navbar: FC<NavbarProps> = ({ darkNavLinks, navBackgroundColor }) => {
       {/* Redesigned mobile menu (≤725px) — rendered outside <nav> so the bar
           stays tappable above the overlay. Unchanged by the desktop redesign. */}
       {isMobile && <NavMenu open={navOpen} onClose={closeNav} {...menu} />}
-
-      {/* Dev-only picker for flipping through desktop nav variants. */}
-      <DesktopNavSwitcher />
     </>
   )
 }
