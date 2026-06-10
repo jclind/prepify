@@ -1,0 +1,43 @@
+@use '../../helpers.scss' as s;
+
+.legal-placeholder {
+  // Fills the flexbox app-main so the footer stays at the viewport bottom
+  // (see Layout.scss); nav is position:absolute, so offset content past it.
+  flex: 1 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: calc(#{s.$nav-height} + 2rem) 1.5rem 3rem;
+
+  .legal-placeholder-inner {
+    max-width: 640px;
+  }
+
+  h1 {
+    font-size: 2.25rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: s.$primary-text;
+    margin-bottom: 1rem;
+  }
+  .lead {
+    color: s.$secondary-text;
+    font-size: 1.05rem;
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+  }
+  .note {
+    color: s.$tertiary-text;
+    font-weight: 600;
+    margin-bottom: 2rem;
+  }
+  .back-home {
+    color: s.$primary;
+    font-weight: 700;
+    text-decoration: none;
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
