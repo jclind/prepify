@@ -5,7 +5,6 @@ import { BiHelpCircle, BiLogOut } from 'react-icons/bi'
 import { MdKeyboardArrowDown, MdOutlineRestaurantMenu } from 'react-icons/md'
 import { IconType } from 'react-icons'
 import { NavMenuData } from 'src/Components/Navbar/menu/types'
-import { useDesktopDropdown } from './dropdownStore'
 
 type DesktopAccountMenuProps = Pick<
   NavMenuData,
@@ -15,13 +14,9 @@ type DesktopAccountMenuProps = Pick<
 type LinkItem = { to: string; label: string; Icon: IconType }
 
 /**
- * Accessible avatar dropdown shared by every desktop variant. Replaces the old
- * hover-only menu (invalid CSS, keyboard-inaccessible) with a click/focus toggle
- * that closes on outside-click and Escape.
- *
- * The *menu design* is a switchable dimension (see dropdownRegistry/dropdownStore
- * + the dev switcher): classic card, profile card, compact list, or rich
- * sections. The trigger + open/close behavior stay shared across all of them.
+ * Accessible avatar dropdown ("Profile Card"): a profile header (avatar + name +
+ * email linking to /account), the account links, and an outlined Log out button.
+ * Opens on click, closes on outside-click and Escape, exposes aria-expanded.
  */
 const DesktopAccountMenu: FC<DesktopAccountMenuProps> = ({
   username,
@@ -30,7 +25,6 @@ const DesktopAccountMenu: FC<DesktopAccountMenuProps> = ({
   photoURL,
   logout,
 }) => {
-  const dropdownId = useDesktopDropdown()
   const [open, setOpen] = useState(false)
   const [imgFailed, setImgFailed] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -64,9 +58,6 @@ const DesktopAccountMenu: FC<DesktopAccountMenuProps> = ({
       <span className={`${className} ${className}--initial`}>{nameInitial}</span>
     )
 
-  const showProfileHeader = dropdownId === 'profile' || dropdownId === 'rich'
-  const buttonLogout = dropdownId === 'classic' || dropdownId === 'compact'
-
   const linkItems: LinkItem[] = [
     { to: '/account', label: 'Account', Icon: AiOutlineUser },
     { to: '/account/your-recipes', label: 'Your recipes', Icon: MdOutlineRestaurantMenu },
@@ -75,10 +66,7 @@ const DesktopAccountMenu: FC<DesktopAccountMenuProps> = ({
   ]
 
   return (
-    <div
-      className={`dnav-account dnav-account--${dropdownId}${open ? ' is-open' : ''}`}
-      ref={ref}
-    >
+    <div className={`dnav-account${open ? ' is-open' : ''}`} ref={ref}>
       <button
         type='button'
         className='dnav-account__btn'
@@ -88,44 +76,26 @@ const DesktopAccountMenu: FC<DesktopAccountMenuProps> = ({
         onClick={() => setOpen(o => !o)}
       >
         {renderAvatar('dnav-account__avatar')}
-        {/* Shown only by variants that surface the name beside the avatar. */}
-        <span className='dnav-account__name'>{username || 'Account'}</span>
         <MdKeyboardArrowDown className='dnav-account__caret' />
       </button>
 
       <div className='dnav-account__menu' role='menu'>
-        {/* Header */}
-        {dropdownId === 'classic' && (
-          <div className='dnav-account__identity'>
-            <AiOutlineUser className='icon' />
-            <span className='text'>
-              Signed in as <strong>{username || 'you'}</strong>
-              {email && <span className='dnav-account__email'>{email}</span>}
+        <NavLink
+          to='/account'
+          role='menuitem'
+          className='dnav-account__profile'
+          onClick={close}
+        >
+          {renderAvatar('dnav-account__profile-avatar')}
+          <span className='dnav-account__profile-meta'>
+            <span className='dnav-account__profile-name'>
+              {username || 'Your account'}
             </span>
-          </div>
-        )}
-        {showProfileHeader && (
-          <NavLink
-            to='/account'
-            role='menuitem'
-            className='dnav-account__profile'
-            onClick={close}
-          >
-            {renderAvatar('dnav-account__profile-avatar')}
-            <span className='dnav-account__profile-meta'>
-              <span className='dnav-account__profile-name'>
-                {username || 'Your account'}
-              </span>
-              {email && <span className='dnav-account__email'>{email}</span>}
-            </span>
-          </NavLink>
-        )}
+            {email && <span className='dnav-account__email'>{email}</span>}
+          </span>
+        </NavLink>
 
-        {/* Links */}
         <div className='dnav-account__links'>
-          {dropdownId === 'rich' && (
-            <p className='dnav-account__group-heading'>Manage</p>
-          )}
           {linkItems.map(({ to, label, Icon }) => (
             <NavLink
               key={to}
@@ -140,34 +110,18 @@ const DesktopAccountMenu: FC<DesktopAccountMenuProps> = ({
           ))}
         </div>
 
-        {/* Logout */}
-        {buttonLogout ? (
-          <button
-            type='button'
-            role='menuitem'
-            className='dnav-account__item dnav-account__logout'
-            onClick={() => {
-              close()
-              logout()
-            }}
-          >
-            <BiLogOut className='icon' />
-            <span>Log out</span>
-          </button>
-        ) : (
-          <button
-            type='button'
-            role='menuitem'
-            className='dnav-account__logout-btn'
-            onClick={() => {
-              close()
-              logout()
-            }}
-          >
-            <BiLogOut className='icon' />
-            <span>Log out</span>
-          </button>
-        )}
+        <button
+          type='button'
+          role='menuitem'
+          className='dnav-account__logout-btn'
+          onClick={() => {
+            close()
+            logout()
+          }}
+        >
+          <BiLogOut className='icon' />
+          <span>Log out</span>
+        </button>
       </div>
     </div>
   )

@@ -6,29 +6,9 @@ import { AiOutlinePlusCircle } from 'react-icons/ai'
 import { BiBookmark } from 'react-icons/bi'
 import SearchRecipesInput from 'src/Components/SearchRecipesInput/SearchRecipesInput'
 import DesktopAccountMenu from './DesktopAccountMenu'
-import { useDesktopCreateStyle } from './createStore'
-import { useAuthPreview } from './authPreviewStore'
-import { DesktopNavProps, DesktopVariant } from './types'
+import { DesktopNavProps } from './types'
 
 const skeletonColor = '#d6d6d6'
-
-type DesktopBarProps = DesktopNavProps & { variant: DesktopVariant }
-
-/** Dev-only: force the bar into a signed-in / signed-out preview. No-op in prod. */
-const useEffectiveAuth = (data: DesktopNavProps): DesktopNavProps => {
-  const preview = useAuthPreview()
-  if (!import.meta.env.DEV || preview === 'auto') return data
-  if (preview === 'out') return { ...data, isLoggedIn: false, authLoading: false }
-  // 'in' — fill mock identity when the real one is empty so the avatar/menu read
-  return {
-    ...data,
-    isLoggedIn: true,
-    authLoading: false,
-    username: data.username || 'Preview Chef',
-    email: data.email || 'preview@prepify.app',
-    nameInitial: data.nameInitial || 'P',
-  }
-}
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   isActive ? 'dnav__link is-active' : 'dnav__link'
@@ -51,23 +31,16 @@ const DesktopCTAs: FC = () => (
 )
 
 /**
- * Shared desktop nav markup used by every variant. Content/IA is fixed here
- * (prominent search · Recipes · Create · Saved · account menu); visual identity
- * (layout, surface, active state) comes from the `.dnav--<id>` skin in
- * DesktopNav.scss. `Create` prominence is a switchable style; the account menu
- * design is another switchable dimension (see DesktopAccountMenu).
+ * The desktop nav bar (>725px): prominent persistent search · Recipes · Create ·
+ * Saved · accessible account menu (logged in) / Log in + Sign up CTAs (logged
+ * out). Visual identity is the "Quiet" skin in DesktopNav.scss; the surface
+ * flips transparent→solid on scroll (driven by `.nav--solid` on the shell).
  */
-const DesktopBar: FC<DesktopBarProps> = ({ variant, ...rawData }) => {
-  const data = useEffectiveAuth(rawData)
+const DesktopBar: FC<DesktopNavProps> = data => {
   const { isLoggedIn, authLoading } = data
-  const createStyle = useDesktopCreateStyle()
 
   return (
-    <div
-      className={`dnav dnav--${variant.id}${
-        variant.centerSearch ? ' dnav--center-search' : ''
-      }`}
-    >
+    <div className='dnav dnav--quiet'>
       <div className='dnav__search'>
         <SearchRecipesInput autoComplete={true} />
       </div>
@@ -81,7 +54,7 @@ const DesktopBar: FC<DesktopBarProps> = ({ variant, ...rawData }) => {
           <NavLink
             to='/add-recipe'
             className={({ isActive }) =>
-              `dnav__link dnav__create dnav__create--${createStyle}${
+              `dnav__link dnav__create dnav__create--promoted${
                 isActive ? ' is-active' : ''
               }`
             }
