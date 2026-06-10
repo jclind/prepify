@@ -1,6 +1,13 @@
 @use '../../helpers.scss' as s;
 
-nav {
+// Nav shell. The desktop links/CTAs/search live in the variant bar
+// (src/Components/Navbar/desktop, styled in DesktopNav.scss); the mobile menu
+// lives in src/Components/Navbar/menu. This file only owns the bar itself plus
+// the shared logo + hamburger.
+
+// Scoped to the shell's `.nav` class (not the bare `nav` tag) so it doesn't
+// leak into the inner `<nav>` landmark the desktop links live in.
+.nav {
   position: absolute;
   top: 0;
   left: 0;
@@ -10,16 +17,22 @@ nav {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin: 0 auto;
-  display: flex;
   height: s.$nav-height;
-  // background: s.$primary;
   width: 100%;
+
+  // Desktop: fixed so the bar stays put and can solidify + condense on scroll.
+  @media screen and (min-width: 726px) {
+    position: fixed;
+    transition: background 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease,
+      height 0.2s ease;
+  }
+
   .nav-center {
     position: relative;
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 1.5rem; // keep the logo/BETA off the desktop bar (search) when it narrows
     margin: 0 auto;
     width: 90%;
     max-width: s.$max-width;
@@ -48,240 +61,55 @@ nav {
       }
     }
   }
+}
 
-  .nav-content {
-    display: flex;
-    justify-content: flex-end;
-    .nav-links {
-      display: flex;
-      gap: 2rem;
-      align-items: center;
-      justify-content: space-between;
-      .nav-link {
-        text-transform: capitalize;
-        padding: 0.5rem;
-        font-size: 1.125rem;
-        font-weight: 700;
-        color: s.$primary-background;
-        text-decoration: none;
-        white-space: nowrap;
-        &:focus {
-          @include s.outline();
-        }
-      }
-      .account-link {
-        background: s.$primary-text;
-        border-radius: 50%;
-        border: 1px solid s.$primary-background;
-        width: 45px;
-        height: 45px;
-        display: flex;
-        text-decoration: none;
-        justify-content: center;
-        align-items: center;
-        font-size: 1.875rem;
-        color: s.$primary;
-        font-weight: 500;
-        overflow: hidden;
+// Scroll-aware solid surface. The class is only set on the shell at desktop
+// widths (Navbar.tsx), so the mobile bar stays transparent. Variants may
+// override this surface in DesktopNav.scss (gradient bar, capsule, ...).
+.nav--solid {
+  background: #{rgba(s.$white, 0.85)};
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid s.$gray-300;
+  box-shadow: 0 2px 14px rgba(48, 56, 65, 0.07);
+}
 
-        .profile-image {
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          height: 45px;
-          width: 45px;
-          object-fit: contain;
-        }
-      }
-      .account-link-loading {
-        width: 45px;
-        height: 45px;
-        border-radius: 50%;
-      }
-      .dropdown {
-        position: relative;
-        .dropdown-btn {
-          padding: 0.5rem 0;
-        }
-        &:hover {
-          .dropdown-links {
-            visibility: 1;
-            opacity: 1;
-            pointer-events: all;
-            z-index: 5;
-          }
-        }
-        @media screen and (max-width: 725px) {
-          display: flex;
-          flex-direction: column-reverse;
-          align-items: center;
-        }
-      }
-      .dropdown-links {
-        position: absolute;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: -1;
+// Condensed (scrolled) — slim the bar so the persistent search isn't a heavy
+// 100px footprint while reading. Desktop only (class set just for >725px).
+// Items shrink + recenter; the reserved page offset stays $nav-height, so a
+// small gap appears below the bar rather than the content jumping.
+.nav--condensed {
+  height: 4rem;
 
-        // display: flex;
-        flex-direction: column;
-        gap: 0.25rem;
-        box-sizing: border-box;
-        width: 175px;
-        padding-bottom: 0.5rem;
-        pointer-events: none;
-
-        visibility: 0;
-        opacity: 0;
-        transition: visibility 0s, opacity 0.1s linear;
-
-        background: s.$white;
-        border: 1px solid s.$gray-400;
-        border-radius: s.$border-radius;
-
-        .dropdown-section {
-          border-bottom: 1px solid s.$gray-400;
-        }
-        .signed-in-as {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          height: fit-content;
-
-          padding: 0.5rem 1rem;
-
-          .icon {
-            height: 20px;
-            width: 20px;
-            flex-shrink: 0;
-            color: s.$primary-text;
-          }
-          .text {
-            font-size: 0.875rem;
-            font-weight: 600;
-          }
-        }
-        .nav-link {
-          display: flex;
-          gap: 0.5rem;
-          align-items: center;
-          color: s.$primary-text;
-          padding: 0.5rem 1rem;
-          width: 100%;
-          box-sizing: border-box;
-          .icon {
-            height: 20px;
-            width: 20px;
-            flex-shrink: 0;
-          }
-          .text {
-            font-size: 0.875rem;
-            font-weight: 600;
-          }
-        }
-
-        @media screen and (max-width: 1400px) {
-          right: 0;
-          left: unset;
-          transform: translateX(0);
-        }
-        @media screen and (max-width: 725px) {
-          position: relative;
-          flex-direction: column-reverse;
-          justify-content: center;
-          align-items: center;
-          visibility: 1;
-          opacity: 1;
-          background: none;
-          border: none;
-          width: fit-content;
-
-          .dropdown-section {
-            border: none;
-          }
-          .signed-in-as {
-            display: none;
-          }
-          .nav-link {
-            display: flex;
-            justify-content: center;
-            width: 100%;
-
-            .icon {
-              display: none;
-            }
-            .text {
-              text-transform: capitalize;
-              font-size: 1.5rem;
-              font-weight: 700;
-              color: s.$primary-text;
-              text-decoration: none;
-              white-space: nowrap;
-              padding: 0.5rem 0;
-              color: s.$primary-text;
-              text-decoration: underline;
-              text-align: center;
-            }
-          }
-        }
-      }
-    }
-    @media screen and (max-width: 725px) {
-      position: fixed;
-      z-index: 10;
-      top: 0;
-      left: 0;
-      // display: none;
-      height: 100%;
-      width: 100%;
-      padding-top: 8rem;
-      visibility: hidden;
-      opacity: 0;
-      transition: visibility 0s, opacity 0.1s linear;
-      background: s.$primary-background;
-
-      .nav-links {
-        // display: flex;
-        flex-direction: column;
-        justify-content: flex-start;
-        align-items: center;
-        gap: 2rem;
-
-        .nav-link {
-          padding: 0.5rem 0;
-          font-size: 1.5rem;
-          color: s.$primary-text;
-          text-decoration: underline;
-        }
-      }
-    }
-    @media screen and (max-width: 956px) {
-      .nav-links {
-        gap: 1rem;
-      }
-    }
+  // Scoped through `.prepify-logo.nav-link` so these beat the base logo rules
+  // (which are themselves `.prepify-logo.nav-link .nav-logo`, 0-3-0); a bare
+  // `.nav--condensed .nav-logo` (0-2-0) loses to them and the shrink is silently
+  // dropped.
+  .prepify-logo.nav-link .nav-logo {
+    font-size: 1.7rem;
+    transition: font-size 0.2s ease;
   }
-  .nav-content.show {
-    display: block !important;
-    visibility: visible;
-    opacity: 1;
-
-    // gap: 5rem;
+  .prepify-logo.nav-link .beta-tag {
+    font-size: 0.7rem;
+    padding: 0.15rem 0.4rem;
   }
-
-  // Mobile menu is now handled by the redesigned <NavMenu> overlay
-  // (src/Components/Navbar/menu). The legacy full-screen .nav-content overlay
-  // is disabled below 725px; desktop keeps using it for the inline links.
-  @media screen and (max-width: 725px) {
-    .nav-content,
-    .nav-content.show {
-      display: none !important;
+  .dnav {
+    .search-recipes-input {
+      height: 42px;
+      transition: height 0.2s ease;
     }
-  }
-
-  .nav-links.dark-nav-links {
-    .nav-link {
-      color: s.$primary-text !important;
+    .dnav-account__avatar {
+      height: 38px;
+      width: 38px;
+    }
+    .dnav__icon-link {
+      height: 38px;
+      width: 38px;
+      font-size: 1.2rem;
+    }
+    .dnav__create {
+      padding-top: 0.4rem;
+      padding-bottom: 0.4rem;
     }
   }
 }
@@ -389,6 +217,19 @@ nav {
     }
     .beta-tag {
       font-size: 0.75rem;
+    }
+  }
+
+  // Tight desktop band just above the mobile breakpoint: the bar packs logo +
+  // search + links + CTAs into little space, so shrink the logo/BETA to give
+  // the search room.
+  @media screen and (min-width: 726px) and (max-width: 860px) {
+    .nav-logo {
+      font-size: 1.6rem;
+    }
+    .beta-tag {
+      font-size: 0.7rem;
+      padding: 0.18rem 0.4rem;
     }
   }
 }
