@@ -1,24 +1,30 @@
 import React, { FC } from 'react'
 import toast from 'react-hot-toast'
-import { levelPlaceholder } from 'src/pages/Account/accountPlaceholders'
 
 // LevelCard — the right-column level/XP card from the P2 header. A tappable card
 // that shows the cook's level + rank, a "Rewards" affordance, and an XP bar with
-// a one-line label beneath it.
+// a one-line label beneath it. Level/XP are real (GET /getGamification, derived
+// from the user's activity).
 //
-// TODO(Phase 4): the level data is a placeholder (see accountPlaceholders.ts) and
-// the click currently just toasts. Wire to the real rewards/achievements screen
-// + XP engine when that lands.
-const lvl = levelPlaceholder
+// TODO(Phase 5): the click toasts for now — wire to the rewards/achievements
+// gallery when that screen lands.
+
+type LevelCardProps = {
+  level: number
+  rank: string
+  xp: number // progress within the current level
+  xpNext: number // XP needed to clear the current level
+  pct: number
+}
 
 const onRewards = () => toast('Rewards & badges coming soon')
 
-const LevelCard: FC = () => (
+const LevelCard: FC<LevelCardProps> = ({ level, rank, xp, xpNext, pct }) => (
   <button className='acct-levelcard' onClick={onRewards}>
     <div className='acct-levelcard-top'>
       <span className='acct-lvl-chip'>
-        <span className='acct-lvl-chip-num'>Lv {lvl.level}</span>
-        {lvl.rank}
+        <span className='acct-lvl-chip-num'>Lv {level}</span>
+        {rank}
       </span>
       <span className='acct-rewards-cta'>
         Rewards <span aria-hidden>›</span>
@@ -26,11 +32,10 @@ const LevelCard: FC = () => (
     </div>
     <div className='acct-xpbar'>
       <div className='acct-xpbar-track'>
-        <div className='acct-xpbar-fill' style={{ width: `${lvl.pct}%` }} />
+        <div className='acct-xpbar-fill' style={{ width: `${pct}%` }} />
       </div>
       <span className='acct-xpbar-label'>
-        {lvl.xp.toLocaleString()} / {lvl.xpNext.toLocaleString()} XP to Level{' '}
-        {lvl.level + 1}
+        {xp.toLocaleString()} / {xpNext.toLocaleString()} XP to Level {level + 1}
       </span>
     </div>
   </button>

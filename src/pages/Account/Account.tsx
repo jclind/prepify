@@ -2,9 +2,11 @@ import React, { FC, useEffect } from 'react'
 import { useLocation, useNavigate, Outlet, Link } from 'react-router-dom'
 import './Account.scss'
 import { Helmet } from 'react-helmet-async'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import toast from 'react-hot-toast'
 import AuthAPI from 'src/api/auth'
 import RecipeAPI from 'src/api/recipes'
+import GamificationAPI from 'src/api/gamification'
 import { useAuth } from 'src/context/AuthContext'
 import LevelCard from 'src/pages/Account/components/LevelCard'
 import ProfileControls from 'src/pages/Account/components/ProfileControls'
@@ -23,6 +25,7 @@ const Account: FC = () => {
 
   const location = useLocation()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
 
   const authRes = useAuth()
   const user = authRes?.user
@@ -44,6 +47,36 @@ const Account: FC = () => {
     queryFn: () => RecipeAPI.getAccountCounts(),
     enabled: !!uid,
   })
+
+  const { data: gamification } = useQuery({
+    queryKey: ['gamification', uid],
+    queryFn: () => GamificationAPI.getGamification(),
+    enabled: !!uid,
+  })
+
+  // Celebrate any achievements earned since the user last looked, then mark them
+  // acknowledged so the toast won't fire again on the next load. Several can
+  // unlock at once (e.g. a new user's first visit), so collapse those into one
+  // summary toast rather than stacking a wall of them.
+  useEffect(() => {
+    if (!gamification || gamification.newlyUnlocked.length === 0) return
+    const byId = new Map(gamification.achievements.map(a => [a.id, a]))
+    const names = gamification.newlyUnlocked
+      .map(id => byId.get(id)?.name)
+      .filter((n): n is string => !!n)
+    if (names.length === 1) {
+      toast.success(`🏅 Achievement unlocked: ${names[0]}`)
+    } else if (names.length > 1) {
+      toast.success(`🏅 ${names.length} achievements unlocked!`)
+    }
+    GamificationAPI.acknowledgeAchievements(gamification.newlyUnlocked)
+      .then(() =>
+        queryClient.invalidateQueries({ queryKey: ['gamification', uid] })
+      )
+      .catch(() => {
+        // Non-fatal: if the ack fails, the toast simply re-fires next load.
+      })
+  }, [gamification, uid, queryClient])
 
   const username = user?.displayName ?? data ?? ''
   const displayName = user?.displayName ?? username
@@ -105,7 +138,15 @@ const Account: FC = () => {
           </div>
 
           <div className='acct-side'>
-            <LevelCard />
+            {gamification && (
+              <LevelCard
+                level={gamification.level}
+                rank={gamification.rank}
+                xp={gamification.xp}
+                xpNext={gamification.xpNext}
+                pct={gamification.pct}
+              />
+            )}
             <ProfileControls />
           </div>
         </header>

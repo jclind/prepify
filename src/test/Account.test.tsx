@@ -7,6 +7,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import Account from 'src/pages/Account/Account'
 import AuthAPI from 'src/api/auth'
 import RecipeAPI from 'src/api/recipes'
+import GamificationAPI from 'src/api/gamification'
+import toast from 'react-hot-toast'
 import { useAuth } from 'src/context/AuthContext'
 
 vi.mock('src/api/auth', () => ({
@@ -25,6 +27,17 @@ vi.mock('src/api/recipes', () => ({
   },
 }))
 
+vi.mock('src/api/gamification', () => ({
+  default: {
+    getGamification: vi.fn().mockResolvedValue(null),
+    acknowledgeAchievements: vi.fn().mockResolvedValue(undefined),
+  },
+}))
+
+vi.mock('react-hot-toast', () => ({
+  default: { success: vi.fn(), error: vi.fn() },
+}))
+
 vi.mock('src/context/AuthContext', () => ({
   useAuth: vi.fn().mockReturnValue({ user: null }),
 }))
@@ -34,6 +47,13 @@ const mockGetUsername = AuthAPI.getUsername as ReturnType<typeof vi.fn>
 const mockGetAccountCounts = RecipeAPI.getAccountCounts as ReturnType<
   typeof vi.fn
 >
+const mockGetGamification = GamificationAPI.getGamification as ReturnType<
+  typeof vi.fn
+>
+const mockAcknowledge = GamificationAPI.acknowledgeAchievements as ReturnType<
+  typeof vi.fn
+>
+const mockToastSuccess = toast.success as ReturnType<typeof vi.fn>
 const mockUseAuth = useAuth as ReturnType<typeof vi.fn>
 
 const createTestQueryClient = () =>
@@ -82,6 +102,11 @@ describe('Account page', () => {
       recipes: 0,
       drafts: 0,
     })
+    mockGetGamification.mockReset()
+    mockGetGamification.mockResolvedValue(null)
+    mockAcknowledge.mockReset()
+    mockAcknowledge.mockResolvedValue(undefined)
+    mockToastSuccess.mockReset()
     mockUseAuth.mockReturnValue({ user: null })
   })
 
@@ -143,6 +168,84 @@ describe('Account page', () => {
       expect(screen.getByText('2')).toBeInTheDocument()
       // ...while zero counts render no badge (0 is never shown).
       expect(screen.queryByText('0')).not.toBeInTheDocument()
+    })
+  })
+
+  describe('achievement unlock toast', () => {
+    const gamificationWith = (newlyUnlocked: string[]) => ({
+      level: 2,
+      rank: 'New Cook',
+      xp: 20,
+      xpNext: 200,
+      pct: 10,
+      totalXp: 120,
+      achievements: [
+        {
+          id: 'first_save',
+          name: 'First Save',
+          description: 'Saved your first recipe.',
+          earned: true,
+        },
+        {
+          id: 'first_recipe',
+          name: 'First Recipe',
+          description: 'Published your first recipe.',
+          earned: true,
+        },
+      ],
+      earned: ['first_save', 'first_recipe'],
+      newlyUnlocked,
+    })
+
+    it('toasts and acknowledges newly-unlocked achievements', async () => {
+      mockGetUID.mockReturnValue('u1')
+      mockUseAuth.mockReturnValue({
+        user: { displayName: 'Jane', photoURL: null, uid: 'u1' },
+      })
+      mockGetGamification.mockResolvedValue(gamificationWith(['first_save']))
+      renderAccount()
+
+      await waitFor(() =>
+        expect(mockToastSuccess).toHaveBeenCalledWith(
+          expect.stringContaining('First Save')
+        )
+      )
+      expect(mockAcknowledge).toHaveBeenCalledWith(['first_save'])
+    })
+
+    it('collapses several simultaneous unlocks into one summary toast', async () => {
+      mockGetUID.mockReturnValue('u1')
+      mockUseAuth.mockReturnValue({
+        user: { displayName: 'Jane', photoURL: null, uid: 'u1' },
+      })
+      mockGetGamification.mockResolvedValue(
+        gamificationWith(['first_save', 'first_recipe'])
+      )
+      renderAccount()
+
+      await waitFor(() =>
+        expect(mockToastSuccess).toHaveBeenCalledWith(
+          expect.stringContaining('2 achievements unlocked')
+        )
+      )
+      // One summary toast, not one per achievement.
+      expect(mockToastSuccess).toHaveBeenCalledTimes(1)
+      expect(mockAcknowledge).toHaveBeenCalledWith(['first_save', 'first_recipe'])
+    })
+
+    it('does not toast when there are no new unlocks', async () => {
+      mockGetUID.mockReturnValue('u1')
+      mockUseAuth.mockReturnValue({
+        user: { displayName: 'Jane', photoURL: null, uid: 'u1' },
+      })
+      mockGetGamification.mockResolvedValue(gamificationWith([]))
+      renderAccount()
+
+      // Level card renders from the gamification data...
+      expect(await screen.findByText('Lv 2')).toBeInTheDocument()
+      // ...but nothing was newly unlocked, so no toast / acknowledge.
+      expect(mockToastSuccess).not.toHaveBeenCalled()
+      expect(mockAcknowledge).not.toHaveBeenCalled()
     })
   })
 

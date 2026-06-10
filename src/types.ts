@@ -196,3 +196,24 @@ export type AccountTabCounts = {
   recipes: number
   drafts: number
 }
+
+// Gamification state for the account header, returned by GET /getGamification.
+// Everything is derived server-side from the account counts; `newlyUnlocked`
+// lists earned-but-unacknowledged achievement ids (drives the unlock toast).
+export type Achievement = {
+  id: string
+  name: string
+  description: string
+  earned: boolean
+}
+export type Gamification = {
+  level: number
+  rank: string
+  xp: number // progress within the current level
+  xpNext: number // XP needed to clear the current level
+  pct: number // 0–100
+  totalXp: number
+  achievements: Achievement[]
+  earned: string[]
+  newlyUnlocked: string[]
+}
