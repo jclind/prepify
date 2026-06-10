@@ -120,6 +120,61 @@ describe('GET /recipes', () => {
   })
 })
 
+// ─── GET /recipes — sorting & meal filter ─────────────────────────────────────
+
+describe('GET /recipes sorting & meal filter', () => {
+  beforeEach(async () => {
+    const db = getDB()
+    // Distinct price / time / createdAt / saves so order is unambiguous.
+    await db.collection('recipes').insertMany([
+      { ...BASE_RECIPE, _id: 's-a', title: 'Alpha', mealTypes: ['breakfast'], nutritionLabels: ['vegan'], servingPrice: 100, totalTime: 10, createdAt: '3000', numTimesSaved: 5 },
+      { ...BASE_RECIPE, _id: 's-b', title: 'Bravo', mealTypes: ['dinner'], nutritionLabels: [], servingPrice: 300, totalTime: 50, createdAt: '1000', numTimesSaved: 1 },
+      { ...BASE_RECIPE, _id: 's-c', title: 'Charlie', mealTypes: ['lunch', 'dinner'], nutritionLabels: ['vegan'], servingPrice: 200, totalTime: 30, createdAt: '2000', numTimesSaved: 9 },
+    ])
+  })
+
+  const firstId = async (order) => {
+    const res = await request(app).get(`/api/recipes?order=${order}`)
+    expect(res.status).toBe(200)
+    return res.body.recipeList[0]._id
+  }
+
+  it('cheapest → lowest servingPrice first', async () => {
+    expect(await firstId('cheapest')).toBe('s-a')
+  })
+  it('expensive → highest servingPrice first', async () => {
+    expect(await firstId('expensive')).toBe('s-b')
+  })
+  it('shortest → lowest totalTime first', async () => {
+    expect(await firstId('shortest')).toBe('s-a')
+  })
+  it('longest → highest totalTime first', async () => {
+    expect(await firstId('longest')).toBe('s-b')
+  })
+  it('new → newest createdAt first', async () => {
+    expect(await firstId('new')).toBe('s-a')
+  })
+  it('old → oldest createdAt first', async () => {
+    expect(await firstId('old')).toBe('s-b')
+  })
+  it('popular → most-saved first', async () => {
+    expect(await firstId('popular')).toBe('s-c')
+  })
+
+  it('mealTypes filters to recipes with that meal', async () => {
+    const res = await request(app).get('/api/recipes?mealTypes=dinner')
+    expect(res.status).toBe(200)
+    expect(res.body.recipeList.map((r) => r._id).sort()).toEqual(['s-b', 's-c'])
+  })
+
+  it('mealTypes AND tags (diet) combine', async () => {
+    const res = await request(app).get('/api/recipes?mealTypes=dinner&tags=vegan')
+    expect(res.status).toBe(200)
+    expect(res.body.recipeList).toHaveLength(1)
+    expect(res.body.recipeList[0]._id).toBe('s-c')
+  })
+})
+
 // ─── POST /addRecipe ──────────────────────────────────────────────────────────
 
 describe('POST /addRecipe', () => {
