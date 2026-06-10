@@ -1,4 +1,4 @@
-import React, { FC, useState, useEffect, useRef } from 'react'
+import React, { FC, useState, useEffect, useRef, useId } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AiOutlineSearch, AiOutlineStar, AiOutlineUser } from 'react-icons/ai'
 import { CgTimer } from 'react-icons/cg'
@@ -46,6 +46,7 @@ const SearchRecipesInput: FC<SearchRecipesInputProps> = ({
   defaultVal,
   autoComplete,
 }) => {
+  const inputId = useId()
   const [searchRecipeVal, setSearchRecipeVal] = useState(defaultVal || '')
   const [debouncedQuery, setDebouncedQuery] = useState(defaultVal || '')
 
@@ -94,14 +95,13 @@ const SearchRecipesInput: FC<SearchRecipesInputProps> = ({
       className='search-recipes-form'
       ref={wrapperRef}
     >
-      <label
-        htmlFor='.search-recipes-input'
-        className='search-recipes-input-label'
-      >
+      <label htmlFor={inputId} className='search-recipes-input-label'>
         <AiOutlineSearch className='icon' />
         <input
+          id={inputId}
           className='search-recipes-input'
           placeholder='Search All Recipes'
+          aria-label='Search all recipes'
           onChange={e => setSearchRecipeVal(e.target.value)}
           value={searchRecipeVal}
           onFocus={() => setIsBlurred(false)}
