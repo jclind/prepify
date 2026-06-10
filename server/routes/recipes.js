@@ -18,7 +18,8 @@ router.get('/recipes', async (req, res) => {
   // TODO: no auth required for browse; individual write routes below need auth
   try {
     const db = getDB()
-    const { q, page = 0, recipesPerPage = 5, order, cuisine, tags } = req.query
+    const { q, page = 0, recipesPerPage = 5, order, cuisine, tags, mealTypes } =
+      req.query
     const skip = parseInt(page) * parseInt(recipesPerPage)
     const limit = parseInt(recipesPerPage)
 
@@ -39,6 +40,15 @@ router.get('/recipes', async (req, res) => {
           { mealTypes: { $in: tagList } },
           { nutritionLabels: { $in: tagList } },
         ]
+      }
+    }
+
+    // Separate meal-type filter (AND'd with the rest): recipes matching any of
+    // the selected meal types.
+    if (mealTypes) {
+      const mealList = mealTypes.split(',').map((m) => m.trim()).filter(Boolean)
+      if (mealList.length > 0) {
+        filter.mealTypes = { $in: mealList }
       }
     }
 
