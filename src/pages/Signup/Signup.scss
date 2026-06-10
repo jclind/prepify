@@ -1,14 +1,38 @@
 @use '../../helpers.scss' as s;
 
 .signup-page {
-  // Consent notice below the signup buttons (sign-in-wrap): conspicuous but
-  // low-key, with the legal links emphasized so the notice reads clearly.
+  // The global `html`/`#root { overflow: hidden }` means the document itself
+  // can't scroll, and this route isn't wrapped in <Layout> (which owns the
+  // app's scroll container). Without this, once the form + consent notice
+  // exceed the viewport the notice is clipped with no way to reach it. Give the
+  // page its own full-height scroll context so the notice is always reachable.
+  &.form-format {
+    height: 100vh;
+    overflow-y: auto;
+    // Replace the shared 8rem top margin with top padding inside the scroll
+    // box (smaller on phones); bottom padding keeps the notice off the edge.
+    margin-top: 0;
+    padding: 5rem 1rem 2.5rem;
+
+    @media (min-width: 600px) {
+      padding-top: 6rem;
+    }
+  }
+
+  // Tighten the gap before the primary button (shared FormStyles uses 3rem) so
+  // the whole form + consent notice fits above the fold on more screens.
+  .form-action-btn {
+    margin-top: 2rem;
+  }
+
+  // Consent notice below both signup buttons. Use secondary (not tertiary) text
+  // so it's legible, and give it a little more separation from the buttons.
   .terms-consent {
-    margin-top: 1.5rem;
+    margin-top: 1.75rem;
     text-align: center;
     font-size: 0.8125rem;
     line-height: 1.5;
-    color: s.$tertiary-text;
+    color: s.$secondary-text;
 
     .terms-consent-link {
       color: s.$secondary;
