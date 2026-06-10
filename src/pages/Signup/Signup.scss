@@ -1,0 +1,23 @@
+@use '../../helpers.scss' as s;
+
+.signup-page {
+  // Consent notice below the signup buttons (sign-in-wrap): conspicuous but
+  // low-key, with the legal links emphasized so the notice reads clearly.
+  .terms-consent {
+    margin-top: 1.5rem;
+    text-align: center;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    color: s.$tertiary-text;
+
+    .terms-consent-link {
+      color: s.$secondary;
+      font-weight: 600;
+      text-decoration: none;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+}
