@@ -8,8 +8,11 @@ import SearchRecipesInput from 'src/Components/SearchRecipesInput/SearchRecipesI
 import { Helmet } from 'react-helmet-async'
 import RecipeAPI from 'src/api/recipes'
 import { TailSpin } from 'react-loader-spinner'
+import RecipesSwitcher from './redesign/RecipesSwitcher'
+import { useRecipesTake } from './redesign/variantStore'
+import { getTake } from './redesign/registry'
 
-const Recipes: FC = () => {
+const RecipesDefault: FC = () => {
   const [selectFilterVal, setSelectFilterVal] = useState('')
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [selectedCuisine, setSelectedCuisine] = useState('')
@@ -128,6 +131,35 @@ const Recipes: FC = () => {
           ) : null}
         </section>
       </div>
+    </>
+  )
+}
+
+/**
+ * Dispatcher: in dev, a selected redesign take replaces the production page so
+ * the takes can be compared live; the floating switcher is always mounted in
+ * dev. In prod, only the real page renders (the switcher self-guards to null).
+ */
+const Recipes: FC = () => {
+  const take = useRecipesTake()
+  const activeTake = import.meta.env.DEV ? getTake(take) : undefined
+
+  return (
+    <>
+      {activeTake ? (
+        <>
+          <Helmet>
+            <meta charSet='utf-8' />
+            <title>Prepify | Recipes — preview: {activeTake.label}</title>
+          </Helmet>
+          <div className='page'>
+            <activeTake.Component />
+          </div>
+        </>
+      ) : (
+        <RecipesDefault />
+      )}
+      <RecipesSwitcher />
     </>
   )
 }
