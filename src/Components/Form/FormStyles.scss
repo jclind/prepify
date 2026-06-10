@@ -1,10 +1,25 @@
 @use '../../helpers.scss' as s;
 
 .form-format {
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-top: 8rem;
+  // Own scroll context for the auth pages (login / signup / create-username /
+  // forgot-password): the app's `html`/`#root` use `overflow: hidden` and these
+  // routes aren't wrapped in <Layout> (which owns the app's scroll container),
+  // so a form taller than the viewport would otherwise be clipped with no way
+  // to scroll. border-box keeps the height inclusive of the padding. `dvh`
+  // tracks the *visible* viewport so the form's bottom (e.g. the signup consent
+  // notice) isn't trapped under the mobile browser toolbar; `vh` is the fallback
+  // for browsers without dvh support. Top padding replaces the old 8rem margin.
+  height: 100vh;
+  height: 100dvh;
+  overflow-y: auto;
+  // Top padding clears the absolute .abs-logo (≈ nav height); keep it modest so
+  // the forms don't sit too low. Deeper layout polish is deferred to a planned
+  // login/signup audit.
+  padding: 5rem 1rem 2rem;
   .form-container {
     max-width: 350px;
     width: 95%;
@@ -54,7 +69,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    margin-top: 3rem;
+    margin-top: 1.5rem;
 
     color: s.$primary-background;
     background: s.$secondary;

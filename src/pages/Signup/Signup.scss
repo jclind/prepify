@@ -1,0 +1,26 @@
+@use '../../helpers.scss' as s;
+
+// The full-height scroll container + top padding live on the shared
+// `.form-format` (FormStyles.scss), so all three auth pages get them. Only
+// signup-specific tweaks live here.
+.signup-page {
+  // Consent notice below both signup buttons. Use secondary (not tertiary) text
+  // so it's legible, and give it a little separation from the buttons.
+  .terms-consent {
+    margin-top: 1.75rem;
+    text-align: center;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    color: s.$secondary-text;
+
+    .terms-consent-link {
+      color: s.$secondary;
+      font-weight: 600;
+      text-decoration: none;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+}
