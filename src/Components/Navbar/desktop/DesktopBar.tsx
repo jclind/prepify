@@ -46,13 +46,16 @@ const DesktopBar: FC<DesktopNavProps> = data => {
       </div>
 
       <nav className='dnav__links' aria-label='Primary'>
-        <NavLink to='/recipes' className={linkClass}>
+        {/* aria-label keeps the name when the label collapses to an icon below
+            1000px (the icon SVG carries no accessible name on its own). */}
+        <NavLink to='/recipes' className={linkClass} aria-label='Recipes'>
           <MdOutlineRestaurantMenu className='dnav__link-icon' />
           <span className='dnav__link-label'>Recipes</span>
         </NavLink>
         {isLoggedIn && (
           <NavLink
             to='/add-recipe'
+            aria-label='Create Recipe'
             className={({ isActive }) =>
               `dnav__link dnav__create dnav__create--promoted${
                 isActive ? ' is-active' : ''
