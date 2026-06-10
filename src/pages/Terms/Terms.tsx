@@ -1,7 +1,6 @@
 import React, { FC } from 'react'
 import LegalDocument from 'src/pages/legal/LegalDocument'
-
-const SUPPORT_EMAIL = 'JesseLindCS@gmail.com'
+import { contactEmail } from 'src/Components/Footer/footerData'
 
 // Terms of Service. Boilerplate tailored to Prepify (user-generated recipes and
 // reviews, estimate-only nutrition/price data). Draft — see the visible notice
@@ -115,7 +114,7 @@ const Terms: FC = () => (
       <h2>Contact us</h2>
       <p>
         Questions about these terms? Email us at{' '}
-        <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.
+        <a href={`mailto:${contactEmail}`}>{contactEmail}</a>.
       </p>
     </section>
   </LegalDocument>
