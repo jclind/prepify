@@ -461,16 +461,24 @@
     border: 1px solid s.$gray-300;
     border-radius: 8px;
   }
+  // Secondary (neutral) button — deliberately NOT the orange accent. Uses the
+  // theme's text/border vars so it stays legible on the solid bar (dark text +
+  // gray border) and over the hero (light), with a quiet neutral hover.
   .dnav__create--promoted {
     background: none;
-    color: var(--dnav-accent);
-    border: 1.5px solid var(--dnav-accent);
+    color: var(--dnav-text);
+    border: 1.5px solid var(--dnav-border);
     .dnav__link-icon {
-      color: var(--dnav-accent);
+      color: var(--dnav-text);
     }
     &:hover {
       filter: none;
-      background: #{rgba(s.$primary, 0.08)};
+      background: var(--dnav-hover);
+      border-color: var(--dnav-text);
+    }
+    &.is-active {
+      color: var(--dnav-text);
+      border-color: var(--dnav-text);
     }
   }
   .dnav__icon-link {
