@@ -3,9 +3,8 @@
 .help-page {
   display: flex;
   justify-content: center;
-  min-height: calc(
-    100vh - #{s.$nav-height} - #{s.$footer-height} - #{s.$footer-margin}
-  );
+  // Fills the flexbox app-main; the app shell positions the footer (Layout.scss).
+  flex: 1 0 auto;
   .form-container {
     max-width: 400px;
     width: 90%;

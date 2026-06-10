@@ -1,9 +1,9 @@
 @use '../../helpers.scss' as s;
 
 .recipes-page {
-  min-height: calc(
-    100vh - #{s.$nav-height} - #{s.$footer-height} - #{s.$footer-margin} - 2rem
-  );
+  // Fills the flexbox app-main so the footer stays at the viewport bottom on
+  // short result sets; the app shell owns footer spacing (see Layout.scss).
+  flex: 1 0 auto;
   h1.title {
     text-align: center;
   }

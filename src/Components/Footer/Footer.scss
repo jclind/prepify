@@ -137,19 +137,6 @@ $inner-max: 1200px;
   padding-top: 1.5rem;
   border-top: 1px solid $footer-border;
 
-  .footer-legal-links {
-    list-style: none;
-    display: flex;
-    gap: 1.25rem;
-    a {
-      font-size: 0.82rem;
-      color: s.$secondary-text;
-      text-decoration: none;
-      font-weight: 600;
-      transition: color 0.12s ease;
-      &:hover { color: s.$primary; }
-    }
-  }
   .footer-version {
     margin-left: auto;
     color: s.$tertiary-text;

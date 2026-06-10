@@ -1,0 +1,63 @@
+import React from 'react'
+import { render, screen } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
+import Footer from 'src/Components/Footer/Footer'
+
+// The footer is presentational, but FooterLinkItem branches on `link.external`
+// to render a client-side <Link> vs a plain <a> — the one bit of real logic
+// worth pinning so a refactor can't silently break in-app routing or the
+// external/mailto/social links.
+const renderFooter = () =>
+  render(
+    <MemoryRouter>
+      <Footer />
+    </MemoryRouter>
+  )
+
+describe('Footer', () => {
+  it('renders internal nav links as client-side routes (href = path)', () => {
+    renderFooter()
+    expect(screen.getByRole('link', { name: 'All recipes' })).toHaveAttribute(
+      'href',
+      '/recipes'
+    )
+    expect(screen.getByRole('link', { name: 'Sign in' })).toHaveAttribute(
+      'href',
+      '/login'
+    )
+  })
+
+  it('renders external/placeholder and mailto links as plain anchors', () => {
+    renderFooter()
+    // Placeholder pages aren't built yet — they must stay '#', not become routes.
+    expect(screen.getByRole('link', { name: 'About' })).toHaveAttribute(
+      'href',
+      '#'
+    )
+    expect(screen.getByRole('link', { name: 'Contact' })).toHaveAttribute(
+      'href',
+      'mailto:JesseLindCS@gmail.com'
+    )
+  })
+
+  it('exposes accessible labels on social icons and opens them safely', () => {
+    renderFooter()
+    const instagram = screen.getByRole('link', { name: 'Instagram' })
+    expect(instagram).toHaveAttribute('target', '_blank')
+    expect(instagram).toHaveAttribute('rel', 'noopener noreferrer')
+  })
+
+  it('groups the link columns under a single labelled nav landmark', () => {
+    renderFooter()
+    expect(
+      screen.getByRole('navigation', { name: 'Footer' })
+    ).toBeInTheDocument()
+  })
+
+  it('shows the copyright line', () => {
+    renderFooter()
+    expect(
+      screen.getByText(`© ${new Date().getFullYear()} Prepify`)
+    ).toBeInTheDocument()
+  })
+})
