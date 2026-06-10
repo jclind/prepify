@@ -1,8 +1,9 @@
-import React, { FC, useState } from 'react'
+import React, { FC, useEffect, useState } from 'react'
 import Select, { SingleValue, StylesConfig } from 'react-select'
 import { useForm } from '@formspree/react'
 import './Help.scss'
 import { Helmet } from 'react-helmet-async'
+import { useAuth } from 'src/context/AuthContext'
 
 type OptionType = { value: string; label: string }
 
@@ -58,7 +59,10 @@ const customStyles: StylesConfig<OptionType> = {
 }
 
 const Help: FC = () => {
+  const user = useAuth()?.user
+
   const [selectOption, setSelectOption] = useState<OptionType | null>(null)
+  const [email, setEmail] = useState(user?.email ?? '')
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
 
@@ -66,11 +70,20 @@ const Help: FC = () => {
 
   const [formState, submitFormspree] = useForm('xknyboeq')
 
+  // Auth resolves async, so user is null on first render. Pre-fill the email
+  // once it loads, but don't clobber anything the visitor has already typed.
+  useEffect(() => {
+    if (user?.email) {
+      setEmail(prev => (prev === '' ? user.email ?? '' : prev))
+    }
+  }, [user])
+
   const handleSelectChange = (e: SingleValue<OptionType>) => {
     setSelectOption(e)
   }
   const clearForm = () => {
     setSelectOption(null)
+    setEmail(user?.email ?? '')
     setTitle('')
     setDescription('')
   }
@@ -126,6 +139,18 @@ const Help: FC = () => {
                   name='category'
                 />
               </div>
+              <label htmlFor='' className='email-input-label'>
+                <div className='text'>Email</div>
+                <input
+                  type='email'
+                  name='email'
+                  className='email-input'
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder='Enter your email'
+                  required={true}
+                />
+              </label>
               <label htmlFor='' className='title-input-label'>
                 <div className='text'>Title</div>
                 <input
