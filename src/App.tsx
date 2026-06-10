@@ -23,6 +23,7 @@ import Layout from 'src/Components/Layout/Layout'
 import Help from 'src/pages/Help/Help'
 import NotFound from 'src/pages/404/404'
 import SingleRecipe from 'src/pages/SingleRecipe/SingleRecipe'
+import LegalPlaceholder from 'src/pages/legal/LegalPlaceholder'
 
 import { Toaster } from 'react-hot-toast'
 import Settings from 'src/pages/Settings/Settings'
@@ -74,6 +75,42 @@ const App: FC = () => {
               element={
                 <Layout darkNavLinks={true}>
                   <SingleRecipe />
+                </Layout>
+              }
+            />
+
+            {/* Company/legal pages — stub placeholders for now; real content is
+                written in a follow-up (see docs/LEGAL_PAGES_PROMPT.md). */}
+            <Route
+              path='/about'
+              element={
+                <Layout darkNavLinks={true}>
+                  <LegalPlaceholder
+                    title='About'
+                    intro='Learn more about Prepify and the team behind it.'
+                  />
+                </Layout>
+              }
+            />
+            <Route
+              path='/privacy'
+              element={
+                <Layout darkNavLinks={true}>
+                  <LegalPlaceholder
+                    title='Privacy Policy'
+                    intro='How Prepify collects, uses, and protects your data.'
+                  />
+                </Layout>
+              }
+            />
+            <Route
+              path='/terms'
+              element={
+                <Layout darkNavLinks={true}>
+                  <LegalPlaceholder
+                    title='Terms of Service'
+                    intro='The terms and conditions for using Prepify.'
+                  />
                 </Layout>
               }
             />

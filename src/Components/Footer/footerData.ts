@@ -10,7 +10,7 @@ import pjson from '../../../package.json'
 export const version = pjson.version
 export const contactEmail = 'JesseLindCS@gmail.com'
 export const longTagline =
-  'Real recipes with the prices and nutrition baked in — so you can plan, shop, and cook with zero guesswork.'
+  'Real recipes with the prices and nutrition baked in. Plan, shop and cook with zero guesswork.'
 
 export type FooterLink = {
   label: string
@@ -26,10 +26,12 @@ export const footerColumns: FooterColumn[] = [
   {
     heading: 'Discover',
     links: [
+      { label: 'Home', to: '/' },
       { label: 'All recipes', to: '/recipes' },
-      { label: 'Trending', to: '/recipes' },
-      { label: 'Add a recipe', to: '/add-recipe' },
-      { label: 'Help', to: '/help' },
+      // Both require auth (PrivateRoute) — only show them to signed-in users so
+      // logged-out visitors aren't bounced to the login wall from the footer.
+      { label: 'Add a recipe', to: '/add-recipe', auth: 'in' },
+      { label: 'Help', to: '/help', auth: 'in' },
     ],
   },
   {
@@ -44,10 +46,10 @@ export const footerColumns: FooterColumn[] = [
   {
     heading: 'Company',
     links: [
-      { label: 'About', to: '#', external: true },
+      { label: 'About', to: '/about' },
       { label: 'Contact', to: `mailto:${contactEmail}`, external: true },
-      { label: 'Privacy', to: '#', external: true },
-      { label: 'Terms', to: '#', external: true },
+      { label: 'Privacy', to: '/privacy' },
+      { label: 'Terms', to: '/terms' },
     ],
   },
 ]

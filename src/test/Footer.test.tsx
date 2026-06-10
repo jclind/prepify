@@ -26,23 +26,23 @@ describe('Footer', () => {
 
   it('renders internal nav links as client-side routes (href = path)', () => {
     renderFooter()
+    expect(screen.getByRole('link', { name: 'Home' })).toHaveAttribute(
+      'href',
+      '/'
+    )
     expect(screen.getByRole('link', { name: 'All recipes' })).toHaveAttribute(
       'href',
       '/recipes'
     )
-    expect(screen.getByRole('link', { name: 'Add a recipe' })).toHaveAttribute(
+    // Legal pages are real (stub) routes now, not dead '#' anchors.
+    expect(screen.getByRole('link', { name: 'About' })).toHaveAttribute(
       'href',
-      '/add-recipe'
+      '/about'
     )
   })
 
-  it('renders external/placeholder and mailto links as plain anchors', () => {
+  it('renders the mailto contact link as a plain anchor', () => {
     renderFooter()
-    // Placeholder pages aren't built yet — they must stay '#', not become routes.
-    expect(screen.getByRole('link', { name: 'About' })).toHaveAttribute(
-      'href',
-      '#'
-    )
     expect(screen.getByRole('link', { name: 'Contact' })).toHaveAttribute(
       'href',
       'mailto:JesseLindCS@gmail.com'
@@ -98,6 +98,19 @@ describe('Footer', () => {
       expect(
         screen.queryByRole('link', { name: 'Create account' })
       ).not.toBeInTheDocument()
+    })
+
+    it('reveals the auth-gated Discover links when signed in', () => {
+      // Hidden when signed out so logged-out users aren't sent to the login wall.
+      authState.user = { uid: 'abc123' }
+      renderFooter()
+      expect(
+        screen.getByRole('link', { name: 'Add a recipe' })
+      ).toHaveAttribute('href', '/add-recipe')
+      expect(screen.getByRole('link', { name: 'Help' })).toHaveAttribute(
+        'href',
+        '/help'
+      )
     })
   })
 })
