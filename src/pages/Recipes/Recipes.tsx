@@ -10,6 +10,7 @@ import SearchRecipesInput from 'src/Components/SearchRecipesInput/SearchRecipesI
 import RecipeAPI from 'src/api/recipes'
 import { dietLabelsOptions } from 'src/recipeData/dietLabels'
 import cuisinesList from 'src/recipeData/cuisinesList'
+import mealTypesList from 'src/recipeData/mealTypesList'
 
 const RECIPES_PER_PAGE = 9
 
@@ -37,6 +38,7 @@ const Recipes: FC = () => {
   const [sort, setSort] = useState('popular')
   const [diets, setDiets] = useState<string[]>([])
   const [cuisine, setCuisine] = useState('')
+  const [meals, setMeals] = useState<string[]>([])
   // Gate the query until the initial URL params have been read into state, so
   // we don't fire a default fetch and then immediately refetch with filters.
   const [filtersLoading, setFiltersLoading] = useState(true)
@@ -50,6 +52,7 @@ const Recipes: FC = () => {
     setSort(params.get('order') || 'popular')
     setDiets(params.get('dietTags')?.split(',').filter(Boolean) ?? [])
     setCuisine(params.get('cuisine') ?? '')
+    setMeals(params.get('mealTypes')?.split(',').filter(Boolean) ?? [])
     setFiltersLoading(false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -71,14 +74,17 @@ const Recipes: FC = () => {
     sort?: string
     diets?: string[]
     cuisine?: string
+    meals?: string[]
   }) => {
     const params = new URLSearchParams(location.search)
     const s = next.sort ?? sort
     const d = next.diets ?? diets
     const c = next.cuisine ?? cuisine
+    const m = next.meals ?? meals
     s && s !== 'popular' ? params.set('order', s) : params.delete('order')
     d.length ? params.set('dietTags', d.join(',')) : params.delete('dietTags')
     c ? params.set('cuisine', c) : params.delete('cuisine')
+    m.length ? params.set('mealTypes', m.join(',')) : params.delete('mealTypes')
     navigate(`/recipes?${params.toString()}`)
   }
 
@@ -99,15 +105,26 @@ const Recipes: FC = () => {
     setCuisine(next)
     syncUrl({ cuisine: next })
   }
+  const toggleMeal = (value: string) => {
+    const next = meals.includes(value)
+      ? meals.filter(m => m !== value)
+      : [...meals, value]
+    setMeals(next)
+    syncUrl({ meals: next })
+  }
   const clearFilters = () => {
     setDiets([])
     setCuisine('')
-    syncUrl({ diets: [], cuisine: '' })
+    setMeals([])
+    syncUrl({ diets: [], cuisine: '', meals: [] })
   }
 
   const { data, isFetching, isError, fetchNextPage, hasNextPage } =
     useInfiniteQuery({
-      queryKey: ['recipes', { sort, tags: diets, cuisine, search: query }],
+      queryKey: [
+        'recipes',
+        { sort, tags: diets, cuisine, search: query, meals },
+      ],
       queryFn: ({ pageParam }) =>
         RecipeAPI.getAllRecipes(
           pageParam as number,
@@ -115,7 +132,8 @@ const Recipes: FC = () => {
           diets,
           cuisine,
           RECIPES_PER_PAGE,
-          query
+          query,
+          meals
         ),
       initialPageParam: 0,
       getNextPageParam: (lastPage, allPages) => {
@@ -133,7 +151,7 @@ const Recipes: FC = () => {
 
   const recipeList = data?.pages.flatMap(p => p.recipeList) ?? []
   const totalResults = data?.pages[0]?.total_results ?? null
-  const activeFilterCount = diets.length + (cuisine ? 1 : 0)
+  const activeFilterCount = diets.length + meals.length + (cuisine ? 1 : 0)
   const hasResults = recipeList.length > 0
   const isInitialLoading = !data && !isError
 
@@ -217,6 +235,15 @@ const Recipes: FC = () => {
                 onClick={() => toggleDiet(d)}
               >
                 {dietLabelOf(d)} ✕
+              </button>
+            ))}
+            {meals.map(m => (
+              <button
+                key={m}
+                className='recipes-active__chip'
+                onClick={() => toggleMeal(m)}
+              >
+                {m} ✕
               </button>
             ))}
             <button className='recipes-active__clear' onClick={clearFilters}>
@@ -320,6 +347,22 @@ const Recipes: FC = () => {
                         onClick={() => changeCuisine(c)}
                       >
                         {c}
+                      </button>
+                    ))}
+                  </div>
+                </section>
+                <section>
+                  <h3>Meal</h3>
+                  <div className='recipes-drawer__chips'>
+                    {mealTypesList.map(m => (
+                      <button
+                        key={m}
+                        className={`recipes-chip ${
+                          meals.includes(m) ? 'is-active' : ''
+                        }`}
+                        onClick={() => toggleMeal(m)}
+                      >
+                        {m}
                       </button>
                     ))}
                   </div>

@@ -34,15 +34,21 @@ class RecipeAPIClass {
     tags: string[] = [],
     cuisine: string = '',
     recipesPerPage = 5,
-    query = ''
+    query = '',
+    mealTypes: string[] = []
   ): Promise<RecipeDBResponseType> {
     let tagsArrParam = '' // For tags that have been chosen
     if (tags.length > 0) {
       tagsArrParam += `&tags=${tags.join(',')}`
     }
 
+    let mealTypesParam = ''
+    if (mealTypes.length > 0) {
+      mealTypesParam += `&mealTypes=${encodeURIComponent(mealTypes.join(','))}`
+    }
+
     const result = await http.get(
-      `api/recipes?q=${query}&page=${page}&recipesPerPage=${recipesPerPage}&order=${order}&cuisine=${cuisine}${tagsArrParam}`
+      `api/recipes?q=${query}&page=${page}&recipesPerPage=${recipesPerPage}&order=${order}&cuisine=${cuisine}${tagsArrParam}${mealTypesParam}`
     )
     return result.data
   }

@@ -190,7 +190,7 @@ describe('Recipes (Browse) page', () => {
     await user.click(screen.getByText('Load more recipes'))
 
     await waitFor(() =>
-      expect(mockGetAllRecipes).toHaveBeenCalledWith(1, expect.anything(), expect.anything(), expect.anything(), expect.anything(), expect.anything())
+      expect(mockGetAllRecipes).toHaveBeenCalledWith(1, expect.anything(), expect.anything(), expect.anything(), expect.anything(), expect.anything(), expect.anything())
     )
   })
 
@@ -253,6 +253,7 @@ describe('Recipes (Browse) page', () => {
         expect.anything(),
         expect.anything(),
         expect.anything(),
+        expect.anything(),
         expect.anything()
       )
     )
@@ -276,7 +277,8 @@ describe('Recipes (Browse) page', () => {
         expect.anything(),
         expect.anything(),
         expect.anything(),
-        'taco tuesday'
+        'taco tuesday',
+        expect.anything()
       )
     )
   })
