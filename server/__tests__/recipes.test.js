@@ -192,6 +192,31 @@ describe('GET /recipes sorting & meal filter', () => {
   })
 })
 
+// ─── GET /recipes — diet filter (conjunctive / AND) ───────────────────────────
+
+describe('GET /recipes diet filter (AND)', () => {
+  beforeEach(async () => {
+    const db = getDB()
+    await db.collection('recipes').insertMany([
+      { ...BASE_RECIPE, _id: 'd-1', title: 'Both', nutritionLabels: ['vegan', 'gluten-free'] },
+      { ...BASE_RECIPE, _id: 'd-2', title: 'VeganOnly', nutritionLabels: ['vegan'] },
+      { ...BASE_RECIPE, _id: 'd-3', title: 'GfOnly', nutritionLabels: ['gluten-free'] },
+    ])
+  })
+
+  it('a single diet matches any recipe carrying it', async () => {
+    const res = await request(app).get('/api/recipes?diets=vegan')
+    expect(res.status).toBe(200)
+    expect(res.body.recipeList.map((r) => r._id).sort()).toEqual(['d-1', 'd-2'])
+  })
+
+  it('multiple diets require ALL labels (AND, not OR)', async () => {
+    const res = await request(app).get('/api/recipes?diets=vegan,gluten-free')
+    expect(res.status).toBe(200)
+    expect(res.body.recipeList.map((r) => r._id)).toEqual(['d-1'])
+  })
+})
+
 // ─── POST /addRecipe ──────────────────────────────────────────────────────────
 
 describe('POST /addRecipe', () => {

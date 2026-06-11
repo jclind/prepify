@@ -121,19 +121,17 @@ const Recipes: FC = () => {
 
   const { data, isFetching, isError, fetchNextPage, hasNextPage } =
     useInfiniteQuery({
-      queryKey: [
-        'recipes',
-        { sort, tags: diets, cuisine, search: query, meals },
-      ],
+      queryKey: ['recipes', { sort, diets, cuisine, search: query, meals }],
       queryFn: ({ pageParam }) =>
         RecipeAPI.getAllRecipes(
           pageParam as number,
           sort,
-          diets,
+          [], // `tags` (OR-based) is unused here — diets go via the dedicated param
           cuisine,
           RECIPES_PER_PAGE,
           query,
-          meals
+          meals,
+          diets
         ),
       initialPageParam: 0,
       getNextPageParam: (lastPage, allPages) => {
