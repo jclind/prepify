@@ -65,6 +65,23 @@ describe('gamification engine', () => {
       ['first_recipe', 'first_review'].sort()
     )
   })
+
+  it('earns threshold achievements exactly at their cutoffs', () => {
+    const earned = c => computeGamification(c, []).earned
+    // collector: 25 saves
+    expect(earned({ saved: 24, ratings: 0, recipes: 0 })).not.toContain(
+      'collector'
+    )
+    expect(earned({ saved: 25, ratings: 0, recipes: 0 })).toContain('collector')
+    // prolific: 10 recipes
+    expect(earned({ saved: 0, ratings: 0, recipes: 9 })).not.toContain(
+      'prolific'
+    )
+    expect(earned({ saved: 0, ratings: 0, recipes: 10 })).toContain('prolific')
+    // critic: 10 reviews
+    expect(earned({ saved: 0, ratings: 9, recipes: 0 })).not.toContain('critic')
+    expect(earned({ saved: 0, ratings: 10, recipes: 0 })).toContain('critic')
+  })
 })
 
 // ─── GET /getGamification ────────────────────────────────────────────────────
@@ -93,6 +110,25 @@ describe('GET /getGamification', () => {
     expect(res.body.totalXp).toBe(0)
     expect(res.body.earned).toEqual([])
     expect(res.body.newlyUnlocked).toEqual([])
+  })
+
+  // Contract guard: the frontend Gamification type mocks this exact shape, so a
+  // dropped/renamed field here would drift past the mocked FE tests. Pin it.
+  it('returns exactly the gamification contract fields', async () => {
+    const res = await request(app).get('/api/getGamification').set(AUTH_HEADER)
+    expect(Object.keys(res.body).sort()).toEqual(
+      [
+        'achievements',
+        'earned',
+        'level',
+        'newlyUnlocked',
+        'pct',
+        'rank',
+        'totalXp',
+        'xp',
+        'xpNext',
+      ].sort()
+    )
   })
 
   it('derives level + achievements from the account counts', async () => {

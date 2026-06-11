@@ -7,6 +7,7 @@ const {
   seedUser,
   seedRating,
 } = require('./helpers/seed')
+const { getAccountCountsFor } = require('../util/accountCounts')
 
 const TEST_UID = 'test-uid'
 const AUTH_HEADER = { Authorization: 'Bearer fake-test-token' }
@@ -207,6 +208,24 @@ describe('GET /getCreatedRecipes', () => {
     expect(res.status).toBe(200)
     expect(res.body.recipes).toHaveLength(1)
     expect(res.body.recipes[0]._id).toBe('r1')
+  })
+})
+
+// ─── getAccountCountsFor (shared helper) ──────────────────────────────────────
+
+describe('getAccountCountsFor', () => {
+  it('gives the same result whether or not the username is passed in', async () => {
+    await seedUser(TEST_UID, 'testuser')
+    await seedRating({ username: 'testuser', recipeId: 'x', rating: 5 })
+    await seedRecipes([{ _id: 'c1', userId: TEST_UID }])
+
+    const db = getDB()
+    const lookedUp = await getAccountCountsFor(db, TEST_UID)
+    const passedIn = await getAccountCountsFor(db, TEST_UID, 'testuser')
+
+    expect(passedIn).toEqual(lookedUp)
+    expect(passedIn.ratings).toBe(1)
+    expect(passedIn.recipes).toBe(1)
   })
 })
 

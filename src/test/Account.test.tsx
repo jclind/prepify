@@ -1,6 +1,6 @@
 import React from 'react'
 import { vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import { HelmetProvider } from 'react-helmet-async'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -37,6 +37,12 @@ vi.mock('src/api/gamification', () => ({
 vi.mock('react-hot-toast', () => ({
   default: { success: vi.fn(), error: vi.fn() },
 }))
+
+const writeText = vi.fn().mockResolvedValue(undefined)
+Object.defineProperty(navigator, 'clipboard', {
+  value: { writeText },
+  configurable: true,
+})
 
 vi.mock('src/context/AuthContext', () => ({
   useAuth: vi.fn().mockReturnValue({ user: null }),
@@ -107,6 +113,7 @@ describe('Account page', () => {
     mockAcknowledge.mockReset()
     mockAcknowledge.mockResolvedValue(undefined)
     mockToastSuccess.mockReset()
+    writeText.mockClear()
     mockUseAuth.mockReturnValue({ user: null })
   })
 
@@ -246,6 +253,65 @@ describe('Account page', () => {
       // ...but nothing was newly unlocked, so no toast / acknowledge.
       expect(mockToastSuccess).not.toHaveBeenCalled()
       expect(mockAcknowledge).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('share link + avatar', () => {
+    it('Share copies the /u/<handle> link, not the display name', async () => {
+      // displayName differs from the real username handle — the regression that
+      // shipped a broken /u/<displayName> link. Share must use the handle.
+      mockGetUID.mockReturnValue('u1')
+      mockGetUsername.mockResolvedValue('janedoe')
+      mockUseAuth.mockReturnValue({
+        user: { displayName: 'Jane Doe', photoURL: null, uid: 'u1' },
+      })
+      renderAccount()
+
+      // The handle resolves asynchronously and isn't shown in the UI, so retry
+      // the share click until the resolved handle (not the display name) lands
+      // in the copied URL.
+      await waitFor(() => {
+        fireEvent.click(screen.getByLabelText('Share profile'))
+        expect(writeText).toHaveBeenLastCalledWith(
+          `${window.location.origin}/u/janedoe`
+        )
+      })
+    })
+
+    it('falls back to the initial when the avatar image fails to load', async () => {
+      mockGetUID.mockReturnValue('u1')
+      mockUseAuth.mockReturnValue({
+        user: {
+          displayName: 'Jane',
+          photoURL: 'https://example.com/broken.png',
+          uid: 'u1',
+        },
+      })
+      renderAccount()
+
+      const img = await screen.findByAltText('Profile avatar')
+      fireEvent.error(img)
+
+      await waitFor(() => {
+        const fallback = document.querySelector('.acct-avatar.not-set')
+        expect(fallback?.textContent).toBe('J')
+      })
+    })
+  })
+
+  describe('graceful degradation', () => {
+    it('renders the page (nav, no LevelCard) when gamification data is unavailable', async () => {
+      mockGetUID.mockReturnValue('u1')
+      mockGetGamification.mockResolvedValue(null)
+      mockUseAuth.mockReturnValue({
+        user: { displayName: 'Jane', photoURL: null, uid: 'u1' },
+      })
+      renderAccount()
+
+      // The page still renders its nav...
+      await screen.findByText('Saved')
+      // ...but the LevelCard is omitted rather than crashing on missing data.
+      expect(document.querySelector('.acct-levelcard')).toBeNull()
     })
   })
 

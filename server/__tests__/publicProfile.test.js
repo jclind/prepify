@@ -86,6 +86,45 @@ describe('GET /getPublicProfile', () => {
     expect(res.body.recipesTotalCount).toBe(2)
   })
 
+  it('caps recipes at 12 but reports the full total', async () => {
+    await seedUser(PUB_UID, 'CoolUser')
+    await seedRecipes(
+      Array.from({ length: 13 }, (_, i) => ({
+        _id: `r${i}`,
+        userId: PUB_UID,
+        createdAt: String(i),
+      }))
+    )
+
+    const res = await request(app).get('/api/getPublicProfile?username=CoolUser')
+    expect(res.status).toBe(200)
+    expect(res.body.recipes).toHaveLength(12)
+    expect(res.body.recipesTotalCount).toBe(13)
+  })
+
+  // Contract guard: the frontend PublicProfile type mocks this exact shape.
+  it('returns exactly the public-profile contract fields', async () => {
+    await seedProfile()
+    const res = await request(app).get('/api/getPublicProfile?username=CoolUser')
+    expect(Object.keys(res.body).sort()).toEqual(
+      [
+        'achievements',
+        'bio',
+        'displayName',
+        'level',
+        'location',
+        'pct',
+        'photoURL',
+        'rank',
+        'recipes',
+        'recipesTotalCount',
+        'username',
+        'xp',
+        'xpNext',
+      ].sort()
+    )
+  })
+
   it('resolves the username case-insensitively', async () => {
     await seedProfile()
     const res = await request(app).get('/api/getPublicProfile?username=COOLUSER')
