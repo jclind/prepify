@@ -371,6 +371,20 @@ router.get('/getSavedRecipe', verifyToken, async (req, res) => {
   }
 })
 
+// GET /getSavedRecipeIds — just the current user's saved recipe ids, so a grid
+// can resolve every card's saved state from one request instead of N.
+router.get('/getSavedRecipeIds', verifyToken, async (req, res) => {
+  try {
+    const db = getDB()
+    const userData = await db
+      .collection('userRecipeData')
+      .findOne({ _id: req.uid }, { projection: { savedRecipes: 1 } })
+    res.json((userData?.savedRecipes ?? []).map((e) => e.recipeId))
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 // DELETE /recipes/:id/save
 router.delete('/recipes/:id/save', verifyToken, async (req, res) => {
   try {

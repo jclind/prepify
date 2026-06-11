@@ -5,45 +5,13 @@ import {
   BsFillBookmarkCheckFill,
 } from 'react-icons/bs'
 
-import toast from 'react-hot-toast'
-import AuthAPI from 'src/api/auth'
-import RecipeAPI from 'src/api/recipes'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useSaveRecipe } from 'src/hooks/useSaveRecipe'
 
 type SaveRecipeBtnProps = { recipeId: string }
 
 const SaveRecipeBtn: FC<SaveRecipeBtnProps> = ({ recipeId }) => {
   const [isHovered, setIsHovered] = useState(false)
-
-  const uid = AuthAPI.getUID()
-  const queryClient = useQueryClient()
-
-  const { data } = useQuery({
-    queryKey: ['savedRecipe', uid, recipeId],
-    queryFn: () => RecipeAPI.getSavedRecipe(recipeId),
-    enabled: !!uid,
-  })
-
-  const isSaved = data != null
-
-  const handleToggleSaveRecipe = (recipeId: string) => {
-    if (uid) {
-      if (isSaved) {
-        RecipeAPI.unsaveRecipe(recipeId).then(() =>
-          queryClient.setQueryData(['savedRecipe', uid, recipeId], null)
-        )
-      } else {
-        RecipeAPI.saveRecipe(recipeId).then(() =>
-          queryClient.setQueryData(['savedRecipe', uid, recipeId], {
-            recipeId,
-            dateSaved: Date.now().toString(),
-          })
-        )
-      }
-    } else {
-      toast('Please login to save recipes.', { duration: 10000 })
-    }
-  }
+  const { isSaved, toggle } = useSaveRecipe(recipeId)
 
   return (
     <div className='save-recipe'>
@@ -51,7 +19,7 @@ const SaveRecipeBtn: FC<SaveRecipeBtnProps> = ({ recipeId }) => {
         className={`save-recipe-btn btn ${isSaved ? 'saved' : ''}`}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        onClick={() => handleToggleSaveRecipe(recipeId)}
+        onClick={() => toggle()}
       >
         {!isSaved ? (
           <>

@@ -3,12 +3,9 @@ import { Link } from 'react-router-dom'
 import { CgTimer } from 'react-icons/cg'
 import { AiFillStar } from 'react-icons/ai'
 import { BiBookmark, BiSolidBookmark } from 'react-icons/bi'
-import toast from 'react-hot-toast'
 import Skeleton from 'react-loading-skeleton'
 import 'react-loading-skeleton/dist/skeleton.css'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
-import AuthAPI from 'src/api/auth'
-import RecipeAPI from 'src/api/recipes'
+import { useSaveRecipe } from 'src/hooks/useSaveRecipe'
 import { formatRating } from 'src/util/formatRating'
 import { formatPrice } from 'src/util/formatPrice'
 import { minToHrMin } from 'src/util/minToHrMin'
@@ -39,52 +36,23 @@ const Rating: FC<{ value: number; count: number }> = ({ value, count }) => {
   )
 }
 
-/**
- * Icon-only save toggle. Mirrors SaveRecipeBtn's logic so saved state hydrates
- * correctly and survives navigation: a per-recipe `getSavedRecipe` query keyed
- * by uid, with optimistic cache writes on toggle. Sits above the card link.
- */
+/** Icon-only save toggle floated over the card image (sits above the Link). */
 const SaveButton: FC<{ recipeId: string; title: string }> = ({
   recipeId,
   title,
 }) => {
-  const uid = AuthAPI.getUID()
-  const queryClient = useQueryClient()
-  const { data } = useQuery({
-    queryKey: ['savedRecipe', uid, recipeId],
-    queryFn: () => RecipeAPI.getSavedRecipe(recipeId),
-    enabled: !!uid,
-  })
-  const isSaved = data != null
-
-  const toggle = (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    if (!uid) {
-      toast('Please login to save recipes.', { duration: 6000 })
-      return
-    }
-    if (isSaved) {
-      RecipeAPI.unsaveRecipe(recipeId).then(() =>
-        queryClient.setQueryData(['savedRecipe', uid, recipeId], null)
-      )
-    } else {
-      RecipeAPI.saveRecipe(recipeId).then(() =>
-        queryClient.setQueryData(['savedRecipe', uid, recipeId], {
-          recipeId,
-          dateSaved: Date.now().toString(),
-        })
-      )
-    }
-  }
-
+  const { isSaved, toggle } = useSaveRecipe(recipeId)
   return (
     <button
       type='button'
       className={`recipe-card__save ${isSaved ? 'is-saved' : ''}`}
       aria-pressed={isSaved}
       aria-label={isSaved ? `Unsave ${title}` : `Save ${title}`}
-      onClick={toggle}
+      onClick={e => {
+        e.preventDefault()
+        e.stopPropagation()
+        toggle()
+      }}
     >
       {isSaved ? <BiSolidBookmark /> : <BiBookmark />}
     </button>

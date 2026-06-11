@@ -85,6 +85,11 @@ class RecipeAPIClass {
     const result = await http.get(`api/getSavedRecipe?recipeId=${recipeId}`)
     return result.data
   }
+  // The current user's saved recipe ids — one request the whole grid can share.
+  async getSavedRecipeIds(): Promise<string[]> {
+    const result = await http.get('api/getSavedRecipeIds')
+    return result.data
+  }
   async unsaveRecipe(recipeId = ''): Promise<AxiosResponse> {
     return await http.delete(`api/recipes/${recipeId}/save`)
   }
