@@ -1,7 +1,7 @@
 const { Router } = require('express')
 const { ObjectId } = require('mongodb')
 const { getDB } = require('../db')
-const { verifyToken } = require('../middleware/auth')
+const { verifyToken, requireActive } = require('../middleware/auth')
 const { validateRecipeBounds } = require('../util/recipeLimits')
 const { RECIPE_CONTENT_FIELDS, pickFields } = require('../util/recipeFields')
 
@@ -24,7 +24,7 @@ const MAX_DRAFTS_PER_USER = 25
 
 // POST /drafts — create a new draft for the current user. Returns the new _id
 // so the client can switch to update-on-autosave from then on.
-router.post('/', verifyToken, async (req, res) => {
+router.post('/', verifyToken, requireActive, async (req, res) => {
   try {
     const db = getDB()
     const boundsError = validateRecipeBounds(req.body)
@@ -96,7 +96,7 @@ router.get('/:id', verifyToken, async (req, res) => {
 
 // PUT /drafts/:id — overwrite a draft's content (autosave). Owner-only. Only
 // whitelisted content fields are written; userId/createdAt/_id are immutable.
-router.put('/:id', verifyToken, async (req, res) => {
+router.put('/:id', verifyToken, requireActive, async (req, res) => {
   try {
     const db = getDB()
     if (!ObjectId.isValid(req.params.id)) {

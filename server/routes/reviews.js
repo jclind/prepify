@@ -1,6 +1,6 @@
 const { Router } = require('express')
 const { getDB } = require('../db')
-const { verifyToken, requireAdmin } = require('../middleware/auth')
+const { verifyToken, requireAdmin, requireActive } = require('../middleware/auth')
 const { recipeIdQuery } = require('../util/recipeIdQuery')
 const { REVIEW_VISIBLE, RECIPE_VISIBLE } = require('../util/moderation')
 const { recomputeRecipeRating } = require('../util/recipeRating')
@@ -8,7 +8,7 @@ const { recomputeRecipeRating } = require('../util/recipeRating')
 const router = Router()
 
 // POST /addRating
-router.post('/addRating', verifyToken, async (req, res) => {
+router.post('/addRating', verifyToken, requireActive, async (req, res) => {
   try {
     const { recipeId, rating } = req.query
     const db = getDB()
@@ -54,7 +54,7 @@ router.post('/addRating', verifyToken, async (req, res) => {
 })
 
 // POST /newReview
-router.post('/newReview', verifyToken, async (req, res) => {
+router.post('/newReview', verifyToken, requireActive, async (req, res) => {
   try {
     const db = getDB()
     const { recipeId, reviewText } = req.body
@@ -105,7 +105,7 @@ router.get('/checkIfReviewed', verifyToken, async (req, res) => {
 })
 
 // POST /editReview
-router.post('/editReview', verifyToken, async (req, res) => {
+router.post('/editReview', verifyToken, requireActive, async (req, res) => {
   try {
     const { recipeId, text } = req.query
     const db = getDB()

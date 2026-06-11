@@ -11,9 +11,13 @@
 // The keys (`status` / `moderationHidden`) never collide with query fields used
 // elsewhere, so the spread ANDs cleanly.
 
-// Recipes: hidden via `status: 'hidden'` (enum leaves room for P2 states like
-// 'unpublished' / 'featured' without another migration).
-const RECIPE_VISIBLE = { status: { $ne: 'hidden' } }
+// Recipes: non-public via the `status` enum. 'hidden' = a P1 moderation takedown
+// (reported/policy); 'unpublished' = a P2 admin de-publish that is deliberately
+// NOT framed as a moderation action. Both are filtered from every public read
+// path identically; they differ only in intent and which admin field is stamped.
+// $nin (not $eq 'active') keeps this legacy-safe — a doc with no status field
+// isn't matched, so the existing catalog stays visible on deploy.
+const RECIPE_VISIBLE = { status: { $nin: ['hidden', 'unpublished'] } }
 
 // Reviews live in the `ratings` collection and are hidden via a distinct
 // `moderationHidden` flag — kept separate from the user's own delete (which

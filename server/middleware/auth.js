@@ -1,4 +1,6 @@
 const admin = require('firebase-admin')
+const { getDB } = require('../db')
+const { isBlocked } = require('../util/userStatus')
 
 // Initialize once — guard against double init
 if (!admin.apps.length) {
@@ -36,4 +38,30 @@ function requireAdmin(req, res, next) {
   next()
 }
 
-module.exports = { verifyToken, requireAdmin }
+// Gate for write routes that a suspended/banned user must not perform. Runs
+// after verifyToken (relies on req.uid). Reads the `users` status record — a
+// single indexed findOne by _id; only applied to mutations, never reads. An
+// account with no record (every legacy user) is 'active' and passes through.
+// The 403 carries a machine code + reason so the client can show a clear
+// message instead of a generic error.
+async function requireActive(req, res, next) {
+  try {
+    const doc = await getDB().collection('users').findOne({ _id: req.uid })
+    const status = doc?.status || 'active'
+    if (isBlocked(status)) {
+      return res.status(403).json({
+        error:
+          status === 'banned'
+            ? 'Your account has been banned.'
+            : 'Your account is suspended.',
+        code: status === 'banned' ? 'ACCOUNT_BANNED' : 'ACCOUNT_SUSPENDED',
+        reason: doc?.statusReason || null,
+      })
+    }
+    next()
+  } catch (err) {
+    return res.status(500).json({ error: err.message })
+  }
+}
+
+module.exports = { verifyToken, requireAdmin, requireActive }

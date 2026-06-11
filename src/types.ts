@@ -32,6 +32,9 @@ export type RecipeType = {
   views: number
   numTimesSaved: number
   numTimesMade: number
+  // Moderation/curation state (P1/P2). Absent on legacy recipes = public/active.
+  status?: 'active' | 'hidden' | 'unpublished'
+  featured?: boolean
 }
 export type RecipeFormType = {
   title: string
@@ -231,6 +234,38 @@ export interface AdminReportsResponse {
   reports: AdminReportType[]
   totalCount: number
   openCount: number
+}
+
+// ─── User moderation (P2) ──────────────────────────────────────────────────
+export type UserStatus = 'active' | 'suspended' | 'banned'
+
+// Server 403 `code` values when a suspended/banned user attempts a write
+// (server/middleware/auth.js requireActive). Surfaced as a toast by http-common.
+export type AccountBlockedCode = 'ACCOUNT_SUSPENDED' | 'ACCOUNT_BANNED'
+
+export interface AdminUserType {
+  uid: string
+  username: string | null
+  email?: string | null
+  status: UserStatus
+  statusReason: string | null
+  statusUpdatedAt: string | null
+  statusUpdatedBy: string | null
+  counts: {
+    recipes: number
+    reviews: number
+    openReports: number
+  }
+}
+
+export interface AdminUserDetailType extends AdminUserType {
+  recentRecipes: { _id: string; title?: string; recipeImage?: string; status?: string }[]
+  recentReviews: { recipeId: string; rating?: number; reviewText?: string }[]
+}
+
+export interface AdminUsersResponse {
+  users: AdminUserType[]
+  totalCount: number
 }
 
 export interface AddRecipeErrorType {

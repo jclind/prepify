@@ -21,6 +21,7 @@ import RatingsAndReviews from 'src/pages/SingleRecipe/DataSections/RatingsAndRev
 import RecipeNotFound from 'src/pages/SingleRecipe/RecipeNotFound/RecipeNotFound'
 import PrintableRecipe from 'src/pages/SingleRecipe/PrintableRecipe/PrintableRecipe'
 import ReportControl from 'src/Components/ReportControl/ReportControl'
+import AdminRecipeControls from 'src/Components/AdminRecipeControls/AdminRecipeControls'
 
 import { updateIngredients } from 'src/util/updateIngredients'
 import { capitalize } from 'src/util/capitalize'
@@ -301,6 +302,8 @@ const SingleRecipe: FC = () => {
               )}
             </div>
           </div>
+
+          {currRecipe && <AdminRecipeControls recipe={currRecipe} />}
 
           <div className='body'>
             <section className='card ingredients-card'>
