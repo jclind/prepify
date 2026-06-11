@@ -113,6 +113,29 @@ describe('JSON-body operator injection', () => {
   })
 })
 
+// ─── Page-size caps ──────────────────────────────────────────────────────────
+
+describe('pagination caps', () => {
+  it('GET /recipes caps recipesPerPage at 50 regardless of the requested size', async () => {
+    const db = getDB()
+    await db.collection('recipes').insertMany(
+      Array.from({ length: 55 }, (_, i) => ({
+        _id: `recipe-cap-${String(i).padStart(3, '0')}`,
+        title: `Cap Test ${i}`,
+      }))
+    )
+    const res = await request(app).get('/api/recipes?recipesPerPage=99999')
+    expect(res.status).toBe(200)
+    expect(res.body.recipeList).toHaveLength(50)
+    expect(res.body.total_results).toBe(57) // 55 + the 2 beforeEach fixtures
+  })
+
+  it('GET /recipes tolerates a non-numeric page size without a 500', async () => {
+    const res = await request(app).get('/api/recipes?recipesPerPage=abc&page=xyz')
+    expect(res.status).toBe(200)
+  })
+})
+
 // ─── recipeIdQuery non-string hardening ──────────────────────────────────────
 
 describe('recipeIdQuery non-string ids', () => {
