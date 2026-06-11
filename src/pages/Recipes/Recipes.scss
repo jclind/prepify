@@ -39,7 +39,7 @@
       }
       input {
         box-sizing: border-box;
-        height: 52px;
+        height: 44px;
         border: 1px solid s.$gray-400;
         border-radius: 999px;
         background: s.$white;
@@ -97,7 +97,7 @@
     font-size: 0.85rem;
     padding: 0 1.1rem;
     box-sizing: border-box;
-    min-height: 52px; // match the search pill's height
+    min-height: 44px; // compact, matches the search pill (G06 sizing)
     border-radius: 999px;
     cursor: pointer;
     white-space: nowrap;
@@ -131,7 +131,7 @@
       align-items: center;
       gap: 0.3rem;
       box-sizing: border-box;
-      min-height: 52px; // match the search pill's height
+      min-height: 44px; // compact, matches the search pill (G06 sizing)
       padding: 0 1rem;
       font-family: inherit;
       font-weight: 700;
