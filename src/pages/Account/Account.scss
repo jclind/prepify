@@ -7,6 +7,16 @@
 // and the segmented nav is a <div role="navigation"> (never <nav>) so the global
 // `nav { position:absolute }` rule can't match it.
 
+// Cap the profile well under the global 1400px `.page`. On ultra-wide monitors
+// the header's single fr identity column stretched, stranding the identity and
+// the level/controls cluster at opposite edges of a huge card. Containing the
+// whole page keeps the two clusters a comfortable distance apart and tightens
+// the (otherwise sparse) sub-page grids too. `.account-page.page` outranks
+// `.page` so source order can't matter.
+.account-page.page {
+  max-width: 1180px;
+}
+
 .account-page {
   // ── Header card ────────────────────────────────────────────────────────────
   .acct-head {
