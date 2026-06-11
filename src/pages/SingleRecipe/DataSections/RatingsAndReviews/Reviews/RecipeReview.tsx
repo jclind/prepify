@@ -18,12 +18,10 @@ class StarRatingErrorBoundary extends Component<
     return this.props.children
   }
 }
-import Modal from 'react-modal'
 import { ReviewType } from 'types'
 import RecipeAPI from 'src/api/recipes'
 import ReviewOptions from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/ReviewOptions'
 import { formatDate } from 'src/util/formatDate'
-Modal.setAppElement('#root')
 
 type RecipeReviewProps = {
   review: ReviewType
