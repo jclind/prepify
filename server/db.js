@@ -45,6 +45,19 @@ async function ensureIndexes() {
   } catch (err) {
     console.error('Failed to create index on recipeDrafts.userId:', err.message)
   }
+
+  // Moderation reports (P1/P2). The `reports` collection is new, so these build
+  // instantly. Backs the admin queue (filter by status, newest first), the
+  // per-user open-report tally in GET /admin/users (by reportedUsername and by
+  // recipeId), and the one-open-report-per-target rate-limit lookup on POST.
+  try {
+    const reports = db.collection('reports')
+    await reports.createIndex({ status: 1, createdAt: -1 })
+    await reports.createIndex({ reportedUsername: 1 })
+    await reports.createIndex({ recipeId: 1 })
+  } catch (err) {
+    console.error('Failed to create indexes on reports:', err.message)
+  }
 }
 
 async function closeDB() {

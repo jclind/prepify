@@ -32,6 +32,9 @@ export type RecipeType = {
   views: number
   numTimesSaved: number
   numTimesMade: number
+  // Moderation/curation state (P1/P2). Absent on legacy recipes = public/active.
+  status?: 'active' | 'hidden' | 'unpublished'
+  featured?: boolean
 }
 export type RecipeFormType = {
   title: string
@@ -173,6 +176,96 @@ export type ReviewType = {
 export interface NewReviewType {
   recipeId: string
   reviewText: string
+}
+
+// ─── Moderation / reports ──────────────────────────────────────────────────
+export type ReportTargetType = 'recipe' | 'review'
+export type ReportReason =
+  | 'spam'
+  | 'inappropriate'
+  | 'offensive'
+  | 'copyright'
+  | 'dangerous'
+  | 'other'
+export type ReportStatus = 'open' | 'resolved' | 'dismissed'
+
+export interface NewReportType {
+  targetType: ReportTargetType
+  recipeId: string
+  reportedUsername?: string // required when targetType === 'review'
+  reason: ReportReason
+  details?: string
+}
+
+export interface ReportType {
+  _id: string
+  targetType: ReportTargetType
+  recipeId: string
+  reportedUsername?: string
+  reporterUid: string
+  reason: ReportReason
+  details: string
+  status: ReportStatus
+  createdAt: string
+  resolvedBy?: string
+  resolvedAt?: string
+}
+
+// Report enriched with a snapshot of the reported content, as returned by the
+// admin GET /reports queue.
+export interface AdminReportType extends ReportType {
+  target: {
+    recipe: {
+      _id: string
+      title?: string
+      recipeImage?: string
+      status?: string
+      userId?: string
+    } | null
+    review: {
+      reviewText?: string
+      rating?: number
+      moderationHidden?: boolean
+    } | null
+  }
+}
+
+export interface AdminReportsResponse {
+  reports: AdminReportType[]
+  totalCount: number
+  openCount: number
+}
+
+// ─── User moderation (P2) ──────────────────────────────────────────────────
+export type UserStatus = 'active' | 'suspended' | 'banned'
+
+// Server 403 `code` values when a suspended/banned user attempts a write
+// (server/middleware/auth.js requireActive). Surfaced as a toast by http-common.
+export type AccountBlockedCode = 'ACCOUNT_SUSPENDED' | 'ACCOUNT_BANNED'
+
+export interface AdminUserType {
+  uid: string
+  username: string | null
+  email?: string | null
+  status: UserStatus
+  statusReason: string | null
+  statusUpdatedAt: string | null
+  statusUpdatedBy: string | null
+  counts: {
+    recipes: number
+    reviews: number
+    openReports: number
+  }
+}
+
+export interface AdminUserDetailType extends AdminUserType {
+  recentRecipes: { _id: string; title?: string; recipeImage?: string; status?: string }[]
+  recentReviews: { recipeId: string; rating?: number; reviewText?: string }[]
+}
+
+export interface AdminUsersResponse {
+  users: AdminUserType[]
+  totalCount: number
 }
 
 export interface AddRecipeErrorType {

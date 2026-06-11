@@ -3,6 +3,7 @@ import AuthAPI from 'src/api/auth'
 import { useQuery } from '@tanstack/react-query'
 import ConfirmDeleteReviewModal from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/ConfirmDeleteReviewModal'
 import EditingReviewOptions from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/EditingReviewOptions'
+import ReportControl from 'src/Components/ReportControl/ReportControl'
 
 type ReviewOptionsProps = {
   handleEditReview: () => void
@@ -11,6 +12,7 @@ type ReviewOptionsProps = {
   handleDeleteReview: () => Promise<void>
   editLoading: boolean
   reviewAuthorUsername: string
+  recipeId?: string
 }
 
 const ReviewOptions: FC<ReviewOptionsProps> = ({
@@ -20,6 +22,7 @@ const ReviewOptions: FC<ReviewOptionsProps> = ({
   handleDeleteReview,
   editLoading,
   reviewAuthorUsername,
+  recipeId,
 }) => {
   const uid = AuthAPI.getUID()
 
@@ -49,7 +52,16 @@ const ReviewOptions: FC<ReviewOptionsProps> = ({
           />
         </>
       ) : (
-        ''
+        // Not the author: offer a report affordance instead (self-gates on login).
+        recipeId && (
+          <ReportControl
+            target={{
+              targetType: 'review',
+              recipeId,
+              reportedUsername: reviewAuthorUsername,
+            }}
+          />
+        )
       )}
     </div>
   )
