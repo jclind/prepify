@@ -125,7 +125,7 @@ describe('Home page', () => {
     })
 
     it('renders each meal column with its recipes', async () => {
-      mockGetAllRecipes.mockImplementation((_p: number, _o: string, tags: string[]) =>
+      mockGetAllRecipes.mockImplementation(({ tags }: { tags: string[] }) =>
         Promise.resolve(mealResult([makeRecipe(`${tags[0]}1`)]))
       )
       renderHome()
@@ -135,7 +135,7 @@ describe('Home page', () => {
     })
 
     it('does not repeat a recipe that is tagged for multiple meals', async () => {
-      mockGetAllRecipes.mockImplementation((_p: number, _o: string, tags: string[]) => {
+      mockGetAllRecipes.mockImplementation(({ tags }: { tags: string[] }) => {
         const meal = tags[0]
         if (meal === 'Breakfast') return Promise.resolve(mealResult([makeRecipe('shared'), makeRecipe('bk')]))
         if (meal === 'Lunch') return Promise.resolve(mealResult([makeRecipe('shared'), makeRecipe('ln')]))
