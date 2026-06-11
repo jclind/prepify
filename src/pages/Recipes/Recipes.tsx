@@ -138,8 +138,12 @@ const Recipes: FC = () => {
           (sum, p) => sum + p.recipeList.length,
           0
         )
+        // Next page index = pages fetched so far (0-indexed). The server
+        // response has no `page` field, so deriving it from `allPages.length`
+        // is robust; `lastPage.page + 1` would be NaN and the API would skip(0),
+        // re-serving page 0 as duplicates.
         return totalFetched < lastPage.total_results
-          ? lastPage.page + 1
+          ? allPages.length
           : undefined
       },
       enabled: !filtersLoading,
