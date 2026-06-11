@@ -13,7 +13,7 @@ router.post('/addRating', verifyToken, async (req, res) => {
     const userDoc = await db.collection('usernames').findOne({ _id: req.uid })
     if (!userDoc) return res.status(400).json({ error: 'User not found' })
     const username = userDoc.username
-    if (!recipeId || !rating) {
+    if (!recipeId || typeof recipeId !== 'string' || !rating || typeof rating !== 'string') {
       return res.status(400).json({ error: 'recipeId and rating are required' })
     }
     const parsedRating = parseFloat(rating)
@@ -63,7 +63,7 @@ router.post('/newReview', verifyToken, async (req, res) => {
     const db = getDB()
     const { recipeId, reviewText } = req.body
     const userId = req.uid
-    if (!recipeId || reviewText == null) {
+    if (!recipeId || typeof recipeId !== 'string' || typeof reviewText !== 'string') {
       return res.status(400).json({ error: 'recipeId and reviewText are required' })
     }
 
@@ -116,7 +116,7 @@ router.post('/editReview', verifyToken, async (req, res) => {
     const userDoc = await db.collection('usernames').findOne({ _id: req.uid })
     if (!userDoc) return res.status(400).json({ error: 'User not found' })
     const username = userDoc.username
-    if (!recipeId || text == null) {
+    if (!recipeId || typeof recipeId !== 'string' || text == null || typeof text !== 'string') {
       return res.status(400).json({ error: 'recipeId and text are required' })
     }
     const editResult = await db.collection('ratings').updateOne(
