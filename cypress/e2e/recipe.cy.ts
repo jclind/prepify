@@ -37,7 +37,7 @@ describe('Single Recipe', () => {
     // so navigating directly to the recipe page after login works without React Router tricks.
     cy.visit('/')
     cy.login()
-    cy.contains('a.nav-link', 'Create Recipe', { timeout: 10000 }).should('be.visible')
+    cy.get('.dnav__create', { timeout: 10000 }).should('be.visible')
 
     cy.visit(`/recipes/${recipeId}`)
     cy.wait('@getRecipe')

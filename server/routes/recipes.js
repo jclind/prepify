@@ -9,6 +9,10 @@ const { deleteRecipeImage } = require('../util/firebaseStorage')
 
 const router = Router()
 
+// Hard ceiling on client-requested page sizes so a single request can never
+// dump a whole collection (audit §4.5). Shared by every paginated route here.
+const MAX_PER_PAGE = 50
+
 function escapeRegex(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
@@ -28,8 +32,12 @@ router.get('/recipes', async (req, res) => {
       mealTypes,
       diets,
     } = req.query
-    const skip = parseInt(page) * parseInt(recipesPerPage)
-    const limit = parseInt(recipesPerPage)
+    // Page-size cap (audit §4.5): a single request can never dump the whole
+    // collection. The 'simple' query parser (app.js) guarantees every value is
+    // a string or string[] — never a `{$ne:…}` operator object — so the helpers
+    // below only have to coerce those two shapes.
+    const limit = Math.min(parseInt(recipesPerPage) || 5, MAX_PER_PAGE)
+    const skip = (parseInt(page) || 0) * limit
 
     const filter = {}
 
@@ -153,7 +161,7 @@ router.get('/searchAutoCompleteRecipes', async (req, res) => {
     const recipes = await db
       .collection('recipes')
       .find(
-        { title: { $regex: escapeRegex(title || ''), $options: 'i' } },
+        { title: { $regex: escapeRegex(typeof title === 'string' ? title : ''), $options: 'i' } },
         {
           projection: {
             _id: 1,

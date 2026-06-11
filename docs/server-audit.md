@@ -1,5 +1,9 @@
 # Prepify Error Handling & Auth Audit
 
+> **Historical document.** Every high-severity item below has since been fixed;
+> see `docs/SECURITY_AUDIT_2026-06-11.md` for the current audit, the
+> regression cross-check against this list, and the remaining open items.
+
 ---
 
 ### Backend Issues

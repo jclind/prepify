@@ -1,9 +1,9 @@
 @use '../../helpers.scss' as s;
 
 .recipes-page {
-  min-height: calc(
-    100vh - #{s.$nav-height} - #{s.$footer-height} - #{s.$footer-margin} - 2rem
-  );
+  // Fills the flexbox app-main so the footer stays pinned to the viewport
+  // bottom on short result sets (sticky-footer shell from the footer redesign).
+  flex: 1 0 auto;
   padding-bottom: 3rem;
 
   .recipes-header {

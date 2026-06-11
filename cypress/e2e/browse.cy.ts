@@ -20,8 +20,9 @@ describe('Browse', () => {
   it('search input filters results', () => {
     cy.visit('/recipes')
     cy.wait('@getRecipes')
-    cy.get('input.search-recipes-input', { timeout: 10000 }).should('be.visible').type('Tuscan')
-    cy.get('.search-recipes-btn', { timeout: 5000 }).should('be.visible').click().and('be.visible')
+    // The navbar also renders a SearchRecipesInput, so scope to the page's input/button.
+    cy.get('.recipes-page input.search-recipes-input', { timeout: 10000 }).should('be.visible').type('Tuscan')
+    cy.get('.recipes-page .search-recipes-btn', { timeout: 5000 }).should('be.visible').click().and('be.visible')
     // App navigates to /recipes?q=Tuscan and fires a new getRecipes call
     cy.wait('@getRecipes')
     cy.url().should('include', 'q=Tuscan')
