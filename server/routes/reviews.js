@@ -5,6 +5,9 @@ const { recipeIdQuery } = require('../util/recipeIdQuery')
 
 const router = Router()
 
+// Hard ceiling on client-requested page sizes (audit §4.5); mirrors recipes.js.
+const MAX_PER_PAGE = 50
+
 // POST /addRating
 router.post('/addRating', verifyToken, async (req, res) => {
   try {
@@ -13,7 +16,7 @@ router.post('/addRating', verifyToken, async (req, res) => {
     const userDoc = await db.collection('usernames').findOne({ _id: req.uid })
     if (!userDoc) return res.status(400).json({ error: 'User not found' })
     const username = userDoc.username
-    if (!recipeId || !rating) {
+    if (!recipeId || typeof recipeId !== 'string' || !rating || typeof rating !== 'string') {
       return res.status(400).json({ error: 'recipeId and rating are required' })
     }
     const parsedRating = parseFloat(rating)
@@ -63,7 +66,7 @@ router.post('/newReview', verifyToken, async (req, res) => {
     const db = getDB()
     const { recipeId, reviewText } = req.body
     const userId = req.uid
-    if (!recipeId || reviewText == null) {
+    if (!recipeId || typeof recipeId !== 'string' || typeof reviewText !== 'string') {
       return res.status(400).json({ error: 'recipeId and reviewText are required' })
     }
 
@@ -116,7 +119,7 @@ router.post('/editReview', verifyToken, async (req, res) => {
     const userDoc = await db.collection('usernames').findOne({ _id: req.uid })
     if (!userDoc) return res.status(400).json({ error: 'User not found' })
     const username = userDoc.username
-    if (!recipeId || text == null) {
+    if (!recipeId || typeof recipeId !== 'string' || text == null || typeof text !== 'string') {
       return res.status(400).json({ error: 'recipeId and text are required' })
     }
     const editResult = await db.collection('ratings').updateOne(
@@ -165,8 +168,8 @@ router.get('/getReviews', async (req, res) => {
     const { username, recipeId, page = 0, reviewsPerPage = 5, filter } = req.query
     if (!recipeId) return res.status(400).json({ error: 'recipeId is required' })
 
-    const skip = parseInt(page) * parseInt(reviewsPerPage)
-    const limit = parseInt(reviewsPerPage)
+    const limit = Math.min(parseInt(reviewsPerPage) || 5, MAX_PER_PAGE)
+    const skip = (parseInt(page) || 0) * limit
     const query = { recipeId, reviewText: { $exists: true, $ne: '' } }
 
     let sort = {}
@@ -196,8 +199,8 @@ router.get('/getSingleUserReviews', async (req, res) => {
     const { username, page = 0, reviewsPerPage = 5, filter, returnRecipeData } = req.query
     if (!username) return res.status(400).json({ error: 'username is required' })
 
-    const skip = parseInt(page) * parseInt(reviewsPerPage)
-    const limit = parseInt(reviewsPerPage)
+    const limit = Math.min(parseInt(reviewsPerPage) || 5, MAX_PER_PAGE)
+    const skip = (parseInt(page) || 0) * limit
     const query = { username }
 
     let sort = {}

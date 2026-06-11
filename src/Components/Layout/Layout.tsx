@@ -2,6 +2,8 @@ import React, { FC, ReactElement } from 'react'
 import Navbar from 'src/Components/Navbar/Navbar'
 import Footer from 'src/Components/Footer/Footer'
 
+import './Layout.scss'
+
 type LayoutProps = {
   children?: ReactElement
   darkNavLinks?: boolean
@@ -14,14 +16,14 @@ const Layout: FC<LayoutProps> = ({
   navBackgroundColor = 'none',
 }) => {
   return (
-    <>
+    <div className='app-shell'>
       <Navbar
         darkNavLinks={darkNavLinks}
         navBackgroundColor={navBackgroundColor}
       />
-      {children}
+      <main className='app-main'>{children}</main>
       <Footer />
-    </>
+    </div>
   )
 }
 

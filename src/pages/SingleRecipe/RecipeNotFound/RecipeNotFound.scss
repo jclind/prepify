@@ -5,9 +5,8 @@
   flex-direction: column;
   align-items: center;
   gap: 1rem;
-  min-height: calc(
-    100vh - #{s.$nav-height} - #{s.$footer-height} - #{s.$footer-margin}
-  );
+  // Fills the flexbox app-main; the app shell positions the footer (Layout.scss).
+  flex: 1 0 auto;
   padding-top: s.$nav-height;
   margin: 0 auto;
 

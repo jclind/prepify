@@ -143,7 +143,7 @@ const loginAndVisitAddRecipe = () => {
   // same-origin visits, so the second visit is authenticated.
   cy.visit('/')
   cy.login()
-  cy.contains('a.nav-link', 'Create Recipe', { timeout: 10000 }).should('be.visible')
+  cy.get('.dnav__create', { timeout: 10000 }).should('be.visible')
   cy.visit('/add-recipe')
 }
 
