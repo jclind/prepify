@@ -107,42 +107,108 @@ now type-check before use.
 
 ---
 
-## 4. Open findings — recommendations (not applied)
+## 4. Open findings — status checklist
 
-Ordered by priority. None applied because each needs a product/design decision
-or has broad test impact.
+Initial fixes from §2 merged via PR #117. The low-conflict hardening batch
+(items 1, 5, 6) was implemented 2026-06-11 in a follow-up PR. Items 2–4 are
+**deliberately deferred** until the three feature worktrees
+(recipes-page-refresh, account-page-redesign, admin-service) are merged — they
+touch the same files those branches change (see §5).
 
-1. **No rate limiting anywhere** (*Medium*). Highest-value targets:
-   `POST /api/ingredients/parse` (each call spends paid Spoonacular quota with
-   attacker-chosen input; auth required but any signed-up user qualifies), and
-   the write endpoints (`addRecipe`, `newReview`, `setUsername`). Recommend
-   `express-rate-limit` with a tight per-uid limit on `/api/ingredients/parse`
-   and a generous global default. Decide thresholds first; Cypress E2E and the
-   autosaving drafts client must stay under them.
-2. **500 handlers echo `err.message` to clients** (*Low–Medium*, info
-   disclosure). Every route's catch block returns the raw message, which for
-   infrastructure failures can include internal hostnames (e.g. Mongo
-   `connect ECONNREFUSED <host>`). Recommend a shared error responder that logs
-   the real error and returns a generic message. Touches every route and some
-   test expectations, so left for a focused PR.
-3. **`GET /getReviews` `isCurrentUser` derived from a query param** (*Low*,
-   carried over from old audit). Anyone can pass `?username=victim` and get
-   `isCurrentUser: true` flags. Server-side edits remain protected, so this is
-   a UI-hint spoof only — but it should derive from the token when an
-   `Authorization` header is present.
-4. **`reviewText` has no length bound** (*Low*). Recipe fields are bounded;
-   reviews are not. Add a max length in `newReview`/`editReview` mirroring
-   `DESCRIPTION_MAX_LENGTH`.
-5. **Unbounded `recipesPerPage`/`reviewsPerPage`** (*Low*). A single request
-   can dump an entire collection. Cap like `getTrendingRecipes` does
-   (`Math.min(parsed, N)`).
-6. **No security headers** (*Low*). API-only server, so impact is limited, but
-   `helmet` is a one-liner worth adding alongside the rate-limit PR.
-7. **`verifyToken` doesn't pass `checkRevoked`** (*Info*). Revoked/disabled
-   users keep access until their ID token expires (≤1 h). Standard tradeoff
-   (checkRevoked costs a network call per request); acceptable as-is.
-8. **`newReview` upsert can create a doc without `rating` fields** (*Info*,
-   data integrity, carried over). A review posted before any rating yields a
-   ratings doc lacking `rating`/`ratingLastUpdated`; `addRating`'s averaging
-   then `parseFloat(undefined) → NaN`-guards only via the insert path. Worth
-   normalizing when reviews get their next pass.
+1. [x] **No rate limiting anywhere** (*Medium*) — **DONE.**
+   `express-rate-limit` added: a generous global per-IP backstop on `/api`
+   (1000 req / 15 min, mounted after `/health` so health checks are never
+   throttled) and a tight per-uid limit on `POST /api/ingredients/parse`
+   (30/min — one parse per added ingredient, recipes cap at 50 ingredients).
+   `trust proxy = 1` only in production (one platform proxy); never in dev,
+   where `X-Forwarded-For` would be spoofable. Both limiters are skipped when
+   `NODE_ENV=test` because supertest fires hundreds of requests from one IP in
+   seconds — so the 429 path itself is intentionally untested by Jest. Cypress
+   CI runs with limiters active and stays well under the global cap.
+2. [ ] **500 handlers echo `err.message` to clients** (*Low–Medium*, info
+   disclosure) — **DEFERRED, see §5.** Every route's catch block returns the
+   raw message, which for infrastructure failures can include internal
+   hostnames (e.g. Mongo `connect ECONNREFUSED <host>`). Needs a shared error
+   responder that logs the real error and returns a generic message. Touches
+   every route file and some test expectations — maximal conflict with the
+   worktree backlog, so it must go last.
+3. [ ] **`GET /getReviews` `isCurrentUser` derived from a query param**
+   (*Low*, carried over from old audit) — **DEFERRED, see §5.** Anyone can
+   pass `?username=victim` and get `isCurrentUser: true` flags. UI-hint spoof
+   only (server-side edits remain protected); should derive from the token
+   when an `Authorization` header is present. Lives in `reviews.js`, which the
+   admin worktree's soft-hide moderation also changes.
+4. [ ] **`reviewText` has no length bound** (*Low*) — **DEFERRED, see §5.**
+   Recipe fields are bounded; reviews are not. Add a max length in
+   `newReview`/`editReview` mirroring `DESCRIPTION_MAX_LENGTH` (2000). Same
+   `reviews.js` conflict as item 3.
+5. [x] **Unbounded `recipesPerPage`/`reviewsPerPage`** (*Low*) — **DONE.**
+   All five paginated handlers (`GET /recipes`, `getReviews`,
+   `getSingleUserReviews`, `getCreatedRecipes`, `getSavedRecipes`) clamp the
+   page size to `MAX_PER_PAGE = 50` and coerce NaN page/size to defaults.
+   Regression tests in `security.test.js` ("pagination caps").
+6. [x] **No security headers** (*Low*) — **DONE.** `helmet()` with defaults on
+   every response.
+7. [x] **`verifyToken` doesn't pass `checkRevoked`** (*Info*) — **ACCEPTED
+   AS-IS.** Revoked/disabled users keep access until their ID token expires
+   (≤1 h). Standard tradeoff: `checkRevoked` costs a network round-trip per
+   request. Revisit only if account-ban semantics demand instant lockout.
+8. [ ] **`newReview` upsert can create a doc without `rating` fields**
+   (*Info*, data integrity, carried over) — **DEFERRED, see §5.** A review
+   posted before any rating yields a ratings doc lacking
+   `rating`/`ratingLastUpdated`. Normalize during the same `reviews.js` pass
+   as items 3–4.
+
+---
+
+## 5. Deferred follow-up — runbook for after the worktree merges
+
+**Preconditions:** the three worktree branches (recipes-page-refresh,
+account-page-redesign incl. its P6 teardown, admin-service) are merged into
+`development`, and CI is green. Do **not** start this while any of them is
+still open — items below edit `reviews.js` and every route's catch blocks,
+which those branches also touch.
+
+Ready-to-run prompt for a fresh session:
+
+> Work through §5 of docs/SECURITY_AUDIT_2026-06-11.md on a new branch off
+> development. Check items off in §4 as you complete them, run the server
+> suite after each step, and open a PR.
+
+Steps, in order:
+
+1. **`reviews.js` pass** (items 3, 4, 8 — one commit):
+   - `getReviews`: when an `Authorization` header is present, verify it and
+     derive `isCurrentUser` by resolving `req.uid → usernames` collection;
+     ignore the `username` query param for that flag (it can stay for other
+     uses). Keep the route anonymous-friendly: a missing/invalid header just
+     means `isCurrentUser: false` everywhere.
+   - `newReview`/`editReview`: reject `reviewText`/`text` longer than 2000
+     chars (mirror `DESCRIPTION_MAX_LENGTH` from `util/recipeLimits.js` —
+     import it, don't duplicate the constant).
+   - `newReview` upsert: on insert (`$setOnInsert`), default `rating: null`
+     and `ratingLastUpdated: ''` so no ratings doc ever lacks those keys; make
+     sure `addRating`'s averaging skips `rating: null` docs instead of
+     `parseFloat(null) → NaN`.
+   - Mind the merged admin soft-hide changes in this file: hidden-review
+     filtering must keep working; extend the existing tests rather than
+     replacing them.
+2. **Generic 500 responder** (item 2 — separate commit, largest diff):
+   - Add `server/util/respondServerError.js` (or similar): logs the real
+     error with route context via `console.error`, responds
+     `500 { error: 'Internal server error' }`.
+   - Replace every `res.status(500).json({ error: err.message })` across
+     `server/routes/*.js` (including any new admin/profile routes from the
+     merged worktrees — they were written before this rule).
+   - Keep 4xx validation messages as-is; only 500s change. Update any Jest
+     assertions that matched specific 500 messages.
+   - Exception: `ingredients.js` already logs rich context on purpose
+     (Phase A debugging) — keep its logging, change only the response body.
+3. **Re-audit the merged admin surface** (new since this audit): every
+   `/admin` route must chain `verifyToken` + the admin-claims check
+   (`requireAdmin`); verify report/moderation endpoints validate ids as
+   strings (the injection patterns from §2 — new code may not have inherited
+   them), and add those routes to the regression suite in
+   `security.test.js`.
+4. Update §4 checkboxes + this section, run `npm test` in `server/` (and the
+   frontend suite if `src/` was touched), open the PR.

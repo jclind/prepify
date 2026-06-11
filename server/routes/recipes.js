@@ -9,6 +9,10 @@ const { deleteRecipeImage } = require('../util/firebaseStorage')
 
 const router = Router()
 
+// Hard ceiling on client-requested page sizes so a single request can never
+// dump a whole collection (audit §4.5). Shared by every paginated route here.
+const MAX_PER_PAGE = 50
+
 function escapeRegex(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
@@ -19,8 +23,8 @@ router.get('/recipes', async (req, res) => {
   try {
     const db = getDB()
     const { q, page = 0, recipesPerPage = 5, order, cuisine, tags } = req.query
-    const skip = parseInt(page) * parseInt(recipesPerPage)
-    const limit = parseInt(recipesPerPage)
+    const limit = Math.min(parseInt(recipesPerPage) || 5, MAX_PER_PAGE)
+    const skip = (parseInt(page) || 0) * limit
 
     const filter = {}
 
