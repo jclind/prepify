@@ -1,8 +1,0 @@
-@use '../../../../helpers.scss' as s;
-
-.t4 {
-  .t4-line {
-    display: inline-flex; align-items: center; gap: 0.8rem; margin-top: 1.1rem; flex-wrap: wrap; justify-content: center;
-    .t4-sep { width: 1px; height: 18px; background: #e6d8c8; @media (max-width: 480px) { display: none; } }
-  }
-}

@@ -1,9 +1,0 @@
-@use '../../../../helpers.scss' as s;
-
-.t2 {
-  .t2-nameline {
-    display: inline-flex; align-items: center; gap: 0.7rem; margin-top: 0.9rem; flex-wrap: wrap; justify-content: center;
-    .r3soft-name { margin-top: 0; }
-  }
-  .t2-xp { display: flex; justify-content: center; margin-top: 1.1rem; }
-}
