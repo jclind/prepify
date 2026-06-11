@@ -174,9 +174,8 @@ const Recipes: FC = () => {
           <p>Healthy, budget-friendly meals with real prices per serving.</p>
         </header>
 
-        <SearchRecipesInput defaultVal={query} autoComplete={true} />
-
         <div className='recipes-toolbar'>
+          <SearchRecipesInput defaultVal={query} autoComplete={true} />
           <button
             type='button'
             className='recipes-filters-btn'

@@ -52,6 +52,9 @@
     color: s.$primary;
     font-weight: 800;
     font-size: 0.74rem;
+    // The thumb sets line-height:0 (to kill the image baseline gap); restore a
+    // normal line-height here or the chip's text renders vertically cramped.
+    line-height: 1.1;
     padding: 0.28rem 0.6rem;
     border-radius: 999px;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
