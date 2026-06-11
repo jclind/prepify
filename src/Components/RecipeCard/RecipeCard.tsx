@@ -10,6 +10,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import AuthAPI from 'src/api/auth'
 import RecipeAPI from 'src/api/recipes'
 import { formatRating } from 'src/util/formatRating'
+import { formatPrice } from 'src/util/formatPrice'
+import { minToHrMin } from 'src/util/minToHrMin'
 import { RecipeType } from 'types'
 import './RecipeCard.scss'
 
@@ -114,14 +116,14 @@ const RecipeCard: FC<RecipeCardProps> = ({ recipe, loading }) => {
 
   const price =
     recipe.servingPrice != null
-      ? `$${(recipe.servingPrice / 100).toFixed(2)}/serving`
+      ? `${formatPrice(recipe.servingPrice)}/serving`
       : null
-  const time =
-    recipe.totalTime >= 60
-      ? `${Math.floor(recipe.totalTime / 60)}h ${
-          recipe.totalTime % 60 ? `${recipe.totalTime % 60}m` : ''
-        }`.trim()
-      : `${recipe.totalTime} min`
+  const hm = minToHrMin(recipe.totalTime)
+  const time = !hm
+    ? `${recipe.totalTime} min`
+    : hm.hours
+    ? `${hm.hours}h${hm.minutes ? ` ${hm.minutes}m` : ''}`
+    : `${hm.minutes} min`
 
   return (
     <article className='recipe-card'>
