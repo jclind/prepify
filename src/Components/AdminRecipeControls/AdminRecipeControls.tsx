@@ -85,7 +85,11 @@ const AdminRecipeControls: FC<AdminRecipeControlsProps> = ({ recipe }) => {
       <button
         type='button'
         className='arc-btn publish'
-        disabled={busy}
+        // `status` is a single field shared with the moderation takedown, so
+        // unpublishing a taken-down recipe would silently clear the `hidden`
+        // state (and its moderation stamp). Force the admin to Restore first.
+        disabled={busy || isHidden}
+        title={isHidden ? 'Restore this recipe before changing its publish state' : undefined}
         onClick={() => publishMutation.mutate(isUnpublished)}
       >
         {isUnpublished ? 'Publish' : 'Unpublish'}
@@ -94,7 +98,10 @@ const AdminRecipeControls: FC<AdminRecipeControlsProps> = ({ recipe }) => {
       <button
         type='button'
         className='arc-btn takedown'
-        disabled={busy}
+        // Mirror of the guard above: taking down an unpublished recipe would
+        // clobber the `unpublished` state. Force a Publish back to active first.
+        disabled={busy || isUnpublished}
+        title={isUnpublished ? 'Publish this recipe before taking it down' : undefined}
         onClick={() => takedownMutation.mutate(!isHidden)}
       >
         {isHidden ? 'Restore' : 'Take down'}

@@ -78,4 +78,21 @@ describe('AdminRecipeControls', () => {
     renderControls({ ...recipe, status: 'unpublished' } as RecipeType)
     expect(screen.getByRole('button', { name: /publish/i })).toBeInTheDocument()
   })
+
+  // `status` is shared by the publish + moderation states, so the conflicting
+  // toggle is disabled to stop one silently clobbering the other.
+  it('disables Unpublish while the recipe is taken down (hidden)', () => {
+    mockedUseAuth.mockReturnValue({ isAdmin: true })
+    renderControls({ ...recipe, status: 'hidden' } as RecipeType)
+    expect(screen.getByRole('button', { name: /unpublish/i })).toBeDisabled()
+    // Restore is still available so the admin can return to active first.
+    expect(screen.getByRole('button', { name: /restore/i })).toBeEnabled()
+  })
+
+  it('disables Take down while the recipe is unpublished', () => {
+    mockedUseAuth.mockReturnValue({ isAdmin: true })
+    renderControls({ ...recipe, status: 'unpublished' } as RecipeType)
+    expect(screen.getByRole('button', { name: /take down/i })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /^publish$/i })).toBeEnabled()
+  })
 })
