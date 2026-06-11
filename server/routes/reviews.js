@@ -239,7 +239,7 @@ router.patch('/admin/reviews/moderation', verifyToken, requireAdmin, async (req,
   try {
     const db = getDB()
     const { recipeId, username, moderationHidden } = req.body
-    if (!recipeId || !username) {
+    if (!recipeId || typeof recipeId !== 'string' || !username || typeof username !== 'string') {
       return res.status(400).json({ error: 'recipeId and username are required' })
     }
     if (typeof moderationHidden !== 'boolean') {
