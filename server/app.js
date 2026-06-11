@@ -1,5 +1,7 @@
 const express = require('express')
 const cors = require('cors')
+const helmet = require('helmet')
+const { rateLimit } = require('express-rate-limit')
 const recipeRoutes = require('./routes/recipes')
 const reviewRoutes = require('./routes/reviews')
 const userRoutes = require('./routes/users')
@@ -42,8 +44,33 @@ app.use(cors({
   credentials: true,
 }))
 app.use(express.json())
+app.use(helmet())
 
+// In production the server sits behind exactly one reverse proxy (the hosting
+// platform's), so req.ip must come from X-Forwarded-For for per-IP rate
+// limiting to see real clients. Never trusted in dev, where the server is hit
+// directly and the header would be client-spoofable.
+if (isProduction) app.set('trust proxy', 1)
+
+// /health stays above the limiter so platform health checks and uptime
+// monitors can never be throttled into a false "down".
 app.get('/health', (req, res) => res.json({ status: 'ok' }))
+
+// Generous global per-IP backstop — normal browsing is tens of requests a
+// minute, so only scripted abuse approaches this. The tight per-user limit on
+// /api/ingredients/parse (paid Spoonacular quota) lives in routes/ingredients.js.
+// Skipped under Jest, where supertest fires hundreds of requests from one IP
+// in seconds; Cypress E2E in CI stays well under the cap.
+app.use(
+  '/api',
+  rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 1000,
+    standardHeaders: true,
+    legacyHeaders: false,
+    skip: () => process.env.NODE_ENV === 'test',
+  })
+)
 
 app.use('/api', recipeRoutes)
 app.use('/api', reviewRoutes)
