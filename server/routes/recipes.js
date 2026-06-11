@@ -18,8 +18,16 @@ router.get('/recipes', async (req, res) => {
   // TODO: no auth required for browse; individual write routes below need auth
   try {
     const db = getDB()
-    const { q, page = 0, recipesPerPage = 5, order, cuisine, tags, mealTypes } =
-      req.query
+    const {
+      q,
+      page = 0,
+      recipesPerPage = 5,
+      order,
+      cuisine,
+      tags,
+      mealTypes,
+      diets,
+    } = req.query
     const skip = parseInt(page) * parseInt(recipesPerPage)
     const limit = parseInt(recipesPerPage)
 
@@ -62,6 +70,16 @@ router.get('/recipes', async (req, res) => {
       }
     }
 
+    // Dietary filter — conjunctive ($all): a recipe must carry EVERY selected
+    // diet label (e.g. Vegan AND Gluten-Free), since these are restrictions.
+    // (The shared `tags`/$or above stays OR-based for the Home meal lookup.)
+    if (diets) {
+      const dietList = parseList(diets)
+      if (dietList.length > 0) {
+        filter.nutritionLabels = { $all: dietList }
+      }
+    }
+
     // Sort options exposed by the browse UI. `createdAt` is a millisecond-epoch
     // string of fixed (13-digit) width, so a lexicographic sort matches
     // chronological order. `_id` is a final tiebreak so pagination is stable
@@ -70,6 +88,11 @@ router.get('/recipes', async (req, res) => {
       popular: { numTimesSaved: -1, views: -1, _id: -1 },
       new: { createdAt: -1, _id: -1 },
       old: { createdAt: 1, _id: 1 },
+      // Price/time sorts assume every recipe has servingPrice/totalTime (all
+      // current docs do). If null/missing values ever appear, Mongo sorts them
+      // first in ascending order, so "cheapest"/"quickest" would lead with
+      // unpriced/untimed recipes — switch to an aggregation with $ifNull→Infinity
+      // (nulls-last) at that point rather than papering over it here.
       cheapest: { servingPrice: 1, _id: 1 },
       expensive: { servingPrice: -1, _id: -1 },
       shortest: { totalTime: 1, _id: 1 },

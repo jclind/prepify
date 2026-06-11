@@ -35,7 +35,10 @@ class RecipeAPIClass {
     cuisine: string = '',
     recipesPerPage = 5,
     query = '',
-    mealTypes: string[] = []
+    mealTypes: string[] = [],
+    // Diet labels, matched conjunctively (AND) by the server. Distinct from
+    // `tags` (OR-based; used by the Home meal lookup).
+    diets: string[] = []
   ): Promise<RecipeDBResponseType> {
     // Build via URLSearchParams so every value is encoded — search terms and
     // multi-word cuisines (e.g. "Middle Eastern") would otherwise corrupt the
@@ -49,6 +52,7 @@ class RecipeAPIClass {
     })
     if (tags.length > 0) params.set('tags', tags.join(','))
     if (mealTypes.length > 0) params.set('mealTypes', mealTypes.join(','))
+    if (diets.length > 0) params.set('diets', diets.join(','))
 
     const result = await http.get(`api/recipes?${params.toString()}`)
     return result.data
