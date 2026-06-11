@@ -89,9 +89,6 @@ describe('Recipes (Browse) page', () => {
     mockGetAllRecipes.mockResolvedValue({
       recipeList: [makeRecipe('1'), makeRecipe('2'), makeRecipe('3')],
       total_results: 3,
-      page: 0,
-      entries_per_page: 9,
-      filters: {},
     })
     renderRecipes()
     await screen.findByText('Recipe 1')
@@ -103,9 +100,6 @@ describe('Recipes (Browse) page', () => {
     mockGetAllRecipes.mockResolvedValue({
       recipeList: [],
       total_results: 0,
-      page: 0,
-      entries_per_page: 9,
-      filters: {},
     })
     renderRecipes()
     await screen.findByText('No recipes found')
@@ -115,9 +109,6 @@ describe('Recipes (Browse) page', () => {
     mockGetAllRecipes.mockResolvedValue({
       recipeList: [makeRecipe('1'), makeRecipe('2'), makeRecipe('3')],
       total_results: 6,
-      page: 0,
-      entries_per_page: 9,
-      filters: {},
     })
     renderRecipes()
     await screen.findByText('Load more recipes')
@@ -127,9 +118,6 @@ describe('Recipes (Browse) page', () => {
     mockGetAllRecipes.mockResolvedValue({
       recipeList: [makeRecipe('1'), makeRecipe('2')],
       total_results: 2,
-      page: 0,
-      entries_per_page: 9,
-      filters: {},
     })
     renderRecipes()
     await screen.findByText('Recipe 1')
@@ -141,9 +129,6 @@ describe('Recipes (Browse) page', () => {
     mockGetAllRecipes.mockResolvedValueOnce({
       recipeList: [makeRecipe('1')],
       total_results: 6,
-      page: 0,
-      entries_per_page: 9,
-      filters: {},
     })
 
     let resolveNext: (v: any) => void
@@ -164,9 +149,6 @@ describe('Recipes (Browse) page', () => {
     resolveNext!({
       recipeList: [makeRecipe('2')],
       total_results: 6,
-      page: 1,
-      entries_per_page: 9,
-      filters: {},
     })
     await waitFor(() => expect(btn).not.toBeDisabled())
   })
@@ -177,16 +159,10 @@ describe('Recipes (Browse) page', () => {
       .mockResolvedValueOnce({
         recipeList: [makeRecipe('1')],
         total_results: 6,
-        page: 0,
-        entries_per_page: 9,
-        filters: {},
       })
       .mockResolvedValueOnce({
         recipeList: [makeRecipe('2')],
         total_results: 6,
-        page: 1,
-        entries_per_page: 9,
-        filters: {},
       })
 
     renderRecipes()
@@ -206,16 +182,10 @@ describe('Recipes (Browse) page', () => {
       .mockResolvedValueOnce({
         recipeList: [makeRecipe('1')],
         total_results: 6,
-        page: 0,
-        entries_per_page: 9,
-        filters: {},
       })
       .mockResolvedValueOnce({
         recipeList: [makeRecipe('2')],
         total_results: 6,
-        page: 1,
-        entries_per_page: 9,
-        filters: {},
       })
 
     renderRecipes()
@@ -231,9 +201,6 @@ describe('Recipes (Browse) page', () => {
     mockGetAllRecipes.mockResolvedValue({
       recipeList: [makeRecipe('1')],
       total_results: 1,
-      page: 0,
-      entries_per_page: 9,
-      filters: {},
     })
 
     renderRecipes()
@@ -243,9 +210,6 @@ describe('Recipes (Browse) page', () => {
     mockGetAllRecipes.mockResolvedValue({
       recipeList: [makeRecipe('A')],
       total_results: 1,
-      page: 0,
-      entries_per_page: 9,
-      filters: {},
     })
 
     // Open the Sort menu and pick a different option.
@@ -265,9 +229,6 @@ describe('Recipes (Browse) page', () => {
     mockGetAllRecipes.mockResolvedValue({
       recipeList: [],
       total_results: 0,
-      page: 0,
-      entries_per_page: 9,
-      filters: {},
     })
     renderRecipes('/?q=taco-tuesday')
     await waitFor(() =>
