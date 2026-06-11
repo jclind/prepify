@@ -62,6 +62,18 @@ describe('AchievementsModal', () => {
     expect(firstSave).toHaveClass('earned')
   })
 
+  // Regression: the content frame must be position:absolute. react-modal centers
+  // it with top/left:50% + translate(-50%,-50%); without an explicit position the
+  // frame defaults to `static`, the offsets are ignored, and the translate yanks
+  // the card off-screen (top-left). Caught only in a real browser, never jsdom.
+  it('positions the modal frame absolutely so it stays centered', () => {
+    render(
+      <AchievementsModal isOpen onClose={() => {}} achievements={achievements} />
+    )
+    const frame = screen.getByRole('dialog')
+    expect(frame).toHaveStyle({ position: 'absolute' })
+  })
+
   it('renders nothing when closed', () => {
     render(
       <AchievementsModal
