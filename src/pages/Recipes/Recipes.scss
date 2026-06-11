@@ -38,7 +38,8 @@
         color: s.$tertiary-text;
       }
       input {
-        height: 48px;
+        box-sizing: border-box;
+        height: 52px;
         border: 1px solid s.$gray-400;
         border-radius: 999px;
         background: s.$white;
@@ -95,7 +96,8 @@
     font-weight: 700;
     font-size: 0.85rem;
     padding: 0 1.1rem;
-    min-height: 2.5rem;
+    box-sizing: border-box;
+    min-height: 52px; // match the search pill's height
     border-radius: 999px;
     cursor: pointer;
     white-space: nowrap;
@@ -128,7 +130,8 @@
       display: inline-flex;
       align-items: center;
       gap: 0.3rem;
-      min-height: 2.5rem;
+      box-sizing: border-box;
+      min-height: 52px; // match the search pill's height
       padding: 0 1rem;
       font-family: inherit;
       font-weight: 700;
