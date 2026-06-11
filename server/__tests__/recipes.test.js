@@ -173,6 +173,23 @@ describe('GET /recipes sorting & meal filter', () => {
     expect(res.body.recipeList).toHaveLength(1)
     expect(res.body.recipeList[0]._id).toBe('s-c')
   })
+
+  // Hardening: `order` is client-controlled; an inherited-member name must not
+  // resolve to a function/object and break the Mongo sort.
+  it('ignores a prototype-polluting order value (no 500)', async () => {
+    const res = await request(app).get('/api/recipes?order=constructor')
+    expect(res.status).toBe(200)
+    expect(Array.isArray(res.body.recipeList)).toBe(true)
+  })
+
+  // Hardening: a repeated list param arrives as an array; must not throw.
+  it('handles a repeated mealTypes param as an array', async () => {
+    const res = await request(app).get(
+      '/api/recipes?mealTypes=dinner&mealTypes=lunch'
+    )
+    expect(res.status).toBe(200)
+    expect(res.body.recipeList.map((r) => r._id).sort()).toEqual(['s-b', 's-c'])
+  })
 })
 
 // ─── POST /addRecipe ──────────────────────────────────────────────────────────

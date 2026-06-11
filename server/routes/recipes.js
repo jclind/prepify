@@ -25,16 +25,26 @@ router.get('/recipes', async (req, res) => {
 
     const filter = {}
 
-    if (q) {
-      filter.title = { $regex: escapeRegex(q), $options: 'i' }
+    // Query params can arrive as arrays (?x=a&x=b) — coerce so string ops below
+    // can't throw on malformed/repeated params.
+    const asText = (v) => (Array.isArray(v) ? v[0] : v) ?? ''
+    const parseList = (v) =>
+      (Array.isArray(v) ? v : String(v).split(','))
+        .map((s) => s.trim())
+        .filter(Boolean)
+
+    const qText = asText(q)
+    if (qText) {
+      filter.title = { $regex: escapeRegex(qText), $options: 'i' }
     }
 
-    if (cuisine && cuisine.trim()) {
-      filter.cuisine = { $regex: `^${escapeRegex(cuisine.trim())}$`, $options: 'i' }
+    const cuisineText = asText(cuisine).trim()
+    if (cuisineText) {
+      filter.cuisine = { $regex: `^${escapeRegex(cuisineText)}$`, $options: 'i' }
     }
 
     if (tags) {
-      const tagList = tags.split(',').map((t) => t.trim()).filter(Boolean)
+      const tagList = parseList(tags)
       if (tagList.length > 0) {
         filter.$or = [
           { mealTypes: { $in: tagList } },
@@ -46,7 +56,7 @@ router.get('/recipes', async (req, res) => {
     // Separate meal-type filter (AND'd with the rest): recipes matching any of
     // the selected meal types.
     if (mealTypes) {
-      const mealList = mealTypes.split(',').map((m) => m.trim()).filter(Boolean)
+      const mealList = parseList(mealTypes)
       if (mealList.length > 0) {
         filter.mealTypes = { $in: mealList }
       }
@@ -68,7 +78,12 @@ router.get('/recipes', async (req, res) => {
       top: { 'rating.rateValue': -1, _id: -1 },
       trending: { views: -1, _id: -1 },
     }
-    const sort = SORTS[order] || SORTS.popular
+    // Own-property lookup only — `order` is client-controlled, so a bare
+    // `SORTS[order]` would resolve inherited members (`constructor`, `__proto__`)
+    // to a function/object and break the Mongo sort.
+    const sort = Object.prototype.hasOwnProperty.call(SORTS, order)
+      ? SORTS[order]
+      : SORTS.popular
 
     const collection = db.collection('recipes')
     const [recipes, totalCount] = await Promise.all([
