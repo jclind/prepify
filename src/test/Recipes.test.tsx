@@ -15,6 +15,10 @@ vi.mock('src/api/recipes', () => ({
     // RecipeCard's save button queries this; it stays disabled in tests (no
     // signed-in uid), but provide it so the mocked module is complete.
     getSavedRecipeIds: vi.fn().mockResolvedValue([]),
+    // The filter drawer queries this to hide cuisines with no recipes.
+    getRecipeFacets: vi
+      .fn()
+      .mockResolvedValue({ cuisines: [], diets: [], mealTypes: [] }),
   },
 }))
 

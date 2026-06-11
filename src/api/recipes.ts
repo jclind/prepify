@@ -41,6 +41,13 @@ export type GetAllRecipesParams = {
   diets?: string[]
 }
 
+/** Distinct filter values that actually exist in the catalog. */
+export type RecipeFacets = {
+  cuisines: string[]
+  diets: string[]
+  mealTypes: string[]
+}
+
 class RecipeAPIClass {
   async getAllRecipes({
     page = 0,
@@ -102,6 +109,10 @@ class RecipeAPIClass {
   // The current user's saved recipe ids — one request the whole grid can share.
   async getSavedRecipeIds(): Promise<string[]> {
     const result = await http.get('api/getSavedRecipeIds')
+    return result.data
+  }
+  async getRecipeFacets(): Promise<RecipeFacets> {
+    const result = await http.get('api/recipes/facets')
     return result.data
   }
   async unsaveRecipe(recipeId = ''): Promise<AxiosResponse> {

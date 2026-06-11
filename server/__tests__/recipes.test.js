@@ -217,6 +217,28 @@ describe('GET /recipes diet filter (AND)', () => {
   })
 })
 
+describe('GET /recipes/facets', () => {
+  beforeEach(async () => {
+    const db = getDB()
+    await db.collection('recipes').insertMany([
+      { ...BASE_RECIPE, _id: 'f-1', cuisine: 'Italian', mealTypes: ['dinner'], nutritionLabels: ['vegan'] },
+      { ...BASE_RECIPE, _id: 'f-2', cuisine: 'Mexican', mealTypes: ['lunch'], nutritionLabels: ['gluten-free'] },
+      // Empty/missing values should be dropped, not surfaced as facets.
+      { ...BASE_RECIPE, _id: 'f-3', cuisine: '', mealTypes: [], nutritionLabels: [] },
+    ])
+  })
+
+  it('returns only the distinct, non-empty values present in the catalog', async () => {
+    const res = await request(app).get('/api/recipes/facets')
+    expect(res.status).toBe(200)
+    expect(res.body.cuisines.sort()).toEqual(['Italian', 'Mexican'])
+    expect(res.body.diets.sort()).toEqual(['gluten-free', 'vegan'])
+    expect(res.body.mealTypes.sort()).toEqual(['dinner', 'lunch'])
+    // The empty-string cuisine from f-3 is filtered out.
+    expect(res.body.cuisines).not.toContain('')
+  })
+})
+
 // ─── POST /addRecipe ──────────────────────────────────────────────────────────
 
 describe('POST /addRecipe', () => {

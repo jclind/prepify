@@ -120,6 +120,31 @@ router.get('/recipes', async (req, res) => {
   }
 })
 
+// GET /recipes/facets — distinct filter values that actually exist in the
+// catalog, so the browse UI can hide filters with zero recipes (e.g. don't
+// offer "Jamaican" when nothing is tagged Jamaican). `distinct` returns raw
+// stored values including null/'' — drop the empties; the client maps the rest
+// back to its curated label lists.
+router.get('/recipes/facets', async (req, res) => {
+  try {
+    const collection = getDB().collection('recipes')
+    const clean = (arr) =>
+      arr.filter((v) => typeof v === 'string' && v.trim() !== '')
+    const [cuisines, diets, mealTypes] = await Promise.all([
+      collection.distinct('cuisine'),
+      collection.distinct('nutritionLabels'),
+      collection.distinct('mealTypes'),
+    ])
+    res.json({
+      cuisines: clean(cuisines),
+      diets: clean(diets),
+      mealTypes: clean(mealTypes),
+    })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 // GET /searchAutoCompleteRecipes — quick title search for autocomplete
 router.get('/searchAutoCompleteRecipes', async (req, res) => {
   try {
