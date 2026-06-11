@@ -32,10 +32,10 @@ router.post('/reports', verifyToken, requireActive, async (req, res) => {
     if (!TARGET_TYPES.includes(targetType)) {
       return res.status(400).json({ error: "targetType must be 'recipe' or 'review'" })
     }
-    if (!recipeId) {
+    if (!recipeId || typeof recipeId !== 'string') {
       return res.status(400).json({ error: 'recipeId is required' })
     }
-    if (targetType === 'review' && !reportedUsername) {
+    if (targetType === 'review' && (!reportedUsername || typeof reportedUsername !== 'string')) {
       return res.status(400).json({ error: 'reportedUsername is required for review reports' })
     }
     if (!REASONS.includes(reason)) {
