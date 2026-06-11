@@ -758,6 +758,37 @@ describe('GET /getSavedRecipe', () => {
   })
 })
 
+// ─── GET /getSavedRecipeIds ───────────────────────────────────────────────────
+
+describe('GET /getSavedRecipeIds', () => {
+  it('rejects request with no auth token (401)', async () => {
+    const res = await request(app).get('/api/getSavedRecipeIds')
+    expect(res.status).toBe(401)
+  })
+
+  it('returns the current user saved recipe ids', async () => {
+    await seedUserRecipeData(TEST_UID, {
+      savedRecipes: [
+        { recipeId: 'r1', dateSaved: '1' },
+        { recipeId: 'r2', dateSaved: '2' },
+      ],
+    })
+    const res = await request(app)
+      .get('/api/getSavedRecipeIds')
+      .set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(res.body.sort()).toEqual(['r1', 'r2'])
+  })
+
+  it('returns [] when the user has no saved recipes', async () => {
+    const res = await request(app)
+      .get('/api/getSavedRecipeIds')
+      .set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(res.body).toEqual([])
+  })
+})
+
 // ─── POST /madeRecipe ─────────────────────────────────────────────────────────
 
 describe('POST /madeRecipe', () => {

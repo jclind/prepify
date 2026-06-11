@@ -14,7 +14,7 @@ vi.mock('src/api/recipes', () => ({
     searchAutoCompleteRecipes: vi.fn().mockResolvedValue([]),
     // RecipeCard's save button queries this; it stays disabled in tests (no
     // signed-in uid), but provide it so the mocked module is complete.
-    getSavedRecipe: vi.fn().mockResolvedValue(null),
+    getSavedRecipeIds: vi.fn().mockResolvedValue([]),
   },
 }))
 
