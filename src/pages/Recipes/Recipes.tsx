@@ -12,7 +12,7 @@ import { dietLabelsOptions } from 'src/recipeData/dietLabels'
 import cuisinesList from 'src/recipeData/cuisinesList'
 import mealTypesList from 'src/recipeData/mealTypesList'
 
-const RECIPES_PER_PAGE = 9
+const RECIPES_PER_PAGE = 10
 
 const SORT_OPTIONS = [
   { value: 'popular', label: 'Popular' },
