@@ -24,15 +24,15 @@ router.get('/recipes', async (req, res) => {
 
     const filter = {}
 
-    if (q) {
+    if (q && typeof q === 'string') {
       filter.title = { $regex: escapeRegex(q), $options: 'i' }
     }
 
-    if (cuisine && cuisine.trim()) {
+    if (cuisine && typeof cuisine === 'string' && cuisine.trim()) {
       filter.cuisine = { $regex: `^${escapeRegex(cuisine.trim())}$`, $options: 'i' }
     }
 
-    if (tags) {
+    if (tags && typeof tags === 'string') {
       const tagList = tags.split(',').map((t) => t.trim()).filter(Boolean)
       if (tagList.length > 0) {
         filter.$or = [
@@ -67,7 +67,7 @@ router.get('/searchAutoCompleteRecipes', async (req, res) => {
     const recipes = await db
       .collection('recipes')
       .find(
-        { title: { $regex: escapeRegex(title || ''), $options: 'i' } },
+        { title: { $regex: escapeRegex(typeof title === 'string' ? title : ''), $options: 'i' } },
         {
           projection: {
             _id: 1,

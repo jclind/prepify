@@ -9,6 +9,11 @@ const draftRoutes = require('./routes/drafts')
 
 const app = express()
 
+// The default ('extended'/qs) parser turns ?id[$ne]=x into a nested object,
+// which would flow into MongoDB filters as a query operator. 'simple' keeps
+// every query value a plain string (or array of strings for repeated keys).
+app.set('query parser', 'simple')
+
 const allowedOrigins = (process.env.FRONTEND_URLS || 'http://localhost:3000')
   .split(',')
   .map(s => s.trim().replace(/\/$/, ''))
