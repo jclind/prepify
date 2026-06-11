@@ -43,7 +43,12 @@ const HomeBrowseByMeal: FC = () => {
   const results = useQueries({
     queries: MEALS.map(meal => ({
       queryKey: ['recipes-by-meal', meal],
-      queryFn: () => RecipeAPI.getAllRecipes(0, 'trending', [meal], '', PER_COL * 3),
+      queryFn: () =>
+        RecipeAPI.getAllRecipes({
+          order: 'trending',
+          tags: [meal],
+          recipesPerPage: PER_COL * 3,
+        }),
       staleTime: 5 * 60 * 1000,
     })),
   })

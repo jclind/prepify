@@ -120,6 +120,125 @@ describe('GET /recipes', () => {
   })
 })
 
+// ─── GET /recipes — sorting & meal filter ─────────────────────────────────────
+
+describe('GET /recipes sorting & meal filter', () => {
+  beforeEach(async () => {
+    const db = getDB()
+    // Distinct price / time / createdAt / saves so order is unambiguous.
+    await db.collection('recipes').insertMany([
+      { ...BASE_RECIPE, _id: 's-a', title: 'Alpha', mealTypes: ['breakfast'], nutritionLabels: ['vegan'], servingPrice: 100, totalTime: 10, createdAt: '3000', numTimesSaved: 5 },
+      { ...BASE_RECIPE, _id: 's-b', title: 'Bravo', mealTypes: ['dinner'], nutritionLabels: [], servingPrice: 300, totalTime: 50, createdAt: '1000', numTimesSaved: 1 },
+      { ...BASE_RECIPE, _id: 's-c', title: 'Charlie', mealTypes: ['lunch', 'dinner'], nutritionLabels: ['vegan'], servingPrice: 200, totalTime: 30, createdAt: '2000', numTimesSaved: 9 },
+    ])
+  })
+
+  const firstId = async (order) => {
+    const res = await request(app).get(`/api/recipes?order=${order}`)
+    expect(res.status).toBe(200)
+    return res.body.recipeList[0]._id
+  }
+
+  it('cheapest → lowest servingPrice first', async () => {
+    expect(await firstId('cheapest')).toBe('s-a')
+  })
+  it('expensive → highest servingPrice first', async () => {
+    expect(await firstId('expensive')).toBe('s-b')
+  })
+  it('shortest → lowest totalTime first', async () => {
+    expect(await firstId('shortest')).toBe('s-a')
+  })
+  it('longest → highest totalTime first', async () => {
+    expect(await firstId('longest')).toBe('s-b')
+  })
+  it('new → newest createdAt first', async () => {
+    expect(await firstId('new')).toBe('s-a')
+  })
+  it('old → oldest createdAt first', async () => {
+    expect(await firstId('old')).toBe('s-b')
+  })
+  it('popular → most-saved first', async () => {
+    expect(await firstId('popular')).toBe('s-c')
+  })
+
+  it('mealTypes filters to recipes with that meal', async () => {
+    const res = await request(app).get('/api/recipes?mealTypes=dinner')
+    expect(res.status).toBe(200)
+    expect(res.body.recipeList.map((r) => r._id).sort()).toEqual(['s-b', 's-c'])
+  })
+
+  it('mealTypes AND tags (diet) combine', async () => {
+    const res = await request(app).get('/api/recipes?mealTypes=dinner&tags=vegan')
+    expect(res.status).toBe(200)
+    expect(res.body.recipeList).toHaveLength(1)
+    expect(res.body.recipeList[0]._id).toBe('s-c')
+  })
+
+  // Hardening: `order` is client-controlled; an inherited-member name must not
+  // resolve to a function/object and break the Mongo sort.
+  it('ignores a prototype-polluting order value (no 500)', async () => {
+    const res = await request(app).get('/api/recipes?order=constructor')
+    expect(res.status).toBe(200)
+    expect(Array.isArray(res.body.recipeList)).toBe(true)
+  })
+
+  // Hardening: a repeated list param arrives as an array; must not throw.
+  it('handles a repeated mealTypes param as an array', async () => {
+    const res = await request(app).get(
+      '/api/recipes?mealTypes=dinner&mealTypes=lunch'
+    )
+    expect(res.status).toBe(200)
+    expect(res.body.recipeList.map((r) => r._id).sort()).toEqual(['s-b', 's-c'])
+  })
+})
+
+// ─── GET /recipes — diet filter (conjunctive / AND) ───────────────────────────
+
+describe('GET /recipes diet filter (AND)', () => {
+  beforeEach(async () => {
+    const db = getDB()
+    await db.collection('recipes').insertMany([
+      { ...BASE_RECIPE, _id: 'd-1', title: 'Both', nutritionLabels: ['vegan', 'gluten-free'] },
+      { ...BASE_RECIPE, _id: 'd-2', title: 'VeganOnly', nutritionLabels: ['vegan'] },
+      { ...BASE_RECIPE, _id: 'd-3', title: 'GfOnly', nutritionLabels: ['gluten-free'] },
+    ])
+  })
+
+  it('a single diet matches any recipe carrying it', async () => {
+    const res = await request(app).get('/api/recipes?diets=vegan')
+    expect(res.status).toBe(200)
+    expect(res.body.recipeList.map((r) => r._id).sort()).toEqual(['d-1', 'd-2'])
+  })
+
+  it('multiple diets require ALL labels (AND, not OR)', async () => {
+    const res = await request(app).get('/api/recipes?diets=vegan,gluten-free')
+    expect(res.status).toBe(200)
+    expect(res.body.recipeList.map((r) => r._id)).toEqual(['d-1'])
+  })
+})
+
+describe('GET /recipes/facets', () => {
+  beforeEach(async () => {
+    const db = getDB()
+    await db.collection('recipes').insertMany([
+      { ...BASE_RECIPE, _id: 'f-1', cuisine: 'Italian', mealTypes: ['dinner'], nutritionLabels: ['vegan'] },
+      { ...BASE_RECIPE, _id: 'f-2', cuisine: 'Mexican', mealTypes: ['lunch'], nutritionLabels: ['gluten-free'] },
+      // Empty/missing values should be dropped, not surfaced as facets.
+      { ...BASE_RECIPE, _id: 'f-3', cuisine: '', mealTypes: [], nutritionLabels: [] },
+    ])
+  })
+
+  it('returns only the distinct, non-empty values present in the catalog', async () => {
+    const res = await request(app).get('/api/recipes/facets')
+    expect(res.status).toBe(200)
+    expect(res.body.cuisines.sort()).toEqual(['Italian', 'Mexican'])
+    expect(res.body.diets.sort()).toEqual(['gluten-free', 'vegan'])
+    expect(res.body.mealTypes.sort()).toEqual(['dinner', 'lunch'])
+    // The empty-string cuisine from f-3 is filtered out.
+    expect(res.body.cuisines).not.toContain('')
+  })
+})
+
 // ─── POST /addRecipe ──────────────────────────────────────────────────────────
 
 describe('POST /addRecipe', () => {
@@ -658,6 +777,37 @@ describe('GET /getSavedRecipe', () => {
       .set(AUTH_HEADER)
     expect(res.status).toBe(200)
     expect(res.body).toBeNull()
+  })
+})
+
+// ─── GET /getSavedRecipeIds ───────────────────────────────────────────────────
+
+describe('GET /getSavedRecipeIds', () => {
+  it('rejects request with no auth token (401)', async () => {
+    const res = await request(app).get('/api/getSavedRecipeIds')
+    expect(res.status).toBe(401)
+  })
+
+  it('returns the current user saved recipe ids', async () => {
+    await seedUserRecipeData(TEST_UID, {
+      savedRecipes: [
+        { recipeId: 'r1', dateSaved: '1' },
+        { recipeId: 'r2', dateSaved: '2' },
+      ],
+    })
+    const res = await request(app)
+      .get('/api/getSavedRecipeIds')
+      .set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(res.body.sort()).toEqual(['r1', 'r2'])
+  })
+
+  it('returns [] when the user has no saved recipes', async () => {
+    const res = await request(app)
+      .get('/api/getSavedRecipeIds')
+      .set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(res.body).toEqual([])
   })
 })
 

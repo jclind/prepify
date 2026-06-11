@@ -6,6 +6,9 @@ const { RECIPE_VISIBLE } = require('../util/moderation')
 
 const router = Router()
 
+// Hard ceiling on client-requested page sizes (audit §4.5); mirrors recipes.js.
+const MAX_PER_PAGE = 50
+
 // GET /getCreatedRecipes — recipes authored by the current user, with pagination
 router.get('/getCreatedRecipes', verifyToken, async (req, res) => {
   try {
@@ -15,8 +18,8 @@ router.get('/getCreatedRecipes', verifyToken, async (req, res) => {
 
     const sort = order === 'old' ? { createdAt: 1 } : { createdAt: -1 }
 
-    const pageNum = parseInt(page)
-    const perPage = parseInt(recipesPerPage)
+    const pageNum = parseInt(page) || 0
+    const perPage = Math.min(parseInt(recipesPerPage) || 6, MAX_PER_PAGE)
 
     const collection = db.collection('recipes')
     // Don't surface soft-hidden recipes in the author's own created list.
@@ -54,8 +57,8 @@ router.get('/getSavedRecipes', verifyToken, async (req, res) => {
       savedRecipes = [...savedRecipes].sort((a, b) => Number(a.dateSaved) - Number(b.dateSaved))
     }
 
-    const pageNum = parseInt(page)
-    const perPage = parseInt(recipesPerPage)
+    const pageNum = parseInt(page) || 0
+    const perPage = Math.min(parseInt(recipesPerPage) || 5, MAX_PER_PAGE)
     const pageSlice = savedRecipes.slice(pageNum * perPage, (pageNum + 1) * perPage)
     const recipeIds = pageSlice.map((entry) => entry.recipeId)
 

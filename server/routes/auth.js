@@ -45,7 +45,9 @@ router.get('/getUsername', verifyToken, async (req, res) => {
 router.get('/checkUsernameAvailability', async (req, res) => {
   try {
     const { username } = req.query
-    if (!username) return res.status(400).json({ error: 'username is required' })
+    if (!username || typeof username !== 'string') {
+      return res.status(400).json({ error: 'username is required' })
+    }
     const db = getDB()
     const existing = await db
       .collection('usernames')
