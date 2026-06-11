@@ -84,6 +84,21 @@ describe('requireActive lets active / legacy users through', () => {
   })
 })
 
+describe('GET /api/getMyStatus', () => {
+  it('returns active by default (no users record)', async () => {
+    const res = await request(app).get('/api/getMyStatus').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(res.body).toEqual({ status: 'active', statusReason: null })
+  })
+
+  it('returns status + reason and stays reachable while suspended', async () => {
+    await setStatus('suspended', 'spam')
+    const res = await request(app).get('/api/getMyStatus').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(res.body).toEqual({ status: 'suspended', statusReason: 'spam' })
+  })
+})
+
 describe('deletes remain allowed when suspended (not punitive)', () => {
   it('a suspended user can still delete their own review', async () => {
     await setStatus('suspended')

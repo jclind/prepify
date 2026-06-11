@@ -1,6 +1,7 @@
 import React, { FC, ReactElement } from 'react'
 import Navbar from 'src/Components/Navbar/Navbar'
 import Footer from 'src/Components/Footer/Footer'
+import AccountStatusBanner from 'src/Components/AccountStatusBanner/AccountStatusBanner'
 
 import './Layout.scss'
 
@@ -21,6 +22,7 @@ const Layout: FC<LayoutProps> = ({
         darkNavLinks={darkNavLinks}
         navBackgroundColor={navBackgroundColor}
       />
+      <AccountStatusBanner />
       <main className='app-main'>{children}</main>
       <Footer />
     </div>

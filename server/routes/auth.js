@@ -56,6 +56,23 @@ router.get('/checkUsernameAvailability', async (req, res) => {
   }
 })
 
+// GET /getMyStatus — the authenticated user's own moderation status, so the
+// client can show a persistent "account suspended/banned" banner up front
+// instead of only failing on a write. NOT behind requireActive: a suspended
+// user must be able to read their own status.
+router.get('/getMyStatus', verifyToken, async (req, res) => {
+  try {
+    const db = getDB()
+    const doc = await db.collection('users').findOne({ _id: req.uid })
+    res.json({
+      status: doc?.status || 'active',
+      statusReason: doc?.statusReason || null,
+    })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 // POST /setUsername?username=...
 // Creates or updates the username for the authenticated user
 router.post('/setUsername', verifyToken, requireActive, async (req, res) => {

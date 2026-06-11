@@ -69,6 +69,10 @@ const AdminRecipeControls: FC<AdminRecipeControlsProps> = ({ recipe }) => {
     <div className='admin-recipe-controls' role='group' aria-label='Admin recipe controls'>
       <span className='arc-label'>Admin</span>
 
+      {isHidden && <span className='arc-pill hidden'>Hidden</span>}
+      {isUnpublished && <span className='arc-pill unpublished'>Unpublished</span>}
+      {isFeatured && <span className='arc-pill featured'>Featured</span>}
+
       <button
         type='button'
         className='arc-btn feature'

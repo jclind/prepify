@@ -1,7 +1,7 @@
 const { Router } = require('express')
 const { ObjectId } = require('mongodb')
 const { getDB, getClient } = require('../db')
-const { verifyToken, requireAdmin, requireActive } = require('../middleware/auth')
+const { verifyToken, optionalAuth, requireAdmin, requireActive } = require('../middleware/auth')
 const { recipeIdQuery } = require('../util/recipeIdQuery')
 const { RECIPE_VISIBLE } = require('../util/moderation')
 const { validateRequiredRecipeFields, validateRecipeBounds } = require('../util/recipeLimits')
@@ -110,14 +110,24 @@ router.get('/getTrendingRecipes', async (req, res) => {
   }
 })
 
-// GET /getRecipe — fetch single recipe and increment view count
-router.get('/getRecipe', async (req, res) => {
+// GET /getRecipe — fetch single recipe and increment view count.
+// optionalAuth so an admin keeps access to hidden/unpublished recipes (to review
+// + restore them); for everyone else a moderated recipe is treated as not found.
+router.get('/getRecipe', optionalAuth, async (req, res) => {
   try {
     const db = getDB()
     const { id } = req.query
     if (!id) return res.status(400).json({ error: 'id is required' })
 
-    // A soft-hidden recipe is treated as not found for the public — and the
+    // Admin: load the recipe regardless of moderation state, WITHOUT inflating
+    // its view count (this is a moderation preview, not a real visit).
+    if (req.isAdmin) {
+      const recipe = await db.collection('recipes').findOne(recipeIdQuery(id))
+      if (!recipe) return res.status(404).json({ error: 'Not found' })
+      return res.json(recipe)
+    }
+
+    // Public: a soft-hidden/unpublished recipe is "not found" — and the
     // non-match means views aren't incremented either.
     const recipe = await db.collection('recipes').findOneAndUpdate(
       { ...recipeIdQuery(id), ...RECIPE_VISIBLE },

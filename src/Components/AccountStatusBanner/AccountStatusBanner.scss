@@ -1,0 +1,21 @@
+.account-status-banner {
+  width: 100%;
+  padding: 0.7rem 1.25rem;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  text-align: center;
+  color: #7c2d12;
+  background: #fef3c7;
+  border-bottom: 1px solid #fcd34d;
+
+  &.banned {
+    color: #7f1d1d;
+    background: #fee2e2;
+    border-bottom-color: #fca5a5;
+  }
+
+  .asb-reason {
+    font-style: italic;
+    opacity: 0.85;
+  }
+}
