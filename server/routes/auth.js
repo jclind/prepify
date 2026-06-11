@@ -1,7 +1,7 @@
 const express = require('express')
 const router = express.Router()
 const { getDB } = require('../db')
-const { verifyToken } = require('../middleware/auth')
+const { verifyToken, requireActive } = require('../middleware/auth')
 
 const USERNAME_MIN_LENGTH = 3
 const USERNAME_MAX_LENGTH = 30
@@ -58,7 +58,7 @@ router.get('/checkUsernameAvailability', async (req, res) => {
 
 // POST /setUsername?username=...
 // Creates or updates the username for the authenticated user
-router.post('/setUsername', verifyToken, async (req, res) => {
+router.post('/setUsername', verifyToken, requireActive, async (req, res) => {
   try {
     const { username } = req.query
     const validationError = validateUsername(username)

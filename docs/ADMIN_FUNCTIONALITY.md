@@ -171,9 +171,9 @@ report = {
 
 ## Progress tracker *(update as we build)*
 
-**Current status (2026-06-10): P0 + P1 built on `worktree-feat+admin-service`
-(off origin/development). Tests green — server 190, frontend 204. Not yet
-merged. P2/P3 still to do.**
+**Current status (2026-06-11): P0 + P1 + P2 built on `worktree-feat+admin-service`
+(off origin/development). Tests green — server 217, frontend 211, tsc clean. Pushed
+(no PR), not merged. P3 still to do.**
 
 Decisions locked while building: takedown model is a **`status` enum** on recipes
 (`'active' | 'hidden'`, room for P2 states) + a distinct **`moderationHidden`**
@@ -204,10 +204,33 @@ flag on the `ratings` doc for reviews (original text preserved, reversible).
 - `getSavedRecipes` `totalCount` still counts a saved-but-hidden recipe even though
   it's filtered from the returned page (minor pagination drift).
 
-### P2 — Extended moderation
-- `[ ]` User-status source of truth + suspension/ban
-- `[ ]` Recipe feature/unpublish
-- `[ ]` Admin user search/detail
+### P2 — Extended moderation ✅
+Built on `worktree-feat+admin-service`. Decisions: central status lives in a new
+**`users` collection** (uid-keyed, legacy-safe — absent ⇒ active); **ban is a soft
+DB flag**, enforced identically to suspend (writes blocked, reads/login allowed),
+NOT coupled to Firebase `disabled`; recipe item = a **`featured` flag** + a distinct
+**`unpublished`** status separate from the P1 moderation `hidden`.
+- `[x]` User-status source of truth + suspension/ban — `server/util/userStatus.js`
+  + `requireActive` middleware (`server/middleware/auth.js`) returning 403 +
+  `ACCOUNT_SUSPENDED`/`ACCOUNT_BANNED` code; gates content/social writes in
+  recipes/reviews/reports/drafts/auth (deletes intentionally left open).
+- `[x]` Admin user management — `server/routes/admin.js`: `GET /admin/users`
+  (username-prefix / email / uid search, enriched with status + recipe/review/
+  open-report counts), `GET /admin/users/:uid` (detail + email + recent content),
+  `PATCH /admin/users/:uid/status` (self-guard + can't-action-another-admin guard).
+- `[x]` Recipe feature/unpublish — `RECIPE_VISIBLE` now `$nin ['hidden','unpublished']`;
+  `PATCH /admin/recipes/:id/publish` (stamps publishUpdatedBy, NOT moderatedBy) +
+  `PATCH /admin/recipes/:id/feature`; `getTrendingRecipes` pins `featured` first.
+- `[x]` Frontend — `src/api/admin.ts`; `/admin/users` page (`src/pages/Admin/Users`)
+  + nav item; admin-only `AdminRecipeControls` strip on the recipe page
+  (feature/publish/takedown); http-common interceptor toasts the blocked-account 403.
+- `[x]` Tests — server `admin-users.test.js`, `user-status-enforcement.test.js`,
+  `admin-recipe-curation.test.js` (firebase-admin mock gained getUser/getUserByEmail
+  + __setUsers); frontend `AdminUsers.test.tsx`, `AdminRecipeControls.test.tsx`.
+  Green: server 217, frontend 211, tsc clean.
+
+**Deferred from P2 → P3:** persistent in-app "your account is suspended" banner
+(toast-on-403 only for now).
 
 ### P3 — Polish
 - `[ ]` `auditLog` collection + writes on every admin action

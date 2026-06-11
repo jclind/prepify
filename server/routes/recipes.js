@@ -1,7 +1,7 @@
 const { Router } = require('express')
 const { ObjectId } = require('mongodb')
 const { getDB, getClient } = require('../db')
-const { verifyToken, requireAdmin } = require('../middleware/auth')
+const { verifyToken, requireAdmin, requireActive } = require('../middleware/auth')
 const { recipeIdQuery } = require('../util/recipeIdQuery')
 const { RECIPE_VISIBLE } = require('../util/moderation')
 const { validateRequiredRecipeFields, validateRecipeBounds } = require('../util/recipeLimits')
@@ -96,10 +96,12 @@ router.get('/getTrendingRecipes', async (req, res) => {
   try {
     const db = getDB()
     const limit = Math.min(parseInt(req.query.limit) || 4, 20)
+    // Admin-curated `featured` picks are pinned to the front of the row, then
+    // the usual most-viewed ordering fills the rest.
     const recipes = await db
       .collection('recipes')
       .find({ ...RECIPE_VISIBLE })
-      .sort({ views: -1 })
+      .sort({ featured: -1, views: -1 })
       .limit(limit)
       .toArray()
     res.json(recipes)
@@ -138,7 +140,7 @@ router.get('/getRecipe', async (req, res) => {
 })
 
 // POST /addRecipe
-router.post('/addRecipe', verifyToken, async (req, res) => {
+router.post('/addRecipe', verifyToken, requireActive, async (req, res) => {
   try {
     const db = getDB()
     const body = req.body
@@ -170,7 +172,7 @@ router.post('/addRecipe', verifyToken, async (req, res) => {
 // metadata are never writable here (only EDITABLE_RECIPE_FIELDS are copied), so
 // an edit can never reset a recipe's ratings, saves, or made-count. editedAt is
 // stamped so the UI can surface that the recipe changed after people saved it.
-router.put('/editRecipe', verifyToken, async (req, res) => {
+router.put('/editRecipe', verifyToken, requireActive, async (req, res) => {
   try {
     const db = getDB()
     const { recipeId } = req.query
@@ -296,8 +298,67 @@ router.patch('/admin/recipes/:id/moderation', verifyToken, requireAdmin, async (
   }
 })
 
+// PATCH /admin/recipes/:id/publish — admin de-publish / re-publish.
+// Distinct from /moderation on purpose: this flips `status` between
+// 'unpublished' and 'active' and stamps `publishUpdatedBy/At` (NOT `moderatedBy`)
+// so an editorial de-publish never reads as a moderation takedown. Both states
+// are filtered from public reads identically (util/moderation RECIPE_VISIBLE).
+router.patch('/admin/recipes/:id/publish', verifyToken, requireAdmin, async (req, res) => {
+  try {
+    const db = getDB()
+    const recipeId = req.params.id
+    const { published } = req.body
+    if (typeof published !== 'boolean') {
+      return res.status(400).json({ error: 'published must be a boolean' })
+    }
+    const updated = await db.collection('recipes').findOneAndUpdate(
+      recipeIdQuery(recipeId),
+      {
+        $set: {
+          status: published ? 'active' : 'unpublished',
+          publishUpdatedBy: req.uid,
+          publishUpdatedAt: new Date(),
+        },
+      },
+      { returnDocument: 'after' }
+    )
+    if (!updated) return res.status(404).json({ error: 'Recipe not found' })
+    res.json({ _id: updated._id, status: updated.status })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// PATCH /admin/recipes/:id/feature — admin curation. `featured` recipes are
+// pinned to the front of the home trending row (see getTrendingRecipes).
+router.patch('/admin/recipes/:id/feature', verifyToken, requireAdmin, async (req, res) => {
+  try {
+    const db = getDB()
+    const recipeId = req.params.id
+    const { featured } = req.body
+    if (typeof featured !== 'boolean') {
+      return res.status(400).json({ error: 'featured must be a boolean' })
+    }
+    const updated = await db.collection('recipes').findOneAndUpdate(
+      recipeIdQuery(recipeId),
+      {
+        $set: {
+          featured,
+          featuredBy: req.uid,
+          featuredAt: new Date(),
+        },
+      },
+      { returnDocument: 'after' }
+    )
+    if (!updated) return res.status(404).json({ error: 'Recipe not found' })
+    res.json({ _id: updated._id, featured: updated.featured === true })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 // POST /recipes/:id/save
-router.post('/recipes/:id/save', verifyToken, async (req, res) => {
+router.post('/recipes/:id/save', verifyToken, requireActive, async (req, res) => {
   try {
     const db = getDB()
     const recipeId = req.params.id
@@ -344,7 +405,7 @@ router.get('/getSavedRecipe', verifyToken, async (req, res) => {
 })
 
 // DELETE /recipes/:id/save
-router.delete('/recipes/:id/save', verifyToken, async (req, res) => {
+router.delete('/recipes/:id/save', verifyToken, requireActive, async (req, res) => {
   try {
     const db = getDB()
     const recipeId = req.params.id
@@ -372,7 +433,7 @@ router.delete('/recipes/:id/save', verifyToken, async (req, res) => {
 })
 
 // POST /madeRecipe
-router.post('/madeRecipe', verifyToken, async (req, res) => {
+router.post('/madeRecipe', verifyToken, requireActive, async (req, res) => {
   try {
     const db = getDB()
     const { recipeId } = req.query

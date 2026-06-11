@@ -119,3 +119,53 @@ dashboard on any currently-hidden item (no API call needed).
   though it's filtered from the page (minor pagination drift).
 
 ✅ All boxes checked = P0 + P1 working end to end.
+
+---
+
+# P2 — Extended Moderation (smoke test)
+
+User suspension/ban, admin user search, and recipe feature/unpublish. Needs the
+same admin account as above + a separate normal account.
+
+## User search + status (as the admin)
+
+- [ ] Go to `/admin/users` (new **Users** item in the admin sidebar). With an
+      empty search you see a list of users; each row shows username, a status
+      pill (active/suspended/banned), email, and counts
+      (recipes · reviews · open reports)
+- [ ] Search by **username prefix** → list narrows; search by the normal user's
+      **email** → that single user resolves; clearing + Search lists all again
+- [ ] On the normal user's row, set the dropdown to **Suspended**, type a reason,
+      click **Apply** → success toast; the status pill flips to **suspended**
+
+## Suspension enforcement (as the suspended normal user)
+
+- [ ] Browsing/reading still works (recipes, reviews, profiles all load)
+- [ ] Try to **create a recipe** → blocked with a clear toast naming the reason
+- [ ] Try to **post or edit a review**, **save a recipe**, or **file a report** →
+      each is blocked the same way
+- [ ] **Deleting** your own recipe/review still works (deletes aren't punished)
+- [ ] Back as admin, set the user to **Banned** → same write-block behavior, and
+      the user is still logged in and can read (ban is a soft flag, no Firebase
+      lockout)
+- [ ] Set the user back to **Active** → their writes work again
+
+## Status guards (as the admin)
+
+- [ ] Your **own** row offers no way to suspend yourself (or returns an error if
+      forced) — admins can't change their own status
+- [ ] Changing **another admin's** status is refused
+
+## Recipe feature / unpublish (as the admin, on a recipe page)
+
+- [ ] On any recipe page you see an **Admin** control strip (non-admins never do)
+- [ ] Click **Feature** → toast; the recipe now appears pinned at the **front of
+      the homepage trending** row (even over higher-view recipes). **Unfeature**
+      removes the pin
+- [ ] Click **Unpublish** → toast; the recipe disappears from `/recipes`, search,
+      trending, and its direct URL (like a takedown) — but it is **not** labeled a
+      moderation takedown. **Publish** brings it back
+- [ ] **Take down / Restore** from this strip behaves like the P1 report-queue
+      takedown (soft-hide)
+
+✅ All boxes checked = P2 working end to end.

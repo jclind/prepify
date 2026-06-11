@@ -12,6 +12,7 @@ import PrivateRoute from 'src/Components/PrivateRoute'
 import AdminRoute from 'src/Components/AdminRoute'
 import AdminLayout from 'src/pages/Admin/AdminLayout'
 import Reports from 'src/pages/Admin/Reports/Reports'
+import Users from 'src/pages/Admin/Users/Users'
 import CreateUsername from 'src/pages/CreateUsername/CreateUsername'
 
 import Account from 'src/pages/Account/Account'
@@ -174,6 +175,7 @@ const App: FC = () => {
               <Route element={<AdminLayout />}>
                 <Route index element={<Navigate to='/admin/reports' replace />} />
                 <Route path='reports' element={<Reports />} />
+                <Route path='users' element={<Users />} />
               </Route>
             </Route>
 

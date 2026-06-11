@@ -1,7 +1,7 @@
 const { Router } = require('express')
 const { ObjectId } = require('mongodb')
 const { getDB } = require('../db')
-const { verifyToken, requireAdmin } = require('../middleware/auth')
+const { verifyToken, requireAdmin, requireActive } = require('../middleware/auth')
 const { recipeIdQuery } = require('../util/recipeIdQuery')
 
 const router = Router()
@@ -24,7 +24,7 @@ function targetMatch({ targetType, recipeId, reportedUsername }) {
 
 // POST /reports — any logged-in user files a report. Rate-limited to one OPEN
 // report per (reporter, target) so a single user can't flood the queue.
-router.post('/reports', verifyToken, async (req, res) => {
+router.post('/reports', verifyToken, requireActive, async (req, res) => {
   try {
     const db = getDB()
     const { targetType, recipeId, reportedUsername, reason, details } = req.body
