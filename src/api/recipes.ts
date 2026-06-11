@@ -37,19 +37,20 @@ class RecipeAPIClass {
     query = '',
     mealTypes: string[] = []
   ): Promise<RecipeDBResponseType> {
-    let tagsArrParam = '' // For tags that have been chosen
-    if (tags.length > 0) {
-      tagsArrParam += `&tags=${tags.join(',')}`
-    }
+    // Build via URLSearchParams so every value is encoded — search terms and
+    // multi-word cuisines (e.g. "Middle Eastern") would otherwise corrupt the
+    // query string.
+    const params = new URLSearchParams({
+      q: query,
+      page: String(page),
+      recipesPerPage: String(recipesPerPage),
+      order,
+      cuisine,
+    })
+    if (tags.length > 0) params.set('tags', tags.join(','))
+    if (mealTypes.length > 0) params.set('mealTypes', mealTypes.join(','))
 
-    let mealTypesParam = ''
-    if (mealTypes.length > 0) {
-      mealTypesParam += `&mealTypes=${encodeURIComponent(mealTypes.join(','))}`
-    }
-
-    const result = await http.get(
-      `api/recipes?q=${query}&page=${page}&recipesPerPage=${recipesPerPage}&order=${order}&cuisine=${cuisine}${tagsArrParam}${mealTypesParam}`
-    )
+    const result = await http.get(`api/recipes?${params.toString()}`)
     return result.data
   }
   async searchAutoCompleteRecipes(
