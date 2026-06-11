@@ -171,24 +171,38 @@ report = {
 
 ## Progress tracker *(update as we build)*
 
-**Current status (2026-06-10): scoped + decisions made, not started.**
+**Current status (2026-06-10): P0 + P1 built on `worktree-feat+admin-service`
+(off origin/development). Tests green — server 190, frontend 204. Not yet
+merged. P2/P3 still to do.**
 
-### P0 — Foundation
-- `[ ]` `requireAdmin` middleware in `server/middleware/auth.js`
-- `[ ]` `server/scripts/setAdmin.js` grant script
-- `[ ]` `isAdmin` surfaced in `AuthContext`
-- `[ ]` `AdminRoute` component
-- `[ ]` `/admin/*` routes registered in `App.tsx`
+Decisions locked while building: takedown model is a **`status` enum** on recipes
+(`'active' | 'hidden'`, room for P2 states) + a distinct **`moderationHidden`**
+flag on the `ratings` doc for reviews (original text preserved, reversible).
 
-### P1 — Reporting + moderation queue
-- `[ ]` `reports` collection + `server/routes/reports.js` (`POST`/`GET`/`PATCH`)
-- `[ ]` `server/app.js` mounts report routes
-- `[ ]` `src/api/reports.ts` client
-- `[ ]` Report affordance on recipe + reviews
-- `[ ]` Soft-hide `status` field + filter all recipe read paths
-- `[ ]` Admin review takedown (by `username`+`recipeId`)
-- `[ ]` `AdminLayout` shell
-- `[ ]` `Reports` queue dashboard UI
+### P0 — Foundation ✅
+- `[x]` `requireAdmin` middleware in `server/middleware/auth.js` (+ `req.isAdmin` set in `verifyToken`)
+- `[x]` `server/scripts/setAdmin.js` grant script (`node scripts/setAdmin.js <uid|email> [--revoke]`)
+- `[x]` `isAdmin` surfaced in `AuthContext` (from `getIdTokenResult().claims.admin`)
+- `[x]` `AdminRoute` component (login + admin claim; `authLoading` guard so admins aren't bounced on refresh)
+- `[x]` `/admin/*` routes registered in `App.tsx` (own `AdminLayout` shell, outside the public Layout)
+
+### P1 — Reporting + moderation queue ✅
+- `[x]` `reports` collection + `server/routes/reports.js` (`POST`/`GET`/`PATCH`, rate-limited one-open-per-reporter-per-target, admin queue enriched with content snapshot)
+- `[x]` `server/app.js` mounts report routes
+- `[x]` `src/api/reports.ts` client (+ report types in `src/types.ts`)
+- `[x]` Report affordance on recipe (`SingleRecipe`, non-owners) + reviews (`ReviewOptions`, non-authors) via reusable `src/Components/ReportControl`
+- `[x]` Soft-hide `status` field + filter ALL recipe read paths (`/recipes`, `getRecipe`, `getTrendingRecipes`, `searchAutoCompleteRecipes`, `getCreatedRecipes`, `getSavedRecipes`) via `server/util/moderation.js` (`$ne` predicate — legacy docs stay visible)
+- `[x]` Admin recipe hide/unhide (`PATCH /api/admin/recipes/:id/moderation`) + review takedown by `username`+`recipeId` (`PATCH /api/admin/reviews/moderation`); both filter from `getReviews`/`getSingleUserReviews`
+- `[x]` `AdminLayout` shell
+- `[x]` `Reports` queue dashboard UI (status tabs, inline previews, take-down/resolve/dismiss)
+- `[x]` Tests: server `reports.test.js` + `admin-moderation.test.js`; frontend `AdminRoute.test.tsx` + `ReportControl.test.tsx`
+
+**Known nuances to revisit (intentional for P1, candidates for P2 polish):**
+- A soft-hidden recipe is hidden from its **own author** too (`getCreatedRecipes`),
+  and a taken-down review is hidden from its author's list (`getSingleUserReviews`).
+  P2 should add an owner-facing "your content was moderated" surface.
+- `getSavedRecipes` `totalCount` still counts a saved-but-hidden recipe even though
+  it's filtered from the returned page (minor pagination drift).
 
 ### P2 — Extended moderation
 - `[ ]` User-status source of truth + suspension/ban

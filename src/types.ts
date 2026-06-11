@@ -175,6 +175,64 @@ export interface NewReviewType {
   reviewText: string
 }
 
+// ─── Moderation / reports ──────────────────────────────────────────────────
+export type ReportTargetType = 'recipe' | 'review'
+export type ReportReason =
+  | 'spam'
+  | 'inappropriate'
+  | 'offensive'
+  | 'copyright'
+  | 'dangerous'
+  | 'other'
+export type ReportStatus = 'open' | 'resolved' | 'dismissed'
+
+export interface NewReportType {
+  targetType: ReportTargetType
+  recipeId: string
+  reportedUsername?: string // required when targetType === 'review'
+  reason: ReportReason
+  details?: string
+}
+
+export interface ReportType {
+  _id: string
+  targetType: ReportTargetType
+  recipeId: string
+  reportedUsername?: string
+  reporterUid: string
+  reason: ReportReason
+  details: string
+  status: ReportStatus
+  createdAt: string
+  resolvedBy?: string
+  resolvedAt?: string
+}
+
+// Report enriched with a snapshot of the reported content, as returned by the
+// admin GET /reports queue.
+export interface AdminReportType extends ReportType {
+  target: {
+    recipe: {
+      _id: string
+      title?: string
+      recipeImage?: string
+      status?: string
+      userId?: string
+    } | null
+    review: {
+      reviewText?: string
+      rating?: number
+      moderationHidden?: boolean
+    } | null
+  }
+}
+
+export interface AdminReportsResponse {
+  reports: AdminReportType[]
+  totalCount: number
+  openCount: number
+}
+
 export interface AddRecipeErrorType {
   title: string
   image: string

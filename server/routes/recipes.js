@@ -1,8 +1,9 @@
 const { Router } = require('express')
 const { ObjectId } = require('mongodb')
 const { getDB, getClient } = require('../db')
-const { verifyToken } = require('../middleware/auth')
+const { verifyToken, requireAdmin } = require('../middleware/auth')
 const { recipeIdQuery } = require('../util/recipeIdQuery')
+const { RECIPE_VISIBLE } = require('../util/moderation')
 const { validateRequiredRecipeFields, validateRecipeBounds } = require('../util/recipeLimits')
 const { EDITABLE_RECIPE_FIELDS, pickFields } = require('../util/recipeFields')
 const { deleteRecipeImage } = require('../util/firebaseStorage')
@@ -22,7 +23,8 @@ router.get('/recipes', async (req, res) => {
     const skip = parseInt(page) * parseInt(recipesPerPage)
     const limit = parseInt(recipesPerPage)
 
-    const filter = {}
+    // Soft-hidden recipes never surface in public browse.
+    const filter = { ...RECIPE_VISIBLE }
 
     if (q) {
       filter.title = { $regex: escapeRegex(q), $options: 'i' }
@@ -67,7 +69,7 @@ router.get('/searchAutoCompleteRecipes', async (req, res) => {
     const recipes = await db
       .collection('recipes')
       .find(
-        { title: { $regex: escapeRegex(title || ''), $options: 'i' } },
+        { title: { $regex: escapeRegex(title || ''), $options: 'i' }, ...RECIPE_VISIBLE },
         {
           projection: {
             _id: 1,
@@ -96,7 +98,7 @@ router.get('/getTrendingRecipes', async (req, res) => {
     const limit = Math.min(parseInt(req.query.limit) || 4, 20)
     const recipes = await db
       .collection('recipes')
-      .find({})
+      .find({ ...RECIPE_VISIBLE })
       .sort({ views: -1 })
       .limit(limit)
       .toArray()
@@ -113,8 +115,10 @@ router.get('/getRecipe', async (req, res) => {
     const { id } = req.query
     if (!id) return res.status(400).json({ error: 'id is required' })
 
+    // A soft-hidden recipe is treated as not found for the public — and the
+    // non-match means views aren't incremented either.
     const recipe = await db.collection('recipes').findOneAndUpdate(
-      recipeIdQuery(id),
+      { ...recipeIdQuery(id), ...RECIPE_VISIBLE },
       { $inc: { views: 1 } },
       { returnDocument: 'after' }
     )
@@ -258,6 +262,35 @@ router.delete('/deleteRecipe', verifyToken, async (req, res) => {
     await deleteRecipeImage(recipe.recipeImage)
 
     res.json({ deleted: true })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// PATCH /admin/recipes/:id/moderation — admin soft-hide / unhide.
+// Bypasses the owner check (admin authority). Reversible: flips `status`
+// between 'hidden' and 'active'.
+router.patch('/admin/recipes/:id/moderation', verifyToken, requireAdmin, async (req, res) => {
+  try {
+    const db = getDB()
+    const recipeId = req.params.id
+    const { status } = req.body
+    if (status !== 'hidden' && status !== 'active') {
+      return res.status(400).json({ error: "status must be 'hidden' or 'active'" })
+    }
+    const updated = await db.collection('recipes').findOneAndUpdate(
+      recipeIdQuery(recipeId),
+      {
+        $set: {
+          status,
+          moderatedBy: req.uid,
+          moderatedAt: new Date(),
+        },
+      },
+      { returnDocument: 'after' }
+    )
+    if (!updated) return res.status(404).json({ error: 'Recipe not found' })
+    res.json({ _id: updated._id, status: updated.status })
   } catch (err) {
     res.status(500).json({ error: err.message })
   }

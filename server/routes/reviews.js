@@ -1,7 +1,9 @@
 const { Router } = require('express')
 const { getDB } = require('../db')
-const { verifyToken } = require('../middleware/auth')
+const { verifyToken, requireAdmin } = require('../middleware/auth')
 const { recipeIdQuery } = require('../util/recipeIdQuery')
+const { REVIEW_VISIBLE, RECIPE_VISIBLE } = require('../util/moderation')
+const { recomputeRecipeRating } = require('../util/recipeRating')
 
 const router = Router()
 
@@ -42,14 +44,8 @@ router.post('/addRating', verifyToken, async (req, res) => {
       })
     }
 
-    const allRatings = await db.collection('ratings').find({ recipeId }).toArray()
-    const count = allRatings.length
-    const avg = allRatings.reduce((sum, r) => sum + parseFloat(r.rating), 0) / count
-
-    await db.collection('recipes').updateOne(
-      recipeIdQuery(recipeId),
-      { $set: { rating: { rateCount: count, rateValue: avg } } }
-    )
+    // Recompute the aggregate (excludes moderated ratings).
+    await recomputeRecipeRating(db, recipeId)
 
     res.json({ rated: true })
   } catch (err) {
@@ -167,7 +163,8 @@ router.get('/getReviews', async (req, res) => {
 
     const skip = parseInt(page) * parseInt(reviewsPerPage)
     const limit = parseInt(reviewsPerPage)
-    const query = { recipeId, reviewText: { $exists: true, $ne: '' } }
+    // Exclude admin-taken-down reviews from the public list.
+    const query = { recipeId, reviewText: { $exists: true, $ne: '' }, ...REVIEW_VISIBLE }
 
     let sort = {}
     if (filter === 'new') sort = { reviewCreatedAt: -1 }
@@ -198,7 +195,8 @@ router.get('/getSingleUserReviews', async (req, res) => {
 
     const skip = parseInt(page) * parseInt(reviewsPerPage)
     const limit = parseInt(reviewsPerPage)
-    const query = { username }
+    // Suppress admin-taken-down reviews from a user's public review list too.
+    const query = { username, ...REVIEW_VISIBLE }
 
     let sort = {}
     if (filter === 'new') sort = { reviewCreatedAt: -1 }
@@ -211,15 +209,55 @@ router.get('/getSingleUserReviews', async (req, res) => {
 
     let reviews = rawReviews
     if (returnRecipeData === 'true') {
-      reviews = await Promise.all(
+      // Only attach (and keep) ratings whose recipe is still publicly visible —
+      // a rating for a soft-hidden recipe shouldn't surface in the user's list.
+      const withRecipe = await Promise.all(
         rawReviews.map(async (r) => {
-          const recipeData = await db.collection('recipes').findOne(recipeIdQuery(r.recipeId))
-          return { ...r, recipeData }
+          const recipeData = await db
+            .collection('recipes')
+            .findOne({ ...recipeIdQuery(r.recipeId), ...RECIPE_VISIBLE })
+          return recipeData ? { ...r, recipeData } : null
         })
       )
+      reviews = withRecipe.filter(Boolean)
     }
 
     res.json({ reviews, totalCount })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// PATCH /admin/reviews/moderation — admin take down / restore a review.
+// Reviews have no stable id; identity is the (username, recipeId) pair. Uses a
+// distinct `moderationHidden` flag rather than blanking reviewText, so the
+// takedown is reversible and the original text is preserved for audit/appeal.
+router.patch('/admin/reviews/moderation', verifyToken, requireAdmin, async (req, res) => {
+  try {
+    const db = getDB()
+    const { recipeId, username, moderationHidden } = req.body
+    if (!recipeId || !username) {
+      return res.status(400).json({ error: 'recipeId and username are required' })
+    }
+    if (typeof moderationHidden !== 'boolean') {
+      return res.status(400).json({ error: 'moderationHidden must be a boolean' })
+    }
+    const result = await db.collection('ratings').updateOne(
+      { username, recipeId },
+      {
+        $set: {
+          moderationHidden,
+          moderatedBy: req.uid,
+          moderatedAt: new Date(),
+        },
+      }
+    )
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ error: 'Review not found' })
+    }
+    // A takedown/restore changes which ratings count toward the recipe's score.
+    await recomputeRecipeRating(db, recipeId)
+    res.json({ recipeId, username, moderationHidden })
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
