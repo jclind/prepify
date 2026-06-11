@@ -12,20 +12,25 @@ const renderNav = (path: string, counts?: AccountTabCounts) =>
   )
 
 describe('SegmentedNav', () => {
+  // The label now lives in a span inside the tab link, so the `active` class is
+  // on the closest `.acct-seg` link, not on the text node itself.
+  const tab = (label: string) =>
+    screen.getByText(label).closest('.acct-seg') as HTMLElement
+
   it('marks the tab matching the current route active', () => {
     renderNav('/account/ratings')
-    expect(screen.getByText('Ratings')).toHaveClass('active')
-    expect(screen.getByText('Saved')).not.toHaveClass('active')
+    expect(tab('Ratings')).toHaveClass('active')
+    expect(tab('Saved')).not.toHaveClass('active')
   })
 
   it('treats the bare /account path as the Saved tab', () => {
     renderNav('/account')
-    expect(screen.getByText('Saved')).toHaveClass('active')
+    expect(tab('Saved')).toHaveClass('active')
   })
 
   it('falls back to the first tab for an unrecognized path', () => {
     renderNav('/account/something-unknown')
-    expect(screen.getByText('Saved')).toHaveClass('active')
+    expect(tab('Saved')).toHaveClass('active')
   })
 
   it('shows non-zero counts and hides zero/absent ones', () => {

@@ -106,14 +106,20 @@
     text-align: left;
     font-family: inherit;
     cursor: pointer;
-    background: #fdfaf6;
-    border: 1px solid #f0e6da;
+    // Soft teal→orange brand tint, matching the recipe-owner control banner
+    // (RecipeControls.scss) — replaces the off-palette warm cream.
+    background: linear-gradient(
+      135deg,
+      rgba(s.$secondary, 0.13),
+      rgba(s.$primary, 0.09)
+    );
+    border: 1px solid rgba(s.$primary, 0.22);
     border-radius: 14px;
     padding: 0.85rem 1rem;
     transition: border-color 0.12s ease, box-shadow 0.12s ease;
 
     &:hover {
-      border-color: #ffd9b8;
+      border-color: rgba(s.$primary, 0.4);
       box-shadow: 0 6px 18px rgba(255, 87, 34, 0.1);
     }
   }
@@ -132,7 +138,7 @@
     font-weight: 700;
     color: s.$secondary-text;
     background: #fff;
-    border: 1px solid #f0e1d4;
+    border: 1px solid rgba(s.$primary-text, 0.08);
     border-radius: 999px;
     padding: 0.3rem 0.75rem 0.3rem 0.3rem;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
@@ -161,7 +167,7 @@
     width: 100%;
     .acct-xpbar-track {
       height: 6px;
-      background: #efe7dc;
+      background: rgba(s.$primary-text, 0.1);
       border-radius: 999px;
       overflow: hidden;
     }
@@ -231,7 +237,7 @@
     position: relative;
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    background: #efe6da;
+    background: s.$gray-400;
     border-radius: 14px;
     padding: 5px;
     max-width: 560px;
@@ -264,18 +270,20 @@
     padding: 0.65rem 0.4rem;
     border-radius: 10px;
     transition: color 0.2s ease;
-    span {
-      font-size: 0.68rem;
-      opacity: 0.7;
-    }
     &.active {
-      color: s.$primary;
+      color: s.$primary-text;
     }
-    @media (max-width: 480px) {
-      font-size: 0.74rem;
-      span {
-        display: none;
-      }
+    // Per-tab icon + the short-label variant are phone-only (see the ≤600px
+    // block); the desktop control stays text-only.
+    .acct-seg-icon,
+    .acct-seg-label-short {
+      display: none;
+    }
+    // Count badge — a small dimmed number trailing the label.
+    .acct-seg-count {
+      font-size: 0.68rem;
+      font-weight: 800;
+      opacity: 0.7;
     }
   }
 
@@ -297,6 +305,129 @@
     p {
       font-size: 16px;
       color: #666;
+    }
+  }
+
+  // ── Phone layout (app-style rebuild, ≤600px) ───────────────────────────────
+  // The two-column header collapses into a centered profile card, and the
+  // segmented control becomes an icon-over-label tab bar. Mobile-first rebuild
+  // approved against the "Option B" mock. Placed last so it overrides the ≤880px
+  // rules where they overlap.
+  @media (max-width: 600px) {
+    .acct-head {
+      grid-template-columns: 1fr;
+      justify-items: center;
+      text-align: center;
+      gap: 1.1rem;
+      padding: 1.5rem 1.25rem;
+    }
+
+    // Identity stacks: avatar over name / meta / bio, all centered.
+    .acct-id {
+      flex-direction: column;
+      align-items: center;
+      gap: 0.85rem;
+      text-align: center;
+    }
+    .acct-avatar {
+      width: 76px;
+      height: 76px;
+      &.not-set {
+        font-size: 2rem;
+      }
+    }
+    .acct-id-text {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .acct-name {
+      font-size: 1.5rem;
+    }
+    .acct-bio {
+      max-width: 100%;
+    }
+
+    // Level card + controls sit beneath, full width, no divider.
+    .acct-side {
+      width: 100%;
+      align-items: stretch;
+      border-top: none;
+      padding-top: 0;
+    }
+    // Controls collapse to a centered row of equal circular icon buttons; the
+    // "Edit profile" label drops to just its pencil.
+    .acct-controls {
+      justify-content: center;
+    }
+    .acct-edit {
+      width: 42px;
+      height: 42px;
+      padding: 0;
+      border-radius: 50%;
+      span {
+        display: none;
+      }
+      svg {
+        font-size: 1.1rem;
+      }
+    }
+    .acct-iconbtn {
+      width: 42px;
+      height: 42px;
+    }
+
+    // ── Icon-led tab bar ──
+    .acct-segment {
+      max-width: none;
+      margin: 0 0 1.5rem;
+      padding: 6px;
+      border-radius: 16px;
+    }
+    .acct-seg-indicator {
+      border-radius: 12px;
+    }
+    .acct-seg {
+      flex-direction: column;
+      gap: 0.32rem;
+      padding: 0.6rem 0.25rem;
+      font-size: 0.7rem;
+      line-height: 1;
+
+      .acct-seg-icon {
+        display: flex;
+        font-size: 1.2rem;
+      }
+      // Swap the full label for the short one where a tab defines it.
+      .acct-seg-label.has-short {
+        display: none;
+      }
+      .acct-seg-label-short {
+        display: inline;
+      }
+      .acct-seg-label {
+        white-space: nowrap;
+      }
+      // Count rides as a small corner badge instead of trailing the label.
+      .acct-seg-count {
+        position: absolute;
+        top: 0.3rem;
+        right: 0.8rem;
+        min-width: 1rem;
+        height: 1rem;
+        padding: 0 0.25rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.6rem;
+        font-weight: 800;
+        color: #fff;
+        // Muted slate rather than brand orange, so the count doesn't read as a
+        // notification badge.
+        background: s.$secondary-text;
+        border-radius: 999px;
+        opacity: 1;
+      }
     }
   }
 }

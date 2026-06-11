@@ -1,7 +1,7 @@
 import React, { FC } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { FiEdit3, FiSettings, FiShare2 } from 'react-icons/fi'
+import { FiEdit3, FiSettings, FiShare } from 'react-icons/fi'
 
 // ProfileControls — the header action cluster: a subtle Edit button plus icon
 // buttons for Settings and Share. Edit + Settings both route to the existing
@@ -51,7 +51,7 @@ const ProfileControls: FC<ProfileControlsProps> = ({ username }) => {
         aria-label='Share profile'
         title='Share'
       >
-        <FiShare2 />
+        <FiShare />
       </button>
     </div>
   )
