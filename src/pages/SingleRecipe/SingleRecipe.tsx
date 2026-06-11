@@ -20,6 +20,7 @@ import PrintRecipeBtn from 'src/pages/SingleRecipe/Buttons/PrintRecipeBtn'
 import RatingsAndReviews from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/RatingsAndReviews'
 import RecipeNotFound from 'src/pages/SingleRecipe/RecipeNotFound/RecipeNotFound'
 import PrintableRecipe from 'src/pages/SingleRecipe/PrintableRecipe/PrintableRecipe'
+import ReportControl from 'src/Components/ReportControl/ReportControl'
 
 import { updateIngredients } from 'src/util/updateIngredients'
 import { capitalize } from 'src/util/capitalize'
@@ -290,6 +291,12 @@ const SingleRecipe: FC = () => {
                   <SaveRecipeBtn recipeId={currRecipe._id} />
                   <AddRatingBtn currUserReview={currUserReview} />
                   <PrintRecipeBtn printedRef={printedRef} />
+                  {!isOwner && (
+                    <ReportControl
+                      target={{ targetType: 'recipe', recipeId: currRecipe._id }}
+                      variant='button'
+                    />
+                  )}
                 </>
               )}
             </div>

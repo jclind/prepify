@@ -27,6 +27,7 @@ export function useAuth() {
 
 type AuthContextValueType = {
   user: UserCredential['user'] | null
+  isAdmin: boolean
   logout: () => void
   signInWithGoogle: (setError: (val: string) => void) => void
   signInDefault: (
@@ -64,10 +65,15 @@ type AuthProviderProps = {
 }
 
 const AuthContext = React.createContext<AuthContextValueType | null>(null)
-const auth = getAuth()
 
 const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
+  // getAuth() is resolved here rather than at module scope so that merely
+  // importing this module (e.g. for the useAuth hook, as ReportControl does)
+  // never triggers Firebase init — which would throw in environments/tests
+  // where no Firebase app has been created. getAuth() is idempotent.
+  const auth = getAuth()
   const [user, setUser] = useState<UserCredential['user'] | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
   const [loading, setLoading] = useState(true)
 
   const navigate = useNavigate()
@@ -233,20 +239,20 @@ const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
 
   // Check for auth status on page load
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(userInstance => {
+    const unsubscribe = auth.onAuthStateChanged(async userInstance => {
       if (userInstance) {
-        // Gets type of authentication, ie... password, google...
-        // const providerId = userInstance.providerData[0].providerId
-
-        // // If the authentication is anything other than password, send getUsername to check if username exists for that user
-        // if (providerId !== 'password') {
-        //   // // !!FIX ME
-
-        // }
-
         setUser(userInstance)
+        // Read the admin custom claim off the verified ID token. Mirrors the
+        // server's req.isAdmin so the client can gate admin-only UI/routes.
+        try {
+          const tokenResult = await userInstance.getIdTokenResult()
+          setIsAdmin(tokenResult.claims.admin === true)
+        } catch {
+          setIsAdmin(false)
+        }
       } else {
         setUser(null)
+        setIsAdmin(false)
       }
       setLoading(false)
     })
@@ -297,6 +303,7 @@ const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
 
   const value: AuthContextValueType = {
     user,
+    isAdmin,
     logout,
     signInWithGoogle,
     signInDefault,

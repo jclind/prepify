@@ -2,6 +2,7 @@ const { Router } = require('express')
 const { getDB } = require('../db')
 const { verifyToken } = require('../middleware/auth')
 const { recipeIdInQuery } = require('../util/recipeIdQuery')
+const { RECIPE_VISIBLE } = require('../util/moderation')
 
 const router = Router()
 
@@ -18,7 +19,8 @@ router.get('/getCreatedRecipes', verifyToken, async (req, res) => {
     const perPage = parseInt(recipesPerPage)
 
     const collection = db.collection('recipes')
-    const filter = { userId: uid }
+    // Don't surface soft-hidden recipes in the author's own created list.
+    const filter = { userId: uid, ...RECIPE_VISIBLE }
     const [recipes, totalCount] = await Promise.all([
       collection
         .find(filter)
@@ -59,7 +61,10 @@ router.get('/getSavedRecipes', verifyToken, async (req, res) => {
 
     const recipes =
       recipeIds.length > 0
-        ? await db.collection('recipes').find(recipeIdInQuery(recipeIds)).toArray()
+        ? await db
+            .collection('recipes')
+            .find({ ...recipeIdInQuery(recipeIds), ...RECIPE_VISIBLE })
+            .toArray()
         : []
 
     res.json({ recipes, totalCount })
