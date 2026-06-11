@@ -55,6 +55,15 @@ describe('GET /api/admin/users', () => {
     expect(alice.counts).toEqual({ recipes: 2, reviews: 1, openReports: 1 })
   })
 
+  it('counts written reviews only, not bare star ratings', async () => {
+    admin.__setClaims({ admin: true })
+    await seedUser('u1', 'rater')
+    await seedRating({ username: 'rater', recipeId: 'r1', rating: 5, reviewText: 'great' })
+    await seedRating({ username: 'rater', recipeId: 'r2', rating: 4, reviewText: '' }) // star-only
+    const res = await request(app).get('/api/admin/users?query=rater').set(AUTH_HEADER)
+    expect(res.body.users[0].counts.reviews).toBe(1)
+  })
+
   it('counts an open recipe report against the recipe author', async () => {
     admin.__setClaims({ admin: true })
     await seedUser('u1', 'chef')
