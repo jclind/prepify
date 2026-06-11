@@ -27,19 +27,33 @@ export type EditRecipeResult =
   | { status: 'auth-error' }
   | { status: 'error'; message: string }
 
+export type GetAllRecipesParams = {
+  page?: number
+  order?: string
+  /** OR-based tag match (mealTypes ∪ nutritionLabels) — used by Home. */
+  tags?: string[]
+  cuisine?: string
+  recipesPerPage?: number
+  query?: string
+  /** Any of the selected meal types. */
+  mealTypes?: string[]
+  /** Conjunctive (AND) diet filter — recipe must carry every label. */
+  diets?: string[]
+}
+
 class RecipeAPIClass {
-  async getAllRecipes(
+  async getAllRecipes({
     page = 0,
     order = 'new',
-    tags: string[] = [],
-    cuisine: string = '',
+    // `tags` is OR-based (used by the Home meal lookup). `diets` is the
+    // conjunctive (AND) dietary filter; `mealTypes` matches any selected meal.
+    tags = [],
+    cuisine = '',
     recipesPerPage = 5,
     query = '',
-    mealTypes: string[] = [],
-    // Diet labels, matched conjunctively (AND) by the server. Distinct from
-    // `tags` (OR-based; used by the Home meal lookup).
-    diets: string[] = []
-  ): Promise<RecipeDBResponseType> {
+    mealTypes = [],
+    diets = [],
+  }: GetAllRecipesParams = {}): Promise<RecipeDBResponseType> {
     // Build via URLSearchParams so every value is encoded — search terms and
     // multi-word cuisines (e.g. "Middle Eastern") would otherwise corrupt the
     // query string.

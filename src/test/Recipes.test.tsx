@@ -190,7 +190,9 @@ describe('Recipes (Browse) page', () => {
     await user.click(screen.getByText('Load more recipes'))
 
     await waitFor(() =>
-      expect(mockGetAllRecipes).toHaveBeenCalledWith(1, expect.anything(), expect.anything(), expect.anything(), expect.anything(), expect.anything(), expect.anything(), expect.anything())
+      expect(mockGetAllRecipes).toHaveBeenCalledWith(
+        expect.objectContaining({ page: 1 })
+      )
     )
   })
 
@@ -248,14 +250,7 @@ describe('Recipes (Browse) page', () => {
 
     await waitFor(() =>
       expect(mockGetAllRecipes).toHaveBeenCalledWith(
-        0,
-        'new',
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        expect.anything()
+        expect.objectContaining({ page: 0, order: 'new' })
       )
     )
     await screen.findByText('Recipe A')
@@ -273,14 +268,7 @@ describe('Recipes (Browse) page', () => {
     renderRecipes('/?q=taco-tuesday')
     await waitFor(() =>
       expect(mockGetAllRecipes).toHaveBeenCalledWith(
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        'taco tuesday',
-        expect.anything(),
-        expect.anything()
+        expect.objectContaining({ query: 'taco tuesday' })
       )
     )
   })
