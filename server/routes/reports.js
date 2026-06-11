@@ -1,0 +1,153 @@
+const { Router } = require('express')
+const { ObjectId } = require('mongodb')
+const { getDB } = require('../db')
+const { verifyToken, requireAdmin, requireActive } = require('../middleware/auth')
+const { recipeIdQuery } = require('../util/recipeIdQuery')
+
+const router = Router()
+
+// A report targets either a recipe or a single review. Reviews have no stable
+// id (they live in `ratings` keyed by username+recipeId), so a review report
+// must carry `reportedUsername` alongside `recipeId` to identify the target.
+const TARGET_TYPES = ['recipe', 'review']
+const REASONS = ['spam', 'inappropriate', 'offensive', 'copyright', 'dangerous', 'other']
+const RESOLUTIONS = ['resolved', 'dismissed']
+const MAX_DETAILS_LEN = 1000
+
+// Build the query that identifies a single target, used for the
+// one-open-report-per-reporter-per-target rate limit.
+function targetMatch({ targetType, recipeId, reportedUsername }) {
+  return targetType === 'review'
+    ? { targetType, recipeId, reportedUsername }
+    : { targetType, recipeId }
+}
+
+// POST /reports — any logged-in user files a report. Rate-limited to one OPEN
+// report per (reporter, target) so a single user can't flood the queue.
+router.post('/reports', verifyToken, requireActive, async (req, res) => {
+  try {
+    const db = getDB()
+    const { targetType, recipeId, reportedUsername, reason, details } = req.body
+
+    if (!TARGET_TYPES.includes(targetType)) {
+      return res.status(400).json({ error: "targetType must be 'recipe' or 'review'" })
+    }
+    if (!recipeId || typeof recipeId !== 'string') {
+      return res.status(400).json({ error: 'recipeId is required' })
+    }
+    if (targetType === 'review' && (!reportedUsername || typeof reportedUsername !== 'string')) {
+      return res.status(400).json({ error: 'reportedUsername is required for review reports' })
+    }
+    if (!REASONS.includes(reason)) {
+      return res.status(400).json({ error: 'Invalid reason' })
+    }
+    if (details != null && (typeof details !== 'string' || details.length > MAX_DETAILS_LEN)) {
+      return res.status(400).json({ error: `details must be a string under ${MAX_DETAILS_LEN} chars` })
+    }
+
+    const match = targetMatch({ targetType, recipeId, reportedUsername })
+    const existing = await db.collection('reports').findOne({
+      ...match,
+      reporterUid: req.uid,
+      status: 'open',
+    })
+    if (existing) {
+      return res.status(409).json({
+        code: 'ALREADY_REPORTED',
+        error: 'You already have an open report for this content.',
+      })
+    }
+
+    const doc = {
+      _id: new ObjectId(),
+      targetType,
+      recipeId,
+      ...(targetType === 'review' ? { reportedUsername } : {}),
+      reporterUid: req.uid,
+      reason,
+      details: details || '',
+      status: 'open',
+      createdAt: new Date(),
+    }
+    await db.collection('reports').insertOne(doc)
+    res.status(201).json(doc)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// GET /reports — admin queue. Filters by status/targetType, paginates, and
+// enriches each report with a snapshot of the reported content for inline
+// preview (recipe title/image, or the review text).
+router.get('/reports', verifyToken, requireAdmin, async (req, res) => {
+  try {
+    const db = getDB()
+    const { status, targetType, page = 0, perPage = 20 } = req.query
+
+    const filter = {}
+    if (status && ['open', ...RESOLUTIONS].includes(status)) filter.status = status
+    if (targetType && TARGET_TYPES.includes(targetType)) filter.targetType = targetType
+
+    const skip = parseInt(page) * parseInt(perPage)
+    const limit = parseInt(perPage)
+
+    const [reports, totalCount, openCount] = await Promise.all([
+      db.collection('reports').find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).toArray(),
+      db.collection('reports').countDocuments(filter),
+      db.collection('reports').countDocuments({ status: 'open' }),
+    ])
+
+    // Attach a lightweight snapshot of the target so the queue can render a
+    // preview without a second round trip per row.
+    const enriched = await Promise.all(
+      reports.map(async (r) => {
+        const recipe = await db
+          .collection('recipes')
+          .findOne(recipeIdQuery(r.recipeId), {
+            projection: { title: 1, recipeImage: 1, status: 1, userId: 1 },
+          })
+        let review = null
+        if (r.targetType === 'review') {
+          review = await db
+            .collection('ratings')
+            .findOne(
+              { username: r.reportedUsername, recipeId: r.recipeId },
+              { projection: { reviewText: 1, rating: 1, moderationHidden: 1 } }
+            )
+        }
+        return { ...r, target: { recipe, review } }
+      })
+    )
+
+    res.json({ reports: enriched, totalCount, openCount })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// PATCH /reports/:id — admin resolves or dismisses a report. Resolving does NOT
+// itself take content down; the admin takedown endpoints (on recipes/reviews)
+// do that. This just closes the queue item and stamps who/when.
+router.patch('/reports/:id', verifyToken, requireAdmin, async (req, res) => {
+  try {
+    const db = getDB()
+    if (!ObjectId.isValid(req.params.id)) {
+      return res.status(404).json({ error: 'Report not found' })
+    }
+    const { status } = req.body
+    if (!RESOLUTIONS.includes(status)) {
+      return res.status(400).json({ error: "status must be 'resolved' or 'dismissed'" })
+    }
+    const updated = await db.collection('reports').findOneAndUpdate(
+      { _id: new ObjectId(req.params.id) },
+      { $set: { status, resolvedBy: req.uid, resolvedAt: new Date() } },
+      { returnDocument: 'after' }
+    )
+    if (!updated) return res.status(404).json({ error: 'Report not found' })
+    res.json(updated)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+module.exports = router

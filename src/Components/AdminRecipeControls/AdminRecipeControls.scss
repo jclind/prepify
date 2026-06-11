@@ -1,0 +1,77 @@
+.admin-recipe-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin: 1rem 0;
+  padding: 0.6rem 0.8rem;
+  border: 1px dashed #c7b3e6;
+  border-radius: 8px;
+  background: #faf7ff;
+
+  .arc-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #6b21a8;
+    background: #ede4fb;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+  }
+
+  .arc-pill {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+
+    &.hidden {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    &.unpublished {
+      background: #e5e7eb;
+      color: #374151;
+    }
+
+    &.featured {
+      background: #fef3c7;
+      color: #b45309;
+    }
+  }
+
+  .arc-btn {
+    cursor: pointer;
+    border-radius: 6px;
+    padding: 0.4rem 0.85rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    border: 1px solid #d1d5db;
+    background: #fff;
+    color: #374151;
+    transition: all 0.15s;
+
+    &:hover:not(:disabled) {
+      border-color: #9ca3af;
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+
+    &.feature {
+      border-color: #d97706;
+      color: #b45309;
+    }
+
+    &.takedown {
+      border-color: #d64545;
+      color: #b91c1c;
+    }
+  }
+}

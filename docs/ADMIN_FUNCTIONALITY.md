@@ -171,29 +171,76 @@ report = {
 
 ## Progress tracker *(update as we build)*
 
-**Current status (2026-06-10): scoped + decisions made, not started.**
+**Current status (2026-06-11): P0 + P1 + P2 built + smoke-tested on
+`worktree-feat+admin-service` (off origin/development). Tests green — server 220,
+frontend 215, tsc clean. Pushed (no PR), not merged. P3 still to do.**
 
-### P0 — Foundation
-- `[ ]` `requireAdmin` middleware in `server/middleware/auth.js`
-- `[ ]` `server/scripts/setAdmin.js` grant script
-- `[ ]` `isAdmin` surfaced in `AuthContext`
-- `[ ]` `AdminRoute` component
-- `[ ]` `/admin/*` routes registered in `App.tsx`
+P2 smoke test PASS (2026-06-11). Fixes applied during it: account-status banner
+(pulled forward from P3 — persistent upfront notice for suspended/banned users),
+Users page live/clearable search + pagination, and admin-bypass on `getRecipe`
+(`optionalAuth`) so admins keep access to hidden/unpublished recipes to restore
+them (with status pills on the recipe Admin strip).
 
-### P1 — Reporting + moderation queue
-- `[ ]` `reports` collection + `server/routes/reports.js` (`POST`/`GET`/`PATCH`)
-- `[ ]` `server/app.js` mounts report routes
-- `[ ]` `src/api/reports.ts` client
-- `[ ]` Report affordance on recipe + reviews
-- `[ ]` Soft-hide `status` field + filter all recipe read paths
-- `[ ]` Admin review takedown (by `username`+`recipeId`)
-- `[ ]` `AdminLayout` shell
-- `[ ]` `Reports` queue dashboard UI
+Decisions locked while building: takedown model is a **`status` enum** on recipes
+(`'active' | 'hidden'`, room for P2 states) + a distinct **`moderationHidden`**
+flag on the `ratings` doc for reviews (original text preserved, reversible).
 
-### P2 — Extended moderation
-- `[ ]` User-status source of truth + suspension/ban
-- `[ ]` Recipe feature/unpublish
-- `[ ]` Admin user search/detail
+### P0 — Foundation ✅
+- `[x]` `requireAdmin` middleware in `server/middleware/auth.js` (+ `req.isAdmin` set in `verifyToken`)
+- `[x]` `server/scripts/setAdmin.js` grant script (`node scripts/setAdmin.js <uid|email> [--revoke]`)
+- `[x]` `isAdmin` surfaced in `AuthContext` (from `getIdTokenResult().claims.admin`)
+- `[x]` `AdminRoute` component (login + admin claim; `authLoading` guard so admins aren't bounced on refresh)
+- `[x]` `/admin/*` routes registered in `App.tsx` (own `AdminLayout` shell, outside the public Layout)
+
+### P1 — Reporting + moderation queue ✅
+- `[x]` `reports` collection + `server/routes/reports.js` (`POST`/`GET`/`PATCH`, rate-limited one-open-per-reporter-per-target, admin queue enriched with content snapshot)
+- `[x]` `server/app.js` mounts report routes
+- `[x]` `src/api/reports.ts` client (+ report types in `src/types.ts`)
+- `[x]` Report affordance on recipe (`SingleRecipe`, non-owners) + reviews (`ReviewOptions`, non-authors) via reusable `src/Components/ReportControl`
+- `[x]` Soft-hide `status` field + filter ALL recipe read paths (`/recipes`, `getRecipe`, `getTrendingRecipes`, `searchAutoCompleteRecipes`, `getCreatedRecipes`, `getSavedRecipes`) via `server/util/moderation.js` (`$ne` predicate — legacy docs stay visible)
+- `[x]` Admin recipe hide/unhide (`PATCH /api/admin/recipes/:id/moderation`) + review takedown by `username`+`recipeId` (`PATCH /api/admin/reviews/moderation`); both filter from `getReviews`/`getSingleUserReviews`
+- `[x]` `AdminLayout` shell
+- `[x]` `Reports` queue dashboard UI (status tabs, inline previews, take-down/resolve/dismiss)
+- `[x]` Tests: server `reports.test.js` + `admin-moderation.test.js`; frontend `AdminRoute.test.tsx` + `ReportControl.test.tsx`
+
+**Known nuances to revisit (intentional for P1, candidates for P2 polish):**
+- A soft-hidden recipe is hidden from its **own author** too (`getCreatedRecipes`),
+  and a taken-down review is hidden from its author's list (`getSingleUserReviews`).
+  P2 should add an owner-facing "your content was moderated" surface.
+- `getSavedRecipes` `totalCount` still counts a saved-but-hidden recipe even though
+  it's filtered from the returned page (minor pagination drift).
+
+### P2 — Extended moderation ✅
+Built on `worktree-feat+admin-service`. Decisions: central status lives in a new
+**`users` collection** (uid-keyed, legacy-safe — absent ⇒ active); **ban is a soft
+DB flag**, enforced identically to suspend (writes blocked, reads/login allowed),
+NOT coupled to Firebase `disabled`; recipe item = a **`featured` flag** + a distinct
+**`unpublished`** status separate from the P1 moderation `hidden`.
+- `[x]` User-status source of truth + suspension/ban — `server/util/userStatus.js`
+  + `requireActive` middleware (`server/middleware/auth.js`) returning 403 +
+  `ACCOUNT_SUSPENDED`/`ACCOUNT_BANNED` code; gates content/social writes in
+  recipes/reviews/reports/drafts/auth (deletes intentionally left open).
+- `[x]` Admin user management — `server/routes/admin.js`: `GET /admin/users`
+  (username-prefix / email / uid search, enriched with status + recipe/review/
+  open-report counts), `GET /admin/users/:uid` (detail + email + recent content),
+  `PATCH /admin/users/:uid/status` (self-guard + can't-action-another-admin guard).
+- `[x]` Recipe feature/unpublish — `RECIPE_VISIBLE` now `$nin ['hidden','unpublished']`;
+  `PATCH /admin/recipes/:id/publish` (stamps publishUpdatedBy, NOT moderatedBy) +
+  `PATCH /admin/recipes/:id/feature`; `getTrendingRecipes` pins `featured` first.
+- `[x]` Frontend — `src/api/admin.ts`; `/admin/users` page (`src/pages/Admin/Users`)
+  + nav item; admin-only `AdminRecipeControls` strip on the recipe page
+  (feature/publish/takedown); http-common interceptor toasts the blocked-account 403.
+- `[x]` Tests — server `admin-users.test.js`, `user-status-enforcement.test.js`,
+  `admin-recipe-curation.test.js` (firebase-admin mock gained getUser/getUserByEmail
+  + __setUsers); frontend `AdminUsers.test.tsx`, `AdminRecipeControls.test.tsx`.
+  Green: server 217, frontend 211, tsc clean.
+
+**Done during smoke test (was P2→P3):** persistent in-app "your account is
+suspended/banned" banner — `AccountStatusBanner` (in Layout) + `GET /getMyStatus`.
+
+**Still P3:** a dedicated admin "moderated content" list (find hidden/unpublished
+recipes without a direct URL); optional functional split between suspend & ban
+(auto-expiry / Firebase-disable) — currently identical enforcement, semantic only.
 
 ### P3 — Polish
 - `[ ]` `auditLog` collection + writes on every admin action

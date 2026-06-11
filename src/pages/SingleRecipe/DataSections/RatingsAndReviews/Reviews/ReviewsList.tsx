@@ -27,7 +27,13 @@ const ReviewsList: FC<ReviewsListProps> = ({
     <div className='reviews-list-container'>
       {reviewList.length > 0 ? (
         reviewList.map(review => {
-          return <RecipeReview key={review._id} review={review} />
+          return (
+            <RecipeReview
+              key={review._id}
+              review={review}
+              recipeId={recipeId}
+            />
+          )
         })
       ) : loading ? (
         <>
