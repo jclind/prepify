@@ -1,5 +1,5 @@
 import React, { FC, useEffect, useRef, useState } from 'react'
-import { useInfiniteQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import { BiChevronDown, BiSliderAlt } from 'react-icons/bi'
@@ -145,6 +145,20 @@ const Recipes: FC = () => {
       enabled: !filtersLoading,
       retry: false,
     })
+
+  // Which filter values actually exist in the catalog, so we don't offer a
+  // cuisine with zero recipes. Falls back to the full curated list if the
+  // request hasn't resolved (or failed) — better to over-offer than show none.
+  const { data: facets } = useQuery({
+    queryKey: ['recipe-facets'],
+    queryFn: () => RecipeAPI.getRecipeFacets(),
+    staleTime: 10 * 60 * 1000,
+  })
+  const availableCuisines = facets
+    ? cuisinesList.filter(c =>
+        facets.cuisines.some(fc => fc.toLowerCase() === c.toLowerCase())
+      )
+    : cuisinesList
 
   const recipeList = data?.pages.flatMap(p => p.recipeList) ?? []
   const totalResults = data?.pages[0]?.total_results ?? null
@@ -334,7 +348,7 @@ const Recipes: FC = () => {
                 <section>
                   <h3>Cuisine</h3>
                   <div className='recipes-drawer__chips'>
-                    {cuisinesList.map(c => (
+                    {availableCuisines.map(c => (
                       <button
                         key={c}
                         className={`recipes-chip ${
