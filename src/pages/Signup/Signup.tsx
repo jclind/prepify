@@ -125,6 +125,19 @@ const Signup: FC = () => {
           >
             <AiOutlineGoogle className='icon' /> Sign Up With Google
           </button>
+          {/* Consent notice covers both signup paths (email form + Google),
+              so it sits below both buttons. */}
+          <p className='terms-consent'>
+            By creating an account, you agree to our{' '}
+            <Link to='/terms' className='terms-consent-link'>
+              Terms of Service
+            </Link>{' '}
+            and{' '}
+            <Link to='/privacy' className='terms-consent-link'>
+              Privacy Policy
+            </Link>
+            .
+          </p>
         </div>
       </div>
     </>

@@ -24,6 +24,9 @@ import Layout from 'src/Components/Layout/Layout'
 import Help from 'src/pages/Help/Help'
 import NotFound from 'src/pages/404/404'
 import SingleRecipe from 'src/pages/SingleRecipe/SingleRecipe'
+import About from 'src/pages/About/About'
+import Privacy from 'src/pages/Privacy/Privacy'
+import Terms from 'src/pages/Terms/Terms'
 
 import { Toaster } from 'react-hot-toast'
 import Settings from 'src/pages/Settings/Settings'
@@ -92,6 +95,32 @@ const App: FC = () => {
               }
             />
 
+            {/* Company/legal pages. */}
+            <Route
+              path='/about'
+              element={
+                <Layout darkNavLinks={true}>
+                  <About />
+                </Layout>
+              }
+            />
+            <Route
+              path='/privacy'
+              element={
+                <Layout darkNavLinks={true}>
+                  <Privacy />
+                </Layout>
+              }
+            />
+            <Route
+              path='/terms'
+              element={
+                <Layout darkNavLinks={true}>
+                  <Terms />
+                </Layout>
+              }
+            />
+
             <Route path='/' element={<PrivateRoute />}>
               <Route
                 path='/account'
@@ -141,15 +170,15 @@ const App: FC = () => {
                   </Layout>
                 }
               />
-              <Route
-                path='/help'
-                element={
-                  <Layout darkNavLinks={true}>
-                    <Help />
-                  </Layout>
-                }
-              />
             </Route>
+            <Route
+              path='/help'
+              element={
+                <Layout darkNavLinks={true}>
+                  <Help />
+                </Layout>
+              }
+            />
             <Route path='/login' element={<Login />} />
             <Route path='/signup' element={<Signup />} />
             <Route path='/create-username' element={<CreateUsername />} />

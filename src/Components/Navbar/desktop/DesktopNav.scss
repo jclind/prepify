@@ -1,0 +1,560 @@
+@use '../../../helpers.scss' as s;
+
+// =============================================================================
+// Desktop nav (>725px). Shared markup lives in <DesktopBar>; this file holds the
+// bar's styling. Hidden below 725px, where the mobile <NavMenu> takes over.
+//
+// Layout: logo (in the shell) · prominent centered search · Recipes + Create ·
+// Saved icon · account menu / CTAs (right).
+//
+// Color theming uses CSS custom props that flip with the bar surface:
+//   transparent over the Home hero  -> light text
+//   solid (scrolled, or any non-hero page) -> dark text
+// The `.nav--solid` class is set on the <nav> shell by Navbar.tsx.
+//
+// Skin: "Quiet" — maximum restraint, monochrome, the accent reserved for the
+// active state and the outlined Create. Account dropdown: "Profile Card".
+// =============================================================================
+
+.dnav {
+  // theming knobs (defaults = transparent-over-hero: light text)
+  --dnav-text: #{s.$white};
+  --dnav-accent: #{s.$primary};
+  --dnav-muted: #{rgba(s.$white, 0.85)};
+  --dnav-border: #{rgba(s.$white, 0.55)};
+  --dnav-hover: #{rgba(s.$white, 0.16)};
+  --dnav-active-bg: #{rgba(s.$white, 0.18)};
+
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+
+  @media screen and (max-width: 725px) {
+    display: none;
+  }
+}
+
+// Solid surface -> dark text. (Set on the shell; applies to the whole bar.)
+.nav--solid .dnav {
+  --dnav-text: #{s.$primary-text};
+  --dnav-muted: #{s.$secondary-text};
+  --dnav-border: #{s.$gray-400};
+  --dnav-hover: #{s.$gray-200};
+  --dnav-active-bg: #{rgba(s.$primary, 0.12)};
+}
+
+// ---- search (always present, prominent) ----------------------------------
+.dnav__search {
+  flex: 0 1 560px;
+  min-width: 0;
+  margin: 0 auto; // center the search between the logo and the right-hand cluster
+
+  .search-recipes-form {
+    width: 100%;
+    max-width: none;
+  }
+
+  // Compact nav search: the shared input reserves ~7rem on the right for a
+  // floating "Search" text button, which clips the placeholder once the field
+  // narrows in the bar. Drop the button here (Enter and the autocomplete
+  // results submit) and tighten the padding so the placeholder always fits.
+  .search-recipes-form .search-recipes-input-label .search-recipes-btn {
+    display: none;
+  }
+  .search-recipes-form .search-recipes-input-label input {
+    padding-left: 2.6rem;
+    padding-right: 1rem;
+  }
+}
+
+// On the Home hero the bar is transparent (not yet solid) and the hero already
+// has a big search field. Hide the nav search there to avoid two stacked
+// searches; it "docks" into the bar once you scroll (bar goes solid). With the
+// search hidden, pin the links/actions to the right so there's no empty gap.
+// Only the Home hero is ever non-solid, so this targets exactly that case.
+.nav:not(.nav--solid) {
+  .dnav__search {
+    display: none;
+  }
+  .dnav__links {
+    margin-left: auto;
+  }
+}
+
+// Home hero legibility (desktop): the bar sits over a bright, busy food photo,
+// so light text fails contrast. A top scrim guarantees a dark backing, inactive
+// links go full-white (Quiet mutes them, which hurts here), and a soft shadow
+// handles high-contrast spots. Scoped to desktop so the mobile bar is
+// untouched; only the Home hero is ever non-solid.
+@media screen and (min-width: 726px) {
+  .nav:not(.nav--solid) {
+    background: linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0.5) 0%,
+      rgba(0, 0, 0, 0.32) 50%,
+      rgba(0, 0, 0, 0) 100%
+    );
+
+    .dnav {
+      --dnav-muted: #{s.$white};
+    }
+    .dnav__link,
+    .dnav__cta--login {
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+    }
+    .dnav__icon-link,
+    .dnav-account__caret {
+      filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
+    }
+    .nav-logo,
+    .beta-tag {
+      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+    }
+  }
+}
+
+// ---- primary links -------------------------------------------------------
+.dnav__links {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+.dnav__link {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.4rem 0.25rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+  color: var(--dnav-text);
+  transition: color 0.12s linear, background 0.12s linear, opacity 0.12s linear,
+    border-color 0.12s linear, filter 0.12s linear;
+
+  .dnav__link-icon {
+    display: none; // shown by the Create button, and at narrow widths
+    height: 20px;
+    width: 20px;
+    flex-shrink: 0;
+  }
+  &:hover {
+    opacity: 0.85;
+  }
+  &.is-active {
+    color: var(--dnav-accent);
+  }
+  &:focus-visible {
+    @include s.outline();
+  }
+}
+
+// Create — promoted action. In the Quiet skin this is an outlined accent button
+// (override below) rather than a filled one, to keep the bar restrained.
+.dnav__create {
+  border-radius: s.$border-radius;
+  .dnav__link-icon {
+    display: block;
+  }
+}
+.dnav__create--promoted {
+  padding: 0.5rem 1.05rem;
+  background: var(--dnav-accent);
+  color: #fff;
+  .dnav__link-icon {
+    color: #fff;
+  }
+  &:hover {
+    opacity: 1;
+    filter: brightness(1.07);
+  }
+  &.is-active {
+    color: #fff;
+  }
+}
+
+// ---- actions (saved icon, account / CTAs) --------------------------------
+.dnav__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.dnav__actions-loading {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+}
+
+.dnav__icon-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 42px;
+  width: 42px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  color: var(--dnav-text);
+  font-size: 1.35rem;
+  text-decoration: none;
+  transition: background 0.12s linear, color 0.12s linear;
+  &:hover {
+    background: var(--dnav-hover);
+  }
+  &.is-active {
+    color: var(--dnav-accent);
+  }
+  &:focus-visible {
+    @include s.outline();
+  }
+}
+
+.dnav__cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1.1rem;
+  border-radius: s.$border-radius;
+  font-size: 1rem;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: filter 0.12s linear, background 0.12s linear, border-color 0.12s linear,
+    color 0.12s linear;
+  &:focus-visible {
+    @include s.outline();
+  }
+}
+.dnav__cta--login {
+  color: var(--dnav-text);
+  border: 2px solid var(--dnav-border);
+  background: none;
+  &:hover {
+    border-color: var(--dnav-accent);
+    color: var(--dnav-accent);
+  }
+}
+.dnav__cta--signup {
+  color: #fff;
+  background: var(--dnav-accent);
+  border: 2px solid var(--dnav-accent);
+  &:hover {
+    filter: brightness(1.07);
+  }
+}
+
+// ---- account dropdown (trigger + menu card) ------------------------------
+.dnav-account {
+  position: relative;
+
+  &__btn {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--dnav-text);
+    &:focus-visible {
+      @include s.outline();
+    }
+  }
+  &__avatar {
+    flex-shrink: 0;
+    height: 42px;
+    width: 42px;
+    border-radius: 50%;
+    object-fit: cover;
+    overflow: hidden;
+  }
+  &__avatar--initial {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: s.$primary-text;
+    color: s.$white;
+    font-size: 1.4rem;
+    font-weight: 600;
+    border: 1px solid #{rgba(s.$white, 0.6)};
+  }
+  &__caret {
+    height: 20px;
+    width: 20px;
+    color: var(--dnav-text);
+    transition: transform 0.15s ease;
+  }
+  &.is-open &__caret {
+    transform: rotate(180deg);
+  }
+
+  &__menu {
+    position: absolute;
+    top: calc(100% + 0.6rem);
+    right: 0;
+    width: 252px;
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 0.4rem;
+    background: s.$white;
+    border: 1px solid s.$gray-300;
+    border-radius: s.$border-radius;
+    box-shadow: 0 12px 28px rgba(48, 56, 65, 0.18);
+
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(-4px);
+    pointer-events: none;
+    transition: opacity 0.12s linear, transform 0.12s ease, visibility 0s linear 0.12s;
+  }
+  &.is-open &__menu {
+    visibility: visible;
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+    transition: opacity 0.12s linear, transform 0.12s ease;
+  }
+
+  &__email {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: s.$secondary-text;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 170px;
+  }
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.65rem 1rem;
+    background: none;
+    border: none;
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: s.$primary-text;
+    .icon {
+      height: 20px;
+      width: 20px;
+      flex-shrink: 0;
+      color: s.$secondary-text;
+    }
+    &:hover {
+      background: s.$gray-200;
+    }
+    &.is-active {
+      color: s.$primary;
+    }
+    &:focus-visible {
+      @include s.outline();
+      outline-offset: -2px;
+    }
+  }
+}
+
+// ---- account dropdown: Profile Card --------------------------------------
+.dnav-account__links {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.dnav-account__profile {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.9rem 1rem;
+  text-decoration: none;
+  border-bottom: 1px solid s.$gray-300;
+  &:hover {
+    background: s.$gray-200;
+  }
+  &:focus-visible {
+    @include s.outline();
+    outline-offset: -2px;
+  }
+}
+.dnav-account__profile-avatar {
+  flex-shrink: 0;
+  height: 42px;
+  width: 42px;
+  border-radius: 50%;
+  object-fit: cover;
+  overflow: hidden;
+}
+.dnav-account__profile-avatar--initial {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: s.$primary-text;
+  color: s.$white;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+.dnav-account__profile-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.dnav-account__profile-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: s.$primary-text;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dnav-account__logout-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 0.5rem 0.75rem 0.25rem;
+  padding: 0.6rem;
+  border: 1px solid s.$gray-300;
+  border-radius: s.$border-radius;
+  background: none;
+  color: s.$primary-text;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.12s linear, color 0.12s linear, background 0.12s linear;
+  .icon {
+    height: 20px;
+    width: 20px;
+  }
+  &:hover {
+    border-color: s.$error-red;
+    color: s.$error-red;
+  }
+  &:focus-visible {
+    @include s.outline();
+  }
+}
+
+// =============================================================================
+// SKIN — Quiet: monochrome restraint; the accent is reserved for the active
+// link and the outlined Create. The bar surface is the default `.nav--solid`.
+// =============================================================================
+.dnav--quiet {
+  .dnav__link:not(.dnav__create) {
+    font-weight: 600;
+    color: var(--dnav-muted);
+    &:hover {
+      opacity: 1;
+      color: var(--dnav-text);
+    }
+    &.is-active {
+      color: var(--dnav-accent);
+    }
+  }
+  // The field sits on a near-white bar, so a plain white input nearly vanishes.
+  // Give it a light recessed fill + a firmer border so it reads as a search box,
+  // then lift it to white on focus. (High specificity to beat the shared input's
+  // own `background:white; border:none`.)
+  .search-recipes-form .search-recipes-input-label input {
+    background: s.$gray-200;
+    border: 1px solid s.$gray-400;
+    border-radius: 8px;
+    &:focus {
+      background: s.$white;
+      border-color: s.$gray-600;
+    }
+  }
+  // Secondary (neutral) button — deliberately NOT the orange accent. Uses the
+  // theme's text/border vars so it stays legible on the solid bar (dark text +
+  // gray border) and over the hero (light), with a quiet neutral hover.
+  .dnav__create--promoted {
+    background: none;
+    color: var(--dnav-text);
+    border: 1.5px solid var(--dnav-border);
+    .dnav__link-icon {
+      color: var(--dnav-text);
+    }
+    &:hover {
+      filter: none;
+      background: var(--dnav-hover);
+      border-color: var(--dnav-text);
+    }
+    &.is-active {
+      color: var(--dnav-text);
+      border-color: var(--dnav-text);
+    }
+  }
+  .dnav__icon-link {
+    color: var(--dnav-muted);
+    &:hover {
+      color: var(--dnav-text);
+    }
+  }
+}
+
+// =============================================================================
+// RESPONSIVE — the bar carries a lot (search · Recipes · Create · Saved ·
+// avatar). Shrink the search, then collapse link labels to icons, so it never
+// overflows or wraps between the mobile breakpoint (725px) and ~1240px.
+// =============================================================================
+@media screen and (max-width: 1240px) {
+  .dnav {
+    gap: 1rem;
+  }
+  .dnav__search {
+    flex-basis: 420px;
+  }
+}
+@media screen and (max-width: 1080px) {
+  .dnav {
+    gap: 0.8rem;
+  }
+  .dnav__links {
+    gap: 0.9rem;
+  }
+  .dnav__search {
+    flex-basis: 300px;
+  }
+}
+@media screen and (max-width: 1000px) {
+  // search now fills the remaining space (not a fixed centered width) so it
+  // doesn't collapse to a sliver as the bar narrows
+  .dnav__search {
+    flex: 1 1 auto;
+    margin: 0;
+  }
+  // collapse link labels to icons to reclaim horizontal space
+  .dnav__link .dnav__link-label {
+    display: none;
+  }
+  .dnav__link .dnav__link-icon {
+    display: block;
+  }
+  .dnav__link:not(.dnav__create) {
+    gap: 0;
+    padding: 0.45rem;
+  }
+  .dnav__create {
+    padding-left: 0.6rem;
+    padding-right: 0.6rem;
+  }
+}
+@media screen and (max-width: 860px) {
+  .dnav {
+    gap: 0.5rem;
+  }
+  .dnav__links {
+    gap: 0.5rem;
+  }
+  // smaller search text so "Search All Recipes" isn't clipped in the tight band
+  .dnav__search .search-recipes-form .search-recipes-input-label input {
+    font-size: 0.95rem;
+    padding-left: 2.4rem;
+  }
+}

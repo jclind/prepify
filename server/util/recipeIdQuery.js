@@ -11,6 +11,9 @@ function isObjectIdHex(id) {
 // Once the one-time backfill runs, the $or branch becomes a no-op extra
 // clause — harmless to leave in place.
 function recipeIdQuery(id) {
+  // Non-string ids (arrays from repeated query keys, objects from JSON bodies)
+  // must never reach the filter — an object here would act as a query operator.
+  if (typeof id !== 'string') return { _id: { $in: [] } }
   if (isObjectIdHex(id)) {
     return { $or: [{ _id: new ObjectId(id) }, { _id: id }] }
   }
@@ -23,6 +26,7 @@ function recipeIdQuery(id) {
 function recipeIdInQuery(ids) {
   const variants = []
   for (const id of ids) {
+    if (typeof id !== 'string') continue
     variants.push(id)
     if (isObjectIdHex(id)) variants.push(new ObjectId(id))
   }

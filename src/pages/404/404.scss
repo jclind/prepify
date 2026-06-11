@@ -6,9 +6,9 @@
   align-items: center;
   justify-content: center;
   gap: 1rem;
-  min-height: calc(
-    100vh - #{s.$nav-height} - #{s.$footer-height} - #{s.$footer-margin}
-  );
+  // Fills the flexbox app-main so the centered content stays vertically centered
+  // between nav and footer; the app shell positions the footer (Layout.scss).
+  flex: 1 0 auto;
   padding: 0;
   padding-top: s.$nav-height;
   margin: 0 auto;

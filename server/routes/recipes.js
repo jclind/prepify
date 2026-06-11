@@ -9,6 +9,10 @@ const { deleteRecipeImage } = require('../util/firebaseStorage')
 
 const router = Router()
 
+// Hard ceiling on client-requested page sizes so a single request can never
+// dump a whole collection (audit §4.5). Shared by every paginated route here.
+const MAX_PER_PAGE = 50
+
 function escapeRegex(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
@@ -18,22 +22,45 @@ router.get('/recipes', async (req, res) => {
   // TODO: no auth required for browse; individual write routes below need auth
   try {
     const db = getDB()
-    const { q, page = 0, recipesPerPage = 5, order, cuisine, tags } = req.query
-    const skip = parseInt(page) * parseInt(recipesPerPage)
-    const limit = parseInt(recipesPerPage)
+    const {
+      q,
+      page = 0,
+      recipesPerPage = 5,
+      order,
+      cuisine,
+      tags,
+      mealTypes,
+      diets,
+    } = req.query
+    // Page-size cap (audit §4.5): a single request can never dump the whole
+    // collection. The 'simple' query parser (app.js) guarantees every value is
+    // a string or string[] — never a `{$ne:…}` operator object — so the helpers
+    // below only have to coerce those two shapes.
+    const limit = Math.min(parseInt(recipesPerPage) || 5, MAX_PER_PAGE)
+    const skip = (parseInt(page) || 0) * limit
 
     const filter = {}
 
-    if (q) {
-      filter.title = { $regex: escapeRegex(q), $options: 'i' }
+    // Query params can arrive as arrays (?x=a&x=b) — coerce so string ops below
+    // can't throw on malformed/repeated params.
+    const asText = (v) => (Array.isArray(v) ? v[0] : v) ?? ''
+    const parseList = (v) =>
+      (Array.isArray(v) ? v : String(v).split(','))
+        .map((s) => s.trim())
+        .filter(Boolean)
+
+    const qText = asText(q)
+    if (qText) {
+      filter.title = { $regex: escapeRegex(qText), $options: 'i' }
     }
 
-    if (cuisine && cuisine.trim()) {
-      filter.cuisine = { $regex: `^${escapeRegex(cuisine.trim())}$`, $options: 'i' }
+    const cuisineText = asText(cuisine).trim()
+    if (cuisineText) {
+      filter.cuisine = { $regex: `^${escapeRegex(cuisineText)}$`, $options: 'i' }
     }
 
     if (tags) {
-      const tagList = tags.split(',').map((t) => t.trim()).filter(Boolean)
+      const tagList = parseList(tags)
       if (tagList.length > 0) {
         filter.$or = [
           { mealTypes: { $in: tagList } },
@@ -42,10 +69,52 @@ router.get('/recipes', async (req, res) => {
       }
     }
 
-    let sort = {}
-    if (order === 'new') sort = { createdAt: -1 }
-    else if (order === 'top') sort = { 'rating.rateValue': -1 }
-    else if (order === 'trending') sort = { views: -1 }
+    // Separate meal-type filter (AND'd with the rest): recipes matching any of
+    // the selected meal types.
+    if (mealTypes) {
+      const mealList = parseList(mealTypes)
+      if (mealList.length > 0) {
+        filter.mealTypes = { $in: mealList }
+      }
+    }
+
+    // Dietary filter — conjunctive ($all): a recipe must carry EVERY selected
+    // diet label (e.g. Vegan AND Gluten-Free), since these are restrictions.
+    // (The shared `tags`/$or above stays OR-based for the Home meal lookup.)
+    if (diets) {
+      const dietList = parseList(diets)
+      if (dietList.length > 0) {
+        filter.nutritionLabels = { $all: dietList }
+      }
+    }
+
+    // Sort options exposed by the browse UI. `createdAt` is a millisecond-epoch
+    // string of fixed (13-digit) width, so a lexicographic sort matches
+    // chronological order. `_id` is a final tiebreak so pagination is stable
+    // when the primary key ties (e.g. many recipes with 0 saves / same price).
+    const SORTS = {
+      popular: { numTimesSaved: -1, views: -1, _id: -1 },
+      new: { createdAt: -1, _id: -1 },
+      old: { createdAt: 1, _id: 1 },
+      // Price/time sorts assume every recipe has servingPrice/totalTime (all
+      // current docs do). If null/missing values ever appear, Mongo sorts them
+      // first in ascending order, so "cheapest"/"quickest" would lead with
+      // unpriced/untimed recipes — switch to an aggregation with $ifNull→Infinity
+      // (nulls-last) at that point rather than papering over it here.
+      cheapest: { servingPrice: 1, _id: 1 },
+      expensive: { servingPrice: -1, _id: -1 },
+      shortest: { totalTime: 1, _id: 1 },
+      longest: { totalTime: -1, _id: -1 },
+      // Retained for any non-UI callers.
+      top: { 'rating.rateValue': -1, _id: -1 },
+      trending: { views: -1, _id: -1 },
+    }
+    // Own-property lookup only — `order` is client-controlled, so a bare
+    // `SORTS[order]` would resolve inherited members (`constructor`, `__proto__`)
+    // to a function/object and break the Mongo sort.
+    const sort = Object.prototype.hasOwnProperty.call(SORTS, order)
+      ? SORTS[order]
+      : SORTS.popular
 
     const collection = db.collection('recipes')
     const [recipes, totalCount] = await Promise.all([
@@ -59,6 +128,31 @@ router.get('/recipes', async (req, res) => {
   }
 })
 
+// GET /recipes/facets — distinct filter values that actually exist in the
+// catalog, so the browse UI can hide filters with zero recipes (e.g. don't
+// offer "Jamaican" when nothing is tagged Jamaican). `distinct` returns raw
+// stored values including null/'' — drop the empties; the client maps the rest
+// back to its curated label lists.
+router.get('/recipes/facets', async (req, res) => {
+  try {
+    const collection = getDB().collection('recipes')
+    const clean = (arr) =>
+      arr.filter((v) => typeof v === 'string' && v.trim() !== '')
+    const [cuisines, diets, mealTypes] = await Promise.all([
+      collection.distinct('cuisine'),
+      collection.distinct('nutritionLabels'),
+      collection.distinct('mealTypes'),
+    ])
+    res.json({
+      cuisines: clean(cuisines),
+      diets: clean(diets),
+      mealTypes: clean(mealTypes),
+    })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 // GET /searchAutoCompleteRecipes — quick title search for autocomplete
 router.get('/searchAutoCompleteRecipes', async (req, res) => {
   try {
@@ -67,7 +161,7 @@ router.get('/searchAutoCompleteRecipes', async (req, res) => {
     const recipes = await db
       .collection('recipes')
       .find(
-        { title: { $regex: escapeRegex(title || ''), $options: 'i' } },
+        { title: { $regex: escapeRegex(typeof title === 'string' ? title : ''), $options: 'i' } },
         {
           projection: {
             _id: 1,
@@ -305,6 +399,20 @@ router.get('/getSavedRecipe', verifyToken, async (req, res) => {
     const match =
       userData?.savedRecipes?.find((entry) => entry.recipeId === recipeId) ?? null
     res.json(match)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// GET /getSavedRecipeIds — just the current user's saved recipe ids, so a grid
+// can resolve every card's saved state from one request instead of N.
+router.get('/getSavedRecipeIds', verifyToken, async (req, res) => {
+  try {
+    const db = getDB()
+    const userData = await db
+      .collection('userRecipeData')
+      .findOne({ _id: req.uid }, { projection: { savedRecipes: 1 } })
+    res.json((userData?.savedRecipes ?? []).map((e) => e.recipeId))
   } catch (err) {
     res.status(500).json({ error: err.message })
   }

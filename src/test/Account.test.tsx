@@ -125,7 +125,7 @@ describe('Account page', () => {
     renderAccount('/account')
     // navigate('/account/saved-recipes') fires in useEffect; active class confirms arrival
     await waitFor(() => {
-      expect(screen.getByText('Saved')).toHaveClass('active')
+      expect(screen.getByText('Saved').closest('.acct-seg')).toHaveClass('active')
     })
   })
 
@@ -133,26 +133,38 @@ describe('Account page', () => {
     it('"Saved" link has active class at /account/saved-recipes', async () => {
       renderAccount('/account/saved-recipes')
       await waitFor(() =>
-        expect(screen.getByText('Saved')).toHaveClass('active')
+        expect(screen.getByText('Saved').closest('.acct-seg')).toHaveClass('active')
       )
-      expect(screen.getByText('Ratings')).not.toHaveClass('active')
-      expect(screen.getByText('Your Recipes')).not.toHaveClass('active')
+      expect(screen.getByText('Ratings').closest('.acct-seg')).not.toHaveClass(
+        'active'
+      )
+      expect(
+        screen.getByText('Your Recipes').closest('.acct-seg')
+      ).not.toHaveClass('active')
     })
 
     it('"Ratings" link has active class at /account/ratings', async () => {
       renderAccount('/account/ratings')
       await waitFor(() =>
-        expect(screen.getByText('Ratings')).toHaveClass('active')
+        expect(screen.getByText('Ratings').closest('.acct-seg')).toHaveClass(
+          'active'
+        )
       )
-      expect(screen.getByText('Saved')).not.toHaveClass('active')
+      expect(screen.getByText('Saved').closest('.acct-seg')).not.toHaveClass(
+        'active'
+      )
     })
 
     it('"Your Recipes" link has active class at /account/your-recipes', async () => {
       renderAccount('/account/your-recipes')
       await waitFor(() =>
-        expect(screen.getByText('Your Recipes')).toHaveClass('active')
+        expect(screen.getByText('Your Recipes').closest('.acct-seg')).toHaveClass(
+          'active'
+        )
       )
-      expect(screen.getByText('Saved')).not.toHaveClass('active')
+      expect(screen.getByText('Saved').closest('.acct-seg')).not.toHaveClass(
+        'active'
+      )
     })
   })
 

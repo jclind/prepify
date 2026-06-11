@@ -28,23 +28,55 @@ export type EditRecipeResult =
   | { status: 'auth-error' }
   | { status: 'error'; message: string }
 
+export type GetAllRecipesParams = {
+  page?: number
+  order?: string
+  /** OR-based tag match (mealTypes ∪ nutritionLabels) — used by Home. */
+  tags?: string[]
+  cuisine?: string
+  recipesPerPage?: number
+  query?: string
+  /** Any of the selected meal types. */
+  mealTypes?: string[]
+  /** Conjunctive (AND) diet filter — recipe must carry every label. */
+  diets?: string[]
+}
+
+/** Distinct filter values that actually exist in the catalog. */
+export type RecipeFacets = {
+  cuisines: string[]
+  diets: string[]
+  mealTypes: string[]
+}
+
 class RecipeAPIClass {
-  async getAllRecipes(
+  async getAllRecipes({
     page = 0,
     order = 'new',
-    tags: string[] = [],
-    cuisine: string = '',
+    // `tags` is OR-based (used by the Home meal lookup). `diets` is the
+    // conjunctive (AND) dietary filter; `mealTypes` matches any selected meal.
+    tags = [],
+    cuisine = '',
     recipesPerPage = 5,
-    query = ''
-  ): Promise<RecipeDBResponseType> {
-    let tagsArrParam = '' // For tags that have been chosen
-    if (tags.length > 0) {
-      tagsArrParam += `&tags=${tags.join(',')}`
-    }
+    query = '',
+    mealTypes = [],
+    diets = [],
+  }: GetAllRecipesParams = {}): Promise<RecipeDBResponseType> {
+    // Build via URLSearchParams so every value is encoded — search terms and
+    // multi-word cuisines (e.g. "Middle Eastern") would otherwise corrupt the
+    // query string.
+    const params = new URLSearchParams({
+      q: query,
+      page: String(page),
+      recipesPerPage: String(recipesPerPage),
+      order,
+      cuisine,
+    })
+    if (tags.length > 0) params.set('tags', tags.join(','))
+    if (mealTypes.length > 0) params.set('mealTypes', mealTypes.join(','))
+    if (diets.length > 0) params.set('diets', diets.join(','))
 
-    const result = await http.get(
-      `api/recipes?q=${query}&page=${page}&recipesPerPage=${recipesPerPage}&order=${order}&cuisine=${cuisine}${tagsArrParam}`
-    )
+    const result = await http.get(`api/recipes?${params.toString()}`)
     return result.data
   }
   async searchAutoCompleteRecipes(
@@ -73,6 +105,15 @@ class RecipeAPIClass {
     recipeId = ''
   ): Promise<{ recipeId: string; dateSaved: string } | null> {
     const result = await http.get(`api/getSavedRecipe?recipeId=${recipeId}`)
+    return result.data
+  }
+  // The current user's saved recipe ids — one request the whole grid can share.
+  async getSavedRecipeIds(): Promise<string[]> {
+    const result = await http.get('api/getSavedRecipeIds')
+    return result.data
+  }
+  async getRecipeFacets(): Promise<RecipeFacets> {
+    const result = await http.get('api/recipes/facets')
     return result.data
   }
   async unsaveRecipe(recipeId = ''): Promise<AxiosResponse> {
