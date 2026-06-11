@@ -34,8 +34,11 @@ async function enrichUsers(db, usernameDocs) {
       .toArray(),
     db
       .collection('ratings')
+      // Count actual reviews, not bare ratings: a `ratings` doc with an empty
+      // reviewText is a star-only rating, not a written review, so it must not
+      // inflate the "reviews" column.
       .aggregate([
-        { $match: { username: { $in: usernames } } },
+        { $match: { username: { $in: usernames }, reviewText: { $exists: true, $nin: ['', null] } } },
         { $group: { _id: '$username', count: { $sum: 1 } } },
       ])
       .toArray(),
