@@ -1,4 +1,4 @@
-import React, { FC, useState } from 'react'
+import React, { FC, useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
@@ -80,14 +80,28 @@ const UserCard: FC<{
   )
 }
 
+const PER_PAGE = 25
+
 const Users: FC = () => {
   const [input, setInput] = useState('')
   const [query, setQuery] = useState('')
+  const [page, setPage] = useState(1)
   const queryClient = useQueryClient()
 
+  // Live search: debounce the input into the query so typing filters as you go
+  // and clearing the box restores the full list (no separate "reset" needed).
+  // Any query change resets to the first page.
+  useEffect(() => {
+    const id = setTimeout(() => {
+      setQuery(input.trim())
+      setPage(1)
+    }, 300)
+    return () => clearTimeout(id)
+  }, [input])
+
   const { data, isPending, isError } = useQuery({
-    queryKey: ['admin-users', query],
-    queryFn: () => AdminAPI.searchUsers({ query, perPage: 50 }),
+    queryKey: ['admin-users', query, page],
+    queryFn: () => AdminAPI.searchUsers({ query, page, perPage: PER_PAGE }),
   })
 
   const statusMutation = useMutation({
@@ -101,26 +115,34 @@ const Users: FC = () => {
       toast.error(err?.response?.data?.error || 'Could not update the user.'),
   })
 
+  const totalCount = data?.totalCount ?? 0
+  const totalPages = Math.max(Math.ceil(totalCount / PER_PAGE), 1)
+  const rangeStart = totalCount === 0 ? 0 : (page - 1) * PER_PAGE + 1
+  const rangeEnd = Math.min(page * PER_PAGE, totalCount)
+
   return (
     <div className='admin-users'>
       <header className='admin-users-head'>
         <h1>Users</h1>
       </header>
 
-      <form
-        className='user-search'
-        onSubmit={e => {
-          e.preventDefault()
-          setQuery(input.trim())
-        }}
-      >
+      <form className='user-search' onSubmit={e => e.preventDefault()} role='search'>
         <input
           type='text'
           placeholder='Search by username, email, or uid…'
           value={input}
           onChange={e => setInput(e.target.value)}
         />
-        <button type='submit'>Search</button>
+        {input && (
+          <button
+            type='button'
+            className='clear-btn'
+            aria-label='Clear search'
+            onClick={() => setInput('')}
+          >
+            Clear
+          </button>
+        )}
       </form>
 
       {isPending ? (
@@ -130,18 +152,44 @@ const Users: FC = () => {
       ) : data.users.length === 0 ? (
         <p className='users-state'>No users found.</p>
       ) : (
-        <ul className='users-list'>
-          {data.users.map(user => (
-            <UserCard
-              key={user.uid}
-              user={user}
-              busy={statusMutation.isPending}
-              onApply={(uid, status, reason) =>
-                statusMutation.mutate({ uid, status, reason })
-              }
-            />
-          ))}
-        </ul>
+        <>
+          <p className='users-meta'>
+            Showing {rangeStart}–{rangeEnd} of {totalCount}
+          </p>
+          <ul className='users-list'>
+            {data.users.map(user => (
+              <UserCard
+                key={user.uid}
+                user={user}
+                busy={statusMutation.isPending}
+                onApply={(uid, status, reason) =>
+                  statusMutation.mutate({ uid, status, reason })
+                }
+              />
+            ))}
+          </ul>
+          {totalPages > 1 && (
+            <div className='users-pagination'>
+              <button
+                type='button'
+                disabled={page <= 1}
+                onClick={() => setPage(p => Math.max(p - 1, 1))}
+              >
+                Previous
+              </button>
+              <span className='page-indicator'>
+                Page {page} of {totalPages}
+              </span>
+              <button
+                type='button'
+                disabled={page >= totalPages}
+                onClick={() => setPage(p => Math.min(p + 1, totalPages))}
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   )

@@ -30,6 +30,24 @@ async function verifyToken(req, res, next) {
   }
 }
 
+// Soft auth for otherwise-public routes that want to behave differently for an
+// admin (e.g. let an admin still load a hidden/unpublished recipe). Sets req.uid
+// / req.isAdmin when a valid token is present, but NEVER rejects — an anonymous
+// or bad-token request just continues with req.isAdmin undefined.
+async function optionalAuth(req, res, next) {
+  const authHeader = req.headers.authorization
+  if (authHeader?.startsWith('Bearer ')) {
+    try {
+      const decoded = await admin.auth().verifyIdToken(authHeader.split('Bearer ')[1])
+      req.uid = decoded.uid
+      req.isAdmin = decoded.admin === true
+    } catch (err) {
+      // Ignore — treat as anonymous.
+    }
+  }
+  next()
+}
+
 // Gate for admin-only routes. Must run after verifyToken (relies on req.isAdmin).
 function requireAdmin(req, res, next) {
   if (!req.isAdmin) {
@@ -64,4 +82,4 @@ async function requireActive(req, res, next) {
   }
 }
 
-module.exports = { verifyToken, requireAdmin, requireActive }
+module.exports = { verifyToken, optionalAuth, requireAdmin, requireActive }

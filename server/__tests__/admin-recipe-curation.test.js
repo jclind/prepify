@@ -78,6 +78,16 @@ describe('unpublished recipes are filtered from public reads', () => {
     const single = await request(app).get('/api/getRecipe?id=unp')
     expect(single.status).toBe(404)
   })
+
+  it('lets an admin still load a hidden/unpublished recipe, without inflating views', async () => {
+    admin.__setClaims({ admin: true })
+    await seedRecipe({ ...BASE, _id: 'unp', status: 'unpublished', views: 7 })
+    const res = await request(app).get('/api/getRecipe?id=unp').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(res.body._id).toBe('unp')
+    const doc = await getDB().collection('recipes').findOne({ _id: 'unp' })
+    expect(doc.views).toBe(7) // moderation preview doesn't count as a visit
+  })
 })
 
 describe('PATCH /api/admin/recipes/:id/feature', () => {

@@ -32,7 +32,7 @@ incognito window is easiest).
 - [x] As the **admin** user, visit `/admin/reports` → the admin shell + Reports
       queue render
       <!-- FIXED: the :4000 server was the main tree's (no reports route) → 404.
-               Worktree server is now on :4000. Re-test. -->
+                       Worktree server is now on :4000. Re-test. -->
 - [x] Refresh `/admin/reports` as admin → stays on the page (not bounced to home
       while auth loads)
 
@@ -129,43 +129,51 @@ same admin account as above + a separate normal account.
 
 ## User search + status (as the admin)
 
-- [ ] Go to `/admin/users` (new **Users** item in the admin sidebar). With an
-      empty search you see a list of users; each row shows username, a status
-      pill (active/suspended/banned), email, and counts
-      (recipes · reviews · open reports)
-- [ ] Search by **username prefix** → list narrows; search by the normal user's
-      **email** → that single user resolves; clearing + Search lists all again
-- [ ] On the normal user's row, set the dropdown to **Suspended**, type a reason,
-      click **Apply** → success toast; the status pill flips to **suspended**
+- [x] Go to `/admin/users` (new **Users** item in the admin sidebar). With an empty search you see a list of users; each row shows username, a status pill (active/suspended/banned), email, and counts (recipes · reviews · open reports)
+<!-- ! Is there a pagination or are all users called at the same time? That could be problematic with calls. -->
+<!-- FIXED: the server always paginated (perPage capped at 50); the UI now exposes it — 25/page with Previous/Next + a "Showing X–Y of N" count. -->
+
+- [x] Search by **username prefix** → list narrows; search by the normal user's **email** → that single user resolves; clearing + Search lists all again
+- [x] On the normal user's row, set the dropdown to **Suspended**, type a reason, click **Apply** → success toast; the status pill flips to **suspended**
+<!-- ! There doesn't seem to be a clear ssearch. Once a string is searched then it disappears and the search bar is empty but the list doesn't return to normal. -->
+<!-- FIXED: search is now live (debounced) — clearing the box restores the full list automatically, plus a Clear button. No more submit-only state. -->
+
 
 ## Suspension enforcement (as the suspended normal user)
 
-- [ ] Browsing/reading still works (recipes, reviews, profiles all load)
-- [ ] Try to **create a recipe** → blocked with a clear toast naming the reason
-- [ ] Try to **post or edit a review**, **save a recipe**, or **file a report** →
-      each is blocked the same way
-- [ ] **Deleting** your own recipe/review still works (deletes aren't punished)
-- [ ] Back as admin, set the user to **Banned** → same write-block behavior, and
-      the user is still logged in and can read (ban is a soft flag, no Firebase
-      lockout)
-- [ ] Set the user back to **Active** → their writes work again
+- [x] Browsing/reading still works (recipes, reviews, profiles all load)
+- [x] Try to **create a recipe** → blocked with a clear toast naming the reason
+<!-- ! It's blocked, but not until you press create recipe. An indicator would be ideal.  -->
+<!-- FIXED: added a persistent site-wide AccountStatusBanner (below the navbar) shown to any suspended/banned user, with the reason — so they know up front, not just on a failed action. The toast stays as the at-the-moment confirmation. -->
+
+- [x] Try to **post or edit a review**, **save a recipe**, or **file a report** → each is blocked the same way
+<!-- ! everything seems to be correctly blocked, but again, a ui indication may be helpful. -->
+<!-- FIXED: same AccountStatusBanner covers this. -->
+
+- [x] **Deleting** your own recipe/review still works (deletes aren't punished)
+- [x] Back as admin, set the user to **Banned** → same write-block behavior, and the user is still logged in and can read (ban is a soft flag, no Firebase lockout)
+<!-- ! What is the difference between suspending and banning? -->
+<!-- ANSWER: today they enforce identically (both block writes, both reversible, neither touches Firebase) — per your earlier "ban = soft DB flag" call. The split is semantic: suspended = temporary/under-review, banned = stronger/permanent intent. The banner wording differs ("suspended" vs "banned"). If you want a real functional difference (e.g. suspensions auto-expire after N days, or ban also disables the Firebase login), that's a small follow-up — say the word. -->
+
+- [x] Set the user back to **Active** → their writes work again
 
 ## Status guards (as the admin)
 
-- [ ] Your **own** row offers no way to suspend yourself (or returns an error if
-      forced) — admins can't change their own status
-- [ ] Changing **another admin's** status is refused
+- [x] Your **own** row offers no way to suspend yourself (or returns an error if forced) — admins can't change their own status
+- [x] Changing **another admin's** status is refused
 
 ## Recipe feature / unpublish (as the admin, on a recipe page)
 
-- [ ] On any recipe page you see an **Admin** control strip (non-admins never do)
-- [ ] Click **Feature** → toast; the recipe now appears pinned at the **front of
-      the homepage trending** row (even over higher-view recipes). **Unfeature**
-      removes the pin
-- [ ] Click **Unpublish** → toast; the recipe disappears from `/recipes`, search,
-      trending, and its direct URL (like a takedown) — but it is **not** labeled a
-      moderation takedown. **Publish** brings it back
-- [ ] **Take down / Restore** from this strip behaves like the P1 report-queue
-      takedown (soft-hide)
+- [x] On any recipe page you see an **Admin** control strip (non-admins never do)
+- [x] Click **Feature** → toast; the recipe now appears pinned at the **front of the homepage trending** row (even over higher-view recipes). **Unfeature** removes the pin
+- [x] Click **Unpublish** → toast; the recipe disappears from `/recipes`, search, trending, and its direct URL (like a takedown) — but it is **not** labeled a moderation takedown. **Publish** brings it back
+<!-- ! The unpublish seems to work, but where can those be found again? -->
+<!-- FIXED: moderated recipes were filtered from EVERY read path, so the recipe page 404'd right after you unpublished it — you lost access. Now an admin can still open a hidden/unpublished recipe at its URL (it's filtered for everyone else), the Admin strip shows a Hidden/Unpublished pill, and Publish/Restore is right there. (Admin views don't inflate the view count.) A dedicated "moderated content" admin list is noted for P3. -->
+
+- [x] **Take down / Restore** from this strip behaves like the P1 report-queue
+    takedown (soft-hide)
+<!-- ! Same with this one, once a recipe is taken down, it's not obviously how an admin can restore it. -->
+<!-- FIXED: same as above — the admin can reopen the taken-down recipe's page and click Restore on the Admin strip (the Hidden pill makes the state obvious). Reported content is also still restorable from the Reports queue. -->
+
 
 ✅ All boxes checked = P2 working end to end.

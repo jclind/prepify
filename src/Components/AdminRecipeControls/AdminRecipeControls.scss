@@ -20,6 +20,30 @@
     border-radius: 4px;
   }
 
+  .arc-pill {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+
+    &.hidden {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    &.unpublished {
+      background: #e5e7eb;
+      color: #374151;
+    }
+
+    &.featured {
+      background: #fef3c7;
+      color: #b45309;
+    }
+  }
+
   .arc-btn {
     cursor: pointer;
     border-radius: 6px;

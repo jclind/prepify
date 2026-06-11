@@ -171,9 +171,15 @@ report = {
 
 ## Progress tracker *(update as we build)*
 
-**Current status (2026-06-11): P0 + P1 + P2 built on `worktree-feat+admin-service`
-(off origin/development). Tests green — server 217, frontend 211, tsc clean. Pushed
-(no PR), not merged. P3 still to do.**
+**Current status (2026-06-11): P0 + P1 + P2 built + smoke-tested on
+`worktree-feat+admin-service` (off origin/development). Tests green — server 220,
+frontend 215, tsc clean. Pushed (no PR), not merged. P3 still to do.**
+
+P2 smoke test PASS (2026-06-11). Fixes applied during it: account-status banner
+(pulled forward from P3 — persistent upfront notice for suspended/banned users),
+Users page live/clearable search + pagination, and admin-bypass on `getRecipe`
+(`optionalAuth`) so admins keep access to hidden/unpublished recipes to restore
+them (with status pills on the recipe Admin strip).
 
 Decisions locked while building: takedown model is a **`status` enum** on recipes
 (`'active' | 'hidden'`, room for P2 states) + a distinct **`moderationHidden`**
@@ -229,8 +235,12 @@ NOT coupled to Firebase `disabled`; recipe item = a **`featured` flag** + a dist
   + __setUsers); frontend `AdminUsers.test.tsx`, `AdminRecipeControls.test.tsx`.
   Green: server 217, frontend 211, tsc clean.
 
-**Deferred from P2 → P3:** persistent in-app "your account is suspended" banner
-(toast-on-403 only for now).
+**Done during smoke test (was P2→P3):** persistent in-app "your account is
+suspended/banned" banner — `AccountStatusBanner` (in Layout) + `GET /getMyStatus`.
+
+**Still P3:** a dedicated admin "moderated content" list (find hidden/unpublished
+recipes without a direct URL); optional functional split between suspend & ban
+(auto-expiry / Firebase-disable) — currently identical enforcement, semantic only.
 
 ### P3 — Polish
 - `[ ]` `auditLog` collection + writes on every admin action
