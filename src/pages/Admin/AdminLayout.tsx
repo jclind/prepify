@@ -6,6 +6,7 @@ import './AdminLayout.scss'
 // (no marketing navbar/footer) — this is an internal tool. P1 added the queue;
 // P2 adds Users; P3 adds the audit trail. Analytics will slot in alongside.
 const ADMIN_NAV = [
+  { to: '/admin/analytics', label: 'Overview' },
   { to: '/admin/reports', label: 'Reports' },
   { to: '/admin/users', label: 'Users' },
   { to: '/admin/audit', label: 'Audit log' },
