@@ -2,7 +2,14 @@ import React, { FC, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { AuditAction, AuditEntryType, AuditTargetType } from 'types'
 import AdminAPI from 'src/api/admin'
+import { ACTION_META } from 'src/pages/Admin/auditMeta'
+import SavedFilterBar from 'src/Components/SavedFilters/SavedFilterBar'
 import './Audit.scss'
+
+type AuditFilter = {
+  action: AuditAction | 'all'
+  targetType: AuditTargetType | 'all'
+}
 
 const PER_PAGE = 25
 
@@ -23,23 +30,6 @@ const ACTION_FILTERS: { value: AuditAction | 'all'; label: string }[] = [
   { value: 'report.resolve', label: 'Report resolved' },
   { value: 'report.dismiss', label: 'Report dismissed' },
 ]
-
-// Short human phrasing + a colour family per action, for the row label.
-const ACTION_META: Record<AuditAction, { label: string; tone: string }> = {
-  'recipe.hide': { label: 'hid recipe', tone: 'danger' },
-  'recipe.unhide': { label: 'restored recipe', tone: 'good' },
-  'recipe.publish': { label: 'published recipe', tone: 'good' },
-  'recipe.unpublish': { label: 'unpublished recipe', tone: 'warn' },
-  'recipe.feature': { label: 'featured recipe', tone: 'good' },
-  'recipe.unfeature': { label: 'unfeatured recipe', tone: 'neutral' },
-  'review.takedown': { label: 'took down review by', tone: 'danger' },
-  'review.restore': { label: 'restored review by', tone: 'good' },
-  'user.suspend': { label: 'suspended', tone: 'warn' },
-  'user.ban': { label: 'banned', tone: 'danger' },
-  'user.activate': { label: 'reactivated', tone: 'good' },
-  'report.resolve': { label: 'resolved report', tone: 'good' },
-  'report.dismiss': { label: 'dismissed report', tone: 'neutral' },
-}
 
 const TARGET_TABS: { value: AuditTargetType | 'all'; label: string }[] = [
   { value: 'all', label: 'All targets' },
@@ -69,6 +59,12 @@ const Audit: FC = () => {
 
   const resetTo = <T,>(setter: (v: T) => void) => (value: T) => {
     setter(value)
+    setPage(1)
+  }
+
+  const applyPreset = (f: AuditFilter) => {
+    setAction(f.action)
+    setTargetType(f.targetType)
     setPage(1)
   }
 
@@ -105,6 +101,12 @@ const Audit: FC = () => {
           ))}
         </div>
       </div>
+
+      <SavedFilterBar<AuditFilter>
+        page='audit'
+        current={{ action, targetType }}
+        onApply={applyPreset}
+      />
 
       {isPending ? (
         <p className='audit-state'>Loading audit log…</p>

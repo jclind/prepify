@@ -47,6 +47,18 @@ const INDEXES = [
     name: 'featured_-1_views_-1',
     why: 'getTrendingRecipes homepage sort (featured picks first, then most-viewed)',
   },
+  // Analytics recipesOverTime (P3b, GET /admin/analytics) buckets recipes by a
+  // `createdAt` range; the existing {userId,createdAt} compound can't serve a
+  // createdAt-only range. recipes is the large collection, so it lives here in the
+  // deliberate migration. The small reports/usernames createdAt indexes auto-build
+  // at startup (db.js) alongside their siblings. Admin-only + low-frequency, so
+  // this is future-proofing, not a hot-path fix.
+  {
+    collection: 'recipes',
+    key: { createdAt: -1 },
+    name: 'createdAt_-1',
+    why: 'admin analytics recipesOverTime (createdAt range bucketing)',
+  },
 ]
 
 async function main() {

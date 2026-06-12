@@ -5,6 +5,7 @@ import {
   AuditResponse,
   AuditAction,
   AuditTargetType,
+  AnalyticsResponse,
 } from 'types'
 import { http } from 'src/api/http-common'
 
@@ -77,6 +78,15 @@ class AdminAPIClass {
     perPage?: number
   }): Promise<AuditResponse> {
     const result = await http.get<AuditResponse>('api/admin/audit', { params })
+    return result.data
+  }
+
+  // Overview metrics for the admin dashboard. `days` bounds the over-time series
+  // (server clamps to 7–90).
+  async getAnalytics(params?: { days?: number }): Promise<AnalyticsResponse> {
+    const result = await http.get<AnalyticsResponse>('api/admin/analytics', {
+      params,
+    })
     return result.data
   }
 }

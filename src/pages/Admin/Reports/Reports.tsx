@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { AdminReportType, ReportStatus } from 'types'
 import ReportAPI from 'src/api/reports'
+import SavedFilterBar from 'src/Components/SavedFilters/SavedFilterBar'
 import './Reports.scss'
 
 type StatusFilter = ReportStatus | 'all'
@@ -196,6 +197,12 @@ const Reports: FC = () => {
           </button>
         ))}
       </div>
+
+      <SavedFilterBar<{ status: StatusFilter }>
+        page='reports'
+        current={{ status: statusFilter }}
+        onApply={f => changeTab(f.status)}
+      />
 
       {openReports.length > 0 && (
         <div className='bulk-bar'>

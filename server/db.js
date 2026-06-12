@@ -37,6 +37,16 @@ async function ensureIndexes() {
     )
   }
 
+  // Backs the admin analytics usersOverTime series (signup createdAt range
+  // bucketing). setUsername only began stamping createdAt in P3b, so this index
+  // covers the docs that have it; legacy docs without the field aren't counted in
+  // the signup series.
+  try {
+    await db.collection('usernames').createIndex({ createdAt: -1 })
+  } catch (err) {
+    console.error('Failed to create index on usernames.createdAt:', err.message)
+  }
+
   // Backs GET /api/drafts, which lists a user's drafts newest-updated first
   // (find({ userId }).sort({ updatedAt: -1 })). Without it that query is a full
   // collection scan plus an in-memory sort on every Drafts-tab load.
@@ -72,6 +82,8 @@ async function ensureIndexes() {
     await reports.createIndex({ status: 1, createdAt: -1 })
     await reports.createIndex({ reportedUsername: 1 })
     await reports.createIndex({ recipeId: 1 })
+    // Backs the admin analytics reportsOverTime series (createdAt range bucketing).
+    await reports.createIndex({ createdAt: -1 })
   } catch (err) {
     console.error('Failed to create indexes on reports:', err.message)
   }
