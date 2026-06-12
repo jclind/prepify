@@ -55,4 +55,33 @@ async function recordAudit(db, entry) {
   }
 }
 
-module.exports = { recordAudit, AUDIT_ACTIONS, AUDIT_TARGET_TYPES }
+/**
+ * Append many audit entries in a single insertOne batch. Same best-effort
+ * contract as recordAudit (swallows its own errors, always resolves) — for
+ * bulk admin sweeps so we make one round-trip instead of one per entry.
+ *
+ * @param {import('mongodb').Db} db
+ * @param {object[]} entries  each shaped like the recordAudit `entry` arg
+ */
+async function recordAuditMany(db, entries) {
+  if (!Array.isArray(entries) || entries.length === 0) return
+  try {
+    await db.collection('auditLog').insertMany(
+      entries.map((entry) => ({
+        _id: new ObjectId(),
+        action: entry.action,
+        actorUid: entry.actorUid,
+        targetType: entry.targetType,
+        targetId: entry.targetId != null ? String(entry.targetId) : null,
+        targetLabel: entry.targetLabel || null,
+        reason: entry.reason || null,
+        metadata: entry.metadata || null,
+        createdAt: new Date(),
+      }))
+    )
+  } catch (err) {
+    console.error('Failed to write audit log entries:', err.message)
+  }
+}
+
+module.exports = { recordAudit, recordAuditMany, AUDIT_ACTIONS, AUDIT_TARGET_TYPES }

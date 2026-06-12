@@ -3,7 +3,7 @@ const { ObjectId } = require('mongodb')
 const { getDB } = require('../db')
 const { verifyToken, requireAdmin, requireActive } = require('../middleware/auth')
 const { recipeIdQuery } = require('../util/recipeIdQuery')
-const { recordAudit } = require('../util/auditLog')
+const { recordAudit, recordAuditMany } = require('../util/auditLog')
 
 const router = Router()
 
@@ -127,7 +127,7 @@ router.get('/reports', verifyToken, requireAdmin, async (req, res) => {
 })
 
 // Most reports a single admin sweep would ever clear at once. Bounds the bulk
-// updateMany and the per-report audit fan-out.
+// updateMany and the audit insert.
 const MAX_BULK = 100
 
 // PATCH /reports/bulk — admin resolves/dismisses many reports in one sweep.
@@ -152,29 +152,34 @@ router.patch('/reports/bulk', verifyToken, requireAdmin, async (req, res) => {
       return res.status(400).json({ error: 'No valid report ids' })
     }
 
-    // Snapshot the open targets first so each closed report gets an audit entry
-    // with a readable label (updateMany can't return the docs).
-    const open = await db
-      .collection('reports')
-      .find({ _id: { $in: objectIds }, status: 'open' })
-      .toArray()
-
+    // Stamp every report this sweep closes with a single timestamp, then re-read
+    // exactly those docs by our own (actorUid, resolvedAt) stamp. updateMany
+    // can't return the modified docs, and re-reading by the stamp — rather than
+    // a pre-update snapshot — means a report closed concurrently by another
+    // admin can't slip into *our* audit trail.
+    const resolvedAt = new Date()
     const result = await db.collection('reports').updateMany(
       { _id: { $in: objectIds }, status: 'open' },
-      { $set: { status, resolvedBy: req.uid, resolvedAt: new Date() } }
+      { $set: { status, resolvedBy: req.uid, resolvedAt } }
     )
 
-    await Promise.all(
-      open.map((r) =>
-        recordAudit(db, {
-          action: status === 'resolved' ? 'report.resolve' : 'report.dismiss',
-          actorUid: req.uid,
-          targetType: 'report',
-          targetId: r._id,
-          targetLabel: r.reportedUsername ? `@${r.reportedUsername}` : r.recipeId,
-          metadata: { targetType: r.targetType, recipeId: r.recipeId, bulk: true },
-        })
-      )
+    const closed = result.modifiedCount
+      ? await db
+          .collection('reports')
+          .find({ _id: { $in: objectIds }, resolvedBy: req.uid, resolvedAt })
+          .toArray()
+      : []
+
+    await recordAuditMany(
+      db,
+      closed.map((r) => ({
+        action: status === 'resolved' ? 'report.resolve' : 'report.dismiss',
+        actorUid: req.uid,
+        targetType: 'report',
+        targetId: r._id,
+        targetLabel: r.reportedUsername ? `@${r.reportedUsername}` : r.recipeId,
+        metadata: { targetType: r.targetType, recipeId: r.recipeId, bulk: true },
+      }))
     )
 
     res.json({ updated: result.modifiedCount })
