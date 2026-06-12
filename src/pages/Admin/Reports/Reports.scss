@@ -138,6 +138,14 @@
     justify-content: space-between;
     gap: 1.25rem;
 
+    // Grow to fill the row between the (optional) select checkbox and the action
+    // column, so content stays left-aligned. Without this, space-between centres
+    // it and the slack reads as inconsistent whitespace that tracks title length.
+    .report-main {
+      flex: 1;
+      min-width: 0;
+    }
+
     .report-tags {
       display: flex;
       gap: 0.4rem;
