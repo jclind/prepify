@@ -23,6 +23,7 @@ afterEach(async () => {
     db.collection('reports').deleteMany({}),
     db.collection('recipes').deleteMany({}),
     db.collection('ratings').deleteMany({}),
+    db.collection('auditLog').deleteMany({}),
   ])
 })
 
@@ -204,5 +205,87 @@ describe('PATCH /api/reports/:id', () => {
     expect(missing.status).toBe(404)
     const malformed = await request(app).patch('/api/reports/not-an-id').set(AUTH_HEADER).send({ status: 'resolved' })
     expect(malformed.status).toBe(404)
+  })
+
+  it('writes an audit entry when a report is resolved', async () => {
+    admin.__setClaims({ admin: true })
+    const report = await seedReport({ reportedUsername: 'baduser', targetType: 'review' })
+    await request(app).patch(`/api/reports/${report._id}`).set(AUTH_HEADER).send({ status: 'dismissed' })
+    const entries = await getDB().collection('auditLog').find({}).toArray()
+    expect(entries).toHaveLength(1)
+    expect(entries[0].action).toBe('report.dismiss')
+    expect(entries[0].actorUid).toBe(TEST_UID)
+    expect(entries[0].targetType).toBe('report')
+  })
+})
+
+describe('PATCH /api/reports/bulk', () => {
+  async function seedReports(n, overrides = {}) {
+    const docs = Array.from({ length: n }, (_, i) => ({
+      _id: new ObjectId(),
+      targetType: 'recipe',
+      recipeId: `recipe-${i}`,
+      reporterUid: `u${i}`,
+      reason: 'spam',
+      status: 'open',
+      createdAt: new Date(),
+      ...overrides,
+    }))
+    await getDB().collection('reports').insertMany(docs)
+    return docs
+  }
+
+  it('requires admin', async () => {
+    const [a] = await seedReports(1)
+    const res = await request(app)
+      .patch('/api/reports/bulk')
+      .set(AUTH_HEADER)
+      .send({ ids: [String(a._id)], status: 'resolved' })
+    expect(res.status).toBe(403)
+  })
+
+  it('resolves many open reports and reports how many changed', async () => {
+    admin.__setClaims({ admin: true })
+    const docs = await seedReports(3)
+    const ids = docs.map((d) => String(d._id))
+    const res = await request(app)
+      .patch('/api/reports/bulk')
+      .set(AUTH_HEADER)
+      .send({ ids, status: 'resolved' })
+    expect(res.status).toBe(200)
+    expect(res.body.updated).toBe(3)
+    const remaining = await getDB().collection('reports').countDocuments({ status: 'open' })
+    expect(remaining).toBe(0)
+    // One audit entry per report actually closed.
+    const audits = await getDB().collection('auditLog').countDocuments({ action: 'report.resolve' })
+    expect(audits).toBe(3)
+  })
+
+  it('only touches open reports (skips already-closed ids in the batch)', async () => {
+    admin.__setClaims({ admin: true })
+    const open = await seedReports(2)
+    const closed = await seedReports(1, { status: 'dismissed' })
+    const ids = [...open, ...closed].map((d) => String(d._id))
+    const res = await request(app)
+      .patch('/api/reports/bulk')
+      .set(AUTH_HEADER)
+      .send({ ids, status: 'resolved' })
+    expect(res.status).toBe(200)
+    expect(res.body.updated).toBe(2)
+  })
+
+  it('rejects an empty id list and an invalid status', async () => {
+    admin.__setClaims({ admin: true })
+    const empty = await request(app).patch('/api/reports/bulk').set(AUTH_HEADER).send({ ids: [], status: 'resolved' })
+    expect(empty.status).toBe(400)
+    const badStatus = await request(app).patch('/api/reports/bulk').set(AUTH_HEADER).send({ ids: ['x'], status: 'open' })
+    expect(badStatus.status).toBe(400)
+  })
+
+  it('rejects a batch over the cap', async () => {
+    admin.__setClaims({ admin: true })
+    const ids = Array.from({ length: 101 }, () => String(new ObjectId()))
+    const res = await request(app).patch('/api/reports/bulk').set(AUTH_HEADER).send({ ids, status: 'resolved' })
+    expect(res.status).toBe(400)
   })
 })

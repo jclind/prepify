@@ -58,6 +58,68 @@
     }
   }
 
+  .bulk-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+    padding: 0.6rem 0.9rem;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+
+    .bulk-select-all {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      color: #374151;
+      cursor: pointer;
+    }
+
+    .bulk-actions {
+      display: flex;
+      gap: 0.5rem;
+
+      .action {
+        cursor: pointer;
+        border-radius: 6px;
+        padding: 0.4rem 0.8rem;
+        font-size: 0.82rem;
+        font-weight: 600;
+        border: 1px solid transparent;
+        white-space: nowrap;
+
+        &:disabled {
+          opacity: 0.6;
+          cursor: default;
+        }
+
+        &.resolve {
+          background: #16a34a;
+          border-color: #16a34a;
+          color: #fff;
+        }
+
+        &.dismiss {
+          background: #fff;
+          border-color: #d1d5db;
+          color: #6b7280;
+        }
+      }
+    }
+  }
+
+  .report-select {
+    margin-top: 0.3rem;
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+  }
+
   .reports-list {
     list-style: none;
     margin: 0;
@@ -75,6 +137,14 @@
     display: flex;
     justify-content: space-between;
     gap: 1.25rem;
+
+    // Grow to fill the row between the (optional) select checkbox and the action
+    // column, so content stays left-aligned. Without this, space-between centres
+    // it and the slack reads as inconsistent whitespace that tracks title length.
+    .report-main {
+      flex: 1;
+      min-width: 0;
+    }
 
     .report-tags {
       display: flex;

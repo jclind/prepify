@@ -75,6 +75,21 @@ async function ensureIndexes() {
   } catch (err) {
     console.error('Failed to create indexes on reports:', err.message)
   }
+
+  // Admin audit log (P3). New collection, so these build instantly. Backs the
+  // audit page (newest first), and filtering by actor or by a specific target.
+  // The action/targetType compounds end in createdAt:-1 so the page's filter
+  // dropdowns are served filter-then-sort by one index rather than an in-memory sort.
+  try {
+    const auditLog = db.collection('auditLog')
+    await auditLog.createIndex({ createdAt: -1 })
+    await auditLog.createIndex({ actorUid: 1, createdAt: -1 })
+    await auditLog.createIndex({ targetType: 1, targetId: 1 })
+    await auditLog.createIndex({ action: 1, createdAt: -1 })
+    await auditLog.createIndex({ targetType: 1, createdAt: -1 })
+  } catch (err) {
+    console.error('Failed to create indexes on auditLog:', err.message)
+  }
 }
 
 async function closeDB() {

@@ -3,6 +3,7 @@ const admin = require('firebase-admin')
 const { getDB } = require('../db')
 const { verifyToken, requireAdmin } = require('../middleware/auth')
 const { USER_STATUSES } = require('../util/userStatus')
+const { recordAudit, AUDIT_ACTIONS, AUDIT_TARGET_TYPES } = require('../util/auditLog')
 
 const router = Router()
 
@@ -242,7 +243,65 @@ router.patch('/admin/users/:uid/status', verifyToken, requireAdmin, async (req, 
       { upsert: true }
     )
 
+    const targetUsernameDoc = await db.collection('usernames').findOne({ _id: uid })
+    const auditAction =
+      status === 'suspended' ? 'user.suspend' : status === 'banned' ? 'user.ban' : 'user.activate'
+    await recordAudit(db, {
+      action: auditAction,
+      actorUid: req.uid,
+      targetType: 'user',
+      targetId: uid,
+      targetLabel: targetUsernameDoc?.username ? `@${targetUsernameDoc.username}` : uid,
+      reason: status === 'active' ? null : reason || null,
+    })
+
     res.json({ uid, status })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// GET /admin/audit?action=&targetType=&actorUid=&page=&perPage= — the moderation
+// audit trail, newest first. Each row is enriched with the actor's username so
+// the page can show "@admin did X" without a per-row lookup.
+router.get('/admin/audit', verifyToken, requireAdmin, async (req, res) => {
+  try {
+    const db = getDB()
+    const { action, targetType, actorUid } = req.query
+    const page = Math.max(parseInt(req.query.page) || 1, 1)
+    const perPage = Math.min(parseInt(req.query.perPage) || DEFAULT_PER_PAGE, MAX_PER_PAGE)
+
+    const filter = {}
+    if (typeof action === 'string' && AUDIT_ACTIONS.includes(action)) filter.action = action
+    if (typeof targetType === 'string' && AUDIT_TARGET_TYPES.includes(targetType)) {
+      filter.targetType = targetType
+    }
+    if (typeof actorUid === 'string' && actorUid) filter.actorUid = actorUid
+
+    const [entries, totalCount] = await Promise.all([
+      db
+        .collection('auditLog')
+        .find(filter)
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * perPage)
+        .limit(perPage)
+        .toArray(),
+      db.collection('auditLog').countDocuments(filter),
+    ])
+
+    // Batch-resolve actor usernames for this page.
+    const actorUids = [...new Set(entries.map((e) => e.actorUid).filter(Boolean))]
+    const actorDocs = actorUids.length
+      ? await db.collection('usernames').find({ _id: { $in: actorUids } }).toArray()
+      : []
+    const actorByUid = Object.fromEntries(actorDocs.map((d) => [d._id, d.username]))
+
+    const enriched = entries.map((e) => ({
+      ...e,
+      actorUsername: actorByUid[e.actorUid] || null,
+    }))
+
+    res.json({ entries: enriched, totalCount })
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
