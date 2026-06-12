@@ -243,7 +243,13 @@ recipes without a direct URL); optional functional split between suspend & ban
 (auto-expiry / Firebase-disable) — currently identical enforcement, semantic only.
 
 ### P3 — Polish
-- `[ ]` `auditLog` collection + writes on every admin action
+- `[x]` `auditLog` collection + writes on every admin action — `server/util/auditLog.js`
+  (`recordAudit`, best-effort/never breaks the action); wired into recipe
+  hide/publish/feature, review takedown/restore, user status, report resolve/dismiss.
+  `GET /admin/audit` (filter by action/targetType/actorUid, paginated, actor-username
+  enriched) + `/admin/audit` page & nav tab. Indexed in db.js (new collection).
+- `[x]` Bulk actions — `PATCH /reports/bulk` (resolve/dismiss many open reports, capped
+  at 100, one audit entry each) + multi-select checkboxes & selection bar in the queue.
 - `[ ]` Admin analytics dashboard
 - `[ ]` Notifications/email (provider TBD)
-- `[ ]` Bulk actions / saved filters
+- `[ ]` Saved filters

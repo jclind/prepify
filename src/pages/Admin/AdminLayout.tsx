@@ -4,10 +4,11 @@ import './AdminLayout.scss'
 
 // Shell for the admin section. Deliberately separate from the public Layout
 // (no marketing navbar/footer) — this is an internal tool. P1 added the queue;
-// P2 adds Users. P3 will add Audit/analytics nav items alongside these.
+// P2 adds Users; P3 adds the audit trail. Analytics will slot in alongside.
 const ADMIN_NAV = [
   { to: '/admin/reports', label: 'Reports' },
   { to: '/admin/users', label: 'Users' },
+  { to: '/admin/audit', label: 'Audit log' },
 ]
 
 const AdminLayout: FC = () => {

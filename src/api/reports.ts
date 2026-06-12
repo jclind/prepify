@@ -46,6 +46,19 @@ class ReportAPIClass {
     return result.data
   }
 
+  // Admin: close many reports at once. Returns how many were actually updated
+  // (already-closed ids in the batch are skipped server-side).
+  async bulkResolve(
+    ids: string[],
+    status: 'resolved' | 'dismissed'
+  ): Promise<{ updated: number }> {
+    const result = await http.patch<{ updated: number }>('api/reports/bulk', {
+      ids,
+      status,
+    })
+    return result.data
+  }
+
   // Admin: soft-hide / restore a recipe.
   async setRecipeModeration(
     recipeId: string,
