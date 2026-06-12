@@ -11,8 +11,60 @@ const DEFAULT_PER_PAGE = 25
 const MAX_PER_PAGE = 50
 const MAX_REASON_LEN = 500
 
+// Analytics time-window bounds (days) for the over-time series, plus how many
+// recent admin actions the dashboard surfaces.
+const DEFAULT_DAYS = 30
+const MIN_DAYS = 7
+const MAX_DAYS = 90
+const RECENT_ACTIONS_LIMIT = 10
+
 function escapeRegex(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+// Attach each audit entry's actor username in one batched lookup, so a page of
+// entries shows "@admin did X" without a per-row query. Shared by the audit
+// trail and the analytics "recent actions" feed.
+async function enrichActors(db, entries) {
+  const actorUids = [...new Set(entries.map((e) => e.actorUid).filter(Boolean))]
+  const actorDocs = actorUids.length
+    ? await db.collection('usernames').find({ _id: { $in: actorUids } }).toArray()
+    : []
+  const actorByUid = Object.fromEntries(actorDocs.map((d) => [d._id, d.username]))
+  return entries.map((e) => ({ ...e, actorUsername: actorByUid[e.actorUid] || null }))
+}
+
+// Build a complete, zero-filled daily time series for the last `days` days
+// (inclusive of today, oldest first) from a [{ _id: 'YYYY-MM-DD', count }]
+// aggregation result. Filling the gaps server-side means the client always
+// receives one bucket per day and never has to reason about missing dates.
+function buildDailySeries(aggRows, days, now = new Date()) {
+  const byDate = Object.fromEntries(aggRows.map((r) => [r._id, r.count]))
+  const series = []
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(now)
+    d.setUTCDate(d.getUTCDate() - i)
+    const date = d.toISOString().slice(0, 10)
+    series.push({ date, count: byDate[date] || 0 })
+  }
+  return series
+}
+
+// One aggregation that buckets a collection's `createdAt` by UTC day since the
+// cutoff. Returns rows shaped for buildDailySeries.
+function dailyCreatedAgg(db, collection, cutoff) {
+  return db
+    .collection(collection)
+    .aggregate([
+      { $match: { createdAt: { $gte: cutoff } } },
+      {
+        $group: {
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt', timezone: 'UTC' } },
+          count: { $sum: 1 },
+        },
+      },
+    ])
+    .toArray()
 }
 
 // There is no central user record (P2 introduces a `users` status doc, but it
@@ -290,18 +342,101 @@ router.get('/admin/audit', verifyToken, requireAdmin, async (req, res) => {
     ])
 
     // Batch-resolve actor usernames for this page.
-    const actorUids = [...new Set(entries.map((e) => e.actorUid).filter(Boolean))]
-    const actorDocs = actorUids.length
-      ? await db.collection('usernames').find({ _id: { $in: actorUids } }).toArray()
-      : []
-    const actorByUid = Object.fromEntries(actorDocs.map((d) => [d._id, d.username]))
-
-    const enriched = entries.map((e) => ({
-      ...e,
-      actorUsername: actorByUid[e.actorUid] || null,
-    }))
+    const enriched = await enrichActors(db, entries)
 
     res.json({ entries: enriched, totalCount })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// GET /admin/analytics?days= — single overview payload for the admin dashboard:
+// headline totals, daily over-time series (reports filed / recipes / signups),
+// and the most recent admin actions. `days` is clamped to [MIN_DAYS, MAX_DAYS].
+//
+// Caveat on usersOverTime: the `usernames` collection only started carrying a
+// `createdAt` with this change (setUsername $setOnInsert), so the signup series
+// only reflects accounts created from that point forward — older users have no
+// timestamp and are excluded. Recipe/report series are fully historical.
+router.get('/admin/analytics', verifyToken, requireAdmin, async (req, res) => {
+  try {
+    const db = getDB()
+    const days = Math.min(
+      Math.max(parseInt(req.query.days) || DEFAULT_DAYS, MIN_DAYS),
+      MAX_DAYS
+    )
+    const now = new Date()
+    const cutoff = new Date(now)
+    cutoff.setUTCDate(cutoff.getUTCDate() - (days - 1))
+    cutoff.setUTCHours(0, 0, 0, 0)
+
+    const [
+      userCount,
+      recipeStatusAgg,
+      featuredCount,
+      reviewCount,
+      reportStatusAgg,
+      reportsDaily,
+      recipesDaily,
+      usersDaily,
+      recentRaw,
+    ] = await Promise.all([
+      db.collection('usernames').countDocuments(),
+      // A missing status is a legacy 'active' recipe (legacy-safe — same rule the
+      // public read paths use via $nin).
+      db
+        .collection('recipes')
+        .aggregate([
+          { $group: { _id: { $ifNull: ['$status', 'active'] }, count: { $sum: 1 } } },
+        ])
+        .toArray(),
+      db.collection('recipes').countDocuments({ featured: true }),
+      // Count written reviews only, not bare star ratings (same rule as enrichUsers).
+      db.collection('ratings').countDocuments({ reviewText: { $exists: true, $nin: ['', null] } }),
+      db
+        .collection('reports')
+        .aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }])
+        .toArray(),
+      dailyCreatedAgg(db, 'reports', cutoff),
+      dailyCreatedAgg(db, 'recipes', cutoff),
+      dailyCreatedAgg(db, 'usernames', cutoff),
+      db
+        .collection('auditLog')
+        .find({})
+        .sort({ createdAt: -1 })
+        .limit(RECENT_ACTIONS_LIMIT)
+        .toArray(),
+    ])
+
+    const recipeByStatus = Object.fromEntries(recipeStatusAgg.map((r) => [r._id, r.count]))
+    const recipeTotal = recipeStatusAgg.reduce((sum, r) => sum + r.count, 0)
+    const reportByStatus = Object.fromEntries(reportStatusAgg.map((r) => [r._id, r.count]))
+
+    const recentActions = await enrichActors(db, recentRaw)
+
+    res.json({
+      days,
+      totals: {
+        users: userCount,
+        recipes: {
+          total: recipeTotal,
+          active: recipeByStatus.active || 0,
+          hidden: recipeByStatus.hidden || 0,
+          unpublished: recipeByStatus.unpublished || 0,
+          featured: featuredCount,
+        },
+        reviews: reviewCount,
+        reports: {
+          open: reportByStatus.open || 0,
+          resolved: reportByStatus.resolved || 0,
+          dismissed: reportByStatus.dismissed || 0,
+        },
+      },
+      reportsOverTime: buildDailySeries(reportsDaily, days, now),
+      recipesOverTime: buildDailySeries(recipesDaily, days, now),
+      usersOverTime: buildDailySeries(usersDaily, days, now),
+      recentActions,
+    })
   } catch (err) {
     res.status(500).json({ error: err.message })
   }

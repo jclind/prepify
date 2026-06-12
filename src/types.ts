@@ -304,6 +304,40 @@ export interface AuditResponse {
   totalCount: number
 }
 
+// Admin analytics dashboard (P3b). Mirrors GET /admin/analytics in
+// server/routes/admin.js.
+export interface AnalyticsTotals {
+  users: number
+  recipes: {
+    total: number
+    active: number
+    hidden: number
+    unpublished: number
+    featured: number
+  }
+  reviews: number
+  reports: {
+    open: number
+    resolved: number
+    dismissed: number
+  }
+}
+
+// One day of a zero-filled daily series (oldest first). `date` is 'YYYY-MM-DD'.
+export interface TimeBucket {
+  date: string
+  count: number
+}
+
+export interface AnalyticsResponse {
+  days: number
+  totals: AnalyticsTotals
+  reportsOverTime: TimeBucket[]
+  recipesOverTime: TimeBucket[]
+  usersOverTime: TimeBucket[]
+  recentActions: AuditEntryType[]
+}
+
 export interface AddRecipeErrorType {
   title: string
   image: string

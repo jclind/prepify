@@ -11,6 +11,7 @@ import ForgotPassword from 'src/pages/ForgotPassword/ForgotPassword'
 import PrivateRoute from 'src/Components/PrivateRoute'
 import AdminRoute from 'src/Components/AdminRoute'
 import AdminLayout from 'src/pages/Admin/AdminLayout'
+import Analytics from 'src/pages/Admin/Analytics/Analytics'
 import Reports from 'src/pages/Admin/Reports/Reports'
 import Users from 'src/pages/Admin/Users/Users'
 import Audit from 'src/pages/Admin/Audit/Audit'
@@ -188,7 +189,8 @@ const App: FC = () => {
                 outside the public Layout (its own AdminLayout shell). */}
             <Route path='/admin' element={<AdminRoute />}>
               <Route element={<AdminLayout />}>
-                <Route index element={<Navigate to='/admin/reports' replace />} />
+                <Route index element={<Navigate to='/admin/analytics' replace />} />
+                <Route path='analytics' element={<Analytics />} />
                 <Route path='reports' element={<Reports />} />
                 <Route path='users' element={<Users />} />
                 <Route path='audit' element={<Audit />} />

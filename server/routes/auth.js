@@ -125,7 +125,13 @@ router.post('/setUsername', verifyToken, requireActive, async (req, res) => {
     try {
       await db.collection('usernames').updateOne(
         { _id: uid },
-        { $set: { username, username_lower: usernameLower } },
+        {
+          $set: { username, username_lower: usernameLower },
+          // Stamp the account's first-seen time once, so admin analytics can
+          // chart signups over time. Legacy docs created before this won't have
+          // it (and are excluded from the signup series) — see GET /admin/analytics.
+          $setOnInsert: { createdAt: new Date() },
+        },
         { upsert: true }
       )
     } catch (err) {

@@ -250,6 +250,17 @@ recipes without a direct URL); optional functional split between suspend & ban
   enriched) + `/admin/audit` page & nav tab. Indexed in db.js (new collection).
 - `[x]` Bulk actions — `PATCH /reports/bulk` (resolve/dismiss many open reports, capped
   at 100, one audit entry each) + multi-select checkboxes & selection bar in the queue.
-- `[ ]` Admin analytics dashboard
-- `[ ]` Notifications/email (provider TBD)
-- `[ ]` Saved filters
+- `[x]` Admin analytics dashboard — `GET /admin/analytics` (server/routes/admin.js):
+  headline totals (users; recipes by status active/hidden/unpublished + featured,
+  legacy no-status counted active; written-review count; reports by status),
+  zero-filled date-bounded daily series (reports filed / new recipes / new signups,
+  `days` clamped 7–90), and a recent-admin-actions feed reusing the auditLog
+  (shared `enrichActors` helper). New `/admin/analytics` page is the admin landing
+  ("Overview" nav tab, `/admin` index redirects here): stat cards + dependency-free
+  bar charts + recent-actions list. **Caveat:** the signup series only counts
+  accounts created after this shipped — `setUsername` now stamps `createdAt`
+  (`$setOnInsert`); legacy `usernames` docs have no timestamp and are excluded.
+- `[x]` Saved filters — per-browser localStorage presets (`src/util/savedFilters.ts`
+  + reusable `SavedFilterBar`) wired into the Reports and Audit queues. No backend.
+- `[ ]` Notifications/email — **DEFERRED**: blocked on choosing a provider
+  (SendGrid / Postmark / SES). Not built.
