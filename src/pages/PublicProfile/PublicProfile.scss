@@ -1,0 +1,154 @@
+@use '../../helpers.scss' as s;
+
+// Public profile page (/u/:username). Read-only showcase: identity, bio,
+// level/rank, earned badges, and published recipes. Classes are `pp-`-prefixed
+// and scoped under `.public-profile` because this project's SCSS is global.
+
+.public-profile {
+  &.pp-centered {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 50vh;
+    text-align: center;
+  }
+
+  .pp-notfound {
+    h1 {
+      font-size: 1.8rem;
+      font-weight: 800;
+      margin-bottom: 0.5rem;
+    }
+    p {
+      color: s.$secondary-text;
+      margin-bottom: 1.5rem;
+    }
+  }
+  .pp-browse-btn {
+    display: inline-block;
+    font-weight: 700;
+    text-decoration: none;
+    color: #fff;
+    background: s.$primary;
+    border-radius: 999px;
+    padding: 0.6rem 1.5rem;
+    transition: filter 0.12s ease;
+    &:hover {
+      filter: brightness(1.05);
+    }
+  }
+
+  // ── Header ─────────────────────────────────────────────────────────────────
+  .pp-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 1.5rem;
+    background: #fff;
+    border: 1px solid #ece2d6;
+    border-radius: 20px;
+    padding: 1.75rem;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+    margin-bottom: 2rem;
+
+    @media (max-width: 640px) {
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+  }
+  .pp-avatar {
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+    box-shadow: 0 8px 22px rgba(255, 87, 34, 0.18);
+
+    &.not-set {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: s.$primary;
+      font-weight: 600;
+      font-size: 2.5rem;
+      background: s.$primary-text;
+    }
+  }
+  .pp-id {
+    min-width: 0;
+  }
+  .pp-name {
+    font-size: 1.9rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+  .pp-meta {
+    color: s.$tertiary-text;
+    font-weight: 600;
+    font-size: 0.85rem;
+    margin-top: 0.35rem;
+  }
+  .pp-bio {
+    color: s.$secondary-text;
+    line-height: 1.55;
+    font-size: 0.95rem;
+    margin-top: 0.7rem;
+    max-width: 620px;
+  }
+
+  // ── Earned badges ──────────────────────────────────────────────────────────
+  .pp-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.9rem;
+
+    @media (max-width: 640px) {
+      justify-content: center;
+    }
+  }
+  .pp-badge {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: s.$secondary-text;
+    background: #fdf3ec;
+    border: 1px solid #f0e1d4;
+    border-radius: 999px;
+    padding: 0.3rem 0.7rem;
+  }
+
+  // ── Recipes ────────────────────────────────────────────────────────────────
+  .pp-section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.3rem;
+    font-weight: 800;
+    margin-bottom: 1.25rem;
+  }
+  .pp-count {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: s.$tertiary-text;
+    background: #efe6da;
+    border-radius: 999px;
+    padding: 0.15rem 0.6rem;
+  }
+  .pp-recipe-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1.5rem;
+  }
+  .pp-empty {
+    color: s.$secondary-text;
+    padding: 2rem 0 3rem;
+  }
+  .pp-more {
+    margin-top: 1.25rem;
+    text-align: center;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: s.$tertiary-text;
+  }
+}

@@ -4,6 +4,7 @@ import { getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage'
 import dietLabels from 'src/recipeData/dietLabels'
 import { calculateServingPrice } from 'src/util/calculateServingPrice'
 import {
+  AccountTabCounts,
   IngredientsType,
   NewReviewType,
   NutritionDataType,
@@ -492,6 +493,13 @@ class RecipeAPIClass {
     const result = await http.get(
       `api/getCreatedRecipes?page=${page}&recipesPerPage=${recipesPerPage}&order=${order}`
     )
+    return result.data
+  }
+  // Aggregate counts for the account-page tabs in a single request. Skipped
+  // (returns null) when nobody is signed in, like the other account queries.
+  async getAccountCounts(): Promise<AccountTabCounts | null> {
+    if (!AuthAPI.getUID()) return null
+    const result = await http.get('api/getAccountCounts')
     return result.data
   }
 }

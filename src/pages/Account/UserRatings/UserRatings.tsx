@@ -9,6 +9,7 @@ import './UserRatings.scss'
 import { timeElapsedSince } from 'src/util/timeElapsedSince'
 import Skeleton from 'react-loading-skeleton'
 import { useNavigate } from 'react-router-dom'
+import { useDelayedLoading } from 'src/pages/Account/useDelayedLoading'
 
 type SingleReviewProps = {
   review?: OptionalReviewType
@@ -90,6 +91,7 @@ const Ratings: FC = () => {
     queryFn: () =>
       RecipeAPI.getSingleUserReviews(currPage, 5, selectOption.value, true),
   })
+  const showSkeleton = useDelayedLoading(isLoading)
 
   useEffect(() => {
     if (data) {
@@ -112,6 +114,14 @@ const Ratings: FC = () => {
   }
   const handleLoadMoreReviews = () => {
     setCurrPage(prev => prev + 1)
+  }
+
+  // On the first load, hold an empty frame while a fast query settles, so the
+  // skeleton only shows for genuinely slow loads — and the empty state never
+  // flashes before data. Scoped to the initial load so paging never blanks the
+  // already-rendered list.
+  if (isLoading && !showSkeleton && reviews.length === 0) {
+    return <div className='user-ratings' />
   }
 
   return (

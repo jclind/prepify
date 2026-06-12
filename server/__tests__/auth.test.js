@@ -8,6 +8,7 @@ const AUTH_HEADER = { Authorization: 'Bearer fake-test-token' }
 
 afterEach(async () => {
   await getDB().collection('usernames').deleteMany({})
+  await getDB().collection('userProfiles').deleteMany({})
 })
 
 // ─── GET /getUsername ─────────────────────────────────────────────────────────
@@ -174,5 +175,160 @@ describe('POST /setUsername', () => {
       .set(AUTH_HEADER)
 
     expect(res.status).toBe(200)
+  })
+})
+
+// ─── GET /getProfile ──────────────────────────────────────────────────────────
+
+describe('GET /getProfile', () => {
+  it('rejects request with no auth token (401)', async () => {
+    const res = await request(app).get('/api/getProfile')
+    expect(res.status).toBe(401)
+  })
+
+  it('returns empty strings when the user has no profile yet', async () => {
+    const res = await request(app).get('/api/getProfile').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(res.body).toEqual({ bio: '', location: '' })
+  })
+
+  it("returns the authenticated user's own bio and location", async () => {
+    await getDB()
+      .collection('userProfiles')
+      .insertOne({ _id: TEST_UID, bio: 'I cook', location: 'Portland, OR' })
+
+    const res = await request(app).get('/api/getProfile').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(res.body).toEqual({ bio: 'I cook', location: 'Portland, OR' })
+  })
+
+  it("does not leak another user's profile", async () => {
+    await getDB()
+      .collection('userProfiles')
+      .insertOne({ _id: 'other-uid', bio: 'secret', location: 'NYC' })
+
+    const res = await request(app).get('/api/getProfile').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(res.body).toEqual({ bio: '', location: '' })
+  })
+})
+
+// ─── POST /updateProfile ─────────────────────────────────────────────────────
+
+describe('POST /updateProfile', () => {
+  it('rejects request with no auth token (401)', async () => {
+    const res = await request(app)
+      .post('/api/updateProfile')
+      .send({ bio: 'hi', location: 'here' })
+    expect(res.status).toBe(401)
+  })
+
+  it('upserts bio + location and returns success', async () => {
+    const res = await request(app)
+      .post('/api/updateProfile')
+      .set(AUTH_HEADER)
+      .send({ bio: 'Home cook', location: 'Portland, OR' })
+
+    expect(res.status).toBe(200)
+    expect(res.body).toEqual({ success: true })
+
+    const doc = await getDB()
+      .collection('userProfiles')
+      .findOne({ _id: TEST_UID })
+    expect(doc.bio).toBe('Home cook')
+    expect(doc.location).toBe('Portland, OR')
+    expect(doc.updatedAt).toBeInstanceOf(Date)
+  })
+
+  it('trims whitespace from stored values', async () => {
+    const res = await request(app)
+      .post('/api/updateProfile')
+      .set(AUTH_HEADER)
+      .send({ bio: '  spaced  ', location: '  Portland  ' })
+
+    expect(res.status).toBe(200)
+    const doc = await getDB()
+      .collection('userProfiles')
+      .findOne({ _id: TEST_UID })
+    expect(doc.bio).toBe('spaced')
+    expect(doc.location).toBe('Portland')
+  })
+
+  it('allows empty strings, clearing the fields', async () => {
+    await getDB()
+      .collection('userProfiles')
+      .insertOne({ _id: TEST_UID, bio: 'old', location: 'old' })
+
+    const res = await request(app)
+      .post('/api/updateProfile')
+      .set(AUTH_HEADER)
+      .send({ bio: '', location: '' })
+
+    expect(res.status).toBe(200)
+    const doc = await getDB()
+      .collection('userProfiles')
+      .findOne({ _id: TEST_UID })
+    expect(doc.bio).toBe('')
+    expect(doc.location).toBe('')
+  })
+
+  it('treats missing fields as empty', async () => {
+    const res = await request(app)
+      .post('/api/updateProfile')
+      .set(AUTH_HEADER)
+      .send({})
+
+    expect(res.status).toBe(200)
+    const doc = await getDB()
+      .collection('userProfiles')
+      .findOne({ _id: TEST_UID })
+    expect(doc.bio).toBe('')
+    expect(doc.location).toBe('')
+  })
+
+  it('updates an existing profile in place (single doc per uid)', async () => {
+    await request(app)
+      .post('/api/updateProfile')
+      .set(AUTH_HEADER)
+      .send({ bio: 'first', location: 'A' })
+    await request(app)
+      .post('/api/updateProfile')
+      .set(AUTH_HEADER)
+      .send({ bio: 'second', location: 'B' })
+
+    const docs = await getDB()
+      .collection('userProfiles')
+      .find({ _id: TEST_UID })
+      .toArray()
+    expect(docs).toHaveLength(1)
+    expect(docs[0].bio).toBe('second')
+    expect(docs[0].location).toBe('B')
+  })
+
+  it('rejects a bio longer than 300 characters (400)', async () => {
+    const res = await request(app)
+      .post('/api/updateProfile')
+      .set(AUTH_HEADER)
+      .send({ bio: 'a'.repeat(301), location: '' })
+
+    expect(res.status).toBe(400)
+  })
+
+  it('rejects a location longer than 80 characters (400)', async () => {
+    const res = await request(app)
+      .post('/api/updateProfile')
+      .set(AUTH_HEADER)
+      .send({ bio: '', location: 'a'.repeat(81) })
+
+    expect(res.status).toBe(400)
+  })
+
+  it('rejects a non-string bio (400)', async () => {
+    const res = await request(app)
+      .post('/api/updateProfile')
+      .set(AUTH_HEADER)
+      .send({ bio: 123, location: '' })
+
+    expect(res.status).toBe(400)
   })
 })

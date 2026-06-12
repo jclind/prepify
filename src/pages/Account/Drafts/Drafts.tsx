@@ -7,6 +7,7 @@ import 'react-loading-skeleton/dist/skeleton.css'
 import './Drafts.scss'
 import DraftAPI from 'src/api/drafts'
 import DraftCard from './DraftCard'
+import { useDelayedLoading } from 'src/pages/Account/useDelayedLoading'
 
 const Drafts: FC = () => {
   const queryClient = useQueryClient()
@@ -21,8 +22,15 @@ const Drafts: FC = () => {
     queryClient.invalidateQueries({ queryKey: ['drafts'] })
   }
 
+  const showSkeleton = useDelayedLoading(isLoading)
   const hasDrafts = !!drafts && drafts.length > 0
   const showList = hasDrafts || isLoading
+
+  // Hold an empty frame while a fast query settles, so the skeleton only shows
+  // for genuinely slow loads — and the empty state never flashes before data.
+  if (isLoading && !showSkeleton) {
+    return <div className='drafts' />
+  }
 
   return (
     <div className='drafts'>

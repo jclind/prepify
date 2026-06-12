@@ -6,9 +6,11 @@ import toast from 'react-hot-toast'
 import { TailSpin } from 'react-loader-spinner'
 import { AiOutlineClose } from 'react-icons/ai'
 import InputContainer from 'src/pages/Settings/SubSettings/InputContainer'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 
 const MAX_FILE_SIZE = 5000 * 1024
+const BIO_MAX_LENGTH = 300
+const LOCATION_MAX_LENGTH = 80
 
 const Profile: FC = () => {
   const [saveLoading, setSaveLoading] = useState(false)
@@ -19,13 +21,22 @@ const Profile: FC = () => {
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [bio, setBio] = useState('')
+  const [location, setLocation] = useState('')
 
   const authRes = useAuth()
   const uid = AuthAPI.getUID()
+  const queryClient = useQueryClient()
 
   const { data: fetchedUsername, isLoading } = useQuery({
     queryKey: ['username', uid],
     queryFn: () => AuthAPI.getUsername(),
+    enabled: !!uid,
+  })
+
+  const { data: fetchedProfile } = useQuery({
+    queryKey: ['profile', uid],
+    queryFn: () => AuthAPI.getProfile(),
     enabled: !!uid,
   })
 
@@ -38,6 +49,13 @@ const Profile: FC = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchedUsername, authRes?.user])
+
+  useEffect(() => {
+    if (fetchedProfile) {
+      setBio(fetchedProfile.bio || '')
+      setLocation(fetchedProfile.location || '')
+    }
+  }, [fetchedProfile])
 
   const nameInitial = authRes?.user?.displayName
     ? authRes.user.displayName.charAt(0).toUpperCase()
@@ -71,16 +89,23 @@ const Profile: FC = () => {
     } else if (!email) {
       setSaveLoading(false)
       return toast.error('Email Is Required.')
-    } else if (
-      imgURL === authRes?.user?.photoURL &&
-      email === authRes?.user?.email &&
-      imgURL === authRes?.user?.photoURL &&
-      displayName === authRes?.user?.displayName &&
-      username === fetchedUsername
-    ) {
+    }
+
+    const accountFieldsChanged =
+      imgURL !== authRes?.user?.photoURL ||
+      email !== authRes?.user?.email ||
+      displayName !== authRes?.user?.displayName ||
+      username !== fetchedUsername ||
+      !!password
+    const profileChanged =
+      bio !== (fetchedProfile?.bio ?? '') ||
+      location !== (fetchedProfile?.location ?? '')
+
+    if (!accountFieldsChanged && !profileChanged) {
       setSaveLoading(false)
       return toast.error('No Changes To Submit.', { duration: 3000 })
     }
+
     const data = {
       ...(displayName !== authRes?.user?.displayName && { displayName }),
       ...(imgURL !== authRes?.user?.photoURL ? { imgFile } : { imgFile: null }),
@@ -88,9 +113,26 @@ const Profile: FC = () => {
       ...(password && { password }),
       username,
     }
-    authRes
-      ?.updateProfileData(data)
+
+    // Account fields (Firebase + username) and profile fields (bio/location)
+    // live in different stores; only call the side that actually changed so a
+    // bio-only edit doesn't touch the avatar/displayName, and vice versa. Run
+    // them in sequence (account first) so a failed account update — e.g. the
+    // email-change reauth throwing 'password-required' — aborts before the
+    // profile write, rather than leaving bio/location saved behind a failed save.
+    const runSave = async () => {
+      if (accountFieldsChanged && authRes) {
+        await authRes.updateProfileData(data)
+      }
+      if (profileChanged) {
+        await AuthAPI.updateProfile({ bio, location })
+      }
+    }
+
+    runSave()
       .then(() => {
+        // Keep the Account page header in sync with what was just saved.
+        queryClient.invalidateQueries({ queryKey: ['profile', uid] })
         setSaveLoading(false)
         toast.success('Profile updated!', { duration: 3000 })
       })
@@ -167,6 +209,25 @@ const Profile: FC = () => {
           val={email}
           setVal={setEmail}
           placeholder={email}
+        />
+      </div>
+      <div className='input-row'>
+        <InputContainer
+          label='Location'
+          val={location}
+          setVal={setLocation}
+          placeholder='e.g. Portland, OR'
+          maxLength={LOCATION_MAX_LENGTH}
+        />
+      </div>
+      <div className='input-row'>
+        <InputContainer
+          label='Bio'
+          val={bio}
+          setVal={setBio}
+          placeholder='Tell others about your cooking…'
+          multiline
+          maxLength={BIO_MAX_LENGTH}
         />
       </div>
       <div

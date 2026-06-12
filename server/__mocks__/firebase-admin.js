@@ -21,30 +21,39 @@ function toFbUser(u) {
   }
 }
 function notFound() {
-  const err = new Error('There is no user record corresponding to the provided identifier.')
+  const err = new Error(
+    'There is no user record corresponding to the provided identifier.'
+  )
   err.code = 'auth/user-not-found'
   return err
 }
+
+// Stable auth instance so tests can tune verifyIdToken / getUser via the exported
+// handles (admin.auth() returns the same object every call). The default
+// implementations honor the admin-test state (extraClaims / users registry), so
+// the account-page suites (which override __getUser / __verifyIdToken directly)
+// and the admin suites (which use the __setClaims / __setUsers setters) both work
+// against this one mock.
+const verifyIdToken = jest
+  .fn()
+  .mockImplementation(async () => ({ uid: 'test-uid', ...extraClaims }))
+const getUser = jest.fn().mockImplementation(async uid => {
+  const u = users.find(x => x.uid === uid)
+  if (!u) throw notFound()
+  return toFbUser(u)
+})
+const getUserByEmail = jest.fn().mockImplementation(async email => {
+  const u = users.find(x => x.email === email)
+  if (!u) throw notFound()
+  return toFbUser(u)
+})
+const authInstance = { verifyIdToken, getUser, getUserByEmail }
 
 const admin = {
   apps: [{}],
   initializeApp: jest.fn(),
   credential: { cert: jest.fn() },
-  auth: jest.fn(() => ({
-    verifyIdToken: jest
-      .fn()
-      .mockImplementation(async () => ({ uid: 'test-uid', ...extraClaims })),
-    getUser: jest.fn().mockImplementation(async (uid) => {
-      const u = users.find((x) => x.uid === uid)
-      if (!u) throw notFound()
-      return toFbUser(u)
-    }),
-    getUserByEmail: jest.fn().mockImplementation(async (email) => {
-      const u = users.find((x) => x.email === email)
-      if (!u) throw notFound()
-      return toFbUser(u)
-    }),
-  })),
+  auth: jest.fn(() => authInstance),
   // Storage chain used by util/firebaseStorage.deleteRecipeImage. deleteFile is
   // exported so tests can assert (or override) image-deletion behavior.
   storage: jest.fn(() => ({
@@ -53,14 +62,16 @@ const admin = {
     })),
   })),
   __deleteFile: deleteFile,
-  __setClaims: (claims) => {
+  __verifyIdToken: verifyIdToken,
+  __getUser: getUser,
+  __setClaims: claims => {
     extraClaims = claims
   },
   __resetClaims: () => {
     extraClaims = {}
   },
   // Register Firebase users for getUser/getUserByEmail. Pass [{ uid, email, admin }].
-  __setUsers: (list) => {
+  __setUsers: list => {
     users = list
   },
   __resetUsers: () => {

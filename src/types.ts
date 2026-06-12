@@ -280,3 +280,51 @@ export interface AddRecipeErrorType {
   cuisine: string
   mealType: string
 }
+
+// Aggregate item counts for the account-page tabs, returned by
+// GET /getAccountCounts. All fields are real counts (0 when the user has none).
+export type AccountTabCounts = {
+  saved: number
+  ratings: number
+  recipes: number
+  drafts: number
+}
+
+// Gamification state for the account header, returned by GET /getGamification.
+// Everything is derived server-side from the account counts; `newlyUnlocked`
+// lists earned-but-unacknowledged achievement ids (drives the unlock toast).
+export type Achievement = {
+  id: string
+  name: string
+  description: string
+  earned: boolean
+}
+export type Gamification = {
+  level: number
+  rank: string
+  xp: number // progress within the current level
+  xpNext: number // XP needed to clear the current level
+  pct: number // 0–100
+  totalXp: number
+  achievements: Achievement[]
+  earned: string[]
+  newlyUnlocked: string[]
+}
+
+// Public, read-only profile returned by GET /getPublicProfile. Identity comes
+// from Firebase Auth (displayName/photoURL); `achievements` are earned-only.
+export type PublicProfile = {
+  username: string
+  displayName: string
+  photoURL: string | null
+  bio: string
+  location: string
+  level: number
+  rank: string
+  xp: number
+  xpNext: number
+  pct: number
+  achievements: Achievement[]
+  recipes: RecipeType[]
+  recipesTotalCount: number
+}
