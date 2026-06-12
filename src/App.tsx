@@ -16,6 +16,7 @@ import Users from 'src/pages/Admin/Users/Users'
 import CreateUsername from 'src/pages/CreateUsername/CreateUsername'
 
 import Account from 'src/pages/Account/Account'
+import PublicProfile from 'src/pages/PublicProfile/PublicProfile'
 import SavedRecipes from 'src/pages/Account/SavedRecipes/SavedRecipes'
 import UserRatings from 'src/pages/Account/UserRatings/UserRatings'
 import UserRecipes from 'src/pages/Account/UserRecipes/UserRecipes'
@@ -67,6 +68,7 @@ const App: FC = () => {
                 </Layout>
               }
             />
+
             <Route
               path='/recipes'
               element={
@@ -81,6 +83,18 @@ const App: FC = () => {
               element={
                 <Layout darkNavLinks={true}>
                   <SingleRecipe />
+                </Layout>
+              }
+            />
+
+            {/* Public, read-only profile. Interim /u/:username prefix — the bare
+                top-level /:username (Instagram-style) + a reserved-words blocklist
+                are part of the deferred end-of-phases cleanup. */}
+            <Route
+              path='/u/:username'
+              element={
+                <Layout darkNavLinks={true}>
+                  <PublicProfile />
                 </Layout>
               }
             />

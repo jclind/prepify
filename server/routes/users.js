@@ -2,6 +2,7 @@ const { Router } = require('express')
 const { getDB } = require('../db')
 const { verifyToken } = require('../middleware/auth')
 const { recipeIdInQuery } = require('../util/recipeIdQuery')
+const { getAccountCountsFor } = require('../util/accountCounts')
 const { RECIPE_VISIBLE } = require('../util/moderation')
 
 const router = Router()
@@ -71,6 +72,18 @@ router.get('/getSavedRecipes', verifyToken, async (req, res) => {
         : []
 
     res.json({ recipes, totalCount })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// GET /getAccountCounts — aggregate item counts for the account-page tabs
+// (saved, ratings, recipes, drafts) for the authenticated user, in one round
+// trip so the nav doesn't need four separate list requests.
+router.get('/getAccountCounts', verifyToken, async (req, res) => {
+  try {
+    const counts = await getAccountCountsFor(getDB(), req.uid)
+    res.json(counts)
   } catch (err) {
     res.status(500).json({ error: err.message })
   }

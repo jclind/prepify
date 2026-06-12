@@ -109,7 +109,8 @@
       text-transform: capitalize;
       padding-bottom: 0.25rem;
     }
-    input {
+    input,
+    textarea {
       background: s.$secondary-background;
       border: none;
       font-size: 1rem;
@@ -118,6 +119,11 @@
       &:focus {
         @include s.outline;
       }
+    }
+    .input-textarea {
+      font-family: inherit;
+      resize: vertical;
+      min-height: 4.5rem;
     }
     .error-text {
       height: 0;

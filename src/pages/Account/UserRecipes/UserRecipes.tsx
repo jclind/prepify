@@ -7,6 +7,7 @@ import './UserRecipes.scss'
 import RecipeAPI from 'src/api/recipes'
 import { RecipeType } from 'types'
 import { selectCustomStyles } from 'src/pages/Account/selectCustomStyles'
+import { useDelayedLoading } from 'src/pages/Account/useDelayedLoading'
 import UserRecipeThumbnail from './UserRecipeThumbnail'
 
 type OptionType = { value: string; label: string }
@@ -52,7 +53,16 @@ const UserRecipes: FC = () => {
     setCurrPage(prev => prev + 1)
   }
 
+  const showSkeleton = useDelayedLoading(isLoading)
   const showGrid = recipes.length > 0 || isLoading
+
+  // On the first load, hold an empty frame while a fast query settles, so the
+  // skeleton only shows for genuinely slow loads — and the empty state never
+  // flashes before data. Scoped to the initial load so paging never blanks the
+  // already-rendered grid.
+  if (isLoading && !showSkeleton && recipes.length === 0) {
+    return <div className='user-recipes' />
+  }
 
   return (
     <div className='user-recipes'>
