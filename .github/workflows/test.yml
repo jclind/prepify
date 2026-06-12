@@ -125,3 +125,35 @@ jobs:
           VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
           VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
           VITE_FIREBASE_MEASUREMENT_ID: ${{ secrets.VITE_FIREBASE_MEASUREMENT_ID }}
+
+  fallow:
+    name: Fallow (dead-code, advisory)
+    runs-on: ubuntu-latest
+    # Option B: advisory only — this job NEVER blocks merges (continue-on-error).
+    # Findings are posted to the run's Step Summary for visibility.
+    # TODO: once we trust the signal, flip to Option A (baseline-gated regression
+    # mode): commit a baseline of existing findings, fail only on NEW dead code,
+    # and drop `continue-on-error`. See the `regression` config in fallow docs.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      # node_modules must be present so Fallow can resolve imports/deps;
+      # without them it reports false "unresolved import" / "unused dependency" noise.
+      - name: Install root dependencies
+        run: npm ci --prefer-offline --no-audit
+      - name: Install server dependencies
+        run: npm ci --prefer-offline --no-audit
+        working-directory: server
+      # Version pinned for deterministic CI — Fallow releases very frequently and
+      # a new version could change findings and surprise a green PR.
+      - name: Run Fallow dead-code analysis
+        run: |
+          {
+            echo '## Fallow — dead-code (advisory, non-blocking)'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          npx --yes fallow@2.95.0 dead-code | tee -a "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
