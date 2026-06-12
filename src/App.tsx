@@ -1,5 +1,5 @@
 import React, { FC, useEffect } from 'react'
-import { Routes, Route, useLocation } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { HelmetProvider } from 'react-helmet-async'
 import AuthProvider from 'src/context/AuthContext'
 
@@ -9,6 +9,10 @@ import Login from 'src/pages/Login/Login'
 import Signup from 'src/pages/Signup/Signup'
 import ForgotPassword from 'src/pages/ForgotPassword/ForgotPassword'
 import PrivateRoute from 'src/Components/PrivateRoute'
+import AdminRoute from 'src/Components/AdminRoute'
+import AdminLayout from 'src/pages/Admin/AdminLayout'
+import Reports from 'src/pages/Admin/Reports/Reports'
+import Users from 'src/pages/Admin/Users/Users'
 import CreateUsername from 'src/pages/CreateUsername/CreateUsername'
 
 import Account from 'src/pages/Account/Account'
@@ -179,6 +183,16 @@ const App: FC = () => {
                 </Layout>
               }
             />
+            {/* Admin section — gated by AdminRoute (login + admin claim),
+                outside the public Layout (its own AdminLayout shell). */}
+            <Route path='/admin' element={<AdminRoute />}>
+              <Route element={<AdminLayout />}>
+                <Route index element={<Navigate to='/admin/reports' replace />} />
+                <Route path='reports' element={<Reports />} />
+                <Route path='users' element={<Users />} />
+              </Route>
+            </Route>
+
             <Route path='/login' element={<Login />} />
             <Route path='/signup' element={<Signup />} />
             <Route path='/create-username' element={<CreateUsername />} />

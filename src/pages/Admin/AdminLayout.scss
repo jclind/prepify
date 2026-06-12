@@ -1,0 +1,93 @@
+.admin-layout {
+  display: flex;
+  min-height: 100vh;
+  background: #f5f6f8;
+
+  .admin-sidebar {
+    width: 220px;
+    flex-shrink: 0;
+    background: #1f2430;
+    color: #e7e9ee;
+    display: flex;
+    flex-direction: column;
+    padding: 1.5rem 1rem;
+    gap: 1.5rem;
+
+    .admin-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 700;
+      font-size: 1.15rem;
+
+      a {
+        color: #fff;
+        text-decoration: none;
+      }
+
+      .admin-badge {
+        font-size: 0.65rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        background: #3b82f6;
+        color: #fff;
+        padding: 0.15rem 0.4rem;
+        border-radius: 4px;
+      }
+    }
+
+    .admin-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+
+      .admin-nav-link {
+        color: #b9bec9;
+        text-decoration: none;
+        padding: 0.5rem 0.75rem;
+        border-radius: 6px;
+        font-size: 0.95rem;
+        transition: background 0.15s, color 0.15s;
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.06);
+          color: #fff;
+        }
+
+        &.active {
+          background: #3b82f6;
+          color: #fff;
+        }
+      }
+    }
+  }
+
+  .admin-content {
+    flex: 1;
+    padding: 2rem;
+    overflow-x: auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-layout {
+    flex-direction: column;
+
+    .admin-sidebar {
+      width: 100%;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem;
+    }
+
+    .admin-nav {
+      flex-direction: row;
+    }
+
+    .admin-content {
+      padding: 1rem;
+    }
+  }
+}

@@ -106,6 +106,7 @@ const RecipeReview: FC<RecipeReviewProps> = ({
           handleDeleteReview={handleDeleteReview}
           editLoading={editLoading}
           reviewAuthorUsername={review.username}
+          recipeId={recipeId}
         />
       </div>
     </div>
