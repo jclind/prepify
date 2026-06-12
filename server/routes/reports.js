@@ -3,6 +3,7 @@ const { ObjectId } = require('mongodb')
 const { getDB } = require('../db')
 const { verifyToken, requireAdmin, requireActive } = require('../middleware/auth')
 const { recipeIdQuery } = require('../util/recipeIdQuery')
+const { recordAudit } = require('../util/auditLog')
 
 const router = Router()
 
@@ -125,6 +126,63 @@ router.get('/reports', verifyToken, requireAdmin, async (req, res) => {
   }
 })
 
+// Most reports a single admin sweep would ever clear at once. Bounds the bulk
+// updateMany and the per-report audit fan-out.
+const MAX_BULK = 100
+
+// PATCH /reports/bulk — admin resolves/dismisses many reports in one sweep.
+// Declared BEFORE /reports/:id so 'bulk' isn't captured as an :id. Only OPEN
+// reports are touched (already-closed ids in the batch are simply skipped), and
+// one audit entry is written per report actually closed.
+router.patch('/reports/bulk', verifyToken, requireAdmin, async (req, res) => {
+  try {
+    const db = getDB()
+    const { ids, status } = req.body
+    if (!RESOLUTIONS.includes(status)) {
+      return res.status(400).json({ error: "status must be 'resolved' or 'dismissed'" })
+    }
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ error: 'ids must be a non-empty array' })
+    }
+    if (ids.length > MAX_BULK) {
+      return res.status(400).json({ error: `Cannot update more than ${MAX_BULK} reports at once` })
+    }
+    const objectIds = ids.filter((id) => typeof id === 'string' && ObjectId.isValid(id)).map((id) => new ObjectId(id))
+    if (objectIds.length === 0) {
+      return res.status(400).json({ error: 'No valid report ids' })
+    }
+
+    // Snapshot the open targets first so each closed report gets an audit entry
+    // with a readable label (updateMany can't return the docs).
+    const open = await db
+      .collection('reports')
+      .find({ _id: { $in: objectIds }, status: 'open' })
+      .toArray()
+
+    const result = await db.collection('reports').updateMany(
+      { _id: { $in: objectIds }, status: 'open' },
+      { $set: { status, resolvedBy: req.uid, resolvedAt: new Date() } }
+    )
+
+    await Promise.all(
+      open.map((r) =>
+        recordAudit(db, {
+          action: status === 'resolved' ? 'report.resolve' : 'report.dismiss',
+          actorUid: req.uid,
+          targetType: 'report',
+          targetId: r._id,
+          targetLabel: r.reportedUsername ? `@${r.reportedUsername}` : r.recipeId,
+          metadata: { targetType: r.targetType, recipeId: r.recipeId, bulk: true },
+        })
+      )
+    )
+
+    res.json({ updated: result.modifiedCount })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 // PATCH /reports/:id — admin resolves or dismisses a report. Resolving does NOT
 // itself take content down; the admin takedown endpoints (on recipes/reviews)
 // do that. This just closes the queue item and stamps who/when.
@@ -144,6 +202,14 @@ router.patch('/reports/:id', verifyToken, requireAdmin, async (req, res) => {
       { returnDocument: 'after' }
     )
     if (!updated) return res.status(404).json({ error: 'Report not found' })
+    await recordAudit(db, {
+      action: status === 'resolved' ? 'report.resolve' : 'report.dismiss',
+      actorUid: req.uid,
+      targetType: 'report',
+      targetId: updated._id,
+      targetLabel: updated.reportedUsername ? `@${updated.reportedUsername}` : updated.recipeId,
+      metadata: { targetType: updated.targetType, recipeId: updated.recipeId },
+    })
     res.json(updated)
   } catch (err) {
     res.status(500).json({ error: err.message })

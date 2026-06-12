@@ -3,6 +3,7 @@ const { getDB } = require('../db')
 const { verifyToken, requireAdmin, requireActive } = require('../middleware/auth')
 const { recipeIdQuery } = require('../util/recipeIdQuery')
 const { REVIEW_VISIBLE, RECIPE_VISIBLE } = require('../util/moderation')
+const { recordAudit } = require('../util/auditLog')
 const { recomputeRecipeRating } = require('../util/recipeRating')
 
 const router = Router()
@@ -260,6 +261,14 @@ router.patch('/admin/reviews/moderation', verifyToken, requireAdmin, async (req,
     }
     // A takedown/restore changes which ratings count toward the recipe's score.
     await recomputeRecipeRating(db, recipeId)
+    await recordAudit(db, {
+      action: moderationHidden ? 'review.takedown' : 'review.restore',
+      actorUid: req.uid,
+      targetType: 'review',
+      targetId: `${username}:${recipeId}`,
+      targetLabel: `@${username}`,
+      metadata: { recipeId, username },
+    })
     res.json({ recipeId, username, moderationHidden })
   } catch (err) {
     res.status(500).json({ error: err.message })

@@ -4,6 +4,7 @@ const { getDB, getClient } = require('../db')
 const { verifyToken, optionalAuth, requireAdmin, requireActive } = require('../middleware/auth')
 const { recipeIdQuery } = require('../util/recipeIdQuery')
 const { RECIPE_VISIBLE } = require('../util/moderation')
+const { recordAudit } = require('../util/auditLog')
 const { validateRequiredRecipeFields, validateRecipeBounds } = require('../util/recipeLimits')
 const { EDITABLE_RECIPE_FIELDS, pickFields } = require('../util/recipeFields')
 const { deleteRecipeImage } = require('../util/firebaseStorage')
@@ -396,6 +397,13 @@ router.patch('/admin/recipes/:id/moderation', verifyToken, requireAdmin, async (
       { returnDocument: 'after' }
     )
     if (!updated) return res.status(404).json({ error: 'Recipe not found' })
+    await recordAudit(db, {
+      action: status === 'hidden' ? 'recipe.hide' : 'recipe.unhide',
+      actorUid: req.uid,
+      targetType: 'recipe',
+      targetId: updated._id,
+      targetLabel: updated.title || null,
+    })
     res.json({ _id: updated._id, status: updated.status })
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -427,6 +435,13 @@ router.patch('/admin/recipes/:id/publish', verifyToken, requireAdmin, async (req
       { returnDocument: 'after' }
     )
     if (!updated) return res.status(404).json({ error: 'Recipe not found' })
+    await recordAudit(db, {
+      action: published ? 'recipe.publish' : 'recipe.unpublish',
+      actorUid: req.uid,
+      targetType: 'recipe',
+      targetId: updated._id,
+      targetLabel: updated.title || null,
+    })
     res.json({ _id: updated._id, status: updated.status })
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -455,6 +470,13 @@ router.patch('/admin/recipes/:id/feature', verifyToken, requireAdmin, async (req
       { returnDocument: 'after' }
     )
     if (!updated) return res.status(404).json({ error: 'Recipe not found' })
+    await recordAudit(db, {
+      action: featured ? 'recipe.feature' : 'recipe.unfeature',
+      actorUid: req.uid,
+      targetType: 'recipe',
+      targetId: updated._id,
+      targetLabel: updated.title || null,
+    })
     res.json({ _id: updated._id, featured: updated.featured === true })
   } catch (err) {
     res.status(500).json({ error: err.message })
