@@ -137,6 +137,9 @@ jobs:
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Full history so `fallow audit` can diff changed files against the base.
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -156,4 +159,18 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
           npx --yes fallow@2.95.0 dead-code | tee -a "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+      # Changed-files audit: dead-code + complexity + duplication scoped to the
+      # PR diff. Default `--gate new-only` only counts findings the PR introduces
+      # (inherited backlog is reported but not failed). PR events only — needs a base.
+      - name: Run Fallow audit (changed files)
+        if: github.event_name == 'pull_request'
+        env:
+          FALLOW_AUDIT_BASE: origin/${{ github.base_ref }}
+        run: |
+          {
+            echo "## Fallow — audit: changed files vs ${{ github.base_ref }} (advisory)"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          npx --yes fallow@2.95.0 audit | tee -a "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
