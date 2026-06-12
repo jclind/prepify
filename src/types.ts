@@ -268,6 +268,42 @@ export interface AdminUsersResponse {
   totalCount: number
 }
 
+// Admin audit trail (P3). Mirrors server/util/auditLog.js.
+export type AuditAction =
+  | 'recipe.hide'
+  | 'recipe.unhide'
+  | 'recipe.publish'
+  | 'recipe.unpublish'
+  | 'recipe.feature'
+  | 'recipe.unfeature'
+  | 'review.takedown'
+  | 'review.restore'
+  | 'user.suspend'
+  | 'user.ban'
+  | 'user.activate'
+  | 'report.resolve'
+  | 'report.dismiss'
+
+export type AuditTargetType = 'recipe' | 'review' | 'user' | 'report'
+
+export interface AuditEntryType {
+  _id: string
+  action: AuditAction
+  actorUid: string
+  actorUsername: string | null
+  targetType: AuditTargetType
+  targetId: string | null
+  targetLabel: string | null
+  reason: string | null
+  metadata: Record<string, unknown> | null
+  createdAt: string
+}
+
+export interface AuditResponse {
+  entries: AuditEntryType[]
+  totalCount: number
+}
+
 export interface AddRecipeErrorType {
   title: string
   image: string

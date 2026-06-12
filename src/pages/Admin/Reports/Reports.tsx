@@ -17,6 +17,9 @@ const STATUS_TABS: { value: StatusFilter; label: string }[] = [
 
 const Reports: FC = () => {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('open')
+  // Ids of reports ticked for a bulk resolve/dismiss sweep. Only open reports
+  // are selectable; switching tabs clears the selection.
+  const [selected, setSelected] = useState<Set<string>>(new Set())
   const queryClient = useQueryClient()
 
   const { data, isPending, isError } = useQuery({
@@ -30,6 +33,40 @@ const Reports: FC = () => {
 
   const invalidate = () =>
     queryClient.invalidateQueries({ queryKey: ['admin-reports'] })
+
+  const changeTab = (value: StatusFilter) => {
+    setStatusFilter(value)
+    setSelected(new Set())
+  }
+
+  const toggleSelect = (id: string) =>
+    setSelected(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+
+  const openReports = (data?.reports || []).filter(r => r.status === 'open')
+  const allOpenSelected =
+    openReports.length > 0 && openReports.every(r => selected.has(r._id))
+
+  const toggleSelectAll = () =>
+    setSelected(
+      allOpenSelected ? new Set() : new Set(openReports.map(r => r._id))
+    )
+
+  // Resolve/dismiss every selected report in one request.
+  const bulkMutation = useMutation({
+    mutationFn: ({ status }: { status: 'resolved' | 'dismissed' }) =>
+      ReportAPI.bulkResolve(Array.from(selected), status),
+    onSuccess: (res, vars) => {
+      toast.success(`${res.updated} report${res.updated === 1 ? '' : 's'} ${vars.status}.`)
+      setSelected(new Set())
+      invalidate()
+    },
+    onError: () => toast.error('Could not update the selected reports.'),
+  })
 
   // Resolve / dismiss a report (does not itself change the content).
   const resolveMutation = useMutation({
@@ -92,7 +129,8 @@ const Reports: FC = () => {
   const busy =
     resolveMutation.isPending ||
     takedownMutation.isPending ||
-    restoreMutation.isPending
+    restoreMutation.isPending ||
+    bulkMutation.isPending
 
   const renderPreview = (report: AdminReportType) => {
     const { target } = report
@@ -152,12 +190,45 @@ const Reports: FC = () => {
           <button
             key={tab.value}
             className={statusFilter === tab.value ? 'tab active' : 'tab'}
-            onClick={() => setStatusFilter(tab.value)}
+            onClick={() => changeTab(tab.value)}
           >
             {tab.label}
           </button>
         ))}
       </div>
+
+      {openReports.length > 0 && (
+        <div className='bulk-bar'>
+          <label className='bulk-select-all'>
+            <input
+              type='checkbox'
+              checked={allOpenSelected}
+              onChange={toggleSelectAll}
+            />
+            {selected.size > 0
+              ? `${selected.size} selected`
+              : `Select all ${openReports.length} open`}
+          </label>
+          {selected.size > 0 && (
+            <div className='bulk-actions'>
+              <button
+                className='action resolve'
+                disabled={busy}
+                onClick={() => bulkMutation.mutate({ status: 'resolved' })}
+              >
+                Resolve selected
+              </button>
+              <button
+                className='action dismiss'
+                disabled={busy}
+                onClick={() => bulkMutation.mutate({ status: 'dismissed' })}
+              >
+                Dismiss selected
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {isPending ? (
         <p className='reports-state'>Loading reports…</p>
@@ -169,6 +240,15 @@ const Reports: FC = () => {
         <ul className='reports-list'>
           {data.reports.map(report => (
             <li key={report._id} className='report-card'>
+              {report.status === 'open' && (
+                <input
+                  type='checkbox'
+                  className='report-select'
+                  checked={selected.has(report._id)}
+                  onChange={() => toggleSelect(report._id)}
+                  aria-label='Select report for bulk action'
+                />
+              )}
               <div className='report-main'>
                 <div className='report-tags'>
                   <span className={`type-pill ${report.targetType}`}>

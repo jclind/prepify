@@ -2,6 +2,9 @@ import {
   AdminUsersResponse,
   AdminUserDetailType,
   UserStatus,
+  AuditResponse,
+  AuditAction,
+  AuditTargetType,
 } from 'types'
 import { http } from 'src/api/http-common'
 
@@ -62,6 +65,18 @@ class AdminAPIClass {
       `api/admin/recipes/${recipeId}/publish`,
       { published }
     )
+    return result.data
+  }
+
+  // The moderation audit trail, newest first; optionally filtered.
+  async listAudit(params?: {
+    action?: AuditAction
+    targetType?: AuditTargetType
+    actorUid?: string
+    page?: number
+    perPage?: number
+  }): Promise<AuditResponse> {
+    const result = await http.get<AuditResponse>('api/admin/audit', { params })
     return result.data
   }
 }
