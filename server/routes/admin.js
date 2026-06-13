@@ -4,6 +4,7 @@ const { getDB } = require('../db')
 const { verifyToken, requireAdmin } = require('../middleware/auth')
 const { USER_STATUSES } = require('../util/userStatus')
 const { recordAudit, AUDIT_ACTIONS, AUDIT_TARGET_TYPES } = require('../util/auditLog')
+const { notifyInBackground, notifyAccountStatus } = require('../util/email')
 
 const router = Router()
 
@@ -306,6 +307,9 @@ router.patch('/admin/users/:uid/status', verifyToken, requireAdmin, async (req, 
       targetLabel: targetUsernameDoc?.username ? `@${targetUsernameDoc.username}` : uid,
       reason: status === 'active' ? null : reason || null,
     })
+
+    // Notify the affected user on suspend/ban (background). Activation is silent.
+    notifyInBackground(notifyAccountStatus(uid, status, reason))
 
     res.json({ uid, status })
   } catch (err) {
