@@ -7,10 +7,14 @@ const { REVIEW_VISIBLE } = require('./moderation')
 // moderated rating no longer influences the recipe's score. Returns the new
 // aggregate. count === 0 yields rateValue 0 (avoids divide-by-zero).
 async function recomputeRecipeRating(db, recipeId) {
-  const ratings = await db
+  const docs = await db
     .collection('ratings')
     .find({ recipeId, ...REVIEW_VISIBLE })
     .toArray()
+  // A ratings doc can be review-only (posted before any star rating), so its
+  // `rating` is null/absent. Count and average ONLY docs with a real numeric
+  // rating — otherwise parseFloat(null) → NaN poisons the whole aggregate.
+  const ratings = docs.filter((r) => Number.isFinite(parseFloat(r.rating)))
   const rateCount = ratings.length
   const rateValue = rateCount
     ? ratings.reduce((sum, r) => sum + parseFloat(r.rating), 0) / rateCount

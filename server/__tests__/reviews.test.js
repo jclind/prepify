@@ -109,6 +109,30 @@ describe('POST /addRating', () => {
     expect(recipe.rating.rateCount).toBe(1)
     expect(recipe.rating.rateValue).toBe(4)
   })
+
+  // Audit §4 item 8: a review-only doc (rating: null) on the same recipe must be
+  // excluded from the recompute — otherwise parseFloat(null) → NaN poisons the
+  // whole average. The aggregate counts only the genuinely-rated doc.
+  it('does not let a review-only (rating: null) doc poison the recipe average', async () => {
+    const db = getDB()
+    await seedRating({
+      username: OTHER_USERNAME,
+      recipeId: RECIPE_ID,
+      rating: null,
+      reviewText: 'Review with no star rating',
+      ratingLastUpdated: '',
+    })
+
+    const res = await request(app)
+      .post(`/api/addRating?recipeId=${RECIPE_ID}&rating=4`)
+      .set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+
+    const recipe = await db.collection('recipes').findOne({ _id: RECIPE_ID })
+    expect(recipe.rating.rateCount).toBe(1)
+    expect(recipe.rating.rateValue).toBe(4)
+    expect(Number.isNaN(recipe.rating.rateValue)).toBe(false)
+  })
 })
 
 // ─── POST /editReview ──────────────────────────────────────────────────────────
@@ -158,6 +182,15 @@ describe('POST /editReview', () => {
       .collection('ratings')
       .findOne({ username: TEST_USERNAME, recipeId: RECIPE_ID })
     expect(doc.reviewText).toBe('Updated review')
+  })
+
+  // Audit §4 item 4: edited review text must be bounded too.
+  it('rejects edited text longer than 2000 characters (400)', async () => {
+    const res = await request(app)
+      .post(`/api/editReview?recipeId=${RECIPE_ID}&text=${'x'.repeat(2001)}`)
+      .set(AUTH_HEADER)
+    expect(res.status).toBe(400)
+    expect(res.body.error).toMatch(/cannot exceed/)
   })
 })
 
@@ -251,6 +284,33 @@ describe('POST /newReview', () => {
     expect(res.body.reviewText).toBe('Amazing dish!')
     expect(res.body.username).toBe(TEST_USERNAME)
     expect(res.body.recipeId).toBe(RECIPE_ID)
+  })
+
+  // Audit §4 item 4: reviewText must be bounded (mirrors DESCRIPTION_MAX_LENGTH).
+  it('rejects a review longer than 2000 characters (400)', async () => {
+    const res = await request(app)
+      .post('/api/newReview')
+      .set(AUTH_HEADER)
+      .send({ recipeId: RECIPE_ID, reviewText: 'x'.repeat(2001) })
+    expect(res.status).toBe(400)
+    expect(res.body.error).toMatch(/cannot exceed/)
+  })
+
+  // Audit §4 item 8: a review posted before any rating must still produce a
+  // ratings doc with a `rating` key (defaulted to null on insert), so the
+  // recipe-average recompute never sees an undefined rating → NaN.
+  it('defaults rating to null on a review-only upsert', async () => {
+    await request(app)
+      .post('/api/newReview')
+      .set(AUTH_HEADER)
+      .send({ recipeId: RECIPE_ID, reviewText: 'Review without a star rating' })
+
+    const db = getDB()
+    const stored = await db
+      .collection('ratings')
+      .findOne({ username: TEST_USERNAME, recipeId: RECIPE_ID })
+    expect(stored).toHaveProperty('rating', null)
+    expect(stored).toHaveProperty('ratingLastUpdated', '')
   })
 
   it('updates an existing review entry (upsert)', async () => {
@@ -408,7 +468,7 @@ describe('GET /getReviews', () => {
     expect(res.body.totalCount).toBe(1)
   })
 
-  it('sets isCurrentUser=true for the review matching the username param', async () => {
+  it('sets isCurrentUser=true for the authenticated caller’s own review', async () => {
     await seedRating({
       username: TEST_USERNAME,
       recipeId: RECIPE_ID,
@@ -417,11 +477,46 @@ describe('GET /getReviews', () => {
       reviewCreatedAt: '1000',
     })
 
+    // Token resolves to TEST_UID → TEST_USERNAME; flag comes from the token.
+    const res = await request(app)
+      .get(`/api/getReviews?recipeId=${RECIPE_ID}`)
+      .set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(res.body.reviews[0].isCurrentUser).toBe(true)
+  })
+
+  it('ignores the username query param — no token means isCurrentUser=false (spoof closed)', async () => {
+    await seedRating({
+      username: TEST_USERNAME,
+      recipeId: RECIPE_ID,
+      rating: 5,
+      reviewText: 'My review',
+      reviewCreatedAt: '1000',
+    })
+
+    // Anonymous request passing ?username=<victim> must NOT be flagged as theirs.
     const res = await request(app).get(
       `/api/getReviews?recipeId=${RECIPE_ID}&username=${TEST_USERNAME}`
     )
     expect(res.status).toBe(200)
-    expect(res.body.reviews[0].isCurrentUser).toBe(true)
+    expect(res.body.reviews[0].isCurrentUser).toBe(false)
+  })
+
+  it('sets isCurrentUser=false for another user’s review even when authenticated', async () => {
+    await seedRating({
+      username: OTHER_USERNAME,
+      recipeId: RECIPE_ID,
+      rating: 4,
+      reviewText: 'Their review',
+      reviewCreatedAt: '1000',
+    })
+
+    // Authenticated as TEST_UID, but the review belongs to OTHER_USERNAME.
+    const res = await request(app)
+      .get(`/api/getReviews?recipeId=${RECIPE_ID}`)
+      .set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(res.body.reviews[0].isCurrentUser).toBe(false)
   })
 
   it('paginates results', async () => {
