@@ -241,3 +241,24 @@ describe('respondServerError', () => {
     spy.mockRestore()
   })
 })
+
+// ─── Central error backstop (app.js) ─────────────────────────────────────────
+// Errors thrown outside a route's own try/catch (here: a malformed JSON body
+// rejected by express.json()) must hit the app-level error handler and return a
+// generic body — never Express's default handler, which would echo a stack trace.
+
+describe('error backstop for non-route errors', () => {
+  it('returns a generic 400 for a malformed JSON body (no stack leak)', async () => {
+    const spy = jest.spyOn(console, 'error').mockImplementation(() => {})
+    const res = await request(app)
+      .post('/api/newReview')
+      .set(AUTH_HEADER)
+      .set('Content-Type', 'application/json')
+      .send('{ "recipeId": ') // truncated JSON → body-parser throws (status 400)
+    expect(res.status).toBe(400)
+    expect(res.body).toEqual({ error: 'Bad request' })
+    // Nothing in the response body resembles a stack trace or parser internals.
+    expect(JSON.stringify(res.body)).not.toMatch(/SyntaxError|Unexpected|at /)
+    spy.mockRestore()
+  })
+})
