@@ -1,4 +1,5 @@
-require('dotenv').config()
+// Must load first so Sentry instruments express before it's required below.
+require('./instrument')
 const app = require('./app')
 const { connectDB } = require('./db')
 

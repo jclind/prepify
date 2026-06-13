@@ -236,6 +236,49 @@ export interface AdminReportsResponse {
   openCount: number
 }
 
+// ─── Bug reports (user-submitted product feedback) ─────────────────────────
+export type BugReportCategory = 'bug' | 'confusing' | 'idea' | 'other'
+
+// Status reuses the moderation lifecycle values.
+export type BugReportStatus = ReportStatus
+
+// What the client sends. Context (url, appVersion) is auto-captured by the form;
+// email is only collected from logged-out users for follow-up.
+export interface NewBugReportType {
+  category: BugReportCategory
+  description: string
+  url?: string
+  appVersion?: string
+  email?: string
+}
+
+export interface BugReportType {
+  _id: string
+  reporterUid: string | null
+  reporterEmail: string | null
+  category: BugReportCategory
+  description: string
+  url: string
+  userAgent: string
+  appVersion: string
+  status: BugReportStatus
+  createdAt: string
+  resolvedBy?: string
+  resolvedAt?: string
+}
+
+// Bug report enriched with the reporter's username, as returned by the admin
+// GET /admin/bug-reports queue. Null username = anonymous or no username on file.
+export interface AdminBugReportType extends BugReportType {
+  reporterUsername: string | null
+}
+
+export interface AdminBugReportsResponse {
+  reports: AdminBugReportType[]
+  totalCount: number
+  openCount: number
+}
+
 // ─── User moderation (P2) ──────────────────────────────────────────────────
 export type UserStatus = 'active' | 'suspended' | 'banned'
 
@@ -280,8 +323,15 @@ export type AuditAction =
   | 'user.activate'
   | 'report.resolve'
   | 'report.dismiss'
+  | 'bugReport.resolve'
+  | 'bugReport.dismiss'
 
-export type AuditTargetType = 'recipe' | 'review' | 'user' | 'report'
+export type AuditTargetType =
+  | 'recipe'
+  | 'review'
+  | 'user'
+  | 'report'
+  | 'bugReport'
 
 export interface AuditEntryType {
   _id: string

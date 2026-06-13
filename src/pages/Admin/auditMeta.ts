@@ -18,4 +18,6 @@ export const ACTION_META: Record<AuditAction, { label: string; tone: string }> =
   'user.activate': { label: 'reactivated', tone: 'good' },
   'report.resolve': { label: 'resolved report', tone: 'good' },
   'report.dismiss': { label: 'dismissed report', tone: 'neutral' },
+  'bugReport.resolve': { label: 'resolved bug report', tone: 'good' },
+  'bugReport.dismiss': { label: 'dismissed bug report', tone: 'neutral' },
 }

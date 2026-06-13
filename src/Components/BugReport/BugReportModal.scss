@@ -1,0 +1,103 @@
+.bug-report-trigger {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #8a8f99;
+  font-size: 0.8rem;
+  padding: 0.15rem 0.35rem;
+  border-radius: 4px;
+  transition: color 0.15s, background 0.15s;
+
+  &:hover {
+    color: #2563eb;
+    background: rgba(37, 99, 235, 0.08);
+  }
+
+  &.button {
+    border: 1px solid #d8dbe0;
+    padding: 0.4rem 0.75rem;
+    font-size: 0.85rem;
+  }
+}
+
+.bug-report-modal {
+  outline: none;
+
+  .bug-report-modal-title {
+    margin: 0 0 0.35rem;
+    font-size: 1.25rem;
+  }
+
+  .bug-report-modal-sub {
+    margin: 0 0 1.25rem;
+    color: #6b7280;
+    font-size: 0.9rem;
+  }
+
+  .bug-report-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin-bottom: 1rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #374151;
+
+    select,
+    textarea,
+    input {
+      font-weight: 400;
+      font-size: 0.9rem;
+      padding: 0.55rem 0.65rem;
+      border: 1px solid #d8dbe0;
+      border-radius: 6px;
+      font-family: inherit;
+      resize: vertical;
+
+      &:focus {
+        outline: none;
+        border-color: #3b82f6;
+      }
+    }
+  }
+
+  .bug-report-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.6rem;
+    margin-top: 0.5rem;
+
+    button {
+      cursor: pointer;
+      border-radius: 6px;
+      padding: 0.55rem 1rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      position: relative;
+    }
+
+    .bug-report-cancel-btn {
+      background: #f1f2f4;
+      border: 1px solid #d8dbe0;
+      color: #374151;
+    }
+
+    .bug-report-submit-btn {
+      background: #16a34a;
+      border: 1px solid #16a34a;
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+
+      &:disabled {
+        opacity: 0.7;
+        cursor: default;
+      }
+    }
+
+    .bug-report-btn-spinner {
+      display: inline-flex;
+    }
+  }
+}
