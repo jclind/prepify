@@ -1,24 +1,20 @@
 import React from 'react'
 import { vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { HelmetProvider } from 'react-helmet-async'
 import Signup from 'src/pages/Signup/Signup'
+
+// Hoisted so the mocked useAuth and the assertions share one spy.
+const { signUpMock } = vi.hoisted(() => ({ signUpMock: vi.fn() }))
 
 // Stub auth so the page renders signed-out chrome without booting Firebase.
 vi.mock('src/context/AuthContext', () => ({
   useAuth: () => ({
     user: null,
-    signUp: vi.fn(),
+    signUp: signUpMock,
     signInWithGoogle: vi.fn(),
   }),
-}))
-
-// UsernameInput imports AuthAPI (→ axios/Firebase) at module scope; mock it so
-// the import graph stays out of these presentational tests. (The availability
-// check only fires for usernames ≥ 3 chars, which this test never types.)
-vi.mock('src/api/auth', () => ({
-  default: { checkUsernameAvailability: vi.fn() },
 }))
 
 const renderSignup = () =>
@@ -29,6 +25,10 @@ const renderSignup = () =>
       </MemoryRouter>
     </HelmetProvider>
   )
+
+beforeEach(() => {
+  signUpMock.mockClear()
+})
 
 describe('Signup terms-of-service consent', () => {
   it('shows a consent notice linking to the Terms and Privacy pages', () => {
@@ -42,5 +42,45 @@ describe('Signup terms-of-service consent', () => {
     expect(
       screen.getByRole('link', { name: 'Privacy Policy' })
     ).toHaveAttribute('href', '/privacy')
+  })
+})
+
+describe('Signup confirm-password validation', () => {
+  it('blocks submit and shows an error when the passwords do not match', () => {
+    renderSignup()
+    fireEvent.change(screen.getByLabelText('Email'), {
+      target: { value: 'a@b.com' },
+    })
+    fireEvent.change(screen.getByLabelText('Password'), {
+      target: { value: 'abc123' },
+    })
+    fireEvent.change(screen.getByLabelText('Confirm password'), {
+      target: { value: 'xyz789' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /create account/i }))
+
+    expect(screen.getByText('Passwords do not match.')).toBeInTheDocument()
+    expect(signUpMock).not.toHaveBeenCalled()
+  })
+
+  it('calls signUp with email + password when the passwords match', () => {
+    renderSignup()
+    fireEvent.change(screen.getByLabelText('Email'), {
+      target: { value: 'a@b.com' },
+    })
+    fireEvent.change(screen.getByLabelText('Password'), {
+      target: { value: 'abc123' },
+    })
+    fireEvent.change(screen.getByLabelText('Confirm password'), {
+      target: { value: 'abc123' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /create account/i }))
+
+    expect(signUpMock).toHaveBeenCalledWith(
+      'a@b.com',
+      'abc123',
+      expect.any(Function),
+      expect.any(Function)
+    )
   })
 })
