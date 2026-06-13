@@ -158,7 +158,15 @@ function layout({ heading, paragraphs }) {
   return { html, text }
 }
 
-const APPEAL = 'If you believe this was a mistake, you can appeal by contacting Prepify support.'
+// The "how to appeal" line. If SUPPORT_EMAIL is configured it names a concrete
+// address (the from-address is no-reply, so replies go nowhere); otherwise it
+// falls back to generic wording so nothing reads as broken when it's unset.
+function appealLine() {
+  const support = process.env.SUPPORT_EMAIL
+  return support
+    ? `If you believe this was a mistake, you can appeal by emailing us at ${support}.`
+    : 'If you believe this was a mistake, you can appeal by contacting Prepify support.'
+}
 
 const templates = {
   reportResolved() {
@@ -189,7 +197,7 @@ const templates = {
         ? 'This decision is permanent and you can no longer post recipes or reviews.'
         : 'While suspended, you will not be able to post recipes or reviews.'
     )
-    paragraphs.push(APPEAL)
+    paragraphs.push(appealLine())
     return { subject, ...layout({ heading: subject, paragraphs }) }
   },
 
@@ -202,7 +210,7 @@ const templates = {
         heading: subject,
         paragraphs: [
           `Your recipe${titleBit} has been hidden by our moderation team because it may not meet our community guidelines, and is no longer visible to other users.`,
-          APPEAL,
+          appealLine(),
         ],
       }),
     }
@@ -217,7 +225,7 @@ const templates = {
         heading: subject,
         paragraphs: [
           `One of your reviews${onBit} has been removed by our moderation team because it may not meet our community guidelines.`,
-          APPEAL,
+          appealLine(),
         ],
       }),
     }
