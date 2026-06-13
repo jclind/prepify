@@ -88,6 +88,16 @@ async function ensureIndexes() {
     console.error('Failed to create indexes on reports:', err.message)
   }
 
+  // User bug reports. New collection, so these build instantly. Backs the admin
+  // queue (filter by status, newest first) and analytics createdAt bucketing.
+  try {
+    const bugReports = db.collection('bugReports')
+    await bugReports.createIndex({ status: 1, createdAt: -1 })
+    await bugReports.createIndex({ createdAt: -1 })
+  } catch (err) {
+    console.error('Failed to create indexes on bugReports:', err.message)
+  }
+
   // Admin audit log (P3). New collection, so these build instantly. Backs the
   // audit page (newest first), and filtering by actor or by a specific target.
   // The action/targetType compounds end in createdAt:-1 so the page's filter

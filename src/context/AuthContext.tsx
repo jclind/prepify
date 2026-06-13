@@ -20,6 +20,7 @@ import AuthAPI from 'src/api/auth'
 import { TailSpin } from 'react-loader-spinner'
 import { getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage'
 import { ErrorWithData } from 'src/util/ErrorWithData'
+import { setSentryUser } from 'src/util/sentry'
 
 export function useAuth() {
   return useContext(AuthContext)
@@ -240,6 +241,9 @@ const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
   // Check for auth status on page load
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async userInstance => {
+      // Attribute Sentry error reports to the signed-in account (cleared on
+      // logout). No-ops when Sentry is disabled.
+      setSentryUser(userInstance ? { uid: userInstance.uid } : null)
       if (userInstance) {
         setUser(userInstance)
         // Read the admin custom claim off the verified ID token. Mirrors the

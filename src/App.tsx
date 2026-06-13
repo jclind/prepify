@@ -13,6 +13,7 @@ import AdminRoute from 'src/Components/AdminRoute'
 import AdminLayout from 'src/pages/Admin/AdminLayout'
 import Analytics from 'src/pages/Admin/Analytics/Analytics'
 import Reports from 'src/pages/Admin/Reports/Reports'
+import BugReports from 'src/pages/Admin/BugReports/BugReports'
 import Users from 'src/pages/Admin/Users/Users'
 import Audit from 'src/pages/Admin/Audit/Audit'
 import CreateUsername from 'src/pages/CreateUsername/CreateUsername'
@@ -38,6 +39,8 @@ import { Toaster } from 'react-hot-toast'
 import Settings from 'src/pages/Settings/Settings'
 import Profile from 'src/pages/Settings/SubSettings/Profile'
 import Password from 'src/pages/Settings/SubSettings/Password'
+import { Sentry } from 'src/util/sentry'
+import AppErrorFallback from 'src/Components/AppErrorFallback/AppErrorFallback'
 // import RecipeAI from './pages/RecipeAI/RecipeAI'
 
 const ScrollToTop: FC = () => {
@@ -49,8 +52,11 @@ const ScrollToTop: FC = () => {
 }
 const App: FC = () => {
   return (
-    <HelmetProvider>
-      <AuthProvider>
+    <Sentry.ErrorBoundary
+      fallback={({ resetError }) => <AppErrorFallback resetError={resetError} />}
+    >
+      <HelmetProvider>
+        <AuthProvider>
         <Toaster position='bottom-center' toastOptions={{ duration: 5000 }} />
         <ScrollToTop />
         <Routes>
@@ -192,6 +198,7 @@ const App: FC = () => {
                 <Route index element={<Navigate to='/admin/analytics' replace />} />
                 <Route path='analytics' element={<Analytics />} />
                 <Route path='reports' element={<Reports />} />
+                <Route path='bug-reports' element={<BugReports />} />
                 <Route path='users' element={<Users />} />
                 <Route path='audit' element={<Audit />} />
               </Route>
@@ -202,8 +209,9 @@ const App: FC = () => {
             <Route path='/create-username' element={<CreateUsername />} />
             <Route path='/forgot-password' element={<ForgotPassword />} />
           </Routes>
-      </AuthProvider>
-    </HelmetProvider>
+        </AuthProvider>
+      </HelmetProvider>
+    </Sentry.ErrorBoundary>
   )
 }
 
