@@ -1,4 +1,5 @@
 const { Router } = require('express')
+const { respondServerError } = require('../util/respondServerError')
 const { ObjectId } = require('mongodb')
 const { getDB } = require('../db')
 const { verifyToken, requireAdmin, requireActive } = require('../middleware/auth')
@@ -74,7 +75,7 @@ router.post('/reports', verifyToken, requireActive, async (req, res) => {
     await db.collection('reports').insertOne(doc)
     res.status(201).json(doc)
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    respondServerError(res, err, req)
   }
 })
 
@@ -123,7 +124,7 @@ router.get('/reports', verifyToken, requireAdmin, async (req, res) => {
 
     res.json({ reports: enriched, totalCount, openCount })
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    respondServerError(res, err, req)
   }
 })
 
@@ -191,7 +192,7 @@ router.patch('/reports/bulk', verifyToken, requireAdmin, async (req, res) => {
 
     res.json({ updated: result.modifiedCount })
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    respondServerError(res, err, req)
   }
 })
 
@@ -226,7 +227,7 @@ router.patch('/reports/:id', verifyToken, requireAdmin, async (req, res) => {
     if (status === 'resolved') notifyInBackground(notifyReportResolved(updated.reporterUid))
     res.json(updated)
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    respondServerError(res, err, req)
   }
 })
 

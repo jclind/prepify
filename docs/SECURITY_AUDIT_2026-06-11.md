@@ -125,23 +125,25 @@ touch the same files those branches change (see §5).
    `NODE_ENV=test` because supertest fires hundreds of requests from one IP in
    seconds — so the 429 path itself is intentionally untested by Jest. Cypress
    CI runs with limiters active and stays well under the global cap.
-2. [ ] **500 handlers echo `err.message` to clients** (*Low–Medium*, info
-   disclosure) — **DEFERRED, see §5.** Every route's catch block returns the
-   raw message, which for infrastructure failures can include internal
-   hostnames (e.g. Mongo `connect ECONNREFUSED <host>`). Needs a shared error
-   responder that logs the real error and returns a generic message. Touches
-   every route file and some test expectations — maximal conflict with the
-   worktree backlog, so it must go last.
-3. [ ] **`GET /getReviews` `isCurrentUser` derived from a query param**
-   (*Low*, carried over from old audit) — **DEFERRED, see §5.** Anyone can
-   pass `?username=victim` and get `isCurrentUser: true` flags. UI-hint spoof
-   only (server-side edits remain protected); should derive from the token
-   when an `Authorization` header is present. Lives in `reviews.js`, which the
-   admin worktree's soft-hide moderation also changes.
-4. [ ] **`reviewText` has no length bound** (*Low*) — **DEFERRED, see §5.**
-   Recipe fields are bounded; reviews are not. Add a max length in
-   `newReview`/`editReview` mirroring `DESCRIPTION_MAX_LENGTH` (2000). Same
-   `reviews.js` conflict as item 3.
+2. [x] **500 handlers echo `err.message` to clients** (*Low–Medium*, info
+   disclosure) — **DONE (2026-06-12).** Added `util/respondServerError.js`
+   (logs the real error with `METHOD /path` context, returns
+   `500 { error: 'Internal server error' }`); wired into all 9 route files
+   (52 sites) + `requireActive` in `middleware/auth.js`. `ingredients.js`
+   keeps its rich Phase-A logging and only swapped the response body. 4xx
+   validation messages unchanged. Also added a central error backstop in
+   `app.js` so errors thrown *outside* a route's try/catch (malformed JSON
+   body, CORS rejection) no longer reach Express's default stack-leaking
+   handler — they return a generic body, preserving a thrower-set 4xx.
+3. [x] **`GET /getReviews` `isCurrentUser` derived from a query param**
+   (*Low*, carried over from old audit) — **DONE (2026-06-12).** Route now uses
+   `optionalAuth`; `isCurrentUser` is derived from the verified token's
+   uid → `usernames`, ignoring the `?username` param for the flag. Stays
+   anonymous-friendly (no/invalid token → `false` everywhere). Regression
+   tests in `reviews.test.js`.
+4. [x] **`reviewText` has no length bound** (*Low*) — **DONE (2026-06-12).**
+   `newReview`/`editReview` reject text over `DESCRIPTION_MAX_LENGTH` (2000),
+   now exported from `util/recipeLimits.js` (imported, not duplicated).
 5. [x] **Unbounded `recipesPerPage`/`reviewsPerPage`** (*Low*) — **DONE.**
    All five paginated handlers (`GET /recipes`, `getReviews`,
    `getSingleUserReviews`, `getCreatedRecipes`, `getSavedRecipes`) clamp the
@@ -153,15 +155,27 @@ touch the same files those branches change (see §5).
    AS-IS.** Revoked/disabled users keep access until their ID token expires
    (≤1 h). Standard tradeoff: `checkRevoked` costs a network round-trip per
    request. Revisit only if account-ban semantics demand instant lockout.
-8. [ ] **`newReview` upsert can create a doc without `rating` fields**
-   (*Info*, data integrity, carried over) — **DEFERRED, see §5.** A review
-   posted before any rating yields a ratings doc lacking
-   `rating`/`ratingLastUpdated`. Normalize during the same `reviews.js` pass
-   as items 3–4.
+8. [x] **`newReview` upsert can create a doc without `rating` fields**
+   (*Info → actually higher: data corruption*) — **DONE (2026-06-12).**
+   `newReview` now `$setOnInsert`s `rating: null` / `ratingLastUpdated: ''`,
+   and `recomputeRecipeRating` filters to docs with a finite numeric rating.
+   This was worse than logged: `recomputeRecipeRating` ran `parseFloat(r.rating)`
+   over review-only docs → `NaN`, poisoning the **entire** recipe average (and
+   still counting toward `rateCount`). Regression test in `reviews.test.js`
+   ("does not let a review-only doc poison the recipe average").
 
 ---
 
 ## 5. Deferred follow-up — runbook for after the worktree merges
+
+> **STATUS: COMPLETE (2026-06-12).** All three worktrees merged (recipes #119,
+> account #122, admin #121/#124/#125/#126). Worked on branch
+> `security/deferred-batch-2026-06`: step 1 (reviews.js items 3/4/8) and step 2
+> (generic 500 responder) applied; step 3 admin re-audit found the surface
+> **already sound** — every `/admin` route chains `verifyToken + requireAdmin`,
+> report/moderation endpoints validate ids (ObjectId.isValid / string
+> type-checks / whitelists) — so it needed regression tests, not fixes. Server
+> suite green (344). §4 boxes ticked above.
 
 **Preconditions:** the three worktree branches (recipes-page-refresh,
 account-page-redesign incl. its P6 teardown, admin-service) are merged into
