@@ -4,6 +4,7 @@ const { getDB } = require('../db')
 const { verifyToken, requireAdmin, requireActive } = require('../middleware/auth')
 const { recipeIdQuery } = require('../util/recipeIdQuery')
 const { recordAudit, recordAuditMany } = require('../util/auditLog')
+const { notifyInBackground, notifyReportResolved, notifyReportResolvedMany } = require('../util/email')
 
 const router = Router()
 
@@ -182,6 +183,12 @@ router.patch('/reports/bulk', verifyToken, requireAdmin, async (req, res) => {
       }))
     )
 
+    // Email each affected reporter once per sweep (resolve only; dismiss is
+    // silent), in the background so a large sweep never blocks the response.
+    if (status === 'resolved') {
+      notifyInBackground(notifyReportResolvedMany(closed.map((r) => r.reporterUid)))
+    }
+
     res.json({ updated: result.modifiedCount })
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -215,6 +222,8 @@ router.patch('/reports/:id', verifyToken, requireAdmin, async (req, res) => {
       targetLabel: updated.reportedUsername ? `@${updated.reportedUsername}` : updated.recipeId,
       metadata: { targetType: updated.targetType, recipeId: updated.recipeId },
     })
+    // Notify the reporter that action was taken. Dismiss is intentionally silent.
+    if (status === 'resolved') notifyInBackground(notifyReportResolved(updated.reporterUid))
     res.json(updated)
   } catch (err) {
     res.status(500).json({ error: err.message })
