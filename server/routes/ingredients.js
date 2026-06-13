@@ -63,7 +63,7 @@ router.post('/parse', verifyToken, parseLimiter, async (req, res) => {
       JSON.stringify({ ingredientString, message: err && err.message }),
       err && err.stack
     )
-    return res.status(500).json({ error: err.message })
+    return res.status(500).json({ error: 'Internal server error' })
   }
 })
 

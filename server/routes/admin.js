@@ -1,4 +1,5 @@
 const { Router } = require('express')
+const { respondServerError } = require('../util/respondServerError')
 const admin = require('firebase-admin')
 const { getDB } = require('../db')
 const { verifyToken, requireAdmin } = require('../middleware/auth')
@@ -202,7 +203,7 @@ router.get('/admin/users', verifyToken, requireAdmin, async (req, res) => {
     const users = await enrichUsers(db, usernameDocs)
     res.json({ users, totalCount })
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    respondServerError(res, err, req)
   }
 })
 
@@ -243,7 +244,7 @@ router.get('/admin/users/:uid', verifyToken, requireAdmin, async (req, res) => {
 
     res.json({ ...enriched, email, recentRecipes, recentReviews })
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    respondServerError(res, err, req)
   }
 })
 
@@ -313,7 +314,7 @@ router.patch('/admin/users/:uid/status', verifyToken, requireAdmin, async (req, 
 
     res.json({ uid, status })
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    respondServerError(res, err, req)
   }
 })
 
@@ -350,7 +351,7 @@ router.get('/admin/audit', verifyToken, requireAdmin, async (req, res) => {
 
     res.json({ entries: enriched, totalCount })
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    respondServerError(res, err, req)
   }
 })
 
@@ -442,7 +443,7 @@ router.get('/admin/analytics', verifyToken, requireAdmin, async (req, res) => {
       recentActions,
     })
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    respondServerError(res, err, req)
   }
 })
 

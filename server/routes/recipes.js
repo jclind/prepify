@@ -1,4 +1,5 @@
 const { Router } = require('express')
+const { respondServerError } = require('../util/respondServerError')
 const { ObjectId } = require('mongodb')
 const { getDB, getClient } = require('../db')
 const { verifyToken, optionalAuth, requireAdmin, requireActive } = require('../middleware/auth')
@@ -128,7 +129,7 @@ router.get('/recipes', async (req, res) => {
 
     res.json({ recipeList: recipes, total_results: totalCount })
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    respondServerError(res, err, req)
   }
 })
 
@@ -153,7 +154,7 @@ router.get('/recipes/facets', async (req, res) => {
       mealTypes: clean(mealTypes),
     })
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    respondServerError(res, err, req)
   }
 })
 
@@ -183,7 +184,7 @@ router.get('/searchAutoCompleteRecipes', async (req, res) => {
       .toArray()
     res.json(recipes)
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    respondServerError(res, err, req)
   }
 })
 
@@ -202,7 +203,7 @@ router.get('/getTrendingRecipes', async (req, res) => {
       .toArray()
     res.json(recipes)
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    respondServerError(res, err, req)
   }
 })
 
@@ -241,7 +242,7 @@ router.get('/getRecipe', optionalAuth, async (req, res) => {
 
     res.json(recipe)
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    respondServerError(res, err, req)
   }
 })
 
@@ -270,7 +271,7 @@ router.post('/addRecipe', verifyToken, requireActive, async (req, res) => {
     )
     res.status(201).json({ _id: newId })
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    respondServerError(res, err, req)
   }
 })
 
@@ -319,7 +320,7 @@ router.put('/editRecipe', verifyToken, requireActive, async (req, res) => {
     )
     res.json(updated)
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    respondServerError(res, err, req)
   }
 })
 
@@ -371,7 +372,7 @@ router.delete('/deleteRecipe', verifyToken, async (req, res) => {
 
     res.json({ deleted: true })
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    respondServerError(res, err, req)
   }
 })
 
@@ -409,7 +410,7 @@ router.patch('/admin/recipes/:id/moderation', verifyToken, requireAdmin, async (
     if (status === 'hidden') notifyInBackground(notifyRecipeHidden(updated.userId, updated.title))
     res.json({ _id: updated._id, status: updated.status })
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    respondServerError(res, err, req)
   }
 })
 
@@ -447,7 +448,7 @@ router.patch('/admin/recipes/:id/publish', verifyToken, requireAdmin, async (req
     })
     res.json({ _id: updated._id, status: updated.status })
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    respondServerError(res, err, req)
   }
 })
 
@@ -482,7 +483,7 @@ router.patch('/admin/recipes/:id/feature', verifyToken, requireAdmin, async (req
     })
     res.json({ _id: updated._id, featured: updated.featured === true })
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    respondServerError(res, err, req)
   }
 })
 
@@ -511,7 +512,7 @@ router.post('/recipes/:id/save', verifyToken, requireActive, async (req, res) =>
     )
     res.json({ saved: true })
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    respondServerError(res, err, req)
   }
 })
 
@@ -529,7 +530,7 @@ router.get('/getSavedRecipe', verifyToken, async (req, res) => {
       userData?.savedRecipes?.find((entry) => entry.recipeId === recipeId) ?? null
     res.json(match)
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    respondServerError(res, err, req)
   }
 })
 
@@ -543,7 +544,7 @@ router.get('/getSavedRecipeIds', verifyToken, async (req, res) => {
       .findOne({ _id: req.uid }, { projection: { savedRecipes: 1 } })
     res.json((userData?.savedRecipes ?? []).map((e) => e.recipeId))
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    respondServerError(res, err, req)
   }
 })
 
@@ -571,7 +572,7 @@ router.delete('/recipes/:id/save', verifyToken, requireActive, async (req, res) 
     )
     res.json({ unsaved: true })
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    respondServerError(res, err, req)
   }
 })
 
@@ -595,7 +596,7 @@ router.post('/madeRecipe', verifyToken, requireActive, async (req, res) => {
     )
     res.json({ made: true })
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    respondServerError(res, err, req)
   }
 })
 
@@ -613,7 +614,7 @@ router.get('/checkMadeRecipe', verifyToken, async (req, res) => {
       userData?.madeRecipes?.some((entry) => entry.recipeId === recipeId) ?? false
     res.json({ made })
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    respondServerError(res, err, req)
   }
 })
 

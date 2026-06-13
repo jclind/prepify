@@ -1,4 +1,5 @@
 const { Router } = require('express')
+const { respondServerError } = require('../util/respondServerError')
 const { ObjectId } = require('mongodb')
 const { getDB } = require('../db')
 const { verifyToken, requireActive } = require('../middleware/auth')
@@ -53,7 +54,7 @@ router.post('/', verifyToken, requireActive, async (req, res) => {
     await db.collection('recipeDrafts').insertOne(doc)
     res.status(201).json(doc)
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    respondServerError(res, err, req)
   }
 })
 
@@ -68,7 +69,7 @@ router.get('/', verifyToken, async (req, res) => {
       .toArray()
     res.json(drafts)
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    respondServerError(res, err, req)
   }
 })
 
@@ -90,7 +91,7 @@ router.get('/:id', verifyToken, async (req, res) => {
     }
     res.json(draft)
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    respondServerError(res, err, req)
   }
 })
 
@@ -126,7 +127,7 @@ router.put('/:id', verifyToken, requireActive, async (req, res) => {
       .findOneAndUpdate({ _id }, { $set: update }, { returnDocument: 'after' })
     res.json(updated)
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    respondServerError(res, err, req)
   }
 })
 
@@ -149,7 +150,7 @@ router.delete('/:id', verifyToken, async (req, res) => {
     await db.collection('recipeDrafts').deleteOne({ _id })
     res.json({ deleted: true })
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    respondServerError(res, err, req)
   }
 })
 
