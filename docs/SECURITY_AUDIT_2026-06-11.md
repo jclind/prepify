@@ -131,7 +131,10 @@ touch the same files those branches change (see §5).
    `500 { error: 'Internal server error' }`); wired into all 9 route files
    (52 sites) + `requireActive` in `middleware/auth.js`. `ingredients.js`
    keeps its rich Phase-A logging and only swapped the response body. 4xx
-   validation messages unchanged.
+   validation messages unchanged. Also added a central error backstop in
+   `app.js` so errors thrown *outside* a route's try/catch (malformed JSON
+   body, CORS rejection) no longer reach Express's default stack-leaking
+   handler — they return a generic body, preserving a thrower-set 4xx.
 3. [x] **`GET /getReviews` `isCurrentUser` derived from a query param**
    (*Low*, carried over from old audit) — **DONE (2026-06-12).** Route now uses
    `optionalAuth`; `isCurrentUser` is derived from the verified token's
