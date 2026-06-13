@@ -239,9 +239,6 @@ export interface AdminReportsResponse {
 // ─── User moderation (P2) ──────────────────────────────────────────────────
 export type UserStatus = 'active' | 'suspended' | 'banned'
 
-// Server 403 `code` values when a suspended/banned user attempts a write
-// (server/middleware/auth.js requireActive). Surfaced as a toast by http-common.
-export type AccountBlockedCode = 'ACCOUNT_SUSPENDED' | 'ACCOUNT_BANNED'
 
 export interface AdminUserType {
   uid: string

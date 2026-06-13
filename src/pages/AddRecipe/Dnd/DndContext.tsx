@@ -1,7 +1,7 @@
 import React from 'react'
 import { DragDropContext, DropResult } from '@hello-pangea/dnd'
 import { reorder } from 'src/util/reorder'
-import Drop from 'src/pages/AddRecipe/Dnd/Drop'
+import Drop from './Drop'
 
 type DndContextProps<T> = {
   list: T[]

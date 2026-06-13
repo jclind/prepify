@@ -33,4 +33,4 @@ function recipeIdInQuery(ids) {
   return { _id: { $in: variants } }
 }
 
-module.exports = { recipeIdQuery, recipeIdInQuery, isObjectIdHex }
+module.exports = { recipeIdQuery, recipeIdInQuery }

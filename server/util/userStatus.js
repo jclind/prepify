@@ -23,4 +23,4 @@ function isBlocked(status) {
   return BLOCKED_STATUSES.includes(status)
 }
 
-module.exports = { USER_STATUSES, BLOCKED_STATUSES, getUserStatus, isBlocked }
+module.exports = { USER_STATUSES, isBlocked }
