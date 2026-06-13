@@ -1,4 +1,5 @@
 const { Router } = require('express')
+const { respondServerError } = require('../util/respondServerError')
 const { getDB } = require('../db')
 const { verifyToken, optionalAuth, requireAdmin, requireActive } = require('../middleware/auth')
 const { recipeIdQuery } = require('../util/recipeIdQuery')
@@ -55,7 +56,7 @@ router.post('/addRating', verifyToken, requireActive, async (req, res) => {
 
     res.json({ rated: true })
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    respondServerError(res, err, req)
   }
 })
 
@@ -92,7 +93,7 @@ router.post('/newReview', verifyToken, requireActive, async (req, res) => {
     const updated = await db.collection('ratings').findOne({ username, recipeId })
     res.json(updated)
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    respondServerError(res, err, req)
   }
 })
 
@@ -115,7 +116,7 @@ router.get('/checkIfReviewed', verifyToken, async (req, res) => {
       res.json({ reviewed: false })
     }
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    respondServerError(res, err, req)
   }
 })
 
@@ -142,7 +143,7 @@ router.post('/editReview', verifyToken, requireActive, async (req, res) => {
     }
     res.json({ edited: true })
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    respondServerError(res, err, req)
   }
 })
 
@@ -168,7 +169,7 @@ router.delete('/deleteReview', verifyToken, async (req, res) => {
     }
     res.json({ deleted: true })
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    respondServerError(res, err, req)
   }
 })
 
@@ -210,7 +211,7 @@ router.get('/getReviews', optionalAuth, async (req, res) => {
 
     res.json({ reviews, totalCount })
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    respondServerError(res, err, req)
   }
 })
 
@@ -252,7 +253,7 @@ router.get('/getSingleUserReviews', async (req, res) => {
 
     res.json({ reviews, totalCount })
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    respondServerError(res, err, req)
   }
 })
 
@@ -297,7 +298,7 @@ router.patch('/admin/reviews/moderation', verifyToken, requireAdmin, async (req,
     if (moderationHidden) notifyInBackground(notifyReviewTakenDown(db, username, recipeId))
     res.json({ recipeId, username, moderationHidden })
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    respondServerError(res, err, req)
   }
 })
 

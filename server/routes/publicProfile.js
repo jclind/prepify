@@ -1,4 +1,5 @@
 const express = require('express')
+const { respondServerError } = require('../util/respondServerError')
 const router = express.Router()
 const admin = require('firebase-admin')
 const { getDB } = require('../db')
@@ -77,7 +78,7 @@ router.get('/getPublicProfile', async (req, res) => {
       recipesTotalCount: counts.recipes,
     })
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    respondServerError(res, err, req)
   }
 })
 

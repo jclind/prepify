@@ -1,4 +1,5 @@
 const admin = require('firebase-admin')
+const { respondServerError } = require('../util/respondServerError')
 const { getDB } = require('../db')
 const { isBlocked } = require('../util/userStatus')
 
@@ -78,7 +79,7 @@ async function requireActive(req, res, next) {
     }
     next()
   } catch (err) {
-    return res.status(500).json({ error: err.message })
+    return respondServerError(res, err, req)
   }
 }
 

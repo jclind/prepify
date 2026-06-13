@@ -1,4 +1,5 @@
 const express = require('express')
+const { respondServerError } = require('../util/respondServerError')
 const router = express.Router()
 const { getDB } = require('../db')
 const { verifyToken, requireActive } = require('../middleware/auth')
@@ -62,7 +63,7 @@ router.get('/getUsername', verifyToken, async (req, res) => {
     if (!doc) return res.json(null)
     res.json(doc.username)
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    respondServerError(res, err, req)
   }
 })
 
@@ -80,7 +81,7 @@ router.get('/checkUsernameAvailability', async (req, res) => {
       .findOne({ username_lower: username.toLowerCase() })
     res.json(existing === null)
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    respondServerError(res, err, req)
   }
 })
 
@@ -97,7 +98,7 @@ router.get('/getMyStatus', verifyToken, async (req, res) => {
       statusReason: doc?.statusReason || null,
     })
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    respondServerError(res, err, req)
   }
 })
 
@@ -145,7 +146,7 @@ router.post('/setUsername', verifyToken, requireActive, async (req, res) => {
     }
     res.json({ success: true })
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    respondServerError(res, err, req)
   }
 })
 
@@ -159,7 +160,7 @@ router.get('/getProfile', verifyToken, async (req, res) => {
     const doc = await db.collection('userProfiles').findOne({ _id: req.uid })
     res.json({ bio: doc?.bio ?? '', location: doc?.location ?? '' })
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    respondServerError(res, err, req)
   }
 })
 
@@ -187,7 +188,7 @@ router.post('/updateProfile', verifyToken, async (req, res) => {
     )
     res.json({ success: true })
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    respondServerError(res, err, req)
   }
 })
 

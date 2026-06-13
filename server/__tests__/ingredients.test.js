@@ -140,14 +140,15 @@ describe('POST /api/ingredients/parse', () => {
 
   // ── Error handling ────────────────────────────────────────────────────────────
 
-  it('returns 500 and the error message when ingredientParser throws', async () => {
+  it('returns a generic 500 (not the raw error) when ingredientParser throws', async () => {
     ingredientParser.mockRejectedValue(new Error('parser exploded'))
     const res = await request(app)
       .post('/api/ingredients/parse')
       .set(AUTH_HEADER)
       .send({ ingredientString: '2 cups flour' })
     expect(res.status).toBe(500)
-    expect(res.body).toHaveProperty('error', 'parser exploded')
+    // Body is generic; the real message ('parser exploded') is logged, not echoed.
+    expect(res.body).toHaveProperty('error', 'Internal server error')
   })
 
   // ── Spoonacular CDN URL rewrite ──────────────────────────────────────────────
