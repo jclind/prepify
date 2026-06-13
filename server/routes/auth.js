@@ -1,5 +1,5 @@
 const express = require('express')
-const { respondServerError } = require('../util/respondServerError')
+const { asyncHandler } = require('../util/asyncHandler')
 const router = express.Router()
 const { getDB } = require('../db')
 const { verifyToken, requireActive } = require('../middleware/auth')
@@ -56,140 +56,116 @@ function validateUsername(username) {
 // Returns the authenticated user's own username, or null if not set yet.
 // Scoped to req.uid so a user can't enumerate other users' usernames by id;
 // other users' usernames are surfaced through the reviews endpoints instead.
-router.get('/getUsername', verifyToken, async (req, res) => {
-  try {
-    const db = getDB()
-    const doc = await db.collection('usernames').findOne({ _id: req.uid })
-    if (!doc) return res.json(null)
-    res.json(doc.username)
-  } catch (err) {
-    respondServerError(res, err, req)
-  }
-})
+router.get('/getUsername', verifyToken, asyncHandler(async (req, res) => {
+  const db = getDB()
+  const doc = await db.collection('usernames').findOne({ _id: req.uid })
+  if (!doc) return res.json(null)
+  res.json(doc.username)
+}))
 
 // GET /checkUsernameAvailability?username=...
 // Returns true if username is available, false if taken
-router.get('/checkUsernameAvailability', async (req, res) => {
-  try {
-    const { username } = req.query
-    if (!username || typeof username !== 'string') {
-      return res.status(400).json({ error: 'username is required' })
-    }
-    const db = getDB()
-    const existing = await db
-      .collection('usernames')
-      .findOne({ username_lower: username.toLowerCase() })
-    res.json(existing === null)
-  } catch (err) {
-    respondServerError(res, err, req)
+router.get('/checkUsernameAvailability', asyncHandler(async (req, res) => {
+  const { username } = req.query
+  if (!username || typeof username !== 'string') {
+    return res.status(400).json({ error: 'username is required' })
   }
-})
+  const db = getDB()
+  const existing = await db
+    .collection('usernames')
+    .findOne({ username_lower: username.toLowerCase() })
+  res.json(existing === null)
+}))
 
 // GET /getMyStatus — the authenticated user's own moderation status, so the
 // client can show a persistent "account suspended/banned" banner up front
 // instead of only failing on a write. NOT behind requireActive: a suspended
 // user must be able to read their own status.
-router.get('/getMyStatus', verifyToken, async (req, res) => {
-  try {
-    const db = getDB()
-    const doc = await db.collection('users').findOne({ _id: req.uid })
-    res.json({
-      status: doc?.status || 'active',
-      statusReason: doc?.statusReason || null,
-    })
-  } catch (err) {
-    respondServerError(res, err, req)
-  }
-})
+router.get('/getMyStatus', verifyToken, asyncHandler(async (req, res) => {
+  const db = getDB()
+  const doc = await db.collection('users').findOne({ _id: req.uid })
+  res.json({
+    status: doc?.status || 'active',
+    statusReason: doc?.statusReason || null,
+  })
+}))
 
 // POST /setUsername?username=...
 // Creates or updates the username for the authenticated user
-router.post('/setUsername', verifyToken, requireActive, async (req, res) => {
-  try {
-    const { username } = req.query
-    const validationError = validateUsername(username)
-    if (validationError) {
-      return res.status(400).json({ error: validationError })
-    }
-    const usernameLower = username.toLowerCase()
-    const uid = req.uid
-    const db = getDB()
+router.post('/setUsername', verifyToken, requireActive, asyncHandler(async (req, res) => {
+  const { username } = req.query
+  const validationError = validateUsername(username)
+  if (validationError) {
+    return res.status(400).json({ error: validationError })
+  }
+  const usernameLower = username.toLowerCase()
+  const uid = req.uid
+  const db = getDB()
 
-    // Check the name isn't already taken by someone else (case-insensitive).
-    const existing = await db
-      .collection('usernames')
-      .findOne({ username_lower: usernameLower })
-    if (existing && existing._id !== uid) {
+  // Check the name isn't already taken by someone else (case-insensitive).
+  const existing = await db
+    .collection('usernames')
+    .findOne({ username_lower: usernameLower })
+  if (existing && existing._id !== uid) {
+    return res.status(409).json({ error: 'Username already taken' })
+  }
+
+  try {
+    await db.collection('usernames').updateOne(
+      { _id: uid },
+      {
+        $set: { username, username_lower: usernameLower },
+        // Stamp the account's first-seen time once, so admin analytics can
+        // chart signups over time. Legacy docs created before this won't have
+        // it (and are excluded from the signup series) — see GET /admin/analytics.
+        $setOnInsert: { createdAt: new Date() },
+      },
+      { upsert: true }
+    )
+  } catch (err) {
+    // The unique index on username_lower is the source of truth: it closes
+    // the race between the check above and this write, where two concurrent
+    // requests could both pass the findOne.
+    if (err.code === 11000) {
       return res.status(409).json({ error: 'Username already taken' })
     }
-
-    try {
-      await db.collection('usernames').updateOne(
-        { _id: uid },
-        {
-          $set: { username, username_lower: usernameLower },
-          // Stamp the account's first-seen time once, so admin analytics can
-          // chart signups over time. Legacy docs created before this won't have
-          // it (and are excluded from the signup series) — see GET /admin/analytics.
-          $setOnInsert: { createdAt: new Date() },
-        },
-        { upsert: true }
-      )
-    } catch (err) {
-      // The unique index on username_lower is the source of truth: it closes
-      // the race between the check above and this write, where two concurrent
-      // requests could both pass the findOne.
-      if (err.code === 11000) {
-        return res.status(409).json({ error: 'Username already taken' })
-      }
-      throw err
-    }
-    res.json({ success: true })
-  } catch (err) {
-    respondServerError(res, err, req)
+    throw err
   }
-})
+  res.json({ success: true })
+}))
 
 // GET /getProfile
 // Returns the authenticated user's own profile fields (bio + location), or
 // empty strings when nothing has been saved yet. Scoped to req.uid like
 // /getUsername so a user only ever reads their own profile.
-router.get('/getProfile', verifyToken, async (req, res) => {
-  try {
-    const db = getDB()
-    const doc = await db.collection('userProfiles').findOne({ _id: req.uid })
-    res.json({ bio: doc?.bio ?? '', location: doc?.location ?? '' })
-  } catch (err) {
-    respondServerError(res, err, req)
-  }
-})
+router.get('/getProfile', verifyToken, asyncHandler(async (req, res) => {
+  const db = getDB()
+  const doc = await db.collection('userProfiles').findOne({ _id: req.uid })
+  res.json({ bio: doc?.bio ?? '', location: doc?.location ?? '' })
+}))
 
 // POST /updateProfile
 // Upserts the authenticated user's bio + location. Empty strings are allowed
 // and clear the field. Values are trimmed before storage.
-router.post('/updateProfile', verifyToken, async (req, res) => {
-  try {
-    const { bio, location } = req.body || {}
-    const validationError = validateProfile(bio, location)
-    if (validationError) {
-      return res.status(400).json({ error: validationError })
-    }
-    const db = getDB()
-    await db.collection('userProfiles').updateOne(
-      { _id: req.uid },
-      {
-        $set: {
-          bio: typeof bio === 'string' ? bio.trim() : '',
-          location: typeof location === 'string' ? location.trim() : '',
-          updatedAt: new Date(),
-        },
-      },
-      { upsert: true }
-    )
-    res.json({ success: true })
-  } catch (err) {
-    respondServerError(res, err, req)
+router.post('/updateProfile', verifyToken, asyncHandler(async (req, res) => {
+  const { bio, location } = req.body || {}
+  const validationError = validateProfile(bio, location)
+  if (validationError) {
+    return res.status(400).json({ error: validationError })
   }
-})
+  const db = getDB()
+  await db.collection('userProfiles').updateOne(
+    { _id: req.uid },
+    {
+      $set: {
+        bio: typeof bio === 'string' ? bio.trim() : '',
+        location: typeof location === 'string' ? location.trim() : '',
+        updatedAt: new Date(),
+      },
+    },
+    { upsert: true }
+  )
+  res.json({ success: true })
+}))
 
 module.exports = router
