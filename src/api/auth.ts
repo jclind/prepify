@@ -5,6 +5,10 @@ import { UserStatus } from 'types'
 type UserProfile = {
   bio: string
   location: string
+  // Present on reads (getProfile); optional so callers writing only bio/location
+  // via updateProfile don't have to supply them.
+  isPublic?: boolean
+  hideLocation?: boolean
 }
 
 class AuthAPIClass {
@@ -47,6 +51,29 @@ class AuthAPIClass {
   }
   async updateProfile(profile: UserProfile) {
     await http.post('api/updateProfile', profile)
+  }
+  // Saves the privacy toggles that gate the public /u/:username view. Both flags
+  // are always sent so the server stores the current state of each switch.
+  async updatePrivacy(isPublic: boolean, hideLocation: boolean) {
+    await http.post('api/updatePrivacy', { isPublic, hideLocation })
+  }
+  // Permanently deletes the user's data + Firebase account (server cascade).
+  // Callers should reauthenticate first (see AuthContext.deleteAccount).
+  async deleteAccount() {
+    await http.post('api/deleteAccount')
+  }
+  // Fetches the user's full data export as a blob and triggers a browser
+  // download. The Bearer token is attached by the http interceptor.
+  async exportMyData() {
+    const result = await http.get('api/exportMyData', { responseType: 'blob' })
+    const url = window.URL.createObjectURL(result.data as Blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'prepify-data.json'
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    window.URL.revokeObjectURL(url)
   }
 }
 

@@ -1,8 +1,10 @@
 const express = require('express')
+const admin = require('firebase-admin')
 const { asyncHandler } = require('../util/asyncHandler')
 const router = express.Router()
 const { getDB } = require('../db')
 const { verifyToken, requireActive } = require('../middleware/auth')
+const { recordAudit } = require('../util/auditLog')
 
 const USERNAME_MIN_LENGTH = 3
 const USERNAME_MAX_LENGTH = 30
@@ -29,6 +31,19 @@ function validateProfile(bio, location) {
     location.trim().length > LOCATION_MAX_LENGTH
   ) {
     return `location must be at most ${LOCATION_MAX_LENGTH} characters`
+  }
+  return null
+}
+
+// Validates the two privacy toggles. Both are required booleans — the client
+// always sends the current state of each switch. Returns an error string, or
+// null when valid.
+function validatePrivacy(isPublic, hideLocation) {
+  if (typeof isPublic !== 'boolean') {
+    return 'isPublic must be a boolean'
+  }
+  if (typeof hideLocation !== 'boolean') {
+    return 'hideLocation must be a boolean'
   }
   return null
 }
@@ -110,6 +125,11 @@ router.post('/setUsername', verifyToken, requireActive, asyncHandler(async (req,
     return res.status(409).json({ error: 'Username already taken' })
   }
 
+  // The user's current handle, captured before the write so we can propagate a
+  // rename to the places that denormalize the username (see below).
+  const prevDoc = await db.collection('usernames').findOne({ _id: uid })
+  const prevUsername = prevDoc?.username || null
+
   try {
     await db.collection('usernames').updateOne(
       { _id: uid },
@@ -131,6 +151,24 @@ router.post('/setUsername', verifyToken, requireActive, asyncHandler(async (req,
     }
     throw err
   }
+
+  // Ratings (which carry the reviews) and review reports denormalize the
+  // username — their documents are keyed by it, not by uid — so a rename has to
+  // be carried across or a user's existing reviews keep the old handle and
+  // detach from their profile + the moderation queue. New name is guaranteed
+  // free (checked above), so there's no collision with another user's rows.
+  if (prevUsername && prevUsername !== username) {
+    await db
+      .collection('ratings')
+      .updateMany({ username: prevUsername }, { $set: { username } })
+    await db
+      .collection('reports')
+      .updateMany(
+        { reportedUsername: prevUsername },
+        { $set: { reportedUsername: username } }
+      )
+  }
+
   res.json({ success: true })
 }))
 
@@ -141,13 +179,20 @@ router.post('/setUsername', verifyToken, requireActive, asyncHandler(async (req,
 router.get('/getProfile', verifyToken, asyncHandler(async (req, res) => {
   const db = getDB()
   const doc = await db.collection('userProfiles').findOne({ _id: req.uid })
-  res.json({ bio: doc?.bio ?? '', location: doc?.location ?? '' })
+  res.json({
+    bio: doc?.bio ?? '',
+    location: doc?.location ?? '',
+    // Privacy toggles default to "public, location shown" when the fields are
+    // absent, so every pre-existing profile stays visible exactly as before.
+    isPublic: doc?.isPublic ?? true,
+    hideLocation: doc?.hideLocation ?? false,
+  })
 }))
 
 // POST /updateProfile
 // Upserts the authenticated user's bio + location. Empty strings are allowed
 // and clear the field. Values are trimmed before storage.
-router.post('/updateProfile', verifyToken, asyncHandler(async (req, res) => {
+router.post('/updateProfile', verifyToken, requireActive, asyncHandler(async (req, res) => {
   const { bio, location } = req.body || {}
   const validationError = validateProfile(bio, location)
   if (validationError) {
@@ -165,6 +210,113 @@ router.post('/updateProfile', verifyToken, asyncHandler(async (req, res) => {
     },
     { upsert: true }
   )
+  res.json({ success: true })
+}))
+
+// POST /updatePrivacy
+// Upserts the authenticated user's privacy toggles (public-profile +
+// hide-location). These gate the public /u/:username view served by
+// GET /getPublicProfile.
+router.post('/updatePrivacy', verifyToken, requireActive, asyncHandler(async (req, res) => {
+  const { isPublic, hideLocation } = req.body || {}
+  const validationError = validatePrivacy(isPublic, hideLocation)
+  if (validationError) {
+    return res.status(400).json({ error: validationError })
+  }
+  const db = getDB()
+  await db.collection('userProfiles').updateOne(
+    { _id: req.uid },
+    { $set: { isPublic, hideLocation, updatedAt: new Date() } },
+    { upsert: true }
+  )
+  res.json({ success: true })
+}))
+
+// GET /exportMyData
+// Assembles a JSON copy of everything stored for the authenticated user and
+// returns it as a file download. Read-only; ratings are keyed by username, so
+// we resolve that first (a user with no username simply has no ratings).
+router.get('/exportMyData', verifyToken, asyncHandler(async (req, res) => {
+  const uid = req.uid
+  const db = getDB()
+  const usernameDoc = await db.collection('usernames').findOne({ _id: uid })
+  const username = usernameDoc?.username || null
+
+  const [profile, userRecipeData, recipes, drafts, ratings] = await Promise.all([
+    db.collection('userProfiles').findOne({ _id: uid }),
+    db.collection('userRecipeData').findOne({ _id: uid }),
+    db.collection('recipes').find({ userId: uid }).toArray(),
+    db.collection('recipeDrafts').find({ userId: uid }).toArray(),
+    username
+      ? db.collection('ratings').find({ username }).toArray()
+      : Promise.resolve([]),
+  ])
+
+  const data = {
+    exportedAt: new Date().toISOString(),
+    username,
+    profile: profile
+      ? {
+          bio: profile.bio ?? '',
+          location: profile.location ?? '',
+          isPublic: profile.isPublic ?? true,
+          hideLocation: profile.hideLocation ?? false,
+        }
+      : null,
+    savedRecipes: userRecipeData?.savedRecipes ?? [],
+    recipes,
+    drafts,
+    ratings,
+  }
+
+  res.setHeader(
+    'Content-Disposition',
+    'attachment; filename="prepify-data.json"'
+  )
+  res.setHeader('Content-Type', 'application/json')
+  res.send(JSON.stringify(data, null, 2))
+}))
+
+// POST /deleteAccount
+// Permanently deletes the authenticated user and all of their data. Removes the
+// Mongo records first (across every collection that keys on the user) and the
+// Firebase Auth account last, so a partial failure leaves the auth account — and
+// therefore a way back in to retry — intact rather than orphaning data behind a
+// deleted login.
+// Intentionally NOT behind requireActive (unlike updateProfile/updatePrivacy): a
+// suspended or banned user must still be able to delete their account and export
+// their data — those are the two writes a moderated user is always allowed.
+router.post('/deleteAccount', verifyToken, asyncHandler(async (req, res) => {
+  const uid = req.uid
+  const db = getDB()
+
+  // ratings are keyed by username (not uid), so resolve it before we delete the
+  // usernames doc.
+  const usernameDoc = await db.collection('usernames').findOne({ _id: uid })
+  const username = usernameDoc?.username || null
+
+  await db.collection('usernames').deleteOne({ _id: uid })
+  await db.collection('userProfiles').deleteOne({ _id: uid })
+  await db.collection('users').deleteOne({ _id: uid })
+  await db.collection('userRecipeData').deleteOne({ _id: uid })
+  await db.collection('recipes').deleteMany({ userId: uid })
+  await db.collection('recipeDrafts').deleteMany({ userId: uid })
+  if (username) {
+    await db.collection('ratings').deleteMany({ username })
+  }
+
+  // Leave a trail in the audit log (best-effort) so an admin can see that the
+  // account was self-deleted rather than removed by moderation.
+  await recordAudit(db, {
+    action: 'user.delete',
+    actorUid: uid,
+    targetType: 'user',
+    targetId: uid,
+    targetLabel: username ? `@${username}` : null,
+  })
+
+  await admin.auth().deleteUser(uid)
+
   res.json({ success: true })
 }))
 

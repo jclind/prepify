@@ -9,8 +9,9 @@ import {
   sendPasswordResetEmail,
   UserCredential,
   updateProfile,
-  updateEmail,
+  verifyBeforeUpdateEmail,
   reauthenticateWithCredential,
+  reauthenticateWithPopup,
   EmailAuthProvider,
   updatePassword,
 } from 'firebase/auth'
@@ -58,6 +59,10 @@ type AuthContextValueType = {
     password?: string
   }) => Promise<void>
   changePassword: (oldPass: string, newPass: string) => Promise<void>
+  // Reauthenticates, then deletes the user's data + Firebase account (server
+  // cascade) and signs out. `password` is required for password-based accounts;
+  // Google-only accounts reauthenticate via a popup and ignore it.
+  deleteAccount: (password?: string) => Promise<void>
 }
 
 type AuthProviderProps = {
@@ -191,6 +196,10 @@ const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
       })
   }
 
+  // Avatar intent is encoded in imgFile: a File uploads + sets a new photo,
+  // `null` explicitly clears it, and `undefined` (the key omitted) leaves the
+  // existing photo untouched. Likewise an omitted displayName is left as-is. This
+  // lets an email-only or name-only save run without clobbering the avatar.
   const updateProfileData = async (data: {
     displayName?: string
     username?: string
@@ -202,13 +211,20 @@ const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
       const currUsername = await AuthAPI.getUsername()
       const { displayName, username, imgFile, email, password } = data
 
-      const storage = getStorage()
-      let profilePhotoURL = ''
+      const photoUpdate: { photoURL?: string } = {}
       if (imgFile) {
-        const profilePhotosRef = ref(storage, `profilePhotos/${imgFile.name}`)
+        const storage = getStorage()
+        // Key the storage path by uid (not the original filename) so two users
+        // who upload a file of the same name can't overwrite each other's photo.
+        // No extension, so a re-upload always replaces the same object rather
+        // than orphaning the old one (Firebase serves the stored content-type).
+        const profilePhotosRef = ref(storage, `profilePhotos/${user.uid}`)
         await uploadBytes(profilePhotosRef, imgFile)
-        profilePhotoURL = await getDownloadURL(profilePhotosRef)
+        photoUpdate.photoURL = await getDownloadURL(profilePhotosRef)
+      } else if (imgFile === null) {
+        photoUpdate.photoURL = ''
       }
+
       if (username && username !== currUsername) {
         await AuthAPI.setUsername(username)
       }
@@ -221,12 +237,20 @@ const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
         }
         const credential = EmailAuthProvider.credential(user.email, password)
         await reauthenticateWithCredential(user, credential)
-        await updateEmail(user, email)
+        // Sends a verification link to the NEW address; the email only actually
+        // changes once the user clicks it. This is required when Firebase's
+        // email-enumeration protection is on (plain updateEmail throws there),
+        // and it matches the "check your inbox to verify it" copy the UI shows.
+        await verifyBeforeUpdateEmail(user, email)
       }
-      await updateProfile(user, {
-        ...(profilePhotoURL ? { photoURL: profilePhotoURL } : { photoURL: '' }),
-        ...(displayName && { displayName }),
-      })
+
+      const profileUpdate = {
+        ...photoUpdate,
+        ...(displayName !== undefined && { displayName }),
+      }
+      if (Object.keys(profileUpdate).length > 0) {
+        await updateProfile(user, profileUpdate)
+      }
     }
   }
   const changePassword = async (oldPass: string, newPass: string) => {
@@ -235,6 +259,39 @@ const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
       await reauthenticateWithCredential(user, credential)
       await updatePassword(user, newPass)
     }
+  }
+  const deleteAccount = async (password?: string) => {
+    if (!user) return
+    // Firebase requires a recent login before a destructive op. Reauthenticate
+    // with the method the account actually uses: password accounts re-enter
+    // their password; Google accounts re-consent via a popup.
+    const providers = user.providerData.map(p => p.providerId)
+    if (providers.includes('password')) {
+      if (!password) {
+        throw new ErrorWithData(
+          'password-required',
+          'Password Is Required To Delete Your Account'
+        )
+      }
+      if (!user.email) {
+        throw new ErrorWithData(
+          'no-email',
+          'This account has no email to reauthenticate with.'
+        )
+      }
+      const credential = EmailAuthProvider.credential(user.email, password)
+      await reauthenticateWithCredential(user, credential)
+    } else {
+      await reauthenticateWithPopup(user, new GoogleAuthProvider())
+    }
+
+    // Server cascades the Mongo data and deletes the Firebase auth account. The
+    // request goes out while the (just-refreshed) token is still valid.
+    await AuthAPI.deleteAccount()
+
+    // The auth account no longer exists; clear local state and leave.
+    await signOut(auth)
+    navigate('/')
   }
 
   // Check for auth status on page load
@@ -312,6 +369,7 @@ const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
     authLoading: loading,
     updateProfileData,
     changePassword,
+    deleteAccount,
   }
 
   return (

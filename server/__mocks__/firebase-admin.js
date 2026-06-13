@@ -47,7 +47,10 @@ const getUserByEmail = jest.fn().mockImplementation(async email => {
   if (!u) throw notFound()
   return toFbUser(u)
 })
-const authInstance = { verifyIdToken, getUser, getUserByEmail }
+// Used by POST /deleteAccount. Resolves by default; tests assert the uid it was
+// called with via admin.__deleteUser.
+const deleteUser = jest.fn().mockResolvedValue(undefined)
+const authInstance = { verifyIdToken, getUser, getUserByEmail, deleteUser }
 
 const admin = {
   apps: [{}],
@@ -64,6 +67,7 @@ const admin = {
   __deleteFile: deleteFile,
   __verifyIdToken: verifyIdToken,
   __getUser: getUser,
+  __deleteUser: deleteUser,
   __setClaims: claims => {
     extraClaims = claims
   },

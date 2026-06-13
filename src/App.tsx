@@ -36,8 +36,10 @@ import Terms from 'src/pages/Terms/Terms'
 
 import { Toaster } from 'react-hot-toast'
 import Settings from 'src/pages/Settings/Settings'
-import Profile from 'src/pages/Settings/SubSettings/Profile'
-import Password from 'src/pages/Settings/SubSettings/Password'
+import ProfileSection from 'src/pages/Settings/sections/ProfileSection'
+import AccountSection from 'src/pages/Settings/sections/AccountSection'
+import PrivacySection from 'src/pages/Settings/sections/PrivacySection'
+import DangerSection from 'src/pages/Settings/sections/DangerSection'
 // import RecipeAI from './pages/RecipeAI/RecipeAI'
 
 const ScrollToTop: FC = () => {
@@ -149,8 +151,15 @@ const App: FC = () => {
                   </Layout>
                 }
               >
-                <Route path='' element={<Profile />} />
-                <Route path='password' element={<Password />} />
+                <Route path='' element={<ProfileSection />} />
+                <Route path='account' element={<AccountSection />} />
+                <Route path='privacy' element={<PrivacySection />} />
+                <Route path='danger' element={<DangerSection />} />
+                {/* Old bookmark — the password form now lives under Account. */}
+                <Route
+                  path='password'
+                  element={<Navigate to='/settings/account' replace />}
+                />
               </Route>
               {/* <Route
                 path='recipe-ai'

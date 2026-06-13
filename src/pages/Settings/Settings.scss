@@ -1,27 +1,135 @@
 @use '../../helpers.scss' as s;
 
-.page.settings-page {
+.settings-page {
+  max-width: 1080px;
+  // Only override the horizontal centering — keep the `.page` margin-top that
+  // clears the fixed navbar. A plain `margin: 0 auto` here zeroed it out, which
+  // slid the "Settings" title up under the navbar.
+  margin-inline: auto;
   padding-bottom: 2rem;
-  h1 {
-    // margin: 0 auto;
-    text-align: center;
+
+  .settings-title {
+    font-size: 1.7rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: s.$primary-text;
+    margin: 0 0 1.4rem;
   }
-  .link-options {
+
+  .settings-shell {
+    display: grid;
+    grid-template-columns: 232px 1fr;
+    gap: 2.25rem;
+    align-items: start;
+
+    @media (max-width: 880px) {
+      grid-template-columns: 1fr;
+      gap: 1.1rem;
+    }
+  }
+
+  /* Sidebar nav */
+  .settings-nav {
     display: flex;
-    gap: 1rem;
-    margin: 1rem auto;
-    width: fit-content;
-    .selection {
-      font-size: 1.1rem;
-      padding: 0.5rem 1rem;
-      border-radius: 20px;
-      text-decoration: none;
+    flex-direction: column;
+    gap: 2px;
+    position: sticky;
+    top: calc(#{s.$nav-height} + 1rem);
+
+    // On narrow screens the rail can't stay a sticky column. Rather than a
+    // horizontal scroll strip (which hid Privacy + Danger Zone off-screen), lay
+    // the four sections out as a 2-up grid of tappable cards — all visible, no
+    // scrolling, and they collapse to a single column on the smallest phones.
+    @media (max-width: 880px) {
+      position: static;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.6rem;
+    }
+    @media (max-width: 400px) {
+      grid-template-columns: 1fr;
+    }
+
+    .settings-navitem {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      width: 100%;
+      // The global `*` reset doesn't set box-sizing, so without this the
+      // width:100% + padding (+ the mobile border) overflows the grid cell and
+      // gets clipped by #root's overflow:hidden.
+      box-sizing: border-box;
+      border: none;
+      background: transparent;
+      font-family: inherit;
+      font-size: 0.9rem;
       font-weight: 600;
       color: s.$secondary-text;
+      text-decoration: none;
+      text-align: left;
+      padding: 0.65rem 0.8rem;
+      border-radius: 11px;
+      cursor: pointer;
+      transition: background 0.12s ease, color 0.12s ease,
+        border-color 0.12s ease;
+      white-space: nowrap;
+
+      // Card treatment for the mobile grid: a bordered tile per section.
+      @media (max-width: 880px) {
+        border: 1px solid #ece2d6;
+        background: s.$white;
+        white-space: normal;
+      }
+
+      .settings-navicon {
+        height: 1.05rem;
+        width: 1.05rem;
+        flex-shrink: 0;
+      }
+      &:hover {
+        background: rgba(0, 0, 0, 0.04);
+        color: s.$primary-text;
+      }
+      &.active {
+        background: rgba(s.$secondary, 0.12);
+        color: #057780;
+        border-color: rgba(s.$secondary, 0.45);
+      }
+      &.danger {
+        color: s.$error-red;
+        &.active {
+          background: rgba(s.$error-red, 0.1);
+          border-color: rgba(s.$error-red, 0.4);
+        }
+      }
     }
-    .selection.active {
-      background: s.$secondary-background;
-      color: s.$primary-text;
+  }
+
+  /* Content pane */
+  .settings-pane {
+    background: s.$white;
+    border: 1px solid #ece2d6;
+    border-radius: 18px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+    padding: 1.75rem;
+
+    @media (max-width: 600px) {
+      padding: 1.25rem;
+    }
+
+    .settings-panehead {
+      margin-bottom: 1.5rem;
+      h2 {
+        font-size: 1.25rem;
+        font-weight: 800;
+        color: s.$primary-text;
+        margin: 0 0 0.25rem;
+      }
+      p {
+        font-size: 0.85rem;
+        color: s.$tertiary-text;
+        margin: 0;
+      }
     }
   }
 }

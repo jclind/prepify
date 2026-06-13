@@ -16,6 +16,7 @@ export const ACTION_META: Record<AuditAction, { label: string; tone: string }> =
   'user.suspend': { label: 'suspended', tone: 'warn' },
   'user.ban': { label: 'banned', tone: 'danger' },
   'user.activate': { label: 'reactivated', tone: 'good' },
+  'user.delete': { label: 'deleted their account', tone: 'danger' },
   'report.resolve': { label: 'resolved report', tone: 'good' },
   'report.dismiss': { label: 'dismissed report', tone: 'neutral' },
 }

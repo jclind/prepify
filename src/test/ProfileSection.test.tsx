@@ -2,11 +2,11 @@ import React from 'react'
 import { vi } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import Profile from 'src/pages/Settings/SubSettings/Profile'
+import ProfileSection from 'src/pages/Settings/sections/ProfileSection'
 import AuthAPI from 'src/api/auth'
 import { useAuth } from 'src/context/AuthContext'
 
-// The interesting Phase-2 logic in Profile is the save split: account fields
+// The interesting logic in the Profile section is the save split: account fields
 // (Firebase + username) and profile fields (bio/location) live in separate
 // stores and must be written independently, so editing one never touches the
 // other. These tests pin that routing down.
@@ -19,6 +19,7 @@ vi.mock('src/api/auth', () => ({
       .fn()
       .mockResolvedValue({ bio: 'old bio', location: 'Portland' }),
     updateProfile: vi.fn().mockResolvedValue(undefined),
+    checkUsernameAvailability: vi.fn().mockResolvedValue(true),
   },
 }))
 
@@ -41,7 +42,7 @@ const createTestQueryClient = () =>
 const renderProfile = () =>
   render(
     <QueryClientProvider client={createTestQueryClient()}>
-      <Profile />
+      <ProfileSection />
     </QueryClientProvider>
   )
 
@@ -65,7 +66,7 @@ describe('Profile settings — save routing', () => {
     renderProfile()
     const bioField = await screen.findByDisplayValue('old bio')
     fireEvent.change(bioField, { target: { value: 'new bio' } })
-    fireEvent.click(screen.getByText('Save Changes'))
+    fireEvent.click(screen.getByText('Save changes'))
 
     await waitFor(() =>
       expect(mockUpdateProfile).toHaveBeenCalledWith({
@@ -80,7 +81,7 @@ describe('Profile settings — save routing', () => {
     renderProfile()
     const nameField = await screen.findByDisplayValue('John')
     fireEvent.change(nameField, { target: { value: 'Jane' } })
-    fireEvent.click(screen.getByText('Save Changes'))
+    fireEvent.click(screen.getByText('Save changes'))
 
     await waitFor(() => expect(mockUpdateProfileData).toHaveBeenCalled())
     expect(mockUpdateProfile).not.toHaveBeenCalled()
@@ -92,17 +93,38 @@ describe('Profile settings — save routing', () => {
     const bioField = await screen.findByDisplayValue('old bio')
     fireEvent.change(nameField, { target: { value: 'Jane' } })
     fireEvent.change(bioField, { target: { value: 'new bio' } })
-    fireEvent.click(screen.getByText('Save Changes'))
+    fireEvent.click(screen.getByText('Save changes'))
 
     await waitFor(() => expect(mockUpdateProfile).toHaveBeenCalled())
     expect(mockUpdateProfileData).toHaveBeenCalled()
+  })
+
+  it('saves a bio-only change even when the display name is empty', async () => {
+    // Identity validation should only gate the account write. An account with no
+    // Firebase display name must still be able to edit its bio.
+    mockUseAuth.mockReturnValue({
+      user: { displayName: '', photoURL: '', email: 'john@example.com', uid: 'u1' },
+      updateProfileData: mockUpdateProfileData,
+    })
+    renderProfile()
+    const bioField = await screen.findByDisplayValue('old bio')
+    fireEvent.change(bioField, { target: { value: 'new bio' } })
+    fireEvent.click(screen.getByText('Save changes'))
+
+    await waitFor(() =>
+      expect(mockUpdateProfile).toHaveBeenCalledWith({
+        bio: 'new bio',
+        location: 'Portland',
+      })
+    )
+    expect(mockUpdateProfileData).not.toHaveBeenCalled()
   })
 
   it('does not call either store when nothing changed', async () => {
     renderProfile()
     // Wait for the form to seed from the queries before saving.
     await screen.findByDisplayValue('old bio')
-    fireEvent.click(screen.getByText('Save Changes'))
+    fireEvent.click(screen.getByText('Save changes'))
 
     await waitFor(() => expect(mockUpdateProfile).not.toHaveBeenCalled())
     expect(mockUpdateProfileData).not.toHaveBeenCalled()
