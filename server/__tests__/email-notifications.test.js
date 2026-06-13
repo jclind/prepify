@@ -39,6 +39,7 @@ const TEST_UID = 'test-uid'
 beforeEach(() => {
   process.env.RESEND_API_KEY = 'test-key'
   delete process.env.EMAIL_ENABLED
+  delete process.env.SUPPORT_EMAIL
   sendMock.mockReset()
   // Resend's SDK resolves with { data, error } — it does not throw on API errors.
   sendMock.mockResolvedValue({ data: { id: 'email-1' }, error: null })
@@ -120,6 +121,19 @@ describe('per-event recipient resolution', () => {
     expect(sentArg().text).toContain('Reason: Posted spam $& scam <link>')
     // HTML escapes the angle brackets but keeps the literal text.
     expect(sentArg().html).toContain('Posted spam $&amp; scam &lt;link&gt;')
+  })
+
+  it('names SUPPORT_EMAIL in the appeal line when set, falls back when not', async () => {
+    admin.__setUsers([{ uid: 'owner', email: 'owner@example.dev' }])
+
+    process.env.SUPPORT_EMAIL = 'help@prepifymeals.com'
+    await notifyRecipeHidden('owner', 'Dish')
+    expect(sentArg().text).toContain('emailing us at help@prepifymeals.com')
+
+    sendMock.mockClear()
+    delete process.env.SUPPORT_EMAIL
+    await notifyRecipeHidden('owner', 'Dish')
+    expect(sentArg().text).toContain('contacting Prepify support')
   })
 
   it('recipeHidden mails the owner with the recipe title', async () => {
