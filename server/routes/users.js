@@ -1,5 +1,5 @@
 const { Router } = require('express')
-const { respondServerError } = require('../util/respondServerError')
+const { asyncHandler } = require('../util/asyncHandler')
 const { getDB } = require('../db')
 const { verifyToken } = require('../middleware/auth')
 const { recipeIdInQuery } = require('../util/recipeIdQuery')
@@ -12,82 +12,70 @@ const router = Router()
 const MAX_PER_PAGE = 50
 
 // GET /getCreatedRecipes — recipes authored by the current user, with pagination
-router.get('/getCreatedRecipes', verifyToken, async (req, res) => {
-  try {
-    const db = getDB()
-    const { page = 0, recipesPerPage = 6, order } = req.query
-    const uid = req.uid
+router.get('/getCreatedRecipes', verifyToken, asyncHandler(async (req, res) => {
+  const db = getDB()
+  const { page = 0, recipesPerPage = 6, order } = req.query
+  const uid = req.uid
 
-    const sort = order === 'old' ? { createdAt: 1 } : { createdAt: -1 }
+  const sort = order === 'old' ? { createdAt: 1 } : { createdAt: -1 }
 
-    const pageNum = parseInt(page) || 0
-    const perPage = Math.min(parseInt(recipesPerPage) || 6, MAX_PER_PAGE)
+  const pageNum = parseInt(page) || 0
+  const perPage = Math.min(parseInt(recipesPerPage) || 6, MAX_PER_PAGE)
 
-    const collection = db.collection('recipes')
-    // Don't surface soft-hidden recipes in the author's own created list.
-    const filter = { userId: uid, ...RECIPE_VISIBLE }
-    const [recipes, totalCount] = await Promise.all([
-      collection
-        .find(filter)
-        .sort(sort)
-        .skip(pageNum * perPage)
-        .limit(perPage)
-        .toArray(),
-      collection.countDocuments(filter),
-    ])
+  const collection = db.collection('recipes')
+  // Don't surface soft-hidden recipes in the author's own created list.
+  const filter = { userId: uid, ...RECIPE_VISIBLE }
+  const [recipes, totalCount] = await Promise.all([
+    collection
+      .find(filter)
+      .sort(sort)
+      .skip(pageNum * perPage)
+      .limit(perPage)
+      .toArray(),
+    collection.countDocuments(filter),
+  ])
 
-    res.json({ recipes, totalCount })
-  } catch (err) {
-    respondServerError(res, err, req)
-  }
-})
+  res.json({ recipes, totalCount })
+}))
 
 // GET /getSavedRecipes — with dateSaved sorting
-router.get('/getSavedRecipes', verifyToken, async (req, res) => {
-  try {
-    const db = getDB()
-    const { page = 0, recipesPerPage = 5, order } = req.query
-    const uid = req.uid
+router.get('/getSavedRecipes', verifyToken, asyncHandler(async (req, res) => {
+  const db = getDB()
+  const { page = 0, recipesPerPage = 5, order } = req.query
+  const uid = req.uid
 
-    const userData = await db.collection('userRecipeData').findOne({ _id: uid })
-    let savedRecipes = userData?.savedRecipes ?? []
-    const totalCount = savedRecipes.length
+  const userData = await db.collection('userRecipeData').findOne({ _id: uid })
+  let savedRecipes = userData?.savedRecipes ?? []
+  const totalCount = savedRecipes.length
 
-    if (order === 'new') {
-      savedRecipes = [...savedRecipes].sort((a, b) => Number(b.dateSaved) - Number(a.dateSaved))
-    } else if (order === 'old') {
-      savedRecipes = [...savedRecipes].sort((a, b) => Number(a.dateSaved) - Number(b.dateSaved))
-    }
-
-    const pageNum = parseInt(page) || 0
-    const perPage = Math.min(parseInt(recipesPerPage) || 5, MAX_PER_PAGE)
-    const pageSlice = savedRecipes.slice(pageNum * perPage, (pageNum + 1) * perPage)
-    const recipeIds = pageSlice.map((entry) => entry.recipeId)
-
-    const recipes =
-      recipeIds.length > 0
-        ? await db
-            .collection('recipes')
-            .find({ ...recipeIdInQuery(recipeIds), ...RECIPE_VISIBLE })
-            .toArray()
-        : []
-
-    res.json({ recipes, totalCount })
-  } catch (err) {
-    respondServerError(res, err, req)
+  if (order === 'new') {
+    savedRecipes = [...savedRecipes].sort((a, b) => Number(b.dateSaved) - Number(a.dateSaved))
+  } else if (order === 'old') {
+    savedRecipes = [...savedRecipes].sort((a, b) => Number(a.dateSaved) - Number(b.dateSaved))
   }
-})
+
+  const pageNum = parseInt(page) || 0
+  const perPage = Math.min(parseInt(recipesPerPage) || 5, MAX_PER_PAGE)
+  const pageSlice = savedRecipes.slice(pageNum * perPage, (pageNum + 1) * perPage)
+  const recipeIds = pageSlice.map((entry) => entry.recipeId)
+
+  const recipes =
+    recipeIds.length > 0
+      ? await db
+          .collection('recipes')
+          .find({ ...recipeIdInQuery(recipeIds), ...RECIPE_VISIBLE })
+          .toArray()
+      : []
+
+  res.json({ recipes, totalCount })
+}))
 
 // GET /getAccountCounts — aggregate item counts for the account-page tabs
 // (saved, ratings, recipes, drafts) for the authenticated user, in one round
 // trip so the nav doesn't need four separate list requests.
-router.get('/getAccountCounts', verifyToken, async (req, res) => {
-  try {
-    const counts = await getAccountCountsFor(getDB(), req.uid)
-    res.json(counts)
-  } catch (err) {
-    respondServerError(res, err, req)
-  }
-})
+router.get('/getAccountCounts', verifyToken, asyncHandler(async (req, res) => {
+  const counts = await getAccountCountsFor(getDB(), req.uid)
+  res.json(counts)
+}))
 
 module.exports = router

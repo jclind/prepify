@@ -242,6 +242,32 @@ describe('respondServerError', () => {
   })
 })
 
+// ─── asyncHandler (util/asyncHandler) ────────────────────────────────────────
+// Wrapped handlers no longer carry their own try/catch; a rejected handler
+// promise must reach Express's error chain via next(err) so the backstop turns
+// it into a generic 500.
+
+describe('asyncHandler', () => {
+  const { asyncHandler } = require('../util/asyncHandler')
+
+  it('forwards a rejected handler promise to next(err)', async () => {
+    const boom = new Error('handler blew up')
+    const next = jest.fn()
+    await asyncHandler(async () => {
+      throw boom
+    })({}, {}, next)
+    expect(next).toHaveBeenCalledWith(boom)
+  })
+
+  it('does not call next when the handler resolves', async () => {
+    const next = jest.fn()
+    await asyncHandler(async (req, res) => {
+      res.json({ ok: true })
+    })({}, { json: jest.fn() }, next)
+    expect(next).not.toHaveBeenCalled()
+  })
+})
+
 // ─── Central error backstop (app.js) ─────────────────────────────────────────
 // Errors thrown outside a route's own try/catch (here: a malformed JSON body
 // rejected by express.json()) must hit the app-level error handler and return a
