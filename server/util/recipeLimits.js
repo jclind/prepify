@@ -59,4 +59,5 @@ function validateRecipeBounds(body) {
 module.exports = {
   validateRequiredRecipeFields,
   validateRecipeBounds,
+  DESCRIPTION_MAX_LENGTH,
 }
