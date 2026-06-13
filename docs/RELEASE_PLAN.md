@@ -135,8 +135,17 @@ a feature flag. Do these together:
   the API origin, with valid certs. **(blocker)**
 - `[ ]` **Support / contact path** — a way for users to report issues (Formspree is already a
   dependency — wire a contact form, or list an email). **(nice-to-have)**
-- `[ ]` **Error tracking decision** — decide whether to add basic error tracking (e.g. Sentry) before
-  or after 1.0. Out of the current scope, but flag the call. **(needs decision)**
+- `[x]` **Error tracking (Sentry) — wired; prod env vars are a launch step** — Sentry error monitoring
+  is implemented frontend + backend (env-gated; no DSN ⇒ no-ops). Also shipped: an in-app "Report a
+  bug" form (footer, open to logged-out users) → `bugReports` collection → `/admin/bug-reports` queue.
+  **Before/at launch, set the production env vars or nothing is captured/emailed:**
+  - **Backend (Railway):** `SENTRY_DSN` = the Node-project DSN.
+  - **Frontend build env (Netlify / Firebase Hosting):** `VITE_SENTRY_DSN` = the React-project DSN.
+    It's compiled into the bundle, so it **must be set before `npm run build`**, not at runtime.
+  - **Backend (Railway):** `ADMIN_NOTIFY_EMAIL` (optional) — where new bug-report alerts are sent;
+    defaults to `jesselindcs@gmail.com`. Only sends when `RESEND_API_KEY` is configured.
+  DSNs are public (safe to ship in the client bundle). No DB migration — `bugReports` indexes
+  auto-build at startup. **(was: needs decision → done; the env vars are the remaining launch task)**
 - `[ ]` **Performance / Lighthouse pass** — run Lighthouse on the prod build; address obvious image-size
   and bundle-size wins. **(nice-to-have)**
 - `[ ]` **README cleanup** — the README still has placeholder `your-username` clone URLs and generic
@@ -222,7 +231,9 @@ the actual flip. Deploy is currently manual (Firebase Hosting frontend + Railway
 2. `[ ]` Bump `version` in `package.json` to `1.0.0`.
 3. `[ ]` Flip the beta tag off (the three edits in the blockers section).
 4. `[ ]` Update release-notes content for 1.0 and tag a GitHub Release.
-5. `[ ]` Deploy frontend (`npm run build` → Firebase Hosting) and backend (Railway).
+5. `[ ]` Deploy frontend (`npm run build` → Firebase Hosting) and backend (Railway). **First set prod
+   env vars:** `VITE_SENTRY_DSN` in the frontend build env (before `npm run build`), and `SENTRY_DSN`
+   + `ADMIN_NOTIFY_EMAIL` on Railway. See Section C → "Error tracking (Sentry)".
 6. `[ ]` Smoke-test production: load home, view a recipe, sign in, create a recipe, leave a review.
 7. `[ ]` Watch logs/analytics for the first hours.
 
