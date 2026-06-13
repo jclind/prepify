@@ -23,12 +23,12 @@ import { v4 as uuidv4 } from 'uuid'
 
 export const ADD_RECIPE_AUTH_ERROR = 'AUTH_ERROR'
 
-export type EditRecipeResult =
+type EditRecipeResult =
   | { status: 'success'; recipe: RecipeType }
   | { status: 'auth-error' }
   | { status: 'error'; message: string }
 
-export type GetAllRecipesParams = {
+type GetAllRecipesParams = {
   page?: number
   order?: string
   /** OR-based tag match (mealTypes ∪ nutritionLabels) — used by Home. */
@@ -43,7 +43,7 @@ export type GetAllRecipesParams = {
 }
 
 /** Distinct filter values that actually exist in the catalog. */
-export type RecipeFacets = {
+type RecipeFacets = {
   cuisines: string[]
   diets: string[]
   mealTypes: string[]

@@ -4,18 +4,18 @@ import { BiHelpCircle } from 'react-icons/bi'
 import { NavItem, NavGroup } from './types'
 
 /** Browse links — always shown (logged in or out). */
-export const browseItems: NavItem[] = [
+const browseItems: NavItem[] = [
   { label: 'Home', to: '/', icon: AiOutlineHome },
   { label: 'Recipes', to: '/recipes', icon: MdOutlineRestaurantMenu },
 ]
 
 /** Create links — logged-in only. */
-export const createItems: NavItem[] = [
+const createItems: NavItem[] = [
   { label: 'Create Recipe', to: '/add-recipe', icon: AiOutlinePlusCircle },
 ]
 
 /** Account links — logged-in only (Logout is rendered separately as a button). */
-export const accountNavItems: NavItem[] = [
+const accountNavItems: NavItem[] = [
   { label: 'Account', to: '/account', icon: AiOutlineUser },
   { label: 'Help', to: '/help', icon: BiHelpCircle },
 ]

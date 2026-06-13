@@ -322,7 +322,6 @@ function flushNotifications() {
 }
 
 module.exports = {
-  emailEnabled,
   sendEmail,
   notifyInBackground,
   flushNotifications,

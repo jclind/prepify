@@ -14,6 +14,17 @@
   "ignoreDependencies": [
     "sass",                         // used by Vite to compile .scss at build time
     "@vitest/coverage-v8"           // used by `vitest --coverage`, not imported
+  ],
+
+  // The AddRecipe/Dnd folder is an intentional namespace barrel: DndContext,
+  // Drag, and Drop each have a default export collected by index.ts. Fallow
+  // can't disambiguate multiple default exports in one dir, so it false-flags
+  // Drop's default as "unused" (it's used by DndContext) and reports the
+  // DndContext/Drag default pair as a duplicate export. Exclude the barrel.
+  "ignoreExports": [
+    { "file": "src/pages/AddRecipe/Dnd/DndContext.tsx", "exports": ["*"] },
+    { "file": "src/pages/AddRecipe/Dnd/Drag.tsx", "exports": ["*"] },
+    { "file": "src/pages/AddRecipe/Dnd/Drop.tsx", "exports": ["*"] }
   ]
 
   // Note: the remote Google Fonts @import in src/index.scss is suppressed

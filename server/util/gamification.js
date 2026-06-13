@@ -134,7 +134,5 @@ module.exports = {
   computeXp,
   levelFromXp,
   rankForLevel,
-  cumXpForLevel,
   ACHIEVEMENTS,
-  XP_WEIGHTS,
 }
