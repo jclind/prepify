@@ -1,4 +1,5 @@
 const express = require('express')
+const { respondServerError } = require('../util/respondServerError')
 const router = express.Router()
 const { getDB } = require('../db')
 const { verifyToken } = require('../middleware/auth')
@@ -23,7 +24,7 @@ router.get('/getGamification', verifyToken, async (req, res) => {
     const seen = profile?.seenAchievements ?? []
     res.json(computeGamification(counts, seen))
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    respondServerError(res, err, req)
   }
 })
 
@@ -49,7 +50,7 @@ router.post('/acknowledgeAchievements', verifyToken, async (req, res) => {
     }
     res.json({ success: true })
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    respondServerError(res, err, req)
   }
 })
 

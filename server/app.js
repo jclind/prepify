@@ -12,6 +12,7 @@ const gamificationRoutes = require('./routes/gamification')
 const publicProfileRoutes = require('./routes/publicProfile')
 const reportRoutes = require('./routes/reports')
 const adminRoutes = require('./routes/admin')
+const { GENERIC_500_MESSAGE } = require('./util/respondServerError')
 
 const app = express()
 
@@ -86,5 +87,22 @@ app.use('/api/ingredients', ingredientRoutes)
 app.use('/api/drafts', draftRoutes)
 app.use('/api', reportRoutes)
 app.use('/api', adminRoutes)
+
+// Central error backstop. Route handlers catch their own errors (via
+// respondServerError), but errors thrown *outside* a route's try/catch — a
+// malformed JSON body rejected by express.json(), a CORS origin rejection, or
+// any future handler that forgets to catch — would otherwise reach Express's
+// default handler, which echoes a stack trace to the client. Same contract as
+// respondServerError: log the real error, return a generic body. A 4xx the
+// thrower set (e.g. body-parser's 400 on bad JSON) is preserved; anything else
+// collapses to 500.
+app.use((err, req, res, next) => {
+  if (res.headersSent) return next(err)
+  const status = err.status || err.statusCode || 500
+  console.error(`[${status}] ${req.method} ${req.originalUrl}`, err)
+  res.status(status).json({
+    error: status >= 500 ? GENERIC_500_MESSAGE : 'Bad request',
+  })
+})
 
 module.exports = app

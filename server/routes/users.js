@@ -1,4 +1,5 @@
 const { Router } = require('express')
+const { respondServerError } = require('../util/respondServerError')
 const { getDB } = require('../db')
 const { verifyToken } = require('../middleware/auth')
 const { recipeIdInQuery } = require('../util/recipeIdQuery')
@@ -37,7 +38,7 @@ router.get('/getCreatedRecipes', verifyToken, async (req, res) => {
 
     res.json({ recipes, totalCount })
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    respondServerError(res, err, req)
   }
 })
 
@@ -73,7 +74,7 @@ router.get('/getSavedRecipes', verifyToken, async (req, res) => {
 
     res.json({ recipes, totalCount })
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    respondServerError(res, err, req)
   }
 })
 
@@ -85,7 +86,7 @@ router.get('/getAccountCounts', verifyToken, async (req, res) => {
     const counts = await getAccountCountsFor(getDB(), req.uid)
     res.json(counts)
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    respondServerError(res, err, req)
   }
 })
 

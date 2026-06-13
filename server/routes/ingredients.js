@@ -2,6 +2,7 @@ const { Router } = require('express')
 const { rateLimit } = require('express-rate-limit')
 const { ingredientParser } = require('@jclind/ingredient-parser')
 const { verifyToken } = require('../middleware/auth')
+const { GENERIC_500_MESSAGE } = require('../util/respondServerError')
 
 const router = Router()
 
@@ -63,7 +64,7 @@ router.post('/parse', verifyToken, parseLimiter, async (req, res) => {
       JSON.stringify({ ingredientString, message: err && err.message }),
       err && err.stack
     )
-    return res.status(500).json({ error: err.message })
+    return res.status(500).json({ error: GENERIC_500_MESSAGE })
   }
 })
 
