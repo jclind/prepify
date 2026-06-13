@@ -54,7 +54,8 @@ Scoped **2026-06-10**. Single-developer estimate: **~3 weeks** for the full P0�
 3. **No central user record.** Identity is split across Firebase Auth + `usernames` +
    `userRecipeData`. "Ban a user" (P2) has no clean home today → plan to introduce a `users` status
    record when we reach P2.
-4. **No email provider exists yet.** P3 notifications require choosing one first.
+4. ~~**No email provider exists yet.** P3 notifications require choosing one first.~~
+   **RESOLVED (2026-06-12):** provider = **Resend**, behind `server/util/email.js`.
 
 ---
 
@@ -165,7 +166,8 @@ report = {
 
 - `[?]` **User-record source of truth for banning (P2).** Propose a `users` status record when we
   reach P2; revisit then.
-- `[?]` **Email provider for notifications (P3).** None exists; pick before P3 notifications.
+- `[x]` ~~**Email provider for notifications (P3).** None exists; pick before P3 notifications.~~
+  **Decided 2026-06-12: Resend** (free tier, simple SDK; wrapper keeps it swappable).
 
 ---
 
@@ -262,5 +264,23 @@ recipes without a direct URL); optional functional split between suspend & ban
   (`$setOnInsert`); legacy `usernames` docs have no timestamp and are excluded.
 - `[x]` Saved filters — per-browser localStorage presets (`src/util/savedFilters.ts`
   + reusable `SavedFilterBar`) wired into the Reports and Audit queues. No backend.
-- `[ ]` Notifications/email — **DEFERRED**: blocked on choosing a provider
-  (SendGrid / Postmark / SES). Not built.
+- `[x]` Notifications/email — **provider = Resend** (3k/mo free tier). Thin swappable
+  wrapper `server/util/email.js` (`sendEmail` + typed helpers), best-effort like
+  `recordAudit` (swallows errors, never breaks the moderation action) and **env-gated**:
+  with no `RESEND_API_KEY` (dev/CI/test) the module no-ops before any Firebase/DB lookup.
+  Sends run **in the background** (`notifyInBackground`) so the admin response never waits
+  on Firebase/Resend, with a 10s per-send timeout; bulk resolves are sent **serially** to
+  self-throttle under Resend's per-second rate limit.
+  Four **action-only** events wired alongside the audit writes:
+  report **resolved** → reporter (`reporterUid`; dismiss is silent; bulk resolve emails
+  each distinct reporter once), user **suspended/banned** → the user (`uid`; activate is
+  silent), recipe **hidden** → owner (`userId`; unhide silent), review **taken down** →
+  author (username→uid via `usernames`; restore silent). Env: `RESEND_API_KEY`,
+  `EMAIL_FROM`, `APP_BASE_URL` (+ optional `EMAIL_ENABLED=false` kill switch) — in
+  `server/.env.example`. Tests: `__tests__/email-notifications.test.js` (recipient per
+  event, no-op without key, failure-swallowed, route wiring incl. dismiss/unhide silence
+  + bulk dedupe). **Domain/DKIM:** works from Resend's test sender
+  `onboarding@resend.dev` out of the box; to send from a real domain, verify it in Resend
+  (DNS DKIM + SPF/MX) and point `EMAIL_FROM` at it. Firebase Auth's own emails (password
+  reset etc.) are untouched. **Deferred:** appeal flow has no support route yet (copy says
+  "contact Prepify support"); no reversal/"good news" emails.

@@ -5,6 +5,7 @@ const { recipeIdQuery } = require('../util/recipeIdQuery')
 const { REVIEW_VISIBLE, RECIPE_VISIBLE } = require('../util/moderation')
 const { recordAudit } = require('../util/auditLog')
 const { recomputeRecipeRating } = require('../util/recipeRating')
+const { notifyInBackground, notifyReviewTakenDown } = require('../util/email')
 
 const router = Router()
 
@@ -269,6 +270,8 @@ router.patch('/admin/reviews/moderation', verifyToken, requireAdmin, async (req,
       targetLabel: `@${username}`,
       metadata: { recipeId, username },
     })
+    // Notify the review author on a takedown (background). Restore is silent.
+    if (moderationHidden) notifyInBackground(notifyReviewTakenDown(db, username, recipeId))
     res.json({ recipeId, username, moderationHidden })
   } catch (err) {
     res.status(500).json({ error: err.message })

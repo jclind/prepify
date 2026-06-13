@@ -5,6 +5,7 @@ const { verifyToken, optionalAuth, requireAdmin, requireActive } = require('../m
 const { recipeIdQuery } = require('../util/recipeIdQuery')
 const { RECIPE_VISIBLE } = require('../util/moderation')
 const { recordAudit } = require('../util/auditLog')
+const { notifyInBackground, notifyRecipeHidden } = require('../util/email')
 const { validateRequiredRecipeFields, validateRecipeBounds } = require('../util/recipeLimits')
 const { EDITABLE_RECIPE_FIELDS, pickFields } = require('../util/recipeFields')
 const { deleteRecipeImage } = require('../util/firebaseStorage')
@@ -404,6 +405,8 @@ router.patch('/admin/recipes/:id/moderation', verifyToken, requireAdmin, async (
       targetId: updated._id,
       targetLabel: updated.title || null,
     })
+    // Notify the owner on a takedown (background). Unhide is silent.
+    if (status === 'hidden') notifyInBackground(notifyRecipeHidden(updated.userId, updated.title))
     res.json({ _id: updated._id, status: updated.status })
   } catch (err) {
     res.status(500).json({ error: err.message })
