@@ -4,7 +4,7 @@ import { useAuth } from 'src/context/AuthContext'
 import { footerColumns, FooterLink } from '../footerData'
 
 /** Renders one footer link as an internal <Link> or external/placeholder <a>. */
-export const FooterLinkItem: FC<{ link: FooterLink }> = ({ link }) =>
+const FooterLinkItem: FC<{ link: FooterLink }> = ({ link }) =>
   link.external ? (
     <a href={link.to} className='footer-link'>
       {link.label}

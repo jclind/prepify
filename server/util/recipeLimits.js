@@ -57,12 +57,6 @@ function validateRecipeBounds(body) {
 }
 
 module.exports = {
-  TITLE_MAX_LENGTH,
-  DESCRIPTION_MAX_LENGTH,
-  INSTRUCTION_MAX_LENGTH,
-  MAX_INGREDIENTS,
-  MAX_INSTRUCTIONS,
-  REQUIRED_RECIPE_FIELDS,
   validateRequiredRecipeFields,
   validateRecipeBounds,
 }

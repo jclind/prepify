@@ -428,31 +428,3 @@ export const closestFraction = (num: number): string => {
     denominator / divisor
   }`
 }
-
-export const evalNum = (val: string | number | undefined): number => {
-  if (typeof val === 'undefined') return 0
-  if (typeof val === 'number') {
-    return val
-  }
-  const evalFraction = (frac: string) => {
-    const split = frac.split('/')
-    const res = parseInt(split[0], 10) / parseInt(split[1], 10)
-    return Number(res)
-  }
-  if (isFraction(val)) {
-    return evalFraction(val)
-  }
-
-  const splitVal = val.split(/[\s-]/)
-  if (splitVal.length <= 0) return 0
-  if (splitVal.length === 1) {
-    if (isFraction(splitVal[0])) {
-      return evalFraction(splitVal[0])
-    } else {
-      return Number(splitVal[0])
-    }
-  } else {
-    console.log("This shouldn't be happening in evalNum")
-    return 0
-  }
-}

@@ -2,7 +2,7 @@ import { auth } from 'src/client/db'
 import { http } from 'src/api/http-common'
 import { UserStatus } from 'types'
 
-export type UserProfile = {
+type UserProfile = {
   bio: string
   location: string
 }
