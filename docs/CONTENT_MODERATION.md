@@ -81,7 +81,16 @@ Traced from the current codebase on 2026-06-14.
 
 3. **Soft-hide already ripples through every public read path.** Recipes use a `status` field
    (`status === 'hidden'`), reviews use `moderationHidden`. Auto-mod must reuse these *same*
-   flags — do **not** invent a parallel state, or some read paths will leak flagged content.
+   flags for takedowns — do **not** invent a parallel state, or some read paths will leak
+   flagged content.
+
+   **New for this build:** the medium-confidence "hold for review" decision adds a *third*
+   recipe visibility state — `status: 'pending_review'` — that is **owner + moderator visible
+   but excluded from public reads**. This is distinct from `'hidden'` (post-takedown). It
+   ripples the same way `'hidden'` does, with one extra requirement: owner-facing read paths
+   (`getCreatedRecipes`, single-recipe view for the owner) **must still show the owner their
+   own pending recipe**, while every public path (`GET /recipes`, search, trending, public
+   profile) must exclude it. Budget tests for exactly this split.
 
 4. **Username/displayName moderation is special.** It is checked at signup/rename, appears in
    the URL (`/u/:username`), and a slur here is high-visibility. Pair the classifier with a
@@ -100,13 +109,20 @@ Traced from the current codebase on 2026-06-14.
 
 ## Design decisions
 
+All resolved **2026-06-14** (the four prior open questions are now settled — see the Confidence
+tiers, Text engine, Username timing, and Verification rows).
+
 | Decision | Choice | Why |
 |---|---|---|
 | **Pipeline reuse** | Flagged content feeds the **existing** `reports` + `moderationHidden`/`status` + `auditLog` + email pipeline | No new infra; admins see auto-flags in the same queue |
 | **Synthetic actor** | Auto-actions credited to a reserved `system` / `automod` actor in `auditLog` | Distinguishes machine from human actions; keeps audit honest |
-| **Text strategy** | **Block-on-write** (synchronous, inline 4xx error) | Fast, cheap, best UX; nothing illegal ever goes live |
+| **Text engine** | **OpenAI Moderation API** (free) + blocklist. Claude Haiku relevance/spam pass **deferred** (not in scope until off-topic spam is actually observed). | Purpose-built free safety classifier; one dep, server-side only |
+| **Text strategy** | **Block-on-write** (synchronous, inline 4xx error) for high-confidence | Fast, cheap, best UX; nothing illegal ever goes live |
 | **Image strategy** | **Async scan → auto-hide → queue** (can't block a Storage trigger) | Matches the upload architecture |
-| **Confidence tiers** | High-confidence → auto-hide; medium → flag-for-review **without** hiding | Limits false positives nuking legit recipes |
+| **Confidence tiers** | High-confidence → **block** (text) / **auto-hide** (image). Medium-confidence → **hold for review**: see "Medium-confidence hold" below. | Limits false positives nuking legit recipes while never publishing unreviewed risky content |
+| **Medium-confidence hold** | **Recipes:** set a new `status: 'pending_review'` — visible **only to the owner + moderators** — and silently auto-file a `report`; goes public when an admin clears it. **Reviews / bio / username:** no meaningful owner-only state, so medium-confidence is treated as **block-on-write** (they're short; ask the user to rephrase). | Owner-only pending is clean for recipes; pointless for a review or bio only the author can see |
+| **Username timing** | Moderate at **signup AND every rename** | A slur can never land via a later rename; pairs with the reserved-words blocklist |
+| **Verification** | Per phase: **automated tests green (Jest/Vitest) + an authed live smoke test** (post a slur → blocked/held, clean → 200) via `run-prepify` against a real `.env`. See "How to verify" below. | Matches how every other Prepify feature is signed off |
 | **Fail-open vs fail-closed** | Text: **fail-open** for transient classifier errors (log + allow), **fail-closed** for blocklist; Images: **fail-closed** (quarantine until scanned) | A 500 from a moderation API shouldn't block all recipe creation; an unscanned image shouldn't be public |
 | **Env-gating** | All classifiers no-op silently when their key is unset (mirror `email.js` pattern) | Local/dev/test run without external keys |
 
@@ -121,7 +137,8 @@ Traced from the current codebase on 2026-06-14.
   repeated chars, etc.) as a cheap zeroth pass that runs even if the API is down.
 - **Claude Haiku 4.5** (`claude-haiku-4-5-20251001`) — for what dedicated moderation APIs
   *miss*: domain relevance ("is this actually a recipe, or off-topic spam / link-dropping?"),
-  gibberish, promotional content. Optional, P2.
+  gibberish, promotional content. **Deferred** (decided 2026-06-14) — not in scope until
+  off-topic spam is actually observed in production; revisit then.
 
 ### Images
 - **Google Cloud Vision SafeSearch** or **AWS Rekognition** — adult/violent/racy scoring,
@@ -141,13 +158,20 @@ Traced from the current codebase on 2026-06-14.
 - [ ] Unit tests for the blocklist + no-op behavior.
 
 ### P1 — Text moderation at write-time (2–3 days) — *primary value*
-- [ ] Wire OpenAI Moderation into `moderateText`.
+- [ ] Wire OpenAI Moderation into `moderateText`, returning a `severity` (high / medium / clean).
 - [ ] Apply at recipe create/edit (`recipes.js`), review create/edit (`reviews.js`),
-      profile bio/location (`users.js`), and username/displayName (signup + rename).
-- [ ] On block: return inline 4xx with a friendly message (FE surfaces it on the form).
-- [ ] On medium-confidence: allow but auto-file a `report` into the admin queue.
+      profile bio/location (`users.js`), and username/displayName at **signup AND rename**.
+- [ ] **High-confidence** → return inline 4xx with a friendly message (FE surfaces it on the form).
+- [ ] **Medium-confidence handling (per surface):**
+  - [ ] Recipes → save with `status: 'pending_review'` (owner + mod visible only) + silent
+        auto-`report`; clears to public on admin approval. Owner-facing reads must still show it.
+  - [ ] Reviews / bio / username → treat as a block (4xx, ask to rephrase) — no owner-only state.
+- [ ] Public read paths exclude `pending_review`; owner read paths include it (see gotcha #3).
 - [ ] Fail-open on transient API errors (log, don't block); fail-closed on blocklist.
-- [ ] Tests: blocked write → 4xx; clean write → 200; API-down → allowed + logged.
+- [ ] Tests: high → 4xx; medium recipe → `pending_review` + queued; medium review → 4xx;
+      clean → 200 (and visible publicly); API-down → allowed + logged; owner-sees-own-pending.
+- [ ] Surface the inline 4xx in the FE: recipe form (`src/pages/AddRecipe*`), review form, and
+      profile/settings forms — locate the existing form error handling before adding new UI.
 
 ### P2 — Image moderation (3–4 days)
 - [ ] Firebase Storage `onFinalize` Cloud Function (or the Cloud Vision extension).
@@ -180,16 +204,40 @@ All keys absent ⇒ the corresponding layer no-ops silently (local/test friendly
 
 ---
 
+## How to verify (per phase)
+
+Sign-off for every phase = **automated tests green + an authed live smoke test**, matching how
+the rest of Prepify ships.
+
+1. **Automated:** `npm test` (frontend Vitest) and `cd server && npm test` (Jest). The phase's
+   own test cases (listed in each phase) must pass alongside the existing suites.
+2. **Authed live smoke** via the `run-prepify` skill against a real `.env` (needs real
+   Mongo + Firebase, and `OPENAI_API_KEY` set so the classifier actually fires):
+   - Log in, then **submit a recipe whose description contains an obvious slur** → expect a
+     blocked 4xx with the inline message (high-confidence) **or** the recipe saved as
+     `pending_review` and absent from public `/recipes` but visible on the owner's account.
+   - Submit a **clean** recipe → 200 and visible publicly.
+   - Repeat the slur test on a **review** and a **profile bio** → blocked 4xx.
+   - With `OPENAI_API_KEY` unset → all writes succeed (env-gated no-op confirmed).
+3. **(P2/P3)** Upload a flagged image → confirm it is auto-hidden + queued + owner emailed.
+
+> ⚠️ Use a disposable test account and benign-but-triggering test strings; don't pollute prod
+> data. Tear down any test recipes/reviews afterward.
+
+---
+
 ## Open decisions
 
-- [?] **CSAM provider** — Cloudflare (free, simplest) vs PhotoDNA vs Thorn Safer.
-- [?] **Text relevance pass (Claude Haiku)** — in scope for P2, or defer until spam is observed?
-- [?] **Username moderation timing** — block at signup only, or also re-check on rename?
-- [?] **Medium-confidence UX** — silently queue, or also soft-warn the user?
+- [?] **CSAM provider** — Cloudflare (free, simplest) vs PhotoDNA vs Thorn Safer. *(P3 only; does
+      not block P0–P2.)*
+
+_Resolved 2026-06-14: text engine = **OpenAI Moderation** (Haiku relevance pass deferred);
+username moderation = **signup + every rename**; medium-confidence = **`pending_review` hold for
+recipes / block for reviews+bio+username**; verification = **tests + authed live smoke**._
 
 ---
 
 ## Progress
 
-_Not started (scoped 2026-06-14). Update this section as phases ship — mirror the format used
-in `docs/ADMIN_FUNCTIONALITY.md`._
+_Not started (scoped 2026-06-14; all P0–P2 decisions resolved same day). Update this section as
+phases ship — mirror the format used in `docs/ADMIN_FUNCTIONALITY.md`._
