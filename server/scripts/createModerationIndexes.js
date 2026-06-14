@@ -39,7 +39,30 @@ const INDEXES = [
     collection: 'ratings',
     key: { username: 1 },
     name: 'username_1',
-    why: 'admin user list review tally + getSingleUserReviews (by username)',
+    why: 'admin user list review tally (still keyed by reportedUsername)',
+  },
+  // D1: ratings now identify their author by the stable `userId`. This compound
+  // serves both the (userId, recipeId) point lookup/upsert used by every review
+  // write AND the userId-prefix scans (getSingleUserReviews, account counts,
+  // exportMyData, the delete-account cascade).
+  //
+  // UNIQUE — enforces the "one rating per (user, recipe)" invariant the upserts
+  // rely on. Without it, a legacy doc missing `userId` (pre-backfill) or a
+  // concurrent double-submit would slip a SECOND row past the upsert filter and
+  // silently double-count the author in the recipe aggregate. PARTIAL on
+  // `userId: { $exists: true }` so it (a) ignores not-yet-backfilled legacy docs
+  // instead of failing to build over them, and (b) still serves every read,
+  // which always predicates on an existing `userId`. Run the backfill first so
+  // the docs that should be unique actually carry the field.
+  {
+    collection: 'ratings',
+    key: { userId: 1, recipeId: 1 },
+    name: 'userId_1_recipeId_1',
+    options: {
+      unique: true,
+      partialFilterExpression: { userId: { $exists: true } },
+    },
+    why: 'D1 review writes/reads + account-counts/export/cascade keyed on userId (unique: one rating per user+recipe)',
   },
   {
     collection: 'recipes',
@@ -81,16 +104,36 @@ async function main() {
     const db = client.db('prepify')
     console.log('Connected to MongoDB (prepify). Building indexes...\n')
 
+    let failures = 0
     for (const ix of INDEXES) {
       const start = Date.now()
-      // Non-unique on purpose: a unique index could fail to build over legacy
-      // data with duplicates (cf. the username_lower guard in db.js).
-      const result = await db.collection(ix.collection).createIndex(ix.key, { name: ix.name })
-      const ms = Date.now() - start
-      console.log(`  ✓ ${ix.collection}.${result}  (${ms}ms)`)
-      console.log(`      ${ix.why}`)
+      try {
+        const result = await db
+          .collection(ix.collection)
+          .createIndex(ix.key, { name: ix.name, ...ix.options })
+        const ms = Date.now() - start
+        console.log(`  ✓ ${ix.collection}.${result}  (${ms}ms)`)
+        console.log(`      ${ix.why}`)
+      } catch (err) {
+        // A unique index can fail to build over legacy data that still holds
+        // duplicates (cf. the username_lower guard in db.js). Don't abort the
+        // whole run for one collision — report it loudly so the operator can
+        // dedup (and re-run the backfill) then re-run, while the rest build.
+        failures++
+        console.error(`  ✗ ${ix.collection}.${ix.name} FAILED: ${err.message}`)
+        if (err.code === 11000 || /duplicate key/i.test(err.message)) {
+          console.error(
+            `      Duplicate (${Object.keys(ix.key).join(',')}) rows exist — ` +
+              'dedup them (run backfillRatingUserIds.js first), then re-run.'
+          )
+        }
+      }
     }
 
+    if (failures) {
+      console.error(`\n${failures} index(es) failed to build. See errors above.`)
+      process.exit(1)
+    }
     console.log('\nDone. All moderation indexes are in place.')
     process.exit(0)
   } catch (err) {

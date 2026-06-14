@@ -214,18 +214,14 @@ describe('GET /getCreatedRecipes', () => {
 // ─── getAccountCountsFor (shared helper) ──────────────────────────────────────
 
 describe('getAccountCountsFor', () => {
-  it('gives the same result whether or not the username is passed in', async () => {
+  it("counts a user's ratings by their stable userId (D1)", async () => {
     await seedUser(TEST_UID, 'testuser')
-    await seedRating({ username: 'testuser', recipeId: 'x', rating: 5 })
+    await seedRating({ userId: TEST_UID, username: 'testuser', recipeId: 'x', rating: 5 })
     await seedRecipes([{ _id: 'c1', userId: TEST_UID }])
 
-    const db = getDB()
-    const lookedUp = await getAccountCountsFor(db, TEST_UID)
-    const passedIn = await getAccountCountsFor(db, TEST_UID, 'testuser')
-
-    expect(passedIn).toEqual(lookedUp)
-    expect(passedIn.ratings).toBe(1)
-    expect(passedIn.recipes).toBe(1)
+    const counts = await getAccountCountsFor(getDB(), TEST_UID)
+    expect(counts.ratings).toBe(1)
+    expect(counts.recipes).toBe(1)
   })
 })
 
@@ -264,8 +260,8 @@ describe('GET /getAccountCounts', () => {
         { _id: 'd3', userId: TEST_UID },
         { _id: 'd4', userId: TEST_UID },
       ])
-    await seedRating({ username: 'testuser', recipeId: 'c1', rating: 5 })
-    await seedRating({ username: 'testuser', recipeId: 'c2', rating: 4 })
+    await seedRating({ userId: TEST_UID, username: 'testuser', recipeId: 'c1', rating: 5 })
+    await seedRating({ userId: TEST_UID, username: 'testuser', recipeId: 'c2', rating: 4 })
 
     const res = await request(app).get('/api/getAccountCounts').set(AUTH_HEADER)
     expect(res.status).toBe(200)
@@ -282,18 +278,18 @@ describe('GET /getAccountCounts', () => {
     await getDB()
       .collection('recipeDrafts')
       .insertOne({ _id: 'theirdraft', userId: 'other-uid' })
-    await seedRating({ username: 'otheruser', recipeId: 'mine', rating: 5 })
+    await seedRating({ userId: 'other-uid', username: 'otheruser', recipeId: 'mine', rating: 5 })
 
     const res = await request(app).get('/api/getAccountCounts').set(AUTH_HEADER)
     expect(res.status).toBe(200)
     expect(res.body).toEqual({ saved: 0, ratings: 0, recipes: 1, drafts: 0 })
   })
 
-  it('returns 0 ratings when the user has no username yet', async () => {
-    // Ratings are keyed by username; a user without one resolves to 0 ratings
-    // even if rows happen to exist under some other name.
+  it('returns 0 ratings when no ratings are keyed to the user (D1)', async () => {
+    // Ratings are keyed by the stable userId; rows authored by someone else
+    // never count toward this user, regardless of recipe.
     await seedRecipes([{ _id: 'c1', userId: TEST_UID }])
-    await seedRating({ username: 'someoneelse', recipeId: 'c1', rating: 5 })
+    await seedRating({ userId: 'someoneelse-uid', username: 'someoneelse', recipeId: 'c1', rating: 5 })
 
     const res = await request(app).get('/api/getAccountCounts').set(AUTH_HEADER)
     expect(res.status).toBe(200)

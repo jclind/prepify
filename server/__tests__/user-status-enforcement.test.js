@@ -103,7 +103,7 @@ describe('deletes remain allowed when suspended (not punitive)', () => {
   it('a suspended user can still delete their own review', async () => {
     await setStatus('suspended')
     await seedUser(TEST_UID, 'me')
-    await seedRating({ username: 'me', recipeId: 'r1', reviewText: 'hi', rating: 5 })
+    await seedRating({ userId: TEST_UID, username: 'me', recipeId: 'r1', reviewText: 'hi', rating: 5 })
     const res = await request(app).delete('/api/deleteReview?recipeId=r1').set(AUTH_HEADER)
     expect(res.status).toBe(200)
     expect(res.body.deleted).toBe(true)
