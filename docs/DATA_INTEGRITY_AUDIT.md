@@ -95,8 +95,88 @@ idempotency is enough for the rename.
 
 ---
 
+## D4 — delete-account deletes a user's reviews without recomputing the recipes' rating aggregates `[ ]`
+
+**What:** `POST /deleteAccount` runs `ratings.deleteMany({ username })`
+(`server/routes/auth.js`), removing the departing user's reviews from recipes that *other* users
+still own. Recipes carry a denormalized rating average + count maintained by `recomputeRecipeRating`
+(`server/util/recipeRating.js`), which every `reviews` mutation calls (`server/routes/reviews.js`,
+add / edit / delete). The bulk delete skips the recompute, so each affected recipe keeps an
+average/total that still counts the now-deleted review.
+
+**Impact:** silent rating drift on surviving recipes — a recipe's displayed average and review count
+stay inflated until the next add/edit/delete on *that* recipe happens to trigger a recompute. The
+more reviews the departing user left, the more recipes drift.
+
+**Fix:** before the bulk delete, collect the distinct `recipeId`s from the user's `ratings`; delete;
+then `recomputeRecipeRating(db, recipeId)` for each — skipping recipes that the cascade itself
+deleted because the user authored them (no point recomputing a deleted recipe). Batchable. Add a
+regression test: a recipe reviewed by two users shows the correct average after one of them deletes
+their account.
+
+**Touches:** `server/routes/auth.js` (deleteAccount); reuses `server/util/recipeRating.js`.
+
+---
+
+## D5 — account-delete leaves Firebase Storage objects orphaned (recipe images + profile photo) `[ ]`
+
+**What:** `DELETE /deleteRecipe` correctly calls `deleteRecipeImage(recipe.recipeImage)` after its
+transaction (`server/routes/recipes.js:342`). The delete-account cascade does **not** — it
+`recipes.deleteMany({ userId })` and never touches Storage. The user's **profile photo**
+(`profilePhotos/{uid}`, written by `AuthContext.updateProfileData`) is likewise never deleted by the
+cascade.
+
+**Impact:** every deleted account leaves its recipe images and avatar blob in Storage indefinitely —
+unreferenced files that still cost storage and stay publicly fetchable by URL if one was cached or
+shared.
+
+**Fix:** in the cascade, *read* the user's recipes (`find({ userId }).toArray()`) before deleting
+the docs and best-effort `deleteRecipeImage(r.recipeImage)` each; also best-effort-delete
+`profilePhotos/{uid}`. Keep it best-effort / never-throw (same posture as `recordAudit` and the
+existing `deleteRecipeImage` — an orphaned blob beats a failed account delete). The profile photo is
+keyed by path, not a download URL, so it needs a small delete-by-path helper alongside the existing
+URL-parsing one.
+
+**Touches:** `server/routes/auth.js` (deleteAccount); `server/util/firebaseStorage.js` (add a
+delete-by-path helper).
+
+---
+
+## D6 — the delete-account cascade re-implements recipe teardown instead of reusing the thorough one `[ ]` **(unifies D2 / D5 for the account path)**
+
+**What:** `DELETE /deleteRecipe` already does a complete, atomic per-recipe teardown
+(`server/routes/recipes.js:319`): delete the recipe, `ratings.deleteMany({ recipeId })`, `$pull` the
+`recipeId` out of every user's `savedRecipes` / `madeRecipes` / `userRecipes`, then delete the image
+— all in a transaction. The delete-account cascade ignores every bit of that and just
+`recipes.deleteMany({ userId })`. So for the departing user's recipes: other users' reviews of them
+orphan (the account-path half of **D2**), other users' saved/made references dangle, and images leak
+(**D5**). Separately, reports the user *filed* (`reports.reporterUid`, `server/routes/reports.js`)
+are never removed by the cascade at all.
+
+**Impact:** dangling `savedRecipes` entries on other users (a saved card that 404s), orphaned
+`ratings` (D2), leaked Storage objects (D5), and stale moderation reports authored by a user who no
+longer exists.
+
+**Fix:** factor the per-recipe teardown out of `DELETE /deleteRecipe` into a shared
+`teardownRecipe(db, recipe, session)` and call it for each of the user's recipes inside the cascade,
+so the two paths can't drift. Then decide reporter cleanup: `reports.deleteMany({ reporterUid: uid })`
+if the filed reports are disposable, or anonymize `reporterUid` if the moderation queue needs the
+history. Pairs naturally with D3 (wrap the whole thing in one transaction).
+
+**Touches:** `server/routes/recipes.js` (extract `teardownRecipe`); `server/routes/auth.js`
+(deleteAccount); `server/routes/reports.js` (reporter-cleanup decision).
+
+---
+
 ## Recommended order
 
-**D1 → D2 → D3.** D1 is the root cause; fixing it makes D2's cascade key consistent (`userId` /
-`recipeId`) and removes one of D3's partial-failure modes (the rename propagation). D2 and D3 are
-then smaller, self-contained passes.
+**D1 → {D2, D4, D5, D6} → D3.** D1 is the root cause; fixing it makes the cascade key consistent
+(`userId` / `recipeId`) and removes one of D3's partial-failure modes (the rename propagation).
+
+D2, D4, D5 and D6 are really one piece of work — *rewrite the delete-account cascade to reuse the
+recipe teardown that `DELETE /deleteRecipe` already has* (covers D2's account half + D5's recipe
+images + D6's dangling saves), plus add the reviewer-side recompute (D4) and the profile-photo +
+reporter cleanup. Do them in a single pass over `deleteAccount`.
+
+D3 (wrapping the multi-collection writes in a transaction) comes last and makes the whole cascade
+atomic — best done once the cascade's *contents* are settled.
