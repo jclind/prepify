@@ -58,6 +58,11 @@ const BugReportModal: FC<BugReportModalProps> = ({ variant = 'link' }) => {
   const [submitting, setSubmitting] = useState(false)
 
   const loggedOut = !authRes?.user
+  // Identity shown to a signed-in reporter so they know the report is tied to
+  // their account (which is why we don't ask logged-in users for an email). The
+  // server attaches reporterUid from the token regardless of this label.
+  const reporterName =
+    authRes?.user?.displayName || authRes?.user?.email || null
 
   const close = () => {
     if (submitting) return
@@ -115,6 +120,12 @@ const BugReportModal: FC<BugReportModalProps> = ({ variant = 'link' }) => {
         <p className='bug-report-modal-sub'>
           Tell us what happened. We’ll attach the page you’re on automatically.
         </p>
+
+        {!loggedOut && reporterName && (
+          <p className='bug-report-identity'>
+            Reporting as <strong>{reporterName}</strong>
+          </p>
+        )}
 
         <label className='bug-report-field'>
           <span>What kind of issue?</span>
