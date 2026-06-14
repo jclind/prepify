@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from 'src/context/AuthContext'
 import AuthAPI from 'src/api/auth'
 import { AvatarField, TextField, TextArea, SaveBar } from '../components/controls'
+import { useSettingsDirty } from '../SettingsDirtyContext'
 import './sections.scss'
 
 const MAX_FILE_SIZE = 5000 * 1024
@@ -47,17 +48,23 @@ const ProfileSection: FC = () => {
   const [saving, setSaving] = useState(false)
   const [usernameStatus, setUsernameStatus] = useState<UsernameStatus>('idle')
 
-  // Seed the account fields once the auth user + saved username resolve.
+  // Seed identity (avatar + display name) straight from the Firebase user as
+  // soon as it resolves — NOT gated on the username/profile queries. Coupling
+  // them made the avatar flash from the fallback initial to the real photo, and
+  // briefly read the form as dirty, on every refresh.
   useEffect(() => {
-    if (fetchedUsername !== undefined && authRes?.user) {
-      setUsername(fetchedUsername || '')
+    if (authRes?.user) {
       setDisplayName(authRes.user.displayName || '')
       setImgURL(authRes.user.photoURL || '')
       setImgFile(null)
       setAvatarRemoved(false)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fetchedUsername, authRes?.user])
+  }, [authRes?.user])
+
+  useEffect(() => {
+    if (fetchedUsername !== undefined) setUsername(fetchedUsername || '')
+  }, [fetchedUsername])
 
   useEffect(() => {
     if (fetchedProfile) {
@@ -126,7 +133,21 @@ const ProfileSection: FC = () => {
   const profileChanged =
     bio !== (fetchedProfile?.bio ?? '') ||
     location !== (fetchedProfile?.location ?? '')
-  const dirty = accountFieldsChanged || profileChanged
+  // Only consider the form dirty once every source has loaded and seeded the
+  // fields — otherwise the gap between the auth user and the queries reads as a
+  // change and flashes the save bar on refresh.
+  const ready =
+    !!authRes?.user &&
+    fetchedUsername !== undefined &&
+    fetchedProfile !== undefined
+  const dirty = ready && (accountFieldsChanged || profileChanged)
+
+  // Report unsaved changes to the shell so it can warn before navigating away.
+  const { setDirty } = useSettingsDirty()
+  useEffect(() => {
+    setDirty(dirty)
+    return () => setDirty(false)
+  }, [dirty, setDirty])
 
   const usernameError =
     usernameStatus === 'taken'

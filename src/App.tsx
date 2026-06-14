@@ -151,7 +151,11 @@ const App: FC = () => {
                   </Layout>
                 }
               >
+                {/* Index renders Profile so a direct /settings visit (and the
+                    desktop landing) shows it; /settings/profile is the canonical
+                    route the nav + mobile master-detail link to. */}
                 <Route path='' element={<ProfileSection />} />
+                <Route path='profile' element={<ProfileSection />} />
                 <Route path='account' element={<AccountSection />} />
                 <Route path='privacy' element={<PrivacySection />} />
                 <Route path='danger' element={<DangerSection />} />

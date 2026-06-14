@@ -212,6 +212,7 @@
   font-family: inherit;
   font-size: 0.88rem;
   font-weight: 600;
+  white-space: nowrap;
   padding: 0.6rem 1.2rem;
   border-radius: 10px;
   cursor: pointer;
@@ -295,17 +296,25 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  margin-top: 1.5rem;
-  padding: 0.7rem 0.7rem 0.7rem 1.2rem;
   background: s.$primary-text;
   border-radius: 14px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  // Collapsed by default so the hidden bar reserves no space under the form
+  // (opacity alone left ~3.5rem of dead padding at the bottom of every section).
+  max-height: 0;
+  margin-top: 0;
+  padding: 0 1.2rem;
   opacity: 0;
   transform: translateY(8px);
   pointer-events: none;
-  transition: opacity 0.18s ease, transform 0.18s ease;
+  overflow: hidden;
+  transition: opacity 0.18s ease, transform 0.18s ease, max-height 0.2s ease,
+    margin-top 0.2s ease, padding 0.2s ease;
 
   &.show {
+    max-height: 6rem;
+    margin-top: 1.5rem;
+    padding: 0.7rem 0.7rem 0.7rem 1.2rem;
     opacity: 1;
     transform: translateY(0);
     pointer-events: auto;
@@ -325,6 +334,30 @@
     color: rgba(255, 255, 255, 0.75);
     &:hover {
       color: s.$white;
+    }
+  }
+}
+
+// On mobile the sticky bar can sit below the fold of a long form, so a user can
+// miss it and lose edits. Pin it to the bottom of the viewport instead so it's
+// always visible while there are unsaved changes.
+@media (max-width: 880px) {
+  .sr-savebar.show {
+    position: fixed;
+    left: 0.9rem;
+    right: 0.9rem;
+    bottom: 0.9rem;
+    margin-top: 0;
+    max-height: none;
+    gap: 0.6rem;
+    padding: 0.6rem 0.6rem 0.6rem 1rem;
+    // Above page content but below the toaster (z 9999) so the "saved!" toast
+    // still shows over the bar.
+    z-index: 50;
+
+    .sr-savebar-msg {
+      font-size: 0.78rem;
+      line-height: 1.2;
     }
   }
 }

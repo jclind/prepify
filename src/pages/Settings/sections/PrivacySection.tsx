@@ -3,6 +3,7 @@ import toast from 'react-hot-toast'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import AuthAPI from 'src/api/auth'
 import { Toggle, SettingRow, SaveBar } from '../components/controls'
+import { useSettingsDirty } from '../SettingsDirtyContext'
 import './sections.scss'
 
 // Privacy gates the public /u/:username view. Seeds from the same getProfile
@@ -36,6 +37,13 @@ const PrivacySection: FC = () => {
 
   const dirty =
     isPublic !== baseline.isPublic || hideLocation !== baseline.hideLocation
+
+  // Report unsaved changes to the shell so it can warn before navigating away.
+  const { setDirty } = useSettingsDirty()
+  useEffect(() => {
+    setDirty(dirty)
+    return () => setDirty(false)
+  }, [dirty, setDirty])
 
   const handleSave = () => {
     if (!dirty) return
