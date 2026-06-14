@@ -78,7 +78,7 @@ the one-off backfill migration script.
 
 ---
 
-## D2 — Deleting a recipe orphans other users' ratings of it `[ ]`
+## D2 — Deleting a recipe orphans other users' ratings of it `[x]`
 
 **What:** `ratings` are keyed by `recipeId`. Deleting a recipe (via delete-recipe, or as part of
 the delete-account cascade which removes the user's `recipes`) does **not** remove other users'
@@ -93,12 +93,17 @@ delete-recipe path and the delete-account cascade). Alternatively a periodic swe
 `ratings` whose `recipeId` has no matching `recipes` doc. Add a regression test asserting no
 orphans remain after a recipe delete.
 
+**Done (PR: cascade):** the account path now runs the same per-recipe teardown as
+`DELETE /deleteRecipe` (see D6) — `ratings.deleteMany({ recipeId })` for each of the departing
+user's recipes — so other users' reviews of those recipes no longer survive. Regression test:
+`auth.test.js` cascade → "removes other users' ratings of the departing user's recipes".
+
 **Touches:** `server/routes/recipes.js` (deleteRecipe), `server/routes/auth.js` (deleteAccount
-cascade).
+cascade), `server/util/teardownRecipe.js`.
 
 ---
 
-## D3 — Multi-collection writes are not atomic `[ ]`
+## D3 — Multi-collection writes are not atomic `[x]` (delete cascade)
 
 **What:** Several flows mutate several collections in sequence with no transaction:
 - `POST /deleteAccount` deletes across `usernames`, `userProfiles`, `users`, `userRecipeData`,
@@ -119,12 +124,20 @@ partial failure leaves the login recoverable to retry) — this item is specific
 idempotent so the whole operation is safely retryable. Prefer transactions for the delete cascade;
 idempotency is enough for the rename.
 
-**Touches:** `server/routes/auth.js` (deleteAccount, setUsername), `server/db.js` (a
-`withTransaction` helper).
+**Done (PR: cascade):** the entire Mongo-side delete cascade (per-recipe teardowns + the user's own
+docs across `usernames`/`userProfiles`/`users`/`userRecipeData`/`recipeDrafts`/`ratings` + reporter
+anonymization) now runs inside one `getClient().startSession()` / `session.withTransaction(...)`
+(`server/routes/auth.js`), so a partial failure rolls the whole thing back. The external side
+effects (rating recompute, Storage deletes, audit log, Firebase Auth deletion) deliberately stay
+*outside* the transaction and remain best-effort, preserving the Mongo-first / Firebase-last
+ordering. **Not done:** `setUsername`'s rename writes are left as-is (the propagation is now a
+display-only concern after D1 — idempotent `updateMany`s that are safely retryable).
+
+**Touches:** `server/routes/auth.js` (deleteAccount).
 
 ---
 
-## D4 — delete-account deletes a user's reviews without recomputing the recipes' rating aggregates `[ ]`
+## D4 — delete-account deletes a user's reviews without recomputing the recipes' rating aggregates `[x]`
 
 **What:** `POST /deleteAccount` runs `ratings.deleteMany({ username })`
 (`server/routes/auth.js`), removing the departing user's reviews from recipes that *other* users
@@ -143,11 +156,17 @@ deleted because the user authored them (no point recomputing a deleted recipe). 
 regression test: a recipe reviewed by two users shows the correct average after one of them deletes
 their account.
 
+**Done (PR: cascade):** exactly that — `ratings.distinct('recipeId', { userId })` is captured before
+the transaction, and after it commits `recomputeRecipeRating` runs for each reviewed recipe the user
+did NOT own (best-effort; a recompute failure can't block the account delete). Regression test:
+`auth.test.js` cascade → "recomputes the aggregate of a surviving recipe the departing user reviewed"
+(2-reviewer recipe drops from avg 3/count 2 to avg 4/count 1).
+
 **Touches:** `server/routes/auth.js` (deleteAccount); reuses `server/util/recipeRating.js`.
 
 ---
 
-## D5 — account-delete leaves Firebase Storage objects orphaned (recipe images + profile photo) `[ ]`
+## D5 — account-delete leaves Firebase Storage objects orphaned (recipe images + profile photo) `[x]`
 
 **What:** `DELETE /deleteRecipe` correctly calls `deleteRecipeImage(recipe.recipeImage)` after its
 transaction (`server/routes/recipes.js:342`). The delete-account cascade does **not** — it
@@ -166,12 +185,21 @@ existing `deleteRecipeImage` — an orphaned blob beats a failed account delete)
 keyed by path, not a download URL, so it needs a small delete-by-path helper alongside the existing
 URL-parsing one.
 
-**Touches:** `server/routes/auth.js` (deleteAccount); `server/util/firebaseStorage.js` (add a
-delete-by-path helper).
+**Done (PR: cascade):** the user's recipe docs are read before the transaction; after it commits,
+`deleteRecipeImage(r.recipeImage)` runs per recipe and the new `deleteProfilePhoto(uid)` helper
+(`server/util/firebaseStorage.js`) deletes `profilePhotos/{uid}` by path. Both never throw. The
+profile-photo helper names its bucket from `FIREBASE_STORAGE_BUCKET` (the Admin SDK has no default
+bucket configured) — added to `server/.env.example`; without it profile-photo cleanup is silently
+skipped (still best-effort). Regression tests: `auth.test.js` cascade → asserts the storage helpers
+are invoked (recipe image + profile photo = 2 calls) and that a Storage failure can't fail the
+account delete.
+
+**Touches:** `server/routes/auth.js` (deleteAccount); `server/util/firebaseStorage.js`
+(`deleteProfilePhoto` by-path helper).
 
 ---
 
-## D6 — the delete-account cascade re-implements recipe teardown instead of reusing the thorough one `[ ]` **(unifies D2 / D5 for the account path)**
+## D6 — the delete-account cascade re-implements recipe teardown instead of reusing the thorough one `[x]` **(unifies D2 / D5 for the account path)**
 
 **What:** `DELETE /deleteRecipe` already does a complete, atomic per-recipe teardown
 (`server/routes/recipes.js:319`): delete the recipe, `ratings.deleteMany({ recipeId })`, `$pull` the
@@ -192,8 +220,17 @@ so the two paths can't drift. Then decide reporter cleanup: `reports.deleteMany(
 if the filed reports are disposable, or anonymize `reporterUid` if the moderation queue needs the
 history. Pairs naturally with D3 (wrap the whole thing in one transaction).
 
-**Touches:** `server/routes/recipes.js` (extract `teardownRecipe`); `server/routes/auth.js`
-(deleteAccount); `server/routes/reports.js` (reporter-cleanup decision).
+**Done (PR: cascade):** `teardownRecipeDocs(db, recipe, session)` is now the single implementation in
+`server/util/teardownRecipe.js`, called by both `DELETE /deleteRecipe` and the cascade. Reporter
+cleanup: **anonymize** — `reports.updateMany({ reporterUid: uid }, { $set: { reporterUid: null } })`
+inside the transaction, chosen over delete because a report's subject (the reported content) can
+still be a valid open queue item after the reporter leaves; the email helpers already guard a falsy
+`reporterUid`, so an anonymized report just skips reporter notification. Regression tests:
+`auth.test.js` cascade → dangling saved/made refs pulled, reporter anonymized, surrounding data
+intact.
+
+**Touches:** `server/routes/recipes.js` (now delegates to the shared helper);
+`server/util/teardownRecipe.js` (new); `server/routes/auth.js` (deleteAccount).
 
 ---
 

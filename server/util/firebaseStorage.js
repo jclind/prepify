@@ -27,4 +27,31 @@ async function deleteRecipeImage(url) {
   }
 }
 
-module.exports = { parseStorageUrl, deleteRecipeImage }
+// Best-effort deletion of a user's profile photo, which (unlike recipe images)
+// we only know by its Storage PATH — `profilePhotos/{uid}`, written by the
+// client's AuthContext.updateProfileData — not by a download URL. Never throws,
+// same posture as deleteRecipeImage: an orphaned avatar must not fail (or roll
+// back) the account deletion it accompanies. Returns true only when a file was
+// actually deleted.
+//
+// The Admin SDK isn't initialized with a default storageBucket, so we name the
+// bucket explicitly from FIREBASE_STORAGE_BUCKET when set, else fall back to the
+// default bucket (which is what the test mock exercises). If neither resolves,
+// the attempt simply fails and is swallowed.
+async function deleteProfilePhoto(uid) {
+  if (!uid || typeof uid !== 'string') return false
+  const path = `profilePhotos/${uid}`
+  try {
+    const bucketName = process.env.FIREBASE_STORAGE_BUCKET
+    const bucket = bucketName
+      ? admin.storage().bucket(bucketName)
+      : admin.storage().bucket()
+    await bucket.file(path).delete()
+    return true
+  } catch (err) {
+    console.error('Failed to delete profile photo from storage:', err.message)
+    return false
+  }
+}
+
+module.exports = { parseStorageUrl, deleteRecipeImage, deleteProfilePhoto }
