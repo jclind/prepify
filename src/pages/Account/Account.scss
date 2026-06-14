@@ -354,6 +354,10 @@
   // ── Body / sub-page mount ──────────────────────────────────────────────────
   .account-body {
     margin-top: 0;
+    // Sit in the .acct-main 1fr track without letting non-shrinkable content
+    // (a long recipe title, a wide review) force the track wider than its share
+    // and overflow the page horizontally. Grid tracks default to min-width:auto.
+    min-width: 0;
   }
 
   // Shared empty-state used by every sub-page (Saved/Ratings/Recipes/Drafts).
