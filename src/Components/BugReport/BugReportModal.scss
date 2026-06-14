@@ -34,6 +34,19 @@
     font-size: 0.9rem;
   }
 
+  .bug-report-identity {
+    margin: -0.75rem 0 1.25rem;
+    padding: 0.5rem 0.7rem;
+    background: #f1f5f9;
+    border-radius: 6px;
+    color: #374151;
+    font-size: 0.85rem;
+
+    strong {
+      font-weight: 600;
+    }
+  }
+
   .bug-report-field {
     display: flex;
     flex-direction: column;

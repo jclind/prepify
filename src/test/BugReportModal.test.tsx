@@ -75,4 +75,17 @@ describe('BugReportModal', () => {
     rerender(<BugReportModal />)
     expect(screen.queryByPlaceholderText(/follow up/i)).not.toBeInTheDocument()
   })
+
+  it('shows "Reporting as <name>" for a signed-in user and not when logged out', () => {
+    mockedUseAuth.mockReturnValue({ user: { uid: 'u1', displayName: 'chefSam' } })
+    const { rerender } = render(<BugReportModal />)
+    fireEvent.click(screen.getByRole('button', { name: /report a bug/i }))
+    expect(screen.getByText(/reporting as/i)).toBeInTheDocument()
+    expect(screen.getByText('chefSam')).toBeInTheDocument()
+
+    vi.clearAllMocks()
+    mockedUseAuth.mockReturnValue({ user: null })
+    rerender(<BugReportModal />)
+    expect(screen.queryByText(/reporting as/i)).not.toBeInTheDocument()
+  })
 })
