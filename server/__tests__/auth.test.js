@@ -552,7 +552,7 @@ describe('GET /exportMyData', () => {
       .insertOne({ _id: 'd1', userId: TEST_UID })
     await db
       .collection('ratings')
-      .insertOne({ username: 'exporter', recipeId: 'r1', rating: 5 })
+      .insertOne({ userId: TEST_UID, username: 'exporter', recipeId: 'r1', rating: 5 })
 
     const res = await request(app).get('/api/exportMyData').set(AUTH_HEADER)
 
@@ -595,7 +595,7 @@ describe('POST /deleteAccount', () => {
       .insertOne({ _id: 'd1', userId: TEST_UID })
     await db
       .collection('ratings')
-      .insertOne({ username: 'goner', recipeId: 'r1', rating: 4 })
+      .insertOne({ userId: TEST_UID, username: 'goner', recipeId: 'r1', rating: 4 })
   }
 
   it('rejects request with no auth token (401)', async () => {

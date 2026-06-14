@@ -141,6 +141,7 @@ describe('POST /editReview', () => {
   beforeEach(async () => {
     const db = getDB()
     await db.collection('ratings').insertOne({
+      userId: TEST_UID,
       username: TEST_USERNAME,
       recipeId: RECIPE_ID,
       rating: 4,
@@ -200,6 +201,7 @@ describe('DELETE /deleteReview', () => {
   beforeEach(async () => {
     const db = getDB()
     await db.collection('ratings').insertOne({
+      userId: TEST_UID,
       username: TEST_USERNAME,
       recipeId: RECIPE_ID,
       rating: 3,
@@ -315,6 +317,7 @@ describe('POST /newReview', () => {
 
   it('updates an existing review entry (upsert)', async () => {
     await seedRating({
+      userId: TEST_UID,
       username: TEST_USERNAME,
       recipeId: RECIPE_ID,
       rating: 4,
@@ -383,7 +386,7 @@ describe('GET /checkIfReviewed', () => {
   })
 
   it('returns { reviewed: true, rating } when a rating exists with empty reviewText (rating-only)', async () => {
-    await seedRating({ username: TEST_USERNAME, recipeId: RECIPE_ID, rating: 3, reviewText: '' })
+    await seedRating({ userId: TEST_UID, username: TEST_USERNAME, recipeId: RECIPE_ID, rating: 3, reviewText: '' })
 
     const res = await request(app)
       .get(`/api/checkIfReviewed?recipeId=${RECIPE_ID}`)
@@ -396,6 +399,7 @@ describe('GET /checkIfReviewed', () => {
 
   it('returns the full ratings doc plus reviewed:true when a review exists', async () => {
     await seedRating({
+      userId: TEST_UID,
       username: TEST_USERNAME,
       recipeId: RECIPE_ID,
       rating: 5,
@@ -470,6 +474,7 @@ describe('GET /getReviews', () => {
 
   it('sets isCurrentUser=true for the authenticated caller’s own review', async () => {
     await seedRating({
+      userId: TEST_UID,
       username: TEST_USERNAME,
       recipeId: RECIPE_ID,
       rating: 5,
@@ -487,6 +492,7 @@ describe('GET /getReviews', () => {
 
   it('ignores the username query param — no token means isCurrentUser=false (spoof closed)', async () => {
     await seedRating({
+      userId: TEST_UID,
       username: TEST_USERNAME,
       recipeId: RECIPE_ID,
       rating: 5,
@@ -549,6 +555,7 @@ describe('GET /getSingleUserReviews', () => {
 
   it('returns only reviews for the specified user', async () => {
     await seedRating({
+      userId: TEST_UID,
       username: TEST_USERNAME,
       recipeId: RECIPE_ID,
       rating: 5,
@@ -556,6 +563,7 @@ describe('GET /getSingleUserReviews', () => {
       reviewCreatedAt: '1000',
     })
     await seedRating({
+      userId: OTHER_UID,
       username: OTHER_USERNAME,
       recipeId: RECIPE_ID,
       rating: 3,
@@ -571,6 +579,7 @@ describe('GET /getSingleUserReviews', () => {
 
   it('includes recipeData when returnRecipeData=true', async () => {
     await seedRating({
+      userId: TEST_UID,
       username: TEST_USERNAME,
       recipeId: RECIPE_ID,
       rating: 4,
@@ -588,6 +597,7 @@ describe('GET /getSingleUserReviews', () => {
 
   it('does not include recipeData when returnRecipeData is not set', async () => {
     await seedRating({
+      userId: TEST_UID,
       username: TEST_USERNAME,
       recipeId: RECIPE_ID,
       rating: 4,
@@ -605,6 +615,7 @@ describe('GET /getSingleUserReviews', () => {
   // which silently dropped any rating without a written review.
   it('includes rating-only entries (empty reviewText)', async () => {
     await seedRating({
+      userId: TEST_UID,
       username: TEST_USERNAME,
       recipeId: RECIPE_ID,
       rating: 4,
@@ -622,6 +633,7 @@ describe('GET /getSingleUserReviews', () => {
   it('paginates results', async () => {
     for (let i = 0; i < 4; i++) {
       await seedRating({
+        userId: TEST_UID,
         username: TEST_USERNAME,
         recipeId: `recipe-${i}`,
         rating: 3,
@@ -636,5 +648,81 @@ describe('GET /getSingleUserReviews', () => {
     expect(res.status).toBe(200)
     expect(res.body.reviews).toHaveLength(2)
     expect(res.body.totalCount).toBe(4)
+  })
+})
+
+// ─── D1: ratings are keyed by the stable userId, not the mutable username ──────
+// These pin the root-cause fix: a review's identity is the author's uid, so a
+// username that no longer matches the doc (a rename happened) can neither
+// detach the author from their own review nor let the stale handle be used to
+// reach it.
+
+describe('D1: review identity keyed on userId', () => {
+  // Simulate a post-rename state: the user's CURRENT username is TEST_USERNAME
+  // (from the usernames doc seeded in beforeEach), but their existing rating doc
+  // still carries the OLD denormalized handle.
+  const STALE_HANDLE = 'old-handle'
+
+  it('lets the author edit their own review found by uid even when the stored username is stale', async () => {
+    await seedRating({
+      userId: TEST_UID,
+      username: STALE_HANDLE,
+      recipeId: RECIPE_ID,
+      rating: 4,
+      reviewText: 'before',
+      reviewCreatedAt: '1000',
+      reviewLastUpdated: '1000',
+    })
+
+    const res = await request(app)
+      .post(`/api/editReview?recipeId=${RECIPE_ID}&text=after`)
+      .set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+
+    const doc = await getDB()
+      .collection('ratings')
+      .findOne({ userId: TEST_UID, recipeId: RECIPE_ID })
+    expect(doc.reviewText).toBe('after')
+  })
+
+  it('upserts onto the existing doc by uid (no duplicate) when the stored username is stale', async () => {
+    await seedRating({
+      userId: TEST_UID,
+      username: STALE_HANDLE,
+      recipeId: RECIPE_ID,
+      rating: 5,
+      reviewText: 'original',
+      reviewCreatedAt: '1000',
+      reviewLastUpdated: '1000',
+    })
+
+    await request(app)
+      .post('/api/newReview')
+      .set(AUTH_HEADER)
+      .send({ recipeId: RECIPE_ID, reviewText: 'updated' })
+
+    const docs = await getDB()
+      .collection('ratings')
+      .find({ userId: TEST_UID, recipeId: RECIPE_ID })
+      .toArray()
+    expect(docs).toHaveLength(1)
+    expect(docs[0].reviewText).toBe('updated')
+  })
+
+  it('flags isCurrentUser from the uid, not the (possibly stale) stored username', async () => {
+    await seedRating({
+      userId: TEST_UID,
+      username: STALE_HANDLE,
+      recipeId: RECIPE_ID,
+      rating: 5,
+      reviewText: 'mine',
+      reviewCreatedAt: '1000',
+    })
+
+    const res = await request(app)
+      .get(`/api/getReviews?recipeId=${RECIPE_ID}`)
+      .set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(res.body.reviews[0].isCurrentUser).toBe(true)
   })
 })

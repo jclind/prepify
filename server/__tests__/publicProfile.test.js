@@ -42,7 +42,7 @@ const seedProfile = async () => {
   await seedUserRecipeData(PUB_UID, {
     savedRecipes: [{ recipeId: 'c1', dateSaved: '1' }],
   })
-  await seedRating({ username: 'CoolUser', recipeId: 'c1', rating: 5 })
+  await seedRating({ userId: PUB_UID, username: 'CoolUser', recipeId: 'c1', rating: 5 })
 }
 
 describe('GET /getPublicProfile', () => {

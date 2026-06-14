@@ -60,11 +60,22 @@ router.post('/reports', verifyToken, requireActive, asyncHandler(async (req, res
     })
   }
 
+  // Snapshot the reported user's stable uid alongside the denormalized handle
+  // (D1), so a review report stays attached to its author across renames. The
+  // handle is still stored for display in the queue.
+  let reportedUid = null
+  if (targetType === 'review') {
+    const reportedDoc = await db
+      .collection('usernames')
+      .findOne({ username_lower: reportedUsername.toLowerCase() })
+    reportedUid = reportedDoc?._id || null
+  }
+
   const doc = {
     _id: new ObjectId(),
     targetType,
     recipeId,
-    ...(targetType === 'review' ? { reportedUsername } : {}),
+    ...(targetType === 'review' ? { reportedUsername, reportedUid } : {}),
     reporterUid: req.uid,
     reason,
     details: details || '',

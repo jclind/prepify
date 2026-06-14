@@ -16,7 +16,7 @@
 
 ---
 
-## D1 — `ratings` are keyed by `username`, not `uid` `[~]` **(root cause)**
+## D1 — `ratings` are keyed by `username`, not `uid` `[x]` **(root cause)**
 
 **What:** Review/rating documents in the `ratings` collection identify their author by a
 denormalized `username` string (e.g. `{ username: 'jesse', recipeId, rating, reviewText }`), not
@@ -42,10 +42,39 @@ and the moderation queue.
 `username` as a denormalized display field refreshed at read time (or dropped in favour of a join).
 Then the rename propagation and the username-based delete cascade both become unnecessary.
 
-**Touches:** `server/routes/reviews.js`, `server/routes/auth.js` (setUsername, deleteAccount,
-exportMyData), `server/routes/publicProfile.js`, plus a one-off backfill migration script.
+**Done (PR: D1):**
+- `ratings` now carry the author's stable `userId`; every author-facing write/read keys on it —
+  `addRating` / `newReview` / `editReview` / `deleteReview` / `checkIfReviewed` match `{ userId,
+  recipeId }`, `getReviews` derives `isCurrentUser` from a direct uid match, and
+  `getSingleUserReviews` resolves the public handle → uid then queries on `userId`
+  (`server/routes/reviews.js`). `username` stays on each doc purely as a denormalized display field.
+- `getAccountCountsFor`, `GET /exportMyData`, and the `POST /deleteAccount` ratings delete all key
+  on `userId` now (no username round-trip; robust even if the `usernames` doc is already gone).
+- `reports` review documents snapshot a stable `reportedUid` at creation time
+  (`server/routes/reports.js`); `reportedUsername` remains the denormalized display handle.
+- One-off backfill: `server/scripts/backfillRatingUserIds.js` — dry-run by default (`--apply` to
+  write), maps `username_lower → _id`, stamps `ratings.userId` + `reports.reportedUid`, lists
+  unresolved handles (orphans). Idempotent (only touches docs missing the field).
+- Index: `ratings { userId: 1, recipeId: 1 }` added to `server/scripts/createModerationIndexes.js`
+  to back the new point lookups and uid-prefix scans.
+- Regression tests: `reviews.test.js` "D1: review identity keyed on userId" (edit/upsert/flag still
+  work when the stored handle is stale, i.e. post-rename), `reports.test.js` reportedUid stamping.
 
-**Sequencing:** do this first — it shrinks D2 and D3.
+**Deploy ordering:** new writes already stamp `userId`, so run the backfill at deploy time to close
+the brief window where a legacy username-only `ratings` doc could be double-written. Run
+`createModerationIndexes.js` for the new ratings index.
+
+**Deferred (residual):** the admin review-moderation endpoint and the reports queue still *reference*
+a review by its denormalized `(username, recipeId)` / `reportedUsername`, so `POST /setUsername` keeps
+its rename propagation to keep those display handles fresh — identity is now uid-stable regardless, so
+this is a display concern, not a correctness one. Fully dropping propagation would mean moving the
+moderation/queue lookups to `reportedUid` too.
+
+**Touches:** `server/routes/reviews.js`, `server/routes/auth.js` (deleteAccount, exportMyData),
+`server/routes/reports.js`, `server/routes/publicProfile.js`, `server/util/accountCounts.js`, plus
+the one-off backfill migration script.
+
+**Sequencing:** done first — it shrinks D2 and D3.
 
 ---
 

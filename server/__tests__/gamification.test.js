@@ -140,7 +140,7 @@ describe('GET /getGamification', () => {
     await seedUserRecipeData(TEST_UID, {
       savedRecipes: [{ recipeId: 'c1', dateSaved: '1' }],
     })
-    await seedRating({ username: 'testuser', recipeId: 'c1', rating: 5 })
+    await seedRating({ userId: TEST_UID, username: 'testuser', recipeId: 'c1', rating: 5 })
 
     const res = await request(app).get('/api/getGamification').set(AUTH_HEADER)
     expect(res.status).toBe(200)

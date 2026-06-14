@@ -234,8 +234,9 @@ router.post('/updatePrivacy', verifyToken, requireActive, asyncHandler(async (re
 
 // GET /exportMyData
 // Assembles a JSON copy of everything stored for the authenticated user and
-// returns it as a file download. Read-only; ratings are keyed by username, so
-// we resolve that first (a user with no username simply has no ratings).
+// returns it as a file download. Read-only. Everything keys on the stable uid
+// (ratings carry `userId` since D1); the username is still surfaced as a
+// top-level display field.
 router.get('/exportMyData', verifyToken, asyncHandler(async (req, res) => {
   const uid = req.uid
   const db = getDB()
@@ -247,9 +248,7 @@ router.get('/exportMyData', verifyToken, asyncHandler(async (req, res) => {
     db.collection('userRecipeData').findOne({ _id: uid }),
     db.collection('recipes').find({ userId: uid }).toArray(),
     db.collection('recipeDrafts').find({ userId: uid }).toArray(),
-    username
-      ? db.collection('ratings').find({ username }).toArray()
-      : Promise.resolve([]),
+    db.collection('ratings').find({ userId: uid }).toArray(),
   ])
 
   const data = {
@@ -290,8 +289,8 @@ router.post('/deleteAccount', verifyToken, asyncHandler(async (req, res) => {
   const uid = req.uid
   const db = getDB()
 
-  // ratings are keyed by username (not uid), so resolve it before we delete the
-  // usernames doc.
+  // The username is only needed for the audit label now — every collection
+  // below keys on the stable uid (ratings carry `userId` since D1).
   const usernameDoc = await db.collection('usernames').findOne({ _id: uid })
   const username = usernameDoc?.username || null
 
@@ -301,9 +300,7 @@ router.post('/deleteAccount', verifyToken, asyncHandler(async (req, res) => {
   await db.collection('userRecipeData').deleteOne({ _id: uid })
   await db.collection('recipes').deleteMany({ userId: uid })
   await db.collection('recipeDrafts').deleteMany({ userId: uid })
-  if (username) {
-    await db.collection('ratings').deleteMany({ username })
-  }
+  await db.collection('ratings').deleteMany({ userId: uid })
 
   // Leave a trail in the audit log (best-effort) so an admin can see that the
   // account was self-deleted rather than removed by moderation.

@@ -39,7 +39,17 @@ const INDEXES = [
     collection: 'ratings',
     key: { username: 1 },
     name: 'username_1',
-    why: 'admin user list review tally + getSingleUserReviews (by username)',
+    why: 'admin user list review tally (still keyed by reportedUsername)',
+  },
+  // D1: ratings now identify their author by the stable `userId`. This compound
+  // serves both the (userId, recipeId) point lookup/upsert used by every review
+  // write AND the userId-prefix scans (getSingleUserReviews, account counts,
+  // exportMyData, the delete-account cascade).
+  {
+    collection: 'ratings',
+    key: { userId: 1, recipeId: 1 },
+    name: 'userId_1_recipeId_1',
+    why: 'D1 review writes/reads + account-counts/export/cascade keyed on userId',
   },
   {
     collection: 'recipes',
