@@ -649,4 +649,121 @@ describe('POST /deleteAccount', () => {
     expect(res.status).toBe(200)
     expect(admin.__deleteUser).toHaveBeenCalledWith(TEST_UID)
   })
+
+  // ── Cascade thoroughness (D2 / D4 / D5 / D6) ──────────────────────────────
+  // The departing user (TEST_UID/'goner') OWNS recipe 'owned'. Another user
+  // ('keeper') owns recipe 'kept' and has reviewed BOTH; the departing user has
+  // also reviewed 'kept'. Exercises: other users' reviews of a deleted recipe,
+  // dangling saved/made refs, surviving-recipe rating drift, and Storage leaks.
+  describe('cascade (D2/D4/D5/D6)', () => {
+    const KEEPER_UID = 'keeper-uid'
+
+    const seedCascade = async () => {
+      const db = getDB()
+      await seedUser(TEST_UID, 'goner')
+      await seedUser(KEEPER_UID, 'keeper')
+      await db.collection('users').insertOne({ _id: TEST_UID, status: 'active' })
+
+      // Departing user owns 'owned' (with an image); keeper owns 'kept'.
+      await db.collection('recipes').insertMany([
+        { _id: 'owned', userId: TEST_UID, recipeImage: 'https://firebasestorage.googleapis.com/v0/b/b/o/owned.jpg?alt=media&token=t' },
+        { _id: 'kept', userId: KEEPER_UID, rating: { rateCount: 0, rateValue: 0 } },
+      ])
+
+      // keeper saved + made the departing user's recipe → must be pulled (D2/D6).
+      await db.collection('userRecipeData').insertMany([
+        { _id: TEST_UID, savedRecipes: [{ recipeId: 'kept' }], madeRecipes: [], userRecipes: [{ recipeId: 'owned' }] },
+        { _id: KEEPER_UID, savedRecipes: [{ recipeId: 'owned' }], madeRecipes: [{ recipeId: 'owned' }], userRecipes: [{ recipeId: 'kept' }] },
+      ])
+
+      // Ratings: keeper reviewed BOTH; departing user reviewed 'kept'.
+      await db.collection('ratings').insertMany([
+        { userId: KEEPER_UID, username: 'keeper', recipeId: 'owned', rating: 5 },
+        { userId: KEEPER_UID, username: 'keeper', recipeId: 'kept', rating: 4 },
+        { userId: TEST_UID, username: 'goner', recipeId: 'kept', rating: 2 },
+      ])
+      // 'kept' currently averages keeper(4) + goner(2) = 3 over 2 ratings.
+      await db.collection('recipes').updateOne({ _id: 'kept' }, { $set: { rating: { rateCount: 2, rateValue: 3 } } })
+    }
+
+    beforeEach(() => admin.__deleteFile.mockClear())
+
+    it('removes other users\' ratings of the departing user\'s recipes (D2)', async () => {
+      await seedCascade()
+      await request(app).post('/api/deleteAccount').set(AUTH_HEADER)
+
+      const db = getDB()
+      // keeper's review of the now-deleted 'owned' recipe must be gone.
+      expect(await db.collection('ratings').countDocuments({ recipeId: 'owned' })).toBe(0)
+    })
+
+    it('pulls the deleted recipe from other users\' saved/made lists (D6)', async () => {
+      await seedCascade()
+      await request(app).post('/api/deleteAccount').set(AUTH_HEADER)
+
+      const keeper = await getDB().collection('userRecipeData').findOne({ _id: KEEPER_UID })
+      expect(keeper.savedRecipes).toEqual([])
+      expect(keeper.madeRecipes).toEqual([])
+      // keeper's unrelated created list is untouched.
+      expect(keeper.userRecipes).toEqual([{ recipeId: 'kept' }])
+    })
+
+    it('recomputes the aggregate of a surviving recipe the departing user reviewed (D4)', async () => {
+      await seedCascade()
+      await request(app).post('/api/deleteAccount').set(AUTH_HEADER)
+
+      const db = getDB()
+      // goner's review of 'kept' is gone; only keeper(4) remains.
+      expect(await db.collection('ratings').countDocuments({ recipeId: 'kept' })).toBe(1)
+      const kept = await db.collection('recipes').findOne({ _id: 'kept' })
+      expect(kept.rating).toEqual({ rateCount: 1, rateValue: 4 })
+    })
+
+    it('deletes the departing user\'s recipe images and profile photo from Storage (D5)', async () => {
+      await seedCascade()
+      await request(app).post('/api/deleteAccount').set(AUTH_HEADER)
+
+      // One recipe image ('owned') + the profile photo (profilePhotos/{uid}).
+      expect(admin.__deleteFile).toHaveBeenCalledTimes(2)
+    })
+
+    it('still completes the account delete if a Storage delete fails (best-effort)', async () => {
+      await seedCascade()
+      admin.__deleteFile.mockRejectedValueOnce(new Error('storage down'))
+
+      const res = await request(app).post('/api/deleteAccount').set(AUTH_HEADER)
+      expect(res.status).toBe(200)
+      expect(admin.__deleteUser).toHaveBeenCalledWith(TEST_UID)
+    })
+
+    it('anonymizes reports the departing user filed, preserving the record (D6)', async () => {
+      await seedCascade()
+      const db = getDB()
+      await db.collection('reports').insertOne({
+        targetType: 'recipe',
+        recipeId: 'kept',
+        reporterUid: TEST_UID,
+        reason: 'spam',
+        status: 'open',
+        createdAt: new Date(),
+      })
+
+      await request(app).post('/api/deleteAccount').set(AUTH_HEADER)
+
+      const report = await db.collection('reports').findOne({ recipeId: 'kept' })
+      expect(report).not.toBeNull()
+      expect(report.reporterUid).toBeNull()
+    })
+
+    it('leaves another user\'s own recipe and review intact', async () => {
+      await seedCascade()
+      await request(app).post('/api/deleteAccount').set(AUTH_HEADER)
+
+      const db = getDB()
+      expect(await db.collection('recipes').findOne({ _id: 'kept' })).not.toBeNull()
+      expect(
+        await db.collection('ratings').findOne({ userId: KEEPER_UID, recipeId: 'kept' })
+      ).not.toBeNull()
+    })
+  })
 })
