@@ -321,6 +321,7 @@ export type AuditAction =
   | 'user.suspend'
   | 'user.ban'
   | 'user.activate'
+  | 'user.delete'
   | 'report.resolve'
   | 'report.dismiss'
   | 'bugReport.resolve'

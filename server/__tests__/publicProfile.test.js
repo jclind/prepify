@@ -148,4 +148,39 @@ describe('GET /getPublicProfile', () => {
     expect(res.body.displayName).toBe('CoolUser')
     expect(res.body.photoURL).toBeNull()
   })
+
+  // ── Privacy gating ──────────────────────────────────────────────────────────
+
+  it('returns 404 when the profile is private', async () => {
+    await seedUser(PUB_UID, 'CoolUser')
+    await getDB()
+      .collection('userProfiles')
+      .insertOne({ _id: PUB_UID, bio: 'secret', location: 'PDX', isPublic: false })
+
+    const res = await request(app).get('/api/getPublicProfile?username=CoolUser')
+    expect(res.status).toBe(404)
+  })
+
+  it('stays public when isPublic is explicitly true', async () => {
+    await seedUser(PUB_UID, 'CoolUser')
+    await getDB()
+      .collection('userProfiles')
+      .insertOne({ _id: PUB_UID, location: 'PDX', isPublic: true })
+
+    const res = await request(app).get('/api/getPublicProfile?username=CoolUser')
+    expect(res.status).toBe(200)
+    expect(res.body.location).toBe('PDX')
+  })
+
+  it('strips the location when hideLocation is set', async () => {
+    await seedUser(PUB_UID, 'CoolUser')
+    await getDB()
+      .collection('userProfiles')
+      .insertOne({ _id: PUB_UID, bio: 'hi', location: 'PDX', hideLocation: true })
+
+    const res = await request(app).get('/api/getPublicProfile?username=CoolUser')
+    expect(res.status).toBe(200)
+    expect(res.body.location).toBe('')
+    expect(res.body.bio).toBe('hi')
+  })
 })

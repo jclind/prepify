@@ -58,6 +58,15 @@ router.get('/getPublicProfile', asyncHandler(async (req, res) => {
     fetchAuthRecord(),
   ])
 
+  // Privacy gate. A profile the user has switched to private reads as
+  // not-found (404) — the same response as a username that was never taken — so
+  // the existence of the account isn't leaked. hideLocation keeps the rest of
+  // the profile public but strips the location.
+  if (profile?.isPublic === false) {
+    return res.status(404).json({ error: 'Profile not found' })
+  }
+  const location = profile?.hideLocation ? '' : profile?.location ?? ''
+
   const gamification = computeGamification(counts, [])
   const earnedAchievements = gamification.achievements.filter(a => a.earned)
 
@@ -66,7 +75,7 @@ router.get('/getPublicProfile', asyncHandler(async (req, res) => {
     displayName: authRecord.displayName,
     photoURL: authRecord.photoURL,
     bio: profile?.bio ?? '',
-    location: profile?.location ?? '',
+    location,
     level: gamification.level,
     rank: gamification.rank,
     xp: gamification.xp,

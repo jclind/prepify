@@ -15,6 +15,8 @@ const AUDIT_ACTIONS = [
   'user.suspend',
   'user.ban',
   'user.activate',
+  // Self-service: the user deleted their own account (Settings → Danger Zone).
+  'user.delete',
   'report.resolve',
   'report.dismiss',
   'bugReport.resolve',
