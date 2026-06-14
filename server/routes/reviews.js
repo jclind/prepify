@@ -7,6 +7,7 @@ const { REVIEW_VISIBLE, RECIPE_VISIBLE } = require('../util/moderation')
 const { DESCRIPTION_MAX_LENGTH } = require('../util/recipeLimits')
 const { recordAudit } = require('../util/auditLog')
 const { recomputeRecipeRating } = require('../util/recipeRating')
+const { upsertWithDupRetry } = require('../util/upsertWithDupRetry')
 const { notifyInBackground, notifyReviewTakenDown } = require('../util/email')
 
 const router = Router()
@@ -35,7 +36,10 @@ router.post('/addRating', verifyToken, requireActive, asyncHandler(async (req, r
     return res.status(400).json({ error: 'Rating must be between 1 and 5' })
   }
 
-  await db.collection('ratings').updateOne(
+  // dup-retry: the unique { userId, recipeId } index turns a concurrent
+  // double-submit into an E11000 on the loser; retry it as a plain update.
+  await upsertWithDupRetry(
+    db.collection('ratings'),
     { userId, recipeId },
     {
       $set: { rating: parsedRating, ratingLastUpdated: new Date() },
@@ -47,8 +51,7 @@ router.post('/addRating', verifyToken, requireActive, asyncHandler(async (req, r
         reviewLastUpdated: '',
         reviewText: '',
       },
-    },
-    { upsert: true }
+    }
   )
 
   // Recompute the aggregate (excludes moderated ratings).
@@ -75,8 +78,10 @@ router.post('/newReview', verifyToken, requireActive, asyncHandler(async (req, r
 
   const now = Date.now().toString()
   // Keyed by the stable uid (D1). username is denormalized for display, written
-  // once on insert ($setOnInsert) alongside the defaulted rating fields.
-  await db.collection('ratings').updateOne(
+  // once on insert ($setOnInsert) alongside the defaulted rating fields. The
+  // dup-retry handles a concurrent double-submit racing on the unique index.
+  await upsertWithDupRetry(
+    db.collection('ratings'),
     { userId, recipeId },
     {
       $set: { reviewText, reviewCreatedAt: now, reviewLastUpdated: now },
@@ -84,8 +89,7 @@ router.post('/newReview', verifyToken, requireActive, asyncHandler(async (req, r
       // insert so no ratings doc ever lacks them (recomputeRecipeRating skips
       // rating: null, but this keeps the document shape consistent).
       $setOnInsert: { username, rating: null, ratingLastUpdated: '' },
-    },
-    { upsert: true }
+    }
   )
 
   const updated = await db.collection('ratings').findOne({ userId, recipeId })

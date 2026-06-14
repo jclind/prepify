@@ -5,7 +5,6 @@ const router = express.Router()
 const { getDB, getClient } = require('../db')
 const { verifyToken, requireActive } = require('../middleware/auth')
 const { recordAudit } = require('../util/auditLog')
-const { teardownRecipeDocs } = require('../util/teardownRecipe')
 const { deleteRecipeImage, deleteProfilePhoto } = require('../util/firebaseStorage')
 const { recomputeRecipeRating } = require('../util/recipeRating')
 
@@ -313,14 +312,32 @@ router.post('/deleteAccount', verifyToken, asyncHandler(async (req, res) => {
   // teardown DELETE /deleteRecipe uses (D6), so the account path can't drift:
   // other users' reviews of this user's recipes (D2) and their saved/made
   // references to them are cleaned up too — not just the recipe rows.
+  const ownRecipeIdList = [...ownRecipeIds]
   const session = getClient().startSession()
   try {
     await session.withTransaction(async () => {
-      for (const recipe of ownRecipes) {
-        await teardownRecipeDocs(db, recipe, session)
-      }
+      // Per-recipe teardown, batched into O(1) collection passes (not one set of
+      // writes per recipe). A prolific owner could otherwise run hundreds of
+      // full-collection updateMany scans inside a single transaction and blow the
+      // transaction time/oplog limit, rolling back the whole delete. Same effect
+      // as calling teardownRecipeDocs for each recipe, in three writes total.
+      await db.collection('recipes').deleteMany({ userId: uid }, { session })
+      await db
+        .collection('ratings')
+        .deleteMany({ recipeId: { $in: ownRecipeIdList } }, { session })
+      await db.collection('userRecipeData').updateMany(
+        {},
+        {
+          $pull: {
+            savedRecipes: { recipeId: { $in: ownRecipeIdList } },
+            madeRecipes: { recipeId: { $in: ownRecipeIdList } },
+            userRecipes: { recipeId: { $in: ownRecipeIdList } },
+          },
+        },
+        { session }
+      )
       // The user's own reviews of OTHER people's recipes (their reviews of their
-      // own recipes were already removed by the teardown above).
+      // own recipes were already removed by the ratings delete above).
       await db.collection('ratings').deleteMany({ userId: uid }, { session })
       await db.collection('usernames').deleteOne({ _id: uid }, { session })
       await db.collection('userProfiles').deleteOne({ _id: uid }, { session })
