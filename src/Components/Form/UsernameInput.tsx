@@ -57,8 +57,10 @@ const UsernameInput: FC<UsernameInputProps> = ({
     <>
       <FormInput
         icon={<MdAlternateEmail className='icon' />}
-        type='username'
+        type='text'
         name='username'
+        label='Username'
+        autoComplete='username'
         val={username}
         setVal={setUsername}
         placeholder='johnsmith'

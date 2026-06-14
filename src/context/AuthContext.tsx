@@ -7,6 +7,9 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
+  setPersistence,
+  browserLocalPersistence,
+  browserSessionPersistence,
   UserCredential,
   updateProfile,
   verifyBeforeUpdateEmail,
@@ -21,6 +24,8 @@ import AuthAPI from 'src/api/auth'
 import { TailSpin } from 'react-loader-spinner'
 import { getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage'
 import { ErrorWithData } from 'src/util/ErrorWithData'
+import { setSentryUser } from 'src/util/sentry'
+import { authErrorMessage } from 'src/util/authErrors'
 
 export function useAuth() {
   return useContext(AuthContext)
@@ -34,19 +39,19 @@ type AuthContextValueType = {
   signInDefault: (
     email: string,
     password: string,
+    remember: boolean,
+    setLoading: (val: boolean) => void,
     setError: (val: string) => void
   ) => void
   signUp: (
     email: string,
     password: string,
-    username: string,
-    displayName: string,
     setLoading: (val: boolean) => void,
-    setSuccess: (val: string) => void,
     setError: (val: string) => void
   ) => void
   forgotPassword: (
     email: string,
+    setLoading: (val: boolean) => void,
     setSuccess: (val: string) => void,
     setError: (val: string) => void
   ) => void
@@ -100,99 +105,93 @@ const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
         navigate('/')
       })
       .catch(err => {
-        setError(err.code)
+        // authErrorMessage returns '' for benign cases (e.g. the user closing
+        // the popup), so only surface a banner when there's something to say.
+        const message = authErrorMessage(err.code)
+        if (message) setError(message)
       })
   }
   const signInDefault = (
     email: string,
     password: string,
+    remember: boolean,
+    setLoading: (val: boolean) => void,
     setError: (val: string) => void
   ) => {
     if (!email) {
-      return setError('Must enter email')
+      return setError('Please enter your email.')
     } else if (!password) {
-      return setError('Must enter password')
+      return setError('Please enter your password.')
     }
-    signInWithEmailAndPassword(auth, email, password)
+    setLoading(true)
+    // "Remember me" → keep the session across browser restarts (local), else
+    // drop it when the tab/window closes (session). Local matches Firebase's
+    // default, so leaving the box checked preserves prior behavior.
+    setPersistence(
+      auth,
+      remember ? browserLocalPersistence : browserSessionPersistence
+    )
+      .then(() => signInWithEmailAndPassword(auth, email, password))
       .then(userCredential => {
         setUser(userCredential.user)
         navigate('/')
       })
       .catch(err => {
-        const errCode = err.code
-
-        switch (errCode) {
-          case 'auth/user-not-found':
-            return setError(
-              'User not found in database, try creating an account.'
-            )
-          default:
-            return setError('Error, try refreshing your page.')
-        }
+        setLoading(false)
+        setError(authErrorMessage(err.code))
       })
   }
   const signUp = (
     email: string,
     password: string,
-    username: string,
-    displayName: string,
+    setLoading: (val: boolean) => void,
+    setError: (val: string) => void
+  ) => {
+    if (!email) {
+      return setError('Please enter your email.')
+    } else if (!password) {
+      return setError('Please enter your password.')
+    }
+    setLoading(true)
+    createUserWithEmailAndPassword(auth, email, password)
+      .then(cred => {
+        setUser(cred.user)
+        setLoading(false)
+        // Username + optional profile details (display name, bio, location) are
+        // collected on the onboarding step. The post-auth redirect also funnels
+        // username-less Google sign-ins here, so both paths share one page.
+        navigate('/create-username')
+      })
+      .catch(err => {
+        setLoading(false)
+        setError(authErrorMessage(err.code))
+      })
+  }
+  const forgotPassword = (
+    email: string,
     setLoading: (val: boolean) => void,
     setSuccess: (val: string) => void,
     setError: (val: string) => void
   ) => {
-    setLoading(true)
-    if (!username) {
-      setLoading(false)
-      return setError('Must enter username')
-    } else if (!email) {
-      setLoading(false)
-      return setError('Must enter email')
-    } else if (!password) {
-      setLoading(false)
-      return setError('Must enter password')
+    if (!email) {
+      return setError('Please enter your email.')
     }
-
-    AuthAPI.checkUsernameAvailability(username).then(isAvailable => {
-      if (!isAvailable) {
-        setLoading(false)
-        return setError(`${username} has already been taken`)
-      }
-      createUserWithEmailAndPassword(auth, email, password)
-        .then(cred => {
-          AuthAPI.setUsername(username).then(() => {
-            setLoading(false)
-            setSuccess('Username successfully created!')
-            return navigate('/')
-          })
-          updateProfile(cred.user, {
-            displayName: displayName,
-          })
-        })
-        .catch(err => {
-          const errCode = err.code
-          if (err.code === 'auth/weak-password') {
-            setError('Password must be 6 characters or more')
-          } else if (err.code === 'auth/email-already-in-use') {
-            setError('Email is already in use')
-          } else {
-            setError(errCode)
-          }
-          setLoading(false)
-        })
-    })
-  }
-  const forgotPassword = (
-    email: string,
-    setSuccess: (val: string) => void,
-    setError: (val: string) => void
-  ) => {
+    setLoading(true)
     sendPasswordResetEmail(auth, email)
       .then(() => {
+        setLoading(false)
         setSuccess('Email sent! Check your inbox for instructions.')
       })
       .catch(err => {
-        console.log(err)
-        setError(err.code)
+        setLoading(false)
+        // Don't reveal whether an email is registered: a missing account still
+        // shows the same "email sent" confirmation. Only genuinely actionable
+        // problems (bad email format, network, rate-limit) surface an error.
+        if (err.code === 'auth/user-not-found') {
+          setSuccess('Email sent! Check your inbox for instructions.')
+        } else {
+          setError(authErrorMessage(err.code))
+        }
       })
   }
 
@@ -297,6 +296,9 @@ const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
   // Check for auth status on page load
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async userInstance => {
+      // Attribute Sentry error reports to the signed-in account (cleared on
+      // logout). No-ops when Sentry is disabled.
+      setSentryUser(userInstance ? { uid: userInstance.uid } : null)
       if (userInstance) {
         setUser(userInstance)
         // Read the admin custom claim off the verified ID token. Mirrors the

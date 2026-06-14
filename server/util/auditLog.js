@@ -19,9 +19,11 @@ const AUDIT_ACTIONS = [
   'user.delete',
   'report.resolve',
   'report.dismiss',
+  'bugReport.resolve',
+  'bugReport.dismiss',
 ]
 
-const AUDIT_TARGET_TYPES = ['recipe', 'review', 'user', 'report']
+const AUDIT_TARGET_TYPES = ['recipe', 'review', 'user', 'report', 'bugReport']
 
 /**
  * Append one immutable entry to the `auditLog` collection describing an admin
