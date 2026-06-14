@@ -52,11 +52,11 @@ describe('SegmentedNav', () => {
     expect(screen.getByText('Saved')).toBeInTheDocument()
   })
 
-  it('drives the sliding indicator position from the active index', () => {
-    // tabs: saved=0, ratings=1, recipes(your-recipes)=2, drafts=3
-    const { container } = renderNav('/account/your-recipes')
-    const seg = container.querySelector('.acct-segment') as HTMLElement
-    expect(seg.style.getPropertyValue('--seg-i')).toBe('2')
-    expect(seg.style.getPropertyValue('--seg-n')).toBe('4')
+  it('renders all four tabs as links pointing at their routes', () => {
+    renderNav('/account/saved-recipes')
+    expect(tab('Saved')).toHaveAttribute('href', '/account/saved-recipes')
+    expect(tab('Ratings')).toHaveAttribute('href', '/account/ratings')
+    expect(tab('Your Recipes')).toHaveAttribute('href', '/account/your-recipes')
+    expect(tab('Drafts')).toHaveAttribute('href', '/account/drafts')
   })
 })

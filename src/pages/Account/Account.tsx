@@ -164,10 +164,12 @@ const Account: FC = () => {
           </div>
         </header>
 
-        <SegmentedNav counts={counts} />
+        <div className='acct-main'>
+          <SegmentedNav counts={counts} />
 
-        <div className='account-body'>
-          <Outlet />
+          <div className='account-body'>
+            <Outlet />
+          </div>
         </div>
       </div>
 
