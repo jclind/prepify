@@ -8,6 +8,7 @@ import './AdminLayout.scss'
 const ADMIN_NAV = [
   { to: '/admin/analytics', label: 'Overview' },
   { to: '/admin/reports', label: 'Reports' },
+  { to: '/admin/bug-reports', label: 'Bug reports' },
   { to: '/admin/users', label: 'Users' },
   { to: '/admin/audit', label: 'Audit log' },
 ]

@@ -230,6 +230,19 @@ const templates = {
       }),
     }
   },
+
+  // Admin-facing: a new user bug report landed. No appeal line (internal); the
+  // CTA button drops the admin at Prepify, and the body carries the triage bits.
+  bugReportFiled({ category, description, url, reporterLabel }) {
+    const subject = `New bug report: ${category}`
+    const paragraphs = [
+      `A new ${category} report was submitted by ${reporterLabel || 'a user'}.`,
+    ]
+    if (url) paragraphs.push(`Page: ${url}`)
+    paragraphs.push(`Description: ${description}`)
+    paragraphs.push('Open the admin bug-reports queue to triage it.')
+    return { subject, ...layout({ heading: subject, paragraphs }) }
+  },
 }
 
 // --- Per-event helpers ------------------------------------------------------
@@ -299,6 +312,26 @@ function notifyReviewTakenDown(db, ownerUsername, recipeId) {
   )
 }
 
+// Where new-bug-report alerts go. ADMIN_NOTIFY_EMAIL overrides; otherwise this
+// hardcoded default (same inbox already used for contact in the footer). Set the
+// env var to point alerts at a dedicated support inbox later without a code change.
+const DEFAULT_ADMIN_EMAIL = 'jesselindcs@gmail.com'
+function adminNotifyAddress() {
+  return process.env.ADMIN_NOTIFY_EMAIL || DEFAULT_ADMIN_EMAIL
+}
+
+// New bug report → email the admin so the queue isn't only pull-based. Unlike the
+// moderation events this notifies a fixed internal address, not the actor.
+function notifyBugReportFiled({ category, description, url, reporterLabel }) {
+  if (!emailEnabled()) return Promise.resolve()
+  const to = adminNotifyAddress()
+  if (!to) return Promise.resolve()
+  return deliver(
+    () => to,
+    () => templates.bugReportFiled({ category, description, url, reporterLabel })
+  )
+}
+
 // --- Background dispatch -----------------------------------------------------
 // Moderation routes fire notifications WITHOUT awaiting them, so the admin's
 // HTTP response never waits on Firebase + the email provider (the action has
@@ -330,4 +363,5 @@ module.exports = {
   notifyAccountStatus,
   notifyRecipeHidden,
   notifyReviewTakenDown,
+  notifyBugReportFiled,
 }
