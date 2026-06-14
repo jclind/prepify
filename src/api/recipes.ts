@@ -103,7 +103,11 @@ class RecipeAPIClass {
   }
   async getSavedRecipe(
     recipeId = ''
-  ): Promise<{ recipeId: string; dateSaved: string } | null> {
+  ): Promise<{
+    recipeId: string
+    dateSaved: string
+    collectionIds?: string[]
+  } | null> {
     const result = await http.get(`api/getSavedRecipe?recipeId=${recipeId}`)
     return result.data
   }
@@ -476,12 +480,17 @@ class RecipeAPIClass {
   async getSavedRecipes(
     page: number,
     recipesPerPage: number,
-    order: string
+    order: string,
+    collectionId?: string
   ): Promise<{ recipes: RecipeType[]; totalCount: number } | null> {
     if (!AuthAPI.getUID()) return null
-    const result = await http.get(
-      `api/getSavedRecipes?page=${page}&recipesPerPage=${recipesPerPage}&order=${order}`
-    )
+    const params = new URLSearchParams({
+      page: String(page),
+      recipesPerPage: String(recipesPerPage),
+      order,
+    })
+    if (collectionId) params.set('collectionId', collectionId)
+    const result = await http.get(`api/getSavedRecipes?${params.toString()}`)
     return result.data
   }
   async getCreatedRecipes(

@@ -1,5 +1,166 @@
+@use '../../../helpers.scss' as s;
+
 .saved-recipes {
   padding-bottom: 2rem;
+
+  // ── Collection chips ──
+  .collection-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1rem;
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-family: inherit;
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: s.$secondary-text;
+      background: #fff;
+      border: 1px solid #ece2d6;
+      border-radius: 999px;
+      padding: 0.4rem 0.85rem;
+      cursor: pointer;
+      transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+
+      &:hover {
+        color: s.$primary-text;
+        background: s.$gray-50;
+      }
+      &.active {
+        color: #fff;
+        background: s.$primary;
+        border-color: s.$primary;
+      }
+
+      .chip-count {
+        font-size: 0.72rem;
+        font-weight: 800;
+        opacity: 0.85;
+      }
+    }
+    .chip-new {
+      color: s.$primary;
+      border-style: dashed;
+    }
+
+    .new-chip-form {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+
+      input {
+        font-family: inherit;
+        font-size: 0.85rem;
+        padding: 0.4rem 0.7rem;
+        border: 1px solid s.$gray-400;
+        border-radius: 999px;
+        &:focus {
+          outline: none;
+          border-color: s.$primary;
+        }
+      }
+      .chip-icon-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        background: s.$primary;
+        color: #fff;
+        border: none;
+        border-radius: 50%;
+        cursor: pointer;
+      }
+    }
+  }
+
+  // ── Active-collection toolbar (rename / delete) ──
+  .collection-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1.1rem;
+
+    .collection-name {
+      font-size: 1.25rem;
+      margin: 0;
+    }
+    .btn-small {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.3rem;
+      font-family: inherit;
+      font-size: 0.82rem;
+      padding: 0.35rem 0.55rem;
+      border-radius: 8px;
+      border: 1px solid s.$gray-400;
+      background: #fff;
+      color: s.$secondary-text;
+      cursor: pointer;
+      &.ghost {
+        border-color: transparent;
+        &:hover {
+          background: s.$gray-50;
+        }
+      }
+      &.danger:hover {
+        color: #c0392b;
+      }
+    }
+    .rename-form {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      input {
+        font-family: inherit;
+        font-size: 1rem;
+        padding: 0.4rem 0.6rem;
+        border: 1px solid s.$gray-400;
+        border-radius: 8px;
+        &:focus {
+          outline: none;
+          border-color: s.$primary;
+        }
+      }
+    }
+  }
+
+  // Each card wraps the thumbnail so the add-to-collection control and its
+  // popover can be positioned over it (the thumbnail itself is a full <button>,
+  // so the control must be a sibling, never nested).
+  .saved-card {
+    position: relative;
+
+    .add-to-collection-btn {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+      z-index: 5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 34px;
+      border: none;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.92);
+      color: s.$primary-text;
+      font-size: 1.05rem;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
+      transition: background 0.12s ease, color 0.12s ease;
+
+      &:hover {
+        background: #fff;
+        color: s.$primary;
+      }
+    }
+  }
+
   .saved-recipes-filters {
     margin-top: 1rem;
     max-width: 250px;
