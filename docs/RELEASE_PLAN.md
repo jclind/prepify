@@ -219,6 +219,18 @@ Chunky design efforts that are bigger than a single checkbox. Tag each as **(blo
   - **Touches:** `src/pages/Help/Help.tsx` (+ `Help.scss`), the route in `src/App.tsx:130`, and the
     nav link in `src/Components/Navbar/Navbar.tsx:127`.
 
+- `[ ]` **Data-integrity pass** — **(post-1.0)**
+  - **Now:** several collections reference each other by mutable/denormalized fields rather than the
+    stable `uid` — chiefly `ratings`/`reports` keyed by `username`, recipe deletes that orphan other
+    users' ratings, and multi-collection writes (delete-account cascade, username rename) that aren't
+    atomic. The settings overhaul shipped tactical patches (rename now propagates to
+    `ratings`/`reports`) but not the root causes.
+  - **Goal:** key `ratings` by `userId` (+ backfill), cascade-delete ratings on recipe delete, and
+    wrap the multi-collection writes in transactions. Sequenced D1 → D2 → D3.
+  - **Full writeup:** `docs/DATA_INTEGRITY_AUDIT.md`.
+  - **Touches:** `server/routes/reviews.js`, `server/routes/auth.js`, `server/routes/recipes.js`,
+    `server/routes/publicProfile.js`, `server/db.js`, + a one-off backfill migration.
+
 ---
 
 ## Release-day cutover (light)

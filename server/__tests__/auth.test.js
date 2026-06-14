@@ -1,4 +1,5 @@
 const request = require('supertest')
+const admin = require('firebase-admin')
 const app = require('../app')
 const { getDB } = require('../db')
 const { seedUser } = require('./helpers/seed')
@@ -7,8 +8,19 @@ const TEST_UID = 'test-uid'
 const AUTH_HEADER = { Authorization: 'Bearer fake-test-token' }
 
 afterEach(async () => {
-  await getDB().collection('usernames').deleteMany({})
-  await getDB().collection('userProfiles').deleteMany({})
+  const db = getDB()
+  await Promise.all([
+    db.collection('usernames').deleteMany({}),
+    db.collection('userProfiles').deleteMany({}),
+    db.collection('users').deleteMany({}),
+    db.collection('userRecipeData').deleteMany({}),
+    db.collection('recipes').deleteMany({}),
+    db.collection('recipeDrafts').deleteMany({}),
+    db.collection('ratings').deleteMany({}),
+    db.collection('reports').deleteMany({}),
+    db.collection('auditLog').deleteMany({}),
+  ])
+  admin.__deleteUser.mockClear()
 })
 
 // ─── GET /getUsername ─────────────────────────────────────────────────────────
@@ -176,6 +188,83 @@ describe('POST /setUsername', () => {
 
     expect(res.status).toBe(200)
   })
+
+  // Reviews (ratings) and review reports denormalize the username, so a rename
+  // must carry across or a user's existing reviews keep the old handle.
+  describe('rename propagation', () => {
+    it("rewrites the user's ratings to the new username", async () => {
+      await seedUser(TEST_UID, 'oldname')
+      const db = getDB()
+      await db
+        .collection('ratings')
+        .insertOne({ username: 'oldname', recipeId: 'r1', rating: 5 })
+
+      const res = await request(app)
+        .post('/api/setUsername?username=newname')
+        .set(AUTH_HEADER)
+      expect(res.status).toBe(200)
+
+      expect(
+        await db.collection('ratings').findOne({ username: 'oldname' })
+      ).toBeNull()
+      const moved = await db
+        .collection('ratings')
+        .findOne({ username: 'newname' })
+      expect(moved.recipeId).toBe('r1')
+    })
+
+    it('rewrites reportedUsername on open review reports', async () => {
+      await seedUser(TEST_UID, 'oldname')
+      const db = getDB()
+      await db.collection('reports').insertOne({
+        targetType: 'review',
+        reportedUsername: 'oldname',
+        recipeId: 'r1',
+        status: 'open',
+      })
+
+      await request(app)
+        .post('/api/setUsername?username=newname')
+        .set(AUTH_HEADER)
+
+      const report = await db.collection('reports').findOne({ recipeId: 'r1' })
+      expect(report.reportedUsername).toBe('newname')
+    })
+
+    it('leaves other users\' ratings untouched', async () => {
+      await seedUser(TEST_UID, 'oldname')
+      const db = getDB()
+      await db
+        .collection('ratings')
+        .insertOne({ username: 'someoneelse', recipeId: 'r1', rating: 3 })
+
+      await request(app)
+        .post('/api/setUsername?username=newname')
+        .set(AUTH_HEADER)
+
+      const other = await db
+        .collection('ratings')
+        .findOne({ username: 'someoneelse' })
+      expect(other).not.toBeNull()
+    })
+
+    it('does not touch ratings when the name is unchanged', async () => {
+      await seedUser(TEST_UID, 'samename')
+      const db = getDB()
+      await db
+        .collection('ratings')
+        .insertOne({ username: 'samename', recipeId: 'r1', rating: 5 })
+
+      await request(app)
+        .post('/api/setUsername?username=samename')
+        .set(AUTH_HEADER)
+
+      const still = await db
+        .collection('ratings')
+        .findOne({ username: 'samename' })
+      expect(still).not.toBeNull()
+    })
+  })
 })
 
 // ─── GET /getProfile ──────────────────────────────────────────────────────────
@@ -186,10 +275,15 @@ describe('GET /getProfile', () => {
     expect(res.status).toBe(401)
   })
 
-  it('returns empty strings when the user has no profile yet', async () => {
+  it('returns empty strings and public defaults when the user has no profile yet', async () => {
     const res = await request(app).get('/api/getProfile').set(AUTH_HEADER)
     expect(res.status).toBe(200)
-    expect(res.body).toEqual({ bio: '', location: '' })
+    expect(res.body).toEqual({
+      bio: '',
+      location: '',
+      isPublic: true,
+      hideLocation: false,
+    })
   })
 
   it("returns the authenticated user's own bio and location", async () => {
@@ -199,7 +293,19 @@ describe('GET /getProfile', () => {
 
     const res = await request(app).get('/api/getProfile').set(AUTH_HEADER)
     expect(res.status).toBe(200)
-    expect(res.body).toEqual({ bio: 'I cook', location: 'Portland, OR' })
+    expect(res.body.bio).toBe('I cook')
+    expect(res.body.location).toBe('Portland, OR')
+  })
+
+  it('returns stored privacy toggles when set', async () => {
+    await getDB()
+      .collection('userProfiles')
+      .insertOne({ _id: TEST_UID, isPublic: false, hideLocation: true })
+
+    const res = await request(app).get('/api/getProfile').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(res.body.isPublic).toBe(false)
+    expect(res.body.hideLocation).toBe(true)
   })
 
   it("does not leak another user's profile", async () => {
@@ -209,7 +315,8 @@ describe('GET /getProfile', () => {
 
     const res = await request(app).get('/api/getProfile').set(AUTH_HEADER)
     expect(res.status).toBe(200)
-    expect(res.body).toEqual({ bio: '', location: '' })
+    expect(res.body.bio).toBe('')
+    expect(res.body.location).toBe('')
   })
 })
 
@@ -330,5 +437,216 @@ describe('POST /updateProfile', () => {
       .send({ bio: 123, location: '' })
 
     expect(res.status).toBe(400)
+  })
+
+  it('blocks a suspended user from editing their profile (403)', async () => {
+    await getDB()
+      .collection('users')
+      .insertOne({ _id: TEST_UID, status: 'suspended' })
+
+    const res = await request(app)
+      .post('/api/updateProfile')
+      .set(AUTH_HEADER)
+      .send({ bio: 'sneaky edit', location: '' })
+
+    expect(res.status).toBe(403)
+    expect(res.body.code).toBe('ACCOUNT_SUSPENDED')
+  })
+})
+
+// ─── POST /updatePrivacy ─────────────────────────────────────────────────────
+
+describe('POST /updatePrivacy', () => {
+  it('rejects request with no auth token (401)', async () => {
+    const res = await request(app)
+      .post('/api/updatePrivacy')
+      .send({ isPublic: false, hideLocation: true })
+    expect(res.status).toBe(401)
+  })
+
+  it('upserts both toggles and returns success', async () => {
+    const res = await request(app)
+      .post('/api/updatePrivacy')
+      .set(AUTH_HEADER)
+      .send({ isPublic: false, hideLocation: true })
+
+    expect(res.status).toBe(200)
+    expect(res.body).toEqual({ success: true })
+
+    const doc = await getDB()
+      .collection('userProfiles')
+      .findOne({ _id: TEST_UID })
+    expect(doc.isPublic).toBe(false)
+    expect(doc.hideLocation).toBe(true)
+    expect(doc.updatedAt).toBeInstanceOf(Date)
+  })
+
+  it('does not clobber existing bio/location', async () => {
+    await getDB()
+      .collection('userProfiles')
+      .insertOne({ _id: TEST_UID, bio: 'keep me', location: 'PDX' })
+
+    await request(app)
+      .post('/api/updatePrivacy')
+      .set(AUTH_HEADER)
+      .send({ isPublic: false, hideLocation: false })
+
+    const doc = await getDB()
+      .collection('userProfiles')
+      .findOne({ _id: TEST_UID })
+    expect(doc.bio).toBe('keep me')
+    expect(doc.location).toBe('PDX')
+  })
+
+  it('rejects a non-boolean isPublic (400)', async () => {
+    const res = await request(app)
+      .post('/api/updatePrivacy')
+      .set(AUTH_HEADER)
+      .send({ isPublic: 'yes', hideLocation: false })
+    expect(res.status).toBe(400)
+  })
+
+  it('rejects a missing hideLocation (400)', async () => {
+    const res = await request(app)
+      .post('/api/updatePrivacy')
+      .set(AUTH_HEADER)
+      .send({ isPublic: true })
+    expect(res.status).toBe(400)
+  })
+
+  it('blocks a banned user from changing privacy (403)', async () => {
+    await getDB()
+      .collection('users')
+      .insertOne({ _id: TEST_UID, status: 'banned' })
+
+    const res = await request(app)
+      .post('/api/updatePrivacy')
+      .set(AUTH_HEADER)
+      .send({ isPublic: true, hideLocation: false })
+
+    expect(res.status).toBe(403)
+    expect(res.body.code).toBe('ACCOUNT_BANNED')
+  })
+})
+
+// ─── GET /exportMyData ───────────────────────────────────────────────────────
+
+describe('GET /exportMyData', () => {
+  it('rejects request with no auth token (401)', async () => {
+    const res = await request(app).get('/api/exportMyData')
+    expect(res.status).toBe(401)
+  })
+
+  it('returns the full data shape as a JSON attachment', async () => {
+    await seedUser(TEST_UID, 'exporter')
+    const db = getDB()
+    await db
+      .collection('userProfiles')
+      .insertOne({ _id: TEST_UID, bio: 'hi', location: 'PDX' })
+    await db
+      .collection('userRecipeData')
+      .insertOne({ _id: TEST_UID, savedRecipes: [{ recipeId: 'r1' }] })
+    await db.collection('recipes').insertOne({ _id: 'r9', userId: TEST_UID })
+    await db
+      .collection('recipeDrafts')
+      .insertOne({ _id: 'd1', userId: TEST_UID })
+    await db
+      .collection('ratings')
+      .insertOne({ username: 'exporter', recipeId: 'r1', rating: 5 })
+
+    const res = await request(app).get('/api/exportMyData').set(AUTH_HEADER)
+
+    expect(res.status).toBe(200)
+    expect(res.headers['content-disposition']).toMatch(/attachment/)
+    expect(res.body.username).toBe('exporter')
+    expect(res.body.profile.bio).toBe('hi')
+    expect(res.body.savedRecipes).toHaveLength(1)
+    expect(res.body.recipes.map(r => r._id)).toEqual(['r9'])
+    expect(res.body.drafts.map(d => d._id)).toEqual(['d1'])
+    expect(res.body.ratings).toHaveLength(1)
+  })
+
+  it('handles a user with no data yet', async () => {
+    const res = await request(app).get('/api/exportMyData').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(res.body.username).toBeNull()
+    expect(res.body.profile).toBeNull()
+    expect(res.body.recipes).toEqual([])
+    expect(res.body.ratings).toEqual([])
+  })
+})
+
+// ─── POST /deleteAccount ─────────────────────────────────────────────────────
+
+describe('POST /deleteAccount', () => {
+  const seedFullAccount = async () => {
+    await seedUser(TEST_UID, 'goner')
+    const db = getDB()
+    await db
+      .collection('userProfiles')
+      .insertOne({ _id: TEST_UID, bio: 'bye' })
+    await db.collection('users').insertOne({ _id: TEST_UID, status: 'active' })
+    await db
+      .collection('userRecipeData')
+      .insertOne({ _id: TEST_UID, savedRecipes: [] })
+    await db.collection('recipes').insertOne({ _id: 'r1', userId: TEST_UID })
+    await db
+      .collection('recipeDrafts')
+      .insertOne({ _id: 'd1', userId: TEST_UID })
+    await db
+      .collection('ratings')
+      .insertOne({ username: 'goner', recipeId: 'r1', rating: 4 })
+  }
+
+  it('rejects request with no auth token (401)', async () => {
+    const res = await request(app).post('/api/deleteAccount')
+    expect(res.status).toBe(401)
+  })
+
+  it('deletes the user across every collection and removes the Firebase account', async () => {
+    await seedFullAccount()
+
+    const res = await request(app).post('/api/deleteAccount').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(res.body).toEqual({ success: true })
+
+    const db = getDB()
+    expect(await db.collection('usernames').findOne({ _id: TEST_UID })).toBeNull()
+    expect(
+      await db.collection('userProfiles').findOne({ _id: TEST_UID })
+    ).toBeNull()
+    expect(await db.collection('users').findOne({ _id: TEST_UID })).toBeNull()
+    expect(
+      await db.collection('userRecipeData').findOne({ _id: TEST_UID })
+    ).toBeNull()
+    expect(await db.collection('recipes').findOne({ userId: TEST_UID })).toBeNull()
+    expect(
+      await db.collection('recipeDrafts').findOne({ userId: TEST_UID })
+    ).toBeNull()
+    // ratings are keyed by username, not uid.
+    expect(
+      await db.collection('ratings').findOne({ username: 'goner' })
+    ).toBeNull()
+
+    expect(admin.__deleteUser).toHaveBeenCalledWith(TEST_UID)
+  })
+
+  it('records the self-deletion in the audit log', async () => {
+    await seedFullAccount()
+    await request(app).post('/api/deleteAccount').set(AUTH_HEADER)
+
+    const entry = await getDB()
+      .collection('auditLog')
+      .findOne({ action: 'user.delete' })
+    expect(entry).not.toBeNull()
+    expect(entry.actorUid).toBe(TEST_UID)
+    expect(entry.targetType).toBe('user')
+    expect(entry.targetLabel).toBe('@goner')
+  })
+
+  it('still deletes the Firebase account when the user has no other data', async () => {
+    const res = await request(app).post('/api/deleteAccount').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(admin.__deleteUser).toHaveBeenCalledWith(TEST_UID)
   })
 })
