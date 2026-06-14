@@ -18,6 +18,8 @@ const RESOLUTIONS = ['resolved', 'dismissed']
 const MAX_DESCRIPTION_LEN = 2000
 const MAX_EMAIL_LEN = 254
 const MAX_CONTEXT_LEN = 500 // url / userAgent / appVersion individually
+const DEFAULT_PER_PAGE = 20
+const MAX_PER_PAGE = 100 // cap the admin page size so one query can't pull the whole collection
 
 // Trim and hard-cap a free-text field; non-strings collapse to ''. Keeps any one
 // field from bloating a document or the admin queue regardless of client input.
@@ -91,14 +93,18 @@ router.post('/bug-reports', submitLimiter, optionalAuth, asyncHandler(async (req
 // enrich each report's reporterUid with a username in one batched lookup.
 router.get('/admin/bug-reports', verifyToken, requireAdmin, asyncHandler(async (req, res) => {
   const db = getDB()
-  const { status, category, page = 0, perPage = 20 } = req.query
+  const { status, category } = req.query
 
   const filter = {}
   if (status && ['open', ...RESOLUTIONS].includes(status)) filter.status = status
   if (category && CATEGORIES.includes(category)) filter.category = category
 
-  const skip = parseInt(page) * parseInt(perPage)
-  const limit = parseInt(perPage)
+  // Clamp paging so a malformed (NaN) or oversized perPage can't crash the
+  // cursor or pull the whole collection in one query.
+  const perPage = Math.min(Math.max(parseInt(req.query.perPage, 10) || DEFAULT_PER_PAGE, 1), MAX_PER_PAGE)
+  const page = Math.max(parseInt(req.query.page, 10) || 0, 0)
+  const skip = page * perPage
+  const limit = perPage
 
   const [reports, totalCount, openCount] = await Promise.all([
     db.collection('bugReports').find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).toArray(),
@@ -185,12 +191,24 @@ router.patch('/admin/bug-reports/:id', verifyToken, requireAdmin, asyncHandler(a
   if (!RESOLUTIONS.includes(status)) {
     return res.status(400).json({ error: "status must be 'resolved' or 'dismissed'" })
   }
+  // Only OPEN reports can be closed — same invariant the bulk route enforces.
+  // Guarding on status here means a report another admin already closed (or a
+  // stale queue view) can't overwrite the original resolvedBy/resolvedAt or
+  // write a second, misattributed audit entry.
+  const _id = new ObjectId(req.params.id)
   const updated = await db.collection('bugReports').findOneAndUpdate(
-    { _id: new ObjectId(req.params.id) },
+    { _id, status: 'open' },
     { $set: { status, resolvedBy: req.uid, resolvedAt: new Date() } },
     { returnDocument: 'after' }
   )
-  if (!updated) return res.status(404).json({ error: 'Bug report not found' })
+  if (!updated) {
+    // No open report matched: distinguish a missing id (404) from one that was
+    // already closed (409) so the client can refresh rather than treat it as gone.
+    const exists = await db.collection('bugReports').findOne({ _id }, { projection: { _id: 1 } })
+    return res
+      .status(exists ? 409 : 404)
+      .json({ error: exists ? 'Bug report is already closed' : 'Bug report not found' })
+  }
   await recordAudit(db, {
     action: status === 'resolved' ? 'bugReport.resolve' : 'bugReport.dismiss',
     actorUid: req.uid,

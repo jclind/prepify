@@ -177,6 +177,22 @@ describe('PATCH /api/admin/bug-reports/:id', () => {
     const malformed = await request(app).patch('/api/admin/bug-reports/not-an-id').set(AUTH_HEADER).send({ status: 'resolved' })
     expect(malformed.status).toBe(404)
   })
+
+  it('409s for an already-closed report without overwriting the original resolution or re-auditing', async () => {
+    admin.__setClaims({ admin: true })
+    const report = await seedReport({
+      status: 'resolved',
+      resolvedBy: 'first-admin',
+      resolvedAt: new Date('2026-06-01'),
+    })
+    const res = await request(app).patch(`/api/admin/bug-reports/${report._id}`).set(AUTH_HEADER).send({ status: 'dismissed' })
+    expect(res.status).toBe(409)
+    const after = await getDB().collection('bugReports').findOne({ _id: report._id })
+    expect(after.status).toBe('resolved')
+    expect(after.resolvedBy).toBe('first-admin')
+    const entries = await getDB().collection('auditLog').find({}).toArray()
+    expect(entries).toHaveLength(0)
+  })
 })
 
 describe('PATCH /api/admin/bug-reports/bulk', () => {

@@ -284,6 +284,51 @@
       }
     }
   }
+
+  .bug-reports-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: 1.5rem;
+
+    .page-info {
+      font-size: 0.82rem;
+      color: #6b7280;
+    }
+
+    .page-controls {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+
+      .page-indicator {
+        font-size: 0.82rem;
+        color: #374151;
+      }
+
+      .page-btn {
+        cursor: pointer;
+        border: 1px solid #d8dbe0;
+        background: #fff;
+        color: #374151;
+        border-radius: 6px;
+        padding: 0.4rem 0.8rem;
+        font-size: 0.82rem;
+        font-weight: 600;
+
+        &:hover:not(:disabled) {
+          border-color: #9ca3af;
+        }
+
+        &:disabled {
+          opacity: 0.5;
+          cursor: default;
+        }
+      }
+    }
+  }
 }
 
 @media (max-width: 640px) {

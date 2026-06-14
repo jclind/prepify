@@ -1,5 +1,10 @@
-import React, { FC, useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import React, { FC, useEffect, useState } from 'react'
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  keepPreviousData,
+} from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { AdminBugReportType, BugReportStatus, BugReportCategory } from 'types'
 import BugReportAPI from 'src/api/bugReports'
@@ -24,34 +29,54 @@ const CATEGORY_OPTIONS: { value: CategoryFilter; label: string }[] = [
   { value: 'other', label: 'Other' },
 ]
 
+// Server caps perPage at 100; 50 keeps each page light while still showing a
+// useful chunk. Pagination below lets admins reach reports beyond the first page.
+const PER_PAGE = 50
+
 const BugReports: FC = () => {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('open')
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all')
+  const [page, setPage] = useState(0)
   // Ids ticked for a bulk resolve/dismiss sweep. Only open reports are
   // selectable; changing any filter clears the selection.
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const queryClient = useQueryClient()
 
   const { data, isPending, isError } = useQuery({
-    queryKey: ['admin-bug-reports', statusFilter, categoryFilter],
+    queryKey: ['admin-bug-reports', statusFilter, categoryFilter, page],
     queryFn: () =>
       BugReportAPI.listBugReports({
         status: statusFilter === 'all' ? undefined : statusFilter,
         category: categoryFilter === 'all' ? undefined : categoryFilter,
-        perPage: 50,
+        page,
+        perPage: PER_PAGE,
       }),
+    // Keep the current page visible while the next one loads, so paging doesn't
+    // flash the empty/loading state.
+    placeholderData: keepPreviousData,
   })
+
+  const totalCount = data?.totalCount ?? 0
+  const totalPages = Math.max(1, Math.ceil(totalCount / PER_PAGE))
+
+  // If reports drain off the last page (e.g. the admin resolved the only item on
+  // it), step back so they aren't stranded on an empty page.
+  useEffect(() => {
+    if (page > 0 && page >= totalPages) setPage(totalPages - 1)
+  }, [page, totalPages])
 
   const invalidate = () =>
     queryClient.invalidateQueries({ queryKey: ['admin-bug-reports'] })
 
   const changeTab = (value: StatusFilter) => {
     setStatusFilter(value)
+    setPage(0)
     setSelected(new Set())
   }
 
   const changeCategory = (value: CategoryFilter) => {
     setCategoryFilter(value)
+    setPage(0)
     setSelected(new Set())
   }
 
@@ -138,6 +163,7 @@ const BugReports: FC = () => {
         onApply={f => {
           setStatusFilter(f.status)
           setCategoryFilter(f.category)
+          setPage(0)
           setSelected(new Set())
         }}
       />
@@ -152,7 +178,9 @@ const BugReports: FC = () => {
             />
             {selected.size > 0
               ? `${selected.size} selected`
-              : `Select all ${openReports.length} open`}
+              : `Select all ${openReports.length} open${
+                  totalPages > 1 ? ' on this page' : ''
+                }`}
           </label>
           {selected.size > 0 && (
             <div className='bulk-actions'>
@@ -250,6 +278,34 @@ const BugReports: FC = () => {
             </li>
           ))}
         </ul>
+      )}
+
+      {data && !isError && totalCount > 0 && totalPages > 1 && (
+        <div className='bug-reports-pagination'>
+          <span className='page-info'>
+            Showing {page * PER_PAGE + 1}–
+            {Math.min((page + 1) * PER_PAGE, totalCount)} of {totalCount}
+          </span>
+          <div className='page-controls'>
+            <button
+              className='page-btn'
+              disabled={page === 0}
+              onClick={() => setPage(p => Math.max(0, p - 1))}
+            >
+              Previous
+            </button>
+            <span className='page-indicator'>
+              Page {page + 1} of {totalPages}
+            </span>
+            <button
+              className='page-btn'
+              disabled={page >= totalPages - 1}
+              onClick={() => setPage(p => p + 1)}
+            >
+              Next
+            </button>
+          </div>
+        </div>
       )}
     </div>
   )
