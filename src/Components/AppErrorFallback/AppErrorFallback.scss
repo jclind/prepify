@@ -1,0 +1,52 @@
+.app-error-fallback {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background: #fff;
+
+  .app-error-content {
+    max-width: 480px;
+    text-align: center;
+
+    h1 {
+      font-size: 1.75rem;
+      margin-bottom: 0.75rem;
+      color: #1f2430;
+    }
+
+    p {
+      color: #374151;
+      line-height: 1.5;
+      margin-bottom: 1.5rem;
+    }
+
+    .app-error-actions {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: center;
+      flex-wrap: wrap;
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.65rem 1.25rem;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        font-weight: 600;
+        text-decoration: none;
+        background: #1f2430;
+        color: #fff;
+
+        &.secondary {
+          background: #fff;
+          color: #1f2430;
+          border: 1px solid #d1d5db;
+        }
+      }
+    }
+  }
+}

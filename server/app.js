@@ -11,7 +11,9 @@ const draftRoutes = require('./routes/drafts')
 const gamificationRoutes = require('./routes/gamification')
 const publicProfileRoutes = require('./routes/publicProfile')
 const reportRoutes = require('./routes/reports')
+const bugReportRoutes = require('./routes/bugReports')
 const adminRoutes = require('./routes/admin')
+const Sentry = require('@sentry/node')
 const { GENERIC_500_MESSAGE } = require('./util/respondServerError')
 
 const app = express()
@@ -86,6 +88,7 @@ app.use('/api', publicProfileRoutes)
 app.use('/api/ingredients', ingredientRoutes)
 app.use('/api/drafts', draftRoutes)
 app.use('/api', reportRoutes)
+app.use('/api', bugReportRoutes)
 app.use('/api', adminRoutes)
 
 // Central error backstop. Route handlers catch their own errors (via
@@ -100,6 +103,10 @@ app.use((err, req, res, next) => {
   if (res.headersSent) return next(err)
   const status = err.status || err.statusCode || 500
   console.error(`[${status}] ${req.method} ${req.originalUrl}`, err)
+  // Report genuine server faults to Sentry (no-ops without SENTRY_DSN). Skip
+  // client 4xx the thrower set (bad JSON, CORS) — those are expected outcomes,
+  // not bugs. Capture never blocks or changes the client-facing response.
+  if (status >= 500) Sentry.captureException(err)
   res.status(status).json({
     error: status >= 500 ? GENERIC_500_MESSAGE : 'Bad request',
   })
