@@ -3,13 +3,15 @@ import { Link, useLocation } from 'react-router-dom'
 import { FiBookmark, FiStar, FiBookOpen, FiFileText } from 'react-icons/fi'
 import { AccountTabCounts } from 'types'
 
-// SegmentedNav — the account sub-route switcher. On desktop it's the centered
-// text segmented control from the P2 header; on phones (≤600px, see Account.scss)
-// it becomes an app-style icon-over-label tab bar. The four tabs are URL routes
-// (so deep-links keep working) and the sliding white indicator follows the active
-// route at every width. Counts come from the aggregate GET /getAccountCounts
-// query (passed in by Account); a tab shows its number only once counts have
-// loaded and the count is non-zero.
+// SegmentedNav — the account sub-route switcher. On desktop (≥900px, see
+// Account.scss) it's a vertical rail sitting beside the sub-page content, turning
+// the account into a two-column dashboard. Below that it collapses to a fixed
+// four-up icon-over-label tab bar — all four destinations stay visible, never a
+// horizontal scroll. The four tabs are URL routes (so deep-links keep working)
+// and the active route gets a tinted background. Counts come from the aggregate
+// GET /getAccountCounts query (passed in by Account); a tab shows its number only
+// once counts have loaded and the count is non-zero. (Named SegmentedNav for
+// history; the control is now a rail.)
 
 type Tab = {
   key: keyof AccountTabCounts
@@ -51,16 +53,7 @@ const SegmentedNav: FC<SegmentedNavProps> = ({ counts }) => {
   )
 
   return (
-    <div
-      className='acct-segment'
-      role='navigation'
-      aria-label='Account sections'
-      style={{
-        ['--seg-i' as string]: activeIndex,
-        ['--seg-n' as string]: tabs.length,
-      }}
-    >
-      <div className='acct-seg-indicator' />
+    <div className='acct-segment' role='navigation' aria-label='Account sections'>
       {tabs.map((t, i) => {
         const count = counts?.[t.key]
         return (
