@@ -5,7 +5,7 @@ import '../../Components/Form/FormStyles.scss'
 import FormInput from 'src/Components/Form/FormInput'
 import { MdOutlineEmail } from 'react-icons/md'
 import { useAuth } from 'src/context/AuthContext'
-import PrepifyLogo from 'src/Components/Navbar/PrepifyLogo'
+import { TailSpin } from 'react-loader-spinner'
 import { Helmet } from 'react-helmet-async'
 
 const ForgotPassword: FC = () => {
@@ -15,12 +15,15 @@ const ForgotPassword: FC = () => {
 
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [loading, setLoading] = useState(false)
 
-  const handleChangePasswordFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleChangePasswordFormSubmit = (
+    e: React.FormEvent<HTMLFormElement>
+  ) => {
     e.preventDefault()
     setError('')
     setSuccess('')
-    authRes?.forgotPassword(email, setSuccess, setError)
+    authRes?.forgotPassword(email, setLoading, setSuccess, setError)
   }
 
   return (
@@ -29,33 +32,49 @@ const ForgotPassword: FC = () => {
         <meta charSet='utf-8' />
         <title>Prepify | Forgot Password</title>
       </Helmet>
-      <div className='abs-logo'>
-        <PrepifyLogo />
-      </div>
       <div className='forgot-password-page form-format'>
         <div className='login-form-container'>
+          <div className='brand-mark'>P</div>
           <form onSubmit={handleChangePasswordFormSubmit} className='form'>
-            <h1 className='title'>Forgot Password?</h1>
+            <h1 className='title'>Reset your password</h1>
             <p className='prompt'>
-              Enter your email to receive a link to reset your password.
+              Enter your email and we'll send you a link to get back in.
             </p>
-            {error ? <div className='error'>{error}</div> : null}
-            {success ? <div className='success'>{success}</div> : null}
+            <div aria-live='polite'>
+              {error ? <div className='error'>{error}</div> : null}
+              {success ? <div className='success'>{success}</div> : null}
+            </div>
             <div className='input-fields'>
               <FormInput
                 icon={<MdOutlineEmail className='icon' />}
                 type='email'
                 name='email'
+                label='Email'
+                autoComplete='email'
                 val={email}
                 setVal={setEmail}
                 placeholder='name@example.com'
               />
             </div>
-            <button className='form-action-btn btn'>Send Email</button>
+            <button className='form-action-btn btn' disabled={loading}>
+              {loading ? (
+                <TailSpin
+                  height='28'
+                  width='28'
+                  color='white'
+                  ariaLabel='loading'
+                />
+              ) : (
+                'Send reset link'
+              )}
+            </button>
           </form>
-          <Link to='/login' className='back-to-login'>
-            Return to Login
-          </Link>
+          <p className='switch-prompt'>
+            Remembered it?{' '}
+            <Link to='/login' className='prompt-btn'>
+              Back to login
+            </Link>
+          </p>
         </div>
       </div>
     </>
