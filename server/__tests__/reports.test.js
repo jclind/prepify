@@ -11,7 +11,7 @@ const admin = require('firebase-admin') // auto-mocked
 const { ObjectId } = require('mongodb')
 const app = require('../app')
 const { getDB } = require('../db')
-const { seedRecipe, seedRating } = require('./helpers/seed')
+const { seedRecipe, seedRating, seedUser } = require('./helpers/seed')
 
 const AUTH_HEADER = { Authorization: 'Bearer fake-test-token' }
 const TEST_UID = 'test-uid'
@@ -23,6 +23,7 @@ afterEach(async () => {
     db.collection('reports').deleteMany({}),
     db.collection('recipes').deleteMany({}),
     db.collection('ratings').deleteMany({}),
+    db.collection('usernames').deleteMany({}),
     db.collection('auditLog').deleteMany({}),
   ])
 })
@@ -57,6 +58,36 @@ describe('POST /api/reports', () => {
       .send({ targetType: 'review', recipeId: 'recipe-001', reportedUsername: 'baduser', reason: 'offensive' })
     expect(res.status).toBe(201)
     expect(res.body.reportedUsername).toBe('baduser')
+  })
+
+  // D1: snapshot the reported user's stable uid so the report stays attached
+  // across a rename. Resolved case-insensitively from the usernames collection.
+  it('stamps reportedUid on a review report when the handle resolves', async () => {
+    await seedUser('bad-uid', 'BadUser')
+    const res = await request(app)
+      .post('/api/reports')
+      .set(AUTH_HEADER)
+      .send({ targetType: 'review', recipeId: 'recipe-001', reportedUsername: 'baduser', reason: 'offensive' })
+    expect(res.status).toBe(201)
+    expect(res.body.reportedUid).toBe('bad-uid')
+  })
+
+  it('leaves reportedUid null when the reported handle has no account', async () => {
+    const res = await request(app)
+      .post('/api/reports')
+      .set(AUTH_HEADER)
+      .send({ targetType: 'review', recipeId: 'recipe-001', reportedUsername: 'ghost', reason: 'offensive' })
+    expect(res.status).toBe(201)
+    expect(res.body.reportedUid).toBeNull()
+  })
+
+  it('does not stamp reportedUid on a recipe report', async () => {
+    const res = await request(app)
+      .post('/api/reports')
+      .set(AUTH_HEADER)
+      .send(validRecipeReport)
+    expect(res.status).toBe(201)
+    expect(res.body.reportedUid).toBeUndefined()
   })
 
   it('rejects an invalid targetType', async () => {

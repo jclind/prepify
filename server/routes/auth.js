@@ -2,9 +2,11 @@ const express = require('express')
 const admin = require('firebase-admin')
 const { asyncHandler } = require('../util/asyncHandler')
 const router = express.Router()
-const { getDB } = require('../db')
+const { getDB, getClient } = require('../db')
 const { verifyToken, requireActive } = require('../middleware/auth')
 const { recordAudit } = require('../util/auditLog')
+const { deleteRecipeImage, deleteProfilePhoto } = require('../util/firebaseStorage')
+const { recomputeRecipeRating } = require('../util/recipeRating')
 
 const USERNAME_MIN_LENGTH = 3
 const USERNAME_MAX_LENGTH = 30
@@ -234,8 +236,9 @@ router.post('/updatePrivacy', verifyToken, requireActive, asyncHandler(async (re
 
 // GET /exportMyData
 // Assembles a JSON copy of everything stored for the authenticated user and
-// returns it as a file download. Read-only; ratings are keyed by username, so
-// we resolve that first (a user with no username simply has no ratings).
+// returns it as a file download. Read-only. Everything keys on the stable uid
+// (ratings carry `userId` since D1); the username is still surfaced as a
+// top-level display field.
 router.get('/exportMyData', verifyToken, asyncHandler(async (req, res) => {
   const uid = req.uid
   const db = getDB()
@@ -247,9 +250,7 @@ router.get('/exportMyData', verifyToken, asyncHandler(async (req, res) => {
     db.collection('userRecipeData').findOne({ _id: uid }),
     db.collection('recipes').find({ userId: uid }).toArray(),
     db.collection('recipeDrafts').find({ userId: uid }).toArray(),
-    username
-      ? db.collection('ratings').find({ username }).toArray()
-      : Promise.resolve([]),
+    db.collection('ratings').find({ userId: uid }).toArray(),
   ])
 
   const data = {
@@ -290,20 +291,93 @@ router.post('/deleteAccount', verifyToken, asyncHandler(async (req, res) => {
   const uid = req.uid
   const db = getDB()
 
-  // ratings are keyed by username (not uid), so resolve it before we delete the
-  // usernames doc.
+  // The username is only needed for the audit label now — every collection
+  // below keys on the stable uid (ratings carry `userId` since D1).
   const usernameDoc = await db.collection('usernames').findOne({ _id: uid })
   const username = usernameDoc?.username || null
 
-  await db.collection('usernames').deleteOne({ _id: uid })
-  await db.collection('userProfiles').deleteOne({ _id: uid })
-  await db.collection('users').deleteOne({ _id: uid })
-  await db.collection('userRecipeData').deleteOne({ _id: uid })
-  await db.collection('recipes').deleteMany({ userId: uid })
-  await db.collection('recipeDrafts').deleteMany({ userId: uid })
-  if (username) {
-    await db.collection('ratings').deleteMany({ username })
+  // Read what we need BEFORE the transaction:
+  //  - the user's recipe docs themselves (for the per-recipe teardown + their
+  //    Storage images), and
+  //  - the distinct recipes the user REVIEWED, so we can fix surviving recipes'
+  //    rating aggregates after their reviews are removed (D4).
+  const ownRecipes = await db.collection('recipes').find({ userId: uid }).toArray()
+  const ownRecipeIds = new Set(ownRecipes.map((r) => String(r._id)))
+  const reviewedRecipeIds = await db
+    .collection('ratings')
+    .distinct('recipeId', { userId: uid })
+
+  // Cascade the Mongo-side deletes atomically (D3) — a partial failure here
+  // leaves nothing half-removed. teardownRecipeDocs reuses the exact per-recipe
+  // teardown DELETE /deleteRecipe uses (D6), so the account path can't drift:
+  // other users' reviews of this user's recipes (D2) and their saved/made
+  // references to them are cleaned up too — not just the recipe rows.
+  const ownRecipeIdList = [...ownRecipeIds]
+  const session = getClient().startSession()
+  try {
+    await session.withTransaction(async () => {
+      // Per-recipe teardown, batched into O(1) collection passes (not one set of
+      // writes per recipe). A prolific owner could otherwise run hundreds of
+      // full-collection updateMany scans inside a single transaction and blow the
+      // transaction time/oplog limit, rolling back the whole delete. Same effect
+      // as calling teardownRecipeDocs for each recipe, in three writes total.
+      await db.collection('recipes').deleteMany({ userId: uid }, { session })
+      await db
+        .collection('ratings')
+        .deleteMany({ recipeId: { $in: ownRecipeIdList } }, { session })
+      await db.collection('userRecipeData').updateMany(
+        {},
+        {
+          $pull: {
+            savedRecipes: { recipeId: { $in: ownRecipeIdList } },
+            madeRecipes: { recipeId: { $in: ownRecipeIdList } },
+            userRecipes: { recipeId: { $in: ownRecipeIdList } },
+          },
+        },
+        { session }
+      )
+      // The user's own reviews of OTHER people's recipes (their reviews of their
+      // own recipes were already removed by the ratings delete above).
+      await db.collection('ratings').deleteMany({ userId: uid }, { session })
+      await db.collection('usernames').deleteOne({ _id: uid }, { session })
+      await db.collection('userProfiles').deleteOne({ _id: uid }, { session })
+      await db.collection('users').deleteOne({ _id: uid }, { session })
+      await db.collection('userRecipeData').deleteOne({ _id: uid }, { session })
+      await db.collection('recipeDrafts').deleteMany({ userId: uid }, { session })
+      // D6: reports the user FILED. Keep the moderation record (its subject —
+      // the reported content — may still be a valid open queue item) but
+      // anonymize the now-departed reporter.
+      await db
+        .collection('reports')
+        .updateMany({ reporterUid: uid }, { $set: { reporterUid: null } }, { session })
+    })
+  } finally {
+    await session.endSession()
   }
+
+  // ── External / non-transactional side effects ──────────────────────────────
+  // All best-effort and ordered deliberately: Mongo is fully committed above and
+  // the Firebase Auth deletion is LAST, so any failure here leaves the login
+  // recoverable to retry rather than orphaning a deleted account behind data.
+
+  // D4: recompute the aggregate for recipes the user reviewed but did NOT own
+  // (the ones they owned are gone). Post-commit, so it reflects the removed
+  // reviews. Best-effort: a recompute failure must not block the account delete.
+  for (const recipeId of reviewedRecipeIds) {
+    if (ownRecipeIds.has(recipeId)) continue
+    try {
+      await recomputeRecipeRating(db, recipeId)
+    } catch (err) {
+      console.error('deleteAccount: rating recompute failed for', recipeId, err.message)
+    }
+  }
+
+  // D5: drop the user's recipe images and profile photo from Storage. Both
+  // helpers never throw — an orphaned blob beats a failed account delete.
+  for (const recipe of ownRecipes) {
+    await deleteRecipeImage(recipe.recipeImage)
+  }
+  await deleteProfilePhoto(uid)
 
   // Leave a trail in the audit log (best-effort) so an admin can see that the
   // account was self-deleted rather than removed by moderation.

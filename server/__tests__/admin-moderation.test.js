@@ -10,7 +10,7 @@ const request = require('supertest')
 const admin = require('firebase-admin') // auto-mocked
 const app = require('../app')
 const { getDB } = require('../db')
-const { seedRecipe, seedRecipes, seedUserRecipeData, seedRating } = require('./helpers/seed')
+const { seedRecipe, seedRecipes, seedUserRecipeData, seedRating, seedUser } = require('./helpers/seed')
 
 const AUTH_HEADER = { Authorization: 'Bearer fake-test-token' }
 const TEST_UID = 'test-uid'
@@ -35,6 +35,7 @@ afterEach(async () => {
     db.collection('recipes').deleteMany({}),
     db.collection('ratings').deleteMany({}),
     db.collection('userRecipeData').deleteMany({}),
+    db.collection('usernames').deleteMany({}),
     db.collection('stats').deleteMany({}),
   ])
 })
@@ -186,8 +187,9 @@ describe('PATCH /api/admin/reviews/moderation', () => {
       { ...BASE_RECIPE, _id: 'vis', title: 'Visible' },
       { ...BASE_RECIPE, _id: 'hid', title: 'Hidden', status: 'hidden' },
     ])
-    await seedRating({ username: 'rater', recipeId: 'vis', reviewText: 'good', rating: 5 })
-    await seedRating({ username: 'rater', recipeId: 'hid', reviewText: 'also good', rating: 4 })
+    await seedUser('rater-uid', 'rater')
+    await seedRating({ userId: 'rater-uid', username: 'rater', recipeId: 'vis', reviewText: 'good', rating: 5 })
+    await seedRating({ userId: 'rater-uid', username: 'rater', recipeId: 'hid', reviewText: 'also good', rating: 4 })
 
     const res = await request(app).get(
       '/api/getSingleUserReviews?username=rater&returnRecipeData=true&reviewsPerPage=50'

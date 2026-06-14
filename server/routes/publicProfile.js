@@ -46,9 +46,7 @@ router.get('/getPublicProfile', asyncHandler(async (req, res) => {
 
   const [profile, counts, recipes, authRecord] = await Promise.all([
     db.collection('userProfiles').findOne({ _id: uid }),
-    // We already resolved the username to find the uid — pass it so the counts
-    // helper doesn't look it up again.
-    getAccountCountsFor(db, uid, usernameDoc.username),
+    getAccountCountsFor(db, uid),
     db
       .collection('recipes')
       .find({ userId: uid })

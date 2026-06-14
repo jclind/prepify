@@ -10,6 +10,7 @@ const { notifyInBackground, notifyRecipeHidden } = require('../util/email')
 const { validateRequiredRecipeFields, validateRecipeBounds } = require('../util/recipeLimits')
 const { EDITABLE_RECIPE_FIELDS, pickFields } = require('../util/recipeFields')
 const { deleteRecipeImage } = require('../util/firebaseStorage')
+const { teardownRecipeDocs } = require('../util/teardownRecipe')
 
 const router = Router()
 
@@ -314,24 +315,12 @@ router.delete('/deleteRecipe', verifyToken, asyncHandler(async (req, res) => {
 
   // Remove the recipe and every reference to it atomically: its ratings/
   // reviews, and the recipeId entry from any user's saved/made/created lists.
-  // userRecipes only ever lives on the owner's doc, but pulling it across all
-  // docs in the same updateMany is harmless and keeps this to one write.
+  // Shared with the delete-account cascade via teardownRecipeDocs so the two
+  // paths can't drift.
   const session = getClient().startSession()
   try {
     await session.withTransaction(async () => {
-      await db.collection('recipes').deleteOne(recipeIdQuery(recipeId), { session })
-      await db.collection('ratings').deleteMany({ recipeId }, { session })
-      await db.collection('userRecipeData').updateMany(
-        {},
-        {
-          $pull: {
-            savedRecipes: { recipeId },
-            madeRecipes: { recipeId },
-            userRecipes: { recipeId },
-          },
-        },
-        { session }
-      )
+      await teardownRecipeDocs(db, recipe, session)
     })
   } finally {
     await session.endSession()
