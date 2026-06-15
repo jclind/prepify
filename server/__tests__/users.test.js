@@ -125,6 +125,72 @@ describe('GET /getSavedRecipes', () => {
     expect(res.body.recipes).toHaveLength(1)
     expect(res.body.recipes[0]._id).toBe('r1')
   })
+
+  it('q filters saved recipes by title (case-insensitive) and counts only matches', async () => {
+    await seedRecipes([
+      { _id: 'r1', title: 'Tomato Soup' },
+      { _id: 'r2', title: 'Chicken Tacos' },
+      { _id: 'r3', title: 'Potato Soup' },
+    ])
+    await seedUserRecipeData(TEST_UID, {
+      savedRecipes: [
+        { recipeId: 'r1', dateSaved: '1000' },
+        { recipeId: 'r2', dateSaved: '2000' },
+        { recipeId: 'r3', dateSaved: '3000' },
+      ],
+    })
+
+    const res = await request(app)
+      .get('/api/getSavedRecipes?q=SOUP')
+      .set(AUTH_HEADER)
+
+    expect(res.status).toBe(200)
+    expect(res.body.totalCount).toBe(2)
+    const ids = res.body.recipes.map((r) => r._id).sort()
+    expect(ids).toEqual(['r1', 'r3'])
+  })
+
+  it('q keeps save-time order (newest first) over the matches', async () => {
+    await seedRecipes([
+      { _id: 'r1', title: 'Old Soup' },
+      { _id: 'r2', title: 'New Soup' },
+    ])
+    await seedUserRecipeData(TEST_UID, {
+      savedRecipes: [
+        { recipeId: 'r1', dateSaved: '1000' },
+        { recipeId: 'r2', dateSaved: '9000' },
+      ],
+    })
+
+    const res = await request(app)
+      .get('/api/getSavedRecipes?q=soup')
+      .set(AUTH_HEADER)
+
+    expect(res.status).toBe(200)
+    expect(res.body.recipes.map((r) => r._id)).toEqual(['r2', 'r1'])
+  })
+
+  it('q combines with a collection filter', async () => {
+    await seedRecipes([
+      { _id: 'r1', title: 'Tomato Soup' },
+      { _id: 'r2', title: 'Potato Soup' },
+    ])
+    await seedUserRecipeData(TEST_UID, {
+      collections: [{ id: 'col1', name: 'Dinners', createdAt: '1' }],
+      savedRecipes: [
+        { recipeId: 'r1', dateSaved: '1000', collectionIds: ['col1'] },
+        { recipeId: 'r2', dateSaved: '2000', collectionIds: [] },
+      ],
+    })
+
+    const res = await request(app)
+      .get('/api/getSavedRecipes?q=soup&collectionId=col1')
+      .set(AUTH_HEADER)
+
+    expect(res.status).toBe(200)
+    expect(res.body.totalCount).toBe(1)
+    expect(res.body.recipes.map((r) => r._id)).toEqual(['r1'])
+  })
 })
 
 // ─── GET /getCreatedRecipes ───────────────────────────────────────────────────

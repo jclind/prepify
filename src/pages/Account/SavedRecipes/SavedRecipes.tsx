@@ -1,46 +1,124 @@
-import React, { FC, useState, useEffect } from 'react'
+import React, { FC, useState, useEffect, useRef } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
-import { FiPlus, FiFolderPlus, FiEdit2, FiTrash2, FiX } from 'react-icons/fi'
-import Select, { SingleValue } from 'react-select'
+import {
+  FiPlus,
+  FiFolderPlus,
+  FiEdit2,
+  FiTrash2,
+  FiX,
+  FiSearch,
+  FiGrid,
+} from 'react-icons/fi'
+import { BiChevronDown } from 'react-icons/bi'
 import RecipeThumbnail from 'src/Components/RecipeThumbnail/RecipeThumbnail'
 
 import './SavedRecipes.scss'
 import RecipeAPI from 'src/api/recipes'
 import CollectionsAPI from 'src/api/collections'
+import AuthAPI from 'src/api/auth'
 import { RecipeType } from 'types'
-import { selectCustomStyles } from 'src/pages/Account/selectCustomStyles'
 import { useDelayedLoading } from 'src/pages/Account/useDelayedLoading'
 import AddToCollectionControl from 'src/Components/AddToCollection/AddToCollectionControl'
+import CollectionCard from './CollectionCard'
 
-type OptionType = { value: string; label: string }
+type SortOption = { value: string; label: string }
 
-// Save-time orders sort the saved entries; the rest are field sorts the server
-// resolves from the recipe docs (see GET /getSavedRecipes).
-const options: OptionType[] = [
-  { value: 'newAdd', label: 'Save Time: Recent' },
-  { value: 'oldAdd', label: 'Save Time: Oldest' },
-  { value: 'alpha', label: 'Title: A–Z' },
-  { value: 'rating', label: 'Rating: Highest' },
-  { value: 'timeShort', label: 'Time: Shortest' },
-  { value: 'timeLong', label: 'Time: Longest' },
+// Save-time orders ('newAdd'/'oldAdd') sort the saved entries; the rest are
+// field sorts the server resolves from the recipe docs (see GET /getSavedRecipes).
+const SORT_OPTIONS: SortOption[] = [
+  { value: 'newAdd', label: 'Recently saved' },
+  { value: 'oldAdd', label: 'Oldest saved' },
+  { value: 'alpha', label: 'Title A–Z' },
+  { value: 'rating', label: 'Top rated' },
+  { value: 'timeShort', label: 'Quickest' },
+  { value: 'timeLong', label: 'Longest' },
 ]
 
+const PER_PAGE = 6
+
+// Custom sort control (matches the Recipes page): a pill trigger that opens a
+// styled menu. Closes on outside click / Escape.
+const SortMenu: FC<{ sort: SortOption; onChange: (o: SortOption) => void }> = ({
+  sort,
+  onChange,
+}) => {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const onDown = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false)
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [open])
+
+  return (
+    <div className='saved-sort' ref={ref}>
+      <button
+        type='button'
+        className={`saved-sort__trigger ${open ? 'is-open' : ''}`}
+        aria-haspopup='listbox'
+        aria-expanded={open}
+        onClick={() => setOpen(o => !o)}
+      >
+        Sort: {sort.label}
+        <BiChevronDown className='chev' />
+      </button>
+      {open && (
+        <ul className='saved-sort__menu' role='listbox'>
+          {SORT_OPTIONS.map(o => (
+            <li key={o.value}>
+              <button
+                type='button'
+                className={o.value === sort.value ? 'is-active' : ''}
+                onClick={() => {
+                  onChange(o)
+                  setOpen(false)
+                }}
+              >
+                {o.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
 const SavedRecipes: FC = () => {
+  const uid = AuthAPI.getUID()
   const queryClient = useQueryClient()
 
   const [recipes, setRecipes] = useState<RecipeType[]>([])
   const [currPage, setCurrPage] = useState(0)
   const [isMoreRecipes, setIsMoreRecipes] = useState(false)
-  const [selectOption, setSelectOption] = useState(options[0])
+  const [sort, setSort] = useState(SORT_OPTIONS[0])
 
   // null = the "All" view (the master saved list); otherwise a collection id.
   const [activeCollectionId, setActiveCollectionId] = useState<string | null>(null)
   const [creatingNew, setCreatingNew] = useState(false)
   const [newName, setNewName] = useState('')
+  const [creating, setCreating] = useState(false)
   const [renaming, setRenaming] = useState(false)
   const [renameValue, setRenameValue] = useState('')
-  const [creating, setCreating] = useState(false)
+
+  // searchInput is what the user types; query is the debounced term that
+  // actually drives the request, so we don't fire one per keystroke.
+  const [searchInput, setSearchInput] = useState('')
+  const [query, setQuery] = useState('')
+  useEffect(() => {
+    const t = setTimeout(() => setQuery(searchInput.trim()), 300)
+    return () => clearTimeout(t)
+  }, [searchInput])
 
   const { data: collections = [] } = useQuery({
     queryKey: ['collections'],
@@ -48,9 +126,16 @@ const SavedRecipes: FC = () => {
   })
   const activeCollection = collections.find(c => c.id === activeCollectionId) ?? null
 
-  // A deleted collection (e.g. from another tab) shouldn't strand the view on a
-  // filter that no longer exists — fall back to All. Only once collections have
-  // loaded, so the initial empty list doesn't bounce a valid deep-link.
+  // Total saved count for the "All saved" tile, independent of the filtered
+  // view. Shares the account-counts cache the account header already populates.
+  const { data: counts } = useQuery({
+    queryKey: ['account-counts', uid],
+    queryFn: () => RecipeAPI.getAccountCounts(),
+    enabled: !!uid,
+  })
+  const savedTotal = counts?.saved ?? null
+
+  // A collection deleted elsewhere shouldn't strand the view on a dead filter.
   useEffect(() => {
     if (activeCollectionId && collections.length > 0 && !activeCollection) {
       setActiveCollectionId(null)
@@ -60,50 +145,51 @@ const SavedRecipes: FC = () => {
   }, [activeCollectionId, activeCollection, collections.length])
 
   const { data, isLoading } = useQuery({
-    queryKey: ['saved-recipes', selectOption.value, currPage, activeCollectionId],
+    queryKey: ['saved-recipes', sort.value, currPage, activeCollectionId, query],
     queryFn: () =>
       RecipeAPI.getSavedRecipes(
         currPage,
-        6,
-        selectOption.value,
-        activeCollectionId ?? undefined
+        PER_PAGE,
+        sort.value,
+        activeCollectionId ?? undefined,
+        query || undefined
       ),
   })
   const showSkeleton = useDelayedLoading(isLoading)
 
   useEffect(() => {
-    if (data) {
-      if (currPage === 0) {
-        setRecipes([...data.recipes])
-        setIsMoreRecipes(Number(data.totalCount) > data.recipes.length)
-      } else {
-        const updated = [...recipes, ...data.recipes]
-        setRecipes(updated)
-        setIsMoreRecipes(Number(data.totalCount) > updated.length)
-      }
+    if (!data) return
+    if (currPage === 0) {
+      setRecipes([...data.recipes])
+      setIsMoreRecipes(Number(data.totalCount) > data.recipes.length)
+    } else {
+      const updated = [...recipes, ...data.recipes]
+      setRecipes(updated)
+      setIsMoreRecipes(Number(data.totalCount) > updated.length)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data])
-
-  const handleSelectChange = (e: SingleValue<OptionType>) => {
-    if (!e) return
-    setSelectOption(e)
-    setCurrPage(0)
-  }
-
-  const handleLoadMoreRecipes = () => setCurrPage(prev => prev + 1)
 
   const selectCollection = (id: string | null) => {
     setActiveCollectionId(id)
     setCurrPage(0)
     setRenaming(false)
   }
+  const changeSort = (o: SortOption) => {
+    setSort(o)
+    setCurrPage(0)
+  }
+  const onSearchChange = (v: string) => {
+    setSearchInput(v)
+    setCurrPage(0)
+  }
+  const handleLoadMoreRecipes = () => setCurrPage(prev => prev + 1)
 
-  // Refresh after a membership/collection change. Counts (and covers) always
-  // refetch; the grid only needs to reset when a filter is active, since adding
-  // or removing a tag can change which recipes the active collection shows.
+  // Refresh after a membership/collection change. Counts + covers always
+  // refetch; the grid only needs resetting when a filter is active.
   const refreshAfterMutation = () => {
     queryClient.invalidateQueries({ queryKey: ['collections'] })
+    queryClient.invalidateQueries({ queryKey: ['account-counts', uid] })
     if (activeCollectionId !== null) {
       setCurrPage(0)
       queryClient.invalidateQueries({ queryKey: ['saved-recipes'] })
@@ -153,8 +239,10 @@ const SavedRecipes: FC = () => {
     }
   }
 
-  // On the first load, hold an empty frame while a fast query settles, so the
-  // skeleton only shows for genuinely slow loads — and the empty state never
+  const searching = query.length > 0
+
+  // On the first load, hold an empty frame while a fast query settles so the
+  // skeleton only shows for genuinely slow loads and the empty state never
   // flashes before data. Scoped to the initial load so paging never blanks the
   // already-rendered list.
   if (isLoading && !showSkeleton && recipes.length === 0) {
@@ -163,27 +251,29 @@ const SavedRecipes: FC = () => {
 
   return (
     <div className='saved-recipes'>
-      {/* Collection chips: All + each collection + a create affordance. */}
-      <div className='collection-chips'>
-        <button
-          className={`chip ${activeCollectionId === null ? 'active' : ''}`}
+      {/* Collections: All + each collection + a create affordance. */}
+      <div className='saved-collections'>
+        <CollectionCard
+          label='All saved'
+          count={savedTotal}
+          cover={null}
+          icon={<FiGrid />}
+          active={activeCollectionId === null}
           onClick={() => selectCollection(null)}
-        >
-          All
-        </button>
+        />
         {collections.map(c => (
-          <button
+          <CollectionCard
             key={c.id}
-            className={`chip ${activeCollectionId === c.id ? 'active' : ''}`}
+            label={c.name}
+            count={c.count}
+            cover={c.coverImage}
+            active={activeCollectionId === c.id}
             onClick={() => selectCollection(c.id)}
-          >
-            {c.name}
-            <span className='chip-count'>{c.count}</span>
-          </button>
+          />
         ))}
         {creatingNew ? (
           <form
-            className='new-chip-form'
+            className='collection-card collection-card--new is-form'
             onSubmit={e => {
               e.preventDefault()
               handleCreate()
@@ -202,16 +292,16 @@ const SavedRecipes: FC = () => {
             />
             <button
               type='submit'
-              className='chip-icon-btn'
-              aria-label='Create'
+              className='new-submit'
               disabled={creating || !newName.trim()}
             >
-              <FiPlus />
+              <FiPlus /> Create
             </button>
           </form>
         ) : (
           <button
-            className='chip chip-new'
+            type='button'
+            className='collection-card collection-card--new'
             onClick={() => setCreatingNew(true)}
             aria-label='New collection'
           >
@@ -220,71 +310,90 @@ const SavedRecipes: FC = () => {
         )}
       </div>
 
-      {/* Toolbar for the active collection: rename / delete. */}
-      {activeCollection && (
-        <div className='collection-toolbar'>
-          {renaming ? (
-            <form
-              className='rename-form'
-              onSubmit={e => {
-                e.preventDefault()
-                handleRename()
-              }}
+      {/* Toolbar: full-width search + sort. */}
+      <div className='saved-toolbar'>
+        <div className='saved-search'>
+          <FiSearch className='saved-search__icon' />
+          <input
+            type='text'
+            placeholder={
+              activeCollection
+                ? `Search ${activeCollection.name}…`
+                : 'Search saved…'
+            }
+            value={searchInput}
+            onChange={e => onSearchChange(e.target.value)}
+          />
+          {searchInput && (
+            <button
+              type='button'
+              className='saved-search__clear'
+              aria-label='Clear search'
+              onClick={() => onSearchChange('')}
             >
-              <input
-                type='text'
-                autoFocus
-                value={renameValue}
-                maxLength={50}
-                onChange={e => setRenameValue(e.target.value)}
-              />
-              <button type='submit' className='btn-small'>Save</button>
-              <button
-                type='button'
-                className='btn-small ghost'
-                onClick={() => setRenaming(false)}
-              >
-                <FiX />
-              </button>
-            </form>
-          ) : (
-            <>
-              <h2 className='collection-name'>{activeCollection.name}</h2>
-              <button
-                className='btn-small ghost'
-                onClick={() => {
-                  setRenameValue(activeCollection.name)
-                  setRenaming(true)
-                }}
-                aria-label='Rename collection'
-              >
-                <FiEdit2 />
-              </button>
-              <button
-                className='btn-small ghost danger'
-                onClick={handleDelete}
-                aria-label='Delete collection'
-              >
-                <FiTrash2 />
-              </button>
-            </>
+              <FiX />
+            </button>
           )}
         </div>
-      )}
+        <SortMenu sort={sort} onChange={changeSort} />
+      </div>
+
+      {/* Subhead: current view + (for a collection) rename / delete. */}
+      <div className='saved-subhead'>
+        {renaming && activeCollection ? (
+          <form
+            className='saved-rename'
+            onSubmit={e => {
+              e.preventDefault()
+              handleRename()
+            }}
+          >
+            <input
+              type='text'
+              autoFocus
+              value={renameValue}
+              maxLength={50}
+              onChange={e => setRenameValue(e.target.value)}
+            />
+            <button type='submit' className='btn-small'>Save</button>
+            <button
+              type='button'
+              className='btn-small ghost'
+              onClick={() => setRenaming(false)}
+            >
+              <FiX />
+            </button>
+          </form>
+        ) : (
+          <>
+            <h2>{activeCollection ? activeCollection.name : 'All Saved'}</h2>
+            {activeCollection && (
+              <div className='saved-collection-actions'>
+                <button
+                  className='btn-small ghost'
+                  onClick={() => {
+                    setRenameValue(activeCollection.name)
+                    setRenaming(true)
+                  }}
+                  aria-label='Rename collection'
+                >
+                  <FiEdit2 /> Rename
+                </button>
+                <button
+                  className='btn-small ghost danger'
+                  onClick={handleDelete}
+                  aria-label='Delete collection'
+                >
+                  <FiTrash2 /> Delete
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
 
       {recipes.length > 0 || isLoading ? (
         <>
-          <div className='saved-recipes-filters'>
-            <Select<OptionType, false>
-              options={options}
-              styles={selectCustomStyles}
-              isSearchable={false}
-              isClearable={false}
-              className='select'
-              onChange={handleSelectChange}
-              value={selectOption}
-            />
-          </div>
           <div className='thumbnails-container'>
             {!isLoading ? (
               recipes.map(recipe => (
@@ -314,12 +423,24 @@ const SavedRecipes: FC = () => {
         </>
       ) : (
         <div className='no-data-saved'>
-          <h2>{activeCollection ? 'Nothing here yet' : 'No Recipes Saved Yet'}</h2>
-          <p>
-            {activeCollection
-              ? 'Add saved recipes to this collection from the folder icon on any card.'
-              : 'Start saving your favorite recipes today!'}
-          </p>
+          {searching ? (
+            <>
+              <h2>No matches</h2>
+              <p>
+                Nothing {activeCollection ? `in ${activeCollection.name}` : 'saved'}{' '}
+                matches “{query}”.
+              </p>
+            </>
+          ) : (
+            <>
+              <h2>{activeCollection ? 'Nothing here yet' : 'No Recipes Saved Yet'}</h2>
+              <p>
+                {activeCollection
+                  ? 'Add saved recipes to this collection from the folder icon on any card.'
+                  : 'Start saving your favorite recipes today!'}
+              </p>
+            </>
+          )}
         </div>
       )}
     </div>

@@ -481,7 +481,8 @@ class RecipeAPIClass {
     page: number,
     recipesPerPage: number,
     order: string,
-    collectionId?: string
+    collectionId?: string,
+    q?: string
   ): Promise<{ recipes: RecipeType[]; totalCount: number } | null> {
     if (!AuthAPI.getUID()) return null
     const params = new URLSearchParams({
@@ -490,6 +491,7 @@ class RecipeAPIClass {
       order,
     })
     if (collectionId) params.set('collectionId', collectionId)
+    if (q && q.trim()) params.set('q', q.trim())
     const result = await http.get(`api/getSavedRecipes?${params.toString()}`)
     return result.data
   }

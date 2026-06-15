@@ -1,7 +1,7 @@
 /**
- * Saved tab — collection chips, collection filtering, and the per-card
- * add-to-collection popover. RecipeAPI, CollectionsAPI and toast are mocked;
- * react-query and router are real.
+ * Saved tab — collection cards, collection filtering, title search, and the
+ * per-card add-to-collection popover. RecipeAPI, CollectionsAPI and toast are
+ * mocked; react-query and router are real.
  */
 
 import React from 'react'
@@ -18,6 +18,7 @@ vi.mock('src/api/recipes', () => ({
   default: {
     getSavedRecipes: vi.fn(),
     getSavedRecipe: vi.fn(),
+    getAccountCounts: vi.fn(),
   },
 }))
 vi.mock('src/api/collections', () => ({
@@ -43,6 +44,7 @@ vi.mock('src/api/auth', () => ({
 
 const mockedGetSaved = RecipeAPI.getSavedRecipes as unknown as Mock
 const mockedGetSavedOne = RecipeAPI.getSavedRecipe as unknown as Mock
+const mockedCounts = RecipeAPI.getAccountCounts as unknown as Mock
 const mockedList = CollectionsAPI.list as unknown as Mock
 const mockedSetMembership = CollectionsAPI.setRecipeCollections as unknown as Mock
 
@@ -73,6 +75,7 @@ beforeEach(() => {
     recipes: [recipe('r1', 'Soup')],
     totalCount: 1,
   })
+  mockedCounts.mockResolvedValue({ saved: 12, ratings: 0, recipes: 0, drafts: 0 })
   mockedList.mockResolvedValue([
     { id: 'c1', name: 'Weeknight', createdAt: '1', count: 3, coverRecipeId: 'r1', coverImage: null },
     { id: 'c2', name: 'Desserts', createdAt: '2', count: 0, coverRecipeId: null, coverImage: null },
@@ -89,22 +92,34 @@ beforeEach(() => {
   })
 })
 
-it('renders a chip per collection with its count, plus All and New', async () => {
+it('renders a card per collection with its count, plus All saved and New', async () => {
   renderPage()
   expect(await screen.findByText('Weeknight')).toBeInTheDocument()
   expect(screen.getByText('Desserts')).toBeInTheDocument()
-  expect(screen.getByText('All')).toBeInTheDocument()
+  expect(screen.getByText('All saved')).toBeInTheDocument()
   expect(screen.getByText('New')).toBeInTheDocument()
-  // Counts ride on the chip.
-  expect(screen.getByText('3')).toBeInTheDocument()
+  // Counts ride on the card; the All tile shows the account-counts total.
+  expect(screen.getByText('3 saved')).toBeInTheDocument()
+  expect(screen.getByText('12 saved')).toBeInTheDocument()
 })
 
-it('filters the grid by collection id when a chip is clicked', async () => {
+it('filters the grid by collection id when a card is clicked', async () => {
   renderPage()
-  const chip = await screen.findByText('Weeknight')
-  fireEvent.click(chip)
+  const card = await screen.findByText('Weeknight')
+  fireEvent.click(card)
   await waitFor(() =>
-    expect(mockedGetSaved).toHaveBeenCalledWith(0, 6, 'newAdd', 'c1')
+    expect(mockedGetSaved).toHaveBeenCalledWith(0, 6, 'newAdd', 'c1', undefined)
+  )
+})
+
+it('searches by title (debounced) via the q param', async () => {
+  renderPage()
+  await screen.findByText('Soup')
+  fireEvent.change(screen.getByPlaceholderText('Search saved…'), {
+    target: { value: 'soup' },
+  })
+  await waitFor(() =>
+    expect(mockedGetSaved).toHaveBeenCalledWith(0, 6, 'newAdd', undefined, 'soup')
   )
 })
 

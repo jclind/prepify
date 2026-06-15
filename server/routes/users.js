@@ -69,6 +69,11 @@ router.get('/getSavedRecipes', verifyToken, asyncHandler(async (req, res) => {
     ? req.query.collectionId[0]
     : req.query.collectionId
 
+  // Optional case-insensitive title search. A repeated ?q= arrives as an array;
+  // take the first value, like collectionId above.
+  const rawQ = Array.isArray(req.query.q) ? req.query.q[0] : req.query.q
+  const q = (typeof rawQ === 'string' ? rawQ : '').trim().toLowerCase()
+
   const userData = await db.collection('userRecipeData').findOne({ _id: uid })
   let savedRecipes = userData?.savedRecipes ?? []
 
@@ -82,21 +87,40 @@ router.get('/getSavedRecipes', verifyToken, asyncHandler(async (req, res) => {
   const pageNum = parseInt(page) || 0
   const perPage = Math.min(parseInt(recipesPerPage) || 5, MAX_PER_PAGE)
 
-  // Field sorts (title/rating/cook time) order by the recipe docs, so fetch the
-  // whole saved set (visible only), sort the docs, then page. totalCount counts
-  // visible recipes — soft-hidden ones drop out entirely rather than leaving
-  // holes in a page.
+  // A title search or a field sort (title/rating/cook time) both order/filter by
+  // the recipe docs themselves, so materialize the whole saved set (visible
+  // only), filter/sort the docs, then page. totalCount counts what survives —
+  // soft-hidden or non-matching recipes drop out entirely rather than leaving
+  // holes in a page. The cheaper save-time fast path below handles the common
+  // case (no search, no field sort).
   const fieldSort = typeof order === 'string' ? FIELD_SORTS[order] : undefined
-  if (fieldSort) {
+  if (q || fieldSort) {
     const allIds = savedRecipes.map((entry) => entry.recipeId)
-    const docs =
+    let docs =
       allIds.length > 0
         ? await db
             .collection('recipes')
             .find({ ...recipeIdInQuery(allIds), ...RECIPE_VISIBLE })
             .toArray()
         : []
-    docs.sort(fieldSort)
+    if (q) {
+      docs = docs.filter((d) => String(d.title || '').toLowerCase().includes(q))
+    }
+    if (fieldSort) {
+      docs.sort(fieldSort)
+    } else {
+      // No field sort: keep save-time order over the filtered docs by looking up
+      // each doc's saved date from its entry.
+      const savedAt = new Map(
+        savedRecipes.map((e) => [String(e.recipeId), Number(e.dateSaved)])
+      )
+      const oldestFirst = order === 'old' || order === 'oldAdd'
+      docs.sort((a, b) => {
+        const av = savedAt.get(String(a._id)) || 0
+        const bv = savedAt.get(String(b._id)) || 0
+        return oldestFirst ? av - bv : bv - av
+      })
+    }
     const recipes = docs.slice(pageNum * perPage, (pageNum + 1) * perPage)
     return res.json({ recipes, totalCount: docs.length })
   }
