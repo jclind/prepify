@@ -121,6 +121,15 @@ describe('moderateText — OpenAI grading', () => {
     const v = await moderateText('borderline content', 'review')
     expect(v.severity).toBe('high')
   })
+
+  it('flagged with no usable category scores → medium with a non-null reason', async () => {
+    mockModeration({ flagged: true, category_scores: {} })
+    const v = await moderateText('borderline content', 'recipe.description')
+    expect(v.severity).toBe('medium')
+    expect(v.category).toBe('flagged')
+    // Never the meaningless 'openai:null:0.00'.
+    expect(v.reason).toBe('openai:flagged:0.00')
+  })
 })
 
 describe('moderateText — fail-open', () => {

@@ -9,7 +9,7 @@
  * unmoderated. Assert the real keys make it into the blob.
  */
 
-const { gatherRecipeText } = require('../util/automod')
+const { gatherRecipeText, holdRecipeForReview } = require('../util/automod')
 
 // A parsed-ingredient row exactly as src/api/recipes.ts builds it.
 const parsedIngredient = (originalIngredientString, ingredient) => ({
@@ -92,5 +92,41 @@ describe('gatherRecipeText — real client payload shapes', () => {
     expect(
       gatherRecipeText({ title: 'T', ingredients: [null], instructions: [null] })
     ).toBe('T')
+  })
+})
+
+describe('holdRecipeForReview — report-gated hold', () => {
+  const VERDICT = { severity: 'medium', reason: 'openai:harassment:0.60', category: 'harassment', source: 'openai' }
+
+  // Minimal fake Db that records calls and lets a collection's updateOne be
+  // overridden (to simulate a failing report write).
+  const fakeDb = (overrides = {}) => {
+    const calls = { reports: [], recipes: [], auditLog: [] }
+    const coll = (name) => ({
+      updateOne: overrides[name]?.updateOne || (async (...args) => { calls[name].push(args); return { acknowledged: true } }),
+      insertOne: overrides[name]?.insertOne || (async (...args) => { calls[name].push(args); return { acknowledged: true } }),
+    })
+    return { db: { collection: coll }, calls }
+  }
+
+  it('files the report, THEN hides the recipe, and returns true', async () => {
+    const { db, calls } = fakeDb()
+    const held = await holdRecipeForReview(db, { recipeId: 'rec-1', title: 'T', verdict: VERDICT })
+    expect(held).toBe(true)
+    expect(calls.reports).toHaveLength(1) // queue entry filed
+    expect(calls.recipes).toHaveLength(1) // recipe hidden
+    // The recipe is flipped to pending_review.
+    expect(calls.recipes[0][1]).toEqual({ $set: { status: 'pending_review' } })
+    expect(calls.auditLog).toHaveLength(1) // autohold audit appended
+  })
+
+  it('does NOT hide the recipe when the report write fails (fail-open) and returns false', async () => {
+    const { db, calls } = fakeDb({
+      reports: { updateOne: async () => { throw new Error('mongo down') } },
+    })
+    const held = await holdRecipeForReview(db, { recipeId: 'rec-2', title: 'T', verdict: VERDICT })
+    expect(held).toBe(false)
+    // Crucial invariant: a recipe is never hidden without a queue entry to clear it.
+    expect(calls.recipes).toHaveLength(0)
   })
 })

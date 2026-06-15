@@ -75,7 +75,10 @@ function grade(result) {
 
   if (topScore >= highThreshold()) return { severity: 'high', category: topCategory, score: topScore }
   if (result.flagged || topScore >= mediumThreshold()) {
-    return { severity: 'medium', category: topCategory, score: topScore }
+    // `flagged` can be true with no usable per-category score (empty/zero
+    // category_scores). Fall back to a non-null category so the verdict reason
+    // never reads `openai:null:0.00`.
+    return { severity: 'medium', category: topCategory || 'flagged', score: topScore }
   }
   return { severity: 'clean', category: topCategory, score: topScore }
 }

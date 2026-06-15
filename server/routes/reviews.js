@@ -10,7 +10,7 @@ const { recomputeRecipeRating } = require('../util/recipeRating')
 const { upsertWithDupRetry } = require('../util/upsertWithDupRetry')
 const { notifyInBackground, notifyReviewTakenDown } = require('../util/email')
 const { moderateText } = require('../util/textModeration')
-const { BLOCKED_MESSAGE, BLOCKED_CODE } = require('../util/automod')
+const { respondBlocked } = require('../util/automod')
 
 const router = Router()
 
@@ -79,7 +79,7 @@ router.post('/newReview', verifyToken, requireActive, asyncHandler(async (req, r
   // `allowed` is true only for a clean verdict.
   const verdict = await moderateText(reviewText, 'review')
   if (!verdict.allowed) {
-    return res.status(422).json({ error: BLOCKED_MESSAGE, code: BLOCKED_CODE })
+    return respondBlocked(res)
   }
 
   const usernameDoc = await db.collection('usernames').findOne({ _id: userId })
@@ -135,7 +135,7 @@ router.post('/editReview', verifyToken, requireActive, asyncHandler(async (req, 
   }
   const verdict = await moderateText(text, 'review')
   if (!verdict.allowed) {
-    return res.status(422).json({ error: BLOCKED_MESSAGE, code: BLOCKED_CODE })
+    return respondBlocked(res)
   }
   // Keyed by the stable uid (D1): only the author (req.uid) can match their own
   // doc, so a non-author falls through to matchedCount 0 → 403 below.

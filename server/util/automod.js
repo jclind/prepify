@@ -6,6 +6,7 @@
 
 const { ObjectId } = require('mongodb')
 const { recordAudit, SYSTEM_ACTOR } = require('./auditLog')
+const { recipeIdQuery } = require('./recipeIdQuery')
 
 // Friendly, surface-agnostic message returned on a high-confidence block. It
 // deliberately does NOT echo the matched term/category (don't coach evasion, and
@@ -14,6 +15,13 @@ const { recordAudit, SYSTEM_ACTOR } = require('./auditLog')
 const BLOCKED_MESSAGE =
   "This content was flagged by our automated moderation system and can't be published. Please review our content guidelines and edit your submission."
 const BLOCKED_CODE = 'CONTENT_BLOCKED'
+
+// Single owner of the high-confidence block response, so the 422 contract (status
+// + body shape the FE keys on) lives in one place instead of being re-typed at
+// every write route.
+function respondBlocked(res) {
+  return res.status(422).json({ error: BLOCKED_MESSAGE, code: BLOCKED_CODE })
+}
 
 // Flatten a recipe payload's user-controlled text into one blob for a single
 // classifier pass (one API call per recipe, not one per field).
@@ -67,23 +75,28 @@ function gatherRecipeText(body = {}) {
 }
 
 /**
- * Record a medium-confidence automated hold on a recipe: file an OPEN report into
- * the admin queue (credited to the system actor) and append an audit entry. The
- * caller is responsible for stamping `status: 'pending_review'` on the recipe doc
- * itself — this only writes the queue/audit side effects.
+ * Place a medium-confidence automated hold on a recipe, as one report-gated unit:
+ *   1. file the OPEN admin-queue report (credited to the system actor),
+ *   2. only then flip the recipe to `status: 'pending_review'`,
+ *   3. append the `recipe.autohold` audit entry.
+ *
+ * Ordering matters: the recipe is hidden from public reads ONLY after its queue
+ * entry exists, so we can never end up with a recipe that has silently vanished
+ * with nothing for an admin to clear. If the report write fails the recipe is
+ * left visible (fail-open, consistent with the text classifier) and the caller
+ * is told the hold did not take.
  *
  * Idempotent on the report: re-holding the same recipe (e.g. owner re-edits while
  * still pending) upserts the single open automod report instead of stacking
  * duplicates, mirroring the one-open-report-per-(reporter,target) rule in
  * routes/reports.js.
  *
- * Best-effort, like recordAudit/email: never throws into the write route.
- *
  * @param {import('mongodb').Db} db
  * @param {object} args
  * @param {string} args.recipeId
  * @param {string} [args.title]   recipe title, for the audit label
  * @param {object} args.verdict   the moderateText() result (severity/reason/category/source)
+ * @returns {Promise<boolean>}    true if the recipe was actually held
  */
 async function holdRecipeForReview(db, { recipeId, title, verdict }) {
   const id = String(recipeId)
@@ -112,7 +125,20 @@ async function holdRecipeForReview(db, { recipeId, title, verdict }) {
       { upsert: true }
     )
   } catch (err) {
-    console.error('holdRecipeForReview: failed to file automod report:', err.message)
+    // Queue entry could not be created → do NOT hide the recipe. Better to leave
+    // a borderline recipe momentarily visible than to disappear it with no way
+    // for an admin to find and clear it.
+    console.error('holdRecipeForReview: failed to file automod report — leaving recipe visible:', err.message)
+    return false
+  }
+
+  // The queue entry now exists, so it is safe to withhold the recipe from public
+  // reads. A failure here leaves the report in place (an admin can still act), so
+  // it's logged but not fatal.
+  try {
+    await db.collection('recipes').updateOne(recipeIdQuery(id), { $set: { status: 'pending_review' } })
+  } catch (err) {
+    console.error('holdRecipeForReview: report filed but failed to set pending_review:', err.message)
   }
 
   await recordAudit(db, {
@@ -125,6 +151,7 @@ async function holdRecipeForReview(db, { recipeId, title, verdict }) {
     reason: verdict.reason || null,
     metadata: { severity: verdict.severity, category: verdict.category || null, source: verdict.source || null },
   })
+  return true
 }
 
-module.exports = { BLOCKED_MESSAGE, BLOCKED_CODE, gatherRecipeText, holdRecipeForReview }
+module.exports = { BLOCKED_MESSAGE, BLOCKED_CODE, respondBlocked, gatherRecipeText, holdRecipeForReview }

@@ -62,7 +62,15 @@ const SPAM_PATTERNS = [
   { re: /\b(free|cheap)\s+(viagra|cialis|crypto|bitcoin|followers)\b/i, label: 'spam-offer', identityOnly: false },
 ]
 
-// Short identity fields get the stricter (identityOnly) spam rules too.
+// Short identity fields get the stricter (identityOnly) spam rules too: a URL or
+// bare domain in a username/displayName is never legitimate.
+//
+// `bio`/`location` (context 'profile') are DELIBERATELY excluded. A bio is prose,
+// and a recipe author linking their own blog/socials is legitimate, so blocking
+// every URL there would be user-hostile. Bios are still covered by the
+// non-identity spam patterns (promotional "buy now" / "free crypto" phrasing) and
+// by the OpenAI layer. If bio link-spam becomes a real problem, add 'profile'
+// here — that's the single switch that makes bios reject URLs/domains too.
 const IDENTITY_CONTEXTS = new Set(['username', 'displayName'])
 
 /**

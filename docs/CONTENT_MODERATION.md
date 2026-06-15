@@ -255,10 +255,26 @@ recipes / block for reviews+bio+username**; verification = **tests + authed live
 ## Progress
 
 **2026-06-14 — P0 + P1 (text) shipped.** The independently-shippable text slice is complete and
-fully tested (server Jest **431/431**, frontend Vitest **361/361**, `tsc` clean). Awaiting an
-**authed live smoke test** against a real `.env` with `OPENAI_API_KEY` set (step 2 under "How to
-verify") before this is considered signed off — the automated suite mocks the classifier, so the
-real OpenAI call has not yet been exercised end-to-end.
+fully tested (server Jest **431/431**, frontend Vitest **361/361**, `tsc` clean).
+
+**2026-06-15 — P1 authed live smoke test PASSED ✅ — P1 is now signed off.** Ran against a real
+`.env` (prod Mongo + Firebase) with a live `OPENAI_API_KEY`, driving the API directly with a
+throwaway Firebase account (no browser — the moderation logic is all server-side):
+- **Blocklist layer (7/7):** recipe/review/bio blocklist-spam → `422 CONTENT_BLOCKED`; clean
+  recipe → 201, clean review/bio → 2xx, clean username → 200. (Proves `verdict=high → 422` on
+  every surface; needs no OpenAI key.)
+- **OpenAI grading (real classifier):** violent-threat recipe/review/bio → `422 CONTENT_BLOCKED`;
+  clean recipe → 201; clean bio → 200.
+- **Medium-confidence hold (6/6) — the distinctive `pending_review` state:** harassment-band text
+  (score 0.649) → `201 pendingReview:true`, recipe saved `status:'pending_review'`, automod
+  `report` filed (open/medium) + `recipe.autohold` audit by the `system` actor, **owner read
+  returns it (200) while the public read 404s it.** Owner-vs-public split confirmed end-to-end.
+- **Fail-open verified for real:** before account credits were loaded the key returned a persistent
+  account-level `429`; the classifier failed open exactly as designed (logged, content allowed) —
+  no writes blocked by the outage.
+
+All test data torn down; prod verified residue-free. (Cleanup gotcha logged: `updateProfile`
+writes bio/location to the `userProfiles` collection — easy to miss when purging test data.)
 
 Shipped:
 - **P0 foundation** — `server/util/textModeration.js` (env-gated `moderateText`, blocklist →
@@ -273,7 +289,46 @@ Shipped:
 - **Frontend** — moderation `422` surfaced on the recipe / review / profile forms; a non-error
   "pending review" toast when a recipe is held. Env vars added to `server/.env.example`.
 
-Known follow-ups: server-side `displayName` moderation (needs a Firebase blocking function — see the
-P1 note above); P2 image moderation; P3 CSAM. None block the text slice.
+**2026-06-15 — P1 code-review pass (high effort), 9 findings fixed.** A multi-angle review of
+the branch surfaced one critical gap and several integrity/robustness issues; all fixed with
+regression tests (server Jest **446** green). One finding (`displayName`) was already a known
+follow-up; the central-middleware refactor is deferred (see below).
 
-_Next: run the authed live smoke test, then proceed to P2 (images) when ready._
+- **#1 (critical) — ingredient + instruction text bypassed moderation.** `gatherRecipeText` read
+  keys that don't exist on real payloads (`ing.ingredient`/`.name`, `step.step`), so only
+  `title`/`description` were ever screened. Now reads the real shapes
+  (`parsedIngredient.originalIngredientString` + `ingredient`/`comment`, instruction `.content`,
+  and `LabelType` `.label` section headers). New `__tests__/automod.test.js` uses the real client
+  shapes — the route tests mock `moderateText`, so this was previously untestable.
+- **#2 — edit no longer downgrades an admin takedown.** A medium-confidence owner edit of a
+  `hidden`/`unpublished` recipe no longer lifts it to the weaker, owner-visible `pending_review`
+  (only an admin clears a takedown); the automod report is gated on the same condition.
+- **#3 — `addRecipe` whitelists the insert.** Replaced the raw `{ ...body }` spread with
+  `pickFields(body, CREATABLE_RECIPE_FIELDS)`; the server stamps `_id`/`userId`/zeroed
+  `rating`+counters, so a client can't inject `status`, `featured`, or a forged rating on create
+  (symmetric with the edit whitelist).
+- **#4 — public-profile count matches the visible list.** `recipesTotalCount` now counts with
+  `RECIPE_VISIBLE` instead of the unfiltered account total, so held/hidden recipes no longer
+  inflate the number or leak their existence.
+- **#7 — `editRecipe` race guard.** A `null` `findOneAndUpdate` result (recipe deleted mid-edit)
+  returns `404` instead of `200`-with-null, and skips the hold (no orphan report).
+- **#8 — report-gated hold.** `holdRecipeForReview` now files the queue report FIRST, then flips
+  the recipe to `pending_review`, then audits — returning a boolean. If the report write fails the
+  recipe is left visible (fail-open) rather than disappearing with nothing for an admin to clear.
+  The routes no longer stamp `pending_review` inline; the helper is the single owner.
+- **#9 — classifier reason fallback.** `flagged: true` with empty category scores now grades
+  `medium` with category `flagged` (reason `openai:flagged:0.00`) instead of `openai:null:0.00`.
+- **#10 (partial) — `respondBlocked(res)` helper.** The `422 {error, code}` block contract was
+  hand-typed at 6 sites across 3 route files; now one helper in `automod.js`.
+- **#6 — bio/`profile` spam rules: deliberate decision, no behavior change.** Bios stay on the
+  non-identity ruleset (a recipe author linking their own blog is legitimate; promo-phrase patterns
+  + OpenAI still apply). `IDENTITY_CONTEXTS` carries a note: adding `'profile'` is the single switch
+  that makes bios reject URLs/domains, if bio link-spam is ever observed.
+
+Known follow-ups: server-side `displayName` moderation (needs a Firebase blocking function — see the
+P1 note above); **#10 (full) — a central moderation choke point / middleware so a new write route
+can't silently ship unmoderated** (deferred to its own focused PR — retrofitting across the 6 write
+routes is too broad to fold into this slice); P2 image moderation; P3 CSAM. None block the text slice.
+
+_Next: P1 is fully signed off (incl. the code-review pass). Proceed to the `displayName` follow-up
+(Firebase blocking function) and/or P2 (images) when ready._

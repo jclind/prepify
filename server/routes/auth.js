@@ -8,7 +8,7 @@ const { recordAudit } = require('../util/auditLog')
 const { deleteRecipeImage, deleteProfilePhoto } = require('../util/firebaseStorage')
 const { recomputeRecipeRating } = require('../util/recipeRating')
 const { moderateText } = require('../util/textModeration')
-const { BLOCKED_MESSAGE, BLOCKED_CODE } = require('../util/automod')
+const { respondBlocked } = require('../util/automod')
 
 const USERNAME_MIN_LENGTH = 3
 const USERNAME_MAX_LENGTH = 30
@@ -122,7 +122,7 @@ router.post('/setUsername', verifyToken, requireActive, asyncHandler(async (req,
   // applies the identity-only spam rules (no URLs/domains in a handle).
   const usernameVerdict = await moderateText(username, 'username')
   if (!usernameVerdict.allowed) {
-    return res.status(422).json({ error: BLOCKED_MESSAGE, code: BLOCKED_CODE })
+    return respondBlocked(res)
   }
   const usernameLower = username.toLowerCase()
   const uid = req.uid
@@ -214,7 +214,7 @@ router.post('/updateProfile', verifyToken, requireActive, asyncHandler(async (re
   const profileText = [bio, location].filter((s) => typeof s === 'string' && s.trim()).join('\n')
   const profileVerdict = await moderateText(profileText, 'profile')
   if (!profileVerdict.allowed) {
-    return res.status(422).json({ error: BLOCKED_MESSAGE, code: BLOCKED_CODE })
+    return respondBlocked(res)
   }
   const db = getDB()
   await db.collection('userProfiles').updateOne(

@@ -9,7 +9,7 @@ const { recordAudit } = require('../util/auditLog')
 const { notifyInBackground, notifyRecipeHidden } = require('../util/email')
 const { validateRequiredRecipeFields, validateRecipeBounds } = require('../util/recipeLimits')
 const { moderateText } = require('../util/textModeration')
-const { gatherRecipeText, holdRecipeForReview, BLOCKED_MESSAGE, BLOCKED_CODE } = require('../util/automod')
+const { gatherRecipeText, holdRecipeForReview, respondBlocked } = require('../util/automod')
 const { EDITABLE_RECIPE_FIELDS, CREATABLE_RECIPE_FIELDS, pickFields } = require('../util/recipeFields')
 const { deleteRecipeImage } = require('../util/firebaseStorage')
 const { teardownRecipeDocs } = require('../util/teardownRecipe')
@@ -261,15 +261,15 @@ router.post('/addRecipe', verifyToken, requireActive, asyncHandler(async (req, r
   // normally. moderateText fails open, so a moderation outage won't block creation.
   const verdict = await moderateText(gatherRecipeText(body), 'recipe')
   if (verdict.severity === 'high') {
-    return res.status(422).json({ error: BLOCKED_MESSAGE, code: BLOCKED_CODE })
+    return respondBlocked(res)
   }
-  const pendingReview = verdict.severity === 'medium'
 
   // Whitelist the insert (mirrors the edit path): only creatable fields are
   // copied from the client, and the server stamps _id, userId, a zeroed rating
   // and counters. Anything else the client sends — `status`, `featured`, a
   // forged rating/counter — is ignored, so a recipe can never be born hidden,
-  // featured, or pre-rated.
+  // featured, or pre-rated. The medium-hold status is NOT set here; holdRecipeForReview
+  // owns it (and only flips it once the admin-queue report is filed).
   const newId = new ObjectId()
   const docToInsert = {
     ...pickFields(body, CREATABLE_RECIPE_FIELDS),
@@ -280,15 +280,15 @@ router.post('/addRecipe', verifyToken, requireActive, asyncHandler(async (req, r
     numTimesMade: 0,
     views: 0,
   }
-  if (pendingReview) docToInsert.status = 'pending_review'
   await db.collection('recipes').insertOne(docToInsert)
   await db.collection('userRecipeData').updateOne(
     { _id: uid },
     { $push: { userRecipes: { recipeId: newId } } },
     { upsert: true }
   )
-  if (pendingReview) {
-    await holdRecipeForReview(db, { recipeId: newId, title: body.title, verdict })
+  let pendingReview = false
+  if (verdict.severity === 'medium') {
+    pendingReview = await holdRecipeForReview(db, { recipeId: newId, title: body.title, verdict })
   }
   res.status(201).json({ _id: newId, pendingReview })
 }))
@@ -328,12 +328,13 @@ router.put('/editRecipe', verifyToken, requireActive, asyncHandler(async (req, r
   // admin clears those (the edit just stops adding new flags).
   const verdict = await moderateText(gatherRecipeText(body), 'recipe')
   if (verdict.severity === 'high') {
-    return res.status(422).json({ error: BLOCKED_MESSAGE, code: BLOCKED_CODE })
+    return respondBlocked(res)
   }
 
   // Whitelist: copy only editable fields from the client payload. Anything
   // else the client sends (rating, numTimesSaved, views, userId, _id, …) is
-  // ignored.
+  // ignored. The hold status is NOT set here — holdRecipeForReview owns it, so
+  // the recipe is only hidden once its admin-queue report exists.
   const update = {
     ...pickFields(body, EDITABLE_RECIPE_FIELDS),
     editedAt: Date.now().toString(),
@@ -343,16 +344,21 @@ router.put('/editRecipe', verifyToken, requireActive, asyncHandler(async (req, r
   // it back to the weaker, owner-visible pending state (only an admin clears a
   // takedown). Re-holding an already-pending/active recipe is fine.
   const TAKEDOWN_STATUSES = ['hidden', 'unpublished']
-  const hold = verdict.severity === 'medium' && !TAKEDOWN_STATUSES.includes(recipe.status)
-  if (hold) update.status = 'pending_review'
+  const shouldHold = verdict.severity === 'medium' && !TAKEDOWN_STATUSES.includes(recipe.status)
 
   const updated = await db.collection('recipes').findOneAndUpdate(
     recipeIdQuery(recipeId),
     { $set: update },
     { returnDocument: 'after' }
   )
-  if (hold) {
-    await holdRecipeForReview(db, { recipeId, title: body.title, verdict })
+  // The recipe can be deleted between the ownership check and this update; don't
+  // 200 with a null body (and don't file a report against a recipe that's gone).
+  if (!updated) {
+    return res.status(404).json({ error: 'Recipe not found' })
+  }
+  if (shouldHold) {
+    const held = await holdRecipeForReview(db, { recipeId, title: body.title, verdict })
+    if (held) updated.status = 'pending_review'
   }
   res.json(updated)
 }))
