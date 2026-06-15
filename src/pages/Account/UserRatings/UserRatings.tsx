@@ -5,6 +5,8 @@ import RecipeAPI from 'src/api/recipes'
 import { OptionalReviewType } from 'types'
 import { selectCustomStyles } from 'src/pages/Account/selectCustomStyles'
 import StarRating from 'src/Components/StarRating/StarRating'
+import EmptyState from 'src/Components/EmptyState/EmptyState'
+import { FiStar } from 'react-icons/fi'
 import './UserRatings.scss'
 import { timeElapsedSince } from 'src/util/timeElapsedSince'
 import Skeleton from 'react-loading-skeleton'
@@ -167,10 +169,12 @@ const Ratings: FC = () => {
           ) : null}
         </>
       ) : (
-        <div className='no-data-saved'>
-          <h2>No Ratings Yet</h2>
-          <p>All of your future ratings will show up here</p>
-        </div>
+        <EmptyState
+          icon={<FiStar />}
+          title='No Ratings Yet'
+          description='All of your future ratings will show up here.'
+          action={{ label: 'Find recipes to review', to: '/recipes' }}
+        />
       )}
     </div>
   )

@@ -11,7 +11,9 @@ import {
   FiGrid,
 } from 'react-icons/fi'
 import { BiChevronDown } from 'react-icons/bi'
+import { FiBookmark, FiFolder } from 'react-icons/fi'
 import RecipeThumbnail from 'src/Components/RecipeThumbnail/RecipeThumbnail'
+import EmptyState from 'src/Components/EmptyState/EmptyState'
 
 import './SavedRecipes.scss'
 import RecipeAPI from 'src/api/recipes'
@@ -240,6 +242,15 @@ const SavedRecipes: FC = () => {
   }
 
   const searching = query.length > 0
+  // A first-time, totally empty Saved page (no saves, no collections, not
+  // searching): drop the collections grid / search / subhead so the empty
+  // state sits at the top like the other account tabs instead of below chrome.
+  const blankSlate =
+    !isLoading &&
+    recipes.length === 0 &&
+    !searching &&
+    !activeCollection &&
+    collections.length === 0
 
   // On the first load, hold an empty frame while a fast query settles so the
   // skeleton only shows for genuinely slow loads and the empty state never
@@ -251,6 +262,8 @@ const SavedRecipes: FC = () => {
 
   return (
     <div className='saved-recipes'>
+      {!blankSlate && (
+        <>
       {/* Collections: All + each collection + a create affordance. */}
       <div className='saved-collections'>
         <CollectionCard
@@ -391,6 +404,8 @@ const SavedRecipes: FC = () => {
           </>
         )}
       </div>
+        </>
+      )}
 
       {recipes.length > 0 || isLoading ? (
         <>
@@ -422,26 +437,32 @@ const SavedRecipes: FC = () => {
           ) : null}
         </>
       ) : (
-        <div className='no-data-saved'>
-          {searching ? (
-            <>
-              <h2>No matches</h2>
-              <p>
-                Nothing {activeCollection ? `in ${activeCollection.name}` : 'saved'}{' '}
-                matches “{query}”.
-              </p>
-            </>
-          ) : (
-            <>
-              <h2>{activeCollection ? 'Nothing here yet' : 'No Recipes Saved Yet'}</h2>
-              <p>
-                {activeCollection
-                  ? 'Add saved recipes to this collection from the folder icon on any card.'
-                  : 'Start saving your favorite recipes today!'}
-              </p>
-            </>
-          )}
-        </div>
+        searching ? (
+          <EmptyState
+            icon={<FiSearch />}
+            title='No matches'
+            description={
+              <>
+                Nothing{' '}
+                {activeCollection ? `in ${activeCollection.name}` : 'saved'} matches
+                “{query}”.
+              </>
+            }
+          />
+        ) : activeCollection ? (
+          <EmptyState
+            icon={<FiFolder />}
+            title='Nothing here yet'
+            description='Add saved recipes to this collection from the folder icon on any card.'
+          />
+        ) : (
+          <EmptyState
+            icon={<FiBookmark />}
+            title='No Recipes Saved Yet'
+            description='Start saving your favorite recipes today!'
+            action={{ label: 'Browse recipes', to: '/recipes' }}
+          />
+        )
       )}
     </div>
   )

@@ -360,22 +360,6 @@
     min-width: 0;
   }
 
-  // Shared empty-state used by every sub-page (Saved/Ratings/Recipes/Drafts).
-  .no-data-saved {
-    text-align: center;
-    margin: 3rem auto 0;
-    padding-bottom: 3rem;
-
-    h2 {
-      font-size: 24px;
-      margin-bottom: 10px;
-    }
-    p {
-      font-size: 16px;
-      color: #666;
-    }
-  }
-
   // ── Phone layout (app-style rebuild, ≤600px) ───────────────────────────────
   // The two-column header collapses into a centered profile card, and the
   // segmented control becomes an icon-over-label tab bar. Mobile-first rebuild

@@ -1,9 +1,10 @@
 import React, { FC, useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import Select, { SingleValue } from 'react-select'
+import { FiBookOpen } from 'react-icons/fi'
 
 import './UserRecipes.scss'
+import EmptyState from 'src/Components/EmptyState/EmptyState'
 import RecipeAPI from 'src/api/recipes'
 import { RecipeType } from 'types'
 import { selectCustomStyles } from 'src/pages/Account/selectCustomStyles'
@@ -102,13 +103,12 @@ const UserRecipes: FC = () => {
           ) : null}
         </>
       ) : (
-        <div className='no-data-saved'>
-          <h2>No Recipes Created Yet</h2>
-          <p>Share your first recipe with the Prepify community!</p>
-          <Link to='/add-recipe' className='btn add-recipe-btn'>
-            Add a Recipe
-          </Link>
-        </div>
+        <EmptyState
+          icon={<FiBookOpen />}
+          title='No Recipes Created Yet'
+          description='Share your first recipe with the Prepify community!'
+          action={{ label: 'Add a Recipe', to: '/add-recipe' }}
+        />
       )}
     </div>
   )
