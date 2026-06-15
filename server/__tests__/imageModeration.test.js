@@ -133,4 +133,13 @@ describe('imageModeration — fail CLOSED', () => {
     const v = await moderateImage(URL)
     expect(v).toMatchObject({ allowed: false, severity: 'medium', source: 'error' })
   })
+
+  it('fails closed on a 200 with no error AND no annotation (never publishes unscanned)', async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ responses: [{}] }),
+    })
+    const v = await moderateImage(URL)
+    expect(v).toMatchObject({ allowed: false, severity: 'medium', source: 'error' })
+  })
 })

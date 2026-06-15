@@ -262,10 +262,14 @@ router.post('/addRecipe', verifyToken, requireActive, asyncHandler(async (req, r
   // file a system report for an admin to clear. Clean / classifier-disabled → save
   // normally. Text fails OPEN (an outage can't block creation); image fails CLOSED
   // (an unscanned image is held, never published) — see util/imageModeration.
-  const verdict = worstVerdict(
-    await moderateText(gatherRecipeText(body), 'recipe'),
-    await moderateImage(body.recipeImage, 'recipe.image')
-  )
+  // The two scans are independent network calls, so run them concurrently; both
+  // resolve internally (text fails open, image fails closed) and never reject, so
+  // Promise.all won't short-circuit on a moderation outage.
+  const [textVerdict, imageVerdict] = await Promise.all([
+    moderateText(gatherRecipeText(body), 'recipe'),
+    moderateImage(body.recipeImage, 'recipe.image'),
+  ])
+  const verdict = worstVerdict(textVerdict, imageVerdict)
   if (verdict.severity === 'high') {
     return respondBlocked(res)
   }
@@ -335,10 +339,13 @@ router.put('/editRecipe', verifyToken, requireActive, asyncHandler(async (req, r
   // adding new flags). The image is re-scanned only when the URL actually changed,
   // so a plain text edit doesn't pay for (or re-hold on) an already-cleared image.
   const newImage = body.recipeImage && body.recipeImage !== recipe.recipeImage ? body.recipeImage : null
-  const verdict = worstVerdict(
-    await moderateText(gatherRecipeText(body), 'recipe'),
-    await moderateImage(newImage, 'recipe.image')
-  )
+  // Run the two scans concurrently (see addRecipe) — independent calls that both
+  // resolve internally, so Promise.all is safe.
+  const [textVerdict, imageVerdict] = await Promise.all([
+    moderateText(gatherRecipeText(body), 'recipe'),
+    moderateImage(newImage, 'recipe.image'),
+  ])
+  const verdict = worstVerdict(textVerdict, imageVerdict)
   if (verdict.severity === 'high') {
     return respondBlocked(res)
   }

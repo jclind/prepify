@@ -418,5 +418,19 @@ Server restored to normal thresholds afterwards.
 ⚠️ **PROD ENV STEP** to add to Railway when shipping: `GOOGLE_VISION_API_KEY` (absent ⇒ image layer
 no-ops; text moderation unaffected). Optional `MODERATION_IMAGE_HIGH` / `MODERATION_IMAGE_MEDIUM`.
 
+**2026-06-15 — P2 code-review pass (high effort), 2 fixes applied.** A focused review of the P2 diff
+found the build sound (correct fail-closed routing, SSRF-safe via Vision `imageUri`, no DB leakage of raw
+scores). Two findings were fixed (own follow-up commit):
+- **M1 (perf):** `moderateText` + `moderateImage` ran serially on `addRecipe`/`editRecipe`; now run via
+  `Promise.all`. Both resolve internally (text fails open, image fails closed) so `Promise.all` can't
+  short-circuit on an outage — cuts the added latency from `OpenAI + Vision` to `max(OpenAI, Vision)`.
+- **M2 (fail-closed gap):** `callVision` graded a 200 with no `error` *and* no `safeSearchAnnotation` as
+  clean — a narrow fail-*open* hole in a fail-closed design. It now throws on a missing annotation so the
+  image is held, never published unscanned. Added a unit test for that case (server Jest 468 → 469).
+
+  Low/nit findings (L1 photo now commits before later profile steps — intentional reject-early ordering;
+  L2 `updatePhoto` accepts an arbitrary URL — not a regression, non-Storage URLs fail-closed anyway;
+  L3 no per-image dedupe on create; doc-drift nits) were reviewed and deferred as non-blocking.
+
 _Next: commit P2 on its own branch off `development` + open a PR (P1's branch is already merged/deleted).
 P3 CSAM still needs a provider decision (Cloudflare / PhotoDNA / Thorn). `displayName` follow-up still open._

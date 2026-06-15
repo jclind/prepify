@@ -119,7 +119,11 @@ async function callVision(imageUrl) {
     // Vision reports a per-request failure (bad/unreachable image) in `error`
     // rather than a non-2xx — treat it as a scan failure so we fail closed.
     if (result.error) throw new Error(`Vision SafeSearch image error: ${result.error.message || result.error.code}`)
-    return result.safeSearchAnnotation || {}
+    // A 200 with no error but no annotation is anomalous (the feature was
+    // requested). Treat a missing annotation as a scan failure so we fail CLOSED
+    // rather than grading an empty object as clean and publishing it unscanned.
+    if (!result.safeSearchAnnotation) throw new Error('Vision SafeSearch: missing annotation')
+    return result.safeSearchAnnotation
   } finally {
     clearTimeout(timer)
   }
