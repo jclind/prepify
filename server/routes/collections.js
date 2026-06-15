@@ -25,10 +25,12 @@ function boundedName(val) {
 }
 
 // Shape a stored collection + the user's saved entries into the API payload:
-// a live member count and a cover (the most-recently-saved member). Counts are
-// derived from membership so they always match the master saved list.
-// coverImage is filled in by the GET handler (one batched lookup); every other
-// caller leaves it null (a freshly-created collection has no members).
+// a live member count and a cover (the most-recently-saved member). Count and
+// cover both reflect only *visible* members (those present in imageById), so the
+// badge matches what opening the collection actually shows — the saved grid
+// filters soft-hidden/removed recipes, and counting raw membership would read
+// higher than the grid. coverImage is filled in by the GET handler (one batched
+// lookup); every other caller passes no members, so count is 0 / cover null.
 function withStats(collection, savedEntries, imageById = new Map()) {
   let count = 0
   let coverRecipeId = null
@@ -36,13 +38,13 @@ function withStats(collection, savedEntries, imageById = new Map()) {
   let coverDate = -Infinity
   for (const entry of savedEntries) {
     if (!(entry.collectionIds ?? []).includes(collection.id)) continue
-    count += 1
-    // Cover = the most-recently-saved member that is currently visible. A hidden
-    // or removed member is absent from imageById, so it's skipped and can't
-    // blank out the cover when older visible members remain. (Strictly-newer
-    // wins, so equal dateSaved ties resolve deterministically to the first.)
+    // A hidden or removed member is absent from imageById — skip it so it counts
+    // toward neither the badge nor the cover.
     const key = String(entry.recipeId)
     if (!imageById.has(key)) continue
+    count += 1
+    // Cover = the most-recently-saved visible member. (Strictly-newer wins, so
+    // equal dateSaved ties resolve deterministically to the first.)
     const d = Number(entry.dateSaved) || 0
     if (d > coverDate) {
       coverDate = d

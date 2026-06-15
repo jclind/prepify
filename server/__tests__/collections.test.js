@@ -161,7 +161,7 @@ describe('GET /collections', () => {
       ],
     })
     const res = await request(app).get('/api/collections').set(AUTH_HEADER)
-    expect(res.body[0].count).toBe(2) // count still reflects membership
+    expect(res.body[0].count).toBe(1) // count reflects visible members only
     expect(res.body[0].coverRecipeId).toBe('r1')
     expect(res.body[0].coverImage).toBe('http://img/r1.jpg')
   })
