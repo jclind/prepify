@@ -33,7 +33,7 @@ import {
   MAX_INGREDIENTS,
   MAX_INSTRUCTIONS,
 } from 'src/util/recipeLimits'
-import RecipeAPI, { ADD_RECIPE_AUTH_ERROR } from 'src/api/recipes'
+import RecipeAPI from 'src/api/recipes'
 import styles from 'src/_exports.module.scss'
 import AddRecipeFormError from 'src/pages/AddRecipe/AddRecipeFormError'
 import SectionHeader from 'src/pages/AddRecipe/SectionHeader'
@@ -46,6 +46,15 @@ import DraftSaveStatus from 'src/pages/AddRecipe/DraftSaveStatus'
 import DraftResumeBanner from 'src/pages/AddRecipe/DraftResumeBanner'
 
 type TimeVal = { hours: number; minutes: number } | null
+
+// Shown when a recipe saves but is held by automated moderation for an admin to
+// review before it appears publicly. Longer-lived than a normal toast (and not
+// styled as an error — nothing went wrong) so the owner doesn't miss it.
+const notifyPendingReview = () =>
+  toast(
+    'Your recipe was submitted and is pending review. It will appear publicly once approved.',
+    { icon: '⏳', duration: 7000 }
+  )
 
 // When `initialRecipe` is supplied the form runs in edit mode: every field is
 // pre-populated from the existing recipe and submitting updates it (preserving
@@ -336,25 +345,36 @@ const AddRecipe: FC<AddRecipeProps> = ({ initialRecipe }) => {
         // list still needs a refetch to reorder/relabel.
         queryClient.setQueryData(['recipe', initialRecipe._id], result.recipe)
         queryClient.invalidateQueries({ queryKey: ['created-recipes'] })
-        toast.success('Recipe updated!')
+        // A medium-confidence moderation hold saves the edit but withholds it from
+        // public reads until an admin clears it; tell the owner instead of the
+        // usual "updated!" so a silently-hidden recipe isn't a surprise.
+        if (result.recipe.status === 'pending_review') {
+          notifyPendingReview()
+        } else {
+          toast.success('Recipe updated!')
+        }
         navigate(`/recipes/${initialRecipe._id}`)
       } else {
         toast.error(result.message)
       }
     } else {
       const recipeData: RecipeFormType = { ...formData, recipeImage: recipeImage! }
-      const newId = await RecipeAPI.addRecipe(recipeData, setLoadingProgress)
-      if (newId === ADD_RECIPE_AUTH_ERROR) {
+      const result = await RecipeAPI.addRecipe(recipeData, setLoadingProgress)
+      if (result.status === 'auth-error') {
         toast.error('Your session has expired — please sign in again and retry.')
-      } else if (newId) {
-        // Recipe is live — remove the now-redundant draft (and stop autosave
+      } else if (result.status === 'success') {
+        // Recipe is saved — remove the now-redundant draft (and stop autosave
         // from recreating it on unmount) before navigating away.
         await clearDraft()
         queryClient.invalidateQueries({ queryKey: ['drafts'] })
-        toast.success('Recipe published!')
-        navigate(`/recipes/${newId}`)
+        if (result.pendingReview) {
+          notifyPendingReview()
+        } else {
+          toast.success('Recipe published!')
+        }
+        navigate(`/recipes/${result.id}`)
       } else {
-        toast.error('Failed to create recipe. Please try again.')
+        toast.error(result.message)
       }
     }
     setAddRecipeLoading(false)

@@ -5,6 +5,7 @@ const admin = require('firebase-admin')
 const { getDB } = require('../db')
 const { getAccountCountsFor } = require('../util/accountCounts')
 const { computeGamification } = require('../util/gamification')
+const { RECIPE_VISIBLE } = require('../util/moderation')
 
 const PROFILE_RECIPE_LIMIT = 12
 
@@ -44,12 +45,20 @@ router.get('/getPublicProfile', asyncHandler(async (req, res) => {
     }
   }
 
-  const [profile, counts, recipes, authRecord] = await Promise.all([
+  const [profile, counts, visibleRecipeCount, recipes, authRecord] = await Promise.all([
     db.collection('userProfiles').findOne({ _id: uid }),
     getAccountCountsFor(db, uid),
+    // The displayed total must match what the list shows: count only publicly
+    // visible recipes, not every recipe the user owns (getAccountCountsFor is
+    // unfiltered — correct for the owner's own account page, but it would
+    // otherwise inflate the public total and leak the existence of held/hidden
+    // recipes here).
+    db.collection('recipes').countDocuments({ userId: uid, ...RECIPE_VISIBLE }),
     db
+      // Public surface: exclude hidden / unpublished / pending_review recipes so
+      // a held or taken-down recipe never appears on someone's public profile.
       .collection('recipes')
-      .find({ userId: uid })
+      .find({ userId: uid, ...RECIPE_VISIBLE })
       .sort({ createdAt: -1 })
       .limit(PROFILE_RECIPE_LIMIT)
       .toArray(),
@@ -81,7 +90,7 @@ router.get('/getPublicProfile', asyncHandler(async (req, res) => {
     pct: gamification.pct,
     achievements: earnedAchievements,
     recipes,
-    recipesTotalCount: counts.recipes,
+    recipesTotalCount: visibleRecipeCount,
   })
 }))
 

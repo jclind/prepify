@@ -293,6 +293,31 @@ describe('POST /addRecipe', () => {
     expect(stored.userId).toBe(TEST_UID)
   })
 
+  it('ignores client-supplied status, featured, and a forged rating on create', async () => {
+    const res = await request(app)
+      .post('/api/addRecipe')
+      .set(AUTH_HEADER)
+      .send({
+        title: 'Test Recipe',
+        description: 'A test recipe',
+        ingredients: [{ id: 'i1', name: 'salt' }],
+        instructions: [{ content: 'Add salt', index: 1, id: 's1' }],
+        mealTypes: ['dinner'],
+        // Curation / moderation flags a client must never be able to set on create.
+        status: 'active',
+        featured: true,
+        // A forged rating to fake social proof on a brand-new recipe.
+        rating: { rateCount: 99, rateValue: 5 },
+      })
+
+    expect(res.status).toBe(201)
+    const { ObjectId } = require('mongodb')
+    const stored = await getDB().collection('recipes').findOne({ _id: new ObjectId(res.body._id) })
+    expect(stored.status).toBeUndefined()
+    expect(stored.featured).toBeUndefined()
+    expect(stored.rating).toEqual({ rateCount: 0, rateValue: 0 })
+  })
+
   describe('input bounds (defense-in-depth)', () => {
     const validBody = () => ({
       title: 'Test Recipe',

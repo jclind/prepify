@@ -1,4 +1,5 @@
 import React, { FC, useEffect, useState } from 'react'
+import axios from 'axios'
 import toast from 'react-hot-toast'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from 'src/context/AuthContext'
@@ -217,7 +218,13 @@ const ProfileSection: FC = () => {
         if (err.code === 'auth/email-already-in-use') {
           toast.error('Email already in use.')
         } else {
-          toast.error(err.message || 'Something went wrong.')
+          // Prefer the server's reason (e.g. a 422 moderation block on the
+          // username, bio, or location) over axios's generic "Request failed…".
+          const message =
+            (axios.isAxiosError(err) && err.response?.data?.error) ||
+            err.message ||
+            'Something went wrong.'
+          toast.error(message)
         }
       })
   }

@@ -12,6 +12,9 @@ const AUDIT_ACTIONS = [
   'recipe.unfeature',
   'review.takedown',
   'review.restore',
+  // Automated moderation: a classifier put a recipe into pending_review (held
+  // from public reads until a human clears it). Credited to the system actor.
+  'recipe.autohold',
   'user.suspend',
   'user.ban',
   'user.activate',
@@ -25,6 +28,12 @@ const AUDIT_ACTIONS = [
 
 const AUDIT_TARGET_TYPES = ['recipe', 'review', 'user', 'report', 'bugReport']
 
+// Reserved synthetic actor for automated (non-human) moderation actions. Stamped
+// into auditLog/reports so the queue can visually distinguish a machine decision
+// from a human admin's, and so `actorUid` analytics never attribute an automod
+// action to a real admin. The uid is an obviously-non-Firebase sentinel.
+const SYSTEM_ACTOR = { uid: 'system:automod', type: 'system' }
+
 /**
  * Append one immutable entry to the `auditLog` collection describing an admin
  * action. Deliberately best-effort: a logging failure must never break the
@@ -34,7 +43,8 @@ const AUDIT_TARGET_TYPES = ['recipe', 'review', 'user', 'report', 'bugReport']
  * @param {import('mongodb').Db} db
  * @param {object} entry
  * @param {string} entry.action       one of AUDIT_ACTIONS
- * @param {string} entry.actorUid     admin uid performing the action
+ * @param {string} entry.actorUid     admin uid performing the action (or SYSTEM_ACTOR.uid)
+ * @param {string} [entry.actorType]  'admin' (default) | 'system' — machine vs human
  * @param {string} entry.targetType   one of AUDIT_TARGET_TYPES
  * @param {string} entry.targetId     recipeId / uid / reportId (or username+recipeId for reviews)
  * @param {string} [entry.targetLabel] human-readable label captured at action time (recipe title, @username)
@@ -47,6 +57,7 @@ async function recordAudit(db, entry) {
       _id: new ObjectId(),
       action: entry.action,
       actorUid: entry.actorUid,
+      actorType: entry.actorType || 'admin',
       targetType: entry.targetType,
       targetId: entry.targetId != null ? String(entry.targetId) : null,
       targetLabel: entry.targetLabel || null,
@@ -75,6 +86,7 @@ async function recordAuditMany(db, entries) {
         _id: new ObjectId(),
         action: entry.action,
         actorUid: entry.actorUid,
+        actorType: entry.actorType || 'admin',
         targetType: entry.targetType,
         targetId: entry.targetId != null ? String(entry.targetId) : null,
         targetLabel: entry.targetLabel || null,
@@ -88,4 +100,4 @@ async function recordAuditMany(db, entries) {
   }
 }
 
-module.exports = { recordAudit, recordAuditMany, AUDIT_ACTIONS, AUDIT_TARGET_TYPES }
+module.exports = { recordAudit, recordAuditMany, AUDIT_ACTIONS, AUDIT_TARGET_TYPES, SYSTEM_ACTOR }

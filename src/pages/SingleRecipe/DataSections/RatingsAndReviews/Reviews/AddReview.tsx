@@ -1,4 +1,5 @@
 import React, { FC, useState } from 'react'
+import axios from 'axios'
 import RecipeAPI from 'src/api/recipes'
 import { ReviewType } from 'types'
 
@@ -37,10 +38,13 @@ const AddReview: FC<AddReviewProps> = ({
       .then(res => {
         setCurrUserReview(res ?? null)
       })
-      .catch(() => {
-        setNewReviewError(
+      .catch(error => {
+        // Surface the server's reason (e.g. a 422 moderation block) inline so the
+        // user can rephrase, falling back to the generic message otherwise.
+        const message =
+          (axios.isAxiosError(error) && error.response?.data?.error) ||
           'Something went wrong submitting your review. Please try again.'
-        )
+        setNewReviewError(message)
       })
   }
 

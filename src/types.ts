@@ -33,7 +33,9 @@ export type RecipeType = {
   numTimesSaved: number
   numTimesMade: number
   // Moderation/curation state (P1/P2). Absent on legacy recipes = public/active.
-  status?: 'active' | 'hidden' | 'unpublished'
+  // 'pending_review' = an automated-moderation hold: owner-visible, withheld from
+  // public reads until an admin clears it.
+  status?: 'active' | 'hidden' | 'unpublished' | 'pending_review'
   featured?: boolean
 }
 export type RecipeFormType = {
