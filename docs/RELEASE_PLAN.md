@@ -146,6 +146,17 @@ a feature flag. Do these together:
     defaults to `jesselindcs@gmail.com`. Only sends when `RESEND_API_KEY` is configured.
   DSNs are public (safe to ship in the client bundle). No DB migration — `bugReports` indexes
   auto-build at startup. **(was: needs decision → done; the env vars are the remaining launch task)**
+- `[x]` **Content moderation (text) — wired; prod env vars are a launch step** — write-time text
+  moderation is implemented (PR #138; blocklist + OpenAI Moderation API). Env-gated: with no key the
+  curated blocklist still fires, but the OpenAI layer no-ops to "clean".
+  **Before/at launch, set the production env vars or the OpenAI layer stays off:**
+  - **Backend (Railway):** `OPENAI_API_KEY` = OpenAI key (server-side only; the moderation endpoint
+    is free). **Never expose to the client** — it must not be a `VITE_*` var.
+  - **Backend (Railway):** `MODERATION_ENABLED` = `true` (master kill switch; `false` disables the
+    OpenAI layer even when a key is set).
+  - **Backend (Railway, optional):** `MODERATION_HIGH_THRESHOLD` / `MODERATION_MEDIUM_THRESHOLD` —
+    override the default score cutoffs (0.85 / 0.5). Leave unset for defaults.
+  No DB migration. See `docs/CONTENT_MODERATION.md`.
 - `[ ]` **Performance / Lighthouse pass** — run Lighthouse on the prod build; address obvious image-size
   and bundle-size wins. **(nice-to-have)**
 - `[ ]` **README cleanup** — the README still has placeholder `your-username` clone URLs and generic
@@ -245,7 +256,8 @@ the actual flip. Deploy is currently manual (Firebase Hosting frontend + Railway
 4. `[ ]` Update release-notes content for 1.0 and tag a GitHub Release.
 5. `[ ]` Deploy frontend (`npm run build` → Firebase Hosting) and backend (Railway). **First set prod
    env vars:** `VITE_SENTRY_DSN` in the frontend build env (before `npm run build`), and `SENTRY_DSN`
-   + `ADMIN_NOTIFY_EMAIL` on Railway. See Section C → "Error tracking (Sentry)".
+   + `ADMIN_NOTIFY_EMAIL` + `OPENAI_API_KEY` + `MODERATION_ENABLED` on Railway. See Section C →
+   "Error tracking (Sentry)" and "Content moderation (text)".
 6. `[ ]` Smoke-test production: load home, view a recipe, sign in, create a recipe, leave a review.
 7. `[ ]` Watch logs/analytics for the first hours.
 

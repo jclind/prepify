@@ -28,6 +28,15 @@ type EditRecipeResult =
   | { status: 'auth-error' }
   | { status: 'error'; message: string }
 
+// addRecipe mirrors EditRecipeResult so the create path can surface the same
+// things an edit can: a server moderation block (status: 'error', message) and a
+// medium-confidence hold (status: 'success', pendingReview: true) where the recipe
+// saved but is withheld from public reads until an admin clears it.
+export type AddRecipeResult =
+  | { status: 'success'; id: string; pendingReview: boolean }
+  | { status: 'auth-error' }
+  | { status: 'error'; message: string }
+
 type GetAllRecipesParams = {
   page?: number
   order?: string
@@ -198,7 +207,7 @@ class RecipeAPIClass {
   async addRecipe(
     recipeData: RecipeFormType,
     setProgress: (val: number) => void
-  ): Promise<string | null> {
+  ): Promise<AddRecipeResult> {
     try {
       setProgress(10)
       const authorUsername: string | null = await AuthAPI.getUsername()
@@ -238,14 +247,27 @@ class RecipeAPIClass {
         numTimesMade: 0,
       }
       setProgress(90)
-      const result = await http.post<{ _id: string }>('api/addRecipe', returnRecipeData)
-      return result.data._id
+      const result = await http.post<{ _id: string; pendingReview?: boolean }>(
+        'api/addRecipe',
+        returnRecipeData
+      )
+      return {
+        status: 'success',
+        id: result.data._id,
+        pendingReview: !!result.data.pendingReview,
+      }
     } catch (error: unknown) {
       console.error('addRecipe failed:', error)
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
-        return ADD_RECIPE_AUTH_ERROR
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 401) return { status: 'auth-error' }
+        // Surface the server's reason (e.g. a 422 moderation block) so the user
+        // sees why the recipe was rejected instead of a generic "try again".
+        const message =
+          error.response?.data?.error ??
+          'Failed to create recipe. Please try again.'
+        return { status: 'error', message }
       }
-      return null
+      return { status: 'error', message: 'Failed to create recipe. Please try again.' }
     }
   }
 
