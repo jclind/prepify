@@ -34,6 +34,12 @@ vi.mock('react-hot-toast', () => ({
   __esModule: true,
   default: { success: vi.fn(), error: vi.fn() },
 }))
+// The add-to-collection control renders nothing for logged-out users, so give
+// it a signed-in uid.
+vi.mock('src/api/auth', () => ({
+  __esModule: true,
+  default: { getUID: () => 'test-uid' },
+}))
 
 const mockedGetSaved = RecipeAPI.getSavedRecipes as unknown as Mock
 const mockedGetSavedOne = RecipeAPI.getSavedRecipe as unknown as Mock
@@ -68,8 +74,8 @@ beforeEach(() => {
     totalCount: 1,
   })
   mockedList.mockResolvedValue([
-    { id: 'c1', name: 'Weeknight', createdAt: '1', count: 3, coverRecipeId: 'r1' },
-    { id: 'c2', name: 'Desserts', createdAt: '2', count: 0, coverRecipeId: null },
+    { id: 'c1', name: 'Weeknight', createdAt: '1', count: 3, coverRecipeId: 'r1', coverImage: null },
+    { id: 'c2', name: 'Desserts', createdAt: '2', count: 0, coverRecipeId: null, coverImage: null },
   ])
   mockedGetSavedOne.mockResolvedValue({
     recipeId: 'r1',

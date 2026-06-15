@@ -6,6 +6,7 @@ import { BiBookmark, BiSolidBookmark } from 'react-icons/bi'
 import Skeleton from 'react-loading-skeleton'
 import 'react-loading-skeleton/dist/skeleton.css'
 import { useSaveRecipe } from 'src/hooks/useSaveRecipe'
+import AddToCollectionControl from 'src/Components/AddToCollection/AddToCollectionControl'
 import { formatRating } from 'src/util/formatRating'
 import { formatPrice } from 'src/util/formatPrice'
 import { minToHrMin } from 'src/util/minToHrMin'
@@ -124,6 +125,12 @@ const RecipeCard: FC<RecipeCardProps> = ({ recipe, loading }) => {
         </div>
       </Link>
       <SaveButton recipeId={recipe._id} title={recipe.title} />
+      <AddToCollectionControl
+        recipeId={recipe._id}
+        className='recipe-card__collection'
+        triggerClassName='recipe-card__collection-btn'
+        triggerAriaLabel={`Add ${recipe.title} to a collection`}
+      />
     </article>
   )
 }

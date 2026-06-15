@@ -11,6 +11,23 @@ const router = Router()
 // Hard ceiling on client-requested page sizes (audit §4.5); mirrors recipes.js.
 const MAX_PER_PAGE = 50
 
+// Field sorts order by attributes that live on the recipe docs (title, rating,
+// cook time) rather than on the saved-entry (dateSaved), so getSavedRecipes
+// has to fetch the docs before it can sort. Save-time orders ('newAdd'/'oldAdd'
+// and the legacy 'new'/'old') and any unknown value fall back to the cheaper
+// sort-then-page-then-fetch path below.
+const FIELD_SORTS = {
+  alpha: (a, b) => String(a.title || '').localeCompare(String(b.title || '')),
+  rating: (a, b) => {
+    const av = Number(a?.rating?.rateValue) || 0
+    const bv = Number(b?.rating?.rateValue) || 0
+    if (bv !== av) return bv - av // higher average first
+    return (Number(b?.rating?.rateCount) || 0) - (Number(a?.rating?.rateCount) || 0)
+  },
+  timeShort: (a, b) => (Number(a.totalTime) || 0) - (Number(b.totalTime) || 0),
+  timeLong: (a, b) => (Number(b.totalTime) || 0) - (Number(a.totalTime) || 0),
+}
+
 // GET /getCreatedRecipes — recipes authored by the current user, with pagination
 router.get('/getCreatedRecipes', verifyToken, asyncHandler(async (req, res) => {
   const db = getDB()
@@ -55,6 +72,28 @@ router.get('/getSavedRecipes', verifyToken, asyncHandler(async (req, res) => {
     )
   }
 
+  const pageNum = parseInt(page) || 0
+  const perPage = Math.min(parseInt(recipesPerPage) || 5, MAX_PER_PAGE)
+
+  // Field sorts (title/rating/cook time) order by the recipe docs, so fetch the
+  // whole saved set (visible only), sort the docs, then page. totalCount counts
+  // visible recipes — soft-hidden ones drop out entirely rather than leaving
+  // holes in a page.
+  const fieldSort = typeof order === 'string' ? FIELD_SORTS[order] : undefined
+  if (fieldSort) {
+    const allIds = savedRecipes.map((entry) => entry.recipeId)
+    const docs =
+      allIds.length > 0
+        ? await db
+            .collection('recipes')
+            .find({ ...recipeIdInQuery(allIds), ...RECIPE_VISIBLE })
+            .toArray()
+        : []
+    docs.sort(fieldSort)
+    const recipes = docs.slice(pageNum * perPage, (pageNum + 1) * perPage)
+    return res.json({ recipes, totalCount: docs.length })
+  }
+
   const totalCount = savedRecipes.length
 
   // Sort by save time. Accept both the legacy ('new'/'old') and current
@@ -66,8 +105,6 @@ router.get('/getSavedRecipes', verifyToken, asyncHandler(async (req, res) => {
       : Number(b.dateSaved) - Number(a.dateSaved)
   )
 
-  const pageNum = parseInt(page) || 0
-  const perPage = Math.min(parseInt(recipesPerPage) || 5, MAX_PER_PAGE)
   const pageSlice = savedRecipes.slice(pageNum * perPage, (pageNum + 1) * perPage)
   const recipeIds = pageSlice.map((entry) => entry.recipeId)
 

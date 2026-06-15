@@ -1,10 +1,32 @@
-@use '../../../helpers.scss' as s;
+@use '../../helpers.scss' as s;
+
+// Wrapper holds the trigger + the popover; surfaces add their own positioning
+// class for where the control sits (over a card, in an action row, etc.).
+.add-to-collection {
+  position: relative;
+  display: inline-flex;
+
+  &__trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    font-family: inherit;
+    color: inherit;
+    background: none;
+    border: none;
+    cursor: pointer;
+  }
+}
+
+// Portaled to <body> and fixed-positioned at the trigger so a card's
+// overflow/transform can't clip it; inline top/left come from the control.
+.add-to-collection-portal {
+  position: fixed;
+  z-index: 1000;
+}
 
 .add-to-collection-popover {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-  z-index: 20;
   width: 230px;
   background: #fff;
   border: 1px solid #ece2d6;

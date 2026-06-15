@@ -3,7 +3,8 @@ const crypto = require('crypto')
 const { asyncHandler } = require('../util/asyncHandler')
 const { getDB } = require('../db')
 const { verifyToken, requireActive } = require('../middleware/auth')
-const { recipeIdQuery } = require('../util/recipeIdQuery')
+const { recipeIdQuery, recipeIdInQuery } = require('../util/recipeIdQuery')
+const { RECIPE_VISIBLE } = require('../util/moderation')
 
 const router = Router()
 
@@ -26,6 +27,8 @@ function boundedName(val) {
 // Shape a stored collection + the user's saved entries into the API payload:
 // a live member count and a cover (the most-recently-saved member). Counts are
 // derived from membership so they always match the master saved list.
+// coverImage is filled in by the GET handler (one batched lookup); every other
+// caller leaves it null (a freshly-created collection has no members).
 function withStats(collection, savedEntries) {
   let count = 0
   let coverRecipeId = null
@@ -45,6 +48,7 @@ function withStats(collection, savedEntries) {
     createdAt: collection.createdAt,
     count,
     coverRecipeId,
+    coverImage: null,
   }
 }
 
@@ -54,9 +58,30 @@ router.get('/collections', verifyToken, asyncHandler(async (req, res) => {
   const userData = await db
     .collection('userRecipeData')
     .findOne({ _id: req.uid }, { projection: { collections: 1, savedRecipes: 1 } })
-  const collections = userData?.collections ?? []
   const saved = userData?.savedRecipes ?? []
-  res.json(collections.map((c) => withStats(c, saved)))
+  const collections = (userData?.collections ?? []).map((c) => withStats(c, saved))
+
+  // Resolve each cover id to an image URL in one batched, visibility-filtered
+  // lookup so the client can render cover art without an extra round-trip. A
+  // cover pointing at a soft-hidden or removed recipe resolves to null.
+  const coverIds = collections.map((c) => c.coverRecipeId).filter(Boolean)
+  if (coverIds.length > 0) {
+    const docs = await db
+      .collection('recipes')
+      .find(
+        { ...recipeIdInQuery(coverIds), ...RECIPE_VISIBLE },
+        { projection: { recipeImage: 1 } }
+      )
+      .toArray()
+    const imageById = new Map(docs.map((d) => [String(d._id), d.recipeImage ?? null]))
+    for (const c of collections) {
+      if (c.coverRecipeId) {
+        c.coverImage = imageById.get(String(c.coverRecipeId)) ?? null
+      }
+    }
+  }
+
+  res.json(collections)
 }))
 
 // POST /collections — create a new (empty) collection.

@@ -135,22 +135,21 @@
   .saved-card {
     position: relative;
 
-    .add-to-collection-btn {
+    // The control wrapper anchors the trigger (and its popover) to the card.
+    .saved-card__collection {
       position: absolute;
       top: 0.5rem;
       right: 0.5rem;
       z-index: 5;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+    }
+
+    .add-to-collection-btn {
       width: 34px;
       height: 34px;
-      border: none;
       border-radius: 50%;
       background: rgba(255, 255, 255, 0.92);
       color: s.$primary-text;
       font-size: 1.05rem;
-      cursor: pointer;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
       transition: background 0.12s ease, color 0.12s ease;
 

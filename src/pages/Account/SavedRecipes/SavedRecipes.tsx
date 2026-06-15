@@ -11,13 +11,19 @@ import CollectionsAPI from 'src/api/collections'
 import { RecipeType } from 'types'
 import { selectCustomStyles } from 'src/pages/Account/selectCustomStyles'
 import { useDelayedLoading } from 'src/pages/Account/useDelayedLoading'
-import AddToCollectionPopover from './AddToCollectionPopover'
+import AddToCollectionControl from 'src/Components/AddToCollection/AddToCollectionControl'
 
 type OptionType = { value: string; label: string }
 
+// Save-time orders sort the saved entries; the rest are field sorts the server
+// resolves from the recipe docs (see GET /getSavedRecipes).
 const options: OptionType[] = [
   { value: 'newAdd', label: 'Save Time: Recent' },
   { value: 'oldAdd', label: 'Save Time: Oldest' },
+  { value: 'alpha', label: 'Title: A–Z' },
+  { value: 'rating', label: 'Rating: Highest' },
+  { value: 'timeShort', label: 'Time: Shortest' },
+  { value: 'timeLong', label: 'Time: Longest' },
 ]
 
 const SavedRecipes: FC = () => {
@@ -34,7 +40,6 @@ const SavedRecipes: FC = () => {
   const [newName, setNewName] = useState('')
   const [renaming, setRenaming] = useState(false)
   const [renameValue, setRenameValue] = useState('')
-  const [menuOpenId, setMenuOpenId] = useState<string | null>(null)
 
   const { data: collections = [] } = useQuery({
     queryKey: ['collections'],
@@ -91,7 +96,6 @@ const SavedRecipes: FC = () => {
     setActiveCollectionId(id)
     setCurrPage(0)
     setRenaming(false)
-    setMenuOpenId(null)
   }
 
   // Refresh after a membership/collection change. Counts (and covers) always
@@ -277,25 +281,12 @@ const SavedRecipes: FC = () => {
               recipes.map(recipe => (
                 <div className='saved-card' key={recipe._id}>
                   <RecipeThumbnail recipe={recipe} />
-                  <button
-                    className='add-to-collection-btn'
-                    onClick={() =>
-                      setMenuOpenId(prev =>
-                        prev === recipe._id ? null : recipe._id
-                      )
-                    }
-                    aria-label='Add to collection'
-                  >
-                    <FiFolderPlus />
-                  </button>
-                  {menuOpenId === recipe._id && (
-                    <AddToCollectionPopover
-                      recipeId={recipe._id}
-                      collections={collections}
-                      onClose={() => setMenuOpenId(null)}
-                      onMutated={refreshAfterMutation}
-                    />
-                  )}
+                  <AddToCollectionControl
+                    recipeId={recipe._id}
+                    className='saved-card__collection'
+                    triggerClassName='add-to-collection-btn'
+                    onMutated={refreshAfterMutation}
+                  />
                 </div>
               ))
             ) : (

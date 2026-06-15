@@ -1,33 +1,28 @@
-import React, { FC, useEffect, useRef, useState } from 'react'
+import React, { FC, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { FiPlus, FiCheck } from 'react-icons/fi'
 import CollectionsAPI from 'src/api/collections'
 import RecipeAPI from 'src/api/recipes'
 import { RecipeCollection } from 'types'
 
-import './AddToCollectionPopover.scss'
-
 type Props = {
   recipeId: string
-  // Collections come from the parent's query; the popover toggles membership and
-  // can create new folders, calling onMutated so the parent refetches counts and
-  // (when filtering) the grid.
+  // Collections come from the control's query; the popover toggles membership
+  // and can create new folders, calling onMutated so caches (counts, saved
+  // grid, saved-id list) refetch.
   collections: RecipeCollection[]
-  onClose: () => void
   onMutated: () => void
 }
 
 const AddToCollectionPopover: FC<Props> = ({
   recipeId,
   collections,
-  onClose,
   onMutated,
 }) => {
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [newName, setNewName] = useState('')
   const [busy, setBusy] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
 
   // Load the recipe's current membership so the right boxes start checked.
   useEffect(() => {
@@ -43,22 +38,6 @@ const AddToCollectionPopover: FC<Props> = ({
       active = false
     }
   }, [recipeId])
-
-  // Close on outside click / Escape.
-  useEffect(() => {
-    const onDown = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) onClose()
-    }
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
-    document.addEventListener('mousedown', onDown)
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('mousedown', onDown)
-      document.removeEventListener('keydown', onKey)
-    }
-  }, [onClose])
 
   const persist = async (next: Set<string>) => {
     setBusy(true)
@@ -102,7 +81,11 @@ const AddToCollectionPopover: FC<Props> = ({
   }
 
   return (
-    <div className='add-to-collection-popover' ref={ref} role='dialog' aria-label='Add to collection'>
+    <div
+      className='add-to-collection-popover'
+      role='dialog'
+      aria-label='Add to collection'
+    >
       <div className='popover-title'>Add to collection</div>
 
       <div className='collection-options'>
@@ -140,7 +123,12 @@ const AddToCollectionPopover: FC<Props> = ({
           maxLength={50}
           onChange={e => setNewName(e.target.value)}
         />
-        <button type='submit' className='create-btn' disabled={!newName.trim() || busy} aria-label='Create collection'>
+        <button
+          type='submit'
+          className='create-btn'
+          disabled={!newName.trim() || busy}
+          aria-label='Create collection'
+        >
           <FiPlus />
         </button>
       </form>

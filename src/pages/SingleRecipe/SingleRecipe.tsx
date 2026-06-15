@@ -8,6 +8,7 @@ import { AiOutlineClockCircle, AiOutlineUsergroupAdd } from 'react-icons/ai'
 import { BsStar } from 'react-icons/bs'
 import { BiLeftArrowAlt, BiCheckCircle } from 'react-icons/bi'
 import { CiShoppingBasket } from 'react-icons/ci'
+import { FiFolderPlus } from 'react-icons/fi'
 
 import './SingleRecipe.scss'
 
@@ -15,6 +16,7 @@ import NutritionData from 'src/pages/SingleRecipe/DataSections/NutritionData/Nut
 import RecipeControls from 'src/pages/SingleRecipe/DataSections/RecipeControls/RecipeControls'
 import MadeRecipeBtn from 'src/pages/SingleRecipe/Buttons/MadeRecipeBtn'
 import SaveRecipeBtn from 'src/pages/SingleRecipe/Buttons/SaveRecipeBtn'
+import AddToCollectionControl from 'src/Components/AddToCollection/AddToCollectionControl'
 import AddRatingBtn from 'src/pages/SingleRecipe/Buttons/AddRatingBtn'
 import PrintRecipeBtn from 'src/pages/SingleRecipe/Buttons/PrintRecipeBtn'
 import RatingsAndReviews from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/RatingsAndReviews'
@@ -290,6 +292,16 @@ const SingleRecipe: FC = () => {
               {currRecipe && (
                 <>
                   <SaveRecipeBtn recipeId={currRecipe._id} />
+                  <AddToCollectionControl
+                    recipeId={currRecipe._id}
+                    triggerClassName='btn'
+                    align='left'
+                    label={
+                      <>
+                        <FiFolderPlus className='icon' /> Collection
+                      </>
+                    }
+                  />
                   <AddRatingBtn currUserReview={currUserReview} />
                   <PrintRecipeBtn printedRef={printedRef} />
                   {!isOwner && (

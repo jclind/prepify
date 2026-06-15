@@ -86,6 +86,36 @@ describe('GET /collections', () => {
     expect(res.status).toBe(200)
     expect(res.body).toEqual([])
   })
+
+  it('resolves coverImage from the most-recent member recipe', async () => {
+    await seedRecipes([
+      { _id: 'r1', title: 'One', recipeImage: 'http://img/r1.jpg' },
+      { _id: 'r2', title: 'Two', recipeImage: 'http://img/r2.jpg' },
+    ])
+    await seedUserRecipeData(TEST_UID, {
+      collections: [{ id: 'c1', name: 'Weeknight', createdAt: '1' }],
+      savedRecipes: [
+        { recipeId: 'r1', dateSaved: '100', collectionIds: ['c1'] },
+        { recipeId: 'r2', dateSaved: '300', collectionIds: ['c1'] },
+      ],
+    })
+    const res = await request(app).get('/api/collections').set(AUTH_HEADER)
+    expect(res.body[0].coverRecipeId).toBe('r2')
+    expect(res.body[0].coverImage).toBe('http://img/r2.jpg')
+  })
+
+  it('returns a null coverImage when the cover recipe is hidden', async () => {
+    await seedRecipes([
+      { _id: 'r1', title: 'One', recipeImage: 'http://img/r1.jpg', status: 'hidden' },
+    ])
+    await seedUserRecipeData(TEST_UID, {
+      collections: [{ id: 'c1', name: 'Weeknight', createdAt: '1' }],
+      savedRecipes: [{ recipeId: 'r1', dateSaved: '100', collectionIds: ['c1'] }],
+    })
+    const res = await request(app).get('/api/collections').set(AUTH_HEADER)
+    expect(res.body[0].coverRecipeId).toBe('r1')
+    expect(res.body[0].coverImage).toBeNull()
+  })
 })
 
 // ─── PATCH /collections/:id ───────────────────────────────────────────────────
@@ -259,5 +289,67 @@ describe('GET /getSavedRecipes with collections', () => {
       .get('/api/getSavedRecipes?order=oldAdd')
       .set(AUTH_HEADER)
     expect(res.body.recipes.map(r => r._id)).toEqual(['r1', 'r3', 'r2'])
+  })
+})
+
+// ─── GET /getSavedRecipes — field sorts (title / rating / cook time) ───────────
+
+describe('GET /getSavedRecipes field sorts', () => {
+  beforeEach(async () => {
+    await seedRecipes([
+      { _id: 'r1', title: 'Banana Bread', totalTime: 60, rating: { rateValue: 3, rateCount: 2 } },
+      { _id: 'r2', title: 'Apple Pie', totalTime: 30, rating: { rateValue: 5, rateCount: 1 } },
+      { _id: 'r3', title: 'Cherry Tart', totalTime: 45, rating: { rateValue: 5, rateCount: 9 } },
+    ])
+    await seedUserRecipeData(TEST_UID, {
+      savedRecipes: [
+        { recipeId: 'r1', dateSaved: '100', collectionIds: [] },
+        { recipeId: 'r2', dateSaved: '200', collectionIds: [] },
+        { recipeId: 'r3', dateSaved: '300', collectionIds: [] },
+      ],
+    })
+  })
+
+  it('sorts alphabetically by title (A–Z)', async () => {
+    const res = await request(app)
+      .get('/api/getSavedRecipes?order=alpha')
+      .set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    // Apple, Banana, Cherry
+    expect(res.body.recipes.map(r => r._id)).toEqual(['r2', 'r1', 'r3'])
+  })
+
+  it('sorts by rating, highest average first with count as tiebreak', async () => {
+    const res = await request(app)
+      .get('/api/getSavedRecipes?order=rating')
+      .set(AUTH_HEADER)
+    // r3 & r2 both 5★; r3 has more ratings → first. Then r1 (3★).
+    expect(res.body.recipes.map(r => r._id)).toEqual(['r3', 'r2', 'r1'])
+  })
+
+  it('sorts by shortest cook time', async () => {
+    const res = await request(app)
+      .get('/api/getSavedRecipes?order=timeShort')
+      .set(AUTH_HEADER)
+    // 30, 45, 60 mins
+    expect(res.body.recipes.map(r => r._id)).toEqual(['r2', 'r3', 'r1'])
+  })
+
+  it('sorts by longest cook time', async () => {
+    const res = await request(app)
+      .get('/api/getSavedRecipes?order=timeLong')
+      .set(AUTH_HEADER)
+    expect(res.body.recipes.map(r => r._id)).toEqual(['r1', 'r3', 'r2'])
+  })
+
+  it('drops a soft-hidden recipe from a field-sorted page and count', async () => {
+    await getDB()
+      .collection('recipes')
+      .updateOne({ _id: 'r2' }, { $set: { status: 'hidden' } })
+    const res = await request(app)
+      .get('/api/getSavedRecipes?order=alpha')
+      .set(AUTH_HEADER)
+    expect(res.body.totalCount).toBe(2)
+    expect(res.body.recipes.map(r => r._id)).toEqual(['r1', 'r3'])
   })
 })

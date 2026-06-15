@@ -417,6 +417,9 @@ export type RecipeCollection = {
   createdAt: string
   count: number
   coverRecipeId: string | null
+  // Resolved server-side from coverRecipeId (the most-recently-saved member);
+  // null when the collection is empty or its cover recipe is hidden/removed.
+  coverImage: string | null
 }
 
 // Gamification state for the account header, returned by GET /getGamification.
