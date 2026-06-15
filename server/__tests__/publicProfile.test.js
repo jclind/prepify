@@ -86,6 +86,23 @@ describe('GET /getPublicProfile', () => {
     expect(res.body.recipesTotalCount).toBe(2)
   })
 
+  it('excludes held / hidden recipes from both the list and the total count', async () => {
+    await seedUser(PUB_UID, 'CoolUser')
+    await seedRecipes([
+      { _id: 'v1', userId: PUB_UID, createdAt: '4000' },
+      { _id: 'v2', userId: PUB_UID, createdAt: '3000' },
+      { _id: 'held', userId: PUB_UID, createdAt: '2000', status: 'pending_review' },
+      { _id: 'hid', userId: PUB_UID, createdAt: '1000', status: 'hidden' },
+    ])
+
+    const res = await request(app).get('/api/getPublicProfile?username=CoolUser')
+    expect(res.status).toBe(200)
+    // The list shows only visible recipes…
+    expect(res.body.recipes.map(r => r._id)).toEqual(['v1', 'v2'])
+    // …and the reported total agrees with it (no leak of held/hidden existence).
+    expect(res.body.recipesTotalCount).toBe(2)
+  })
+
   it('caps recipes at 12 but reports the full total', async () => {
     await seedUser(PUB_UID, 'CoolUser')
     await seedRecipes(

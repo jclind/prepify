@@ -27,6 +27,18 @@ const EDITABLE_RECIPE_FIELDS = [
   'totalTime',
 ]
 
+// Creating a recipe additionally accepts the author snapshot and timestamps the
+// client supplies. The server still stamps _id/userId, zeroes the social
+// counters, and seeds the rating itself — so curation/moderation flags
+// (`status`, `featured`) and any other unlisted key the client sends are
+// ignored on create, exactly as the edit whitelist ignores them on update.
+const CREATABLE_RECIPE_FIELDS = [
+  ...EDITABLE_RECIPE_FIELDS,
+  'authorUsername',
+  'createdAt',
+  'editedAt',
+]
+
 // Copy only the whitelisted keys that are present in `body`. Absent keys are
 // left out (callers merge via $set), so a field the client doesn't send is
 // untouched rather than overwritten.
@@ -38,4 +50,4 @@ function pickFields(body, fields) {
   return out
 }
 
-module.exports = { RECIPE_CONTENT_FIELDS, EDITABLE_RECIPE_FIELDS, pickFields }
+module.exports = { RECIPE_CONTENT_FIELDS, EDITABLE_RECIPE_FIELDS, CREATABLE_RECIPE_FIELDS, pickFields }

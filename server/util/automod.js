@@ -16,22 +16,53 @@ const BLOCKED_MESSAGE =
 const BLOCKED_CODE = 'CONTENT_BLOCKED'
 
 // Flatten a recipe payload's user-controlled text into one blob for a single
-// classifier pass (one API call per recipe, not one per field). Defensive about
-// shape: ingredients may carry `ingredient` or `name`; instructions may be
-// strings or `{ step }`; tags may be strings or `{ text }`.
+// classifier pass (one API call per recipe, not one per field).
+//
+// Must match the SHAPES THE CLIENT ACTUALLY SENDS (src/types.ts), or whole
+// fields silently go unmoderated:
+//   - ingredients[] are parsed rows ({ parsedIngredient: { originalIngredientString,
+//     ingredient, comment, … }, ingredientData, id }) OR section-header labels
+//     ({ label, id }). The verbatim line the user typed lives in
+//     `parsedIngredient.originalIngredientString`.
+//   - instructions[] are step rows ({ content, index, id }) OR labels ({ label, id }).
+//   - There is no `tags` field on recipes today; the loop is kept for forward-compat.
+// Older/test shapes (`ingredient`/`name`, `step`, plain strings, `text`) are still
+// accepted defensively, but the real keys above are what production exercises.
 function gatherRecipeText(body = {}) {
   const parts = []
-  if (typeof body.title === 'string') parts.push(body.title)
-  if (typeof body.description === 'string') parts.push(body.description)
+  const push = (v) => { if (typeof v === 'string') parts.push(v) }
+
+  push(body.title)
+  push(body.description)
+
   for (const ing of body.ingredients || []) {
-    parts.push((ing && (ing.ingredient || ing.name)) || '')
+    if (!ing) continue
+    if (typeof ing === 'string') { parts.push(ing); continue }
+    push(ing.label) // section-header row (LabelType)
+    if (ing.parsedIngredient) {
+      push(ing.parsedIngredient.originalIngredientString) // the verbatim typed line
+      push(ing.parsedIngredient.ingredient)
+      push(ing.parsedIngredient.comment)
+    }
+    push(ing.ingredient) // defensive (older/alternate shapes)
+    push(ing.name)
   }
+
   for (const step of body.instructions || []) {
-    parts.push(typeof step === 'string' ? step : (step && step.step) || '')
+    if (!step) continue
+    if (typeof step === 'string') { parts.push(step); continue }
+    push(step.content) // step row (InstructionsType)
+    push(step.label) // section-header row (LabelType)
+    push(step.step) // defensive
   }
+
   for (const tag of body.tags || []) {
-    parts.push(typeof tag === 'string' ? tag : (tag && tag.text) || '')
+    if (!tag) continue
+    if (typeof tag === 'string') { parts.push(tag); continue }
+    push(tag.label)
+    push(tag.text)
   }
+
   return parts.filter(Boolean).join('\n')
 }
 

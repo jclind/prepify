@@ -10,7 +10,7 @@ const { notifyInBackground, notifyRecipeHidden } = require('../util/email')
 const { validateRequiredRecipeFields, validateRecipeBounds } = require('../util/recipeLimits')
 const { moderateText } = require('../util/textModeration')
 const { gatherRecipeText, holdRecipeForReview, BLOCKED_MESSAGE, BLOCKED_CODE } = require('../util/automod')
-const { EDITABLE_RECIPE_FIELDS, pickFields } = require('../util/recipeFields')
+const { EDITABLE_RECIPE_FIELDS, CREATABLE_RECIPE_FIELDS, pickFields } = require('../util/recipeFields')
 const { deleteRecipeImage } = require('../util/firebaseStorage')
 const { teardownRecipeDocs } = require('../util/teardownRecipe')
 
@@ -265,9 +265,21 @@ router.post('/addRecipe', verifyToken, requireActive, asyncHandler(async (req, r
   }
   const pendingReview = verdict.severity === 'medium'
 
-  // Server stamps _id, userId, and counters — client-supplied values are discarded
+  // Whitelist the insert (mirrors the edit path): only creatable fields are
+  // copied from the client, and the server stamps _id, userId, a zeroed rating
+  // and counters. Anything else the client sends — `status`, `featured`, a
+  // forged rating/counter — is ignored, so a recipe can never be born hidden,
+  // featured, or pre-rated.
   const newId = new ObjectId()
-  const docToInsert = { ...body, _id: newId, userId: uid, numTimesSaved: 0, numTimesMade: 0, views: 0 }
+  const docToInsert = {
+    ...pickFields(body, CREATABLE_RECIPE_FIELDS),
+    _id: newId,
+    userId: uid,
+    rating: { rateCount: 0, rateValue: 0 },
+    numTimesSaved: 0,
+    numTimesMade: 0,
+    views: 0,
+  }
   if (pendingReview) docToInsert.status = 'pending_review'
   await db.collection('recipes').insertOne(docToInsert)
   await db.collection('userRecipeData').updateOne(
@@ -326,14 +338,20 @@ router.put('/editRecipe', verifyToken, requireActive, asyncHandler(async (req, r
     ...pickFields(body, EDITABLE_RECIPE_FIELDS),
     editedAt: Date.now().toString(),
   }
-  if (verdict.severity === 'medium') update.status = 'pending_review'
+  // Medium → re-hold as 'pending_review', BUT never downgrade an admin takedown:
+  // if the recipe is already 'hidden'/'unpublished', an owner edit must not lift
+  // it back to the weaker, owner-visible pending state (only an admin clears a
+  // takedown). Re-holding an already-pending/active recipe is fine.
+  const TAKEDOWN_STATUSES = ['hidden', 'unpublished']
+  const hold = verdict.severity === 'medium' && !TAKEDOWN_STATUSES.includes(recipe.status)
+  if (hold) update.status = 'pending_review'
 
   const updated = await db.collection('recipes').findOneAndUpdate(
     recipeIdQuery(recipeId),
     { $set: update },
     { returnDocument: 'after' }
   )
-  if (verdict.severity === 'medium') {
+  if (hold) {
     await holdRecipeForReview(db, { recipeId, title: body.title, verdict })
   }
   res.json(updated)

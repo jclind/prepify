@@ -40,8 +40,15 @@ const RECIPE_BODY = {
   nutritionLabels: ['low-carb'],
   rating: { rateCount: 0, rateValue: 0 },
   createdAt: '1000000',
-  ingredients: [{ id: 'i1', name: 'chicken' }],
-  instructions: [{ step: 'Cook the chicken' }],
+  // Real client shapes (src/types.ts): parsed-ingredient row + step row.
+  ingredients: [
+    {
+      id: 'i1',
+      parsedIngredient: { ingredient: 'chicken', originalIngredientString: '1 lb chicken', comment: null },
+      ingredientData: { name: 'chicken' },
+    },
+  ],
+  instructions: [{ content: 'Cook the chicken', index: 0, id: 's1' }],
   recipeImage: 'https://firebasestorage.googleapis.com/v0/b/test-bucket/o/recipeImages%2Ft.jpg?alt=media&token=abc',
 }
 
@@ -103,6 +110,29 @@ describe('POST /addRecipe — moderation tiers', () => {
     const recipe = await getDB().collection('recipes').findOne(recipeIdQuery(res.body._id))
     expect(recipe.status).toBeUndefined()
     expect(await getDB().collection('reports').countDocuments({})).toBe(0)
+  })
+})
+
+describe('PUT /editRecipe — medium hold never downgrades an admin takedown', () => {
+  it('medium edit of an active recipe → pending_review + automod report', async () => {
+    await seedRecipe({ ...RECIPE_BODY, _id: 'e-active', userId: TEST_UID })
+    moderateText.mockResolvedValue(MEDIUM)
+    const res = await request(app).put('/api/editRecipe?recipeId=e-active').set(AUTH).send(RECIPE_BODY)
+    expect(res.status).toBe(200)
+    const db = getDB()
+    expect((await db.collection('recipes').findOne(recipeIdQuery('e-active'))).status).toBe('pending_review')
+    expect(await db.collection('reports').countDocuments({ recipeId: 'e-active', source: 'automod' })).toBe(1)
+  })
+
+  it('medium edit of an admin-hidden recipe keeps it hidden and files no automod report', async () => {
+    await seedRecipe({ ...RECIPE_BODY, _id: 'e-hidden', userId: TEST_UID, status: 'hidden' })
+    moderateText.mockResolvedValue(MEDIUM)
+    const res = await request(app).put('/api/editRecipe?recipeId=e-hidden').set(AUTH).send(RECIPE_BODY)
+    expect(res.status).toBe(200)
+    const db = getDB()
+    // Admin takedown preserved — not lifted to the weaker owner-visible pending state.
+    expect((await db.collection('recipes').findOne(recipeIdQuery('e-hidden'))).status).toBe('hidden')
+    expect(await db.collection('reports').countDocuments({ recipeId: 'e-hidden' })).toBe(0)
   })
 })
 
