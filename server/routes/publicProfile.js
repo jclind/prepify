@@ -5,6 +5,7 @@ const admin = require('firebase-admin')
 const { getDB } = require('../db')
 const { getAccountCountsFor } = require('../util/accountCounts')
 const { computeGamification } = require('../util/gamification')
+const { RECIPE_VISIBLE } = require('../util/moderation')
 
 const PROFILE_RECIPE_LIMIT = 12
 
@@ -48,8 +49,10 @@ router.get('/getPublicProfile', asyncHandler(async (req, res) => {
     db.collection('userProfiles').findOne({ _id: uid }),
     getAccountCountsFor(db, uid),
     db
+      // Public surface: exclude hidden / unpublished / pending_review recipes so
+      // a held or taken-down recipe never appears on someone's public profile.
       .collection('recipes')
-      .find({ userId: uid })
+      .find({ userId: uid, ...RECIPE_VISIBLE })
       .sort({ createdAt: -1 })
       .limit(PROFILE_RECIPE_LIMIT)
       .toArray(),

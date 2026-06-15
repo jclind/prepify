@@ -8,10 +8,12 @@ import { MemoryRouter } from 'react-router-dom'
 import AddRecipe from 'src/pages/AddRecipe/AddRecipe'
 import RecipeAPI from 'src/api/recipes'
 
-const { navigateFn, toastSuccess, toastError } = vi.hoisted(() => ({
+const { navigateFn, toastSuccess, toastError, toastBase } = vi.hoisted(() => ({
   navigateFn: vi.fn(),
   toastSuccess: vi.fn(),
   toastError: vi.fn(),
+  // The base callable toast() — used for the neutral "pending review" notice.
+  toastBase: vi.fn(),
 }))
 
 vi.mock('react-router-dom', async () => {
@@ -21,10 +23,10 @@ vi.mock('react-router-dom', async () => {
   return { ...actual, useNavigate: () => navigateFn }
 })
 
-vi.mock('react-hot-toast', () => ({
-  toast: { success: toastSuccess, error: toastError },
-  default: { success: toastSuccess, error: toastError },
-}))
+vi.mock('react-hot-toast', () => {
+  const toast = Object.assign(toastBase, { success: toastSuccess, error: toastError })
+  return { toast, default: toast }
+})
 
 vi.mock('src/api/recipes', () => ({
   default: { addRecipe: vi.fn() },
@@ -168,6 +170,7 @@ describe('AddRecipe form', () => {
     navigateFn.mockReset()
     toastSuccess.mockReset()
     toastError.mockReset()
+    toastBase.mockReset()
   })
 
   it('submit button has the "invalid" CSS class on initial empty render', () => {
@@ -279,7 +282,7 @@ describe('AddRecipe form', () => {
 
   it('clicking "Create Recipe" when valid calls RecipeAPI.addRecipe', async () => {
     const user = userEvent.setup()
-    mockAddRecipe.mockResolvedValue('new-1')
+    mockAddRecipe.mockResolvedValue({ status: 'success', id: 'new-1', pendingReview: false })
     renderAddRecipe()
     await fillAllFields(user)
     await waitFor(() =>
@@ -291,7 +294,7 @@ describe('AddRecipe form', () => {
 
   it('navigates to the new recipe page after a successful submission', async () => {
     const user = userEvent.setup()
-    mockAddRecipe.mockResolvedValue('new-1')
+    mockAddRecipe.mockResolvedValue({ status: 'success', id: 'new-1', pendingReview: false })
     renderAddRecipe()
     await fillAllFields(user)
     await waitFor(() =>
@@ -304,9 +307,28 @@ describe('AddRecipe form', () => {
     expect(toastSuccess).toHaveBeenCalledWith('Recipe published!')
   })
 
+  it('shows a pending-review notice (not "published") when the recipe is held for review', async () => {
+    const user = userEvent.setup()
+    mockAddRecipe.mockResolvedValue({ status: 'success', id: 'new-1', pendingReview: true })
+    renderAddRecipe()
+    await fillAllFields(user)
+    await waitFor(() =>
+      expect(screen.getByText('Create Recipe').closest('button')).toHaveClass('valid')
+    )
+    await user.click(screen.getByText('Create Recipe'))
+    // Still navigates to the (owner-visible) recipe, but the notice replaces the
+    // usual success toast so the owner knows it isn't public yet.
+    await waitFor(() => expect(navigateFn).toHaveBeenCalledWith('/recipes/new-1'))
+    expect(toastSuccess).not.toHaveBeenCalledWith('Recipe published!')
+    expect(toastBase).toHaveBeenCalledWith(
+      expect.stringMatching(/pending review/i),
+      expect.anything()
+    )
+  })
+
   it('shows error message when addRecipe returns null', async () => {
     const user = userEvent.setup()
-    mockAddRecipe.mockResolvedValue(null)
+    mockAddRecipe.mockResolvedValue({ status: 'error', message: 'Failed to create recipe. Please try again.' })
     renderAddRecipe()
     await fillAllFields(user)
     await waitFor(() =>
@@ -330,7 +352,7 @@ describe('AddRecipe form', () => {
     await user.click(screen.getByText('Create Recipe'))
     // After clicking, handleAddRecipe awaits addRecipe — "Create Recipe" text is replaced
     expect(screen.queryByText('Create Recipe')).toBeNull()
-    resolveAddRecipe!('new-1')
+    resolveAddRecipe!({ status: 'success', id: 'new-1', pendingReview: false })
     await waitFor(() => expect(screen.getByText('Create Recipe')).toBeInTheDocument())
   })
 
@@ -344,7 +366,7 @@ describe('AddRecipe form', () => {
 
   it('does not block submission when cookTime is absent', async () => {
     const user = userEvent.setup()
-    mockAddRecipe.mockResolvedValue('new-1')
+    mockAddRecipe.mockResolvedValue({ status: 'success', id: 'new-1', pendingReview: false })
     renderAddRecipe()
     await fillAllFields(user) // fillAllFields does not set cookTime
     await waitFor(() =>
@@ -409,7 +431,7 @@ describe('AddRecipe form', () => {
       // Loading in-flight: button should be disabled
       await waitFor(() => expect(submitBtn).toBeDisabled())
 
-      resolveAddRecipe!('new-1')
+      resolveAddRecipe!({ status: 'success', id: 'new-1', pendingReview: false })
       await waitFor(() => expect(submitBtn).not.toBeDisabled())
     })
   })
@@ -418,7 +440,7 @@ describe('AddRecipe form', () => {
   describe('error discrimination', () => {
     it('shows session-expired message on the AUTH_ERROR sentinel and does not navigate', async () => {
       const user = userEvent.setup()
-      mockAddRecipe.mockResolvedValue('AUTH_ERROR')
+      mockAddRecipe.mockResolvedValue({ status: 'auth-error' })
       renderAddRecipe()
       await fillAllFields(user)
       await waitFor(() =>
@@ -434,7 +456,7 @@ describe('AddRecipe form', () => {
 
     it('does not navigate when addRecipe returns null', async () => {
       const user = userEvent.setup()
-      mockAddRecipe.mockResolvedValue(null)
+      mockAddRecipe.mockResolvedValue({ status: 'error', message: 'Failed to create recipe. Please try again.' })
       renderAddRecipe()
       await fillAllFields(user)
       await waitFor(() =>

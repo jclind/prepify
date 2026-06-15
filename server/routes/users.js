@@ -4,7 +4,7 @@ const { getDB } = require('../db')
 const { verifyToken } = require('../middleware/auth')
 const { recipeIdInQuery } = require('../util/recipeIdQuery')
 const { getAccountCountsFor } = require('../util/accountCounts')
-const { RECIPE_VISIBLE } = require('../util/moderation')
+const { RECIPE_VISIBLE, RECIPE_OWNER_VISIBLE } = require('../util/moderation')
 
 const router = Router()
 
@@ -23,8 +23,10 @@ router.get('/getCreatedRecipes', verifyToken, asyncHandler(async (req, res) => {
   const perPage = Math.min(parseInt(recipesPerPage) || 6, MAX_PER_PAGE)
 
   const collection = db.collection('recipes')
-  // Don't surface soft-hidden recipes in the author's own created list.
-  const filter = { userId: uid, ...RECIPE_VISIBLE }
+  // The author's own created list: exclude takedowns/de-publishes, but DO show
+  // their own 'pending_review' recipes (owner-visible) so a held recipe isn't
+  // silently missing from their account while it awaits moderation.
+  const filter = { userId: uid, ...RECIPE_OWNER_VISIBLE }
   const [recipes, totalCount] = await Promise.all([
     collection
       .find(filter)

@@ -4,10 +4,12 @@ const { ObjectId } = require('mongodb')
 const { getDB, getClient } = require('../db')
 const { verifyToken, optionalAuth, requireAdmin, requireActive } = require('../middleware/auth')
 const { recipeIdQuery } = require('../util/recipeIdQuery')
-const { RECIPE_VISIBLE } = require('../util/moderation')
+const { RECIPE_VISIBLE, RECIPE_OWNER_VISIBLE } = require('../util/moderation')
 const { recordAudit } = require('../util/auditLog')
 const { notifyInBackground, notifyRecipeHidden } = require('../util/email')
 const { validateRequiredRecipeFields, validateRecipeBounds } = require('../util/recipeLimits')
+const { moderateText } = require('../util/textModeration')
+const { gatherRecipeText, holdRecipeForReview, BLOCKED_MESSAGE, BLOCKED_CODE } = require('../util/automod')
 const { EDITABLE_RECIPE_FIELDS, pickFields } = require('../util/recipeFields')
 const { deleteRecipeImage } = require('../util/firebaseStorage')
 const { teardownRecipeDocs } = require('../util/teardownRecipe')
@@ -216,7 +218,19 @@ router.get('/getRecipe', optionalAuth, asyncHandler(async (req, res) => {
     { returnDocument: 'after' }
   )
 
-  if (!recipe) return res.status(404).json({ error: 'Not found' })
+  if (!recipe) {
+    // The author can still view their OWN recipe while it's held in
+    // 'pending_review' (it's withheld from the public, not from its owner). Don't
+    // inflate views for this owner preview. Takedowns ('hidden'/'unpublished')
+    // are excluded by RECIPE_OWNER_VISIBLE, so this only surfaces a pending hold.
+    if (req.uid) {
+      const own = await db
+        .collection('recipes')
+        .findOne({ ...recipeIdQuery(id), userId: req.uid, ...RECIPE_OWNER_VISIBLE })
+      if (own) return res.json(own)
+    }
+    return res.status(404).json({ error: 'Not found' })
+  }
 
   // Fire-and-forget global stats increment
   db.collection('stats').updateOne(
@@ -240,16 +254,31 @@ router.post('/addRecipe', verifyToken, requireActive, asyncHandler(async (req, r
   if (boundsError) {
     return res.status(400).json({ error: boundsError })
   }
+
+  // Automated text moderation. High-confidence → block the write (4xx). Medium →
+  // save but hold from public reads as 'pending_review' (owner still sees it) and
+  // file a system report for an admin to clear. Clean / classifier-disabled → save
+  // normally. moderateText fails open, so a moderation outage won't block creation.
+  const verdict = await moderateText(gatherRecipeText(body), 'recipe')
+  if (verdict.severity === 'high') {
+    return res.status(422).json({ error: BLOCKED_MESSAGE, code: BLOCKED_CODE })
+  }
+  const pendingReview = verdict.severity === 'medium'
+
   // Server stamps _id, userId, and counters — client-supplied values are discarded
   const newId = new ObjectId()
   const docToInsert = { ...body, _id: newId, userId: uid, numTimesSaved: 0, numTimesMade: 0, views: 0 }
+  if (pendingReview) docToInsert.status = 'pending_review'
   await db.collection('recipes').insertOne(docToInsert)
   await db.collection('userRecipeData').updateOne(
     { _id: uid },
     { $push: { userRecipes: { recipeId: newId } } },
     { upsert: true }
   )
-  res.status(201).json({ _id: newId })
+  if (pendingReview) {
+    await holdRecipeForReview(db, { recipeId: newId, title: body.title, verdict })
+  }
+  res.status(201).json({ _id: newId, pendingReview })
 }))
 
 // PUT /editRecipe — owner-only edit. Social/derived counters and immutable
@@ -281,6 +310,15 @@ router.put('/editRecipe', verifyToken, requireActive, asyncHandler(async (req, r
     return res.status(400).json({ error: boundsError })
   }
 
+  // Re-moderate the edited text (same tiers as create). High → reject the edit;
+  // the previously-saved version stays as-is. Medium → re-hold as 'pending_review'.
+  // A clean edit deliberately does NOT clear an existing hold/takedown — only an
+  // admin clears those (the edit just stops adding new flags).
+  const verdict = await moderateText(gatherRecipeText(body), 'recipe')
+  if (verdict.severity === 'high') {
+    return res.status(422).json({ error: BLOCKED_MESSAGE, code: BLOCKED_CODE })
+  }
+
   // Whitelist: copy only editable fields from the client payload. Anything
   // else the client sends (rating, numTimesSaved, views, userId, _id, …) is
   // ignored.
@@ -288,12 +326,16 @@ router.put('/editRecipe', verifyToken, requireActive, asyncHandler(async (req, r
     ...pickFields(body, EDITABLE_RECIPE_FIELDS),
     editedAt: Date.now().toString(),
   }
+  if (verdict.severity === 'medium') update.status = 'pending_review'
 
   const updated = await db.collection('recipes').findOneAndUpdate(
     recipeIdQuery(recipeId),
     { $set: update },
     { returnDocument: 'after' }
   )
+  if (verdict.severity === 'medium') {
+    await holdRecipeForReview(db, { recipeId, title: body.title, verdict })
+  }
   res.json(updated)
 }))
 

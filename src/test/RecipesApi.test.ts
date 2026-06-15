@@ -79,7 +79,7 @@ describe('RecipeAPI.addRecipe — nutrition soft-fail (High #4)', () => {
 
     const result = await RecipeAPI.addRecipe(makeFormData(), () => {})
 
-    expect(result).toBe('srv-1')
+    expect(result).toEqual({ status: 'success', id: 'srv-1', pendingReview: false })
     // The recipe POST fires even though nutrition failed
     expect(httpPost).toHaveBeenCalledTimes(1)
     expect(httpPost.mock.calls[0][0]).toBe('api/addRecipe')
@@ -96,7 +96,7 @@ describe('RecipeAPI.addRecipe — nutrition soft-fail (High #4)', () => {
 
     const result = await RecipeAPI.addRecipe(makeFormData(), () => {})
 
-    expect(result).toBe('srv-2')
+    expect(result).toEqual({ status: 'success', id: 'srv-2', pendingReview: false })
     expect(httpPost).toHaveBeenCalledWith('api/addRecipe', expect.any(Object))
   })
 })

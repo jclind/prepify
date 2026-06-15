@@ -149,29 +149,44 @@ tiers, Text engine, Username timing, and Verification rows).
 
 ## Phases
 
-### P0 — Foundation + text blocklist (½–1 day)
-- [ ] `server/util/moderation.js` — thin, swappable, env-gated wrapper (mirror `email.js`):
-      exports `moderateText(text, context)` → `{ allowed, reason, severity }`. No-ops to
-      `{ allowed: true }` when no provider configured.
-- [ ] Curated blocklist (slurs + spam patterns) as the zeroth pass inside `moderateText`.
-- [ ] Reserved `system`/`automod` actor constant + helper for `recordAudit`.
-- [ ] Unit tests for the blocklist + no-op behavior.
+### P0 — Foundation + text blocklist (½–1 day) — ✅ shipped 2026-06-14
+- [x] `server/util/textModeration.js` — thin, swappable, env-gated wrapper (mirrors `email.js`):
+      exports `moderateText(text, context)` → `{ allowed, severity, reason, category, source }`.
+      No-ops to a clean verdict when no provider configured. *(Lives in its own file rather than
+      the existing `server/util/moderation.js`, which already holds the visibility predicates.)*
+- [x] Curated blocklist (`server/util/moderationBlocklist.js`) — slur stems (leet/repeat-normalized,
+      Scunthorpe-safe) + identity-only spam patterns, as the zeroth pass inside `moderateText`.
+- [x] Reserved `SYSTEM_ACTOR` constant + optional `actorType` on `recordAudit` (default `'admin'`)
+      + new `recipe.autohold` audit action.
+- [x] Unit tests for the blocklist + no-op gating + severity grading + fail-open (15 cases).
 
-### P1 — Text moderation at write-time (2–3 days) — *primary value*
-- [ ] Wire OpenAI Moderation into `moderateText`, returning a `severity` (high / medium / clean).
-- [ ] Apply at recipe create/edit (`recipes.js`), review create/edit (`reviews.js`),
-      profile bio/location (`users.js`), and username/displayName at **signup AND rename**.
-- [ ] **High-confidence** → return inline 4xx with a friendly message (FE surfaces it on the form).
-- [ ] **Medium-confidence handling (per surface):**
-  - [ ] Recipes → save with `status: 'pending_review'` (owner + mod visible only) + silent
-        auto-`report`; clears to public on admin approval. Owner-facing reads must still show it.
-  - [ ] Reviews / bio / username → treat as a block (4xx, ask to rephrase) — no owner-only state.
-- [ ] Public read paths exclude `pending_review`; owner read paths include it (see gotcha #3).
-- [ ] Fail-open on transient API errors (log, don't block); fail-closed on blocklist.
-- [ ] Tests: high → 4xx; medium recipe → `pending_review` + queued; medium review → 4xx;
-      clean → 200 (and visible publicly); API-down → allowed + logged; owner-sees-own-pending.
-- [ ] Surface the inline 4xx in the FE: recipe form (`src/pages/AddRecipe*`), review form, and
-      profile/settings forms — locate the existing form error handling before adding new UI.
+### P1 — Text moderation at write-time (2–3 days) — *primary value* — ✅ shipped 2026-06-14
+- [x] Wire OpenAI Moderation into `moderateText` (native `fetch`, no SDK dep), grading a
+      `severity` (high / medium / clean) via env-tunable thresholds.
+- [x] Apply at recipe create/edit (`recipes.js`), review create/edit (`reviews.js`),
+      profile bio/location (`auth.js` `updateProfile`), and **username at signup AND rename**
+      (`auth.js` `setUsername`).
+- [x] **High-confidence** → inline `422` with a friendly `CONTENT_BLOCKED` message (FE surfaces it).
+- [x] **Medium-confidence handling (per surface):**
+  - [x] Recipes → save with `status: 'pending_review'` (owner + mod visible only) + silent
+        auto-`report` (idempotent) + `recipe.autohold` audit; clears to public on admin approval.
+        Owner-facing reads (`getCreatedRecipes`, own single-recipe `getRecipe`) still show it.
+  - [x] Reviews / bio / username → treated as a block (`422`, ask to rephrase) — no owner-only state.
+- [x] Public read paths exclude `pending_review` (`RECIPE_VISIBLE`); owner reads use
+      `RECIPE_OWNER_VISIBLE` (see gotcha #3). **Also fixed the pre-existing `publicProfile.js` leak**
+      (it filtered nothing, so it had been exposing `hidden`/`unpublished` recipes too).
+- [x] Fail-open on transient API errors (log, don't block); fail-closed on blocklist.
+- [x] Tests: high → 422; medium recipe → `pending_review` + queued report + system audit; medium
+      review → 422; clean → 201/visible; classifier-disabled/error → allowed; owner-sees-own-pending;
+      public-hides-pending (11 route cases, all green).
+- [x] Surfaced in the FE: recipe form (`AddRecipe.tsx` — block message + a "pending review" notice
+      on hold), review form (`AddReview.tsx`), and profile/settings (`ProfileSection.tsx`) — all reuse
+      the existing react-hot-toast / inline-error patterns and `error.response.data.error`.
+
+> **P1 follow-up (not shipped):** `displayName` is set client-side straight to Firebase Auth with
+> no server route, so it has no server-side moderation hook. Covering it needs a new server rename
+> endpoint or a Firebase **blocking function** (`beforeUserCreated`/`beforeUserSignedIn`). Tracked
+> here; out of scope for this slice. Username + bio/location (which DO hit the server) are covered.
 
 ### P2 — Image moderation (3–4 days)
 - [ ] Firebase Storage `onFinalize` Cloud Function (or the Cloud Vision extension).
@@ -239,5 +254,26 @@ recipes / block for reviews+bio+username**; verification = **tests + authed live
 
 ## Progress
 
-_Not started (scoped 2026-06-14; all P0–P2 decisions resolved same day). Update this section as
-phases ship — mirror the format used in `docs/ADMIN_FUNCTIONALITY.md`._
+**2026-06-14 — P0 + P1 (text) shipped.** The independently-shippable text slice is complete and
+fully tested (server Jest **431/431**, frontend Vitest **361/361**, `tsc` clean). Awaiting an
+**authed live smoke test** against a real `.env` with `OPENAI_API_KEY` set (step 2 under "How to
+verify") before this is considered signed off — the automated suite mocks the classifier, so the
+real OpenAI call has not yet been exercised end-to-end.
+
+Shipped:
+- **P0 foundation** — `server/util/textModeration.js` (env-gated `moderateText`, blocklist →
+  OpenAI grading, fail-open/fail-closed), `server/util/moderationBlocklist.js`, `SYSTEM_ACTOR` +
+  `actorType` + `recipe.autohold` in `auditLog.js`.
+- **P1 write-time wiring** — recipe add/edit (high→block / medium→`pending_review`+report+audit),
+  review add/edit + username + bio/location (high|medium→block). `server/util/automod.js` holds the
+  shared `gatherRecipeText` + idempotent `holdRecipeForReview`.
+- **Visibility** — `pending_review` added to `RECIPE_VISIBLE` (excluded from all public reads) +
+  new `RECIPE_OWNER_VISIBLE`; `getCreatedRecipes` and owner `getRecipe` show the owner their own
+  held recipe; **fixed the pre-existing `publicProfile.js` visibility leak**.
+- **Frontend** — moderation `422` surfaced on the recipe / review / profile forms; a non-error
+  "pending review" toast when a recipe is held. Env vars added to `server/.env.example`.
+
+Known follow-ups: server-side `displayName` moderation (needs a Firebase blocking function — see the
+P1 note above); P2 image moderation; P3 CSAM. None block the text slice.
+
+_Next: run the authed live smoke test, then proceed to P2 (images) when ready._

@@ -1,0 +1,140 @@
+/**
+ * P0 — text moderation foundation (util/textModeration + util/moderationBlocklist).
+ *
+ * Pure-unit: no DB, no app. `fetch` is replaced per-test so the OpenAI layer is
+ * exercised without a network call. Contract under test:
+ *   - blocklist hits are high-confidence and fire even with the API disabled,
+ *   - the wrapper no-ops to CLEAN when OPENAI_API_KEY is unset,
+ *   - API scores grade into high/medium/clean at the configured thresholds,
+ *   - a transient API failure fails OPEN (clean), never throwing.
+ */
+
+const { moderateText } = require('../util/textModeration')
+const { checkBlocklist, normalizeToken } = require('../util/moderationBlocklist')
+
+const realFetch = global.fetch
+
+// Build a fake fetch resolving to one OpenAI moderation result.
+function mockModeration({ flagged = false, categories = {}, category_scores = {} }) {
+  global.fetch = jest.fn().mockResolvedValue({
+    ok: true,
+    json: async () => ({ results: [{ flagged, categories, category_scores }] }),
+  })
+}
+
+beforeEach(() => {
+  process.env.OPENAI_API_KEY = 'test-key'
+  delete process.env.MODERATION_ENABLED
+  delete process.env.MODERATION_HIGH_THRESHOLD
+  delete process.env.MODERATION_MEDIUM_THRESHOLD
+})
+
+afterEach(() => {
+  global.fetch = realFetch
+  jest.restoreAllMocks()
+})
+
+// process.env is shared across files under --runInBand; don't leak an enabled
+// moderation key (or it would make later route suites hit the real API).
+afterAll(() => {
+  delete process.env.OPENAI_API_KEY
+})
+
+describe('moderationBlocklist.checkBlocklist', () => {
+  it('catches an exact slur token', () => {
+    expect(checkBlocklist('you are a bitch', 'review')).toMatchObject({ kind: 'slur' })
+  })
+
+  it('catches leetspeak / obfuscated slurs', () => {
+    expect(checkBlocklist('f4ggot', 'review')).toMatchObject({ kind: 'slur' })
+    expect(checkBlocklist('sh1t', 'review')).toMatchObject({ kind: 'slur' })
+  })
+
+  it('does not false-positive on clean text (Scunthorpe-safe)', () => {
+    expect(checkBlocklist('Scunthorpe assistant classic recipe', 'recipe.title')).toBeNull()
+    expect(checkBlocklist('A delicious shiitake mushroom risotto', 'recipe.title')).toBeNull()
+  })
+
+  it('applies URL/domain spam rules only to identity fields', () => {
+    expect(checkBlocklist('visit www.spam.com', 'username')).toMatchObject({ kind: 'spam' })
+    // A recipe body legitimately contains links — not flagged by the blocklist.
+    expect(checkBlocklist('adapted from www.spam.com', 'recipe.description')).toBeNull()
+  })
+
+  it('normalizeToken folds case, leet, and repeats', () => {
+    expect(normalizeToken('Fuuuck')).toBe('fuck')
+    expect(normalizeToken('SH!T')).toBe('sht')
+  })
+})
+
+describe('moderateText — gating', () => {
+  it('no-ops to clean when OPENAI_API_KEY is absent (and no blocklist hit)', async () => {
+    delete process.env.OPENAI_API_KEY
+    global.fetch = jest.fn()
+    const v = await moderateText('a perfectly normal sentence', 'review')
+    expect(v).toMatchObject({ allowed: true, severity: 'clean', source: 'disabled' })
+    expect(global.fetch).not.toHaveBeenCalled()
+  })
+
+  it('still blocks blocklist hits even when the API is disabled', async () => {
+    delete process.env.OPENAI_API_KEY
+    const v = await moderateText('total bitch move', 'review')
+    expect(v).toMatchObject({ allowed: false, severity: 'high', source: 'blocklist' })
+  })
+
+  it('treats empty/blank text as clean without calling the API', async () => {
+    global.fetch = jest.fn()
+    expect(await moderateText('', 'bio')).toMatchObject({ allowed: true, severity: 'clean' })
+    expect(await moderateText('   ', 'bio')).toMatchObject({ allowed: true, severity: 'clean' })
+    expect(global.fetch).not.toHaveBeenCalled()
+  })
+})
+
+describe('moderateText — OpenAI grading', () => {
+  it('grades a high score as high', async () => {
+    mockModeration({ flagged: true, category_scores: { hate: 0.97 } })
+    const v = await moderateText('borderline content', 'review')
+    expect(v).toMatchObject({ allowed: false, severity: 'high', source: 'openai' })
+  })
+
+  it('grades a mid score as medium', async () => {
+    mockModeration({ flagged: true, category_scores: { harassment: 0.6 } })
+    const v = await moderateText('borderline content', 'recipe.description')
+    expect(v).toMatchObject({ allowed: false, severity: 'medium', source: 'openai' })
+  })
+
+  it('grades a low score as clean', async () => {
+    mockModeration({ flagged: false, category_scores: { harassment: 0.01 } })
+    const v = await moderateText('a wholesome lasagna recipe', 'recipe.description')
+    expect(v).toMatchObject({ allowed: true, severity: 'clean', source: 'openai' })
+  })
+
+  it('treats sexual/minors as high regardless of score', async () => {
+    mockModeration({ flagged: true, categories: { 'sexual/minors': true }, category_scores: { 'sexual/minors': 0.2 } })
+    const v = await moderateText('borderline content', 'review')
+    expect(v).toMatchObject({ severity: 'high', category: 'sexual/minors' })
+  })
+
+  it('respects env-tuned thresholds', async () => {
+    process.env.MODERATION_HIGH_THRESHOLD = '0.5'
+    mockModeration({ flagged: true, category_scores: { hate: 0.55 } })
+    const v = await moderateText('borderline content', 'review')
+    expect(v.severity).toBe('high')
+  })
+})
+
+describe('moderateText — fail-open', () => {
+  it('returns clean (failing open) when the API call rejects', async () => {
+    global.fetch = jest.fn().mockRejectedValue(new Error('network down'))
+    jest.spyOn(console, 'error').mockImplementation(() => {})
+    const v = await moderateText('a perfectly normal sentence', 'review')
+    expect(v).toMatchObject({ allowed: true, severity: 'clean', source: 'error' })
+  })
+
+  it('returns clean (failing open) on a non-2xx response', async () => {
+    global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 500, json: async () => ({}) })
+    jest.spyOn(console, 'error').mockImplementation(() => {})
+    const v = await moderateText('a perfectly normal sentence', 'review')
+    expect(v).toMatchObject({ allowed: true, severity: 'clean', source: 'error' })
+  })
+})

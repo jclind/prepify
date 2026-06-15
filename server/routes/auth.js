@@ -7,6 +7,8 @@ const { verifyToken, requireActive } = require('../middleware/auth')
 const { recordAudit } = require('../util/auditLog')
 const { deleteRecipeImage, deleteProfilePhoto } = require('../util/firebaseStorage')
 const { recomputeRecipeRating } = require('../util/recipeRating')
+const { moderateText } = require('../util/textModeration')
+const { BLOCKED_MESSAGE, BLOCKED_CODE } = require('../util/automod')
 
 const USERNAME_MIN_LENGTH = 3
 const USERNAME_MAX_LENGTH = 30
@@ -115,6 +117,13 @@ router.post('/setUsername', verifyToken, requireActive, asyncHandler(async (req,
   if (validationError) {
     return res.status(400).json({ error: validationError })
   }
+  // A username is high-visibility (it lands in the URL), so both high and medium
+  // confidence block at signup AND on every rename. The 'username' context also
+  // applies the identity-only spam rules (no URLs/domains in a handle).
+  const usernameVerdict = await moderateText(username, 'username')
+  if (!usernameVerdict.allowed) {
+    return res.status(422).json({ error: BLOCKED_MESSAGE, code: BLOCKED_CODE })
+  }
   const usernameLower = username.toLowerCase()
   const uid = req.uid
   const db = getDB()
@@ -199,6 +208,13 @@ router.post('/updateProfile', verifyToken, requireActive, asyncHandler(async (re
   const validationError = validateProfile(bio, location)
   if (validationError) {
     return res.status(400).json({ error: validationError })
+  }
+  // Profile text is short and only the author benefits from it, so (like reviews)
+  // both high and medium confidence block inline rather than holding for review.
+  const profileText = [bio, location].filter((s) => typeof s === 'string' && s.trim()).join('\n')
+  const profileVerdict = await moderateText(profileText, 'profile')
+  if (!profileVerdict.allowed) {
+    return res.status(422).json({ error: BLOCKED_MESSAGE, code: BLOCKED_CODE })
   }
   const db = getDB()
   await db.collection('userProfiles').updateOne(
