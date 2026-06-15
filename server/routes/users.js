@@ -11,6 +11,19 @@ const router = Router()
 // Hard ceiling on client-requested page sizes (audit §4.5); mirrors recipes.js.
 const MAX_PER_PAGE = 50
 
+// The saved grid only renders these fields (RecipeCard), and the field-sort path
+// needs title/rating/totalTime to sort by. Projecting to them keeps the
+// whole-saved-set fetch (used to sort/search) from dragging back full recipe
+// bodies — ingredients, instructions, nutrition — on every page and keystroke.
+const SAVED_CARD_PROJECTION = {
+  title: 1,
+  recipeImage: 1,
+  servingPrice: 1,
+  totalTime: 1,
+  cuisine: 1,
+  rating: 1,
+}
+
 // Field sorts order by attributes that live on the recipe docs (title, rating,
 // cook time) rather than on the saved-entry (dateSaved), so getSavedRecipes
 // has to fetch the docs before it can sort. Save-time orders ('newAdd'/'oldAdd'
@@ -100,7 +113,9 @@ router.get('/getSavedRecipes', verifyToken, asyncHandler(async (req, res) => {
       allIds.length > 0
         ? await db
             .collection('recipes')
-            .find({ ...recipeIdInQuery(allIds), ...RECIPE_VISIBLE })
+            .find({ ...recipeIdInQuery(allIds), ...RECIPE_VISIBLE }, {
+              projection: SAVED_CARD_PROJECTION,
+            })
             .toArray()
         : []
     if (q) {
@@ -125,8 +140,6 @@ router.get('/getSavedRecipes', verifyToken, asyncHandler(async (req, res) => {
     return res.json({ recipes, totalCount: docs.length })
   }
 
-  const totalCount = savedRecipes.length
-
   // Sort by save time. Accept both the legacy ('new'/'old') and current
   // ('newAdd'/'oldAdd') param spellings; default to most-recently-saved first.
   const oldestFirst = order === 'old' || order === 'oldAdd'
@@ -143,7 +156,9 @@ router.get('/getSavedRecipes', verifyToken, asyncHandler(async (req, res) => {
     recipeIds.length > 0
       ? await db
           .collection('recipes')
-          .find({ ...recipeIdInQuery(recipeIds), ...RECIPE_VISIBLE })
+          .find({ ...recipeIdInQuery(recipeIds), ...RECIPE_VISIBLE }, {
+            projection: SAVED_CARD_PROJECTION,
+          })
           .toArray()
       : []
 
@@ -153,6 +168,19 @@ router.get('/getSavedRecipes', verifyToken, asyncHandler(async (req, res) => {
   // by RECIPE_VISIBLE (soft-hidden) simply drop from the page.
   const byId = new Map(recipeDocs.map((r) => [String(r._id), r]))
   const recipes = recipeIds.map((id) => byId.get(String(id))).filter(Boolean)
+
+  // totalCount must count only recipes that can actually surface — soft-hidden
+  // entries drop from every page (above), so counting raw saved entries would
+  // leave the client's `isMoreRecipes` permanently true and show a Load More
+  // button that fetches nothing. Count visible recipes among the saved ids
+  // (indexed _id $in + count, no doc bodies fetched).
+  const allIds = savedRecipes.map((entry) => entry.recipeId)
+  const totalCount =
+    allIds.length > 0
+      ? await db
+          .collection('recipes')
+          .countDocuments({ ...recipeIdInQuery(allIds), ...RECIPE_VISIBLE })
+      : 0
 
   res.json({ recipes, totalCount })
 }))

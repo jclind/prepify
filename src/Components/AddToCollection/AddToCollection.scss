@@ -1,24 +1,5 @@
 @use '../../helpers.scss' as s;
 
-// Wrapper holds the trigger + the popover; surfaces add their own positioning
-// class for where the control sits (over a card, in an action row, etc.).
-.add-to-collection {
-  position: relative;
-  display: inline-flex;
-
-  &__trigger {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.4rem;
-    font-family: inherit;
-    color: inherit;
-    background: none;
-    border: none;
-    cursor: pointer;
-  }
-}
-
 // Unified save + collections control. The wrapper just holds the trigger +
 // portal; each surface positions it and styles the trigger chrome (reusing
 // .save-recipe-btn on the recipe page, .recipe-card__save over a card, etc.).

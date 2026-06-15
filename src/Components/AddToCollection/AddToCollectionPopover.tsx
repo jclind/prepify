@@ -69,18 +69,30 @@ const AddToCollectionPopover: FC<Props> = ({
     const name = newName.trim()
     if (!name || busy) return
     setBusy(true)
+
+    let created
     try {
-      const created = await CollectionsAPI.create(name)
-      setNewName('')
-      // Add the recipe to the freshly-created collection in the same gesture.
-      const next = new Set(selected)
-      next.add(created.id)
-      await CollectionsAPI.setRecipeCollections(recipeId, [...next])
-      setSelected(next)
-      onMutated()
+      created = await CollectionsAPI.create(name)
     } catch (err: any) {
       toast.error(err?.response?.data?.error ?? 'Could not create collection')
+      setBusy(false)
+      return
+    }
+
+    // The collection now exists server-side. Filing the recipe into it is a
+    // separate request that can fail on its own — but we must still surface the
+    // new collection (onMutated refetches the list) so it can't become an
+    // invisible orphan that a same-name retry would 409 against.
+    setNewName('')
+    const next = new Set(selected)
+    next.add(created.id)
+    try {
+      await CollectionsAPI.setRecipeCollections(recipeId, [...next])
+      setSelected(next)
+    } catch {
+      toast.error('Collection created, but the recipe couldn’t be added to it')
     } finally {
+      onMutated()
       setBusy(false)
     }
   }

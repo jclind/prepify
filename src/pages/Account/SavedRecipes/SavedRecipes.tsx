@@ -9,10 +9,11 @@ import {
   FiX,
   FiSearch,
   FiGrid,
+  FiBookmark,
+  FiFolder,
 } from 'react-icons/fi'
 import { BiChevronDown } from 'react-icons/bi'
-import { FiBookmark, FiFolder } from 'react-icons/fi'
-import RecipeThumbnail from 'src/Components/RecipeThumbnail/RecipeThumbnail'
+import RecipeCard from 'src/Components/RecipeCard/RecipeCard'
 import EmptyState from 'src/Components/EmptyState/EmptyState'
 
 import './SavedRecipes.scss'
@@ -21,7 +22,6 @@ import CollectionsAPI from 'src/api/collections'
 import AuthAPI from 'src/api/auth'
 import { RecipeType } from 'types'
 import { useDelayedLoading } from 'src/pages/Account/useDelayedLoading'
-import SaveControl from 'src/Components/AddToCollection/SaveControl'
 import CollectionCard from './CollectionCard'
 
 type SortOption = { value: string; label: string }
@@ -188,14 +188,14 @@ const SavedRecipes: FC = () => {
   const handleLoadMoreRecipes = () => setCurrPage(prev => prev + 1)
 
   // Refresh after a membership/collection change. Counts + covers always
-  // refetch; the grid only needs resetting when a filter is active.
+  // refetch. The grid must refetch too — an unsave from the popover removes a
+  // card even in the unfiltered "All saved" view — so reset to page 0 and
+  // refetch unconditionally rather than only when a collection filter is active.
   const refreshAfterMutation = () => {
     queryClient.invalidateQueries({ queryKey: ['collections'] })
     queryClient.invalidateQueries({ queryKey: ['account-counts', uid] })
-    if (activeCollectionId !== null) {
-      setCurrPage(0)
-      queryClient.invalidateQueries({ queryKey: ['saved-recipes'] })
-    }
+    setCurrPage(0)
+    queryClient.invalidateQueries({ queryKey: ['saved-recipes'] })
   }
 
   const handleCreate = async () => {
@@ -409,28 +409,18 @@ const SavedRecipes: FC = () => {
 
       {recipes.length > 0 || isLoading ? (
         <>
-          <div className='thumbnails-container'>
-            {!isLoading ? (
-              recipes.map(recipe => (
-                <div className='saved-card' key={recipe._id}>
-                  <RecipeThumbnail recipe={recipe} />
-                  <SaveControl
-                    recipeId={recipe._id}
-                    variant='icon'
-                    title={recipe.title}
-                    className='saved-card__collection'
-                    triggerClassName='add-to-collection-btn'
+          <div className='saved-grid'>
+            {!isLoading
+              ? recipes.map(recipe => (
+                  <RecipeCard
+                    key={recipe._id}
+                    recipe={recipe}
                     onMutated={refreshAfterMutation}
                   />
-                </div>
-              ))
-            ) : (
-              <>
-                <RecipeThumbnail recipe={null} loading={true} />
-                <RecipeThumbnail recipe={null} loading={true} />
-                <RecipeThumbnail recipe={null} loading={true} />
-              </>
-            )}
+                ))
+              : Array.from({ length: PER_PAGE }).map((_, i) => (
+                  <RecipeCard key={i} recipe={null} loading={true} />
+                ))}
           </div>
           {isMoreRecipes && recipes.length > 0 ? (
             <button className='load-more-btn btn' onClick={handleLoadMoreRecipes}>

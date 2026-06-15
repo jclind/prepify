@@ -29,17 +29,25 @@ function boundedName(val) {
 // derived from membership so they always match the master saved list.
 // coverImage is filled in by the GET handler (one batched lookup); every other
 // caller leaves it null (a freshly-created collection has no members).
-function withStats(collection, savedEntries) {
+function withStats(collection, savedEntries, imageById = new Map()) {
   let count = 0
   let coverRecipeId = null
+  let coverImage = null
   let coverDate = -Infinity
   for (const entry of savedEntries) {
     if (!(entry.collectionIds ?? []).includes(collection.id)) continue
     count += 1
+    // Cover = the most-recently-saved member that is currently visible. A hidden
+    // or removed member is absent from imageById, so it's skipped and can't
+    // blank out the cover when older visible members remain. (Strictly-newer
+    // wins, so equal dateSaved ties resolve deterministically to the first.)
+    const key = String(entry.recipeId)
+    if (!imageById.has(key)) continue
     const d = Number(entry.dateSaved) || 0
-    if (d >= coverDate) {
+    if (d > coverDate) {
       coverDate = d
       coverRecipeId = entry.recipeId
+      coverImage = imageById.get(key)
     }
   }
   return {
@@ -48,7 +56,7 @@ function withStats(collection, savedEntries) {
     createdAt: collection.createdAt,
     count,
     coverRecipeId,
-    coverImage: null,
+    coverImage,
   }
 }
 
@@ -59,29 +67,34 @@ router.get('/collections', verifyToken, asyncHandler(async (req, res) => {
     .collection('userRecipeData')
     .findOne({ _id: req.uid }, { projection: { collections: 1, savedRecipes: 1 } })
   const saved = userData?.savedRecipes ?? []
-  const collections = (userData?.collections ?? []).map((c) => withStats(c, saved))
+  const collections = userData?.collections ?? []
 
-  // Resolve each cover id to an image URL in one batched, visibility-filtered
-  // lookup so the client can render cover art without an extra round-trip. A
-  // cover pointing at a soft-hidden or removed recipe resolves to null.
-  const coverIds = collections.map((c) => c.coverRecipeId).filter(Boolean)
-  if (coverIds.length > 0) {
+  // Resolve cover art in one batched lookup: fetch the visible recipes (with
+  // images) among all collection members, then let withStats pick each
+  // collection's cover as its most-recently-saved *visible* member. Resolving
+  // visibility before the cover is chosen (rather than after) means a hidden or
+  // removed newest member can't blank out a cover that older visible members
+  // could still provide.
+  const memberIds = [
+    ...new Set(
+      saved
+        .filter((e) => (e.collectionIds ?? []).length > 0)
+        .map((e) => e.recipeId)
+    ),
+  ]
+  let imageById = new Map()
+  if (memberIds.length > 0) {
     const docs = await db
       .collection('recipes')
       .find(
-        { ...recipeIdInQuery(coverIds), ...RECIPE_VISIBLE },
+        { ...recipeIdInQuery(memberIds), ...RECIPE_VISIBLE },
         { projection: { recipeImage: 1 } }
       )
       .toArray()
-    const imageById = new Map(docs.map((d) => [String(d._id), d.recipeImage ?? null]))
-    for (const c of collections) {
-      if (c.coverRecipeId) {
-        c.coverImage = imageById.get(String(c.coverRecipeId)) ?? null
-      }
-    }
+    imageById = new Map(docs.map((d) => [String(d._id), d.recipeImage ?? null]))
   }
 
-  res.json(collections)
+  res.json(collections.map((c) => withStats(c, saved, imageById)))
 }))
 
 // POST /collections — create a new (empty) collection.
@@ -164,9 +177,41 @@ router.patch('/collections/:id', verifyToken, requireActive, asyncHandler(async 
   if (existing.some((c) => c.id !== id && c.name.toLowerCase() === name.toLowerCase())) {
     return res.status(409).json({ error: 'A collection with that name already exists' })
   }
-  await db
-    .collection('userRecipeData')
-    .updateOne({ _id: req.uid, 'collections.id': id }, { $set: { 'collections.$.name': name } })
+
+  // The read-then-write above is friendly but not atomic — like create, two
+  // concurrent renames toward the same name can both pass it. So the actual
+  // $set is guarded server-side against the live document: it only applies when
+  // no OTHER collection already holds the name (case-insensitive). A lost race
+  // ends with matchedCount 0 → 409, mirroring POST /collections.
+  const nameLower = name.toLowerCase()
+  const renamed = await db.collection('userRecipeData').updateOne(
+    {
+      _id: req.uid,
+      'collections.id': id,
+      $expr: {
+        $eq: [
+          {
+            $size: {
+              $filter: {
+                input: { $ifNull: ['$collections', []] },
+                cond: {
+                  $and: [
+                    { $eq: [{ $toLower: '$$this.name' }, nameLower] },
+                    { $ne: ['$$this.id', id] },
+                  ],
+                },
+              },
+            },
+          },
+          0,
+        ],
+      },
+    },
+    { $set: { 'collections.$.name': name } }
+  )
+  if (renamed.matchedCount === 0) {
+    return res.status(409).json({ error: 'A collection with that name already exists' })
+  }
   res.json({ id, name })
 }))
 
@@ -220,18 +265,33 @@ router.patch(
         { $set: { 'savedRecipes.$.collectionIds': collectionIds } }
       )
     } else {
-      await db.collection('userRecipeData').updateOne(
-        { _id: req.uid },
-        {
-          $push: {
-            savedRecipes: { recipeId, dateSaved: Date.now().toString(), collectionIds },
+      // Atomic guard against a concurrent double-save (double-tap / two tabs):
+      // only push when the recipe isn't already in the saved list, and only bump
+      // numTimesSaved when this request is the one that actually pushed. upsert
+      // handles the first-ever save (no userRecipeData doc yet); a request that
+      // loses the race against an existing doc fails the `$ne` match and surfaces
+      // as a duplicate-_id error we swallow as a no-op.
+      let pushed = false
+      try {
+        const result = await db.collection('userRecipeData').updateOne(
+          { _id: req.uid, 'savedRecipes.recipeId': { $ne: recipeId } },
+          {
+            $push: {
+              savedRecipes: { recipeId, dateSaved: Date.now().toString(), collectionIds },
+            },
           },
-        },
-        { upsert: true }
-      )
-      await db
-        .collection('recipes')
-        .updateOne(recipeIdQuery(recipeId), { $inc: { numTimesSaved: 1 } })
+          { upsert: true }
+        )
+        pushed = result.modifiedCount > 0 || result.upsertedCount > 0
+      } catch (err) {
+        if (err?.code !== 11000) throw err
+        // Lost the race to a concurrent save — already saved, nothing to do.
+      }
+      if (pushed) {
+        await db
+          .collection('recipes')
+          .updateOne(recipeIdQuery(recipeId), { $inc: { numTimesSaved: 1 } })
+      }
     }
     res.json({ recipeId, collectionIds, saved: true })
   })

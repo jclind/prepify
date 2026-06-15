@@ -90,6 +90,10 @@ describe('POST /collections', () => {
 
 describe('GET /collections', () => {
   it('returns each collection with a live count and most-recent cover', async () => {
+    await seedRecipes([
+      { _id: 'r1', title: 'One' },
+      { _id: 'r2', title: 'Two' },
+    ])
     await seedUserRecipeData(TEST_UID, {
       collections: [{ id: 'c1', name: 'Weeknight', createdAt: '1' }],
       savedRecipes: [
@@ -128,7 +132,7 @@ describe('GET /collections', () => {
     expect(res.body[0].coverImage).toBe('http://img/r2.jpg')
   })
 
-  it('returns a null coverImage when the cover recipe is hidden', async () => {
+  it('returns a null cover when the only member is hidden', async () => {
     await seedRecipes([
       { _id: 'r1', title: 'One', recipeImage: 'http://img/r1.jpg', status: 'hidden' },
     ])
@@ -137,8 +141,29 @@ describe('GET /collections', () => {
       savedRecipes: [{ recipeId: 'r1', dateSaved: '100', collectionIds: ['c1'] }],
     })
     const res = await request(app).get('/api/collections').set(AUTH_HEADER)
-    expect(res.body[0].coverRecipeId).toBe('r1')
+    expect(res.body[0].coverRecipeId).toBeNull()
     expect(res.body[0].coverImage).toBeNull()
+  })
+
+  it('falls back to the newest visible member when the newest is hidden', async () => {
+    // Regression: the cover used to be chosen before the visibility filter, so a
+    // hidden newest member blanked the cover even when older visible members
+    // existed. It should fall back to the newest *visible* member.
+    await seedRecipes([
+      { _id: 'r1', title: 'Old', recipeImage: 'http://img/r1.jpg' },
+      { _id: 'r2', title: 'New Hidden', recipeImage: 'http://img/r2.jpg', status: 'hidden' },
+    ])
+    await seedUserRecipeData(TEST_UID, {
+      collections: [{ id: 'c1', name: 'Weeknight', createdAt: '1' }],
+      savedRecipes: [
+        { recipeId: 'r1', dateSaved: '100', collectionIds: ['c1'] },
+        { recipeId: 'r2', dateSaved: '300', collectionIds: ['c1'] },
+      ],
+    })
+    const res = await request(app).get('/api/collections').set(AUTH_HEADER)
+    expect(res.body[0].count).toBe(2) // count still reflects membership
+    expect(res.body[0].coverRecipeId).toBe('r1')
+    expect(res.body[0].coverImage).toBe('http://img/r1.jpg')
   })
 })
 
@@ -179,6 +204,29 @@ describe('PATCH /collections/:id', () => {
       .set(AUTH_HEADER)
       .send({ name: 'a' })
     expect(res.status).toBe(409)
+  })
+
+  it('is atomic: concurrent renames toward one name keep it unique', async () => {
+    // Regression: the rename guard was a non-atomic read-then-write, so two
+    // concurrent renames toward the same name could both pass and create
+    // duplicate names — defeating the invariant the create path enforces.
+    await seedUserRecipeData(TEST_UID, {
+      collections: [
+        { id: 'c1', name: 'A', createdAt: '1' },
+        { id: 'c2', name: 'B', createdAt: '2' },
+      ],
+    })
+    const [r1, r2] = await Promise.all([
+      request(app).patch('/api/collections/c1').set(AUTH_HEADER).send({ name: 'Same' }),
+      request(app).patch('/api/collections/c2').set(AUTH_HEADER).send({ name: 'Same' }),
+    ])
+    expect([r1.status, r2.status].sort()).toEqual([200, 409])
+
+    const data = await getUserData()
+    const named = data.collections.filter(
+      (c) => c.name.toLowerCase() === 'same'
+    )
+    expect(named).toHaveLength(1)
   })
 })
 
@@ -258,6 +306,32 @@ describe('PATCH /recipes/:recipeId/collections', () => {
     const data = await getUserData()
     expect(data.savedRecipes).toHaveLength(1)
     expect(data.savedRecipes[0].recipeId).toBe('r9')
+    const recipe = await getDB().collection('recipes').findOne({ _id: 'r9' })
+    expect(recipe.numTimesSaved).toBe(1)
+  })
+
+  it('is atomic: concurrent auto-saves of one recipe save it once, count once', async () => {
+    // Regression: the auto-save branch read isSaved then pushed, so two
+    // concurrent PATCHes (double-tap / two tabs) both saw "not saved" and each
+    // pushed a savedRecipes entry + bumped numTimesSaved.
+    await seedRecipes([{ _id: 'r9', title: 'New', numTimesSaved: 0 }])
+    await seedUserRecipeData(TEST_UID, {
+      collections: [{ id: 'c1', name: 'A', createdAt: '1' }],
+      savedRecipes: [],
+    })
+
+    const results = await Promise.all(
+      Array.from({ length: 6 }, () =>
+        request(app)
+          .patch('/api/recipes/r9/collections')
+          .set(AUTH_HEADER)
+          .send({ collectionIds: ['c1'] })
+      )
+    )
+    expect(results.every((r) => r.status === 200)).toBe(true)
+
+    const data = await getUserData()
+    expect(data.savedRecipes.filter((e) => e.recipeId === 'r9')).toHaveLength(1)
     const recipe = await getDB().collection('recipes').findOne({ _id: 'r9' })
     expect(recipe.numTimesSaved).toBe(1)
   })

@@ -35,14 +35,20 @@ const Rating: FC<{ value: number; count: number }> = ({ value, count }) => {
   )
 }
 
-type RecipeCardProps = { recipe: RecipeType | null; loading?: boolean }
+type RecipeCardProps = {
+  recipe: RecipeType | null
+  loading?: boolean
+  // Extra refresh after a save/membership change (the Saved tab passes this so
+  // unsaving/refiling resets its paged grid). Caches always refetch regardless.
+  onMutated?: () => void
+}
 
 /**
  * Browse-grid recipe card: image with price-per-serving chip + save bookmark,
  * cuisine eyebrow, title, and a time/rating meta row. Used by the /recipes
- * page. (RecipeThumbnail is kept for the account pages.)
+ * page and the account Saved tab.
  */
-const RecipeCard: FC<RecipeCardProps> = ({ recipe, loading }) => {
+const RecipeCard: FC<RecipeCardProps> = ({ recipe, loading, onMutated }) => {
   if (loading || !recipe) {
     return (
       <article className='recipe-card recipe-card--loading' aria-hidden='true'>
@@ -105,6 +111,7 @@ const RecipeCard: FC<RecipeCardProps> = ({ recipe, loading }) => {
         title={recipe.title}
         className='recipe-card__save-wrap'
         triggerClassName='recipe-card__save'
+        onMutated={onMutated}
       />
     </article>
   )

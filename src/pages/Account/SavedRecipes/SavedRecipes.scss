@@ -329,56 +329,16 @@
     }
   }
 
-  // ── Saved recipe cards (the add-to-collection control sits over each) ──
-  .saved-card {
-    position: relative;
-
-    .saved-card__collection {
-      position: absolute;
-      top: 0.5rem;
-      right: 0.5rem;
-      z-index: 5;
-    }
-    .add-to-collection-btn {
-      width: 34px;
-      height: 34px;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.92);
-      color: s.$primary-text;
-      font-size: 1.05rem;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
-      transition: background 0.12s ease, color 0.12s ease;
-
-      &:hover {
-        background: #fff;
-        color: s.$primary;
-      }
-    }
-  }
-
-  .thumbnails-container {
+  // ── Saved recipe grid ──
+  // Fluid auto-fill grid (mirrors the /recipes browse grid) so cards flow to
+  // fill the account-body track instead of overflowing a fixed 4-up layout.
+  .saved-grid {
     display: grid;
-    justify-items: center;
-    grid-template-columns: 1fr 1fr 1fr 1fr;
-    width: fit-content;
-    margin: 2rem auto;
-    gap: 2rem;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1.5rem;
+    margin: 1.5rem 0;
 
-    @media screen and (max-width: 1400px) {
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 1rem;
-    }
-    @media screen and (max-width: 1200px) {
-      gap: 0.5rem;
-    }
-    @media screen and (max-width: 1100px) {
-      grid-template-columns: 1fr 1fr;
-      gap: 2rem;
-    }
-    @media screen and (max-width: 815px) {
-      gap: 1rem;
-    }
-    @media screen and (max-width: 725px) {
+    @media screen and (max-width: 420px) {
       grid-template-columns: 1fr;
     }
   }

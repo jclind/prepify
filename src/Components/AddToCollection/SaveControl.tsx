@@ -146,10 +146,14 @@ const SaveControl: FC<Props> = ({
   }
 
   // "All saved" master row inside the popover. Unsaving drops all memberships,
-  // so there's nothing left to manage — close the menu.
-  const handleToggleSaved = () => {
+  // so there's nothing left to manage — close the menu. Await the save/unsave
+  // before refetching collection counts + the saved grid so the refetch can't
+  // race ahead of the write and resolve with stale data that never corrects;
+  // skip the refetch entirely if the write failed (the hook rolled back).
+  const handleToggleSaved = async () => {
     const wasSaved = isSaved
-    toggle()
+    const ok = await toggle()
+    if (!ok) return
     queryClient.invalidateQueries({ queryKey: ['collections'] })
     onMutated?.()
     if (wasSaved) setOpen(false)

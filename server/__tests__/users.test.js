@@ -61,6 +61,32 @@ describe('GET /getSavedRecipes', () => {
     expect(res.body.recipes).toHaveLength(2)
   })
 
+  it('excludes soft-hidden recipes from totalCount on the save-time path', async () => {
+    // Regression: totalCount used to count raw saved entries, so a hidden saved
+    // recipe (dropped from the page) left totalCount > visible count and the
+    // client's Load More button stuck on forever fetching nothing.
+    await seedRecipes([
+      { _id: 'r1', title: 'Visible One' },
+      { _id: 'r2', title: 'Hidden', status: 'hidden' },
+      { _id: 'r3', title: 'Visible Two' },
+    ])
+    await seedUserRecipeData(TEST_UID, {
+      savedRecipes: [
+        { recipeId: 'r1', dateSaved: '1000' },
+        { recipeId: 'r2', dateSaved: '2000' },
+        { recipeId: 'r3', dateSaved: '3000' },
+      ],
+    })
+
+    const res = await request(app)
+      .get('/api/getSavedRecipes')
+      .set(AUTH_HEADER)
+
+    expect(res.status).toBe(200)
+    expect(res.body.totalCount).toBe(2)
+    expect(res.body.recipes.map((r) => r._id).sort()).toEqual(['r1', 'r3'])
+  })
+
   it('paginates results', async () => {
     await seedRecipes([
       { _id: 'r1', title: 'Recipe One' },
