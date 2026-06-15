@@ -63,6 +63,7 @@ vi.mock('src/api/auth', () => ({
   default: {
     getUsername: vi.fn().mockResolvedValue('johndoe'),
     setUsername: vi.fn().mockResolvedValue(undefined),
+    updatePhoto: vi.fn().mockResolvedValue(undefined),
     deleteAccount: vi.fn().mockResolvedValue(undefined),
     checkUsernameAvailability: vi.fn().mockResolvedValue(true),
   },
@@ -74,6 +75,7 @@ const makeUser = (overrides: Record<string, any> = {}) => ({
   displayName: 'John',
   photoURL: '',
   providerData: [{ providerId: 'password' }],
+  reload: vi.fn().mockResolvedValue(undefined),
   getIdTokenResult: vi.fn().mockResolvedValue({ claims: {} }),
   ...overrides,
 })
@@ -188,7 +190,7 @@ describe('AuthContext — deleteAccount (Google account)', () => {
 // ─── updateProfileData ────────────────────────────────────────────────────────
 
 describe('AuthContext — updateProfileData', () => {
-  it('uploads a new avatar and writes its URL to the Firebase profile', async () => {
+  it('uploads a new avatar and applies its URL through the moderated server endpoint', async () => {
     const result = await mountAuth(makeUser())
     const imgFile = new File(['x'], 'pic.png', { type: 'image/png' })
 
@@ -198,12 +200,14 @@ describe('AuthContext — updateProfileData', () => {
 
     expect(uploadBytes).toHaveBeenCalledWith('photo-ref', imgFile)
     expect(getDownloadURL).toHaveBeenCalled()
-    expect(updateProfile).toHaveBeenCalledWith(h.authUser, {
-      photoURL: 'https://cdn/new-photo.png',
-    })
+    // photoURL is now written SERVER-side (so it can be moderated), not via the
+    // client Firebase updateProfile; the local user is reloaded to reflect it.
+    expect(AuthAPI.updatePhoto).toHaveBeenCalledWith('https://cdn/new-photo.png')
+    expect(h.authUser.reload).toHaveBeenCalled()
+    expect(updateProfile).not.toHaveBeenCalled()
   })
 
-  it('clears the avatar when imgFile is explicitly null', async () => {
+  it('clears the avatar through the server endpoint when imgFile is explicitly null', async () => {
     const result = await mountAuth(makeUser())
 
     await act(async () => {
@@ -211,7 +215,18 @@ describe('AuthContext — updateProfileData', () => {
     })
 
     expect(uploadBytes).not.toHaveBeenCalled()
-    expect(updateProfile).toHaveBeenCalledWith(h.authUser, { photoURL: '' })
+    expect(AuthAPI.updatePhoto).toHaveBeenCalledWith('')
+  })
+
+  it('writes displayName via Firebase updateProfile and leaves the photo endpoint untouched', async () => {
+    const result = await mountAuth(makeUser())
+
+    await act(async () => {
+      await result.current!.updateProfileData({ displayName: 'Jane' })
+    })
+
+    expect(updateProfile).toHaveBeenCalledWith(h.authUser, { displayName: 'Jane' })
+    expect(AuthAPI.updatePhoto).not.toHaveBeenCalled()
   })
 
   it('renames the username only when it differs from the current one', async () => {

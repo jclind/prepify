@@ -210,7 +210,9 @@ const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
       const currUsername = await AuthAPI.getUsername()
       const { displayName, username, imgFile, email, password } = data
 
-      const photoUpdate: { photoURL?: string } = {}
+      // The new photoURL: the uploaded image's download URL, '' to clear, or
+      // undefined to leave it untouched.
+      let newPhotoURL: string | undefined
       if (imgFile) {
         const storage = getStorage()
         // Key the storage path by uid (not the original filename) so two users
@@ -219,9 +221,20 @@ const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
         // than orphaning the old one (Firebase serves the stored content-type).
         const profilePhotosRef = ref(storage, `profilePhotos/${user.uid}`)
         await uploadBytes(profilePhotosRef, imgFile)
-        photoUpdate.photoURL = await getDownloadURL(profilePhotosRef)
+        newPhotoURL = await getDownloadURL(profilePhotosRef)
       } else if (imgFile === null) {
-        photoUpdate.photoURL = ''
+        newPhotoURL = ''
+      }
+
+      // Apply the photo through the SERVER so it gets moderated before it's set
+      // on the Firebase Auth profile (an unmoderated photoURL can't be written
+      // client-side anymore). A rejected image throws here — before any other
+      // profile field is written — and the form surfaces the moderation error.
+      // reload() then refreshes the local user so the new (or cleared) photoURL
+      // is reflected immediately, as the old client-side updateProfile did.
+      if (newPhotoURL !== undefined) {
+        await AuthAPI.updatePhoto(newPhotoURL)
+        await user.reload()
       }
 
       if (username && username !== currUsername) {
@@ -243,12 +256,10 @@ const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
         await verifyBeforeUpdateEmail(user, email)
       }
 
-      const profileUpdate = {
-        ...photoUpdate,
-        ...(displayName !== undefined && { displayName }),
-      }
-      if (Object.keys(profileUpdate).length > 0) {
-        await updateProfile(user, profileUpdate)
+      // displayName still goes straight to Firebase Auth — it has no server hook
+      // yet (tracked as a moderation follow-up). The photo is handled above.
+      if (displayName !== undefined) {
+        await updateProfile(user, { displayName })
       }
     }
   }

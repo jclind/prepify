@@ -8,6 +8,7 @@ const { recordAudit } = require('../util/auditLog')
 const { deleteRecipeImage, deleteProfilePhoto } = require('../util/firebaseStorage')
 const { recomputeRecipeRating } = require('../util/recipeRating')
 const { moderateText } = require('../util/textModeration')
+const { moderateImage } = require('../util/imageModeration')
 const { respondBlocked } = require('../util/automod')
 
 const USERNAME_MIN_LENGTH = 3
@@ -229,6 +230,37 @@ router.post('/updateProfile', verifyToken, requireActive, asyncHandler(async (re
     { upsert: true }
   )
   res.json({ success: true })
+}))
+
+// POST /updatePhoto
+// Sets (or clears) the authenticated user's Firebase Auth photoURL, AFTER
+// screening the image. Profile photos are uploaded client-side straight to
+// Storage and the photoURL is otherwise written client-side directly to Firebase
+// Auth — there is no server upload path to intercept — so this server-owned
+// endpoint is the moderation hook: the client uploads the file, then POSTs the
+// resulting download URL here and the SERVER applies it only if it passes.
+//
+// Like a review/bio (and unlike a recipe), a photo has no owner-only "pending"
+// state to fall back to, so BOTH high and medium confidence block (422); the
+// image fails CLOSED, so a scan outage also rejects rather than applying an
+// unscanned photo. Clearing the photo (empty URL) needs no scan.
+router.post('/updatePhoto', verifyToken, requireActive, asyncHandler(async (req, res) => {
+  const { photoURL } = req.body || {}
+  if (photoURL != null && typeof photoURL !== 'string') {
+    return res.status(400).json({ error: 'photoURL must be a string' })
+  }
+  const url = typeof photoURL === 'string' ? photoURL.trim() : ''
+
+  if (url) {
+    const verdict = await moderateImage(url, 'profile.photo')
+    if (!verdict.allowed) {
+      return respondBlocked(res)
+    }
+  }
+
+  // Admin SDK clears the avatar with null (an empty string is rejected).
+  await admin.auth().updateUser(req.uid, { photoURL: url || null })
+  res.json({ success: true, photoURL: url })
 }))
 
 // POST /updatePrivacy
