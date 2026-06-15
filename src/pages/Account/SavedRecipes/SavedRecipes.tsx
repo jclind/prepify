@@ -40,6 +40,7 @@ const SavedRecipes: FC = () => {
   const [newName, setNewName] = useState('')
   const [renaming, setRenaming] = useState(false)
   const [renameValue, setRenameValue] = useState('')
+  const [creating, setCreating] = useState(false)
 
   const { data: collections = [] } = useQuery({
     queryKey: ['collections'],
@@ -111,7 +112,8 @@ const SavedRecipes: FC = () => {
 
   const handleCreate = async () => {
     const name = newName.trim()
-    if (!name) return
+    if (!name || creating) return // guard against a double-submit firing two creates
+    setCreating(true)
     try {
       const created = await CollectionsAPI.create(name)
       setNewName('')
@@ -120,6 +122,8 @@ const SavedRecipes: FC = () => {
       selectCollection(created.id)
     } catch (err: any) {
       toast.error(err?.response?.data?.error ?? 'Could not create collection')
+    } finally {
+      setCreating(false)
     }
   }
 
@@ -196,7 +200,12 @@ const SavedRecipes: FC = () => {
                 if (!newName.trim()) setCreatingNew(false)
               }}
             />
-            <button type='submit' className='chip-icon-btn' aria-label='Create'>
+            <button
+              type='submit'
+              className='chip-icon-btn'
+              aria-label='Create'
+              disabled={creating || !newName.trim()}
+            >
               <FiPlus />
             </button>
           </form>

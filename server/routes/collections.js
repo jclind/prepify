@@ -104,9 +104,45 @@ router.post('/collections', verifyToken, requireActive, asyncHandler(async (req,
     return res.status(409).json({ error: 'A collection with that name already exists' })
   }
   const collection = { id: crypto.randomUUID(), name, createdAt: Date.now().toString() }
-  await db
-    .collection('userRecipeData')
-    .updateOne({ _id: req.uid }, { $push: { collections: collection } }, { upsert: true })
+
+  // The read-then-write above is friendly but not atomic: two concurrent creates
+  // (a double-click, two tabs) can both pass it and push the same name twice. So
+  // the actual push is a single guarded update — it only appends when no existing
+  // member matches the name case-insensitively, evaluated server-side against the
+  // live document. A lost race ends with matchedCount 0 → 409. ($expr/$toLower
+  // also catch legacy collections, so no name_lower field is needed.) Ensure the
+  // doc exists first so the guarded push never has to upsert (which would 11000
+  // on an unrelated concurrent first-create instead of pushing).
+  const nameLower = name.toLowerCase()
+  try {
+    await db
+      .collection('userRecipeData')
+      .updateOne({ _id: req.uid }, { $setOnInsert: { collections: [] } }, { upsert: true })
+  } catch (err) {
+    if (err.code !== 11000) throw err // ignore the concurrent-insert race
+  }
+  const pushed = await db.collection('userRecipeData').updateOne(
+    {
+      _id: req.uid,
+      $expr: {
+        $eq: [
+          {
+            $size: {
+              $filter: {
+                input: { $ifNull: ['$collections', []] },
+                cond: { $eq: [{ $toLower: '$$this.name' }, nameLower] },
+              },
+            },
+          },
+          0,
+        ],
+      },
+    },
+    { $push: { collections: collection } }
+  )
+  if (pushed.matchedCount === 0) {
+    return res.status(409).json({ error: 'A collection with that name already exists' })
+  }
   res.status(201).json(withStats(collection, []))
 }))
 

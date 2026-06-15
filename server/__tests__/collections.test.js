@@ -60,6 +60,30 @@ describe('POST /collections', () => {
       .send({ name: 'desserts' })
     expect(res.status).toBe(409)
   })
+
+  it('is atomic: 8 concurrent creates of one name yield exactly one collection', async () => {
+    await seedUserRecipeData(TEST_UID, { collections: [] })
+    const results = await Promise.all(
+      Array.from({ length: 8 }, () =>
+        request(app).post('/api/collections').set(AUTH_HEADER).send({ name: 'Brunch' })
+      )
+    )
+    expect(results.filter((r) => r.status === 201)).toHaveLength(1)
+    expect(results.filter((r) => r.status === 409)).toHaveLength(7)
+    const data = await getUserData()
+    expect(data.collections.filter((c) => c.name === 'Brunch')).toHaveLength(1)
+  })
+
+  it('guarded push also blocks a case-variant duplicate atomically', async () => {
+    await seedUserRecipeData(TEST_UID, { collections: [] })
+    const results = await Promise.all([
+      request(app).post('/api/collections').set(AUTH_HEADER).send({ name: 'Lunch' }),
+      request(app).post('/api/collections').set(AUTH_HEADER).send({ name: 'LUNCH' }),
+    ])
+    expect(results.filter((r) => r.status === 201)).toHaveLength(1)
+    const data = await getUserData()
+    expect(data.collections).toHaveLength(1)
+  })
 })
 
 // ─── GET /collections ─────────────────────────────────────────────────────────
@@ -269,6 +293,15 @@ describe('GET /getSavedRecipes with collections', () => {
   it('filters to a single collection and counts only its members', async () => {
     const res = await request(app)
       .get('/api/getSavedRecipes?collectionId=c1')
+      .set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(res.body.totalCount).toBe(2)
+    expect(res.body.recipes.map(r => r._id).sort()).toEqual(['r1', 'r3'])
+  })
+
+  it('collapses a repeated collectionId param to the first value', async () => {
+    const res = await request(app)
+      .get('/api/getSavedRecipes?collectionId=c1&collectionId=c2')
       .set(AUTH_HEADER)
     expect(res.status).toBe(200)
     expect(res.body.totalCount).toBe(2)

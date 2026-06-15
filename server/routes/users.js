@@ -59,8 +59,15 @@ router.get('/getCreatedRecipes', verifyToken, asyncHandler(async (req, res) => {
 // optionally narrowed to one collection (?collectionId).
 router.get('/getSavedRecipes', verifyToken, asyncHandler(async (req, res) => {
   const db = getDB()
-  const { page = 0, recipesPerPage = 5, order, collectionId } = req.query
+  const { page = 0, recipesPerPage = 5, order } = req.query
   const uid = req.uid
+
+  // A repeated ?collectionId= makes Express hand us an array; collapse to the
+  // first value so `.includes(collectionId)` compares against a string, not an
+  // array object (which would silently match nothing).
+  const collectionId = Array.isArray(req.query.collectionId)
+    ? req.query.collectionId[0]
+    : req.query.collectionId
 
   const userData = await db.collection('userRecipeData').findOne({ _id: uid })
   let savedRecipes = userData?.savedRecipes ?? []
