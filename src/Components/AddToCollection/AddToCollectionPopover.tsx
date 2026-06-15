@@ -11,12 +11,17 @@ type Props = {
   // and can create new folders, calling onMutated so caches (counts, saved
   // grid, saved-id list) refetch.
   collections: RecipeCollection[]
+  // Master "All saved" state + toggle (saves when off, unsaves when on).
+  saved: boolean
+  onToggleSaved: () => void
   onMutated: () => void
 }
 
 const AddToCollectionPopover: FC<Props> = ({
   recipeId,
   collections,
+  saved,
+  onToggleSaved,
   onMutated,
 }) => {
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -86,7 +91,19 @@ const AddToCollectionPopover: FC<Props> = ({
       role='dialog'
       aria-label='Add to collection'
     >
-      <div className='popover-title'>Add to collection</div>
+      <div className='popover-title'>Save to</div>
+
+      {/* Master row: the recipe's place in the saved list. Unchecking it
+          unsaves (and drops every collection membership with it). */}
+      <button
+        type='button'
+        className={`collection-option master ${saved ? 'checked' : ''}`}
+        onClick={onToggleSaved}
+        disabled={busy}
+      >
+        <span className='checkbox'>{saved && <FiCheck />}</span>
+        <span className='name'>All saved</span>
+      </button>
 
       <div className='collection-options'>
         {loading ? (

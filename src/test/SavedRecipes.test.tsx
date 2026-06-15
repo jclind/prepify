@@ -18,6 +18,7 @@ vi.mock('src/api/recipes', () => ({
   default: {
     getSavedRecipes: vi.fn(),
     getSavedRecipe: vi.fn(),
+    getSavedRecipeIds: vi.fn(),
     getAccountCounts: vi.fn(),
   },
 }))
@@ -44,6 +45,7 @@ vi.mock('src/api/auth', () => ({
 
 const mockedGetSaved = RecipeAPI.getSavedRecipes as unknown as Mock
 const mockedGetSavedOne = RecipeAPI.getSavedRecipe as unknown as Mock
+const mockedSavedIds = RecipeAPI.getSavedRecipeIds as unknown as Mock
 const mockedCounts = RecipeAPI.getAccountCounts as unknown as Mock
 const mockedList = CollectionsAPI.list as unknown as Mock
 const mockedSetMembership = CollectionsAPI.setRecipeCollections as unknown as Mock
@@ -75,6 +77,7 @@ beforeEach(() => {
     recipes: [recipe('r1', 'Soup')],
     totalCount: 1,
   })
+  mockedSavedIds.mockResolvedValue(['r1'])
   mockedCounts.mockResolvedValue({ saved: 12, ratings: 0, recipes: 0, drafts: 0 })
   mockedList.mockResolvedValue([
     { id: 'c1', name: 'Weeknight', createdAt: '1', count: 3, coverRecipeId: 'r1', coverImage: null },
@@ -125,9 +128,10 @@ it('searches by title (debounced) via the q param', async () => {
 
 it('toggles membership through the add-to-collection popover', async () => {
   renderPage()
-  // Wait for the card to render, then open its popover.
+  // Wait for the card to render, then open its popover. The saved card's
+  // SaveControl is already-saved, so its trigger opens the collections menu.
   await screen.findByText('Soup')
-  fireEvent.click(screen.getByLabelText('Add to collection'))
+  fireEvent.click(await screen.findByLabelText('Soup saved — edit collections'))
 
   // Popover loads current membership, then lists collections as options.
   const option = await screen.findByText('Desserts', {

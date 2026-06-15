@@ -21,7 +21,7 @@ import CollectionsAPI from 'src/api/collections'
 import AuthAPI from 'src/api/auth'
 import { RecipeType } from 'types'
 import { useDelayedLoading } from 'src/pages/Account/useDelayedLoading'
-import AddToCollectionControl from 'src/Components/AddToCollection/AddToCollectionControl'
+import SaveControl from 'src/Components/AddToCollection/SaveControl'
 import CollectionCard from './CollectionCard'
 
 type SortOption = { value: string; label: string }
@@ -414,8 +414,10 @@ const SavedRecipes: FC = () => {
               recipes.map(recipe => (
                 <div className='saved-card' key={recipe._id}>
                   <RecipeThumbnail recipe={recipe} />
-                  <AddToCollectionControl
+                  <SaveControl
                     recipeId={recipe._id}
+                    variant='icon'
+                    title={recipe.title}
                     className='saved-card__collection'
                     triggerClassName='add-to-collection-btn'
                     onMutated={refreshAfterMutation}

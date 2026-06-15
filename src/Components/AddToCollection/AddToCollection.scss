@@ -19,6 +19,50 @@
   }
 }
 
+// Unified save + collections control. The wrapper just holds the trigger +
+// portal; each surface positions it and styles the trigger chrome (reusing
+// .save-recipe-btn on the recipe page, .recipe-card__save over a card, etc.).
+.save-control {
+  position: relative;
+  display: inline-flex;
+
+  &__trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    font-family: inherit;
+    color: inherit;
+    background: none;
+    border: none;
+    cursor: pointer;
+  }
+
+  &__caret {
+    font-size: 1.15rem;
+    margin-left: -0.1rem;
+  }
+}
+
+// Toast shown on first save, nudging toward collections.
+.save-toast {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+
+  &__action {
+    border: none;
+    background: none;
+    padding: 0;
+    font-family: inherit;
+    font-weight: 800;
+    font-size: inherit;
+    color: s.$primary;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+}
+
 // Portaled to <body> and fixed-positioned at the trigger so a card's
 // overflow/transform can't clip it; inline top/left come from the control.
 .add-to-collection-portal {
@@ -54,6 +98,15 @@
     font-size: 0.78rem;
     color: s.$secondary-text;
     padding: 0.4rem 0.35rem;
+  }
+
+  // The "All saved" master row sits above the collection list with a divider.
+  .collection-option.master {
+    margin-bottom: 0.35rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 1px solid s.$gray-200;
+    border-radius: 9px 9px 0 0;
+    font-weight: 700;
   }
 
   .collection-option {
