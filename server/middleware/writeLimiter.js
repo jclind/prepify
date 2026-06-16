@@ -24,7 +24,10 @@ const writeLimiter = rateLimit({
   legacyHeaders: false,
   keyGenerator: (req) => req.uid,
   skip: () => process.env.NODE_ENV === 'test',
-  message: { error: 'You’re doing that too quickly — wait a moment and try again.' },
+  // Carry a stable `code` like every other client error (CONTENT_BLOCKED,
+  // ACCOUNT_BANNED, ALREADY_REPORTED) so the FE can branch on the 429 — e.g. show
+  // a dedicated "slow down" affordance — instead of string-matching the message.
+  message: { error: 'You’re doing that too quickly — wait a moment and try again.', code: 'RATE_LIMITED' },
 })
 
 module.exports = { writeLimiter }

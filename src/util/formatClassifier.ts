@@ -15,5 +15,9 @@ export const formatClassifier = (c: ReportClassifier): string => {
   const scoreMatch = c.reason?.match(/:([0-9]*\.?[0-9]+)$/)
   if (scoreMatch) parts.push(`${Math.round(parseFloat(scoreMatch[1]) * 100)}% confidence`)
   if (c.severity) parts.push(`${c.severity} severity`)
-  return parts.join(' · ')
+  // A classifier with no renderable fields would otherwise return '', which leaves
+  // the call sites showing a dangling label ("Auto-flagged: " / "Auto-held … — .").
+  // Real medium holds always carry category + severity + score, so this only fires
+  // on a malformed/partial snapshot — fall back to a readable placeholder.
+  return parts.length ? parts.join(' · ') : 'details unavailable'
 }

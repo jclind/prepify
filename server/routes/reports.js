@@ -5,7 +5,17 @@ const { getDB } = require('../db')
 const { verifyToken, requireAdmin, requireActive } = require('../middleware/auth')
 const { recipeIdQuery } = require('../util/recipeIdQuery')
 const { recordAudit, recordAuditMany } = require('../util/auditLog')
+const { restoreHeldRecipe } = require('../util/automod')
 const { notifyInBackground, notifyReportResolved, notifyReportResolvedMany } = require('../util/email')
+
+// An OPEN automod report is the queue half of a recipe hold; the other half is the
+// recipe's `pending_review` status. Closing such a report directly (resolve OR
+// dismiss) without restoring the recipe would strand it invisible forever, so any
+// report-close path runs the held recipe back through restoreHeldRecipe. The
+// status filter inside that helper means a recipe an admin has separately taken
+// down ('hidden') is left down — only genuine strays (still 'pending_review') are
+// restored.
+const isAutomodRecipeReport = (r) => r && r.source === 'automod' && r.targetType === 'recipe'
 
 const router = Router()
 
@@ -186,6 +196,13 @@ router.patch('/reports/bulk', verifyToken, requireAdmin, asyncHandler(async (req
     }))
   )
 
+  // Strand guard: any automod recipe report closed in this sweep clears a hold, so
+  // restore those recipes (bounded by MAX_BULK above). Sequential to keep audit
+  // writes orderly; the set is small.
+  for (const r of closed.filter(isAutomodRecipeReport)) {
+    await restoreHeldRecipe(db, r.recipeId, req.uid)
+  }
+
   // Email each affected reporter once per sweep (resolve only; dismiss is
   // silent), in the background so a large sweep never blocks the response.
   if (status === 'resolved') {
@@ -221,6 +238,9 @@ router.patch('/reports/:id', verifyToken, requireAdmin, asyncHandler(async (req,
     targetLabel: updated.reportedUsername ? `@${updated.reportedUsername}` : updated.recipeId,
     metadata: { targetType: updated.targetType, recipeId: updated.recipeId },
   })
+  // Strand guard: if this report was an automod hold, closing it here would leave
+  // the recipe stuck at 'pending_review' — restore it (no-op if already taken down).
+  if (isAutomodRecipeReport(updated)) await restoreHeldRecipe(db, updated.recipeId, req.uid)
   // Notify the reporter that action was taken. Dismiss is intentionally silent.
   if (status === 'resolved') notifyInBackground(notifyReportResolved(updated.reporterUid))
   res.json(updated)
