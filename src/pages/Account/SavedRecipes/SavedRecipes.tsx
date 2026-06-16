@@ -1,4 +1,4 @@
-import React, { FC, useState, useEffect, useRef } from 'react'
+import React, { FC, useState, useEffect } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import {
@@ -12,9 +12,9 @@ import {
   FiBookmark,
   FiFolder,
 } from 'react-icons/fi'
-import { BiChevronDown } from 'react-icons/bi'
 import RecipeCard from 'src/Components/RecipeCard/RecipeCard'
 import EmptyState from 'src/Components/EmptyState/EmptyState'
+import SortDropdown from 'src/Components/SortDropdown/SortDropdown'
 
 import './SavedRecipes.scss'
 import RecipeAPI from 'src/api/recipes'
@@ -40,63 +40,6 @@ const SORT_OPTIONS: SortOption[] = [
 ]
 
 const PER_PAGE = 6
-
-// Custom sort control (matches the Recipes page): a pill trigger that opens a
-// styled menu. Closes on outside click / Escape.
-const SortMenu: FC<{ sort: SortOption; onChange: (o: SortOption) => void }> = ({
-  sort,
-  onChange,
-}) => {
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!open) return
-    const onDown = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
-    }
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false)
-    document.addEventListener('mousedown', onDown)
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('mousedown', onDown)
-      document.removeEventListener('keydown', onKey)
-    }
-  }, [open])
-
-  return (
-    <div className='saved-sort' ref={ref}>
-      <button
-        type='button'
-        className={`saved-sort__trigger ${open ? 'is-open' : ''}`}
-        aria-haspopup='listbox'
-        aria-expanded={open}
-        onClick={() => setOpen(o => !o)}
-      >
-        Sort: {sort.label}
-        <BiChevronDown className='chev' />
-      </button>
-      {open && (
-        <ul className='saved-sort__menu' role='listbox'>
-          {SORT_OPTIONS.map(o => (
-            <li key={o.value}>
-              <button
-                type='button'
-                className={o.value === sort.value ? 'is-active' : ''}
-                onClick={() => {
-                  onChange(o)
-                  setOpen(false)
-                }}
-              >
-                {o.label}
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  )
-}
 
 const SavedRecipes: FC = () => {
   const uid = AuthAPI.getUID()
@@ -180,8 +123,9 @@ const SavedRecipes: FC = () => {
     setCurrPage(0)
     setRenaming(false)
   }
-  const changeSort = (o: SortOption) => {
-    setSort(o)
+  const changeSort = (value: string) => {
+    const next = SORT_OPTIONS.find(o => o.value === value)
+    if (next) setSort(next)
     setCurrPage(0)
   }
   const onSearchChange = (v: string) => setSearchInput(v)
@@ -347,7 +291,12 @@ const SavedRecipes: FC = () => {
             </button>
           )}
         </div>
-        <SortMenu sort={sort} onChange={changeSort} />
+        <SortDropdown
+          className='saved-sort'
+          options={SORT_OPTIONS}
+          value={sort.value}
+          onChange={changeSort}
+        />
       </div>
 
       {/* Subhead: current view + (for a collection) rename / delete. */}
