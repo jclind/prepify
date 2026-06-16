@@ -1,24 +1,19 @@
 const { Router } = require('express')
-const { rateLimit } = require('express-rate-limit')
 const { ingredientParser } = require('@jclind/ingredient-parser')
 const { verifyToken } = require('../middleware/auth')
+const { makeUserLimiter } = require('../middleware/writeLimiter')
 const { GENERIC_500_MESSAGE } = require('../util/respondServerError')
 
 const router = Router()
 
-// Every call spends paid Spoonacular quota, so this is the one route with a
-// tight per-user limit. Keyed by req.uid (set by verifyToken, which runs
+// Every call spends paid Spoonacular quota, so this route gets its own tight
+// per-user limit — an independent bucket from the content-write limiters (see
+// middleware/writeLimiter), keyed by req.uid (set by verifyToken, which runs
 // first), not IP, so shared NATs don't collide. 30/min comfortably covers the
 // add-recipe flow — one parse per ingredient added, max 50 per recipe.
 // Skipped under Jest along with the global limiter (see app.js).
-const parseLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  limit: 30,
-  standardHeaders: true,
-  legacyHeaders: false,
-  keyGenerator: (req) => req.uid,
-  skip: () => process.env.NODE_ENV === 'test',
-  message: { error: 'Too many ingredient lookups — wait a minute and try again.' },
+const parseLimiter = makeUserLimiter({
+  message: 'Too many ingredient lookups — wait a minute and try again.',
 })
 
 router.post('/parse', verifyToken, parseLimiter, async (req, res) => {

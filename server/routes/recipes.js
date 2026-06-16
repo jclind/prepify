@@ -3,7 +3,7 @@ const { asyncHandler } = require('../util/asyncHandler')
 const { ObjectId } = require('mongodb')
 const { getDB, getClient } = require('../db')
 const { verifyToken, optionalAuth, requireAdmin, requireActive } = require('../middleware/auth')
-const { writeLimiter } = require('../middleware/writeLimiter')
+const { recipeWriteLimiter } = require('../middleware/writeLimiter')
 const { recipeIdQuery } = require('../util/recipeIdQuery')
 const { RECIPE_VISIBLE, RECIPE_OWNER_VISIBLE } = require('../util/moderation')
 const { recordAudit } = require('../util/auditLog')
@@ -244,7 +244,7 @@ router.get('/getRecipe', optionalAuth, asyncHandler(async (req, res) => {
 }))
 
 // POST /addRecipe
-router.post('/addRecipe', verifyToken, requireActive, writeLimiter, asyncHandler(async (req, res) => {
+router.post('/addRecipe', verifyToken, requireActive, recipeWriteLimiter, asyncHandler(async (req, res) => {
   const db = getDB()
   const body = req.body
   const uid = req.uid
@@ -308,7 +308,7 @@ router.post('/addRecipe', verifyToken, requireActive, writeLimiter, asyncHandler
 // metadata are never writable here (only EDITABLE_RECIPE_FIELDS are copied), so
 // an edit can never reset a recipe's ratings, saves, or made-count. editedAt is
 // stamped so the UI can surface that the recipe changed after people saved it.
-router.put('/editRecipe', verifyToken, requireActive, writeLimiter, asyncHandler(async (req, res) => {
+router.put('/editRecipe', verifyToken, requireActive, recipeWriteLimiter, asyncHandler(async (req, res) => {
   const db = getDB()
   const { recipeId } = req.query
   if (!recipeId) {
