@@ -1,36 +1,358 @@
+@use '../../../helpers.scss' as s;
+
 .saved-recipes {
   padding-bottom: 2rem;
-  .saved-recipes-filters {
+
+  // ── Collections ──
+  .saved-collections {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 0.75rem;
     margin-top: 1rem;
-    max-width: 250px;
-    @media screen and (max-width: 500px) {
-      max-width: 100%;
-      width: 100%;
+  }
+
+  .collection-card {
+    display: flex;
+    flex-direction: column;
+    // border-box so the create form's own padding (.is-form) is counted inside
+    // the 158px instead of making that tile taller than its fixed-height
+    // siblings and stretching the grid row.
+    box-sizing: border-box;
+    height: 158px;
+    overflow: hidden;
+    border: 1px solid #ece2d6;
+    border-radius: 12px;
+    background: #fff;
+    cursor: pointer;
+    text-align: left;
+    color: s.$primary-text;
+    font-family: inherit;
+    transition: box-shadow 0.14s ease, transform 0.14s ease,
+      border-color 0.14s ease;
+
+    &:hover {
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+      transform: translateY(-1px);
+    }
+    &.active {
+      border-color: s.$primary;
+      box-shadow: 0 0 0 1px s.$primary;
+      .collection-card__name {
+        color: s.$primary;
+      }
+    }
+
+    &__thumb {
+      flex-shrink: 0;
+      height: 88px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      background: s.$gray-200;
+      color: s.$tertiary-text;
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      &.empty svg {
+        font-size: 1.3rem;
+      }
+      // The "All saved" view is a system entry, not a folder — tint its thumb
+      // and brand + enlarge the icon so it reads as the primary all-view rather
+      // than looking like an empty-folder fallback (same gray + icon).
+      &.all {
+        background: rgba(s.$primary, 0.1);
+        color: s.$primary;
+        svg {
+          font-size: 1.6rem;
+        }
+      }
+    }
+    // Name + count grouped near the top with one fixed gap (chosen spacing), so
+    // the rhythm is identical whether the name is one or two lines.
+    &__text {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      padding: 0.55rem 0.7rem;
+      justify-content: flex-start;
+    }
+    &__name {
+      font-weight: 800;
+      font-size: 0.85rem;
+      line-height: 1.25;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    &__count {
+      color: s.$tertiary-text;
+      font-weight: 700;
+      font-size: 0.72rem;
     }
   }
-  .thumbnails-container {
-    display: grid;
-    justify-items: center;
-    grid-template-columns: 1fr 1fr 1fr 1fr;
-    width: fit-content;
-    margin: 2rem auto;
-    gap: 2rem;
 
-    @media screen and (max-width: 1400px) {
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 1rem;
+  .collection-card--new {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    border-style: dashed;
+    border-color: s.$primary;
+    color: s.$primary;
+    font-weight: 800;
+    font-size: 0.85rem;
+
+    &:hover {
+      background: s.$gray-50;
+      transform: none;
+      box-shadow: none;
     }
-    @media screen and (max-width: 1200px) {
+    // Inline create form fills the same tile.
+    &.is-form {
+      flex-direction: column;
+      justify-content: center;
       gap: 0.5rem;
+      padding: 0.6rem;
+      cursor: default;
+
+      input {
+        width: 100%;
+        box-sizing: border-box;
+        font-family: inherit;
+        font-size: 0.85rem;
+        padding: 0.45rem 0.6rem;
+        border: 1px solid s.$gray-400;
+        border-radius: 8px;
+        color: s.$primary-text;
+        &:focus {
+          outline: none;
+          border-color: s.$primary;
+        }
+      }
+      .new-submit {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.3rem;
+        border: none;
+        background: s.$primary;
+        color: #fff;
+        font-family: inherit;
+        font-weight: 800;
+        font-size: 0.82rem;
+        border-radius: 8px;
+        padding: 0.4rem 0.7rem;
+        cursor: pointer;
+        &:disabled {
+          opacity: 0.5;
+          cursor: default;
+        }
+      }
     }
-    @media screen and (max-width: 1100px) {
-      grid-template-columns: 1fr 1fr;
-      gap: 2rem;
+  }
+
+  // ── Toolbar (full-width search + sort) ──
+  .saved-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-top: 1.25rem;
+    flex-wrap: wrap;
+  }
+  .saved-search {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex: 1 1 auto;
+    min-width: 200px;
+
+    &__icon {
+      position: absolute;
+      left: 0.95rem;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 1.05rem;
+      color: s.$tertiary-text;
+      pointer-events: none;
     }
-    @media screen and (max-width: 815px) {
-      gap: 1rem;
+    input {
+      width: 100%;
+      height: 44px;
+      box-sizing: border-box;
+      font-family: inherit;
+      font-size: 0.9rem;
+      padding: 0 2.6rem;
+      border: 1px solid s.$gray-400;
+      border-radius: 999px;
+      background: #fff;
+      &:focus {
+        outline: none;
+        border-color: s.$primary;
+      }
     }
-    @media screen and (max-width: 725px) {
+    &__clear {
+      position: absolute;
+      right: 0.7rem;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      border: none;
+      border-radius: 50%;
+      background: s.$gray-200;
+      color: s.$secondary-text;
+      cursor: pointer;
+      &:hover {
+        background: s.$gray-300;
+      }
+    }
+  }
+  // Custom sort control (mirrors the Recipes page) instead of a react-select box.
+  .saved-sort {
+    position: relative;
+    flex-shrink: 0;
+
+    &__trigger {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      box-sizing: border-box;
+      min-height: 44px;
+      padding: 0 1rem;
+      font-family: inherit;
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: s.$primary-text;
+      background: #fff;
+      border: 1px solid s.$gray-400;
+      border-radius: 999px;
+      cursor: pointer;
+      white-space: nowrap;
+      .chev {
+        font-size: 1rem;
+        transition: transform 0.14s ease;
+      }
+      &:hover {
+        border-color: s.$tertiary-text;
+      }
+      &.is-open .chev {
+        transform: rotate(180deg);
+      }
+    }
+    &__menu {
+      position: absolute;
+      top: calc(100% + 0.5rem);
+      right: 0;
+      z-index: 20;
+      min-width: 180px;
+      list-style: none;
+      margin: 0;
+      background: #fff;
+      border: 1px solid s.$gray-300;
+      border-radius: 12px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.14);
+      padding: 0.4rem;
+      button {
+        display: block;
+        width: 100%;
+        text-align: left;
+        border: none;
+        background: none;
+        font-family: inherit;
+        font-size: 0.88rem;
+        font-weight: 600;
+        color: s.$primary-text;
+        padding: 0.45rem 0.6rem;
+        border-radius: 8px;
+        cursor: pointer;
+        &:hover {
+          background: s.$gray-200;
+        }
+        &.is-active {
+          color: s.$primary;
+          background: rgba(255, 87, 34, 0.08);
+        }
+      }
+    }
+  }
+
+  // ── Active-collection subhead (current view + rename / delete) ──
+  .saved-subhead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: 1.5rem;
+
+    h2 {
+      margin: 0;
+      font-size: 1.25rem;
+    }
+  }
+  .saved-collection-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+  .btn-small {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
+    font-family: inherit;
+    font-size: 0.82rem;
+    padding: 0.35rem 0.6rem;
+    border-radius: 8px;
+    border: 1px solid s.$gray-400;
+    background: #fff;
+    color: s.$secondary-text;
+    cursor: pointer;
+    &.ghost {
+      border-color: transparent;
+      &:hover {
+        background: s.$gray-50;
+      }
+    }
+    &.danger:hover {
+      color: #c0392b;
+    }
+  }
+  .saved-rename {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    input {
+      font-family: inherit;
+      font-size: 1rem;
+      padding: 0.4rem 0.6rem;
+      border: 1px solid s.$gray-400;
+      border-radius: 8px;
+      &:focus {
+        outline: none;
+        border-color: s.$primary;
+      }
+    }
+  }
+
+  // ── Saved recipe grid ──
+  // Fluid auto-fill grid (mirrors the /recipes browse grid) so cards flow to
+  // fill the account-body track instead of overflowing a fixed 4-up layout.
+  .saved-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1.5rem;
+    margin: 1.5rem 0;
+
+    @media screen and (max-width: 420px) {
       grid-template-columns: 1fr;
     }
   }

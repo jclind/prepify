@@ -1,11 +1,16 @@
 @use '../../../helpers.scss' as s;
 
 .user-ratings {
-  padding-top: 1rem;
   font-size: 1.125rem;
   font-weight: 600;
   max-width: 550px;
   margin: 0 auto;
+
+  // Top spacing lives on the populated content (the sort control) rather than
+  // the wrapper, so the empty state sits at the same offset as the other tabs.
+  .saved-filters {
+    margin-top: 1rem;
+  }
 
   .thumbnails-container {
     display: flex;

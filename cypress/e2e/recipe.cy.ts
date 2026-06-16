@@ -27,10 +27,13 @@ describe('Single Recipe', () => {
 
   it('save/unsave button toggles correctly when logged in', () => {
     cy.intercept('GET', `${api()}/api/getTrendingRecipes*`, { fixture: 'trending-recipes.json' })
-    // getSavedRecipe returns the matched savedRecipes entry {recipeId, dateSaved}
-    // or null. Stub null here so the recipe starts in the "not saved" state.
+    // The unified SaveControl resolves "is this saved" from getSavedRecipeIds;
+    // the `getSavedRecipe*` glob covers both that and the popover's per-recipe
+    // getSavedRecipe lookup. Stub empty so the recipe starts "not saved".
     cy.intercept('GET', `${api()}/api/getSavedRecipe*`, { body: null }).as('getSavedRecipe')
     cy.intercept('GET', `${api()}/api/getUsername*`, { body: 'testinguser' })
+    // Opening the collections popover loads the user's folders.
+    cy.intercept('GET', `${api()}/api/collections*`, { body: [] }).as('getCollections')
 
     // Load the app first (required for __cy_signIn__ to be on window), then sign in.
     // Firebase stores auth in IndexedDB which persists across same-origin cy.visit() calls,
@@ -42,17 +45,21 @@ describe('Single Recipe', () => {
     cy.visit(`/recipes/${recipeId}`)
     cy.wait('@getRecipe')
     cy.wait('@getSavedRecipe')
-    cy.get('button.save-recipe-btn', { timeout: 5000 }).should('be.visible').and('not.have.class', 'saved')
+    cy.get('button.save-recipe-btn', { timeout: 5000 }).should('be.visible').and('not.have.class', 'is-saved')
 
     cy.intercept('POST', `${api()}/api/recipes/*/save`, { fixture: 'save-recipe.json' }).as('saveRecipe')
     cy.intercept('DELETE', `${api()}/api/recipes/*/save`, { body: {} }).as('unsaveRecipe')
 
+    // One tap saves to the master list (Spotify-style).
     cy.get('button.save-recipe-btn').click()
     cy.wait('@saveRecipe')
-    cy.get('button.save-recipe-btn').should('be.visible').and('have.class', 'saved')
+    cy.get('button.save-recipe-btn').should('be.visible').and('have.class', 'is-saved')
 
+    // Tapping an already-saved recipe opens the collections popover; unchecking
+    // the "All saved" master row there unsaves it.
     cy.get('button.save-recipe-btn').click()
+    cy.contains('.collection-option.master', 'All saved').should('be.visible').click()
     cy.wait('@unsaveRecipe')
-    cy.get('button.save-recipe-btn').should('be.visible').and('not.have.class', 'saved')
+    cy.get('button.save-recipe-btn').should('be.visible').and('not.have.class', 'is-saved')
   })
 })

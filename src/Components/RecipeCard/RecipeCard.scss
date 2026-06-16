@@ -56,12 +56,14 @@
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
   }
 
-  // Bookmark — sibling of the link (valid markup), floated over the image.
-  &__save {
+  // Unified save control — floated over the image (sibling of the link).
+  &__save-wrap {
     position: absolute;
     top: 0.6rem;
     right: 0.6rem;
     z-index: 2;
+  }
+  &__save {
     display: inline-grid;
     place-items: center;
     width: 2rem;

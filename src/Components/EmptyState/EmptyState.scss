@@ -1,0 +1,68 @@
+@use '../../helpers.scss' as s;
+
+.empty-state {
+  // Top-anchored with a fixed offset so the icon/title land at the exact same
+  // height on every page that uses it — regardless of how many lines the copy
+  // wraps to (the description/CTA just flow downward). The account sub-page
+  // wrappers all contribute 0 top padding, so this margin is the sole offset.
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: center;
+  max-width: 26rem;
+  min-height: 300px;
+  margin: 3rem auto 2rem;
+  padding: 0 1.25rem;
+
+  &__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 72px;
+    height: 72px;
+    margin-bottom: 1.25rem;
+    border-radius: 50%;
+    background: rgba(255, 87, 34, 0.09);
+    color: s.$primary;
+    font-size: 1.85rem;
+  }
+
+  &__title {
+    margin: 0 0 0.5rem;
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: s.$primary-text;
+  }
+
+  &__text {
+    margin: 0;
+    font-size: 0.95rem;
+    line-height: 1.55;
+    color: s.$secondary-text;
+  }
+
+  &__cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: 1.5rem;
+    padding: 0.7rem 1.5rem;
+    border: none;
+    border-radius: 999px;
+    background: s.$primary;
+    color: #fff;
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    transition: filter 0.12s ease, transform 0.12s ease;
+
+    &:hover {
+      filter: brightness(1.05);
+      transform: translateY(-1px);
+    }
+  }
+}

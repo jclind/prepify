@@ -44,23 +44,4 @@
     display: block;
     margin: 0 auto;
   }
-
-  .no-data-saved {
-    text-align: center;
-    padding: 3rem 1rem;
-
-    h2 {
-      margin-bottom: 0.5rem;
-    }
-
-    p {
-      color: s.$secondary-text;
-      margin-bottom: 1.5rem;
-    }
-
-    .add-recipe-btn {
-      display: inline-block;
-      text-decoration: none;
-    }
-  }
 }
