@@ -8,10 +8,12 @@ const { recordAudit } = require('../util/auditLog')
 const { deleteRecipeImage, deleteProfilePhoto } = require('../util/firebaseStorage')
 const { recomputeRecipeRating } = require('../util/recipeRating')
 const { moderateText } = require('../util/textModeration')
+const { moderateImage } = require('../util/imageModeration')
 const { respondBlocked } = require('../util/automod')
 
 const USERNAME_MIN_LENGTH = 3
 const USERNAME_MAX_LENGTH = 30
+const DISPLAY_NAME_MAX_LENGTH = 50
 
 const BIO_MAX_LENGTH = 300
 const LOCATION_MAX_LENGTH = 80
@@ -229,6 +231,66 @@ router.post('/updateProfile', verifyToken, requireActive, asyncHandler(async (re
     { upsert: true }
   )
   res.json({ success: true })
+}))
+
+// POST /updatePhoto
+// Sets (or clears) the authenticated user's Firebase Auth photoURL, AFTER
+// screening the image. Profile photos are uploaded client-side straight to
+// Storage and the photoURL is otherwise written client-side directly to Firebase
+// Auth — there is no server upload path to intercept — so this server-owned
+// endpoint is the moderation hook: the client uploads the file, then POSTs the
+// resulting download URL here and the SERVER applies it only if it passes.
+//
+// Like a review/bio (and unlike a recipe), a photo has no owner-only "pending"
+// state to fall back to, so BOTH high and medium confidence block (422); the
+// image fails CLOSED, so a scan outage also rejects rather than applying an
+// unscanned photo. Clearing the photo (empty URL) needs no scan.
+router.post('/updatePhoto', verifyToken, requireActive, asyncHandler(async (req, res) => {
+  const { photoURL } = req.body || {}
+  if (photoURL != null && typeof photoURL !== 'string') {
+    return res.status(400).json({ error: 'photoURL must be a string' })
+  }
+  const url = typeof photoURL === 'string' ? photoURL.trim() : ''
+
+  if (url) {
+    const verdict = await moderateImage(url, 'profile.photo')
+    if (!verdict.allowed) {
+      return respondBlocked(res)
+    }
+  }
+
+  // Admin SDK clears the avatar with null (an empty string is rejected).
+  await admin.auth().updateUser(req.uid, { photoURL: url || null })
+  res.json({ success: true, photoURL: url })
+}))
+
+// POST /updateDisplayName
+// Sets the authenticated user's Firebase Auth displayName, AFTER moderation.
+// A displayName is otherwise written client-side straight to Firebase Auth
+// (updateProfile in AuthContext) — there's no server path to intercept — so,
+// exactly like updatePhoto for photoURL, this server-owned endpoint is the
+// moderation hook: the client POSTs the desired name and the SERVER applies it
+// only if it passes. Like a username (and unlike a recipe) a name has no
+// owner-only "pending" state, so BOTH high and medium confidence block (422).
+// The 'displayName' context also applies the identity-only spam rules (no
+// URLs/domains in a name).
+router.post('/updateDisplayName', verifyToken, requireActive, asyncHandler(async (req, res) => {
+  const { displayName } = req.body || {}
+  if (typeof displayName !== 'string' || !displayName.trim()) {
+    return res.status(400).json({ error: 'displayName is required' })
+  }
+  const name = displayName.trim()
+  if (name.length > DISPLAY_NAME_MAX_LENGTH) {
+    return res.status(400).json({ error: `Display name must be at most ${DISPLAY_NAME_MAX_LENGTH} characters` })
+  }
+
+  const verdict = await moderateText(name, 'displayName')
+  if (!verdict.allowed) {
+    return respondBlocked(res)
+  }
+
+  await admin.auth().updateUser(req.uid, { displayName: name })
+  res.json({ success: true, displayName: name })
 }))
 
 // POST /updatePrivacy

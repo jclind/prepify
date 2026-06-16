@@ -1,9 +1,9 @@
 import React, { FC, useEffect, useState } from 'react'
-import axios from 'axios'
 import toast from 'react-hot-toast'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from 'src/context/AuthContext'
 import AuthAPI from 'src/api/auth'
+import { getApiErrorMessage } from 'src/util/getApiErrorMessage'
 import { AvatarField, TextField, TextArea, SaveBar } from '../components/controls'
 import { useSettingsDirty } from '../SettingsDirtyContext'
 import './sections.scss'
@@ -220,11 +220,7 @@ const ProfileSection: FC = () => {
         } else {
           // Prefer the server's reason (e.g. a 422 moderation block on the
           // username, bio, or location) over axios's generic "Request failed…".
-          const message =
-            (axios.isAxiosError(err) && err.response?.data?.error) ||
-            err.message ||
-            'Something went wrong.'
-          toast.error(message)
+          toast.error(getApiErrorMessage(err, 'Something went wrong.'))
         }
       })
   }

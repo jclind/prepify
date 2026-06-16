@@ -75,6 +75,12 @@ Traced from the current codebase on 2026-06-14.
    - Route uploads through the Express server (larger refactor + bandwidth cost). Only do this
      if a Cloud Function proves impractical.
 
+   > **What P2 actually shipped (2026-06-15):** neither of the above. The server never sees the
+   > *bytes*, but it *does* receive the resulting **URL** at recipe-create/edit time, so recipe
+   > images are scanned server-side from that URL (no Functions, no upload re-routing). Profile
+   > photos — the only path that didn't touch the server at all — were moved server-side via a
+   > new `POST /updatePhoto` endpoint. See P2 for the full rationale.
+
 2. **Reviews have no stable id.** They live inside the `ratings` collection keyed by
    `(username, recipeId)`, with text in `reviewText`. Any auto-flag for a review must key off
    `(username, recipeId)`, exactly like the existing report/moderation paths do.
@@ -118,7 +124,7 @@ tiers, Text engine, Username timing, and Verification rows).
 | **Synthetic actor** | Auto-actions credited to a reserved `system` / `automod` actor in `auditLog` | Distinguishes machine from human actions; keeps audit honest |
 | **Text engine** | **OpenAI Moderation API** (free) + blocklist. Claude Haiku relevance/spam pass **deferred** (not in scope until off-topic spam is actually observed). | Purpose-built free safety classifier; one dep, server-side only |
 | **Text strategy** | **Block-on-write** (synchronous, inline 4xx error) for high-confidence | Fast, cheap, best UX; nothing illegal ever goes live |
-| **Image strategy** | **Async scan → auto-hide → queue** (can't block a Storage trigger) | Matches the upload architecture |
+| **Image strategy** | **Server-side synchronous URL scan at write-time**, reusing the P1 pipeline (recipe images via `worstVerdict`+`holdRecipeForReview`; profile photos via a new `POST /updatePhoto`). *(Revised 2026-06-15 from the original Storage-trigger plan — see P2 for the rationale: no Functions infra, filename-keyed paths, the server already has the URL.)* | Avoids the Blaze plan + a new deploy surface; the recipe doc already exists server-side so no mapping/timing problem |
 | **Confidence tiers** | High-confidence → **block** (text) / **auto-hide** (image). Medium-confidence → **hold for review**: see "Medium-confidence hold" below. | Limits false positives nuking legit recipes while never publishing unreviewed risky content |
 | **Medium-confidence hold** | **Recipes:** set a new `status: 'pending_review'` — visible **only to the owner + moderators** — and silently auto-file a `report`; goes public when an admin clears it. **Reviews / bio / username:** no meaningful owner-only state, so medium-confidence is treated as **block-on-write** (they're short; ask the user to rephrase). | Owner-only pending is clean for recipes; pointless for a review or bio only the author can see |
 | **Username timing** | Moderate at **signup AND every rename** | A slur can never land via a later rename; pairs with the reserved-words blocklist |
@@ -188,29 +194,91 @@ tiers, Text engine, Username timing, and Verification rows).
 > endpoint or a Firebase **blocking function** (`beforeUserCreated`/`beforeUserSignedIn`). Tracked
 > here; out of scope for this slice. Username + bio/location (which DO hit the server) are covered.
 
-### P2 — Image moderation (3–4 days)
-- [ ] Firebase Storage `onFinalize` Cloud Function (or the Cloud Vision extension).
-- [ ] SafeSearch scan on `recipeImages/` + `profilePhotos/` uploads.
-- [ ] On hit: set the existing `status`/`moderationHidden` flag on the owning doc +
-      auto-file a `report` + `auditLog` entry + owner email (reuse `notifyRecipeHidden` etc.).
-- [ ] Quarantine-until-scanned default so unscanned images aren't publicly served.
-- [ ] (Optional) Claude Haiku relevance/spam pass on recipe text.
+### P2 — Image moderation — ✅ shipped 2026-06-15 (server-side, not a Cloud Function)
+
+> **Architecture decided 2026-06-15 (with the user):** *not* a Storage trigger. The
+> original `onFinalize` Cloud Function plan was dropped in favour of a **server-side
+> URL scan** that reuses the P1 pipeline, because (a) no Firebase Functions infra
+> exists yet (`firebase.json` is `{}`) and a trigger forces the paid Blaze plan + a new
+> deploy/ops surface, (b) `recipeImages/{filename}` isn't keyed by recipe id and the
+> upload fires *before* the recipe doc exists, so a trigger has nothing to map back to,
+> and (c) the server already receives the image URL at recipe-create/edit time. The one
+> surface that genuinely bypassed the server — profile photos (written straight to
+> Firebase Auth) — was brought server-side via a new endpoint. Scanner: **Cloud Vision
+> SafeSearch** over REST (no SDK dep, mirrors the OpenAI choice). Tradeoff accepted:
+> orphan uploads (images never attached to a doc) aren't scanned; CSAM is P3 regardless.
+
+- [x] `server/util/imageModeration.js` — env-gated `moderateImage(url, context)`, Cloud
+      Vision SafeSearch via native `fetch`, graded high/medium/clean from adult/violence/racy
+      likelihoods (env-tunable; `racy` only ever contributes medium). No-ops to clean when
+      `GOOGLE_VISION_API_KEY` is unset. **Fails CLOSED** (scan error ⇒ medium/`unscanned`).
+- [x] **Recipe images** scanned at create/edit, collapsed with the text verdict via
+      `worstVerdict` (recipe is only as clean as its worst axis). high → `422`; medium /
+      fail-closed → `holdRecipeForReview` (`pending_review` + automod report + audit, reusing
+      the entire P1 pipeline incl. `notifyRecipeHidden`). Edit re-scans only when the URL changed.
+- [x] **Profile photos** — new `POST /updatePhoto` (auth.js): the client uploads to Storage
+      then POSTs the URL; the SERVER scans it and only then sets `photoURL` via Admin
+      `updateUser`. high|medium|fail-closed → `422` (no owner-only state, like a bio).
+      Client refactor: `AuthContext` routes the `photoURL` write through this endpoint +
+      `user.reload()`; `displayName` still goes direct (the known follow-up).
+- [x] Quarantine-until-scanned satisfied by the synchronous design: a recipe image is graded
+      before the write returns (fail-closed holds an unscanned image); a photo is applied only
+      after a clean scan.
+- [x] Tests: `imageModeration.test.js` (grading/gating/fail-closed, 14 cases) + route cases in
+      `moderation-routes.test.js` (image high/medium/fail-closed hold, worst-of, edit re-scan
+      gating, `/updatePhoto` clean/blocked/clear) + FE `AuthContext.test.tsx` photo-flow update.
+      `GOOGLE_VISION_API_KEY` (+ image thresholds) added to `server/.env.example`.
+- [ ] (Optional) Claude Haiku relevance/spam pass on recipe text. *(Still deferred, as in P1.)*
+- [ ] (Deferred) Orphan uploads — images uploaded to Storage but never attached to a doc go
+      unscanned under the server-side model; revisit with a periodic sweep or a narrow Storage
+      trigger if it proves a real vector.
 
 ### P3 — CSAM + hardening (2–3 days) — *gates public launch*
-- [ ] Integrate Cloudflare CSAM Scanning Tool (or PhotoDNA/Thorn) on the image path.
-- [ ] Mandatory-reporting runbook (NCMEC) documented for when a match occurs.
+
+> **DECISION 2026-06-16 — CSAM scanning DEFERRED (not declined), trigger-gated.**
+> At current scale (≈0 users, no upload inflow) the realistic CSAM exposure is negligible, while the
+> free hash-matchers (PhotoDNA / Google Content Safety) require a multi-week application + vetting and
+> an ongoing NCMEC reporting pipeline — i.e. compliance overhead for traffic that doesn't exist yet.
+> The Vision SafeSearch adult/racy gate (P2, fail-closed) is the proportionate first line for now.
+> The owner is willing to take on the reporting duty; the point of deferral is to *sequence* it to
+> when it can actually do good, not to avoid it. **This is reversible** — it's a server-side hook at
+> upload, identical in shape to `imageModeration.js`, so adding it later is contained, not a rewrite.
+>
+> **Chosen approach when triggered:** **PhotoDNA Cloud Service** (free, Microsoft) as a server-side
+> hash-match hook at upload — fits the existing Firebase-Storage + server-scan path with no Cloudflare
+> dependency (Cloudflare's edge tool would require routing image delivery through Cloudflare, which we
+> don't today). Add **Google Content Safety API** later if novel-content (non-hash) detection is wanted.
+> **Thorn Safer** is capable but commercial/overkill at this scale. Full rationale: see the
+> "CSAM provider" discussion in Progress / chat history.
+>
+> **Pull the trigger when ANY of these hits:**
+> 1. Image uploads open to the general public at real volume (~low hundreds of active users, or
+>    unverified/anonymous accounts can upload).
+> 2. The **adult-hit canary fires** — `imageModeration.js` logs `[moderation][adult-canary]` whenever
+>    Vision reports `adult >= LIKELY`, AND fires a throttled best-effort alert email (via `email.js`,
+>    to `MODERATION_ALERT_EMAIL`/admin, ≤1 per 30 min) so it isn't buried in logs. Recurring hits = bad
+>    actors found the site.
+> 3. A new feature invites image uploads beyond recipe photos/avatars (DMs, galleries, image comments).
+
+- [ ] *(deferred, trigger-gated — see decision above)* Integrate PhotoDNA Cloud Service on the image path.
+- [ ] *(deferred)* Mandatory-reporting runbook (NCMEC CyberTipline, preserve-don't-delete) documented for when a match occurs.
 - [ ] Rate-limit content creation endpoints if not already covered by the security-audit limits.
 - [ ] Admin queue: visually distinguish `system`-flagged items + show classifier reason/score.
 - [ ] Metrics: counts of auto-hidden / auto-flagged / false-positive-restored.
+- [x] **Adult-hit canary** — `imageModeration.js` warns on `adult >= LIKELY` (early-warning for trigger #2) AND sends a throttled best-effort alert email via `email.js` (`MODERATION_ALERT_EMAIL`, ≤1 per `MODERATION_ALERT_THROTTLE_MS`/30 min) (2026-06-16).
 
 ---
 
 ## Environment variables (to add to `server/.env.example`)
 
 ```
-OPENAI_API_KEY=            # server-side OpenAI Moderation (free endpoint)
-MODERATION_ENABLED=        # master toggle; off ⇒ moderateText no-ops
-GOOGLE_VISION_CREDENTIALS= # or GCP application-default creds for SafeSearch
+OPENAI_API_KEY=            # server-side OpenAI Moderation (free endpoint) — text
+MODERATION_ENABLED=        # master toggle for ALL classifiers; off ⇒ they no-op
+GOOGLE_VISION_API_KEY=     # server-side Cloud Vision SafeSearch (REST) — images
+MODERATION_IMAGE_HIGH=     # optional likelihood threshold (default VERY_LIKELY)
+MODERATION_IMAGE_MEDIUM=   # optional likelihood threshold (default LIKELY)
+MODERATION_ALERT_EMAIL=    # optional — where adult-canary alert emails go (default: ADMIN_NOTIFY_EMAIL)
+MODERATION_ALERT_THROTTLE_MS=  # optional — min ms between canary emails (default 1800000 = 30 min; 0 disables)
 # CSAM tool credentials TBD by chosen provider (Cloudflare / PhotoDNA / Thorn)
 ```
 
@@ -328,7 +396,123 @@ follow-up; the central-middleware refactor is deferred (see below).
 Known follow-ups: server-side `displayName` moderation (needs a Firebase blocking function — see the
 P1 note above); **#10 (full) — a central moderation choke point / middleware so a new write route
 can't silently ship unmoderated** (deferred to its own focused PR — retrofitting across the 6 write
-routes is too broad to fold into this slice); P2 image moderation; P3 CSAM. None block the text slice.
+routes is too broad to fold into this slice); P3 CSAM. None block the text slice.
 
-_Next: P1 is fully signed off (incl. the code-review pass). Proceed to the `displayName` follow-up
-(Firebase blocking function) and/or P2 (images) when ready._
+**P1 was MERGED to development via PR #138 (squash-merged 2026-06-15; remote branch auto-deleted).**
+
+---
+
+**2026-06-15 — P2 (image moderation) built — server-side, NOT a Cloud Function.** Scoped with the
+user first; the original Storage `onFinalize` plan was dropped in favour of a server-side URL scan
+that reuses the entire P1 pipeline (see the P2 section + design-table rationale: no Firebase Functions
+infra exists, the Blaze plan + a new deploy surface were unwarranted, `recipeImages/{filename}` isn't
+keyed by recipe id and the trigger would fire before the recipe doc exists, and the server already
+receives the image URL). Scanner: **Cloud Vision SafeSearch** over REST (native `fetch`, no SDK).
+
+Shipped:
+- **`server/util/imageModeration.js`** — env-gated `moderateImage(url, context)` mirroring
+  `textModeration`; grades adult/violence/racy SafeSearch likelihoods → high/medium/clean (env-tunable;
+  `racy` caps at medium). No-ops to clean when `GOOGLE_VISION_API_KEY` is unset. **Fails CLOSED**
+  (scan error ⇒ medium `unscanned`), the deliberate inverse of text's fail-open.
+- **Recipe images** scanned at create/edit, merged with the text verdict via the new
+  `automod.worstVerdict` (recipe = its worst axis). high → block; medium / fail-closed →
+  `holdRecipeForReview` (`pending_review` + automod report + audit + owner email). Edit re-scans only
+  when the URL changed (no re-hold / cost on a plain text edit).
+- **Profile photos** — new `POST /updatePhoto` (auth.js): client uploads to Storage, server scans the
+  URL and only then sets `photoURL` via Admin `updateUser`. high|medium|fail-closed → `422` (no
+  owner-only state, like a bio). `AuthContext` + `AuthAPI` refactored to route the photoURL write
+  through it (+`user.reload()`); `displayName` still direct.
+- **Tests/env:** `imageModeration.test.js` (14) + image route cases in `moderation-routes.test.js`
+  (`firebase-admin` mock gained `updateUser`) + FE `AuthContext.test.tsx` photo-flow update. Env added
+  to `server/.env.example`. **server Jest 468, FE Vitest 362, tsc clean.**
+
+**2026-06-15 — P2 authed live smoke PASSED ✅** against a real `GOOGLE_VISION_API_KEY` (Cloud Vision API
+enabled + billing on `prepify-9b974`), driving the worktree server's real routes with a throwaway
+Firebase account (no browser). Benign images only — the block/hold tiers were proven by lowering the
+likelihood threshold so a clean image's real verdict crosses it, never by sourcing explicit content:
+- **Real classifier fires:** a real Firebase Storage recipe-image URL is fetched and graded by Vision
+  (`source: vision`, all `VERY_UNLIKELY` → clean). Confirmed Vision *can* fetch `firebasestorage.googleapis.com`
+  URLs via `imageUri` (a 3rd-party HTTPS URL, gstatic, was refused — irrelevant to our surfaces, and it
+  **fail-closed** correctly: `severity: medium, source: error`).
+- **Clean tier (3/3):** clean image → `addRecipe` 201 not-pending (published); `updatePhoto` 200; clear 200.
+- **High tier (3/3, threshold forced to VERY_UNLIKELY):** real verdict graded high → `addRecipe` 422,
+  `updatePhoto` 422; cleanup confirmed the blocked recipe wrote **zero rows**.
+- **Medium tier (4/4, threshold forced):** real verdict graded medium → recipe `201 pending_review`,
+  **owner read 200 / anonymous read 404** (the held-recipe visibility split), automod `report` + audit
+  filed (reports=1, audit=1), `updatePhoto` medium → 422 (photos block, no owner-only state).
+
+All test data torn down; prod verified residue-free (0 leftover recipes / 0 recent automod reports).
+Server restored to normal thresholds afterwards.
+
+⚠️ **PROD ENV STEP** to add to Railway when shipping: `GOOGLE_VISION_API_KEY` (absent ⇒ image layer
+no-ops; text moderation unaffected). Optional `MODERATION_IMAGE_HIGH` / `MODERATION_IMAGE_MEDIUM`.
+
+**2026-06-15 — P2 code-review pass (high effort), 2 fixes applied.** A focused review of the P2 diff
+found the build sound (correct fail-closed routing, SSRF-safe via Vision `imageUri`, no DB leakage of raw
+scores). Two findings were fixed (own follow-up commit):
+- **M1 (perf):** `moderateText` + `moderateImage` ran serially on `addRecipe`/`editRecipe`; now run via
+  `Promise.all`. Both resolve internally (text fails open, image fails closed) so `Promise.all` can't
+  short-circuit on an outage — cuts the added latency from `OpenAI + Vision` to `max(OpenAI, Vision)`.
+- **M2 (fail-closed gap):** `callVision` graded a 200 with no `error` *and* no `safeSearchAnnotation` as
+  clean — a narrow fail-*open* hole in a fail-closed design. It now throws on a missing annotation so the
+  image is held, never published unscanned. Added a unit test for that case (server Jest 468 → 469).
+
+  Low/nit findings (L1 photo now commits before later profile steps — intentional reject-early ordering;
+  L2 `updatePhoto` accepts an arbitrary URL — not a regression, non-Storage URLs fail-closed anyway;
+  L3 no per-image dedupe on create; doc-drift nits) were reviewed and deferred as non-blocking.
+
+**2026-06-15 — follow-ups found during the user's own prod smoke (logged, not yet fixed):**
+- **FE error surfacing (P1 UX bug) — ✅ FIXED 2026-06-15.** The server's 422 block response carries a
+  friendly body (`{ error: BLOCKED_MESSAGE, code: 'CONTENT_BLOCKED' }`), but `CreateUsername` showed
+  axios's generic "Request failed with status code 422" (it surfaced `err.message`). Added a shared
+  `src/util/getApiErrorMessage(error, fallback)` helper (prefers `response.data.error`) and used it in
+  CreateUsername; folded the existing inline duplicates in `AddReview` and Settings `ProfileSection` onto
+  it. The recipe paths (`api/recipes.ts` add/edit → `result.message`) already read `response.data.error`.
+  Net: every moderated surface — onboarding username, settings username/bio/photo, reviews, recipe
+  create/edit — now shows the friendly moderation message. The 422 status itself was always correct.
+- **Blocklist evasion gaps (P1 hardening).** ✅ **DONE 2026-06-16** (`moderationBlocklist.js`). Was:
+  token-boundary matching let a concatenated slur with no separator (`shitfuck`) and letter-spacing
+  (`s h i t`) pass; `shit_fuck` / `shit` / `fuck` were already caught. Fix adds two passes around the
+  existing exact-token match, designed around the Scunthorpe problem on a *recipe* site:
+  - **Letter-spacing pass** — maximal runs of single-character tokens (`s h i t`, `n.i.g.g.e.r`,
+    `f*u*c*k`) are rejoined and re-scanned with the wide pass. Adversarial signal ⇒ strict.
+  - **Substring pass, tiered** — `SUBSTRING_SLURS` (`nigger`/`cunt`/`asshole`, unambiguous) match as a
+    substring on **every** surface; the substring-prone rest (`shit`/`fuck`/`faggot`/`retard`/…) match
+    as substrings **only on identity fields** (username/displayName), and still as exact tokens
+    everywhere. Long-form prose leans on the OpenAI layer for obfuscated profanity to avoid
+    false-positives.
+  - **`BENIGN_ALLOWLIST`** guards the substring pass: `scunthorpe`, `shitake`/`shiitake`, `shitzu`,
+    `retardant`, `niggardly` — a token equal to one of these is exempt from substring scanning.
+  - Result: `shitfuck`/`shitlord` (identity), `niggerlover`/`megaasshole`/`xXcuntXx` (anywhere), and
+    `s h i t`/`n i g g e r`/`f.u.c.k` all now blocked; `shiitake`/`shitake`/`Scunthorpe`/`fire retardant`/
+    `classic`/`push it`/`viscount`/`glasshouse` all stay clean. Tests: +4 cases in `textModeration.test.js`
+    (catches + FP guards). server 476 green.
+- **Reminder:** moderation only runs where the code is deployed AND the keys are present. Prod hadn't
+  shipped moderation yet at the time of this smoke (a slur username + review went through on the live
+  site — cleaned up via account delete). The `OPENAI_API_KEY` + redeploy is the pending Railway step.
+
+**2026-06-15 — comprehensive authed live smoke across EVERY write surface (worktree server :4005, real
+blocklist + OpenAI, throwaway accounts, prod DB swept after). 14/14 effective.** Every server-side surface
+moderates correctly:
+- ✅ **username** (setUsername) — slur→422, clean→200
+- ✅ **bio** + **location** (updateProfile, joined `profileText`) — slur/spam→422, clean→200 (location
+  re-confirmed with a bounded trigger: `shit head`→422, `buy now plaza`→422, `Denver`→200)
+- ✅ **recipe** create — slur in TITLE / INGREDIENT / INSTRUCTION each→422 (confirms `gatherRecipeText`
+  field coverage), clean→201 published
+- ✅ **recipe** edit (editRecipe) — slur→422
+- ✅ **review** create + edit (newReview/editReview) — slur/spam→422, clean→200
+- ✅ **OpenAI layer live** — a violent threat with NO blocklist token still→422 (proves the AI grade, not
+  just the blocklist)
+- ✅ **displayName — FIXED 2026-06-16 (was THE GAP the user hit).** New server `POST /updateDisplayName`
+  (auth.js) mirrors `updatePhoto`: validates (required, ≤50 chars) → `moderateText(name, 'displayName')`
+  (both high+medium block, identity spam rules apply) → `admin.auth().updateUser`. `AuthContext` and
+  `CreateUsername` now route displayName through `AuthAPI.updateDisplayName` + `user.reload()` instead of
+  the client Firebase `updateProfile` (import dropped from both). Tests: 3 route cases + updated FE
+  AuthContext/CreateUsername suites (server 472 / FE 366 / tsc). **Live smoke 6/6** (real classifier +
+  Firebase): slur/spam→422, clean applied (trimmed) and confirmed on the real account, >50/empty→400.
+- ⚠️ Re-confirmed the evasion gaps applied to ALL these text surfaces (concatenated `shittown`/`shitfuck`,
+  spaced `s h i t`) — **now hardened 2026-06-16, see above.**
+
+_Next: P2 + the displayName/UX fixes + blocklist hardening are on PR #139 (into development). P3 CSAM
+still needs a provider decision (Cloudflare / PhotoDNA / Thorn) — ask the user before integrating. No
+P1 follow-ups remain._

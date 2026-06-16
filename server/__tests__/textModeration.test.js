@@ -55,6 +55,37 @@ describe('moderationBlocklist.checkBlocklist', () => {
     expect(checkBlocklist('A delicious shiitake mushroom risotto', 'recipe.title')).toBeNull()
   })
 
+  it('catches concatenated/embedded slurs everywhere via the hard-slur substring pass', () => {
+    // Hard, unambiguous stems are substring-matched on any surface.
+    expect(checkBlocklist('what a niggerlover', 'review')).toMatchObject({ kind: 'slur' })
+    expect(checkBlocklist('megaasshole energy', 'recipe.description')).toMatchObject({ kind: 'slur' })
+    expect(checkBlocklist('xXcuntXx', 'recipe.title')).toMatchObject({ kind: 'slur' })
+  })
+
+  it('catches soft concatenated slurs on identity fields but leaves prose to the API', () => {
+    // "shitfuck" is substring-matched on short identity fields…
+    expect(checkBlocklist('shitfuck', 'username')).toMatchObject({ kind: 'slur' })
+    expect(checkBlocklist('shitlord', 'displayName')).toMatchObject({ kind: 'slur' })
+    // …but NOT substring-scanned in long-form prose (the OpenAI layer backstops it).
+    expect(checkBlocklist('this shitfuck of a day', 'review')).toBeNull()
+  })
+
+  it('defeats letter-spacing evasion', () => {
+    expect(checkBlocklist('s h i t', 'username')).toMatchObject({ kind: 'slur' })
+    expect(checkBlocklist('n i g g e r', 'review')).toMatchObject({ kind: 'slur' })
+    expect(checkBlocklist('you f.u.c.k', 'review')).toMatchObject({ kind: 'slur' })
+  })
+
+  it('keeps the substring pass Scunthorpe-safe via the benign allowlist', () => {
+    // "Scunthorpe" (contains cunt) and the shitake/retardant family must pass even
+    // where the hard-slur substring pass would otherwise fire.
+    expect(checkBlocklist('greetings from Scunthorpe', 'review')).toBeNull()
+    expect(checkBlocklist('shitake mushroom stir fry', 'recipe.title')).toBeNull()
+    expect(checkBlocklist('coat the pan with fire retardant', 'recipe.description')).toBeNull()
+    // Even as an identity field (where soft substrings fire), allowlisted words pass.
+    expect(checkBlocklist('Scunthorpe', 'username')).toBeNull()
+  })
+
   it('applies URL/domain spam rules only to identity fields', () => {
     expect(checkBlocklist('visit www.spam.com', 'username')).toMatchObject({ kind: 'spam' })
     // A recipe body legitimately contains links — not flagged by the blocklist.

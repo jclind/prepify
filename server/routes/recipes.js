@@ -9,7 +9,8 @@ const { recordAudit } = require('../util/auditLog')
 const { notifyInBackground, notifyRecipeHidden } = require('../util/email')
 const { validateRequiredRecipeFields, validateRecipeBounds } = require('../util/recipeLimits')
 const { moderateText } = require('../util/textModeration')
-const { gatherRecipeText, holdRecipeForReview, respondBlocked } = require('../util/automod')
+const { moderateImage } = require('../util/imageModeration')
+const { gatherRecipeText, holdRecipeForReview, respondBlocked, worstVerdict } = require('../util/automod')
 const { EDITABLE_RECIPE_FIELDS, CREATABLE_RECIPE_FIELDS, pickFields } = require('../util/recipeFields')
 const { deleteRecipeImage } = require('../util/firebaseStorage')
 const { teardownRecipeDocs } = require('../util/teardownRecipe')
@@ -255,11 +256,20 @@ router.post('/addRecipe', verifyToken, requireActive, asyncHandler(async (req, r
     return res.status(400).json({ error: boundsError })
   }
 
-  // Automated text moderation. High-confidence → block the write (4xx). Medium →
+  // Automated moderation on BOTH axes — text and the recipe image — collapsed to
+  // the most severe verdict. High-confidence → block the write (4xx). Medium →
   // save but hold from public reads as 'pending_review' (owner still sees it) and
   // file a system report for an admin to clear. Clean / classifier-disabled → save
-  // normally. moderateText fails open, so a moderation outage won't block creation.
-  const verdict = await moderateText(gatherRecipeText(body), 'recipe')
+  // normally. Text fails OPEN (an outage can't block creation); image fails CLOSED
+  // (an unscanned image is held, never published) — see util/imageModeration.
+  // The two scans are independent network calls, so run them concurrently; both
+  // resolve internally (text fails open, image fails closed) and never reject, so
+  // Promise.all won't short-circuit on a moderation outage.
+  const [textVerdict, imageVerdict] = await Promise.all([
+    moderateText(gatherRecipeText(body), 'recipe'),
+    moderateImage(body.recipeImage, 'recipe.image'),
+  ])
+  const verdict = worstVerdict(textVerdict, imageVerdict)
   if (verdict.severity === 'high') {
     return respondBlocked(res)
   }
@@ -322,11 +332,20 @@ router.put('/editRecipe', verifyToken, requireActive, asyncHandler(async (req, r
     return res.status(400).json({ error: boundsError })
   }
 
-  // Re-moderate the edited text (same tiers as create). High → reject the edit;
-  // the previously-saved version stays as-is. Medium → re-hold as 'pending_review'.
-  // A clean edit deliberately does NOT clear an existing hold/takedown — only an
-  // admin clears those (the edit just stops adding new flags).
-  const verdict = await moderateText(gatherRecipeText(body), 'recipe')
+  // Re-moderate the edited text + (only if it changed) the new image — same tiers
+  // as create. High → reject the edit; the previously-saved version stays as-is.
+  // Medium → re-hold as 'pending_review'. A clean edit deliberately does NOT clear
+  // an existing hold/takedown — only an admin clears those (the edit just stops
+  // adding new flags). The image is re-scanned only when the URL actually changed,
+  // so a plain text edit doesn't pay for (or re-hold on) an already-cleared image.
+  const newImage = body.recipeImage && body.recipeImage !== recipe.recipeImage ? body.recipeImage : null
+  // Run the two scans concurrently (see addRecipe) — independent calls that both
+  // resolve internally, so Promise.all is safe.
+  const [textVerdict, imageVerdict] = await Promise.all([
+    moderateText(gatherRecipeText(body), 'recipe'),
+    moderateImage(newImage, 'recipe.image'),
+  ])
+  const verdict = worstVerdict(textVerdict, imageVerdict)
   if (verdict.severity === 'high') {
     return respondBlocked(res)
   }

@@ -3,13 +3,13 @@ import '../../Components/Form/FormStyles.scss'
 import './CreateUsername.scss'
 import { TailSpin } from 'react-loader-spinner'
 import { useNavigate } from 'react-router-dom'
-import { updateProfile } from 'firebase/auth'
 import toast from 'react-hot-toast'
 import { AiOutlineUser } from 'react-icons/ai'
 import { MdOutlineLocationOn } from 'react-icons/md'
 import UsernameInput from 'src/Components/Form/UsernameInput'
 import FormInput from 'src/Components/Form/FormInput'
 import AuthAPI from 'src/api/auth'
+import { getApiErrorMessage } from 'src/util/getApiErrorMessage'
 import { useAuth } from 'src/context/AuthContext'
 
 const BIO_MAX = 300
@@ -82,7 +82,10 @@ const CreateUsername: FC = () => {
       try {
         await AuthAPI.setUsername(currUsername)
         if (displayName.trim()) {
-          await updateProfile(user, { displayName: displayName.trim() })
+          // Moderated server-side before it's set on the Firebase Auth profile
+          // (a rejected name throws and surfaces below); reload to reflect it.
+          await AuthAPI.updateDisplayName(displayName.trim())
+          await user.reload()
         }
         if (bio.trim() || location.trim()) {
           await AuthAPI.updateProfile({
@@ -97,7 +100,9 @@ const CreateUsername: FC = () => {
         navigate('/')
       } catch (err: unknown) {
         setLoadingCreateUsername(false)
-        setError(err instanceof Error ? err.message : String(err))
+        // Prefer the server's reason (e.g. a 422 moderation block on the
+        // username) over axios's generic "Request failed with status code 422".
+        setError(getApiErrorMessage(err, 'Something went wrong. Please try again.'))
       }
     })()
   }

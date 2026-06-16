@@ -23,6 +23,20 @@ function respondBlocked(res) {
   return res.status(422).json({ error: BLOCKED_MESSAGE, code: BLOCKED_CODE })
 }
 
+// A recipe is screened on two independent axes (text + image); the recipe is
+// only as clean as its worst part. Collapse any number of verdicts into the most
+// severe one, so the route applies a single tier decision (block / hold / allow).
+// Skips falsy args (e.g. an image axis that wasn't scanned this request).
+const SEVERITY_RANK = { clean: 0, medium: 1, high: 2 }
+function worstVerdict(...verdicts) {
+  let worst = null
+  for (const v of verdicts) {
+    if (!v) continue
+    if (!worst || SEVERITY_RANK[v.severity] > SEVERITY_RANK[worst.severity]) worst = v
+  }
+  return worst || { allowed: true, severity: 'clean', reason: null, category: null, scores: null, source: 'none' }
+}
+
 // Flatten a recipe payload's user-controlled text into one blob for a single
 // classifier pass (one API call per recipe, not one per field).
 //
@@ -154,4 +168,4 @@ async function holdRecipeForReview(db, { recipeId, title, verdict }) {
   return true
 }
 
-module.exports = { BLOCKED_MESSAGE, BLOCKED_CODE, respondBlocked, gatherRecipeText, holdRecipeForReview }
+module.exports = { BLOCKED_MESSAGE, BLOCKED_CODE, respondBlocked, gatherRecipeText, holdRecipeForReview, worstVerdict }

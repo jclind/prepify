@@ -52,6 +52,18 @@ class AuthAPIClass {
   async updateProfile(profile: UserProfile) {
     await http.post('api/updateProfile', profile)
   }
+  // Applies (or clears, with '') the Firebase Auth photoURL server-side, AFTER
+  // image moderation — the client no longer writes photoURL directly. A rejected
+  // image throws (422 CONTENT_BLOCKED), surfaced like the other moderation errors.
+  async updatePhoto(photoURL: string) {
+    await http.post('api/updatePhoto', { photoURL })
+  }
+  // Applies the Firebase Auth displayName server-side, AFTER text moderation —
+  // the client no longer writes displayName directly. A rejected name throws
+  // (422 CONTENT_BLOCKED), surfaced like the other moderation errors.
+  async updateDisplayName(displayName: string) {
+    await http.post('api/updateDisplayName', { displayName })
+  }
   // Saves the privacy toggles that gate the public /u/:username view. Both flags
   // are always sent so the server stores the current state of each switch.
   async updatePrivacy(isPublic: boolean, hideLocation: boolean) {
