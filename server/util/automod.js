@@ -144,6 +144,15 @@ function gatherRecipeText(body = {}) {
   return parts.filter(Boolean).join('\n')
 }
 
+// The single OPEN automated-moderation report for a recipe — the queue entry that
+// represents an active hold. holdRecipeForReview keeps at most one (it upserts on
+// the system reporter), so this both reads "why is it held" (admin.js) and clears
+// the hold (recipes.js approve). Kept here so those callers can't drift on how an
+// automod hold is keyed.
+function openAutomodReportQuery(recipeId) {
+  return { targetType: 'recipe', recipeId: String(recipeId), source: 'automod', status: 'open' }
+}
+
 /**
  * Place a medium-confidence automated hold on a recipe, as one report-gated unit:
  *   1. file the OPEN admin-queue report (credited to the system actor),
@@ -224,4 +233,4 @@ async function holdRecipeForReview(db, { recipeId, title, verdict }) {
   return true
 }
 
-module.exports = { BLOCKED_MESSAGE, BLOCKED_CODE, respondBlocked, auditContentBlock, gatherRecipeText, holdRecipeForReview, worstVerdict }
+module.exports = { BLOCKED_MESSAGE, BLOCKED_CODE, respondBlocked, auditContentBlock, gatherRecipeText, holdRecipeForReview, worstVerdict, openAutomodReportQuery }

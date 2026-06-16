@@ -21,6 +21,7 @@ vi.mock('src/api/admin', () => ({
     setRecipeFeatured: vi.fn().mockResolvedValue({ _id: 'r1', featured: true }),
     setRecipePublished: vi.fn().mockResolvedValue({ _id: 'r1', status: 'unpublished' }),
     getRecipeAutomod: vi.fn(),
+    approveRecipe: vi.fn().mockResolvedValue({ _id: 'r1', status: 'active' }),
   },
 }))
 vi.mock('src/api/reports', () => ({
@@ -37,6 +38,7 @@ const mockedFeature = AdminAPI.setRecipeFeatured as unknown as Mock
 const mockedPublish = AdminAPI.setRecipePublished as unknown as Mock
 const mockedModeration = ReportAPI.setRecipeModeration as unknown as Mock
 const mockedAutomod = AdminAPI.getRecipeAutomod as unknown as Mock
+const mockedApprove = AdminAPI.approveRecipe as unknown as Mock
 
 const recipe = { _id: 'r1', title: 'T', status: 'active', featured: false } as RecipeType
 
@@ -135,5 +137,20 @@ describe('AdminRecipeControls', () => {
     expect(screen.queryByText('Pending review')).not.toBeInTheDocument()
     expect(screen.queryByText(/auto-held/i)).not.toBeInTheDocument()
     expect(mockedAutomod).not.toHaveBeenCalled()
+  })
+
+  it('approves (publishes + clears the hold) a pending_review recipe', async () => {
+    mockedUseAuth.mockReturnValue({ isAdmin: true })
+    mockedAutomod.mockResolvedValue({ classifier: null, createdAt: null })
+    renderControls({ ...recipe, status: 'pending_review' } as RecipeType)
+
+    fireEvent.click(screen.getByRole('button', { name: /approve & publish/i }))
+    await waitFor(() => expect(mockedApprove).toHaveBeenCalledWith('r1'))
+  })
+
+  it('shows no Approve button on a non-held recipe', () => {
+    mockedUseAuth.mockReturnValue({ isAdmin: true })
+    renderControls() // active
+    expect(screen.queryByRole('button', { name: /approve/i })).not.toBeInTheDocument()
   })
 })

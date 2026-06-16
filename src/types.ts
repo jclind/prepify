@@ -333,6 +333,7 @@ export type AuditAction =
   | 'recipe.unpublish'
   | 'recipe.feature'
   | 'recipe.unfeature'
+  | 'recipe.approve'
   | 'review.takedown'
   | 'review.restore'
   | 'user.suspend'

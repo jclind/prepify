@@ -102,6 +102,18 @@ class AdminAPIClass {
     }>(`api/admin/recipes/${recipeId}/automod`)
     return result.data
   }
+
+  // Clear an automated hold: restore a pending_review recipe to active AND dismiss
+  // its open automod report in one server-side action. Pairs with getRecipeAutomod
+  // (which explains the hold). Errors if the recipe isn't currently pending review.
+  async approveRecipe(
+    recipeId: string
+  ): Promise<{ _id: string; status: string }> {
+    const result = await http.patch<{ _id: string; status: string }>(
+      `api/admin/recipes/${recipeId}/approve`
+    )
+    return result.data
+  }
 }
 
 const AdminAPI = new AdminAPIClass()
