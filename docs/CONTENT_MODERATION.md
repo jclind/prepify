@@ -441,10 +441,23 @@ scores). Two findings were fixed (own follow-up commit):
   it. The recipe paths (`api/recipes.ts` add/edit → `result.message`) already read `response.data.error`.
   Net: every moderated surface — onboarding username, settings username/bio/photo, reviews, recipe
   create/edit — now shows the friendly moderation message. The 422 status itself was always correct.
-- **Blocklist evasion gaps (P1 hardening).** Token-boundary matching means a concatenated slur with no
-  separator (`shitfuck`) and letter-spacing (`s h i t`) both pass the blocklist. `shit_fuck` / `shit` /
-  `fuck` are caught. The OpenAI layer is the intended backstop but is unreliable against deliberate
-  obfuscation. Consider collapsed-whitespace + substring matching for the slur set.
+- **Blocklist evasion gaps (P1 hardening).** ✅ **DONE 2026-06-16** (`moderationBlocklist.js`). Was:
+  token-boundary matching let a concatenated slur with no separator (`shitfuck`) and letter-spacing
+  (`s h i t`) pass; `shit_fuck` / `shit` / `fuck` were already caught. Fix adds two passes around the
+  existing exact-token match, designed around the Scunthorpe problem on a *recipe* site:
+  - **Letter-spacing pass** — maximal runs of single-character tokens (`s h i t`, `n.i.g.g.e.r`,
+    `f*u*c*k`) are rejoined and re-scanned with the wide pass. Adversarial signal ⇒ strict.
+  - **Substring pass, tiered** — `SUBSTRING_SLURS` (`nigger`/`cunt`/`asshole`, unambiguous) match as a
+    substring on **every** surface; the substring-prone rest (`shit`/`fuck`/`faggot`/`retard`/…) match
+    as substrings **only on identity fields** (username/displayName), and still as exact tokens
+    everywhere. Long-form prose leans on the OpenAI layer for obfuscated profanity to avoid
+    false-positives.
+  - **`BENIGN_ALLOWLIST`** guards the substring pass: `scunthorpe`, `shitake`/`shiitake`, `shitzu`,
+    `retardant`, `niggardly` — a token equal to one of these is exempt from substring scanning.
+  - Result: `shitfuck`/`shitlord` (identity), `niggerlover`/`megaasshole`/`xXcuntXx` (anywhere), and
+    `s h i t`/`n i g g e r`/`f.u.c.k` all now blocked; `shiitake`/`shitake`/`Scunthorpe`/`fire retardant`/
+    `classic`/`push it`/`viscount`/`glasshouse` all stay clean. Tests: +4 cases in `textModeration.test.js`
+    (catches + FP guards). server 476 green.
 - **Reminder:** moderation only runs where the code is deployed AND the keys are present. Prod hadn't
   shipped moderation yet at the time of this smoke (a slur username + review went through on the live
   site — cleaned up via account delete). The `OPENAI_API_KEY` + redeploy is the pending Railway step.
@@ -468,9 +481,9 @@ moderates correctly:
   the client Firebase `updateProfile` (import dropped from both). Tests: 3 route cases + updated FE
   AuthContext/CreateUsername suites (server 472 / FE 366 / tsc). **Live smoke 6/6** (real classifier +
   Firebase): slur/spam→422, clean applied (trimmed) and confirmed on the real account, >50/empty→400.
-- ⚠️ Re-confirmed the evasion gaps apply to ALL these text surfaces (concatenated `shittown`/`shitfuck`,
-  spaced `s h i t` pass the blocklist).
+- ⚠️ Re-confirmed the evasion gaps applied to ALL these text surfaces (concatenated `shittown`/`shitfuck`,
+  spaced `s h i t`) — **now hardened 2026-06-16, see above.**
 
-_Next: P2 + the displayName/UX fixes are on PR #139 (into development). P3 CSAM still needs a provider
-decision (Cloudflare / PhotoDNA / Thorn). One P1 follow-up remains: **blocklist evasion hardening**
-(concatenated/letter-spaced slurs)._
+_Next: P2 + the displayName/UX fixes + blocklist hardening are on PR #139 (into development). P3 CSAM
+still needs a provider decision (Cloudflare / PhotoDNA / Thorn) — ask the user before integrating. No
+P1 follow-ups remain._
