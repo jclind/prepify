@@ -6,6 +6,7 @@ const { verifyToken, requireAdmin } = require('../middleware/auth')
 const { USER_STATUSES } = require('../util/userStatus')
 const { recordAudit, AUDIT_ACTIONS, AUDIT_TARGET_TYPES } = require('../util/auditLog')
 const { notifyInBackground, notifyAccountStatus } = require('../util/email')
+const { openAutomodReportQuery } = require('../util/automod')
 
 const router = Router()
 
@@ -348,7 +349,7 @@ router.get('/admin/audit', verifyToken, requireAdmin, asyncHandler(async (req, r
 router.get('/admin/recipes/:id/automod', verifyToken, requireAdmin, asyncHandler(async (req, res) => {
   const db = getDB()
   const report = await db.collection('reports').findOne(
-    { targetType: 'recipe', recipeId: String(req.params.id), source: 'automod', status: 'open' },
+    openAutomodReportQuery(req.params.id),
     { sort: { createdAt: -1 }, projection: { classifier: 1, createdAt: 1 } }
   )
   res.json({ classifier: report?.classifier || null, createdAt: report?.createdAt || null })

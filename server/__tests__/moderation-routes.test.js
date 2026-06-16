@@ -61,6 +61,18 @@ const RECIPE_BODY = {
   recipeImage: 'https://firebasestorage.googleapis.com/v0/b/test-bucket/o/recipeImages%2Ft.jpg?alt=media&token=abc',
 }
 
+// content.blocked audit rows are written fire-and-forget by respondBlocked (so a
+// logging hiccup can never turn a block into a 500), so poll briefly for the row
+// rather than asserting synchronously the instant the 422 lands.
+const waitFor = async (fn, { tries = 50, gap = 10 } = {}) => {
+  for (let i = 0; i < tries; i++) {
+    const v = await fn()
+    if (v) return v
+    await new Promise((r) => setTimeout(r, gap))
+  }
+  return null
+}
+
 beforeEach(() => {
   moderateText.mockReset()
   moderateText.mockResolvedValue(CLEAN)
@@ -91,6 +103,26 @@ describe('POST /addRecipe — moderation tiers', () => {
     expect(res.status).toBe(422)
     expect(res.body.code).toBe('CONTENT_BLOCKED')
     expect(await getDB().collection('recipes').countDocuments({})).toBe(0)
+  })
+
+  it('high block leaves a content.blocked audit row (system actor, offender as target)', async () => {
+    moderateText.mockResolvedValue(HIGH)
+    const res = await request(app).post('/api/addRecipe').set(AUTH).send(RECIPE_BODY)
+    expect(res.status).toBe(422)
+
+    const db = getDB()
+    const audit = await waitFor(() =>
+      db.collection('auditLog').findOne({ action: 'content.blocked', 'metadata.surface': 'recipe' })
+    )
+    expect(audit).toMatchObject({
+      action: 'content.blocked',
+      actorType: 'system',
+      actorUid: SYSTEM_ACTOR.uid,
+      targetType: 'user',
+      targetId: TEST_UID,
+    })
+    // Structured signal only — never the matched term / submitted text.
+    expect(audit.metadata).toMatchObject({ surface: 'recipe', category: 'hate', severity: 'high', source: 'openai' })
   })
 
   it('medium confidence → 201 pending_review + open automod report + system audit', async () => {
@@ -339,5 +371,67 @@ describe('POST /updateDisplayName — display name moderation', () => {
     expect(res.status).toBe(400)
     expect(moderateText).not.toHaveBeenCalled()
     expect(admin.__updateUser).not.toHaveBeenCalled()
+  })
+})
+
+describe('PATCH /api/admin/recipes/:id/approve — clear an automated hold', () => {
+  // Reproduce the exact state holdRecipeForReview leaves behind: a pending_review
+  // recipe with one OPEN system-filed automod report.
+  const seedHeld = async (id = 'held') => {
+    await seedRecipe({ ...RECIPE_BODY, _id: id, userId: 'owner', status: 'pending_review' })
+    await getDB().collection('reports').insertOne({
+      targetType: 'recipe',
+      recipeId: id,
+      reporterUid: SYSTEM_ACTOR.uid,
+      reason: 'inappropriate',
+      status: 'open',
+      source: 'automod',
+      classifier: { severity: 'medium', category: 'harassment', reason: 'openai:harassment:0.60', source: 'openai' },
+      createdAt: new Date(),
+    })
+  }
+
+  it('requires admin', async () => {
+    await seedHeld()
+    const res = await request(app).patch('/api/admin/recipes/held/approve').set(AUTH)
+    expect(res.status).toBe(403)
+  })
+
+  it('publishes the held recipe, dismisses its open automod report, and audits the approval', async () => {
+    admin.__setClaims({ admin: true })
+    await seedHeld()
+
+    const res = await request(app).patch('/api/admin/recipes/held/approve').set(AUTH)
+    expect(res.status).toBe(200)
+    expect(res.body.status).toBe('active')
+
+    const db = getDB()
+    const recipe = await db.collection('recipes').findOne(recipeIdQuery('held'))
+    expect(recipe.status).toBe('active')
+    expect(recipe.moderatedBy).toBe(TEST_UID)
+
+    const report = await db.collection('reports').findOne({ recipeId: 'held', source: 'automod' })
+    expect(report.status).toBe('dismissed')
+    expect(report.resolvedBy).toBe(TEST_UID)
+
+    const audit = await db.collection('auditLog').findOne({ action: 'recipe.approve' })
+    expect(audit).toMatchObject({ actorUid: TEST_UID, targetType: 'recipe', targetId: 'held' })
+  })
+
+  it('is 409 and a no-op when the recipe is not pending_review (never clobbers active/hidden)', async () => {
+    admin.__setClaims({ admin: true })
+    await seedRecipe({ ...RECIPE_BODY, _id: 'live', userId: 'owner' }) // no status field = active
+
+    const res = await request(app).patch('/api/admin/recipes/live/approve').set(AUTH)
+    expect(res.status).toBe(409)
+    const recipe = await getDB().collection('recipes').findOne(recipeIdQuery('live'))
+    expect(recipe.status).toBeUndefined() // untouched
+    expect(await getDB().collection('auditLog').countDocuments({ action: 'recipe.approve' })).toBe(0)
+  })
+
+  it('is 409 for a recipe that does not exist', async () => {
+    admin.__setClaims({ admin: true })
+    const res = await request(app).patch('/api/admin/recipes/nope/approve').set(AUTH)
+    expect(res.status).toBe(409)
   })
 })
