@@ -10,6 +10,7 @@ import { MdOutlineLocationOn } from 'react-icons/md'
 import UsernameInput from 'src/Components/Form/UsernameInput'
 import FormInput from 'src/Components/Form/FormInput'
 import AuthAPI from 'src/api/auth'
+import { getApiErrorMessage } from 'src/util/getApiErrorMessage'
 import { useAuth } from 'src/context/AuthContext'
 
 const BIO_MAX = 300
@@ -97,7 +98,9 @@ const CreateUsername: FC = () => {
         navigate('/')
       } catch (err: unknown) {
         setLoadingCreateUsername(false)
-        setError(err instanceof Error ? err.message : String(err))
+        // Prefer the server's reason (e.g. a 422 moderation block on the
+        // username) over axios's generic "Request failed with status code 422".
+        setError(getApiErrorMessage(err, 'Something went wrong. Please try again.'))
       }
     })()
   }

@@ -432,5 +432,22 @@ scores). Two findings were fixed (own follow-up commit):
   L2 `updatePhoto` accepts an arbitrary URL — not a regression, non-Storage URLs fail-closed anyway;
   L3 no per-image dedupe on create; doc-drift nits) were reviewed and deferred as non-blocking.
 
+**2026-06-15 — follow-ups found during the user's own prod smoke (logged, not yet fixed):**
+- **FE error surfacing (P1 UX bug) — ✅ FIXED 2026-06-15.** The server's 422 block response carries a
+  friendly body (`{ error: BLOCKED_MESSAGE, code: 'CONTENT_BLOCKED' }`), but `CreateUsername` showed
+  axios's generic "Request failed with status code 422" (it surfaced `err.message`). Added a shared
+  `src/util/getApiErrorMessage(error, fallback)` helper (prefers `response.data.error`) and used it in
+  CreateUsername; folded the existing inline duplicates in `AddReview` and Settings `ProfileSection` onto
+  it. The recipe paths (`api/recipes.ts` add/edit → `result.message`) already read `response.data.error`.
+  Net: every moderated surface — onboarding username, settings username/bio/photo, reviews, recipe
+  create/edit — now shows the friendly moderation message. The 422 status itself was always correct.
+- **Blocklist evasion gaps (P1 hardening).** Token-boundary matching means a concatenated slur with no
+  separator (`shitfuck`) and letter-spacing (`s h i t`) both pass the blocklist. `shit_fuck` / `shit` /
+  `fuck` are caught. The OpenAI layer is the intended backstop but is unreliable against deliberate
+  obfuscation. Consider collapsed-whitespace + substring matching for the slur set.
+- **Reminder:** moderation only runs where the code is deployed AND the keys are present. Prod hadn't
+  shipped moderation yet at the time of this smoke (a slur username + review went through on the live
+  site — cleaned up via account delete). The `OPENAI_API_KEY` + redeploy is the pending Railway step.
+
 _Next: commit P2 on its own branch off `development` + open a PR (P1's branch is already merged/deleted).
 P3 CSAM still needs a provider decision (Cloudflare / PhotoDNA / Thorn). `displayName` follow-up still open._
