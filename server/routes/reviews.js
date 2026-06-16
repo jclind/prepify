@@ -2,7 +2,7 @@ const { Router } = require('express')
 const { asyncHandler } = require('../util/asyncHandler')
 const { getDB } = require('../db')
 const { verifyToken, optionalAuth, requireAdmin, requireActive } = require('../middleware/auth')
-const { writeLimiter } = require('../middleware/writeLimiter')
+const { reviewWriteLimiter } = require('../middleware/writeLimiter')
 const { recipeIdQuery } = require('../util/recipeIdQuery')
 const { REVIEW_VISIBLE, RECIPE_VISIBLE } = require('../util/moderation')
 const { DESCRIPTION_MAX_LENGTH } = require('../util/recipeLimits')
@@ -64,7 +64,7 @@ router.post('/addRating', verifyToken, requireActive, asyncHandler(async (req, r
 }))
 
 // POST /newReview
-router.post('/newReview', verifyToken, requireActive, writeLimiter, asyncHandler(async (req, res) => {
+router.post('/newReview', verifyToken, requireActive, reviewWriteLimiter, asyncHandler(async (req, res) => {
   const db = getDB()
   const { recipeId, reviewText } = req.body
   const userId = req.uid
@@ -125,7 +125,7 @@ router.get('/checkIfReviewed', verifyToken, asyncHandler(async (req, res) => {
 }))
 
 // POST /editReview
-router.post('/editReview', verifyToken, requireActive, writeLimiter, asyncHandler(async (req, res) => {
+router.post('/editReview', verifyToken, requireActive, reviewWriteLimiter, asyncHandler(async (req, res) => {
   const { recipeId, text } = req.query
   const db = getDB()
   if (!recipeId || typeof recipeId !== 'string' || text == null || typeof text !== 'string') {

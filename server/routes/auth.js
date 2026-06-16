@@ -4,7 +4,7 @@ const { asyncHandler } = require('../util/asyncHandler')
 const router = express.Router()
 const { getDB, getClient } = require('../db')
 const { verifyToken, requireActive } = require('../middleware/auth')
-const { writeLimiter } = require('../middleware/writeLimiter')
+const { profileWriteLimiter } = require('../middleware/writeLimiter')
 const { recordAudit } = require('../util/auditLog')
 const { deleteRecipeImage, deleteProfilePhoto } = require('../util/firebaseStorage')
 const { recomputeRecipeRating } = require('../util/recipeRating')
@@ -114,7 +114,7 @@ router.get('/getMyStatus', verifyToken, asyncHandler(async (req, res) => {
 
 // POST /setUsername?username=...
 // Creates or updates the username for the authenticated user
-router.post('/setUsername', verifyToken, requireActive, writeLimiter, asyncHandler(async (req, res) => {
+router.post('/setUsername', verifyToken, requireActive, profileWriteLimiter, asyncHandler(async (req, res) => {
   const { username } = req.query
   const validationError = validateUsername(username)
   if (validationError) {
@@ -206,7 +206,7 @@ router.get('/getProfile', verifyToken, asyncHandler(async (req, res) => {
 // POST /updateProfile
 // Upserts the authenticated user's bio + location. Empty strings are allowed
 // and clear the field. Values are trimmed before storage.
-router.post('/updateProfile', verifyToken, requireActive, writeLimiter, asyncHandler(async (req, res) => {
+router.post('/updateProfile', verifyToken, requireActive, profileWriteLimiter, asyncHandler(async (req, res) => {
   const { bio, location } = req.body || {}
   const validationError = validateProfile(bio, location)
   if (validationError) {
@@ -246,7 +246,7 @@ router.post('/updateProfile', verifyToken, requireActive, writeLimiter, asyncHan
 // state to fall back to, so BOTH high and medium confidence block (422); the
 // image fails CLOSED, so a scan outage also rejects rather than applying an
 // unscanned photo. Clearing the photo (empty URL) needs no scan.
-router.post('/updatePhoto', verifyToken, requireActive, writeLimiter, asyncHandler(async (req, res) => {
+router.post('/updatePhoto', verifyToken, requireActive, profileWriteLimiter, asyncHandler(async (req, res) => {
   const { photoURL } = req.body || {}
   if (photoURL != null && typeof photoURL !== 'string') {
     return res.status(400).json({ error: 'photoURL must be a string' })
@@ -275,7 +275,7 @@ router.post('/updatePhoto', verifyToken, requireActive, writeLimiter, asyncHandl
 // owner-only "pending" state, so BOTH high and medium confidence block (422).
 // The 'displayName' context also applies the identity-only spam rules (no
 // URLs/domains in a name).
-router.post('/updateDisplayName', verifyToken, requireActive, writeLimiter, asyncHandler(async (req, res) => {
+router.post('/updateDisplayName', verifyToken, requireActive, profileWriteLimiter, asyncHandler(async (req, res) => {
   const { displayName } = req.body || {}
   if (typeof displayName !== 'string' || !displayName.trim()) {
     return res.status(400).json({ error: 'displayName is required' })
