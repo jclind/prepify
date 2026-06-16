@@ -25,10 +25,15 @@ export const useSaveRecipe = (recipeId: string) => {
 
   const isSaved = !!savedIds?.includes(recipeId)
 
-  const toggle = () => {
+  // Resolves true once the server write lands, false on failure (after rolling
+  // back the optimistic cache). Never rejects, so fire-and-forget callers can't
+  // leak an unhandled rejection; callers that need to refetch dependent caches
+  // (collection counts, the saved grid) should await it and skip on false so
+  // they don't refetch against a write that didn't happen.
+  const toggle = async (): Promise<boolean> => {
     if (!uid) {
       toast('Please login to save recipes.', { duration: 6000 })
-      return
+      return false
     }
     const current = savedIds ?? []
     const next = isSaved
@@ -38,8 +43,13 @@ export const useSaveRecipe = (recipeId: string) => {
     const request = isSaved
       ? RecipeAPI.unsaveRecipe(recipeId)
       : RecipeAPI.saveRecipe(recipeId)
-    // Roll back to the pre-toggle list if the server rejects it.
-    request.catch(() => queryClient.setQueryData(queryKey, current))
+    try {
+      await request
+      return true
+    } catch {
+      queryClient.setQueryData(queryKey, current) // roll back on failure
+      return false
+    }
   }
 
   return { isSaved, toggle, isLoggedIn: !!uid }

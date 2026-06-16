@@ -171,7 +171,7 @@ $danger: #d23f31;
       border-color: s.$primary;
       color: s.$white;
       &:hover { background: #e74e1d; border-color: #e74e1d; }
-      &.saved {
+      &.is-saved {
         background: s.$secondary;
         border-color: s.$secondary;
         &:hover { background: #009aa1; border-color: #009aa1; }

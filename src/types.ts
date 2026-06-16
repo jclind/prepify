@@ -410,6 +410,20 @@ export type AccountTabCounts = {
   drafts: number
 }
 
+// A user-defined folder over the saved-recipes list (GET /collections). `count`
+// and `coverRecipeId` are derived server-side from membership, so they always
+// match the master saved list.
+export type RecipeCollection = {
+  id: string
+  name: string
+  createdAt: string
+  count: number
+  coverRecipeId: string | null
+  // Resolved server-side from coverRecipeId (the most-recently-saved member);
+  // null when the collection is empty or its cover recipe is hidden/removed.
+  coverImage: string | null
+}
+
 // Gamification state for the account header, returned by GET /getGamification.
 // Everything is derived server-side from the account counts; `newlyUnlocked`
 // lists earned-but-unacknowledged achievement ids (drives the unlock toast).

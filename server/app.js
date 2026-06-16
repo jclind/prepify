@@ -13,6 +13,7 @@ const publicProfileRoutes = require('./routes/publicProfile')
 const reportRoutes = require('./routes/reports')
 const bugReportRoutes = require('./routes/bugReports')
 const adminRoutes = require('./routes/admin')
+const collectionRoutes = require('./routes/collections')
 const Sentry = require('@sentry/node')
 const { GENERIC_500_MESSAGE } = require('./util/respondServerError')
 
@@ -90,6 +91,7 @@ app.use('/api/drafts', draftRoutes)
 app.use('/api', reportRoutes)
 app.use('/api', bugReportRoutes)
 app.use('/api', adminRoutes)
+app.use('/api', collectionRoutes)
 
 // Central error backstop. Route handlers catch their own errors (via
 // respondServerError), but errors thrown *outside* a route's try/catch — a

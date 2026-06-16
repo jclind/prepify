@@ -14,7 +14,7 @@ import './SingleRecipe.scss'
 import NutritionData from 'src/pages/SingleRecipe/DataSections/NutritionData/NutritionData'
 import RecipeControls from 'src/pages/SingleRecipe/DataSections/RecipeControls/RecipeControls'
 import MadeRecipeBtn from 'src/pages/SingleRecipe/Buttons/MadeRecipeBtn'
-import SaveRecipeBtn from 'src/pages/SingleRecipe/Buttons/SaveRecipeBtn'
+import SaveControl from 'src/Components/AddToCollection/SaveControl'
 import AddRatingBtn from 'src/pages/SingleRecipe/Buttons/AddRatingBtn'
 import PrintRecipeBtn from 'src/pages/SingleRecipe/Buttons/PrintRecipeBtn'
 import RatingsAndReviews from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/RatingsAndReviews'
@@ -289,7 +289,13 @@ const SingleRecipe: FC = () => {
             <div className='sr-actions'>
               {currRecipe && (
                 <>
-                  <SaveRecipeBtn recipeId={currRecipe._id} />
+                  <SaveControl
+                    recipeId={currRecipe._id}
+                    variant='button'
+                    className='save-recipe'
+                    triggerClassName='save-recipe-btn btn'
+                    align='left'
+                  />
                   <AddRatingBtn currUserReview={currUserReview} />
                   <PrintRecipeBtn printedRef={printedRef} />
                   {!isOwner && (

@@ -2,10 +2,9 @@ import React, { FC } from 'react'
 import { Link } from 'react-router-dom'
 import { CgTimer } from 'react-icons/cg'
 import { AiFillStar } from 'react-icons/ai'
-import { BiBookmark, BiSolidBookmark } from 'react-icons/bi'
 import Skeleton from 'react-loading-skeleton'
 import 'react-loading-skeleton/dist/skeleton.css'
-import { useSaveRecipe } from 'src/hooks/useSaveRecipe'
+import SaveControl from 'src/Components/AddToCollection/SaveControl'
 import { formatRating } from 'src/util/formatRating'
 import { formatPrice } from 'src/util/formatPrice'
 import { minToHrMin } from 'src/util/minToHrMin'
@@ -36,37 +35,20 @@ const Rating: FC<{ value: number; count: number }> = ({ value, count }) => {
   )
 }
 
-/** Icon-only save toggle floated over the card image (sits above the Link). */
-const SaveButton: FC<{ recipeId: string; title: string }> = ({
-  recipeId,
-  title,
-}) => {
-  const { isSaved, toggle } = useSaveRecipe(recipeId)
-  return (
-    <button
-      type='button'
-      className={`recipe-card__save ${isSaved ? 'is-saved' : ''}`}
-      aria-pressed={isSaved}
-      aria-label={isSaved ? `Unsave ${title}` : `Save ${title}`}
-      onClick={e => {
-        e.preventDefault()
-        e.stopPropagation()
-        toggle()
-      }}
-    >
-      {isSaved ? <BiSolidBookmark /> : <BiBookmark />}
-    </button>
-  )
+type RecipeCardProps = {
+  recipe: RecipeType | null
+  loading?: boolean
+  // Extra refresh after a save/membership change (the Saved tab passes this so
+  // unsaving/refiling resets its paged grid). Caches always refetch regardless.
+  onMutated?: () => void
 }
-
-type RecipeCardProps = { recipe: RecipeType | null; loading?: boolean }
 
 /**
  * Browse-grid recipe card: image with price-per-serving chip + save bookmark,
  * cuisine eyebrow, title, and a time/rating meta row. Used by the /recipes
- * page. (RecipeThumbnail is kept for the account pages.)
+ * page and the account Saved tab.
  */
-const RecipeCard: FC<RecipeCardProps> = ({ recipe, loading }) => {
+const RecipeCard: FC<RecipeCardProps> = ({ recipe, loading, onMutated }) => {
   if (loading || !recipe) {
     return (
       <article className='recipe-card recipe-card--loading' aria-hidden='true'>
@@ -123,7 +105,14 @@ const RecipeCard: FC<RecipeCardProps> = ({ recipe, loading }) => {
           </div>
         </div>
       </Link>
-      <SaveButton recipeId={recipe._id} title={recipe.title} />
+      <SaveControl
+        recipeId={recipe._id}
+        variant='icon'
+        title={recipe.title}
+        className='recipe-card__save-wrap'
+        triggerClassName='recipe-card__save'
+        onMutated={onMutated}
+      />
     </article>
   )
 }
