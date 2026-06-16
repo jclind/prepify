@@ -11,7 +11,7 @@ const { notifyInBackground, notifyRecipeHidden } = require('../util/email')
 const { validateRequiredRecipeFields, validateRecipeBounds } = require('../util/recipeLimits')
 const { moderateText } = require('../util/textModeration')
 const { moderateImage } = require('../util/imageModeration')
-const { gatherRecipeText, holdRecipeForReview, respondBlocked, worstVerdict } = require('../util/automod')
+const { gatherRecipeText, holdRecipeForReview, respondBlocked, worstVerdict, openAutomodReportQuery } = require('../util/automod')
 const { EDITABLE_RECIPE_FIELDS, CREATABLE_RECIPE_FIELDS, pickFields } = require('../util/recipeFields')
 const { deleteRecipeImage } = require('../util/firebaseStorage')
 const { teardownRecipeDocs } = require('../util/teardownRecipe')
@@ -450,6 +450,53 @@ router.patch('/admin/recipes/:id/moderation', verifyToken, requireAdmin, asyncHa
   })
   // Notify the owner on a takedown (background). Unhide is silent.
   if (status === 'hidden') notifyInBackground(notifyRecipeHidden(updated.userId, updated.title))
+  res.json({ _id: updated._id, status: updated.status })
+}))
+
+// PATCH /admin/recipes/:id/approve — clear an AUTOMATED hold. An auto-held recipe
+// sits at status 'pending_review' (owner-visible, withheld from public reads) with
+// an OPEN system-filed automod report. Dismissing that report from the queue alone
+// only flips the report and strands the recipe invisible forever; this is the path
+// that actually publishes it. Restores the recipe to 'active' AND closes the open
+// automod report(s) as 'dismissed' in one action.
+//
+// Ordering is deliberate (mirrors holdRecipeForReview's fail-safe reasoning): flip
+// the recipe live FIRST, then close the report. If the second write fails the
+// recipe is already public (the goal) and the report just stays open for a manual
+// dismiss — strictly better than the reverse, which could re-strand a recipe that
+// should be live. Only one audit row is written (recipe.approve, the human
+// decision); the report's status flip records its own resolution.
+router.patch('/admin/recipes/:id/approve', verifyToken, requireAdmin, asyncHandler(async (req, res) => {
+  const db = getDB()
+  const recipeId = req.params.id
+  // The status filter scopes this to held recipes only: it makes a double-click
+  // idempotent (a second call finds nothing to flip → 409) and prevents an approve
+  // from silently clobbering a 'hidden'/'unpublished' state into 'active'.
+  const updated = await db.collection('recipes').findOneAndUpdate(
+    { ...recipeIdQuery(recipeId), status: 'pending_review' },
+    { $set: { status: 'active', moderatedBy: req.uid, moderatedAt: new Date() } },
+    { returnDocument: 'after' }
+  )
+  if (!updated) {
+    return res.status(409).json({ error: 'Recipe not found or not pending review' })
+  }
+
+  // Close the open automod report(s) for this recipe so the queue item resolves and
+  // the autoFlagsDismissed metric counts it. holdRecipeForReview keeps at most one
+  // open automod report per recipe, but updateMany is safe for 0..n.
+  await db.collection('reports').updateMany(
+    openAutomodReportQuery(recipeId),
+    { $set: { status: 'dismissed', resolvedBy: req.uid, resolvedAt: new Date() } }
+  )
+
+  await recordAudit(db, {
+    action: 'recipe.approve',
+    actorUid: req.uid,
+    targetType: 'recipe',
+    targetId: updated._id,
+    targetLabel: updated.title || null,
+  })
+
   res.json({ _id: updated._id, status: updated.status })
 }))
 

@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { AdminReportType, ReportStatus } from 'types'
 import ReportAPI from 'src/api/reports'
+import AdminAPI from 'src/api/admin'
 import SavedFilterBar from 'src/Components/SavedFilters/SavedFilterBar'
 import { formatClassifier } from 'src/util/formatClassifier'
 import './Reports.scss'
@@ -49,7 +50,19 @@ const Reports: FC = () => {
       return next
     })
 
-  const openReports = (data?.reports || []).filter(r => r.status === 'open')
+  // Whether the reported recipe is sitting on an automated hold (pending_review).
+  // These need Approve/Take down, NOT a bare Resolve/Dismiss (which would strand
+  // the recipe invisible — the bug this action fixes), so they're also excluded
+  // from the bulk-action selection below.
+  const isTargetPendingReview = (report: AdminReportType) =>
+    report.targetType === 'recipe' &&
+    report.target.recipe?.status === 'pending_review'
+
+  // Only non-held open reports are bulk-selectable; a bulk Dismiss must never be
+  // able to strand an auto-held recipe.
+  const openReports = (data?.reports || []).filter(
+    r => r.status === 'open' && !isTargetPendingReview(r)
+  )
   const allOpenSelected =
     openReports.length > 0 && openReports.every(r => selected.has(r._id))
 
@@ -58,10 +71,16 @@ const Reports: FC = () => {
       allOpenSelected ? new Set() : new Set(openReports.map(r => r._id))
     )
 
-  // Resolve/dismiss every selected report in one request.
+  // Resolve/dismiss every selected report in one request. Re-derive the ids from
+  // the CURRENT selectable set rather than the raw `selected` snapshot: a report
+  // selected while active but auto-held since (its checkbox is now hidden) would
+  // otherwise still ride along and let a bulk dismiss strand the held recipe.
   const bulkMutation = useMutation({
     mutationFn: ({ status }: { status: 'resolved' | 'dismissed' }) =>
-      ReportAPI.bulkResolve(Array.from(selected), status),
+      ReportAPI.bulkResolve(
+        openReports.filter(r => selected.has(r._id)).map(r => r._id),
+        status
+      ),
     onSuccess: (res, vars) => {
       toast.success(`${res.updated} report${res.updated === 1 ? '' : 's'} ${vars.status}.`)
       setSelected(new Set())
@@ -122,16 +141,41 @@ const Reports: FC = () => {
     onError: () => toast.error('Could not restore the content.'),
   })
 
+  // Approve an auto-held recipe: publish it AND dismiss its open automod report in
+  // one server call. The only path that actually clears a pending_review hold — a
+  // bare Dismiss would close the report but leave the recipe invisible forever.
+  const approveMutation = useMutation({
+    mutationFn: (report: AdminReportType) => AdminAPI.approveRecipe(report.recipeId),
+    onSuccess: () => {
+      toast.success('Recipe approved and published.')
+      invalidate()
+    },
+    onError: () => toast.error('Could not approve the recipe.'),
+  })
+
   // Whether the reported target is currently hidden (from the queue's snapshot).
   const isTargetHidden = (report: AdminReportType) =>
     report.targetType === 'recipe'
       ? report.target.recipe?.status === 'hidden'
       : report.target.review?.moderationHidden === true
 
+  // Take-down button is offered both for a held recipe and a plain open report, so
+  // render it once here rather than duplicating the markup across both branches.
+  const takedownButton = (report: AdminReportType) => (
+    <button
+      className='action takedown'
+      disabled={busy}
+      onClick={() => takedownMutation.mutate(report)}
+    >
+      Take down
+    </button>
+  )
+
   const busy =
     resolveMutation.isPending ||
     takedownMutation.isPending ||
     restoreMutation.isPending ||
+    approveMutation.isPending ||
     bulkMutation.isPending
 
   const renderPreview = (report: AdminReportType) => {
@@ -248,7 +292,7 @@ const Reports: FC = () => {
         <ul className='reports-list'>
           {data.reports.map(report => (
             <li key={report._id} className='report-card'>
-              {report.status === 'open' && (
+              {report.status === 'open' && !isTargetPendingReview(report) && (
                 <input
                   type='checkbox'
                   className='report-select'
@@ -294,45 +338,56 @@ const Reports: FC = () => {
 
               {(report.status === 'open' || isTargetHidden(report)) && (
                 <div className='report-actions'>
-                  {isTargetHidden(report) ? (
-                    <button
-                      className='action restore'
-                      disabled={busy}
-                      onClick={() => restoreMutation.mutate(report)}
-                    >
-                      Restore
-                    </button>
-                  ) : (
-                    report.status === 'open' && (
-                      <button
-                        className='action takedown'
-                        disabled={busy}
-                        onClick={() => takedownMutation.mutate(report)}
-                      >
-                        Take down
-                      </button>
-                    )
-                  )}
-                  {report.status === 'open' && (
+                  {isTargetPendingReview(report) ? (
+                    // Auto-held recipe: the two terminal choices are publish or
+                    // hide, both of which close the report. A bare Resolve/Dismiss
+                    // is intentionally omitted — it would strand the recipe in
+                    // pending_review (invisible to the public) forever.
                     <>
                       <button
-                        className='action resolve'
+                        className='action approve'
                         disabled={busy}
-                        onClick={() =>
-                          resolveMutation.mutate({ id: report._id, status: 'resolved' })
-                        }
+                        onClick={() => approveMutation.mutate(report)}
                       >
-                        Resolve
+                        Approve
                       </button>
-                      <button
-                        className='action dismiss'
-                        disabled={busy}
-                        onClick={() =>
-                          resolveMutation.mutate({ id: report._id, status: 'dismissed' })
-                        }
-                      >
-                        Dismiss
-                      </button>
+                      {takedownButton(report)}
+                    </>
+                  ) : (
+                    <>
+                      {isTargetHidden(report) ? (
+                        <button
+                          className='action restore'
+                          disabled={busy}
+                          onClick={() => restoreMutation.mutate(report)}
+                        >
+                          Restore
+                        </button>
+                      ) : (
+                        report.status === 'open' && takedownButton(report)
+                      )}
+                      {report.status === 'open' && (
+                        <>
+                          <button
+                            className='action resolve'
+                            disabled={busy}
+                            onClick={() =>
+                              resolveMutation.mutate({ id: report._id, status: 'resolved' })
+                            }
+                          >
+                            Resolve
+                          </button>
+                          <button
+                            className='action dismiss'
+                            disabled={busy}
+                            onClick={() =>
+                              resolveMutation.mutate({ id: report._id, status: 'dismissed' })
+                            }
+                          >
+                            Dismiss
+                          </button>
+                        </>
+                      )}
                     </>
                   )}
                 </div>

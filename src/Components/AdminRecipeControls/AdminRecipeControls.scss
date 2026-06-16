@@ -88,5 +88,18 @@
       border-color: #d64545;
       color: #b91c1c;
     }
+
+    // Primary action for an auto-held recipe — filled green so it reads as the
+    // recommended way out of pending_review.
+    &.approve {
+      border-color: #15803d;
+      background: #16a34a;
+      color: #fff;
+
+      &:hover:not(:disabled) {
+        background: #15803d;
+        border-color: #166534;
+      }
+    }
   }
 }

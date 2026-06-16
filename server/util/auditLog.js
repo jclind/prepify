@@ -10,6 +10,9 @@ const AUDIT_ACTIONS = [
   'recipe.unpublish',
   'recipe.feature',
   'recipe.unfeature',
+  // An admin cleared an automated hold: a pending_review recipe was approved back
+  // to public (and its open automod report dismissed). See recipes.js approve route.
+  'recipe.approve',
   'review.takedown',
   'review.restore',
   // Automated moderation: a classifier put a recipe into pending_review (held

@@ -23,6 +23,7 @@ export const ACTION_META: Record<AuditAction, { label: string; tone: string }> =
   'recipe.unpublish': { label: 'unpublished recipe', tone: 'warn' },
   'recipe.feature': { label: 'featured recipe', tone: 'good' },
   'recipe.unfeature': { label: 'unfeatured recipe', tone: 'neutral' },
+  'recipe.approve': { label: 'approved held recipe', tone: 'good' },
   'review.takedown': { label: 'took down review by', tone: 'danger' },
   'review.restore': { label: 'restored review by', tone: 'good' },
   'user.suspend': { label: 'suspended', tone: 'warn' },

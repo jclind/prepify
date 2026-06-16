@@ -303,7 +303,8 @@
           color: #fff;
         }
 
-        &.restore {
+        &.restore,
+        &.approve {
           background: #16a34a;
           border-color: #16a34a;
           color: #fff;

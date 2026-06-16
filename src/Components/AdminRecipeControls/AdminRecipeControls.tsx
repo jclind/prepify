@@ -23,8 +23,12 @@ const AdminRecipeControls: FC<AdminRecipeControlsProps> = ({ recipe }) => {
   const isAdmin = authRes?.isAdmin === true
   const queryClient = useQueryClient()
 
-  const invalidate = () =>
+  const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['recipe', recipe._id] })
+    // The automod note keys off the OPEN report; approving dismisses it, so drop
+    // the stale classifier snapshot too.
+    queryClient.invalidateQueries({ queryKey: ['recipe-automod', recipe._id] })
+  }
 
   const isPendingReview = recipe.status === 'pending_review'
 
@@ -67,6 +71,17 @@ const AdminRecipeControls: FC<AdminRecipeControlsProps> = ({ recipe }) => {
     onError: () => toast.error('Could not update moderation state.'),
   })
 
+  // Clear an automated hold: publish the recipe and dismiss its automod report in
+  // one call. Only meaningful (and only shown) while the recipe is pending_review.
+  const approveMutation = useMutation({
+    mutationFn: () => AdminAPI.approveRecipe(recipe._id),
+    onSuccess: () => {
+      toast.success('Recipe approved and published.')
+      invalidate()
+    },
+    onError: () => toast.error('Could not approve the recipe.'),
+  })
+
   if (!isAdmin) return null
 
   const isHidden = recipe.status === 'hidden'
@@ -75,7 +90,8 @@ const AdminRecipeControls: FC<AdminRecipeControlsProps> = ({ recipe }) => {
   const busy =
     featureMutation.isPending ||
     publishMutation.isPending ||
-    takedownMutation.isPending
+    takedownMutation.isPending ||
+    approveMutation.isPending
 
   return (
     <div className='admin-recipe-controls' role='group' aria-label='Admin recipe controls'>
@@ -93,6 +109,17 @@ const AdminRecipeControls: FC<AdminRecipeControlsProps> = ({ recipe }) => {
         </p>
       )}
 
+      {isPendingReview && (
+        <button
+          type='button'
+          className='arc-btn approve'
+          disabled={busy}
+          onClick={() => approveMutation.mutate()}
+        >
+          Approve &amp; publish
+        </button>
+      )}
+
       <button
         type='button'
         className='arc-btn feature'
@@ -105,11 +132,18 @@ const AdminRecipeControls: FC<AdminRecipeControlsProps> = ({ recipe }) => {
       <button
         type='button'
         className='arc-btn publish'
-        // `status` is a single field shared with the moderation takedown, so
-        // unpublishing a taken-down recipe would silently clear the `hidden`
-        // state (and its moderation stamp). Force the admin to Restore first.
-        disabled={busy || isHidden}
-        title={isHidden ? 'Restore this recipe before changing its publish state' : undefined}
+        // `status` is a single field shared with the moderation/hold states, so
+        // unpublishing a taken-down OR auto-held recipe would silently clear that
+        // state (and orphan its open automod report). Force the admin to resolve
+        // the hold (Approve/Take down) or Restore first.
+        disabled={busy || isHidden || isPendingReview}
+        title={
+          isHidden
+            ? 'Restore this recipe before changing its publish state'
+            : isPendingReview
+            ? 'Approve or take down this held recipe before changing its publish state'
+            : undefined
+        }
         onClick={() => publishMutation.mutate(isUnpublished)}
       >
         {isUnpublished ? 'Publish' : 'Unpublish'}
