@@ -42,6 +42,21 @@
       background: #fef3c7;
       color: #b45309;
     }
+
+    &.pending {
+      background: #e0e7ff;
+      color: #3730a3;
+    }
+  }
+
+  // Auto-hold explanation; wraps to its own line under the strip.
+  .arc-automod-note {
+    flex-basis: 100%;
+    margin: 0;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #4338ca;
+    text-transform: capitalize;
   }
 
   .arc-btn {

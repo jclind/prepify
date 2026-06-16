@@ -190,6 +190,21 @@
           color: #6b7280;
         }
       }
+
+      // Machine-filed report — visually set apart from human reports.
+      .automod-pill {
+        background: #0f172a;
+        color: #e2e8f0;
+      }
+    }
+
+    // Why the system held this content (automod reports only).
+    .report-classifier {
+      margin: 0 0 0.65rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #4338ca;
+      text-transform: capitalize;
     }
 
     .preview {

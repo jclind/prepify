@@ -81,6 +81,37 @@ describe('GET /api/admin/analytics', () => {
     })
     expect(totals.reviews).toBe(2) // bare star-only excluded
     expect(totals.reports).toEqual({ open: 2, resolved: 1, dismissed: 1 })
+    // No automod activity seeded here → all zero, all-time.
+    expect(totals.moderation).toEqual({ autoHeld: 0, autoBlocked: 0, autoFlagsDismissed: 0 })
+  })
+
+  it('tallies automated-moderation activity from the audit log + dismissed automod reports', async () => {
+    admin.__setClaims({ admin: true })
+    const db = getDB()
+    await db.collection('auditLog').insertMany([
+      { action: 'recipe.autohold', actorType: 'system', targetType: 'recipe', targetId: 'r1', createdAt: daysAgo(1) },
+      { action: 'recipe.autohold', actorType: 'system', targetType: 'recipe', targetId: 'r2', createdAt: daysAgo(2) },
+      { action: 'content.blocked', actorType: 'system', targetType: 'user', targetId: 'u1', createdAt: daysAgo(1) },
+      { action: 'content.blocked', actorType: 'system', targetType: 'user', targetId: 'u2', createdAt: daysAgo(3) },
+      { action: 'content.blocked', actorType: 'system', targetType: 'user', targetId: 'u3', createdAt: daysAgo(3) },
+      // A human admin action must NOT be counted as automated.
+      { action: 'recipe.hide', actorType: 'admin', targetType: 'recipe', targetId: 'r3', createdAt: daysAgo(1) },
+    ])
+    await db.collection('reports').insertMany([
+      { targetType: 'recipe', recipeId: 'r1', source: 'automod', status: 'dismissed', createdAt: daysAgo(1) },
+      // A dismissed USER report (no source) is not a false-positive restore.
+      { targetType: 'recipe', recipeId: 'r2', status: 'dismissed', createdAt: daysAgo(1) },
+      // An open automod report is not a restore either.
+      { targetType: 'recipe', recipeId: 'r3', source: 'automod', status: 'open', createdAt: daysAgo(1) },
+    ])
+
+    const res = await request(app).get('/api/admin/analytics').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(res.body.totals.moderation).toEqual({
+      autoHeld: 2,
+      autoBlocked: 3,
+      autoFlagsDismissed: 1,
+    })
   })
 
   it('returns a zero-filled, date-bounded daily series', async () => {

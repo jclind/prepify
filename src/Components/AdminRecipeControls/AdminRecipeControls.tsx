@@ -1,10 +1,11 @@
 import React, { FC } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { RecipeType } from 'types'
 import { useAuth } from 'src/context/AuthContext'
 import AdminAPI from 'src/api/admin'
 import ReportAPI from 'src/api/reports'
+import { formatClassifier } from 'src/util/formatClassifier'
 import './AdminRecipeControls.scss'
 
 interface AdminRecipeControlsProps {
@@ -24,6 +25,17 @@ const AdminRecipeControls: FC<AdminRecipeControlsProps> = ({ recipe }) => {
 
   const invalidate = () =>
     queryClient.invalidateQueries({ queryKey: ['recipe', recipe._id] })
+
+  const isPendingReview = recipe.status === 'pending_review'
+
+  // For an auto-held recipe, fetch WHY (the open automod report's classifier) so
+  // the admin sees the reason inline. Only runs for an admin viewing a held
+  // recipe — never on the public path.
+  const { data: automod } = useQuery({
+    queryKey: ['recipe-automod', recipe._id],
+    queryFn: () => AdminAPI.getRecipeAutomod(recipe._id),
+    enabled: isAdmin && isPendingReview,
+  })
 
   const featureMutation = useMutation({
     mutationFn: (featured: boolean) =>
@@ -71,7 +83,15 @@ const AdminRecipeControls: FC<AdminRecipeControlsProps> = ({ recipe }) => {
 
       {isHidden && <span className='arc-pill hidden'>Hidden</span>}
       {isUnpublished && <span className='arc-pill unpublished'>Unpublished</span>}
+      {isPendingReview && <span className='arc-pill pending'>Pending review</span>}
       {isFeatured && <span className='arc-pill featured'>Featured</span>}
+
+      {isPendingReview && (
+        <p className='arc-automod-note'>
+          Auto-held for moderation review
+          {automod?.classifier ? ` — ${formatClassifier(automod.classifier)}` : ''}.
+        </p>
+      )}
 
       <button
         type='button'
