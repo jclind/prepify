@@ -3,7 +3,6 @@ import '../../Components/Form/FormStyles.scss'
 import './CreateUsername.scss'
 import { TailSpin } from 'react-loader-spinner'
 import { useNavigate } from 'react-router-dom'
-import { updateProfile } from 'firebase/auth'
 import toast from 'react-hot-toast'
 import { AiOutlineUser } from 'react-icons/ai'
 import { MdOutlineLocationOn } from 'react-icons/md'
@@ -83,7 +82,10 @@ const CreateUsername: FC = () => {
       try {
         await AuthAPI.setUsername(currUsername)
         if (displayName.trim()) {
-          await updateProfile(user, { displayName: displayName.trim() })
+          // Moderated server-side before it's set on the Firebase Auth profile
+          // (a rejected name throws and surfaces below); reload to reflect it.
+          await AuthAPI.updateDisplayName(displayName.trim())
+          await user.reload()
         }
         if (bio.trim() || location.trim()) {
           await AuthAPI.updateProfile({

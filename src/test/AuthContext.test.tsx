@@ -64,6 +64,7 @@ vi.mock('src/api/auth', () => ({
     getUsername: vi.fn().mockResolvedValue('johndoe'),
     setUsername: vi.fn().mockResolvedValue(undefined),
     updatePhoto: vi.fn().mockResolvedValue(undefined),
+    updateDisplayName: vi.fn().mockResolvedValue(undefined),
     deleteAccount: vi.fn().mockResolvedValue(undefined),
     checkUsernameAvailability: vi.fn().mockResolvedValue(true),
   },
@@ -218,14 +219,19 @@ describe('AuthContext — updateProfileData', () => {
     expect(AuthAPI.updatePhoto).toHaveBeenCalledWith('')
   })
 
-  it('writes displayName via Firebase updateProfile and leaves the photo endpoint untouched', async () => {
-    const result = await mountAuth(makeUser())
+  it('writes displayName through the server endpoint (moderated) and leaves the photo endpoint untouched', async () => {
+    const user = makeUser()
+    const result = await mountAuth(user)
 
     await act(async () => {
       await result.current!.updateProfileData({ displayName: 'Jane' })
     })
 
-    expect(updateProfile).toHaveBeenCalledWith(h.authUser, { displayName: 'Jane' })
+    // displayName now goes through the moderated server endpoint, not the client
+    // Firebase updateProfile; the local user is reloaded to reflect it.
+    expect(AuthAPI.updateDisplayName).toHaveBeenCalledWith('Jane')
+    expect(user.reload).toHaveBeenCalled()
+    expect(updateProfile).not.toHaveBeenCalled()
     expect(AuthAPI.updatePhoto).not.toHaveBeenCalled()
   })
 

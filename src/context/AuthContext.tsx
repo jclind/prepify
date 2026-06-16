@@ -11,7 +11,6 @@ import {
   browserLocalPersistence,
   browserSessionPersistence,
   UserCredential,
-  updateProfile,
   verifyBeforeUpdateEmail,
   reauthenticateWithCredential,
   reauthenticateWithPopup,
@@ -256,10 +255,13 @@ const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
         await verifyBeforeUpdateEmail(user, email)
       }
 
-      // displayName still goes straight to Firebase Auth — it has no server hook
-      // yet (tracked as a moderation follow-up). The photo is handled above.
+      // Apply the displayName through the SERVER so it gets moderated before it's
+      // set on the Firebase Auth profile (like the photo above — the client no
+      // longer writes displayName directly). A rejected name throws here and the
+      // form surfaces the moderation error; reload() refreshes the local user.
       if (displayName !== undefined) {
-        await updateProfile(user, { displayName })
+        await AuthAPI.updateDisplayName(displayName)
+        await user.reload()
       }
     }
   }

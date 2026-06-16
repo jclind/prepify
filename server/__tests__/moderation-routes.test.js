@@ -315,3 +315,29 @@ describe('POST /updatePhoto — profile photo moderation', () => {
     expect(admin.__updateUser).toHaveBeenCalledWith('test-uid', { photoURL: null })
   })
 })
+
+describe('POST /updateDisplayName — display name moderation', () => {
+  it('clean name → 200 and applied (trimmed) to Firebase Auth', async () => {
+    const res = await request(app).post('/api/updateDisplayName').set(AUTH).send({ displayName: '  Jane Cook  ' })
+    expect(res.status).toBe(200)
+    expect(admin.__updateUser).toHaveBeenCalledWith('test-uid', { displayName: 'Jane Cook' })
+  })
+
+  it('high|medium name → 422 and NOT applied (both tiers block, like a username)', async () => {
+    for (const verdict of [HIGH, MEDIUM]) {
+      admin.__updateUser.mockClear()
+      moderateText.mockResolvedValue(verdict)
+      const res = await request(app).post('/api/updateDisplayName').set(AUTH).send({ displayName: 'bad name' })
+      expect(res.status).toBe(422)
+      expect(res.body.code).toBe('CONTENT_BLOCKED')
+      expect(admin.__updateUser).not.toHaveBeenCalled()
+    }
+  })
+
+  it('empty/whitespace name → 400 and never scanned or applied', async () => {
+    const res = await request(app).post('/api/updateDisplayName').set(AUTH).send({ displayName: '   ' })
+    expect(res.status).toBe(400)
+    expect(moderateText).not.toHaveBeenCalled()
+    expect(admin.__updateUser).not.toHaveBeenCalled()
+  })
+})

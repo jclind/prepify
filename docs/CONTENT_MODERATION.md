@@ -449,5 +449,28 @@ scores). Two findings were fixed (own follow-up commit):
   shipped moderation yet at the time of this smoke (a slur username + review went through on the live
   site — cleaned up via account delete). The `OPENAI_API_KEY` + redeploy is the pending Railway step.
 
-_Next: commit P2 on its own branch off `development` + open a PR (P1's branch is already merged/deleted).
-P3 CSAM still needs a provider decision (Cloudflare / PhotoDNA / Thorn). `displayName` follow-up still open._
+**2026-06-15 — comprehensive authed live smoke across EVERY write surface (worktree server :4005, real
+blocklist + OpenAI, throwaway accounts, prod DB swept after). 14/14 effective.** Every server-side surface
+moderates correctly:
+- ✅ **username** (setUsername) — slur→422, clean→200
+- ✅ **bio** + **location** (updateProfile, joined `profileText`) — slur/spam→422, clean→200 (location
+  re-confirmed with a bounded trigger: `shit head`→422, `buy now plaza`→422, `Denver`→200)
+- ✅ **recipe** create — slur in TITLE / INGREDIENT / INSTRUCTION each→422 (confirms `gatherRecipeText`
+  field coverage), clean→201 published
+- ✅ **recipe** edit (editRecipe) — slur→422
+- ✅ **review** create + edit (newReview/editReview) — slur/spam→422, clean→200
+- ✅ **OpenAI layer live** — a violent threat with NO blocklist token still→422 (proves the AI grade, not
+  just the blocklist)
+- ✅ **displayName — FIXED 2026-06-16 (was THE GAP the user hit).** New server `POST /updateDisplayName`
+  (auth.js) mirrors `updatePhoto`: validates (required, ≤50 chars) → `moderateText(name, 'displayName')`
+  (both high+medium block, identity spam rules apply) → `admin.auth().updateUser`. `AuthContext` and
+  `CreateUsername` now route displayName through `AuthAPI.updateDisplayName` + `user.reload()` instead of
+  the client Firebase `updateProfile` (import dropped from both). Tests: 3 route cases + updated FE
+  AuthContext/CreateUsername suites (server 472 / FE 366 / tsc). **Live smoke 6/6** (real classifier +
+  Firebase): slur/spam→422, clean applied (trimmed) and confirmed on the real account, >50/empty→400.
+- ⚠️ Re-confirmed the evasion gaps apply to ALL these text surfaces (concatenated `shittown`/`shitfuck`,
+  spaced `s h i t` pass the blocklist).
+
+_Next: P2 + the displayName/UX fixes are on PR #139 (into development). P3 CSAM still needs a provider
+decision (Cloudflare / PhotoDNA / Thorn). One P1 follow-up remains: **blocklist evasion hardening**
+(concatenated/letter-spaced slurs)._
