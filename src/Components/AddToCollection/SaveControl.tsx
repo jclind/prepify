@@ -7,6 +7,7 @@ import { BiBookmark, BiSolidBookmark, BiChevronDown } from 'react-icons/bi'
 import AuthAPI from 'src/api/auth'
 import CollectionsAPI from 'src/api/collections'
 import { useSaveRecipe } from 'src/hooks/useSaveRecipe'
+import { invalidateSavedCaches } from 'src/util/invalidateSavedCaches'
 import { RecipeCollection } from 'types'
 import AddToCollectionPopover from './AddToCollectionPopover'
 
@@ -106,8 +107,7 @@ const SaveControl: FC<Props> = ({
   // Filing/saving touches the collection counts+covers cache and the per-card
   // saved-id list (so a bookmark elsewhere flips state too).
   const handleMutated = () => {
-    queryClient.invalidateQueries({ queryKey: ['collections'] })
-    queryClient.invalidateQueries({ queryKey: ['savedRecipeIds', uid] })
+    invalidateSavedCaches(queryClient, uid)
     onMutated?.()
   }
 
@@ -154,7 +154,7 @@ const SaveControl: FC<Props> = ({
     const wasSaved = isSaved
     const ok = await toggle()
     if (!ok) return
-    queryClient.invalidateQueries({ queryKey: ['collections'] })
+    invalidateSavedCaches(queryClient, uid)
     onMutated?.()
     if (wasSaved) setOpen(false)
   }

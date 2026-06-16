@@ -1,4 +1,4 @@
-import React, { FC, useEffect, useRef, useState } from 'react'
+import React, { FC, useEffect, useState } from 'react'
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
@@ -7,6 +7,7 @@ import { TailSpin } from 'react-loader-spinner'
 import './Recipes.scss'
 import RecipeCard from 'src/Components/RecipeCard/RecipeCard'
 import SearchRecipesInput from 'src/Components/SearchRecipesInput/SearchRecipesInput'
+import SortDropdown from 'src/Components/SortDropdown/SortDropdown'
 import RecipeAPI from 'src/api/recipes'
 import { dietLabelsOptions } from 'src/recipeData/dietLabels'
 import cuisinesList from 'src/recipeData/cuisinesList'
@@ -43,8 +44,6 @@ const Recipes: FC = () => {
   // we don't fire a default fetch and then immediately refetch with filters.
   const [filtersLoading, setFiltersLoading] = useState(true)
   const [drawerOpen, setDrawerOpen] = useState(false)
-  const [sortOpen, setSortOpen] = useState(false)
-  const sortRef = useRef<HTMLDivElement>(null)
 
   // Hydrate filter state from the URL once on mount.
   useEffect(() => {
@@ -56,18 +55,6 @@ const Recipes: FC = () => {
     setFiltersLoading(false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-
-  // Close the sort popover on outside click.
-  useEffect(() => {
-    if (!sortOpen) return
-    const onDown = (e: MouseEvent) => {
-      if (sortRef.current && !sortRef.current.contains(e.target as Node)) {
-        setSortOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', onDown)
-    return () => document.removeEventListener('mousedown', onDown)
-  }, [sortOpen])
 
   // Reflect filter state back into the URL (shareable + bookmarkable).
   const syncUrl = (next: {
@@ -90,7 +77,6 @@ const Recipes: FC = () => {
 
   const changeSort = (value: string) => {
     setSort(value)
-    setSortOpen(false)
     syncUrl({ sort: value })
   }
   const toggleDiet = (value: string) => {
@@ -170,9 +156,6 @@ const Recipes: FC = () => {
   const hasResults = recipeList.length > 0
   const isInitialLoading = !data && !isError
 
-  const currentSortLabel =
-    SORT_OPTIONS.find(o => o.value === sort)?.label ?? 'Popular'
-
   return (
     <>
       <Helmet>
@@ -204,32 +187,12 @@ const Recipes: FC = () => {
             )}
           </button>
 
-          <div className='recipes-sort' ref={sortRef}>
-            <button
-              type='button'
-              className={`recipes-sort__trigger ${sortOpen ? 'is-open' : ''}`}
-              aria-expanded={sortOpen}
-              onClick={() => setSortOpen(o => !o)}
-            >
-              Sort: {currentSortLabel}
-              <BiChevronDown className='chev' />
-            </button>
-            {sortOpen && (
-              <ul className='recipes-sort__menu'>
-                {SORT_OPTIONS.map(o => (
-                  <li key={o.value}>
-                    <button
-                      type='button'
-                      className={o.value === sort ? 'is-active' : ''}
-                      onClick={() => changeSort(o.value)}
-                    >
-                      {o.label}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+          <SortDropdown
+            className='recipes-sort'
+            options={SORT_OPTIONS}
+            value={sort}
+            onChange={changeSort}
+          />
         </div>
 
         {activeFilterCount > 0 && (
