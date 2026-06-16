@@ -157,6 +157,16 @@ a feature flag. Do these together:
   - **Backend (Railway, optional):** `MODERATION_HIGH_THRESHOLD` / `MODERATION_MEDIUM_THRESHOLD` —
     override the default score cutoffs (0.85 / 0.5). Leave unset for defaults.
   No DB migration. See `docs/CONTENT_MODERATION.md`.
+- `[x]` **Content moderation (images) — wired; prod env var is a launch step** — write-time image
+  moderation (recipe images + profile photos) via Google Cloud Vision SafeSearch, reusing the same
+  pipeline as the text layer. Env-gated: with no key the image layer no-ops (text moderation is
+  unaffected). Live-smoke-tested 2026-06-15. **Before/at launch, set the production env var:**
+  - **Backend (Railway):** `GOOGLE_VISION_API_KEY` = a server-side Cloud Vision API key (the Vision
+    API must be enabled + billing active on the `prepify-9b974` GCP project). **Never expose to the
+    client** — server-side only, not a `VITE_*` var. Absent ⇒ the image layer silently no-ops.
+  - **Backend (Railway, optional):** `MODERATION_IMAGE_HIGH` / `MODERATION_IMAGE_MEDIUM` — override the
+    default SafeSearch likelihood cutoffs (`VERY_LIKELY` / `LIKELY`). Leave unset for defaults.
+  Shares the `MODERATION_ENABLED` master switch. No DB migration. See `docs/CONTENT_MODERATION.md`.
 - `[ ]` **Performance / Lighthouse pass** — run Lighthouse on the prod build; address obvious image-size
   and bundle-size wins. **(nice-to-have)**
 - `[ ]` **README cleanup** — the README still has placeholder `your-username` clone URLs and generic
@@ -256,8 +266,8 @@ the actual flip. Deploy is currently manual (Firebase Hosting frontend + Railway
 4. `[ ]` Update release-notes content for 1.0 and tag a GitHub Release.
 5. `[ ]` Deploy frontend (`npm run build` → Firebase Hosting) and backend (Railway). **First set prod
    env vars:** `VITE_SENTRY_DSN` in the frontend build env (before `npm run build`), and `SENTRY_DSN`
-   + `ADMIN_NOTIFY_EMAIL` + `OPENAI_API_KEY` + `MODERATION_ENABLED` on Railway. See Section C →
-   "Error tracking (Sentry)" and "Content moderation (text)".
+   + `ADMIN_NOTIFY_EMAIL` + `OPENAI_API_KEY` + `MODERATION_ENABLED` + `GOOGLE_VISION_API_KEY` on Railway.
+   See Section C → "Error tracking (Sentry)", "Content moderation (text)", and "Content moderation (images)".
 6. `[ ]` Smoke-test production: load home, view a recipe, sign in, create a recipe, leave a review.
 7. `[ ]` Watch logs/analytics for the first hours.
 

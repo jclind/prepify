@@ -14,12 +14,14 @@
  */
 
 jest.mock('../util/textModeration', () => ({ moderateText: jest.fn() }))
+jest.mock('../util/imageModeration', () => ({ moderateImage: jest.fn() }))
 
 const request = require('supertest')
 const admin = require('firebase-admin') // auto-mocked
 const app = require('../app')
 const { getDB } = require('../db')
 const { moderateText } = require('../util/textModeration')
+const { moderateImage } = require('../util/imageModeration')
 const { SYSTEM_ACTOR } = require('../util/auditLog')
 const { recipeIdQuery } = require('../util/recipeIdQuery')
 const { seedRecipe, seedUser } = require('./helpers/seed')
@@ -30,6 +32,13 @@ const AUTH = { Authorization: 'Bearer fake-test-token' }
 const HIGH = { allowed: false, severity: 'high', reason: 'openai:hate:0.97', category: 'hate', source: 'openai' }
 const MEDIUM = { allowed: false, severity: 'medium', reason: 'openai:harassment:0.60', category: 'harassment', source: 'openai' }
 const CLEAN = { allowed: true, severity: 'clean', reason: null, category: null, source: 'openai' }
+
+// Image verdicts (same shape; source 'vision'/'error'). IMG_UNSCANNED models the
+// fail-CLOSED path: a scan outage grades MEDIUM so the recipe is held / photo rejected.
+const IMG_HIGH = { allowed: false, severity: 'high', reason: 'vision:adult:VERY_LIKELY', category: 'adult', source: 'vision' }
+const IMG_MEDIUM = { allowed: false, severity: 'medium', reason: 'vision:racy:VERY_LIKELY', category: 'racy', source: 'vision' }
+const IMG_CLEAN = { allowed: true, severity: 'clean', reason: null, category: null, source: 'vision' }
+const IMG_UNSCANNED = { allowed: false, severity: 'medium', reason: 'vision:unscanned', category: 'unscanned', source: 'error' }
 
 // Minimal valid recipe payload (server stamps _id/userId/counters).
 const RECIPE_BODY = {
@@ -55,6 +64,9 @@ const RECIPE_BODY = {
 beforeEach(() => {
   moderateText.mockReset()
   moderateText.mockResolvedValue(CLEAN)
+  moderateImage.mockReset()
+  moderateImage.mockResolvedValue(IMG_CLEAN)
+  admin.__updateUser.mockClear()
 })
 
 afterEach(async () => {
@@ -216,5 +228,116 @@ describe('fail-open at the route layer', () => {
     const res = await request(app).post('/api/addRecipe').set(AUTH).send(RECIPE_BODY)
     expect(res.status).toBe(201)
     expect(res.body.pendingReview).toBe(false)
+  })
+})
+
+// ── P2: image moderation, collapsed with the text verdict on the recipe path ──
+
+describe('POST /addRecipe — image moderation tiers (text clean)', () => {
+  it('high-confidence image → 422 blocked, nothing persisted', async () => {
+    moderateImage.mockResolvedValue(IMG_HIGH)
+    const res = await request(app).post('/api/addRecipe').set(AUTH).send(RECIPE_BODY)
+    expect(res.status).toBe(422)
+    expect(res.body.code).toBe('CONTENT_BLOCKED')
+    expect(await getDB().collection('recipes').countDocuments({})).toBe(0)
+  })
+
+  it('medium-confidence image → 201 pending_review + automod report (image reason)', async () => {
+    moderateImage.mockResolvedValue(IMG_MEDIUM)
+    const res = await request(app).post('/api/addRecipe').set(AUTH).send(RECIPE_BODY)
+    expect(res.status).toBe(201)
+    expect(res.body.pendingReview).toBe(true)
+    const db = getDB()
+    expect((await db.collection('recipes').findOne(recipeIdQuery(res.body._id))).status).toBe('pending_review')
+    const report = await db.collection('reports').findOne({ recipeId: String(res.body._id) })
+    expect(report.classifier.reason).toBe('vision:racy:VERY_LIKELY')
+  })
+
+  it('image fails CLOSED: an unscanned (scan-error) image holds the recipe', async () => {
+    moderateImage.mockResolvedValue(IMG_UNSCANNED)
+    const res = await request(app).post('/api/addRecipe').set(AUTH).send(RECIPE_BODY)
+    expect(res.status).toBe(201)
+    expect(res.body.pendingReview).toBe(true)
+    expect((await getDB().collection('recipes').findOne(recipeIdQuery(res.body._id))).status).toBe('pending_review')
+  })
+
+  it('worst-of: clean image + high text still blocks', async () => {
+    moderateText.mockResolvedValue(HIGH)
+    moderateImage.mockResolvedValue(IMG_CLEAN)
+    const res = await request(app).post('/api/addRecipe').set(AUTH).send(RECIPE_BODY)
+    expect(res.status).toBe(422)
+  })
+})
+
+describe('PUT /editRecipe — image only re-scanned when it changed', () => {
+  it('does not scan the image when the URL is unchanged', async () => {
+    await seedRecipe({ ...RECIPE_BODY, _id: 'e-img', userId: TEST_UID })
+    const res = await request(app).put('/api/editRecipe?recipeId=e-img').set(AUTH).send(RECIPE_BODY)
+    expect(res.status).toBe(200)
+    // Same recipeImage as the seeded doc → image axis skipped (empty URL → not called).
+    expect(moderateImage).toHaveBeenCalledWith(null, 'recipe.image')
+  })
+
+  it('scans (and can block on) a changed image URL', async () => {
+    await seedRecipe({ ...RECIPE_BODY, _id: 'e-img2', userId: TEST_UID })
+    moderateImage.mockResolvedValue(IMG_HIGH)
+    const changed = { ...RECIPE_BODY, recipeImage: 'https://firebasestorage.googleapis.com/v0/b/test-bucket/o/recipeImages%2FNEW.jpg?alt=media&token=z' }
+    const res = await request(app).put('/api/editRecipe?recipeId=e-img2').set(AUTH).send(changed)
+    expect(res.status).toBe(422)
+    expect(moderateImage).toHaveBeenCalledWith(changed.recipeImage, 'recipe.image')
+  })
+})
+
+describe('POST /updatePhoto — profile photo moderation', () => {
+  const PHOTO = 'https://firebasestorage.googleapis.com/v0/b/test-bucket/o/profilePhotos%2Ftest-uid?alt=media&token=p'
+
+  it('clean photo → 200 and applied to Firebase Auth', async () => {
+    const res = await request(app).post('/api/updatePhoto').set(AUTH).send({ photoURL: PHOTO })
+    expect(res.status).toBe(200)
+    expect(admin.__updateUser).toHaveBeenCalledWith('test-uid', { photoURL: PHOTO })
+  })
+
+  it('high|medium|fail-closed photo → 422 and NOT applied', async () => {
+    for (const verdict of [IMG_HIGH, IMG_MEDIUM, IMG_UNSCANNED]) {
+      admin.__updateUser.mockClear()
+      moderateImage.mockResolvedValue(verdict)
+      const res = await request(app).post('/api/updatePhoto').set(AUTH).send({ photoURL: PHOTO })
+      expect(res.status).toBe(422)
+      expect(res.body.code).toBe('CONTENT_BLOCKED')
+      expect(admin.__updateUser).not.toHaveBeenCalled()
+    }
+  })
+
+  it('clearing the photo (empty URL) needs no scan and clears via null', async () => {
+    const res = await request(app).post('/api/updatePhoto').set(AUTH).send({ photoURL: '' })
+    expect(res.status).toBe(200)
+    expect(moderateImage).not.toHaveBeenCalled()
+    expect(admin.__updateUser).toHaveBeenCalledWith('test-uid', { photoURL: null })
+  })
+})
+
+describe('POST /updateDisplayName — display name moderation', () => {
+  it('clean name → 200 and applied (trimmed) to Firebase Auth', async () => {
+    const res = await request(app).post('/api/updateDisplayName').set(AUTH).send({ displayName: '  Jane Cook  ' })
+    expect(res.status).toBe(200)
+    expect(admin.__updateUser).toHaveBeenCalledWith('test-uid', { displayName: 'Jane Cook' })
+  })
+
+  it('high|medium name → 422 and NOT applied (both tiers block, like a username)', async () => {
+    for (const verdict of [HIGH, MEDIUM]) {
+      admin.__updateUser.mockClear()
+      moderateText.mockResolvedValue(verdict)
+      const res = await request(app).post('/api/updateDisplayName').set(AUTH).send({ displayName: 'bad name' })
+      expect(res.status).toBe(422)
+      expect(res.body.code).toBe('CONTENT_BLOCKED')
+      expect(admin.__updateUser).not.toHaveBeenCalled()
+    }
+  })
+
+  it('empty/whitespace name → 400 and never scanned or applied', async () => {
+    const res = await request(app).post('/api/updateDisplayName').set(AUTH).send({ displayName: '   ' })
+    expect(res.status).toBe(400)
+    expect(moderateText).not.toHaveBeenCalled()
+    expect(admin.__updateUser).not.toHaveBeenCalled()
   })
 })

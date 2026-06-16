@@ -31,6 +31,7 @@ const {
   notifyAccountStatus,
   notifyRecipeHidden,
   notifyReviewTakenDown,
+  notifyAdultContentFlag,
 } = require('../util/email')
 
 const AUTH_HEADER = { Authorization: 'Bearer fake-test-token' }
@@ -40,6 +41,8 @@ beforeEach(() => {
   process.env.RESEND_API_KEY = 'test-key'
   delete process.env.EMAIL_ENABLED
   delete process.env.SUPPORT_EMAIL
+  delete process.env.MODERATION_ALERT_EMAIL
+  delete process.env.MODERATION_ALERT_THROTTLE_MS
   sendMock.mockReset()
   // Resend's SDK resolves with { data, error } — it does not throw on API errors.
   sendMock.mockResolvedValue({ data: { id: 'email-1' }, error: null })
@@ -180,6 +183,58 @@ describe('failures never throw', () => {
     const brokenDb = { collection: () => ({ findOne: () => Promise.reject(new Error('db down')) }) }
     await expect(notifyReviewTakenDown(brokenDb, 'chef', 'r1')).resolves.toBeUndefined()
     expect(sendMock).not.toHaveBeenCalled()
+  })
+})
+
+describe('adult-content canary alert', () => {
+  it('mails the admin address (or MODERATION_ALERT_EMAIL) with the SafeSearch likelihoods', async () => {
+    process.env.MODERATION_ALERT_THROTTLE_MS = '0' // no throttle for this assertion
+    process.env.MODERATION_ALERT_EMAIL = 'safety@prepifymeals.com'
+    await notifyAdultContentFlag({
+      context: 'recipe.image', adult: 'LIKELY', racy: 'POSSIBLE', violence: 'UNLIKELY', verdict: 'medium',
+    })
+    await flushNotifications()
+    expect(sendMock).toHaveBeenCalledTimes(1)
+    expect(sentArg().to).toBe('safety@prepifymeals.com')
+    expect(sentArg().subject).toMatch(/adult-content/i)
+    expect(sentArg().text).toMatch(/adult: LIKELY/)
+    expect(sentArg().text).toMatch(/recipe\.image/)
+  })
+
+  it('no-ops without RESEND_API_KEY (never touches the provider)', async () => {
+    delete process.env.RESEND_API_KEY
+    process.env.MODERATION_ALERT_THROTTLE_MS = '0'
+    await notifyAdultContentFlag({ context: 'recipe.image', adult: 'VERY_LIKELY', racy: 'x', violence: 'x', verdict: 'high' })
+    await flushNotifications()
+    expect(sendMock).not.toHaveBeenCalled()
+  })
+
+  it('throttles repeat alerts within the window, then sends again after it', async () => {
+    process.env.MODERATION_ALERT_THROTTLE_MS = '60000' // 1-min window
+    jest.useFakeTimers()
+    try {
+      // Base far past any real Date.now() a prior test may have stamped into the
+      // module-local throttle clock, so this test's first send isn't seen as a repeat.
+      const base = 10_000_000_000_000 // ~year 2286
+      jest.setSystemTime(base)
+      const fire = () => notifyAdultContentFlag({ context: 'recipe.image', adult: 'LIKELY', racy: 'x', violence: 'x', verdict: 'medium' })
+
+      await fire()
+      await flushNotifications()
+      expect(sendMock).toHaveBeenCalledTimes(1) // first one sends
+
+      jest.setSystemTime(base + 1000) // +1s, inside the window
+      await fire()
+      await flushNotifications()
+      expect(sendMock).toHaveBeenCalledTimes(1) // throttled — still 1
+
+      jest.setSystemTime(base + 61_000) // past the window
+      await fire()
+      await flushNotifications()
+      expect(sendMock).toHaveBeenCalledTimes(2) // sends again
+    } finally {
+      jest.useRealTimers()
+    }
   })
 })
 

@@ -50,7 +50,10 @@ const getUserByEmail = jest.fn().mockImplementation(async email => {
 // Used by POST /deleteAccount. Resolves by default; tests assert the uid it was
 // called with via admin.__deleteUser.
 const deleteUser = jest.fn().mockResolvedValue(undefined)
-const authInstance = { verifyIdToken, getUser, getUserByEmail, deleteUser }
+// Used by POST /updatePhoto to set the moderated photoURL. Resolves by default;
+// tests assert the (uid, props) it was called with via admin.__updateUser.
+const updateUser = jest.fn().mockResolvedValue(undefined)
+const authInstance = { verifyIdToken, getUser, getUserByEmail, deleteUser, updateUser }
 
 const admin = {
   apps: [{}],
@@ -68,6 +71,7 @@ const admin = {
   __verifyIdToken: verifyIdToken,
   __getUser: getUser,
   __deleteUser: deleteUser,
+  __updateUser: updateUser,
   __setClaims: claims => {
     extraClaims = claims
   },
