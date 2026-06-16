@@ -95,11 +95,11 @@ const Analytics: FC = () => {
               </span>
             </div>
             <div className='stat-card'>
-              <span className='stat-value warn'>{data.totals.moderation.autoBlocked}</span>
+              <span className='stat-value warn'>{data.totals.moderation?.autoBlocked ?? 0}</span>
               <span className='stat-label'>Auto-blocked</span>
               <span className='stat-sub'>
-                {data.totals.moderation.autoHeld} auto-held ·{' '}
-                {data.totals.moderation.autoFlagsDismissed} flags&nbsp;dismissed
+                {data.totals.moderation?.autoHeld ?? 0} auto-held ·{' '}
+                {data.totals.moderation?.autoFlagsDismissed ?? 0} flags&nbsp;dismissed
               </span>
             </div>
           </section>

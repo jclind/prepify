@@ -41,10 +41,12 @@ describe('writeLimiter — per-user content-write cap', () => {
       const res = await request(app).post('/write').set('x-test-uid', uid)
       expect(res.status).toBe(200)
     }
-    // The 31st in the window is throttled with the friendly message.
+    // The 31st in the window is throttled with the friendly message + a stable
+    // code the FE can branch on.
     const blocked = await request(app).post('/write').set('x-test-uid', uid)
     expect(blocked.status).toBe(429)
     expect(blocked.body.error).toMatch(/too quickly/i)
+    expect(blocked.body.code).toBe('RATE_LIMITED')
   })
 
   it('keys per user — one user hitting the cap does not throttle another', async () => {

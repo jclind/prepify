@@ -393,8 +393,10 @@ export interface AnalyticsTotals {
     resolved: number
     dismissed: number
   }
-  // Automated-moderation activity (all-time).
-  moderation: {
+  // Automated-moderation activity (all-time). Optional: a stale/partial payload
+  // (older server, truncated response) must not crash the admin Overview — the
+  // consumer reads it with `?.x ?? 0`.
+  moderation?: {
     autoHeld: number // recipes the classifier held for review (recipe.autohold)
     autoBlocked: number // writes refused outright (content.blocked)
     autoFlagsDismissed: number // automod reports an admin dismissed (flags cleared, not content restored)
