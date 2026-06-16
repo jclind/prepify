@@ -22,6 +22,7 @@ import CollectionsAPI from 'src/api/collections'
 import AuthAPI from 'src/api/auth'
 import { RecipeType } from 'types'
 import { useDelayedLoading } from 'src/pages/Account/useDelayedLoading'
+import { invalidateSavedCaches } from 'src/util/invalidateSavedCaches'
 import CollectionCard from './CollectionCard'
 
 type SortOption = { value: string; label: string }
@@ -192,10 +193,8 @@ const SavedRecipes: FC = () => {
   // card even in the unfiltered "All saved" view — so reset to page 0 and
   // refetch unconditionally rather than only when a collection filter is active.
   const refreshAfterMutation = () => {
-    queryClient.invalidateQueries({ queryKey: ['collections'] })
-    queryClient.invalidateQueries({ queryKey: ['account-counts', uid] })
+    invalidateSavedCaches(queryClient, uid)
     setCurrPage(0)
-    queryClient.invalidateQueries({ queryKey: ['saved-recipes'] })
   }
 
   const handleCreate = async () => {
