@@ -22,6 +22,7 @@ import CollectionsAPI from 'src/api/collections'
 import AuthAPI from 'src/api/auth'
 import { RecipeType } from 'types'
 import { useDelayedLoading } from 'src/pages/Account/useDelayedLoading'
+import { useDebounce } from 'src/hooks/useDebounce'
 import { invalidateSavedCaches } from 'src/util/invalidateSavedCaches'
 import CollectionCard from './CollectionCard'
 
@@ -117,11 +118,12 @@ const SavedRecipes: FC = () => {
   // searchInput is what the user types; query is the debounced term that
   // actually drives the request, so we don't fire one per keystroke.
   const [searchInput, setSearchInput] = useState('')
-  const [query, setQuery] = useState('')
+  const query = useDebounce(searchInput.trim(), 300)
+  // Reset to the first page off the debounced term, not the keystroke, so a new
+  // search doesn't fire a throwaway page-0 request for the old term first.
   useEffect(() => {
-    const t = setTimeout(() => setQuery(searchInput.trim()), 300)
-    return () => clearTimeout(t)
-  }, [searchInput])
+    setCurrPage(0)
+  }, [query])
 
   const { data: collections = [] } = useQuery({
     queryKey: ['collections'],
@@ -182,10 +184,7 @@ const SavedRecipes: FC = () => {
     setSort(o)
     setCurrPage(0)
   }
-  const onSearchChange = (v: string) => {
-    setSearchInput(v)
-    setCurrPage(0)
-  }
+  const onSearchChange = (v: string) => setSearchInput(v)
   const handleLoadMoreRecipes = () => setCurrPage(prev => prev + 1)
 
   // Refresh after a membership/collection change. Counts + covers always

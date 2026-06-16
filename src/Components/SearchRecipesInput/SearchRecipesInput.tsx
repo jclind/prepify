@@ -6,6 +6,7 @@ import './SearchRecipesInput.scss'
 import { formatRating } from 'src/util/formatRating'
 import slugify from 'slugify'
 import RecipeAPI from 'src/api/recipes'
+import { useDebounce } from 'src/hooks/useDebounce'
 import { RecipeSearchResponseType } from 'types'
 import Skeleton from 'react-loading-skeleton'
 import { useQuery } from '@tanstack/react-query'
@@ -48,14 +49,12 @@ const SearchRecipesInput: FC<SearchRecipesInputProps> = ({
 }) => {
   const inputId = useId()
   const [searchRecipeVal, setSearchRecipeVal] = useState(defaultVal || '')
-  const [debouncedQuery, setDebouncedQuery] = useState(defaultVal || '')
-
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const debouncedQuery = useDebounce(searchRecipeVal, 300)
 
   const { data } = useQuery<RecipeSearchResponseType[]>({
     queryKey: ['recipe-autocomplete', debouncedQuery],
     queryFn: () => RecipeAPI.searchAutoCompleteRecipes(debouncedQuery),
-    enabled: debouncedQuery.length > 2,
+    enabled: autoComplete && debouncedQuery.length > 2,
   })
 
   const [isBlurred, setIsBlurred] = useState(true)
@@ -75,19 +74,6 @@ const SearchRecipesInput: FC<SearchRecipesInputProps> = ({
     }
     setIsBlurred(true)
   }
-
-  useEffect(() => {
-    if (autoComplete) {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current)
-      timeoutRef.current = setTimeout(() => {
-        setDebouncedQuery(searchRecipeVal)
-      }, 300)
-      return () => {
-        if (timeoutRef.current) clearTimeout(timeoutRef.current)
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchRecipeVal])
 
   return (
     <form
