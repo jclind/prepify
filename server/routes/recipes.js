@@ -11,7 +11,7 @@ const { notifyInBackground, notifyRecipeHidden } = require('../util/email')
 const { validateRequiredRecipeFields, validateRecipeBounds } = require('../util/recipeLimits')
 const { moderateText } = require('../util/textModeration')
 const { moderateImage } = require('../util/imageModeration')
-const { gatherRecipeText, holdRecipeForReview, respondBlocked, worstVerdict, openAutomodReportQuery } = require('../util/automod')
+const { gatherRecipeText, holdRecipeForReview, respondBlocked, worstVerdict, openAutomodReportQuery, restoreHeldRecipe } = require('../util/automod')
 const { EDITABLE_RECIPE_FIELDS, CREATABLE_RECIPE_FIELDS, pickFields } = require('../util/recipeFields')
 const { deleteRecipeImage } = require('../util/firebaseStorage')
 const { teardownRecipeDocs } = require('../util/teardownRecipe')
@@ -469,14 +469,12 @@ router.patch('/admin/recipes/:id/moderation', verifyToken, requireAdmin, asyncHa
 router.patch('/admin/recipes/:id/approve', verifyToken, requireAdmin, asyncHandler(async (req, res) => {
   const db = getDB()
   const recipeId = req.params.id
-  // The status filter scopes this to held recipes only: it makes a double-click
-  // idempotent (a second call finds nothing to flip → 409) and prevents an approve
-  // from silently clobbering a 'hidden'/'unpublished' state into 'active'.
-  const updated = await db.collection('recipes').findOneAndUpdate(
-    { ...recipeIdQuery(recipeId), status: 'pending_review' },
-    { $set: { status: 'active', moderatedBy: req.uid, moderatedAt: new Date() } },
-    { returnDocument: 'after' }
-  )
+  // restoreHeldRecipe scopes to held recipes only (status 'pending_review') and
+  // writes the recipe.approve audit: a double-click is idempotent (a second call
+  // finds nothing to flip → null → 409) and an approve can't clobber a
+  // 'hidden'/'unpublished' state into 'active'. Shared with the report-close strand
+  // guard so both paths clear a hold identically.
+  const updated = await restoreHeldRecipe(db, recipeId, req.uid)
   if (!updated) {
     return res.status(409).json({ error: 'Recipe not found or not pending review' })
   }
@@ -488,14 +486,6 @@ router.patch('/admin/recipes/:id/approve', verifyToken, requireAdmin, asyncHandl
     openAutomodReportQuery(recipeId),
     { $set: { status: 'dismissed', resolvedBy: req.uid, resolvedAt: new Date() } }
   )
-
-  await recordAudit(db, {
-    action: 'recipe.approve',
-    actorUid: req.uid,
-    targetType: 'recipe',
-    targetId: updated._id,
-    targetLabel: updated.title || null,
-  })
 
   res.json({ _id: updated._id, status: updated.status })
 }))

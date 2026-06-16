@@ -226,6 +226,16 @@ describe('respondBlocked — 422 contract + best-effort audit', () => {
     return res
   }
 
+  // The no-context path warns (a wiring bug); spy so it doesn't spam test output
+  // and so the warn-behaviour test can assert on it.
+  let warnSpy
+  beforeEach(() => {
+    warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
+  })
+  afterEach(() => {
+    warnSpy.mockRestore()
+  })
+
   it('returns the 422 CONTENT_BLOCKED contract', () => {
     const res = fakeRes()
     respondBlocked(res)
@@ -253,9 +263,11 @@ describe('respondBlocked — 422 contract + best-effort audit', () => {
     expect(inserts[0].metadata.surface).toBe('displayName')
   })
 
-  it('skips the audit (and never throws) when no context is passed', () => {
+  it('warns loudly (does not silently skip the audit) and never throws when no context is passed', () => {
     const res = fakeRes()
     expect(() => respondBlocked(res)).not.toThrow()
     expect(res.status).toHaveBeenCalledWith(422)
+    // A block with no audit context is a wiring bug — it must be loud, not silent.
+    expect(warnSpy).toHaveBeenCalled()
   })
 })

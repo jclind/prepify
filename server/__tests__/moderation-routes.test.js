@@ -435,3 +435,88 @@ describe('PATCH /api/admin/recipes/:id/approve — clear an automated hold', () 
     expect(res.status).toBe(409)
   })
 })
+
+// A recipe hold lives in TWO places — the recipe's 'pending_review' status AND an
+// OPEN automod report. Closing the report directly from the queue (rather than via
+// the approve endpoint) must not strand the recipe invisible forever, so the report
+// routes restore any held recipe whose automod report they close.
+describe('report-close strand guard — closing an automod hold restores the recipe', () => {
+  // Reproduce holdRecipeForReview's output and return the report _id so we can PATCH it.
+  const seedHeld = async (id, status = 'pending_review') => {
+    await seedRecipe({ ...RECIPE_BODY, _id: id, userId: 'owner', status })
+    const { insertedId } = await getDB().collection('reports').insertOne({
+      targetType: 'recipe',
+      recipeId: id,
+      reporterUid: SYSTEM_ACTOR.uid,
+      reason: 'inappropriate',
+      status: 'open',
+      source: 'automod',
+      classifier: { severity: 'medium', category: 'harassment', reason: 'openai:harassment:0.60', source: 'openai' },
+      createdAt: new Date(),
+    })
+    return insertedId
+  }
+
+  beforeEach(() => admin.__setClaims({ admin: true }))
+
+  it('PATCH /reports/:id dismiss of an automod hold restores the recipe to active', async () => {
+    const reportId = await seedHeld('held-1')
+    const res = await request(app)
+      .patch(`/api/reports/${reportId}`)
+      .set(AUTH)
+      .send({ status: 'dismissed' })
+    expect(res.status).toBe(200)
+    const db = getDB()
+    expect((await db.collection('recipes').findOne(recipeIdQuery('held-1'))).status).toBe('active')
+    // The shared restore helper writes the recipe.approve audit row.
+    expect(await db.collection('auditLog').countDocuments({ action: 'recipe.approve', targetId: 'held-1' })).toBe(1)
+  })
+
+  it('PATCH /reports/:id resolve of an automod hold also restores the recipe (no strand on either resolution)', async () => {
+    const reportId = await seedHeld('held-2')
+    const res = await request(app)
+      .patch(`/api/reports/${reportId}`)
+      .set(AUTH)
+      .send({ status: 'resolved' })
+    expect(res.status).toBe(200)
+    expect((await getDB().collection('recipes').findOne(recipeIdQuery('held-2'))).status).toBe('active')
+  })
+
+  it('does NOT restore a recipe an admin separately took down (hidden) — only genuine pending_review strays', async () => {
+    const reportId = await seedHeld('hidden-1', 'hidden')
+    const res = await request(app)
+      .patch(`/api/reports/${reportId}`)
+      .set(AUTH)
+      .send({ status: 'dismissed' })
+    expect(res.status).toBe(200)
+    const db = getDB()
+    expect((await db.collection('recipes').findOne(recipeIdQuery('hidden-1'))).status).toBe('hidden')
+    expect(await db.collection('auditLog').countDocuments({ action: 'recipe.approve' })).toBe(0)
+  })
+
+  it('a user-filed (non-automod) report close touches no recipe status', async () => {
+    await seedRecipe({ ...RECIPE_BODY, _id: 'r-user', userId: 'owner' }) // active (no status)
+    const { insertedId: reportId } = await getDB().collection('reports').insertOne({
+      targetType: 'recipe', recipeId: 'r-user', reporterUid: 'some-user', reason: 'spam', status: 'open', createdAt: new Date(),
+    })
+    const res = await request(app)
+      .patch(`/api/reports/${reportId}`)
+      .set(AUTH)
+      .send({ status: 'dismissed' })
+    expect(res.status).toBe(200)
+    expect(await getDB().collection('auditLog').countDocuments({ action: 'recipe.approve' })).toBe(0)
+  })
+
+  it('PATCH /reports/bulk restores every held recipe whose automod report it closes', async () => {
+    const id1 = await seedHeld('bulk-1')
+    const id2 = await seedHeld('bulk-2')
+    const res = await request(app)
+      .patch('/api/reports/bulk')
+      .set(AUTH)
+      .send({ ids: [String(id1), String(id2)], status: 'dismissed' })
+    expect(res.status).toBe(200)
+    const db = getDB()
+    expect((await db.collection('recipes').findOne(recipeIdQuery('bulk-1'))).status).toBe('active')
+    expect((await db.collection('recipes').findOne(recipeIdQuery('bulk-2'))).status).toBe('active')
+  })
+})

@@ -60,10 +60,10 @@ describe('formatClassifier', () => {
     ).toBe('harassment · 60% confidence')
   })
 
-  // EDGE: every segment absent. Today this yields '' (which renders a dangling
-  // "Auto-flagged:" label at the call sites). Documented here as current
-  // behaviour; the empty-guard fix is tracked as a deferred moderation follow-up.
-  it('returns an empty string when nothing is present (known dangling-label edge)', () => {
+  // EDGE: every renderable segment absent (malformed/partial snapshot). Falls back
+  // to a readable placeholder instead of '' so the call sites never show a dangling
+  // "Auto-flagged: " / "Auto-held … — ." label.
+  it('falls back to a placeholder when nothing renderable is present', () => {
     expect(
       formatClassifier({
         severity: null as unknown as ReportClassifier['severity'],
@@ -71,6 +71,6 @@ describe('formatClassifier', () => {
         reason: null,
         source: 'openai',
       })
-    ).toBe('')
+    ).toBe('details unavailable')
   })
 })

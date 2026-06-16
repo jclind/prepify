@@ -67,14 +67,25 @@ async function auditContentBlock(db, { uid, surface, verdict } = {}) {
 
 // Single owner of the high-confidence block response, so the 422 contract (status
 // + body shape the FE keys on) lives in one place instead of being re-typed at
-// every write route. When a `context` ({ db, uid, surface, verdict }) is passed,
-// it ALSO drops a best-effort, system-actor audit row so the block is visible to
-// admins — fire-and-forget so it never delays the 422 or turns a block into a
-// 500 (recordAudit already swallows its own errors; the guard covers the rest).
-// Context is optional, so a bare respondBlocked(res) still works.
+// every write route. Returning a block is INSEPARABLE from auditing it here: the
+// audit row is the only trace a write was refused (the content is never persisted)
+// and the sole source of the `autoBlocked` metric, so a block that emits no audit
+// is a silent data loss. The audit is best-effort/fire-and-forget so it never
+// delays the 422 or turns a block into a 500 (recordAudit already swallows its own
+// errors; the guard covers the rest).
+//
+// `context` ({ db, uid, surface, verdict }) is what makes the audit possible, so
+// every real caller passes it. A bare respondBlocked(res) still returns a correct
+// 422 (we never want a logging gap to break the block), but it CANNOT record the
+// block — that's a wiring bug, so we warn loudly rather than dropping the row in
+// silence.
 function respondBlocked(res, context) {
   if (context && context.db) {
     auditContentBlock(context.db, context).catch(() => {})
+  } else {
+    console.warn(
+      'respondBlocked: no audit context supplied — this block will NOT be recorded (missing content.blocked audit + autoBlocked metric). Pass { db, uid, surface, verdict }.'
+    )
   }
   return res.status(422).json({ error: BLOCKED_MESSAGE, code: BLOCKED_CODE })
 }
@@ -151,6 +162,44 @@ function gatherRecipeText(body = {}) {
 // automod hold is keyed.
 function openAutomodReportQuery(recipeId) {
   return { targetType: 'recipe', recipeId: String(recipeId), source: 'automod', status: 'open' }
+}
+
+/**
+ * Restore an auto-held recipe (status 'pending_review') to 'active' and record the
+ * human-decision `recipe.approve` audit row. Returns the updated recipe doc, or
+ * null if nothing was held.
+ *
+ * The `status: 'pending_review'` filter is the safety scope: a recipe that is
+ * already 'active', or that an admin has separately taken down ('hidden'), is left
+ * untouched — so this can never resurrect content an admin meant to keep down, and
+ * a double-call is a harmless no-op.
+ *
+ * Shared by the dedicated approve endpoint AND the report-close strand guard. The
+ * hold lives in two places (the recipe's `pending_review` status + an OPEN automod
+ * report); closing the report directly from the queue would otherwise strand the
+ * recipe invisible forever, so any path that clears the hold restores the recipe
+ * through this one helper.
+ *
+ * @param {import('mongodb').Db} db
+ * @param {string} recipeId
+ * @param {string} actorUid  the admin clearing the hold (audited as the actor)
+ * @returns {Promise<object|null>}
+ */
+async function restoreHeldRecipe(db, recipeId, actorUid) {
+  const updated = await db.collection('recipes').findOneAndUpdate(
+    { ...recipeIdQuery(recipeId), status: 'pending_review' },
+    { $set: { status: 'active', moderatedBy: actorUid, moderatedAt: new Date() } },
+    { returnDocument: 'after' }
+  )
+  if (!updated) return null
+  await recordAudit(db, {
+    action: 'recipe.approve',
+    actorUid,
+    targetType: 'recipe',
+    targetId: updated._id,
+    targetLabel: updated.title || null,
+  })
+  return updated
 }
 
 /**
@@ -233,4 +282,4 @@ async function holdRecipeForReview(db, { recipeId, title, verdict }) {
   return true
 }
 
-module.exports = { BLOCKED_MESSAGE, BLOCKED_CODE, respondBlocked, auditContentBlock, gatherRecipeText, holdRecipeForReview, worstVerdict, openAutomodReportQuery }
+module.exports = { BLOCKED_MESSAGE, BLOCKED_CODE, respondBlocked, auditContentBlock, gatherRecipeText, holdRecipeForReview, worstVerdict, openAutomodReportQuery, restoreHeldRecipe }
