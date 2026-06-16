@@ -23,6 +23,8 @@
 //     allowed  : true only when severity === 'clean'
 //     source   : 'vision' | 'disabled' | 'error'
 
+const { notifyInBackground, notifyAdultContentFlag } = require('./email')
+
 const VISION_URL = 'https://vision.googleapis.com/v1/images:annotate'
 const REQUEST_TIMEOUT_MS = 8000
 
@@ -164,6 +166,17 @@ async function moderateImage(imageUrl, context = '') {
       `[moderation][adult-canary] adult=${annotation.adult} racy=${annotation.racy} ` +
       `violence=${annotation.violence} context=${context || 'n/a'} verdict=${severity} ` +
       `— review for abuse; if recurring, enable CSAM hash-scanning (CONTENT_MODERATION.md P3)`
+    )
+    // Push a throttled, best-effort alert email on top of the log (email.js gates
+    // on RESEND_API_KEY and rate-limits itself; never awaited, never blocks the scan).
+    notifyInBackground(
+      notifyAdultContentFlag({
+        context: context || 'n/a',
+        adult: annotation.adult,
+        racy: annotation.racy,
+        violence: annotation.violence,
+        verdict: severity,
+      })
     )
   }
 

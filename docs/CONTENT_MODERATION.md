@@ -254,8 +254,10 @@ tiers, Text engine, Username timing, and Verification rows).
 > **Pull the trigger when ANY of these hits:**
 > 1. Image uploads open to the general public at real volume (~low hundreds of active users, or
 >    unverified/anonymous accounts can upload).
-> 2. The **adult-hit canary fires** — `imageModeration.js` now logs `[moderation][adult-canary]`
->    whenever Vision reports `adult >= LIKELY`. Recurring hits = bad actors found the site.
+> 2. The **adult-hit canary fires** — `imageModeration.js` logs `[moderation][adult-canary]` whenever
+>    Vision reports `adult >= LIKELY`, AND fires a throttled best-effort alert email (via `email.js`,
+>    to `MODERATION_ALERT_EMAIL`/admin, ≤1 per 30 min) so it isn't buried in logs. Recurring hits = bad
+>    actors found the site.
 > 3. A new feature invites image uploads beyond recipe photos/avatars (DMs, galleries, image comments).
 
 - [ ] *(deferred, trigger-gated — see decision above)* Integrate PhotoDNA Cloud Service on the image path.
@@ -263,7 +265,7 @@ tiers, Text engine, Username timing, and Verification rows).
 - [ ] Rate-limit content creation endpoints if not already covered by the security-audit limits.
 - [ ] Admin queue: visually distinguish `system`-flagged items + show classifier reason/score.
 - [ ] Metrics: counts of auto-hidden / auto-flagged / false-positive-restored.
-- [x] **Adult-hit canary** — `imageModeration.js` warns on `adult >= LIKELY` as the early-warning for trigger #2 above (2026-06-16).
+- [x] **Adult-hit canary** — `imageModeration.js` warns on `adult >= LIKELY` (early-warning for trigger #2) AND sends a throttled best-effort alert email via `email.js` (`MODERATION_ALERT_EMAIL`, ≤1 per `MODERATION_ALERT_THROTTLE_MS`/30 min) (2026-06-16).
 
 ---
 
@@ -275,6 +277,8 @@ MODERATION_ENABLED=        # master toggle for ALL classifiers; off ⇒ they no-
 GOOGLE_VISION_API_KEY=     # server-side Cloud Vision SafeSearch (REST) — images
 MODERATION_IMAGE_HIGH=     # optional likelihood threshold (default VERY_LIKELY)
 MODERATION_IMAGE_MEDIUM=   # optional likelihood threshold (default LIKELY)
+MODERATION_ALERT_EMAIL=    # optional — where adult-canary alert emails go (default: ADMIN_NOTIFY_EMAIL)
+MODERATION_ALERT_THROTTLE_MS=  # optional — min ms between canary emails (default 1800000 = 30 min; 0 disables)
 # CSAM tool credentials TBD by chosen provider (Cloudflare / PhotoDNA / Thorn)
 ```
 

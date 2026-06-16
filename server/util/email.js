@@ -231,6 +231,26 @@ const templates = {
     }
   },
 
+  // Admin-facing: Cloud Vision flagged a user image with a non-trivial ADULT
+  // likelihood (the canary in imageModeration.js). Internal, no appeal line; the
+  // body carries the SafeSearch likelihoods so it can be triaged from the inbox.
+  adultContentFlagged({ context, adult, racy, violence, verdict }) {
+    const subject = 'Prepify moderation: adult-content image flagged'
+    return {
+      subject,
+      ...layout({
+        heading: subject,
+        paragraphs: [
+          'Cloud Vision SafeSearch flagged a user-uploaded image with a non-trivial ADULT likelihood.',
+          `Surface: ${context || 'unknown'}`,
+          `SafeSearch — adult: ${adult}, racy: ${racy}, violence: ${violence}`,
+          `Moderation verdict: ${verdict}`,
+          'This is an early-warning signal, NOT CSAM detection. If these recur it is the agreed trigger to stand up dedicated CSAM hash-scanning (see CONTENT_MODERATION.md P3). Further alerts are rate-limited.',
+        ],
+      }),
+    }
+  },
+
   // Admin-facing: a new user bug report landed. No appeal line (internal); the
   // CTA button drops the admin at Prepify, and the body carries the triage bits.
   bugReportFiled({ category, description, url, reporterLabel }) {
@@ -332,6 +352,41 @@ function notifyBugReportFiled({ category, description, url, reporterLabel }) {
   )
 }
 
+// Where adult-content canary alerts go. MODERATION_ALERT_EMAIL overrides; else it
+// falls back to the shared admin address. Separate from ADMIN_NOTIFY_EMAIL so the
+// safety canary can be pointed at a different inbox without a code change.
+function moderationAlertAddress() {
+  return process.env.MODERATION_ALERT_EMAIL || adminNotifyAddress()
+}
+
+// Throttle for the adult-content canary email: at most one send per window, so a
+// burst of bad uploads can't flood the inbox. The per-image console.warn in
+// imageModeration.js still fires every time — this only rate-limits the push. The
+// last-sent timestamp is module-local (per process); a multi-instance deploy may
+// send one-per-instance, which is acceptable for an early-warning. Default 30 min,
+// env-overridable (0 disables throttling).
+let _lastAdultAlertAt = 0
+function adultAlertThrottleMs() {
+  const v = Number(process.env.MODERATION_ALERT_THROTTLE_MS)
+  return Number.isFinite(v) && v >= 0 ? v : 30 * 60 * 1000
+}
+
+// Adult-content image flagged → email the moderation/admin address, throttled and
+// best-effort. Returns without sending when disabled, throttled, or there is no
+// recipient. The throttle clock only advances on an actual (enabled) attempt.
+function notifyAdultContentFlag({ context, adult, racy, violence, verdict }) {
+  if (!emailEnabled()) return Promise.resolve()
+  const now = Date.now()
+  if (now - _lastAdultAlertAt < adultAlertThrottleMs()) return Promise.resolve()
+  _lastAdultAlertAt = now
+  const to = moderationAlertAddress()
+  if (!to) return Promise.resolve()
+  return deliver(
+    () => to,
+    () => templates.adultContentFlagged({ context, adult, racy, violence, verdict })
+  )
+}
+
 // --- Background dispatch -----------------------------------------------------
 // Moderation routes fire notifications WITHOUT awaiting them, so the admin's
 // HTTP response never waits on Firebase + the email provider (the action has
@@ -364,4 +419,5 @@ module.exports = {
   notifyRecipeHidden,
   notifyReviewTakenDown,
   notifyBugReportFiled,
+  notifyAdultContentFlag,
 }
