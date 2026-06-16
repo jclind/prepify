@@ -112,6 +112,22 @@ describe('imageModeration — grading', () => {
   })
 })
 
+describe('imageModeration — adult-hit canary (CSAM trigger early-warning)', () => {
+  it('logs a warning when adult >= LIKELY (even if the verdict is only medium)', async () => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
+    mockSafeSearch({ adult: 'LIKELY', violence: 'UNLIKELY', racy: 'UNLIKELY' })
+    await moderateImage(URL, 'recipe.image')
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('adult-canary'))
+  })
+
+  it('does NOT log the canary for a clean image (no adult signal)', async () => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
+    mockSafeSearch({ adult: 'UNLIKELY', violence: 'UNLIKELY', racy: 'POSSIBLE' })
+    await moderateImage(URL)
+    expect(warn).not.toHaveBeenCalled()
+  })
+})
+
 describe('imageModeration — fail CLOSED', () => {
   it('treats a thrown fetch as MEDIUM / not-allowed (held, not published)', async () => {
     global.fetch = jest.fn().mockRejectedValue(new Error('network down'))

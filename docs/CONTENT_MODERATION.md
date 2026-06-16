@@ -234,11 +234,36 @@ tiers, Text engine, Username timing, and Verification rows).
       trigger if it proves a real vector.
 
 ### P3 — CSAM + hardening (2–3 days) — *gates public launch*
-- [ ] Integrate Cloudflare CSAM Scanning Tool (or PhotoDNA/Thorn) on the image path.
-- [ ] Mandatory-reporting runbook (NCMEC) documented for when a match occurs.
+
+> **DECISION 2026-06-16 — CSAM scanning DEFERRED (not declined), trigger-gated.**
+> At current scale (≈0 users, no upload inflow) the realistic CSAM exposure is negligible, while the
+> free hash-matchers (PhotoDNA / Google Content Safety) require a multi-week application + vetting and
+> an ongoing NCMEC reporting pipeline — i.e. compliance overhead for traffic that doesn't exist yet.
+> The Vision SafeSearch adult/racy gate (P2, fail-closed) is the proportionate first line for now.
+> The owner is willing to take on the reporting duty; the point of deferral is to *sequence* it to
+> when it can actually do good, not to avoid it. **This is reversible** — it's a server-side hook at
+> upload, identical in shape to `imageModeration.js`, so adding it later is contained, not a rewrite.
+>
+> **Chosen approach when triggered:** **PhotoDNA Cloud Service** (free, Microsoft) as a server-side
+> hash-match hook at upload — fits the existing Firebase-Storage + server-scan path with no Cloudflare
+> dependency (Cloudflare's edge tool would require routing image delivery through Cloudflare, which we
+> don't today). Add **Google Content Safety API** later if novel-content (non-hash) detection is wanted.
+> **Thorn Safer** is capable but commercial/overkill at this scale. Full rationale: see the
+> "CSAM provider" discussion in Progress / chat history.
+>
+> **Pull the trigger when ANY of these hits:**
+> 1. Image uploads open to the general public at real volume (~low hundreds of active users, or
+>    unverified/anonymous accounts can upload).
+> 2. The **adult-hit canary fires** — `imageModeration.js` now logs `[moderation][adult-canary]`
+>    whenever Vision reports `adult >= LIKELY`. Recurring hits = bad actors found the site.
+> 3. A new feature invites image uploads beyond recipe photos/avatars (DMs, galleries, image comments).
+
+- [ ] *(deferred, trigger-gated — see decision above)* Integrate PhotoDNA Cloud Service on the image path.
+- [ ] *(deferred)* Mandatory-reporting runbook (NCMEC CyberTipline, preserve-don't-delete) documented for when a match occurs.
 - [ ] Rate-limit content creation endpoints if not already covered by the security-audit limits.
 - [ ] Admin queue: visually distinguish `system`-flagged items + show classifier reason/score.
 - [ ] Metrics: counts of auto-hidden / auto-flagged / false-positive-restored.
+- [x] **Adult-hit canary** — `imageModeration.js` warns on `adult >= LIKELY` as the early-warning for trigger #2 above (2026-06-16).
 
 ---
 

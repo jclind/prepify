@@ -152,6 +152,21 @@ async function moderateImage(imageUrl, context = '') {
   }
 
   const { severity, category, score } = grade(annotation)
+
+  // Canary: surface any non-trivial ADULT signal in the logs even when the verdict
+  // itself didn't hard-block (a POSSIBLE/LIKELY adult image still grades medium or
+  // clean). The agreed trigger for standing up dedicated CSAM hash-scanning is "we
+  // start seeing adult hits" — this is the early warning that bad actors found the
+  // site. NOTE: SafeSearch flags generic adult/explicit content, NOT CSAM; this is
+  // a signal to act, not a detector. See docs/CONTENT_MODERATION.md P3.
+  if ((LIKELIHOOD[annotation.adult] ?? 0) >= LIKELIHOOD.LIKELY) {
+    console.warn(
+      `[moderation][adult-canary] adult=${annotation.adult} racy=${annotation.racy} ` +
+      `violence=${annotation.violence} context=${context || 'n/a'} verdict=${severity} ` +
+      `— review for abuse; if recurring, enable CSAM hash-scanning (CONTENT_MODERATION.md P3)`
+    )
+  }
+
   return {
     allowed: severity === 'clean',
     severity,
