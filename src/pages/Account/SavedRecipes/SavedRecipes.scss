@@ -14,6 +14,10 @@
   .collection-card {
     display: flex;
     flex-direction: column;
+    // border-box so the create form's own padding (.is-form) is counted inside
+    // the 158px instead of making that tile taller than its fixed-height
+    // siblings and stretching the grid row.
+    box-sizing: border-box;
     height: 158px;
     overflow: hidden;
     border: 1px solid #ece2d6;
