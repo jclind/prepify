@@ -271,6 +271,7 @@ const SavedRecipes: FC = () => {
           count={savedTotal}
           cover={null}
           icon={<FiGrid />}
+          variant='all'
           active={activeCollectionId === null}
           onClick={() => selectCollection(null)}
         />

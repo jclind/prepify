@@ -11,15 +11,22 @@ const CollectionCard: FC<{
   cover: string | null
   active: boolean
   icon?: ReactNode
+  // 'all' = the system "All saved" view; gets a branded thumb so it reads as the
+  // primary all-view rather than an empty-folder fallback.
+  variant?: 'default' | 'all'
   onClick: () => void
-}> = ({ label, count, cover, active, icon, onClick }) => (
+}> = ({ label, count, cover, active, icon, variant = 'default', onClick }) => (
   <button
     type='button'
     className={`collection-card ${active ? 'active' : ''}`}
     onClick={onClick}
     aria-pressed={active}
   >
-    <span className={`collection-card__thumb ${cover ? '' : 'empty'}`}>
+    <span
+      className={`collection-card__thumb ${cover ? '' : 'empty'} ${
+        variant === 'all' ? 'all' : ''
+      }`.trim()}
+    >
       {cover ? <img src={cover} alt='' /> : icon ?? <FiFolder />}
     </span>
     <span className='collection-card__text'>

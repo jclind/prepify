@@ -59,6 +59,16 @@
       &.empty svg {
         font-size: 1.3rem;
       }
+      // The "All saved" view is a system entry, not a folder — tint its thumb
+      // and brand + enlarge the icon so it reads as the primary all-view rather
+      // than looking like an empty-folder fallback (same gray + icon).
+      &.all {
+        background: rgba(s.$primary, 0.1);
+        color: s.$primary;
+        svg {
+          font-size: 1.6rem;
+        }
+      }
     }
     // Name + count grouped near the top with one fixed gap (chosen spacing), so
     // the rhythm is identical whether the name is one or two lines.
