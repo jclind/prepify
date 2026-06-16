@@ -199,6 +199,18 @@ export interface NewReportType {
   details?: string
 }
 
+// Classifier snapshot stamped onto an automated (source: 'automod') report by
+// holdRecipeForReview, so the admin queue can show WHY the system held it.
+export interface ReportClassifier {
+  severity: 'clean' | 'medium' | 'high'
+  category: string | null
+  // e.g. 'openai:harassment:0.60' — the numeric score lives here. Medium holds
+  // are openai-only (blocklist hits are always high-blocked, never held), so this
+  // never carries raw user content.
+  reason: string | null
+  source: string | null
+}
+
 export interface ReportType {
   _id: string
   targetType: ReportTargetType
@@ -211,6 +223,9 @@ export interface ReportType {
   createdAt: string
   resolvedBy?: string
   resolvedAt?: string
+  // Present only on machine-filed reports. User reports leave these undefined.
+  source?: 'automod'
+  classifier?: ReportClassifier
 }
 
 // Report enriched with a snapshot of the reported content, as returned by the
@@ -328,6 +343,9 @@ export type AuditAction =
   | 'report.dismiss'
   | 'bugReport.resolve'
   | 'bugReport.dismiss'
+  // Automated moderation actions (system actor).
+  | 'recipe.autohold'
+  | 'content.blocked'
 
 export type AuditTargetType =
   | 'recipe'
@@ -340,6 +358,9 @@ export interface AuditEntryType {
   _id: string
   action: AuditAction
   actorUid: string
+  // 'system' marks an automated (non-human) action — autohold, content.blocked.
+  // 'admin' (or absent, for legacy rows) is a human admin.
+  actorType?: 'admin' | 'system'
   actorUsername: string | null
   targetType: AuditTargetType
   targetId: string | null
@@ -370,6 +391,12 @@ export interface AnalyticsTotals {
     open: number
     resolved: number
     dismissed: number
+  }
+  // Automated-moderation activity (all-time).
+  moderation: {
+    autoHeld: number // recipes the classifier held for review (recipe.autohold)
+    autoBlocked: number // writes refused outright (content.blocked)
+    autoFlagsDismissed: number // automod reports an admin dismissed (flags cleared, not content restored)
   }
 }
 

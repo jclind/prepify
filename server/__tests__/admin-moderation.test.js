@@ -37,7 +37,43 @@ afterEach(async () => {
     db.collection('userRecipeData').deleteMany({}),
     db.collection('usernames').deleteMany({}),
     db.collection('stats').deleteMany({}),
+    db.collection('reports').deleteMany({}),
   ])
+})
+
+describe('GET /api/admin/recipes/:id/automod', () => {
+  it('requires admin', async () => {
+    const res = await request(app).get('/api/admin/recipes/r1/automod').set(AUTH_HEADER)
+    expect(res.status).toBe(403)
+  })
+
+  it('returns the classifier from the open automod report holding the recipe', async () => {
+    admin.__setClaims({ admin: true })
+    await getDB().collection('reports').insertOne({
+      targetType: 'recipe',
+      recipeId: 'r1',
+      reporterUid: 'system:automod',
+      source: 'automod',
+      status: 'open',
+      classifier: { severity: 'medium', category: 'harassment', reason: 'openai:harassment:0.60', source: 'openai' },
+      createdAt: new Date(),
+    })
+    const res = await request(app).get('/api/admin/recipes/r1/automod').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(res.body.classifier).toMatchObject({ severity: 'medium', category: 'harassment' })
+  })
+
+  it('returns null classifier when there is no open automod report', async () => {
+    admin.__setClaims({ admin: true })
+    // A user report (no source) and a CLOSED automod report must both be ignored.
+    await getDB().collection('reports').insertMany([
+      { targetType: 'recipe', recipeId: 'r1', reporterUid: 'u1', status: 'open', createdAt: new Date() },
+      { targetType: 'recipe', recipeId: 'r1', reporterUid: 'system:automod', source: 'automod', status: 'dismissed', classifier: { severity: 'medium' }, createdAt: new Date() },
+    ])
+    const res = await request(app).get('/api/admin/recipes/r1/automod').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(res.body.classifier).toBeNull()
+  })
 })
 
 describe('PATCH /api/admin/recipes/:id/moderation', () => {

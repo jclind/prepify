@@ -85,4 +85,43 @@ describe('Admin Reports bulk actions', () => {
     await screen.findByText('Dish r1')
     expect(screen.queryByText(/select all/i)).not.toBeInTheDocument()
   })
+
+  it('flags an automod report with the Automod pill + the classifier reason', async () => {
+    mockedList.mockResolvedValue({
+      reports: [
+        {
+          ...openReport('r1', 'rec1'),
+          source: 'automod',
+          classifier: {
+            severity: 'medium',
+            category: 'harassment',
+            reason: 'openai:harassment:0.60',
+            source: 'openai',
+          },
+        },
+      ],
+      totalCount: 1,
+      openCount: 1,
+    })
+    renderReports()
+    await screen.findByText('Dish r1')
+
+    expect(screen.getByText('Automod')).toBeInTheDocument()
+    expect(
+      screen.getByText(/auto-flagged: harassment · 60% confidence · medium severity/i)
+    ).toBeInTheDocument()
+  })
+
+  it('shows no Automod pill or classifier line for a plain user report', async () => {
+    mockedList.mockResolvedValue({
+      reports: [openReport('r1', 'rec1')], // no source / classifier
+      totalCount: 1,
+      openCount: 1,
+    })
+    renderReports()
+    await screen.findByText('Dish r1')
+
+    expect(screen.queryByText('Automod')).not.toBeInTheDocument()
+    expect(screen.queryByText(/auto-flagged/i)).not.toBeInTheDocument()
+  })
 })

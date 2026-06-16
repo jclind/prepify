@@ -20,6 +20,7 @@ vi.mock('src/api/admin', () => ({
   default: {
     setRecipeFeatured: vi.fn().mockResolvedValue({ _id: 'r1', featured: true }),
     setRecipePublished: vi.fn().mockResolvedValue({ _id: 'r1', status: 'unpublished' }),
+    getRecipeAutomod: vi.fn(),
   },
 }))
 vi.mock('src/api/reports', () => ({
@@ -35,6 +36,7 @@ const mockedUseAuth = useAuth as unknown as Mock
 const mockedFeature = AdminAPI.setRecipeFeatured as unknown as Mock
 const mockedPublish = AdminAPI.setRecipePublished as unknown as Mock
 const mockedModeration = ReportAPI.setRecipeModeration as unknown as Mock
+const mockedAutomod = AdminAPI.getRecipeAutomod as unknown as Mock
 
 const recipe = { _id: 'r1', title: 'T', status: 'active', featured: false } as RecipeType
 
@@ -94,5 +96,44 @@ describe('AdminRecipeControls', () => {
     renderControls({ ...recipe, status: 'unpublished' } as RecipeType)
     expect(screen.getByRole('button', { name: /take down/i })).toBeDisabled()
     expect(screen.getByRole('button', { name: /^publish$/i })).toBeEnabled()
+  })
+
+  it('shows the Pending review pill + auto-held note with the classifier reason', async () => {
+    mockedUseAuth.mockReturnValue({ isAdmin: true })
+    mockedAutomod.mockResolvedValue({
+      classifier: {
+        severity: 'medium',
+        category: 'harassment',
+        reason: 'openai:harassment:0.60',
+        source: 'openai',
+      },
+      createdAt: new Date('2026-06-01').toISOString(),
+    })
+    renderControls({ ...recipe, status: 'pending_review' } as RecipeType)
+
+    expect(screen.getByText('Pending review')).toBeInTheDocument()
+    // The note fills in once the classifier query resolves.
+    expect(
+      await screen.findByText(
+        /auto-held for moderation review — harassment · 60% confidence · medium severity/i
+      )
+    ).toBeInTheDocument()
+    expect(mockedAutomod).toHaveBeenCalledWith('r1')
+  })
+
+  it('renders a held recipe without a classifier as a plain auto-held note', async () => {
+    mockedUseAuth.mockReturnValue({ isAdmin: true })
+    mockedAutomod.mockResolvedValue({ classifier: null, createdAt: null })
+    renderControls({ ...recipe, status: 'pending_review' } as RecipeType)
+
+    expect(await screen.findByText(/auto-held for moderation review\.$/i)).toBeInTheDocument()
+  })
+
+  it('does not query automod or show held UI for an active recipe', () => {
+    mockedUseAuth.mockReturnValue({ isAdmin: true })
+    renderControls() // active
+    expect(screen.queryByText('Pending review')).not.toBeInTheDocument()
+    expect(screen.queryByText(/auto-held/i)).not.toBeInTheDocument()
+    expect(mockedAutomod).not.toHaveBeenCalled()
   })
 })

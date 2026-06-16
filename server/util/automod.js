@@ -16,10 +16,66 @@ const BLOCKED_MESSAGE =
   "This content was flagged by our automated moderation system and can't be published. Please review our content guidelines and edit your submission."
 const BLOCKED_CODE = 'CONTENT_BLOCKED'
 
+/**
+ * Best-effort audit row for a block that was returned to a user. Without it a
+ * block leaves NO trace: the refused content is never persisted, so an admin
+ * could not otherwise tell the automated system is rejecting submissions — from
+ * whom, on which surface, or in what category. Credited to the system actor (a
+ * machine decision, like recipe.autohold), with the OFFENDING user as the target.
+ *
+ * Stores ONLY structured signal — surface + classifier category/severity/source
+ * + the offender's uid. It deliberately never stores verdict.reason (a blocklist
+ * reason embeds the matched term, i.e. the very content we refuse to echo) nor
+ * any of the submitted text.
+ *
+ * @param {import('mongodb').Db} db
+ * @param {object} args
+ * @param {string} args.uid       offending user's uid
+ * @param {string} args.surface   where the block happened ('recipe' | 'review' | 'username' | 'displayName' | 'profile' | 'profile.photo')
+ * @param {object} args.verdict   the moderate{Text,Image} result
+ */
+async function auditContentBlock(db, { uid, surface, verdict } = {}) {
+  if (!db) return
+  let targetLabel = null
+  try {
+    // Best-effort handle so the queue reads "@user" not a bare uid. A miss
+    // (legacy user, lookup hiccup) just falls back to the uid at render time.
+    if (uid) {
+      const doc = await db
+        .collection('usernames')
+        .findOne({ _id: uid }, { projection: { username: 1 } })
+      if (doc?.username) targetLabel = `@${doc.username}`
+    }
+  } catch (_) {
+    // ignore — targetLabel stays null
+  }
+  await recordAudit(db, {
+    action: 'content.blocked',
+    actorUid: SYSTEM_ACTOR.uid,
+    actorType: SYSTEM_ACTOR.type,
+    targetType: 'user',
+    targetId: uid || null,
+    targetLabel,
+    metadata: {
+      surface: surface || null,
+      category: verdict?.category || null,
+      severity: verdict?.severity || null,
+      source: verdict?.source || null,
+    },
+  })
+}
+
 // Single owner of the high-confidence block response, so the 422 contract (status
 // + body shape the FE keys on) lives in one place instead of being re-typed at
-// every write route.
-function respondBlocked(res) {
+// every write route. When a `context` ({ db, uid, surface, verdict }) is passed,
+// it ALSO drops a best-effort, system-actor audit row so the block is visible to
+// admins — fire-and-forget so it never delays the 422 or turns a block into a
+// 500 (recordAudit already swallows its own errors; the guard covers the rest).
+// Context is optional, so a bare respondBlocked(res) still works.
+function respondBlocked(res, context) {
+  if (context && context.db) {
+    auditContentBlock(context.db, context).catch(() => {})
+  }
   return res.status(422).json({ error: BLOCKED_MESSAGE, code: BLOCKED_CODE })
 }
 
@@ -168,4 +224,4 @@ async function holdRecipeForReview(db, { recipeId, title, verdict }) {
   return true
 }
 
-module.exports = { BLOCKED_MESSAGE, BLOCKED_CODE, respondBlocked, gatherRecipeText, holdRecipeForReview, worstVerdict }
+module.exports = { BLOCKED_MESSAGE, BLOCKED_CODE, respondBlocked, auditContentBlock, gatherRecipeText, holdRecipeForReview, worstVerdict }

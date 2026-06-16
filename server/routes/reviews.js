@@ -2,6 +2,7 @@ const { Router } = require('express')
 const { asyncHandler } = require('../util/asyncHandler')
 const { getDB } = require('../db')
 const { verifyToken, optionalAuth, requireAdmin, requireActive } = require('../middleware/auth')
+const { writeLimiter } = require('../middleware/writeLimiter')
 const { recipeIdQuery } = require('../util/recipeIdQuery')
 const { REVIEW_VISIBLE, RECIPE_VISIBLE } = require('../util/moderation')
 const { DESCRIPTION_MAX_LENGTH } = require('../util/recipeLimits')
@@ -63,7 +64,7 @@ router.post('/addRating', verifyToken, requireActive, asyncHandler(async (req, r
 }))
 
 // POST /newReview
-router.post('/newReview', verifyToken, requireActive, asyncHandler(async (req, res) => {
+router.post('/newReview', verifyToken, requireActive, writeLimiter, asyncHandler(async (req, res) => {
   const db = getDB()
   const { recipeId, reviewText } = req.body
   const userId = req.uid
@@ -79,7 +80,7 @@ router.post('/newReview', verifyToken, requireActive, asyncHandler(async (req, r
   // `allowed` is true only for a clean verdict.
   const verdict = await moderateText(reviewText, 'review')
   if (!verdict.allowed) {
-    return respondBlocked(res)
+    return respondBlocked(res, { db, uid: userId, surface: 'review', verdict })
   }
 
   const usernameDoc = await db.collection('usernames').findOne({ _id: userId })
@@ -124,7 +125,7 @@ router.get('/checkIfReviewed', verifyToken, asyncHandler(async (req, res) => {
 }))
 
 // POST /editReview
-router.post('/editReview', verifyToken, requireActive, asyncHandler(async (req, res) => {
+router.post('/editReview', verifyToken, requireActive, writeLimiter, asyncHandler(async (req, res) => {
   const { recipeId, text } = req.query
   const db = getDB()
   if (!recipeId || typeof recipeId !== 'string' || text == null || typeof text !== 'string') {
@@ -135,7 +136,7 @@ router.post('/editReview', verifyToken, requireActive, asyncHandler(async (req, 
   }
   const verdict = await moderateText(text, 'review')
   if (!verdict.allowed) {
-    return respondBlocked(res)
+    return respondBlocked(res, { db, uid: req.uid, surface: 'review', verdict })
   }
   // Keyed by the stable uid (D1): only the author (req.uid) can match their own
   // doc, so a non-author falls through to matchedCount 0 → 403 below.
