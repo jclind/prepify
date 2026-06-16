@@ -9,7 +9,8 @@
  * unmoderated. Assert the real keys make it into the blob.
  */
 
-const { gatherRecipeText, holdRecipeForReview } = require('../util/automod')
+const { gatherRecipeText, holdRecipeForReview, auditContentBlock, respondBlocked } = require('../util/automod')
+const { SYSTEM_ACTOR } = require('../util/auditLog')
 
 // A parsed-ingredient row exactly as src/api/recipes.ts builds it.
 const parsedIngredient = (originalIngredientString, ingredient) => ({
@@ -128,5 +129,133 @@ describe('holdRecipeForReview — report-gated hold', () => {
     expect(held).toBe(false)
     // Crucial invariant: a recipe is never hidden without a queue entry to clear it.
     expect(calls.recipes).toHaveLength(0)
+  })
+})
+
+describe('auditContentBlock — system-actor trail for a refused write', () => {
+  // Fake Db capturing the auditLog insert and serving a usernames lookup.
+  const fakeDb = ({ username, findThrows, insertThrows } = {}) => {
+    const inserts = []
+    return {
+      inserts,
+      db: {
+        collection: (name) => {
+          if (name === 'usernames') {
+            return {
+              findOne: async () => {
+                if (findThrows) throw new Error('lookup down')
+                return username ? { username } : null
+              },
+            }
+          }
+          return {
+            insertOne: async (doc) => {
+              if (insertThrows) throw new Error('insert down')
+              inserts.push(doc)
+              return { acknowledged: true }
+            },
+          }
+        },
+      },
+    }
+  }
+
+  const VERDICT = { allowed: false, severity: 'high', reason: 'blocklist:slur:SLURWORD', category: 'slur', source: 'blocklist' }
+
+  it('writes a system-actor content.blocked row targeting the offending user', async () => {
+    const { db, inserts } = fakeDb({ username: 'baduser' })
+    await auditContentBlock(db, { uid: 'uid-1', surface: 'review', verdict: VERDICT })
+    expect(inserts).toHaveLength(1)
+    const row = inserts[0]
+    expect(row.action).toBe('content.blocked')
+    expect(row.actorUid).toBe(SYSTEM_ACTOR.uid)
+    expect(row.actorType).toBe('system')
+    expect(row.targetType).toBe('user')
+    expect(row.targetId).toBe('uid-1')
+    expect(row.targetLabel).toBe('@baduser')
+    expect(row.metadata).toEqual({
+      surface: 'review',
+      category: 'slur',
+      severity: 'high',
+      source: 'blocklist',
+    })
+  })
+
+  it('stores NO raw content — never the verdict.reason (which embeds the matched term) or the text', async () => {
+    const { db, inserts } = fakeDb({ username: 'baduser' })
+    await auditContentBlock(db, { uid: 'uid-1', surface: 'username', verdict: VERDICT })
+    const serialized = JSON.stringify(inserts[0])
+    expect(serialized).not.toContain('SLURWORD') // the matched term must not leak
+    expect(serialized).not.toContain('blocklist:slur:') // nor the reason string that carries it
+    expect(inserts[0].reason).toBeFalsy()
+  })
+
+  it('falls back to a null targetLabel (→ bare uid at render) when the username lookup misses', async () => {
+    const { db, inserts } = fakeDb({ username: null })
+    await auditContentBlock(db, { uid: 'uid-2', surface: 'profile', verdict: VERDICT })
+    expect(inserts[0].targetLabel).toBeNull()
+    expect(inserts[0].targetId).toBe('uid-2')
+  })
+
+  it('is best-effort: a username-lookup failure still records the row', async () => {
+    const { db, inserts } = fakeDb({ findThrows: true })
+    await expect(
+      auditContentBlock(db, { uid: 'uid-3', surface: 'recipe', verdict: VERDICT })
+    ).resolves.toBeUndefined()
+    expect(inserts).toHaveLength(1)
+    expect(inserts[0].targetLabel).toBeNull()
+  })
+
+  it('is best-effort: an audit-insert failure never throws', async () => {
+    const { db } = fakeDb({ username: 'baduser', insertThrows: true })
+    await expect(
+      auditContentBlock(db, { uid: 'uid-4', surface: 'recipe', verdict: VERDICT })
+    ).resolves.toBeUndefined()
+  })
+
+  it('no-ops when given no db', async () => {
+    await expect(auditContentBlock(undefined, { uid: 'x' })).resolves.toBeUndefined()
+  })
+})
+
+describe('respondBlocked — 422 contract + best-effort audit', () => {
+  const fakeRes = () => {
+    const res = {}
+    res.status = jest.fn(() => res)
+    res.json = jest.fn(() => res)
+    return res
+  }
+
+  it('returns the 422 CONTENT_BLOCKED contract', () => {
+    const res = fakeRes()
+    respondBlocked(res)
+    expect(res.status).toHaveBeenCalledWith(422)
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ code: 'CONTENT_BLOCKED' })
+    )
+  })
+
+  it('drops a content.blocked audit row when context is supplied, without blocking the response', async () => {
+    const inserts = []
+    const db = {
+      collection: (name) =>
+        name === 'usernames'
+          ? { findOne: async () => ({ username: 'baduser' }) }
+          : { insertOne: async (doc) => { inserts.push(doc); return { acknowledged: true } } },
+    }
+    const res = fakeRes()
+    respondBlocked(res, { db, uid: 'uid-9', surface: 'displayName', verdict: { severity: 'high', category: 'harassment', source: 'openai' } })
+    // Response is sent synchronously; the audit is fire-and-forget.
+    expect(res.status).toHaveBeenCalledWith(422)
+    await new Promise((r) => setImmediate(r)) // let the fire-and-forget settle
+    expect(inserts).toHaveLength(1)
+    expect(inserts[0].action).toBe('content.blocked')
+    expect(inserts[0].metadata.surface).toBe('displayName')
+  })
+
+  it('skips the audit (and never throws) when no context is passed', () => {
+    const res = fakeRes()
+    expect(() => respondBlocked(res)).not.toThrow()
+    expect(res.status).toHaveBeenCalledWith(422)
   })
 })

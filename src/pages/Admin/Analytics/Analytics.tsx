@@ -2,7 +2,7 @@ import React, { FC, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { AuditEntryType, TimeBucket } from 'types'
 import AdminAPI from 'src/api/admin'
-import { ACTION_META } from 'src/pages/Admin/auditMeta'
+import { ACTION_META, formatAuditActor } from 'src/pages/Admin/auditMeta'
 import './Analytics.scss'
 
 // Day windows offered by the toggle. Server clamps to 7–90 regardless.
@@ -94,6 +94,14 @@ const Analytics: FC = () => {
                 {data.totals.reports.resolved} resolved · {data.totals.reports.dismissed} dismissed
               </span>
             </div>
+            <div className='stat-card'>
+              <span className='stat-value warn'>{data.totals.moderation.autoBlocked}</span>
+              <span className='stat-label'>Auto-blocked</span>
+              <span className='stat-sub'>
+                {data.totals.moderation.autoHeld} auto-held ·{' '}
+                {data.totals.moderation.autoFlagsDismissed} flags&nbsp;dismissed
+              </span>
+            </div>
           </section>
 
           <section className='trends'>
@@ -126,7 +134,7 @@ const Analytics: FC = () => {
                       <div className='action-body'>
                         <p className='action-line'>
                           <strong className='actor'>
-                            {entry.actorUsername ? `@${entry.actorUsername}` : 'An admin'}
+                            {formatAuditActor(entry)}
                           </strong>{' '}
                           {meta?.label || entry.action}{' '}
                           <span className='target'>{entry.targetLabel || entry.targetId}</span>

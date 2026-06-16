@@ -1,4 +1,16 @@
-import { AuditAction } from 'types'
+import { AuditAction, AuditEntryType } from 'types'
+
+// Display name for the actor of an audit row, shared by the Audit log and the
+// Analytics "recent actions" feed so they stay in sync. Automated actions
+// (autohold, content.blocked) are credited to the synthetic system actor, whose
+// uid never resolves to a username — show "Automod" instead of the misleading
+// "An admin" fallback. Human admins show their @handle (or a generic fallback).
+export const formatAuditActor = (
+  entry: Pick<AuditEntryType, 'actorType' | 'actorUsername'>
+): string => {
+  if (entry.actorType === 'system') return 'Automod'
+  return entry.actorUsername ? `@${entry.actorUsername}` : 'An admin'
+}
 
 // Short human phrasing + a colour tone per audit action, used for the row label
 // in both the Audit log and the Analytics "recent actions" feed. Kept here so
@@ -21,4 +33,9 @@ export const ACTION_META: Record<AuditAction, { label: string; tone: string }> =
   'report.dismiss': { label: 'dismissed report', tone: 'neutral' },
   'bugReport.resolve': { label: 'resolved bug report', tone: 'good' },
   'bugReport.dismiss': { label: 'dismissed bug report', tone: 'neutral' },
+  // Automated moderation (system actor). autohold = held a borderline recipe for
+  // review; content.blocked = refused a write outright (never persisted, target
+  // is the offending user; surface/category live in metadata).
+  'recipe.autohold': { label: 'auto-held recipe', tone: 'warn' },
+  'content.blocked': { label: 'blocked content from', tone: 'warn' },
 }

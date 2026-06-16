@@ -5,6 +5,7 @@ import toast from 'react-hot-toast'
 import { AdminReportType, ReportStatus } from 'types'
 import ReportAPI from 'src/api/reports'
 import SavedFilterBar from 'src/Components/SavedFilters/SavedFilterBar'
+import { formatClassifier } from 'src/util/formatClassifier'
 import './Reports.scss'
 
 type StatusFilter = ReportStatus | 'all'
@@ -265,7 +266,21 @@ const Reports: FC = () => {
                   <span className={`status-pill ${report.status}`}>
                     {report.status}
                   </span>
+                  {report.source === 'automod' && (
+                    <span
+                      className='automod-pill'
+                      title='Filed automatically by the content-moderation system'
+                    >
+                      Automod
+                    </span>
+                  )}
                 </div>
+
+                {report.classifier && (
+                  <p className='report-classifier'>
+                    Auto-flagged: {formatClassifier(report.classifier)}
+                  </p>
+                )}
 
                 {renderPreview(report)}
 

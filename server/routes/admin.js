@@ -339,6 +339,21 @@ router.get('/admin/audit', verifyToken, requireAdmin, asyncHandler(async (req, r
   res.json({ entries: enriched, totalCount })
 }))
 
+// GET /admin/recipes/:id/automod — the classifier snapshot from the OPEN
+// automated-moderation report that put this recipe into pending_review, so the
+// recipe page's admin strip can show WHY it was held inline (not only in the
+// reports queue). The reason lives on the report, not the recipe doc, hence this
+// targeted lookup. Returns { classifier: null } when no open automod report
+// exists (e.g. a human takedown, or the hold was already cleared).
+router.get('/admin/recipes/:id/automod', verifyToken, requireAdmin, asyncHandler(async (req, res) => {
+  const db = getDB()
+  const report = await db.collection('reports').findOne(
+    { targetType: 'recipe', recipeId: String(req.params.id), source: 'automod', status: 'open' },
+    { sort: { createdAt: -1 }, projection: { classifier: 1, createdAt: 1 } }
+  )
+  res.json({ classifier: report?.classifier || null, createdAt: report?.createdAt || null })
+}))
+
 // GET /admin/analytics?days= — single overview payload for the admin dashboard:
 // headline totals, daily over-time series (reports filed / recipes / signups),
 // and the most recent admin actions. `days` is clamped to [MIN_DAYS, MAX_DAYS].
@@ -364,6 +379,8 @@ router.get('/admin/analytics', verifyToken, requireAdmin, asyncHandler(async (re
     featuredCount,
     reviewCount,
     reportStatusAgg,
+    moderationActionAgg,
+    autoDismissedCount,
     reportsDaily,
     recipesDaily,
     usersDaily,
@@ -385,6 +402,20 @@ router.get('/admin/analytics', verifyToken, requireAdmin, asyncHandler(async (re
       .collection('reports')
       .aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }])
       .toArray(),
+    // Automated-moderation tallies (all-time, like the other totals). autohold =
+    // recipes the classifier held for review; content.blocked = writes it refused
+    // outright. One aggregation over the two system actions (uses the action index).
+    db
+      .collection('auditLog')
+      .aggregate([
+        { $match: { action: { $in: ['recipe.autohold', 'content.blocked'] } } },
+        { $group: { _id: '$action', count: { $sum: 1 } } },
+      ])
+      .toArray(),
+    // Automod-filed reports an admin later dismissed. NOTE: dismissing does not
+    // (yet) restore a held recipe's status — this counts flags cleared, not
+    // content republished. See moderation follow-ups (approve/restore path).
+    db.collection('reports').countDocuments({ source: 'automod', status: 'dismissed' }),
     dailyCreatedAgg(db, 'reports', cutoff),
     dailyCreatedAgg(db, 'recipes', cutoff),
     dailyCreatedAgg(db, 'usernames', cutoff),
@@ -399,6 +430,7 @@ router.get('/admin/analytics', verifyToken, requireAdmin, asyncHandler(async (re
   const recipeByStatus = Object.fromEntries(recipeStatusAgg.map((r) => [r._id, r.count]))
   const recipeTotal = recipeStatusAgg.reduce((sum, r) => sum + r.count, 0)
   const reportByStatus = Object.fromEntries(reportStatusAgg.map((r) => [r._id, r.count]))
+  const modByAction = Object.fromEntries(moderationActionAgg.map((r) => [r._id, r.count]))
 
   const recentActions = await enrichActors(db, recentRaw)
 
@@ -418,6 +450,13 @@ router.get('/admin/analytics', verifyToken, requireAdmin, asyncHandler(async (re
         open: reportByStatus.open || 0,
         resolved: reportByStatus.resolved || 0,
         dismissed: reportByStatus.dismissed || 0,
+      },
+      // Automated-moderation activity (all-time). See the audit actions
+      // recipe.autohold / content.blocked and dismissed automod reports.
+      moderation: {
+        autoHeld: modByAction['recipe.autohold'] || 0,
+        autoBlocked: modByAction['content.blocked'] || 0,
+        autoFlagsDismissed: autoDismissedCount,
       },
     },
     reportsOverTime: buildDailySeries(reportsDaily, days, now),

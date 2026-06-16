@@ -2,7 +2,7 @@ import React, { FC, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { AuditAction, AuditEntryType, AuditTargetType } from 'types'
 import AdminAPI from 'src/api/admin'
-import { ACTION_META } from 'src/pages/Admin/auditMeta'
+import { ACTION_META, formatAuditActor } from 'src/pages/Admin/auditMeta'
 import SavedFilterBar from 'src/Components/SavedFilters/SavedFilterBar'
 import './Audit.scss'
 
@@ -29,6 +29,8 @@ const ACTION_FILTERS: { value: AuditAction | 'all'; label: string }[] = [
   { value: 'user.activate', label: 'User reactivated' },
   { value: 'report.resolve', label: 'Report resolved' },
   { value: 'report.dismiss', label: 'Report dismissed' },
+  { value: 'recipe.autohold', label: 'Recipe auto-held (auto)' },
+  { value: 'content.blocked', label: 'Content blocked (auto)' },
 ]
 
 const TARGET_TABS: { value: AuditTargetType | 'all'; label: string }[] = [
@@ -125,7 +127,7 @@ const Audit: FC = () => {
                   <div className='audit-body'>
                     <p className='audit-line'>
                       <strong className='actor'>
-                        {entry.actorUsername ? `@${entry.actorUsername}` : 'An admin'}
+                        {formatAuditActor(entry)}
                       </strong>{' '}
                       {meta?.label || entry.action}{' '}
                       <span className='target'>{entry.targetLabel || entry.targetId}</span>

@@ -6,6 +6,7 @@ import {
   AuditAction,
   AuditTargetType,
   AnalyticsResponse,
+  ReportClassifier,
 } from 'types'
 import { http } from 'src/api/http-common'
 
@@ -87,6 +88,18 @@ class AdminAPIClass {
     const result = await http.get<AnalyticsResponse>('api/admin/analytics', {
       params,
     })
+    return result.data
+  }
+
+  // Why a recipe was auto-held (its open automod report's classifier), so the
+  // recipe page's admin strip can explain a pending_review hold inline.
+  async getRecipeAutomod(
+    recipeId: string
+  ): Promise<{ classifier: ReportClassifier | null; createdAt: string | null }> {
+    const result = await http.get<{
+      classifier: ReportClassifier | null
+      createdAt: string | null
+    }>(`api/admin/recipes/${recipeId}/automod`)
     return result.data
   }
 }

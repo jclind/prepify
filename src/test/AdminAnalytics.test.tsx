@@ -29,6 +29,7 @@ const sample = {
     recipes: { total: 100, active: 90, hidden: 5, unpublished: 5, featured: 3 },
     reviews: 17,
     reports: { open: 4, resolved: 8, dismissed: 2 },
+    moderation: { autoHeld: 6, autoBlocked: 11, autoFlagsDismissed: 2 },
   },
   reportsOverTime: series(1, 0, 2),
   recipesOverTime: series(3, 1, 0),
@@ -72,6 +73,11 @@ describe('Admin Analytics page', () => {
     expect(screen.getByText('17')).toBeInTheDocument() // reviews
     expect(screen.getByText('4')).toBeInTheDocument() // open reports
     expect(screen.getByText(/3 featured/)).toBeInTheDocument()
+
+    // Moderation card: auto-blocked headline + the auto-held / false-positive sub.
+    expect(screen.getByText('11')).toBeInTheDocument() // auto-blocked
+    expect(screen.getByText('Auto-blocked')).toBeInTheDocument()
+    expect(screen.getByText(/6 auto-held/)).toBeInTheDocument()
 
     // Recent action row reuses the audit phrasing.
     expect(screen.getByText('@mod')).toBeInTheDocument()

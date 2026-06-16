@@ -15,6 +15,10 @@ const AUDIT_ACTIONS = [
   // Automated moderation: a classifier put a recipe into pending_review (held
   // from public reads until a human clears it). Credited to the system actor.
   'recipe.autohold',
+  // Automated moderation: a high/medium-confidence classifier verdict refused a
+  // write outright (the content was never persisted). Credited to the system
+  // actor; the target is the offending user. See util/automod.auditContentBlock.
+  'content.blocked',
   'user.suspend',
   'user.ban',
   'user.activate',
