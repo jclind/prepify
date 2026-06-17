@@ -17,6 +17,7 @@ const createTestQueryClient = () =>
 vi.mock('src/api/recipes', () => ({
   default: {
     addRating: vi.fn(),
+    removeRating: vi.fn(),
     getReviews: vi.fn().mockResolvedValue({ reviews: [], totalCount: 0 }),
     newReview: vi.fn(),
     editReview: vi.fn(),
@@ -48,6 +49,7 @@ const mockToast = vi.hoisted(() => Object.assign(vi.fn(), { success: vi.fn(), er
 vi.mock('react-hot-toast', () => ({ default: mockToast }))
 
 const mockAddRating = RecipeAPI.addRating as ReturnType<typeof vi.fn>
+const mockRemoveRating = RecipeAPI.removeRating as ReturnType<typeof vi.fn>
 const mockNewReview = RecipeAPI.newReview as ReturnType<typeof vi.fn>
 const mockEditReview = RecipeAPI.editReview as ReturnType<typeof vi.fn>
 const mockDeleteReview = RecipeAPI.deleteReview as ReturnType<typeof vi.fn>
@@ -68,24 +70,34 @@ const baseReview = {
 // ─── Ratings ─────────────────────────────────────────────────────────────────
 
 describe('Ratings', () => {
-  const renderRatings = (uid: string | null = null, ratingVal = 0, ratingCount = 0) => {
+  const renderRatings = (
+    uid: string | null = null,
+    ratingVal = 0,
+    ratingCount = 0,
+    rating = 0,
+    setRating = vi.fn()
+  ) => {
     mockGetUID.mockReturnValue(uid)
     return render(
-      <MemoryRouter>
-        <Ratings
-          rating={0}
-          setRating={vi.fn()}
-          ratingVal={ratingVal}
-          ratingCount={ratingCount}
-          recipeId='recipe-1'
-        />
-      </MemoryRouter>
+      <QueryClientProvider client={createTestQueryClient()}>
+        <MemoryRouter>
+          <Ratings
+            rating={rating}
+            setRating={setRating}
+            ratingVal={ratingVal}
+            ratingCount={ratingCount}
+            recipeId='recipe-1'
+          />
+        </MemoryRouter>
+      </QueryClientProvider>
     )
   }
 
   beforeEach(() => {
     mockAddRating.mockReset()
+    mockRemoveRating.mockReset()
     mockGetUID.mockReturnValue(null)
+    mockToast.error.mockClear()
   })
 
   it('shows "Sign In To Rate" with non-interactive display stars when no uid is available', async () => {
@@ -119,6 +131,50 @@ describe('Ratings', () => {
     renderRatings(null, 4, 10)
     expect(screen.getByText(/4\.0/)).toBeInTheDocument()
     expect(screen.getByText('(10)')).toBeInTheDocument()
+  })
+
+  it('does NOT show "Remove rating" when the user has no rating', () => {
+    renderRatings('user-1', 0, 0, 0)
+    expect(screen.queryByText('Remove rating')).toBeNull()
+  })
+
+  it('shows "Remove rating" once the user has a rating', () => {
+    renderRatings('user-1', 4, 1, 4)
+    expect(screen.getByText('Remove rating')).toBeInTheDocument()
+  })
+
+  it('clicking "Remove rating" calls RecipeAPI.removeRating and clears the local rating', async () => {
+    const user = userEvent.setup()
+    const setRating = vi.fn()
+    mockRemoveRating.mockResolvedValue(undefined)
+    renderRatings('user-1', 4, 1, 4, setRating)
+    await user.click(screen.getByText('Remove rating'))
+    expect(setRating).toHaveBeenCalledWith(0)
+    await waitFor(() => expect(mockRemoveRating).toHaveBeenCalledWith('recipe-1'))
+  })
+
+  it('reverts the optimistic star and shows a toast when addRating fails', async () => {
+    const user = userEvent.setup()
+    const setRating = vi.fn()
+    mockAddRating.mockRejectedValue(new Error('network'))
+    renderRatings('user-1', 0, 0, 0, setRating)
+    await user.click(screen.getByTestId('star-ratings-rating'))
+    // optimistic to 4, then reverted back to the prior value (0)
+    expect(setRating).toHaveBeenCalledWith(4)
+    await waitFor(() => expect(setRating).toHaveBeenLastCalledWith(0))
+    expect(mockToast.error).toHaveBeenCalled()
+  })
+
+  it('reverts the cleared star and shows a toast when removeRating fails', async () => {
+    const user = userEvent.setup()
+    const setRating = vi.fn()
+    mockRemoveRating.mockRejectedValue(new Error('network'))
+    renderRatings('user-1', 4, 1, 4, setRating)
+    await user.click(screen.getByText('Remove rating'))
+    // optimistic to 0, then reverted back to the prior rating (4)
+    expect(setRating).toHaveBeenCalledWith(0)
+    await waitFor(() => expect(setRating).toHaveBeenLastCalledWith(4))
+    expect(mockToast.error).toHaveBeenCalled()
   })
 })
 

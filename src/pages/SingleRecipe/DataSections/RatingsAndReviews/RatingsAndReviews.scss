@@ -80,6 +80,22 @@
             @include s.outline();
           }
         }
+        .remove-rating {
+          background: none;
+          border: none;
+          padding: 0;
+          margin-left: 0.5rem;
+          font-size: 0.8125rem;
+          color: s.$secondary-text;
+          text-decoration: underline;
+          cursor: pointer;
+          &:hover {
+            color: s.$primary-text;
+          }
+          &:focus {
+            @include s.outline();
+          }
+        }
       }
 
       @media screen and (max-width: 450px) {

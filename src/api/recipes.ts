@@ -436,6 +436,11 @@ class RecipeAPIClass {
     if (!AuthAPI.getUID()) return null
     return await http.delete(`api/deleteReview?recipeId=${recipeId}`)
   }
+  // Removes only the user's star rating (keeps any written review).
+  async removeRating(recipeId: string): Promise<AxiosResponse | null> {
+    if (!AuthAPI.getUID()) return null
+    return await http.delete(`api/removeRating?recipeId=${recipeId}`)
+  }
   async getReviews(
     recipeId: string,
     filter = 'new',

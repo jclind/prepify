@@ -24,14 +24,20 @@ The triage date stamped on items is the date they were filed here, not when they
 
 ## Bugs
 
-- `[ ]` **Deleting a review leaves the star rating behind** — there's no way to remove just a star
-  rating; you can only delete the review text. `deleteReview` blanks `reviewText`/`reviewLastUpdated`
-  but leaves the `rating` field on the doc (`server/routes/reviews.js:163`). Add a "remove rating"
-  path and have review deletion optionally clear the rating too. *(verified)*
+- `[~]` **Deleting a review leaves the star rating behind** — **fix implemented in PR #150 (open, track
+  1a)**: added `DELETE /removeRating` (clears just the star; keeps any review; deletes the doc when
+  rating-only), and `deleteReview` now keeps the rating and deletes the doc when there's nothing left —
+  no orphan with neither text nor rating. A "Remove rating" control was added to the recipe rating card.
+  Flip to `[x]` when #150 merges. *(verified; live authed smoke-test passed 2026-06-17)*
 - `[ ]` **Save-recipe functionality is broken** — needs a fix and test coverage.
 - `[ ]` **Account "Ratings" list renders inaccurately** — recipe images aren't loading for rated recipes.
-- `[ ]` **Rating aggregate went *down* after a 5-star** — observed the average drop when adding a
-  5-star rating; investigate `recomputeRecipeRating`.
+- `[~]` **Rating aggregate went *down* after a 5-star** — **root cause found (PR #150, track 1a):** the
+  `recomputeRecipeRating` math is correct; the drop is a **stale STORED aggregate** being corrected on
+  the next recompute. A live smoke test found *Homemade Granola* stored `5/4.6` while only 4 rating docs
+  actually exist (true avg `4.5`). PR #150 makes every rating change recompute + the UI refresh, so a
+  recipe self-heals the moment anyone rates it, and the displayed average no longer lags. **REMAINING
+  (does not block #150):** recipes nobody re-rates stay drifted → needs the one-off reconciliation in
+  Tech debt below.
 - `[ ]` **Serving price looks wrong** — recipe serving pricing appears miscalculated; audit
   `src/util/calculateServingPrice.ts` against real data.
 - `[ ]` **"Your Recipes" flashes an empty state** — the account section shows "no recipes" briefly
@@ -81,6 +87,17 @@ The triage date stamped on items is the date they were filed here, not when they
 
 ## Tech debt / process / infra
 
+- `[ ]` **One-off rating-aggregate reconciliation** — stored `recipes.rating` aggregates can drift from
+  the actual `ratings` docs (confirmed live: *Homemade Granola* stored `5/4.6` vs true `4/4.5`). Likely
+  legacy/pre-recompute data or a past silent best-effort failure. Write a script (alongside
+  `server/scripts/`) that loops every recipe and runs `recomputeRecipeRating(db, recipeId)`
+  (`server/util/recipeRating.js`) to reconcile the whole catalog in one pass. *(surfaced by track 1a /
+  PR #150, which only self-heals a recipe when someone next rates it.)*
+- `[ ]` **Harden `deleteAccount`'s rating recompute** — the per-recipe recompute after an account delete
+  is best-effort/post-commit and only `console.error`s on failure (`server/routes/auth.js` ~L447-454),
+  so a silent failure can re-introduce aggregate drift. The set of recipes is correct
+  (`distinct('recipeId', { userId })` covers rating-only docs); only the failure mode is silent. Consider
+  a periodic reconciliation job (pairs with the item above) or alerting on recompute failure. *(low priority)*
 - `[ ]` **Migrate Sass `@import` → `@use`** — build emits Sass `@import` deprecation warnings
   (pre-existing; Sass 1.x warns `@import` is going away in 3.x). Cosmetic now, worth migrating.
 - `[ ]` **Point Railway at the production branch** — currently not deploying from production.
