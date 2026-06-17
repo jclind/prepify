@@ -84,7 +84,7 @@ a feature flag. Do these together:
 - `[ ]` **Audit every `VITE_*` var** — for each, confirm it's *safe to be public*. Firebase web config
   and Edamam app id/key are designed to be client-side (acceptable, but lock them down server-side —
   see below). **(blocker)**
-- `[ ]` **Remove dead/dangerous client env vars** — `VITE_OPEN_AI_API_KEY` is defined in `.env` /
+- `[x]` **Remove dead/dangerous client env vars** *(done — PR #151, 2026-06-17)* — `VITE_OPEN_AI_API_KEY` is defined in `.env` /
   `.env.example` but has **zero callers** (per CLAUDE.md). A live OpenAI key must never ship to the
   browser — remove it. `VITE_INGREDIENT_PARSER_URL` is also dead (parsing goes through the main
   server now). Remove both from `.env.example`. **(blocker)**
@@ -111,9 +111,12 @@ a feature flag. Do these together:
   `FRONTEND_URLS` + a `deploy-preview-*--prepify.netlify.app` regex + `credentials: true`, default
   `localhost:3000`). Just confirm the **production** `FRONTEND_URLS` value is the real origin(s) only.
   **(blocker)**
-- `[ ]` **Dependency audit** — run `npm audit` for both root and `server/`, and the `dep-audit` skill
-  for an upgrade triage. Resolve high/critical advisories. (audit 2026-06-17: root 5 — 3 high, 2 low;
-  server 13 — 3 high, 10 moderate. High advisories remain unresolved.) **(blocker for high/critical)**
+- `[~]` **Dependency audit** — run `npm audit` for both root and `server/`, and the `dep-audit` skill
+  for an upgrade triage. Resolve high/critical advisories. **All high advisories resolved via PR #151**
+  (2026-06-17, non-breaking lockfile-only bumps: vite, launch-editor, @grpc/grpc-js, form-data,
+  protobufjs, tmp) — high/critical blocker cleared. Residual moderates (root 8, server 25) require
+  **major** bumps (firebase-admin 13→14, jest major) and are deferred to a dedicated upgrade pass.
+  **(blocker for high/critical — cleared)**
 - `[ ]` **Residual low-severity API issues** — surfaced by the audit, not release-blocking: (a)
   `getReviews` derives `isCurrentUser` from the `username` *query param* rather than the token
   (`reviews.js:165,183`) — cosmetic, since edit/delete are token-scoped; (b) `newReview` upserts with
@@ -177,8 +180,9 @@ a feature flag. Do these together:
   Shares the `MODERATION_ENABLED` master switch. No DB migration. See `docs/CONTENT_MODERATION.md`.
 - `[ ]` **Performance / Lighthouse pass** — run Lighthouse on the prod build; address obvious image-size
   and bundle-size wins. **(nice-to-have)**
-- `[ ]` **README cleanup** — the README still has placeholder `your-username` clone URLs and generic
-  setup steps; tidy before the repo is public-facing. **(nice-to-have)**
+- `[x]` **README cleanup** *(done — PR #151, 2026-06-17)* — replaced the placeholder `your-username`
+  clone URL with `jclind/prepify` and refreshed setup steps for the two-service architecture.
+  **(nice-to-have)**
 
 ---
 
