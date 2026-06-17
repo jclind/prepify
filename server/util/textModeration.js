@@ -45,7 +45,7 @@ function mediumThreshold() {
 // review" judgement call. (`sexual/minors` is the omni-moderation category name.)
 const ALWAYS_HIGH_CATEGORIES = new Set(['sexual/minors'])
 
-const CLEAN = { allowed: true, severity: 'clean', reason: null, category: null, scores: null, source: 'disabled' }
+const CLEAN = { allowed: true, severity: 'clean', reason: null, category: null, score: null, scores: null, source: 'disabled' }
 
 // A clean verdict tagged with its source (so logs/tests can tell disabled from
 // classifier-said-clean from failed-open).
@@ -113,7 +113,12 @@ async function callOpenAI(text) {
  *
  * @param {string} text       the content to screen
  * @param {string} [context]  field context ('username' | 'recipe.title' | 'review' | 'bio' | ...)
- * @returns {Promise<{allowed:boolean, severity:'clean'|'medium'|'high', reason:string|null, category:string|null, scores:object|null, source:string}>}
+ * @returns {Promise<{allowed:boolean, severity:'clean'|'medium'|'high', reason:string|null, category:string|null, score:number|null, scores:object|null, source:string}>}
+ *
+ * `score` is the top category's confidence as a 0–1 probability (the same value
+ * embedded in `reason`), exposed as a numeric field so consumers don't have to
+ * regex-parse it back out. null when there is no probabilistic signal
+ * (blocklist hit, disabled, clean, or a failed-open error).
  */
 async function moderateText(text, context = '') {
   if (!text || typeof text !== 'string' || !text.trim()) return clean('empty')
@@ -126,6 +131,7 @@ async function moderateText(text, context = '') {
       severity: 'high',
       reason: `blocklist:${hit.kind}:${hit.term}`,
       category: hit.kind,
+      score: null,
       scores: null,
       source: 'blocklist',
     }
@@ -150,6 +156,9 @@ async function moderateText(text, context = '') {
     severity,
     reason: severity === 'clean' ? null : `openai:${category}:${score.toFixed(2)}`,
     category,
+    // Surfaced numerically (0–1) so the admin UI reads confidence off a field
+    // rather than regex-parsing it back out of `reason`. Null on a clean verdict.
+    score: severity === 'clean' ? null : score,
     scores: result.category_scores || null,
     source: 'openai',
   }

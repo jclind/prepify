@@ -37,6 +37,10 @@ export type RecipeType = {
   // public reads until an admin clears it.
   status?: 'active' | 'hidden' | 'unpublished' | 'pending_review'
   featured?: boolean
+  // Admin-only: the open automod report's classifier, attached by GET /getRecipe
+  // for an admin viewing a 'pending_review' recipe so the admin strip can explain
+  // the hold inline. null when held by a non-automod path; absent otherwise.
+  automodClassifier?: ReportClassifier | null
 }
 export type RecipeFormType = {
   title: string
@@ -204,9 +208,13 @@ export interface NewReportType {
 export interface ReportClassifier {
   severity: 'clean' | 'medium' | 'high'
   category: string | null
-  // e.g. 'openai:harassment:0.60' — the numeric score lives here. Medium holds
-  // are openai-only (blocklist hits are always high-blocked, never held), so this
-  // never carries raw user content.
+  // Confidence as a 0–1 probability (openai medium holds). null when the source
+  // has no probabilistic score (e.g. Vision likelihood buckets). Optional because
+  // reports filed before this field existed don't carry it — formatClassifier
+  // falls back to parsing the legacy score embedded in `reason`.
+  score?: number | null
+  // e.g. 'openai:harassment:0.60'. Medium holds are openai-only (blocklist hits
+  // are always high-blocked, never held), so this never carries raw user content.
   reason: string | null
   source: string | null
 }

@@ -209,6 +209,16 @@ router.get('/getRecipe', optionalAuth, asyncHandler(async (req, res) => {
   if (req.isAdmin) {
     const recipe = await db.collection('recipes').findOne(recipeIdQuery(id))
     if (!recipe) return res.status(404).json({ error: 'Not found' })
+    // For an auto-held recipe, attach WHY (the open automod report's classifier)
+    // so the admin strip can explain the hold inline without a second round-trip.
+    // Only an extra lookup on the (rare) pending_review path, admins only.
+    if (recipe.status === 'pending_review') {
+      const report = await db.collection('reports').findOne(
+        openAutomodReportQuery(id),
+        { sort: { createdAt: -1 }, projection: { classifier: 1 } }
+      )
+      recipe.automodClassifier = report?.classifier || null
+    }
     return res.json(recipe)
   }
 

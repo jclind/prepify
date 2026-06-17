@@ -33,6 +33,17 @@ const AUDIT_ACTIONS = [
   'bugReport.dismiss',
 ]
 
+const AUDIT_ACTION_SET = new Set(AUDIT_ACTIONS)
+
+// A typo'd action still persists (best-effort: never drop an audit row) but is
+// invisible to the Audit page's action filter, which keys off AUDIT_ACTIONS. Warn
+// loudly so the mismatch surfaces in dev/logs instead of silently disappearing.
+function warnUnknownAction(action) {
+  if (!AUDIT_ACTION_SET.has(action)) {
+    console.warn(`recordAudit: unknown action '${action}' — add it to AUDIT_ACTIONS or it won't be filterable`)
+  }
+}
+
 const AUDIT_TARGET_TYPES = ['recipe', 'review', 'user', 'report', 'bugReport']
 
 // Reserved synthetic actor for automated (non-human) moderation actions. Stamped
@@ -59,6 +70,7 @@ const SYSTEM_ACTOR = { uid: 'system:automod', type: 'system' }
  * @param {object} [entry.metadata]   any extra structured context (e.g. { from, to })
  */
 async function recordAudit(db, entry) {
+  warnUnknownAction(entry.action)
   try {
     await db.collection('auditLog').insertOne({
       _id: new ObjectId(),
@@ -87,6 +99,7 @@ async function recordAudit(db, entry) {
  */
 async function recordAuditMany(db, entries) {
   if (!Array.isArray(entries) || entries.length === 0) return
+  entries.forEach((entry) => warnUnknownAction(entry.action))
   try {
     await db.collection('auditLog').insertMany(
       entries.map((entry) => ({

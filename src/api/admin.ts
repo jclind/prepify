@@ -6,7 +6,6 @@ import {
   AuditAction,
   AuditTargetType,
   AnalyticsResponse,
-  ReportClassifier,
 } from 'types'
 import { http } from 'src/api/http-common'
 
@@ -91,21 +90,10 @@ class AdminAPIClass {
     return result.data
   }
 
-  // Why a recipe was auto-held (its open automod report's classifier), so the
-  // recipe page's admin strip can explain a pending_review hold inline.
-  async getRecipeAutomod(
-    recipeId: string
-  ): Promise<{ classifier: ReportClassifier | null; createdAt: string | null }> {
-    const result = await http.get<{
-      classifier: ReportClassifier | null
-      createdAt: string | null
-    }>(`api/admin/recipes/${recipeId}/automod`)
-    return result.data
-  }
-
   // Clear an automated hold: restore a pending_review recipe to active AND dismiss
-  // its open automod report in one server-side action. Pairs with getRecipeAutomod
-  // (which explains the hold). Errors if the recipe isn't currently pending review.
+  // its open automod report in one server-side action. The hold reason itself is
+  // carried inline on the admin GET /getRecipe (recipe.automodClassifier). Errors
+  // if the recipe isn't currently pending review.
   async approveRecipe(
     recipeId: string
   ): Promise<{ _id: string; status: string }> {

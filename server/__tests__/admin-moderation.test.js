@@ -41,38 +41,46 @@ afterEach(async () => {
   ])
 })
 
-describe('GET /api/admin/recipes/:id/automod', () => {
-  it('requires admin', async () => {
-    const res = await request(app).get('/api/admin/recipes/r1/automod').set(AUTH_HEADER)
-    expect(res.status).toBe(403)
-  })
-
-  it('returns the classifier from the open automod report holding the recipe', async () => {
+// The hold reason is carried inline on the admin GET /getRecipe response
+// (recipe.automodClassifier) rather than a dedicated endpoint, so the admin strip
+// explains a pending_review hold without a second round-trip.
+describe('GET /api/getRecipe — admin automodClassifier', () => {
+  it('attaches the open automod report classifier for a pending_review recipe', async () => {
     admin.__setClaims({ admin: true })
+    await seedRecipe({ ...BASE_RECIPE, _id: 'r1', status: 'pending_review' })
     await getDB().collection('reports').insertOne({
       targetType: 'recipe',
       recipeId: 'r1',
       reporterUid: 'system:automod',
       source: 'automod',
       status: 'open',
-      classifier: { severity: 'medium', category: 'harassment', reason: 'openai:harassment:0.60', source: 'openai' },
+      classifier: { severity: 'medium', category: 'harassment', score: 0.6, reason: 'openai:harassment:0.60', source: 'openai' },
       createdAt: new Date(),
     })
-    const res = await request(app).get('/api/admin/recipes/r1/automod').set(AUTH_HEADER)
+    const res = await request(app).get('/api/getRecipe?id=r1').set(AUTH_HEADER)
     expect(res.status).toBe(200)
-    expect(res.body.classifier).toMatchObject({ severity: 'medium', category: 'harassment' })
+    expect(res.body.automodClassifier).toMatchObject({ severity: 'medium', category: 'harassment', score: 0.6 })
   })
 
-  it('returns null classifier when there is no open automod report', async () => {
+  it('attaches null automodClassifier for a pending_review recipe with no open automod report', async () => {
     admin.__setClaims({ admin: true })
+    await seedRecipe({ ...BASE_RECIPE, _id: 'r1', status: 'pending_review' })
     // A user report (no source) and a CLOSED automod report must both be ignored.
     await getDB().collection('reports').insertMany([
       { targetType: 'recipe', recipeId: 'r1', reporterUid: 'u1', status: 'open', createdAt: new Date() },
       { targetType: 'recipe', recipeId: 'r1', reporterUid: 'system:automod', source: 'automod', status: 'dismissed', classifier: { severity: 'medium' }, createdAt: new Date() },
     ])
-    const res = await request(app).get('/api/admin/recipes/r1/automod').set(AUTH_HEADER)
+    const res = await request(app).get('/api/getRecipe?id=r1').set(AUTH_HEADER)
     expect(res.status).toBe(200)
-    expect(res.body.classifier).toBeNull()
+    expect(res.body.automodClassifier).toBeNull()
+  })
+
+  it('does not attach automodClassifier for a non-held (active) recipe', async () => {
+    admin.__setClaims({ admin: true })
+    await seedRecipe({ ...BASE_RECIPE, _id: 'r1', status: 'active' })
+    const res = await request(app).get('/api/getRecipe?id=r1').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(res.body.automodClassifier).toBeUndefined()
   })
 })
 

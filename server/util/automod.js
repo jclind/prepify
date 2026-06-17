@@ -244,6 +244,9 @@ async function holdRecipeForReview(db, { recipeId, title, verdict }) {
           classifier: {
             severity: verdict.severity,
             category: verdict.category || null,
+            // Numeric confidence (0–1) when the classifier produced one; the FE
+            // reads this directly instead of regex-parsing it out of `reason`.
+            score: typeof verdict.score === 'number' ? verdict.score : null,
             reason: verdict.reason || null,
             source: verdict.source || null,
           },

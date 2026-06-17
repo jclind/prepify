@@ -6,7 +6,6 @@ const { verifyToken, requireAdmin } = require('../middleware/auth')
 const { USER_STATUSES } = require('../util/userStatus')
 const { recordAudit, AUDIT_ACTIONS, AUDIT_TARGET_TYPES } = require('../util/auditLog')
 const { notifyInBackground, notifyAccountStatus } = require('../util/email')
-const { openAutomodReportQuery } = require('../util/automod')
 
 const router = Router()
 
@@ -338,21 +337,6 @@ router.get('/admin/audit', verifyToken, requireAdmin, asyncHandler(async (req, r
   const enriched = await enrichActors(db, entries)
 
   res.json({ entries: enriched, totalCount })
-}))
-
-// GET /admin/recipes/:id/automod — the classifier snapshot from the OPEN
-// automated-moderation report that put this recipe into pending_review, so the
-// recipe page's admin strip can show WHY it was held inline (not only in the
-// reports queue). The reason lives on the report, not the recipe doc, hence this
-// targeted lookup. Returns { classifier: null } when no open automod report
-// exists (e.g. a human takedown, or the hold was already cleared).
-router.get('/admin/recipes/:id/automod', verifyToken, requireAdmin, asyncHandler(async (req, res) => {
-  const db = getDB()
-  const report = await db.collection('reports').findOne(
-    openAutomodReportQuery(req.params.id),
-    { sort: { createdAt: -1 }, projection: { classifier: 1, createdAt: 1 } }
-  )
-  res.json({ classifier: report?.classifier || null, createdAt: report?.createdAt || null })
 }))
 
 // GET /admin/analytics?days= — single overview payload for the admin dashboard:

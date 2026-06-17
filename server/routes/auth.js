@@ -247,6 +247,7 @@ router.post('/updateProfile', verifyToken, requireActive, profileWriteLimiter, a
 // image fails CLOSED, so a scan outage also rejects rather than applying an
 // unscanned photo. Clearing the photo (empty URL) needs no scan.
 router.post('/updatePhoto', verifyToken, requireActive, profileWriteLimiter, asyncHandler(async (req, res) => {
+  const db = getDB()
   const { photoURL } = req.body || {}
   if (photoURL != null && typeof photoURL !== 'string') {
     return res.status(400).json({ error: 'photoURL must be a string' })
@@ -256,7 +257,7 @@ router.post('/updatePhoto', verifyToken, requireActive, profileWriteLimiter, asy
   if (url) {
     const verdict = await moderateImage(url, 'profile.photo')
     if (!verdict.allowed) {
-      return respondBlocked(res, { db: getDB(), uid: req.uid, surface: 'profile.photo', verdict })
+      return respondBlocked(res, { db, uid: req.uid, surface: 'profile.photo', verdict })
     }
   }
 
@@ -276,6 +277,7 @@ router.post('/updatePhoto', verifyToken, requireActive, profileWriteLimiter, asy
 // The 'displayName' context also applies the identity-only spam rules (no
 // URLs/domains in a name).
 router.post('/updateDisplayName', verifyToken, requireActive, profileWriteLimiter, asyncHandler(async (req, res) => {
+  const db = getDB()
   const { displayName } = req.body || {}
   if (typeof displayName !== 'string' || !displayName.trim()) {
     return res.status(400).json({ error: 'displayName is required' })
@@ -287,7 +289,7 @@ router.post('/updateDisplayName', verifyToken, requireActive, profileWriteLimite
 
   const verdict = await moderateText(name, 'displayName')
   if (!verdict.allowed) {
-    return respondBlocked(res, { db: getDB(), uid: req.uid, surface: 'displayName', verdict })
+    return respondBlocked(res, { db, uid: req.uid, surface: 'displayName', verdict })
   }
 
   await admin.auth().updateUser(req.uid, { displayName: name })
