@@ -228,13 +228,16 @@ Chunky design efforts that are bigger than a single checkbox. Tag each as **(blo
     usages (Home hero, `src/Components/Navbar/menu/`).
   - Gates nothing for 1.0 — tracked here so it isn't lost.
 
-- `[ ]` **Homepage redesign** — **(blocker)**
-  - **Now:** `src/pages/Home/Home.tsx` is sparse — it renders only `<HomeHero />` and
-    `<TrendingRecipes />`. No value-prop sections, feature highlights, or rich link/data blocks.
-  - **Goal:** _(fill in)_ — a richer landing page with more sections, links, and website data
-    (value prop, featured/seasonal content, etc.).
-  - **Touches:** `src/pages/Home/Home.tsx`, `src/pages/Home/HomeHero/HomeHero.tsx` (+ `.scss`), and
-    likely `src/Components/TrendingRecipes/`.
+- `[x]` **Homepage redesign** — **(design shipped)**
+  - **Shipped:** the redesign landed earlier (`e1539c3`) — Home is now `HomeHero → Trending → Browse by
+    meal → View all recipes`, fully responsive with empty/loading states. The "sparse Home" wording here
+    was pre-redesign and is now stale.
+  - **Remaining Home work** is feature, not design — tracked from `docs/FEATURE_IDEAS.md`:
+    - `[~]` **Personalized "For You" row** — content-based row inferred from saves/makes/ratings
+      (`HomeForYou` + `GET /api/getForYouRecipes`). In progress on `feat/homepage-redesign`.
+    - `[ ]` **"What should I cook?" button** — random on-taste pick from `HomeHero`. Next up.
+  - **Touches:** `src/pages/Home/*` (`Home.tsx`, `HomeForYou.tsx`, `HomeRecipeCard.tsx`),
+    `src/api/recipes.ts`, `server/routes/recipes.js`, `server/util/forYou.js`.
 
 - `[ ]` **Help / Contact Support page** — **(blocker)**
   - **Now:** the page already exists — `src/pages/Help/Help.tsx` (routed `/help`) is a Formspree form
