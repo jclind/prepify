@@ -13,30 +13,46 @@
       margin: 0;
       font-size: 1.6rem;
     }
+  }
 
-    .range-toggle {
-      display: flex;
-      gap: 0.3rem;
+  // Header row for the windowed trends: the "Last N days" eyebrow paired with the
+  // range toggle that actually drives it (kept out of the page header so it sits
+  // next to the only section it affects).
+  .trends-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.6rem;
+    flex-wrap: wrap;
 
-      .range {
-        border: 1px solid #d8dbe0;
-        background: #fff;
-        color: #4b5563;
-        padding: 0.35rem 0.75rem;
-        border-radius: 999px;
-        font-size: 0.82rem;
-        cursor: pointer;
-        transition: all 0.15s;
+    .section-eyebrow {
+      margin: 0;
+    }
+  }
 
-        &:hover {
-          border-color: #9ca3af;
-        }
+  .range-toggle {
+    display: flex;
+    gap: 0.3rem;
 
-        &.active {
-          background: #1f2430;
-          border-color: #1f2430;
-          color: #fff;
-        }
+    .range {
+      border: 1px solid #d8dbe0;
+      background: #fff;
+      color: #4b5563;
+      padding: 0.35rem 0.75rem;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      cursor: pointer;
+      transition: all 0.15s;
+
+      &:hover {
+        border-color: #9ca3af;
+      }
+
+      &.active {
+        background: #1f2430;
+        border-color: #1f2430;
+        color: #fff;
       }
     }
   }
@@ -48,6 +64,15 @@
     &.error {
       color: #b91c1c;
     }
+  }
+
+  .section-eyebrow {
+    margin: 0 0 0.6rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #9ca3af;
   }
 
   .stat-cards {

@@ -26,7 +26,26 @@ describe('formatClassifier', () => {
     )
   })
 
-  it('parses the score from the END of reason and rounds to a whole percent', () => {
+  it('renders confidence from the numeric score field when present', () => {
+    expect(
+      formatClassifier(classifier({ score: 0.6, reason: null }))
+    ).toBe('harassment · 60% confidence · medium severity')
+  })
+
+  it('prefers the numeric score over a (legacy) score embedded in reason', () => {
+    // score wins even if reason still carries an older trailing number.
+    expect(
+      formatClassifier(classifier({ score: 0.42, reason: 'openai:harassment:0.99' }))
+    ).toContain('42% confidence')
+  })
+
+  it('omits the confidence segment when score is null and reason carries none', () => {
+    const out = formatClassifier(classifier({ score: null, reason: 'vision:adult:VERY_LIKELY' }))
+    expect(out).not.toMatch(/confidence/)
+    expect(out).toBe('harassment · medium severity')
+  })
+
+  it('falls back to the legacy reason-embedded score when score is absent', () => {
     expect(formatClassifier(classifier({ reason: 'openai:violence:0.07' }))).toContain(
       '7% confidence'
     )

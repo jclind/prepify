@@ -1,5 +1,5 @@
 import React, { FC } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { RecipeType } from 'types'
 import { useAuth } from 'src/context/AuthContext'
@@ -24,22 +24,17 @@ const AdminRecipeControls: FC<AdminRecipeControlsProps> = ({ recipe }) => {
   const queryClient = useQueryClient()
 
   const invalidate = () => {
+    // Refetching the recipe also refreshes recipe.automodClassifier (the admin
+    // getRecipe attaches it for held recipes); approving clears the hold so it
+    // drops out on its own.
     queryClient.invalidateQueries({ queryKey: ['recipe', recipe._id] })
-    // The automod note keys off the OPEN report; approving dismisses it, so drop
-    // the stale classifier snapshot too.
-    queryClient.invalidateQueries({ queryKey: ['recipe-automod', recipe._id] })
   }
 
   const isPendingReview = recipe.status === 'pending_review'
 
-  // For an auto-held recipe, fetch WHY (the open automod report's classifier) so
-  // the admin sees the reason inline. Only runs for an admin viewing a held
-  // recipe — never on the public path.
-  const { data: automod } = useQuery({
-    queryKey: ['recipe-automod', recipe._id],
-    queryFn: () => AdminAPI.getRecipeAutomod(recipe._id),
-    enabled: isAdmin && isPendingReview,
-  })
+  // For an auto-held recipe, the admin getRecipe response carries the open automod
+  // report's classifier so the strip can explain the hold inline.
+  const automodClassifier = recipe.automodClassifier
 
   const featureMutation = useMutation({
     mutationFn: (featured: boolean) =>
@@ -105,7 +100,7 @@ const AdminRecipeControls: FC<AdminRecipeControlsProps> = ({ recipe }) => {
       {isPendingReview && (
         <p className='arc-automod-note'>
           Auto-held for moderation review
-          {automod?.classifier ? ` — ${formatClassifier(automod.classifier)}` : ''}.
+          {automodClassifier ? ` — ${formatClassifier(automodClassifier)}` : ''}.
         </p>
       )}
 

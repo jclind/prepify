@@ -121,6 +121,28 @@ describe('holdRecipeForReview — report-gated hold', () => {
     expect(calls.auditLog).toHaveLength(1) // autohold audit appended
   })
 
+  it('stamps the numeric classifier score (0–1) onto the filed report', async () => {
+    const { db, calls } = fakeDb()
+    await holdRecipeForReview(db, {
+      recipeId: 'rec-score',
+      title: 'T',
+      verdict: { ...VERDICT, score: 0.6 },
+    })
+    const setOnInsert = calls.reports[0][1].$setOnInsert
+    expect(setOnInsert.classifier.score).toBe(0.6)
+  })
+
+  it('stores classifier.score as null when the verdict carries no numeric score', async () => {
+    const { db, calls } = fakeDb()
+    await holdRecipeForReview(db, {
+      recipeId: 'rec-noscore',
+      title: 'T',
+      verdict: { severity: 'medium', reason: 'vision:adult:LIKELY', category: 'adult', source: 'vision' },
+    })
+    const setOnInsert = calls.reports[0][1].$setOnInsert
+    expect(setOnInsert.classifier.score).toBeNull()
+  })
+
   it('does NOT hide the recipe when the report write fails (fail-open) and returns false', async () => {
     const { db, calls } = fakeDb({
       reports: { updateOne: async () => { throw new Error('mongo down') } },
