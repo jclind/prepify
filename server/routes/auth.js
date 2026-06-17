@@ -461,10 +461,15 @@ router.post('/deleteAccount', verifyToken, asyncHandler(async (req, res) => {
   await deleteProfilePhoto(uid)
 
   // Leave a trail in the audit log (best-effort) so an admin can see that the
-  // account was self-deleted rather than removed by moderation.
+  // account was self-deleted rather than removed by moderation. actorType 'user'
+  // marks it as a self-service action (not an admin one), and actorUsername
+  // captures the handle here because the `usernames` doc was just deleted in the
+  // cascade above — read-time enrichment can no longer resolve it.
   await recordAudit(db, {
     action: 'user.delete',
     actorUid: uid,
+    actorType: 'user',
+    actorUsername: username,
     targetType: 'user',
     targetId: uid,
     targetLabel: username ? `@${username}` : null,

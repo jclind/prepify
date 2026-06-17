@@ -64,6 +64,40 @@ describe('GET /api/admin/audit', () => {
     expect(res.body.entries[0].actorUsername).toBe('adminuser')
   })
 
+  it('falls back to a captured actorUsername when the usernames doc is gone', async () => {
+    // A self-service account deletion writes its audit row and deletes the
+    // actor's usernames doc in the same cascade, so the live enrichment lookup
+    // misses. The handle captured on the row must still surface.
+    admin.__setClaims({ admin: true })
+    await seedUser(TEST_UID, 'adminuser') // the admin viewing the log
+    await seedAudit([
+      {
+        action: 'user.delete',
+        actorUid: 'gone-uid',
+        actorType: 'user',
+        actorUsername: 'goner',
+        targetType: 'user',
+        targetId: 'gone-uid',
+      },
+    ])
+
+    const res = await request(app).get('/api/admin/audit').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(res.body.entries[0].actorUsername).toBe('goner')
+    expect(res.body.entries[0].actorType).toBe('user')
+  })
+
+  it('prefers the live username lookup over a stale captured one', async () => {
+    admin.__setClaims({ admin: true })
+    await seedUser(TEST_UID, 'currentname')
+    await seedAudit([
+      { action: 'recipe.hide', actorUid: TEST_UID, actorUsername: 'oldname' },
+    ])
+
+    const res = await request(app).get('/api/admin/audit').set(AUTH_HEADER)
+    expect(res.body.entries[0].actorUsername).toBe('currentname')
+  })
+
   it('filters by action and by targetType', async () => {
     admin.__setClaims({ admin: true })
     await seedAudit([
