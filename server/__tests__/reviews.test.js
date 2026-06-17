@@ -133,6 +133,31 @@ describe('POST /addRating', () => {
     expect(recipe.rating.rateValue).toBe(4)
     expect(Number.isNaN(recipe.rating.rateValue)).toBe(false)
   })
+
+  // Bug 2 regression: adding a 5-star can never LOWER a correctly-stored
+  // average. Seed an existing 4-star from another user, then add a 5 → the
+  // aggregate must rise to 4.5 (count 2), proving the recompute math is sound.
+  it('adding a 5-star raises (never lowers) the average', async () => {
+    const db = getDB()
+    await seedRating({
+      userId: OTHER_UID,
+      username: OTHER_USERNAME,
+      recipeId: RECIPE_ID,
+      rating: 4,
+      reviewText: '',
+      ratingLastUpdated: new Date(),
+    })
+
+    const res = await request(app)
+      .post(`/api/addRating?recipeId=${RECIPE_ID}&rating=5`)
+      .set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+
+    const recipe = await db.collection('recipes').findOne({ _id: RECIPE_ID })
+    expect(recipe.rating.rateCount).toBe(2)
+    expect(recipe.rating.rateValue).toBe(4.5)
+    expect(recipe.rating.rateValue).toBeGreaterThanOrEqual(4)
+  })
 })
 
 // ─── POST /editReview ──────────────────────────────────────────────────────────
@@ -228,7 +253,7 @@ describe('DELETE /deleteReview', () => {
     expect(res.status).toBe(403)
   })
 
-  it('allows the author to delete their own review', async () => {
+  it('allows the author to delete their own review but KEEPS the star rating', async () => {
     const res = await request(app)
       .delete(`/api/deleteReview?recipeId=${RECIPE_ID}`)
       .set(AUTH_HEADER)
@@ -240,7 +265,170 @@ describe('DELETE /deleteReview', () => {
     const doc = await db
       .collection('ratings')
       .findOne({ username: TEST_USERNAME, recipeId: RECIPE_ID })
+    // Review text gone, but the 3-star rating is retained on the doc.
     expect(doc.reviewText).toBe('')
+    expect(doc.rating).toBe(3)
+  })
+
+  // Orphan cleanup: deleting a review on a doc that has NO star rating must
+  // remove the whole doc, not leave one with neither text nor rating.
+  it('deletes the whole doc when the review had no rating to keep', async () => {
+    const db = getDB()
+    // Replace the rated fixture with a review-only doc (rating: null).
+    await db.collection('ratings').deleteMany({})
+    await seedRating({
+      userId: TEST_UID,
+      username: TEST_USERNAME,
+      recipeId: RECIPE_ID,
+      rating: null,
+      reviewText: 'Review with no star rating',
+      reviewCreatedAt: '1000',
+      reviewLastUpdated: '1000',
+      ratingLastUpdated: '',
+    })
+
+    const res = await request(app)
+      .delete(`/api/deleteReview?recipeId=${RECIPE_ID}`)
+      .set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+
+    const doc = await db
+      .collection('ratings')
+      .findOne({ userId: TEST_UID, recipeId: RECIPE_ID })
+    expect(doc).toBeNull()
+  })
+})
+
+// ─── DELETE /removeRating ────────────────────────────────────────────────────
+// Bug 1: a user can remove just their star rating. The review (if any) is kept;
+// a rating-only doc is deleted outright so no orphan lingers; and the recipe
+// aggregate is recomputed so the removed star stops counting.
+
+describe('DELETE /removeRating', () => {
+  it('rejects request with no auth token (401)', async () => {
+    const res = await request(app).delete(`/api/removeRating?recipeId=${RECIPE_ID}`)
+    expect(res.status).toBe(401)
+  })
+
+  it('returns 400 if recipeId is missing', async () => {
+    const res = await request(app).delete('/api/removeRating').set(AUTH_HEADER)
+    expect(res.status).toBe(400)
+  })
+
+  it('returns 404 when the user has no rating doc for the recipe', async () => {
+    const res = await request(app)
+      .delete(`/api/removeRating?recipeId=${RECIPE_ID}`)
+      .set(AUTH_HEADER)
+    expect(res.status).toBe(404)
+  })
+
+  it('removes the star rating but KEEPS the review, and recomputes the average', async () => {
+    const db = getDB()
+    await seedRating({
+      userId: TEST_UID,
+      username: TEST_USERNAME,
+      recipeId: RECIPE_ID,
+      rating: 5,
+      reviewText: 'Loved it',
+      reviewCreatedAt: '1000',
+      reviewLastUpdated: '1000',
+      ratingLastUpdated: new Date(),
+    })
+
+    const res = await request(app)
+      .delete(`/api/removeRating?recipeId=${RECIPE_ID}`)
+      .set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(res.body).toEqual({ removed: true })
+
+    const doc = await db
+      .collection('ratings')
+      .findOne({ userId: TEST_UID, recipeId: RECIPE_ID })
+    // Review survives; the rating is cleared back to the review-only shape.
+    expect(doc).not.toBeNull()
+    expect(doc.reviewText).toBe('Loved it')
+    expect(doc.rating).toBeNull()
+
+    // The recipe aggregate drops the removed star — no ratings now → 0/0.
+    const recipe = await db.collection('recipes').findOne({ _id: RECIPE_ID })
+    expect(recipe.rating.rateCount).toBe(0)
+    expect(recipe.rating.rateValue).toBe(0)
+  })
+
+  it('deletes the whole doc when removing a rating-only entry (no review)', async () => {
+    const db = getDB()
+    await seedRating({
+      userId: TEST_UID,
+      username: TEST_USERNAME,
+      recipeId: RECIPE_ID,
+      rating: 4,
+      reviewText: '',
+      ratingLastUpdated: new Date(),
+    })
+
+    const res = await request(app)
+      .delete(`/api/removeRating?recipeId=${RECIPE_ID}`)
+      .set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+
+    const doc = await db
+      .collection('ratings')
+      .findOne({ userId: TEST_UID, recipeId: RECIPE_ID })
+    expect(doc).toBeNull()
+  })
+
+  it('recomputes the average from the remaining ratings after one is removed', async () => {
+    const db = getDB()
+    // TEST_UID rated 2, OTHER_UID rated 4 → avg 3. Remove TEST_UID's → avg 4.
+    await seedRating({
+      userId: TEST_UID,
+      username: TEST_USERNAME,
+      recipeId: RECIPE_ID,
+      rating: 2,
+      reviewText: '',
+      ratingLastUpdated: new Date(),
+    })
+    await seedRating({
+      userId: OTHER_UID,
+      username: OTHER_USERNAME,
+      recipeId: RECIPE_ID,
+      rating: 4,
+      reviewText: '',
+      ratingLastUpdated: new Date(),
+    })
+
+    const res = await request(app)
+      .delete(`/api/removeRating?recipeId=${RECIPE_ID}`)
+      .set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+
+    const recipe = await db.collection('recipes').findOne({ _id: RECIPE_ID })
+    expect(recipe.rating.rateCount).toBe(1)
+    expect(recipe.rating.rateValue).toBe(4)
+  })
+
+  // Removing your own rating is a self-service delete, so it stays allowed even
+  // for a suspended/banned account (mirrors /deleteReview — no requireActive).
+  it('is allowed for a suspended account (self-service delete)', async () => {
+    const db = getDB()
+    await db.collection('users').insertOne({ _id: TEST_UID, status: 'suspended' })
+    await seedRating({
+      userId: TEST_UID,
+      username: TEST_USERNAME,
+      recipeId: RECIPE_ID,
+      rating: 4,
+      reviewText: '',
+      ratingLastUpdated: new Date(),
+    })
+    try {
+      const res = await request(app)
+        .delete(`/api/removeRating?recipeId=${RECIPE_ID}`)
+        .set(AUTH_HEADER)
+      expect(res.status).toBe(200)
+      expect(res.body).toEqual({ removed: true })
+    } finally {
+      await db.collection('users').deleteMany({})
+    }
   })
 })
 

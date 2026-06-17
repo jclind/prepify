@@ -7,7 +7,7 @@ const { recipeIdQuery } = require('../util/recipeIdQuery')
 const { REVIEW_VISIBLE, RECIPE_VISIBLE } = require('../util/moderation')
 const { DESCRIPTION_MAX_LENGTH } = require('../util/recipeLimits')
 const { recordAudit } = require('../util/auditLog')
-const { recomputeRecipeRating } = require('../util/recipeRating')
+const { recomputeRecipeRating, hasNumericRating } = require('../util/recipeRating')
 const { upsertWithDupRetry } = require('../util/upsertWithDupRetry')
 const { notifyInBackground, notifyReviewTakenDown } = require('../util/email')
 const { moderateText } = require('../util/textModeration')
@@ -150,7 +150,10 @@ router.post('/editReview', verifyToken, requireActive, reviewWriteLimiter, async
   res.json({ edited: true })
 }))
 
-// DELETE /deleteReview
+// DELETE /deleteReview — removes the written review but KEEPS any star rating
+// the user left (the rating is removed separately via /removeRating). If the
+// doc has no rating to keep, blanking the text would leave an orphan with
+// neither text nor rating, so the whole doc is deleted instead.
 router.delete('/deleteReview', verifyToken, asyncHandler(async (req, res) => {
   const db = getDB()
   const { recipeId } = req.query
@@ -160,14 +163,62 @@ router.delete('/deleteReview', verifyToken, asyncHandler(async (req, res) => {
   }
 
   // Keyed by the stable uid (D1) — only the author's own doc can match.
-  const deleteResult = await db.collection('ratings').updateOne(
-    { userId, recipeId },
-    { $set: { reviewText: '', reviewLastUpdated: '' } }
-  )
-  if (deleteResult.matchedCount === 0) {
+  const doc = await db.collection('ratings').findOne({ userId, recipeId })
+  if (!doc) {
     return res.status(403).json({ error: 'Review not found or not authorized' })
   }
+
+  if (hasNumericRating(doc.rating)) {
+    // A real star rating remains — keep it, just clear the review text.
+    await db.collection('ratings').updateOne(
+      { userId, recipeId },
+      { $set: { reviewText: '', reviewLastUpdated: '' } }
+    )
+  } else {
+    // No rating to keep — drop the doc so we never leave an empty orphan.
+    await db.collection('ratings').deleteOne({ userId, recipeId })
+  }
+  // The recipe aggregate is unaffected either way (the rating, if any, is kept;
+  // a rating-less orphan never counted), so no recompute is needed.
   res.json({ deleted: true })
+}))
+
+// DELETE /removeRating — removes JUST the star rating, keeping any written
+// review intact. If there's no review either, the whole doc is deleted so we
+// never leave an orphan with neither a rating nor text. Either way the recipe
+// aggregate is recomputed so the removed star stops counting toward the average.
+// No requireActive: like /deleteReview this is a self-service removal of the
+// user's own content, which stays allowed even for a suspended/banned account
+// (see user-status-enforcement: "deletes remain allowed when suspended").
+router.delete('/removeRating', verifyToken, asyncHandler(async (req, res) => {
+  const db = getDB()
+  const { recipeId } = req.query
+  const userId = req.uid
+  if (!recipeId) {
+    return res.status(400).json({ error: 'recipeId is required' })
+  }
+
+  // Keyed by the stable uid (D1) — only the author's own doc can match.
+  const doc = await db.collection('ratings').findOne({ userId, recipeId })
+  if (!doc) {
+    return res.status(404).json({ error: 'Rating not found' })
+  }
+
+  const hasReview = typeof doc.reviewText === 'string' && doc.reviewText !== ''
+  if (hasReview) {
+    // Keep the review; reset to the review-only shape (rating: null).
+    await db.collection('ratings').updateOne(
+      { userId, recipeId },
+      { $set: { rating: null, ratingLastUpdated: '' } }
+    )
+  } else {
+    // Nothing left without the rating — drop the doc entirely.
+    await db.collection('ratings').deleteOne({ userId, recipeId })
+  }
+
+  // The removed star must no longer influence the recipe's score.
+  await recomputeRecipeRating(db, recipeId)
+  res.json({ removed: true })
 }))
 
 // GET /getReviews — anonymous-friendly. `optionalAuth` sets req.uid only when a
