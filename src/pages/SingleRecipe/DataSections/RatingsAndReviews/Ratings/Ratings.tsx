@@ -1,6 +1,7 @@
 import React, { FC } from 'react'
 import { BsStar } from 'react-icons/bs'
 import { Link } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import StarRating from 'src/Components/StarRating/StarRating'
 import AuthAPI from 'src/api/auth'
 import RecipeAPI from 'src/api/recipes'
@@ -21,12 +22,28 @@ const Ratings: FC<RatingsProps> = ({
   ratingCount,
   recipeId,
 }) => {
-  const changeRating = (e: number) => {
-    RecipeAPI.addRating(recipeId, e)
-    setRating(e)
+  const queryClient = useQueryClient()
+  const uid = AuthAPI.getUID()
+
+  // After a rating change, refresh the recipe aggregate (the displayed
+  // "Average Rating") and the user's own rating so both reflect the server
+  // recompute rather than the stale page-load value.
+  const refreshRatingViews = () => {
+    queryClient.invalidateQueries({ queryKey: ['recipe', recipeId] })
+    queryClient.invalidateQueries({ queryKey: ['check-made', recipeId] })
   }
 
-  const uid = AuthAPI.getUID()
+  const changeRating = async (e: number) => {
+    setRating(e)
+    await RecipeAPI.addRating(recipeId, e)
+    refreshRatingViews()
+  }
+
+  const handleRemoveRating = async () => {
+    setRating(0)
+    await RecipeAPI.removeRating(recipeId)
+    refreshRatingViews()
+  }
 
   return (
     <div className='overview'>
@@ -55,6 +72,15 @@ const Ratings: FC<RatingsProps> = ({
                 onChange={changeRating}
               />
               <span className='rate-hint'>{rating > 0 ? `${rating} / 5` : 'Tap a star'}</span>
+              {rating > 0 && (
+                <button
+                  type='button'
+                  className='remove-rating'
+                  onClick={handleRemoveRating}
+                >
+                  Remove rating
+                </button>
+              )}
             </div>
           ) : (
             <Link to='/login' className='signin-rate'>
