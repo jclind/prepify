@@ -324,7 +324,7 @@ All endpoints hit the main server (`VITE_API_URL`). Auth is via the interceptor 
 - **Request:** Query param `recipeId`. No body. No `userId` (author resolved from the Bearer token).
 - **Response:** `{ removed: true }`. Returns 404 only when the user has **no doc at all** for the recipe; it's an idempotent 200 no-op on a review-only doc (one already without a star rating).
 - **Behavior:** Removes **only** the star rating. If a written review exists it is kept (doc reset to the review-only shape, `rating: null`); otherwise the whole doc is deleted. The recipe aggregate is recomputed so the removed star stops counting toward the average.
-- **Auth:** Bearer token via interceptor only; only the author's own doc can match. Requires an active (non-suspended) account.
+- **Auth:** Bearer token via interceptor only; only the author's own doc can match. Like `/deleteReview`, this is a self-service removal of the user's own content, so it stays allowed even for a suspended/banned account (no `requireActive`).
 
 ### GET /getReviews
 - **Called from:** `src/api/recipes.ts` → `RecipeAPI.getReviews(recipeId, filter, page, reviewsPerPage)`

@@ -406,6 +406,30 @@ describe('DELETE /removeRating', () => {
     expect(recipe.rating.rateCount).toBe(1)
     expect(recipe.rating.rateValue).toBe(4)
   })
+
+  // Removing your own rating is a self-service delete, so it stays allowed even
+  // for a suspended/banned account (mirrors /deleteReview — no requireActive).
+  it('is allowed for a suspended account (self-service delete)', async () => {
+    const db = getDB()
+    await db.collection('users').insertOne({ _id: TEST_UID, status: 'suspended' })
+    await seedRating({
+      userId: TEST_UID,
+      username: TEST_USERNAME,
+      recipeId: RECIPE_ID,
+      rating: 4,
+      reviewText: '',
+      ratingLastUpdated: new Date(),
+    })
+    try {
+      const res = await request(app)
+        .delete(`/api/removeRating?recipeId=${RECIPE_ID}`)
+        .set(AUTH_HEADER)
+      expect(res.status).toBe(200)
+      expect(res.body).toEqual({ removed: true })
+    } finally {
+      await db.collection('users').deleteMany({})
+    }
+  })
 })
 
 // ─── POST /newReview ───────────────────────────────────────────────────────────

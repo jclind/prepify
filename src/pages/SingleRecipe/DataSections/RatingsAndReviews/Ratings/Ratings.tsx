@@ -2,6 +2,7 @@ import React, { FC } from 'react'
 import { BsStar } from 'react-icons/bs'
 import { Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
+import toast from 'react-hot-toast'
 import StarRating from 'src/Components/StarRating/StarRating'
 import AuthAPI from 'src/api/auth'
 import RecipeAPI from 'src/api/recipes'
@@ -34,14 +35,31 @@ const Ratings: FC<RatingsProps> = ({
   }
 
   const changeRating = async (e: number) => {
+    // Optimistic: show the new star immediately, but revert if the server
+    // rejects (e.g. a suspended account hitting requireActive, or a network
+    // failure) so the UI never shows a rating that wasn't actually saved.
+    const prev = rating
     setRating(e)
-    await RecipeAPI.addRating(recipeId, e)
+    try {
+      await RecipeAPI.addRating(recipeId, e)
+    } catch (err) {
+      setRating(prev)
+      toast.error('Could not save your rating. Please try again.')
+      return
+    }
     refreshRatingViews()
   }
 
   const handleRemoveRating = async () => {
+    const prev = rating
     setRating(0)
-    await RecipeAPI.removeRating(recipeId)
+    try {
+      await RecipeAPI.removeRating(recipeId)
+    } catch (err) {
+      setRating(prev)
+      toast.error('Could not remove your rating. Please try again.')
+      return
+    }
     refreshRatingViews()
   }
 
