@@ -310,13 +310,21 @@ All endpoints hit the main server (`VITE_API_URL`). Auth is via the interceptor 
 - **Auth:** Bearer token via interceptor only — server must extract `userId` from token to authorize the edit.
 - **Error handling:** No catch. Call site uses `.then()` with no error branch.
 
-### PUT /deleteReview
+### DELETE /deleteReview
 - **Called from:** `src/api/recipes.ts` → `RecipeAPI.deleteReview(recipeId)`
 - **Used by:** `RecipeReview.tsx`, `ConfirmDeleteReviewModal.tsx`
-- **Request:** Query params `userId` (resolved via `AuthAPI.getUID()`) and `recipeId`. No body.
-- **Response:** Not destructured
-- **Auth:** Bearer token via interceptor AND `userId` in query param (redundant — see Flags).
-- **Error handling:** No catch. Call site uses `await` with no try/catch.
+- **Request:** Query param `recipeId`. No body. No `userId` (author resolved from the Bearer token).
+- **Response:** `{ deleted: true }`
+- **Behavior:** Removes the written review but **keeps** any star rating the user left. If the doc has no rating to keep, the whole doc is deleted (no orphan with neither text nor rating). The recipe aggregate is unaffected, so it is not recomputed.
+- **Auth:** Bearer token via interceptor only — server extracts `userId` from the token; only the author's own doc can match.
+
+### DELETE /removeRating
+- **Called from:** `src/api/recipes.ts` → `RecipeAPI.removeRating(recipeId)`
+- **Used by:** `src/pages/SingleRecipe/DataSections/RatingsAndReviews/Ratings/Ratings.tsx`
+- **Request:** Query param `recipeId`. No body. No `userId` (author resolved from the Bearer token).
+- **Response:** `{ removed: true }` (404 if the user has no rating doc for the recipe).
+- **Behavior:** Removes **only** the star rating. If a written review exists it is kept (doc reset to the review-only shape, `rating: null`); otherwise the whole doc is deleted. The recipe aggregate is recomputed so the removed star stops counting toward the average.
+- **Auth:** Bearer token via interceptor only; only the author's own doc can match. Requires an active (non-suspended) account.
 
 ### GET /getReviews
 - **Called from:** `src/api/recipes.ts` → `RecipeAPI.getReviews(recipeId, filter, page, reviewsPerPage)`
