@@ -98,6 +98,12 @@ class RecipeAPIClass {
     const result = await http.get(`api/getTrendingRecipes?limit=${limit}`)
     return result.data
   }
+  // Personalized home row. Requires auth (token attached by the http
+  // interceptor); returns [] when the user has too little signal to personalize.
+  async getForYouRecipes(limit = 8): Promise<RecipeType[]> {
+    const result = await http.get(`api/getForYouRecipes?limit=${limit}`)
+    return result.data
+  }
   async getRecipe(id: string): Promise<RecipeType> {
     const result = await http.get(`api/getRecipe?id=${id}`)
     return result.data
