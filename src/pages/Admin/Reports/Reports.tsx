@@ -6,6 +6,7 @@ import { AdminReportType, ReportStatus } from 'types'
 import ReportAPI from 'src/api/reports'
 import AdminAPI from 'src/api/admin'
 import SavedFilterBar from 'src/Components/SavedFilters/SavedFilterBar'
+import ClassifierNote from 'src/Components/ClassifierNote/ClassifierNote'
 import { formatClassifier } from 'src/util/formatClassifier'
 import './Reports.scss'
 
@@ -321,9 +322,9 @@ const Reports: FC = () => {
                 </div>
 
                 {report.classifier && (
-                  <p className='report-classifier'>
+                  <ClassifierNote className='report-classifier'>
                     Auto-flagged: {formatClassifier(report.classifier)}
-                  </p>
+                  </ClassifierNote>
                 )}
 
                 {renderPreview(report)}

@@ -9,6 +9,7 @@
  * unmoderated. Assert the real keys make it into the blob.
  */
 
+const admin = require('firebase-admin') // auto-mocked (server/__mocks__/firebase-admin.js)
 const { gatherRecipeText, holdRecipeForReview, auditContentBlock, respondBlocked } = require('../util/automod')
 const { SYSTEM_ACTOR } = require('../util/auditLog')
 
@@ -155,6 +156,10 @@ describe('holdRecipeForReview — report-gated hold', () => {
 })
 
 describe('auditContentBlock — system-actor trail for a refused write', () => {
+  // The email fallback calls admin.auth().getUser; reset the mock's user
+  // registry between cases so a fresh-account lookup misses unless set.
+  afterEach(() => admin.__resetUsers())
+
   // Fake Db capturing the auditLog insert and serving a usernames lookup.
   const fakeDb = ({ username, findThrows, insertThrows } = {}) => {
     const inserts = []
@@ -212,11 +217,28 @@ describe('auditContentBlock — system-actor trail for a refused write', () => {
     expect(inserts[0].reason).toBeFalsy()
   })
 
-  it('falls back to a null targetLabel (→ bare uid at render) when the username lookup misses', async () => {
+  it('falls back to the Firebase email when there is no usernames doc yet (fresh account)', async () => {
+    // A brand-new account blocked on its first username/displayName write has no
+    // usernames doc; the email keeps the queue row identifiable instead of a uid.
+    admin.__setUsers([{ uid: 'uid-fresh', email: 'fresh@example.com' }])
     const { db, inserts } = fakeDb({ username: null })
-    await auditContentBlock(db, { uid: 'uid-2', surface: 'profile', verdict: VERDICT })
+    await auditContentBlock(db, { uid: 'uid-fresh', surface: 'username', verdict: VERDICT })
+    expect(inserts[0].targetLabel).toBe('fresh@example.com')
+    expect(inserts[0].targetId).toBe('uid-fresh')
+  })
+
+  it('prefers the @handle over the email when a usernames doc exists', async () => {
+    admin.__setUsers([{ uid: 'uid-both', email: 'both@example.com' }])
+    const { db, inserts } = fakeDb({ username: 'baduser' })
+    await auditContentBlock(db, { uid: 'uid-both', surface: 'username', verdict: VERDICT })
+    expect(inserts[0].targetLabel).toBe('@baduser')
+  })
+
+  it('falls back to a null targetLabel (→ bare uid at render) when both lookups miss', async () => {
+    const { db, inserts } = fakeDb({ username: null })
+    await auditContentBlock(db, { uid: 'uid-2-unknown', surface: 'profile', verdict: VERDICT })
     expect(inserts[0].targetLabel).toBeNull()
-    expect(inserts[0].targetId).toBe('uid-2')
+    expect(inserts[0].targetId).toBe('uid-2-unknown')
   })
 
   it('is best-effort: a username-lookup failure still records the row', async () => {
