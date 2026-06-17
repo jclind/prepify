@@ -7,7 +7,7 @@ const { recipeIdQuery } = require('../util/recipeIdQuery')
 const { REVIEW_VISIBLE, RECIPE_VISIBLE } = require('../util/moderation')
 const { DESCRIPTION_MAX_LENGTH } = require('../util/recipeLimits')
 const { recordAudit } = require('../util/auditLog')
-const { recomputeRecipeRating } = require('../util/recipeRating')
+const { recomputeRecipeRating, hasNumericRating } = require('../util/recipeRating')
 const { upsertWithDupRetry } = require('../util/upsertWithDupRetry')
 const { notifyInBackground, notifyReviewTakenDown } = require('../util/email')
 const { moderateText } = require('../util/textModeration')
@@ -168,7 +168,7 @@ router.delete('/deleteReview', verifyToken, asyncHandler(async (req, res) => {
     return res.status(403).json({ error: 'Review not found or not authorized' })
   }
 
-  if (Number.isFinite(parseFloat(doc.rating))) {
+  if (hasNumericRating(doc.rating)) {
     // A real star rating remains — keep it, just clear the review text.
     await db.collection('ratings').updateOne(
       { userId, recipeId },
@@ -187,7 +187,10 @@ router.delete('/deleteReview', verifyToken, asyncHandler(async (req, res) => {
 // review intact. If there's no review either, the whole doc is deleted so we
 // never leave an orphan with neither a rating nor text. Either way the recipe
 // aggregate is recomputed so the removed star stops counting toward the average.
-router.delete('/removeRating', verifyToken, requireActive, asyncHandler(async (req, res) => {
+// No requireActive: like /deleteReview this is a self-service removal of the
+// user's own content, which stays allowed even for a suspended/banned account
+// (see user-status-enforcement: "deletes remain allowed when suspended").
+router.delete('/removeRating', verifyToken, asyncHandler(async (req, res) => {
   const db = getDB()
   const { recipeId } = req.query
   const userId = req.uid

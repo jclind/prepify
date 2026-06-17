@@ -97,6 +97,7 @@ describe('Ratings', () => {
     mockAddRating.mockReset()
     mockRemoveRating.mockReset()
     mockGetUID.mockReturnValue(null)
+    mockToast.error.mockClear()
   })
 
   it('shows "Sign In To Rate" with non-interactive display stars when no uid is available', async () => {
@@ -150,6 +151,30 @@ describe('Ratings', () => {
     await user.click(screen.getByText('Remove rating'))
     expect(setRating).toHaveBeenCalledWith(0)
     await waitFor(() => expect(mockRemoveRating).toHaveBeenCalledWith('recipe-1'))
+  })
+
+  it('reverts the optimistic star and shows a toast when addRating fails', async () => {
+    const user = userEvent.setup()
+    const setRating = vi.fn()
+    mockAddRating.mockRejectedValue(new Error('network'))
+    renderRatings('user-1', 0, 0, 0, setRating)
+    await user.click(screen.getByTestId('star-ratings-rating'))
+    // optimistic to 4, then reverted back to the prior value (0)
+    expect(setRating).toHaveBeenCalledWith(4)
+    await waitFor(() => expect(setRating).toHaveBeenLastCalledWith(0))
+    expect(mockToast.error).toHaveBeenCalled()
+  })
+
+  it('reverts the cleared star and shows a toast when removeRating fails', async () => {
+    const user = userEvent.setup()
+    const setRating = vi.fn()
+    mockRemoveRating.mockRejectedValue(new Error('network'))
+    renderRatings('user-1', 4, 1, 4, setRating)
+    await user.click(screen.getByText('Remove rating'))
+    // optimistic to 0, then reverted back to the prior rating (4)
+    expect(setRating).toHaveBeenCalledWith(0)
+    await waitFor(() => expect(setRating).toHaveBeenLastCalledWith(4))
+    expect(mockToast.error).toHaveBeenCalled()
   })
 })
 
