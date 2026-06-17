@@ -119,8 +119,10 @@ describe('makeUserLimiter — per-user content-write cap', () => {
 describe('per-surface limiters are independent buckets', () => {
   // The whole point of #3: exhausting one surface must NOT throttle another, so a
   // legit cross-surface burst can't 429. Each exported limiter is its own
-  // instance with its own store, so a single uid gets a separate 30/min budget on
-  // recipes vs reviews vs profile.
+  // instance with its own store, so a single uid gets a separate budget on
+  // recipes vs reviews vs profile. The recipe surface is capped tighter (12) than
+  // review/profile (30) because a recipe write can trigger a paid image scan.
+  const RECIPE_LIMIT = 12
   it('exhausting the recipe surface leaves review + profile untouched for the same user', async () => {
     const server = start({
       '/recipe': recipeWriteLimiter,
@@ -130,7 +132,7 @@ describe('per-surface limiters are independent buckets', () => {
     const uid = 'cross-surface-user'
 
     // Burn the full recipe budget.
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < RECIPE_LIMIT; i++) {
       expect((await request(server).post('/recipe').set('x-test-uid', uid)).status).toBe(200)
     }
     expect((await request(server).post('/recipe').set('x-test-uid', uid)).status).toBe(429)
