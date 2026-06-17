@@ -6,6 +6,20 @@ a11y, tech debt, testing, and ideas. The beta→1.0 launch checklist lives separ
 
 Legend: `[ ]` todo · `[~]` partial · `[x]` done · `[?]` needs a decision.
 
+## Idea capture & triage workflow
+
+Keep two stages separate so ideas never get lost to friction:
+
+1. **Capture (Obsidian):** jot every idea into the running Obsidian note — one idea per line,
+   dated, append-only. Don't categorize or polish; just get it out of your head. This is the
+   low-friction inbox, available on phone and off-branch.
+2. **Triage (here):** when the note builds up, hand the dump to Claude. Each item gets sorted
+   into the right section below (or `RELEASE_PLAN.md` / `FEATURE_IDEAS.md`), code-touching items
+   get verified, and you get back an annotated copy marking where each one landed
+   (`→ BACKLOG#Section · date`). Then clear the Obsidian note back to empty.
+
+The triage date stamped on items is the date they were filed here, not when they were thought of.
+
 ---
 
 ## Bugs
