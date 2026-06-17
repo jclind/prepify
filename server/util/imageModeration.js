@@ -58,7 +58,7 @@ function threshold(envName, fallback) {
 function highLikelihood() { return threshold('MODERATION_IMAGE_HIGH', 'VERY_LIKELY') }
 function mediumLikelihood() { return threshold('MODERATION_IMAGE_MEDIUM', 'LIKELY') }
 
-const CLEAN = { allowed: true, severity: 'clean', reason: null, category: null, scores: null, source: 'disabled' }
+const CLEAN = { allowed: true, severity: 'clean', reason: null, category: null, score: null, scores: null, source: 'disabled' }
 function clean(source) {
   return { ...CLEAN, source }
 }
@@ -136,7 +136,12 @@ async function callVision(imageUrl) {
  *
  * @param {string} imageUrl   public download URL of the image to screen
  * @param {string} [context]  surface context ('recipe.image' | 'profile.photo')
- * @returns {Promise<{allowed:boolean, severity:'clean'|'medium'|'high', reason:string|null, category:string|null, scores:object|null, source:string}>}
+ * @returns {Promise<{allowed:boolean, severity:'clean'|'medium'|'high', reason:string|null, category:string|null, score:number|null, scores:object|null, source:string}>}
+ *
+ * `score` mirrors the text moderator's field for a uniform verdict shape, but is
+ * always null here: Vision SafeSearch returns a coarse likelihood bucket
+ * (UNLIKELY…VERY_LIKELY), not a 0–1 probability, so there's no honest numeric
+ * confidence to surface. The bucket name lives in `reason` for human readers.
  */
 async function moderateImage(imageUrl, context = '') {
   if (!imageUrl || typeof imageUrl !== 'string' || !imageUrl.trim()) return clean('empty')
@@ -150,7 +155,7 @@ async function moderateImage(imageUrl, context = '') {
     // caller decides what "held" means for its surface — a recipe goes
     // pending_review; a profile photo is rejected (no owner-only state).
     console.error(`moderateImage: scan failed (failing closed) [${context}]:`, err.message)
-    return { allowed: false, severity: 'medium', reason: 'vision:unscanned', category: 'unscanned', scores: null, source: 'error' }
+    return { allowed: false, severity: 'medium', reason: 'vision:unscanned', category: 'unscanned', score: null, scores: null, source: 'error' }
   }
 
   const { severity, category, score } = grade(annotation)
@@ -185,6 +190,8 @@ async function moderateImage(imageUrl, context = '') {
     severity,
     reason: severity === 'clean' ? null : `vision:${category}:${likelihoodName(score)}`,
     category,
+    // Always null — Vision yields a likelihood bucket, not a 0–1 probability.
+    score: null,
     scores: annotation,
     source: 'vision',
   }

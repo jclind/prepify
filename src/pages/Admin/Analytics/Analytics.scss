@@ -50,6 +50,15 @@
     }
   }
 
+  .section-eyebrow {
+    margin: 0 0 0.6rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #9ca3af;
+  }
+
   .stat-cards {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));

@@ -70,6 +70,7 @@ const Analytics: FC = () => {
         <p className='analytics-state error'>Failed to load analytics.</p>
       ) : (
         <>
+          <p className='section-eyebrow'>All-time totals</p>
           <section className='stat-cards'>
             <div className='stat-card'>
               <span className='stat-value'>{data.totals.users}</span>
@@ -104,6 +105,7 @@ const Analytics: FC = () => {
             </div>
           </section>
 
+          <p className='section-eyebrow'>Last {data.days} days</p>
           <section className='trends'>
             <div className='trend-card'>
               <h2>Reports filed</h2>
