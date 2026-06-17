@@ -6,11 +6,13 @@ import { HelmetProvider } from 'react-helmet-async'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import Home from 'src/pages/Home/Home'
 import RecipeAPI from 'src/api/recipes'
+import { useAuth } from 'src/context/AuthContext'
 
 vi.mock('src/api/recipes', () => ({
   default: {
     getTrendingRecipes: vi.fn(),
     getAllRecipes: vi.fn(),
+    getForYouRecipes: vi.fn(),
   },
 }))
 
@@ -19,8 +21,15 @@ vi.mock('src/Components/SearchRecipesInput/SearchRecipesInput', () => ({
   default: () => null,
 }))
 
+// For You is gated on auth — control the current user per test.
+vi.mock('src/context/AuthContext', () => ({
+  useAuth: vi.fn(),
+}))
+
 const mockGetTrendingRecipes = RecipeAPI.getTrendingRecipes as ReturnType<typeof vi.fn>
 const mockGetAllRecipes = RecipeAPI.getAllRecipes as ReturnType<typeof vi.fn>
+const mockGetForYouRecipes = RecipeAPI.getForYouRecipes as ReturnType<typeof vi.fn>
+const mockUseAuth = useAuth as unknown as ReturnType<typeof vi.fn>
 
 const makeRecipe = (id: string) => ({
   _id: id,
@@ -72,9 +81,14 @@ describe('Home page', () => {
   beforeEach(() => {
     mockGetTrendingRecipes.mockReset()
     mockGetAllRecipes.mockReset()
+    mockGetForYouRecipes.mockReset()
+    mockUseAuth.mockReset()
     // Neutral defaults; individual tests override the section they exercise.
     mockGetTrendingRecipes.mockReturnValue(new Promise(() => {}))
     mockGetAllRecipes.mockResolvedValue(mealResult([]))
+    mockGetForYouRecipes.mockResolvedValue([])
+    // Logged out by default → the For You row is absent and doesn't interfere.
+    mockUseAuth.mockReturnValue({ user: null })
   })
 
   it('renders without crashing', () => {
@@ -113,6 +127,51 @@ describe('Home page', () => {
       mockGetTrendingRecipes.mockRejectedValue(new Error('boom'))
       renderHome()
       expect(await screen.findByText(/couldn.t load trending recipes/i)).toBeInTheDocument()
+    })
+  })
+
+  describe('For you', () => {
+    const loggedIn = () => mockUseAuth.mockReturnValue({ user: { uid: 'u1' } })
+
+    it('is absent for a logged-out visitor', () => {
+      // default beforeEach: user = null
+      renderHome()
+      expect(screen.queryByText('For you')).not.toBeInTheDocument()
+      expect(mockGetForYouRecipes).not.toHaveBeenCalled()
+    })
+
+    it('renders recipe cards when the API returns personalized picks', async () => {
+      loggedIn()
+      mockGetForYouRecipes.mockResolvedValue([makeRecipe('fy1'), makeRecipe('fy2')])
+      renderHome()
+      expect(await screen.findByText('For you')).toBeInTheDocument()
+      expect(await screen.findByText('Recipe fy1')).toBeInTheDocument()
+      expect(screen.getByText('Recipe fy2')).toBeInTheDocument()
+    })
+
+    it('hides the whole row when the API returns no picks (too little signal)', async () => {
+      loggedIn()
+      mockGetForYouRecipes.mockResolvedValue([])
+      renderHome()
+      await waitFor(() => expect(mockGetForYouRecipes).toHaveBeenCalled())
+      await waitFor(() => expect(screen.queryByText('For you')).not.toBeInTheDocument())
+    })
+
+    it('hides the row on fetch error (silent, non-core)', async () => {
+      loggedIn()
+      mockGetForYouRecipes.mockRejectedValue(new Error('boom'))
+      renderHome()
+      await waitFor(() => expect(mockGetForYouRecipes).toHaveBeenCalled())
+      await waitFor(() => expect(screen.queryByText('For you')).not.toBeInTheDocument())
+    })
+
+    it('shows skeletons while the personalized fetch is pending', () => {
+      loggedIn()
+      mockGetForYouRecipes.mockReturnValue(new Promise(() => {}))
+      renderHome()
+      const section = screen.getByText('For you').closest('.home-section')
+      expect(section).not.toBeNull()
+      expect(section!.querySelectorAll('.home-recipe-card')).toHaveLength(4)
     })
   })
 

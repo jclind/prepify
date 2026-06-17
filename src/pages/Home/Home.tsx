@@ -3,6 +3,7 @@ import { Helmet } from 'react-helmet-async'
 import { Link } from 'react-router-dom'
 import { BiChevronRight } from 'react-icons/bi'
 import HomeHero from 'src/pages/Home/HomeHero/HomeHero'
+import HomeForYou from 'src/pages/Home/HomeForYou'
 import HomeTrending from 'src/pages/Home/HomeTrending'
 import HomeBrowseByMeal from 'src/pages/Home/HomeBrowseByMeal'
 import './Home.scss'
@@ -17,6 +18,8 @@ const Home: FC = () => {
       </Helmet>
       <div className='page home-page'>
         <HomeHero />
+
+        <HomeForYou />
 
         <section className='home-section'>
           <div className='home-section-header'>

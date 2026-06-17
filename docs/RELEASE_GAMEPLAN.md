@@ -49,7 +49,7 @@ same commit.**
 | 1b | Save-recipe broken | `[ ]` | — |
 | 1c | Account data (images, empty-flash) | `[ ]` | — |
 | 1d | Serving-price bug | `[ ]` | — |
-| 2a | Homepage redesign | `[ ]` | — |
+| 2a | Homepage redesign (design shipped; For You row in progress) | `[~]` | feat/homepage-redesign |
 | 2b | Public Help/Contact page | `[ ]` | — |
 | 2c | Single-recipe polish | `[ ]` | — |
 | 2d | Recipes browse polish | `[ ]` | — |
@@ -110,7 +110,7 @@ All isolated files — safe to run together.
 
 | Track | Work | Domain |
 |---|---|---|
-| **2a** Homepage redesign *(blocker)* | richer landing page (value prop, featured/seasonal, data blocks) | `src/pages/Home/*` |
+| **2a** Homepage redesign *(design shipped; feature work in progress)* | redesign live (`HomeHero → Trending → Browse by meal`). Remaining = features: **For You** personalized row (in progress), **"What should I cook?"** button (next) | `src/pages/Home/*`, `server/routes/recipes.js`, `server/util/forYou.js` |
 | **2b** Public Help/Contact *(blocker)* | move route out of `PrivateRoute`, add a public link (footer/nav), refresh layout | `src/pages/Help/*`, **`App.tsx`**, Navbar link |
 | **2c** Single-recipe polish | serving-price prominence, "You created this" mobile styling, stats row styling, `RecipeNotFound` visual, "Your Review" UI + rating-dropdown position | `src/pages/SingleRecipe/*` |
 | **2d** Recipes browse polish | better no-results indicator, autocomplete redesign + autocorrect, drop search from the top-most navbar on /recipes | `src/pages/Recipes/*`, `SearchRecipesInput`, Navbar |
@@ -234,14 +234,18 @@ Do: audit src/util/calculateServingPrice.ts against real recipe data — trace h
 Guardrails: scope to src/util/calculateServingPrice.ts and its direct callers/tests. Don't restyle the single-recipe page (price *prominence* is a separate polish track). Keep frontend tests green, tsc clean, build passing. Open a PR into development when green, and in the PR description show a before/after for a concrete recipe so the fix is reviewable.
 ```
 
-### Track 2a · Homepage redesign
+### Track 2a · Homepage features (redesign already shipped)
 
-```
-/worktree-create homepage redesign
+The visual redesign shipped earlier (`e1539c3`): Home is `HomeHero → Trending → Browse by meal → View
+all`. Remaining 2a work is **feature**, not design, sourced from `docs/FEATURE_IDEAS.md`:
 
-Read docs/RELEASE_GAMEPLAN.md (track 2a) and docs/RELEASE_PLAN.md (Section D "Homepage redesign", blocker). The current src/pages/Home/Home.tsx is sparse — only <HomeHero /> and <TrendingRecipes />. Goal: a richer, more polished landing page worthy of a 1.0.
+1. **Personalized "For You" row** *(in progress, `feat/homepage-redesign`)* — a content-based row inferred
+   from the user's saves/makes/ratings. Server: `GET /api/getForYouRecipes` (`verifyToken`) + pure scoring
+   helper `server/util/forYou.js`. Client: `HomeForYou` (gated on auth, hides until personalized) reusing the
+   extracted `HomeRecipeCard`. Decisions: hide-until-personalized, fresh each visit (shuffle top tier),
+   balanced cuisine/meal/diet scoring with community quality as tie-breaker.
+2. **"What should I cook?" button** *(next)* — one `HomeHero` button that picks a random on-taste recipe.
 
-This is a DESIGN task — before building, propose 1–2 layout directions (value-prop section, featured/seasonal/trending content, how-it-works, social proof, CTA to browse/create) and a section order, then implement the chosen direction. Use the existing design language (palette, spacing, components) — reuse RecipeCard/TrendingRecipes rather than reinventing. Must be fully responsive (test at 390px) with sensible empty/loading states for any data it fetches.
-
-Guardrails: stay within src/pages/Home/* (Home.tsx, HomeHero/*, and src/Components/TrendingRecipes/* if needed). Do NOT touch src/App.tsx routes, the Navbar, or global SCSS partials (avoids colliding with other worktrees). Don't touch the beta tag. Drive the running app to screenshot the result before/after. Keep tests green, tsc clean, build passing. Open a PR into development when green, with screenshots.
-```
+Guardrails for these: stay within `src/pages/Home/*` + `src/api/recipes.ts` + `server/routes/recipes.js` +
+`server/util/forYou.js`. Don't touch the beta tag. Keep tests green, tsc clean, build passing. PR into
+development when green.

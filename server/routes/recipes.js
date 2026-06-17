@@ -4,7 +4,8 @@ const { ObjectId } = require('mongodb')
 const { getDB, getClient } = require('../db')
 const { verifyToken, optionalAuth, requireAdmin, requireActive } = require('../middleware/auth')
 const { recipeWriteLimiter } = require('../middleware/writeLimiter')
-const { recipeIdQuery } = require('../util/recipeIdQuery')
+const { recipeIdQuery, recipeIdInQuery } = require('../util/recipeIdQuery')
+const { MIN_SIGNAL, buildTasteProfile, interactionWeight, selectForYou } = require('../util/forYou')
 const { RECIPE_VISIBLE, RECIPE_OWNER_VISIBLE } = require('../util/moderation')
 const { recordAudit } = require('../util/auditLog')
 const { notifyInBackground, notifyRecipeHidden } = require('../util/email')
@@ -193,6 +194,105 @@ router.get('/getTrendingRecipes', asyncHandler(async (req, res) => {
     .sort({ featured: -1, views: -1 })
     .limit(limit)
     .toArray()
+  res.json(recipes)
+}))
+
+// GET /getForYouRecipes — personalized home row, logged-in only.
+// Content-based: infer a taste profile from the user's saves/makes/ratings, then
+// score unseen visible recipes by feature overlap (see util/forYou.js). Returns
+// [] (frontend hides the row) when the user has too little signal. verifyToken,
+// not optionalAuth: the client only calls this when authed, so 401-on-anonymous
+// is the correct, simpler contract.
+router.get('/getForYouRecipes', verifyToken, asyncHandler(async (req, res) => {
+  const db = getDB()
+  const uid = req.uid
+  const limit = Math.max(1, Math.min(parseInt(req.query.limit, 10) || 8, 20))
+
+  // 1. Gather the user's interactions.
+  const [userData, ratingDocs] = await Promise.all([
+    db.collection('userRecipeData').findOne(
+      { _id: uid },
+      { projection: { savedRecipes: 1, madeRecipes: 1 } }
+    ),
+    db.collection('ratings')
+      .find({ userId: uid }, { projection: { recipeId: 1, rating: 1 } })
+      .toArray(),
+  ])
+
+  const savedIds = new Set((userData?.savedRecipes ?? []).map((e) => e.recipeId))
+  const madeIds = new Set((userData?.madeRecipes ?? []).map((e) => e.recipeId))
+  const ratingById = new Map(
+    ratingDocs
+      .filter((r) => r.rating != null)
+      .map((r) => [r.recipeId, r.rating])
+  )
+
+  // Recipes that carry actual taste signal: saved, made, or given a real
+  // (non-null) rating. This drives both the threshold and the profile below.
+  const signalIds = new Set([...savedIds, ...madeIds, ...ratingById.keys()])
+  if (signalIds.size < MIN_SIGNAL) {
+    return res.json([])
+  }
+
+  // Everything the user has engaged with — signal plus review-only rating docs
+  // (rating: null, e.g. a written review without a star rating) — is excluded
+  // from recommendations so we never suggest a recipe back to them. Review-only
+  // docs add no profile signal (ratingById already drops them), but they
+  // shouldn't reappear in the row either.
+  const seenIds = new Set([...signalIds, ...ratingDocs.map((r) => r.recipeId)])
+
+  // 2. Look up the feature tags of the seen recipes (some may be deleted —
+  // those just drop out).
+  const seenFeatureDocs = await db
+    .collection('recipes')
+    .find(recipeIdInQuery([...seenIds]), {
+      projection: { cuisine: 1, mealTypes: 1, nutritionLabels: 1 },
+    })
+    .toArray()
+
+  // 3. Build the taste profile, combining each recipe's signals into one weight.
+  const interactions = seenFeatureDocs.map((recipe) => {
+    const id = String(recipe._id)
+    return {
+      recipe,
+      weight: interactionWeight({
+        made: madeIds.has(id),
+        saved: savedIds.has(id),
+        rating: ratingById.get(id) ?? null,
+      }),
+    }
+  })
+  const profile = buildTasteProfile(interactions)
+
+  // 4. Candidate pool: every visible recipe except ones the user has already
+  // seen or authored. Project only what scoring + the card need.
+  const excludeVariants = recipeIdInQuery([...seenIds])._id.$in
+  const candidates = await db
+    .collection('recipes')
+    .find(
+      { ...RECIPE_VISIBLE, userId: { $ne: uid }, _id: { $nin: excludeVariants } },
+      {
+        projection: {
+          title: 1,
+          recipeImage: 1,
+          cuisine: 1,
+          totalTime: 1,
+          servingPrice: 1,
+          rating: 1,
+          mealTypes: 1,
+          nutritionLabels: 1,
+          numTimesSaved: 1,
+        },
+      }
+    )
+    .toArray()
+
+  // 5. Score, diversify, shuffle the top tier (fresh each visit), slice.
+  const numTimesSavedMax = candidates.reduce(
+    (max, r) => Math.max(max, r.numTimesSaved || 0),
+    0
+  )
+  const recipes = selectForYou(candidates, profile, { limit, numTimesSavedMax })
   res.json(recipes)
 }))
 

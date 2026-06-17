@@ -1021,6 +1021,239 @@ describe('GET /getTrendingRecipes', () => {
   })
 })
 
+// ─── GET /getForYouRecipes ────────────────────────────────────────────────────
+
+describe('GET /getForYouRecipes', () => {
+  it('rejects request with no auth token (401)', async () => {
+    const res = await request(server).get('/api/getForYouRecipes')
+    expect(res.status).toBe(401)
+  })
+
+  it('returns [] when the user has too little signal (< MIN_SIGNAL)', async () => {
+    // Only 2 interacted recipes — below the threshold to personalize.
+    await seedRecipes([
+      { ...BASE_RECIPE, _id: 'fy-a', cuisine: 'Italian' },
+      { ...BASE_RECIPE, _id: 'fy-b', cuisine: 'Italian' },
+    ])
+    await seedUserRecipeData(TEST_UID, {
+      savedRecipes: [
+        { recipeId: 'fy-a', dateSaved: '1' },
+        { recipeId: 'fy-b', dateSaved: '2' },
+      ],
+    })
+    const res = await request(server).get('/api/getForYouRecipes').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(res.body).toEqual([])
+  })
+
+  it('recommends unseen recipes matching the user\'s taste, excluding seen and own', async () => {
+    await seedRecipes([
+      // Three saved Italian dinners → builds an Italian-dinner taste profile.
+      { ...BASE_RECIPE, _id: 'fy-s1', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'fy-s2', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'fy-s3', cuisine: 'Italian', mealTypes: ['dinner'] },
+      // Unseen Italian dinners → should be recommended.
+      { ...BASE_RECIPE, _id: 'fy-c1', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'fy-c2', cuisine: 'Italian', mealTypes: ['dinner'] },
+      // Unseen Mexican breakfast sharing no feature with the profile → excluded.
+      // (nutritionLabels cleared so it doesn't match the inherited 'low-carb' diet.)
+      { ...BASE_RECIPE, _id: 'fy-mex', cuisine: 'Mexican', mealTypes: ['breakfast'], nutritionLabels: [] },
+      // Unseen Italian dinner but authored by the user → excluded as own.
+      { ...BASE_RECIPE, _id: 'fy-own', cuisine: 'Italian', mealTypes: ['dinner'], userId: TEST_UID },
+    ])
+    await seedUserRecipeData(TEST_UID, {
+      savedRecipes: [
+        { recipeId: 'fy-s1', dateSaved: '1' },
+        { recipeId: 'fy-s2', dateSaved: '2' },
+        { recipeId: 'fy-s3', dateSaved: '3' },
+      ],
+    })
+
+    const res = await request(server).get('/api/getForYouRecipes').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(Array.isArray(res.body)).toBe(true)
+
+    const ids = res.body.map((r) => r._id)
+    // Only the unseen, on-taste Italian dinners qualify.
+    expect(ids.sort()).toEqual(['fy-c1', 'fy-c2'])
+    // Never recommend something already saved, the user's own, or off-taste.
+    expect(ids).not.toContain('fy-s1')
+    expect(ids).not.toContain('fy-own')
+    expect(ids).not.toContain('fy-mex')
+  })
+
+  it('excludes hidden recipes from recommendations', async () => {
+    await seedRecipes([
+      { ...BASE_RECIPE, _id: 'fy-s1', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'fy-s2', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'fy-s3', cuisine: 'Italian', mealTypes: ['dinner'] },
+      // On-taste but moderation-hidden → must not surface.
+      { ...BASE_RECIPE, _id: 'fy-hidden', cuisine: 'Italian', mealTypes: ['dinner'], status: 'hidden' },
+    ])
+    await seedUserRecipeData(TEST_UID, {
+      savedRecipes: [
+        { recipeId: 'fy-s1', dateSaved: '1' },
+        { recipeId: 'fy-s2', dateSaved: '2' },
+        { recipeId: 'fy-s3', dateSaved: '3' },
+      ],
+    })
+
+    const res = await request(server).get('/api/getForYouRecipes').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(res.body.map((r) => r._id)).not.toContain('fy-hidden')
+  })
+
+  it('reaches the signal threshold via ratings and recommends on-taste recipes', async () => {
+    await seedRecipes([
+      // Three highly-rated Italian dinners → Italian-dinner taste profile, built
+      // entirely from ratings (no saves/makes), exercising that signal path.
+      { ...BASE_RECIPE, _id: 'fy-r1', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'fy-r2', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'fy-r3', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'fy-rec', cuisine: 'Italian', mealTypes: ['dinner'] },
+    ])
+    await seedRating({ userId: TEST_UID, recipeId: 'fy-r1', rating: 5 })
+    await seedRating({ userId: TEST_UID, recipeId: 'fy-r2', rating: 5 })
+    await seedRating({ userId: TEST_UID, recipeId: 'fy-r3', rating: 4 })
+
+    const res = await request(server).get('/api/getForYouRecipes').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    const ids = res.body.map((r) => r._id)
+    expect(ids).toContain('fy-rec')
+    // Rated recipes are "seen" → never recommended back.
+    expect(ids).not.toContain('fy-r1')
+  })
+
+  it('reaches the signal threshold via made recipes', async () => {
+    await seedRecipes([
+      { ...BASE_RECIPE, _id: 'fy-m1', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'fy-m2', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'fy-m3', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'fy-mrec', cuisine: 'Italian', mealTypes: ['dinner'] },
+    ])
+    await seedUserRecipeData(TEST_UID, {
+      madeRecipes: [{ recipeId: 'fy-m1' }, { recipeId: 'fy-m2' }, { recipeId: 'fy-m3' }],
+    })
+
+    const res = await request(server).get('/api/getForYouRecipes').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    const ids = res.body.map((r) => r._id)
+    expect(ids).toContain('fy-mrec')
+    expect(ids).not.toContain('fy-m1')
+  })
+
+  it('does not surface a community-popular recipe the user has no taste affinity for', async () => {
+    // Regression for the taste-vs-quality gate: an off-taste recipe with a strong
+    // community rating + many saves has a positive *blended* score but zero taste,
+    // and must NOT appear. (Seeds elsewhere carry no rating/saves, so only this
+    // case proves the quality nudge can't pull an off-taste recipe in.)
+    await seedRecipes([
+      { ...BASE_RECIPE, _id: 'fy-s1', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'fy-s2', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'fy-s3', cuisine: 'Italian', mealTypes: ['dinner'] },
+      // On-taste, unrated → should surface.
+      { ...BASE_RECIPE, _id: 'fy-italian', cuisine: 'Italian', mealTypes: ['dinner'] },
+      // Off-taste but community-loved → must stay out despite blended score > 0.
+      {
+        ...BASE_RECIPE,
+        _id: 'fy-popular',
+        cuisine: 'French',
+        mealTypes: ['breakfast'],
+        nutritionLabels: [],
+        rating: { rateCount: 200, rateValue: 5 },
+        numTimesSaved: 500,
+      },
+    ])
+    await seedUserRecipeData(TEST_UID, {
+      savedRecipes: [
+        { recipeId: 'fy-s1', dateSaved: '1' },
+        { recipeId: 'fy-s2', dateSaved: '2' },
+        { recipeId: 'fy-s3', dateSaved: '3' },
+      ],
+    })
+
+    const res = await request(server).get('/api/getForYouRecipes').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    const ids = res.body.map((r) => r._id)
+    expect(ids).toContain('fy-italian')
+    expect(ids).not.toContain('fy-popular')
+  })
+
+  it('honors the limit query param (and the per-cuisine cap)', async () => {
+    await seedRecipes([
+      // Saves across two on-taste cuisines so several candidates qualify.
+      { ...BASE_RECIPE, _id: 'fy-i1', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'fy-i2', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'fy-x1', cuisine: 'Mexican', mealTypes: ['dinner'], nutritionLabels: ['low-carb'] },
+      // Unseen candidates: 2 Italian + 2 Mexican (4 pass the 2-per-cuisine cap).
+      { ...BASE_RECIPE, _id: 'fy-i3', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'fy-i4', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'fy-x2', cuisine: 'Mexican', mealTypes: ['dinner'], nutritionLabels: ['low-carb'] },
+      { ...BASE_RECIPE, _id: 'fy-x3', cuisine: 'Mexican', mealTypes: ['dinner'], nutritionLabels: ['low-carb'] },
+    ])
+    await seedUserRecipeData(TEST_UID, {
+      savedRecipes: [
+        { recipeId: 'fy-i1', dateSaved: '1' },
+        { recipeId: 'fy-i2', dateSaved: '2' },
+        { recipeId: 'fy-x1', dateSaved: '3' },
+      ],
+    })
+
+    const res = await request(server).get('/api/getForYouRecipes?limit=2').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(res.body.length).toBeLessThanOrEqual(2)
+    expect(res.body.length).toBeGreaterThan(0)
+  })
+
+  it('excludes a review-only (rating: null) recipe from recommendations', async () => {
+    await seedRecipes([
+      { ...BASE_RECIPE, _id: 'fy-s1', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'fy-s2', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'fy-s3', cuisine: 'Italian', mealTypes: ['dinner'] },
+      // On-taste, but the user wrote a review with no star rating → engaged with
+      // it, so it must not be recommended back.
+      { ...BASE_RECIPE, _id: 'fy-reviewed', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'fy-fresh', cuisine: 'Italian', mealTypes: ['dinner'] },
+    ])
+    await seedUserRecipeData(TEST_UID, {
+      savedRecipes: [
+        { recipeId: 'fy-s1', dateSaved: '1' },
+        { recipeId: 'fy-s2', dateSaved: '2' },
+        { recipeId: 'fy-s3', dateSaved: '3' },
+      ],
+    })
+    await seedRating({ userId: TEST_UID, recipeId: 'fy-reviewed', rating: null })
+
+    const res = await request(server).get('/api/getForYouRecipes').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    const ids = res.body.map((r) => r._id)
+    expect(ids).not.toContain('fy-reviewed')
+    expect(ids).toContain('fy-fresh')
+  })
+
+  it('does not count review-only (rating: null) docs toward the signal threshold', async () => {
+    await seedRecipes([
+      { ...BASE_RECIPE, _id: 'fy-s1', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'fy-s2', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'fy-rev', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'fy-cand', cuisine: 'Italian', mealTypes: ['dinner'] },
+    ])
+    // 2 real signals (saves) + 1 review-only doc → still below MIN_SIGNAL (3),
+    // so the row stays hidden. A null rating must never act as taste signal.
+    await seedUserRecipeData(TEST_UID, {
+      savedRecipes: [
+        { recipeId: 'fy-s1', dateSaved: '1' },
+        { recipeId: 'fy-s2', dateSaved: '2' },
+      ],
+    })
+    await seedRating({ userId: TEST_UID, recipeId: 'fy-rev', rating: null })
+
+    const res = await request(server).get('/api/getForYouRecipes').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(res.body).toEqual([])
+  })
+})
+
 // ─── Phase 5-D _id coercion regression tests ─────────────────────────────────
 
 describe('Phase 5-D — recipeIdQuery coercion', () => {
