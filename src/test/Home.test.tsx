@@ -1,6 +1,6 @@
 import React from 'react'
 import { vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { HelmetProvider } from 'react-helmet-async'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -13,6 +13,7 @@ vi.mock('src/api/recipes', () => ({
     getTrendingRecipes: vi.fn(),
     getAllRecipes: vi.fn(),
     getForYouRecipes: vi.fn(),
+    getRandomRecipe: vi.fn(),
   },
 }))
 
@@ -29,6 +30,7 @@ vi.mock('src/context/AuthContext', () => ({
 const mockGetTrendingRecipes = RecipeAPI.getTrendingRecipes as ReturnType<typeof vi.fn>
 const mockGetAllRecipes = RecipeAPI.getAllRecipes as ReturnType<typeof vi.fn>
 const mockGetForYouRecipes = RecipeAPI.getForYouRecipes as ReturnType<typeof vi.fn>
+const mockGetRandomRecipe = RecipeAPI.getRandomRecipe as ReturnType<typeof vi.fn>
 const mockUseAuth = useAuth as unknown as ReturnType<typeof vi.fn>
 
 const makeRecipe = (id: string) => ({
@@ -82,6 +84,7 @@ describe('Home page', () => {
     mockGetTrendingRecipes.mockReset()
     mockGetAllRecipes.mockReset()
     mockGetForYouRecipes.mockReset()
+    mockGetRandomRecipe.mockReset()
     mockUseAuth.mockReset()
     // Neutral defaults; individual tests override the section they exercise.
     mockGetTrendingRecipes.mockReturnValue(new Promise(() => {}))
@@ -172,6 +175,50 @@ describe('Home page', () => {
       const section = screen.getByText('For you').closest('.home-section')
       expect(section).not.toBeNull()
       expect(section!.querySelectorAll('.home-recipe-card')).toHaveLength(4)
+    })
+  })
+
+  describe('What should I cook?', () => {
+    const cookButton = () => screen.getByRole('button', { name: /what should i cook/i })
+
+    it('shows the button for a logged-out visitor and does not fetch until clicked', () => {
+      renderHome() // user = null by default
+      expect(cookButton()).toBeInTheDocument()
+      expect(mockGetRandomRecipe).not.toHaveBeenCalled()
+    })
+
+    it('shows the button for a logged-in user too (not auth-gated)', () => {
+      mockUseAuth.mockReturnValue({ user: { uid: 'u1' } })
+      renderHome()
+      expect(cookButton()).toBeInTheDocument()
+    })
+
+    it('reveals a recipe card when clicked', async () => {
+      mockGetRandomRecipe.mockResolvedValue(makeRecipe('rnd1'))
+      renderHome()
+      fireEvent.click(cookButton())
+      expect(await screen.findByText('Recipe rnd1')).toBeInTheDocument()
+      expect(mockGetRandomRecipe).toHaveBeenCalledWith(undefined)
+    })
+
+    it('"Try another" re-rolls, excluding the current pick', async () => {
+      mockGetRandomRecipe
+        .mockResolvedValueOnce(makeRecipe('rnd1'))
+        .mockResolvedValueOnce(makeRecipe('rnd2'))
+      renderHome()
+      fireEvent.click(cookButton())
+      expect(await screen.findByText('Recipe rnd1')).toBeInTheDocument()
+
+      fireEvent.click(screen.getByRole('button', { name: /try another/i }))
+      expect(await screen.findByText('Recipe rnd2')).toBeInTheDocument()
+      expect(mockGetRandomRecipe).toHaveBeenLastCalledWith('rnd1')
+    })
+
+    it('shows a soft message when there are no recipes (404 → null)', async () => {
+      mockGetRandomRecipe.mockResolvedValue(null)
+      renderHome()
+      fireEvent.click(cookButton())
+      expect(await screen.findByText(/no recipes to suggest yet/i)).toBeInTheDocument()
     })
   })
 

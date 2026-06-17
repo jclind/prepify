@@ -148,6 +148,25 @@ function shuffle(arr, rng = Math.random) {
   return a
 }
 
+// Pick ONE element from a list of { recipe, weight } by weight (weights must be
+// >= 0). Used by the "What should I cook?" button to choose a single on-taste
+// recipe: a stronger taste match is likelier, but every positive-weight recipe
+// can come up, so repeated presses feel varied instead of always the top match.
+// Injectable RNG for deterministic tests. Returns undefined for an empty list;
+// if all weights are 0 it falls back to a uniform pick so we still return one.
+function weightedSample(scored, rng = Math.random) {
+  if (!scored.length) return undefined
+  const w = (x) => Math.max(0, x.weight || 0)
+  const total = scored.reduce((s, x) => s + w(x), 0)
+  if (total <= 0) return scored[Math.floor(rng() * scored.length)]
+  let r = rng() * total
+  for (const x of scored) {
+    r -= w(x)
+    if (r < 0) return x
+  }
+  return scored[scored.length - 1] // float-rounding guard
+}
+
 // Rank candidates, enforce per-cuisine diversity, then shuffle the top tier for
 // "fresh each visit" variety. Returns up to `limit` recipes.
 //
@@ -199,4 +218,5 @@ module.exports = {
   scoreRecipe,
   selectForYou,
   shuffle,
+  weightedSample,
 }

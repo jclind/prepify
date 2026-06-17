@@ -1254,6 +1254,108 @@ describe('GET /getForYouRecipes', () => {
   })
 })
 
+describe('GET /recipes/random', () => {
+  it('returns a visible recipe for an anonymous user, never a hidden one', async () => {
+    await seedRecipes([
+      { ...BASE_RECIPE, _id: 'rnd-vis', title: 'Visible' },
+      { ...BASE_RECIPE, _id: 'rnd-hidden', title: 'Hidden', status: 'hidden' },
+    ])
+    // Only one visible candidate, so the (random) pick is deterministic here.
+    for (let i = 0; i < 4; i++) {
+      const res = await request(server).get('/api/recipes/random')
+      expect(res.status).toBe(200)
+      expect(res.body._id).toBe('rnd-vis')
+    }
+  })
+
+  it('returns 404 when there are no recipes', async () => {
+    const res = await request(server).get('/api/recipes/random')
+    expect(res.status).toBe(404)
+  })
+
+  it('returns 404 when the only recipes are hidden (fallback excludes them)', async () => {
+    await seedRecipes([
+      { ...BASE_RECIPE, _id: 'rnd-h1', status: 'hidden' },
+      { ...BASE_RECIPE, _id: 'rnd-h2', status: 'unpublished' },
+    ])
+    const res = await request(server).get('/api/recipes/random')
+    expect(res.status).toBe(404)
+  })
+
+  it('honors the exclude param (never returns the excluded recipe)', async () => {
+    await seedRecipes([
+      { ...BASE_RECIPE, _id: 'rnd-a', title: 'A' },
+      { ...BASE_RECIPE, _id: 'rnd-b', title: 'B' },
+    ])
+    for (let i = 0; i < 6; i++) {
+      const res = await request(server).get('/api/recipes/random?exclude=rnd-a')
+      expect(res.status).toBe(200)
+      expect(res.body._id).toBe('rnd-b')
+    }
+  })
+
+  it('gives a signal user a weighted on-taste pick, excluding seen and own', async () => {
+    await seedRecipes([
+      // 3 saved Italian dinners → Italian-dinner taste profile.
+      { ...BASE_RECIPE, _id: 'rnd-s1', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'rnd-s2', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'rnd-s3', cuisine: 'Italian', mealTypes: ['dinner'] },
+      // The ONLY unseen, non-own, on-taste candidate → must always be the pick.
+      { ...BASE_RECIPE, _id: 'rnd-on', cuisine: 'Italian', mealTypes: ['dinner'] },
+      // Own (excluded) + off-taste (taste 0 → filtered out) decoys.
+      { ...BASE_RECIPE, _id: 'rnd-own', cuisine: 'Italian', mealTypes: ['dinner'], userId: TEST_UID },
+      { ...BASE_RECIPE, _id: 'rnd-off', cuisine: 'Mexican', mealTypes: ['breakfast'], nutritionLabels: [] },
+    ])
+    await seedUserRecipeData(TEST_UID, {
+      savedRecipes: [
+        { recipeId: 'rnd-s1', dateSaved: '1' },
+        { recipeId: 'rnd-s2', dateSaved: '2' },
+        { recipeId: 'rnd-s3', dateSaved: '3' },
+      ],
+    })
+
+    for (let i = 0; i < 5; i++) {
+      const res = await request(server).get('/api/recipes/random').set(AUTH_HEADER)
+      expect(res.status).toBe(200)
+      expect(res.body._id).toBe('rnd-on')
+    }
+  })
+
+  it('falls back to a random visible recipe when a signal user has no on-taste candidate', async () => {
+    await seedRecipes([
+      { ...BASE_RECIPE, _id: 'rnd-s1', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'rnd-s2', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'rnd-s3', cuisine: 'Italian', mealTypes: ['dinner'] },
+      // Only unseen candidate is off-taste → taste path finds nothing, so the
+      // route falls through to a uniform random pick rather than 404.
+      { ...BASE_RECIPE, _id: 'rnd-offonly', cuisine: 'Thai', mealTypes: ['breakfast'], nutritionLabels: [] },
+    ])
+    await seedUserRecipeData(TEST_UID, {
+      savedRecipes: [
+        { recipeId: 'rnd-s1', dateSaved: '1' },
+        { recipeId: 'rnd-s2', dateSaved: '2' },
+        { recipeId: 'rnd-s3', dateSaved: '3' },
+      ],
+    })
+
+    const res = await request(server).get('/api/recipes/random').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(res.body._id).toBe('rnd-offonly')
+  })
+
+  it('still returns a recipe for an authed user below the signal threshold (fallback)', async () => {
+    await seedRecipes([{ ...BASE_RECIPE, _id: 'rnd-only', title: 'Solo' }])
+    // 1 save → below MIN_SIGNAL, so the taste path is skipped and the fallback
+    // random pick runs. (Fallback excludes own + excluded, not merely-seen.)
+    await seedUserRecipeData(TEST_UID, {
+      savedRecipes: [{ recipeId: 'rnd-only', dateSaved: '1' }],
+    })
+    const res = await request(server).get('/api/recipes/random').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(res.body._id).toBe('rnd-only')
+  })
+})
+
 // ─── Phase 5-D _id coercion regression tests ─────────────────────────────────
 
 describe('Phase 5-D — recipeIdQuery coercion', () => {

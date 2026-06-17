@@ -104,6 +104,20 @@ class RecipeAPIClass {
     const result = await http.get(`api/getForYouRecipes?limit=${limit}`)
     return result.data
   }
+  // One random recipe for the "What should I cook?" button. Taste-aware when
+  // signed in (token attached by the interceptor); a uniform random pick
+  // otherwise. `excludeId` re-rolls without repeating the current pick. Resolves
+  // null when the catalog is empty (404) so the caller can show a soft message.
+  async getRandomRecipe(excludeId?: string): Promise<RecipeType | null> {
+    const params = excludeId ? `?exclude=${encodeURIComponent(excludeId)}` : ''
+    try {
+      const result = await http.get(`api/recipes/random${params}`)
+      return result.data
+    } catch (err) {
+      if (axios.isAxiosError(err) && err.response?.status === 404) return null
+      throw err
+    }
+  }
   async getRecipe(id: string): Promise<RecipeType> {
     const result = await http.get(`api/getRecipe?id=${id}`)
     return result.data
