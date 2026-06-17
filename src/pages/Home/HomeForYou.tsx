@@ -15,7 +15,8 @@ const HomeForYou: FC = () => {
 
   const { data, isLoading, isError } = useQuery<RecipeType[]>({
     queryKey: ['for-you-recipes', user?.uid],
-    queryFn: () => RecipeAPI.getForYouRecipes(8),
+    // Match the Trending row's count (4) so the desktop grid stays even.
+    queryFn: () => RecipeAPI.getForYouRecipes(4),
     enabled: !!user,
     staleTime: 5 * 60 * 1000,
   })
