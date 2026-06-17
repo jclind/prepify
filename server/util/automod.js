@@ -4,6 +4,7 @@
 // state. Used by the recipe write routes; reviews/profile block inline and need
 // none of this.
 
+const admin = require('firebase-admin')
 const { ObjectId } = require('mongodb')
 const { recordAudit, SYSTEM_ACTOR } = require('./auditLog')
 const { recipeIdQuery } = require('./recipeIdQuery')
@@ -45,9 +46,17 @@ async function auditContentBlock(db, { uid, surface, verdict } = {}) {
         .collection('usernames')
         .findOne({ _id: uid }, { projection: { username: 1 } })
       if (doc?.username) targetLabel = `@${doc.username}`
+      // A brand-new account blocked on its very first username/displayName/profile
+      // write has no `usernames` doc yet, so the lookup above misses. Fall back to
+      // the account's Firebase email — still a human identifier an admin can act
+      // on (and already shown in the user-detail view), rather than a bare uid.
+      if (!targetLabel) {
+        const userRecord = await admin.auth().getUser(uid)
+        if (userRecord?.email) targetLabel = userRecord.email
+      }
     }
   } catch (_) {
-    // ignore — targetLabel stays null
+    // ignore — targetLabel stays null (renders as the bare uid)
   }
   await recordAudit(db, {
     action: 'content.blocked',

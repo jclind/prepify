@@ -49,14 +49,11 @@
     }
   }
 
-  // Auto-hold explanation; wraps to its own line under the strip.
+  // Auto-hold explanation; wraps to its own line under the strip. Shared visual
+  // treatment lives on .classifier-note (ClassifierNote.scss); only the
+  // full-width wrap is overridden here.
   .arc-automod-note {
     flex-basis: 100%;
-    margin: 0;
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: #4338ca;
-    text-transform: capitalize;
   }
 
   .arc-btn {
