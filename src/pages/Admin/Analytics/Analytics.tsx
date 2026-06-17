@@ -1,5 +1,5 @@
 import React, { FC, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { AuditEntryType, TimeBucket } from 'types'
 import AdminAPI from 'src/api/admin'
 import { ACTION_META, formatAuditActor } from 'src/pages/Admin/auditMeta'
@@ -45,23 +45,32 @@ const Analytics: FC = () => {
   const { data, isPending, isError } = useQuery({
     queryKey: ['admin-analytics', days],
     queryFn: () => AdminAPI.getAnalytics({ days }),
+    // Keep the previous window's data on screen while a new range loads, so the
+    // range toggle (which lives down in the trends section) doesn't blink the
+    // whole page back to "Loading…" — and stays mounted — on every switch.
+    placeholderData: keepPreviousData,
   })
+
+  // The range toggle only drives the windowed trends, so it lives with them
+  // rather than in the page header (the all-time totals never react to it).
+  const rangeToggle = (
+    <div className='range-toggle' role='group' aria-label='Time range'>
+      {DAY_OPTIONS.map(d => (
+        <button
+          key={d}
+          className={days === d ? 'range active' : 'range'}
+          onClick={() => setDays(d)}
+        >
+          {d}d
+        </button>
+      ))}
+    </div>
+  )
 
   return (
     <div className='admin-analytics'>
       <header className='admin-analytics-head'>
         <h1>Overview</h1>
-        <div className='range-toggle' role='group' aria-label='Time range'>
-          {DAY_OPTIONS.map(d => (
-            <button
-              key={d}
-              className={days === d ? 'range active' : 'range'}
-              onClick={() => setDays(d)}
-            >
-              {d}d
-            </button>
-          ))}
-        </div>
       </header>
 
       {isPending ? (
@@ -105,7 +114,10 @@ const Analytics: FC = () => {
             </div>
           </section>
 
-          <p className='section-eyebrow'>Last {data.days} days</p>
+          <div className='trends-head'>
+            <p className='section-eyebrow'>Last {data.days} days</p>
+            {rangeToggle}
+          </div>
           <section className='trends'>
             <div className='trend-card'>
               <h2>Reports filed</h2>
