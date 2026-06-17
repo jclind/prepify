@@ -21,13 +21,14 @@ Prepify is a recipe website focused on recipe pricing, fridge/freezer life, nutr
 
 ## Installation and Running
 
-1. Clone the repository: `git clone https://github.com/your-username/prepify.git`
+1. Clone the repository: `git clone https://github.com/jclind/prepify.git`
 2. Navigate to the project directory: `cd prepify`
-3. Install dependencies: `npm install`
-4. Set up Firebase authentication and configure the Firebase credentials in the project.
-5. Set up MongoDB and configure the MongoDB connection in the project.
-6. Run the development server: `npm start`
-7. Access the application at: `http://localhost:3000`
+3. Install frontend dependencies: `npm install`
+4. Install backend dependencies: `cd server && npm install && cd ..`
+5. Create your environment files: copy `.env.example` to `.env` for the frontend and create `server/.env` for the API (see `CLAUDE.md` for the full list of variables). Configure your Firebase, MongoDB, and external API credentials.
+6. Start the API server: `cd server && npm run dev` (runs on `http://localhost:4000`)
+7. In a separate terminal, start the frontend dev server: `npm start`
+8. Access the application at: `http://localhost:3000`
 
 ## Contributing
 
