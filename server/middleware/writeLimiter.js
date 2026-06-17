@@ -52,9 +52,16 @@ function makeUserLimiter({
 // then tweak your profile — could 429 even though no single surface was abused.
 // Separate instances ⇒ separate buckets, so each surface is bounded on its own
 // and normal mixed activity never trips the limit; scripted spam of any one
-// surface still hits its cap at 30/min. A real user never approaches 30 writes
-// to a single surface in a minute, so only abuse is affected.
-const recipeWriteLimiter = makeUserLimiter()
+// surface still hits its own cap. A real user never approaches these in a
+// minute, so only abuse is affected.
+//
+// The recipe surface is capped TIGHTER than the others (12 vs 30/min): a recipe
+// write is the one content write that can trigger a paid Cloud Vision image scan,
+// so it's the expensive surface to spam. 12/min is still far above any human
+// add/edit cadence but bounds the paid-scan blast radius of a single rogue
+// account to ~40% of the 30/min exposure. Review/profile carry no per-write paid
+// cost beyond the (free) OpenAI moderation call, so they keep the 30/min default.
+const recipeWriteLimiter = makeUserLimiter({ limit: 12 })
 const reviewWriteLimiter = makeUserLimiter()
 const profileWriteLimiter = makeUserLimiter()
 
