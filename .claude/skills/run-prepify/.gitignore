@@ -1,3 +1,13 @@
 node_modules/
 screenshots/
 package-lock.json
+
+# Ad-hoc, session-specific driver scripts are throwaway and stay local.
+# Reusable drivers are committed and allowlisted explicitly below.
+*.mjs
+!authshot.mjs
+!driver.mjs
+!shot.mjs
+!shotVariants.mjs
+!shot_into.mjs
+!shot_scroll.mjs
