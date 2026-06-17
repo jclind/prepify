@@ -2,7 +2,7 @@ import React, { FC, useState } from 'react'
 import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { AuditEntryType, TimeBucket } from 'types'
 import AdminAPI from 'src/api/admin'
-import { ACTION_META, formatAuditActor } from 'src/pages/Admin/auditMeta'
+import { ACTION_META, formatAuditActor, isSelfAction } from 'src/pages/Admin/auditMeta'
 import './Analytics.scss'
 
 // Day windows offered by the toggle. Server clamps to 7–90 regardless.
@@ -150,8 +150,15 @@ const Analytics: FC = () => {
                           <strong className='actor'>
                             {formatAuditActor(entry)}
                           </strong>{' '}
-                          {meta?.label || entry.action}{' '}
-                          <span className='target'>{entry.targetLabel || entry.targetId}</span>
+                          {meta?.label || entry.action}
+                          {!isSelfAction(entry) && (
+                            <>
+                              {' '}
+                              <span className='target'>
+                                {entry.targetLabel || entry.targetId}
+                              </span>
+                            </>
+                          )}
                         </p>
                         <p className='action-time'>
                           {new Date(entry.createdAt).toLocaleString()}

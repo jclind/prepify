@@ -642,6 +642,12 @@ describe('POST /deleteAccount', () => {
     expect(entry.actorUid).toBe(TEST_UID)
     expect(entry.targetType).toBe('user')
     expect(entry.targetLabel).toBe('@goner')
+    // Self-service, not an admin action: stamped 'user' so the audit feed reads
+    // "@goner deleted their account" rather than "An admin …".
+    expect(entry.actorType).toBe('user')
+    // The handle is captured on the row because the usernames doc was deleted in
+    // the same cascade — read-time enrichment can no longer resolve actorUid.
+    expect(entry.actorUsername).toBe('goner')
   })
 
   it('still deletes the Firebase account when the user has no other data', async () => {

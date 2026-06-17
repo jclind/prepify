@@ -62,7 +62,10 @@ const SYSTEM_ACTOR = { uid: 'system:automod', type: 'system' }
  * @param {object} entry
  * @param {string} entry.action       one of AUDIT_ACTIONS
  * @param {string} entry.actorUid     admin uid performing the action (or SYSTEM_ACTOR.uid)
- * @param {string} [entry.actorType]  'admin' (default) | 'system' — machine vs human
+ * @param {string} [entry.actorType]  'admin' (default) | 'system' | 'user' — machine vs human admin vs self-service
+ * @param {string} [entry.actorUsername] handle captured at action time; the only
+ *   way to label the actor when their `usernames` doc won't survive to read time
+ *   (e.g. self-service account deletion removes it in the same cascade)
  * @param {string} entry.targetType   one of AUDIT_TARGET_TYPES
  * @param {string} entry.targetId     recipeId / uid / reportId (or username+recipeId for reviews)
  * @param {string} [entry.targetLabel] human-readable label captured at action time (recipe title, @username)
@@ -77,6 +80,7 @@ async function recordAudit(db, entry) {
       action: entry.action,
       actorUid: entry.actorUid,
       actorType: entry.actorType || 'admin',
+      actorUsername: entry.actorUsername || null,
       targetType: entry.targetType,
       targetId: entry.targetId != null ? String(entry.targetId) : null,
       targetLabel: entry.targetLabel || null,
@@ -107,6 +111,7 @@ async function recordAuditMany(db, entries) {
         action: entry.action,
         actorUid: entry.actorUid,
         actorType: entry.actorType || 'admin',
+        actorUsername: entry.actorUsername || null,
         targetType: entry.targetType,
         targetId: entry.targetId != null ? String(entry.targetId) : null,
         targetLabel: entry.targetLabel || null,

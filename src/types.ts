@@ -368,8 +368,9 @@ export interface AuditEntryType {
   action: AuditAction
   actorUid: string
   // 'system' marks an automated (non-human) action — autohold, content.blocked.
-  // 'admin' (or absent, for legacy rows) is a human admin.
-  actorType?: 'admin' | 'system'
+  // 'user' marks a self-service action (the user acting on their own account,
+  // e.g. account deletion). 'admin' (or absent, for legacy rows) is a human admin.
+  actorType?: 'admin' | 'system' | 'user'
   actorUsername: string | null
   targetType: AuditTargetType
   targetId: string | null

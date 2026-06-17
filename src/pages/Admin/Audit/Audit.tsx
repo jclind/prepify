@@ -2,7 +2,7 @@ import React, { FC, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { AuditAction, AuditEntryType, AuditTargetType } from 'types'
 import AdminAPI from 'src/api/admin'
-import { ACTION_META, formatAuditActor } from 'src/pages/Admin/auditMeta'
+import { ACTION_META, formatAuditActor, isSelfAction } from 'src/pages/Admin/auditMeta'
 import SavedFilterBar from 'src/Components/SavedFilters/SavedFilterBar'
 import './Audit.scss'
 
@@ -129,8 +129,15 @@ const Audit: FC = () => {
                       <strong className='actor'>
                         {formatAuditActor(entry)}
                       </strong>{' '}
-                      {meta?.label || entry.action}{' '}
-                      <span className='target'>{entry.targetLabel || entry.targetId}</span>
+                      {meta?.label || entry.action}
+                      {!isSelfAction(entry) && (
+                        <>
+                          {' '}
+                          <span className='target'>
+                            {entry.targetLabel || entry.targetId}
+                          </span>
+                        </>
+                      )}
                     </p>
                     {entry.reason && (
                       <p className='audit-reason'>“{entry.reason}”</p>
