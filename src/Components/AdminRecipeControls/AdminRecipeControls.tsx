@@ -5,6 +5,7 @@ import { RecipeType } from 'types'
 import { useAuth } from 'src/context/AuthContext'
 import AdminAPI from 'src/api/admin'
 import ReportAPI from 'src/api/reports'
+import ClassifierNote from 'src/Components/ClassifierNote/ClassifierNote'
 import { formatClassifier } from 'src/util/formatClassifier'
 import './AdminRecipeControls.scss'
 
@@ -98,10 +99,10 @@ const AdminRecipeControls: FC<AdminRecipeControlsProps> = ({ recipe }) => {
       {isFeatured && <span className='arc-pill featured'>Featured</span>}
 
       {isPendingReview && (
-        <p className='arc-automod-note'>
+        <ClassifierNote className='arc-automod-note'>
           Auto-held for moderation review
           {automodClassifier ? ` — ${formatClassifier(automodClassifier)}` : ''}.
-        </p>
+        </ClassifierNote>
       )}
 
       {isPendingReview && (

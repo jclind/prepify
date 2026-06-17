@@ -198,13 +198,11 @@
       }
     }
 
-    // Why the system held this content (automod reports only).
+    // Why the system held this content (automod reports only). Shared visual
+    // treatment lives on .classifier-note (ClassifierNote.scss); only the
+    // queue-specific bottom margin is overridden here.
     .report-classifier {
       margin: 0 0 0.65rem;
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: #4338ca;
-      text-transform: capitalize;
     }
 
     .preview {
