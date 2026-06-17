@@ -15,6 +15,19 @@ const { notifyInBackground, notifyReportResolved, notifyReportResolvedMany } = r
 // status filter inside that helper means a recipe an admin has separately taken
 // down ('hidden') is left down — only genuine strays (still 'pending_review') are
 // restored.
+//
+// IMPORTANT — resolve and dismiss are treated IDENTICALLY here: both close the
+// report, so both restore a still-held recipe to 'active'. "Resolve" does NOT take
+// the recipe down. Taking a held recipe down is a SEPARATE action (admin recipe
+// controls → Take down, or the /admin/recipes/:id/moderation route → 'hidden'),
+// after which this guard becomes a no-op. So the rule is: to keep a held recipe
+// down, hide it FIRST, then close its report. The admin UI enforces this by
+// offering a held report only Approve / Take down (never a bare Resolve/Dismiss,
+// which from the queue would silently publish the content) and by excluding held
+// reports from bulk selection. This server guard is the backstop for direct API
+// calls — it can't tell "resolve = publish" from "resolve = should've hidden", so
+// it always restores; the takedown-first ordering is the contract that keeps a
+// resolve from publishing content an admin meant to remove.
 const isAutomodRecipeReport = (r) => r && r.source === 'automod' && r.targetType === 'recipe'
 
 const router = Router()
