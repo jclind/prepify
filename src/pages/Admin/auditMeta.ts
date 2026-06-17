@@ -19,10 +19,12 @@ export const formatAuditActor = (
 // A self-service row (the user acting on their own account, e.g. account
 // deletion) has the actor as its own target, so the trailing target label would
 // just repeat the actor's handle — "@user deleted their account @user". Callers
-// suppress the target span for these rows.
+// suppress the target span for these rows. Keyed off actor-is-target rather than
+// actorType so a future self-service action with a distinct target (e.g. a user
+// deleting their own recipe) still renders its target.
 export const isSelfAction = (
-  entry: Pick<AuditEntryType, 'actorType'>
-): boolean => entry.actorType === 'user'
+  entry: Pick<AuditEntryType, 'actorType' | 'actorUid' | 'targetId'>
+): boolean => entry.actorType === 'user' && entry.actorUid === entry.targetId
 
 // Short human phrasing + a colour tone per audit action, used for the row label
 // in both the Audit log and the Analytics "recent actions" feed. Kept here so

@@ -38,14 +38,20 @@ describe('formatAuditActor', () => {
 })
 
 describe('isSelfAction', () => {
-  it('is true for a self-service (user) row', () => {
-    expect(isSelfAction({ actorType: 'user' })).toBe(true)
+  it('is true for a self-service row where the actor is its own target', () => {
+    expect(isSelfAction({ actorType: 'user', actorUid: 'u1', targetId: 'u1' })).toBe(true)
+  })
+
+  it('is false for a user-actor row whose target is something else', () => {
+    // Guards the latent case: a future self-service action with a distinct
+    // target must still render its target rather than be suppressed.
+    expect(isSelfAction({ actorType: 'user', actorUid: 'u1', targetId: 'r9' })).toBe(false)
   })
 
   it('is false for admin and system rows', () => {
-    expect(isSelfAction({ actorType: 'admin' })).toBe(false)
-    expect(isSelfAction({ actorType: 'system' })).toBe(false)
-    expect(isSelfAction({ actorType: undefined })).toBe(false)
+    expect(isSelfAction({ actorType: 'admin', actorUid: 'u1', targetId: 'u1' })).toBe(false)
+    expect(isSelfAction({ actorType: 'system', actorUid: 'u1', targetId: 'u1' })).toBe(false)
+    expect(isSelfAction({ actorType: undefined, actorUid: 'u1', targetId: 'u1' })).toBe(false)
   })
 })
 
