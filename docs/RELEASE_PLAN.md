@@ -27,12 +27,14 @@ before flipping the beta tag; nice-to-haves can ship in a 1.0.x.
 The beta label is **hardcoded in three places**, so removing it is a small coordinated refactor, not
 a feature flag. Do these together:
 
-- `[ ]` **Remove `-beta` from the footer** — `src/Components/Footer/Footer.tsx:16`
-  renders `version {version}-beta`. Drop the `-beta` suffix. **(blocker)**
-- `[?]` **Decide what happens to the "Beta" button** — `src/Components/Navbar/PrepifyLogo.tsx:17-18`
-  is a `<button className='beta-tag'>Beta</button>` that opens the release-notes modal. Options:
-  (a) remove it entirely, (b) repurpose it as a plain version chip / "Release notes" link. Pick one.
-  **(blocker — needs decision)**
+- `[ ]` **Remove `-beta` from the footer** — (moved: the `-beta` suffix now lives in
+  `src/Components/Footer/shared/LegalBar.tsx:16`, `v{version}-beta`, after the footer redesign — not
+  `Footer.tsx`). Drop the `-beta` suffix. **(blocker)**
+- `[ ]` **"Beta" button** — `src/Components/Navbar/PrepifyLogo.tsx:17-18` is a
+  `<button className='beta-tag'>Beta</button>` that opens the release-notes modal. **Decision
+  (2026-06-17):** remove it (option a), but **intentionally last** — flipping the whole beta tag off is
+  Jesse's deliberate final/celebration step at cutover, not done piecemeal earlier. All three beta edits
+  (footer suffix, this button, `isBeta`) ship together at the very end. **(blocker — scheduled for cutover)**
 - `[ ]` **Set `isBeta = false`** — `src/Components/ReleaseNotes/ReleaseNotes.tsx:35`; this drives the
   `-beta` suffix at line 87. **(blocker)**
 - `[~]` **Fix the stale release-notes mechanism** — `ReleaseNotes.tsx` has a hardcoded
@@ -68,8 +70,9 @@ a feature flag. Do these together:
 - `[ ]` **Copy / typo review** — read every user-facing string once with fresh eyes. **(nice-to-have)**
 - `[ ]` **Favicon, page titles, social/OG meta** — verify `index.html` + per-page titles
   (`react-helmet-async` is already a dependency) and an OG image for link previews. **(nice-to-have)**
-- `[ ]` **Remove dev-only UI from production** — `@tanstack/react-query-devtools` is a devDependency;
-  confirm the devtools panel is not rendered in the production build. **(blocker)**
+- `[x]` **Remove dev-only UI from production** — `@tanstack/react-query-devtools` is a devDependency;
+  confirmed gated behind `process.env.NODE_ENV !== 'production'` in `src/index.tsx:23-25`, so the panel
+  is not rendered in the production build. **(blocker → done)**
 
 ---
 
@@ -101,14 +104,16 @@ a feature flag. Do these together:
   range-validated (`reviews.js:19-25`); search params are regex-escaped (`recipes.js:12`); save/unsave
   have dup-checks and a `$max[…,0]` floor; the previously-unprotected `addRecipeTag` route is gone.
   **(blocker → resolved)**
-- `[ ]` **Rate limiting on the API** — public write endpoints (reviews, recipe creation) should have
-  basic rate limiting to prevent abuse. **(nice-to-have)**
+- `[x]` **Rate limiting on the API** — implemented: `server/middleware/writeLimiter.js` (+ per-surface
+  user limiters / `makeUserLimiter`) guards write endpoints, with `helmet()` applied in `server/app.js:55`.
+  Covered by `server/__tests__/writeLimiter.test.js`. **(nice-to-have → done)**
 - `[~]` **Tight CORS allowlist** — mechanism is sound (`server/app.js`: allowlist built from
   `FRONTEND_URLS` + a `deploy-preview-*--prepify.netlify.app` regex + `credentials: true`, default
   `localhost:3000`). Just confirm the **production** `FRONTEND_URLS` value is the real origin(s) only.
   **(blocker)**
 - `[ ]` **Dependency audit** — run `npm audit` for both root and `server/`, and the `dep-audit` skill
-  for an upgrade triage. Resolve high/critical advisories. **(blocker for high/critical)**
+  for an upgrade triage. Resolve high/critical advisories. (audit 2026-06-17: root 5 — 3 high, 2 low;
+  server 13 — 3 high, 10 moderate. High advisories remain unresolved.) **(blocker for high/critical)**
 - `[ ]` **Residual low-severity API issues** — surfaced by the audit, not release-blocking: (a)
   `getReviews` derives `isCurrentUser` from the `username` *query param* rather than the token
   (`reviews.js:165,183`) — cosmetic, since edit/delete are token-scoped; (b) `newReview` upserts with
@@ -123,14 +128,17 @@ a feature flag. Do these together:
 - `[ ]` **Rewrite the About page (personally)** — the current About copy is placeholder/AI-drafted and
   must be rewritten by Jesse personally before launch — it's the site's voice and shouldn't ship
   generated. **Owner: Jesse (do not delegate/auto-generate.)** **(blocker)**
-- `[ ]` **Privacy Policy page** — required once you collect accounts / personal data via Firebase Auth.
-  **(blocker)**
-- `[ ]` **Terms of Service page** — for user-generated content (recipes, reviews) you want ToS.
-  **(blocker)**
-- `[ ]` **Analytics / cookie disclosure** — if Firebase Analytics (`VITE_FIREBASE_MEASUREMENT_ID`) is
-  active, disclose it; add a cookie/consent notice if targeting EU users. **(blocker if analytics on)**
-- `[ ]` **SEO basics** — per-page `<title>`/meta via `react-helmet-async`, a `robots.txt`, and a
-  `sitemap.xml` (even a static one). Confirm recipe pages are crawlable. **(nice-to-have, high-value)**
+- `[x]` **Privacy Policy page** — real page exists (`src/pages/Privacy/Privacy.tsx`) and is routed at
+  `/privacy` (`src/App.tsx:122`). **(blocker → done)**
+- `[x]` **Terms of Service page** — real page exists (`src/pages/Terms/Terms.tsx`) and is routed at
+  `/terms` (`src/App.tsx:130`). **(blocker → done)**
+- `[?]` **Analytics / cookie disclosure** — if Firebase Analytics (`VITE_FIREBASE_MEASUREMENT_ID`) is
+  active, disclose it; add a cookie/consent notice if targeting EU users. **Deferred (2026-06-17):**
+  Jesse is undecided whether to keep Firebase Analytics on at launch or whether a cookie notice is worth
+  it. Revisit before cutover — if analytics stays on, this becomes a blocker. **(blocker if analytics on)**
+- `[x]` **SEO basics** — `public/robots.txt` (allow-all) and a static `public/sitemap.xml`
+  (prepifymeals.com URLs) are present, and `react-helmet-async` is wired (`HelmetProvider` in
+  `src/App.tsx:60`, per-page titles e.g. SingleRecipe). Recipe pages are crawlable. **(nice-to-have → done)**
 - `[ ]` **Production domain + HTTPS** — confirm the real domain is configured on Firebase Hosting and
   the API origin, with valid certs. **(blocker)**
 - `[ ]` **Support / contact path** — a way for users to report issues (Formspree is already a
@@ -179,31 +187,26 @@ a feature flag. Do these together:
 Chunky design efforts that are bigger than a single checkbox. Tag each as **(blocker)** if it gates
 1.0, **(post-1.0)** if it's backlog, or leave `[?]` until you've decided.
 
-- `[ ]` **Footer Overhaul** — **(blocker)**
-  - **Now:** `src/Components/Footer/Footer.tsx` renders a single centered column with just three
-    things — a hardcoded `JesseLindCS@gmail.com`, a `© <year> || Made with React.js` line, and
-    `version {version}-beta`. No nav links, no Privacy/Terms links, no social, no sitemap. Styling is
-    a minimal flex column in `Footer.scss` (fixed `$footer-height`, centered). It's rendered globally
-    via `src/Components/Layout/Layout.tsx:26`. It's effectively an untouched placeholder.
-  - **Goal:** A proper redesign — replace the placeholder with a richer, multi-column footer
-    featuring grouped navigation links and real site data (e.g. Browse/Recipes, Account, Legal
-    [Privacy/Terms], contact, social), and a version chip that isn't "-beta".
-  - **Touches:** `src/Components/Footer/Footer.tsx`, `src/Components/Footer/Footer.scss`
-    (rendered from `Layout.tsx`).
-  - **Folds in two release blockers** — this work naturally absorbs: (1) removing the `-beta` suffix
-    (`Footer.tsx:16`, see blockers section), and (2) adding the Privacy/Terms links that Section C
-    requires. If you do the overhaul before 1.0, do those here rather than twice.
+- `[x]` **Footer Overhaul** — **(blocker → done)**
+  - **Shipped:** the placeholder single-column footer was replaced with a multi-column layout —
+    `src/Components/Footer/shared/FooterColumns.tsx` (grouped nav: Browse, Account, Legal), a
+    `LegalBar.tsx` (copyright + version chip), and a `Wordmark.tsx`, driven by
+    `src/Components/Footer/footerData.ts` (auth-aware links; Privacy `/privacy` + Terms `/terms`
+    present). Rendered globally via `Layout.tsx`.
+  - **Remaining nit (tracked elsewhere):** the version chip still reads `v{version}-beta`
+    (`LegalBar.tsx:16`). Dropping `-beta` is intentionally deferred to the very end of the release as
+    a celebration move — see the beta-tag blocker in the blockers section.
 
-- `[~]` **Mobile Nav Bar redesign** — **(blocker)**
-  - **Done (on `feat/mobile-nav-redesign`, pending merge):** replaced the reflowed-desktop-links
+- `[x]` **Mobile Nav Bar redesign** — **(blocker → done; merged via PR #108)**
+  - **Done (merged to `development`):** replaced the reflowed-desktop-links
     overlay with a purpose-built mobile menu — a full-screen panel with a subtle brand gradient,
     frosted cards grouping the nav (Browse / Create / Account), an in-menu recipe search, larger
     tap-target rows with icons + active-route highlighting, an account card (avatar + username +
     email + logout when signed in; prominent Login/Signup CTAs when signed out), backdrop blur,
     body-scroll lock, Esc-to-close, and safe-area padding. Desktop nav is unchanged. Built under
     `src/Components/Navbar/menu/`; the legacy `.nav-content` overlay is disabled below 725px.
-  - **Still to do:** merge to `development`. The in-menu search reuses the shared `SearchRecipesInput`
-    autocomplete as-is — its visual overhaul is split out as its own item below.
+  - **Note:** the in-menu search reuses the shared `SearchRecipesInput` autocomplete as-is — its
+    visual overhaul is split out as its own item below.
   - **Touches:** `src/Components/Navbar/Navbar.tsx`, `src/Components/Navbar/Navbar.scss`,
     `src/Components/Navbar/menu/*`, and `src/Components/Navbar/PrepifyLogo.tsx` (where the `Beta`
     button decision also lives).
@@ -295,5 +298,18 @@ app (desktop + mobile) via the run-prepify skill.
   all sections render correctly on-screen — a capture artifact. Mobile nav works.
 - **Data note (not code):** a recipe titled "Egg Friend Rice" looks like a typo in user content.
 - Scope was release-blocking only; pure code-quality stays in `REFACTOR.md` / `PATTERN_AUDIT.md`.
+
+### 2026-06-17 — audit run
+- Blockers remaining: 12 (beta tag still live in 3 places; About rewrite; analytics disclosure; prod
+  domain/HTTPS; key lockdown/rotation; Firebase rules; high-sev dep advisories; Footer/Home/Help/Mobile-nav
+  redesigns; broken-link verify).
+- Changes since last run: flipped 5 items to `[x]` — ReactQueryDevtools (now gated behind
+  `NODE_ENV !== 'production'`), API rate limiting (`writeLimiter` + helmet), Privacy page (`/privacy`),
+  Terms page (`/terms`), SEO basics (robots.txt + sitemap.xml + helmet). Noted the footer `-beta` moved
+  to `LegalBar.tsx:16` after the footer redesign.
+- Highlights: beta tag still live in 3 files (`LegalBar.tsx:16`, `ReleaseNotes.tsx:35` `isBeta = true`,
+  `:87`); `RELEASE_DATE` still stale `3/31/2023`; `VITE_OPEN_AI_API_KEY` + `VITE_INGREDIENT_PARSER_URL`
+  still in `.env.example` with zero `src` callers; README still has `your-username` placeholder; npm
+  audit: root 3 high / server 3 high.
 
 _`/release-readiness` appends dated run summaries here._
