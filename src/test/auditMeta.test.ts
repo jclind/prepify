@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { formatAuditActor, ACTION_META } from 'src/pages/Admin/auditMeta'
+import { formatAuditActor, isSelfAction, ACTION_META } from 'src/pages/Admin/auditMeta'
 
 describe('formatAuditActor', () => {
   it('labels a system-actor row "Automod"', () => {
@@ -26,6 +26,37 @@ describe('formatAuditActor', () => {
 
   it('falls back to "An admin" for a human row with no resolved username', () => {
     expect(formatAuditActor({ actorType: 'admin', actorUsername: null })).toBe('An admin')
+  })
+
+  it('shows a self-service actor by their captured @handle', () => {
+    expect(formatAuditActor({ actorType: 'user', actorUsername: 'jess' })).toBe('@jess')
+  })
+
+  it('falls back to "A user" (never "An admin") for a self-service row with no handle', () => {
+    expect(formatAuditActor({ actorType: 'user', actorUsername: null })).toBe('A user')
+  })
+})
+
+describe('isSelfAction', () => {
+  it('is true for a self-service (user) row', () => {
+    expect(isSelfAction({ actorType: 'user' })).toBe(true)
+  })
+
+  it('is false for admin and system rows', () => {
+    expect(isSelfAction({ actorType: 'admin' })).toBe(false)
+    expect(isSelfAction({ actorType: 'system' })).toBe(false)
+    expect(isSelfAction({ actorType: undefined })).toBe(false)
+  })
+})
+
+describe('ACTION_META — user.delete', () => {
+  it('reads as a self-described action ("deleted their account")', () => {
+    // Rendered as "{actor} deleted their account" with the target suppressed,
+    // so the label must not need a trailing target to make sense.
+    expect(ACTION_META['user.delete']).toEqual({
+      label: 'deleted their account',
+      tone: 'danger',
+    })
   })
 })
 

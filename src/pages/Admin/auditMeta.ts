@@ -5,12 +5,24 @@ import { AuditAction, AuditEntryType } from 'types'
 // (autohold, content.blocked) are credited to the synthetic system actor, whose
 // uid never resolves to a username — show "Automod" instead of the misleading
 // "An admin" fallback. Human admins show their @handle (or a generic fallback).
+// Self-service actions ('user') are the account owner acting on themselves, so
+// they must never read as "An admin"; fall back to "A user" if the captured
+// handle is missing.
 export const formatAuditActor = (
   entry: Pick<AuditEntryType, 'actorType' | 'actorUsername'>
 ): string => {
   if (entry.actorType === 'system') return 'Automod'
-  return entry.actorUsername ? `@${entry.actorUsername}` : 'An admin'
+  if (entry.actorUsername) return `@${entry.actorUsername}`
+  return entry.actorType === 'user' ? 'A user' : 'An admin'
 }
+
+// A self-service row (the user acting on their own account, e.g. account
+// deletion) has the actor as its own target, so the trailing target label would
+// just repeat the actor's handle — "@user deleted their account @user". Callers
+// suppress the target span for these rows.
+export const isSelfAction = (
+  entry: Pick<AuditEntryType, 'actorType'>
+): boolean => entry.actorType === 'user'
 
 // Short human phrasing + a colour tone per audit action, used for the row label
 // in both the Audit log and the Analytics "recent actions" feed. Kept here so

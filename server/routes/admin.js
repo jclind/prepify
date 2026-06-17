@@ -26,14 +26,21 @@ function escapeRegex(str) {
 
 // Attach each audit entry's actor username in one batched lookup, so a page of
 // entries shows "@admin did X" without a per-row query. Shared by the audit
-// trail and the analytics "recent actions" feed.
+// trail and the analytics "recent actions" feed. The live `usernames` lookup
+// wins (an admin who renamed shows their current handle), but falls back to a
+// username captured on the row at action time — the only label left for a
+// self-service account deletion, which removes the actor's `usernames` doc in
+// the same cascade that writes the audit row.
 async function enrichActors(db, entries) {
   const actorUids = [...new Set(entries.map((e) => e.actorUid).filter(Boolean))]
   const actorDocs = actorUids.length
     ? await db.collection('usernames').find({ _id: { $in: actorUids } }).toArray()
     : []
   const actorByUid = Object.fromEntries(actorDocs.map((d) => [d._id, d.username]))
-  return entries.map((e) => ({ ...e, actorUsername: actorByUid[e.actorUid] || null }))
+  return entries.map((e) => ({
+    ...e,
+    actorUsername: actorByUid[e.actorUid] || e.actorUsername || null,
+  }))
 }
 
 // Build a complete, zero-filled daily time series for the last `days` days
