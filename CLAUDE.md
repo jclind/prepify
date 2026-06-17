@@ -75,8 +75,6 @@ npx cypress open       # Open Cypress test runner
 - `VITE_FIREBASE_APP_ID` - Firebase app ID
 - `VITE_FIREBASE_MEASUREMENT_ID` - Firebase Analytics measurement ID
 - `VITE_CYPRESS` - Set to `"true"` when running under Cypress; toggles test-mode behavior in `src/client/db.ts`
-- `VITE_OPEN_AI_API_KEY` - **Defined but unused — remove before production or wire to a feature.** Present in `.env.example` with zero callers in `src/`.
-- `VITE_INGREDIENT_PARSER_URL` - **Defined but unused — remove before production or wire to a feature.** Ingredient parsing now goes through the main server (`POST /api/ingredients/parse`).
 
 ### Main Server (.env)
 - `MONGO_URI` - MongoDB connection string
