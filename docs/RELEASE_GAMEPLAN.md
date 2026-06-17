@@ -43,9 +43,9 @@ same commit.**
 
 | Track | Title | Status | Branch / PR |
 |---|---|---|---|
-| 0a | Repo/secrets hygiene | `[ ]` | — |
+| 0a | Repo/secrets hygiene | `[x]` | #151 (merged) |
 | 0c | Infra (Jesse, dashboards) | `[ ]` | n/a |
-| 1a | Ratings/reviews bug | `[ ]` | — |
+| 1a | Ratings/reviews bug | `[P]` | `worktree-feat+delete-review-star-rating-fix` / #150 |
 | 1b | Save-recipe broken | `[ ]` | — |
 | 1c | Account data (images, empty-flash) | `[ ]` | — |
 | 1d | Serving-price bug | `[ ]` | — |
@@ -174,6 +174,11 @@ Append a one-liner when a track changes state (started / PR / merged). Keeps ses
 
 - _2026-06-17_ — Gameplan created; Track Board added. First wave defined (0a / 1a / 1d / 2a). Nothing
   started yet.
+- _2026-06-17_ — **0a merged** (#151). **1a → PR open (#150):** delete-review now keeps the rating +
+  new `DELETE /removeRating` + orphan cleanup; recompute on every rating change + UI refresh. Bug 2
+  ("avg dropped on a 5-star") root-caused = stale stored aggregate corrected on recompute (math is
+  correct); confirmed by a live authed smoke test. Two follow-ups filed in `BACKLOG.md` → Tech debt:
+  one-off catalog-wide aggregate reconciliation + harden `deleteAccount`'s best-effort recompute.
 
 ---
 
