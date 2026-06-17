@@ -43,7 +43,7 @@ same commit.**
 
 | Track | Title | Status | Branch / PR |
 |---|---|---|---|
-| 0a | Repo/secrets hygiene | `[ ]` | — |
+| 0a | Repo/secrets hygiene | `[x]` | #151 ✅ |
 | 0c | Infra (Jesse, dashboards) | `[ ]` | n/a |
 | 1a | Ratings/reviews bug | `[ ]` | — |
 | 1b | Save-recipe broken | `[ ]` | — |
@@ -174,6 +174,11 @@ Append a one-liner when a track changes state (started / PR / merged). Keeps ses
 
 - _2026-06-17_ — Gameplan created; Track Board added. First wave defined (0a / 1a / 1d / 2a). Nothing
   started yet.
+- _2026-06-17_ — **0a Repo/secrets hygiene → merged** (PR #151). Removed dead `VITE_OPEN_AI_API_KEY` +
+  `VITE_INGREDIENT_PARSER_URL` from `.env.example` (+ CLAUDE.md notes); README `your-username` →
+  `jclind/prepify` + setup refresh; `npm audit` non-breaking fixes cleared **all high advisories** (root
+  + server). Residual moderates need major bumps (firebase-admin 13→14, jest) — deferred. CI green;
+  worktree/branch pruned.
 
 ---
 
