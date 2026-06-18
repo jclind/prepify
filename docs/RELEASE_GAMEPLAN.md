@@ -51,7 +51,7 @@ same commit.**
 | 1d | Serving-price bug | `[x]` | #152 ✅ |
 | 2a | Homepage redesign (design + For You row + "What should I cook?") | `[x]` | #153 + #154 ✅ |
 | 2b | Public Help/Contact page | `[ ]` | — |
-| 2c | Single-recipe polish | `[~]` | worktree-feat+single-recipe-page-polish |
+| 2c | Single-recipe polish | `[P]` | #160 |
 | 2d | Recipes browse polish | `[ ]` | — |
 | 2e | Account/profile polish | `[ ]` | — |
 | 3a | a11y (focus-visible, chevron) | `[ ]` | — |
