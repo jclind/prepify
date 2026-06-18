@@ -27,10 +27,17 @@ describe('Single Recipe', () => {
 
   it('save/unsave button toggles correctly when logged in', () => {
     cy.intercept('GET', `${api()}/api/getTrendingRecipes*`, { fixture: 'trending-recipes.json' })
-    // The unified SaveControl resolves "is this saved" from getSavedRecipeIds;
-    // the `getSavedRecipe*` glob covers both that and the popover's per-recipe
-    // getSavedRecipe lookup. Stub empty so the recipe starts "not saved".
-    cy.intercept('GET', `${api()}/api/getSavedRecipe*`, { body: null }).as('getSavedRecipe')
+    // The unified SaveControl resolves "is this saved" from getSavedRecipeIds.
+    // Back it with a stateful list the save/unsave handlers below mutate, so the
+    // server "remembers" the write — useSaveRecipe reconciles its optimistic
+    // cache against this list after each toggle (a static stub would report the
+    // recipe un-saved again on that reconciliation refetch and revert the icon).
+    // The same `getSavedRecipe*` glob also catches the popover's per-recipe
+    // getSavedRecipe lookup, which has no "Ids" and gets the null body.
+    let savedIds: string[] = []
+    cy.intercept('GET', `${api()}/api/getSavedRecipe*`, (req) => {
+      req.reply(req.url.includes('getSavedRecipeIds') ? savedIds : { body: null })
+    }).as('getSavedRecipe')
     cy.intercept('GET', `${api()}/api/getUsername*`, { body: 'testinguser' })
     // Opening the collections popover loads the user's folders.
     cy.intercept('GET', `${api()}/api/collections*`, { body: [] }).as('getCollections')
@@ -47,8 +54,16 @@ describe('Single Recipe', () => {
     cy.wait('@getSavedRecipe')
     cy.get('button.save-recipe-btn', { timeout: 5000 }).should('be.visible').and('not.have.class', 'is-saved')
 
-    cy.intercept('POST', `${api()}/api/recipes/*/save`, { fixture: 'save-recipe.json' }).as('saveRecipe')
-    cy.intercept('DELETE', `${api()}/api/recipes/*/save`, { body: {} }).as('unsaveRecipe')
+    // Save/unsave mutate the stateful list above so the post-write reconciliation
+    // refetch sees the committed state.
+    cy.intercept('POST', `${api()}/api/recipes/*/save`, (req) => {
+      savedIds = [recipeId]
+      req.reply({ fixture: 'save-recipe.json' })
+    }).as('saveRecipe')
+    cy.intercept('DELETE', `${api()}/api/recipes/*/save`, (req) => {
+      savedIds = []
+      req.reply({ body: {} })
+    }).as('unsaveRecipe')
 
     // One tap saves to the master list (Spotify-style).
     cy.get('button.save-recipe-btn').click()
