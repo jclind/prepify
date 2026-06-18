@@ -75,7 +75,7 @@
       color: s.$primary-text;
       border-color: s.$tertiary-text;
     }
-    &:focus {
+    &:focus-visible {
       @include s.outline();
     }
     &:disabled {
@@ -98,7 +98,7 @@
     outline: none;
     transition: all 0.1s linear;
 
-    &:focus {
+    &:focus-visible {
       @include s.outline();
     }
   }
