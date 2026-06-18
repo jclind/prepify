@@ -106,8 +106,11 @@ The triage date stamped on items is the date they were filed here, not when they
 - `[ ]` **Account nav sections UI** — improve the Saved / Ratings / etc. section navigation styling.
 - `[ ]` **`/u/:username` public profile visual polish** — minor visual updates.
 - `[ ]` **"Change Password" title is redundant/cluttered** — in Account & Security settings.
-- `[ ]` **create-username page revamp** — re-evaluate the page, and add a logout (or escape hatch) so a
-  user can't get stuck on it. Page lives at `src/pages/CreateUsername/`.
+- `[x]` **create-username page revamp** — **done (track 3e):** the page was redesigned into the shared
+  soft-glass auth vocabulary alongside login/signup/forgot in **PR #131**, and the escape hatch (a
+  "Cancel and log out" control wired to the auth signout, plus a guard that bounces users who already
+  have a username) landed in **PR #98**. Page lives at `src/pages/CreateUsername/`. Username validation
+  tightening is tracked separately under 3c.
 
 ## Accessibility
 
