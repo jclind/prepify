@@ -49,7 +49,7 @@ same commit.**
 | 1b | Save-recipe broken | `[ ]` | — |
 | 1c | Account data (images, empty-flash) | `[ ]` | — |
 | 1d | Serving-price bug | `[ ]` | — |
-| 2a | Homepage redesign (design shipped; For You row in progress) | `[~]` | feat/homepage-redesign |
+| 2a | Homepage redesign (design + For You row + "What should I cook?") | `[x]` | #153 + #154 ✅ |
 | 2b | Public Help/Contact page | `[ ]` | — |
 | 2c | Single-recipe polish | `[ ]` | — |
 | 2d | Recipes browse polish | `[ ]` | — |
@@ -110,7 +110,7 @@ All isolated files — safe to run together.
 
 | Track | Work | Domain |
 |---|---|---|
-| **2a** Homepage redesign *(design shipped; feature work in progress)* | redesign live (`HomeHero → Trending → Browse by meal`). Remaining = features: **For You** personalized row (in progress), **"What should I cook?"** button (next) | `src/pages/Home/*`, `server/routes/recipes.js`, `server/util/forYou.js` |
+| **2a** Homepage redesign *(complete)* | redesign live (`HomeHero → Trending → Browse by meal`) + both feature items shipped: **For You** personalized row (#153) and **"What should I cook?"** spotlight-modal button (#154) | `src/pages/Home/*`, `server/routes/recipes.js`, `server/util/forYou.js`, `server/util/tasteContext.js` |
 | **2b** Public Help/Contact *(blocker)* | move route out of `PrivateRoute`, add a public link (footer/nav), refresh layout | `src/pages/Help/*`, **`App.tsx`**, Navbar link |
 | **2c** Single-recipe polish | serving-price prominence, "You created this" mobile styling, stats row styling, `RecipeNotFound` visual, "Your Review" UI + rating-dropdown position | `src/pages/SingleRecipe/*` |
 | **2d** Recipes browse polish | better no-results indicator, autocomplete redesign + autocorrect, drop search from the top-most navbar on /recipes | `src/pages/Recipes/*`, `SearchRecipesInput`, Navbar |
@@ -184,6 +184,14 @@ Append a one-liner when a track changes state (started / PR / merged). Keeps ses
   ("avg dropped on a 5-star") root-caused = stale stored aggregate corrected on recompute (math is
   correct); confirmed by a live authed smoke test. Two follow-ups filed in `BACKLOG.md` → Tech debt:
   one-off catalog-wide aggregate reconciliation + harden `deleteAccount`'s best-effort recompute.
+- _2026-06-17_ — **2a For You row → merged** (PR #153). Content-based personalized Home row inferred from
+  saves/makes/ratings (`HomeForYou` + `GET /api/getForYouRecipes` + `server/util/forYou.js`);
+  hide-until-personalized, capped at 4 to match Trending.
+- _2026-06-17_ — **2a "What should I cook?" button → merged** (PR #154) — **Track 2a complete.** Taste-aware
+  random pick (reuses the For You profile via the extracted `server/util/tasteContext.js`; uniform `$sample`
+  fallback) revealed in a spotlight modal with a "Try another" re-roll (`HomeCookSuggestion` +
+  `GET /api/recipes/random`). Fallback prefers unseen recipes, only resurfacing seen ones once the whole
+  catalog is exhausted.
 
 ---
 

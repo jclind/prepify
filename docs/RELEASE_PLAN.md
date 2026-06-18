@@ -232,12 +232,15 @@ Chunky design efforts that are bigger than a single checkbox. Tag each as **(blo
   - **Shipped:** the redesign landed earlier (`e1539c3`) — Home is now `HomeHero → Trending → Browse by
     meal → View all recipes`, fully responsive with empty/loading states. The "sparse Home" wording here
     was pre-redesign and is now stale.
-  - **Remaining Home work** is feature, not design — tracked from `docs/FEATURE_IDEAS.md`:
-    - `[~]` **Personalized "For You" row** — content-based row inferred from saves/makes/ratings
-      (`HomeForYou` + `GET /api/getForYouRecipes`). In progress on `feat/homepage-redesign`.
-    - `[ ]` **"What should I cook?" button** — random on-taste pick from `HomeHero`. Next up.
-  - **Touches:** `src/pages/Home/*` (`Home.tsx`, `HomeForYou.tsx`, `HomeRecipeCard.tsx`),
-    `src/api/recipes.ts`, `server/routes/recipes.js`, `server/util/forYou.js`.
+  - **Remaining Home work** was feature, not design — tracked from `docs/FEATURE_IDEAS.md`, now all shipped:
+    - `[x]` **Personalized "For You" row** — content-based row inferred from saves/makes/ratings
+      (`HomeForYou` + `GET /api/getForYouRecipes`). Merged via **PR #153**.
+    - `[x]` **"What should I cook?" button** — taste-aware random pick from `HomeHero`, revealed in a
+      spotlight modal with "Try another" (`HomeCookSuggestion` + `GET /api/recipes/random`). Merged via
+      **PR #154**.
+  - **Touches:** `src/pages/Home/*` (`Home.tsx`, `HomeForYou.tsx`, `HomeRecipeCard.tsx`,
+    `HomeCookSuggestion.tsx`), `src/api/recipes.ts`, `server/routes/recipes.js`,
+    `server/util/forYou.js`, `server/util/tasteContext.js`.
 
 - `[ ]` **Help / Contact Support page** — **(blocker)**
   - **Now:** the page already exists — `src/pages/Help/Help.tsx` (routed `/help`) is a Formspree form
