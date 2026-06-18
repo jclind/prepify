@@ -94,6 +94,13 @@ const Ratings: FC = () => {
       RecipeAPI.getSingleUserReviews(currPage, 5, selectOption.value, true),
   })
   const showSkeleton = useDelayedLoading(isLoading)
+  // `reviews` is populated by the effect below one render AFTER react-query
+  // flips `isLoading` to false, so on a fast load there's a frame where the
+  // query has settled but `reviews` is still []. Gate the list on the resolved
+  // payload too (`data.reviews`) so that frame keeps showing the list instead
+  // of flashing the "no ratings" empty state.
+  const dataHasReviews = !!data && data.reviews.length > 0
+  const showList = reviews.length > 0 || isLoading || dataHasReviews
 
   useEffect(() => {
     if (data) {
@@ -128,7 +135,7 @@ const Ratings: FC = () => {
 
   return (
     <div className='user-ratings'>
-      {reviews.length > 0 || isLoading ? (
+      {showList ? (
         <>
           <div className='saved-filters'>
             <Select<OptionType, false>

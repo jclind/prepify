@@ -37,7 +37,12 @@ The triage date stamped on items is the date they were filed here, not when they
   mutation (`onMutate` cancel+snapshot, `onError` rollback, `onSettled` reconcile). Added Vitest hook
   coverage (optimistic + rollback + reconcile-after-clobber guard) and extended server Jest with
   `GET /getSavedRecipeIds` + a save→read→unsave→read round-trip.
-- `[ ]` **Account "Ratings" list renders inaccurately** — recipe images aren't loading for rated recipes.
+- `[x]` **Account "Ratings" list renders inaccurately** — **fixed (track 1c):** rating docs store
+  neither `recipeImage` nor `recipeTitle`, and `GET /getSingleUserReviews?returnRecipeData=true` only
+  attached the recipe as a nested `recipeData` object — but `UserRatings.tsx` reads flat
+  `review.recipeImage` / `review.recipeTitle`, so both resolved to `undefined` (blank `<img>` + empty
+  title). Server now denormalizes `recipeImage`/`recipeTitle` from the recipe doc onto each review (keeps
+  `recipeData` for admin callers). Added server + Vitest coverage.
 - `[x]` **Rating aggregate went *down* after a 5-star** — **root-caused + symptom fixed (PR #150, merged,
   track 1a):** the
   `recomputeRecipeRating` math is correct; the drop is a **stale STORED aggregate** being corrected on
@@ -48,8 +53,25 @@ The triage date stamped on items is the date they were filed here, not when they
   Tech debt below.
 - `[x]` **Serving price looks wrong** — **fixed in PR #152 (merged, track 1d)**; audited
   `src/util/calculateServingPrice.ts` against real data + added regression tests.
-- `[ ]` **"Your Recipes" flashes an empty state** — the account section shows "no recipes" briefly
-  before the user's recipes propagate. Gate the empty state on load completion.
+- `[x]` **"Your Recipes" flashes an empty state** — **reproduced + fixed (track 1c):** the existing
+  `useDelayedLoading` guard only covers the in-flight window; it does NOT cover the gap where
+  react-query flips `isLoading` to false but the `recipes` state is still `[]` (it's populated by an
+  effect one render later, to support paged accumulation). On a fast load the empty state mounted for
+  that one frame. Fixed by gating the grid on the resolved payload (`data.recipes`) as well, so the
+  empty state only renders once the query genuinely returns zero recipes. Same latent flash existed in
+  the Ratings list and got the same gate. A Vitest test (records every `EmptyState` mount) reproduces
+  the flash and guards the fix.
+- `[ ]` **Account ratings "Load More" count can be off when a rating's recipe is hidden** —
+  `GET /getSingleUserReviews` computes `totalCount` from `countDocuments(query)` over *all* of the
+  user's rating docs (`server/routes/reviews.js:283`), but with `returnRecipeData=true` the returned
+  `reviews` array is filtered to recipes that are still visible (`:294-308`, drops soft-hidden/deleted
+  recipes). So if a user rated a recipe that was later hidden, `totalCount > reviews.length`, and the
+  client trusts that count to decide pagination (`UserRatings.tsx:113`:
+  `isMoreReviews = Number(totalCount) > updated.length`). Symptom: the "Load More Reviews" button can
+  show with nothing left to load, or a later page returns fewer rows than expected. *(surfaced by
+  track 1c; pre-existing, not a regression — out of that track's scope. Same shape likely in the
+  created-recipes list.)* Fix: count post-visibility-filter, or paginate via an aggregation `$lookup`
+  that excludes hidden recipes before the count.
 - `[~]` **Data export omits saved-recipe content** — `exportMyData` now exports full recipes, drafts,
   ratings, and profile, but `savedRecipes` is still an array of IDs only (`server/routes/auth.js:323`).
   Expand it to full saved-recipe content. *(partially addressed)*
@@ -133,6 +155,20 @@ The triage date stamped on items is the date they were filed here, not when they
 - `[ ]` **Tests for the toast/alert system** — newly implemented `react-hot-toast` is untested.
 - `[ ]` **Create-recipe tests** — Cypress (E2E) + Vitest (unit).
 - `[ ]` **Cypress: test autocomplete on the Recipes page**.
+- `[ ]` **Node 26 test-harness gaps — missing globals in the test sandbox** — this dev machine runs
+  **Node 26**, whose VM/sandbox no longer injects some globals that the test stacks assume:
+  - **Server (Jest):** `server/__tests__/email-notifications.test.js` fails **7/22** with
+    `ReferenceError: clearTimeout is not defined`, thrown from `superagent/request-base.js:28` (via
+    supertest) → cascades to 5000ms test timeouts. **Confirmed pre-existing and environment-induced**, not
+    a product bug: reverting `server/` entirely to base `a7a6653` reproduces the identical 7 failures, and
+    the file imports nothing app-specific. Other server suites that use supertest pass — only the
+    slower email-send paths trip the missing timer global. Likely fix: inject the timer globals when absent
+    in `server/__tests__/setup.js` (e.g. `const t = require('node:timers'); global.clearTimeout ??= t.clearTimeout; global.setTimeout ??= t.setTimeout`), mirroring the client fix below.
+  - **Client (Vitest):** the analogous `localStorage`-is-undefined gap (`savedFilters` / `SingleRecipe`)
+    was the **same root family** and is **already fixed** in PR #156 via an in-memory `Storage` polyfill in
+    `src/test/setup.ts`.
+  - *(Both are masked once everyone is on a Node where the sandbox restores these globals; the guards are
+    no-ops then. Surfaced during track 1c review, 2026-06-18.)*
 
 ## Ideas / needs a decision
 

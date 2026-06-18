@@ -47,6 +47,7 @@ beforeEach(async () => {
   await db.collection('recipes').insertOne({
     _id: RECIPE_ID,
     title: 'Review Test Recipe',
+    recipeImage: 'https://example.com/review-test.jpg',
     rating: { rateCount: 0, rateValue: 0 },
   })
   // Reset to default: verifyToken resolves req.uid = TEST_UID
@@ -781,6 +782,79 @@ describe('GET /getSingleUserReviews', () => {
     expect(res.status).toBe(200)
     expect(res.body.reviews[0].recipeData).toBeDefined()
     expect(res.body.reviews[0].recipeData._id).toBe(RECIPE_ID)
+  })
+
+  // The account "Ratings" list reads flat recipeImage/recipeTitle off each
+  // review (the rating doc stores neither) — they must be denormalized from the
+  // recipe doc, or the thumbnail and title render blank.
+  it('flattens recipeImage and recipeTitle from the recipe when returnRecipeData=true', async () => {
+    await seedRating({
+      userId: TEST_UID,
+      username: TEST_USERNAME,
+      recipeId: RECIPE_ID,
+      rating: 4,
+      reviewText: 'Great recipe!',
+      reviewCreatedAt: '1000',
+    })
+
+    const res = await request(app).get(
+      `/api/getSingleUserReviews?username=${TEST_USERNAME}&returnRecipeData=true`
+    )
+    expect(res.status).toBe(200)
+    expect(res.body.reviews[0].recipeImage).toBe(
+      'https://example.com/review-test.jpg'
+    )
+    expect(res.body.reviews[0].recipeTitle).toBe('Review Test Recipe')
+  })
+
+  // A rating whose recipe was soft-hidden (moderation takedown / unpublished /
+  // pending_review) must not surface in the user's public ratings list when we
+  // join the recipe. The route drops it via RECIPE_VISIBLE → findOne returns
+  // null → the entry is filtered out. Pins reviews.js:294-295/308.
+  it('excludes ratings whose recipe is soft-hidden when returnRecipeData=true', async () => {
+    const db = getDB()
+    await db.collection('recipes').insertOne({
+      _id: 'recipe-hidden-001',
+      title: 'Hidden Recipe',
+      recipeImage: 'https://example.com/hidden.jpg',
+      status: 'hidden',
+      rating: { rateCount: 0, rateValue: 0 },
+    })
+    // Rating on the visible recipe (kept) + rating on the hidden recipe (dropped).
+    await seedRating({ userId: TEST_UID, username: TEST_USERNAME, recipeId: RECIPE_ID, rating: 4, reviewText: 'Visible', reviewCreatedAt: '1000' })
+    await seedRating({ userId: TEST_UID, username: TEST_USERNAME, recipeId: 'recipe-hidden-001', rating: 5, reviewText: 'On a hidden recipe', reviewCreatedAt: '2000' })
+
+    const res = await request(app).get(
+      `/api/getSingleUserReviews?username=${TEST_USERNAME}&returnRecipeData=true`
+    )
+    expect(res.status).toBe(200)
+    expect(res.body.reviews).toHaveLength(1)
+    expect(res.body.reviews[0].recipeId).toBe(RECIPE_ID)
+    expect(
+      res.body.reviews.some((r) => r.recipeId === 'recipe-hidden-001')
+    ).toBe(false)
+  })
+
+  // Defensive: a recipe doc missing title/recipeImage must not crash the join —
+  // the flattened fields are simply absent (undefined → omitted from JSON), and
+  // recipeData is still attached. Documents the no-fallback contract.
+  it('tolerates a recipe with no title/recipeImage (flattened fields just absent)', async () => {
+    const db = getDB()
+    await db.collection('recipes').insertOne({
+      _id: 'recipe-bare-001',
+      rating: { rateCount: 0, rateValue: 0 },
+    })
+    await seedRating({ userId: TEST_UID, username: TEST_USERNAME, recipeId: 'recipe-bare-001', rating: 4, reviewText: 'No image recipe', reviewCreatedAt: '1000' })
+
+    const res = await request(app).get(
+      `/api/getSingleUserReviews?username=${TEST_USERNAME}&returnRecipeData=true`
+    )
+    expect(res.status).toBe(200)
+    const review = res.body.reviews.find((r) => r.recipeId === 'recipe-bare-001')
+    expect(review).toBeDefined()
+    expect(review.recipeImage).toBeUndefined()
+    expect(review.recipeTitle).toBeUndefined()
+    expect(review.recipeData._id).toBe('recipe-bare-001')
   })
 
   it('does not include recipeData when returnRecipeData is not set', async () => {
