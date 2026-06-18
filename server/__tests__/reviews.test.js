@@ -835,6 +835,28 @@ describe('GET /getSingleUserReviews', () => {
     ).toBe(false)
   })
 
+  // Defensive: a recipe doc missing title/recipeImage must not crash the join —
+  // the flattened fields are simply absent (undefined → omitted from JSON), and
+  // recipeData is still attached. Documents the no-fallback contract.
+  it('tolerates a recipe with no title/recipeImage (flattened fields just absent)', async () => {
+    const db = getDB()
+    await db.collection('recipes').insertOne({
+      _id: 'recipe-bare-001',
+      rating: { rateCount: 0, rateValue: 0 },
+    })
+    await seedRating({ userId: TEST_UID, username: TEST_USERNAME, recipeId: 'recipe-bare-001', rating: 4, reviewText: 'No image recipe', reviewCreatedAt: '1000' })
+
+    const res = await request(app).get(
+      `/api/getSingleUserReviews?username=${TEST_USERNAME}&returnRecipeData=true`
+    )
+    expect(res.status).toBe(200)
+    const review = res.body.reviews.find((r) => r.recipeId === 'recipe-bare-001')
+    expect(review).toBeDefined()
+    expect(review.recipeImage).toBeUndefined()
+    expect(review.recipeTitle).toBeUndefined()
+    expect(review.recipeData._id).toBe('recipe-bare-001')
+  })
+
   it('does not include recipeData when returnRecipeData is not set', async () => {
     await seedRating({
       userId: TEST_UID,

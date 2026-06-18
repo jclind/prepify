@@ -145,6 +145,20 @@ The triage date stamped on items is the date they were filed here, not when they
 - `[ ]` **Tests for the toast/alert system** — newly implemented `react-hot-toast` is untested.
 - `[ ]` **Create-recipe tests** — Cypress (E2E) + Vitest (unit).
 - `[ ]` **Cypress: test autocomplete on the Recipes page**.
+- `[ ]` **Node 26 test-harness gaps — missing globals in the test sandbox** — this dev machine runs
+  **Node 26**, whose VM/sandbox no longer injects some globals that the test stacks assume:
+  - **Server (Jest):** `server/__tests__/email-notifications.test.js` fails **7/22** with
+    `ReferenceError: clearTimeout is not defined`, thrown from `superagent/request-base.js:28` (via
+    supertest) → cascades to 5000ms test timeouts. **Confirmed pre-existing and environment-induced**, not
+    a product bug: reverting `server/` entirely to base `a7a6653` reproduces the identical 7 failures, and
+    the file imports nothing app-specific. Other server suites that use supertest pass — only the
+    slower email-send paths trip the missing timer global. Likely fix: inject the timer globals when absent
+    in `server/__tests__/setup.js` (e.g. `const t = require('node:timers'); global.clearTimeout ??= t.clearTimeout; global.setTimeout ??= t.setTimeout`), mirroring the client fix below.
+  - **Client (Vitest):** the analogous `localStorage`-is-undefined gap (`savedFilters` / `SingleRecipe`)
+    was the **same root family** and is **already fixed** in PR #156 via an in-memory `Storage` polyfill in
+    `src/test/setup.ts`.
+  - *(Both are masked once everyone is on a Node where the sandbox restores these globals; the guards are
+    no-ops then. Surfaced during track 1c review, 2026-06-18.)*
 
 ## Ideas / needs a decision
 
