@@ -22,6 +22,7 @@ The previous list's biggest holes are now done and live:
 - **Gamification (partial)** — XP/levels + achievements engine (`server/util/gamification.js`: `first_save`, `collector`, `first_recipe`, `prolific`, `first_review`, `critic`) with an unlock toast and an Account rewards gallery.
 - **Personalized "For You" row on Home** — content-based row inferred from the user's saves/makes/ratings (`HomeForYou` + `GET /api/getForYouRecipes` + `server/util/forYou.js`), hidden until personalized, capped at 4 to match Trending. Shipped via PR #153.
 - **"What should I cook?" button** — taste-aware random pick in `HomeHero` (reuses the For You profile via `server/util/tasteContext.js`; uniform `$sample` fallback) revealed in a spotlight modal with a "Try another" re-roll (`HomeCookSuggestion` + `GET /api/recipes/random`). Shipped via PR #154.
+- **Recipe collections / folders for saved recipes** — saved recipes can be grouped into named collections ("Weeknight dinners," etc.) over the saved list, turning it into a cookbook. Collection CRUD API + saves carry `collectionIds`. Shipped via PR #137.
 
 Adjacent systems that also landed and reshape the roadmap: **drafts**, **admin moderation + audit log + analytics**, **report content**, **bug reporting**, a URL-routed **Settings** area (Profile / Account & Security / Privacy / Danger), and transactional **email** (currently moderation outcomes only).
 
@@ -48,7 +49,6 @@ Adjacent systems that also landed and reshape the roadmap: **drafts**, **admin m
 
 ## 🟢 Nice-to-Have / Engagement Features
 
-- **Recipe collections / folders for saved recipes** — `SavedRecipes.tsx` is still one flat list sortable only by date. Letting users group saves into "Weeknight dinners," "Thanksgiving," etc. turns the saved page into an actual cookbook. `[needs API]` (collection CRUD; saves get `collectionIds`)
 - **Search-history dropdown** — `SearchRecipesInput` still shows nothing on focus until you type. Surfacing the last ~5 searches from localStorage on focus is essentially one component change.
 - **Substitute-ingredient suggestions** — on hover/tap of an ingredient, show 1–3 common swaps ("no buttermilk → milk + lemon"). Could lean on Spoonacular via the existing `/api/ingredients/parse` infra.
 - **Time-based cooking streaks** — gamification today is count-based achievements. Adding "cooked 4 recipes this week" / "3 new cuisines this month" streaks (from the `datesMade` data the server already keeps) gives a recurring reason to come back, distinct from the one-shot badges.
