@@ -807,6 +807,34 @@ describe('GET /getSingleUserReviews', () => {
     expect(res.body.reviews[0].recipeTitle).toBe('Review Test Recipe')
   })
 
+  // A rating whose recipe was soft-hidden (moderation takedown / unpublished /
+  // pending_review) must not surface in the user's public ratings list when we
+  // join the recipe. The route drops it via RECIPE_VISIBLE → findOne returns
+  // null → the entry is filtered out. Pins reviews.js:294-295/308.
+  it('excludes ratings whose recipe is soft-hidden when returnRecipeData=true', async () => {
+    const db = getDB()
+    await db.collection('recipes').insertOne({
+      _id: 'recipe-hidden-001',
+      title: 'Hidden Recipe',
+      recipeImage: 'https://example.com/hidden.jpg',
+      status: 'hidden',
+      rating: { rateCount: 0, rateValue: 0 },
+    })
+    // Rating on the visible recipe (kept) + rating on the hidden recipe (dropped).
+    await seedRating({ userId: TEST_UID, username: TEST_USERNAME, recipeId: RECIPE_ID, rating: 4, reviewText: 'Visible', reviewCreatedAt: '1000' })
+    await seedRating({ userId: TEST_UID, username: TEST_USERNAME, recipeId: 'recipe-hidden-001', rating: 5, reviewText: 'On a hidden recipe', reviewCreatedAt: '2000' })
+
+    const res = await request(app).get(
+      `/api/getSingleUserReviews?username=${TEST_USERNAME}&returnRecipeData=true`
+    )
+    expect(res.status).toBe(200)
+    expect(res.body.reviews).toHaveLength(1)
+    expect(res.body.reviews[0].recipeId).toBe(RECIPE_ID)
+    expect(
+      res.body.reviews.some((r) => r.recipeId === 'recipe-hidden-001')
+    ).toBe(false)
+  })
+
   it('does not include recipeData when returnRecipeData is not set', async () => {
     await seedRating({
       userId: TEST_UID,

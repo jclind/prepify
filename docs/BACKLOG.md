@@ -61,6 +61,17 @@ The triage date stamped on items is the date they were filed here, not when they
   empty state only renders once the query genuinely returns zero recipes. Same latent flash existed in
   the Ratings list and got the same gate. A Vitest test (records every `EmptyState` mount) reproduces
   the flash and guards the fix.
+- `[ ]` **Account ratings "Load More" count can be off when a rating's recipe is hidden** —
+  `GET /getSingleUserReviews` computes `totalCount` from `countDocuments(query)` over *all* of the
+  user's rating docs (`server/routes/reviews.js:283`), but with `returnRecipeData=true` the returned
+  `reviews` array is filtered to recipes that are still visible (`:294-308`, drops soft-hidden/deleted
+  recipes). So if a user rated a recipe that was later hidden, `totalCount > reviews.length`, and the
+  client trusts that count to decide pagination (`UserRatings.tsx:113`:
+  `isMoreReviews = Number(totalCount) > updated.length`). Symptom: the "Load More Reviews" button can
+  show with nothing left to load, or a later page returns fewer rows than expected. *(surfaced by
+  track 1c; pre-existing, not a regression — out of that track's scope. Same shape likely in the
+  created-recipes list.)* Fix: count post-visibility-filter, or paginate via an aggregation `$lookup`
+  that excludes hidden recipes before the count.
 - `[~]` **Data export omits saved-recipe content** — `exportMyData` now exports full recipes, drafts,
   ratings, and profile, but `savedRecipes` is still an array of IDs only (`server/routes/auth.js:323`).
   Expand it to full saved-recipe content. *(partially addressed)*
