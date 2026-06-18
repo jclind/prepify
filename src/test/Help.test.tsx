@@ -15,9 +15,13 @@ vi.mock('@formspree/react', () => ({
   useForm: () => [formspree.state, formspree.submit],
 }))
 
-// Logged-out visitor by default — the whole point of the page being public.
+// Logged-out visitor by default — the whole point of the page being public —
+// but mutable so a test can sign in and check the email pre-fill.
+const authState = vi.hoisted(() => ({
+  user: null as null | { email?: string | null },
+}))
 vi.mock('src/context/AuthContext', () => ({
-  useAuth: () => ({ user: null }),
+  useAuth: () => ({ user: authState.user }),
 }))
 
 const renderHelp = () =>
@@ -32,6 +36,7 @@ const renderHelp = () =>
 beforeEach(() => {
   formspree.state = { succeeded: false, submitting: false, errors: null }
   formspree.submit.mockReset()
+  authState.user = null
 })
 
 describe('Help', () => {
@@ -92,6 +97,20 @@ describe('Help', () => {
     })
     fireEvent.click(screen.getByRole('button', { name: /send message/i }))
     expect(formspree.submit).toHaveBeenCalled()
+  })
+
+  it('pre-fills the email for a signed-in user, but stays empty when logged out', () => {
+    // Logged out (default): the revealed email field is blank.
+    renderHelp()
+    fireEvent.click(screen.getByRole('button', { name: /report a bug/i }))
+    expect(screen.getByLabelText('Your email')).toHaveValue('')
+  })
+
+  it('pre-fills the email from the signed-in user', () => {
+    authState.user = { email: 'chef@example.com' }
+    renderHelp()
+    fireEvent.click(screen.getByRole('button', { name: /report a bug/i }))
+    expect(screen.getByLabelText('Your email')).toHaveValue('chef@example.com')
   })
 
   it('shows a confirmation once the message is sent', () => {
