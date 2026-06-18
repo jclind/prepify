@@ -63,7 +63,7 @@ const Help: FC = () => {
   const [showSubject, setShowSubject] = useState(false)
   const [description, setDescription] = useState('')
 
-  const [formState, submitFormspree] = useForm('xknyboeq')
+  const [formState, submitFormspree, resetFormspree] = useForm('xknyboeq')
 
   // Auth resolves async, so user is null on first render. Pre-fill the email
   // once it loads, but don't clobber anything the visitor has already typed.
@@ -74,6 +74,14 @@ const Help: FC = () => {
   }, [user])
 
   const activeTopic = TOPICS.find(t => t.value === topic) ?? null
+
+  const handleTopicSelect = (value: string) => {
+    setTopic(value)
+    // Clear a stale "couldn't send" banner from a previous attempt so it doesn't
+    // linger under a freshly-chosen topic (the error is Formspree hook state,
+    // independent of `topic`).
+    if (formState.errors) resetFormspree()
+  }
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -129,7 +137,7 @@ const Help: FC = () => {
                     type='button'
                     className={`topic-chip${topic === t.value ? ' selected' : ''}`}
                     aria-pressed={topic === t.value}
-                    onClick={() => setTopic(t.value)}
+                    onClick={() => handleTopicSelect(t.value)}
                   >
                     <span className='chip-icon'>{t.icon}</span>
                     <span className='chip-label'>{t.label}</span>

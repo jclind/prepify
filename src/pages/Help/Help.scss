@@ -16,11 +16,11 @@
   min-height: 0;
   overflow-y: visible;
   padding: calc(#{s.$nav-height} + 1.5rem) 1rem 3rem;
-  // The global footer carries a 4rem top margin to separate itself from page
-  // content; on this gradient page that margin exposes a strip of body
+  // The global footer carries a $footer-margin top margin to separate itself
+  // from page content; on this gradient page that margin exposes a strip of body
   // background between the panel and the footer. Pull the panel down across it
-  // so the gradient meets the footer flush. (Kept in sync with .site-footer.)
-  margin-bottom: -4rem;
+  // (same token .site-footer uses) so the gradient meets the footer flush.
+  margin-bottom: -#{s.$footer-margin};
 
   .form-container {
     // A touch wider than the auth card to fit the 2-up topic grid comfortably.
@@ -90,15 +90,15 @@
       &.selected {
         border-color: s.$secondary;
         color: s.$secondary;
-        background: rgba(0, 173, 181, 0.07);
-        box-shadow: 0 0 0 3px rgba(0, 173, 181, 0.12);
+        background: rgba(s.$secondary, 0.07);
+        box-shadow: 0 0 0 3px rgba(s.$secondary, 0.12);
         .chip-icon {
           color: s.$secondary;
         }
       }
       &:focus-visible {
         outline: none;
-        box-shadow: 0 0 0 3px rgba(0, 173, 181, 0.25);
+        box-shadow: 0 0 0 3px rgba(s.$secondary, 0.25);
       }
     }
   }
@@ -129,7 +129,7 @@
 
         &:focus {
           border-color: s.$secondary;
-          box-shadow: 0 0 0 3px rgba(0, 173, 181, 0.15);
+          box-shadow: 0 0 0 3px rgba(s.$secondary, 0.15);
         }
         &::placeholder {
           color: s.$tertiary-text;

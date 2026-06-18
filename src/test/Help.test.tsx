@@ -10,9 +10,10 @@ import Help from 'src/pages/Help/Help'
 const formspree = vi.hoisted(() => ({
   state: { succeeded: false, submitting: false, errors: null as unknown },
   submit: vi.fn(),
+  reset: vi.fn(),
 }))
 vi.mock('@formspree/react', () => ({
-  useForm: () => [formspree.state, formspree.submit],
+  useForm: () => [formspree.state, formspree.submit, formspree.reset],
 }))
 
 // Logged-out visitor by default — the whole point of the page being public —
@@ -36,6 +37,7 @@ const renderHelp = () =>
 beforeEach(() => {
   formspree.state = { succeeded: false, submitting: false, errors: null }
   formspree.submit.mockReset()
+  formspree.reset.mockReset()
   authState.user = null
 })
 
@@ -111,6 +113,16 @@ describe('Help', () => {
     renderHelp()
     fireEvent.click(screen.getByRole('button', { name: /report a bug/i }))
     expect(screen.getByLabelText('Your email')).toHaveValue('chef@example.com')
+  })
+
+  it('clears a stale submit error when the visitor switches topic', () => {
+    formspree.state = { succeeded: false, submitting: false, errors: {} }
+    renderHelp()
+    fireEvent.click(screen.getByRole('button', { name: /report a bug/i }))
+    // Switching topic resets the Formspree state so the error banner doesn't
+    // linger under a freshly-chosen topic.
+    fireEvent.click(screen.getByRole('button', { name: /ask a question/i }))
+    expect(formspree.reset).toHaveBeenCalled()
   })
 
   it('shows a confirmation once the message is sent', () => {
