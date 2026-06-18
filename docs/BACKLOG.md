@@ -109,8 +109,8 @@ The triage date stamped on items is the date they were filed here, not when they
 - `[x]` **create-username page revamp** — **done (track 3e):** the page was redesigned into the shared
   soft-glass auth vocabulary alongside login/signup/forgot in **PR #131**, and the escape hatch (a
   "Cancel and log out" control wired to the auth signout, plus a guard that bounces users who already
-  have a username) landed in **PR #98**. Page lives at `src/pages/CreateUsername/`. Username validation
-  tightening is tracked separately under 3c.
+  have a username) landed in **PR #98**. Reconciled + escape-hatch regression test added in **PR #162**.
+  Page lives at `src/pages/CreateUsername/`. Username validation tightening is tracked separately under 3c.
 
 ## Accessibility
 

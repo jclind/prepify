@@ -58,7 +58,7 @@ same commit.**
 | 3b | Meta/SEO finish (favicon/OG/titles) | `[ ]` | — |
 | 3c | Username validation + report-user | `[ ]` | — |
 | 3d | Add-recipe UX | `[ ]` | — |
-| 3e | create-username revamp | `[x]` | #131 + #98 ✅ |
+| 3e | create-username revamp | `[x]` | #131 + #98 (+ #162 reconcile/test) ✅ |
 | 4-sass | Sass `@import`→`@use` (LONER) | `[ ]` | — |
 | 4-about | About rewrite (Jesse) | `[ ]` | — |
 | 4-qa | Empty/error sweep + links + copy + mobile + Lighthouse | `[ ]` | — |
