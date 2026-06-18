@@ -116,7 +116,7 @@
       color: s.$primary;
       background: s.$white;
     }
-    &:focus {
+    &:focus-visible {
       @include s.outline();
     }
   }

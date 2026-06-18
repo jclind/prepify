@@ -159,7 +159,7 @@
     -webkit-animation: breathing 5s ease-out infinite normal;
     animation: breathing 5s ease-out infinite normal;
     cursor: pointer;
-    &:focus {
+    &:focus-visible {
       @include s.outline();
     }
   }
