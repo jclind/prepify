@@ -1346,13 +1346,44 @@ describe('GET /recipes/random', () => {
   it('still returns a recipe for an authed user below the signal threshold (fallback)', async () => {
     await seedRecipes([{ ...BASE_RECIPE, _id: 'rnd-only', title: 'Solo' }])
     // 1 save → below MIN_SIGNAL, so the taste path is skipped and the fallback
-    // random pick runs. (Fallback excludes own + excluded, not merely-seen.)
+    // runs. The only recipe is one they've seen, so the "prefer unseen" pool is
+    // empty and the fallback relaxes to return the seen recipe anyway (rather
+    // than a dead end).
     await seedUserRecipeData(TEST_UID, {
       savedRecipes: [{ recipeId: 'rnd-only', dateSaved: '1' }],
     })
     const res = await request(server).get('/api/recipes/random').set(AUTH_HEADER)
     expect(res.status).toBe(200)
     expect(res.body._id).toBe('rnd-only')
+  })
+
+  it('fallback prefers an unseen recipe over seen ones for a signal user', async () => {
+    await seedRecipes([
+      // 3 saved Italian dinners → signal, but all SEEN.
+      { ...BASE_RECIPE, _id: 'rnd-s1', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'rnd-s2', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'rnd-s3', cuisine: 'Italian', mealTypes: ['dinner'] },
+      // A SEEN off-taste recipe (saved) — a valid fallback candidate by status,
+      // but the user has already seen it, so it must NOT be preferred.
+      { ...BASE_RECIPE, _id: 'rnd-seen-off', cuisine: 'Mexican', mealTypes: ['breakfast'], nutritionLabels: [] },
+      // The only UNSEEN recipe is off-taste, so the taste path finds nothing and
+      // the fallback runs — it must always pick this unseen one, never the seen.
+      { ...BASE_RECIPE, _id: 'rnd-unseen-off', cuisine: 'Thai', mealTypes: ['breakfast'], nutritionLabels: [] },
+    ])
+    await seedUserRecipeData(TEST_UID, {
+      savedRecipes: [
+        { recipeId: 'rnd-s1', dateSaved: '1' },
+        { recipeId: 'rnd-s2', dateSaved: '2' },
+        { recipeId: 'rnd-s3', dateSaved: '3' },
+        { recipeId: 'rnd-seen-off', dateSaved: '4' },
+      ],
+    })
+
+    for (let i = 0; i < 8; i++) {
+      const res = await request(server).get('/api/recipes/random').set(AUTH_HEADER)
+      expect(res.status).toBe(200)
+      expect(res.body._id).toBe('rnd-unseen-off')
+    }
   })
 })
 
