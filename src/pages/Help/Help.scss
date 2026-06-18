@@ -1,126 +1,181 @@
 @use '../../helpers.scss' as s;
 
-.help-page {
-  display: flex;
-  justify-content: center;
-  // Fills the flexbox app-main; the app shell positions the footer (Layout.scss).
+// The Help/contact page reuses the auth pages' soft-glass form vocabulary
+// (`.form-format` → frosted `.form-container`, `.brand-mark`, `.input-fields`,
+// `.form-action-btn`, `.error`/`.success`) from Form/FormStyles.scss. Unlike the
+// auth routes, Help renders INSIDE <Layout> (navbar + footer), so the wrapper is
+// re-tuned here to fill the app-main flex slot instead of owning a 100vh,
+// self-scrolling screen.
+.help-page.form-format {
+  // Fill the flexbox app-main and let the document flow scroll past the footer,
+  // rather than forcing a viewport-height panel with its own inner scrollbar.
+  min-height: 0;
   flex: 1 0 auto;
+  overflow-y: visible;
+  // Anchor near the top so the card top is always reachable when the form grows
+  // taller than the available height (the chips + open form can exceed it).
+  align-items: flex-start;
+
   .form-container {
-    max-width: 400px;
-    width: 90%;
-    background: s.$white;
-    padding: 2rem;
-    height: fit-content;
-    border-radius: s.$border-radius;
+    // A touch wider than the auth card to fit the 2-up topic grid comfortably.
+    max-width: 460px;
+  }
 
-    .form-success {
+  // Heading + supporting line sit above the form (the chips live between them),
+  // so they're outside `.form` and styled here rather than inheriting the
+  // FormStyles `.form .title` / `.prompt` rules.
+  .title {
+    font-size: 1.55rem;
+    font-weight: 800;
+    color: s.$primary-text;
+    margin-bottom: 0.4rem;
+  }
+  .prompt {
+    margin: 0 auto 1.5rem;
+    max-width: 34ch;
+    font-weight: 500;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: s.$secondary-text;
+  }
+
+  // Topic chooser — the light entry point. Two-up grid of soft cards; picking
+  // one reveals the form below with that topic preselected.
+  .topic-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+
+    .topic-chip {
       display: flex;
-      justify-content: center;
-      align-items: center;
       flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      padding: 0.9rem 0.5rem;
+      border: 1.5px solid s.$gray-300;
+      border-radius: 14px;
+      background: s.$white;
+      color: s.$secondary-text;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: border-color 0.15s ease, color 0.15s ease,
+        background 0.15s ease, box-shadow 0.15s ease;
 
-      .image-container {
-        margin: 1rem 0;
-        width: 180px;
-        height: 180px;
-        img {
-          object-fit: contain;
-          width: 180px;
-          height: 180px;
+      .chip-icon {
+        display: flex;
+        font-size: 1.45rem;
+        color: s.$tertiary-text;
+        transition: color 0.15s ease;
+      }
+
+      &:hover {
+        border-color: s.$secondary;
+        color: s.$primary-text;
+        .chip-icon {
+          color: s.$secondary;
         }
       }
-      button.submit-another-form-btn {
-        font-size: 1rem;
-        font-weight: 500;
+      &.selected {
+        border-color: s.$secondary;
         color: s.$secondary;
-        text-decoration: underline;
+        background: rgba(0, 173, 181, 0.07);
+        box-shadow: 0 0 0 3px rgba(0, 173, 181, 0.12);
+        .chip-icon {
+          color: s.$secondary;
+        }
+      }
+      &:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(0, 173, 181, 0.25);
+      }
+    }
+  }
+
+  // The form is revealed once a topic is chosen.
+  .help-form {
+    margin-top: 1.5rem;
+
+    // Message box — mirrors the FormInput field styling (FormInput.scss) for a
+    // consistent look, but as a multi-line textarea.
+    .message-field {
+      .message-textarea {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 0.7rem 0.85rem;
+        font-family: inherit;
+        font-size: 0.95rem;
+        font-weight: 500;
+        line-height: 1.5;
+        color: s.$primary-text;
+        border: 1.5px solid s.$gray-300;
+        border-radius: s.$border-radius;
+        background: s.$white;
+        outline: none;
+        resize: vertical;
+        min-height: 110px;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+        &:focus {
+          border-color: s.$secondary;
+          box-shadow: 0 0 0 3px rgba(0, 173, 181, 0.15);
+        }
+        &::placeholder {
+          color: s.$tertiary-text;
+          font-weight: 400;
+        }
       }
     }
 
-    // background: red;
-    .report-form {
-      display: flex;
-      flex-direction: column;
-      gap: 1.5rem;
+    // Optional "Add a subject" disclosure — a quiet text button so the baseline
+    // form stays to email + message.
+    .add-subject-btn {
+      align-self: flex-start;
+      padding: 0.15rem 0;
+      border: none;
+      background: transparent;
+      color: s.$secondary;
+      font-weight: 600;
+      font-size: 0.82rem;
+      cursor: pointer;
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
 
-      .title {
-        text-align: center;
-        font-weight: 600;
-        font-size: 1.375rem;
+  // "Prefer email?" fallback for people who'd rather not use the form.
+  .email-fallback {
+    margin-top: 1.5rem;
+    font-size: 0.82rem;
+    color: s.$tertiary-text;
+    // The address is one unbreakable token — let it wrap rather than force the
+    // card wider than a narrow viewport.
+    overflow-wrap: anywhere;
+    a {
+      color: s.$secondary;
+      font-weight: 600;
+      text-decoration: none;
+      &:hover {
+        text-decoration: underline;
       }
-      .error {
-        margin-bottom: 0;
-      }
-      .select-container {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-        .text {
-          width: 5ch;
-          font-size: 0.875rem;
-          font-weight: 600;
-          color: s.$secondary;
-          padding-bottom: 0.25rem;
-        }
-        .select {
-          width: 100%;
-        }
-      }
-      label.email-input-label,
-      label.title-input-label {
-        width: 100%;
+    }
+  }
 
-        input.email-input,
-        input.title-input {
-          width: 100%;
-          height: 40px;
-          box-sizing: border-box;
-          padding: 0.5rem;
-        }
-      }
-      label.description-input-label {
-        width: 100%;
+  // Post-submit confirmation.
+  .help-success {
+    display: flex;
+    flex-direction: column;
 
-        textarea.description-textarea {
-          width: 100%;
-          box-sizing: border-box;
-          resize: vertical;
-          padding: 0.5rem;
-        }
-      }
-
-      label {
-        .text {
-          font-size: 0.875rem;
-          font-weight: 600;
-          padding-bottom: 0.25rem;
-          color: s.$secondary;
-        }
-      }
-      input,
-      textarea {
-        outline: none;
-        border: none;
-        border: 1px solid s.$gray-400;
-        border-radius: s.$border-radius;
-        font-size: 1rem;
-        font-weight: 500;
-
-        &::placeholder {
-          color: s.$gray-500;
-        }
-        &:focus {
-          border-color: s.$secondary;
-        }
-      }
-
-      button.submit-help-btn {
-        padding: 0.75rem;
-        font-size: 1.25rem;
-        font-weight: 600;
-        border-radius: s.$border-radius;
-        color: s.$white;
-        background: s.$secondary;
+    .title {
+      margin-bottom: 0.6rem;
+    }
+    .prompt {
+      margin-bottom: 1.75rem;
+      strong {
+        color: s.$primary-text;
+        font-weight: 700;
       }
     }
   }
