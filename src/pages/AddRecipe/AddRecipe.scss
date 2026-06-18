@@ -1,5 +1,14 @@
 @use '../../helpers.scss' as s;
 
+// The footer carries a global top margin ($footer-margin) for breathing room
+// after page content. On the create/edit-recipe page the sticky summary bar now
+// sits flush at the bottom of the form, so that margin renders as an empty gap
+// between the bar and the footer. Cancel it for this page only (the bar provides
+// the visual separation) — scoped via :has so no global footer style is touched.
+.app-shell:has(.add-recipe-page) .site-footer {
+  margin-top: 0;
+}
+
 .add-recipe-page {
   display: flex;
   flex-direction: column;
@@ -13,8 +22,9 @@
   // distinct surface. Keep the global .page's top padding so the h1 sits at
   // the same height as headers on other pages (e.g. Recipes).
   background: s.$primary-background;
-  // Clear the fixed summary bar at the bottom of the page.
-  padding-bottom: 130px;
+  // The summary bar is now a sticky in-flow child (see AddRecipeSummaryBar.scss),
+  // so it reserves its own space at the end of the page — no bottom padding hack
+  // needed to clear a fixed overlay, and the footer below it stays reachable.
 
   .add-recipe-heading {
     display: flex;
