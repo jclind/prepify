@@ -280,12 +280,20 @@
     border: 1px solid #{rgba(s.$white, 0.6)};
   }
   &__caret {
+    display: flex;
     height: 20px;
     width: 20px;
     color: var(--dnav-text);
+    // Clip box: keeps the rotating icon's growing bounding box from leaking into
+    // the button's `outline: auto` focus ring, so the ring stays put as it spins.
+    overflow: hidden;
+  }
+  &__caret-icon {
+    height: 20px;
+    width: 20px;
     transition: transform 0.15s ease;
   }
-  &.is-open &__caret {
+  &.is-open &__caret-icon {
     transform: rotate(180deg);
   }
 

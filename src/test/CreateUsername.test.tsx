@@ -12,6 +12,7 @@ const {
   updateDisplayNameMock,
   toastSuccessMock,
   navigateMock,
+  logoutMock,
 } = vi.hoisted(() => ({
   getUsernameMock: vi.fn(),
   checkAvailMock: vi.fn(),
@@ -20,6 +21,7 @@ const {
   updateDisplayNameMock: vi.fn(),
   toastSuccessMock: vi.fn(),
   navigateMock: vi.fn(),
+  logoutMock: vi.fn(),
 }))
 
 vi.mock('src/api/auth', () => ({
@@ -42,7 +44,7 @@ vi.mock('src/context/AuthContext', () => ({
   useAuth: () => ({
     user: { uid: 'u1', reload: vi.fn().mockResolvedValue(undefined) },
     authLoading: false,
-    logout: vi.fn(),
+    logout: logoutMock,
   }),
 }))
 
@@ -119,5 +121,14 @@ describe('CreateUsername (onboarding)', () => {
     expect(updateDisplayNameMock).not.toHaveBeenCalled()
     expect(updateProfileApiMock).not.toHaveBeenCalled()
     await waitFor(() => expect(navigateMock).toHaveBeenCalledWith('/'))
+  })
+
+  // Escape hatch: a signed-in user without a username must be able to get out
+  // rather than getting stuck on this page (the auth signout is the way out).
+  it('logs the user out via the cancel/escape hatch', async () => {
+    renderOnboarding()
+    await screen.findByText('Finish your profile')
+    fireEvent.click(screen.getByRole('button', { name: /cancel and log out/i }))
+    expect(logoutMock).toHaveBeenCalledTimes(1)
   })
 })

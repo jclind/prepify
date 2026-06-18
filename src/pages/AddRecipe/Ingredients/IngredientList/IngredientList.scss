@@ -138,7 +138,7 @@
         opacity: 0;
       }
       &:hover,
-      &:focus {
+      &:focus-visible {
         color: s.$primary;
         .warn {
           opacity: 0;
@@ -147,7 +147,7 @@
           opacity: 1;
         }
       }
-      &:focus {
+      &:focus-visible {
         @include s.outline();
       }
     }
@@ -178,7 +178,7 @@
         color: s.$primary;
         background: s.$white;
       }
-      &:focus {
+      &:focus-visible {
         @include s.outline();
       }
     }
