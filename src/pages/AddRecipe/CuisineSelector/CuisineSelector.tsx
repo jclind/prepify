@@ -13,6 +13,10 @@ const cuisineOptions: OptionType[] = cuisinesList.map(c => ({
   label: c,
 }))
 const customStyles: StylesConfig<OptionType> = {
+  // Lift the open menu above the sticky summary bar (z-index 50). Without this
+  // the Course/Cuisine dropdowns — which sit just above the bar — open partially
+  // hidden behind it.
+  menu: (provided: any) => ({ ...provided, zIndex: 60 }),
   control: (provided: any, state: any) => ({
     ...provided,
     borderColor: state.isFocused ? styles.primary : provided.borderColor,

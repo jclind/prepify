@@ -1,9 +1,14 @@
 import React, { useState } from 'react'
 import { vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import IngredientsContainer from 'src/pages/AddRecipe/Ingredients/IngredientsContainer/IngredientsContainer'
-import IngredientItem from 'src/pages/AddRecipe/Ingredients/IngredientItem'
+import RecipeAPI from 'src/api/recipes'
+import { toast } from 'react-hot-toast'
+import {
+  IngredientEnrichTimeoutError,
+  withTimeout,
+} from 'src/pages/AddRecipe/Ingredients/ingredientEnrichment'
 
 vi.mock('src/api/recipes', () => ({
   default: { getIngredientData: vi.fn() },
@@ -13,111 +18,186 @@ vi.mock('src/api/auth', () => ({
   default: { getUID: vi.fn().mockReturnValue(null) },
 }))
 
-// DnD wraps render nothing in jsdom — render children directly
+vi.mock('react-hot-toast', () => ({
+  toast: { error: vi.fn(), success: vi.fn() },
+}))
+
+// Pass-through by default so the timeout doesn't actually run against real time;
+// the timeout-handling test overrides it to reject with a timeout error. The
+// real IngredientEnrichTimeoutError class is preserved for `instanceof` checks.
+vi.mock(
+  'src/pages/AddRecipe/Ingredients/ingredientEnrichment',
+  async importOriginal => {
+    const actual = await importOriginal<
+      typeof import('src/pages/AddRecipe/Ingredients/ingredientEnrichment')
+    >()
+    return { ...actual, withTimeout: vi.fn((p: Promise<unknown>) => p) }
+  }
+)
+
+// DnD renders nothing in jsdom — render children directly.
 vi.mock('src/pages/AddRecipe/Dnd', () => ({
   DndContext: ({ children }: any) => <div>{children}</div>,
   Drag: ({ children }: any) => <div>{children}</div>,
   Drop: ({ children }: any) => <div>{children}</div>,
 }))
 
-// Replace IngredientsInput with a button that calls addIngredientToList directly
-vi.mock('src/pages/AddRecipe/Ingredients/IngredientsInput', () => ({
-  default: ({ addIngredientToList }: any) => (
-    <button
-      data-testid='add-btn'
-      onClick={() =>
-        addIngredientToList({
-          id: 'sugar-1',
-          parsedIngredient: {
-            ingredient: 'Sugar',
-            quantity: 1,
-            unit: 'cup',
-            comment: null,
-            originalIngredientString: '1 cup Sugar',
-          },
-          ingredientData: null,
-        })
-      }
-    >
-      Add
-    </button>
-  ),
-}))
-
-// Simplify IngredientList to show ingredient name and a Remove button per item
-vi.mock('src/pages/AddRecipe/Ingredients/IngredientList/IngredientList', () => ({
-  default: ({ ingredients, removeIngredient }: any) => (
-    <ul data-testid='ingredient-list'>
-      {ingredients.map((ingr: any) => (
-        <li key={ingr.id}>
-          {ingr.parsedIngredient?.ingredient ?? ingr.label ?? '(ingredient)'}
-          <button onClick={() => removeIngredient(ingr.id)}>Remove</button>
-        </li>
-      ))}
-    </ul>
-  ),
+// Local, synchronous parse (the real one is a library fn) — echo the input so
+// the optimistic row text is predictable.
+vi.mock('@jclind/ingredient-parser', () => ({
+  parseIngredientString: (val: string) => ({
+    ingredient: 'flour',
+    quantity: 2,
+    unit: 'cups',
+    comment: null,
+    originalIngredientString: val,
+  }),
 }))
 
 vi.mock('src/pages/AddRecipe/AddLabel/AddLabel', () => ({ default: () => null }))
 
+const mockGetIngredientData = RecipeAPI.getIngredientData as ReturnType<typeof vi.fn>
+const mockToastError = toast.error as ReturnType<typeof vi.fn>
+const mockWithTimeout = withTimeout as ReturnType<typeof vi.fn>
+
+const PLACEHOLDER = 'Add ingredients to your recipe.'
+
+// A successful enrichment payload (price + image).
+const enriched = (original: string) => ({
+  parsedIngredient: {
+    ingredient: 'flour',
+    quantity: 2,
+    unit: 'cups',
+    comment: null,
+    originalIngredientString: original,
+  },
+  ingredientData: {
+    totalPriceUSACents: 300,
+    imagePath: 'https://img.test/flour.png',
+  },
+  id: 'server-generated-id',
+})
+
+const errorVariant = (original: string) => ({
+  error: { message: 'not found' },
+  parsedIngredient: {
+    ingredient: 'flour',
+    quantity: 2,
+    unit: 'cups',
+    comment: null,
+    originalIngredientString: original,
+  },
+  ingredientData: null,
+  id: 'server-id',
+})
+
 const Wrapper = () => {
   const [ingredients, setIngredients] = useState<any[]>([])
   return (
-    <>
-      <IngredientsContainer ingredients={ingredients} setIngredients={setIngredients} />
-      <span data-testid='count'>{ingredients.length}</span>
-    </>
+    <IngredientsContainer
+      ingredients={ingredients}
+      setIngredients={setIngredients}
+    />
   )
 }
 
-describe('IngredientsContainer', () => {
-  it('adding an ingredient via the input appends it to the displayed list', async () => {
+const addIngredient = async (
+  user: ReturnType<typeof userEvent.setup>,
+  val: string
+) => {
+  await user.type(screen.getByPlaceholderText(PLACEHOLDER), `${val}{enter}`)
+}
+
+// The enriched row price and the footer subtotal both render "$3.00"; assert on
+// the row's `.ingr-price` element specifically.
+const rowPriceText = () =>
+  document.querySelector('.ingr-price')?.textContent ?? ''
+
+beforeEach(() => {
+  mockGetIngredientData.mockReset()
+  mockToastError.mockReset()
+  mockWithTimeout.mockReset()
+  mockWithTimeout.mockImplementation((p: Promise<unknown>) => p)
+})
+
+describe('IngredientsContainer — optimistic add', () => {
+  it('shows the ingredient immediately, then reconciles price when enrichment returns', async () => {
     const user = userEvent.setup()
+    // A deferred enrichment we resolve manually, so we can observe the
+    // optimistic (pre-response) state.
+    let resolve!: (v: any) => void
+    mockGetIngredientData.mockReturnValue(new Promise(r => (resolve = r)))
+
     render(<Wrapper />)
-    expect(screen.getByTestId('count').textContent).toBe('0')
-    await user.click(screen.getByTestId('add-btn'))
-    expect(screen.getByTestId('count').textContent).toBe('1')
-    expect(screen.getByText('Sugar')).toBeInTheDocument()
+    await addIngredient(user, '2 cups flour')
+
+    // Optimistic: the row text is on screen before enrichment resolves, and no
+    // price yet (it's still loading).
+    expect(screen.getByText('flour')).toBeInTheDocument()
+    expect(rowPriceText()).not.toContain('$3.00')
+
+    // Reconcile.
+    await act(async () => {
+      resolve(enriched('2 cups flour'))
+    })
+    await waitFor(() => expect(rowPriceText()).toContain('$3.00'))
+    expect(mockToastError).not.toHaveBeenCalled()
   })
 
-  it('removing an ingredient filters it out by id', async () => {
+  it('marks the row errored (with a retry) when enrichment soft-fails, keeping the ingredient', async () => {
     const user = userEvent.setup()
+    mockGetIngredientData.mockResolvedValue(errorVariant('2 cups flour'))
+
     render(<Wrapper />)
-    await user.click(screen.getByTestId('add-btn'))
-    expect(screen.getByTestId('count').textContent).toBe('1')
-    await user.click(screen.getByText('Remove'))
-    expect(screen.getByTestId('count').textContent).toBe('0')
-    expect(screen.queryByText('Sugar')).toBeNull()
-  })
+    await addIngredient(user, '2 cups flour')
 
-  // Reordering is now always available via a per-row drag handle — there is no
-  // "Reorder"/"Done" mode toggle (see IngredientItem: "Reorder is available any
-  // time — no mode"). This asserts that always-on affordance is present.
-  it('each ingredient row exposes an always-available drag-to-reorder handle', () => {
-    const sugar = {
-      id: 'sugar-1',
-      parsedIngredient: {
-        ingredient: 'Sugar',
-        quantity: 1,
-        unit: 'cup',
-        comment: null,
-        originalIngredientString: '1 cup Sugar',
-      },
-      ingredientData: null,
-    } as any
-
-    render(
-      <IngredientItem
-        ingredients={[sugar]}
-        ingredient={sugar}
-        setLoading={vi.fn()}
-        removeIngredient={vi.fn()}
-        setIngredients={vi.fn()}
-      />
+    // Row is kept and flagged for retry; a soft-fail is shown inline (no toast).
+    await waitFor(() =>
+      expect(screen.getByLabelText('Retry ingredient lookup')).toBeInTheDocument()
     )
+    expect(screen.getByText('flour')).toBeInTheDocument()
+    expect(mockToastError).not.toHaveBeenCalled()
+  })
 
-    expect(screen.getByLabelText('Drag to reorder')).toBeInTheDocument()
-    expect(screen.queryByText('Reorder')).toBeNull()
-    expect(screen.queryByText('Done')).toBeNull()
+  it('retrying an errored row re-runs enrichment and clears the error on success', async () => {
+    const user = userEvent.setup()
+    mockGetIngredientData
+      .mockResolvedValueOnce(errorVariant('2 cups flour'))
+      .mockResolvedValueOnce(enriched('2 cups flour'))
+
+    render(<Wrapper />)
+    await addIngredient(user, '2 cups flour')
+
+    const retry = await screen.findByLabelText('Retry ingredient lookup')
+    await user.click(retry)
+
+    await waitFor(() => expect(rowPriceText()).toContain('$3.00'))
+    expect(screen.queryByLabelText('Retry ingredient lookup')).toBeNull()
+    expect(mockGetIngredientData).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('IngredientsContainer — enrichment timeout', () => {
+  it('errors the row and toasts when the request times out', async () => {
+    const user = userEvent.setup()
+    // getIngredientData is called (and ignored); withTimeout rejects as if the
+    // request hung past the wall clock.
+    mockGetIngredientData.mockReturnValue(new Promise(() => {}))
+    // Async throw so the rejected promise is created only when awaited by the
+    // container (avoids an "unhandled rejection" from an eagerly-built reject).
+    mockWithTimeout.mockImplementationOnce(async () => {
+      throw new IngredientEnrichTimeoutError(12000)
+    })
+
+    render(<Wrapper />)
+    await addIngredient(user, '2 cups flour')
+
+    // Optimistic row present, then flips to errored with a surfaced toast.
+    expect(screen.getByText('flour')).toBeInTheDocument()
+    await waitFor(() =>
+      expect(screen.getByLabelText('Retry ingredient lookup')).toBeInTheDocument()
+    )
+    expect(mockToastError).toHaveBeenCalledTimes(1)
+    expect(mockToastError.mock.calls[0][0]).toMatch(/too long/i)
   })
 })

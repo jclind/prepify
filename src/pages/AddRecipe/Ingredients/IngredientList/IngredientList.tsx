@@ -2,26 +2,25 @@ import React, { Dispatch, FC, SetStateAction } from 'react'
 import { IngredientsType } from 'types'
 import { DndContext, Drag } from 'src/pages/AddRecipe/Dnd'
 import IngredientItem from 'src/pages/AddRecipe/Ingredients/IngredientItem'
+import { IngredientStatus } from 'src/pages/AddRecipe/Ingredients/IngredientsContainer/IngredientsContainer'
 import './IngredientList.scss'
 
 type IngredientListProps = {
   ingredients: IngredientsType[]
   setIngredients: Dispatch<SetStateAction<IngredientsType[]>>
-  setIngredientLoading: Dispatch<
-    SetStateAction<{
-      isLoading: boolean
-      index: number
-    }>
-  >
-  ingredientLoading: { isLoading: boolean; index: number }
+  // Per-row enrichment state keyed by ingredient id (see IngredientsContainer).
+  statusById: Record<string, IngredientStatus>
+  setItemStatus: (id: string, status: IngredientStatus | null) => void
   removeIngredient: (id: string) => void
+  retryIngredient: (id: string) => void
 }
 const IngredientList: FC<IngredientListProps> = ({
   ingredients,
   setIngredients,
-  setIngredientLoading,
-  ingredientLoading,
+  statusById,
+  setItemStatus,
   removeIngredient,
+  retryIngredient,
 }) => {
   const handlListChange = (updatedList: IngredientsType[]) =>
     setIngredients(updatedList)
@@ -30,34 +29,22 @@ const IngredientList: FC<IngredientListProps> = ({
     <DndContext list={ingredients} handleListChange={handlListChange}>
       <>
         {ingredients.map((ingr, idx) => {
-          const isCurrIngredientLoading =
-            ingredientLoading.isLoading && ingredientLoading.index === idx
-
+          const status = ingr.id ? statusById[ingr.id] : undefined
           return (
             <Drag key={ingr.id} id={ingr.id ?? 'id'} index={idx}>
               <IngredientItem
                 ingredients={ingredients}
                 ingredient={ingr}
-                setLoading={setIngredientLoading}
-                loading={isCurrIngredientLoading}
+                setItemStatus={setItemStatus}
+                loading={status === 'loading'}
+                errored={status === 'error'}
                 removeIngredient={removeIngredient}
+                retryIngredient={retryIngredient}
                 setIngredients={setIngredients}
               />
             </Drag>
           )
         })}
-        {ingredientLoading.isLoading &&
-          ingredientLoading.index >= ingredients.length && (
-            <>
-              <IngredientItem
-                ingredients={ingredients}
-                setLoading={setIngredientLoading}
-                loading={true}
-                removeIngredient={removeIngredient}
-                setIngredients={setIngredients}
-              />
-            </>
-          )}
       </>
     </DndContext>
   )

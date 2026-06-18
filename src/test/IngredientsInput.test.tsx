@@ -1,83 +1,45 @@
 import React from 'react'
 import { vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import IngredientsInput from 'src/pages/AddRecipe/Ingredients/IngredientsInput'
-import RecipeAPI from 'src/api/recipes'
 
-vi.mock('src/api/recipes', () => ({
-  default: { getIngredientData: vi.fn() },
-}))
-
-vi.mock('src/api/auth', () => ({
-  default: { getUID: vi.fn().mockReturnValue(null) },
-}))
-
-const mockGetIngredientData = RecipeAPI.getIngredientData as ReturnType<typeof vi.fn>
-
-const setup = () => {
-  const addIngredientToList = vi.fn()
-  const setIngredientLoading = vi.fn()
-  render(
-    <IngredientsInput
-      addIngredientToList={addIngredientToList}
-      setIngredientLoading={setIngredientLoading}
-      ingredientsLength={0}
-      ingredientLoading={{ isLoading: false, index: -1 }}
-    />
-  )
-  return { addIngredientToList, setIngredientLoading }
-}
-
+const PLACEHOLDER = 'Add ingredients to your recipe.'
 const HINT = 'Enter an ingredient before adding it.'
 
-describe('IngredientsInput — empty-input feedback', () => {
-  beforeEach(() => mockGetIngredientData.mockReset())
+const setup = () => {
+  const onAdd = vi.fn()
+  render(<IngredientsInput onAdd={onAdd} />)
+  return { onAdd }
+}
 
-  it('pressing Enter on an empty field shows a hint and fires no parse request', async () => {
+describe('IngredientsInput', () => {
+  it('pressing Enter on an empty field shows a hint and does not add', async () => {
     const user = userEvent.setup()
-    const { addIngredientToList } = setup()
-    await user.type(
-      screen.getByPlaceholderText('Add ingredients to your recipe.'),
-      '{enter}'
-    )
+    const { onAdd } = setup()
+    await user.type(screen.getByPlaceholderText(PLACEHOLDER), '{enter}')
     expect(screen.getByText(HINT)).toBeInTheDocument()
-    expect(mockGetIngredientData).not.toHaveBeenCalled()
-    expect(addIngredientToList).not.toHaveBeenCalled()
+    expect(onAdd).not.toHaveBeenCalled()
   })
 
   it('treats whitespace-only input as empty', async () => {
     const user = userEvent.setup()
-    const { addIngredientToList } = setup()
-    await user.type(
-      screen.getByPlaceholderText('Add ingredients to your recipe.'),
-      '   {enter}'
-    )
+    const { onAdd } = setup()
+    await user.type(screen.getByPlaceholderText(PLACEHOLDER), '   {enter}')
     expect(screen.getByText(HINT)).toBeInTheDocument()
-    expect(mockGetIngredientData).not.toHaveBeenCalled()
-    expect(addIngredientToList).not.toHaveBeenCalled()
+    expect(onAdd).not.toHaveBeenCalled()
   })
 
-  it('trims a valid entry before parsing and adds it to the list', async () => {
+  it('hands a trimmed entry to onAdd and clears the field immediately', async () => {
     const user = userEvent.setup()
-    mockGetIngredientData.mockResolvedValue({
-      id: 'x-1',
-      parsedIngredient: {
-        ingredient: 'flour',
-        quantity: 2,
-        unit: 'cups',
-        comment: null,
-        originalIngredientString: '2 cups flour',
-      },
-      ingredientData: null,
-    })
-    const { addIngredientToList } = setup()
-    await user.type(
-      screen.getByPlaceholderText('Add ingredients to your recipe.'),
-      '  2 cups flour  {enter}'
-    )
-    await waitFor(() => expect(addIngredientToList).toHaveBeenCalledTimes(1))
-    expect(mockGetIngredientData).toHaveBeenCalledWith('2 cups flour')
+    const { onAdd } = setup()
+    const input = screen.getByPlaceholderText(PLACEHOLDER) as HTMLInputElement
+    await user.type(input, '  2 cups flour  {enter}')
+    // Optimistic: the value is handed off trimmed and the field is cleared
+    // synchronously so the user can keep typing while enrichment runs.
+    expect(onAdd).toHaveBeenCalledTimes(1)
+    expect(onAdd).toHaveBeenCalledWith('2 cups flour')
+    expect(input.value).toBe('')
     expect(screen.queryByText(HINT)).toBeNull()
   })
 })

@@ -79,16 +79,24 @@ The triage date stamped on items is the date they were filed here, not when they
 ## UX / visual polish
 
 - `[ ]` **Better "no results found" on the Recipes page** — current indicator is weak.
-- `[ ]` **Optimistic ingredient add** — when adding an ingredient, show it in the list immediately
-  instead of waiting for the parse/nutrition request to return.
+- `[x]` **Optimistic ingredient add** — *done in PR #164 (track 3d; PR open).* Adding an ingredient now
+  parses locally and shows the row immediately, reconciling price/image when enrichment returns; a failure
+  keeps the row and flags it with a one-tap retry instead of waiting on the request.
 - `[ ]` **Search autocomplete "autocorrect" is weak** — fuzzy matching on recipe search autocomplete
   needs improvement.
 - `[x]` **"You created this recipe" — mobile styling** — *fixed in PR #160 (track 2c)*; owner-stats
   strip now an equal-width row with dividers instead of scattering via `space-between`.
 - `[x]` **Recipe stats styling** — *fixed in PR #160 (track 2c)*; rating dropped from the action-bar
   row, replaced by a per-serving price tile (time / servings / price).
-- `[ ]` **Add-recipe bottom bar overlaps the footer** — scrolling to the bottom of the add-recipe page,
-  the sticky bottom bar hides the footer. *(minor)*
+- `[x]` **Add-recipe bottom bar overlaps the footer** — *done in PR #164 (track 3d; PR open).* The summary
+  bar is now `position: sticky` (+ `margin-top: auto`) so it releases at the page end above the footer
+  instead of a fixed overlay; the footer's global top margin is also cancelled on this page (`:has`) so the
+  bar sits flush above it, and the cuisine/course dropdowns were lifted above the bar (menu z-index 50→60).
+- `[ ]` **Add-recipe group labels render underwhelming** — the section labels you can insert between
+  ingredients / instructions (the "Add Label" control) don't display the way they should on the create-recipe
+  page. Refine their styling/placement, and check how they carry through to the recipe view. *(noted
+  2026-06-18 after the track-3d smoke test; visual polish — fold into a future add-recipe pass, e.g. the
+  Phase-4 QA sweep or the "Refactor the create-recipe page" tech-debt item.)*
 - `[x]` **Single-recipe "no recipe found" looks bad** — *fixed in PR #160 (track 2c)*; redesigned
   empty-state card (icon + search + "Browse all recipes" CTA), and fixed 404 routing so a missing
   recipe renders instantly instead of retrying ~7s then showing a generic error.
@@ -167,13 +175,20 @@ The triage date stamped on items is the date they were filed here, not when they
   code stays consistent (likely an addition to `CLAUDE.md` or a new `CONVENTIONS.md`).
 - `[ ]` **Refactor the create-recipe page**.
 - `[ ]` **Refactor the account page**.
-- `[ ]` **Ingredient parser: handle "not found"** — on a parser miss, add an exit/timeout instead of
-  hanging.
+- `[x]` **Ingredient parser: handle "not found"** — *done in PR #164 (track 3d; PR open).* A client-side
+  `withTimeout` (12s) races the enrichment request so a hung/"not found" lookup no longer sticks the UI; on
+  timeout the row is kept, flagged errored with a retry, and a toast surfaces. Applied to both add and
+  inline-edit paths.
 
 ## Testing
 
 - `[ ]` **Tests for the toast/alert system** — newly implemented `react-hot-toast` is untested.
-- `[ ]` **Create-recipe tests** — Cypress (E2E) + Vitest (unit).
+- `[~]` **Create-recipe tests** — Cypress (E2E) + Vitest (unit). *Substantial sweep added in PR #164 (track
+  3d):* Vitest for the enrichment-timeout util, optimistic add / reconcile / soft-fail / retry / timeout,
+  inline-edit re-enrich + timeout, drag-reorder + id-keyed status survival, summary-bar rollup + submit
+  states, and servings/time validation; Cypress gained keyboard drag-reorder specs (ingredient + instruction)
+  and the soft-fail spec was updated to the new retry UX. Remaining: cuisine/meal-type selector units
+  (currently E2E-only) and broader E2E happy-path variants.
 - `[ ]` **Cypress: test autocomplete on the Recipes page**.
 - `[x]` **Node 26 test-harness gaps — missing globals in the test sandbox** — **both fixed.** This dev
   machine runs **Node 26**, whose VM/sandbox no longer keeps some globals the test stacks assume:
