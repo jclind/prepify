@@ -9,12 +9,20 @@
 .help-page.form-format {
   // Fill the flexbox app-main and let the document flow scroll past the footer,
   // rather than forcing a viewport-height panel with its own inner scrollbar.
-  min-height: 0;
   flex: 1 0 auto;
   overflow-y: visible;
   // Anchor near the top so the card top is always reachable when the form grows
   // taller than the available height (the chips + open form can exceed it).
   align-items: flex-start;
+  // The navbar is fixed/absolute (out of flow, $nav-height tall) and the footer
+  // flows right after app-main. Fill a full viewport height so the gradient
+  // always reaches the footer with no bare-background gap (the footer simply sits
+  // just below the fold, like the auth pages), and pad the top by the navbar
+  // height so the card clears it — the gradient still bleeds full-width behind
+  // the transparent navbar.
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: calc(#{s.$nav-height} + 2rem) 1rem 3rem;
 
   .form-container {
     // A touch wider than the auth card to fit the 2-up topic grid comfortably.
