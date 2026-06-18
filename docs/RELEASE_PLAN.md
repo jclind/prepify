@@ -242,7 +242,7 @@ Chunky design efforts that are bigger than a single checkbox. Tag each as **(blo
     `HomeCookSuggestion.tsx`), `src/api/recipes.ts`, `server/routes/recipes.js`,
     `server/util/forYou.js`, `server/util/tasteContext.js`.
 
-- `[~]` **Help / Contact Support page** — **(blocker → PR #158 open)**
+- `[x]` **Help / Contact Support page** — **(blocker → done, PR #158)**
   - **Was:** `/help` (`src/pages/Help/Help.tsx`, a Formspree form) was already public (the route had
     been moved out of `PrivateRoute`), but **every link to it was hidden from logged-out users** — the
     footer link was tagged `auth: 'in'`, so a locked-out visitor had no way to reach support.
