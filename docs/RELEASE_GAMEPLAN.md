@@ -57,7 +57,7 @@ same commit.**
 | 3a | a11y (focus-visible, chevron) | `[ ]` | — |
 | 3b | Meta/SEO finish (favicon/OG/titles) | `[ ]` | — |
 | 3c | Username validation + report-user | `[ ]` | — |
-| 3d | Add-recipe UX | `[ ]` | — |
+| 3d | Add-recipe UX | `[P]` | #164 |
 | 3e | create-username revamp | `[ ]` | — |
 | 4-sass | Sass `@import`→`@use` (LONER) | `[ ]` | — |
 | 4-about | About rewrite (Jesse) | `[ ]` | — |
@@ -137,8 +137,9 @@ All isolated files — safe to run together.
   a stable app, so do near the end.
 - **Mobile hand-pass** (Add Recipe + Account/Settings flows) and **Lighthouse / perf**.
 - **Code & architecture standard for Claude** (new conventions doc) + **post-refactor DB-migration check**.
-- **Toast/alert tests**, **create-recipe Cypress+Vitest**, **Cypress autocomplete test** — fold into the
-  relevant domain track when that track is touched, or batch here.
+- **Toast/alert tests**, **create-recipe Cypress+Vitest** *(largely done in 3d / PR #164 — see Backlog →
+  Testing)*, **Cypress autocomplete test** — fold into the relevant domain track when that track is touched,
+  or batch here.
 
 ## Phase 5 — Cutover
 
@@ -322,6 +323,23 @@ Append a one-liner when a track changes state (started / PR / merged). Keeps ses
   create-username. **Part 2** (after Part 1 merges): **2d** recipes browse (rebases on 3a's Navbar), **3c**
   username-validation + report-user (rebases on 2e's PublicProfile; also carries the two 2c deferrals).
   **3b** meta/SEO held as a finishing pass. Part-1 kickoff prompts added to the appendix below.
+- _2026-06-18_ — **3d Add-recipe UX → PR open** (PR #164, into `development`). Delivered all three brief
+  items under `src/pages/AddRecipe/*`: (1) **optimistic ingredient add** — parse locally + show the row
+  instantly, reconcile price/image on response, keep + flag errored rows with a retry; (2) **enrichment
+  timeout** — a client-side `withTimeout` (12s) races the parse so a hung/"not found" lookup can't stick the
+  UI (toast + errored row + retry), applied to both add and inline-edit; (3) **sticky bar / footer** — bar
+  switched from `position: fixed` to `sticky` (+`margin-top: auto`) so it releases at page end above the
+  footer; per-row enrichment status is keyed by id, so it survives reorders. Two follow-up polish fixes also
+  landed in the PR after a live smoke test: the footer's global top-margin showing as a gap below the
+  released bar (cancelled on this page via `:has`), and the cuisine/course dropdowns opening behind the bar
+  (menu z-index 50→60). Plus a comprehensive **test sweep** (Backlog → Testing): Vitest for the timeout util /
+  optimistic-add / inline-edit / drag-reorder + id-keyed-status / summary-bar / servings+time validation, and
+  **Cypress keyboard drag-reorder** specs (the only reliable automated DnD path — mouse-drag stays manual;
+  gesture pre-verified in a real browser). Verified end-to-end via a live authed smoke test (create→publish,
+  all inputs incl. validation edge cases + an XSS-escape check) with full cleanup of the test account/recipes.
+  **Filed one follow-up → Backlog (UX/visual polish):** add-recipe group-label rendering needs a refinement —
+  a candidate for the Phase-4 QA pass or the create-recipe refactor. Board 3d `[ ]`→`[P]`; backlog
+  add-recipe items + create-recipe-tests flipped.
 
 ---
 
