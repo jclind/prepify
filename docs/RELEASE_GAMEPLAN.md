@@ -190,6 +190,50 @@ After this wave: **Wave 3** = 2d + 2e + the Phase-3 smalls (3a a11y, 3b meta/SEO
 
 ---
 
+## Suggested third wave (Wave 3)
+
+Wave 2 is fully merged and verified. Wave 3 has **7 candidate tracks**, but two chokepoints (Navbar and
+PublicProfile) and the ~2–4-worktree budget mean they can't all run at once. Split into two parts plus a
+late finishing pass. **Paste-ready prompts for Part 1 are in the Wave 3 appendix below;** regenerate
+Part 2's prompts once Part 1 merges (the board will have moved).
+
+### Part 1 — kick off together (zero file overlap)
+
+- **2e** Account/profile polish — `src/pages/Account/*` (in-page `SegmentedNav`) + `src/pages/PublicProfile/*`.
+  *Unblocked: 1c merged.* Owns **PublicProfile** this part.
+- **3a** a11y — global `:focus-visible` (`src/index.scss`) + `src/Components/Navbar/*` (chevron/focus).
+  Owns **Navbar** this part.
+- **3d** Add-recipe UX — `src/pages/AddRecipe/*` (optimistic ingredient add, parser not-found timeout,
+  sticky bar overlapping footer). Fully isolated.
+- **3e** create-username revamp — `src/pages/CreateUsername/*` (+ logout/escape hatch). Fully isolated.
+
+No App.tsx route additions in Part 1 (3e's route already exists). The two "account navs" are different
+components: 2e owns the in-page `Account/components/SegmentedNav`; 3a owns the Navbar account dropdown.
+
+### Part 2 — after Part 1 merges (rebase onto the chokepoint owners)
+
+- **2d** Recipes browse polish — `src/pages/Recipes/*`, `SearchRecipesInput`, **Navbar** (no-results
+  indicator, autocomplete redesign, drop search from the top-most navbar on /recipes). **Waits for 3a**
+  (shared Navbar) — rebase after 3a merges.
+- **3c** Username validation + report-user — `server/routes/*`, `ReportControl`, `types.ts`
+  (`ReportTargetType` is `'recipe' | 'review'` only, `types.ts:188`), admin queue (`src/pages/Admin/Reports/`),
+  **plus the two items deferred out of 2c** (logged-out report controls w/ login prompt; surface the rating
+  up top near the title — `src/pages/SingleRecipe/*`). **Waits for 2e** — it adds a report control to the
+  now-polished PublicProfile.
+
+### Finishing pass (late, not concurrent with page edits)
+
+- **3b** Meta/SEO finish — `index.html` + per-page Helmet (favicon, OG image, per-page `<title>`s). Per-page
+  Helmet collides with any page being actively edited, and 2c already deferred per-page OG here. Run it
+  **after** 2d/3c stabilize their pages — fold into the Phase-4 QA sweep.
+
+**Ordering / holds for Phase 4+:**
+- The **Sass `@import`→`@use` migration is NOT in Wave 3** — it's the loner (Rule 1): runs alone after *all*
+  design/polish merges, then everything open rebases.
+- Beta tag stays untouched until the Phase-5 cutover (the celebration step).
+
+---
+
 ## Status log
 
 Append a one-liner when a track changes state (started / PR / merged). Keeps session handoffs honest.
@@ -272,6 +316,12 @@ Append a one-liner when a track changes state (started / PR / merged). Keeps ses
   (PR #159 — in-memory Web Storage shim) and server `clearTimeout is not defined` from superagent after a
   fake-timer test on Node 26 (PR #161 — re-install `node:timers` per test). Test-only; no product code. Not
   numbered tracks — logged in Backlog → Testing.
+- _2026-06-18_ — **Wave 3 defined** (see "Suggested third wave"). Split the 7 Phase-2/3 tracks across two
+  parts + a late finishing pass to respect the Navbar (3a↔2d) and PublicProfile (2e↔3c) chokepoints.
+  **Part 1** (run now, zero overlap): **2e** account/profile, **3a** a11y, **3d** add-recipe UX, **3e**
+  create-username. **Part 2** (after Part 1 merges): **2d** recipes browse (rebases on 3a's Navbar), **3c**
+  username-validation + report-user (rebases on 2e's PublicProfile; also carries the two 2c deferrals).
+  **3b** meta/SEO held as a finishing pass. Part-1 kickoff prompts added to the appendix below.
 
 ---
 
@@ -414,3 +464,93 @@ Do: tighten these without changing data/behavior. Keep it visual — no API or r
 
 Guardrails: scope STRICTLY to src/pages/SingleRecipe/* (incl. DataSections/RatingsAndReviews/* and its scss). Do NOT change the save control / SaveControl (track 1b is concurrently in that area) and do NOT change ratings server logic or the remove-rating behavior from 1a — styling/placement only. Don't touch the beta tag. Keep tests green, tsc clean, build passing. Open a PR into development when green; screenshot before/after (desktop + mobile widths) in the PR.
 ```
+
+---
+
+## Appendix — Wave 3 kickoff prompts
+
+Paste-ready briefs for `/worktree-create`. Each is self-contained for a **cold** session (no prior
+context). See "Suggested third wave" above for the batching rationale.
+
+### Part 1 — run these four now (zero file overlap)
+
+These four have **zero file overlap** — run them simultaneously. 2e owns PublicProfile and 3a owns the
+Navbar for this part; Part 2 (2d, 3c) rebases on top of them after they merge.
+
+#### Track 2e · Account/profile polish
+
+```
+/worktree-create polish account sections + public profile
+
+Read docs/RELEASE_GAMEPLAN.md (track 2e — now unblocked since 1c merged) and docs/BACKLOG.md ("UX / visual polish": account nav sections UI + /u/:username public profile polish). Visual polish only — no data/behavior/route changes.
+
+Two areas:
+1. Account section navigation — the IN-PAGE Saved / Ratings / Your Recipes / Drafts nav on the Account page. Component: src/pages/Account/components/SegmentedNav.tsx (+ src/pages/Account/Account.scss). Improve its styling/affordance. NOTE: this is the in-page account nav, NOT the Navbar account dropdown (that's track 3a — stay OUT of src/Components/Navbar/*).
+2. Public profile /u/:username — src/pages/PublicProfile/PublicProfile.tsx (+ .scss), route App.tsx:104. Minor visual polish so it's presentable for a public audience.
+
+Build on the 1c fixes already in Account/* — do NOT revert the empty-state gates or the ratings-thumbnail rendering in UserRatings/UserRecipes.
+
+Guardrails: scope STRICTLY to src/pages/Account/* and src/pages/PublicProfile/*. Do NOT touch src/Components/Navbar/* (3a), SingleRecipe, or any server route. A later track 3c will add a "report this user" control to PublicProfile — keep your changes structural/visual so that lands cleanly on top. Don't touch the beta tag. Keep tests green, tsc clean, build passing. Open a PR into development when green; screenshot before/after (desktop + mobile) for both areas.
+```
+
+#### Track 3a · a11y (focus-visible + navbar chevron)
+
+```
+/worktree-create a11y focus-visible + navbar chevron
+
+Read docs/RELEASE_GAMEPLAN.md (track 3a) and docs/BACKLOG.md ("Accessibility"). Two focus-outline issues.
+
+1. Focus outline on mouse clicks — interactive elements show the keyboard focus ring even on mouse/touch click. Switch to :focus-visible so the outline shows for KEYBOARD nav only. Mostly a global-styles change (src/index.scss) plus any component that hardcodes a :focus outline. Do NOT remove focus indication for keyboard users (that's an a11y regression) — only suppress it for pointer interactions.
+2. Desktop navbar account chevron animation shifts the focus outline — the account-menu chevron animation (src/Components/Navbar/desktop/DesktopAccountMenu.tsx) moves the focus outline as it animates; decouple them (animate an inner element, or keep the transform off the outlined box).
+
+Guardrails: this worktree OWNS src/Components/Navbar/* for this wave — track 2d will rebase its navbar change after you merge, so keep your navbar edit minimal and focused on the chevron/focus issue. Scope: src/index.scss (global focus styles) + src/Components/Navbar/*. Don't touch the beta tag or App.tsx. Keep tests green, tsc clean, build passing. Open a PR into development when green; in the PR, note how you verified keyboard focus still shows but a mouse click doesn't.
+```
+
+#### Track 3d · Add-recipe UX
+
+```
+/worktree-create add-recipe page UX fixes
+
+Read docs/RELEASE_GAMEPLAN.md (track 3d) and docs/BACKLOG.md ("UX / visual polish" + "Tech debt" add-recipe items). Three add-recipe UX issues, all under src/pages/AddRecipe/*.
+
+1. Optimistic ingredient add — adding an ingredient currently waits for the parse/nutrition request before showing it. Show it in the list IMMEDIATELY (optimistic), reconcile when the response returns, and handle failure (remove it or mark it errored). Entry points: src/pages/AddRecipe/Ingredients/IngredientsInput.tsx + IngredientsContainer.
+2. Ingredient parser "not found" — on a parser miss the request can hang; add a timeout / exit path so the UI doesn't get stuck (toast or inline error, then let the user proceed/retry).
+3. Sticky bottom bar overlaps the footer — AddRecipeSummaryBar is position:fixed; bottom:0 (AddRecipeSummaryBar.scss) and hides the footer at the bottom of the page. Fix so the footer is reachable (bottom spacer/padding on the form, or release the bar at page end).
+
+Guardrails: scope STRICTLY to src/pages/AddRecipe/*. Don't touch the beta tag, Navbar, or App.tsx. Add/extend Vitest where the optimistic/timeout logic is testable. Keep tests green, tsc clean, build passing. Open a PR into development when green; screenshot the sticky-bar/footer fix (desktop + mobile).
+```
+
+#### Track 3e · create-username revamp
+
+```
+/worktree-create revamp create-username page + escape hatch
+
+Read docs/RELEASE_GAMEPLAN.md (track 3e) and docs/BACKLOG.md ("UX / visual polish": create-username page revamp). Page: src/pages/CreateUsername/CreateUsername.tsx (+ .scss); route /create-username is already registered (App.tsx:222 — do NOT add a route).
+
+Do:
+1. Revamp the page visually to match the auth-page vocabulary (it's shown right after signup, before a username exists).
+2. CRITICAL: add a logout / escape hatch so a user can't get permanently stuck here (today there's no way out if they don't want to pick a username yet). A "Log out" control is the minimum — wire it to the existing auth signout.
+3. Keep the username creation flow working as-is. Do NOT change the username validation rules here — character-set tightening is a separate track (3c).
+
+Guardrails: scope to src/pages/CreateUsername/* + the auth signout hook you reuse for logout. Don't touch the beta tag or App.tsx routes. Keep tests green, tsc clean, build passing. Open a PR into development when green; confirm the escape hatch (a signed-in user without a username can log out).
+```
+
+### Part 2 — hold until Part 1 merges (regenerate full prompts then)
+
+Don't start these until their Part-1 chokepoint owner is merged; then rebase and generate cold-session
+prompts the same way (the board will have moved).
+
+- **2d** Recipes browse polish — `src/pages/Recipes/*`, `SearchRecipesInput`, **Navbar**. Better no-results
+  indicator, autocomplete redesign + autocorrect, drop search from the top-most navbar on /recipes.
+  **Holds behind 3a** (shared Navbar).
+- **3c** Username validation + report-user — `server/routes/*`, `ReportControl`, `types.ts`
+  (`ReportTargetType` only `'recipe' | 'review'`, `types.ts:188`), admin queue (`src/pages/Admin/Reports/`),
+  **plus the two 2c deferrals**: show report controls to logged-out users w/ a login prompt, and surface the
+  recipe rating up top near the title (`src/pages/SingleRecipe/*`). Also the "double-check report-recipe
+  styling" nit. **Holds behind 2e** (shared PublicProfile — adds the report-a-user control there).
+
+### Finishing pass (late)
+
+- **3b** Meta/SEO finish — `index.html` + per-page Helmet (favicon, OG image for link previews, per-page
+  `<title>`s). Collides with any page being edited; run **after** 2d/3c stabilize, folded into the Phase-4
+  QA sweep. (2c deferred its per-page OG tags here.)
