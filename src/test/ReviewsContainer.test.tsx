@@ -149,7 +149,7 @@ describe('ReviewsContainer', () => {
 
   it('shows the user\'s existing review and hides AddReview when currUserReview is set', async () => {
     renderContainer({ currUserReview: baseReview })
-    expect(screen.getByText('Your Review:')).toBeInTheDocument()
+    expect(screen.getByText('Your review')).toBeInTheDocument()
     await screen.findByText('Really great recipe!')
     expect(screen.queryByText('Add Review')).toBeNull()
   })

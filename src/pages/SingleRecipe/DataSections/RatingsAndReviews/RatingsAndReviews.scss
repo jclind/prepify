@@ -128,16 +128,19 @@
       }
 
       .curr-user-review {
-        margin: 2rem 0;
-        border: 1px solid s.$primary;
-        padding: 1rem 1rem 0 1rem;
-        border-radius: s.$border-radius;
+        margin: 0 0 1.5rem;
         width: 100%;
 
+        // Eyebrow-style label, left-aligned to match the page's section labels
+        // (replaces the old centered orange heading in an orange box).
         .heading {
-          text-align: center;
-          font-weight: 600;
-          color: s.$primary;
+          text-align: left;
+          font-size: 0.78rem;
+          font-weight: 700;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          color: s.$secondary;
+          margin-bottom: 0.55rem;
         }
       }
 
