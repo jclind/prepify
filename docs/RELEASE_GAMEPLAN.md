@@ -58,7 +58,7 @@ same commit.**
 | 3b | Meta/SEO finish (favicon/OG/titles) | `[ ]` | — |
 | 3c | Username validation + report-user | `[ ]` | — |
 | 3d | Add-recipe UX | `[ ]` | — |
-| 3e | create-username revamp | `[ ]` | — |
+| 3e | create-username revamp | `[x]` | #131 + #98 (+ #162 reconcile/test) ✅ |
 | 4-sass | Sass `@import`→`@use` (LONER) | `[ ]` | — |
 | 4-about | About rewrite (Jesse) | `[ ]` | — |
 | 4-qa | Empty/error sweep + links + copy + mobile + Lighthouse | `[ ]` | — |
@@ -205,7 +205,8 @@ Part 2's prompts once Part 1 merges (the board will have moved).
   Owns **Navbar** this part.
 - **3d** Add-recipe UX — `src/pages/AddRecipe/*` (optimistic ingredient add, parser not-found timeout,
   sticky bar overlapping footer). Fully isolated.
-- **3e** create-username revamp — `src/pages/CreateUsername/*` (+ logout/escape hatch). Fully isolated.
+- ~~**3e** create-username revamp — `src/pages/CreateUsername/*` (+ logout/escape hatch). Fully isolated.~~
+  **Already merged** (PR #131 redesign + PR #98 escape hatch) — predates this board; nothing to start.
 
 No App.tsx route additions in Part 1 (3e's route already exists). The two "account navs" are different
 components: 2e owns the in-page `Account/components/SegmentedNav`; 3a owns the Navbar account dropdown.
@@ -521,6 +522,10 @@ Guardrails: scope STRICTLY to src/pages/AddRecipe/*. Don't touch the beta tag, N
 ```
 
 #### Track 3e · create-username revamp
+
+> **⚠️ SUPERSEDED — do not run.** This work already shipped before the board existed: the soft-glass
+> redesign in **PR #131** and the logout/escape hatch + page guard in **PR #98** (both merged to
+> `development`). The board (track 3e) and `BACKLOG.md` are reconciled to `[x]`. Prompt kept for history.
 
 ```
 /worktree-create revamp create-username page + escape hatch
