@@ -54,7 +54,7 @@ same commit.**
 | 2c | Single-recipe polish | `[x]` | #160 ✅ |
 | 2d | Recipes browse polish | `[ ]` | — |
 | 2e | Account/profile polish | `[ ]` | — |
-| 3a | a11y (focus-visible, chevron) | `[P]` | #163 |
+| 3a | a11y (focus-visible, chevron) | `[x]` | #163 ✅ |
 | 3b | Meta/SEO finish (favicon/OG/titles) | `[ ]` | — |
 | 3c | Username validation + report-user | `[ ]` | — |
 | 3d | Add-recipe UX | `[ ]` | — |
@@ -123,7 +123,7 @@ All isolated files — safe to run together.
 
 | Track | Work | Domain |
 |---|---|---|
-| **3a** a11y | `:focus-visible` only (no outline on mouse click); fix chevron animation shifting the focus outline *(PR #163, open — global rule + every component-local `s.outline()` ring swept site-wide; input/textarea focus affordances left on `:focus`)* | `src/index.scss` + component SCSS site-wide, `src/Components/Navbar/*` |
+| **3a** a11y | `:focus-visible` only (no outline on mouse click); fix chevron animation shifting the focus outline *(merged #163 ✅ — global rule + every component-local `s.outline()` ring swept site-wide; input/textarea focus affordances left on `:focus`)* | `src/index.scss` + component SCSS site-wide, `src/Components/Navbar/*` |
 | **3b** Meta/SEO finish | favicon, OG image for link previews, per-page `<title>`s | `index.html`, per-page Helmet |
 | **3c** Features | username char-validation; report-a-user from profile *(admin; `ReportTargetType` currently only recipe/review)*; show report controls to logged-out users with a login prompt (recipe + reviews); surface the recipe rating up top (near the title) | `server/routes/*`, `ReportControl`, `types.ts`, `src/pages/SingleRecipe/*` |
 | **3d** Add-recipe UX | optimistic ingredient add; ingredient-parser not-found timeout/exit; bottom bar overlapping footer | `src/pages/AddRecipe/*` |
@@ -202,8 +202,8 @@ Part 2's prompts once Part 1 merges (the board will have moved).
 - **2e** Account/profile polish — `src/pages/Account/*` (in-page `SegmentedNav`) + `src/pages/PublicProfile/*`.
   *Unblocked: 1c merged.* Owns **PublicProfile** this part.
 - **3a** a11y — global `:focus-visible` (`src/index.scss`) + `src/Components/Navbar/*` (chevron/focus).
-  Owns **Navbar** this part. **PR #163 open** — global rule + component-local `s.outline()` rings swept
-  site-wide; chevron decoupled from the ring via a clip box. Awaiting merge; 2d rebases on the Navbar after.
+  Owns **Navbar** this part. **Merged (#163 ✅)** — global rule + component-local `s.outline()` rings swept
+  site-wide; chevron decoupled from the ring via a clip box. 2d rebases on the merged Navbar.
 - **3d** Add-recipe UX — `src/pages/AddRecipe/*` (optimistic ingredient add, parser not-found timeout,
   sticky bar overlapping footer). Fully isolated.
 - ~~**3e** create-username revamp — `src/pages/CreateUsername/*` (+ logout/escape hatch). Fully isolated.~~
@@ -324,6 +324,17 @@ Append a one-liner when a track changes state (started / PR / merged). Keeps ses
   create-username. **Part 2** (after Part 1 merges): **2d** recipes browse (rebases on 3a's Navbar), **3c**
   username-validation + report-user (rebases on 2e's PublicProfile; also carries the two 2c deferrals).
   **3b** meta/SEO held as a finishing pass. Part-1 kickoff prompts added to the appendix below.
+- _2026-06-18_ — **3a a11y → merged** (PR #163, all CI green incl. Cypress). Two focus-outline issues:
+  (A) the focus ring showed on mouse/touch clicks — switched the global `button`/`a` rule (`src/index.scss`)
+  **and every component-local `@include s.outline()` ring** from `:focus` to `:focus-visible`, so it shows
+  for keyboard nav only; input/textarea affordances (border/box-shadow/background) deliberately left on
+  `:focus` so clicking into a field still highlights it; (B) the desktop account-menu chevron rotation
+  dragged the button's `outline:auto` ring (Blink expands `auto` outlines to wrap transformed-descendant
+  ink overflow) — wrapped the caret in a fixed-size `overflow:hidden` clip box with an inner rotating
+  `<svg>` (`DesktopAccountMenu.tsx` + `DesktopNav.scss`). Also dropped a stray `background:red` debug
+  leftover on the star-rating focus state. Verified live (mouse click → no ring, Tab → ring; chevron clip
+  box stable at the 45° worst case). Board 3a `[P]`→`[x]`; backlog Accessibility items flipped.
+  **Unblocks 2d** (rebases on the merged Navbar). Worktree/branch pruned after merge.
 
 ---
 
