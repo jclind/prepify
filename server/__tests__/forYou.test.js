@@ -7,6 +7,7 @@ const {
   scoreRecipe,
   selectForYou,
   shuffle,
+  weightedSample,
 } = require('../util/forYou')
 
 // Hand-build a profile (the same shape buildTasteProfile returns) so scoring
@@ -322,5 +323,58 @@ describe('shuffle', () => {
 describe('MIN_SIGNAL', () => {
   it('is exported as a positive threshold', () => {
     expect(MIN_SIGNAL).toBeGreaterThan(0)
+  })
+})
+
+describe('weightedSample', () => {
+  const items = [
+    { recipe: 'a', weight: 1 },
+    { recipe: 'b', weight: 3 }, // 60% of total weight
+    { recipe: 'c', weight: 1 },
+  ]
+
+  it('returns undefined for an empty list', () => {
+    expect(weightedSample([])).toBeUndefined()
+  })
+
+  it('returns the only item when there is one', () => {
+    expect(weightedSample([{ recipe: 'solo', weight: 5 }]).recipe).toBe('solo')
+  })
+
+  it('selects by cumulative weight (rng maps into each band)', () => {
+    // total weight = 5, bands: a=[0,1), b=[1,4), c=[4,5).
+    expect(weightedSample(items, () => 0).recipe).toBe('a') // r=0 → a
+    expect(weightedSample(items, () => 0.5).recipe).toBe('b') // r=2.5 → b
+    expect(weightedSample(items, () => 0.99).recipe).toBe('c') // r≈4.95 → c
+  })
+
+  it('never picks a zero-weight item when positive-weight items exist', () => {
+    const mixed = [
+      { recipe: 'zero', weight: 0 },
+      { recipe: 'pos', weight: 2 },
+    ]
+    for (const r of [0, 0.25, 0.5, 0.75, 0.999]) {
+      expect(weightedSample(mixed, () => r).recipe).toBe('pos')
+    }
+  })
+
+  it('falls back to a uniform pick when all weights are zero', () => {
+    const zeros = [
+      { recipe: 'x', weight: 0 },
+      { recipe: 'y', weight: 0 },
+    ]
+    expect(weightedSample(zeros, () => 0).recipe).toBe('x')
+    expect(weightedSample(zeros, () => 0.99).recipe).toBe('y')
+  })
+
+  it('treats negative/missing weights as zero', () => {
+    const items2 = [
+      { recipe: 'neg', weight: -5 },
+      { recipe: 'none' },
+      { recipe: 'real', weight: 4 },
+    ]
+    for (const r of [0, 0.5, 0.99]) {
+      expect(weightedSample(items2, () => r).recipe).toBe('real')
+    }
   })
 })
