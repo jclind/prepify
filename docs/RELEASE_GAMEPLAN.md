@@ -51,7 +51,7 @@ same commit.**
 | 1d | Serving-price bug | `[x]` | #152 ✅ |
 | 2a | Homepage redesign (design + For You row + "What should I cook?") | `[x]` | #153 + #154 ✅ |
 | 2b | Public Help/Contact page | `[ ]` | — |
-| 2c | Single-recipe polish | `[ ]` | — |
+| 2c | Single-recipe polish | `[~]` | worktree-feat+single-recipe-page-polish |
 | 2d | Recipes browse polish | `[ ]` | — |
 | 2e | Account/profile polish | `[ ]` | — |
 | 3a | a11y (focus-visible, chevron) | `[ ]` | — |
@@ -125,7 +125,7 @@ All isolated files — safe to run together.
 |---|---|---|
 | **3a** a11y | `:focus-visible` only (no outline on mouse click); fix chevron animation shifting the focus outline | `src/Components/Navbar/*`, global styles |
 | **3b** Meta/SEO finish | favicon, OG image for link previews, per-page `<title>`s | `index.html`, per-page Helmet |
-| **3c** Features | username char-validation; report-a-user from profile *(admin; `ReportTargetType` currently only recipe/review)* | `server/routes/*`, `ReportControl`, `types.ts` |
+| **3c** Features | username char-validation; report-a-user from profile *(admin; `ReportTargetType` currently only recipe/review)*; show report controls to logged-out users with a login prompt (recipe + reviews); surface the recipe rating up top (near the title) | `server/routes/*`, `ReportControl`, `types.ts`, `src/pages/SingleRecipe/*` |
 | **3d** Add-recipe UX | optimistic ingredient add; ingredient-parser not-found timeout/exit; bottom bar overlapping footer | `src/pages/AddRecipe/*` |
 | **3e** create-username | revamp the page + add a logout/escape hatch so users can't get stuck | `src/pages/CreateUsername/*` |
 

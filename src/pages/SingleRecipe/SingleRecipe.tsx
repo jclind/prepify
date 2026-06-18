@@ -1,6 +1,7 @@
 import React, { FC, useState, useEffect, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useParams, Link } from 'react-router-dom'
+import { isAxiosError } from 'axios'
 import { Helmet } from 'react-helmet-async'
 import Skeleton from 'react-loading-skeleton'
 import 'react-loading-skeleton/dist/skeleton.css'
@@ -8,6 +9,7 @@ import { AiOutlineClockCircle, AiOutlineUsergroupAdd } from 'react-icons/ai'
 import { BsStar } from 'react-icons/bs'
 import { BiLeftArrowAlt, BiCheckCircle } from 'react-icons/bi'
 import { CiShoppingBasket } from 'react-icons/ci'
+import { TbCurrencyDollar } from 'react-icons/tb'
 
 import './SingleRecipe.scss'
 
@@ -33,6 +35,7 @@ import { closestFraction } from 'src/util/validateIngredientQuantityStr'
 import { IngredientsType, InstructionsType, RecipeType, ReviewType } from 'types'
 import RecipeAPI from 'src/api/recipes'
 import AuthAPI from 'src/api/auth'
+import { buildRecipeJsonLd } from 'src/pages/SingleRecipe/buildRecipeJsonLd'
 
 type LocalStorageRecipeType = { recipeId: string; numServings: number }
 
@@ -41,16 +44,25 @@ const skeletonColor = '#d6d6d6'
 const SingleRecipe: FC = () => {
   const { recipeId } = useParams<{ recipeId: string }>()
 
-  const { data: fetchedRecipe, isPending, isError } = useQuery({
+  const { data: fetchedRecipe, isPending, isError, error } = useQuery({
     queryKey: ['recipe', recipeId],
     queryFn: () => RecipeAPI.getRecipe(recipeId!),
     enabled: !!recipeId,
+    // A 404 is a definitive "no such recipe" — don't burn ~7s of retries on it;
+    // surface RecipeNotFound immediately. Other failures still retry.
+    retry: (failureCount, err) =>
+      isAxiosError(err) && err.response?.status === 404 ? false : failureCount < 3,
   })
 
   const loading = isPending
-  const recipe404 =
-    !isPending && !isError && (!fetchedRecipe || !fetchedRecipe.title)
-  const recipeError = isError ? 'Failed to load recipe. Please try again.' : null
+  // Treat a 404 (or a 2xx with no recipe body) as "not found" → RecipeNotFound.
+  // Any other error is a transient failure → show the retry message.
+  const is404 =
+    (isError && isAxiosError(error) && error.response?.status === 404) ||
+    (!isPending && !isError && (!fetchedRecipe || !fetchedRecipe.title))
+  const recipe404 = is404
+  const recipeError =
+    isError && !is404 ? 'Failed to load recipe. Please try again.' : null
   const currRecipe: RecipeType | null =
     !isPending && fetchedRecipe && fetchedRecipe.title ? fetchedRecipe : null
 
@@ -114,11 +126,17 @@ const SingleRecipe: FC = () => {
     ? [currRecipe.cuisine, currRecipe.mealTypes?.[0]].filter(Boolean).join(' · ')
     : ''
   const ratingCount = currRecipe?.rating?.rateCount ?? 0
+  const servPrice = currRecipe?.servingPrice ?? 0
+  const hasPrice = servPrice > 0
   const currUID = AuthAPI.getUID()
   const isOwner = !!currUID && !!currRecipe?.userId && currUID === currRecipe.userId
   const ingredients =
     modIngredients.length > 0 ? modIngredients : currRecipe?.ingredients ?? []
   const instructions = currRecipe?.instructions ?? []
+
+  const pageUrl =
+    typeof window !== 'undefined' ? window.location.href : ''
+  const recipeJsonLd = currRecipe ? buildRecipeJsonLd(currRecipe, pageUrl) : null
 
   const renderIngredient = (ingr: IngredientsType) => {
     if ('parsedIngredient' in ingr) {
@@ -129,7 +147,16 @@ const SingleRecipe: FC = () => {
         <li
           key={ingr.id}
           className={`ing ${isChecked ? 'checked' : ''}`}
+          role='checkbox'
+          aria-checked={isChecked}
+          tabIndex={0}
           onClick={() => toggleChecked(ingr.id)}
+          onKeyDown={e => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              toggleChecked(ingr.id)
+            }
+          }}
         >
           <span className='box'>{isChecked ? <BiCheckCircle /> : null}</span>
           <span className='thumb'>
@@ -188,6 +215,19 @@ const SingleRecipe: FC = () => {
             : 'Recipe 404'}
         </title>
         <meta name='description' content={currRecipe?.description} />
+        {/*
+          Recipe structured data (schema.org/Recipe) → rich search results.
+          NOTE: per-page Open Graph / Twitter tags are intentionally NOT set here.
+          index.html ships static og:* defaults that react-helmet-async can't
+          dedupe (they aren't Helmet-managed), so adding page-level ones produces
+          duplicate tags and crawlers fall back to the generic site values.
+          Fixing that belongs to Track 3b (global meta / SEO component).
+        */}
+        {recipeJsonLd && (
+          <script type='application/ld+json'>
+            {JSON.stringify(recipeJsonLd)}
+          </script>
+        )}
       </Helmet>
 
       {recipeError ? (
@@ -274,17 +314,27 @@ const SingleRecipe: FC = () => {
                 </span>
                 <span className='m-l'>Servings</span>
               </div>
-              <div className='m-item'>
-                <span className='m-top'>
-                  <BsStar className='m-ic' />
-                  <span className='m-v'>
-                    {currRecipe && ratingCount > 0
-                      ? formatRating(currRecipe.rating?.rateValue, ratingCount)
-                      : '—'}
+              {hasPrice ? (
+                <div className='m-item m-cost'>
+                  <span className='m-top'>
+                    <TbCurrencyDollar className='m-ic' />
+                    <span className='m-v'>{formatPrice(servPrice)}</span>
                   </span>
-                </span>
-                <span className='m-l'>{ratingCount > 0 ? `(${ratingCount})` : 'No ratings'}</span>
-              </div>
+                  <span className='m-l'>Per serving</span>
+                </div>
+              ) : (
+                <div className='m-item'>
+                  <span className='m-top'>
+                    <BsStar className='m-ic' />
+                    <span className='m-v'>
+                      {currRecipe && ratingCount > 0
+                        ? formatRating(currRecipe.rating?.rateValue, ratingCount)
+                        : '—'}
+                    </span>
+                  </span>
+                  <span className='m-l'>{ratingCount > 0 ? `(${ratingCount})` : 'No ratings'}</span>
+                </div>
+              )}
             </div>
             <div className='sr-actions'>
               {currRecipe && (
@@ -298,12 +348,6 @@ const SingleRecipe: FC = () => {
                   />
                   <AddRatingBtn currUserReview={currUserReview} />
                   <PrintRecipeBtn printedRef={printedRef} />
-                  {!isOwner && (
-                    <ReportControl
-                      target={{ targetType: 'recipe', recipeId: currRecipe._id }}
-                      variant='button'
-                    />
-                  )}
                 </>
               )}
             </div>
@@ -418,6 +462,15 @@ const SingleRecipe: FC = () => {
               setCurrUserReview={setCurrUserReview}
               isOwner={isOwner}
             />
+          )}
+
+          {!loading && currRecipe && currUID && !isOwner && (
+            <div className='sr-report-foot'>
+              <span>See something wrong with this recipe?</span>
+              <ReportControl
+                target={{ targetType: 'recipe', recipeId: currRecipe._id }}
+              />
+            </div>
           )}
 
           {!loading && currRecipe && (
