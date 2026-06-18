@@ -50,7 +50,7 @@ same commit.**
 | 1c | Account data (images, empty-flash) | `[ ]` | — |
 | 1d | Serving-price bug | `[x]` | #152 ✅ |
 | 2a | Homepage redesign (design + For You row + "What should I cook?") | `[x]` | #153 + #154 ✅ |
-| 2b | Public Help/Contact page | `[ ]` | — |
+| 2b | Public Help/Contact page | `[P]` | #158 |
 | 2c | Single-recipe polish | `[ ]` | — |
 | 2d | Recipes browse polish | `[ ]` | — |
 | 2e | Account/profile polish | `[ ]` | — |
