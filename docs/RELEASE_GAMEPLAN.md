@@ -46,7 +46,7 @@ same commit.**
 | 0a | Repo/secrets hygiene | `[x]` | #151 ✅ |
 | 0c | Infra (Jesse, dashboards) | `[ ]` | n/a |
 | 1a | Ratings/reviews bug | `[x]` | #150 ✅ |
-| 1b | Save-recipe broken | `[P]` | #157 |
+| 1b | Save-recipe broken | `[x]` | #157 ✅ |
 | 1c | Account data (images, empty-flash) | `[ ]` | — |
 | 1d | Serving-price bug | `[x]` | #152 ✅ |
 | 2a | Homepage redesign (design + For You row + "What should I cook?") | `[x]` | #153 + #154 ✅ |
@@ -230,6 +230,10 @@ Append a one-liner when a track changes state (started / PR / merged). Keeps ses
   hook — `SaveControl`/`SingleRecipe`/`api` untouched (keeps clear of 2c). Tests: new Vitest suite for the
   hook (optimistic, rollback, and a reconcile-after-clobber guard that fails on the old hook) + extended
   server Jest with `GET /getSavedRecipeIds` shape + save/unsave round-trip. tsc + build clean.
+- _2026-06-18_ — **1b → merged** (PR #157, all CI green incl. Cypress). Board reconciled (1b `[P]`→`[x]`;
+  backlog bug marker flipped). Client change confined to `useSaveRecipe` (SaveControl/SingleRecipe/api
+  untouched), so no collision with 2c. The `recipe.cy.ts` save E2E gained a stateful saved-ids stub so it
+  exercises the new post-write reconciliation. Worktree/branch pruned after merge.
 
 ---
 
