@@ -1,60 +1,31 @@
 import React, { FC, useState } from 'react'
-import { TailSpin } from 'react-loader-spinner'
-import RecipeAPI from 'src/api/recipes'
-import { IngredientsType } from 'types'
 import RecipeFormInput from 'src/pages/AddRecipe/RecipeFormInput'
-import styles from 'src/_exports.module.scss'
 
 type IngredientsInputProps = {
-  addIngredientToList: (data: IngredientsType) => void
-  setIngredientLoading: (data: { isLoading: boolean; index: number }) => void
-  ingredientsLength: number
-  ingredientLoading: { isLoading: boolean; index: number }
+  // Hands the raw entry to the container, which adds it optimistically and runs
+  // enrichment. Fire-and-forget by design — the input clears immediately so the
+  // user can keep typing while the row fills in.
+  onAdd: (rawValue: string) => void
 }
 
-const IngredientsInput: FC<IngredientsInputProps> = ({
-  addIngredientToList,
-  setIngredientLoading,
-  ingredientsLength,
-  ingredientLoading,
-}) => {
+const IngredientsInput: FC<IngredientsInputProps> = ({ onAdd }) => {
   const [inputVal, setInputVal] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [enrichmentWarning, setEnrichmentWarning] = useState('')
+  const [hint, setHint] = useState('')
 
-  const handleAddIngredient = async () => {
-    if (loading) return
-
+  const handleAddIngredient = () => {
     // Empty / whitespace-only input: close the loop with a hint instead of
-    // silently no-opping, and never fire a parse request for nothing. (Guard
-    // BEFORE touching loading state so we never strand the parent spinner.)
+    // silently no-opping, and never add an empty row.
     const trimmed = inputVal.trim()
     if (!trimmed) {
-      setEnrichmentWarning('Enter an ingredient before adding it.')
+      setHint('Enter an ingredient before adding it.')
       return
     }
 
-    setEnrichmentWarning('')
-    setLoading(true)
-    setIngredientLoading({ isLoading: true, index: ingredientsLength })
-
-    try {
-      const data: IngredientsType = await RecipeAPI.getIngredientData(trimmed)
-      // getIngredientData is soft-fail: always returns a valid IngredientsType,
-      // even on enrichment failure (ingredientData: null + error). Per the
-      // ingredient-enrichment-failures-are-non-fatal policy, we add the
-      // ingredient either way and surface a small warning if enrichment failed.
-      addIngredientToList(data)
-      setInputVal('')
-      if ('error' in data && data.error) {
-        setEnrichmentWarning(
-          `Added "${trimmed}", but couldn't fetch nutrition/image data. You can edit or remove it.`
-        )
-      }
-    } finally {
-      setLoading(false)
-      setIngredientLoading({ isLoading: false, index: -1 })
-    }
+    setHint('')
+    onAdd(trimmed)
+    // Clear immediately — the ingredient is already in the list optimistically,
+    // so the field is ready for the next entry without waiting on the network.
+    setInputVal('')
   }
 
   return (
@@ -65,19 +36,9 @@ const IngredientsInput: FC<IngredientsInputProps> = ({
         setVal={setInputVal}
         onEnter={handleAddIngredient}
       />
-      {ingredientLoading.isLoading && (
-        <div className='loading-indicator'>
-          <TailSpin
-            height='20'
-            width='20'
-            color={styles.primaryText}
-            ariaLabel='loading'
-          />
-        </div>
-      )}
-      {enrichmentWarning && (
+      {hint && (
         <div className='warning' role='status'>
-          {enrichmentWarning}
+          {hint}
         </div>
       )}
     </div>

@@ -13,8 +13,9 @@
   // distinct surface. Keep the global .page's top padding so the h1 sits at
   // the same height as headers on other pages (e.g. Recipes).
   background: s.$primary-background;
-  // Clear the fixed summary bar at the bottom of the page.
-  padding-bottom: 130px;
+  // The summary bar is now a sticky in-flow child (see AddRecipeSummaryBar.scss),
+  // so it reserves its own space at the end of the page — no bottom padding hack
+  // needed to clear a fixed overlay, and the footer below it stays reachable.
 
   .add-recipe-heading {
     display: flex;

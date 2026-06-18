@@ -1,13 +1,19 @@
-import React, { Dispatch, SetStateAction, FC, useState, useRef } from 'react'
+import React, { FC, useState, useRef } from 'react'
 import { DraggableProvided, DraggableStateSnapshot } from '@hello-pangea/dnd'
 import { CiShoppingBasket } from 'react-icons/ci'
 import { MdDragIndicator } from 'react-icons/md'
 import { AiOutlineClose } from 'react-icons/ai'
+import { FiAlertCircle, FiRotateCw } from 'react-icons/fi'
 import Skeleton from 'react-loading-skeleton'
+import { toast } from 'react-hot-toast'
 import RecipeAPI from 'src/api/recipes'
-import { getIndexById } from 'src/util/getIndexById'
 import { IngredientsType } from 'types'
 import RecipeFormInput from 'src/pages/AddRecipe/RecipeFormInput'
+import {
+  IngredientEnrichTimeoutError,
+  withTimeout,
+} from 'src/pages/AddRecipe/Ingredients/ingredientEnrichment'
+import { IngredientStatus } from 'src/pages/AddRecipe/Ingredients/IngredientsContainer/IngredientsContainer'
 import '../ListComponents/Item.scss'
 import { TailSpin } from 'react-loader-spinner'
 import styles from 'src/_exports.module.scss'
@@ -18,17 +24,15 @@ const skeletonColor = '#d6d6d6'
 type IngredientItemProps = {
   ingredients: IngredientsType[]
   ingredient?: IngredientsType
-  setLoading: Dispatch<
-    SetStateAction<{
-      isLoading: boolean
-      index: number
-    }>
-  >
+  // Sets this row's enrichment status by id (see IngredientsContainer).
+  setItemStatus: (id: string, status: IngredientStatus | null) => void
   loading?: boolean
+  errored?: boolean
   provided?: DraggableProvided
   snapshot?: DraggableStateSnapshot
   removeIngredient: (id: string) => void
-  setIngredients: Dispatch<SetStateAction<IngredientsType[]>>
+  retryIngredient: (id: string) => void
+  setIngredients: React.Dispatch<React.SetStateAction<IngredientsType[]>>
 }
 
 // Per-ingredient price label from the enriched parser data. Returns '—' when
@@ -48,11 +52,13 @@ const priceLabel = (ingredient?: IngredientsType): string => {
 const IngredientItem: FC<IngredientItemProps> = ({
   ingredients,
   ingredient,
-  setLoading,
+  setItemStatus,
   loading,
+  errored,
   provided,
   snapshot,
   removeIngredient,
+  retryIngredient,
   setIngredients,
 }) => {
   const [isEditing, setIsEditing] = useState(false)
@@ -108,16 +114,31 @@ const IngredientItem: FC<IngredientItemProps> = ({
       !isLabel &&
       ingredient.parsedIngredient.originalIngredientString !== editedVal
     ) {
-      const currIndex = getIndexById(ingredients, ingredient.id)
-      setLoading({ isLoading: true, index: currIndex })
-      const ingredientDataRes = await RecipeAPI.getIngredientData(editedVal)
-      // Phase A: soft-fail by design — whether enrichment succeeded or returned
-      // an error variant, we overwrite the existing ingredient with the new
-      // parse result so the edit takes effect either way. The error is carried
-      // through on the IngredientsType payload itself; no extra handling needed
-      // here.
-      editIngredient(ingredient.id, { ...ingredientDataRes })
-      setLoading({ isLoading: false, index: -1 })
+      const id = ingredient.id
+      setItemStatus(id, 'loading')
+      try {
+        // Same timeout/exit guard as the add path: getIngredientData soft-fails
+        // but can't protect against a request that never settles, so race it
+        // against a wall clock.
+        const ingredientDataRes = await withTimeout(
+          RecipeAPI.getIngredientData(editedVal)
+        )
+        editIngredient(id, { ...ingredientDataRes })
+        setItemStatus(
+          id,
+          'error' in ingredientDataRes && ingredientDataRes.error
+            ? 'error'
+            : null
+        )
+      } catch (err: unknown) {
+        const timedOut = err instanceof IngredientEnrichTimeoutError
+        setItemStatus(id, 'error')
+        toast.error(
+          timedOut
+            ? `"${editedVal}" is taking too long to look up — kept without nutrition data. Retry or edit it.`
+            : `Couldn't fetch data for "${editedVal}" — kept without it. Retry or edit it.`
+        )
+      }
     }
 
     setIsEditing(false)
@@ -133,7 +154,7 @@ const IngredientItem: FC<IngredientItemProps> = ({
       ref={provided?.innerRef}
       className={`ingredients-container item ingredient-row ${
         snapshot?.isDragging ? 'dragging' : ''
-      }`}
+      } ${errored ? 'errored' : ''}`}
       {...provided?.draggableProps}
     >
       {/* Always-visible drag handle (the only drag target, so the row text
@@ -165,13 +186,9 @@ const IngredientItem: FC<IngredientItemProps> = ({
               </>
             )}
           </div>
-          <div className='text-container'>
-            {loading ? (
-              <Skeleton baseColor={skeletonColor} height={25} width={'35ch'} />
-            ) : (
-              renderIngredientText()
-            )}
-          </div>
+          {/* Optimistic: the parsed text is available locally, so show it
+              immediately even while enrichment (image/price) is still loading. */}
+          <div className='text-container'>{renderIngredientText()}</div>
         </button>
       ) : (
         <button className='label-text-container' onClick={handleIngrClick}>
@@ -179,7 +196,23 @@ const IngredientItem: FC<IngredientItemProps> = ({
         </button>
       )}
 
-      {!isEditing && isParsed && (
+      {!isEditing && isParsed && errored && !loading && (
+        <button
+          type='button'
+          className='ingr-retry'
+          aria-label='Retry ingredient lookup'
+          title="Couldn't fetch nutrition data — retry"
+          onClick={e => {
+            e.stopPropagation()
+            retryIngredient(ingredient.id)
+          }}
+        >
+          <FiAlertCircle className='icon warn' />
+          <FiRotateCw className='icon retry' />
+        </button>
+      )}
+
+      {!isEditing && isParsed && !errored && (
         <span className={`ingr-price ${loading ? 'na' : ''}`}>
           {loading ? '' : priceLabel(ingredient)}
         </span>
