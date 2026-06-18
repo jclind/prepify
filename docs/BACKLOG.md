@@ -115,6 +115,13 @@ The triage date stamped on items is the date they were filed here, not when they
   (`:focus-visible`).
 - `[ ]` **Desktop navbar account chevron animation shifts the focus outline** — the chevron animation
   moves the focus outline; decouple them.
+- `[ ]` **Account Ratings list nests a `<button>` inside a `<button>`** — each rating row is a clickable
+  `<button className="single-review">` (`src/pages/Account/UserRatings/.../SingleReview`) that renders a
+  `StarRating`, which itself emits a `<button>` per star (even when non-interactive). React logs
+  `<button> cannot contain a nested <button>` and it's invalid HTML / a screen-reader hazard. *(Pre-existing;
+  surfaced during the Wave 2 verification live smoke test 2026-06-18 — NOT introduced by track 1c.)* Fix:
+  render `StarRating`'s stars as non-interactive `<span>`s when `interactive` is false, or make the row a
+  non-button wrapper (e.g. an `<a>`/`role` container) so the stars aren't nested in a button.
 
 ## Features
 

@@ -254,6 +254,19 @@ Append a one-liner when a track changes state (started / PR / merged). Keeps ses
   the grid/list on the resolved payload, guarded by `EmptyState`-mount-spy tests. Board 1c `[ ]`→`[x]`;
   backlog items flipped. **Unblocks Track 2e** (account/profile polish on top of the fix). Also folded a
   live-confirmed pagination edge case into Backlog (Load-More count vs hidden-recipe visibility filter).
+- _2026-06-18_ — **2b Public Help/Contact → merged** (PR #158, blocker cleared). Un-gated the footer Help
+  link (removed `auth: 'in'` in `footerData.ts`) so logged-out visitors can find it; `/help` was already a
+  public route (no `App.tsx` change); redesigned the page for a public audience (progressive-disclosure
+  topic chooser + `mailto:` fallback). Navbar left untouched so Track 2d owns the nav link cleanly.
+  RELEASE_PLAN Help/Contact blocker flipped `[x]`. *(Entry added 2026-06-18 during the Wave 2 verification
+  pass — the merge had been reflected on the Track Board but never logged here.)*
+- _2026-06-18_ — **Wave 2 verification pass.** Audited all four Wave 2 tracks (1b/#157, 1c/#156, 2b/#158,
+  2c/#160) against their kickoff briefs (code + tests) and live-smoke-tested the user-facing outcomes as
+  admin: save persists across reload (1b), account-ratings thumbnail loads + remove-rating cleanup (1c/1a),
+  logged-out `/help` reachable + footer-linked (2b), price tile + RecipeNotFound redesign (2c). All briefs
+  fully delivered; deferrals (3c report-controls/rating-up-top, 3b/3c OG tags, Load-More pagination) all
+  tracked open. Fixed status-log drift (this 2b entry) + a stale "PR #158 open" in RELEASE_PLAN; filed a
+  nested-`<button>` a11y nit on the account Ratings list to Backlog.
 - _2026-06-18_ — **Test-harness (Node 26) fixes → merged.** Two environment-only gaps that don't reproduce
   on CI's older Node but block local runs: client `localStorage`/`sessionStorage` undefined on Node ≥ 24
   (PR #159 — in-memory Web Storage shim) and server `clearTimeout is not defined` from superagent after a
