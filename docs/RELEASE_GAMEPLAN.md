@@ -47,7 +47,7 @@ same commit.**
 | 0c | Infra (Jesse, dashboards) | `[ ]` | n/a |
 | 1a | Ratings/reviews bug | `[x]` | #150 ✅ |
 | 1b | Save-recipe broken | `[x]` | #157 ✅ |
-| 1c | Account data (images, empty-flash) | `[ ]` | — |
+| 1c | Account data (images, empty-flash) | `[x]` | #156 ✅ |
 | 1d | Serving-price bug | `[x]` | #152 ✅ |
 | 2a | Homepage redesign (design + For You row + "What should I cook?") | `[x]` | #153 + #154 ✅ |
 | 2b | Public Help/Contact page | `[x]` | #158 ✅ |
@@ -245,6 +245,20 @@ Append a one-liner when a track changes state (started / PR / merged). Keeps ses
   `index.html` `og:*` defaults can't be deduped by react-helmet-async). Two follow-ups filed → **Track 3c**:
   show report controls to logged-out users (login prompt); surface rating up top near the title. Backlog
   single-recipe items flipped; worktree/branch pruned after merge.
+- _2026-06-18_ — **1c Account data → merged** (PR #156, all CI green incl. Cypress). Two bugs, both
+  reproduced first: (A) account "Ratings" thumbnails were blank because `GET /getSingleUserReviews?returnRecipeData=true`
+  attached the recipe only as a nested `recipeData` object while `UserRatings.tsx` reads flat
+  `recipeImage`/`recipeTitle` — server now denormalizes those onto each review (kept `recipeData` for admin),
+  **verified live** against a throwaway DB; (B) the "Your Recipes" / "Ratings" lists flashed their empty
+  state for one frame on a fast load (react-query settles before the effect populates list state) — gated
+  the grid/list on the resolved payload, guarded by `EmptyState`-mount-spy tests. Board 1c `[ ]`→`[x]`;
+  backlog items flipped. **Unblocks Track 2e** (account/profile polish on top of the fix). Also folded a
+  live-confirmed pagination edge case into Backlog (Load-More count vs hidden-recipe visibility filter).
+- _2026-06-18_ — **Test-harness (Node 26) fixes → merged.** Two environment-only gaps that don't reproduce
+  on CI's older Node but block local runs: client `localStorage`/`sessionStorage` undefined on Node ≥ 24
+  (PR #159 — in-memory Web Storage shim) and server `clearTimeout is not defined` from superagent after a
+  fake-timer test on Node 26 (PR #161 — re-install `node:timers` per test). Test-only; no product code. Not
+  numbered tracks — logged in Backlog → Testing.
 
 ---
 
