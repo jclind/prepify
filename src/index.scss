@@ -49,13 +49,17 @@ input {
     color: s.$tertiary-text;
   }
 }
+// Show the focus ring for keyboard navigation only (`:focus-visible`), not for
+// mouse/touch clicks. Keyboard users still get a clear indicator on Tab; a plain
+// pointer click no longer leaves an outline behind. Modern browsers already drive
+// their default ring off the same heuristic, so no `:focus` fallback is needed.
 button {
-  &:focus {
+  &:focus-visible {
     @include s.outline();
   }
 }
 a {
-  &:focus {
+  &:focus-visible {
     @include s.outline();
   }
 }
