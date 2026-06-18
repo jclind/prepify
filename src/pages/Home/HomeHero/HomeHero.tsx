@@ -1,6 +1,7 @@
 import React, { FC } from 'react'
 import './HomeHero.scss'
 import SearchRecipesInput from 'src/Components/SearchRecipesInput/SearchRecipesInput'
+import HomeCookSuggestion from '../HomeCookSuggestion'
 
 const HomeHero: FC = () => {
   return (
@@ -17,6 +18,7 @@ const HomeHero: FC = () => {
       <div className='hero-overlay'>
         <h1 className='text'>Save money. Reduce stress. Be healthy.</h1>
         <SearchRecipesInput autoComplete={true} />
+        <HomeCookSuggestion />
       </div>
     </div>
   )

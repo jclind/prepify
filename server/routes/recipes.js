@@ -5,7 +5,8 @@ const { getDB, getClient } = require('../db')
 const { verifyToken, optionalAuth, requireAdmin, requireActive } = require('../middleware/auth')
 const { recipeWriteLimiter } = require('../middleware/writeLimiter')
 const { recipeIdQuery, recipeIdInQuery } = require('../util/recipeIdQuery')
-const { MIN_SIGNAL, buildTasteProfile, interactionWeight, selectForYou } = require('../util/forYou')
+const { MIN_SIGNAL, selectForYou, tasteScore, weightedSample } = require('../util/forYou')
+const { loadInteractions, buildSeenProfile } = require('../util/tasteContext')
 const { RECIPE_VISIBLE, RECIPE_OWNER_VISIBLE } = require('../util/moderation')
 const { recordAudit } = require('../util/auditLog')
 const { notifyInBackground, notifyRecipeHidden } = require('../util/email')
@@ -22,6 +23,28 @@ const router = Router()
 // Hard ceiling on client-requested page sizes so a single request can never
 // dump a whole collection (audit §4.5). Shared by every paginated route here.
 const MAX_PER_PAGE = 50
+
+// Fields the home recipe cards (For You row + "What should I cook?" pick) need
+// to render. Shared so the personalized routes project an identical shape.
+const RECIPE_CARD_PROJECTION = {
+  title: 1,
+  recipeImage: 1,
+  cuisine: 1,
+  totalTime: 1,
+  servingPrice: 1,
+  rating: 1,
+  mealTypes: 1,
+  nutritionLabels: 1,
+  numTimesSaved: 1,
+}
+
+// The id-shape variants (string + ObjectId) for a list of recipe ids, ready to
+// drop into an `_id: { $nin: [...] }` clause. Thin wrapper over recipeIdInQuery
+// so callers don't reach into its `{ _id: { $in } }` return shape. Skips falsy
+// ids (e.g. a missing `exclude` query param).
+function idVariants(ids) {
+  return recipeIdInQuery(ids.filter(Boolean))._id.$in
+}
 
 function escapeRegex(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -208,82 +231,25 @@ router.get('/getForYouRecipes', verifyToken, asyncHandler(async (req, res) => {
   const uid = req.uid
   const limit = Math.max(1, Math.min(parseInt(req.query.limit, 10) || 8, 20))
 
-  // 1. Gather the user's interactions.
-  const [userData, ratingDocs] = await Promise.all([
-    db.collection('userRecipeData').findOne(
-      { _id: uid },
-      { projection: { savedRecipes: 1, madeRecipes: 1 } }
-    ),
-    db.collection('ratings')
-      .find({ userId: uid }, { projection: { recipeId: 1, rating: 1 } })
-      .toArray(),
-  ])
-
-  const savedIds = new Set((userData?.savedRecipes ?? []).map((e) => e.recipeId))
-  const madeIds = new Set((userData?.madeRecipes ?? []).map((e) => e.recipeId))
-  const ratingById = new Map(
-    ratingDocs
-      .filter((r) => r.rating != null)
-      .map((r) => [r.recipeId, r.rating])
-  )
-
-  // Recipes that carry actual taste signal: saved, made, or given a real
-  // (non-null) rating. This drives both the threshold and the profile below.
-  const signalIds = new Set([...savedIds, ...madeIds, ...ratingById.keys()])
-  if (signalIds.size < MIN_SIGNAL) {
+  // 1. Gather the user's interactions (cheap, indexed reads). Below the signal
+  // threshold the row is hidden, so bail before the costlier profile lookup.
+  const interactions = await loadInteractions(db, uid)
+  if (interactions.signalIds.size < MIN_SIGNAL) {
     return res.json([])
   }
+  const seenIds = interactions.seenIds
 
-  // Everything the user has engaged with — signal plus review-only rating docs
-  // (rating: null, e.g. a written review without a star rating) — is excluded
-  // from recommendations so we never suggest a recipe back to them. Review-only
-  // docs add no profile signal (ratingById already drops them), but they
-  // shouldn't reappear in the row either.
-  const seenIds = new Set([...signalIds, ...ratingDocs.map((r) => r.recipeId)])
-
-  // 2. Look up the feature tags of the seen recipes (some may be deleted —
-  // those just drop out).
-  const seenFeatureDocs = await db
-    .collection('recipes')
-    .find(recipeIdInQuery([...seenIds]), {
-      projection: { cuisine: 1, mealTypes: 1, nutritionLabels: 1 },
-    })
-    .toArray()
-
-  // 3. Build the taste profile, combining each recipe's signals into one weight.
-  const interactions = seenFeatureDocs.map((recipe) => {
-    const id = String(recipe._id)
-    return {
-      recipe,
-      weight: interactionWeight({
-        made: madeIds.has(id),
-        saved: savedIds.has(id),
-        rating: ratingById.get(id) ?? null,
-      }),
-    }
-  })
-  const profile = buildTasteProfile(interactions)
+  // 2-3. Build the taste profile from the seen recipes' feature tags.
+  const profile = await buildSeenProfile(db, interactions)
 
   // 4. Candidate pool: every visible recipe except ones the user has already
   // seen or authored. Project only what scoring + the card need.
-  const excludeVariants = recipeIdInQuery([...seenIds])._id.$in
+  const excludeVariants = idVariants([...seenIds])
   const candidates = await db
     .collection('recipes')
     .find(
       { ...RECIPE_VISIBLE, userId: { $ne: uid }, _id: { $nin: excludeVariants } },
-      {
-        projection: {
-          title: 1,
-          recipeImage: 1,
-          cuisine: 1,
-          totalTime: 1,
-          servingPrice: 1,
-          rating: 1,
-          mealTypes: 1,
-          nutritionLabels: 1,
-          numTimesSaved: 1,
-        },
-      }
+      { projection: RECIPE_CARD_PROJECTION }
     )
     .toArray()
 
@@ -294,6 +260,77 @@ router.get('/getForYouRecipes', verifyToken, asyncHandler(async (req, res) => {
   )
   const recipes = selectForYou(candidates, profile, { limit, numTimesSavedMax })
   res.json(recipes)
+}))
+
+// GET /recipes/random — one recipe for the "What should I cook?" button.
+// optionalAuth so it works logged-out. A signed-in user with >= MIN_SIGNAL
+// interactions gets a weighted-random ON-TASTE pick (reusing the For You taste
+// profile); everyone else (anonymous, below threshold, or no on-taste match)
+// gets a uniform random visible recipe via $sample. `exclude` lets the client
+// re-roll ("Try another") without immediately repeating the current pick.
+router.get('/recipes/random', optionalAuth, asyncHandler(async (req, res) => {
+  const db = getDB()
+  const uid = req.uid || null
+  const exclude = typeof req.query.exclude === 'string' ? req.query.exclude : null
+  const excludeVariants = idVariants([exclude])
+
+  // Recipes the user has already engaged with — preferred OUT of suggestions so
+  // we surface something fresh. Loaded once (cheap, indexed) and reused by both
+  // the taste path and the fallback below. Empty for anonymous users.
+  let seenVariants = []
+
+  // 1. Taste-aware path: signed-in user with enough signal to personalize.
+  if (uid) {
+    const interactions = await loadInteractions(db, uid)
+    seenVariants = idVariants([...interactions.seenIds])
+    if (interactions.signalIds.size >= MIN_SIGNAL) {
+      const profile = await buildSeenProfile(db, interactions)
+      const candidates = await db
+        .collection('recipes')
+        .find(
+          {
+            ...RECIPE_VISIBLE,
+            userId: { $ne: uid },
+            _id: { $nin: [...seenVariants, ...excludeVariants] },
+          },
+          { projection: RECIPE_CARD_PROJECTION }
+        )
+        .toArray()
+
+      // Keep only recipes the user has positive affinity for, then pick one
+      // weighted by that affinity (stronger match = likelier, but still varied).
+      const scored = candidates
+        .map((recipe) => ({ recipe, weight: tasteScore(recipe, profile) }))
+        .filter((s) => s.weight > 0)
+      const pick = weightedSample(scored)
+      if (pick) return res.json(pick.recipe)
+      // No on-taste candidate (rare) → fall through to a uniform random pick.
+    }
+  }
+
+  // 2. Fallback: uniform random over visible recipes (never own). Prefer one the
+  // user hasn't seen yet (and isn't the just-shown pick); only if excluding seen
+  // leaves nothing — e.g. they've already seen the whole catalog — do we relax
+  // that so the button still returns a recipe instead of a dead end.
+  const baseMatch = { ...RECIPE_VISIBLE }
+  if (uid) baseMatch.userId = { $ne: uid }
+
+  const sampleOne = async (notIds) => {
+    const match = notIds.length ? { ...baseMatch, _id: { $nin: notIds } } : baseMatch
+    const [doc] = await db
+      .collection('recipes')
+      .aggregate([{ $match: match }, { $sample: { size: 1 } }, { $project: RECIPE_CARD_PROJECTION }])
+      .toArray()
+    return doc
+  }
+
+  let random = await sampleOne([...seenVariants, ...excludeVariants])
+  // Nothing unseen left → relax the "unseen" constraint (still skip the just-shown
+  // pick when possible) so an active user keeps getting suggestions.
+  if (!random && seenVariants.length) random = await sampleOne(excludeVariants)
+
+  if (!random) return res.status(404).json({ error: 'No recipes available' })
+  res.json(random)
 }))
 
 // GET /getRecipe — fetch single recipe and increment view count.

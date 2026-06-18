@@ -45,3 +45,36 @@
     font-weight: 500;
   }
 }
+
+// "What should I cook?" trigger button, living in the hero overlay under the
+// search input. Clicking opens a spotlight modal (HomeCookSuggestion.scss); the
+// button itself never moves, so nothing on the page shifts.
+.home-cook-suggestion {
+  margin-top: 1.25rem;
+  display: flex;
+  justify-content: center;
+
+  .cook-suggestion-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.7rem 1.4rem;
+    border: none;
+    border-radius: 999px;
+    background: s.$primary;
+    color: s.$white;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+    transition: transform 0.12s ease, filter 0.12s ease;
+
+    svg {
+      font-size: 1.25rem;
+    }
+    &:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.06);
+    }
+  }
+}
