@@ -133,6 +133,9 @@ $danger: #d23f31;
     .m-top { display: inline-flex; align-items: baseline; gap: 0.45rem; }
     .m-ic { align-self: center; color: s.$primary; font-size: 1.1rem; }
     .m-v { font-weight: 800; font-size: 1.1rem; }
+    // cost tile: the per-serving price is a headline number, so color it brand
+    // primary to pull the eye — this is the "make pricing prominent" beat
+    .m-cost .m-v { color: s.$primary; }
     .m-l {
       font-size: 0.72rem;
       color: s.$tertiary-text;
@@ -268,6 +271,7 @@ $danger: #d23f31;
         cursor: pointer;
         font-size: 0.94rem;
         &:hover { background: s.$primary-background; }
+        &:focus-visible { @include s.outline(); }
         // qty + name flow as one inline text block, so a long name wraps
         // naturally under the quantity instead of in its own cramped column
         .ing-text { line-height: 1.45; }
@@ -578,6 +582,14 @@ $danger: #d23f31;
       // removed); owners still get their edit/delete row
       .review-options:empty { display: none; }
     }
+    // the signed-in user's own review — mark it as "yours" with a soft teal
+    // accent + tint so it reads as distinct from the public review list
+    .curr-user-review .recipe-review {
+      margin-bottom: 0;
+      border-color: rgba(s.$secondary, 0.45);
+      border-left: 3px solid s.$secondary;
+      background: rgba(s.$secondary, 0.04);
+    }
 
     // write-a-review — appears in-flow after a signed-in user taps a star
     .leave-review-input-container {
@@ -625,6 +637,22 @@ $danger: #d23f31;
         &:hover { background: #e74e1d; }
       }
     }
+  }
+
+  // ── report footer (quiet, de-emphasized — secondary action lives here, away
+  // from the primary Save/Rate/Print CTAs at the top) ─────────────────────────
+  .sr-report-foot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    margin-top: 2.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid s.$gray-200;
+    font-size: 0.85rem;
+    color: s.$tertiary-text;
+    .report-control-trigger { font-size: 0.85rem; font-weight: 700; }
   }
 
   // ── responsive ──────────────────────────────────────────────────────────────

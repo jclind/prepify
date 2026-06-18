@@ -1,21 +1,45 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
+import { TbChefHat } from 'react-icons/tb'
+import { BiSearchAlt } from 'react-icons/bi'
 import SearchRecipesInput from 'src/Components/SearchRecipesInput/SearchRecipesInput'
 import './RecipeNotFound.scss'
 
 const RecipeNotFound = () => {
   return (
     <div className='recipe-not-found'>
-      <h1>Recipe not found!</h1>
-      <p className='text'>
-        It doesn't look like the recipe you are looking for exists. If you think
-        this is an error, please{' '}
-        <Link to='/help' className='contact-link'>
-          contact our help team
-        </Link>
-        .
-      </p>
-      <SearchRecipesInput autoComplete={true} />
+      <div className='rnf-card'>
+        <span className='rnf-icon' aria-hidden='true'>
+          <TbChefHat />
+        </span>
+        <h1>Recipe not found</h1>
+        <p className='text'>
+          We couldn't find the recipe you're looking for — it may have been
+          removed, or the link might be incorrect.
+        </p>
+
+        <div className='rnf-search'>
+          <div className='rnf-search-label'>
+            <BiSearchAlt aria-hidden='true' />
+            <span>Search for something else</span>
+          </div>
+          <SearchRecipesInput autoComplete={true} />
+        </div>
+
+        <div className='rnf-actions'>
+          <Link to='/recipes' className='rnf-browse'>
+            Browse all recipes
+          </Link>
+        </div>
+
+        <p className='rnf-help'>
+          Think this is a mistake?{' '}
+          <Link to='/help' className='contact-link'>
+            Contact our help team
+          </Link>
+          .
+        </p>
+      </div>
     </div>
   )
 }

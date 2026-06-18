@@ -72,6 +72,10 @@ The triage date stamped on items is the date they were filed here, not when they
 - `[ ]` **Serving price not prominent enough** — surface it more clearly on the single-recipe page.
 - `[ ]` **Review UI needs work** — the "Your Review" UI is poor, and the rating dropdown (shown once
   you give a rating) isn't positioned where it should be.
+- `[ ]` **Show the recipe rating up top on the single-recipe page** — the top action-bar rating tile
+  was replaced by the per-serving price tile (2c). Re-surface the rating compactly near the title/hero
+  (e.g. "★ 4.5 · N ratings") rather than adding a 4th action-bar tile (which would crowd mobile). It
+  still shows in the Ratings & Reviews header. *(→ Track 3c)*
 - `[ ]` **Account nav sections UI** — improve the Saved / Ratings / etc. section navigation styling.
 - `[ ]` **`/u/:username` public profile visual polish** — minor visual updates.
 - `[ ]` **"Change Password" title is redundant/cluttered** — in Account & Security settings.
@@ -91,6 +95,12 @@ The triage date stamped on items is the date they were filed here, not when they
 - `[ ]` **Report a *user* from their profile page** *(admin)* — `ReportTargetType` is only
   `'recipe' | 'review'` (`src/types.ts:188`); add a user-report flow. *(verified missing)*
 - `[ ]` **Double-check report-recipe styling in the controls element** *(admin)*.
+- `[ ]` **Report controls should be visible when logged out** — `ReportControl` renders `null` for
+  logged-out users (both the single-recipe footer link and the per-review links), so they have no
+  signal that reporting exists. Keep the trigger visible and, on click while logged out, prompt to log
+  in (a toast or a login link is enough — no full modal). One change covers both recipe + review since
+  they share `ReportControl`. *(→ Track 3c; behavior change to a shared component, so out of the 2c
+  visual-polish scope)*
 - `[ ]` **Username validation: disallow certain characters** — tighten the allowed character set.
 
 ## Tech debt / process / infra
