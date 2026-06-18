@@ -1,5 +1,14 @@
 @use '../../helpers.scss' as s;
 
+// The footer carries a global top margin ($footer-margin) for breathing room
+// after page content. On the create/edit-recipe page the sticky summary bar now
+// sits flush at the bottom of the form, so that margin renders as an empty gap
+// between the bar and the footer. Cancel it for this page only (the bar provides
+// the visual separation) — scoped via :has so no global footer style is touched.
+.app-shell:has(.add-recipe-page) .site-footer {
+  margin-top: 0;
+}
+
 .add-recipe-page {
   display: flex;
   flex-direction: column;
