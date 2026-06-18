@@ -9,7 +9,7 @@ import { AiOutlineClockCircle, AiOutlineUsergroupAdd } from 'react-icons/ai'
 import { BsStar } from 'react-icons/bs'
 import { BiLeftArrowAlt, BiCheckCircle } from 'react-icons/bi'
 import { CiShoppingBasket } from 'react-icons/ci'
-import { TbCurrencyDollar } from 'react-icons/tb'
+import { TbTag } from 'react-icons/tb'
 
 import './SingleRecipe.scss'
 
@@ -317,7 +317,7 @@ const SingleRecipe: FC = () => {
               {hasPrice ? (
                 <div className='m-item m-cost'>
                   <span className='m-top'>
-                    <TbCurrencyDollar className='m-ic' />
+                    <TbTag className='m-ic' />
                     <span className='m-v'>{formatPrice(servPrice)}</span>
                   </span>
                   <span className='m-l'>Per serving</span>
