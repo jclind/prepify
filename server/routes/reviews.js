@@ -292,7 +292,17 @@ router.get('/getSingleUserReviews', asyncHandler(async (req, res) => {
         const recipeData = await db
           .collection('recipes')
           .findOne({ ...recipeIdQuery(r.recipeId), ...RECIPE_VISIBLE })
-        return recipeData ? { ...r, recipeData } : null
+        if (!recipeData) return null
+        // The account "Ratings" list reads flat `recipeImage`/`recipeTitle` off
+        // each review (the rating doc itself stores neither). Denormalize them
+        // from the recipe doc so the thumbnail and title actually render; keep
+        // the full `recipeData` for callers (e.g. admin) that need the rest.
+        return {
+          ...r,
+          recipeImage: recipeData.recipeImage,
+          recipeTitle: recipeData.title,
+          recipeData,
+        }
       })
     )
     reviews = withRecipe.filter(Boolean)

@@ -55,7 +55,14 @@ const UserRecipes: FC = () => {
   }
 
   const showSkeleton = useDelayedLoading(isLoading)
-  const showGrid = recipes.length > 0 || isLoading
+  // `recipes` is populated by the effect above one render AFTER react-query
+  // flips `isLoading` to false, so on a fast load there's a frame where the
+  // query has settled but `recipes` is still []. Gate the grid on the resolved
+  // payload too (`data.recipes`) so that frame shows the grid, not a flash of
+  // the "no recipes" empty state. The empty state then appears only once the
+  // query has genuinely returned zero recipes.
+  const dataHasRecipes = !!data && data.recipes.length > 0
+  const showGrid = recipes.length > 0 || isLoading || dataHasRecipes
 
   // On the first load, hold an empty frame while a fast query settles, so the
   // skeleton only shows for genuinely slow loads — and the empty state never

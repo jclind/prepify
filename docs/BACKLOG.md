@@ -37,7 +37,12 @@ The triage date stamped on items is the date they were filed here, not when they
   mutation (`onMutate` cancel+snapshot, `onError` rollback, `onSettled` reconcile). Added Vitest hook
   coverage (optimistic + rollback + reconcile-after-clobber guard) and extended server Jest with
   `GET /getSavedRecipeIds` + a save→read→unsave→read round-trip.
-- `[ ]` **Account "Ratings" list renders inaccurately** — recipe images aren't loading for rated recipes.
+- `[x]` **Account "Ratings" list renders inaccurately** — **fixed (track 1c):** rating docs store
+  neither `recipeImage` nor `recipeTitle`, and `GET /getSingleUserReviews?returnRecipeData=true` only
+  attached the recipe as a nested `recipeData` object — but `UserRatings.tsx` reads flat
+  `review.recipeImage` / `review.recipeTitle`, so both resolved to `undefined` (blank `<img>` + empty
+  title). Server now denormalizes `recipeImage`/`recipeTitle` from the recipe doc onto each review (keeps
+  `recipeData` for admin callers). Added server + Vitest coverage.
 - `[x]` **Rating aggregate went *down* after a 5-star** — **root-caused + symptom fixed (PR #150, merged,
   track 1a):** the
   `recomputeRecipeRating` math is correct; the drop is a **stale STORED aggregate** being corrected on
@@ -48,8 +53,14 @@ The triage date stamped on items is the date they were filed here, not when they
   Tech debt below.
 - `[x]` **Serving price looks wrong** — **fixed in PR #152 (merged, track 1d)**; audited
   `src/util/calculateServingPrice.ts` against real data + added regression tests.
-- `[ ]` **"Your Recipes" flashes an empty state** — the account section shows "no recipes" briefly
-  before the user's recipes propagate. Gate the empty state on load completion.
+- `[x]` **"Your Recipes" flashes an empty state** — **reproduced + fixed (track 1c):** the existing
+  `useDelayedLoading` guard only covers the in-flight window; it does NOT cover the gap where
+  react-query flips `isLoading` to false but the `recipes` state is still `[]` (it's populated by an
+  effect one render later, to support paged accumulation). On a fast load the empty state mounted for
+  that one frame. Fixed by gating the grid on the resolved payload (`data.recipes`) as well, so the
+  empty state only renders once the query genuinely returns zero recipes. Same latent flash existed in
+  the Ratings list and got the same gate. A Vitest test (records every `EmptyState` mount) reproduces
+  the flash and guards the fix.
 - `[~]` **Data export omits saved-recipe content** — `exportMyData` now exports full recipes, drafts,
   ratings, and profile, but `savedRecipes` is still an array of IDs only (`server/routes/auth.js:323`).
   Expand it to full saved-recipe content. *(partially addressed)*

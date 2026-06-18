@@ -47,6 +47,7 @@ beforeEach(async () => {
   await db.collection('recipes').insertOne({
     _id: RECIPE_ID,
     title: 'Review Test Recipe',
+    recipeImage: 'https://example.com/review-test.jpg',
     rating: { rateCount: 0, rateValue: 0 },
   })
   // Reset to default: verifyToken resolves req.uid = TEST_UID
@@ -781,6 +782,29 @@ describe('GET /getSingleUserReviews', () => {
     expect(res.status).toBe(200)
     expect(res.body.reviews[0].recipeData).toBeDefined()
     expect(res.body.reviews[0].recipeData._id).toBe(RECIPE_ID)
+  })
+
+  // The account "Ratings" list reads flat recipeImage/recipeTitle off each
+  // review (the rating doc stores neither) — they must be denormalized from the
+  // recipe doc, or the thumbnail and title render blank.
+  it('flattens recipeImage and recipeTitle from the recipe when returnRecipeData=true', async () => {
+    await seedRating({
+      userId: TEST_UID,
+      username: TEST_USERNAME,
+      recipeId: RECIPE_ID,
+      rating: 4,
+      reviewText: 'Great recipe!',
+      reviewCreatedAt: '1000',
+    })
+
+    const res = await request(app).get(
+      `/api/getSingleUserReviews?username=${TEST_USERNAME}&returnRecipeData=true`
+    )
+    expect(res.status).toBe(200)
+    expect(res.body.reviews[0].recipeImage).toBe(
+      'https://example.com/review-test.jpg'
+    )
+    expect(res.body.reviews[0].recipeTitle).toBe('Review Test Recipe')
   })
 
   it('does not include recipeData when returnRecipeData is not set', async () => {
