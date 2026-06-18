@@ -45,10 +45,10 @@ same commit.**
 |---|---|---|---|
 | 0a | Repo/secrets hygiene | `[x]` | #151 ✅ |
 | 0c | Infra (Jesse, dashboards) | `[ ]` | n/a |
-| 1a | Ratings/reviews bug | `[P]` | `worktree-feat+delete-review-star-rating-fix` / #150 |
+| 1a | Ratings/reviews bug | `[x]` | #150 ✅ |
 | 1b | Save-recipe broken | `[ ]` | — |
 | 1c | Account data (images, empty-flash) | `[ ]` | — |
-| 1d | Serving-price bug | `[ ]` | — |
+| 1d | Serving-price bug | `[x]` | #152 ✅ |
 | 2a | Homepage redesign (design + For You row + "What should I cook?") | `[x]` | #153 + #154 ✅ |
 | 2b | Public Help/Contact page | `[ ]` | — |
 | 2c | Single-recipe polish | `[ ]` | — |
@@ -168,6 +168,28 @@ When **0a/1a/1d** merge, start the next wave: **2b** (Help, takes the App.tsx ro
 
 ---
 
+## Suggested second wave (Wave 2 — zero file overlap)
+
+Wave 1 is fully merged. Kick these four off together; their domains don't touch:
+
+- **1b** Save-recipe bug — save / `userRecipeData` (server route + save action)
+- **1c** Account-data bug — `src/pages/Account/*` (rated-recipe images + "Your Recipes" empty-flash)
+- **2b** Public Help/Contact *(blocker)* — Navbar link + `Footer/footerData.ts` (route is **already public**;
+  remaining gap is link visibility + layout refresh, so likely **no `App.tsx` change**)
+- **2c** Single-recipe polish — `src/pages/SingleRecipe/*` (now unblocked: 1a is merged)
+
+**Ordering / holds for Wave 3:**
+- **2e** (account/profile polish) waits for **1c** — both live in `Account/*`; land the bug fix, then polish on top.
+- **2d** (recipes browse) waits for **2b** — shared Navbar. 2b owns the Navbar link this wave.
+- One caveat to watch: if **1b**'s fix reaches into the SingleRecipe save button, it brushes **2c**. 2c's
+  scope (price prominence, stats row, RecipeNotFound, Your-Review UI) avoids the save control, so keep 1b's
+  client change on the save button/`RecipeThumbnail` side and there's no collision.
+
+After this wave: **Wave 3** = 2d + 2e + the Phase-3 smalls (3a a11y, 3b meta/SEO, 3c username/report-user,
+3d add-recipe UX, 3e create-username). Then Phase 4 loners (Sass migration alone, About, QA sweep) → cutover.
+
+---
+
 ## Status log
 
 Append a one-liner when a track changes state (started / PR / merged). Keeps session handoffs honest.
@@ -192,6 +214,13 @@ Append a one-liner when a track changes state (started / PR / merged). Keeps ses
   fallback) revealed in a spotlight modal with a "Try another" re-roll (`HomeCookSuggestion` +
   `GET /api/recipes/random`). Fallback prefers unseen recipes, only resurfacing seen ones once the whole
   catalog is exhausted.
+- _2026-06-17_ — **1a → merged** (PR #150) and **1d → merged** (PR #152). **Wave 1 (0a / 1a / 1d / 2a)
+  complete; no PRs open.** 1d corrected the serving-price calc + added regression tests. Board reconciled
+  against git (1a `[P]`→`[x]`, 1d `[ ]`→`[x]`; backlog bug markers flipped). Residual from 1a — the
+  one-off catalog-wide aggregate reconciliation — stays open in Tech debt (not a blocker).
+- _2026-06-18_ — **Wave 2 defined** (see "Suggested second wave"): **1b** save bug, **1c** account-data bug,
+  **2b** Help/Contact (App.tsx route slot), **2c** single-recipe polish. Zero file overlap. Holds **2e**
+  behind 1c (both `Account/*`) and **2d** behind 2b (shared Navbar).
 
 ---
 
@@ -257,3 +286,80 @@ all`. Remaining 2a work is **feature**, not design, sourced from `docs/FEATURE_I
 Guardrails for these: stay within `src/pages/Home/*` + `src/api/recipes.ts` + `server/routes/recipes.js` +
 `server/util/forYou.js`. Don't touch the beta tag. Keep tests green, tsc clean, build passing. PR into
 development when green.
+
+---
+
+## Appendix — Wave 2 kickoff prompts
+
+Paste-ready briefs for `/worktree-create`. Each is self-contained for a **cold** session (no prior
+context). These four have **zero file overlap** — run them simultaneously.
+
+### Track 1b · Save-recipe bug
+
+```
+/worktree-create fix broken save-recipe functionality
+
+Read docs/RELEASE_GAMEPLAN.md (track 1b) and docs/BACKLOG.md ("Bugs": save-recipe broken). Saving a recipe is reported broken — first REPRODUCE, then fix.
+
+The save flow (current wiring, verify before changing):
+- Client hook: src/hooks/useSaveRecipe.ts — optimistic toggle over a React Query cache keyed ['savedRecipeIds', uid].
+- Client API: src/api/recipes.ts — RecipeAPI.saveRecipe() (POST /api/recipes/:id/save), unsaveRecipe() (DELETE /api/recipes/:id/save), getSavedRecipeIds() (GET /api/getSavedRecipeIds).
+- UI: src/Components/AddToCollection/SaveControl.tsx (the save button + collections control; 'button' variant on the single-recipe action row, 'icon' variant on cards).
+- Server: server/routes/recipes.js — POST /recipes/:id/save and DELETE /recipes/:id/save, both writing the userRecipeData.savedRecipes array ({ recipeId, dateSaved }).
+
+Do: reproduce the breakage (run the app, sign in, try to save/unsave from both a recipe card and the single-recipe page), find the root cause across the hook → API → server chain (watch for: cache key/ shape mismatch, optimistic-update rollback, auth/token, the request path or method, and the saved-array read/write), and fix it. Add/extend tests — server Jest for the save/unsave routes, Vitest for useSaveRecipe (optimistic update + rollback on failure).
+
+Guardrails: scope to the save subsystem listed above. Keep your client change on the SaveControl / hook / api side — do NOT restyle the single-recipe page (single-recipe polish is a separate concurrent track 2c; stay out of SingleRecipe layout). Don't touch the beta tag. Keep frontend + server tests green, tsc clean, build passing. Open a PR into development when green, and in the PR description note exactly how the bug reproduced and what fixed it.
+```
+
+### Track 1c · Account-data bug (rated-recipe images + empty-flash)
+
+```
+/worktree-create fix account ratings images and your-recipes empty flash
+
+Read docs/RELEASE_GAMEPLAN.md (track 1c) and docs/BACKLOG.md ("Bugs"). Two account-page data issues — REPRODUCE each before fixing; one may already be handled.
+
+Bug A (verified): the account "Ratings" list shows rated recipes but the recipe images aren't loading. Render site is src/pages/Account/UserRatings/UserRatings.tsx (image comes from review?.recipeImage). Data comes from RecipeAPI.getSingleUserReviews() (src/api/recipes.ts) → server reviews route. Trace whether recipeImage is missing/empty in the API response (server side) or just mis-rendered (client side), and fix at the right layer. If the field isn't populated server-side, join/populate it from the recipe doc.
+
+Bug B (verify repro first — may already be fixed): "Your Recipes" reportedly flashes a "no recipes" empty state before the user's recipes load. The component is src/pages/Account/UserRecipes/UserRecipes.tsx, which already uses a useDelayedLoading guard — so confirm whether the flash still reproduces. If it does, gate the empty state strictly on load-completion. If it does NOT reproduce, don't force a change: document in the PR that it's already handled and flip the backlog item with that note.
+
+Do: fix Bug A; verify+fix-or-document Bug B. Add coverage where it makes sense (Vitest for the rendering/loading logic; server test if you change the reviews payload).
+
+Guardrails: scope to src/pages/Account/* and the specific reviews API/route feeding the ratings list. Do NOT restyle account navigation or sections — account/profile visual polish is a separate later track (2e). Don't touch the beta tag. Keep tests green, tsc clean, build passing. Open a PR into development when green; in the PR description state how each bug reproduced (or that B didn't).
+```
+
+### Track 2b · Public Help/Contact page (blocker)
+
+```
+/worktree-create make help contact page publicly reachable
+
+Read docs/RELEASE_GAMEPLAN.md (track 2b) and docs/RELEASE_PLAN.md (Help/Contact is a launch blocker). The Help page exists (src/pages/Help/Help.tsx, a contact form) but isn't properly reachable by logged-out users.
+
+Current state (verify, then close the gaps):
+- Route: src/App.tsx (~L199-206) already registers /help as a PUBLIC route (NOT inside PrivateRoute) — so the route is likely fine; confirm a signed-out user can load /help directly.
+- Footer link: src/Components/Footer/footerData.ts (~L32) has { label: 'Help', to: '/help', auth: 'in' } — auth:'in' means it ONLY shows to signed-in users. That's the core bug: a logged-out user has no link to Help. Make it publicly visible.
+- Nav: there's no direct navbar link to Help. Decide whether a public entry point belongs in the nav too (footer may be enough — keep it tasteful).
+
+Do: ensure a logged-out visitor can both reach /help directly AND find a link to it (footer at minimum). Refresh the Help page layout/copy so it's presentable for a public audience (it's a 1.0 blocker page). If App.tsx already has it public, you likely won't need to touch App.tsx at all.
+
+Guardrails: you MAY touch the Navbar to add a public link — note that track 2d will also touch the Navbar later, so keep your Navbar change minimal and self-contained. Scope: src/pages/Help/*, src/Components/Footer/*, Navbar link, and App.tsx only if the route genuinely isn't public. Don't touch the beta tag. Keep tests green, tsc clean, build passing. Open a PR into development when green; in the PR, confirm with a signed-out check that Help is reachable + linked.
+```
+
+### Track 2c · Single-recipe polish
+
+```
+/worktree-create polish the single recipe page
+
+Read docs/RELEASE_GAMEPLAN.md (track 2c) and docs/BACKLOG.md ("UX / visual polish" — the single-recipe items). Visual/UX polish on the single-recipe page. NOTE: track 1a (ratings) already merged, so the "Remove rating" control already exists — build on it, don't rebuild it.
+
+Polish items (all on src/pages/SingleRecipe/*):
+1. Serving-price prominence — the price line (SingleRecipe.tsx ~L361-369: "$X total / $X per serving") isn't prominent enough; surface it more clearly.
+2. Stats row (SingleRecipe.tsx ~L262-288, the .action-bar > .meta row of time / servings / rating) — consider dropping the rating from this row (it already shows right below) and centering the remaining three... wait, three stats minus rating = time + servings; re-evaluate and lay it out cleanly/centered.
+3. "You created this recipe" mobile styling — RecipeControls.tsx (~L105-110, the .who span shown to the owner) is slightly off on mobile; fix it.
+4. RecipeNotFound visual — src/pages/SingleRecipe/RecipeNotFound/RecipeNotFound.tsx looks bad; improve it (it already links to /help).
+5. "Your Review" UI + rating-dropdown position — the DataSections/RatingsAndReviews/* area: the "Your Review" UI is weak, and the rating dropdown shown after you give a rating (Ratings/Ratings.tsx) isn't positioned where it should be. Improve both.
+
+Do: tighten these without changing data/behavior. Keep it visual — no API or route changes.
+
+Guardrails: scope STRICTLY to src/pages/SingleRecipe/* (incl. DataSections/RatingsAndReviews/* and its scss). Do NOT change the save control / SaveControl (track 1b is concurrently in that area) and do NOT change ratings server logic or the remove-rating behavior from 1a — styling/placement only. Don't touch the beta tag. Keep tests green, tsc clean, build passing. Open a PR into development when green; screenshot before/after (desktop + mobile widths) in the PR.
+```
