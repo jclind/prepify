@@ -83,17 +83,22 @@ The triage date stamped on items is the date they were filed here, not when they
   instead of waiting for the parse/nutrition request to return.
 - `[ ]` **Search autocomplete "autocorrect" is weak** — fuzzy matching on recipe search autocomplete
   needs improvement.
-- `[ ]` **"You created this recipe" — mobile styling** — slightly off on the single-recipe page.
-- `[ ]` **Recipe stats styling** — consider dropping the rating from the stats row (it already shows
-  right below) and centering the remaining three stats.
+- `[x]` **"You created this recipe" — mobile styling** — *fixed in PR #160 (track 2c)*; owner-stats
+  strip now an equal-width row with dividers instead of scattering via `space-between`.
+- `[x]` **Recipe stats styling** — *fixed in PR #160 (track 2c)*; rating dropped from the action-bar
+  row, replaced by a per-serving price tile (time / servings / price).
 - `[ ]` **Add-recipe bottom bar overlaps the footer** — scrolling to the bottom of the add-recipe page,
   the sticky bottom bar hides the footer. *(minor)*
-- `[ ]` **Single-recipe "no recipe found" looks bad** — improve the visual of `RecipeNotFound`.
+- `[x]` **Single-recipe "no recipe found" looks bad** — *fixed in PR #160 (track 2c)*; redesigned
+  empty-state card (icon + search + "Browse all recipes" CTA), and fixed 404 routing so a missing
+  recipe renders instantly instead of retrying ~7s then showing a generic error.
 - `[ ]` **Drop search from the topmost navbar on /recipes** — for the new navbar, the recipes page
   shouldn't carry search in the top-most bar. *(noted 2026-06-10)*
-- `[ ]` **Serving price not prominent enough** — surface it more clearly on the single-recipe page.
-- `[ ]` **Review UI needs work** — the "Your Review" UI is poor, and the rating dropdown (shown once
-  you give a rating) isn't positioned where it should be.
+- `[x]` **Serving price not prominent enough** — *fixed in PR #160 (track 2c)*; per-serving cost is now
+  a brand-orange price-tag tile in the top action bar.
+- `[x]` **Review UI needs work** — *fixed in PR #160 (track 2c)*; "Your review" is now an eyebrow label
+  + a teal-accented, tinted card distinct from the public list. The "rating dropdown" was already
+  removed by track 1a (it's the "Remove rating" button now), so only the Your-Review UI applied.
 - `[ ]` **Show the recipe rating up top on the single-recipe page** — the top action-bar rating tile
   was replaced by the per-serving price tile (2c). Re-surface the rating compactly near the title/hero
   (e.g. "★ 4.5 · N ratings") rather than adding a 4th action-bar tile (which would crowd mobile). It

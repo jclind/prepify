@@ -51,7 +51,7 @@ same commit.**
 | 1d | Serving-price bug | `[x]` | #152 ✅ |
 | 2a | Homepage redesign (design + For You row + "What should I cook?") | `[x]` | #153 + #154 ✅ |
 | 2b | Public Help/Contact page | `[x]` | #158 ✅ |
-| 2c | Single-recipe polish | `[P]` | #160 |
+| 2c | Single-recipe polish | `[x]` | #160 ✅ |
 | 2d | Recipes browse polish | `[ ]` | — |
 | 2e | Account/profile polish | `[ ]` | — |
 | 3a | a11y (focus-visible, chevron) | `[ ]` | — |
@@ -234,6 +234,17 @@ Append a one-liner when a track changes state (started / PR / merged). Keeps ses
   backlog bug marker flipped). Client change confined to `useSaveRecipe` (SaveControl/SingleRecipe/api
   untouched), so no collision with 2c. The `recipe.cy.ts` save E2E gained a stateful saved-ids stub so it
   exercises the new post-write reconciliation. Worktree/branch pruned after merge.
+- _2026-06-18_ — **2c Single-recipe polish → merged** (PR #160, all CI green incl. Cypress). Shipped:
+  per-serving price as a prominent price-tag tile (replaces rating tile → time/servings/price row);
+  Report demoted from the CTA row to a quiet bottom-of-page link (logged-in non-owners); owner-banner
+  mobile stats now an equal-width divided strip; `RecipeNotFound` redesigned **+ 404 routing fixed**
+  (map 404→null in the queryFn so it renders instantly, no ~7s retry, without overriding retry config);
+  "Your review" restyled as an eyebrow label + teal-accented card; ingredient rows made keyboard-operable
+  (`role=checkbox`); schema.org/Recipe **JSON-LD** added. Verified via live authed smoke test (rate →
+  review → "Your review" card, with full cleanup). Per-page OG tags **deferred to 3b/3c** (static
+  `index.html` `og:*` defaults can't be deduped by react-helmet-async). Two follow-ups filed → **Track 3c**:
+  show report controls to logged-out users (login prompt); surface rating up top near the title. Backlog
+  single-recipe items flipped; worktree/branch pruned after merge.
 
 ---
 
