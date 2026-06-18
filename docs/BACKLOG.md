@@ -114,10 +114,15 @@ The triage date stamped on items is the date they were filed here, not when they
 
 ## Accessibility
 
-- `[ ]` **Stop focus outline on mouse button clicks** — keep it for keyboard nav only
-  (`:focus-visible`).
-- `[ ]` **Desktop navbar account chevron animation shifts the focus outline** — the chevron animation
-  moves the focus outline; decouple them.
+- `[P]` **Stop focus outline on mouse button clicks** — **done in PR #163 (track 3a, open — not yet
+  merged):** the global `button`/`a` outline rule (`src/index.scss`) and every component-local
+  `@include s.outline()` ring were switched from `:focus` to `:focus-visible`, so the ring shows for
+  keyboard nav only. Input/textarea focus affordances (border/box-shadow/background) were deliberately
+  left on `:focus` — clicking into a field should still highlight it.
+- `[P]` **Desktop navbar account chevron animation shifts the focus outline** — **done in PR #163
+  (track 3a, open):** the caret was wrapped in a fixed-size `overflow:hidden` clip box with an inner
+  rotating `<svg>` (`DesktopAccountMenu.tsx` + `DesktopNav.scss`), so the `outline:auto` ring no longer
+  tracks the rotating icon's bounding box.
 - `[ ]` **Account Ratings list nests a `<button>` inside a `<button>`** — each rating row is a clickable
   `<button className="single-review">` (`src/pages/Account/UserRatings/.../SingleReview`) that renders a
   `StarRating`, which itself emits a `<button>` per star (even when non-interactive). React logs

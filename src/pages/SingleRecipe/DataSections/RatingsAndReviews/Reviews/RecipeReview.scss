@@ -98,7 +98,7 @@
           &:hover {
             color: s.$primary-text;
           }
-          &:focus {
+          &:focus-visible {
             @include s.outline();
           }
         }
@@ -106,7 +106,7 @@
           &:hover {
             color: s.$error-red;
           }
-          &:focus {
+          &:focus-visible {
             @include s.outline();
           }
         }
@@ -126,7 +126,7 @@
       }
       button.like-review-btn,
       button.dislike-review-btn {
-        &:focus {
+        &:focus-visible {
           @include s.outline();
         }
       }

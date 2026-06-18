@@ -142,7 +142,7 @@
     text-decoration: none;
     padding: 0.25rem 0.35rem;
     margin: -0.25rem -0.35rem;
-    &:focus {
+    &:focus-visible {
       @include s.outline();
     }
   }
@@ -159,7 +159,7 @@
     -webkit-animation: breathing 5s ease-out infinite normal;
     animation: breathing 5s ease-out infinite normal;
     cursor: pointer;
-    &:focus {
+    &:focus-visible {
       @include s.outline();
     }
   }

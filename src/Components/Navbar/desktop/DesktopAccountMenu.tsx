@@ -88,7 +88,11 @@ const DesktopAccountMenu: FC<DesktopAccountMenuProps> = ({
         onClick={() => setOpen(o => !o)}
       >
         {renderAvatar('dnav-account__avatar')}
-        <MdKeyboardArrowDown className='dnav-account__caret' />
+        {/* Fixed-size clip box; the inner icon (not this box) rotates, so the
+            rotation never enlarges the button's `outline: auto` focus ring. */}
+        <span className='dnav-account__caret'>
+          <MdKeyboardArrowDown className='dnav-account__caret-icon' />
+        </span>
       </button>
 
       <div className='dnav-account__menu' id={panelId}>
