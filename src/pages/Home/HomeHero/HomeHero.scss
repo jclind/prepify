@@ -46,16 +46,13 @@
   }
 }
 
-// "What should I cook?" button + its reveal card, living in the hero overlay
-// under the search input.
+// "What should I cook?" trigger button, living in the hero overlay under the
+// search input. Clicking opens a spotlight modal (HomeCookSuggestion.scss); the
+// button itself never moves, so nothing on the page shifts.
 .home-cook-suggestion {
   margin-top: 1.25rem;
-  width: 90%;
-  max-width: 520px;
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.85rem;
+  justify-content: center;
 
   .cook-suggestion-btn {
     display: inline-flex;
@@ -70,70 +67,14 @@
     font-weight: 600;
     cursor: pointer;
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
-    transition: transform 0.12s ease, filter 0.12s ease, opacity 0.12s ease;
+    transition: transform 0.12s ease, filter 0.12s ease;
 
     svg {
       font-size: 1.25rem;
     }
-    &:hover:not(:disabled) {
+    &:hover {
       transform: translateY(-1px);
       filter: brightness(1.06);
     }
-    &:disabled {
-      opacity: 0.75;
-      cursor: default;
-    }
-  }
-
-  .cook-suggestion-reveal {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.75rem;
-
-    // The shared home card is sized for a grid cell; constrain + lift it here so
-    // the single reveal reads as a floating card on the hero rather than a row.
-    .home-recipe-card {
-      width: 100%;
-      max-width: 320px;
-      background: s.$white;
-      border-radius: 12px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-    }
-
-    .try-another-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      padding: 0.5rem 1.1rem;
-      border: 1px solid rgba(255, 255, 255, 0.55);
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.14);
-      color: s.$white;
-      font-size: 0.9rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: background 0.12s ease;
-
-      svg {
-        font-size: 1.05rem;
-      }
-      &:hover:not(:disabled) {
-        background: rgba(255, 255, 255, 0.24);
-      }
-      &:disabled {
-        opacity: 0.7;
-        cursor: default;
-      }
-    }
-  }
-
-  .cook-suggestion-msg {
-    margin: 0;
-    color: s.$white;
-    font-size: 0.9rem;
-    text-align: center;
-    opacity: 0.9;
   }
 }
