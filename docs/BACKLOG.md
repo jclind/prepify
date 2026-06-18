@@ -29,7 +29,14 @@ The triage date stamped on items is the date they were filed here, not when they
   rating-only), and `deleteReview` now keeps the rating and deletes the doc when there's nothing left —
   no orphan with neither text nor rating. A "Remove rating" control was added to the recipe rating card.
   *(verified; live authed smoke-test passed 2026-06-17)*
-- `[ ]` **Save-recipe functionality is broken** — needs a fix and test coverage.
+- `[x]` **Save-recipe functionality is broken** — **fixed in PR #157 (merged, track 1b)**: root-caused to
+  `useSaveRecipe`'s hand-rolled optimistic write over the shared `['savedRecipeIds']` cache (default
+  `staleTime: 0`). A stale refetch (window-focus / sibling card / `invalidateSavedCaches`) resolving
+  mid-write overwrote the optimistic value, and with no post-write reconciliation the bookmark stayed
+  reverted even though the server save had succeeded. Rewrote the toggle as a proper React Query optimistic
+  mutation (`onMutate` cancel+snapshot, `onError` rollback, `onSettled` reconcile). Added Vitest hook
+  coverage (optimistic + rollback + reconcile-after-clobber guard) and extended server Jest with
+  `GET /getSavedRecipeIds` + a save→read→unsave→read round-trip.
 - `[ ]` **Account "Ratings" list renders inaccurately** — recipe images aren't loading for rated recipes.
 - `[x]` **Rating aggregate went *down* after a 5-star** — **root-caused + symptom fixed (PR #150, merged,
   track 1a):** the
