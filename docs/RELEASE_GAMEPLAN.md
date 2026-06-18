@@ -46,7 +46,7 @@ same commit.**
 | 0a | Repo/secrets hygiene | `[x]` | #151 ✅ |
 | 0c | Infra (Jesse, dashboards) | `[ ]` | n/a |
 | 1a | Ratings/reviews bug | `[x]` | #150 ✅ |
-| 1b | Save-recipe broken | `[P]` | worktree-feat+fix-save-recipe |
+| 1b | Save-recipe broken | `[P]` | #157 |
 | 1c | Account data (images, empty-flash) | `[ ]` | — |
 | 1d | Serving-price bug | `[x]` | #152 ✅ |
 | 2a | Homepage redesign (design + For You row + "What should I cook?") | `[x]` | #153 + #154 ✅ |
@@ -221,7 +221,7 @@ Append a one-liner when a track changes state (started / PR / merged). Keeps ses
 - _2026-06-18_ — **Wave 2 defined** (see "Suggested second wave"): **1b** save bug, **1c** account-data bug,
   **2b** Help/Contact (App.tsx route slot), **2c** single-recipe polish. Zero file overlap. Holds **2e**
   behind 1c (both `Account/*`) and **2d** behind 2b (shared Navbar).
-- _2026-06-18_ — **1b → PR open.** Root-caused the "save is broken" report to `useSaveRecipe`'s
+- _2026-06-18_ — **1b → PR open (#157).** Root-caused the "save is broken" report to `useSaveRecipe`'s
   hand-rolled optimistic write: the shared `['savedRecipeIds']` cache runs at the default staleTime (0),
   so a stale refetch (window-focus / sibling card / `invalidateSavedCaches`) resolving mid-write overwrote
   the optimistic value — and with no post-write reconciliation the bookmark stayed reverted even though the
