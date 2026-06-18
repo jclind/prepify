@@ -44,25 +44,27 @@ const skeletonColor = '#d6d6d6'
 const SingleRecipe: FC = () => {
   const { recipeId } = useParams<{ recipeId: string }>()
 
-  const { data: fetchedRecipe, isPending, isError, error } = useQuery({
+  const { data: fetchedRecipe, isPending, isError } = useQuery({
     queryKey: ['recipe', recipeId],
-    queryFn: () => RecipeAPI.getRecipe(recipeId!),
+    // Map a 404 to null instead of throwing: a missing recipe is a definitive
+    // "not found", not a transient failure, so it should render RecipeNotFound
+    // immediately rather than burning the query's retry budget (~7s) and then
+    // showing a generic error. Other failures still throw → normal retry path.
+    queryFn: async () => {
+      try {
+        return await RecipeAPI.getRecipe(recipeId!)
+      } catch (err) {
+        if (isAxiosError(err) && err.response?.status === 404) return null
+        throw err
+      }
+    },
     enabled: !!recipeId,
-    // A 404 is a definitive "no such recipe" — don't burn ~7s of retries on it;
-    // surface RecipeNotFound immediately. Other failures still retry.
-    retry: (failureCount, err) =>
-      isAxiosError(err) && err.response?.status === 404 ? false : failureCount < 3,
   })
 
   const loading = isPending
-  // Treat a 404 (or a 2xx with no recipe body) as "not found" → RecipeNotFound.
-  // Any other error is a transient failure → show the retry message.
-  const is404 =
-    (isError && isAxiosError(error) && error.response?.status === 404) ||
-    (!isPending && !isError && (!fetchedRecipe || !fetchedRecipe.title))
-  const recipe404 = is404
-  const recipeError =
-    isError && !is404 ? 'Failed to load recipe. Please try again.' : null
+  const recipe404 =
+    !isPending && !isError && (!fetchedRecipe || !fetchedRecipe.title)
+  const recipeError = isError ? 'Failed to load recipe. Please try again.' : null
   const currRecipe: RecipeType | null =
     !isPending && fetchedRecipe && fetchedRecipe.title ? fetchedRecipe : null
 
