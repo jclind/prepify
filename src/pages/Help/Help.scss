@@ -7,14 +7,14 @@
 // re-tuned here to fill the app-main flex slot instead of owning a 100vh,
 // self-scrolling screen.
 .help-page.form-format {
+  // Grow to fill app-main (which flex-grows to fill the shell minus the footer),
+  // so the gradient spans from the navbar down to the footer with the footer
+  // resting at the bottom of the viewport — not pushed below the fold by a forced
+  // 100vh. The navbar is fixed/absolute (out of flow, $nav-height tall) so the
+  // gradient bleeds full-width behind it; the top padding keeps the card clear.
   flex: 1 0 auto;
+  min-height: 0;
   overflow-y: visible;
-  // Fill a full viewport height so the gradient spans navbar→footer (the footer
-  // just sits below the fold, like the auth pages). The navbar is fixed/absolute
-  // (out of flow, $nav-height tall) so the gradient bleeds full-width behind it;
-  // the top padding keeps the card clear of it.
-  min-height: 100vh;
-  min-height: 100dvh;
   padding: calc(#{s.$nav-height} + 1.5rem) 1rem 3rem;
   // The global footer carries a 4rem top margin to separate itself from page
   // content; on this gradient page that margin exposes a strip of body
