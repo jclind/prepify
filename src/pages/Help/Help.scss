@@ -7,26 +7,28 @@
 // re-tuned here to fill the app-main flex slot instead of owning a 100vh,
 // self-scrolling screen.
 .help-page.form-format {
-  // Fill the flexbox app-main and let the document flow scroll past the footer,
-  // rather than forcing a viewport-height panel with its own inner scrollbar.
   flex: 1 0 auto;
   overflow-y: visible;
-  // Anchor near the top so the card top is always reachable when the form grows
-  // taller than the available height (the chips + open form can exceed it).
-  align-items: flex-start;
-  // The navbar is fixed/absolute (out of flow, $nav-height tall) and the footer
-  // flows right after app-main. Fill a full viewport height so the gradient
-  // always reaches the footer with no bare-background gap (the footer simply sits
-  // just below the fold, like the auth pages), and pad the top by the navbar
-  // height so the card clears it — the gradient still bleeds full-width behind
-  // the transparent navbar.
+  // Fill a full viewport height so the gradient spans navbar→footer (the footer
+  // just sits below the fold, like the auth pages). The navbar is fixed/absolute
+  // (out of flow, $nav-height tall) so the gradient bleeds full-width behind it;
+  // the top padding keeps the card clear of it.
   min-height: 100vh;
   min-height: 100dvh;
-  padding: calc(#{s.$nav-height} + 2rem) 1rem 3rem;
+  padding: calc(#{s.$nav-height} + 1.5rem) 1rem 3rem;
+  // The global footer carries a 4rem top margin to separate itself from page
+  // content; on this gradient page that margin exposes a strip of body
+  // background between the panel and the footer. Pull the panel down across it
+  // so the gradient meets the footer flush. (Kept in sync with .site-footer.)
+  margin-bottom: -4rem;
 
   .form-container {
     // A touch wider than the auth card to fit the 2-up topic grid comfortably.
     max-width: 460px;
+    // Auto block margins center the card vertically when there's room, but
+    // collapse to 0 (top-aligned) when the open form is taller than the
+    // viewport — so it never overflows upward behind the fixed navbar.
+    margin: auto;
   }
 
   // Heading + supporting line sit above the form (the chips live between them),
