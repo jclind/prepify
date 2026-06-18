@@ -182,6 +182,10 @@ The triage date stamped on items is the date they were filed here, not when they
 
 ## Resolved / verified done (recorded, not active)
 
+- `[x]` **Local test suite fails on Node ≥24 (Web Storage shim)** — Node's experimental built-in
+  `localStorage` shadowed jsdom's and crashed the `savedFilters`/`SingleRecipe` tests on any Node newer
+  than CI's (pinned to 24). `src/test/setup.ts` now installs an in-memory Storage when the real one is
+  unusable. PR #159.
 - `[x]` **Sign-up button copy** — already reads "Create account" (`src/pages/Signup/Signup.tsx:110`).
 - `[x]` **Bug reporting & viewing system** — shipped: `BugReportModal` + `/admin/bug-reports` queue +
   `bugReports` collection/route.

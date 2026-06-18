@@ -93,13 +93,35 @@ describe('Footer', () => {
       ).not.toBeInTheDocument()
     })
 
-    it('reveals the auth-gated Discover links when signed in', () => {
-      // Hidden when signed out so logged-out users aren't sent to the login wall.
+    it('hides the auth-gated Add a recipe link when signed out', () => {
+      // Behind PrivateRoute, so logged-out users aren't sent to the login wall.
+      authState.user = null
+      renderFooter()
+      expect(
+        screen.queryByRole('link', { name: 'Add a recipe' })
+      ).not.toBeInTheDocument()
+    })
+
+    it('reveals the auth-gated Add a recipe link when signed in', () => {
       authState.user = { uid: 'abc123' }
       renderFooter()
       expect(
         screen.getByRole('link', { name: 'Add a recipe' })
       ).toHaveAttribute('href', '/add-recipe')
+    })
+
+    it('always shows the public Help link, signed in or out', () => {
+      // Help lives outside PrivateRoute so locked-out users can reach support.
+      authState.user = null
+      const { unmount } = renderFooter()
+      expect(screen.getByRole('link', { name: 'Help' })).toHaveAttribute(
+        'href',
+        '/help'
+      )
+      unmount()
+
+      authState.user = { uid: 'abc123' }
+      renderFooter()
       expect(screen.getByRole('link', { name: 'Help' })).toHaveAttribute(
         'href',
         '/help'

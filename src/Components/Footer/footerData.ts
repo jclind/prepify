@@ -26,10 +26,12 @@ export const footerColumns: FooterColumn[] = [
     links: [
       { label: 'Home', to: '/' },
       { label: 'All recipes', to: '/recipes' },
-      // Both require auth (PrivateRoute) — only show them to signed-in users so
+      // Add a recipe is behind PrivateRoute — only show it to signed-in users so
       // logged-out visitors aren't bounced to the login wall from the footer.
       { label: 'Add a recipe', to: '/add-recipe', auth: 'in' },
-      { label: 'Help', to: '/help', auth: 'in' },
+      // Help/support is public (route lives outside PrivateRoute) so locked-out
+      // users — forgot password, broken signup — can always reach the form.
+      { label: 'Help', to: '/help' },
     ],
   },
   {

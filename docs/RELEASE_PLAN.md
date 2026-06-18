@@ -57,8 +57,8 @@ a feature flag. Do these together:
   by loading with the API down. **(nice-to-have, but high-impact)**
 - `[~]` **Broken-link & dead-route check** — click every nav item, footer link, and CTA; confirm no
   404s or dead `href="#"`. **Fixed 2026-06-09:** the 404 page's "contact our support team" link now
-  points to `/help` instead of `/` (`src/pages/404/404.tsx`) — note `/help` is still login-gated, so
-  this fully lands once the Help page goes public (Section D). Still to verify: the "View All Release
+  points to `/help` instead of `/` (`src/pages/404/404.tsx`) — the Help page is now public + redesigned
+  (Section D, PR #158 open), so that dependency is addressed. Still to verify: the "View All Release
   Notes" link in `ReleaseNotes.tsx:145` (`github.com/jclind/prepify/releases`). **(blocker)**
 - `[x]` **404 / not-found page** — a real designed 404 exists (`src/pages/404/404.tsx` — food-plate
   graphic, Return Home button) and renders correctly on an unknown route. *Copy nit:* the heading
@@ -242,16 +242,16 @@ Chunky design efforts that are bigger than a single checkbox. Tag each as **(blo
     `HomeCookSuggestion.tsx`), `src/api/recipes.ts`, `server/routes/recipes.js`,
     `server/util/forYou.js`, `server/util/tasteContext.js`.
 
-- `[ ]` **Help / Contact Support page** — **(blocker)**
-  - **Now:** the page already exists — `src/pages/Help/Help.tsx` (routed `/help`) is a Formspree form
-    (category / title / description). **But it's gated:** the route sits inside the `PrivateRoute`
-    block (`src/App.tsx:130`), so it requires login, and it's only linked from the logged-in account
-    dropdown (`src/Components/Navbar/Navbar.tsx:127`). A logged-out visitor can't reach support at all.
-  - **Goal:** _(fill in)_ — redesign as a proper *public* contact/support page: make it reachable when
-    logged out (move the route out of `PrivateRoute`, add a public link — e.g. from the new footer) and
-    refresh the layout.
-  - **Touches:** `src/pages/Help/Help.tsx` (+ `Help.scss`), the route in `src/App.tsx:130`, and the
-    nav link in `src/Components/Navbar/Navbar.tsx:127`.
+- `[x]` **Help / Contact Support page** — **(blocker → done, PR #158)**
+  - **Was:** `/help` (`src/pages/Help/Help.tsx`, a Formspree form) was already public (the route had
+    been moved out of `PrivateRoute`), but **every link to it was hidden from logged-out users** — the
+    footer link was tagged `auth: 'in'`, so a locked-out visitor had no way to reach support.
+  - **Done (PR #158):** un-gated the footer Help link; redesigned the page for a public audience —
+    soft-glass card matching the auth pages, progressive disclosure (topic chips → compact email +
+    message form, optional subject), email fallback, improved success state, a11y (aria-live / pressed).
+    Verified logged-out + signed-in (email pre-fill), runtime-verified, and high-effort reviewed.
+  - **Touches:** `src/pages/Help/Help.tsx` (+ `Help.scss`), `src/Components/Footer/footerData.ts`
+    (link un-gate). `App.tsx` not touched — route was already public.
 
 - `[ ]` **Data-integrity pass** — **(post-1.0)**
   - **Now:** several collections reference each other by mutable/denormalized fields rather than the
