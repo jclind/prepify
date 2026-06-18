@@ -46,12 +46,12 @@ same commit.**
 | 0a | Repo/secrets hygiene | `[x]` | #151 ✅ |
 | 0c | Infra (Jesse, dashboards) | `[ ]` | n/a |
 | 1a | Ratings/reviews bug | `[x]` | #150 ✅ |
-| 1b | Save-recipe broken | `[ ]` | — |
+| 1b | Save-recipe broken | `[x]` | #157 ✅ |
 | 1c | Account data (images, empty-flash) | `[ ]` | — |
 | 1d | Serving-price bug | `[x]` | #152 ✅ |
 | 2a | Homepage redesign (design + For You row + "What should I cook?") | `[x]` | #153 + #154 ✅ |
 | 2b | Public Help/Contact page | `[x]` | #158 ✅ |
-| 2c | Single-recipe polish | `[ ]` | — |
+| 2c | Single-recipe polish | `[P]` | #160 |
 | 2d | Recipes browse polish | `[ ]` | — |
 | 2e | Account/profile polish | `[ ]` | — |
 | 3a | a11y (focus-visible, chevron) | `[ ]` | — |
@@ -125,7 +125,7 @@ All isolated files — safe to run together.
 |---|---|---|
 | **3a** a11y | `:focus-visible` only (no outline on mouse click); fix chevron animation shifting the focus outline | `src/Components/Navbar/*`, global styles |
 | **3b** Meta/SEO finish | favicon, OG image for link previews, per-page `<title>`s | `index.html`, per-page Helmet |
-| **3c** Features | username char-validation; report-a-user from profile *(admin; `ReportTargetType` currently only recipe/review)* | `server/routes/*`, `ReportControl`, `types.ts` |
+| **3c** Features | username char-validation; report-a-user from profile *(admin; `ReportTargetType` currently only recipe/review)*; show report controls to logged-out users with a login prompt (recipe + reviews); surface the recipe rating up top (near the title) | `server/routes/*`, `ReportControl`, `types.ts`, `src/pages/SingleRecipe/*` |
 | **3d** Add-recipe UX | optimistic ingredient add; ingredient-parser not-found timeout/exit; bottom bar overlapping footer | `src/pages/AddRecipe/*` |
 | **3e** create-username | revamp the page + add a logout/escape hatch so users can't get stuck | `src/pages/CreateUsername/*` |
 
@@ -221,6 +221,19 @@ Append a one-liner when a track changes state (started / PR / merged). Keeps ses
 - _2026-06-18_ — **Wave 2 defined** (see "Suggested second wave"): **1b** save bug, **1c** account-data bug,
   **2b** Help/Contact (App.tsx route slot), **2c** single-recipe polish. Zero file overlap. Holds **2e**
   behind 1c (both `Account/*`) and **2d** behind 2b (shared Navbar).
+- _2026-06-18_ — **1b → PR open (#157).** Root-caused the "save is broken" report to `useSaveRecipe`'s
+  hand-rolled optimistic write: the shared `['savedRecipeIds']` cache runs at the default staleTime (0),
+  so a stale refetch (window-focus / sibling card / `invalidateSavedCaches`) resolving mid-write overwrote
+  the optimistic value — and with no post-write reconciliation the bookmark stayed reverted even though the
+  server save had succeeded. Rewrote the toggle as a proper React Query optimistic mutation
+  (`onMutate` cancel+snapshot, `onError` rollback, `onSettled` reconcile). Client change confined to the
+  hook — `SaveControl`/`SingleRecipe`/`api` untouched (keeps clear of 2c). Tests: new Vitest suite for the
+  hook (optimistic, rollback, and a reconcile-after-clobber guard that fails on the old hook) + extended
+  server Jest with `GET /getSavedRecipeIds` shape + save/unsave round-trip. tsc + build clean.
+- _2026-06-18_ — **1b → merged** (PR #157, all CI green incl. Cypress). Board reconciled (1b `[P]`→`[x]`;
+  backlog bug marker flipped). Client change confined to `useSaveRecipe` (SaveControl/SingleRecipe/api
+  untouched), so no collision with 2c. The `recipe.cy.ts` save E2E gained a stateful saved-ids stub so it
+  exercises the new post-write reconciliation. Worktree/branch pruned after merge.
 
 ---
 

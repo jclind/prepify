@@ -620,6 +620,64 @@ describe('DELETE /recipes/:id/save', () => {
   })
 })
 
+// ─── GET /getSavedRecipeIds ────────────────────────────────────────────────────
+// This is the single read the client's useSaveRecipe hook resolves every card's
+// saved state from, so its shape (a flat array of recipeId strings) and its
+// save/unsave round-trip are part of the save subsystem's contract.
+
+describe('GET /getSavedRecipeIds', () => {
+  it('returns [] when the user has no saved-recipe data', async () => {
+    const res = await request(server)
+      .get('/api/getSavedRecipeIds')
+      .set(AUTH_HEADER)
+
+    expect(res.status).toBe(200)
+    expect(res.body).toEqual([])
+  })
+
+  it('returns a flat array of saved recipe id strings', async () => {
+    const db = getDB()
+    await db.collection('userRecipeData').insertOne({
+      _id: TEST_UID,
+      savedRecipes: [
+        { recipeId: 'recipe-001', dateSaved: '1' },
+        { recipeId: 'recipe-002', dateSaved: '2' },
+      ],
+    })
+
+    const res = await request(server)
+      .get('/api/getSavedRecipeIds')
+      .set(AUTH_HEADER)
+
+    expect(res.status).toBe(200)
+    expect(res.body).toEqual(['recipe-001', 'recipe-002'])
+  })
+
+  it('round-trips: a saved id appears here, then disappears after unsave', async () => {
+    const db = getDB()
+    await db.collection('recipes').insertOne({ ...BASE_RECIPE, numTimesSaved: 0 })
+
+    // Initially not saved.
+    let ids = await request(server).get('/api/getSavedRecipeIds').set(AUTH_HEADER)
+    expect(ids.body).not.toContain(RECIPE_ID)
+
+    // Save → id is now present.
+    await request(server).post(`/api/recipes/${RECIPE_ID}/save`).set(AUTH_HEADER)
+    ids = await request(server).get('/api/getSavedRecipeIds').set(AUTH_HEADER)
+    expect(ids.body).toContain(RECIPE_ID)
+
+    // Unsave → id is gone again.
+    await request(server).delete(`/api/recipes/${RECIPE_ID}/save`).set(AUTH_HEADER)
+    ids = await request(server).get('/api/getSavedRecipeIds').set(AUTH_HEADER)
+    expect(ids.body).not.toContain(RECIPE_ID)
+  })
+
+  it('requires auth', async () => {
+    const res = await request(server).get('/api/getSavedRecipeIds')
+    expect(res.status).toBe(401)
+  })
+})
+
 // ─── GET /health ──────────────────────────────────────────────────────────────
 
 describe('GET /health', () => {

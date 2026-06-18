@@ -161,7 +161,7 @@ describe('RatingsAndReviews integration', () => {
       mockGetUID.mockReturnValue('user-1')
       mockCheckIfReviewed.mockResolvedValue(baseReview)
       render(<IntegrationWrapper />)
-      await screen.findByText('Your Review:')
+      await screen.findByText('Your review')
       expect(screen.queryByText('Add Review')).toBeNull()
     })
   })
@@ -193,7 +193,7 @@ describe('RatingsAndReviews integration', () => {
       )
       // After a successful submit, setCurrUserReview(baseReview) causes ReviewsContainer
       // to switch from AddReview to the curr-user-review section containing RecipeReview.
-      await screen.findByText('Your Review:')
+      await screen.findByText('Your review')
       expect(screen.getByText('Really great recipe!')).toBeInTheDocument()
     })
   })
@@ -252,7 +252,7 @@ describe('RatingsAndReviews integration', () => {
       // setCurrUserReview(null) switches ReviewsContainer back to the write-review
       // box (the user still has their rating, so the textarea reappears in-flow)
       await screen.findByText(/Add a written review/i)
-      expect(screen.queryByText('Your Review:')).toBeNull()
+      expect(screen.queryByText('Your review')).toBeNull()
     })
   })
 

@@ -75,7 +75,7 @@ const ReviewsContainer: FC<ReviewsContainerProps> = ({
             />
           ) : (
             <div className='curr-user-review'>
-              <h4 className='heading'>Your Review:</h4>
+              <h4 className='heading'>Your review</h4>
               <RecipeReview
                 review={currUserReview}
                 setCurrUserReview={setCurrUserReview}
