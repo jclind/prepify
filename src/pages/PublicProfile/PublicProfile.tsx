@@ -174,6 +174,16 @@ const PublicProfile: FC = () => {
           >
             <FiShare />
           </button>
+          {/* Kebab menu with "Report user" — hidden on the viewer's own profile. */}
+          {currentUsername !== profile.username && (
+            <ReportControl
+              variant='menu'
+              target={{
+                targetType: 'user',
+                reportedUsername: profile.username,
+              }}
+            />
+          )}
         </div>
         <p className='pp-name'>{profile.displayName}</p>
 
@@ -215,18 +225,6 @@ const PublicProfile: FC = () => {
                 <FiAward /> {a.name}
               </span>
             ))}
-          </div>
-        )}
-
-        {/* Quiet, secondary affordance — hidden on the viewer's own profile. */}
-        {currentUsername !== profile.username && (
-          <div className='pp-report'>
-            <ReportControl
-              target={{
-                targetType: 'user',
-                reportedUsername: profile.username,
-              }}
-            />
           </div>
         )}
       </header>

@@ -52,9 +52,11 @@ const ReviewOptions: FC<ReviewOptionsProps> = ({
           />
         </>
       ) : (
-        // Not the author: offer a report affordance instead (self-gates on login).
+        // Not the author: offer a report affordance in a kebab menu (the trigger
+        // stays visible logged-out and nudges to log in on click).
         recipeId && (
           <ReportControl
+            variant='menu'
             target={{
               targetType: 'review',
               recipeId,

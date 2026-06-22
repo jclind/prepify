@@ -81,6 +81,54 @@ describe('ReportControl', () => {
     )
   })
 
+  it('menu variant: opens a kebab dropdown whose item opens the report modal', async () => {
+    mockedUseAuth.mockReturnValue({ user: { uid: 'u1' } })
+    render(
+      <ReportControl
+        variant='menu'
+        target={{ targetType: 'review', recipeId: 'r1', reportedUsername: 'baduser' }}
+      />
+    )
+
+    // The report item is hidden until the kebab is opened.
+    expect(
+      screen.queryByRole('menuitem', { name: /report this review/i })
+    ).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /more options/i }))
+    const item = screen.getByRole('menuitem', { name: /report this review/i })
+    fireEvent.click(item)
+
+    // The modal opens; submitting reports the review.
+    expect(
+      screen.getByRole('heading', { name: /report this review/i })
+    ).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /submit report/i }))
+    await waitFor(() => expect(mockedCreate).toHaveBeenCalledTimes(1))
+    expect(mockedCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ targetType: 'review', reportedUsername: 'baduser' })
+    )
+  })
+
+  it('menu variant: prompts login when logged out', () => {
+    mockedUseAuth.mockReturnValue({ user: null })
+    render(
+      <ReportControl
+        variant='menu'
+        target={{ targetType: 'user', reportedUsername: 'baduser' }}
+      />
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /more options/i }))
+    fireEvent.click(screen.getByRole('menuitem', { name: /report this user/i }))
+
+    expect(mockedToastError).toHaveBeenCalledWith(expect.stringMatching(/log in/i))
+    expect(
+      screen.queryByRole('heading', { name: /report this user/i })
+    ).not.toBeInTheDocument()
+    expect(mockedCreate).not.toHaveBeenCalled()
+  })
+
   it('lets a logged-in user report another user (no recipeId)', async () => {
     mockedUseAuth.mockReturnValue({ user: { uid: 'u1' } })
     render(
