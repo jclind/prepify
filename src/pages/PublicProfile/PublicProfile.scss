@@ -194,6 +194,14 @@
     }
   }
 
+  // Quiet, de-emphasized report affordance under the identity block.
+  .pp-report {
+    margin-top: 1rem;
+    .report-control-trigger {
+      font-size: 0.78rem;
+    }
+  }
+
   // ── Recipe tiles (image-first card: square photo + a compact meta row) ───────
   .pp-recipes {
     margin-top: 1.6rem;

@@ -25,9 +25,22 @@ const UsernameInput: FC<UsernameInputProps> = ({
     setError('')
     setSuccess('')
 
-    if (/\s/g.test(username))
-      return setError('Cannot have white space in username')
-    if (!username || username.length < 3) return setIsUsernameAvailable(null)
+    // Mirror the server rules in server/routes/auth.js validateUsername so the
+    // user gets the same feedback inline, before the availability round-trip.
+    if (!username) return setIsUsernameAvailable(null)
+    if (/\s/g.test(username)) {
+      setIsUsernameAvailable(null)
+      return setError('Username cannot contain whitespace')
+    }
+    if (username.length < 3) return setIsUsernameAvailable(null)
+    if (username.length > 30) {
+      setIsUsernameAvailable(null)
+      return setError('Username must be at most 30 characters')
+    }
+    if (!/^[a-zA-Z0-9._-]+$/.test(username)) {
+      setIsUsernameAvailable(null)
+      return setError('Username can only contain letters, numbers, and . _ -')
+    }
 
     // `cancelled` guards against a slow in-flight request resolving after a
     // newer keystroke's request and clobbering the result with stale data.

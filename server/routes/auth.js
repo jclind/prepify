@@ -14,6 +14,10 @@ const { respondBlocked } = require('../util/automod')
 
 const USERNAME_MIN_LENGTH = 3
 const USERNAME_MAX_LENGTH = 30
+// A handle lands in the public profile URL (/u/:username), so keep it to a safe,
+// URL-clean character set: letters, digits, and a small set of separators
+// (. _ -). Everything else (spaces, @, /, emoji, punctuation) is rejected.
+const USERNAME_ALLOWED = /^[a-zA-Z0-9._-]+$/
 const DISPLAY_NAME_MAX_LENGTH = 50
 
 const BIO_MAX_LENGTH = 300
@@ -70,6 +74,9 @@ function validateUsername(username) {
   }
   if (username.length > USERNAME_MAX_LENGTH) {
     return `Username must be at most ${USERNAME_MAX_LENGTH} characters`
+  }
+  if (!USERNAME_ALLOWED.test(username)) {
+    return 'Username can only contain letters, numbers, and . _ -'
   }
   return null
 }

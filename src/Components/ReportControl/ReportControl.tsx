@@ -12,8 +12,8 @@ Modal.setAppElement('#root')
 
 type ReportTarget = {
   targetType: ReportTargetType
-  recipeId: string
-  reportedUsername?: string // required when targetType === 'review'
+  recipeId?: string // required for 'recipe' / 'review'; omitted for 'user'
+  reportedUsername?: string // required for 'review' / 'user'
 }
 
 type ReportControlProps = {
@@ -61,10 +61,24 @@ const ReportControl: FC<ReportControlProps> = ({ target, variant = 'link' }) => 
   const [details, setDetails] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
-  // Reporting requires a logged-in user (the server stamps reporterUid).
-  if (!authRes?.user) return null
+  const NOUNS: Record<ReportTargetType, string> = {
+    recipe: 'recipe',
+    review: 'review',
+    user: 'user',
+  }
+  const noun = NOUNS[target.targetType]
 
-  const noun = target.targetType === 'review' ? 'review' : 'recipe'
+  // The trigger stays visible to everyone so logged-out visitors still know
+  // reporting exists; reporting itself needs an account (the server stamps
+  // reporterUid), so clicking while logged out nudges to log in instead of
+  // opening the modal.
+  const handleTriggerClick = () => {
+    if (!authRes?.user) {
+      toast.error(`Log in to report this ${noun}.`)
+      return
+    }
+    setIsOpen(true)
+  }
 
   const close = () => {
     if (submitting) return
@@ -103,7 +117,7 @@ const ReportControl: FC<ReportControlProps> = ({ target, variant = 'link' }) => 
       <button
         type='button'
         className={`report-control-trigger ${variant}`}
-        onClick={() => setIsOpen(true)}
+        onClick={handleTriggerClick}
         aria-label={`Report this ${noun}`}
       >
         Report

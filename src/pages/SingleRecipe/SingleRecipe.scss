@@ -79,6 +79,19 @@ $danger: #d23f31;
       color: s.$secondary;
     }
     .description { color: s.$secondary-text; line-height: 1.7; font-size: 1rem; }
+    // Compact rating echo by the title (see SingleRecipe.tsx). Pulled snug under
+    // the heading rather than treated as its own stacked block.
+    .hero-rating {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      margin-top: -0.6rem;
+      font-size: 0.95rem;
+      color: s.$primary-text;
+      .hr-star { color: #f5a623; font-size: 1rem; }
+      .hr-val { font-weight: 700; }
+      .hr-count { color: s.$tertiary-text; font-weight: 500; }
+    }
     .author-row {
       margin-top: auto;
       display: flex;

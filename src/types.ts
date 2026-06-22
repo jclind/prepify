@@ -185,7 +185,10 @@ export interface NewReviewType {
 }
 
 // ─── Moderation / reports ──────────────────────────────────────────────────
-export type ReportTargetType = 'recipe' | 'review'
+// 'user' targets a whole profile (reported from the public profile page) and,
+// like 'review', carries `reportedUsername`; unlike recipe/review it has no
+// `recipeId`.
+export type ReportTargetType = 'recipe' | 'review' | 'user'
 export type ReportReason =
   | 'spam'
   | 'inappropriate'
@@ -197,8 +200,9 @@ export type ReportStatus = 'open' | 'resolved' | 'dismissed'
 
 export interface NewReportType {
   targetType: ReportTargetType
-  recipeId: string
-  reportedUsername?: string // required when targetType === 'review'
+  // Required for 'recipe' / 'review'; omitted for a 'user' report.
+  recipeId?: string
+  reportedUsername?: string // required when targetType === 'review' or 'user'
   reason: ReportReason
   details?: string
 }
@@ -222,7 +226,8 @@ export interface ReportClassifier {
 export interface ReportType {
   _id: string
   targetType: ReportTargetType
-  recipeId: string
+  // Present on recipe/review reports; absent on user reports.
+  recipeId?: string
   reportedUsername?: string
   reporterUid: string
   reason: ReportReason

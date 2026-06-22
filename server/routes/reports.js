@@ -32,17 +32,23 @@ const isAutomodRecipeReport = (r) => r && r.source === 'automod' && r.targetType
 
 const router = Router()
 
-// A report targets either a recipe or a single review. Reviews have no stable
-// id (they live in `ratings` keyed by username+recipeId), so a review report
-// must carry `reportedUsername` alongside `recipeId` to identify the target.
-const TARGET_TYPES = ['recipe', 'review']
+// A report targets a recipe, a single review, or a whole user. Reviews have no
+// stable id (they live in `ratings` keyed by username+recipeId), so a review
+// report carries `reportedUsername` alongside `recipeId`. A 'user' report
+// targets a profile directly: it carries `reportedUsername` and has no recipeId.
+const TARGET_TYPES = ['recipe', 'review', 'user']
 const REASONS = ['spam', 'inappropriate', 'offensive', 'copyright', 'dangerous', 'other']
 const RESOLUTIONS = ['resolved', 'dismissed']
 const MAX_DETAILS_LEN = 1000
 
+// Both review and user reports name a reported account by handle (and snapshot
+// its uid); recipe reports do not.
+const namesUser = (targetType) => targetType === 'review' || targetType === 'user'
+
 // Build the query that identifies a single target, used for the
 // one-open-report-per-reporter-per-target rate limit.
 function targetMatch({ targetType, recipeId, reportedUsername }) {
+  if (targetType === 'user') return { targetType, reportedUsername }
   return targetType === 'review'
     ? { targetType, recipeId, reportedUsername }
     : { targetType, recipeId }
@@ -55,13 +61,14 @@ router.post('/reports', verifyToken, requireActive, asyncHandler(async (req, res
   const { targetType, recipeId, reportedUsername, reason, details } = req.body
 
   if (!TARGET_TYPES.includes(targetType)) {
-    return res.status(400).json({ error: "targetType must be 'recipe' or 'review'" })
+    return res.status(400).json({ error: "targetType must be 'recipe', 'review', or 'user'" })
   }
-  if (!recipeId || typeof recipeId !== 'string') {
+  // recipeId identifies recipe/review targets; a user report has none.
+  if (targetType !== 'user' && (!recipeId || typeof recipeId !== 'string')) {
     return res.status(400).json({ error: 'recipeId is required' })
   }
-  if (targetType === 'review' && (!reportedUsername || typeof reportedUsername !== 'string')) {
-    return res.status(400).json({ error: 'reportedUsername is required for review reports' })
+  if (namesUser(targetType) && (!reportedUsername || typeof reportedUsername !== 'string')) {
+    return res.status(400).json({ error: 'reportedUsername is required for review and user reports' })
   }
   if (!REASONS.includes(reason)) {
     return res.status(400).json({ error: 'Invalid reason' })
@@ -84,10 +91,10 @@ router.post('/reports', verifyToken, requireActive, asyncHandler(async (req, res
   }
 
   // Snapshot the reported user's stable uid alongside the denormalized handle
-  // (D1), so a review report stays attached to its author across renames. The
-  // handle is still stored for display in the queue.
+  // (D1), so a review/user report stays attached to its author across renames.
+  // The handle is still stored for display in the queue.
   let reportedUid = null
-  if (targetType === 'review') {
+  if (namesUser(targetType)) {
     const reportedDoc = await db
       .collection('usernames')
       .findOne({ username_lower: reportedUsername.toLowerCase() })
@@ -97,8 +104,9 @@ router.post('/reports', verifyToken, requireActive, asyncHandler(async (req, res
   const doc = {
     _id: new ObjectId(),
     targetType,
-    recipeId,
-    ...(targetType === 'review' ? { reportedUsername, reportedUid } : {}),
+    // user reports have no recipe; recipe/review reports always do.
+    ...(targetType === 'user' ? {} : { recipeId }),
+    ...(namesUser(targetType) ? { reportedUsername, reportedUid } : {}),
     reporterUid: req.uid,
     reason,
     details: details || '',
@@ -133,11 +141,14 @@ router.get('/reports', verifyToken, requireAdmin, asyncHandler(async (req, res) 
   // preview without a second round trip per row.
   const enriched = await Promise.all(
     reports.map(async (r) => {
-      const recipe = await db
-        .collection('recipes')
-        .findOne(recipeIdQuery(r.recipeId), {
-          projection: { title: 1, recipeImage: 1, status: 1, userId: 1 },
-        })
+      // user reports have no recipe to preview.
+      const recipe = r.recipeId
+        ? await db
+            .collection('recipes')
+            .findOne(recipeIdQuery(r.recipeId), {
+              projection: { title: 1, recipeImage: 1, status: 1, userId: 1 },
+            })
+        : null
       let review = null
       if (r.targetType === 'review') {
         review = await db

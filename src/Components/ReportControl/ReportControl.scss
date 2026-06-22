@@ -1,9 +1,13 @@
 .report-control-trigger {
+  display: inline-flex;
+  align-items: center;
   background: none;
   border: none;
   cursor: pointer;
   color: #8a8f99;
+  font-family: inherit;
   font-size: 0.8rem;
+  line-height: 1.2;
   padding: 0.15rem 0.35rem;
   border-radius: 4px;
   transition: color 0.15s, background 0.15s;
@@ -13,10 +17,21 @@
     background: rgba(214, 69, 69, 0.08);
   }
 
+  // Keyboard users get a clear ring (the hover tint isn't enough on its own).
+  &:focus-visible {
+    outline: 2px solid rgba(214, 69, 69, 0.5);
+    outline-offset: 1px;
+    color: #d64545;
+  }
+
   &.button {
     border: 1px solid #d8dbe0;
     padding: 0.4rem 0.75rem;
     font-size: 0.85rem;
+
+    &:hover {
+      border-color: #d64545;
+    }
   }
 }
 

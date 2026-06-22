@@ -90,6 +90,66 @@ describe('POST /api/reports', () => {
     expect(res.body.reportedUid).toBeUndefined()
   })
 
+  it('creates a user report carrying reportedUsername and no recipeId', async () => {
+    const res = await request(app)
+      .post('/api/reports')
+      .set(AUTH_HEADER)
+      .send({ targetType: 'user', reportedUsername: 'baduser', reason: 'offensive' })
+    expect(res.status).toBe(201)
+    expect(res.body.targetType).toBe('user')
+    expect(res.body.reportedUsername).toBe('baduser')
+    expect(res.body.recipeId).toBeUndefined()
+    expect(res.body.reporterUid).toBe(TEST_UID)
+  })
+
+  it('stamps reportedUid on a user report when the handle resolves', async () => {
+    await seedUser('bad-uid', 'BadUser')
+    const res = await request(app)
+      .post('/api/reports')
+      .set(AUTH_HEADER)
+      .send({ targetType: 'user', reportedUsername: 'baduser', reason: 'offensive' })
+    expect(res.status).toBe(201)
+    expect(res.body.reportedUid).toBe('bad-uid')
+  })
+
+  it('requires reportedUsername for a user report', async () => {
+    const res = await request(app)
+      .post('/api/reports')
+      .set(AUTH_HEADER)
+      .send({ targetType: 'user', reason: 'spam' })
+    expect(res.status).toBe(400)
+  })
+
+  it('does not require recipeId for a user report', async () => {
+    const res = await request(app)
+      .post('/api/reports')
+      .set(AUTH_HEADER)
+      .send({ targetType: 'user', reportedUsername: 'baduser', reason: 'spam' })
+    expect(res.status).toBe(201)
+  })
+
+  it('rate-limits to one open user report per reporter+target (409)', async () => {
+    const body = { targetType: 'user', reportedUsername: 'baduser', reason: 'spam' }
+    const first = await request(app).post('/api/reports').set(AUTH_HEADER).send(body)
+    expect(first.status).toBe(201)
+    const second = await request(app).post('/api/reports').set(AUTH_HEADER).send(body)
+    expect(second.status).toBe(409)
+    expect(second.body.code).toBe('ALREADY_REPORTED')
+  })
+
+  it('treats reports against two different users as distinct targets', async () => {
+    const a = await request(app)
+      .post('/api/reports')
+      .set(AUTH_HEADER)
+      .send({ targetType: 'user', reportedUsername: 'alice', reason: 'spam' })
+    const b = await request(app)
+      .post('/api/reports')
+      .set(AUTH_HEADER)
+      .send({ targetType: 'user', reportedUsername: 'bob', reason: 'spam' })
+    expect(a.status).toBe(201)
+    expect(b.status).toBe(201)
+  })
+
   it('rejects an invalid targetType', async () => {
     const res = await request(app)
       .post('/api/reports')
@@ -176,6 +236,27 @@ describe('GET /api/reports', () => {
     expect(recipeReport.target.recipe.title).toBe('Reported Dish')
     const reviewReport = res.body.reports.find((r) => r.targetType === 'review')
     expect(reviewReport.target.review.reviewText).toBe('nasty')
+  })
+
+  it('surfaces a user report in the queue with no recipe/review snapshot', async () => {
+    admin.__setClaims({ admin: true })
+    await getDB().collection('reports').insertOne({
+      _id: new ObjectId(),
+      targetType: 'user',
+      reportedUsername: 'baduser',
+      reportedUid: 'bad-uid',
+      reporterUid: 'u1',
+      reason: 'offensive',
+      status: 'open',
+      createdAt: new Date(),
+    })
+
+    const res = await request(app).get('/api/reports').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    const userReport = res.body.reports.find((r) => r.targetType === 'user')
+    expect(userReport.reportedUsername).toBe('baduser')
+    expect(userReport.target.recipe).toBeNull()
+    expect(userReport.target.review).toBeNull()
   })
 
   it('filters by status', async () => {
