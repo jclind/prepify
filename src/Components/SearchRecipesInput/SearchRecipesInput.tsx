@@ -9,7 +9,7 @@ import RecipeAPI from 'src/api/recipes'
 import { useDebounce } from 'src/hooks/useDebounce'
 import { RecipeSearchResponseType } from 'types'
 import Skeleton from 'react-loading-skeleton'
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 
 const skeletonColor = '#d6d6d6'
 
@@ -51,11 +51,29 @@ const SearchRecipesInput: FC<SearchRecipesInputProps> = ({
   const [searchRecipeVal, setSearchRecipeVal] = useState(defaultVal || '')
   const debouncedQuery = useDebounce(searchRecipeVal, 300)
 
-  const { data } = useQuery<RecipeSearchResponseType[]>({
-    queryKey: ['recipe-autocomplete', debouncedQuery],
-    queryFn: () => RecipeAPI.searchAutoCompleteRecipes(debouncedQuery),
-    enabled: autoComplete && debouncedQuery.length > 2,
+  const trimmedQuery = debouncedQuery.trim()
+  const queryActive = autoComplete && trimmedQuery.length > 2
+
+  const { data, isFetching } = useQuery<RecipeSearchResponseType[]>({
+    queryKey: ['recipe-autocomplete', trimmedQuery],
+    queryFn: () => RecipeAPI.searchAutoCompleteRecipes(trimmedQuery),
+    enabled: queryActive,
+    // Keep the prior results visible while the next keystroke's query resolves,
+    // so the dropdown doesn't blank-then-repopulate on every character.
+    placeholderData: keepPreviousData,
   })
+
+  const results = data ?? []
+  // The server falls back to fuzzy matches when nothing contains the query
+  // literally; detect that (no result contains the query) to show a gentle
+  // "did you mean" affordance. Skipped mid-fetch to avoid a flash against the
+  // previous query's results.
+  const isCorrected =
+    !isFetching &&
+    results.length > 0 &&
+    !results.some(r =>
+      (r.title ?? '').toLowerCase().includes(trimmedQuery.toLowerCase())
+    )
 
   const [isBlurred, setIsBlurred] = useState(true)
 
@@ -101,54 +119,93 @@ const SearchRecipesInput: FC<SearchRecipesInputProps> = ({
           </div>
         )}
       </label>
-      {autoComplete && (data ?? []).length > 0 && !isBlurred && (
+      {autoComplete && !isBlurred && queryActive && (
         <div className='auto-complete-results'>
-          <div className='recipes-container'>
-            {(data ?? []).map(recipe => {
-              return (
-                <button
-                  className='recipe'
-                  key={recipe._id}
-                  onClick={() => navigate(`/recipes/${recipe._id}`)}
-                >
-                  <div className='img-container'>
-                    <Skeleton
-                      className='img-loading'
-                      baseColor={skeletonColor}
-                    />
-                    <img src={recipe.recipeImage} alt='' className='img' />
+          {isFetching && results.length === 0 ? (
+            <ul className='ac-list' aria-hidden='true'>
+              {Array.from({ length: 4 }).map((_, i) => (
+                <li className='ac-item ac-item--skeleton' key={i}>
+                  <Skeleton
+                    className='ac-item__thumb'
+                    baseColor={skeletonColor}
+                  />
+                  <div className='ac-item__body'>
+                    <Skeleton width='65%' baseColor={skeletonColor} />
+                    <Skeleton width='40%' baseColor={skeletonColor} />
                   </div>
-                  <div className='info-content'>
-                    <div className='title'>{recipe.title}</div>
-                    <div className='data'>
-                      <div className='time item'>
-                        <CgTimer className='icon' /> {recipe.totalTime}
+                </li>
+              ))}
+            </ul>
+          ) : results.length === 0 ? (
+            <div className='ac-empty'>
+              <span className='ac-empty__title'>
+                No matches for “{trimmedQuery}”
+              </span>
+              <span className='ac-empty__hint'>Press Enter to search anyway.</span>
+            </div>
+          ) : (
+            <>
+              {isCorrected && (
+                <p className='ac-corrected'>
+                  No exact match — showing similar recipes
+                </p>
+              )}
+              <ul className='ac-list' role='listbox'>
+                {results.map(recipe => (
+                  <li key={recipe._id}>
+                    <button
+                      type='button'
+                      role='option'
+                      aria-selected='false'
+                      className='ac-item'
+                      onClick={() => navigate(`/recipes/${recipe._id}`)}
+                    >
+                      <div className='ac-item__thumb'>
+                        <Skeleton
+                          className='ac-item__thumb-skeleton'
+                          baseColor={skeletonColor}
+                        />
+                        <img src={recipe.recipeImage} alt='' />
                       </div>
-                      <div className='servings item'>
-                        <AiOutlineUser className='icon' /> {recipe.servings}
+                      <div className='ac-item__body'>
+                        <span className='ac-item__title'>{recipe.title}</span>
+                        <span className='ac-item__meta'>
+                          <span className='ac-item__stat'>
+                            <CgTimer /> {recipe.totalTime}
+                          </span>
+                          <span className='ac-item__stat'>
+                            <AiOutlineUser /> {recipe.servings}
+                          </span>
+                          <span className='ac-item__stat'>
+                            <AiOutlineStar />{' '}
+                            {formatRating(
+                              Number(recipe.rating?.rateValue ?? 0),
+                              Number(recipe.rating?.rateCount ?? 0)
+                            )}
+                          </span>
+                        </span>
                       </div>
-                      <div className='rating item'>
-                        <AiOutlineStar className='icon' />{' '}
-                        {formatRating(
-                          Number(recipe.rating?.rateValue ?? 0),
-                          Number(recipe.rating?.rateCount ?? 0)
-                        )}
+                      <div className='ac-item__tags'>
+                        {(recipe.nutritionLabels ?? []).slice(0, 3).map(tag => (
+                          <span className='ac-item__tag' key={tag}>
+                            {tag}
+                          </span>
+                        ))}
                       </div>
-                    </div>
-                  </div>
-                  <div className='tags'>
-                    {(recipe.nutritionLabels ?? []).slice(0, 4).map(tag => {
-                      return (
-                        <div className='tag' key={tag}>
-                          {tag}
-                        </div>
-                      )
-                    })}
-                  </div>
-                </button>
-              )
-            })}
-          </div>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <button
+                type='button'
+                className='ac-footer'
+                onClick={handleSubmit}
+              >
+                <AiOutlineSearch className='ac-footer__icon' />
+                Search for “{searchRecipeVal.trim()}”
+              </button>
+            </>
+          )}
         </div>
       )}
     </form>

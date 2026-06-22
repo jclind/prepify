@@ -91,7 +91,11 @@ class RecipeAPIClass {
   async searchAutoCompleteRecipes(
     title = ''
   ): Promise<RecipeSearchResponseType[]> {
-    const result = await http.get(`api/searchAutoCompleteRecipes?title=${title}`)
+    // Encode the term so special characters (&, %, #, +, …) survive the
+    // round-trip — mirrors getAllRecipes' URLSearchParams encoding above.
+    const result = await http.get(
+      `api/searchAutoCompleteRecipes?title=${encodeURIComponent(title)}`
+    )
     return result.data
   }
   async getTrendingRecipes(limit = 4): Promise<RecipeType[]> {

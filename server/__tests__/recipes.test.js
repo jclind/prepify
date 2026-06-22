@@ -1039,6 +1039,30 @@ describe('GET /searchAutoCompleteRecipes', () => {
     expect(res.status).toBe(200)
     expect(res.body.length).toBeLessThanOrEqual(8)
   })
+
+  it('returns [] for a blank title', async () => {
+    const res = await request(server).get('/api/searchAutoCompleteRecipes?title=')
+    expect(res.status).toBe(200)
+    expect(res.body).toEqual([])
+  })
+
+  it('surfaces near-misses for a typo via the fuzzy fallback', async () => {
+    // "appl" is a literal substring of neither once misspelled; "aple" has no
+    // substring match, so only the fuzzy fallback can surface the apple recipes.
+    const res = await request(server).get('/api/searchAutoCompleteRecipes?title=aple')
+    expect(res.status).toBe(200)
+    const titles = res.body.map((r) => r.title)
+    expect(titles).toContain('Apple Pie')
+    expect(titles).toContain('Apple Crumble')
+    // unrelated titles must not leak in
+    expect(titles).not.toContain('Banana Bread')
+  })
+
+  it('does not add fuzzy noise when the exact match already suffices', async () => {
+    // "apple" matches both apple recipes exactly; Banana Bread must never appear.
+    const res = await request(server).get('/api/searchAutoCompleteRecipes?title=apple')
+    expect(res.body.map((r) => r.title)).not.toContain('Banana Bread')
+  })
 })
 
 // ─── GET /getTrendingRecipes ──────────────────────────────────────────────────

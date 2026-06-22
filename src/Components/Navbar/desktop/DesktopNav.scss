@@ -83,6 +83,14 @@
   }
 }
 
+// The /recipes browse page carries its own search, so DesktopBar omits the bar
+// search there (`.dnav--no-search`). The `.dnav__search` element is gone from
+// the DOM, so — as on the Home hero — push the links/actions cluster right to
+// close the gap left next to the logo.
+.dnav--no-search .dnav__links {
+  margin-left: auto;
+}
+
 // Home hero legibility (desktop): the bar sits over a bright, busy food photo,
 // so light text fails contrast. A top scrim guarantees a dark backing, inactive
 // links go full-white (Quiet mutes them, which hurts here), and a soft shadow

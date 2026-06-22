@@ -84,6 +84,11 @@ The triage date stamped on items is the date they were filed here, not when they
   keeps the row and flags it with a one-tap retry instead of waiting on the request.
 - `[ ]` **Search autocomplete "autocorrect" is weak** — fuzzy matching on recipe search autocomplete
   needs improvement.
+- `[ ]` **Autocomplete footer label can disagree with the rows shown** — the dropdown keeps the previous
+  query's results visible during the debounce + refetch (`keepPreviousData`), but the "Search for …"
+  footer reads the live input (`searchRecipeVal.trim()`), so mid-type it can say *Search for "chica"*
+  while the list still shows `chic` matches. Cosmetic, self-corrects on fetch.
+  (`SearchRecipesInput.tsx:205` + `:124-146`). *(surfaced 2026-06-22 in the track 2d code review.)*
 - `[x]` **"You created this recipe" — mobile styling** — *fixed in PR #160 (track 2c)*; owner-stats
   strip now an equal-width row with dividers instead of scattering via `space-between`.
 - `[x]` **Recipe stats styling** — *fixed in PR #160 (track 2c)*; rating dropped from the action-bar
@@ -154,6 +159,14 @@ The triage date stamped on items is the date they were filed here, not when they
   button. *(Pre-existing; surfaced during the Wave 2 verification live smoke test 2026-06-18 — NOT introduced
   by track 1c. Took the non-button-wrapper route over making StarRating render `<span>`s.)*
 
+- `[ ]` **Autocomplete dropdown isn't a valid ARIA listbox + has no keyboard nav** — the results render as
+  `<ul role="listbox"><li><button role="option">…` (`SearchRecipesInput.tsx:153-162`): a plain `<li>`
+  sits between the listbox and its options, an `option` shouldn't be a `<button>`, and there's no
+  arrow-key navigation / `aria-activedescendant` — it's mouse-clickable buttons wearing listbox roles.
+  Tab-reachable and fine for sighted/click users, so low severity. Fix: either drop the roles and treat it
+  as a plain list of buttons, or implement real listbox keyboarding. *(surfaced 2026-06-22 in the track 2d
+  code review; the per-result `role="option"` on a button is the new markup from this track.)*
+
 ## Features
 
 - `[ ]` **Press `/` to focus search** — global keyboard shortcut to bring up search. No handler exists today.
@@ -181,6 +194,20 @@ The triage date stamped on items is the date they were filed here, not when they
   so a silent failure can re-introduce aggregate drift. The set of recipes is correct
   (`distinct('recipeId', { userId })` covers rating-only docs); only the failure mode is silent. Consider
   a periodic reconciliation job (pairs with the item above) or alerting on recompute failure. *(low priority)*
+- `[ ]` **Autocomplete fuzzy fallback is an O(n) scan + in-process ranking** — when exact matches < 8, the
+  `/api/searchAutoCompleteRecipes` handler pulls up to `FUZZY_CANDIDATE_CAP = 1000` `{_id, title}` docs
+  (only the visibility filter narrows them — no title text index) and runs `titleScore` (windowed
+  Levenshtein) over each (`server/routes/recipes.js:227-236`, `server/util/recipeTitleMatch.js`).
+  Negligible at the current catalog size and correctly skipped when exact ≥ 8, but it grows linearly with
+  the recipe count on a hot path. Revisit with a Mongo text index / Atlas Search before the catalog gets
+  large. *(surfaced 2026-06-22 in the track 2d code review — shipped intentionally as the simplest
+  typo-tolerant fallback.)*
+- `[ ]` **`'/recipes'` route hardcoded in two nav components** — the search-suppression check
+  (`pathname !== '/recipes'`) is copy-pasted into `DesktopBar.tsx:47` and `NavMenu.tsx:20`, and
+  `Recipes.tsx`'s `browseAll` re-issues the same filter-resetting setters as `clearFilters`. A route
+  rename would silently break suppression in two places with no compile error. Extract a shared
+  `RECIPES_PATH` const (or a small hook) and have `browseAll` call `clearFilters`.
+  *(surfaced 2026-06-22 in the track 2d code review.)*
 - `[ ]` **Migrate Sass `@import` → `@use`** — build emits Sass `@import` deprecation warnings
   (pre-existing; Sass 1.x warns `@import` is going away in 3.x). Cosmetic now, worth migrating.
 - `[ ]` **Point Railway at the production branch** — currently not deploying from production.
