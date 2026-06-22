@@ -56,7 +56,7 @@ same commit.**
 | 2e | Account/profile polish | `[x]` | #165 ✅ |
 | 3a | a11y (focus-visible, chevron) | `[x]` | #163 ✅ |
 | 3b | Meta/SEO finish (favicon/OG/titles) | `[ ]` | — |
-| 3c | Username validation + report-user | `[ ]` | — |
+| 3c | Username validation + report-user | `[x]` | #166 ✅ |
 | 3d | Add-recipe UX | `[x]` | #164 ✅ |
 | 3e | create-username revamp | `[x]` | #131 + #98 (+ #162 reconcile/test) ✅ |
 | 4-sass | Sass `@import`→`@use` (LONER) | `[ ]` | — |
@@ -404,6 +404,16 @@ Append a one-liner when a track changes state (started / PR / merged). Keeps ses
   the two `UX / visual polish` items this track delivered — *"Better no-results found"* and *"Search
   autocomplete autocorrect is weak"* — marked done in `BACKLOG.md` (the four review follow-ups stay open by
   design). Worktree + branch pruned. **Wave 3 Part 2 now: only 3c remains** (username validation + report-user).
+- _2026-06-22_ — **3c reconciled → merged (`[x]` #166 ✅).** Squash-merged as `3b23952`; table row flipped and
+  the four backlog items this track delivered marked done in `BACKLOG.md`: *username char-validation*,
+  *report-a-user from a profile*, *report controls visible when logged out*, and *recipe rating up top near
+  the title* (plus the report-control styling double-check). Beyond the original spec the work also moved the
+  report affordances behind kebab menus (recipe / review / profile) and added a recipe top-controls kebab
+  alongside the kept footer link, with Cypress E2E (`reportUser.cy.ts`, `smoke.cy.ts`). A local code review
+  found three server-side gaps on the new `'user'` target — all **fixed in-PR**, not deferred: 404 a report
+  against a non-existent handle, 400 on self-reports (user + review), and case-insensitive handle matching in
+  the one-open-report rate limit. Worktree + branch pruned. **Wave 3 Part 2 complete (2d + 3c merged); Phase-3
+  remainder: 3b meta/SEO + the 4-sass loner.**
 
 ---
 
