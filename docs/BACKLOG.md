@@ -79,16 +79,24 @@ The triage date stamped on items is the date they were filed here, not when they
 ## UX / visual polish
 
 - `[ ]` **Better "no results found" on the Recipes page** — current indicator is weak.
-- `[ ]` **Optimistic ingredient add** — when adding an ingredient, show it in the list immediately
-  instead of waiting for the parse/nutrition request to return.
+- `[x]` **Optimistic ingredient add** — *done in PR #164 (track 3d; PR open).* Adding an ingredient now
+  parses locally and shows the row immediately, reconciling price/image when enrichment returns; a failure
+  keeps the row and flags it with a one-tap retry instead of waiting on the request.
 - `[ ]` **Search autocomplete "autocorrect" is weak** — fuzzy matching on recipe search autocomplete
   needs improvement.
 - `[x]` **"You created this recipe" — mobile styling** — *fixed in PR #160 (track 2c)*; owner-stats
   strip now an equal-width row with dividers instead of scattering via `space-between`.
 - `[x]` **Recipe stats styling** — *fixed in PR #160 (track 2c)*; rating dropped from the action-bar
   row, replaced by a per-serving price tile (time / servings / price).
-- `[ ]` **Add-recipe bottom bar overlaps the footer** — scrolling to the bottom of the add-recipe page,
-  the sticky bottom bar hides the footer. *(minor)*
+- `[x]` **Add-recipe bottom bar overlaps the footer** — *done in PR #164 (track 3d; PR open).* The summary
+  bar is now `position: sticky` (+ `margin-top: auto`) so it releases at the page end above the footer
+  instead of a fixed overlay; the footer's global top margin is also cancelled on this page (`:has`) so the
+  bar sits flush above it, and the cuisine/course dropdowns were lifted above the bar (menu z-index 50→60).
+- `[ ]` **Add-recipe group labels render underwhelming** — the section labels you can insert between
+  ingredients / instructions (the "Add Label" control) don't display the way they should on the create-recipe
+  page. Refine their styling/placement, and check how they carry through to the recipe view. *(noted
+  2026-06-18 after the track-3d smoke test; visual polish — fold into a future add-recipe pass, e.g. the
+  Phase-4 QA sweep or the "Refactor the create-recipe page" tech-debt item.)*
 - `[x]` **Single-recipe "no recipe found" looks bad** — *fixed in PR #160 (track 2c)*; redesigned
   empty-state card (icon + search + "Browse all recipes" CTA), and fixed 404 routing so a missing
   recipe renders instantly instead of retrying ~7s then showing a generic error.
@@ -111,15 +119,23 @@ The triage date stamped on items is the date they were filed here, not when they
   now come from a server-side aggregate over *all* visible recipes (not just the shown batch). Verified
   live incl. a 15-recipe load-more click-through (12→15, button clears, no dupes).
 - `[ ]` **"Change Password" title is redundant/cluttered** — in Account & Security settings.
-- `[ ]` **create-username page revamp** — re-evaluate the page, and add a logout (or escape hatch) so a
-  user can't get stuck on it. Page lives at `src/pages/CreateUsername/`.
+- `[x]` **create-username page revamp** — **done (track 3e):** the page was redesigned into the shared
+  soft-glass auth vocabulary alongside login/signup/forgot in **PR #131**, and the escape hatch (a
+  "Cancel and log out" control wired to the auth signout, plus a guard that bounces users who already
+  have a username) landed in **PR #98**. Reconciled + escape-hatch regression test added in **PR #162**.
+  Page lives at `src/pages/CreateUsername/`. Username validation tightening is tracked separately under 3c.
 
 ## Accessibility
 
-- `[ ]` **Stop focus outline on mouse button clicks** — keep it for keyboard nav only
-  (`:focus-visible`).
-- `[ ]` **Desktop navbar account chevron animation shifts the focus outline** — the chevron animation
-  moves the focus outline; decouple them.
+- `[x]` **Stop focus outline on mouse button clicks** — **done (track 3a, merged in PR #163 ✅):** the
+  global `button`/`a` outline rule (`src/index.scss`) and every component-local `@include s.outline()`
+  ring were switched from `:focus` to `:focus-visible`, so the ring shows for keyboard nav only.
+  Input/textarea focus affordances (border/box-shadow/background) were deliberately left on `:focus` —
+  clicking into a field should still highlight it.
+- `[x]` **Desktop navbar account chevron animation shifts the focus outline** — **done (track 3a, merged
+  in PR #163 ✅):** the caret was wrapped in a fixed-size `overflow:hidden` clip box with an inner
+  rotating `<svg>` (`DesktopAccountMenu.tsx` + `DesktopNav.scss`), so the `outline:auto` ring no longer
+  tracks the rotating icon's bounding box.
 - `[x]` **Account Ratings list nests a `<button>` inside a `<button>`** — **fixed (track 2e):** the rating
   row is now a keyboard-operable `<div role="button">` wrapper (Enter/Space handler, `tabIndex`,
   `aria-disabled`) instead of a `<button>`, so `StarRating`'s per-star `<button>`s are no longer nested in a
@@ -162,13 +178,20 @@ The triage date stamped on items is the date they were filed here, not when they
   code stays consistent (likely an addition to `CLAUDE.md` or a new `CONVENTIONS.md`).
 - `[ ]` **Refactor the create-recipe page**.
 - `[ ]` **Refactor the account page**.
-- `[ ]` **Ingredient parser: handle "not found"** — on a parser miss, add an exit/timeout instead of
-  hanging.
+- `[x]` **Ingredient parser: handle "not found"** — *done in PR #164 (track 3d; PR open).* A client-side
+  `withTimeout` (12s) races the enrichment request so a hung/"not found" lookup no longer sticks the UI; on
+  timeout the row is kept, flagged errored with a retry, and a toast surfaces. Applied to both add and
+  inline-edit paths.
 
 ## Testing
 
 - `[ ]` **Tests for the toast/alert system** — newly implemented `react-hot-toast` is untested.
-- `[ ]` **Create-recipe tests** — Cypress (E2E) + Vitest (unit).
+- `[~]` **Create-recipe tests** — Cypress (E2E) + Vitest (unit). *Substantial sweep added in PR #164 (track
+  3d):* Vitest for the enrichment-timeout util, optimistic add / reconcile / soft-fail / retry / timeout,
+  inline-edit re-enrich + timeout, drag-reorder + id-keyed status survival, summary-bar rollup + submit
+  states, and servings/time validation; Cypress gained keyboard drag-reorder specs (ingredient + instruction)
+  and the soft-fail spec was updated to the new retry UX. Remaining: cuisine/meal-type selector units
+  (currently E2E-only) and broader E2E happy-path variants.
 - `[ ]` **Cypress: test autocomplete on the Recipes page**.
 - `[x]` **Node 26 test-harness gaps — missing globals in the test sandbox** — **both fixed.** This dev
   machine runs **Node 26**, whose VM/sandbox no longer keeps some globals the test stacks assume:

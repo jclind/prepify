@@ -115,6 +115,49 @@
       }
     }
 
+    // Shown in place of the price when enrichment failed/timed out: the row is
+    // kept (the parsed ingredient is still usable) but flagged, with a one-tap
+    // retry. The warning icon swaps to the retry icon on hover/focus.
+    .ingr-retry {
+      flex: none;
+      display: grid;
+      place-items: center;
+      min-width: 56px;
+      height: 30px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      color: s.$error-red;
+      .icon {
+        grid-area: 1 / 1;
+        height: 18px;
+        width: 18px;
+        transition: opacity 0.1s linear;
+      }
+      .retry {
+        opacity: 0;
+      }
+      &:hover,
+      &:focus-visible {
+        color: s.$primary;
+        .warn {
+          opacity: 0;
+        }
+        .retry {
+          opacity: 1;
+        }
+      }
+      &:focus-visible {
+        @include s.outline();
+      }
+    }
+
+    // Subtle tint so a failed-enrichment row reads as needs-attention without
+    // shouting; pairs with the retry control above.
+    &.errored {
+      background: rgba(s.$error-red, 0.06);
+    }
+
     .ingr-remove {
       flex: none;
       display: grid;
@@ -135,7 +178,7 @@
         color: s.$primary;
         background: s.$white;
       }
-      &:focus {
+      &:focus-visible {
         @include s.outline();
       }
     }

@@ -1,10 +1,19 @@
 @use '../../helpers.scss' as s;
 
 .add-recipe-summary-bar {
-  position: fixed;
-  left: 0;
-  right: 0;
+  // Sticky (not fixed) so the bar pins to the bottom of the viewport while the
+  // form scrolls, then releases at the end of the page — letting the footer,
+  // which lives just below this bar's containing block, become reachable
+  // instead of being permanently covered. Full width because, as a flex child
+  // of the centered page column, it would otherwise shrink to its content.
+  position: sticky;
   bottom: 0;
+  width: 100%;
+  // Push to the bottom of the page column so the bar still rests at the bottom
+  // of the viewport when the form is shorter than the screen (the auto margin
+  // absorbs the free space ahead of the page's `justify-content`); a no-op when
+  // the form overflows, where the sticky positioning takes over.
+  margin-top: auto;
   z-index: 50;
   background: s.$white;
   border-top: 1px solid s.$gray-400;
@@ -75,7 +84,7 @@
       color: s.$primary-text;
       border-color: s.$tertiary-text;
     }
-    &:focus {
+    &:focus-visible {
       @include s.outline();
     }
     &:disabled {
@@ -98,7 +107,7 @@
     outline: none;
     transition: all 0.1s linear;
 
-    &:focus {
+    &:focus-visible {
       @include s.outline();
     }
   }

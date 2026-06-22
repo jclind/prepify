@@ -85,7 +85,7 @@
       text-decoration: none;
       transition: background 0.12s ease;
       &:hover { background: #e74e1d; }
-      &:focus { @include s.outline(); }
+      &:focus-visible { @include s.outline(); }
     }
   }
 

@@ -31,7 +31,7 @@ $danger: #d23f31;
       text-decoration: none;
       svg { font-size: 1.2rem; }
       &:hover { color: s.$primary; }
-      &:focus { @include s.outline(); }
+      &:focus-visible { @include s.outline(); }
     }
   }
   > .recipe-controls-container { margin-bottom: 1.5rem; }
@@ -167,7 +167,7 @@ $danger: #d23f31;
       transition: all 0.12s ease;
       .icon { height: 18px; width: 18px; }
       &:hover { border-color: s.$primary-text; }
-      &:focus { @include s.outline(); }
+      &:focus-visible { @include s.outline(); }
     }
     .save-recipe-btn {
       background: s.$primary;
@@ -376,7 +376,7 @@ $danger: #d23f31;
       font-weight: 600;
       text-decoration: none;
       &:hover { background: rgba(s.$secondary, 0.2); }
-      &:focus { @include s.outline(); }
+      &:focus-visible { @include s.outline(); }
     }
   }
 

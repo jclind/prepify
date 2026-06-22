@@ -147,6 +147,27 @@ const loginAndVisitAddRecipe = () => {
   cy.visit('/add-recipe')
 }
 
+// Reorder a list item with the keyboard, the way @hello-pangea/dnd supports
+// natively (and the only DnD path that's reliable to automate — a synthesised
+// mouse drag is timing-sensitive and flaky). Focus the drag handle, press Space
+// to lift, an arrow key per position to move, then Space to drop. Subsequent
+// keystrokes go through cy.focused() because the library keeps focus on the
+// lifted handle as the item moves. keyCodes: 32 = Space, 38 = ArrowUp, 40 = ArrowDown.
+const keyboardReorder = (
+  focusHandle: () => Cypress.Chainable,
+  arrowKeyCode: 38 | 40,
+  steps: number
+) => {
+  focusHandle().focus().trigger('keydown', { keyCode: 32, force: true })
+  cy.wait(300) // let the lift register + announce
+  for (let i = 0; i < steps; i++) {
+    cy.focused().trigger('keydown', { keyCode: arrowKeyCode, force: true })
+    cy.wait(300) // each move animates; give the placeholder time to settle
+  }
+  cy.focused().trigger('keydown', { keyCode: 32, force: true })
+  cy.wait(500) // drop + reorder commit
+}
+
 describe('Add Recipe', () => {
   beforeEach(() => {
     cy.intercept('GET', `${api()}/api/getTrendingRecipes*`, { body: [] })
@@ -233,18 +254,19 @@ describe('Add Recipe', () => {
     cy.contains('flour', { timeout: 5000 }).should('be.visible')
   })
 
-  it('ingredient parse failure shows inline warning but still adds the ingredient (soft-fail)', () => {
+  it('ingredient enrichment failure keeps the row and flags it with a retry (soft-fail)', () => {
     cy.intercept('POST', PARSE_URL, { statusCode: 500 }).as('parseIngredient')
 
     loginAndVisitAddRecipe()
     cy.get('input[placeholder="Add ingredients to your recipe."]').type('2 cups flour{enter}')
     cy.wait('@parseIngredient')
 
-    // Warning surfaces via the IngredientsInput .error role=status banner
-    cy.contains(/couldn't fetch nutrition\/image data/i, { timeout: 5000 }).should('be.visible')
-    // The ingredient row is still added (parsedIngredient parsed locally; enrichment soft-failed)
-    cy.get('.ingredients-container .item, .ingredients-container .ingredients-container.item')
-      .should('have.length.at.least', 1)
+    // Optimistic add parses locally, so the row is present immediately and stays
+    // even though enrichment failed; the row is flagged errored with a one-tap
+    // retry (no inline warning / no blocking — the ingredient is still usable).
+    cy.get('.ingredient-row', { timeout: 8000 }).should('have.length.at.least', 1)
+    cy.contains('.ingredient-row', 'flour').should('be.visible')
+    cy.get('[aria-label="Retry ingredient lookup"]', { timeout: 8000 }).should('be.visible')
   })
 
   it('removing the middle instruction re-indexes survivors sequentially (High #3 regression)', () => {
@@ -294,12 +316,73 @@ describe('Add Recipe', () => {
     cy.url({ timeout: 10000 }).should('include', '/recipes/cy-recipe-1')
   })
 
-  // Reordering via drag-and-drop in @hello-pangea/dnd requires simulating a specific
-  // pointer-event sequence (mousedown on the handle → mousemove → mouseup) and the
-  // library's sensor detection is timing-sensitive. The user explicitly authorised
-  // skipping this with a documenting comment if the implementation would be flaky.
-  // Intent: add three steps "Step A", "Step B", "Step C", drag "Step C" to the top,
-  // assert the DOM order is C / A / B and that the index spans are re-numbered
-  // 1 / 2 / 3 on the new positions.
-  it.skip('drag-and-drop reorder updates the instruction order and re-indexes', () => {})
+  it('keyboard drag-and-drop reorders the ingredient list', () => {
+    // Echo the typed string back as the parsed name so the three rows are
+    // distinguishable (the shared fixture would otherwise label them all "flour").
+    cy.intercept('POST', PARSE_URL, req => {
+      const name = String(req.body.ingredientString || '').trim()
+      req.reply({
+        parsedIngredient: {
+          quantity: null,
+          unit: null,
+          ingredient: name,
+          originalIngredientString: name,
+          comment: '',
+        },
+        ingredientData: {
+          _id: `srv-${name}`,
+          name,
+          amount: 1,
+          imagePath: 'https://img.spoonacular.com/ingredients_100x100/flour.png',
+          totalPriceUSACents: 42,
+        },
+        id: `srv-${name}`,
+      })
+    }).as('parseIngredient')
+
+    loginAndVisitAddRecipe()
+    const ingSel = 'input[placeholder="Add ingredients to your recipe."]'
+    ;['apple', 'banana', 'carrot'].forEach(name => {
+      cy.get(ingSel).type(`${name}{enter}`)
+      cy.wait('@parseIngredient')
+    })
+
+    const names = () =>
+      cy.get('.ingredient-row .ingredient-item-text').then($els =>
+        [...$els].map(e => (e.textContent || '').trim())
+      )
+
+    names().should('deep.equal', ['apple', 'banana', 'carrot'])
+
+    // Drag the first row ("apple") down two positions → it should land last.
+    keyboardReorder(() => cy.get('.ingredient-row .drag-handle').first(), 40, 2)
+
+    names().should('deep.equal', ['banana', 'carrot', 'apple'])
+  })
+
+  it('keyboard drag-and-drop reorders the instruction list and re-indexes', () => {
+    loginAndVisitAddRecipe()
+    const inputSel = 'input[placeholder="Add instruction for your recipe."]'
+    cy.get(inputSel).type('Step A{enter}')
+    cy.get(inputSel).type('Step B{enter}')
+    cy.get(inputSel).type('Step C{enter}')
+
+    cy.get('.instructions .item .index').then($i =>
+      expect([...$i].map(e => e.textContent?.trim())).to.deep.equal(['1', '2', '3'])
+    )
+
+    // Drag the last step ("Step C") up two positions → to the top.
+    keyboardReorder(() => cy.get('.instructions .item .drag-handle').last(), 38, 2)
+
+    // Order is now C / A / B, and the index spans are renumbered to their new spots.
+    cy.get('.instructions .item').then($items => {
+      const text = [...$items].map(el => el.textContent || '')
+      expect(text[0]).to.contain('Step C')
+      expect(text[1]).to.contain('Step A')
+      expect(text[2]).to.contain('Step B')
+    })
+    cy.get('.instructions .item .index').then($i =>
+      expect([...$i].map(e => e.textContent?.trim())).to.deep.equal(['1', '2', '3'])
+    )
+  })
 })

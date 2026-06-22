@@ -54,11 +54,11 @@ same commit.**
 | 2c | Single-recipe polish | `[x]` | #160 ✅ |
 | 2d | Recipes browse polish | `[ ]` | — |
 | 2e | Account/profile polish | `[~]` | `worktree-feat+account-sections-public-profile` (impl done, PR pending) |
-| 3a | a11y (focus-visible, chevron) | `[ ]` | — |
+| 3a | a11y (focus-visible, chevron) | `[x]` | #163 ✅ |
 | 3b | Meta/SEO finish (favicon/OG/titles) | `[ ]` | — |
 | 3c | Username validation + report-user | `[ ]` | — |
-| 3d | Add-recipe UX | `[ ]` | — |
-| 3e | create-username revamp | `[ ]` | — |
+| 3d | Add-recipe UX | `[P]` | #164 |
+| 3e | create-username revamp | `[x]` | #131 + #98 (+ #162 reconcile/test) ✅ |
 | 4-sass | Sass `@import`→`@use` (LONER) | `[ ]` | — |
 | 4-about | About rewrite (Jesse) | `[ ]` | — |
 | 4-qa | Empty/error sweep + links + copy + mobile + Lighthouse | `[ ]` | — |
@@ -123,7 +123,7 @@ All isolated files — safe to run together.
 
 | Track | Work | Domain |
 |---|---|---|
-| **3a** a11y | `:focus-visible` only (no outline on mouse click); fix chevron animation shifting the focus outline | `src/Components/Navbar/*`, global styles |
+| **3a** a11y | `:focus-visible` only (no outline on mouse click); fix chevron animation shifting the focus outline *(merged #163 ✅ — global rule + every component-local `s.outline()` ring swept site-wide; input/textarea focus affordances left on `:focus`)* | `src/index.scss` + component SCSS site-wide, `src/Components/Navbar/*` |
 | **3b** Meta/SEO finish | favicon, OG image for link previews, per-page `<title>`s | `index.html`, per-page Helmet |
 | **3c** Features | username char-validation; report-a-user from profile *(admin; `ReportTargetType` currently only recipe/review)*; show report controls to logged-out users with a login prompt (recipe + reviews); surface the recipe rating up top (near the title) | `server/routes/*`, `ReportControl`, `types.ts`, `src/pages/SingleRecipe/*` |
 | **3d** Add-recipe UX | optimistic ingredient add; ingredient-parser not-found timeout/exit; bottom bar overlapping footer | `src/pages/AddRecipe/*` |
@@ -137,8 +137,9 @@ All isolated files — safe to run together.
   a stable app, so do near the end.
 - **Mobile hand-pass** (Add Recipe + Account/Settings flows) and **Lighthouse / perf**.
 - **Code & architecture standard for Claude** (new conventions doc) + **post-refactor DB-migration check**.
-- **Toast/alert tests**, **create-recipe Cypress+Vitest**, **Cypress autocomplete test** — fold into the
-  relevant domain track when that track is touched, or batch here.
+- **Toast/alert tests**, **create-recipe Cypress+Vitest** *(largely done in 3d / PR #164 — see Backlog →
+  Testing)*, **Cypress autocomplete test** — fold into the relevant domain track when that track is touched,
+  or batch here.
 
 ## Phase 5 — Cutover
 
@@ -202,10 +203,12 @@ Part 2's prompts once Part 1 merges (the board will have moved).
 - **2e** Account/profile polish — `src/pages/Account/*` (in-page `SegmentedNav`) + `src/pages/PublicProfile/*`.
   *Unblocked: 1c merged.* Owns **PublicProfile** this part.
 - **3a** a11y — global `:focus-visible` (`src/index.scss`) + `src/Components/Navbar/*` (chevron/focus).
-  Owns **Navbar** this part.
+  Owns **Navbar** this part. **Merged (#163 ✅)** — global rule + component-local `s.outline()` rings swept
+  site-wide; chevron decoupled from the ring via a clip box. 2d rebases on the merged Navbar.
 - **3d** Add-recipe UX — `src/pages/AddRecipe/*` (optimistic ingredient add, parser not-found timeout,
   sticky bar overlapping footer). Fully isolated.
-- **3e** create-username revamp — `src/pages/CreateUsername/*` (+ logout/escape hatch). Fully isolated.
+- ~~**3e** create-username revamp — `src/pages/CreateUsername/*` (+ logout/escape hatch). Fully isolated.~~
+  **Already merged** (PR #131 redesign + PR #98 escape hatch) — predates this board; nothing to start.
 
 No App.tsx route additions in Part 1 (3e's route already exists). The two "account navs" are different
 components: 2e owns the in-page `Account/components/SegmentedNav`; 3a owns the Navbar account dropdown.
@@ -322,28 +325,54 @@ Append a one-liner when a track changes state (started / PR / merged). Keeps ses
   create-username. **Part 2** (after Part 1 merges): **2d** recipes browse (rebases on 3a's Navbar), **3c**
   username-validation + report-user (rebases on 2e's PublicProfile; also carries the two 2c deferrals).
   **3b** meta/SEO held as a finishing pass. Part-1 kickoff prompts added to the appendix below.
+- _2026-06-18_ — **3a a11y → merged** (PR #163, all CI green incl. Cypress). Two focus-outline issues:
+  (A) the focus ring showed on mouse/touch clicks — switched the global `button`/`a` rule (`src/index.scss`)
+  **and every component-local `@include s.outline()` ring** from `:focus` to `:focus-visible`, so it shows
+  for keyboard nav only; input/textarea affordances (border/box-shadow/background) deliberately left on
+  `:focus` so clicking into a field still highlights it; (B) the desktop account-menu chevron rotation
+  dragged the button's `outline:auto` ring (Blink expands `auto` outlines to wrap transformed-descendant
+  ink overflow) — wrapped the caret in a fixed-size `overflow:hidden` clip box with an inner rotating
+  `<svg>` (`DesktopAccountMenu.tsx` + `DesktopNav.scss`). Also dropped a stray `background:red` debug
+  leftover on the star-rating focus state. Verified live (mouse click → no ring, Tab → ring; chevron clip
+  box stable at the 45° worst case). Board 3a `[P]`→`[x]`; backlog Accessibility items flipped.
+  **Unblocks 2d** (rebases on the merged Navbar). Worktree/branch pruned after merge.
+- _2026-06-18_ — **3d Add-recipe UX → PR open** (PR #164, into `development`). Delivered all three brief
+  items under `src/pages/AddRecipe/*`: (1) **optimistic ingredient add** — parse locally + show the row
+  instantly, reconcile price/image on response, keep + flag errored rows with a retry; (2) **enrichment
+  timeout** — a client-side `withTimeout` (12s) races the parse so a hung/"not found" lookup can't stick the
+  UI (toast + errored row + retry), applied to both add and inline-edit; (3) **sticky bar / footer** — bar
+  switched from `position: fixed` to `sticky` (+`margin-top: auto`) so it releases at page end above the
+  footer; per-row enrichment status is keyed by id, so it survives reorders. Two follow-up polish fixes also
+  landed in the PR after a live smoke test: the footer's global top-margin showing as a gap below the
+  released bar (cancelled on this page via `:has`), and the cuisine/course dropdowns opening behind the bar
+  (menu z-index 50→60). Plus a comprehensive **test sweep** (Backlog → Testing): Vitest for the timeout util /
+  optimistic-add / inline-edit / drag-reorder + id-keyed-status / summary-bar / servings+time validation, and
+  **Cypress keyboard drag-reorder** specs (the only reliable automated DnD path — mouse-drag stays manual;
+  gesture pre-verified in a real browser). Verified end-to-end via a live authed smoke test (create→publish,
+  all inputs incl. validation edge cases + an XSS-escape check) with full cleanup of the test account/recipes.
+  **Filed one follow-up → Backlog (UX/visual polish):** add-recipe group-label rendering needs a refinement —
+  a candidate for the Phase-4 QA pass or the create-recipe refactor. Board 3d `[ ]`→`[P]`; backlog
+  add-recipe items + create-recipe-tests flipped.
 - _2026-06-22_ — **2e Account/profile polish → implemented (PR pending).** Branch
-  `worktree-feat+account-sections-public-profile`. Account tabs redesigned: "Your Recipes" dashboard
-  tiles (views/saves/made + compact counts), "Ratings" compact avatar rows (clamped review text), "Drafts"
-  vertical cards, and grid/spacing alignment across tabs. Public profile (`/u/:username`) reworked:
-  centered identity, divided Recipes/Saves/Made counts, achievement chips, image-first square tiles with
-  rating · time · cost + bookmark save-count, richer `EmptyState`, share button. Added a working **"Load
+  `worktree-feat+account-sections-public-profile`. Account tabs redesigned: "Your Recipes" dashboard tiles
+  (views/saves/made + compact counts), "Ratings" compact avatar rows (clamped review text), "Drafts"
+  vertical cards, and grid/spacing alignment across tabs. Public profile (`/u/:username`) reworked: centered
+  identity, divided Recipes/Saves/Made counts, achievement chips, image-first square tiles with
+  rating · time · cost + a bookmark save-count, richer `EmptyState`, share button. Added a working **"Load
   more"** — new paginated `GET /getPublicProfileRecipes` (the profile endpoint was capped at 12 with no
   pagination) — and moved Saves/Made onto a **server-side aggregate** over all visible recipes (was a
   misleading sum of the shown batch). Also **fixed** the pre-existing nested-`<button>` a11y nit on the
-  Ratings list (row is now a keyboard-operable `<div role="button">`). A **high-effort `/code-review`** was
-  run and its fixes applied: idempotent page-map accumulation (no duplicate-append on refetch), negative-
-  page clamp + `_id` sort tiebreaker, restored image fallbacks, shared `formatCompactCount`/`formatPrice`
-  utils, deleted dead `selectCustomStyles.ts`. **Verified:** prod build green; Vitest 452 pass/2 skip;
-  Jest 644 pass; **live load-more click-through 12→15** (button clears, no dupes) against a seeded
-  >12-recipe user. **Cypress:** *not* environment-blocked — a worktree config mismatch (this worktree's
-  `.env` sets `VITE_API_URL=:4003` while Cypress's intercepts hardcode `:4000` in
-  `cypress/support/constants.ts`); `browse.cy.ts` passes **3/3** when run with `VITE_API_URL=:4000`. The 3
-  auth specs need a `cypress.env.json` Firebase service account (not run locally). **Still open:** the
-  "Account nav sections UI" (SegmentedNav rail styling) sub-item; two low-severity review items (paged
-  endpoint re-counts every page; username→uid lookup duplicated across the two endpoints). **Pre-merge:**
-  the throwaway `/preview` route + `src/pages/_preview/` are intentionally still in the branch (remove
-  before merge); branch is 4 commits behind `development` (docs will need a rebase).
+  Ratings list (row is now a keyboard-operable `<div role="button">`). A **high-effort `/code-review`** ran;
+  fixes applied: idempotent page-map accumulation (no duplicate-append on refetch), negative-page clamp +
+  `_id` sort tiebreaker, restored image fallbacks, shared `formatCompactCount`/`formatPrice` utils, deleted
+  dead `selectCustomStyles.ts`. Throwaway `/preview` seeder removed; merged `development` (adopted the shared
+  `s.outline()` focus ring on the recipe card). **Verified:** prod build green; Vitest 452 pass/2 skip; Jest
+  644 pass; **full Cypress e2e suite green** (16 pass/1 pending); **live load-more click-through 12→15**
+  (button clears, no dupes) against a seeded >12-recipe user. **Cypress was never machine-blocked** — a
+  worktree config mismatch: the test-mode app addressed `:4003` (worktree `.env`) while the intercepts
+  target `:4000`; pinned `VITE_API_URL=:4000` in `.env.test` (no-op in CI). **Still open:** the "Account nav
+  sections UI" (SegmentedNav rail styling) sub-item; two low-severity review items (paged endpoint re-counts
+  every page; username→uid lookup duplicated across the two endpoints).
 
 ---
 
@@ -543,6 +572,10 @@ Guardrails: scope STRICTLY to src/pages/AddRecipe/*. Don't touch the beta tag, N
 ```
 
 #### Track 3e · create-username revamp
+
+> **⚠️ SUPERSEDED — do not run.** This work already shipped before the board existed: the soft-glass
+> redesign in **PR #131** and the logout/escape hatch + page guard in **PR #98** (both merged to
+> `development`). The board (track 3e) and `BACKLOG.md` are reconciled to `[x]`. Prompt kept for history.
 
 ```
 /worktree-create revamp create-username page + escape hatch

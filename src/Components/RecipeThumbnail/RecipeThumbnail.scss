@@ -11,7 +11,7 @@
   max-width: 300px;
   text-align: center;
   cursor: pointer;
-  &:focus {
+  &:focus-visible {
     @include s.outline();
   }
 

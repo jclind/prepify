@@ -17,6 +17,11 @@
   color: s.$primary-text;
   transition: box-shadow 0.18s ease, transform 0.18s ease;
 
+  // Use the shared site-wide focus ring (track 3a a11y standard) rather than a
+  // bespoke one, so the outline is consistent across the app.
+  &:focus-visible {
+    @include s.outline();
+  }
   &:hover {
     box-shadow: 0 12px 28px rgba(0, 0, 0, 0.1);
     transform: translateY(-2px);
@@ -24,10 +29,6 @@
       color: s.$secondary;
       transform: translate(2px, -2px);
     }
-  }
-  &:focus-visible {
-    outline: 2px solid s.$primary;
-    outline-offset: 2px;
   }
 
   .head-row {

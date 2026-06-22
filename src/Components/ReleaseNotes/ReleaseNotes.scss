@@ -16,7 +16,7 @@
       height: 30px;
       width: 30px;
     }
-    &:focus {
+    &:focus-visible {
       @include s.outline();
     }
   }
