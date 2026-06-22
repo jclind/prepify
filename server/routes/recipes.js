@@ -8,6 +8,7 @@ const { recipeIdQuery, recipeIdInQuery } = require('../util/recipeIdQuery')
 const { MIN_SIGNAL, selectForYou, tasteScore, weightedSample } = require('../util/forYou')
 const { loadInteractions, buildSeenProfile } = require('../util/tasteContext')
 const { RECIPE_VISIBLE, RECIPE_OWNER_VISIBLE } = require('../util/moderation')
+const { fuzzyRankTitles } = require('../util/recipeTitleMatch')
 const { recordAudit } = require('../util/auditLog')
 const { notifyInBackground, notifyRecipeHidden } = require('../util/email')
 const { validateRequiredRecipeFields, validateRecipeBounds } = require('../util/recipeLimits')
@@ -179,30 +180,76 @@ router.get('/recipes/facets', asyncHandler(async (req, res) => {
   })
 }))
 
-// GET /searchAutoCompleteRecipes — quick title search for autocomplete
+// GET /searchAutoCompleteRecipes — quick title search for autocomplete.
+//
+// Typo-tolerant: a literal case-insensitive substring match runs first (fast,
+// covers the common case and preserves the original ordering/behaviour). When
+// that returns fewer than AUTOCOMPLETE_LIMIT hits, a fuzzy fallback ranks the
+// remaining visible titles by approximate similarity and fills the open slots,
+// so "chikcen" still surfaces "...Chicken..." results. Scoped to this endpoint
+// only — the main /recipes grid search is unchanged.
+const AUTOCOMPLETE_LIMIT = 8
+const AUTOCOMPLETE_PROJECTION = {
+  _id: 1,
+  title: 1,
+  recipeImage: 1,
+  totalTime: 1,
+  servings: 1,
+  rating: 1,
+  nutritionLabels: 1,
+  servingPrice: 1,
+}
+// Bound the fuzzy candidate scan so the fallback stays cheap even as the catalog
+// grows; titles are tiny, so this is a small read.
+const FUZZY_CANDIDATE_CAP = 1000
+
 router.get('/searchAutoCompleteRecipes', asyncHandler(async (req, res) => {
   const db = getDB()
-  const { title } = req.query
-  const recipes = await db
+  const title = typeof req.query.title === 'string' ? req.query.title.trim() : ''
+  if (!title) return res.json([])
+
+  // 1. Exact-ish substring match (original behaviour).
+  const exact = await db
     .collection('recipes')
     .find(
-      { title: { $regex: escapeRegex(typeof title === 'string' ? title : ''), $options: 'i' }, ...RECIPE_VISIBLE },
-      {
-        projection: {
-          _id: 1,
-          title: 1,
-          recipeImage: 1,
-          totalTime: 1,
-          servings: 1,
-          rating: 1,
-          nutritionLabels: 1,
-          servingPrice: 1,
-        },
-      }
+      { title: { $regex: escapeRegex(title), $options: 'i' }, ...RECIPE_VISIBLE },
+      { projection: AUTOCOMPLETE_PROJECTION }
     )
-    .limit(8)
+    .limit(AUTOCOMPLETE_LIMIT)
     .toArray()
-  res.json(recipes)
+
+  if (exact.length >= AUTOCOMPLETE_LIMIT) return res.json(exact)
+
+  // 2. Fuzzy fallback fills the remaining slots with near-misses. Pull a capped
+  // set of lightweight {_id, title} candidates, rank them, then hydrate only the
+  // winners with the full projection (preserving the ranked order).
+  const seen = new Set(exact.map((r) => String(r._id)))
+  const candidates = await db
+    .collection('recipes')
+    .find({ ...RECIPE_VISIBLE }, { projection: { _id: 1, title: 1 } })
+    .limit(FUZZY_CANDIDATE_CAP)
+    .toArray()
+
+  const ranked = fuzzyRankTitles(
+    title,
+    candidates.filter((c) => !seen.has(String(c._id))),
+    { limit: AUTOCOMPLETE_LIMIT - exact.length }
+  )
+  if (!ranked.length) return res.json(exact)
+
+  const fuzzyDocs = await db
+    .collection('recipes')
+    .find(
+      { _id: { $in: ranked.map((r) => r._id) }, ...RECIPE_VISIBLE },
+      { projection: AUTOCOMPLETE_PROJECTION }
+    )
+    .toArray()
+  const byId = new Map(fuzzyDocs.map((d) => [String(d._id), d]))
+  const fuzzyOrdered = ranked
+    .map((r) => byId.get(String(r._id)))
+    .filter(Boolean)
+
+  res.json([...exact, ...fuzzyOrdered])
 }))
 
 // GET /getTrendingRecipes

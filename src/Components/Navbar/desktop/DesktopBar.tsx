@@ -1,5 +1,5 @@
 import React, { FC } from 'react'
-import { NavLink } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
 import Skeleton from 'react-loading-skeleton'
 import { MdOutlineRestaurantMenu } from 'react-icons/md'
 import { AiOutlinePlusCircle } from 'react-icons/ai'
@@ -38,12 +38,21 @@ const DesktopCTAs: FC = () => (
  */
 const DesktopBar: FC<DesktopNavProps> = data => {
   const { isLoggedIn, authLoading } = data
+  // The /recipes browse page carries its own prominent search, so suppress the
+  // duplicate one in the top bar there (and only there — single-recipe pages at
+  // /recipes/:id have no search of their own and keep it). With the search gone,
+  // `.dnav--no-search` pushes the links/actions cluster to the right so the bar
+  // doesn't leave a gap — same treatment the Home hero uses (DesktopNav.scss).
+  const { pathname } = useLocation()
+  const showSearch = pathname !== '/recipes'
 
   return (
-    <div className='dnav dnav--quiet'>
-      <div className='dnav__search'>
-        <SearchRecipesInput autoComplete={true} />
-      </div>
+    <div className={`dnav dnav--quiet${showSearch ? '' : ' dnav--no-search'}`}>
+      {showSearch && (
+        <div className='dnav__search'>
+          <SearchRecipesInput autoComplete={true} />
+        </div>
+      )}
 
       <nav className='dnav__links' aria-label='Primary'>
         {/* aria-label keeps the name when the label collapses to an icon below

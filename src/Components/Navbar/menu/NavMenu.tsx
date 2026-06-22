@@ -1,4 +1,5 @@
 import React, { FC } from 'react'
+import { useLocation } from 'react-router-dom'
 import './NavMenu.scss'
 import MenuShell from './MenuShell'
 import MenuLink from './MenuLink'
@@ -12,11 +13,19 @@ import { NavMenuProps } from './types'
  * gradient, an in-menu recipe search, frosted cards grouping the nav, and an
  * account card. Data comes from `useNavMenu` (see Navbar.tsx).
  */
-const NavMenu: FC<NavMenuProps> = ({ open, onClose, ...menu }) => (
+const NavMenu: FC<NavMenuProps> = ({ open, onClose, ...menu }) => {
+  // The /recipes browse page has its own search, so don't duplicate it in the
+  // menu there. Kept on every other route (incl. single-recipe /recipes/:id).
+  const { pathname } = useLocation()
+  const showSearch = pathname !== '/recipes'
+
+  return (
   <MenuShell open={open} onClose={onClose}>
-    <div className='menu-search'>
-      <SearchRecipesInput autoComplete={true} />
-    </div>
+    {showSearch && (
+      <div className='menu-search'>
+        <SearchRecipesInput autoComplete={true} />
+      </div>
+    )}
     {getNavGroups(menu.isLoggedIn).map(group => (
       <div className='menu-group' key={group.heading}>
         <p className='menu-group__heading'>{group.heading}</p>
@@ -27,6 +36,7 @@ const NavMenu: FC<NavMenuProps> = ({ open, onClose, ...menu }) => (
     ))}
     <AccountCard {...menu} onClose={onClose} />
   </MenuShell>
-)
+  )
+}
 
 export default NavMenu

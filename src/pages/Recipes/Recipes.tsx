@@ -3,6 +3,7 @@ import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import { BiChevronDown, BiSliderAlt } from 'react-icons/bi'
+import { TbSearchOff } from 'react-icons/tb'
 import { TailSpin } from 'react-loader-spinner'
 import './Recipes.scss'
 import RecipeCard from 'src/Components/RecipeCard/RecipeCard'
@@ -103,6 +104,16 @@ const Recipes: FC = () => {
     setCuisine('')
     setMeals([])
     syncUrl({ diets: [], cuisine: '', meals: [] })
+  }
+  // Full reset escape-hatch for the empty state: drop the search term AND every
+  // filter, landing on the unfiltered catalog. `syncUrl`/`clearFilters` both
+  // preserve `q`, so we reset the local state and navigate to a bare /recipes.
+  const browseAll = () => {
+    setSort('popular')
+    setDiets([])
+    setCuisine('')
+    setMeals([])
+    navigate('/recipes')
   }
 
   const { data, isFetching, isError, fetchNextPage, hasNextPage } =
@@ -235,12 +246,37 @@ const Recipes: FC = () => {
           </div>
         ) : totalResults === 0 ? (
           <div className='recipes-empty'>
-            <div className='recipes-empty__emoji'>🍽️</div>
-            <h2>No recipes found</h2>
-            <p>Try a different search or clear your filters.</p>
-            {activeFilterCount > 0 && (
-              <button onClick={clearFilters}>Clear filters</button>
-            )}
+            <div className='recipes-empty__icon' aria-hidden='true'>
+              <TbSearchOff />
+            </div>
+            <h2 className='recipes-empty__title'>No recipes found</h2>
+            <p className='recipes-empty__msg'>
+              {query ? (
+                <>
+                  Nothing matched <strong>“{query}”</strong>
+                  {activeFilterCount > 0 ? ' with these filters' : ''}. Try a
+                  different search{activeFilterCount > 0 ? ' or loosen your filters' : ''}.
+                </>
+              ) : (
+                'No recipes match these filters. Try removing one to see more.'
+              )}
+            </p>
+            <div className='recipes-empty__actions'>
+              {activeFilterCount > 0 && (
+                <button
+                  className='recipes-empty__btn recipes-empty__btn--ghost'
+                  onClick={clearFilters}
+                >
+                  Clear filters
+                </button>
+              )}
+              <button
+                className='recipes-empty__btn recipes-empty__btn--primary'
+                onClick={browseAll}
+              >
+                Browse all recipes
+              </button>
+            </div>
           </div>
         ) : (
           <>
