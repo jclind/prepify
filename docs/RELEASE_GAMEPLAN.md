@@ -53,7 +53,7 @@ same commit.**
 | 2b | Public Help/Contact page | `[x]` | #158 ✅ |
 | 2c | Single-recipe polish | `[x]` | #160 ✅ |
 | 2d | Recipes browse polish | `[ ]` | — |
-| 2e | Account/profile polish | `[ ]` | — |
+| 2e | Account/profile polish | `[~]` | `worktree-feat+account-sections-public-profile` (impl done, PR pending) |
 | 3a | a11y (focus-visible, chevron) | `[ ]` | — |
 | 3b | Meta/SEO finish (favicon/OG/titles) | `[ ]` | — |
 | 3c | Username validation + report-user | `[ ]` | — |
@@ -322,6 +322,28 @@ Append a one-liner when a track changes state (started / PR / merged). Keeps ses
   create-username. **Part 2** (after Part 1 merges): **2d** recipes browse (rebases on 3a's Navbar), **3c**
   username-validation + report-user (rebases on 2e's PublicProfile; also carries the two 2c deferrals).
   **3b** meta/SEO held as a finishing pass. Part-1 kickoff prompts added to the appendix below.
+- _2026-06-22_ — **2e Account/profile polish → implemented (PR pending).** Branch
+  `worktree-feat+account-sections-public-profile`. Account tabs redesigned: "Your Recipes" dashboard
+  tiles (views/saves/made + compact counts), "Ratings" compact avatar rows (clamped review text), "Drafts"
+  vertical cards, and grid/spacing alignment across tabs. Public profile (`/u/:username`) reworked:
+  centered identity, divided Recipes/Saves/Made counts, achievement chips, image-first square tiles with
+  rating · time · cost + bookmark save-count, richer `EmptyState`, share button. Added a working **"Load
+  more"** — new paginated `GET /getPublicProfileRecipes` (the profile endpoint was capped at 12 with no
+  pagination) — and moved Saves/Made onto a **server-side aggregate** over all visible recipes (was a
+  misleading sum of the shown batch). Also **fixed** the pre-existing nested-`<button>` a11y nit on the
+  Ratings list (row is now a keyboard-operable `<div role="button">`). A **high-effort `/code-review`** was
+  run and its fixes applied: idempotent page-map accumulation (no duplicate-append on refetch), negative-
+  page clamp + `_id` sort tiebreaker, restored image fallbacks, shared `formatCompactCount`/`formatPrice`
+  utils, deleted dead `selectCustomStyles.ts`. **Verified:** prod build green; Vitest 452 pass/2 skip;
+  Jest 644 pass; **live load-more click-through 12→15** (button clears, no dupes) against a seeded
+  >12-recipe user. **Cypress:** *not* environment-blocked — a worktree config mismatch (this worktree's
+  `.env` sets `VITE_API_URL=:4003` while Cypress's intercepts hardcode `:4000` in
+  `cypress/support/constants.ts`); `browse.cy.ts` passes **3/3** when run with `VITE_API_URL=:4000`. The 3
+  auth specs need a `cypress.env.json` Firebase service account (not run locally). **Still open:** the
+  "Account nav sections UI" (SegmentedNav rail styling) sub-item; two low-severity review items (paged
+  endpoint re-counts every page; username→uid lookup duplicated across the two endpoints). **Pre-merge:**
+  the throwaway `/preview` route + `src/pages/_preview/` are intentionally still in the branch (remove
+  before merge); branch is 4 commits behind `development` (docs will need a rebase).
 
 ---
 
