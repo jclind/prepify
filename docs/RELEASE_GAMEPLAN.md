@@ -52,7 +52,7 @@ same commit.**
 | 2a | Homepage redesign (design + For You row + "What should I cook?") | `[x]` | #153 + #154 ✅ |
 | 2b | Public Help/Contact page | `[x]` | #158 ✅ |
 | 2c | Single-recipe polish | `[x]` | #160 ✅ |
-| 2d | Recipes browse polish | `[ ]` | — |
+| 2d | Recipes browse polish | `[x]` | #167 ✅ |
 | 2e | Account/profile polish | `[x]` | #165 ✅ |
 | 3a | a11y (focus-visible, chevron) | `[x]` | #163 ✅ |
 | 3b | Meta/SEO finish (favicon/OG/titles) | `[ ]` | — |
@@ -400,6 +400,10 @@ Append a one-liner when a track changes state (started / PR / merged). Keeps ses
   logic, the `isCorrected` banner, `browseAll`'s cache behavior, and the hydration dedupe all verified clean.
   **Four follow-ups filed → Backlog:** fuzzy fallback O(n) scan + hardcoded `'/recipes'` route (Tech debt),
   ARIA-listbox markup + keyboard nav (Accessibility/Features), debounce footer-label mismatch (UX polish).
+- _2026-06-22_ — **2d reconciled → merged (`[x]` #167 ✅).** Squash-merged as `d2d0417`; table row flipped and
+  the two `UX / visual polish` items this track delivered — *"Better no-results found"* and *"Search
+  autocomplete autocorrect is weak"* — marked done in `BACKLOG.md` (the four review follow-ups stay open by
+  design). Worktree + branch pruned. **Wave 3 Part 2 now: only 3c remains** (username validation + report-user).
 
 ---
 
