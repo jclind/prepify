@@ -19,15 +19,26 @@ const renderPage = (ui: ReactElement) =>
 describe('Legal / company pages', () => {
   it('About renders its heading and calls to action', () => {
     renderPage(<About />)
+    // "About Prepify" is the eyebrow; the marketing headline is the <h1>.
     expect(
-      screen.getByRole('heading', { level: 1, name: 'About Prepify' })
+      screen.getByRole('heading', {
+        level: 1,
+        name: /recipes that tell you the whole story/i,
+      })
     ).toBeInTheDocument()
-    expect(
-      screen.getByRole('link', { name: 'Browse recipes' })
-    ).toHaveAttribute('href', '/recipes')
-    expect(
-      screen.getByRole('link', { name: 'Create an account' })
-    ).toHaveAttribute('href', '/signup')
+    expect(screen.getByText('About Prepify')).toBeInTheDocument()
+    // The CTAs appear twice (hero + closing section); assert every instance
+    // points where it should rather than requiring a single match.
+    const browseLinks = screen.getAllByRole('link', { name: 'Browse recipes' })
+    expect(browseLinks.length).toBeGreaterThan(0)
+    browseLinks.forEach(link =>
+      expect(link).toHaveAttribute('href', '/recipes')
+    )
+    const signupLinks = screen.getAllByRole('link', {
+      name: 'Create an account',
+    })
+    expect(signupLinks.length).toBeGreaterThan(0)
+    signupLinks.forEach(link => expect(link).toHaveAttribute('href', '/signup'))
   })
 
   it('Privacy renders its heading and the draft/professional-review note', () => {

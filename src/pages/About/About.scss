@@ -3,97 +3,300 @@
 .about-page {
   // Fills the flexbox app-main so the footer stays at the viewport bottom on
   // short pages (see Layout.scss); nav is position:absolute, so offset content
-  // past it with top padding ≈ the nav height.
+  // past it with top padding ≈ the nav height. Mirrors the legal/Help pages.
   flex: 1 0 auto;
   padding: calc(#{s.$nav-height} + 2rem) 1.5rem 4rem;
   font-family: s.$font-family;
 
   .about-inner {
-    max-width: s.$recipe-body-max-width;
+    // Wider than the legal prose column so the step/feature grids breathe;
+    // individual prose blocks are re-constrained to a readable measure below.
+    max-width: s.$recipe-page-max-width;
     margin: 0 auto;
   }
 
+  // ── Hero ──────────────────────────────────────────────────────────────────
   .about-hero {
-    margin-bottom: 2.5rem;
+    text-align: center;
+    margin-bottom: 4rem;
+
+    .eyebrow {
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: s.$secondary;
+      margin-bottom: 0.75rem;
+    }
 
     h1 {
-      font-size: 2.5rem;
+      font-size: 2.75rem;
       font-weight: 800;
       letter-spacing: -0.02em;
+      line-height: 1.1;
       color: s.$primary-text;
-      margin-bottom: 0.75rem;
+      margin: 0 auto 1rem;
+      max-width: 18ch;
     }
 
     .tagline {
       color: s.$secondary-text;
-      font-size: 1.15rem;
+      font-size: 1.2rem;
       line-height: 1.6;
+      max-width: 60ch;
+      margin: 0 auto;
+    }
+
+    .hero-cta {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1rem;
+      margin-top: 2rem;
     }
   }
 
-  section {
-    margin-bottom: 2rem;
+  // ── Section scaffolding ─────────────────────────────────────────────────────
+  .about-section {
+    margin-bottom: 4rem;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    .section-head {
+      text-align: center;
+      max-width: 62ch;
+      margin: 0 auto 2rem;
+
+      h2 {
+        font-size: 1.8rem;
+        font-weight: 800;
+        letter-spacing: -0.01em;
+        color: s.$primary-text;
+        margin-bottom: 0.6rem;
+      }
+
+      p {
+        color: s.$secondary-text;
+        font-size: 1.1rem;
+        line-height: 1.7;
+        margin: 0;
+      }
+    }
+  }
+
+  // ── How it works: numbered step cards ───────────────────────────────────────
+  .how-it-works .steps-grid {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.25rem;
+
+    .step-card {
+      position: relative;
+      background: s.$white;
+      border: 1px solid s.$gray-300;
+      border-radius: s.$border-radius;
+      padding: 2rem 1.5rem 1.5rem;
+      text-align: center;
+
+      .step-num {
+        position: absolute;
+        top: -0.85rem;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 1.7rem;
+        height: 1.7rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        background: s.$primary;
+        color: s.$white;
+        font-size: 0.85rem;
+        font-weight: 700;
+      }
+
+      .step-icon {
+        display: inline-flex;
+        font-size: 2.25rem;
+        color: s.$secondary;
+        margin-bottom: 0.75rem;
+      }
+
+      h3 {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: s.$primary-text;
+        margin-bottom: 0.5rem;
+      }
+
+      p {
+        color: s.$secondary-text;
+        font-size: 0.98rem;
+        line-height: 1.6;
+        margin: 0;
+      }
+    }
+  }
+
+  // ── Features: icon + text cards ─────────────────────────────────────────────
+  .features .features-grid {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.25rem;
+
+    .feature-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      background: s.$white;
+      border: 1px solid s.$gray-300;
+      border-radius: s.$border-radius;
+      padding: 1.5rem;
+
+      .feature-icon {
+        display: inline-flex;
+        flex-shrink: 0;
+        font-size: 1.6rem;
+        color: s.$primary;
+        background: rgba(s.$primary, 0.1);
+        border-radius: s.$border-radius;
+        padding: 0.6rem;
+      }
+
+      .feature-text {
+        h3 {
+          font-size: 1.08rem;
+          font-weight: 700;
+          color: s.$primary-text;
+          margin-bottom: 0.35rem;
+        }
+
+        p {
+          color: s.$secondary-text;
+          font-size: 0.95rem;
+          line-height: 1.6;
+          margin: 0;
+        }
+      }
+    }
+  }
+
+  // ── Story prose ─────────────────────────────────────────────────────────────
+  .about-story {
+    text-align: center;
+
+    p {
+      color: s.$secondary-text;
+      font-size: 1.08rem;
+      line-height: 1.8;
+      max-width: 65ch;
+      margin: 0 auto 1.25rem;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+  }
+
+  // ── Closing CTA ─────────────────────────────────────────────────────────────
+  .about-cta {
+    text-align: center;
+    background: s.$gray-50;
+    border: 1px solid s.$gray-300;
+    border-radius: s.$border-radius;
+    padding: 3rem 1.5rem;
 
     h2 {
-      font-size: 1.5rem;
-      font-weight: 700;
+      font-size: 1.8rem;
+      font-weight: 800;
+      letter-spacing: -0.01em;
       color: s.$primary-text;
-      margin-bottom: 0.75rem;
+      margin-bottom: 0.5rem;
     }
 
     p {
       color: s.$secondary-text;
-      font-size: 1.05rem;
-      line-height: 1.7;
-      margin-bottom: 1rem;
+      font-size: 1.1rem;
+      line-height: 1.6;
+      margin-bottom: 1.75rem;
     }
 
-    ul {
-      margin: 0 0 1rem 1.25rem;
-      padding: 0;
-      color: s.$secondary-text;
-      font-size: 1.05rem;
-      line-height: 1.7;
-
-      li {
-        margin-bottom: 0.5rem;
-      }
-    }
-
-    strong {
-      color: s.$primary-text;
-      font-weight: 700;
+    .cta-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1rem;
     }
   }
 
-  .about-cta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-    margin-top: 2.5rem;
+  // ── Shared button vocabulary (filled primary / outlined secondary) ──────────
+  .btn-primary,
+  .btn-secondary {
+    display: inline-block;
+    padding: 0.8rem 1.75rem;
+    border-radius: s.$border-radius;
+    font-weight: 700;
+    font-size: 1rem;
+    text-decoration: none;
+    transition: opacity 0.15s ease, background 0.15s ease, color 0.15s ease;
+  }
 
-    .cta-primary,
-    .cta-secondary {
-      display: inline-block;
-      padding: 0.75rem 1.5rem;
-      border-radius: s.$border-radius;
-      font-weight: 700;
-      text-decoration: none;
-      transition: opacity 0.15s ease;
+  .btn-primary {
+    background: s.$primary;
+    color: s.$white;
 
-      &:hover {
-        opacity: 0.9;
+    &:hover {
+      opacity: 0.9;
+    }
+  }
+
+  .btn-secondary {
+    border: 2px solid s.$primary;
+    color: s.$primary;
+
+    &:hover {
+      background: rgba(s.$primary, 0.08);
+    }
+  }
+
+  // ── Mobile ──────────────────────────────────────────────────────────────────
+  @media (max-width: 600px) {
+    padding: calc(#{s.$nav-height} + 1rem) 1.1rem 3rem;
+
+    .about-hero {
+      margin-bottom: 3rem;
+
+      h1 {
+        font-size: 2.1rem;
+      }
+
+      .tagline {
+        font-size: 1.05rem;
       }
     }
 
-    .cta-primary {
-      background: s.$primary;
-      color: s.$white;
+    .about-section {
+      margin-bottom: 3rem;
+
+      .section-head h2 {
+        font-size: 1.5rem;
+      }
     }
 
-    .cta-secondary {
-      border: 2px solid s.$primary;
-      color: s.$primary;
+    .about-cta {
+      padding: 2.25rem 1.25rem;
+
+      h2 {
+        font-size: 1.5rem;
+      }
     }
   }
 }
