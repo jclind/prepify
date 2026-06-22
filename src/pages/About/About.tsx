@@ -175,17 +175,21 @@ const About: FC = () => (
           Most recipes tell you how to cook a dish &mdash; but never what it
           actually costs. We got tired of scrolling between tabs, guessing at
           grocery totals, and hoping a meal would fit the budget. So we built
-          the recipe site we wanted to use: cost and nutrition transparency on
-          every recipe, by default.
+          the recipe site we actually wanted to use: cost and nutrition
+          transparency on every recipe, by default.
         </p>
         <p>
-          Prepify is an independent project, built and maintained with a lot of
-          care by people who cook at home just like you.{' '}
-          {/* TODO(Jesse): add 1–2 sentences of personal background here —
-              who you are, what you do, and why this project matters to you.
-              Kept as a placeholder rather than inventing bio details. */}
-          We&rsquo;re always improving it, and we read every piece of feedback
-          that comes our way.
+          Honestly, we built Prepify for ourselves &mdash; to surface the
+          information we genuinely care about. I&rsquo;m Jesse, a self-taught
+          developer who cooks at home. I lift, so I like to keep an eye on my
+          nutrition &mdash; but more than that, I never want to get excited
+          about a new recipe only to find it doesn&rsquo;t fit my budget.
+          That&rsquo;s exactly why Prepify works the way it does.
+        </p>
+        <p>
+          Prepify is an independent project, built and maintained with care by
+          people who cook at home just like you. We&rsquo;re always improving
+          it, and we read every piece of feedback that comes our way.
         </p>
       </section>
 
