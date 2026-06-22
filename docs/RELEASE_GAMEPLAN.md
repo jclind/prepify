@@ -401,7 +401,7 @@ Paste-ready briefs for `/worktree-create`. Each is self-contained for a **cold**
 context). These four have **zero file overlap** — run them simultaneously. Regenerate later waves on
 demand once the board moves.
 
-### Track 0a · Repo & secrets hygiene
+### Track 0a · Repo & secrets hygiene ✅
 
 ```
 /worktree-create repo and secrets hygiene for release
@@ -416,7 +416,7 @@ Do:
 Guardrails: don't touch any source under src/ beyond grep verification; don't touch the beta tag; keep `npm test` (frontend) and `cd server && npm test` green; `npm run build` must pass. Use a conventional-commit message. When green, open a PR into development and report the audit residual.
 ```
 
-### Track 1a · Ratings/reviews bug
+### Track 1a · Ratings/reviews bug ✅
 
 ```
 /worktree-create fix delete-review leaves star rating
@@ -430,7 +430,7 @@ Bug 2 (investigate): the rating average was observed to DROP after adding a 5-st
 Guardrails: stay within the reviews/ratings subsystem (server/routes/reviews.js, util/recipeRating, src/pages/SingleRecipe/DataSections/RatingsAndReviews/*, relevant api/recipes.ts methods). Do NOT redesign the review UI (that's a separate track) — minimal UI for the new control is fine. Add/extend tests (server Jest + frontend Vitest). Keep all tests green, tsc clean, build passing. Open a PR into development when green.
 ```
 
-### Track 1d · Serving-price bug
+### Track 1d · Serving-price bug ✅
 
 ```
 /worktree-create fix recipe serving price calculation
@@ -442,7 +442,7 @@ Do: audit src/util/calculateServingPrice.ts against real recipe data — trace h
 Guardrails: scope to src/util/calculateServingPrice.ts and its direct callers/tests. Don't restyle the single-recipe page (price *prominence* is a separate polish track). Keep frontend tests green, tsc clean, build passing. Open a PR into development when green, and in the PR description show a before/after for a concrete recipe so the fix is reviewable.
 ```
 
-### Track 2a · Homepage features (redesign already shipped)
+### Track 2a · Homepage features (redesign already shipped) ✅
 
 The visual redesign shipped earlier (`e1539c3`): Home is `HomeHero → Trending → Browse by meal → View
 all`. Remaining 2a work is **feature**, not design, sourced from `docs/FEATURE_IDEAS.md`:
@@ -465,7 +465,7 @@ development when green.
 Paste-ready briefs for `/worktree-create`. Each is self-contained for a **cold** session (no prior
 context). These four have **zero file overlap** — run them simultaneously.
 
-### Track 1b · Save-recipe bug
+### Track 1b · Save-recipe bug ✅
 
 ```
 /worktree-create fix broken save-recipe functionality
@@ -483,7 +483,7 @@ Do: reproduce the breakage (run the app, sign in, try to save/unsave from both a
 Guardrails: scope to the save subsystem listed above. Keep your client change on the SaveControl / hook / api side — do NOT restyle the single-recipe page (single-recipe polish is a separate concurrent track 2c; stay out of SingleRecipe layout). Don't touch the beta tag. Keep frontend + server tests green, tsc clean, build passing. Open a PR into development when green, and in the PR description note exactly how the bug reproduced and what fixed it.
 ```
 
-### Track 1c · Account-data bug (rated-recipe images + empty-flash)
+### Track 1c · Account-data bug (rated-recipe images + empty-flash) ✅
 
 ```
 /worktree-create fix account ratings images and your-recipes empty flash
@@ -499,7 +499,7 @@ Do: fix Bug A; verify+fix-or-document Bug B. Add coverage where it makes sense (
 Guardrails: scope to src/pages/Account/* and the specific reviews API/route feeding the ratings list. Do NOT restyle account navigation or sections — account/profile visual polish is a separate later track (2e). Don't touch the beta tag. Keep tests green, tsc clean, build passing. Open a PR into development when green; in the PR description state how each bug reproduced (or that B didn't).
 ```
 
-### Track 2b · Public Help/Contact page (blocker)
+### Track 2b · Public Help/Contact page (blocker) ✅
 
 ```
 /worktree-create make help contact page publicly reachable
@@ -516,7 +516,7 @@ Do: ensure a logged-out visitor can both reach /help directly AND find a link to
 Guardrails: you MAY touch the Navbar to add a public link — note that track 2d will also touch the Navbar later, so keep your Navbar change minimal and self-contained. Scope: src/pages/Help/*, src/Components/Footer/*, Navbar link, and App.tsx only if the route genuinely isn't public. Don't touch the beta tag. Keep tests green, tsc clean, build passing. Open a PR into development when green; in the PR, confirm with a signed-out check that Help is reachable + linked.
 ```
 
-### Track 2c · Single-recipe polish
+### Track 2c · Single-recipe polish ✅
 
 ```
 /worktree-create polish the single recipe page
@@ -547,7 +547,7 @@ context). See "Suggested third wave" above for the batching rationale.
 These four have **zero file overlap** — run them simultaneously. 2e owns PublicProfile and 3a owns the
 Navbar for this part; Part 2 (2d, 3c) rebases on top of them after they merge.
 
-#### Track 2e · Account/profile polish
+#### Track 2e · Account/profile polish ✅
 
 ```
 /worktree-create polish account sections + public profile
@@ -563,7 +563,7 @@ Build on the 1c fixes already in Account/* — do NOT revert the empty-state gat
 Guardrails: scope STRICTLY to src/pages/Account/* and src/pages/PublicProfile/*. Do NOT touch src/Components/Navbar/* (3a), SingleRecipe, or any server route. A later track 3c will add a "report this user" control to PublicProfile — keep your changes structural/visual so that lands cleanly on top. Don't touch the beta tag. Keep tests green, tsc clean, build passing. Open a PR into development when green; screenshot before/after (desktop + mobile) for both areas.
 ```
 
-#### Track 3a · a11y (focus-visible + navbar chevron)
+#### Track 3a · a11y (focus-visible + navbar chevron) ✅
 
 ```
 /worktree-create a11y focus-visible + navbar chevron
@@ -576,7 +576,7 @@ Read docs/RELEASE_GAMEPLAN.md (track 3a) and docs/BACKLOG.md ("Accessibility"). 
 Guardrails: this worktree OWNS src/Components/Navbar/* for this wave — track 2d will rebase its navbar change after you merge, so keep your navbar edit minimal and focused on the chevron/focus issue. Scope: src/index.scss (global focus styles) + src/Components/Navbar/*. Don't touch the beta tag or App.tsx. Keep tests green, tsc clean, build passing. Open a PR into development when green; in the PR, note how you verified keyboard focus still shows but a mouse click doesn't.
 ```
 
-#### Track 3d · Add-recipe UX
+#### Track 3d · Add-recipe UX ✅
 
 ```
 /worktree-create add-recipe page UX fixes
@@ -590,7 +590,7 @@ Read docs/RELEASE_GAMEPLAN.md (track 3d) and docs/BACKLOG.md ("UX / visual polis
 Guardrails: scope STRICTLY to src/pages/AddRecipe/*. Don't touch the beta tag, Navbar, or App.tsx. Add/extend Vitest where the optimistic/timeout logic is testable. Keep tests green, tsc clean, build passing. Open a PR into development when green; screenshot the sticky-bar/footer fix (desktop + mobile).
 ```
 
-#### Track 3e · create-username revamp
+#### Track 3e · create-username revamp ✅ (superseded — already shipped)
 
 > **⚠️ SUPERSEDED — do not run.** This work already shipped before the board existed: the soft-glass
 > redesign in **PR #131** and the logout/escape hatch + page guard in **PR #98** (both merged to
