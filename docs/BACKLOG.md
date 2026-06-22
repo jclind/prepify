@@ -129,10 +129,10 @@ The triage date stamped on items is the date they were filed here, not when they
 - `[x]` **Review UI needs work** — *fixed in PR #160 (track 2c)*; "Your review" is now an eyebrow label
   + a teal-accented, tinted card distinct from the public list. The "rating dropdown" was already
   removed by track 1a (it's the "Remove rating" button now), so only the Your-Review UI applied.
-- `[ ]` **Show the recipe rating up top on the single-recipe page** — the top action-bar rating tile
-  was replaced by the per-serving price tile (2c). Re-surface the rating compactly near the title/hero
-  (e.g. "★ 4.5 · N ratings") rather than adding a 4th action-bar tile (which would crowd mobile). It
-  still shows in the Ratings & Reviews header. *(→ Track 3c)*
+- `[x]` **Show the recipe rating up top on the single-recipe page** — *done in PR #166 (track 3c, merged ✅):*
+  a compact `.hero-rating` echo (`★ 4.5 · N ratings`) sits just under the title, shown only once the recipe
+  has ratings, so an unrated recipe isn't labelled. Not a 4th action-bar tile (would crowd mobile); the full
+  breakdown still lives in the Ratings & Reviews header.
 - `[ ]` **Account nav sections UI** — improve the Saved / Ratings / etc. section navigation styling.
 - `[x]` **`/u/:username` public profile visual polish** — **done (track 2e):** centered identity
   (avatar, @handle + share, divided Recipes/Saves/Made counts, "location · Lv N", achievement chips),
@@ -175,16 +175,22 @@ The triage date stamped on items is the date they were filed here, not when they
 ## Features
 
 - `[ ]` **Press `/` to focus search** — global keyboard shortcut to bring up search. No handler exists today.
-- `[ ]` **Report a *user* from their profile page** *(admin)* — `ReportTargetType` is only
-  `'recipe' | 'review'` (`src/types.ts:188`); add a user-report flow. *(verified missing)*
-- `[ ]` **Double-check report-recipe styling in the controls element** *(admin)*.
-- `[ ]` **Report controls should be visible when logged out** — `ReportControl` renders `null` for
-  logged-out users (both the single-recipe footer link and the per-review links), so they have no
-  signal that reporting exists. Keep the trigger visible and, on click while logged out, prompt to log
-  in (a toast or a login link is enough — no full modal). One change covers both recipe + review since
-  they share `ReportControl`. *(→ Track 3c; behavior change to a shared component, so out of the 2c
-  visual-polish scope)*
-- `[ ]` **Username validation: disallow certain characters** — tighten the allowed character set.
+- `[x]` **Report a *user* from their profile page** *(admin)* — *done in PR #166 (track 3c, merged ✅):*
+  `ReportTargetType` now includes `'user'`; the server accepts/validates/stores the target (no `recipeId`,
+  carries `reportedUsername` + a `reportedUid` rename-stable snapshot), PublicProfile exposes a "Report user"
+  control, and the admin queue renders user reports (close-only — suspend/ban lives on `/admin/users`).
+  Server guards added: 404 on a non-existent handle, 400 on self-reports, case-insensitive rate limit.
+- `[x]` **Double-check report-recipe styling in the controls element** *(admin)* — *done in PR #166 (track 3c,
+  merged ✅):* tidied `ReportControl.scss` (focus-visible rings, button hover) and reworked the affordances
+  into kebab menus (recipe / review / profile) plus a recipe top-controls kebab alongside the kept footer link.
+- `[x]` **Report controls should be visible when logged out** — *done in PR #166 (track 3c, merged ✅):*
+  `ReportControl` no longer returns `null` for logged-out users; the trigger stays visible (footer link + per-
+  review/profile kebabs) and clicking it while logged out fires a "Log in to report this …" toast instead of
+  opening the modal. One change in the shared component covers recipe + review + user.
+- `[x]` **Username validation: disallow certain characters** — *done in PR #166 (track 3c, merged ✅):*
+  server `validateUsername` now rejects anything outside `[A-Za-z0-9._-]` with a clear error, mirrored inline
+  on the create-username flow (same rule order: whitespace → length → charset) so feedback matches before the
+  availability round-trip.
 
 ## Tech debt / process / infra
 
