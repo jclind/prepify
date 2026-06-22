@@ -392,6 +392,14 @@ Append a one-liner when a track changes state (started / PR / merged). Keeps ses
   (username validation + report-a-user + the two 2c deferrals) are unblocked (3a's Navbar #163 + 2e's
   PublicProfile #165 merged) and have zero file overlap — run simultaneously. References checked against
   `development`.
+- _2026-06-22_ — **2d (recipes browse polish) built + local code review on `worktree-feat+recipes-browse-polish`
+  (PR #167 open).** Empty state, server-side fuzzy autocomplete (`server/util/recipeTitleMatch.js`), and
+  `/recipes`-only nav-search suppression. Review found one fix-now bug — **autocomplete endpoint wasn't
+  URL-encoding the term** (`src/api/recipes.ts:94`; `&`/`%`/`#` silently truncated the query, unlike the
+  `URLSearchParams`-encoded `getAllRecipes`) — **fixed in-worktree** (`encodeURIComponent`). The core fuzzy
+  logic, the `isCorrected` banner, `browseAll`'s cache behavior, and the hydration dedupe all verified clean.
+  **Four follow-ups filed → Backlog:** fuzzy fallback O(n) scan + hardcoded `'/recipes'` route (Tech debt),
+  ARIA-listbox markup + keyboard nav (Accessibility/Features), debounce footer-label mismatch (UX polish).
 
 ---
 
