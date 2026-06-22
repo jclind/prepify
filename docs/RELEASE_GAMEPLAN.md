@@ -61,6 +61,7 @@ same commit.**
 | 3e | create-username revamp | `[x]` | #131 + #98 (+ #162 reconcile/test) ✅ |
 | 4-sass | Sass `@import`→`@use` (LONER) | `[ ]` | — |
 | 4-about | About rewrite (Jesse) | `[ ]` | — |
+| 4-tests | Toast/alert + Cypress autocomplete tests | `[ ]` | — |
 | 4-qa | Empty/error sweep + links + copy + mobile + Lighthouse | `[ ]` | — |
 | 5 | Cutover (beta off + 1.0.0 + deploy) | `[ ]` | — |
 
@@ -429,6 +430,14 @@ Append a one-liner when a track changes state (started / PR / merged). Keeps ses
   implementation — nothing to reconcile; logged this pass for handoff honesty. One minor non-blocker noted
   (client username min-length is a silent no-error below 3 chars; server still rejects) — not filed as it's
   cosmetic inline-feedback only.
+- _2026-06-22_ — **Wave 4 defined** (see "Appendix — Wave 4 kickoff prompts"). All design/polish is merged,
+  so the finishing work is sequenced around Rule 1 (the Sass loner). **Part 1** (run now, zero file overlap):
+  **3b** meta/SEO finish, **4-about** About rewrite, **4-tests** toast/alert + Cypress autocomplete. 3b skips
+  `About.tsx` so 4-about owns its own meta. **Part 2** (after Part 1 merges, ALONE): **4-sass** `@import`→`@use`
+  migration — the loner; rebase any open branch after. **Part 3** (late, on the stabilized post-Sass app):
+  **4-qa** finishing sweep (empty/error/loading states + broken-link click-through + copy/typo + mobile
+  hand-pass + Lighthouse). Then **Phase 5 cutover** (beta off + 1.0.0 + deploy) per `RELEASE_PLAN.md`. Added a
+  `4-tests` row to the Track Board.
 
 ---
 
@@ -646,15 +655,16 @@ Do:
 Guardrails: scope to src/pages/CreateUsername/* + the auth signout hook you reuse for logout. Don't touch the beta tag or App.tsx routes. Keep tests green, tsc clean, build passing. Open a PR into development when green; confirm the escape hatch (a signed-in user without a username can log out).
 ```
 
-### Part 2 — ready now (Part 1 fully merged 2026-06-22)
+### Part 2 — COMPLETE ✅ (2d #167 + 3c #166 merged & verified 2026-06-22)
 
 Both Part-1 chokepoint owners are in `development` — **3a** merged the Navbar (#163), **2e** merged the
-PublicProfile (#165) — so 2d and 3c are unblocked. **They have zero file overlap with each other** (2d owns
+PublicProfile (#165) — so 2d and 3c were unblocked. **They had zero file overlap with each other** (2d owns
 Recipes + `SearchRecipesInput` + the Navbar search; 3c owns the reports/auth server routes + `ReportControl`
-+ `PublicProfile` + `SingleRecipe` hero), so run them **simultaneously**. Paste-ready, cold-session briefs
-below — references checked against `development` at 2026-06-22.
++ `PublicProfile` + `SingleRecipe` hero), so they ran **simultaneously**. Both merged and passed a full
+verification pass (code audit + Vitest 495 / Jest 683 + live headless smoke of every behavior). Briefs kept
+below for history.
 
-#### Track 2d · Recipes browse polish
+#### Track 2d · Recipes browse polish ✅
 
 ```
 /worktree-create polish the recipes browse page
@@ -669,7 +679,7 @@ Three items:
 Guardrails: scope to src/pages/Recipes/*, src/Components/SearchRecipesInput/*, and the Navbar ONLY for the /recipes search-visibility change. Do NOT change search behavior elsewhere or touch the beta tag / App.tsx routes. Keep frontend tests green, tsc clean, build passing; add a Cypress autocomplete test if practical (Backlog → Testing has this open). Open a PR into development when green; screenshot before/after for the no-results state, the autocomplete dropdown, and the /recipes top bar (desktop + mobile).
 ```
 
-#### Track 3c · Username validation + report-a-user (+ the two 2c deferrals)
+#### Track 3c · Username validation + report-a-user (+ the two 2c deferrals) ✅
 
 ```
 /worktree-create username validation + report-a-user + report-control polish
@@ -689,4 +699,115 @@ Guardrails: scope to server/routes/auth.js + server/routes/reports.js, src/types
 
 - **3b** Meta/SEO finish — `index.html` + per-page Helmet (favicon, OG image for link previews, per-page
   `<title>`s). Collides with any page being edited; run **after** 2d/3c stabilize, folded into the Phase-4
-  QA sweep. (2c deferred its per-page OG tags here.)
+  QA sweep. (2c deferred its per-page OG tags here.) *(Now scheduled as Wave 4 Part 1 — see below.)*
+
+---
+
+## Appendix — Wave 4 kickoff prompts
+
+Wave 3 is fully merged and verified, so all design/polish is in `development`. Wave 4 is the **finishing
+sequence**, shaped by **Rule 1 (the Sass loner)** and by the QA sweep needing a stable app:
+
+- **Part 1 — run now, in parallel (zero file overlap):** **3b** meta/SEO, **4-about** About rewrite,
+  **4-tests** toast/alert + Cypress autocomplete. The only seam: 3b skips `src/pages/About/*`, so **4-about
+  owns its own `<title>`/OG**. All three otherwise touch disjoint files (3b → `index.html` + per-page Helmet;
+  about → `About.*`; tests → `src/test/*` + `cypress/e2e/*`).
+- **Part 2 — the loner, ALONE (after Part 1 merges):** **4-sass** `@import`→`@use`. Rewrites nearly every
+  `.scss`; confirm nothing else scss-touching is in flight, then have any open branch rebase after it merges.
+- **Part 3 — finishing sweep, late (after Sass merges, on the stabilized app):** **4-qa** empty/error/loading
+  states + broken-link click-through + copy/typo + mobile hand-pass + Lighthouse.
+- Then **Phase 5 cutover** (beta tag off + bump to `1.0.0` + deploy) — the celebration step; follow the
+  `RELEASE_PLAN.md` checklist, not a worktree.
+
+Paste-ready, cold-session briefs below — references checked against `development` at 2026-06-22.
+
+### Part 1 — run these three now (zero file overlap)
+
+#### Track 3b · Meta/SEO finish
+
+```
+/worktree-create meta and SEO finish — favicon, OG image, per-page titles
+
+Read docs/RELEASE_GAMEPLAN.md (track 3b) and docs/BACKLOG.md. The meta/SEO finishing pass. NOTE: index.html ALREADY has a favicon (public/favicon.ico), apple-touch-icon (public/logo192.png), and global og:title/og:description/og:type/og:image/og:url defaults — so this is a COMPLETION + dedupe pass, not from scratch. Many pages already mount react-helmet-async (Home, SingleRecipe, Recipes, PublicProfile, Account, Login, Signup, ForgotPassword, AddRecipe).
+
+Do:
+1. Per-page <title>s — audit EVERY route and ensure each sets a descriptive, unique <title> via Helmet, in a consistent "<Page> · Prepify" pattern (e.g. "Tuscan Chicken Skillet · Prepify", "Recipes · Prepify", "Help · Prepify"). Fill the gaps (Help, Admin pages, CreateUsername, 404/RecipeNotFound, etc.).
+2. OG link-preview image — the current og:image is just the logo (public/logo192.png). Add a proper branded link-preview image sized 1200×630 and reference it (absolute URL) from index.html. If you can't produce final art, add a clean branded card and flag it as a placeholder in the PR.
+3. Per-page OG tags — tracks 2c and 3c DEFERRED per-page og:title/og:description/og:image here. react-helmet-async must override the static index.html defaults (no duplicate og:* in the rendered <head>). Add per-page og:* to at least the single-recipe page (recipe name + image + description) and the other high-value share targets (Recipes, PublicProfile). VERIFY the static default is actually overridden, not duplicated.
+4. Favicon/manifest — confirm favicon.ico + apple-touch-icon resolve; add PNG variants + a web-manifest icon set if missing.
+
+⚠️ Do NOT touch src/pages/About/* — track 4-about owns the About page (incl. its own title/OG) this wave; skip it to avoid a collision.
+
+Guardrails: scope to index.html, public/* (icons/manifest), and per-page Helmet blocks ONLY (NOT About.tsx). Don't restyle pages or touch the beta tag. Keep tests green, tsc clean, build passing. Open a PR into development; in the PR, paste the rendered <head> for 2–3 routes showing unique titles + deduped og tags, and a link-preview check.
+```
+
+#### Track 4-about · About page rewrite
+
+```
+/worktree-create rewrite the About page for 1.0
+
+Read docs/RELEASE_GAMEPLAN.md (track 4-about). The About page (src/pages/About/About.tsx + About.scss) needs a real 1.0 rewrite — it's currently thin/placeholder. Isolated page; nothing else depends on it.
+
+Do:
+1. Rewrite the copy for a public/launch audience — what Prepify is (real recipes with real per-serving prices + nutrition baked in), who it's for, and the value (plan, shop, cook with zero guesswork). Warm, concise, in Jesse's voice. Leave clearly-marked TODO placeholders for personal-bio details rather than inventing them.
+2. Lay it out in the site's design vocabulary (reuse existing components/tokens; mirror the polished Help/legal pages) — e.g. a hero, a "How it works" section, and a closing CTA to browse recipes / sign up.
+3. Set the page's OWN <title> + og:* via Helmet right here — track 3b is explicitly skipping About to avoid a collision, so About owns its own meta.
+4. Confirm it's reachable (footer/nav link) and responsive (desktop + mobile).
+
+Guardrails: scope STRICTLY to src/pages/About/* (+ a footer/nav link only if About isn't already linked). Don't touch the beta tag, other pages, or any server route. Keep tests green, tsc clean, build passing. Open a PR into development; screenshot desktop + mobile.
+```
+
+#### Track 4-tests · Toast/alert + Cypress autocomplete tests
+
+```
+/worktree-create toast/alert tests + cypress autocomplete test
+
+Read docs/RELEASE_GAMEPLAN.md (Phase 4 testing bullet) and docs/BACKLOG.md ("Testing"). Batch the two remaining standalone test gaps. TEST FILES ONLY — no product-code changes (if a test reveals a real bug, file it to the backlog rather than fixing it here, unless the fix is trivial).
+
+Do:
+1. Toast/alert system — the react-hot-toast usage is untested. Find where the Toaster is mounted and how toasts are fired, then add Vitest coverage for that contract (success/error/loading shapes, any dedupe/throttle, and a couple of representative call sites).
+2. Cypress autocomplete (Recipes page) — track 2d shipped server-side fuzzy autocomplete + a "showing similar recipes" banner. Add a Cypress spec (fold into cypress/e2e/browse.cy.ts or a new spec) that: types a partial query and asserts the dropdown shows matching options; types a typo (e.g. "chikcen") and asserts results still surface WITH the "similar recipes" banner; clicking an option navigates correctly. Stub the autocomplete endpoint for determinism.
+
+Guardrails: scope to src/test/* and cypress/e2e/* ONLY. Don't touch product code or the beta tag. Keep the full Vitest + Cypress suites green. Open a PR into development; note the coverage added.
+```
+
+### Part 2 — the loner (after Part 1 merges; run ALONE)
+
+#### Track 4-sass · Sass `@import` → `@use` migration (LONER)
+
+```
+/worktree-create migrate Sass @import to @use (LONER — run alone)
+
+Read docs/RELEASE_GAMEPLAN.md (track 4-sass + Rule 1) and docs/BACKLOG.md ("Tech debt": Migrate Sass @import → @use). ⚠️ THIS IS THE LONER: it rewrites nearly every .scss file, so it collides with ANY other scss-touching worktree. Confirm no other design/polish/QA worktree is in flight before starting; after it merges, every open branch must rebase.
+
+Do: migrate the stylesheet system off the deprecated Sass @import to the module system (@use / @forward). Load the shared partials (variables/mixins/functions — the `s.` namespace already in use, e.g. s.outline()) via @use with explicit namespaces, convert every @import across src/ to @use/@forward, and resolve the resulting namespacing (vars/mixins are no longer global — qualify them). The build currently emits @import deprecation warnings; the goal is ZERO Sass deprecation warnings on `npm run build`.
+
+Guardrails: this is a mechanical-but-wide refactor — change ONLY the Sass module wiring, NOT any visual values (no color/spacing/layout changes; rendered output must be pixel-identical). Don't touch the beta tag or any .tsx logic. Keep tests green, tsc clean; `npm run build` must pass with no Sass @import deprecation warnings. Open a PR into development; in the PR, confirm the warning count went to zero and spot-check a few pages render identically (screenshots).
+```
+
+### Part 3 — finishing sweep (late; after Sass merges, on the stabilized app)
+
+#### Track 4-qa · Release QA sweep
+
+```
+/worktree-create release QA sweep — empty/error states, links, copy, mobile, lighthouse
+
+Read docs/RELEASE_GAMEPLAN.md (track 4-qa) and docs/RELEASE_PLAN.md. The late, app-wide finishing sweep — run on a STABLE app, AFTER 3b/4-about/4-tests AND the Sass migration have merged (so fixes land in the @use world). Needs the app running (use the run-prepify skill).
+
+Do a structured pass and fix what you find (small, safe fixes; file anything larger to the backlog):
+1. Empty / error / loading states — click through every page in empty, error, and loading conditions; make sure each has a sensible state (no spinners-forever, no blank flashes, no unhandled error walls).
+2. Broken-link click-through — visit every nav/footer/in-page link and CTA; fix any 404 or dead route. Confirm logged-out vs logged-in link visibility is correct.
+3. Copy / typo review — proofread visible copy site-wide (headings, empty states, buttons, toasts, legal/help/about) for typos and inconsistent voice.
+4. Mobile hand-pass — walk the Add Recipe + Account/Settings flows at mobile widths; fix layout/overflow/tap-target issues.
+5. Lighthouse / perf — run Lighthouse on Home + a recipe page; capture scores and knock out cheap wins (image sizing, meta, a11y flags).
+
+Guardrails: keep fixes small and safe — polish, not redesign. Don't touch the beta tag (that's the Phase-5 cutover). Keep tests green, tsc clean, build passing. Open a PR into development; attach a short checklist of what was checked + before/after Lighthouse scores, and link any backlog items filed for larger issues.
+```
+
+### Then → Phase 5 cutover (not a worktree)
+
+The celebration step. Follow `RELEASE_PLAN.md` → "Release-day cutover": all blockers `[x]` → bump
+`package.json` to `1.0.0` → **drop the beta tag** (the three edits together: `LegalBar.tsx`,
+`PrepifyLogo.tsx`, `ReleaseNotes.tsx`) → refresh release notes + tag a GitHub Release → deploy FE + BE with
+prod env vars set first → smoke-test prod → watch logs. Revisit the **Firebase Analytics / cookie-notice**
+decision here — if analytics stays on at launch, the disclosure becomes a blocker.
