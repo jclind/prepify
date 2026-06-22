@@ -6,7 +6,7 @@ import { Helmet } from 'react-helmet-async'
 import Skeleton from 'react-loading-skeleton'
 import 'react-loading-skeleton/dist/skeleton.css'
 import { AiOutlineClockCircle, AiOutlineUsergroupAdd } from 'react-icons/ai'
-import { BsStar } from 'react-icons/bs'
+import { BsStar, BsStarFill } from 'react-icons/bs'
 import { BiLeftArrowAlt, BiCheckCircle } from 'react-icons/bi'
 import { CiShoppingBasket } from 'react-icons/ci'
 import { TbTag } from 'react-icons/tb'
@@ -242,6 +242,14 @@ const SingleRecipe: FC = () => {
             <Link to='/recipes' className='sr-back'>
               <BiLeftArrowAlt /> All recipes
             </Link>
+            {/* Quick-access report kebab (the quiet footer link below stays too).
+                Hidden for the owner; logged-out clicks nudge to log in. */}
+            {currRecipe && !isOwner && (
+              <ReportControl
+                variant='menu'
+                target={{ targetType: 'recipe', recipeId: currRecipe._id }}
+              />
+            )}
           </div>
 
           {currRecipe && (
@@ -279,6 +287,21 @@ const SingleRecipe: FC = () => {
                   capitalize(currRecipe?.title || '')
                 )}
               </h1>
+              {/* Top-of-page rating echo. 2c moved the action-bar rating tile
+                  out for the per-serving price; this re-surfaces it compactly by
+                  the title (the full breakdown still lives in Ratings & Reviews).
+                  Only shown once rated, so an unrated recipe isn't labelled. */}
+              {currRecipe && ratingCount > 0 && (
+                <div className='hero-rating' aria-label={`Rated ${formatRating(currRecipe.rating?.rateValue, ratingCount)} out of 5 from ${ratingCount} ratings`}>
+                  <BsStarFill className='hr-star' aria-hidden='true' />
+                  <span className='hr-val'>
+                    {formatRating(currRecipe.rating?.rateValue, ratingCount)}
+                  </span>
+                  <span className='hr-count'>
+                    · {ratingCount} {ratingCount === 1 ? 'rating' : 'ratings'}
+                  </span>
+                </div>
+              )}
               {loading ? (
                 <Skeleton baseColor={skeletonColor} count={2} />
               ) : (
@@ -466,7 +489,7 @@ const SingleRecipe: FC = () => {
             />
           )}
 
-          {!loading && currRecipe && currUID && !isOwner && (
+          {!loading && currRecipe && !isOwner && (
             <div className='sr-report-foot'>
               <span>See something wrong with this recipe?</span>
               <ReportControl

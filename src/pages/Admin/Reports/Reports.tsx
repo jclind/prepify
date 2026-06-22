@@ -104,11 +104,14 @@ const Reports: FC = () => {
   // Take the reported content down, then close the report as resolved.
   const takedownMutation = useMutation({
     mutationFn: async (report: AdminReportType) => {
-      if (report.targetType === 'recipe') {
-        await ReportAPI.setRecipeModeration(report.recipeId, 'hidden')
-      } else if (report.reportedUsername) {
+      // recipeId is present on every recipe/review report (the only targets the
+      // Take down button is offered for; user reports have none).
+      const { recipeId } = report
+      if (report.targetType === 'recipe' && recipeId) {
+        await ReportAPI.setRecipeModeration(recipeId, 'hidden')
+      } else if (report.reportedUsername && recipeId) {
         await ReportAPI.setReviewModeration(
-          report.recipeId,
+          recipeId,
           report.reportedUsername,
           true
         )
@@ -125,11 +128,12 @@ const Reports: FC = () => {
   // Bring previously-hidden content back. Leaves the report's status as-is.
   const restoreMutation = useMutation({
     mutationFn: async (report: AdminReportType) => {
-      if (report.targetType === 'recipe') {
-        await ReportAPI.setRecipeModeration(report.recipeId, 'active')
-      } else if (report.reportedUsername) {
+      const { recipeId } = report
+      if (report.targetType === 'recipe' && recipeId) {
+        await ReportAPI.setRecipeModeration(recipeId, 'active')
+      } else if (report.reportedUsername && recipeId) {
         await ReportAPI.setReviewModeration(
-          report.recipeId,
+          recipeId,
           report.reportedUsername,
           false
         )
@@ -146,7 +150,10 @@ const Reports: FC = () => {
   // one server call. The only path that actually clears a pending_review hold — a
   // bare Dismiss would close the report but leave the recipe invisible forever.
   const approveMutation = useMutation({
-    mutationFn: (report: AdminReportType) => AdminAPI.approveRecipe(report.recipeId),
+    // Approve is only ever offered on a pending_review recipe report, which
+    // always carries a recipeId.
+    mutationFn: (report: AdminReportType) =>
+      AdminAPI.approveRecipe(report.recipeId as string),
     onSuccess: () => {
       toast.success('Recipe approved and published.')
       invalidate()
@@ -181,6 +188,22 @@ const Reports: FC = () => {
 
   const renderPreview = (report: AdminReportType) => {
     const { target } = report
+    if (report.targetType === 'user') {
+      // A user report has no recipe/review snapshot — link straight to the
+      // reported profile so an admin can review it (and act from /admin/users).
+      return (
+        <div className='preview user-preview'>
+          <div className='preview-body'>
+            <div className='preview-meta'>
+              Reported user:{' '}
+              <Link to={`/u/${report.reportedUsername}`} className='preview-title'>
+                @{report.reportedUsername}
+              </Link>
+            </div>
+          </div>
+        </div>
+      )
+    }
     if (report.targetType === 'recipe') {
       if (!target.recipe) {
         return <span className='preview-missing'>Recipe no longer exists.</span>
@@ -365,7 +388,12 @@ const Reports: FC = () => {
                           Restore
                         </button>
                       ) : (
-                        report.status === 'open' && takedownButton(report)
+                        // No inline take-down for a user report — user
+                        // moderation (suspend/ban) lives on /admin/users; the
+                        // queue only closes the report.
+                        report.status === 'open' &&
+                        report.targetType !== 'user' &&
+                        takedownButton(report)
                       )}
                       {report.status === 'open' && (
                         <>

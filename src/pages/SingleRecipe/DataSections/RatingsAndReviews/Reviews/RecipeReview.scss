@@ -82,6 +82,10 @@
         height: 18px;
         width: 18px;
       }
+      // Non-author view: a lone report kebab — pin it to the right edge.
+      .report-menu {
+        margin-left: auto;
+      }
       .actions {
         display: flex;
         justify-content: flex-end;
