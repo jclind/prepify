@@ -78,12 +78,17 @@ The triage date stamped on items is the date they were filed here, not when they
 
 ## UX / visual polish
 
-- `[ ]` **Better "no results found" on the Recipes page** — current indicator is weak.
+- `[x]` **Better "no results found" on the Recipes page** — *done in PR #167 (track 2d, merged ✅):*
+  replaced the weak indicator with a real empty state (icon + contextual copy that names the query and/or
+  filters) and Clear-filters / Browse-all affordances.
 - `[x]` **Optimistic ingredient add** — *done in PR #164 (track 3d; PR open).* Adding an ingredient now
   parses locally and shows the row immediately, reconciling price/image when enrichment returns; a failure
   keeps the row and flags it with a one-tap retry instead of waiting on the request.
-- `[ ]` **Search autocomplete "autocorrect" is weak** — fuzzy matching on recipe search autocomplete
-  needs improvement.
+- `[x]` **Search autocomplete "autocorrect" is weak** — *done in PR #167 (track 2d, merged ✅):*
+  added a server-side fuzzy fallback (`server/util/recipeTitleMatch.js`) scoped to the autocomplete
+  endpoint, so typos like `chikcen` surface `…Chicken…` results, with a "showing similar recipes" banner
+  and a redesigned dropdown. *(Follow-ups on the fallback's scalability and the dropdown's a11y are filed
+  separately below.)*
 - `[ ]` **Autocomplete footer label can disagree with the rows shown** — the dropdown keeps the previous
   query's results visible during the debounce + refetch (`keepPreviousData`), but the "Search for …"
   footer reads the live input (`searchRecipeVal.trim()`), so mid-type it can say *Search for "chica"*
