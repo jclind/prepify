@@ -1,33 +1,26 @@
 import React, { FC, useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import Select, { SingleValue } from 'react-select'
 import { FiBookOpen } from 'react-icons/fi'
 
 import './UserRecipes.scss'
 import EmptyState from 'src/Components/EmptyState/EmptyState'
 import RecipeAPI from 'src/api/recipes'
 import { RecipeType } from 'types'
-import { selectCustomStyles } from 'src/pages/Account/selectCustomStyles'
 import { useDelayedLoading } from 'src/pages/Account/useDelayedLoading'
 import UserRecipeThumbnail from './UserRecipeThumbnail'
 
-type OptionType = { value: string; label: string }
-
-const options: OptionType[] = [
-  { value: 'new', label: 'Date Created: Newest' },
-  { value: 'old', label: 'Date Created: Oldest' },
-]
+// Default order: newest first. (The sort control was removed for now; the query
+// keeps this fixed order.)
+const SORT = 'new'
 
 const UserRecipes: FC = () => {
   const [recipes, setRecipes] = useState<RecipeType[]>([])
   const [currPage, setCurrPage] = useState(0)
   const [isMoreRecipes, setIsMoreRecipes] = useState(false)
 
-  const [selectOption, setSelectOption] = useState(options[0])
-
   const { data, isLoading } = useQuery({
-    queryKey: ['created-recipes', selectOption.value, currPage],
-    queryFn: () => RecipeAPI.getCreatedRecipes(currPage, 6, selectOption.value),
+    queryKey: ['created-recipes', SORT, currPage],
+    queryFn: () => RecipeAPI.getCreatedRecipes(currPage, 6, SORT),
   })
 
   useEffect(() => {
@@ -43,12 +36,6 @@ const UserRecipes: FC = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data])
-
-  const handleSelectChange = (e: SingleValue<OptionType>) => {
-    if (!e) return
-    setSelectOption(e)
-    setCurrPage(0)
-  }
 
   const handleLoadMoreRecipes = () => {
     setCurrPage(prev => prev + 1)
@@ -76,17 +63,6 @@ const UserRecipes: FC = () => {
     <div className='user-recipes'>
       {showGrid ? (
         <>
-          <div className='user-recipes-filters'>
-            <Select<OptionType, false>
-              options={options}
-              styles={selectCustomStyles}
-              isSearchable={false}
-              isClearable={false}
-              className='select'
-              onChange={handleSelectChange}
-              value={selectOption}
-            />
-          </div>
           <div className='thumbnails-container'>
             {!isLoading ? (
               recipes.map(recipe => (

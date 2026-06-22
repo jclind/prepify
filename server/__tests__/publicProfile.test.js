@@ -135,11 +135,29 @@ describe('GET /getPublicProfile', () => {
         'rank',
         'recipes',
         'recipesTotalCount',
+        'recipesSavesTotal',
+        'recipesMadeTotal',
         'username',
         'xp',
         'xpNext',
       ].sort()
     )
+  })
+
+  it('reports cross-recipe saves/made totals over all visible recipes', async () => {
+    await seedUser(PUB_UID, 'CoolUser')
+    await seedRecipes([
+      { _id: 's1', userId: PUB_UID, createdAt: '3', numTimesSaved: 10, numTimesMade: 4 },
+      { _id: 's2', userId: PUB_UID, createdAt: '2', numTimesSaved: 5, numTimesMade: 1 },
+      // Held recipe must not contribute to the public totals.
+      { _id: 'held', userId: PUB_UID, createdAt: '1', status: 'hidden', numTimesSaved: 99, numTimesMade: 99 },
+    ])
+
+    const res = await request(app).get('/api/getPublicProfile?username=CoolUser')
+    expect(res.status).toBe(200)
+    expect(res.body.recipesTotalCount).toBe(2)
+    expect(res.body.recipesSavesTotal).toBe(15)
+    expect(res.body.recipesMadeTotal).toBe(5)
   })
 
   it('resolves the username case-insensitively', async () => {
@@ -199,5 +217,111 @@ describe('GET /getPublicProfile', () => {
     expect(res.status).toBe(200)
     expect(res.body.location).toBe('')
     expect(res.body.bio).toBe('hi')
+  })
+})
+
+describe('GET /getPublicProfileRecipes', () => {
+  // Seed N visible recipes, newest-first by createdAt (r0 newest … r{N-1} oldest).
+  // createdAt is stored/sorted as a string, so zero-pad to keep lexicographic
+  // order equal to numeric order.
+  const seedManyRecipes = async (n) => {
+    await seedUser(PUB_UID, 'CoolUser')
+    await seedRecipes(
+      Array.from({ length: n }, (_, i) => ({
+        _id: `r${i}`,
+        userId: PUB_UID,
+        createdAt: String(n - i).padStart(5, '0'), // r0 highest → comes first
+      }))
+    )
+  }
+
+  it('returns 400 when username is missing', async () => {
+    const res = await request(app).get('/api/getPublicProfileRecipes')
+    expect(res.status).toBe(400)
+  })
+
+  it('returns 404 for an unknown username', async () => {
+    const res = await request(app).get(
+      '/api/getPublicProfileRecipes?username=nobody'
+    )
+    expect(res.status).toBe(404)
+  })
+
+  it('returns 404 when the profile is private', async () => {
+    await seedUser(PUB_UID, 'CoolUser')
+    await getDB()
+      .collection('userProfiles')
+      .insertOne({ _id: PUB_UID, isPublic: false })
+
+    const res = await request(app).get(
+      '/api/getPublicProfileRecipes?username=CoolUser'
+    )
+    expect(res.status).toBe(404)
+  })
+
+  it('requires no auth (publicly readable)', async () => {
+    await seedManyRecipes(2)
+    const res = await request(app).get(
+      '/api/getPublicProfileRecipes?username=CoolUser'
+    )
+    expect(res.status).toBe(200)
+  })
+
+  it('pages newest-first and reports the full total', async () => {
+    await seedManyRecipes(15)
+
+    // Page 0 = the first 12 (mirrors the profile payload's initial batch).
+    const p0 = await request(app).get(
+      '/api/getPublicProfileRecipes?username=CoolUser&page=0&recipesPerPage=12'
+    )
+    expect(p0.status).toBe(200)
+    expect(p0.body.recipes).toHaveLength(12)
+    expect(p0.body.recipes.map(r => r._id)).toEqual(
+      Array.from({ length: 12 }, (_, i) => `r${i}`)
+    )
+    expect(p0.body.totalCount).toBe(15)
+
+    // Page 1 picks up exactly where page 0 left off (r12, r13, r14).
+    const p1 = await request(app).get(
+      '/api/getPublicProfileRecipes?username=CoolUser&page=1&recipesPerPage=12'
+    )
+    expect(p1.status).toBe(200)
+    expect(p1.body.recipes.map(r => r._id)).toEqual(['r12', 'r13', 'r14'])
+    expect(p1.body.totalCount).toBe(15)
+  })
+
+  it('treats a negative page as page 0 (no negative skip / 500)', async () => {
+    await seedManyRecipes(3)
+    const res = await request(app).get(
+      '/api/getPublicProfileRecipes?username=CoolUser&page=-1'
+    )
+    expect(res.status).toBe(200)
+    expect(res.body.recipes.map(r => r._id)).toEqual(['r0', 'r1', 'r2'])
+  })
+
+  it('caps the page size at 12 even if a larger one is requested', async () => {
+    await seedManyRecipes(20)
+    const res = await request(app).get(
+      '/api/getPublicProfileRecipes?username=CoolUser&page=0&recipesPerPage=100'
+    )
+    expect(res.status).toBe(200)
+    expect(res.body.recipes).toHaveLength(12)
+  })
+
+  it('excludes held / hidden recipes from both the page and the total', async () => {
+    await seedUser(PUB_UID, 'CoolUser')
+    await seedRecipes([
+      { _id: 'v1', userId: PUB_UID, createdAt: '4000' },
+      { _id: 'v2', userId: PUB_UID, createdAt: '3000' },
+      { _id: 'held', userId: PUB_UID, createdAt: '2000', status: 'pending_review' },
+      { _id: 'hid', userId: PUB_UID, createdAt: '1000', status: 'hidden' },
+    ])
+
+    const res = await request(app).get(
+      '/api/getPublicProfileRecipes?username=CoolUser'
+    )
+    expect(res.status).toBe(200)
+    expect(res.body.recipes.map(r => r._id)).toEqual(['v1', 'v2'])
+    expect(res.body.totalCount).toBe(2)
   })
 })

@@ -43,6 +43,8 @@ import PrivacySection from 'src/pages/Settings/sections/PrivacySection'
 import DangerSection from 'src/pages/Settings/sections/DangerSection'
 import { Sentry } from 'src/util/sentry'
 import AppErrorFallback from 'src/Components/AppErrorFallback/AppErrorFallback'
+// TEMP — mock-data preview (throwaway; removed before the polish PR).
+import Preview from 'src/pages/_preview/Preview'
 // import RecipeAI from './pages/RecipeAI/RecipeAI'
 
 const ScrollToTop: FC = () => {
@@ -216,6 +218,9 @@ const App: FC = () => {
                 <Route path='audit' element={<Audit />} />
               </Route>
             </Route>
+
+            {/* TEMP — mock-data seeder for the signed-in account preview (throwaway). */}
+            <Route path='/preview' element={<Preview />} />
 
             <Route path='/login' element={<Login />} />
             <Route path='/signup' element={<Signup />} />
