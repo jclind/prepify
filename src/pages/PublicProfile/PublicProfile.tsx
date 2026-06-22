@@ -15,6 +15,8 @@ import {
 import toast from 'react-hot-toast'
 import './PublicProfile.scss'
 import PublicProfileAPI from 'src/api/publicProfile'
+import AuthAPI from 'src/api/auth'
+import ReportControl from 'src/Components/ReportControl/ReportControl'
 import EmptyState from 'src/Components/EmptyState/EmptyState'
 import { formatRating } from 'src/util/formatRating'
 import { formatCompactCount } from 'src/util/formatCompactCount'
@@ -38,6 +40,16 @@ const PublicProfile: FC = () => {
   // the profile payload is effectively page 0).
   const [extraPages, setExtraPages] = useState<Record<number, RecipeType[]>>({})
   const [extraPage, setExtraPage] = useState(0)
+
+  // The viewer's own handle, so we can hide the "report" control on their own
+  // profile. Only fetched when signed in; logged-out visitors still see the
+  // control (clicking it prompts them to log in).
+  const currentUid = AuthAPI.getUID()
+  const { data: currentUsername } = useQuery({
+    queryKey: ['username', currentUid],
+    queryFn: () => AuthAPI.getUsername(),
+    enabled: !!currentUid,
+  })
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['public-profile', username],
@@ -162,6 +174,16 @@ const PublicProfile: FC = () => {
           >
             <FiShare />
           </button>
+          {/* Kebab menu with "Report user" — hidden on the viewer's own profile. */}
+          {currentUsername !== profile.username && (
+            <ReportControl
+              variant='menu'
+              target={{
+                targetType: 'user',
+                reportedUsername: profile.username,
+              }}
+            />
+          )}
         </div>
         <p className='pp-name'>{profile.displayName}</p>
 

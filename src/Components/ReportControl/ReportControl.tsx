@@ -1,7 +1,9 @@
-import React, { FC, useState } from 'react'
+import React, { FC, useEffect, useRef, useState } from 'react'
 import Modal from 'react-modal'
 import toast from 'react-hot-toast'
 import { TailSpin } from 'react-loader-spinner'
+import { BsThreeDots } from 'react-icons/bs'
+import { FiFlag } from 'react-icons/fi'
 import { AxiosError } from 'axios'
 import { ReportReason, ReportTargetType } from 'types'
 import { useAuth } from 'src/context/AuthContext'
@@ -12,14 +14,18 @@ Modal.setAppElement('#root')
 
 type ReportTarget = {
   targetType: ReportTargetType
-  recipeId: string
-  reportedUsername?: string // required when targetType === 'review'
+  recipeId?: string // required for 'recipe' / 'review'; omitted for 'user'
+  reportedUsername?: string // required for 'review' / 'user'
 }
 
 type ReportControlProps = {
   target: ReportTarget
-  // Visual style of the trigger: a small text link (default) or a plain button.
-  variant?: 'link' | 'button'
+  // Visual style of the trigger:
+  //  - 'link'   — a small inline text link (default)
+  //  - 'button' — a plain bordered button
+  //  - 'menu'   — a three-dots (kebab) trigger that opens a dropdown whose
+  //               single item opens the report modal
+  variant?: 'link' | 'button' | 'menu'
 }
 
 const REASON_OPTIONS: { value: ReportReason; label: string }[] = [
@@ -57,14 +63,49 @@ const customStyles = {
 const ReportControl: FC<ReportControlProps> = ({ target, variant = 'link' }) => {
   const authRes = useAuth()
   const [isOpen, setIsOpen] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
   const [reason, setReason] = useState<ReportReason>('spam')
   const [details, setDetails] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
 
-  // Reporting requires a logged-in user (the server stamps reporterUid).
-  if (!authRes?.user) return null
+  const NOUNS: Record<ReportTargetType, string> = {
+    recipe: 'recipe',
+    review: 'review',
+    user: 'user',
+  }
+  const noun = NOUNS[target.targetType]
 
-  const noun = target.targetType === 'review' ? 'review' : 'recipe'
+  // Close the kebab dropdown on an outside click or Escape (matches the
+  // SortDropdown pattern). Only wired while the menu is actually open.
+  useEffect(() => {
+    if (!menuOpen) return
+    const onDown = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false)
+      }
+    }
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setMenuOpen(false)
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [menuOpen])
+
+  // The trigger stays visible to everyone so logged-out visitors still know
+  // reporting exists; reporting itself needs an account (the server stamps
+  // reporterUid), so clicking while logged out nudges to log in instead of
+  // opening the modal.
+  const handleTriggerClick = () => {
+    setMenuOpen(false)
+    if (!authRes?.user) {
+      toast.error(`Log in to report this ${noun}.`)
+      return
+    }
+    setIsOpen(true)
+  }
 
   const close = () => {
     if (submitting) return
@@ -98,77 +139,114 @@ const ReportControl: FC<ReportControlProps> = ({ target, variant = 'link' }) => 
     }
   }
 
+  const modal = (
+    <Modal
+      isOpen={isOpen}
+      onRequestClose={close}
+      style={customStyles}
+      className='report-modal'
+    >
+      <h2 className='report-modal-title'>Report this {noun}</h2>
+      <p className='report-modal-sub'>
+        Tell us what’s wrong. Reports are reviewed by our moderation team.
+      </p>
+
+      <label className='report-field'>
+        <span>Reason</span>
+        <select
+          value={reason}
+          onChange={e => setReason(e.target.value as ReportReason)}
+        >
+          {REASON_OPTIONS.map(opt => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label className='report-field'>
+        <span>Details (optional)</span>
+        <textarea
+          value={details}
+          maxLength={1000}
+          rows={4}
+          placeholder='Add any context that will help us review this.'
+          onChange={e => setDetails(e.target.value)}
+        />
+      </label>
+
+      <div className='report-modal-actions'>
+        <button
+          type='button'
+          className='report-cancel-btn'
+          onClick={close}
+          disabled={submitting}
+        >
+          Cancel
+        </button>
+        <button
+          type='button'
+          className='report-submit-btn'
+          onClick={handleSubmit}
+          disabled={submitting}
+        >
+          Submit report
+          {submitting && (
+            <span className='report-btn-spinner'>
+              <TailSpin height='18' width='18' color='#fff' ariaLabel='loading' />
+            </span>
+          )}
+        </button>
+      </div>
+    </Modal>
+  )
+
+  // Kebab variant: a three-dots trigger opening a dropdown with a single
+  // "Report …" item. The modal is a sibling of the (collapsible) panel, so it
+  // survives the panel closing when the item is clicked.
+  if (variant === 'menu') {
+    return (
+      <div className='report-menu' ref={menuRef}>
+        <button
+          type='button'
+          className={`report-menu-trigger ${menuOpen ? 'is-open' : ''}`}
+          aria-haspopup='menu'
+          aria-expanded={menuOpen}
+          aria-label='More options'
+          onClick={() => setMenuOpen(o => !o)}
+        >
+          <BsThreeDots />
+        </button>
+        {menuOpen && (
+          <div className='report-menu-panel' role='menu'>
+            <button
+              type='button'
+              role='menuitem'
+              className='report-menu-item'
+              onClick={handleTriggerClick}
+              aria-label={`Report this ${noun}`}
+            >
+              <FiFlag /> Report {noun}
+            </button>
+          </div>
+        )}
+        {modal}
+      </div>
+    )
+  }
+
   return (
     <>
       <button
         type='button'
         className={`report-control-trigger ${variant}`}
-        onClick={() => setIsOpen(true)}
+        onClick={handleTriggerClick}
         aria-label={`Report this ${noun}`}
       >
         Report
       </button>
-
-      <Modal
-        isOpen={isOpen}
-        onRequestClose={close}
-        style={customStyles}
-        className='report-modal'
-      >
-        <h2 className='report-modal-title'>Report this {noun}</h2>
-        <p className='report-modal-sub'>
-          Tell us what’s wrong. Reports are reviewed by our moderation team.
-        </p>
-
-        <label className='report-field'>
-          <span>Reason</span>
-          <select
-            value={reason}
-            onChange={e => setReason(e.target.value as ReportReason)}
-          >
-            {REASON_OPTIONS.map(opt => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className='report-field'>
-          <span>Details (optional)</span>
-          <textarea
-            value={details}
-            maxLength={1000}
-            rows={4}
-            placeholder='Add any context that will help us review this.'
-            onChange={e => setDetails(e.target.value)}
-          />
-        </label>
-
-        <div className='report-modal-actions'>
-          <button
-            type='button'
-            className='report-cancel-btn'
-            onClick={close}
-            disabled={submitting}
-          >
-            Cancel
-          </button>
-          <button
-            type='button'
-            className='report-submit-btn'
-            onClick={handleSubmit}
-            disabled={submitting}
-          >
-            Submit report
-            {submitting && (
-              <span className='report-btn-spinner'>
-                <TailSpin height='18' width='18' color='#fff' ariaLabel='loading' />
-              </span>
-            )}
-          </button>
-        </div>
-      </Modal>
+      {modal}
     </>
   )
 }

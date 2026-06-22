@@ -166,6 +166,37 @@ describe('POST /setUsername', () => {
     expect(res.status).toBe(400)
   })
 
+  it.each([
+    ['john@smith', '@'],
+    ['john/smith', 'slash'],
+    ['john!', 'punctuation'],
+    ['héllo', 'accented letter'],
+    ['ab😀cd', 'emoji'],
+  ])('rejects a username with a disallowed character: %s (%s)', async (username) => {
+    const res = await request(app)
+      .post(`/api/setUsername?username=${encodeURIComponent(username)}`)
+      .set(AUTH_HEADER)
+
+    expect(res.status).toBe(400)
+    expect(res.body.error).toMatch(/letters, numbers/i)
+  })
+
+  it.each([
+    'john_smith',
+    'john.smith',
+    'john-smith',
+    'JohnSmith99',
+    'a_b-c.d',
+  ])('accepts a username using only the allowed character set: %s', async (username) => {
+    const res = await request(app)
+      .post(`/api/setUsername?username=${encodeURIComponent(username)}`)
+      .set(AUTH_HEADER)
+
+    expect(res.status).toBe(200)
+    expect(res.body).toEqual({ success: true })
+    await getDB().collection('usernames').deleteMany({})
+  })
+
   it('updates an existing username entry', async () => {
     await seedUser(TEST_UID, 'oldname')
 

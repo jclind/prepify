@@ -1,9 +1,13 @@
 .report-control-trigger {
+  display: inline-flex;
+  align-items: center;
   background: none;
   border: none;
   cursor: pointer;
   color: #8a8f99;
+  font-family: inherit;
   font-size: 0.8rem;
+  line-height: 1.2;
   padding: 0.15rem 0.35rem;
   border-radius: 4px;
   transition: color 0.15s, background 0.15s;
@@ -13,10 +17,101 @@
     background: rgba(214, 69, 69, 0.08);
   }
 
+  // Keyboard users get a clear ring (the hover tint isn't enough on its own).
+  &:focus-visible {
+    outline: 2px solid rgba(214, 69, 69, 0.5);
+    outline-offset: 1px;
+    color: #d64545;
+  }
+
   &.button {
     border: 1px solid #d8dbe0;
     padding: 0.4rem 0.75rem;
     font-size: 0.85rem;
+
+    &:hover {
+      border-color: #d64545;
+    }
+  }
+}
+
+// ── Kebab (three-dots) variant ──────────────────────────────────────────────
+.report-menu {
+  position: relative;
+  display: inline-flex;
+
+  .report-menu-trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #8a8f99;
+    border-radius: 50%;
+    width: 1.9rem;
+    height: 1.9rem;
+    font-size: 1.05rem;
+    line-height: 1;
+    transition: color 0.15s, background 0.15s;
+
+    &:hover,
+    &.is-open {
+      color: #4b5563;
+      background: rgba(0, 0, 0, 0.06);
+    }
+
+    &:focus-visible {
+      outline: 2px solid rgba(59, 130, 246, 0.5);
+      outline-offset: 1px;
+    }
+  }
+
+  .report-menu-panel {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    z-index: 50;
+    min-width: 9.5rem;
+    padding: 0.3rem;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    box-shadow: 0 6px 20px rgba(17, 24, 39, 0.12);
+  }
+
+  .report-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.5rem 0.6rem;
+    background: none;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.85rem;
+    color: #374151;
+    text-align: left;
+    white-space: nowrap;
+    text-transform: capitalize;
+
+    svg {
+      flex-shrink: 0;
+      font-size: 0.95rem;
+    }
+
+    &:hover {
+      background: rgba(214, 69, 69, 0.08);
+      color: #d64545;
+    }
+
+    &:focus-visible {
+      outline: 2px solid rgba(214, 69, 69, 0.5);
+      outline-offset: -2px;
+      color: #d64545;
+    }
   }
 }
 

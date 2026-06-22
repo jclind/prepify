@@ -8,13 +8,22 @@ export default defineConfig({
     baseUrl: 'http://localhost:3000',
     setupNodeEvents(on, config) {
       on('task', {
-        mintCustomToken(uid: string) {
+        // Accepts a bare uid, or { uid, claims } to bake developer claims (e.g.
+        // { admin: true }) into the token — these propagate to the ID token's
+        // claims, which AuthContext reads to set isAdmin.
+        mintCustomToken(arg: string | { uid: string; claims?: Record<string, unknown> }) {
           if (!admin.apps.length) {
+            // Accept the service account as a parsed object (cypress.env.json) or
+            // a JSON string (a CYPRESS_FIREBASE_SERVICE_ACCOUNT env var).
+            const svc = config.env.FIREBASE_SERVICE_ACCOUNT
+            const credential = typeof svc === 'string' ? JSON.parse(svc) : svc
             admin.initializeApp({
-              credential: admin.credential.cert(config.env.FIREBASE_SERVICE_ACCOUNT),
+              credential: admin.credential.cert(credential),
             })
           }
-          return admin.auth().createCustomToken(uid)
+          const uid = typeof arg === 'string' ? arg : arg.uid
+          const claims = typeof arg === 'string' ? undefined : arg.claims
+          return admin.auth().createCustomToken(uid, claims)
         },
       })
       return config

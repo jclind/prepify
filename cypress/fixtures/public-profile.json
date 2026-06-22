@@ -1,0 +1,17 @@
+{
+  "username": "baduser",
+  "displayName": "Bad User",
+  "photoURL": null,
+  "bio": "Just here to cook.",
+  "location": "Nowhere",
+  "level": 2,
+  "rank": "Line Cook",
+  "xp": 40,
+  "xpNext": 100,
+  "pct": 40,
+  "achievements": [],
+  "recipes": [],
+  "recipesTotalCount": 0,
+  "recipesSavesTotal": 0,
+  "recipesMadeTotal": 0
+}
