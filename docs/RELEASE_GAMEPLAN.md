@@ -53,7 +53,7 @@ same commit.**
 | 2b | Public Help/Contact page | `[x]` | #158 ✅ |
 | 2c | Single-recipe polish | `[x]` | #160 ✅ |
 | 2d | Recipes browse polish | `[ ]` | — |
-| 2e | Account/profile polish | `[ ]` | — |
+| 2e | Account/profile polish | `[P]` | #165 |
 | 3a | a11y (focus-visible, chevron) | `[x]` | #163 ✅ |
 | 3b | Meta/SEO finish (favicon/OG/titles) | `[ ]` | — |
 | 3c | Username validation + report-user | `[ ]` | — |
@@ -353,6 +353,26 @@ Append a one-liner when a track changes state (started / PR / merged). Keeps ses
   **Filed one follow-up → Backlog (UX/visual polish):** add-recipe group-label rendering needs a refinement —
   a candidate for the Phase-4 QA pass or the create-recipe refactor. Board 3d `[ ]`→`[P]`; backlog
   add-recipe items + create-recipe-tests flipped.
+- _2026-06-22_ — **2e Account/profile polish → PR open (#165).** Branch
+  `worktree-feat+account-sections-public-profile`. Account tabs redesigned: "Your Recipes" dashboard tiles
+  (views/saves/made + compact counts), "Ratings" compact avatar rows (clamped review text), "Drafts"
+  vertical cards, and grid/spacing alignment across tabs. Public profile (`/u/:username`) reworked: centered
+  identity, divided Recipes/Saves/Made counts, achievement chips, image-first square tiles with
+  rating · time · cost + a bookmark save-count, richer `EmptyState`, share button. Added a working **"Load
+  more"** — new paginated `GET /getPublicProfileRecipes` (the profile endpoint was capped at 12 with no
+  pagination) — and moved Saves/Made onto a **server-side aggregate** over all visible recipes (was a
+  misleading sum of the shown batch). Also **fixed** the pre-existing nested-`<button>` a11y nit on the
+  Ratings list (row is now a keyboard-operable `<div role="button">`). A **high-effort `/code-review`** ran;
+  fixes applied: idempotent page-map accumulation (no duplicate-append on refetch), negative-page clamp +
+  `_id` sort tiebreaker, restored image fallbacks, shared `formatCompactCount`/`formatPrice` utils, deleted
+  dead `selectCustomStyles.ts`. Throwaway `/preview` seeder removed; merged `development` (adopted the shared
+  `s.outline()` focus ring on the recipe card). **Verified:** prod build green; Vitest 452 pass/2 skip; Jest
+  644 pass; **full Cypress e2e suite green** (16 pass/1 pending); **live load-more click-through 12→15**
+  (button clears, no dupes) against a seeded >12-recipe user. **Cypress was never machine-blocked** — a
+  worktree config mismatch: the test-mode app addressed `:4003` (worktree `.env`) while the intercepts
+  target `:4000`; pinned `VITE_API_URL=:4000` in `.env.test` (no-op in CI). **Still open:** the "Account nav
+  sections UI" (SegmentedNav rail styling) sub-item; two low-severity review items (paged endpoint re-counts
+  every page; username→uid lookup duplicated across the two endpoints).
 
 ---
 

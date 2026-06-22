@@ -1,6 +1,6 @@
 import axios from 'axios'
 import { http } from 'src/api/http-common'
-import { PublicProfile } from 'types'
+import { PublicProfile, RecipeType } from 'types'
 
 class PublicProfileAPIClass {
   // Public endpoint — no auth required. A missing username is an expected
@@ -18,6 +18,21 @@ class PublicProfileAPIClass {
       }
       throw err
     }
+  }
+
+  // Paginated companion used by the profile's "load more" — returns just the
+  // next page of the user's visible recipes plus the full total. Public, no auth.
+  async getPublicProfileRecipes(
+    username: string,
+    page: number,
+    recipesPerPage: number
+  ): Promise<{ recipes: RecipeType[]; totalCount: number }> {
+    const result = await http.get(
+      `api/getPublicProfileRecipes?username=${encodeURIComponent(
+        username
+      )}&page=${page}&recipesPerPage=${recipesPerPage}`
+    )
+    return result.data
   }
 }
 

@@ -45,25 +45,41 @@ router.get('/getPublicProfile', asyncHandler(async (req, res) => {
     }
   }
 
-  const [profile, counts, visibleRecipeCount, recipes, authRecord] = await Promise.all([
+  const [profile, counts, recipeStats, recipes, authRecord] = await Promise.all([
     db.collection('userProfiles').findOne({ _id: uid }),
     getAccountCountsFor(db, uid),
-    // The displayed total must match what the list shows: count only publicly
-    // visible recipes, not every recipe the user owns (getAccountCountsFor is
-    // unfiltered — correct for the owner's own account page, but it would
-    // otherwise inflate the public total and leak the existence of held/hidden
-    // recipes here).
-    db.collection('recipes').countDocuments({ userId: uid, ...RECIPE_VISIBLE }),
+    // One aggregate over the publicly-visible recipes drives the header stats:
+    // the total count plus cross-recipe sums of saves/made. Counting only
+    // visible recipes keeps the totals honest and avoids leaking the existence
+    // of held/hidden recipes (getAccountCountsFor is unfiltered — correct for
+    // the owner's own account page, but it would inflate these public totals).
+    db
+      .collection('recipes')
+      .aggregate([
+        { $match: { userId: uid, ...RECIPE_VISIBLE } },
+        {
+          $group: {
+            _id: null,
+            count: { $sum: 1 },
+            saves: { $sum: '$numTimesSaved' },
+            made: { $sum: '$numTimesMade' },
+          },
+        },
+      ])
+      .toArray(),
     db
       // Public surface: exclude hidden / unpublished / pending_review recipes so
       // a held or taken-down recipe never appears on someone's public profile.
       .collection('recipes')
       .find({ userId: uid, ...RECIPE_VISIBLE })
-      .sort({ createdAt: -1 })
+      // _id tiebreaker keeps ordering deterministic and aligned with the paged
+      // /getPublicProfileRecipes endpoint (same sort) across the page boundary.
+      .sort({ createdAt: -1, _id: 1 })
       .limit(PROFILE_RECIPE_LIMIT)
       .toArray(),
     fetchAuthRecord(),
   ])
+  const stats = recipeStats[0] ?? { count: 0, saves: 0, made: 0 }
 
   // Privacy gate. A profile the user has switched to private reads as
   // not-found (404) — the same response as a username that was never taken — so
@@ -90,8 +106,66 @@ router.get('/getPublicProfile', asyncHandler(async (req, res) => {
     pct: gamification.pct,
     achievements: earnedAchievements,
     recipes,
-    recipesTotalCount: visibleRecipeCount,
+    recipesTotalCount: stats.count,
+    recipesSavesTotal: stats.saves,
+    recipesMadeTotal: stats.made,
   })
+}))
+
+// GET /getPublicProfileRecipes?username=&page=&recipesPerPage=
+// Lightweight, paginated companion to /getPublicProfile: returns just the next
+// page of a user's publicly-visible recipes (+ the full total) so the profile
+// page can "load more" without re-fetching the whole profile/gamification
+// payload. Same visibility filter and privacy gate as the profile endpoint (a
+// private profile reads as not-found so its recipes can't be paged either). The
+// default page size matches the profile's initial batch so page 1 picks up
+// exactly where the profile payload left off.
+router.get('/getPublicProfileRecipes', asyncHandler(async (req, res) => {
+  const { username } = req.query
+  if (!username) {
+    return res.status(400).json({ error: 'username is required' })
+  }
+
+  const db = getDB()
+  const usernameDoc = await db
+    .collection('usernames')
+    .findOne({ username_lower: String(username).toLowerCase() })
+  if (!usernameDoc) {
+    return res.status(404).json({ error: 'Profile not found' })
+  }
+  const uid = usernameDoc._id
+
+  // Privacy gate — mirror /getPublicProfile so a private profile can't be paged.
+  const profile = await db.collection('userProfiles').findOne({ _id: uid })
+  if (profile?.isPublic === false) {
+    return res.status(404).json({ error: 'Profile not found' })
+  }
+
+  // Floor at 0 so a negative ?page never produces a negative .skip() (which
+  // MongoDB rejects, surfacing as a 500 instead of a clean first page).
+  const pageNum = Math.max(0, parseInt(req.query.page) || 0)
+  // Clamp to PROFILE_RECIPE_LIMIT so a client can't request an oversized page
+  // (and so pages stay aligned with the profile payload's initial batch).
+  const perPage = Math.min(
+    parseInt(req.query.recipesPerPage) || PROFILE_RECIPE_LIMIT,
+    PROFILE_RECIPE_LIMIT
+  )
+
+  const filter = { userId: uid, ...RECIPE_VISIBLE }
+  const [recipes, totalCount] = await Promise.all([
+    db
+      .collection('recipes')
+      .find(filter)
+      // _id tiebreaker matches /getPublicProfile's sort so paging stays aligned
+      // (no skipped/duplicated recipe when two share a createdAt at a boundary).
+      .sort({ createdAt: -1, _id: 1 })
+      .skip(pageNum * perPage)
+      .limit(perPage)
+      .toArray(),
+    db.collection('recipes').countDocuments(filter),
+  ])
+
+  res.json({ recipes, totalCount })
 }))
 
 module.exports = router

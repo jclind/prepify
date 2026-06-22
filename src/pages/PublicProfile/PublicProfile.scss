@@ -1,10 +1,17 @@
 @use '../../helpers.scss' as s;
 
-// Public profile page (/u/:username). Read-only showcase: identity, bio,
-// level/rank, earned badges, and published recipes. Classes are `pp-`-prefixed
-// and scoped under `.public-profile` because this project's SCSS is global.
+// Public profile page (/u/:username). Read-only showcase styled after the
+// "TikTok"-inspired direction: centered identity, divided Recipes/Saves/Made
+// counts, a subtle "location · Lv N" line, and an image-first square tile grid.
+// Classes are `pp-`-prefixed and scoped under `.public-profile` because this
+// project's SCSS is global.
 
 .public-profile {
+  // Narrower than the global 1400px `.page`; centering + the navbar-clearing
+  // top margin come from `.page` (don't set `margin` here or it resets the
+  // `.page` margin-top and the navbar overlaps the header).
+  max-width: 760px;
+
   &.pp-centered {
     display: flex;
     align-items: center;
@@ -38,27 +45,16 @@
     }
   }
 
-  // ── Header ─────────────────────────────────────────────────────────────────
+  // ── Header (centered identity) ───────────────────────────────────────────────
   .pp-head {
     display: flex;
-    align-items: flex-start;
-    gap: 1.5rem;
-    background: #fff;
-    border: 1px solid #ece2d6;
-    border-radius: 20px;
-    padding: 1.75rem;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
-    margin-bottom: 2rem;
-
-    @media (max-width: 640px) {
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-    }
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
   }
   .pp-avatar {
-    width: 96px;
-    height: 96px;
+    width: 116px;
+    height: 116px;
     border-radius: 50%;
     object-fit: cover;
     flex-shrink: 0;
@@ -69,86 +65,281 @@
       align-items: center;
       justify-content: center;
       color: s.$primary;
-      font-weight: 600;
-      font-size: 2.5rem;
+      font-weight: 700;
+      font-size: 2.6rem;
       background: s.$primary-text;
     }
   }
-  .pp-id {
-    min-width: 0;
+  .pp-handle-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.8rem;
+  }
+  .pp-handle {
+    font-size: 1.4rem;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+  }
+  // Non-intrusive share affordance sitting beside the handle.
+  .pp-share {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: s.$tertiary-text;
+    cursor: pointer;
+    transition: color 0.15s ease, background 0.15s ease;
+    svg {
+      font-size: 0.95rem;
+    }
+    &:hover {
+      color: s.$primary;
+      background: rgba(s.$primary, 0.08);
+    }
+    &:focus-visible {
+      outline: 2px solid s.$primary;
+      outline-offset: 2px;
+    }
   }
   .pp-name {
-    font-size: 1.9rem;
-    font-weight: 800;
-    letter-spacing: -0.02em;
-    line-height: 1.1;
-  }
-  .pp-meta {
     color: s.$tertiary-text;
     font-weight: 600;
-    font-size: 0.85rem;
-    margin-top: 0.35rem;
-  }
-  .pp-bio {
-    color: s.$secondary-text;
-    line-height: 1.55;
-    font-size: 0.95rem;
-    margin-top: 0.7rem;
-    max-width: 620px;
+    margin-top: 0.1rem;
   }
 
-  // ── Earned badges ──────────────────────────────────────────────────────────
+  // Divided count row (Recipes / Saves / Made).
+  .pp-counts {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    margin: 1.1rem 0;
+    div {
+      display: flex;
+      flex-direction: column;
+    }
+    b {
+      font-size: 1.25rem;
+      font-weight: 800;
+    }
+    span {
+      font-size: 0.8rem;
+      color: s.$tertiary-text;
+    }
+    .pp-div {
+      width: 1px;
+      height: 26px;
+      background: #e3d9ca;
+    }
+  }
+
+  .pp-bio {
+    color: s.$secondary-text;
+    line-height: 1.5;
+    margin-top: 0.4rem;
+    max-width: 46ch;
+  }
+
+  // Location · Lv N — level reads as a quiet inline accent, not a loud chip.
+  .pp-loc {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: s.$tertiary-text;
+    font-size: 0.86rem;
+    font-weight: 600;
+    margin-top: 0.5rem;
+    svg {
+      color: s.$secondary;
+    }
+    .pp-sep {
+      color: s.$gray-400;
+    }
+    .pp-lvl {
+      font-size: 0.76rem;
+      font-weight: 800;
+      color: s.$primary;
+      background: rgba(s.$primary, 0.1);
+      border-radius: 999px;
+      padding: 0.12rem 0.55rem;
+    }
+  }
+
+  // Earned achievements — subtle chips, kept calm to fit the showcase header.
   .pp-badges {
     display: flex;
     flex-wrap: wrap;
+    justify-content: center;
     gap: 0.5rem;
     margin-top: 0.9rem;
-
-    @media (max-width: 640px) {
-      justify-content: center;
-    }
   }
   .pp-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
     font-size: 0.78rem;
     font-weight: 700;
     color: s.$secondary-text;
     background: #fdf3ec;
     border: 1px solid #f0e1d4;
     border-radius: 999px;
-    padding: 0.3rem 0.7rem;
+    padding: 0.32rem 0.7rem;
+    svg {
+      color: s.$primary;
+      font-size: 0.9rem;
+    }
   }
 
-  // ── Recipes ────────────────────────────────────────────────────────────────
-  .pp-section-title {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 1.3rem;
-    font-weight: 800;
-    margin-bottom: 1.25rem;
+  // ── Recipe tiles (image-first card: square photo + a compact meta row) ───────
+  .pp-recipes {
+    margin-top: 1.6rem;
   }
-  .pp-count {
-    font-size: 0.8rem;
-    font-weight: 700;
-    color: s.$tertiary-text;
-    background: #efe6da;
-    border-radius: 999px;
-    padding: 0.15rem 0.6rem;
-  }
-  .pp-recipe-grid {
+  .pp-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 1.5rem;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.9rem;
   }
-  .pp-empty {
-    color: s.$secondary-text;
-    padding: 2rem 0 3rem;
+  .pp-tile {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid #ece2d6;
+    border-radius: 14px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+    text-decoration: none;
+    color: s.$primary-text;
+    transition: transform 0.16s ease, box-shadow 0.16s ease;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 26px rgba(0, 0, 0, 0.1);
+    }
+    &:focus-visible {
+      outline: 2px solid s.$primary;
+      outline-offset: 2px;
+    }
+
+    // Square photo with the saves badge floated over it.
+    .pp-tile-media {
+      position: relative;
+      aspect-ratio: 1 / 1;
+      overflow: hidden;
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+        transition: transform 0.25s ease;
+      }
+      // Fallback when a recipe has no image — a neutral tinted panel + glyph
+      // instead of the browser's broken-image icon.
+      .pp-tile-noimg {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #fdf3ec;
+        color: s.$primary;
+        font-size: 1.6rem;
+      }
+    }
+    &:hover .pp-tile-media img {
+      transform: scale(1.04);
+    }
+    .pp-tile-saves {
+      position: absolute;
+      top: 0.45rem;
+      right: 0.45rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.18rem 0.45rem;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(2px);
+      color: #fff;
+      font-size: 0.72rem;
+      font-weight: 700;
+      svg {
+        font-size: 0.8rem;
+      }
+    }
+
+    .pp-tile-body {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      padding: 0.7rem 0.75rem 0.8rem;
+    }
+    .pp-tile-title {
+      font-size: 0.92rem;
+      font-weight: 700;
+      line-height: 1.3;
+      text-transform: capitalize;
+      // Clamp to two lines so cards stay even regardless of title length.
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    // Rating · time · cost, spread across the row. Wraps gracefully if a card
+    // gets narrow.
+    .pp-tile-meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.35rem 0.75rem;
+      margin-top: auto;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: s.$secondary-text;
+    }
+    .pp-tile-stat {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.28rem;
+      svg {
+        color: s.$secondary;
+        font-size: 0.85rem;
+      }
+    }
+    .pp-tile-cost {
+      color: s.$primary;
+    }
   }
+  // "Load more" + the running "showing N of M" count beneath it.
   .pp-more {
-    margin-top: 1.25rem;
-    text-align: center;
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: s.$tertiary-text;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6rem;
+    margin-top: 1.5rem;
+
+    .pp-more-count {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: s.$tertiary-text;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .pp-avatar {
+      width: 92px;
+      height: 92px;
+    }
+    .pp-counts {
+      gap: 1rem;
+    }
+    // Two-up tiles on phones so the meta row (rating · time · cost) isn't cramped.
+    .pp-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
   }
 }

@@ -3,9 +3,27 @@ import { useParams, Link } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import { useQuery } from '@tanstack/react-query'
 import { TailSpin } from 'react-loader-spinner'
+import {
+  FiShare,
+  FiMapPin,
+  FiBookmark,
+  FiAward,
+  FiStar,
+  FiClock,
+  FiBookOpen,
+} from 'react-icons/fi'
+import toast from 'react-hot-toast'
 import './PublicProfile.scss'
 import PublicProfileAPI from 'src/api/publicProfile'
-import RecipeThumbnail from 'src/Components/RecipeThumbnail/RecipeThumbnail'
+import EmptyState from 'src/Components/EmptyState/EmptyState'
+import { formatRating } from 'src/util/formatRating'
+import { formatCompactCount } from 'src/util/formatCompactCount'
+import { formatPrice } from 'src/util/formatPrice'
+import { RecipeType } from 'types'
+
+// Page size for "load more". Matches the server's initial-batch limit so the
+// first extra page (page 1) picks up exactly where the profile payload ended.
+const PROFILE_PAGE_SIZE = 12
 
 const PublicProfile: FC = () => {
   const { username } = useParams<{ username: string }>()
@@ -13,15 +31,70 @@ const PublicProfile: FC = () => {
   // CDN-blocked photoURL) rather than showing a broken image.
   const [avatarError, setAvatarError] = useState(false)
 
+  // Recipes loaded beyond the profile payload's initial batch, keyed by server
+  // page number. Keying by page (rather than blindly appending) makes the
+  // accumulation idempotent: a re-fetch of a page overwrites its slot instead of
+  // duplicating recipes. `extraPage` is the next page to request (0 = none yet;
+  // the profile payload is effectively page 0).
+  const [extraPages, setExtraPages] = useState<Record<number, RecipeType[]>>({})
+  const [extraPage, setExtraPage] = useState(0)
+
   const { data, isLoading, isError } = useQuery({
     queryKey: ['public-profile', username],
     queryFn: () => PublicProfileAPI.getPublicProfile(username as string),
     enabled: !!username,
     retry: false,
+    // A profile is static within a viewing session; don't refetch on window
+    // focus (which would also churn the recipe accumulation below).
+    refetchOnWindowFocus: false,
   })
 
   // Reset the avatar fallback when the profile (and its photo) changes.
   useEffect(() => setAvatarError(false), [data?.photoURL])
+
+  // Reset paging whenever the username changes — e.g. navigating to a different
+  // profile — so we don't carry one cook's extra recipes onto another's page.
+  useEffect(() => {
+    setExtraPages({})
+    setExtraPage(0)
+  }, [username])
+
+  const { data: moreData, isFetching: isLoadingMore } = useQuery({
+    queryKey: ['public-profile-recipes', username, extraPage],
+    queryFn: () =>
+      PublicProfileAPI.getPublicProfileRecipes(
+        username as string,
+        extraPage,
+        PROFILE_PAGE_SIZE
+      ),
+    enabled: !!username && extraPage > 0,
+    refetchOnWindowFocus: false,
+  })
+
+  useEffect(() => {
+    if (moreData?.recipes) {
+      setExtraPages(prev => ({ ...prev, [extraPage]: moreData.recipes }))
+    }
+  }, [moreData, extraPage])
+
+  const handleShare = async () => {
+    const url = window.location.href
+    const title = data ? `${data.displayName} on Prepify` : 'Prepify'
+    try {
+      if (navigator.share) {
+        await navigator.share({ title, url })
+        return
+      }
+    } catch {
+      // User dismissed the share sheet, or it failed — fall through to copy.
+    }
+    try {
+      await navigator.clipboard.writeText(url)
+      toast.success('Profile link copied')
+    } catch {
+      toast.error('Could not copy link')
+    }
+  }
 
   if (isLoading) {
     return (
@@ -45,26 +118,31 @@ const PublicProfile: FC = () => {
     )
   }
 
-  const initial = data.displayName
-    ? data.displayName.charAt(0).toUpperCase()
+  const profile = data
+  const initial = profile.displayName
+    ? profile.displayName.charAt(0).toUpperCase()
     : ''
-  const metaParts = [
-    `@${data.username}`,
-    data.location || null,
-    `Lv ${data.level} · ${data.rank}`,
-  ].filter(Boolean)
+
+  // The grid shows the profile payload's initial batch plus any "load more"
+  // pages, ordered by page number.
+  const extraRecipes = Object.keys(extraPages)
+    .map(Number)
+    .sort((a, b) => a - b)
+    .flatMap(p => extraPages[p])
+  const shownRecipes = [...profile.recipes, ...extraRecipes]
+  const hasMore = shownRecipes.length < profile.recipesTotalCount
 
   return (
     <div className='page public-profile'>
       <Helmet>
         <meta charSet='utf-8' />
-        <title>{data.displayName} | Prepify</title>
+        <title>{profile.displayName} | Prepify</title>
       </Helmet>
 
       <header className='pp-head'>
-        {data.photoURL && !avatarError ? (
+        {profile.photoURL && !avatarError ? (
           <img
-            src={data.photoURL}
+            src={profile.photoURL}
             alt='Profile avatar'
             className='pp-avatar'
             onError={() => setAvatarError(true)}
@@ -72,46 +150,148 @@ const PublicProfile: FC = () => {
         ) : (
           <div className='pp-avatar not-set'>{initial}</div>
         )}
-        <div className='pp-id'>
-          <h1 className='pp-name'>{data.displayName}</h1>
-          <p className='pp-meta'>{metaParts.join(' · ')}</p>
-          {data.bio && <p className='pp-bio'>{data.bio}</p>}
-          {data.achievements.length > 0 && (
-            <div className='pp-badges'>
-              {data.achievements.map(a => (
-                <span key={a.id} className='pp-badge' title={a.description}>
-                  🏅 {a.name}
-                </span>
-              ))}
-            </div>
-          )}
+
+        <div className='pp-handle-row'>
+          <h1 className='pp-handle'>@{profile.username}</h1>
+          <button
+            type='button'
+            className='pp-share'
+            onClick={handleShare}
+            aria-label='Share this profile'
+            title='Share this profile'
+          >
+            <FiShare />
+          </button>
         </div>
+        <p className='pp-name'>{profile.displayName}</p>
+
+        <div className='pp-counts'>
+          <div>
+            <b>{formatCompactCount(profile.recipesTotalCount)}</b>
+            <span>Recipes</span>
+          </div>
+          <div className='pp-div' />
+          <div>
+            <b>{formatCompactCount(profile.recipesSavesTotal)}</b>
+            <span>Saves</span>
+          </div>
+          <div className='pp-div' />
+          <div>
+            <b>{formatCompactCount(profile.recipesMadeTotal)}</b>
+            <span>Made</span>
+          </div>
+        </div>
+
+        {profile.bio && <p className='pp-bio'>{profile.bio}</p>}
+
+        <p className='pp-loc'>
+          {profile.location && (
+            <>
+              <FiMapPin /> {profile.location}
+              <span className='pp-sep'>·</span>
+            </>
+          )}
+          <span className='pp-lvl' title={profile.rank}>
+            Lv {profile.level}
+          </span>
+        </p>
+
+        {profile.achievements.length > 0 && (
+          <div className='pp-badges'>
+            {profile.achievements.map(a => (
+              <span key={a.id} className='pp-badge' title={a.description}>
+                <FiAward /> {a.name}
+              </span>
+            ))}
+          </div>
+        )}
       </header>
 
       <section className='pp-recipes'>
-        <h2 className='pp-section-title'>
-          Recipes
-          {data.recipesTotalCount > 0 && (
-            <span className='pp-count'>{data.recipesTotalCount}</span>
-          )}
-        </h2>
-        {data.recipes.length > 0 ? (
+        {shownRecipes.length > 0 ? (
           <>
-            <div className='pp-recipe-grid'>
-              {data.recipes.map(recipe => (
-                <RecipeThumbnail key={recipe._id} recipe={recipe} />
-              ))}
+            <div className='pp-grid'>
+              {shownRecipes.map(recipe => {
+                const rated = recipe.rating.rateCount > 0
+                const cost =
+                  recipe.servingPrice != null
+                    ? formatPrice(recipe.servingPrice)
+                    : null
+                return (
+                  <Link
+                    key={recipe._id}
+                    to={`/recipes/${recipe._id}`}
+                    className='pp-tile'
+                  >
+                    <div className='pp-tile-media'>
+                      {recipe.recipeImage ? (
+                        <img
+                          src={recipe.recipeImage}
+                          alt={recipe.title}
+                          loading='lazy'
+                          decoding='async'
+                        />
+                      ) : (
+                        // No image on the recipe — show a neutral placeholder
+                        // rather than a broken-image icon.
+                        <div className='pp-tile-noimg'>
+                          <FiBookOpen />
+                        </div>
+                      )}
+                      {(recipe.numTimesSaved ?? 0) > 0 && (
+                        <span className='pp-tile-saves'>
+                          <FiBookmark /> {formatCompactCount(recipe.numTimesSaved)}
+                        </span>
+                      )}
+                    </div>
+                    <div className='pp-tile-body'>
+                      <h3 className='pp-tile-title'>{recipe.title}</h3>
+                      <div className='pp-tile-meta'>
+                        <span className='pp-tile-stat'>
+                          <FiStar />{' '}
+                          {rated
+                            ? formatRating(
+                                recipe.rating.rateValue,
+                                recipe.rating.rateCount
+                              )
+                            : 'New'}
+                        </span>
+                        <span className='pp-tile-stat'>
+                          <FiClock /> {recipe.totalTime}m
+                        </span>
+                        {cost && (
+                          <span className='pp-tile-stat pp-tile-cost'>
+                            {cost}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </Link>
+                )
+              })}
             </div>
-            {data.recipesTotalCount > data.recipes.length && (
-              <p className='pp-more'>
-                Showing {data.recipes.length} of {data.recipesTotalCount} recipes
-              </p>
+            {hasMore && (
+              <div className='pp-more'>
+                <button
+                  type='button'
+                  className='load-more-btn btn'
+                  onClick={() => setExtraPage(p => p + 1)}
+                  disabled={isLoadingMore}
+                >
+                  {isLoadingMore ? 'Loading…' : 'Load more recipes'}
+                </button>
+                <p className='pp-more-count'>
+                  Showing {shownRecipes.length} of {profile.recipesTotalCount}
+                </p>
+              </div>
             )}
           </>
         ) : (
-          <p className='pp-empty'>
-            {data.displayName} hasn’t published any recipes yet.
-          </p>
+          <EmptyState
+            icon={<FiBookOpen />}
+            title='No recipes yet'
+            description={`${profile.displayName} hasn’t published any recipes yet — check back soon.`}
+          />
         )}
       </section>
     </div>
