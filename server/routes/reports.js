@@ -45,13 +45,23 @@ const MAX_DETAILS_LEN = 1000
 // its uid); recipe reports do not.
 const namesUser = (targetType) => targetType === 'review' || targetType === 'user'
 
+const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+// Match a stored handle case-insensitively for the rate-limit query so a casing
+// variant (BadUser vs baduser) can't sidestep the one-open-report-per-target
+// limit. Anchored + escaped — reportedUsername isn't charset-validated here, so
+// raw input must not leak regex metacharacters.
+const handleMatch = (reportedUsername) => new RegExp(`^${escapeRegex(reportedUsername)}$`, 'i')
+
 // Build the query that identifies a single target, used for the
 // one-open-report-per-reporter-per-target rate limit.
 function targetMatch({ targetType, recipeId, reportedUsername }) {
-  if (targetType === 'user') return { targetType, reportedUsername }
-  return targetType === 'review'
-    ? { targetType, recipeId, reportedUsername }
-    : { targetType, recipeId }
+  if (targetType === 'recipe') return { targetType, recipeId }
+  // review/user name an account; match the handle case-insensitively.
+  const handle = { reportedUsername: handleMatch(reportedUsername) }
+  return targetType === 'user'
+    ? { targetType, ...handle }
+    : { targetType, recipeId, ...handle }
 }
 
 // POST /reports — any logged-in user files a report. Rate-limited to one OPEN
@@ -77,6 +87,32 @@ router.post('/reports', verifyToken, requireActive, asyncHandler(async (req, res
     return res.status(400).json({ error: `details must be a string under ${MAX_DETAILS_LEN} chars` })
   }
 
+  // Resolve the reported account up front for review/user reports. The lookup
+  // does triple duty: reject reports against a handle that doesn't exist, block
+  // self-reports, and snapshot the stable uid (D1) so the report survives a
+  // rename. The handle is still stored for display in the queue.
+  let reportedUid = null
+  if (namesUser(targetType)) {
+    const reportedDoc = await db
+      .collection('usernames')
+      .findOne({ username_lower: reportedUsername.toLowerCase() })
+    // A 'user' report must name a real account (any string is otherwise a valid
+    // target). A review report's author is implied by an existing review, so a
+    // missing handle there falls through to a null uid as before.
+    if (targetType === 'user' && !reportedDoc) {
+      return res.status(404).json({ error: 'No user with that username exists.' })
+    }
+    reportedUid = reportedDoc?._id || null
+    if (reportedUid && reportedUid === req.uid) {
+      return res.status(400).json({
+        error:
+          targetType === 'user'
+            ? "You can't report yourself."
+            : "You can't report your own review.",
+      })
+    }
+  }
+
   const match = targetMatch({ targetType, recipeId, reportedUsername })
   const existing = await db.collection('reports').findOne({
     ...match,
@@ -88,17 +124,6 @@ router.post('/reports', verifyToken, requireActive, asyncHandler(async (req, res
       code: 'ALREADY_REPORTED',
       error: 'You already have an open report for this content.',
     })
-  }
-
-  // Snapshot the reported user's stable uid alongside the denormalized handle
-  // (D1), so a review/user report stays attached to its author across renames.
-  // The handle is still stored for display in the queue.
-  let reportedUid = null
-  if (namesUser(targetType)) {
-    const reportedDoc = await db
-      .collection('usernames')
-      .findOne({ username_lower: reportedUsername.toLowerCase() })
-    reportedUid = reportedDoc?._id || null
   }
 
   const doc = {

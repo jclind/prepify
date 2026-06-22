@@ -91,6 +91,7 @@ describe('POST /api/reports', () => {
   })
 
   it('creates a user report carrying reportedUsername and no recipeId', async () => {
+    await seedUser('bad-uid', 'baduser')
     const res = await request(app)
       .post('/api/reports')
       .set(AUTH_HEADER)
@@ -121,6 +122,7 @@ describe('POST /api/reports', () => {
   })
 
   it('does not require recipeId for a user report', async () => {
+    await seedUser('bad-uid', 'baduser')
     const res = await request(app)
       .post('/api/reports')
       .set(AUTH_HEADER)
@@ -128,7 +130,37 @@ describe('POST /api/reports', () => {
     expect(res.status).toBe(201)
   })
 
+  it('404s a user report against a handle with no account', async () => {
+    const res = await request(app)
+      .post('/api/reports')
+      .set(AUTH_HEADER)
+      .send({ targetType: 'user', reportedUsername: 'ghost', reason: 'spam' })
+    expect(res.status).toBe(404)
+  })
+
+  it('rejects reporting yourself (user report)', async () => {
+    // The reporter's own handle resolves to TEST_UID (the verified token's uid).
+    await seedUser(TEST_UID, 'me')
+    const res = await request(app)
+      .post('/api/reports')
+      .set(AUTH_HEADER)
+      .send({ targetType: 'user', reportedUsername: 'me', reason: 'spam' })
+    expect(res.status).toBe(400)
+    expect(res.body.error).toMatch(/yourself/i)
+  })
+
+  it('rejects reporting your own review', async () => {
+    await seedUser(TEST_UID, 'me')
+    const res = await request(app)
+      .post('/api/reports')
+      .set(AUTH_HEADER)
+      .send({ targetType: 'review', recipeId: 'recipe-001', reportedUsername: 'me', reason: 'spam' })
+    expect(res.status).toBe(400)
+    expect(res.body.error).toMatch(/your own review/i)
+  })
+
   it('rate-limits to one open user report per reporter+target (409)', async () => {
+    await seedUser('bad-uid', 'baduser')
     const body = { targetType: 'user', reportedUsername: 'baduser', reason: 'spam' }
     const first = await request(app).post('/api/reports').set(AUTH_HEADER).send(body)
     expect(first.status).toBe(201)
@@ -137,7 +169,25 @@ describe('POST /api/reports', () => {
     expect(second.body.code).toBe('ALREADY_REPORTED')
   })
 
+  it('rate-limits a user report case-insensitively on the handle (409)', async () => {
+    await seedUser('bad-uid', 'BadUser')
+    const first = await request(app)
+      .post('/api/reports')
+      .set(AUTH_HEADER)
+      .send({ targetType: 'user', reportedUsername: 'BadUser', reason: 'spam' })
+    expect(first.status).toBe(201)
+    // A different casing of the same handle is the same target, not a new one.
+    const second = await request(app)
+      .post('/api/reports')
+      .set(AUTH_HEADER)
+      .send({ targetType: 'user', reportedUsername: 'baduser', reason: 'spam' })
+    expect(second.status).toBe(409)
+    expect(second.body.code).toBe('ALREADY_REPORTED')
+  })
+
   it('treats reports against two different users as distinct targets', async () => {
+    await seedUser('alice-uid', 'alice')
+    await seedUser('bob-uid', 'bob')
     const a = await request(app)
       .post('/api/reports')
       .set(AUTH_HEADER)
