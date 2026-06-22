@@ -105,6 +105,46 @@ describe('Recipes (Browse) page', () => {
     await screen.findByText('No recipes found')
   })
 
+  it('empty state for a search query offers "Browse all recipes" and names the query', async () => {
+    mockGetAllRecipes.mockResolvedValue({ recipeList: [], total_results: 0 })
+    renderRecipes('/recipes?q=zzz-nope')
+    await screen.findByText('No recipes found')
+    expect(screen.getByText(/zzz nope/i)).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /browse all recipes/i })
+    ).toBeInTheDocument()
+    // No active filters → no "Clear filters" affordance.
+    expect(
+      screen.queryByRole('button', { name: /clear filters/i })
+    ).toBeNull()
+  })
+
+  it('empty state with active filters offers "Clear filters"', async () => {
+    mockGetAllRecipes.mockResolvedValue({ recipeList: [], total_results: 0 })
+    renderRecipes('/recipes?dietTags=vegan')
+    await screen.findByText('No recipes found')
+    expect(
+      screen.getByRole('button', { name: /clear filters/i })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /browse all recipes/i })
+    ).toBeInTheDocument()
+  })
+
+  it('"Browse all recipes" navigates to a bare /recipes and refetches unfiltered', async () => {
+    mockGetAllRecipes.mockResolvedValue({ recipeList: [], total_results: 0 })
+    renderRecipes('/recipes?q=zzz-nope&dietTags=vegan')
+    await screen.findByText('No recipes found')
+    mockGetAllRecipes.mockClear()
+    await userEvent.click(
+      screen.getByRole('button', { name: /browse all recipes/i })
+    )
+    await waitFor(() => expect(mockGetAllRecipes).toHaveBeenCalled())
+    const arg = mockGetAllRecipes.mock.calls.at(-1)?.[0]
+    expect(arg.query).toBe('')
+    expect(arg.diets).toEqual([])
+  })
+
   it('"Load More" button is visible when total_results > loaded count', async () => {
     mockGetAllRecipes.mockResolvedValue({
       recipeList: [makeRecipe('1'), makeRecipe('2'), makeRecipe('3')],
