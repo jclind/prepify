@@ -53,7 +53,7 @@ same commit.**
 | 2b | Public Help/Contact page | `[x]` | #158 ✅ |
 | 2c | Single-recipe polish | `[x]` | #160 ✅ |
 | 2d | Recipes browse polish | `[ ]` | — |
-| 2e | Account/profile polish | `[P]` | #165 |
+| 2e | Account/profile polish | `[x]` | #165 ✅ |
 | 3a | a11y (focus-visible, chevron) | `[x]` | #163 ✅ |
 | 3b | Meta/SEO finish (favicon/OG/titles) | `[ ]` | — |
 | 3c | Username validation + report-user | `[ ]` | — |
@@ -353,7 +353,7 @@ Append a one-liner when a track changes state (started / PR / merged). Keeps ses
   **Filed one follow-up → Backlog (UX/visual polish):** add-recipe group-label rendering needs a refinement —
   a candidate for the Phase-4 QA pass or the create-recipe refactor. Board 3d `[ ]`→`[P]`; backlog
   add-recipe items + create-recipe-tests flipped.
-- _2026-06-22_ — **2e Account/profile polish → PR open (#165).** Branch
+- _2026-06-22_ — **2e Account/profile polish → merged (#165 ✅, all CI green).** Branch
   `worktree-feat+account-sections-public-profile`. Account tabs redesigned: "Your Recipes" dashboard tiles
   (views/saves/made + compact counts), "Ratings" compact avatar rows (clamped review text), "Drafts"
   vertical cards, and grid/spacing alignment across tabs. Public profile (`/u/:username`) reworked: centered
