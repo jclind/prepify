@@ -45,6 +45,43 @@ describe('Browse', () => {
     cy.get('.auto-complete-results .ac-footer').should('contain.text', 'chic')
   })
 
+  it('surfaces fuzzy results with a "similar recipes" banner for a typo', () => {
+    // track 2d: the server falls back to fuzzy matches when nothing contains
+    // the query literally. The stub returns the chicken recipes — none of whose
+    // titles contain the misspelling "chikcen" — so the client flags the
+    // correction with the "showing similar recipes" banner while still listing
+    // the results. Re-declared here (over beforeEach) only to get a wait alias.
+    cy.intercept('GET', `${api()}/api/searchAutoCompleteRecipes*`, {
+      fixture: 'search-auto-complete-recipes.json',
+    }).as('autocomplete')
+    cy.visit('/recipes')
+    cy.wait('@getRecipes')
+    cy.get('.recipes-page input.search-recipes-input', { timeout: 10000 })
+      .should('be.visible')
+      .type('chikcen')
+    cy.wait('@autocomplete')
+    // Results still surface despite the typo...
+    cy.get('.auto-complete-results .ac-item__title', { timeout: 5000 })
+      .should('have.length.greaterThan', 0)
+      .first()
+      .should('contain.text', 'Chicken')
+    // ...and the "did you mean" banner explains why.
+    cy.contains('.ac-corrected', 'showing similar recipes').should('be.visible')
+  })
+
+  it('omits the "similar recipes" banner when the query matches a result literally', () => {
+    cy.visit('/recipes')
+    cy.wait('@getRecipes')
+    cy.get('.recipes-page input.search-recipes-input', { timeout: 10000 })
+      .should('be.visible')
+      .type('chicken')
+    // "Tuscan Chicken Skillet" et al. contain the query, so it's an exact (not
+    // corrected) match — results show without the banner.
+    cy.get('.auto-complete-results .ac-item__title', { timeout: 5000 })
+      .should('have.length.greaterThan', 0)
+    cy.get('.ac-corrected').should('not.exist')
+  })
+
   it('clicking an autocomplete result navigates to that recipe', () => {
     cy.intercept('GET', `${api()}/api/getRecipe*`, { fixture: 'single-recipe.json' }).as('getRecipe')
     cy.intercept('GET', `${api()}/api/getReviews*`, { fixture: 'recipe-reviews.json' })
