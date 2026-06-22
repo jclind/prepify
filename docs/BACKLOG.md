@@ -92,6 +92,18 @@ The triage date stamped on items is the date they were filed here, not when they
   bar is now `position: sticky` (+ `margin-top: auto`) so it releases at the page end above the footer
   instead of a fixed overlay; the footer's global top margin is also cancelled on this page (`:has`) so the
   bar sits flush above it, and the cuisine/course dropdowns were lifted above the bar (menu z-index 50→60).
+- `[ ]` **Add-recipe summary bar doesn't stay visible while scrolling the form** — the PR #164 fix uses
+  `position: sticky; bottom: 0` + `margin-top: auto` (`AddRecipeSummaryBar.scss`), which correctly releases
+  the bar above the footer at page end (the original overlap bug — fixed). But `margin-top: auto` parks the
+  bar at the bottom of the form's flex column, so on a tall form it does **not** pin to the viewport bottom
+  while you scroll — the summary (totals + submit) is off-screen until you reach the very bottom. The SCSS
+  comment ("pins to the bottom of the viewport while the form scrolls") overstates the actual behavior.
+  *Decide whether an always-visible summary bar is wanted; if so it likely needs the bar outside the
+  `margin-top: auto` column (e.g. a fixed/sticky element relative to the scroll root, with bottom padding on
+  the form so the footer stays reachable). Not a regression — the tracked footer-overlap bug is fixed.*
+  *(surfaced 2026-06-22 during the Phase-3 verification pass; runtime-confirmed: mid-scroll the bar sits
+  off-screen below the fold, footer reachable above the bar at page end. Candidate for the create-recipe
+  refactor or the Phase-4 QA sweep.)*
 - `[ ]` **Add-recipe group labels render underwhelming** — the section labels you can insert between
   ingredients / instructions (the "Add Label" control) don't display the way they should on the create-recipe
   page. Refine their styling/placement, and check how they carry through to the recipe view. *(noted

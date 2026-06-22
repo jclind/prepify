@@ -57,7 +57,7 @@ same commit.**
 | 3a | a11y (focus-visible, chevron) | `[x]` | #163 ✅ |
 | 3b | Meta/SEO finish (favicon/OG/titles) | `[ ]` | — |
 | 3c | Username validation + report-user | `[ ]` | — |
-| 3d | Add-recipe UX | `[P]` | #164 |
+| 3d | Add-recipe UX | `[x]` | #164 ✅ |
 | 3e | create-username revamp | `[x]` | #131 + #98 (+ #162 reconcile/test) ✅ |
 | 4-sass | Sass `@import`→`@use` (LONER) | `[ ]` | — |
 | 4-about | About rewrite (Jesse) | `[ ]` | — |
@@ -373,6 +373,25 @@ Append a one-liner when a track changes state (started / PR / merged). Keeps ses
   target `:4000`; pinned `VITE_API_URL=:4000` in `.env.test` (no-op in CI). **Still open:** the "Account nav
   sections UI" (SegmentedNav rail styling) sub-item; two low-severity review items (paged endpoint re-counts
   every page; username→uid lookup duplicated across the two endpoints).
+- _2026-06-22_ — **Board reconcile: Wave 3 Part 1 COMPLETE.** Caught drift — 3d had stayed `[P]` though
+  PR #164 merged 2026-06-18; flipped to `[x]`. With 2e (#165), 3a (#163), 3d (#164), and 3e (already done),
+  **all of Wave 3 Part 1 is in `development`; no PRs open.** Next up: **Wave 3 Part 2** — **2d** recipes
+  browse (rebases on 3a's Navbar) and **3c** username-validation + report-user (rebases on 2e's
+  PublicProfile, carries the two 2c deferrals). Then the finishing pass (3b meta/SEO) and Phase 4 loners.
+- _2026-06-22_ — **Phase 3 verification pass (3a / 3d / 3e) → all PASS** (live runtime, headless Chromium via
+  the run-prepify driver + a minted Firebase custom token). **3a:** same button shows the `outline:auto` ring
+  on Tab but NOT on a real mouse click (`:focus-visible` false, `outline:none`); account-menu caret rotates
+  inside a 20×20 `overflow:hidden` clip box with the button box stable (ring no longer drags). **3e:** no-username
+  sign-in → `/create-username` ("Finish your profile") with a working "Cancel and log out" (→ `/login`; a
+  protected route then bounces to login, proving real sign-out); happy-path username create redirects home.
+  **3d:** optimistic add (row in ~23ms + skeleton → reconciled image/$0.62), enrichment timeout (delayed parse
+  → row exits errored at ~12.1s with retry + toast, not stuck). **One finding filed → Backlog (UX/visual
+  polish):** the sticky summary bar releases above the footer (overlap bug fixed) but `margin-top:auto` parks
+  it at the form's end, so it does NOT pin to the viewport bottom mid-scroll — the SCSS comment overstates it.
+- _2026-06-22_ — **Wave 3 Part 2 kickoff prompts generated** (appendix below). 2d (recipes browse) and 3c
+  (username validation + report-a-user + the two 2c deferrals) are unblocked (3a's Navbar #163 + 2e's
+  PublicProfile #165 merged) and have zero file overlap — run simultaneously. References checked against
+  `development`.
 
 ---
 
@@ -590,19 +609,44 @@ Do:
 Guardrails: scope to src/pages/CreateUsername/* + the auth signout hook you reuse for logout. Don't touch the beta tag or App.tsx routes. Keep tests green, tsc clean, build passing. Open a PR into development when green; confirm the escape hatch (a signed-in user without a username can log out).
 ```
 
-### Part 2 — hold until Part 1 merges (regenerate full prompts then)
+### Part 2 — ready now (Part 1 fully merged 2026-06-22)
 
-Don't start these until their Part-1 chokepoint owner is merged; then rebase and generate cold-session
-prompts the same way (the board will have moved).
+Both Part-1 chokepoint owners are in `development` — **3a** merged the Navbar (#163), **2e** merged the
+PublicProfile (#165) — so 2d and 3c are unblocked. **They have zero file overlap with each other** (2d owns
+Recipes + `SearchRecipesInput` + the Navbar search; 3c owns the reports/auth server routes + `ReportControl`
++ `PublicProfile` + `SingleRecipe` hero), so run them **simultaneously**. Paste-ready, cold-session briefs
+below — references checked against `development` at 2026-06-22.
 
-- **2d** Recipes browse polish — `src/pages/Recipes/*`, `SearchRecipesInput`, **Navbar**. Better no-results
-  indicator, autocomplete redesign + autocorrect, drop search from the top-most navbar on /recipes.
-  **Holds behind 3a** (shared Navbar).
-- **3c** Username validation + report-user — `server/routes/*`, `ReportControl`, `types.ts`
-  (`ReportTargetType` only `'recipe' | 'review'`, `types.ts:188`), admin queue (`src/pages/Admin/Reports/`),
-  **plus the two 2c deferrals**: show report controls to logged-out users w/ a login prompt, and surface the
-  recipe rating up top near the title (`src/pages/SingleRecipe/*`). Also the "double-check report-recipe
-  styling" nit. **Holds behind 2e** (shared PublicProfile — adds the report-a-user control there).
+#### Track 2d · Recipes browse polish
+
+```
+/worktree-create polish the recipes browse page
+
+Read docs/RELEASE_GAMEPLAN.md (track 2d) and docs/BACKLOG.md ("UX / visual polish": Recipes page items). Visual/UX polish on the recipes browse page + its search. Track 3a already merged its Navbar change (#163) — rebase on the current Navbar and keep any Navbar edit here minimal and self-contained.
+
+Three items:
+1. Better "no results found" indicator — src/pages/Recipes/Recipes.tsx (~L237, the `.recipes-empty` block; it already has a 🍽️ emoji but reads weak). Make it a proper empty state (clear message + a reset-filters / browse-all affordance), styled in src/pages/Recipes/Recipes.scss.
+2. Search autocomplete redesign + autocorrect — src/Components/SearchRecipesInput/SearchRecipesInput.tsx (autocomplete query key ['recipe-autocomplete']; results render in `.auto-complete-results` ~L105) + .scss. Improve the dropdown's look/affordance AND the matching: today it's a literal match, so a small typo returns nothing — add fuzzy/autocorrect-style matching so near-misses still surface. Decide where fuzzy matching belongs (client-side over the returned set, or a server query change) and note the choice in the PR.
+3. Drop search from the top-most navbar on /recipes — the search input is rendered in the desktop top bar (src/Components/Navbar/desktop/DesktopBar.tsx) and the mobile menu (src/Components/Navbar/menu/NavMenu.tsx). On /recipes the page carries its own search, so the top-most navbar shouldn't duplicate it. Suppress the navbar search specifically on the /recipes route (route-aware render), keeping it on every other page.
+
+Guardrails: scope to src/pages/Recipes/*, src/Components/SearchRecipesInput/*, and the Navbar ONLY for the /recipes search-visibility change. Do NOT change search behavior elsewhere or touch the beta tag / App.tsx routes. Keep frontend tests green, tsc clean, build passing; add a Cypress autocomplete test if practical (Backlog → Testing has this open). Open a PR into development when green; screenshot before/after for the no-results state, the autocomplete dropdown, and the /recipes top bar (desktop + mobile).
+```
+
+#### Track 3c · Username validation + report-a-user (+ the two 2c deferrals)
+
+```
+/worktree-create username validation + report-a-user + report-control polish
+
+Read docs/RELEASE_GAMEPLAN.md (track 3c) and docs/BACKLOG.md ("Features", "UX / visual polish"). Track 2e already merged the PublicProfile redesign (#165) — build the report-a-user control ON TOP of it; do NOT revert 2e's profile structure. Five items:
+
+1. Username character validation — server/routes/auth.js `validateUsername()` (~L61) currently only rejects whitespace and enforces min/max length. Tighten the allowed character set (decide the rule — e.g. allow [a-z0-9] plus a small set like . _ - , disallow the rest) and return a clear, specific error message. Surface the same rule as inline feedback on src/pages/CreateUsername/CreateUsername.tsx (it calls src/api/auth.ts setUsername / checkUsernameAvailability). Add server Jest coverage for the new rule.
+2. Report a *user* — extend ReportTargetType (src/types.ts:188, currently 'recipe' | 'review') to include 'user'. Server: server/routes/reports.js must accept + validate the 'user' target (mirror how recipe/review reports are stored). UI: add a "Report this user" control to src/pages/PublicProfile/PublicProfile.tsx (reuse ReportControl where it fits). Admin: make sure user reports render in the queue at src/pages/Admin/Reports/Reports.tsx.
+3. (2c deferral) Report controls visible when logged out — src/Components/ReportControl/ReportControl.tsx returns null for logged-out users (`if (!authRes?.user) return null`, ~L65), so logged-out visitors get no signal that reporting exists. Keep the trigger visible and, on click while logged out, prompt to log in (a toast or login link is enough — no full modal). One change covers both the single-recipe footer link and the per-review links since they share ReportControl.
+4. (2c deferral) Surface the recipe rating up top near the title — src/pages/SingleRecipe/SingleRecipe.tsx (the `.hero` header ~L258; rating count is at ratingCount ~L130). 2c replaced the action-bar rating tile with the per-serving price tile, so the rating no longer shows up top. Re-surface it compactly near the title/hero (e.g. "★ 4.5 · N ratings") — NOT as a 4th action-bar tile (that crowds mobile). It still shows in the Ratings & Reviews header; this is the top-of-page echo.
+5. "Double-check report-recipe styling" nit — review ReportControl.scss / the controls element styling while you're in there and tidy it.
+
+Guardrails: scope to server/routes/auth.js + server/routes/reports.js, src/types.ts, src/Components/ReportControl/*, src/pages/PublicProfile/*, src/pages/Admin/Reports/*, src/pages/CreateUsername/* (inline validation only — don't redesign the page, that shipped in 3e), and the src/pages/SingleRecipe/* hero for item 4. Do NOT touch the Navbar (track 2d owns it this wave) or the beta tag. Add tests (server Jest for username validation + the 'user' report target; Vitest for ReportControl's logged-out trigger + login prompt). Keep all tests green, tsc clean, build passing. Open a PR into development when green; verify end-to-end: report-a-user from a profile lands in the admin queue, a logged-out user sees the report trigger + login prompt, and the rating shows near the title.
+```
 
 ### Finishing pass (late)
 
