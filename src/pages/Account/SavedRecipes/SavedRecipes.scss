@@ -8,7 +8,9 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     gap: 0.75rem;
-    margin-top: 1rem;
+    // No top margin: align the first row of cards with the top of the nav rail
+    // card beside it (both start at the .acct-main grid row top).
+    margin-top: 0;
   }
 
   .collection-card {

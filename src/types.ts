@@ -500,4 +500,8 @@ export type PublicProfile = {
   achievements: Achievement[]
   recipes: RecipeType[]
   recipesTotalCount: number
+  // Cross-recipe sums over the user's publicly-visible recipes (not just the
+  // initial `recipes` batch), used for the header Saves/Made counts.
+  recipesSavesTotal: number
+  recipesMadeTotal: number
 }

@@ -112,7 +112,12 @@ The triage date stamped on items is the date they were filed here, not when they
   (e.g. "★ 4.5 · N ratings") rather than adding a 4th action-bar tile (which would crowd mobile). It
   still shows in the Ratings & Reviews header. *(→ Track 3c)*
 - `[ ]` **Account nav sections UI** — improve the Saved / Ratings / etc. section navigation styling.
-- `[ ]` **`/u/:username` public profile visual polish** — minor visual updates.
+- `[x]` **`/u/:username` public profile visual polish** — **done (track 2e):** centered identity
+  (avatar, @handle + share, divided Recipes/Saves/Made counts, "location · Lv N", achievement chips),
+  image-first square recipe tiles with rating · time · cost + a bookmark save-count badge, richer
+  `EmptyState`, and a working **"Load more"** (new paginated `GET /getPublicProfileRecipes`). Saves/Made
+  now come from a server-side aggregate over *all* visible recipes (not just the shown batch). Verified
+  live incl. a 15-recipe load-more click-through (12→15, button clears, no dupes).
 - `[ ]` **"Change Password" title is redundant/cluttered** — in Account & Security settings.
 - `[x]` **create-username page revamp** — **done (track 3e):** the page was redesigned into the shared
   soft-glass auth vocabulary alongside login/signup/forgot in **PR #131**, and the escape hatch (a
@@ -131,13 +136,11 @@ The triage date stamped on items is the date they were filed here, not when they
   in PR #163 ✅):** the caret was wrapped in a fixed-size `overflow:hidden` clip box with an inner
   rotating `<svg>` (`DesktopAccountMenu.tsx` + `DesktopNav.scss`), so the `outline:auto` ring no longer
   tracks the rotating icon's bounding box.
-- `[ ]` **Account Ratings list nests a `<button>` inside a `<button>`** — each rating row is a clickable
-  `<button className="single-review">` (`src/pages/Account/UserRatings/.../SingleReview`) that renders a
-  `StarRating`, which itself emits a `<button>` per star (even when non-interactive). React logs
-  `<button> cannot contain a nested <button>` and it's invalid HTML / a screen-reader hazard. *(Pre-existing;
-  surfaced during the Wave 2 verification live smoke test 2026-06-18 — NOT introduced by track 1c.)* Fix:
-  render `StarRating`'s stars as non-interactive `<span>`s when `interactive` is false, or make the row a
-  non-button wrapper (e.g. an `<a>`/`role` container) so the stars aren't nested in a button.
+- `[x]` **Account Ratings list nests a `<button>` inside a `<button>`** — **fixed (track 2e):** the rating
+  row is now a keyboard-operable `<div role="button">` wrapper (Enter/Space handler, `tabIndex`,
+  `aria-disabled`) instead of a `<button>`, so `StarRating`'s per-star `<button>`s are no longer nested in a
+  button. *(Pre-existing; surfaced during the Wave 2 verification live smoke test 2026-06-18 — NOT introduced
+  by track 1c. Took the non-button-wrapper route over making StarRating render `<span>`s.)*
 
 ## Features
 

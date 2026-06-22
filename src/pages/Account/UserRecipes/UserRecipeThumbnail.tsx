@@ -1,14 +1,21 @@
 import React, { FC } from 'react'
 import { Link } from 'react-router-dom'
-import { CgTimer } from 'react-icons/cg'
-import { AiOutlineStar, AiOutlineEye } from 'react-icons/ai'
-import { MdOutlineCalendarToday } from 'react-icons/md'
+import {
+  FiClock,
+  FiStar,
+  FiEye,
+  FiBookmark,
+  FiTrendingUp,
+  FiArrowUpRight,
+} from 'react-icons/fi'
 import Skeleton from 'react-loading-skeleton'
 import 'react-loading-skeleton/dist/skeleton.css'
 
 import './UserRecipeThumbnail.scss'
 import { RecipeType } from 'types'
 import { formatRating } from 'src/util/formatRating'
+import { formatCompactCount } from 'src/util/formatCompactCount'
+import { formatPrice } from 'src/util/formatPrice'
 
 const skeletonColor = '#d6d6d6'
 
@@ -27,110 +34,118 @@ type UserRecipeThumbnailType = {
   loading?: boolean
 }
 
+// "Dashboard · slim tiles" card: a header row (thumbnail + title + price/date),
+// a compact three-up performance strip (views / saves / made), and a quiet
+// time/rating footer.
 const UserRecipeThumbnail: FC<UserRecipeThumbnailType> = ({
   recipe,
   loading,
 }) => {
+  const isLoading = loading || !recipe
   const createdDate = recipe ? formatDate(recipe.createdAt) : null
+  const price =
+    recipe && recipe.servingPrice != null
+      ? formatPrice(recipe.servingPrice)
+      : null
 
   const card = (
     <>
-      <div className='img-container'>
-        {loading || !recipe?.recipeImage ? (
-          <Skeleton className='img' baseColor={skeletonColor} />
-        ) : (
-          <>
+      <div className='head-row'>
+        <div className='thumb'>
+          {isLoading || !recipe!.recipeImage ? (
+            // Skeleton stands in for both the loading state and a recipe with no
+            // image, so a missing image never renders a broken-image icon.
+            <Skeleton className='img' baseColor={skeletonColor} />
+          ) : (
             <img
               className='img'
-              height={300}
-              width={200}
-              src={recipe.recipeImage}
-              alt={recipe.title}
-              title={recipe.title}
+              src={recipe!.recipeImage}
+              alt={recipe!.title}
+              title={recipe!.title}
               loading='eager'
             />
-            {createdDate ? (
-              <span className='date-pill'>
-                <MdOutlineCalendarToday className='icon' />
-                {createdDate}
-              </span>
-            ) : null}
-          </>
-        )}
+          )}
+        </div>
+        <div className='id'>
+          {isLoading ? (
+            <Skeleton baseColor={skeletonColor} height={20} width={'14ch'} />
+          ) : (
+            <h3 className='title'>{recipe!.title}</h3>
+          )}
+          {!isLoading && (
+            <div className='sub'>
+              {price && <span className='price'>{price} / serving</span>}
+              {createdDate && <span className='date'>{createdDate}</span>}
+            </div>
+          )}
+        </div>
+        {!isLoading && <FiArrowUpRight className='go' />}
       </div>
-      <h3 className='title'>
-        {loading || !recipe ? (
-          <Skeleton baseColor={skeletonColor} height={30} />
-        ) : (
-          recipe.title
-        )}
-      </h3>
-      <div className='price'>
-        {loading ||
-        !recipe ||
-        recipe.servingPrice == null ||
-        !recipe.servings ? (
-          <Skeleton baseColor={skeletonColor} height={20} width={180} />
-        ) : (
-          `Serving: $${(recipe.servingPrice / 100).toFixed(2)} | Recipe: $${(
-            (recipe.servingPrice / 100) *
-            recipe.servings
-          ).toFixed(2)}`
-        )}
+
+      <div className='tiles'>
+        <div className='tile'>
+          <FiEye className='ic' />
+          {isLoading ? (
+            <Skeleton baseColor={skeletonColor} height={18} width={24} />
+          ) : (
+            <b>{formatCompactCount(recipe!.views)}</b>
+          )}
+          <small>views</small>
+        </div>
+        <div className='tile'>
+          <FiBookmark className='ic' />
+          {isLoading ? (
+            <Skeleton baseColor={skeletonColor} height={18} width={24} />
+          ) : (
+            <b>{formatCompactCount(recipe!.numTimesSaved)}</b>
+          )}
+          <small>saves</small>
+        </div>
+        <div className='tile'>
+          <FiTrendingUp className='ic' />
+          {isLoading ? (
+            <Skeleton baseColor={skeletonColor} height={18} width={24} />
+          ) : (
+            <b>{formatCompactCount(recipe!.numTimesMade)}</b>
+          )}
+          <small>made</small>
+        </div>
       </div>
-      <div className='info'>
-        <div className='total-time single-info'>
-          {loading || !recipe ? (
-            <Skeleton baseColor={skeletonColor} className='skeleton' width={50} />
+
+      <div className='footer'>
+        <span>
+          <FiClock />
+          {isLoading ? (
+            <Skeleton baseColor={skeletonColor} width={50} />
+          ) : recipe!.totalTime > 1 ? (
+            `${recipe!.totalTime} mins`
+          ) : (
+            `${recipe!.totalTime} min`
+          )}
+        </span>
+        <span>
+          <FiStar />
+          {isLoading ? (
+            <Skeleton baseColor={skeletonColor} width={50} />
+          ) : Number(recipe!.rating.rateCount) === 0 ? (
+            'New'
           ) : (
             <>
-              <CgTimer className='icon' />
-              {recipe.totalTime > 1
-                ? `${recipe.totalTime} mins`
-                : `${recipe.totalTime} min`}
+              {formatRating(recipe!.rating.rateValue, recipe!.rating.rateCount)}{' '}
+              ({recipe!.rating.rateCount})
             </>
           )}
-        </div>
-        <div className='rating single-info'>
-          {loading || !recipe ? (
-            <Skeleton baseColor={skeletonColor} className='skeleton' width={50} />
-          ) : (
-            <>
-              <AiOutlineStar className='icon' />
-              {Number(recipe.rating.rateCount) === 0 ? (
-                0
-              ) : (
-                <>
-                  {formatRating(
-                    recipe.rating.rateValue,
-                    recipe.rating.rateCount
-                  )}{' '}
-                  ({recipe.rating.rateCount})
-                </>
-              )}
-            </>
-          )}
-        </div>
-        <div className='views single-info'>
-          {loading || !recipe ? (
-            <Skeleton baseColor={skeletonColor} className='skeleton' width={50} />
-          ) : (
-            <>
-              <AiOutlineEye className='icon' />
-              {recipe.views}
-            </>
-          )}
-        </div>
+        </span>
       </div>
     </>
   )
 
-  if (loading || !recipe) {
+  if (isLoading) {
     return <div className='user-recipe-thumbnail'>{card}</div>
   }
 
   return (
-    <Link to={`/recipes/${recipe._id}`} className='user-recipe-thumbnail'>
+    <Link to={`/recipes/${recipe!._id}`} className='user-recipe-thumbnail'>
       {card}
     </Link>
   )
