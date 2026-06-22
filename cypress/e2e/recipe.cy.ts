@@ -25,6 +25,23 @@ describe('Single Recipe', () => {
     cy.contains('.step', 'Bring a large pot of salted water to a boil', { timeout: 5000 }).should('be.visible')
   })
 
+  it('shows the report kebab + footer link and prompts login when logged out', () => {
+    cy.visit(`/recipes/${recipeId}`)
+    cy.wait('@getRecipe')
+
+    // The quiet footer link stays available...
+    cy.get('.sr-report-foot .report-control-trigger', { timeout: 5000 }).should(
+      'be.visible'
+    )
+
+    // ...alongside a quick-access kebab in the top controls row. Opening it and
+    // choosing "Report recipe" nudges a logged-out visitor to log in.
+    cy.get('.sr-controls .report-menu-trigger').should('be.visible').click()
+    cy.contains('.report-menu-item', /report recipe/i).click()
+    cy.contains(/log in to report/i).should('be.visible')
+    cy.contains('h2', /report this recipe/i).should('not.exist')
+  })
+
   it('save/unsave button toggles correctly when logged in', () => {
     cy.intercept('GET', `${api()}/api/getTrendingRecipes*`, { fixture: 'trending-recipes.json' })
     // The unified SaveControl resolves "is this saved" from getSavedRecipeIds.

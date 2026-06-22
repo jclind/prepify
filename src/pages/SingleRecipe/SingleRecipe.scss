@@ -20,6 +20,7 @@ $danger: #d23f31;
   .sr-controls {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     margin-bottom: 1.25rem;
     .sr-back {
       display: inline-flex;

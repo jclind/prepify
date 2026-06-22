@@ -242,6 +242,14 @@ const SingleRecipe: FC = () => {
             <Link to='/recipes' className='sr-back'>
               <BiLeftArrowAlt /> All recipes
             </Link>
+            {/* Quick-access report kebab (the quiet footer link below stays too).
+                Hidden for the owner; logged-out clicks nudge to log in. */}
+            {currRecipe && !isOwner && (
+              <ReportControl
+                variant='menu'
+                target={{ targetType: 'recipe', recipeId: currRecipe._id }}
+              />
+            )}
           </div>
 
           {currRecipe && (
