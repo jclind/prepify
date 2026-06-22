@@ -414,6 +414,21 @@ Append a one-liner when a track changes state (started / PR / merged). Keeps ses
   against a non-existent handle, 400 on self-reports (user + review), and case-insensitive handle matching in
   the one-open-report rate limit. Worktree + branch pruned. **Wave 3 Part 2 complete (2d + 3c merged); Phase-3
   remainder: 3b meta/SEO + the 4-sass loner.**
+- _2026-06-22_ — **Wave 3 Part 2 verification pass (2d + 3c) → all PASS.** Audited both merged tracks against
+  their kickoff briefs (deep code read), ran both suites, and live-smoke-tested the user-facing behavior in
+  headless Chromium (run-prepify driver). **2d:** server-side fuzzy autocomplete surfaces real results for a
+  typo (`chikcen` → *Tuscan Chicken Skillet* + "showing similar recipes" banner); no-results empty state
+  renders (icon + *"Nothing matched …"* naming the query + "Browse all recipes" CTA); navbar search suppressed
+  on `/recipes` only (1 visible search input = the page's own); `encodeURIComponent` URL-encode fix confirmed
+  in `src/api/recipes.ts`. **3c:** username charset `/^[a-zA-Z0-9._-]+$/` enforced identically server
+  (`auth.js`) + client (`UsernameInput.tsx`); `'user'` report target validated/stored with the three server
+  guards present (404 non-existent handle, 400 self-report for user+review, case-insensitive rate-limit
+  match); logged-out report trigger stays visible and clicking fires the "Log in to report …" toast (no
+  modal); hero rating echo `★ 4.5 · 4 ratings` shows under the title only when rated. **Tests:** Vitest
+  495 pass / 2 skip; Jest 683 pass. No console errors in any smoke run. Docs already matched the
+  implementation — nothing to reconcile; logged this pass for handoff honesty. One minor non-blocker noted
+  (client username min-length is a silent no-error below 3 chars; server still rejects) — not filed as it's
+  cosmetic inline-feedback only.
 
 ---
 
