@@ -26,8 +26,12 @@
   }
 
   // ── Hero ──────────────────────────────────────────────────────────────────
+  // ── Hero — split: copy on the left, a product-proof card on the right ───────
   .about-hero {
-    text-align: center;
+    display: grid;
+    grid-template-columns: 1.05fr 0.95fr;
+    align-items: center;
+    gap: clamp(2rem, 5vw, 4rem);
     margin-bottom: clamp(3rem, 6vw, 4.5rem);
 
     .eyebrow {
@@ -46,24 +50,130 @@
       letter-spacing: -0.02em;
       line-height: 1.1;
       color: s.$primary-text;
-      margin: 0 auto 1rem;
-      max-width: 18ch;
+      margin: 0 0 1rem;
+      max-width: 16ch;
     }
 
     .tagline {
       color: s.$secondary-text;
       font-size: clamp(1rem, 2.4vw, 1.2rem);
       line-height: 1.6;
-      max-width: 58ch;
-      margin: 0 auto;
+      max-width: 52ch;
+      margin: 0;
     }
 
     .hero-cta {
       display: flex;
       flex-wrap: wrap;
-      justify-content: center;
+      justify-content: flex-start;
       gap: 1rem;
       margin-top: 2rem;
+    }
+  }
+
+  // Product-proof card — shows the value prop (per-serving price + nutrition)
+  // rather than only describing it. Mirrors the Home recipe-card vocabulary.
+  .hero-proof {
+    display: flex;
+    justify-content: center;
+
+    .proof-card {
+      width: 100%;
+      max-width: 330px;
+      background: s.$white;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05), 0 18px 40px rgba(0, 0, 0, 0.12);
+    }
+
+    .proof-thumb {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      // Warm, appetizing stand-in for a dish photo (no asset needed).
+      background: linear-gradient(135deg, #ff9a6c 0%, #ff5722 60%, #f0481a 100%);
+
+      .proof-dish {
+        font-size: 4.5rem;
+        color: rgba(255, 255, 255, 0.92);
+      }
+
+      .proof-price {
+        position: absolute;
+        bottom: 0.7rem;
+        right: 0.7rem;
+        background: rgba(255, 255, 255, 0.95);
+        color: s.$primary;
+        font-weight: 800;
+        font-size: 0.82rem;
+        padding: 0.3rem 0.65rem;
+        border-radius: 999px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+      }
+    }
+
+    .proof-body {
+      padding: 1rem 1.1rem 1.2rem;
+      text-align: left;
+
+      h3 {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: s.$primary-text;
+        margin-bottom: 0.5rem;
+      }
+    }
+
+    .proof-meta {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      flex-wrap: wrap;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: s.$secondary-text;
+      margin-bottom: 0.9rem;
+
+      svg {
+        vertical-align: -2px;
+        margin-right: 0.15rem;
+      }
+
+      .proof-cuisine {
+        margin-left: auto;
+        color: s.$tertiary-text;
+      }
+    }
+
+    .proof-nutrition {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.4rem;
+      padding-top: 0.9rem;
+      border-top: 1px solid s.$gray-200;
+
+      .macro {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.15rem;
+
+        .val {
+          font-weight: 800;
+          font-size: 0.95rem;
+          color: s.$primary-text;
+        }
+
+        .lbl {
+          font-size: 0.66rem;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.03em;
+          color: s.$tertiary-text;
+        }
+      }
     }
   }
 
@@ -295,9 +405,34 @@
     }
   }
 
+  // ── Hero stacks below the split breakpoint ──────────────────────────────────
+  @media (max-width: 900px) {
+    .about-hero {
+      grid-template-columns: 1fr;
+      text-align: center;
+      gap: clamp(2rem, 5vw, 3rem);
+
+      h1 {
+        max-width: 20ch;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .tagline {
+        max-width: 56ch;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .hero-cta {
+        justify-content: center;
+      }
+    }
+  }
+
   // ── Tablet ──────────────────────────────────────────────────────────────────
   @media (max-width: 1023px) {
-    // 5 features → 2 columns (last card trails left-aligned, reads intentional).
+    // 6 features → 2 columns (3 balanced rows).
     .features .features-grid {
       grid-template-columns: repeat(2, 1fr);
     }
