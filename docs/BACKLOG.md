@@ -94,16 +94,19 @@ The triage date stamped on items is the date they were filed here, not when they
   footer reads the live input (`searchRecipeVal.trim()`), so mid-type it can say *Search for "chica"*
   while the list still shows `chic` matches. Cosmetic, self-corrects on fetch.
   (`SearchRecipesInput.tsx:205` + `:124-146`). *(surfaced 2026-06-22 in the track 2d code review.)*
-- `[ ]` **Autocomplete result click can be swallowed during a live refetch** — clicking a dropdown row
-  the instant it appears, while a newer keystroke's query is still in flight, no-ops: `keepPreviousData`
-  swaps the `<ul>` rows as the new data resolves, so React replaces the `<button>` the click was landing
-  on before its `onClick` (`navigate(/recipes/:id)`) fires — the dropdown just stays open. Once results
-  settle, the click navigates normally. The window is small locally but widens on a slow connection (a
-  fast typist clicking the moment a row renders can hit it). (onClick `navigate` at
-  `SearchRecipesInput.tsx:161`, inside the `keepPreviousData`-swapped list at `:153-198`.)
-  *(surfaced 2026-06-22 driving the live app during track 4-tests verification; the Cypress coverage
-  stubs the endpoint so the list never re-renders mid-click and can't catch this — a real-network repro
-  would be needed. Not introduced by 4-tests.)*
+- `[x]` **Autocomplete result click "swallowed the instant the row appears"** — *root cause was misfiled
+  and is now fixed in PR #169.* The reported symptom (clicking a freshly-appeared dropdown row does
+  nothing) was **not** a `keepPreviousData` refetch/node-swap race: a production build shows the list is
+  stable once results load and an immediate click on a real row navigates fine. The actual cause is that
+  the loading **skeleton placeholders shared the `.ac-item` class** (`ac-item ac-item--skeleton`), so for
+  the first ~150ms the dropdown is full of non-interactive skeletons that *look* like rows — clicking one
+  (or a probe/test resolving `.ac-item` `.first()`) hits a skeleton, which has no navigation. Fixed by
+  giving skeletons their own `.ac-skeleton` class (sharing none of the interactive row's selectors), so
+  `.ac-item` only ever matches a real, navigable result. Also hardened the narrow genuine swap-race by
+  delegating result activation to the stable `.auto-complete-results` container via `data-recipe-id`
+  (a row that re-renders mid-interaction can no longer drop the event). Verified on a prod build: during
+  load `.ac-item` count is 0 while `.ac-skeleton` shows; after load an immediate real-row click navigates.
+  (`SearchRecipesInput.tsx` + `.scss`.) *(originally surfaced 2026-06-22; re-diagnosed and fixed 2026-06-23.)*
 - `[x]` **"You created this recipe" — mobile styling** — *fixed in PR #160 (track 2c)*; owner-stats
   strip now an equal-width row with dividers instead of scattering via `space-between`.
 - `[x]` **Recipe stats styling** — *fixed in PR #160 (track 2c)*; rating dropped from the action-bar
