@@ -63,7 +63,7 @@ same commit.**
 | 4-sass | Sass `@import`→`@use` (LONER) | `[x]` | `cb2ac81` ✅ (pre-gameplan) |
 | 4-about | About rewrite (Jesse) | `[x]` | #169 ✅ |
 | 4-tests | Toast/alert + Cypress autocomplete tests | `[x]` | #168 ✅ |
-| 4-qa | Empty/error sweep + links + copy + mobile + Lighthouse | `[ ]` | — |
+| 4-qa | Empty/error sweep + links + copy + mobile + Lighthouse | `[P]` | `feat/release-qa-sweep` |
 | 5 | Cutover (beta off + 1.0.0 + deploy) | `[ ]` | — |
 
 _Doc ownership: this board owns **progress**; `RELEASE_PLAN.md` owns **launch acceptance** (audited by
