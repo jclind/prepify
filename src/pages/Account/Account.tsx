@@ -113,7 +113,8 @@ const Account: FC = () => {
     <>
       <Helmet>
         <meta charSet='utf-8' />
-        <title>Prepify | Your Account</title>
+        <title>Your Account · Prepify</title>
+        <meta name='robots' content='noindex' />
       </Helmet>
       <div className='page account-page'>
         <header className='acct-head'>

@@ -24,6 +24,7 @@ import RecipeNotFound from 'src/pages/SingleRecipe/RecipeNotFound/RecipeNotFound
 import PrintableRecipe from 'src/pages/SingleRecipe/PrintableRecipe/PrintableRecipe'
 import ReportControl from 'src/Components/ReportControl/ReportControl'
 import AdminRecipeControls from 'src/Components/AdminRecipeControls/AdminRecipeControls'
+import { SITE_URL, DEFAULT_OG_IMAGE } from 'src/util/seo'
 
 import { updateIngredients } from 'src/util/updateIngredients'
 import { capitalize } from 'src/util/capitalize'
@@ -140,6 +141,19 @@ const SingleRecipe: FC = () => {
     typeof window !== 'undefined' ? window.location.href : ''
   const recipeJsonLd = currRecipe ? buildRecipeJsonLd(currRecipe, pageUrl) : null
 
+  // Social/meta values for this recipe. Canonical is built from the production
+  // origin (not window.location, which is localhost in dev) so crawlers resolve it.
+  const recipeName = currRecipe?.title ? capitalize(currRecipe.title) : ''
+  const recipeTitleTag = loading
+    ? 'Loading recipe… · Prepify'
+    : recipeName
+    ? `${recipeName} · Prepify`
+    : 'Recipe not found · Prepify'
+  const recipeCanonical = currRecipe
+    ? `${SITE_URL}/recipes/${currRecipe._id}`
+    : ''
+  const recipeOgImage = currRecipe?.recipeImage || DEFAULT_OG_IMAGE
+
   const renderIngredient = (ingr: IngredientsType) => {
     if ('parsedIngredient' in ingr) {
       const { quantity, unit, ingredient, comment } = ingr.parsedIngredient
@@ -208,23 +222,40 @@ const SingleRecipe: FC = () => {
     <>
       <Helmet>
         <meta charSet='utf-8' />
-        <title>
-          Prepify |{' '}
-          {loading
-            ? 'Recipe Loading...'
-            : currRecipe && currRecipe.title
-            ? capitalize(currRecipe.title)
-            : 'Recipe 404'}
-        </title>
-        <meta name='description' content={currRecipe?.description} />
+        <title>{recipeTitleTag}</title>
+        {currRecipe?.description && (
+          <meta name='description' content={currRecipe.description} />
+        )}
         {/*
-          Recipe structured data (schema.org/Recipe) → rich search results.
-          NOTE: per-page Open Graph / Twitter tags are intentionally NOT set here.
-          index.html ships static og:* defaults that react-helmet-async can't
-          dedupe (they aren't Helmet-managed), so adding page-level ones produces
-          duplicate tags and crawlers fall back to the generic site values.
-          Fixing that belongs to Track 3b (global meta / SEO component).
+          Per-recipe Open Graph / Twitter. This is the sole live-head meta source
+          for the route once the static index.html fallbacks (data-rh-default)
+          are stripped on JS boot — React 19 hoists these natively and does not
+          merge across <Helmet> instances, so there's exactly one of each tag.
         */}
+        {currRecipe && <meta property='og:type' content='article' />}
+        {currRecipe && <link rel='canonical' href={recipeCanonical} />}
+        {currRecipe && <meta property='og:url' content={recipeCanonical} />}
+        {currRecipe && (
+          <meta name='twitter:card' content='summary_large_image' />
+        )}
+        {recipeName && (
+          <meta property='og:title' content={`${recipeName} · Prepify`} />
+        )}
+        {recipeName && (
+          <meta name='twitter:title' content={`${recipeName} · Prepify`} />
+        )}
+        {currRecipe?.description && (
+          <meta property='og:description' content={currRecipe.description} />
+        )}
+        {currRecipe?.description && (
+          <meta name='twitter:description' content={currRecipe.description} />
+        )}
+        {currRecipe && (
+          <meta property='og:image' content={recipeOgImage} />
+        )}
+        {currRecipe && (
+          <meta name='twitter:image' content={recipeOgImage} />
+        )}
         {recipeJsonLd && (
           <script type='application/ld+json'>
             {JSON.stringify(recipeJsonLd)}

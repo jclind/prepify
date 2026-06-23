@@ -1,6 +1,12 @@
 import React, { FC } from 'react'
 import { Helmet } from 'react-helmet-async'
 import { Link } from 'react-router-dom'
+import {
+  SITE_URL,
+  DEFAULT_OG_IMAGE,
+  DEFAULT_TITLE,
+  DEFAULT_DESCRIPTION,
+} from 'src/util/seo'
 import { BiChevronRight } from 'react-icons/bi'
 import HomeHero from 'src/pages/Home/HomeHero/HomeHero'
 import HomeForYou from 'src/pages/Home/HomeForYou'
@@ -13,8 +19,21 @@ const Home: FC = () => {
     <>
       <Helmet>
         <meta charSet='utf-8' />
-        <title>Prepify | Home</title>
-        <link rel='canonical' href='https://www.prepifymeals.com/' />
+        <title>{DEFAULT_TITLE}</title>
+        <meta name='description' content={DEFAULT_DESCRIPTION} />
+        <link rel='canonical' href={`${SITE_URL}/`} />
+        {/* Default branded link preview for the home route. The static
+            index.html copies are stripped on JS boot, so this is the live
+            source once the app mounts. */}
+        <meta property='og:type' content='website' />
+        <meta property='og:title' content={DEFAULT_TITLE} />
+        <meta property='og:description' content={DEFAULT_DESCRIPTION} />
+        <meta property='og:image' content={DEFAULT_OG_IMAGE} />
+        <meta property='og:url' content={`${SITE_URL}/`} />
+        <meta name='twitter:card' content='summary_large_image' />
+        <meta name='twitter:title' content={DEFAULT_TITLE} />
+        <meta name='twitter:description' content={DEFAULT_DESCRIPTION} />
+        <meta name='twitter:image' content={DEFAULT_OG_IMAGE} />
       </Helmet>
       <div className='page home-page'>
         <HomeHero />

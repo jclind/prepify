@@ -30,7 +30,7 @@ const ForgotPassword: FC = () => {
     <>
       <Helmet>
         <meta charSet='utf-8' />
-        <title>Prepify | Forgot Password</title>
+        <title>Reset Password · Prepify</title>
       </Helmet>
       <div className='forgot-password-page form-format'>
         <div className='login-form-container'>

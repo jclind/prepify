@@ -43,7 +43,7 @@ const Signup: FC = () => {
     <>
       <Helmet>
         <meta charSet='utf-8' />
-        <title>Prepify | Sign Up</title>
+        <title>Sign Up · Prepify</title>
       </Helmet>
       <div className='signup-page form-format'>
         <div className='form-container'>

@@ -1,5 +1,6 @@
 import React, { FC } from 'react'
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import './AdminLayout.scss'
 
 // Shell for the admin section. Deliberately separate from the public Layout
@@ -14,8 +15,21 @@ const ADMIN_NAV = [
 ]
 
 const AdminLayout: FC = () => {
+  const { pathname } = useLocation()
+  // Per-route <title> derived from the nav; longest match wins so /admin alone
+  // (redirects to analytics) still resolves to "Overview".
+  const active = [...ADMIN_NAV]
+    .sort((a, b) => b.to.length - a.to.length)
+    .find(item => pathname.startsWith(item.to))
+  const pageTitle = `${active?.label ?? 'Admin'} · Admin · Prepify`
+
   return (
     <div className='admin-layout'>
+      {/* Internal tool — never index. One block covers every admin route. */}
+      <Helmet>
+        <title>{pageTitle}</title>
+        <meta name='robots' content='noindex, nofollow' />
+      </Helmet>
       <aside className='admin-sidebar'>
         <div className='admin-brand'>
           <NavLink to='/'>Prepify</NavLink>

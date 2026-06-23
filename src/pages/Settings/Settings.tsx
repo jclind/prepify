@@ -1,4 +1,5 @@
 import React, { FC } from 'react'
+import { Helmet } from 'react-helmet-async'
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import {
   FiUser,
@@ -70,6 +71,10 @@ const SettingsShell: FC = () => {
 
   return (
     <div className={`page settings-page ${isIndex ? 'at-index' : 'at-section'}`}>
+      <Helmet>
+        <title>Settings · Prepify</title>
+        <meta name='robots' content='noindex' />
+      </Helmet>
       <h1 className='settings-title'>Settings</h1>
 
       <div className='settings-shell'>

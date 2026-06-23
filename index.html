@@ -19,23 +19,61 @@
     <link rel="icon" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#ff5722" />
-    <title>Prepify</title>
-    <meta property="og:title" content="Prepify" />
+    <!--
+      Static SEO fallback (marked data-rh-default). This is a CSR SPA, so JS-less
+      social crawlers (Facebook, Slack, iMessage, LinkedIn, …) only ever see this
+      served HTML — these defaults are what power link previews for shared URLs.
+      Once our JS boots, src/util/seo#stripStaticMeta removes everything tagged
+      data-rh-default so the live <head> holds only the per-route <Helmet> output
+      (React 19 hoists metadata natively and does NOT dedupe against these tags).
+      Keep the values in sync with src/util/seo.ts.
+    -->
+    <title data-rh-default>Prepify · Budget-friendly, healthy recipes</title>
     <meta
       name="description"
       content="Prepify provides budget-friendly, healthy recipes that don't skimp on flavor. Find easy-to-follow recipes that include meal price and nutrition information!"
-      data-rh="true"
+      data-rh-default
+    />
+    <meta property="og:site_name" content="Prepify" data-rh-default />
+    <meta property="og:type" content="website" data-rh-default />
+    <meta
+      property="og:title"
+      content="Prepify · Budget-friendly, healthy recipes"
+      data-rh-default
     />
     <meta
       property="og:description"
       content="Prepify provides budget-friendly, healthy recipes that don't skimp on flavor. Find easy-to-follow recipes that include meal price and nutrition information!"
+      data-rh-default
     />
-    <meta property="og:type" content="website" />
     <meta
       property="og:image"
-      content="https://firebasestorage.googleapis.com/v0/b/prepify-9b974.appspot.com/o/recipeImages%2Fprepify-image.png?alt=media&token=de585ed4-dff5-4ed0-9ac0-cc953a8ed64a"
+      content="https://www.prepifymeals.com/images/og-card.png"
+      data-rh-default
     />
-    <meta property="og:url" content="https://www.prepifymeals.com" />
+    <meta property="og:image:width" content="1200" data-rh-default />
+    <meta property="og:image:height" content="630" data-rh-default />
+    <meta
+      property="og:url"
+      content="https://www.prepifymeals.com"
+      data-rh-default
+    />
+    <meta name="twitter:card" content="summary_large_image" data-rh-default />
+    <meta
+      name="twitter:title"
+      content="Prepify · Budget-friendly, healthy recipes"
+      data-rh-default
+    />
+    <meta
+      name="twitter:description"
+      content="Prepify provides budget-friendly, healthy recipes that don't skimp on flavor. Find easy-to-follow recipes that include meal price and nutrition information!"
+      data-rh-default
+    />
+    <meta
+      name="twitter:image"
+      content="https://www.prepifymeals.com/images/og-card.png"
+      data-rh-default
+    />
     <link rel="apple-touch-icon" href="/logo192.png" />
     <link rel="manifest" href="/manifest.json" />
   </head>
