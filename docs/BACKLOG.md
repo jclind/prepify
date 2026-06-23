@@ -163,6 +163,12 @@ The triage date stamped on items is the date they were filed here, not when they
   "Cancel and log out" control wired to the auth signout, plus a guard that bounces users who already
   have a username) landed in **PR #98**. Reconciled + escape-hatch regression test added in **PR #162**.
   Page lives at `src/pages/CreateUsername/`. Username validation tightening is tracked separately under 3c.
+- `[ ]` **`RecipeThumbnail` shows the broken-image glyph on a failed image load** — track 3b (PR #170) gave
+  `RecipeCard` an `onError` fallback to the icon `RecipePlaceholder`, but `RecipeThumbnail` only swaps in the
+  placeholder when `recipeImage` is *absent* — a present-but-broken URL still renders the browser's
+  broken-image glyph there (`src/Components/RecipeThumbnail/RecipeThumbnail.tsx`). Mirror RecipeCard: add a
+  `useState` + `onError` that flips to `<RecipePlaceholder />`. Low severity (thumbnails are a secondary
+  surface and seeded data all has images). *(surfaced 2026-06-23 in the track 3b code review.)*
 
 ## Accessibility
 
@@ -239,6 +245,15 @@ The triage date stamped on items is the date they were filed here, not when they
 - `[ ]` **Migrate Sass `@import` → `@use`** — build emits Sass `@import` deprecation warnings
   (pre-existing; Sass 1.x warns `@import` is going away in 3.x). Cosmetic now, worth migrating.
 - `[ ]` **Point Railway at the production branch** — currently not deploying from production.
+- `[ ]` **Social link previews need server-side prerendering (CSR-SPA limitation)** — track 3b (PR #170)
+  added per-route OG/Twitter tags + a branded 1200×630 card and strips the static `index.html` fallbacks on JS
+  boot (React 19 hoists meta natively, no cross-`<Helmet>` dedupe). But non-JS social crawlers (Facebook,
+  Slack, iMessage, LinkedIn) only read the served `index.html`, so **every shared link shows the generic site
+  card**, not the per-recipe/per-profile preview. Googlebot renders JS, so search indexing still gets per-route
+  titles/canonical/description — only the social preview is affected. Fix is prerendering for crawler UAs
+  (prerender.io / react-snap / Netlify or Cloudflare prerender) or consciously accepting the generic card for
+  1.0. **Release-gating copy lives in `RELEASE_PLAN.md` §C (Launch & legal)** — this is the backlog mirror.
+  *(surfaced 2026-06-23 in the track 3b verification + review.)*
 - `[ ]` **Post-6-phase-refactor DB check** — confirm no existing database records need updating/migrating
   after the refactor.
 - `[ ]` **Establish a code & architecture standard for Claude** — write a conventions doc so generated
