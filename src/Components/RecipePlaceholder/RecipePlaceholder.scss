@@ -1,0 +1,16 @@
+.recipe-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  // Soft tint of the brand orange so it reads as "no photo" not "broken".
+  background: linear-gradient(135deg, #fff3ee, #ffe1d4);
+  color: #ff8a65;
+
+  &__icon {
+    width: 36%;
+    height: 36%;
+    opacity: 0.9;
+  }
+}
