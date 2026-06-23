@@ -85,46 +85,64 @@ const FEATURES: Feature[] = [
   },
 ]
 
-// A small, illustrative recipe card that shows the value prop instead of just
-// describing it: the per-serving price chip and the nutrition row are the whole
-// point of Prepify. It mirrors the real Home recipe card vocabulary (rounded
-// card, soft shadow, price chip) but is decorative sample data, so it's hidden
-// from assistive tech.
+// Macro bars for the nutrition panel — mirrors the real recipe-page nutrition
+// component (label + per-serving value + a bar scaled to the largest macro, so
+// protein at 42g is the full-width reference here).
+const PROOF_MACROS = [
+  { label: 'Protein', value: '42g', pct: 100 },
+  { label: 'Fat', value: '18g', pct: 43 },
+  { label: 'Carbs', value: '30g', pct: 71 },
+  { label: 'Fiber', value: '6g', pct: 14 },
+]
+
+// Two real Prepify surfaces, shown rather than described — kept honest:
+//  • the browse card (faithful to the actual recipe thumbnail: image, title,
+//    per-serving PRICE, time, rating — thumbnails never show nutrition), and
+//  • the recipe page's Nutrition panel (where per-serving nutrition actually
+//    lives) floated alongside it.
+// Decorative sample data, so the whole composition is hidden from assistive tech.
 const ProofCard: FC = () => (
   <div className='hero-proof' aria-hidden='true'>
-    <div className='proof-card'>
-      <div className='proof-thumb'>
-        <MdOutlineDinnerDining className='proof-dish' />
-        <span className='proof-price'>$3.18/serv</span>
-      </div>
-      <div className='proof-body'>
-        <h3>Tuscan Chicken Skillet</h3>
-        <div className='proof-meta'>
-          <span>
-            <CgTimer /> 45m
-          </span>
-          <span>
-            <AiOutlineStar /> 4.8
-          </span>
-          <span className='proof-cuisine'>Italian</span>
+    <div className='proof-stack'>
+      <div className='proof-card'>
+        <div className='proof-thumb'>
+          <MdOutlineDinnerDining className='proof-dish' />
+          <span className='proof-price'>$3.18/serv</span>
         </div>
-        <div className='proof-nutrition'>
-          <div className='macro'>
-            <span className='val'>520</span>
-            <span className='lbl'>cal</span>
+        <div className='proof-body'>
+          <h3>Tuscan Chicken Skillet</h3>
+          <div className='proof-meta'>
+            <span>
+              <CgTimer /> 45m
+            </span>
+            <span>
+              <AiOutlineStar /> 4.8
+            </span>
+            <span className='proof-cuisine'>Italian</span>
           </div>
-          <div className='macro'>
-            <span className='val'>42g</span>
-            <span className='lbl'>protein</span>
-          </div>
-          <div className='macro'>
-            <span className='val'>30g</span>
-            <span className='lbl'>carbs</span>
-          </div>
-          <div className='macro'>
-            <span className='val'>18g</span>
-            <span className='lbl'>fat</span>
-          </div>
+        </div>
+      </div>
+
+      <div className='proof-nutrition'>
+        <div className='pn-head'>
+          <h4>Nutrition</h4>
+          <span className='pn-per'>per serving</span>
+        </div>
+        <div className='pn-cal'>
+          <strong>520</strong> calories
+        </div>
+        <div className='pn-macros'>
+          {PROOF_MACROS.map(m => (
+            <div className='pn-macro' key={m.label}>
+              <div className='pn-macro-top'>
+                <span>{m.label}</span>
+                <span>{m.value}</span>
+              </div>
+              <div className='pn-track'>
+                <div className='pn-fill' style={{ width: `${m.pct}%` }} />
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>

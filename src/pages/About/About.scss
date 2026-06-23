@@ -71,15 +71,24 @@
     }
   }
 
-  // Product-proof card — shows the value prop (per-serving price + nutrition)
-  // rather than only describing it. Mirrors the Home recipe-card vocabulary.
+  // Product proof — two real Prepify surfaces shown side by side: a faithful
+  // browse card (price only, like the real thumbnail) and the recipe page's
+  // Nutrition panel floated over its corner. Honest about where each lives.
   .hero-proof {
     display: flex;
     justify-content: center;
 
-    .proof-card {
+    // Shrink-wraps the card so the nutrition panel can overhang its corner
+    // while staying in flow (no absolute positioning → never overlaps the next
+    // section, never causes horizontal overflow).
+    .proof-stack {
+      position: relative;
       width: 100%;
       max-width: 330px;
+    }
+
+    .proof-card {
+      width: 100%;
       background: s.$white;
       border-radius: 16px;
       overflow: hidden;
@@ -134,7 +143,6 @@
       font-size: 0.82rem;
       font-weight: 600;
       color: s.$secondary-text;
-      margin-bottom: 0.9rem;
 
       svg {
         vertical-align: -2px;
@@ -147,31 +155,77 @@
       }
     }
 
+    // Floating Nutrition panel — mirrors the recipe page's nutrition card
+    // (heading + "per serving", a calories line, and labelled macro bars).
     .proof-nutrition {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 0.4rem;
-      padding-top: 0.9rem;
-      border-top: 1px solid s.$gray-200;
+      width: 70%;
+      margin: -1rem -0.75rem 0 auto; // tuck under the card's bottom-right corner
+      position: relative;
+      z-index: 2;
+      background: s.$white;
+      border: 1px solid rgba(0, 0, 0, 0.05);
+      border-radius: 14px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06), 0 12px 28px rgba(0, 0, 0, 0.14);
+      padding: 0.85rem 0.95rem;
 
-      .macro {
+      .pn-head {
         display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 0.15rem;
+        align-items: baseline;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
 
-        .val {
-          font-weight: 800;
+        h4 {
           font-size: 0.95rem;
+          font-weight: 800;
           color: s.$primary-text;
         }
 
-        .lbl {
+        .pn-per {
           font-size: 0.66rem;
           font-weight: 600;
           text-transform: uppercase;
           letter-spacing: 0.03em;
           color: s.$tertiary-text;
+        }
+      }
+
+      .pn-cal {
+        font-size: 0.85rem;
+        color: s.$secondary-text;
+        margin-bottom: 0.6rem;
+
+        strong {
+          font-size: 1.05rem;
+          font-weight: 800;
+          color: s.$primary-text;
+        }
+      }
+
+      .pn-macros {
+        display: flex;
+        flex-direction: column;
+        gap: 0.45rem;
+      }
+
+      .pn-macro-top {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: s.$secondary-text;
+        margin-bottom: 0.2rem;
+      }
+
+      .pn-track {
+        height: 5px;
+        border-radius: 999px;
+        background: s.$gray-200;
+        overflow: hidden;
+
+        .pn-fill {
+          height: 100%;
+          border-radius: 999px;
+          background: s.$secondary; // teal — the page's icon/accent colour
         }
       }
     }
@@ -447,6 +501,13 @@
         flex-direction: column;
         align-items: stretch;
       }
+    }
+
+    // Centre the nutrition panel under the card on phones (no corner overhang),
+    // so it never crowds the padding on the narrowest screens.
+    .hero-proof .proof-nutrition {
+      width: 85%;
+      margin: -1rem auto 0;
     }
 
     // Single column for both grids so each card gets full width and tap area.
