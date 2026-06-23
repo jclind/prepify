@@ -94,6 +94,15 @@ The triage date stamped on items is the date they were filed here, not when they
   footer reads the live input (`searchRecipeVal.trim()`), so mid-type it can say *Search for "chica"*
   while the list still shows `chic` matches. Cosmetic, self-corrects on fetch.
   (`SearchRecipesInput.tsx:205` + `:124-146`). *(surfaced 2026-06-22 in the track 2d code review.)*
+- `[ ]` **Autocomplete result click can be swallowed during a live refetch** — clicking a dropdown row
+  the instant it appears, while a newer keystroke's query is still in flight, no-ops: `keepPreviousData`
+  swaps the `<ul>` rows as the new data resolves, so React replaces the `<button>` the click was landing
+  on before its `onClick` (`navigate(/recipes/:id)`) fires — the dropdown just stays open. Once results
+  settle, the click navigates normally. The window is small locally but widens on a slow connection (a
+  fast typist clicking the moment a row renders can hit it). (`SearchRecipesInput.tsx:153-198`.)
+  *(surfaced 2026-06-22 driving the live app during track 4-tests verification; the Cypress coverage
+  stubs the endpoint so the list never re-renders mid-click and can't catch this — a real-network repro
+  would be needed. Not introduced by 4-tests.)*
 - `[x]` **"You created this recipe" — mobile styling** — *fixed in PR #160 (track 2c)*; owner-stats
   strip now an equal-width row with dividers instead of scattering via `space-between`.
 - `[x]` **Recipe stats styling** — *fixed in PR #160 (track 2c)*; rating dropped from the action-bar
