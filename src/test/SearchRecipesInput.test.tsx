@@ -1,17 +1,23 @@
 /**
  * SearchRecipesInput — autocomplete result activation.
  *
- * Regression guard for the "click swallowed during a live refetch" race: with
- * `keepPreviousData`, an in-flight autocomplete query can resolve between a
- * pointer's mousedown and mouseup, swapping the <li> rows and replacing the
- * <button> the click was landing on — so an onClick-only handler never fires.
- * The fix navigates on `onMouseDown` (pointer-down, before the swap window)
- * while keeping `onClick` for keyboard activation, deduped with a ref guard.
+ * Result navigation is delegated to the stable `.auto-complete-results`
+ * container: a click anywhere on a row bubbles up and resolves that row's
+ * `data-recipe-id`, rather than being bound to the per-row <button>. This
+ * survives the dropdown re-rendering / replacing row nodes during an in-flight
+ * refetch (a detached row can't drop the event), and — because the handler is
+ * stateless — stays correct for the navbar's SearchRecipesInput, which lives in
+ * the persistent <Layout> and is reused across navigations without remounting.
  *
- * These tests assert the contract that pins the fix in place:
- *   - a pointer-down alone navigates (the old onClick-only code would not),
- *   - a full mouse click navigates exactly once (no double-nav),
- *   - a keyboard click (no preceding mousedown) still navigates.
+ * (Loading skeletons render under their own `.ac-skeleton` class, so the
+ * `.ac-item` result rows asserted here are always real, navigable results.)
+ *
+ * These tests pin the contract:
+ *   - clicking a result navigates to it,
+ *   - the row is resolved from any inner element (delegation via closest()),
+ *   - the same mounted instance navigates on every click — no stuck guard
+ *     (regression: the navbar instance is never remounted),
+ *   - keyboard activation (Enter/Space → click, no mousedown) still works.
  */
 
 import React from 'react'
@@ -88,18 +94,7 @@ beforeEach(() => {
 })
 
 describe('SearchRecipesInput — autocomplete result activation', () => {
-  it('navigates on pointer-down (mousedown), so an in-flight refetch cannot swallow the click', async () => {
-    const user = userEvent.setup()
-    renderInput()
-    const firstOption = await openDropdown(user)
-
-    // Fire ONLY mousedown — no mouseup/click. The old onClick-only handler would
-    // never navigate here; the fix activates on pointer-down.
-    fireEvent.mouseDown(firstOption)
-    expect(navigateSpy).toHaveBeenCalledWith('/recipes/abc123')
-  })
-
-  it('navigates exactly once for a full mouse click (mousedown → mouseup → click)', async () => {
+  it('navigates to a result when its row is clicked', async () => {
     const user = userEvent.setup()
     renderInput()
     const firstOption = await openDropdown(user)
@@ -109,13 +104,40 @@ describe('SearchRecipesInput — autocomplete result activation', () => {
     expect(navigateSpy).toHaveBeenCalledWith('/recipes/abc123')
   })
 
-  it('still activates via a keyboard click (no preceding mousedown)', async () => {
+  it('resolves the row from an inner element (delegation via closest)', async () => {
+    const user = userEvent.setup()
+    renderInput()
+    await openDropdown(user)
+
+    // Click the title text deep inside the row, not the <button> itself — the
+    // delegated handler must still walk up to the row's data-recipe-id.
+    await user.click(screen.getByText('Tuscan Chicken Skillet'))
+    expect(navigateSpy).toHaveBeenCalledWith('/recipes/abc123')
+  })
+
+  it('navigates on every click from the same mounted instance (navbar reuse, no stuck guard)', async () => {
+    // The navbar's SearchRecipesInput is never remounted across navigations, so
+    // activation must not depend on one-shot instance state. Two sequential
+    // clicks on the same instance must both navigate.
     const user = userEvent.setup()
     renderInput()
     const firstOption = await openDropdown(user)
 
-    // Keyboard activation (Enter/Space on a focused button) dispatches a click
-    // with no mousedown — the onClick path must still navigate.
+    await user.click(firstOption)
+    await user.click(
+      screen.getByRole('option', { name: /Chinese Lemon Chicken/ })
+    )
+    expect(navigateSpy).toHaveBeenCalledTimes(2)
+    expect(navigateSpy).toHaveBeenNthCalledWith(1, '/recipes/abc123')
+    expect(navigateSpy).toHaveBeenNthCalledWith(2, '/recipes/def456')
+  })
+
+  it('activates via a keyboard click (Enter/Space → click, no mousedown)', async () => {
+    const user = userEvent.setup()
+    renderInput()
+    const firstOption = await openDropdown(user)
+
+    // Keyboard activation dispatches a click with no preceding mousedown.
     fireEvent.click(firstOption)
     expect(navigateSpy).toHaveBeenCalledWith('/recipes/abc123')
   })
