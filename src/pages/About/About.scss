@@ -1,5 +1,15 @@
 @use '../../helpers.scss' as s;
 
+// Shared card shell — mirrors the app's elevated card language (soft shadow +
+// rounded corners, like the Home recipe cards) instead of a flat hairline box,
+// so About reads as the same product.
+%about-card {
+  background: s.$white;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.05);
+}
+
 .about-page {
   // Fills the flexbox app-main so the footer stays at the viewport bottom on
   // short pages (see Layout.scss); nav is position:absolute, so offset content
@@ -10,7 +20,7 @@
 
   .about-inner {
     // Wider than the legal prose column so the step/feature grids breathe;
-    // individual prose blocks are re-constrained to a readable measure below.
+    // prose blocks are re-constrained to a readable measure below.
     max-width: s.$recipe-page-max-width;
     margin: 0 auto;
   }
@@ -18,7 +28,7 @@
   // ── Hero ──────────────────────────────────────────────────────────────────
   .about-hero {
     text-align: center;
-    margin-bottom: 4rem;
+    margin-bottom: clamp(3rem, 6vw, 4.5rem);
 
     .eyebrow {
       text-transform: uppercase;
@@ -30,7 +40,8 @@
     }
 
     h1 {
-      font-size: 2.75rem;
+      // Fluid headline: scales smoothly from phone to desktop.
+      font-size: clamp(2rem, 5.5vw, 2.85rem);
       font-weight: 800;
       letter-spacing: -0.02em;
       line-height: 1.1;
@@ -41,9 +52,9 @@
 
     .tagline {
       color: s.$secondary-text;
-      font-size: 1.2rem;
+      font-size: clamp(1rem, 2.4vw, 1.2rem);
       line-height: 1.6;
-      max-width: 60ch;
+      max-width: 58ch;
       margin: 0 auto;
     }
 
@@ -58,19 +69,21 @@
 
   // ── Section scaffolding ─────────────────────────────────────────────────────
   .about-section {
-    margin-bottom: 4rem;
+    margin-bottom: clamp(3rem, 6vw, 4.5rem);
 
     &:last-child {
       margin-bottom: 0;
     }
 
+    // Section heading + optional short subtitle — always centered for a steady
+    // navigational rhythm. Longer prose underneath left-aligns (see .about-story).
     .section-head {
       text-align: center;
       max-width: 62ch;
       margin: 0 auto 2rem;
 
       h2 {
-        font-size: 1.8rem;
+        font-size: clamp(1.5rem, 3.5vw, 1.85rem);
         font-weight: 800;
         letter-spacing: -0.01em;
         color: s.$primary-text;
@@ -79,95 +92,120 @@
 
       p {
         color: s.$secondary-text;
-        font-size: 1.1rem;
-        line-height: 1.7;
-        margin: 0;
-      }
-    }
-  }
-
-  // ── How it works: numbered step cards ───────────────────────────────────────
-  .how-it-works .steps-grid {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 1.25rem;
-
-    .step-card {
-      position: relative;
-      background: s.$white;
-      border: 1px solid s.$gray-300;
-      border-radius: s.$border-radius;
-      padding: 2rem 1.5rem 1.5rem;
-      text-align: center;
-
-      .step-num {
-        position: absolute;
-        top: -0.85rem;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 1.7rem;
-        height: 1.7rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 50%;
-        background: s.$primary;
-        color: s.$white;
-        font-size: 0.85rem;
-        font-weight: 700;
-      }
-
-      .step-icon {
-        display: inline-flex;
-        font-size: 2.25rem;
-        color: s.$secondary;
-        margin-bottom: 0.75rem;
-      }
-
-      h3 {
-        font-size: 1.2rem;
-        font-weight: 700;
-        color: s.$primary-text;
-        margin-bottom: 0.5rem;
-      }
-
-      p {
-        color: s.$secondary-text;
-        font-size: 0.98rem;
+        font-size: clamp(1rem, 2.2vw, 1.1rem);
         line-height: 1.6;
         margin: 0;
       }
     }
   }
 
-  // ── Features: icon + text cards ─────────────────────────────────────────────
+  // ── Prose sections (What Prepify is / Why we built it) ──────────────────────
+  // Left-aligned body in a readable centered column — easier to read than
+  // centered multi-line paragraphs, and consistent with the legal pages.
+  .about-story {
+    p {
+      color: s.$secondary-text;
+      font-size: clamp(1rem, 2.2vw, 1.08rem);
+      line-height: 1.8;
+      max-width: 68ch;
+      margin: 0 auto 1.25rem;
+      text-align: left;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+  }
+
+  // ── How it works — tinted band so the section reads as one grouped step ──────
+  .how-it-works {
+    background: s.$gray-50;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    border-radius: 18px;
+    padding: clamp(2rem, 4vw, 3rem) clamp(1.25rem, 3vw, 2.5rem);
+
+    .section-head {
+      margin-bottom: 2.25rem;
+    }
+
+    .steps-grid {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: clamp(1rem, 2vw, 1.5rem);
+
+      .step-card {
+        @extend %about-card;
+        position: relative;
+        padding: 2.25rem 1.5rem 1.5rem;
+        text-align: center;
+
+        .step-num {
+          position: absolute;
+          top: -0.85rem;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 1.7rem;
+          height: 1.7rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 50%;
+          background: s.$primary; // orange = sequence marker, echoes the CTAs
+          color: s.$white;
+          font-size: 0.85rem;
+          font-weight: 700;
+        }
+
+        .step-icon {
+          display: inline-flex;
+          font-size: 2.25rem;
+          color: s.$secondary; // teal = the single icon accent (see features)
+          margin-bottom: 0.75rem;
+        }
+
+        h3 {
+          font-size: 1.2rem;
+          font-weight: 700;
+          color: s.$primary-text;
+          margin-bottom: 0.5rem;
+        }
+
+        p {
+          color: s.$secondary-text;
+          font-size: 0.98rem;
+          line-height: 1.6;
+          margin: 0;
+        }
+      }
+    }
+  }
+
+  // ── Features grid ───────────────────────────────────────────────────────────
   .features .features-grid {
     list-style: none;
     margin: 0;
     padding: 0;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 1.25rem;
+    grid-template-columns: repeat(3, 1fr);
+    gap: clamp(1rem, 2vw, 1.25rem);
 
     .feature-card {
+      @extend %about-card;
       display: flex;
       align-items: flex-start;
       gap: 1rem;
-      background: s.$white;
-      border: 1px solid s.$gray-300;
-      border-radius: s.$border-radius;
       padding: 1.5rem;
 
       .feature-icon {
         display: inline-flex;
         flex-shrink: 0;
         font-size: 1.6rem;
-        color: s.$primary;
-        background: rgba(s.$primary, 0.1);
-        border-radius: s.$border-radius;
+        color: s.$secondary; // unified teal icon accent
+        background: rgba(s.$secondary, 0.1);
+        border-radius: 12px;
         padding: 0.6rem;
       }
 
@@ -189,33 +227,17 @@
     }
   }
 
-  // ── Story prose ─────────────────────────────────────────────────────────────
-  .about-story {
-    text-align: center;
-
-    p {
-      color: s.$secondary-text;
-      font-size: 1.08rem;
-      line-height: 1.8;
-      max-width: 65ch;
-      margin: 0 auto 1.25rem;
-
-      &:last-child {
-        margin-bottom: 0;
-      }
-    }
-  }
-
-  // ── Closing CTA ─────────────────────────────────────────────────────────────
+  // ── Closing CTA — brand-tinted, the visual climax ───────────────────────────
   .about-cta {
     text-align: center;
-    background: s.$gray-50;
-    border: 1px solid s.$gray-300;
-    border-radius: s.$border-radius;
-    padding: 3rem 1.5rem;
+    background: linear-gradient(135deg, #fff6f3, #eefafa);
+    border: 1px solid rgba(s.$primary, 0.12);
+    border-radius: 18px;
+    padding: clamp(2.5rem, 5vw, 3.5rem) clamp(1.25rem, 4vw, 2.5rem);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03), 0 12px 32px rgba(0, 0, 0, 0.05);
 
     h2 {
-      font-size: 1.8rem;
+      font-size: clamp(1.6rem, 4vw, 2rem);
       font-weight: 800;
       letter-spacing: -0.01em;
       color: s.$primary-text;
@@ -224,7 +246,7 @@
 
     p {
       color: s.$secondary-text;
-      font-size: 1.1rem;
+      font-size: clamp(1rem, 2.4vw, 1.15rem);
       line-height: 1.6;
       margin-bottom: 1.75rem;
     }
@@ -246,7 +268,13 @@
     font-weight: 700;
     font-size: 1rem;
     text-decoration: none;
-    transition: opacity 0.15s ease, background 0.15s ease, color 0.15s ease;
+    transition: opacity 0.15s ease, background 0.15s ease, color 0.15s ease,
+      box-shadow 0.15s ease;
+
+    &:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(s.$primary, 0.35);
+    }
   }
 
   .btn-primary {
@@ -267,36 +295,43 @@
     }
   }
 
+  // ── Tablet ──────────────────────────────────────────────────────────────────
+  @media (max-width: 1023px) {
+    // 5 features → 2 columns (last card trails left-aligned, reads intentional).
+    .features .features-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
   // ── Mobile ──────────────────────────────────────────────────────────────────
   @media (max-width: 600px) {
     padding: calc(#{s.$nav-height} + 1rem) 1.1rem 3rem;
 
     .about-hero {
-      margin-bottom: 3rem;
-
-      h1 {
-        font-size: 2.1rem;
-      }
-
-      .tagline {
-        font-size: 1.05rem;
+      .hero-cta {
+        flex-direction: column;
+        align-items: stretch;
       }
     }
 
-    .about-section {
-      margin-bottom: 3rem;
-
-      .section-head h2 {
-        font-size: 1.5rem;
-      }
+    // Single column for both grids so each card gets full width and tap area.
+    .how-it-works .steps-grid,
+    .features .features-grid {
+      grid-template-columns: 1fr;
     }
 
-    .about-cta {
-      padding: 2.25rem 1.25rem;
+    // Full-width, comfortably tappable CTAs (≥44px target) on phones.
+    .btn-primary,
+    .btn-secondary {
+      width: 100%;
+      box-sizing: border-box;
+      text-align: center;
+      padding: 0.9rem 1.5rem;
+    }
 
-      h2 {
-        font-size: 1.5rem;
-      }
+    .about-cta .cta-actions {
+      flex-direction: column;
+      align-items: stretch;
     }
   }
 }

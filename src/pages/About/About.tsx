@@ -116,16 +116,16 @@ const About: FC = () => (
         </div>
       </header>
 
-      <section className='about-section'>
+      <section className='about-section about-story'>
         <div className='section-head'>
           <h2>What Prepify is</h2>
-          <p>
-            Prepify is all about transparency. We&rsquo;re a recipe site that
-            keeps it real. No buried costs, no missing nutrition info.
-            It&rsquo;s all calculated from the actual ingredients and shown right
-            there on the recipe.
-          </p>
         </div>
+        <p>
+          Prepify is all about transparency. We&rsquo;re a recipe site that
+          keeps it real. No buried costs, no missing nutrition info.
+          It&rsquo;s all calculated from the actual ingredients and shown right
+          there on the recipe.
+        </p>
       </section>
 
       <section className='about-section how-it-works'>
