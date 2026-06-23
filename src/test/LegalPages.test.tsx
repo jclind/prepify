@@ -23,7 +23,7 @@ describe('Legal / company pages', () => {
     expect(
       screen.getByRole('heading', {
         level: 1,
-        name: /recipes that tell you the whole story/i,
+        name: /got your back/i,
       })
     ).toBeInTheDocument()
     expect(screen.getByText('About Prepify')).toBeInTheDocument()

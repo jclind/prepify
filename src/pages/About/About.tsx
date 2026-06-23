@@ -24,17 +24,17 @@ const STEPS: Step[] = [
   {
     icon: <MdOutlineSearch />,
     title: 'Plan',
-    body: 'Browse recipes with the price and nutrition already on the card. Filter by cuisine, diet, or meal type and build around your budget and your goals.',
+    body: 'Browse recipes with prices and nutrition already on the card. Filter by cuisine, diet, or meal type, and build your plan around your budget and goals.',
   },
   {
     icon: <MdOutlineShoppingCart />,
     title: 'Shop',
-    body: 'Every recipe breaks down to a real per-serving cost, so you can fill your cart with a clear total — no mental math in the aisle.',
+    body: 'Every recipe breaks down to a real cost per serving — no more mental math in the aisle. Fill your cart with a clear total.',
   },
   {
     icon: <MdOutlineRestaurantMenu />,
     title: 'Cook',
-    body: 'Follow clear, step-by-step recipes. Rate what you make, save your favorites, and come back to the meals that earn a spot in the rotation.',
+    body: 'Follow clear, step-by-step recipes. Rate what you make, save your favorites, and come back to the ones you love.',
   },
 ]
 
@@ -47,28 +47,28 @@ type Feature = {
 const FEATURES: Feature[] = [
   {
     icon: <MdOutlineSell />,
-    title: 'Real per-serving prices',
-    body: 'Costs are calculated from the actual ingredients — shown up front, on every recipe.',
+    title: 'Real price per serving',
+    body: 'We show you the real price per serving, calculated from the actual ingredients.',
   },
   {
     icon: <MdOutlineMonitorHeart />,
     title: 'Full nutrition, automatically',
-    body: 'Calories and macros are computed for you, so you can see how a meal fits your day.',
+    body: 'Calories and macros are computed for you — no spreadsheets required.',
   },
   {
     icon: <MdOutlineTune />,
     title: 'Search & filter that works',
-    body: 'Narrow by cuisine, diet, and meal type to find something that fits right now.',
+    body: 'Search and filter by cuisine, diet, and meal type to find something that fits.',
   },
   {
     icon: <MdOutlineEditNote />,
     title: 'Add your own recipes',
-    body: 'Paste your ingredients and let automatic parsing handle the price and nutrition math.',
+    body: 'Add your own recipes and let us handle the price and nutrition math.',
   },
   {
     icon: <MdOutlineBookmarkBorder />,
     title: 'Save & revisit',
-    body: 'Keep the meals you love a click away, and rate and review the ones worth sharing.',
+    body: 'Save and revisit your favorite meals — the ones you love, a click away.',
   },
 ]
 
@@ -91,7 +91,7 @@ const About: FC = () => (
       <meta property='og:title' content='About Prepify' />
       <meta
         property='og:description'
-        content='Every recipe comes with its real per-serving price and full nutrition built in — so you always know what a meal costs and what is in it before you cook.'
+        content='No more surprises. Every recipe on Prepify shows its real price per serving and full nutrition up front — so you always know what you are getting into before you start cooking.'
       />
       <meta property='og:type' content='website' />
       <meta property='og:url' content='https://www.prepifymeals.com/about' />
@@ -100,11 +100,11 @@ const About: FC = () => (
     <div className='about-inner'>
       <header className='about-hero'>
         <p className='eyebrow'>About Prepify</p>
-        <h1>Recipes that tell you the whole story.</h1>
+        <h1>Prepify&rsquo;s got your back.</h1>
         <p className='tagline'>
-          Every recipe on Prepify comes with its real per-serving price and full
-          nutrition built right in &mdash; so you always know what a meal costs,
-          and what&rsquo;s in it, before you start cooking.
+          No more surprises. Every recipe on the site shows its real price per
+          serving and full nutrition, upfront &mdash; so you always know what
+          you&rsquo;re getting into before you start cooking.
         </p>
         <div className='hero-cta'>
           <Link to='/recipes' className='btn-primary'>
@@ -120,11 +120,10 @@ const About: FC = () => (
         <div className='section-head'>
           <h2>What Prepify is</h2>
           <p>
-            Prepify is a recipe site with one promise: no surprises. The price
-            and nutrition aren&rsquo;t an afterthought buried at the bottom of
-            the page &mdash; they&rsquo;re calculated from the real ingredients
-            and shown up front, on every recipe. Search, save, and cook knowing
-            exactly what each meal costs and how it fits your day.
+            Prepify is all about transparency. We&rsquo;re a recipe site that
+            keeps it real &mdash; no buried costs, no missing nutrition info.
+            It&rsquo;s all calculated from the actual ingredients and shown right
+            there on the recipe.
           </p>
         </div>
       </section>
@@ -132,7 +131,7 @@ const About: FC = () => (
       <section className='about-section how-it-works'>
         <div className='section-head'>
           <h2>How it works</h2>
-          <p>Plan, shop, and cook with zero guesswork.</p>
+          <p>Three simple steps: plan, shop, and cook.</p>
         </div>
         <ol className='steps-grid'>
           {STEPS.map((step, i) => (
@@ -151,6 +150,7 @@ const About: FC = () => (
       <section className='about-section features'>
         <div className='section-head'>
           <h2>What you can do</h2>
+          <p>Here&rsquo;s the good stuff.</p>
         </div>
         <ul className='features-grid'>
           {FEATURES.map(feature => (
@@ -172,24 +172,23 @@ const About: FC = () => (
           <h2>Why we built it</h2>
         </div>
         <p>
-          Most recipes tell you how to cook a dish &mdash; but never what it
-          actually costs. We got tired of scrolling between tabs, guessing at
-          grocery totals, and hoping a meal would fit the budget. So we built
-          the recipe site we actually wanted to use: cost and nutrition
-          transparency on every recipe, by default.
+          We built Prepify because we were tired of guessing. Most recipes
+          don&rsquo;t tell you what they actually cost, so we got tired of
+          scrolling between tabs and hoping a meal would fit the budget. So we
+          built the recipe site we wanted to use: cost and nutrition
+          transparency, on every recipe, by default.
         </p>
         <p>
-          Honestly, we built Prepify for ourselves &mdash; to surface the
-          information we genuinely care about. I&rsquo;m Jesse, a self-taught
-          developer who cooks at home. I lift, so I like to keep an eye on my
-          nutrition &mdash; but more than that, I never want to get excited
-          about a new recipe only to find it doesn&rsquo;t fit my budget.
-          That&rsquo;s exactly why Prepify works the way it does.
+          I&rsquo;m Jesse, a self-taught developer who cooks at home. I built
+          Prepify for myself &mdash; to surface the info I actually care about. I
+          like to keep an eye on my nutrition, but I also don&rsquo;t want to get
+          excited about a recipe only to find it doesn&rsquo;t fit my budget.
+          That&rsquo;s why Prepify works the way it does.
         </p>
         <p>
-          Prepify is an independent project, built and maintained with care by
-          people who cook at home just like you. We&rsquo;re always improving
-          it, and we read every piece of feedback that comes our way.
+          We&rsquo;re independent &mdash; built and maintained with care by
+          people who cook at home. We&rsquo;re always improving, and we read
+          every piece of feedback that comes our way.
         </p>
       </section>
 
