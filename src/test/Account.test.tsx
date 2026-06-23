@@ -306,7 +306,9 @@ describe('Account page', () => {
 
       await waitFor(() => {
         const fallback = document.querySelector('.acct-avatar.not-set')
-        expect(fallback?.textContent).toBe('J')
+        // Image error → the default (food-emoji) avatar takes over.
+        expect(fallback).toHaveClass('default-avatar')
+        expect(fallback?.textContent?.length).toBeGreaterThan(0)
       })
     })
   })
@@ -328,7 +330,7 @@ describe('Account page', () => {
   })
 
   describe('username / initial display', () => {
-    it('uses first char of displayName as profile initial when auth user has displayName', async () => {
+    it('shows the default (food-emoji) avatar when auth user has a displayName but no photo', async () => {
       mockGetUID.mockReturnValue('u1')
       mockUseAuth.mockReturnValue({
         user: { displayName: 'Jane Doe', photoURL: null, uid: 'u1' },
@@ -336,7 +338,8 @@ describe('Account page', () => {
       renderAccount()
       await waitFor(() => {
         const profileEl = document.querySelector('.acct-avatar.not-set')
-        expect(profileEl?.textContent).toBe('J')
+        expect(profileEl).toHaveClass('default-avatar')
+        expect(profileEl?.textContent?.length).toBeGreaterThan(0)
       })
     })
 
@@ -360,14 +363,14 @@ describe('Account page', () => {
       await screen.findByText('johndoe')
     })
 
-    it('shows empty profile initial and skips getUsername when not authenticated', async () => {
+    it('shows the default avatar and skips getUsername when not authenticated', async () => {
       mockGetUID.mockReturnValue(null)
       mockUseAuth.mockReturnValue({ user: null })
       renderAccount()
-      // No uid → the username query never runs; the avatar initial stays empty.
+      // No uid → the username query never runs; the default avatar still renders.
       await waitFor(() => {
         const profileEl = document.querySelector('.acct-avatar.not-set')
-        expect(profileEl?.textContent).toBe('')
+        expect(profileEl).toHaveClass('default-avatar')
       })
       expect(mockGetUsername).not.toHaveBeenCalled()
     })

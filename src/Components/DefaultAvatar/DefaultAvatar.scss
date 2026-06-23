@@ -1,0 +1,18 @@
+// Slots into existing avatar classes (which set width/height/border-radius).
+// The inline background (set per-user in the component) wins over any colour the
+// host class declared for the old initial-letter fallback.
+.default-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  line-height: 0;
+  // Neutralise text styling inherited from the old initial-letter classes.
+  color: inherit;
+
+  &__art {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+}

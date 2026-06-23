@@ -18,6 +18,7 @@ import PublicProfileAPI from 'src/api/publicProfile'
 import AuthAPI from 'src/api/auth'
 import ReportControl from 'src/Components/ReportControl/ReportControl'
 import EmptyState from 'src/Components/EmptyState/EmptyState'
+import DefaultAvatar from 'src/Components/DefaultAvatar/DefaultAvatar'
 import { formatRating } from 'src/util/formatRating'
 import { formatCompactCount } from 'src/util/formatCompactCount'
 import { formatPrice } from 'src/util/formatPrice'
@@ -132,9 +133,6 @@ const PublicProfile: FC = () => {
   }
 
   const profile = data
-  const initial = profile.displayName
-    ? profile.displayName.charAt(0).toUpperCase()
-    : ''
 
   // The grid shows the profile payload's initial batch plus any "load more"
   // pages, ordered by page number.
@@ -182,7 +180,11 @@ const PublicProfile: FC = () => {
             onError={() => setAvatarError(true)}
           />
         ) : (
-          <div className='pp-avatar not-set'>{initial}</div>
+          <DefaultAvatar
+            seed={profile.username}
+            className='pp-avatar not-set'
+            title={`${profile.displayName} avatar`}
+          />
         )}
 
         <div className='pp-handle-row'>

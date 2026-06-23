@@ -88,7 +88,7 @@ describe('PublicProfile', () => {
     expect(screen.getByText('Garlic Pasta')).toBeInTheDocument()
   })
 
-  it('falls back to the initial when the avatar image fails to load', async () => {
+  it('falls back to the default avatar when the avatar image fails to load', async () => {
     mockGet.mockResolvedValue({
       ...sampleProfile,
       photoURL: 'https://example.com/broken.png',
@@ -100,7 +100,9 @@ describe('PublicProfile', () => {
 
     await waitFor(() => {
       const fallback = document.querySelector('.pp-avatar.not-set')
-      expect(fallback?.textContent).toBe('C') // "Cool Cook" → C
+      // Image error → the default (food-emoji) avatar takes over.
+      expect(fallback).toHaveClass('default-avatar')
+      expect(fallback?.textContent?.length).toBeGreaterThan(0)
     })
   })
 

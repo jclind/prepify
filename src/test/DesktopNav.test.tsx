@@ -244,14 +244,15 @@ describe('DesktopAccountMenu (Profile Card)', () => {
     expect(btn).toHaveAttribute('aria-expanded', 'false')
   })
 
-  it('renders the photo avatar, falling back to the initial on load error', () => {
+  it('renders the photo avatar, falling back to the default avatar on load error', () => {
     renderLoggedIn({ photoURL: 'https://x.test/p.png', nameInitial: 'C' })
     const imgs = screen.getAllByAltText('Profile')
     expect(imgs.length).toBeGreaterThan(0)
 
     fireEvent.error(imgs[0])
     expect(screen.queryByAltText('Profile')).not.toBeInTheDocument()
-    expect(screen.getAllByText('C').length).toBeGreaterThan(0)
+    // Image error → the default (food-emoji) avatar takes over.
+    expect(document.querySelectorAll('.default-avatar').length).toBeGreaterThan(0)
   })
 })
 

@@ -25,6 +25,7 @@ import PrintableRecipe from 'src/pages/SingleRecipe/PrintableRecipe/PrintableRec
 import ReportControl from 'src/Components/ReportControl/ReportControl'
 import AdminRecipeControls from 'src/Components/AdminRecipeControls/AdminRecipeControls'
 import { SITE_URL, DEFAULT_OG_IMAGE } from 'src/util/seo'
+import DefaultAvatar from 'src/Components/DefaultAvatar/DefaultAvatar'
 
 import { updateIngredients } from 'src/util/updateIngredients'
 import { capitalize } from 'src/util/capitalize'
@@ -344,9 +345,11 @@ const SingleRecipe: FC = () => {
               )}
               {currRecipe && (
                 <div className='author-row'>
-                  <span className='avatar' aria-hidden='true'>
-                    {(currRecipe.authorUsername || '?').charAt(0).toUpperCase()}
-                  </span>
+                  <DefaultAvatar
+                    seed={currRecipe.authorUsername}
+                    className='avatar'
+                    ariaHidden
+                  />
                   <span className='author-text'>
                     by <strong>@{currRecipe.authorUsername}</strong>
                     {currRecipe.createdAt && formatMonthYear(currRecipe.createdAt) && (

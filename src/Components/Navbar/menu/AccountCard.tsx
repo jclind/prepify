@@ -2,6 +2,7 @@ import React, { FC, useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { BiLogOut } from 'react-icons/bi'
 import { NavMenuData } from './types'
+import DefaultAvatar from 'src/Components/DefaultAvatar/DefaultAvatar'
 
 type AccountCardProps = Pick<
   NavMenuData,
@@ -62,9 +63,11 @@ const AccountCard: FC<AccountCardProps> = ({
             onError={() => setImgFailed(true)}
           />
         ) : (
-          <div className='account-card__avatar account-card__avatar--initial'>
-            {nameInitial}
-          </div>
+          <DefaultAvatar
+            seed={username || email}
+            className='account-card__avatar account-card__avatar--initial'
+            ariaHidden
+          />
         )}
         <div className='account-card__meta'>
           <span className='account-card__name'>{username || 'Your account'}</span>
