@@ -29,7 +29,7 @@ const STEPS: Step[] = [
   {
     icon: <MdOutlineShoppingCart />,
     title: 'Shop',
-    body: 'Every recipe breaks down to a real cost per serving — no more mental math in the aisle. Fill your cart with a clear total.',
+    body: 'Every recipe breaks down to a real cost per serving. No more mental math in the aisle. Fill your cart with a clear total.',
   },
   {
     icon: <MdOutlineRestaurantMenu />,
@@ -53,7 +53,7 @@ const FEATURES: Feature[] = [
   {
     icon: <MdOutlineMonitorHeart />,
     title: 'Full nutrition, automatically',
-    body: 'Calories and macros are computed for you — no spreadsheets required.',
+    body: 'Calories and macros are computed for you. No spreadsheets required.',
   },
   {
     icon: <MdOutlineTune />,
@@ -68,7 +68,7 @@ const FEATURES: Feature[] = [
   {
     icon: <MdOutlineBookmarkBorder />,
     title: 'Save & revisit',
-    body: 'Save and revisit your favorite meals — the ones you love, a click away.',
+    body: 'Save and revisit your favorite meals. The ones you love, a click away.',
   },
 ]
 
@@ -85,13 +85,13 @@ const About: FC = () => (
       <title>Prepify | About</title>
       <meta
         name='description'
-        content='Prepify is a recipe site where every recipe shows its real per-serving price and full nutrition up front — so you can plan, shop, and cook with zero guesswork.'
+        content='Prepify is a recipe site where every recipe shows its real per-serving price and full nutrition up front, so you can plan, shop, and cook with zero guesswork.'
       />
       <link rel='canonical' href='https://www.prepifymeals.com/about' />
       <meta property='og:title' content='About Prepify' />
       <meta
         property='og:description'
-        content='No more surprises. Every recipe on Prepify shows its real price per serving and full nutrition up front — so you always know what you are getting into before you start cooking.'
+        content='No more surprises. Every recipe on Prepify shows its real price per serving and full nutrition up front. You always know what you are getting into before you start cooking.'
       />
       <meta property='og:type' content='website' />
       <meta property='og:url' content='https://www.prepifymeals.com/about' />
@@ -103,7 +103,7 @@ const About: FC = () => (
         <h1>Prepify&rsquo;s got your back.</h1>
         <p className='tagline'>
           No more surprises. Every recipe on the site shows its real price per
-          serving and full nutrition, upfront &mdash; so you always know what
+          serving and full nutrition, upfront. You always know what
           you&rsquo;re getting into before you start cooking.
         </p>
         <div className='hero-cta'>
@@ -121,7 +121,7 @@ const About: FC = () => (
           <h2>What Prepify is</h2>
           <p>
             Prepify is all about transparency. We&rsquo;re a recipe site that
-            keeps it real &mdash; no buried costs, no missing nutrition info.
+            keeps it real. No buried costs, no missing nutrition info.
             It&rsquo;s all calculated from the actual ingredients and shown right
             there on the recipe.
           </p>
@@ -180,21 +180,21 @@ const About: FC = () => (
         </p>
         <p>
           I&rsquo;m Jesse, a self-taught developer who cooks at home. I built
-          Prepify for myself &mdash; to surface the info I actually care about. I
-          like to keep an eye on my nutrition, but I also don&rsquo;t want to get
+          Prepify for myself, to surface the info I actually care about. I like
+          to keep an eye on my nutrition, but I also don&rsquo;t want to get
           excited about a recipe only to find it doesn&rsquo;t fit my budget.
           That&rsquo;s why Prepify works the way it does.
         </p>
         <p>
-          We&rsquo;re independent &mdash; built and maintained with care by
-          people who cook at home. We&rsquo;re always improving, and we read
-          every piece of feedback that comes our way.
+          We&rsquo;re independent, built and maintained with care by people who
+          cook at home. We&rsquo;re always improving, and we read every piece of
+          feedback that comes our way.
         </p>
       </section>
 
       <section className='about-section about-cta'>
         <h2>Ready to cook with zero guesswork?</h2>
-        <p>Find your next meal &mdash; price and nutrition included.</p>
+        <p>Find your next meal. Price and nutrition included.</p>
         <div className='cta-actions'>
           <Link to='/recipes' className='btn-primary'>
             Browse recipes
