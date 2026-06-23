@@ -3,7 +3,11 @@
   align-items: center;
   justify-content: center;
   width: 100%;
-  height: 100%;
+  // Own the box via aspect-ratio (matching the RecipeCard <img> and skeleton),
+  // not height:100% — the .recipe-card__thumb parent has no height of its own,
+  // so height:100% resolves to auto and the tile collapses. In RecipeThumbnail
+  // the placeholder also carries the .img class, whose explicit height wins.
+  aspect-ratio: 4 / 3;
   // Soft tint of the brand orange so it reads as "no photo" not "broken".
   background: linear-gradient(135deg, #fff3ee, #ffe1d4);
   color: #ff8a65;
