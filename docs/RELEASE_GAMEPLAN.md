@@ -60,7 +60,7 @@ same commit.**
 | 3c | Username validation + report-user | `[x]` | #166 ✅ |
 | 3d | Add-recipe UX | `[x]` | #164 ✅ |
 | 3e | create-username revamp | `[x]` | #131 + #98 (+ #162 reconcile/test) ✅ |
-| 4-sass | Sass `@import`→`@use` (LONER) | `[ ]` | — |
+| 4-sass | Sass `@import`→`@use` (LONER) | `[x]` | `cb2ac81` ✅ (pre-gameplan) |
 | 4-about | About rewrite (Jesse) | `[x]` | #169 ✅ |
 | 4-tests | Toast/alert + Cypress autocomplete tests | `[x]` | #168 ✅ |
 | 4-qa | Empty/error sweep + links + copy + mobile + Lighthouse | `[ ]` | — |
@@ -493,6 +493,22 @@ Append a one-liner when a track changes state (started / PR / merged). Keeps ses
   for social link previews (CSR-SPA limitation; release-gating copy in `RELEASE_PLAN.md` §C) and a missing
   `onError` placeholder fallback in `RecipeThumbnail`. **Wave 4 Part 1 complete (3b + 4-about + 4-tests);
   remaining: the 4-sass loner (Part 2), then the 4-qa finishing sweep (Part 3) → Phase 5 cutover.**
+- _2026-06-23_ — **4-sass (Sass `@import`→`@use` migration) → reconciled `[x]` (already done in `cb2ac81`).**
+  Spun up the loner worktree to do the migration and found it **already complete** — the work landed
+  **2026-05-09** in `cb2ac81` *"fix: migrate all SCSS from deprecated @import to @use"* (already an ancestor
+  of `development`), a full month before this gameplan was even created (2026-06-17), so the `[ ]` box was
+  stale, not a pending task. That commit converted all 36 component/page stylesheets from
+  `@import 'helpers.scss'` → `@use 'helpers.scss' as s`, namespaced every var/mixin reference under `s.`
+  (the `s.outline()` seen site-wide), fixed a `NutritionData.scss` path, and reordered `index.scss` so `@use`
+  precedes the CSS `@import url()`. **Verified the goal is met, not just trusting git:** `npm run build` exits
+  0 with **zero** Sass deprecation warnings (only the unrelated chunk-size note), and compiling all **73**
+  `.scss` files individually through the Sass CLI yields **0** deprecation warnings of any category. The lone
+  remaining `@import` is `src/index.scss:3` — a plain CSS `@import url('…Montserrat…')` font load, which Sass
+  passes through verbatim; it is **not** the deprecated Sass import and must stay (you can't `@use` a remote
+  CSS URL). **No `.scss` touched** — the loner's collision risk was moot. This entry + the Track Board box +
+  the `BACKLOG.md` Tech-debt item are the only changes (docs-only reconcile). The Rule-1 "everyone rebases
+  after the Sass loner" step is a **no-op** (no stylesheet churn). **Remaining: 4-qa finishing sweep (Part 3)
+  → Phase 5 cutover.**
 
 ---
 
