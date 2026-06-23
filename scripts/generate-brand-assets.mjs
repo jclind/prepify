@@ -25,7 +25,7 @@ const root = join(here, '..')
 const fontFiles = [
   join(here, 'fonts', 'Montserrat-Bold.ttf'),
   join(here, 'fonts', 'Montserrat-SemiBold.ttf'),
-  join(here, 'fonts', 'Montserrat-Italic.ttf'),
+  join(here, 'fonts', 'Montserrat-MediumItalic.ttf'),
 ]
 const out = p => join(root, 'public', p)
 
@@ -44,15 +44,46 @@ const renderPng = (svg, size) =>
 
 // ---------------------------------------------------------------------------
 // Icon: white italic "P" monogram on the brand-orange gradient — echoes the
-// in-app .brand-mark (Montserrat italic), at weight 400 and a large size so it
+// in-app .brand-mark (Montserrat italic), at weight 500 and a large size so it
 // stays legible at favicon scale (16/32px).
 //   rounded → rounded-square (favicons / "any" PWA icons)
 //   pad     → scales the P down for maskable icons (OS applies its own crop)
-// The x is nudged left of center to optically balance the italic lean.
+//
+// Centering: an italic glyph does NOT sit centered on its em-box (the slant +
+// side bearings push it off), so we render the glyph alone, measure its actual
+// ink bounding box, and translate it so that box is dead-centre in the tile.
 // ---------------------------------------------------------------------------
+const ICON_WEIGHT = 500
+const ICON_SIZE = 460 // base glyph size (scaled by `pad` for maskable)
+
+const pText = (fontSize, cx, cy) =>
+  `<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="central"
+        font-family="${FONT}" font-weight="${ICON_WEIGHT}" font-style="italic"
+        font-size="${fontSize}" fill="#ffffff">P</text>`
+
+// Measure where the glyph's ink actually lands (rendered on transparent bg),
+// and return the dx/dy that moves its bbox centre to the tile centre (256,256).
+const centerOffset = fontSize => {
+  const glyph = `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">${pText(fontSize, 256, 256)}</svg>`
+  const { width, height, rgba } = readPng(renderPng(glyph, 512))
+  let minX = width, minY = height, maxX = -1, maxY = -1
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      if (rgba[(y * width + x) * 4 + 3] > 16) {
+        if (x < minX) minX = x
+        if (x > maxX) maxX = x
+        if (y < minY) minY = y
+        if (y > maxY) maxY = y
+      }
+    }
+  }
+  return { dx: 256 - (minX + maxX) / 2, dy: 256 - (minY + maxY) / 2 }
+}
+
 const iconSvg = ({ rounded = true, pad = 1 } = {}) => {
   const rx = rounded ? 112 : 0
-  const fontSize = 410 * pad
+  const fontSize = ICON_SIZE * pad
+  const { dx, dy } = centerOffset(fontSize)
   return `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
   <defs>
     <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
@@ -61,9 +92,7 @@ const iconSvg = ({ rounded = true, pad = 1 } = {}) => {
     </linearGradient>
   </defs>
   <rect width="512" height="512" rx="${rx}" fill="url(#g)"/>
-  <text x="242" y="276" text-anchor="middle" dominant-baseline="central"
-        font-family="${FONT}" font-weight="400" font-style="italic"
-        font-size="${fontSize}" fill="#ffffff">P</text>
+  ${pText(fontSize, 256 + dx, 256 + dy)}
 </svg>`
 }
 
