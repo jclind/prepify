@@ -384,7 +384,7 @@ const AddRecipe: FC<AddRecipeProps> = ({ initialRecipe }) => {
   return (
     <>
       <Helmet>
-        <title>{isEditMode ? 'Edit Recipe' : 'Create New Recipe'}</title>
+        <title>{isEditMode ? 'Edit Recipe · Prepify' : 'Create a Recipe · Prepify'}</title>
         <link
           rel='canonical'
           href={

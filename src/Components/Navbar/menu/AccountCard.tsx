@@ -2,10 +2,11 @@ import React, { FC, useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { BiLogOut } from 'react-icons/bi'
 import { NavMenuData } from './types'
+import DefaultAvatar from 'src/Components/DefaultAvatar/DefaultAvatar'
 
 type AccountCardProps = Pick<
   NavMenuData,
-  'isLoggedIn' | 'username' | 'email' | 'nameInitial' | 'photoURL' | 'logout'
+  'isLoggedIn' | 'username' | 'email' | 'photoURL' | 'logout'
 > & {
   onClose: () => void
 }
@@ -18,12 +19,11 @@ const AccountCard: FC<AccountCardProps> = ({
   isLoggedIn,
   username,
   email,
-  nameInitial,
   photoURL,
   logout,
   onClose,
 }) => {
-  // Fall back to the initial avatar if the profile image fails to load.
+  // Fall back to the default avatar if the profile image fails to load.
   const [imgFailed, setImgFailed] = useState(false)
 
   if (!isLoggedIn) {
@@ -62,9 +62,11 @@ const AccountCard: FC<AccountCardProps> = ({
             onError={() => setImgFailed(true)}
           />
         ) : (
-          <div className='account-card__avatar account-card__avatar--initial'>
-            {nameInitial}
-          </div>
+          <DefaultAvatar
+            seed={username || email}
+            className='account-card__avatar account-card__avatar--initial'
+            ariaHidden
+          />
         )}
         <div className='account-card__meta'>
           <span className='account-card__name'>{username || 'Your account'}</span>

@@ -12,6 +12,7 @@ import LevelCard from 'src/pages/Account/components/LevelCard'
 import ProfileControls from 'src/pages/Account/components/ProfileControls'
 import SegmentedNav from 'src/pages/Account/components/SegmentedNav'
 import AchievementsModal from 'src/pages/Account/components/AchievementsModal'
+import DefaultAvatar from 'src/Components/DefaultAvatar/DefaultAvatar'
 
 // Format Firebase's `creationTime` ("Tue, 22 Mar 2023 …") as "March 2023".
 const formatMemberSince = (creationTime?: string | null): string | null => {
@@ -88,7 +89,6 @@ const Account: FC = () => {
 
   const handle = data ?? '' // the real @username, used for the share/public link
   const displayName = user?.displayName ?? handle
-  const nameInitial = displayName ? displayName.charAt(0).toUpperCase() : ''
 
   const memberSince = formatMemberSince(user?.metadata?.creationTime)
   const place = profile?.location ?? ''
@@ -113,7 +113,8 @@ const Account: FC = () => {
     <>
       <Helmet>
         <meta charSet='utf-8' />
-        <title>Prepify | Your Account</title>
+        <title>Your Account · Prepify</title>
+        <meta name='robots' content='noindex' />
       </Helmet>
       <div className='page account-page'>
         <header className='acct-head'>
@@ -126,7 +127,11 @@ const Account: FC = () => {
                 onError={() => setAvatarError(true)}
               />
             ) : (
-              <div className='acct-avatar not-set'>{nameInitial}</div>
+              <DefaultAvatar
+                seed={handle || displayName}
+                className='acct-avatar not-set'
+                title='Profile avatar'
+              />
             )}
             <div className='acct-id-text'>
               <h1 className='acct-name'>{displayName}</h1>

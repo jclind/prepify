@@ -5,10 +5,11 @@ import { BiHelpCircle, BiLogOut } from 'react-icons/bi'
 import { MdKeyboardArrowDown, MdOutlineRestaurantMenu } from 'react-icons/md'
 import { IconType } from 'react-icons'
 import { NavMenuData } from 'src/Components/Navbar/menu/types'
+import DefaultAvatar from 'src/Components/DefaultAvatar/DefaultAvatar'
 
 type DesktopAccountMenuProps = Pick<
   NavMenuData,
-  'username' | 'email' | 'nameInitial' | 'photoURL' | 'logout'
+  'username' | 'email' | 'photoURL' | 'logout'
 >
 
 type LinkItem = { to: string; label: string; Icon: IconType }
@@ -26,7 +27,6 @@ type LinkItem = { to: string; label: string; Icon: IconType }
 const DesktopAccountMenu: FC<DesktopAccountMenuProps> = ({
   username,
   email,
-  nameInitial,
   photoURL,
   logout,
 }) => {
@@ -65,7 +65,11 @@ const DesktopAccountMenu: FC<DesktopAccountMenuProps> = ({
         onError={() => setImgFailed(true)}
       />
     ) : (
-      <span className={`${className} ${className}--initial`}>{nameInitial}</span>
+      <DefaultAvatar
+        seed={username || email}
+        className={`${className} ${className}--initial`}
+        ariaHidden
+      />
     )
 
   const linkItems: LinkItem[] = [

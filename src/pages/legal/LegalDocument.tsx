@@ -21,7 +21,7 @@ const LegalDocument: FC<LegalDocumentProps> = ({
 }) => (
   <div className='legal-document'>
     <Helmet>
-      <title>{`Prepify | ${title}`}</title>
+      <title>{`${title} · Prepify`}</title>
     </Helmet>
     <div className='legal-document-inner'>
       <header className='legal-document-header'>

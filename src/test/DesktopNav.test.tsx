@@ -27,7 +27,6 @@ const baseProps = (
   authLoading: false,
   username: '',
   email: '',
-  nameInitial: '',
   photoURL: null,
   logout: vi.fn(),
   ...overrides,
@@ -66,7 +65,7 @@ describe('DesktopNav structure', () => {
 
   it('logged in: shows Create Recipe + Saved + account menu, no CTAs', () => {
     renderNav(
-      baseProps({ isLoggedIn: true, username: 'chef', nameInitial: 'C' })
+      baseProps({ isLoggedIn: true, username: 'chef' })
     )
 
     expect(
@@ -94,7 +93,7 @@ describe('DesktopNav structure', () => {
   })
 
   it('the primary links live in a labelled <nav> landmark', () => {
-    renderNav(baseProps({ isLoggedIn: true, username: 'chef', nameInitial: 'C' }))
+    renderNav(baseProps({ isLoggedIn: true, username: 'chef' }))
     expect(
       screen.getByRole('navigation', { name: 'Primary' })
     ).toBeInTheDocument()
@@ -103,7 +102,7 @@ describe('DesktopNav structure', () => {
   it('keeps an accessible name on the icon-collapsible links', () => {
     // Recipes/Create collapse to icon-only below 1000px; the aria-label has to
     // carry the name since the icon SVG has none and the label is display:none.
-    renderNav(baseProps({ isLoggedIn: true, username: 'chef', nameInitial: 'C' }))
+    renderNav(baseProps({ isLoggedIn: true, username: 'chef' }))
     expect(screen.getByRole('link', { name: 'Recipes' })).toHaveAttribute(
       'aria-label',
       'Recipes'
@@ -117,7 +116,7 @@ describe('DesktopNav structure', () => {
 
 describe('DesktopNav routes', () => {
   it('points the primary links at the right routes', () => {
-    renderNav(baseProps({ isLoggedIn: true, username: 'chef', nameInitial: 'C' }))
+    renderNav(baseProps({ isLoggedIn: true, username: 'chef' }))
     expect(screen.getByRole('link', { name: 'Recipes' })).toHaveAttribute(
       'href',
       '/recipes'
@@ -152,7 +151,6 @@ describe('DesktopAccountMenu (Profile Card)', () => {
         isLoggedIn: true,
         username: 'chef',
         email: 'chef@x.com',
-        nameInitial: 'C',
         ...overrides,
       })
     )
@@ -244,14 +242,15 @@ describe('DesktopAccountMenu (Profile Card)', () => {
     expect(btn).toHaveAttribute('aria-expanded', 'false')
   })
 
-  it('renders the photo avatar, falling back to the initial on load error', () => {
-    renderLoggedIn({ photoURL: 'https://x.test/p.png', nameInitial: 'C' })
+  it('renders the photo avatar, falling back to the default avatar on load error', () => {
+    renderLoggedIn({ photoURL: 'https://x.test/p.png' })
     const imgs = screen.getAllByAltText('Profile')
     expect(imgs.length).toBeGreaterThan(0)
 
     fireEvent.error(imgs[0])
     expect(screen.queryByAltText('Profile')).not.toBeInTheDocument()
-    expect(screen.getAllByText('C').length).toBeGreaterThan(0)
+    // Image error → the default (food line-icon) avatar takes over.
+    expect(document.querySelectorAll('.default-avatar').length).toBeGreaterThan(0)
   })
 })
 

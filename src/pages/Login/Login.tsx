@@ -33,7 +33,7 @@ const Login: FC = () => {
     <>
       <Helmet>
         <meta charSet='utf-8' />
-        <title>Prepify | Login</title>
+        <title>Log In · Prepify</title>
       </Helmet>
       <div className='login-page form-format'>
         <div className='form-container'>

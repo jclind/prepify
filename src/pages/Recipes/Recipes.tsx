@@ -10,6 +10,7 @@ import RecipeCard from 'src/Components/RecipeCard/RecipeCard'
 import SearchRecipesInput from 'src/Components/SearchRecipesInput/SearchRecipesInput'
 import SortDropdown from 'src/Components/SortDropdown/SortDropdown'
 import RecipeAPI from 'src/api/recipes'
+import { SITE_URL, DEFAULT_OG_IMAGE } from 'src/util/seo'
 import { dietLabelsOptions } from 'src/recipeData/dietLabels'
 import cuisinesList from 'src/recipeData/cuisinesList'
 import mealTypesList from 'src/recipeData/mealTypesList'
@@ -171,11 +172,29 @@ const Recipes: FC = () => {
     <>
       <Helmet>
         <meta charSet='utf-8' />
-        <title>Prepify | Search Recipes</title>
+        <title>Recipes · Prepify</title>
         <meta
           name='description'
           content="Find healthy and budget-friendly recipes on Prepify's search page. Get meal prices and nutrition info for easy meal planning. Cook delicious meals with our flavorful recipes."
         />
+        <link rel='canonical' href={`${SITE_URL}/recipes`} />
+        {/* Sole live-head meta source for this route (static index.html copies
+            are stripped on JS boot). */}
+        <meta property='og:type' content='website' />
+        <meta property='og:title' content='Recipes · Prepify' />
+        <meta
+          property='og:description'
+          content="Find healthy, budget-friendly recipes on Prepify — every recipe includes meal price and nutrition info."
+        />
+        <meta property='og:image' content={DEFAULT_OG_IMAGE} />
+        <meta property='og:url' content={`${SITE_URL}/recipes`} />
+        <meta name='twitter:card' content='summary_large_image' />
+        <meta name='twitter:title' content='Recipes · Prepify' />
+        <meta
+          name='twitter:description'
+          content="Find healthy, budget-friendly recipes on Prepify — every recipe includes meal price and nutrition info."
+        />
+        <meta name='twitter:image' content={DEFAULT_OG_IMAGE} />
       </Helmet>
       <div className='page recipes-page'>
         <header className='recipes-header'>

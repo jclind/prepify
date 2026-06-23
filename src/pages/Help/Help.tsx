@@ -92,7 +92,7 @@ const Help: FC = () => {
     <>
       <Helmet>
         <meta charSet='utf-8' />
-        <title>Prepify | Help &amp; Support</title>
+        <title>Help &amp; Support · Prepify</title>
         <meta
           name='description'
           content='Get help with Prepify — report a bug, suggest an idea, or ask a question. A real person reads every message and replies by email.'

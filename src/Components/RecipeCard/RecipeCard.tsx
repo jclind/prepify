@@ -1,9 +1,10 @@
-import React, { FC } from 'react'
+import React, { FC, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { CgTimer } from 'react-icons/cg'
 import { AiFillStar } from 'react-icons/ai'
 import Skeleton from 'react-loading-skeleton'
 import 'react-loading-skeleton/dist/skeleton.css'
+import RecipePlaceholder from 'src/Components/RecipePlaceholder/RecipePlaceholder'
 import SaveControl from 'src/Components/AddToCollection/SaveControl'
 import { formatRating } from 'src/util/formatRating'
 import { formatPrice } from 'src/util/formatPrice'
@@ -49,6 +50,9 @@ type RecipeCardProps = {
  * page and the account Saved tab.
  */
 const RecipeCard: FC<RecipeCardProps> = ({ recipe, loading, onMutated }) => {
+  // Hooks must run before the loading early-return below.
+  const [imgError, setImgError] = useState(false)
+
   if (loading || !recipe) {
     return (
       <article className='recipe-card recipe-card--loading' aria-hidden='true'>
@@ -83,13 +87,18 @@ const RecipeCard: FC<RecipeCardProps> = ({ recipe, loading, onMutated }) => {
         aria-label={recipe.title}
       >
         <div className='recipe-card__thumb'>
-          <img
-            src={recipe.recipeImage}
-            alt={recipe.title}
-            loading='lazy'
-            width={300}
-            height={225}
-          />
+          {recipe.recipeImage && !imgError ? (
+            <img
+              src={recipe.recipeImage}
+              alt={recipe.title}
+              loading='lazy'
+              width={300}
+              height={225}
+              onError={() => setImgError(true)}
+            />
+          ) : (
+            <RecipePlaceholder />
+          )}
           {price && <span className='recipe-card__price'>{price}</span>}
         </div>
         <div className='recipe-card__body'>

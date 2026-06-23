@@ -237,6 +237,7 @@ const ProfileSection: FC = () => {
       <AvatarField
         imgUrl={imgURL}
         name={displayName || username}
+        seed={username}
         onUpload={triggerUpload}
         onRemove={handleRemoveAvatar}
       />
