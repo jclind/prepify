@@ -1,48 +1,19 @@
 import React, { FC, ReactElement } from 'react'
 import { Link } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
-import { CgTimer } from 'react-icons/cg'
-import { AiOutlineStar } from 'react-icons/ai'
 import {
-  MdOutlineSearch,
-  MdOutlineShoppingCart,
-  MdOutlineRestaurantMenu,
-  MdOutlineSell,
-  MdOutlineMonitorHeart,
-  MdOutlineTune,
-  MdOutlineEditNote,
-  MdOutlineBookmarkBorder,
-  MdOutlineStarBorder,
-  MdOutlineDinnerDining,
-} from 'react-icons/md'
+  FiDollarSign,
+  FiPieChart,
+  FiSearch,
+  FiEdit3,
+  FiStar,
+  FiHeart,
+  FiClock,
+  FiArrowRight,
+  FiShoppingCart,
+  FiBookOpen,
+} from 'react-icons/fi'
 import './About.scss'
-
-type Step = {
-  icon: ReactElement
-  title: string
-  body: string
-}
-
-// "How it works" is the journey — what you actually do, in order. It stays
-// outcome-focused so it doesn't just re-list the capabilities in the feature
-// grid below (which owns the specifics).
-const STEPS: Step[] = [
-  {
-    icon: <MdOutlineSearch />,
-    title: 'Plan',
-    body: 'Browse recipes with the price and nutrition right on the card, and build around your budget and your goals.',
-  },
-  {
-    icon: <MdOutlineShoppingCart />,
-    title: 'Shop',
-    body: 'Head to the store with a clear per-serving total. No surprises at checkout, no math in the aisle.',
-  },
-  {
-    icon: <MdOutlineRestaurantMenu />,
-    title: 'Cook',
-    body: 'Follow the step-by-step recipe, then save the winners so they are easy to find again.',
-  },
-]
 
 type Feature = {
   icon: ReactElement
@@ -50,100 +21,108 @@ type Feature = {
   body: string
 }
 
-// "What you can do" is the capability set — the specifics behind the journey.
-// Six, so the grid stays balanced (3×2 desktop, 2×3 tablet, 1-up mobile).
+// "What you can do" is the capability set behind the journey. Six, so the grid
+// stays balanced (3×2 desktop, 2×3 tablet, 1-up mobile).
 const FEATURES: Feature[] = [
   {
-    icon: <MdOutlineSell />,
+    icon: <FiDollarSign aria-hidden='true' />,
     title: 'Real per-serving prices',
     body: 'Worked out from the actual ingredients, not rough estimates, and shown on every recipe.',
   },
   {
-    icon: <MdOutlineMonitorHeart />,
+    icon: <FiPieChart aria-hidden='true' />,
     title: 'Nutrition, automatically',
     body: 'Calories and macros are computed for you. No spreadsheets, no guesswork.',
   },
   {
-    icon: <MdOutlineTune />,
+    icon: <FiSearch aria-hidden='true' />,
     title: 'Smart search & filters',
     body: 'Narrow by cuisine, diet, and meal type to find something that fits in seconds.',
   },
   {
-    icon: <MdOutlineEditNote />,
+    icon: <FiEdit3 aria-hidden='true' />,
     title: 'Build your own recipes',
     body: 'Paste your ingredients and we handle the price and nutrition math for you.',
   },
   {
-    icon: <MdOutlineStarBorder />,
+    icon: <FiStar aria-hidden='true' />,
     title: 'Ratings & reviews',
     body: 'See what the community thinks, and share your own take on what you cook.',
   },
   {
-    icon: <MdOutlineBookmarkBorder />,
+    icon: <FiHeart aria-hidden='true' />,
     title: 'Save your favorites',
     body: 'Keep the meals you love a click away, ready for the next time you cook.',
   },
 ]
 
-// Macro bars for the nutrition panel — mirrors the real recipe-page nutrition
-// component (label + per-serving value + a bar scaled to the largest macro, so
-// protein at 42g is the full-width reference here).
-const PROOF_MACROS = [
-  { label: 'Protein', value: '42g', pct: 100 },
-  { label: 'Fat', value: '18g', pct: 43 },
-  { label: 'Carbs', value: '30g', pct: 71 },
-  { label: 'Fiber', value: '6g', pct: 14 },
+type Step = {
+  label: string
+  body: string
+}
+
+// "How it works" is the journey, in order. Outcome-focused so it doesn't just
+// re-list the capabilities in the feature grid below.
+const STEPS: Step[] = [
+  {
+    label: 'Plan',
+    body: 'Browse recipes with the price and nutrition right on the card, and build around your budget and your goals.',
+  },
+  {
+    label: 'Shop',
+    body: 'Head to the store with a clear per-serving total. No surprises at checkout, no math in the aisle.',
+  },
+  {
+    label: 'Cook',
+    body: 'Follow the step-by-step recipe, then save the winners so they are easy to find again.',
+  },
 ]
 
-// Two real Prepify surfaces, shown rather than described — kept honest:
+const MACROS = [
+  { label: 'Protein', value: '42g' },
+  { label: 'Fat', value: '18g' },
+  { label: 'Carbs', value: '30g' },
+  { label: 'Fiber', value: '6g' },
+]
+
+// Two real Prepify surfaces, shown rather than described, and kept honest:
 //  • the browse card (faithful to the actual recipe thumbnail: image, title,
 //    per-serving PRICE, time, rating — thumbnails never show nutrition), and
 //  • the recipe page's Nutrition panel (where per-serving nutrition actually
-//    lives) floated alongside it.
+//    lives) alongside it.
 // Decorative sample data, so the whole composition is hidden from assistive tech.
-const ProofCard: FC = () => (
-  <div className='hero-proof' aria-hidden='true'>
-    <div className='proof-stack'>
-      <div className='proof-card'>
-        <div className='proof-thumb'>
-          <MdOutlineDinnerDining className='proof-dish' />
-          <span className='proof-price'>$3.18/serv</span>
-        </div>
-        <div className='proof-body'>
-          <h3>Tuscan Chicken Skillet</h3>
-          <div className='proof-meta'>
-            <span>
-              <CgTimer /> 45m
-            </span>
-            <span>
-              <AiOutlineStar /> 4.8
-            </span>
-            <span className='proof-cuisine'>Italian</span>
-          </div>
+const ProductShowcase: FC = () => (
+  <div className='about-mock' aria-hidden='true'>
+    <div className='about-card'>
+      <div className='about-card-media'>
+        <span className='about-card-price'>$3.18/serv</span>
+      </div>
+      <div className='about-card-body'>
+        <h3 className='about-card-title'>Tuscan Chicken Skillet</h3>
+        <div className='about-card-meta'>
+          <span>
+            <FiClock aria-hidden='true' /> 45m
+          </span>
+          <span>
+            <FiStar aria-hidden='true' /> 4.8
+          </span>
+          <span>Italian</span>
         </div>
       </div>
+    </div>
 
-      <div className='proof-nutrition'>
-        <div className='pn-head'>
-          <h4>Nutrition</h4>
-          <span className='pn-per'>per serving</span>
-        </div>
-        <div className='pn-cal'>
-          <strong>520</strong> calories
-        </div>
-        <div className='pn-macros'>
-          {PROOF_MACROS.map(m => (
-            <div className='pn-macro' key={m.label}>
-              <div className='pn-macro-top'>
-                <span>{m.label}</span>
-                <span>{m.value}</span>
-              </div>
-              <div className='pn-track'>
-                <div className='pn-fill' style={{ width: `${m.pct}%` }} />
-              </div>
-            </div>
-          ))}
-        </div>
+    <div className='about-nutrition'>
+      <p className='about-nutrition-label'>Nutrition per serving</p>
+      <p className='about-nutrition-cal'>
+        520 <span>cal</span>
+      </p>
+      <div className='about-nutrition-macros'>
+        {MACROS.map(m => (
+          <div className='about-macro' key={m.label}>
+            <span className='about-macro-value'>{m.value}</span>
+            <span className='about-macro-label'>{m.label}</span>
+          </div>
+        ))}
       </div>
     </div>
   </div>
@@ -174,83 +153,86 @@ const About: FC = () => (
       <meta property='og:url' content='https://www.prepifymeals.com/about' />
     </Helmet>
 
-    <div className='about-inner'>
-      <header className='about-hero'>
-        <div className='hero-copy'>
-          <p className='eyebrow'>About Prepify</p>
-          <h1>Prepify&rsquo;s got your back.</h1>
-          <p className='tagline'>
-            No more surprises. Every recipe on the site shows its real price per
-            serving and full nutrition, upfront. You always know what
-            you&rsquo;re getting into before you start cooking.
-          </p>
-          <div className='hero-cta'>
-            <Link to='/recipes' className='btn-primary'>
-              Browse recipes
-            </Link>
-            <Link to='/signup' className='btn-secondary'>
-              Create an account
-            </Link>
-          </div>
-        </div>
-        <ProofCard />
-      </header>
+    <header className='about-hero'>
+      <p className='about-eyebrow'>About Prepify</p>
+      <h1 className='about-hero-title'>Prepify&rsquo;s got your back.</h1>
+      <p className='about-hero-tagline'>
+        No more surprises. Every recipe on the site shows its real price per
+        serving and full nutrition, upfront. You always know what you&rsquo;re
+        getting into before you start cooking.
+      </p>
+      <div className='about-cta'>
+        <Link to='/recipes' className='about-btn about-btn-primary'>
+          Browse recipes
+        </Link>
+        <Link to='/signup' className='about-btn about-btn-ghost'>
+          Create an account
+        </Link>
+      </div>
+    </header>
 
-      <section className='about-section about-story'>
-        <div className='section-head'>
-          <h2>What Prepify is</h2>
-        </div>
-        <p>
-          Prepify is all about transparency. We&rsquo;re a recipe site that
-          keeps it real. No buried costs, no missing nutrition info.
-          It&rsquo;s all calculated from the actual ingredients and shown right
-          there on the recipe.
+    <section className='about-section about-showcase'>
+      <div className='about-showcase-inner'>
+        <ProductShowcase />
+        <p className='about-showcase-caption'>
+          The price lives on the card. The full nutrition lives on the recipe.
+          Always there, always upfront.
         </p>
-      </section>
+      </div>
+    </section>
 
-      <section className='about-section how-it-works'>
-        <div className='section-head'>
-          <h2>How it works</h2>
-          <p>Three simple steps: plan, shop, and cook.</p>
-        </div>
-        <ol className='steps-grid'>
-          {STEPS.map((step, i) => (
-            <li key={step.title} className='step-card'>
-              <span className='step-num'>{i + 1}</span>
-              <span className='step-icon' aria-hidden='true'>
-                {step.icon}
-              </span>
-              <h3>{step.title}</h3>
-              <p>{step.body}</p>
-            </li>
-          ))}
-        </ol>
-      </section>
+    <section className='about-section about-moment'>
+      <p className='about-moment-kicker'>Transparency, by default.</p>
+      <p className='about-moment-line'>
+        Prepify is all about transparency. We&rsquo;re a recipe site that keeps
+        it real. No buried costs, no missing nutrition info. It&rsquo;s all
+        calculated from the actual ingredients and shown right there on the
+        recipe.
+      </p>
+    </section>
 
-      <section className='about-section features'>
-        <div className='section-head'>
-          <h2>What you can do</h2>
-          <p>Everything Prepify gives you, in one place.</p>
-        </div>
-        <ul className='features-grid'>
-          {FEATURES.map(feature => (
-            <li key={feature.title} className='feature-card'>
-              <span className='feature-icon' aria-hidden='true'>
-                {feature.icon}
-              </span>
-              <div className='feature-text'>
-                <h3>{feature.title}</h3>
-                <p>{feature.body}</p>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </section>
+    <section className='about-section about-section-tint about-steps'>
+      <div className='about-section-head'>
+        <p className='about-section-eyebrow'>How it works</p>
+        <h2 className='about-section-title'>Three simple steps.</h2>
+      </div>
+      <ol className='about-steps-grid'>
+        {STEPS.map((step, i) => (
+          <li className='about-step' key={step.label}>
+            <span className='about-step-num'>{i + 1}</span>
+            <h3 className='about-step-label'>{step.label}</h3>
+            <p className='about-step-body'>{step.body}</p>
+          </li>
+        ))}
+      </ol>
+    </section>
 
-      <section className='about-section about-story'>
-        <div className='section-head'>
-          <h2>Why we built it</h2>
-        </div>
+    <section className='about-section about-features'>
+      <div className='about-section-head'>
+        <p className='about-section-eyebrow'>Everything you need</p>
+        <h2 className='about-section-title'>Built for the way you cook.</h2>
+      </div>
+      <ul className='about-features-grid'>
+        {FEATURES.map(f => (
+          <li className='about-feature' key={f.title}>
+            <span className='about-feature-icon' aria-hidden='true'>
+              {f.icon}
+            </span>
+            <div className='about-feature-text'>
+              <h3 className='about-feature-title'>{f.title}</h3>
+              <p className='about-feature-body'>{f.body}</p>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </section>
+
+    <section className='about-section about-story'>
+      <div className='about-section-head'>
+        <p className='about-section-eyebrow'>Why we built it</p>
+        <h2 className='about-section-title'>We were tired of guessing.</h2>
+      </div>
+      <div className='about-story-body'>
         <p>
           We built Prepify because we were tired of guessing. Most recipes
           don&rsquo;t tell you what they actually cost, so we got tired of
@@ -270,21 +252,29 @@ const About: FC = () => (
           cook at home. We&rsquo;re always improving, and we read every piece of
           feedback that comes our way.
         </p>
-      </section>
+      </div>
+    </section>
 
-      <section className='about-section about-cta'>
-        <h2>Ready to cook with zero guesswork?</h2>
-        <p>Find your next meal. Price and nutrition included.</p>
-        <div className='cta-actions'>
-          <Link to='/recipes' className='btn-primary'>
-            Browse recipes
-          </Link>
-          <Link to='/signup' className='btn-secondary'>
-            Create an account
-          </Link>
-        </div>
-      </section>
-    </div>
+    <section className='about-section about-section-tint about-closing'>
+      <h2 className='about-closing-title'>Ready to cook with zero guesswork?</h2>
+      <p className='about-closing-line'>
+        Find your next meal. Price and nutrition included.
+      </p>
+      <div className='about-cta'>
+        <Link to='/recipes' className='about-btn about-btn-primary'>
+          Browse recipes
+          <FiArrowRight aria-hidden='true' />
+        </Link>
+        <Link to='/signup' className='about-btn about-btn-ghost'>
+          Create an account
+        </Link>
+      </div>
+      <div className='about-closing-icons' aria-hidden='true'>
+        <FiShoppingCart />
+        <FiBookOpen />
+        <FiHeart />
+      </div>
+    </section>
   </div>
 )
 
