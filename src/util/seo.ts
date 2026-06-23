@@ -37,8 +37,12 @@ export const STATIC_META_ATTR = 'data-rh-default'
  * HTML for JS-less crawlers; once our JS runs we drop them so React 19's hoisted
  * per-route tags are the only copies in the live <head> (no duplicates).
  */
-export const stripStaticMeta = (doc: Document = document): void => {
-  if (typeof doc === 'undefined' || !doc.head) return
+export const stripStaticMeta = (
+  doc: Document | undefined = typeof document !== 'undefined'
+    ? document
+    : undefined
+): void => {
+  if (!doc?.head) return
   doc.head
     .querySelectorAll(`[${STATIC_META_ATTR}]`)
     .forEach(el => el.remove())

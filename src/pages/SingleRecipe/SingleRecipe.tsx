@@ -231,6 +231,10 @@ const SingleRecipe: FC = () => {
           for the route once the static index.html fallbacks (data-rh-default)
           are stripped on JS boot — React 19 hoists these natively and does not
           merge across <Helmet> instances, so there's exactly one of each tag.
+
+          Each tag is its own conditional (rather than one fragment) on purpose:
+          react-helmet-async expects direct, valid head-element children, so a
+          wrapping <>…</> fragment here is not reliably handled.
         */}
         {currRecipe && <meta property='og:type' content='article' />}
         {currRecipe && <link rel='canonical' href={recipeCanonical} />}
