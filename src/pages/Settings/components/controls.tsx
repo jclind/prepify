@@ -4,6 +4,7 @@
 // playground once the V1 "Dashboard" layout was chosen.
 
 import React, { FC, ReactNode } from 'react'
+import DefaultAvatar from 'src/Components/DefaultAvatar/DefaultAvatar'
 import './controls.scss'
 
 /* ---------------------------------------------------------------- Avatar ---- */
@@ -11,6 +12,9 @@ import './controls.scss'
 type AvatarFieldProps = {
   imgUrl: string
   name: string
+  // Stable identity (username) for the default avatar, so it matches the one
+  // shown elsewhere; falls back to `name` when not provided.
+  seed?: string
   onUpload?: () => void
   onRemove?: () => void
 }
@@ -18,17 +22,21 @@ type AvatarFieldProps = {
 export const AvatarField: FC<AvatarFieldProps> = ({
   imgUrl,
   name,
+  seed,
   onUpload,
   onRemove,
 }) => {
-  const initial = name?.trim()?.charAt(0)?.toUpperCase() || '?'
   return (
     <div className='sr-avatar-field'>
       <div className='sr-avatar'>
         {imgUrl ? (
           <img src={imgUrl} alt='profile avatar' />
         ) : (
-          <span className='sr-avatar-initial'>{initial}</span>
+          <DefaultAvatar
+            seed={seed || name}
+            className='sr-avatar-initial'
+            ariaHidden
+          />
         )}
       </div>
       <div className='sr-avatar-actions'>

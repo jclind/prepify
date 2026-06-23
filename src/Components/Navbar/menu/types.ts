@@ -6,8 +6,6 @@ export type NavMenuData = {
   authLoading: boolean
   username: string
   email: string
-  /** First letter of username (or email) for the avatar fallback. */
-  nameInitial: string
   photoURL: string | null
   logout: () => void
 }

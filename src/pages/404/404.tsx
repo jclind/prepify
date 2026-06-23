@@ -1,4 +1,6 @@
 import React, { FC } from 'react'
+import { Helmet } from 'react-helmet-async'
+import { LuDonut } from 'react-icons/lu'
 import './404.scss'
 import { Link, useNavigate } from 'react-router-dom'
 
@@ -7,11 +9,13 @@ const NotFound: FC = () => {
 
   return (
     <div className='not-found-page page'>
+      <Helmet>
+        <title>Page Not Found · Prepify</title>
+        <meta name='robots' content='noindex' />
+      </Helmet>
       <div className='header'>
         <span className='number'>4</span>
-        <div className='image-container'>
-          <img src='/images/404-plate.svg' alt='food plate as 404 zero' />
-        </div>
+        <LuDonut className='zero' aria-hidden='true' />
         <span className='number'>4</span>
       </div>
       <div className='content'>

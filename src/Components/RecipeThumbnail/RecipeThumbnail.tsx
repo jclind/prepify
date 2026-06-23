@@ -5,6 +5,7 @@ import { AiOutlineStar } from 'react-icons/ai'
 import { formatRating } from 'src/util/formatRating'
 import Skeleton from 'react-loading-skeleton'
 import 'react-loading-skeleton/dist/skeleton.css'
+import RecipePlaceholder from 'src/Components/RecipePlaceholder/RecipePlaceholder'
 
 import './RecipeThumbnail.scss'
 import { RecipeType } from 'types'
@@ -30,8 +31,10 @@ const RecipeThumbnail: FC<RecipeThumbnailType> = ({ recipe, loading }) => {
     <>
       <button onClick={handleOnClick} className='recipe-thumbnail'>
         <div className='img-container'>
-          {loading || !recipe?.recipeImage ? (
+          {loading ? (
             <Skeleton className='img' baseColor={skeletonColor} />
+          ) : !recipe?.recipeImage ? (
+            <RecipePlaceholder className='img' />
           ) : (
             <img
               className='img'

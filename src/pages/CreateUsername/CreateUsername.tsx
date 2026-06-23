@@ -1,4 +1,5 @@
 import React, { ChangeEvent, FC, useEffect, useState } from 'react'
+import { Helmet } from 'react-helmet-async'
 import '../../Components/Form/FormStyles.scss'
 import './CreateUsername.scss'
 import { TailSpin } from 'react-loader-spinner'
@@ -119,6 +120,10 @@ const CreateUsername: FC = () => {
 
   return (
     <div className='create-username-page form-format'>
+      <Helmet>
+        <title>Choose a Username · Prepify</title>
+        <meta name='robots' content='noindex' />
+      </Helmet>
       <div className='login-form-container'>
         <div className='brand-mark'>P</div>
         <form onSubmit={handleSubmit} className='form'>

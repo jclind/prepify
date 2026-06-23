@@ -18,9 +18,11 @@ import PublicProfileAPI from 'src/api/publicProfile'
 import AuthAPI from 'src/api/auth'
 import ReportControl from 'src/Components/ReportControl/ReportControl'
 import EmptyState from 'src/Components/EmptyState/EmptyState'
+import DefaultAvatar from 'src/Components/DefaultAvatar/DefaultAvatar'
 import { formatRating } from 'src/util/formatRating'
 import { formatCompactCount } from 'src/util/formatCompactCount'
 import { formatPrice } from 'src/util/formatPrice'
+import { SITE_URL, DEFAULT_OG_IMAGE } from 'src/util/seo'
 import { RecipeType } from 'types'
 
 // Page size for "load more". Matches the server's initial-batch limit so the
@@ -131,9 +133,6 @@ const PublicProfile: FC = () => {
   }
 
   const profile = data
-  const initial = profile.displayName
-    ? profile.displayName.charAt(0).toUpperCase()
-    : ''
 
   // The grid shows the profile payload's initial batch plus any "load more"
   // pages, ordered by page number.
@@ -144,11 +143,32 @@ const PublicProfile: FC = () => {
   const shownRecipes = [...profile.recipes, ...extraRecipes]
   const hasMore = shownRecipes.length < profile.recipesTotalCount
 
+  // Social/meta values for this profile.
+  const profileTitle = `${profile.displayName} (@${profile.username}) · Prepify`
+  const profileUrl = `${SITE_URL}/u/${profile.username}`
+  const profileDescription =
+    profile.bio?.trim() ||
+    `${profile.displayName}'s budget-friendly, healthy recipes on Prepify — with meal price and nutrition info.`
+  const profileImage = profile.photoURL || DEFAULT_OG_IMAGE
+
   return (
     <div className='page public-profile'>
       <Helmet>
         <meta charSet='utf-8' />
-        <title>{profile.displayName} | Prepify</title>
+        <title>{profileTitle}</title>
+        <meta name='description' content={profileDescription} />
+        <link rel='canonical' href={profileUrl} />
+        {/* Sole live-head meta source for this route (static index.html copies
+            are stripped on JS boot). */}
+        <meta property='og:type' content='profile' />
+        <meta property='og:title' content={profileTitle} />
+        <meta property='og:description' content={profileDescription} />
+        <meta property='og:image' content={profileImage} />
+        <meta property='og:url' content={profileUrl} />
+        <meta name='twitter:card' content='summary_large_image' />
+        <meta name='twitter:title' content={profileTitle} />
+        <meta name='twitter:description' content={profileDescription} />
+        <meta name='twitter:image' content={profileImage} />
       </Helmet>
 
       <header className='pp-head'>
@@ -160,7 +180,11 @@ const PublicProfile: FC = () => {
             onError={() => setAvatarError(true)}
           />
         ) : (
-          <div className='pp-avatar not-set'>{initial}</div>
+          <DefaultAvatar
+            seed={profile.username}
+            className='pp-avatar not-set'
+            title={`${profile.displayName} avatar`}
+          />
         )}
 
         <div className='pp-handle-row'>

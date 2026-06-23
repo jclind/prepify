@@ -19,20 +19,12 @@ export const useNavMenu = (): NavMenuData => {
 
   const username = data ?? ''
   const email = authRes?.user?.email ?? ''
-  const nameInitial = data
-    ? data.charAt(0).toUpperCase()
-    : data === null
-    ? email
-      ? email.charAt(0).toUpperCase()
-      : ''
-    : ''
 
   return {
     isLoggedIn: !!authRes?.user,
     authLoading: !!authRes?.authLoading,
     username,
     email,
-    nameInitial,
     photoURL: authRes?.user?.photoURL ?? null,
     logout: () => authRes?.logout(),
   }
