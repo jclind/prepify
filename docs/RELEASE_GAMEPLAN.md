@@ -61,7 +61,7 @@ same commit.**
 | 3e | create-username revamp | `[x]` | #131 + #98 (+ #162 reconcile/test) ✅ |
 | 4-sass | Sass `@import`→`@use` (LONER) | `[ ]` | — |
 | 4-about | About rewrite (Jesse) | `[ ]` | — |
-| 4-tests | Toast/alert + Cypress autocomplete tests | `[ ]` | — |
+| 4-tests | Toast/alert + Cypress autocomplete tests | `[x]` | #168 ✅ |
 | 4-qa | Empty/error sweep + links + copy + mobile + Lighthouse | `[ ]` | — |
 | 5 | Cutover (beta off + 1.0.0 + deploy) | `[ ]` | — |
 

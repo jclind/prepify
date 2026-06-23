@@ -99,7 +99,8 @@ The triage date stamped on items is the date they were filed here, not when they
   swaps the `<ul>` rows as the new data resolves, so React replaces the `<button>` the click was landing
   on before its `onClick` (`navigate(/recipes/:id)`) fires — the dropdown just stays open. Once results
   settle, the click navigates normally. The window is small locally but widens on a slow connection (a
-  fast typist clicking the moment a row renders can hit it). (`SearchRecipesInput.tsx:153-198`.)
+  fast typist clicking the moment a row renders can hit it). (onClick `navigate` at
+  `SearchRecipesInput.tsx:161`, inside the `keepPreviousData`-swapped list at `:153-198`.)
   *(surfaced 2026-06-22 driving the live app during track 4-tests verification; the Cypress coverage
   stubs the endpoint so the list never re-renders mid-click and can't catch this — a real-network repro
   would be needed. Not introduced by 4-tests.)*
@@ -244,14 +245,20 @@ The triage date stamped on items is the date they were filed here, not when they
 
 ## Testing
 
-- `[ ]` **Tests for the toast/alert system** — newly implemented `react-hot-toast` is untested.
+- `[x]` **Tests for the toast/alert system** — *covered in PR #168 (track 4-tests):* `src/test/toastSystem.test.tsx`
+  mounts a real `<Toaster>` (every other suite mocks `react-hot-toast`) and locks the success/error/loading/blank
+  shapes, the `role="status"` announcement, same-`id` de-dupe/update-in-place, dismiss-by-id removal, and the
+  interactive SaveControl custom toast.
 - `[~]` **Create-recipe tests** — Cypress (E2E) + Vitest (unit). *Substantial sweep added in PR #164 (track
   3d):* Vitest for the enrichment-timeout util, optimistic add / reconcile / soft-fail / retry / timeout,
   inline-edit re-enrich + timeout, drag-reorder + id-keyed status survival, summary-bar rollup + submit
   states, and servings/time validation; Cypress gained keyboard drag-reorder specs (ingredient + instruction)
   and the soft-fail spec was updated to the new retry UX. Remaining: cuisine/meal-type selector units
   (currently E2E-only) and broader E2E happy-path variants.
-- `[ ]` **Cypress: test autocomplete on the Recipes page**.
+- `[x]` **Cypress: test autocomplete on the Recipes page** — *covered in PR #168 (track 4-tests):* `browse.cy.ts`
+  now types a partial query and asserts the dropdown options, types a typo and asserts results surface **with** the
+  "showing similar recipes" banner, asserts the banner is **absent** on a literal match, and clicks a result to
+  navigate. (Server-side fuzzy fallback itself is endpoint-stubbed here; exercised live during verification.)
 - `[x]` **Node 26 test-harness gaps — missing globals in the test sandbox** — **both fixed.** This dev
   machine runs **Node 26**, whose VM/sandbox no longer keeps some globals the test stacks assume:
   - **Server (Jest) — fixed in PR #161:** `server/__tests__/email-notifications.test.js` failed **7/22**
