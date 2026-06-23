@@ -46,11 +46,13 @@ describe('Browse', () => {
   })
 
   it('surfaces fuzzy results with a "similar recipes" banner for a typo', () => {
-    // track 2d: the server falls back to fuzzy matches when nothing contains
-    // the query literally. The stub returns the chicken recipes — none of whose
-    // titles contain the misspelling "chikcen" — so the client flags the
-    // correction with the "showing similar recipes" banner while still listing
-    // the results. Re-declared here (over beforeEach) only to get a wait alias.
+    // Covers the CLIENT-side "did you mean" heuristic, not track 2d's server
+    // fuzzy matching (the endpoint is stubbed). The stub returns the chicken
+    // recipes — none of whose titles contain the misspelling "chikcen" — so the
+    // client flags any non-literal match with the "showing similar recipes"
+    // banner while still listing the results. (The server's actual fuzzy
+    // fallback is exercised by live-app verification, not here.) Re-declared
+    // over beforeEach only to get a wait alias.
     cy.intercept('GET', `${api()}/api/searchAutoCompleteRecipes*`, {
       fixture: 'search-auto-complete-recipes.json',
     }).as('autocomplete')
