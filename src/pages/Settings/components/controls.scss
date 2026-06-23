@@ -23,10 +23,12 @@
       width: 100%;
       object-fit: cover;
     }
+    // The default-avatar lands here nested inside the sized .sr-avatar circle
+    // (unlike other call sites where it IS the sized element), so it must fill
+    // the slot or its tinted background only covers a middle band.
     .sr-avatar-initial {
-      color: s.$primary;
-      font-size: 2.25rem;
-      font-weight: 700;
+      width: 100%;
+      height: 100%;
     }
   }
   .sr-avatar-actions {

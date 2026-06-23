@@ -39,11 +39,11 @@ describe('useNavMenu', () => {
 
     expect(result.current.isLoggedIn).toBe(false)
     expect(result.current.username).toBe('')
-    expect(result.current.nameInitial).toBe('')
+    expect(result.current.email).toBe('')
     expect(result.current.photoURL).toBeNull()
   })
 
-  it('logged in: derives the avatar initial from the username', async () => {
+  it('logged in: exposes the username, email, and photo from auth', async () => {
     mockUseAuth.mockReturnValue({
       user: { email: 'chef@example.com', photoURL: 'https://img/x.png' },
       authLoading: false,
@@ -56,11 +56,11 @@ describe('useNavMenu', () => {
 
     expect(result.current.isLoggedIn).toBe(true)
     expect(result.current.photoURL).toBe('https://img/x.png')
+    expect(result.current.email).toBe('chef@example.com')
     await waitFor(() => expect(result.current.username).toBe('Chef'))
-    expect(result.current.nameInitial).toBe('C')
   })
 
-  it('logged in without a username: falls back to the email initial', async () => {
+  it('logged in without a username: empty username, email still exposed', async () => {
     mockUseAuth.mockReturnValue({
       user: { email: 'bob@example.com', photoURL: null },
       authLoading: false,
@@ -71,7 +71,7 @@ describe('useNavMenu', () => {
 
     const { result } = renderHook(() => useNavMenu(), { wrapper })
 
-    await waitFor(() => expect(result.current.nameInitial).toBe('B'))
+    await waitFor(() => expect(result.current.email).toBe('bob@example.com'))
     expect(result.current.username).toBe('')
   })
 })

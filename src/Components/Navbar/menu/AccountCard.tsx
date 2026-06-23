@@ -6,7 +6,7 @@ import DefaultAvatar from 'src/Components/DefaultAvatar/DefaultAvatar'
 
 type AccountCardProps = Pick<
   NavMenuData,
-  'isLoggedIn' | 'username' | 'email' | 'nameInitial' | 'photoURL' | 'logout'
+  'isLoggedIn' | 'username' | 'email' | 'photoURL' | 'logout'
 > & {
   onClose: () => void
 }
@@ -19,12 +19,11 @@ const AccountCard: FC<AccountCardProps> = ({
   isLoggedIn,
   username,
   email,
-  nameInitial,
   photoURL,
   logout,
   onClose,
 }) => {
-  // Fall back to the initial avatar if the profile image fails to load.
+  // Fall back to the default avatar if the profile image fails to load.
   const [imgFailed, setImgFailed] = useState(false)
 
   if (!isLoggedIn) {

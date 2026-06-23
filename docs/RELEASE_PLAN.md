@@ -142,6 +142,16 @@ a feature flag. Do these together:
 - `[x]` **SEO basics** — `public/robots.txt` (allow-all) and a static `public/sitemap.xml`
   (prepifymeals.com URLs) are present, and `react-helmet-async` is wired (`HelmetProvider` in
   `src/App.tsx:60`, per-page titles e.g. SingleRecipe). Recipe pages are crawlable. **(nice-to-have → done)**
+- `[ ]` **Social link previews need prerendering (SPA limitation)** — track 3b (PR #170) added
+  per-route OG/Twitter tags (recipes, profiles, single recipe) + a branded 1200×630 OG card
+  (`src/util/seo.ts`, `src/pages/**/Helmet`), and strips the static `index.html` fallbacks on JS boot
+  so React 19 doesn't emit duplicate tags. **But this is a client-rendered SPA:** non-JS social
+  crawlers (Facebook, Slack, iMessage, LinkedIn) only ever read the served `index.html`, so **every
+  shared link shows the generic site card**, not the per-recipe/per-profile preview. Googlebot renders
+  JS, so per-route titles/canonical/description still help search indexing — only the social preview is
+  affected. **Revisit before launch:** either add prerendering for crawler user-agents (prerender.io,
+  react-snap, or Netlify/Cloudflare prerender) or consciously accept the generic card for 1.0.
+  **(nice-to-have)**
 - `[ ]` **Production domain + HTTPS** — confirm the real domain is configured on Firebase Hosting and
   the API origin, with valid certs. **(blocker)**
 - `[ ]` **Support / contact path** — a way for users to report issues (Formspree is already a

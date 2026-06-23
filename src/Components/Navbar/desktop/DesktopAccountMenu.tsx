@@ -9,7 +9,7 @@ import DefaultAvatar from 'src/Components/DefaultAvatar/DefaultAvatar'
 
 type DesktopAccountMenuProps = Pick<
   NavMenuData,
-  'username' | 'email' | 'nameInitial' | 'photoURL' | 'logout'
+  'username' | 'email' | 'photoURL' | 'logout'
 >
 
 type LinkItem = { to: string; label: string; Icon: IconType }
@@ -27,7 +27,6 @@ type LinkItem = { to: string; label: string; Icon: IconType }
 const DesktopAccountMenu: FC<DesktopAccountMenuProps> = ({
   username,
   email,
-  nameInitial,
   photoURL,
   logout,
 }) => {
