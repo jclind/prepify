@@ -56,7 +56,7 @@ same commit.**
 | 2d | Recipes browse polish | `[x]` | #167 ✅ |
 | 2e | Account/profile polish | `[x]` | #165 ✅ |
 | 3a | a11y (focus-visible, chevron) | `[x]` | #163 ✅ |
-| 3b | Meta/SEO finish (favicon/OG/titles) | `[ ]` | — |
+| 3b | Meta/SEO finish (favicon/OG/titles) | `[x]` | #170 ✅ |
 | 3c | Username validation + report-user | `[x]` | #166 ✅ |
 | 3d | Add-recipe UX | `[x]` | #164 ✅ |
 | 3e | create-username revamp | `[x]` | #131 + #98 (+ #162 reconcile/test) ✅ |
@@ -467,6 +467,32 @@ Append a one-liner when a track changes state (started / PR / merged). Keeps ses
   only** (every other page keeps it). All CI green (Backend/Frontend/E2e/Fallow/GitGuardian). Worktree +
   branch pruned. **BACKLOG.md** had no About-related items to reconcile (About is a release-track page, not
   a backlog entry). **Wave 4 Part 1 now: only 3b meta/SEO remains** (in flight on `worktree-feat+meta-seo-finish`).
+- _2026-06-23_ — **3b Meta/SEO finish → merged (`[x]` #170 ✅).** Squash-merged as `29b6a5c`; board + 3b
+  appendix flipped. Shipped: per-page `<title>`s in a consistent `"<Page> · Prepify"` pattern across every
+  route (incl. the gaps — Help, Admin, CreateUsername, Settings, 404); **React-19 meta dedup** — `index.html`
+  ships static `data-rh-default` fallbacks for JS-less crawlers, stripped on JS boot (`src/util/seo.ts`
+  `stripStaticMeta`, called in `index.tsx`) so each route's single `<Helmet>` is the only live copy (React 19
+  hoists meta natively and does NOT cross-`<Helmet>` dedupe); per-route OG/Twitter on the high-value share
+  targets (Home, Recipes, PublicProfile, SingleRecipe) + canonicals + `noindex` on private routes
+  (Account/Settings/CreateUsername/Admin/404); a real **branded 1200×630 OG card** (hand-supplied,
+  `public/images/og-card.png`); a reproducible **brand-asset generator** (`scripts/generate-brand-assets.mjs`,
+  Montserrat vendored) emitting the favicon/apple-touch/PWA/maskable icon set — a thin-italic "P" (weight 500,
+  auto-centered on its ink bbox). Beyond the brief, the pass also replaced three default-asset placeholders
+  with on-brand, **asset-free** alternatives: an icon **recipe placeholder** (no-image cards), a deterministic
+  **tinted food line-icon default avatar** (Lucide, seeded from username — replaces the initial letter
+  everywhere), and a **donut-ring "0"** on the 404; plus the home **hero → optimized WebP** (1.1 MB → 304 KB).
+  **Verified at runtime** (`/verify`, headless Chrome): 0 static-fallback leftovers in the live `<head>` on
+  every route, exactly one of each og tag (no React-19 duplication), correct canonicals, `noindex` on 404,
+  all assets 200, OG card 1200×630, no console errors. **A local high-effort code review caught three issues,
+  all fixed in-PR** (not deferred): the Settings avatar rendered as a band not a disc (the nested
+  `.default-avatar` didn't fill the sized `.sr-avatar` slot); dead `nameInitial` plumbing left after the avatar
+  swap (removed from `NavMenuData` + hook + two components + tests — Fallow stayed green); and the recipe card
+  `<img>` never honored its declared `aspect-ratio: 4/3` (the `height` attr pinned it to a fixed 225 px band,
+  so the no-image placeholder didn't match) — added `height: auto` so images, skeleton, and placeholder are a
+  true responsive 4:3 box at every width. All CI green. **Two follow-ups filed → `BACKLOG.md`:** prerendering
+  for social link previews (CSR-SPA limitation; release-gating copy in `RELEASE_PLAN.md` §C) and a missing
+  `onError` placeholder fallback in `RecipeThumbnail`. **Wave 4 Part 1 complete (3b + 4-about + 4-tests);
+  remaining: the 4-sass loner (Part 2), then the 4-qa finishing sweep (Part 3) → Phase 5 cutover.**
 
 ---
 
@@ -752,7 +778,7 @@ Paste-ready, cold-session briefs below — references checked against `developme
 
 ### Part 1 — run these three now (zero file overlap)
 
-#### Track 3b · Meta/SEO finish
+#### Track 3b · Meta/SEO finish ✅
 
 ```
 /worktree-create meta and SEO finish — favicon, OG image, per-page titles
