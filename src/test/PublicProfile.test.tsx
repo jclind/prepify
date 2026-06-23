@@ -100,9 +100,9 @@ describe('PublicProfile', () => {
 
     await waitFor(() => {
       const fallback = document.querySelector('.pp-avatar.not-set')
-      // Image error → the default (food-emoji) avatar takes over.
+      // Image error → the default (food line-icon) avatar takes over.
       expect(fallback).toHaveClass('default-avatar')
-      expect(fallback?.textContent?.length).toBeGreaterThan(0)
+      expect(fallback?.querySelector("svg")).toBeTruthy()
     })
   })
 

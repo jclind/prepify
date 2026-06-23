@@ -1,18 +1,30 @@
-// Deterministic "fun" default avatar for users who haven't set a photo: a food
-// emoji on a soft pastel tile, picked from a stable hash of the user's seed
-// (their username) so the same user always gets the same avatar everywhere.
+// Deterministic default avatar for users with no photo: a food line-icon in a
+// darker shade on a light tint of the same hue (a tasteful, near-monochrome
+// look). Both the icon and the hue are picked from a stable hash of the user's
+// seed (their username) so the same user always gets the same avatar everywhere.
 
-const EMOJIS = [
-  '🍳', '🥑', '🍅', '🥕', '🍜', '🧁', '🍓', '🥦',
-  '🌽', '🍕', '🌮', '🍣', '🍩', '🥐', '🍇', '🍰',
-  '🍝', '🫐', '🥗', '🍋', '🍑', '🥥', '🌶️', '🍔',
-]
+// Icon keys map to react-icons/lu (Lucide) components in DefaultAvatar.tsx.
+export const AVATAR_ICONS = [
+  'apple', 'carrot', 'croissant', 'cookie', 'pizza', 'soup',
+  'salad', 'egg', 'fish', 'beef', 'cakeSlice', 'coffee',
+  'iceCream', 'cherry', 'grape', 'sandwich', 'donut', 'cookingPot',
+  'wheat', 'candy',
+] as const
 
-// Light, friendly backgrounds so the emoji stays the focal point.
-const BACKGROUNDS = [
-  '#FFE0B2', '#FFCCBC', '#F8BBD0', '#E1BEE7',
-  '#C5CAE9', '#B3E5FC', '#B2DFDB', '#C8E6C9',
-  '#DCEDC8', '#FFF59D', '#FFE082', '#D7CCC8',
+export type AvatarIcon = (typeof AVATAR_ICONS)[number]
+
+// Light tint (background) + darker same-hue shade (icon), one hue per entry.
+const HUES: ReadonlyArray<{ bg: string; fg: string }> = [
+  { bg: '#FFF1E6', fg: '#EA580C' }, // orange
+  { bg: '#FEF3C7', fg: '#D97706' }, // amber
+  { bg: '#FFE4E6', fg: '#E11D48' }, // rose
+  { bg: '#E0F2FE', fg: '#0284C7' }, // blue
+  { bg: '#EDE9FE', fg: '#7C3AED' }, // violet
+  { bg: '#CCFBF1', fg: '#0D9488' }, // teal
+  { bg: '#DCFCE7', fg: '#16A34A' }, // green
+  { bg: '#FCE7F3', fg: '#DB2777' }, // pink
+  { bg: '#E0E7FF', fg: '#4F46E5' }, // indigo
+  { bg: '#CFFAFE', fg: '#0891B2' }, // cyan
 ]
 
 // Small, stable string hash (FNV-ish). Deterministic across sessions/devices.
@@ -24,18 +36,18 @@ const hashSeed = (s: string): number => {
   return h
 }
 
-export type DefaultAvatarStyle = { emoji: string; bg: string }
+export type DefaultAvatarStyle = { icon: AvatarIcon; bg: string; fg: string }
 
 /**
- * Resolve a deterministic emoji + background for a seed (e.g. a username).
- * Emoji and background are picked from independent slices of the hash so two
- * users with the same emoji usually differ in colour.
+ * Resolve a deterministic icon + hue for a seed (e.g. a username). Icon and hue
+ * are taken from independent slices of the hash so two users with the same icon
+ * usually differ in colour.
  */
-export const getDefaultAvatar = (seed: string | null | undefined): DefaultAvatarStyle => {
+export const getDefaultAvatar = (
+  seed: string | null | undefined
+): DefaultAvatarStyle => {
   const s = (seed || '?').trim().toLowerCase()
   const h = hashSeed(s)
-  return {
-    emoji: EMOJIS[h % EMOJIS.length],
-    bg: BACKGROUNDS[Math.floor(h / EMOJIS.length) % BACKGROUNDS.length],
-  }
+  const { bg, fg } = HUES[Math.floor(h / AVATAR_ICONS.length) % HUES.length]
+  return { icon: AVATAR_ICONS[h % AVATAR_ICONS.length], bg, fg }
 }

@@ -251,7 +251,7 @@ describe('DesktopAccountMenu (Profile Card)', () => {
 
     fireEvent.error(imgs[0])
     expect(screen.queryByAltText('Profile')).not.toBeInTheDocument()
-    // Image error → the default (food-emoji) avatar takes over.
+    // Image error → the default (food line-icon) avatar takes over.
     expect(document.querySelectorAll('.default-avatar').length).toBeGreaterThan(0)
   })
 })

@@ -306,9 +306,9 @@ describe('Account page', () => {
 
       await waitFor(() => {
         const fallback = document.querySelector('.acct-avatar.not-set')
-        // Image error → the default (food-emoji) avatar takes over.
+        // Image error → the default (food line-icon) avatar takes over.
         expect(fallback).toHaveClass('default-avatar')
-        expect(fallback?.textContent?.length).toBeGreaterThan(0)
+        expect(fallback?.querySelector("svg")).toBeTruthy()
       })
     })
   })
@@ -330,7 +330,7 @@ describe('Account page', () => {
   })
 
   describe('username / initial display', () => {
-    it('shows the default (food-emoji) avatar when auth user has a displayName but no photo', async () => {
+    it('shows the default (food line-icon) avatar when auth user has a displayName but no photo', async () => {
       mockGetUID.mockReturnValue('u1')
       mockUseAuth.mockReturnValue({
         user: { displayName: 'Jane Doe', photoURL: null, uid: 'u1' },
@@ -339,7 +339,7 @@ describe('Account page', () => {
       await waitFor(() => {
         const profileEl = document.querySelector('.acct-avatar.not-set')
         expect(profileEl).toHaveClass('default-avatar')
-        expect(profileEl?.textContent?.length).toBeGreaterThan(0)
+        expect(profileEl?.querySelector("svg")).toBeTruthy()
       })
     })
 

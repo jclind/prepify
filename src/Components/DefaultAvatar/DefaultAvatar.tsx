@@ -1,9 +1,55 @@
 import React, { FC } from 'react'
-import { getDefaultAvatar } from 'src/util/defaultAvatar'
+import { IconType } from 'react-icons'
+import {
+  LuApple,
+  LuCarrot,
+  LuCroissant,
+  LuCookie,
+  LuPizza,
+  LuSoup,
+  LuSalad,
+  LuEgg,
+  LuFish,
+  LuBeef,
+  LuCakeSlice,
+  LuCoffee,
+  LuIceCreamCone,
+  LuCherry,
+  LuGrape,
+  LuSandwich,
+  LuDonut,
+  LuCookingPot,
+  LuWheat,
+  LuCandy,
+} from 'react-icons/lu'
+import { getDefaultAvatar, AvatarIcon } from 'src/util/defaultAvatar'
 import './DefaultAvatar.scss'
 
+const ICONS: Record<AvatarIcon, IconType> = {
+  apple: LuApple,
+  carrot: LuCarrot,
+  croissant: LuCroissant,
+  cookie: LuCookie,
+  pizza: LuPizza,
+  soup: LuSoup,
+  salad: LuSalad,
+  egg: LuEgg,
+  fish: LuFish,
+  beef: LuBeef,
+  cakeSlice: LuCakeSlice,
+  coffee: LuCoffee,
+  iceCream: LuIceCreamCone,
+  cherry: LuCherry,
+  grape: LuGrape,
+  sandwich: LuSandwich,
+  donut: LuDonut,
+  cookingPot: LuCookingPot,
+  wheat: LuWheat,
+  candy: LuCandy,
+}
+
 type DefaultAvatarProps = {
-  // Stable identity (username) so the emoji/colour is consistent per user.
+  // Stable identity (username) so the icon/colour is consistent per user.
   seed: string | null | undefined
   // The avatar slot's existing class — supplies size + border-radius.
   className?: string
@@ -13,9 +59,9 @@ type DefaultAvatarProps = {
 }
 
 /**
- * Fun default avatar for users with no photo: a deterministic food emoji on a
- * soft tile. The emoji is drawn in an SVG so it scales to whatever size the
- * passed-in className gives the tile (16px nav avatar → 120px profile header).
+ * Default avatar for users with no photo: a deterministic food line-icon (darker
+ * shade) on a light tint of the same hue — a tasteful, near-monochrome look.
+ * The icon scales to whatever size the passed-in className gives the tile.
  */
 const DefaultAvatar: FC<DefaultAvatarProps> = ({
   seed,
@@ -23,26 +69,17 @@ const DefaultAvatar: FC<DefaultAvatarProps> = ({
   title,
   ariaHidden,
 }) => {
-  const { emoji, bg } = getDefaultAvatar(seed)
+  const { icon, bg, fg } = getDefaultAvatar(seed)
+  const Icon = ICONS[icon]
   return (
     <span
       className={`default-avatar ${className}`}
-      style={{ background: bg }}
+      style={{ background: bg, color: fg }}
       role={ariaHidden ? undefined : 'img'}
       aria-label={ariaHidden ? undefined : title || 'Default avatar'}
       aria-hidden={ariaHidden || undefined}
     >
-      <svg className='default-avatar__art' viewBox='0 0 100 100'>
-        <text
-          x='50'
-          y='54'
-          textAnchor='middle'
-          dominantBaseline='central'
-          fontSize='58'
-        >
-          {emoji}
-        </text>
-      </svg>
+      <Icon className='default-avatar__icon' />
     </span>
   )
 }
