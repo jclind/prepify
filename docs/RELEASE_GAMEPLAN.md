@@ -438,6 +438,20 @@ Append a one-liner when a track changes state (started / PR / merged). Keeps ses
   **4-qa** finishing sweep (empty/error/loading states + broken-link click-through + copy/typo + mobile
   hand-pass + Lighthouse). Then **Phase 5 cutover** (beta off + 1.0.0 + deploy) per `RELEASE_PLAN.md`. Added a
   `4-tests` row to the Track Board.
+- _2026-06-23_ — **4-tests → merged (`[x]` #168 ✅).** Toast/alert Vitest coverage (`src/test/toastSystem.test.tsx`,
+  the only suite that mounts a real `<Toaster>`) + Cypress autocomplete typo→"showing similar recipes" banner
+  (`browse.cy.ts`). All CI green. Verification surfaced a live click bug → filed to Backlog.
+- _2026-06-23_ — **Autocomplete "click-swallow" bug → re-diagnosed + fixed (`[x]` #171 ✅).** The filed
+  "clicking a result the instant it appears does nothing" was **not** a `keepPreviousData` refetch/node-swap
+  race — a production build showed the list is stable once loaded and an immediate real-row click navigates.
+  Real cause: loading **skeletons shared the `.ac-item` class**, so for the first ~150ms the dropdown is
+  non-interactive placeholders that look clickable (a fast click / `.first()` probe lands on one). Fixed by
+  giving skeletons their own `.ac-skeleton` class (so `.ac-item` only ever matches a real result) and
+  delegating activation to the stable `.auto-complete-results` container via `data-recipe-id`. **A local code
+  review caught a P1 regression before merge** — the first delegation used a never-resetting `navigatingRef`
+  that broke the navbar's persistent `SearchRecipesInput` (every autocomplete click after the first no-op'd
+  until reload); replaced with a stateless `onClick` handler and a regression test. Verified live (consecutive
+  navbar uses both navigate). Vitest 507 + Cypress green.
 
 ---
 
