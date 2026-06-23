@@ -24,7 +24,6 @@ const baseMenu = (
   authLoading: false,
   username: '',
   email: '',
-  nameInitial: '',
   photoURL: null,
   logout: vi.fn(),
   ...overrides,
@@ -63,7 +62,6 @@ describe('NavMenu', () => {
         isLoggedIn: true,
         username: 'chef',
         email: 'chef@example.com',
-        nameInitial: 'C',
       })
     )
 

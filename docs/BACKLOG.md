@@ -254,6 +254,24 @@ The triage date stamped on items is the date they were filed here, not when they
   (prerender.io / react-snap / Netlify or Cloudflare prerender) or consciously accepting the generic card for
   1.0. **Release-gating copy lives in `RELEASE_PLAN.md` §C (Launch & legal)** — this is the backlog mirror.
   *(surfaced 2026-06-23 in the track 3b verification + review.)*
+- `[ ]` **`/add-recipe` is login-gated but indexable** — track 3b (PR #170) added `noindex` to the private
+  routes (Account/Settings/CreateUsername/Admin/404) but `AddRecipe` self-canonicalizes `/add-recipe`
+  (`src/pages/AddRecipe/AddRecipe.tsx`) with no `noindex`. A create-recipe page being crawlable is a minor
+  SEO/privacy wart (crawlers just bounce off the login wall). Add `noindex` to the **create** mode (edit mode
+  already canonicalizes to the public recipe URL, which is correct). Low severity. *(surfaced 2026-06-23 in the
+  Wave 4 Part 1 verification.)*
+- `[ ]` **JSON-LD recipe title/description isn't `</script>`-escaped** — `SingleRecipe.tsx` interpolates
+  user-supplied recipe `title`/`description` into a `<script type="application/ld+json">{JSON.stringify(...)}</script>`
+  block, and `JSON.stringify` does not escape `<` / `</`. **Not exploitable today** — this is a CSR app, so
+  react-helmet-async sets the JSON as a text node via React (not string serialization), and `</script>` in
+  `textContent` isn't parsed as a tag. But it **becomes a real injection vector the moment any server-side
+  prerendering is added** (see the prerender item above). Escape `<`/`</` in the JSON-LD payload before/when
+  prerendering lands. *(surfaced 2026-06-23 in the track 3b code review.)*
+- `[ ]` **Brand-asset script comment drift + dead hero source** — minor cleanup left after track 3b (PR #170):
+  the header comment in `scripts/generate-brand-assets.mjs` lists `Montserrat-{Bold,SemiBold,Italic}.ttf` but
+  the code actually loads `Montserrat-MediumItalic.ttf` (code correct, comment stale); and
+  `public/images/home-images/hero.jpg` (~1.1 MB) is no longer referenced after the WebP swap (`hero.webp`) —
+  safe to delete unless kept as source. *(surfaced 2026-06-23 in the Wave 4 Part 1 verification.)*
 - `[ ]` **Post-6-phase-refactor DB check** — confirm no existing database records need updating/migrating
   after the refactor.
 - `[ ]` **Establish a code & architecture standard for Claude** — write a conventions doc so generated
