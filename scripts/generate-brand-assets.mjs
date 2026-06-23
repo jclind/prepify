@@ -1,17 +1,21 @@
-// Regenerates Prepify's brand assets — the favicon/PWA icon set and the social
-// link-preview (OG) card — from code, in the brand font (Montserrat).
+// Regenerates Prepify's favicon / PWA / apple-touch icon set from code, in the
+// brand font (Montserrat italic "P" on the brand-orange gradient).
 //
 //   npm run gen:brand
 //
-// Fonts: scripts/fonts/Montserrat-{Bold,SemiBold}.ttf (SIL OFL, see OFL.txt).
+// Fonts: scripts/fonts/Montserrat-{Bold,SemiBold,Italic}.ttf (SIL OFL, see OFL.txt).
 // Requires the @resvg/resvg-js devDependency.
+//
+// NOTE: the social link-preview card (public/images/og-card.png) is a
+// hand-supplied design asset and is intentionally NOT generated here — this
+// script used to overwrite it. Replace that file directly; keep it 1200×630 PNG
+// to match the og:image:width/height declared in index.html.
 //
 // Outputs (all under public/):
 //   favicon.ico, favicon-16x16.png, favicon-32x32.png,
-//   apple-touch-icon.png, logo192.png, logo512.png, maskable-512.png,
-//   images/og-card.png
+//   apple-touch-icon.png, logo192.png, logo512.png, maskable-512.png
 import { Resvg } from '@resvg/resvg-js'
-import { readFileSync, writeFileSync, mkdirSync } from 'fs'
+import { writeFileSync } from 'fs'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
 import { inflateSync } from 'zlib'
@@ -21,7 +25,7 @@ const root = join(here, '..')
 const fontFiles = [
   join(here, 'fonts', 'Montserrat-Bold.ttf'),
   join(here, 'fonts', 'Montserrat-SemiBold.ttf'),
-  join(here, 'fonts', 'Montserrat-LightItalic.ttf'),
+  join(here, 'fonts', 'Montserrat-Italic.ttf'),
 ]
 const out = p => join(root, 'public', p)
 
@@ -39,15 +43,16 @@ const renderPng = (svg, size) =>
     .asPng()
 
 // ---------------------------------------------------------------------------
-// Icon: white thin-italic "P" monogram on the brand-orange gradient — matches
-// the in-app .brand-mark (Montserrat Light Italic, weight 300).
+// Icon: white italic "P" monogram on the brand-orange gradient — echoes the
+// in-app .brand-mark (Montserrat italic), at weight 400 and a large size so it
+// stays legible at favicon scale (16/32px).
 //   rounded → rounded-square (favicons / "any" PWA icons)
 //   pad     → scales the P down for maskable icons (OS applies its own crop)
 // The x is nudged left of center to optically balance the italic lean.
 // ---------------------------------------------------------------------------
 const iconSvg = ({ rounded = true, pad = 1 } = {}) => {
   const rx = rounded ? 112 : 0
-  const fontSize = 330 * pad
+  const fontSize = 410 * pad
   return `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
   <defs>
     <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
@@ -56,44 +61,9 @@ const iconSvg = ({ rounded = true, pad = 1 } = {}) => {
     </linearGradient>
   </defs>
   <rect width="512" height="512" rx="${rx}" fill="url(#g)"/>
-  <text x="244" y="278" text-anchor="middle" dominant-baseline="central"
-        font-family="${FONT}" font-weight="300" font-style="italic"
+  <text x="242" y="276" text-anchor="middle" dominant-baseline="central"
+        font-family="${FONT}" font-weight="400" font-style="italic"
         font-size="${fontSize}" fill="#ffffff">P</text>
-</svg>`
-}
-
-// ---------------------------------------------------------------------------
-// OG card (1200×630): wordmark + tagline + url chip + plate/cutlery motif.
-// ---------------------------------------------------------------------------
-const ogCardSvg = () => {
-  const W = 1200
-  const H = 630
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="${ORANGE_LIGHT}"/>
-      <stop offset="1" stop-color="${ORANGE}"/>
-    </linearGradient>
-    <linearGradient id="plate" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ffffff" stop-opacity="0.20"/>
-      <stop offset="1" stop-color="#ffffff" stop-opacity="0.07"/>
-    </linearGradient>
-  </defs>
-  <rect width="${W}" height="${H}" fill="url(#bg)"/>
-  <circle cx="960" cy="315" r="300" fill="url(#plate)"/>
-  <circle cx="960" cy="315" r="300" fill="none" stroke="#ffffff" stroke-opacity="0.35" stroke-width="3"/>
-  <circle cx="960" cy="315" r="218" fill="none" stroke="#ffffff" stroke-opacity="0.30" stroke-width="6" stroke-dasharray="2 22" stroke-linecap="round"/>
-  <g stroke="#ffffff" stroke-opacity="0.85" stroke-linecap="round" fill="none" stroke-width="9">
-    <line x1="905" y1="225" x2="905" y2="405"/>
-    <line x1="888" y1="225" x2="888" y2="270"/><line x1="922" y1="225" x2="922" y2="270"/>
-    <path d="M888 270 q17 14 34 0" stroke-width="7"/>
-    <path d="M1020 225 q26 8 26 60 q0 30 -26 34 l0 86"/>
-  </g>
-  <text x="96" y="300" font-family="${FONT}" font-weight="700" font-size="132" fill="#ffffff" letter-spacing="-2">Prepify</text>
-  <text x="100" y="372" font-family="${FONT}" font-weight="600" font-size="40" fill="#ffffff" fill-opacity="0.97">Budget-friendly, healthy recipes —</text>
-  <text x="100" y="426" font-family="${FONT}" font-weight="600" font-size="40" fill="#ffffff" fill-opacity="0.97">with price &amp; nutrition built in.</text>
-  <rect x="100" y="486" width="312" height="62" rx="31" fill="#ffffff" fill-opacity="0.18"/>
-  <text x="130" y="527" font-family="${FONT}" font-weight="600" font-size="32" fill="#ffffff">prepifymeals.com</text>
 </svg>`
 }
 
@@ -203,7 +173,6 @@ const anySvg = iconSvg({ rounded: true })
 const maskSvg = iconSvg({ rounded: false, pad: 0.72 })
 const appleSvg = iconSvg({ rounded: false }) // iOS masks the corners itself
 
-mkdirSync(join(root, 'public', 'images'), { recursive: true })
 writeFileSync(out('favicon.ico'), buildIco([16, 32, 48]))
 writeFileSync(out('favicon-16x16.png'), renderPng(anySvg, 16))
 writeFileSync(out('favicon-32x32.png'), renderPng(anySvg, 32))
@@ -211,5 +180,4 @@ writeFileSync(out('apple-touch-icon.png'), renderPng(appleSvg, 180))
 writeFileSync(out('logo192.png'), renderPng(anySvg, 192))
 writeFileSync(out('logo512.png'), renderPng(anySvg, 512))
 writeFileSync(out('maskable-512.png'), renderPng(maskSvg, 512))
-writeFileSync(out('images/og-card.png'), renderPng(ogCardSvg(), 1200))
-console.log('Brand assets regenerated in public/ (Montserrat).')
+console.log('Icon set regenerated in public/ (Montserrat).')
