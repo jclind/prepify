@@ -95,7 +95,7 @@ The triage date stamped on items is the date they were filed here, not when they
   while the list still shows `chic` matches. Cosmetic, self-corrects on fetch.
   (`SearchRecipesInput.tsx:205` + `:124-146`). *(surfaced 2026-06-22 in the track 2d code review.)*
 - `[x]` **Autocomplete result click "swallowed the instant the row appears"** — *root cause was misfiled
-  and is now fixed in PR #169.* The reported symptom (clicking a freshly-appeared dropdown row does
+  and is now fixed in PR #171.* The reported symptom (clicking a freshly-appeared dropdown row does
   nothing) was **not** a `keepPreviousData` refetch/node-swap race: a production build shows the list is
   stable once results load and an immediate click on a real row navigates fine. The actual cause is that
   the loading **skeleton placeholders shared the `.ac-item` class** (`ac-item ac-item--skeleton`), so for
