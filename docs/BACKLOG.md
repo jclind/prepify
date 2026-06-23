@@ -195,6 +195,25 @@ The triage date stamped on items is the date they were filed here, not when they
   as a plain list of buttons, or implement real listbox keyboarding. *(surfaced 2026-06-22 in the track 2d
   code review; the per-result `role="option"` on a button is the new markup from this track.)*
 
+- `[ ]` **Ingredient checklist `<li role="checkbox">` is an invalid ARIA role + breaks the list** — each
+  ingredient row is a `<li role="checkbox" aria-checked tabIndex={0}>` (`SingleRecipe.tsx`
+  `renderIngredient`), but `checkbox` isn't an allowed role on `<li>`, which also makes the parent
+  `<ul class="ing-list">` "a list that doesn't contain only `<li>`" (the `<li>`s no longer carry an
+  implicit `listitem` role). Fixes Lighthouse `aria-allowed-role` + `list`. Fix: move the
+  checkbox role/keyboard handler onto an inner element (e.g. a `<div role="checkbox">` or a real
+  `<button>`) and keep the `<li>` plain — needs `.ing` CSS re-pointed and a visual re-check, so it's not
+  a blind one-liner. *(surfaced 2026-06-23 in the track 4-qa Lighthouse pass; recipe-page a11y was 80→89
+  after the cheap wins, these are the remainder.)*
+- `[ ]` **Recipe-page nav fails color-contrast (signup CTA + condensed nav link label)** — Lighthouse
+  `color-contrast` flags `.dnav__cta--signup` and `.dnav__link-label` on the solid (`darkNavLinks`) nav.
+  These are brand colors, so adjusting them is a design call, not a QA-sweep polish edit. *(The
+  `.beta-tag` is also flagged but is intentionally left for the Phase-5 beta-tag cutover. surfaced
+  2026-06-23, track 4-qa.)*
+- `[ ]` **Servings stepper input is below the 24px touch-target minimum** — the `.serv-input` in the
+  Ingredients servings pill (`SingleRecipe.tsx`) trips Lighthouse `target-size`. A label was added in
+  track 4-qa (`aria-label="Servings"`), but enlarging the tap target is a layout change to the pill.
+  *(surfaced 2026-06-23, track 4-qa.)*
+
 ## Features
 
 - `[ ]` **Press `/` to focus search** — global keyboard shortcut to bring up search. No handler exists today.

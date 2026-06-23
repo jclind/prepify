@@ -57,7 +57,14 @@ const StarRating: FC<StarRatingProps> = ({
   const displayRating = hovered || rating
 
   return (
-    <div style={{ display: 'inline-flex', gap: spacing }}>
+    // Display-only stars convey their value once via an img role on the row, so
+    // the individual stars below are hidden from assistive tech (otherwise each
+    // renders as an unnamed <button> — an accessibility failure).
+    <div
+      style={{ display: 'inline-flex', gap: spacing }}
+      role={interactive ? undefined : 'img'}
+      aria-label={interactive ? undefined : `Rated ${rating} out of 5`}
+    >
       {[1, 2, 3, 4, 5].map(i => (
         <button
           key={i}
@@ -74,6 +81,7 @@ const StarRating: FC<StarRatingProps> = ({
             lineHeight: 0,
           }}
           tabIndex={interactive ? 0 : -1}
+          aria-hidden={interactive ? undefined : true}
           aria-label={interactive ? `Rate ${i} out of 5` : undefined}
         >
           <StarSVG

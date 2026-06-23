@@ -121,6 +121,10 @@ const PublicProfile: FC = () => {
   if (isError || !data) {
     return (
       <div className='page public-profile pp-centered'>
+        <Helmet>
+          <title>Profile not found · Prepify</title>
+          <meta name='robots' content='noindex' />
+        </Helmet>
         <div className='pp-notfound'>
           <h1>Profile not found</h1>
           <p>We couldn’t find a cook with the username “{username}”.</p>

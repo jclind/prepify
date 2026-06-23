@@ -110,7 +110,7 @@ const ProfileSection: FC = () => {
     const file = event.target.files?.[0]
     if (file && /\.(jpe?g|png)$/i.test(file.name)) {
       if (file.size > MAX_FILE_SIZE) {
-        toast.error('File cannot be more than 5mb in size')
+        toast.error('Image cannot be more than 5MB in size.')
         return
       }
       setImgFile(file)
