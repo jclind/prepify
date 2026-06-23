@@ -242,8 +242,13 @@ The triage date stamped on items is the date they were filed here, not when they
   rename would silently break suppression in two places with no compile error. Extract a shared
   `RECIPES_PATH` const (or a small hook) and have `browseAll` call `clearFilters`.
   *(surfaced 2026-06-22 in the track 2d code review.)*
-- `[ ]` **Migrate Sass `@import` → `@use`** — build emits Sass `@import` deprecation warnings
-  (pre-existing; Sass 1.x warns `@import` is going away in 3.x). Cosmetic now, worth migrating.
+- `[x]` **Migrate Sass `@import` → `@use`** — **already done in `cb2ac81` (2026-05-09), reconciled
+  2026-06-23.** Converted all 36 component/page stylesheets from `@import 'helpers.scss'` to
+  `@use 'helpers.scss' as s` and namespaced every var/mixin under `s.`. This predates the release gameplan
+  (created 2026-06-17), so the open box was stale, not pending work. Verified: `npm run build` emits **zero**
+  Sass deprecation warnings and all 73 `.scss` compile clean. The only remaining `@import` is the plain CSS
+  `@import url('…Montserrat…')` font load in `src/index.scss` — not a Sass partial import, not deprecated.
+  *(See the 2026-06-23 4-sass status-log entry in `RELEASE_GAMEPLAN.md`.)*
 - `[ ]` **Point Railway at the production branch** — currently not deploying from production.
 - `[ ]` **Social link previews need server-side prerendering (CSR-SPA limitation)** — track 3b (PR #170)
   added per-route OG/Twitter tags + a branded 1200×630 card and strips the static `index.html` fallbacks on JS
