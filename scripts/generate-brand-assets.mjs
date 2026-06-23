@@ -21,6 +21,7 @@ const root = join(here, '..')
 const fontFiles = [
   join(here, 'fonts', 'Montserrat-Bold.ttf'),
   join(here, 'fonts', 'Montserrat-SemiBold.ttf'),
+  join(here, 'fonts', 'Montserrat-LightItalic.ttf'),
 ]
 const out = p => join(root, 'public', p)
 
@@ -38,13 +39,15 @@ const renderPng = (svg, size) =>
     .asPng()
 
 // ---------------------------------------------------------------------------
-// Icon: white "P" monogram on the brand-orange gradient.
+// Icon: white thin-italic "P" monogram on the brand-orange gradient — matches
+// the in-app .brand-mark (Montserrat Light Italic, weight 300).
 //   rounded → rounded-square (favicons / "any" PWA icons)
 //   pad     → scales the P down for maskable icons (OS applies its own crop)
+// The x is nudged left of center to optically balance the italic lean.
 // ---------------------------------------------------------------------------
 const iconSvg = ({ rounded = true, pad = 1 } = {}) => {
   const rx = rounded ? 112 : 0
-  const fontSize = 340 * pad
+  const fontSize = 330 * pad
   return `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
   <defs>
     <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
@@ -53,9 +56,9 @@ const iconSvg = ({ rounded = true, pad = 1 } = {}) => {
     </linearGradient>
   </defs>
   <rect width="512" height="512" rx="${rx}" fill="url(#g)"/>
-  <text x="256" y="280" text-anchor="middle" dominant-baseline="central"
-        font-family="${FONT}" font-weight="700" font-size="${fontSize}"
-        fill="#ffffff" letter-spacing="-6">P</text>
+  <text x="244" y="278" text-anchor="middle" dominant-baseline="central"
+        font-family="${FONT}" font-weight="300" font-style="italic"
+        font-size="${fontSize}" fill="#ffffff">P</text>
 </svg>`
 }
 
