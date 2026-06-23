@@ -13,6 +13,7 @@ import {
   FiShoppingCart,
   FiBookOpen,
 } from 'react-icons/fi'
+import { LuUtensils } from 'react-icons/lu'
 import './About.scss'
 
 type Feature = {
@@ -95,10 +96,11 @@ const ProductShowcase: FC = () => (
   <div className='about-mock' aria-hidden='true'>
     <div className='about-card'>
       <div className='about-card-media'>
+        <LuUtensils className='about-card-media-icon' aria-hidden='true' />
         <span className='about-card-price'>$3.18/serv</span>
       </div>
       <div className='about-card-body'>
-        <h3 className='about-card-title'>Tuscan Chicken Skillet</h3>
+        <p className='about-card-title'>Tuscan Chicken Skillet</p>
         <div className='about-card-meta'>
           <span>
             <FiClock aria-hidden='true' /> 45m
@@ -164,6 +166,7 @@ const About: FC = () => (
       <div className='about-cta'>
         <Link to='/recipes' className='about-btn about-btn-primary'>
           Browse recipes
+          <FiArrowRight aria-hidden='true' />
         </Link>
         <Link to='/signup' className='about-btn about-btn-ghost'>
           Create an account
@@ -184,10 +187,8 @@ const About: FC = () => (
     <section className='about-section about-moment'>
       <p className='about-moment-kicker'>Transparency, by default.</p>
       <p className='about-moment-line'>
-        Prepify is all about transparency. We&rsquo;re a recipe site that keeps
-        it real. No buried costs, no missing nutrition info. It&rsquo;s all
-        calculated from the actual ingredients and shown right there on the
-        recipe.
+        Every price and nutrition figure is calculated straight from the real
+        ingredients. Never estimated, never left for you to work out.
       </p>
     </section>
 

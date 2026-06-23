@@ -10,6 +10,12 @@
   overflow-x: hidden;
   padding-top: calc(#{s.$nav-height} + 1.5rem);
 
+  // The closing CTA is a full-bleed tinted band designed to lead straight into
+  // the footer, so cancel the global $footer-margin gap (the footer keeps it on
+  // every other page). The closing section's own bottom padding is the breathing
+  // room. Kept in terms of the token so it tracks any future change.
+  margin-bottom: calc(-1 * #{s.$footer-margin});
+
   // ---- Shared building blocks ----
   .about-eyebrow,
   .about-section-eyebrow,
@@ -159,6 +165,18 @@
     background: linear-gradient(135deg, #ffd9c9 0%, #ffe9c2 100%);
   }
 
+  // Faint glyph so the gradient reads as "a recipe photo goes here" rather than
+  // an empty block. Sits under the price pill (which keeps its own stacking).
+  .about-card-media-icon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 2.75rem;
+    height: 2.75rem;
+    color: rgba(255, 87, 34, 0.28);
+  }
+
   .about-card-price {
     position: absolute;
     top: 0.65rem;
@@ -265,7 +283,7 @@
 
   .about-showcase-caption {
     font-size: 0.875rem;
-    color: s.$tertiary-text;
+    color: s.$secondary-text;
     max-width: 460px;
     margin: 1.85rem auto 0;
     line-height: 1.6;
@@ -463,6 +481,22 @@
 
     .about-closing-icons {
       gap: 1.4rem;
+    }
+  }
+
+  // Respect users who ask for less motion: no lift, no icon slide.
+  @media (prefers-reduced-motion: reduce) {
+    .about-btn,
+    .about-btn svg {
+      transition: none;
+    }
+
+    .about-btn:hover {
+      transform: none;
+    }
+
+    .about-btn-primary:hover svg {
+      transform: none;
     }
   }
 }
