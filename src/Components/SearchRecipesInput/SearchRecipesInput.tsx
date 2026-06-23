@@ -83,24 +83,21 @@ const SearchRecipesInput: FC<SearchRecipesInputProps> = ({
   useOutsideAlerter(wrapperRef, setIsBlurred)
 
   // Activate an autocomplete result. Delegated to the stable results container
-  // rather than bound per-row, because an in-flight refetch (keepPreviousData,
-  // or a background refetch) re-renders the list and *replaces* the <li>/<button>
-  // DOM nodes mid-interaction. A handler bound to a row therefore fires on a
-  // node React has already detached — the click no-ops and the dropdown just
-  // sits there. The container persists across those swaps, so the bubbled event
-  // always lands; we read the target row's id from its data attribute. We fire
-  // on mousedown (before mouseup can miss a swapped node) and also on click so
-  // keyboard activation (Enter/Space → click, no mousedown) still works; the ref
-  // guard keeps the two paths from double-navigating.
-  const navigatingRef = useRef(false)
+  // rather than bound per-row: an in-flight refetch (keepPreviousData, or a
+  // background refetch) can re-render the list and replace the <li>/<button>
+  // mid-interaction, so a handler bound to a row would fire on a node React has
+  // already detached — the click no-ops and the dropdown just sits there. The
+  // container persists across those swaps, so the bubbled click always lands;
+  // we read the target row's id from its data attribute. Click (not mousedown)
+  // covers both mouse and keyboard (Enter/Space dispatches a click), and because
+  // it's stateless it stays correct for the navbar's SearchRecipesInput, which
+  // lives in the persistent <Layout> and is reused across navigations.
   const handleResultActivate = (e: React.MouseEvent<HTMLDivElement>) => {
     const row = (e.target as HTMLElement).closest<HTMLElement>(
       '[data-recipe-id]'
     )
     const id = row?.dataset.recipeId
-    if (!id || navigatingRef.current) return
-    navigatingRef.current = true
-    navigate(`/recipes/${id}`)
+    if (id) navigate(`/recipes/${id}`)
   }
 
   const handleSubmit = (e: React.SyntheticEvent) => {
@@ -141,11 +138,7 @@ const SearchRecipesInput: FC<SearchRecipesInputProps> = ({
         )}
       </label>
       {autoComplete && !isBlurred && queryActive && (
-        <div
-          className='auto-complete-results'
-          onMouseDown={handleResultActivate}
-          onClick={handleResultActivate}
-        >
+        <div className='auto-complete-results' onClick={handleResultActivate}>
           {isFetching && results.length === 0 ? (
             <ul className='ac-list' aria-hidden='true'>
               {Array.from({ length: 4 }).map((_, i) => (
