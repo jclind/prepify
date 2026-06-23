@@ -26,8 +26,9 @@ _Created 2026-06-17._
 
 Footer overhaul, mobile-nav redesign, Privacy + Terms pages, SEO basics (robots/sitemap/helmet),
 API rate limiting, dev-tools gating, content moderation (text + image), bug-reporting system.
-So the **remaining design blockers are just: Homepage redesign, public Help/Contact page, About
-rewrite, and (at the very end) dropping the beta tag.**
+Homepage redesign (#153/#154), public Help/Contact page (#158), and the About rewrite (#169) are now
+all merged too, so the **only remaining design blocker is dropping the beta tag** — at the very end, in
+the Phase 5 cutover.
 
 ---
 
@@ -60,7 +61,7 @@ same commit.**
 | 3d | Add-recipe UX | `[x]` | #164 ✅ |
 | 3e | create-username revamp | `[x]` | #131 + #98 (+ #162 reconcile/test) ✅ |
 | 4-sass | Sass `@import`→`@use` (LONER) | `[ ]` | — |
-| 4-about | About rewrite (Jesse) | `[ ]` | — |
+| 4-about | About rewrite (Jesse) | `[x]` | #169 ✅ |
 | 4-tests | Toast/alert + Cypress autocomplete tests | `[x]` | #168 ✅ |
 | 4-qa | Empty/error sweep + links + copy + mobile + Lighthouse | `[ ]` | — |
 | 5 | Cutover (beta off + 1.0.0 + deploy) | `[ ]` | — |
@@ -452,6 +453,20 @@ Append a one-liner when a track changes state (started / PR / merged). Keeps ses
   that broke the navbar's persistent `SearchRecipesInput` (every autocomplete click after the first no-op'd
   until reload); replaced with a stateless `onClick` handler and a regression test. Verified live (consecutive
   navbar uses both navigate). Vitest 507 + Cypress green.
+- _2026-06-23_ — **4-about (About page 1.0 rewrite) → merged (`[x]` #169 ✅).** Squash-merged as `ab34a71`;
+  table row flipped. Full rewrite of `src/pages/About/{About.tsx,About.scss}` (compact-refined layout —
+  smaller type scale, even vertical rhythm, hairline section separators) with an **honest** product
+  showcase: the browse card shows the per-serving **price** only (faithful to the real thumbnail), and a
+  separate panel carries nutrition (whole mock `aria-hidden`). The page **owns its own `<title>` + og:\***
+  via Helmet by design — 3b explicitly skips `About.tsx` to avoid a meta collision. A post-merge design
+  audit + polish pass landed in the same PR: trimmed a triple-repeated transparency line, bumped the
+  showcase caption off `tertiary-text` to clear WCAG AA contrast, added a faint `LuUtensils` watermark so
+  the card reads as a photo card, gave the hero CTA the same arrow as the closing CTA, demoted the
+  decorative card `<h3>`→`<p>` (heading-order), added a `prefers-reduced-motion` guard, and closed the
+  ~1in white gap below the closing band by cancelling the global `$footer-margin` **scoped to `.about-page`
+  only** (every other page keeps it). All CI green (Backend/Frontend/E2e/Fallow/GitGuardian). Worktree +
+  branch pruned. **BACKLOG.md** had no About-related items to reconcile (About is a release-track page, not
+  a backlog entry). **Wave 4 Part 1 now: only 3b meta/SEO remains** (in flight on `worktree-feat+meta-seo-finish`).
 
 ---
 
