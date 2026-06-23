@@ -182,20 +182,36 @@
         white-space: nowrap;
       }
 
-      &--skeleton {
-        cursor: default;
-        .ac-item__thumb {
-          background: transparent;
-        }
-        .ac-item__body {
-          gap: 0.4rem;
-        }
-      }
-
       @media screen and (max-width: 600px) {
         &__tags {
           display: none;
         }
+      }
+    }
+
+    // Loading placeholder row. Mirrors `.ac-item`'s layout so the dropdown
+    // doesn't shift when results arrive, but is a separate class so it shares
+    // none of the interactive row's selectors (no hit-target, no hover).
+    .ac-skeleton {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      width: 100%;
+      padding: 0.5rem;
+      cursor: default;
+
+      &__thumb {
+        flex-shrink: 0;
+        width: 56px;
+        height: 56px;
+        border-radius: 8px;
+      }
+      &__body {
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+        flex: 1;
+        min-width: 0;
       }
     }
 
