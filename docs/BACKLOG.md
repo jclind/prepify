@@ -107,6 +107,10 @@ The triage date stamped on items is the date they were filed here, not when they
   (a row that re-renders mid-interaction can no longer drop the event). Verified on a prod build: during
   load `.ac-item` count is 0 while `.ac-skeleton` shows; after load an immediate real-row click navigates.
   (`SearchRecipesInput.tsx` + `.scss`.) *(originally surfaced 2026-06-22; re-diagnosed and fixed 2026-06-23.)*
+  *(Code-review follow-up: the first delegation guarded with a never-resetting `navigatingRef`, which broke the
+  navbar's `SearchRecipesInput` — it lives in the persistent `<Layout>` and is reused across navigations, so
+  after one navbar nav every later autocomplete click no-op'd until reload. Replaced with a stateless `onClick`
+  handler + a "navbar autocomplete works on consecutive uses" regression test.)*
 - `[x]` **"You created this recipe" — mobile styling** — *fixed in PR #160 (track 2c)*; owner-stats
   strip now an equal-width row with dividers instead of scattering via `space-between`.
 - `[x]` **Recipe stats styling** — *fixed in PR #160 (track 2c)*; rating dropped from the action-bar
