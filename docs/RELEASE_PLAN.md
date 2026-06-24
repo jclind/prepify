@@ -55,19 +55,23 @@ a feature flag. Do these together:
 - `[ ]` **Empty / error / loading states sweep** — every page that fetches data (Recipes, SingleRecipe,
   Account, Home) should have a sensible empty state, an error state, and a loading skeleton. Spot-check
   by loading with the API down. **(nice-to-have, but high-impact)**
-- `[~]` **Broken-link & dead-route check** — click every nav item, footer link, and CTA; confirm no
-  404s or dead `href="#"`. **Fixed 2026-06-09:** the 404 page's "contact our support team" link now
-  points to `/help` instead of `/` (`src/pages/404/404.tsx`) — the Help page is now public + redesigned
-  (Section D, PR #158 merged), so that dependency is addressed. Still to verify: the "View All Release
-  Notes" link in `ReleaseNotes.tsx:145` (`github.com/jclind/prepify/releases`). **(blocker)**
+- `[x]` **Broken-link & dead-route check** — **done (track 4-qa, PR #174 ✅):** crawled every nav/footer/
+  in-page link across 24 internal routes — **0 dead routes, 404s, or `#` placeholders** — and confirmed
+  logged-out vs logged-in link visibility is correct. The earlier **2026-06-09** fix (the 404's "contact
+  our support team" link → `/help`, `src/pages/404/404.tsx`) holds, and the "View All Release Notes" link
+  (`ReleaseNotes.tsx:145` → `github.com/jclind/prepify/releases`) resolves 200. **(blocker → done)**
 - `[x]` **404 / not-found page** — a real designed 404 exists (`src/pages/404/404.tsx` — food-plate
-  graphic, Return Home button) and renders correctly on an unknown route. *Copy nit:* the heading
-  reads "Something went wrong!", which sounds like a crash rather than a missing page — consider
-  "Page not found." **(blocker → done; copy tweak is nice-to-have)**
-- `[~]` **Mobile pass** — runtime audit at 390px confirmed Home, Recipes browse, Single Recipe (incl.
-  the Nutrition card) and the hamburger menu all render cleanly with **zero console errors**. Still to
-  eyeball by hand: Add Recipe and Account/Settings flows. **(blocker)**
-- `[ ]` **Copy / typo review** — read every user-facing string once with fresh eyes. **(nice-to-have)**
+  graphic, Return Home button) and renders correctly on an unknown route. The copy nit (heading read
+  "Something went wrong!", which sounded like a crash) was **fixed → "Page not found"** in track 4-qa
+  (PR #174). **(blocker → done)**
+- `[x]` **Mobile pass** — **done (track 4-qa, PR #174 ✅):** the earlier 390px audit (Home, Recipes browse,
+  Single Recipe, hamburger — zero console errors) plus the remaining hand-walk of **Add Recipe + Account +
+  all four Settings sections** logged-in at 390px — **no horizontal overflow, no console errors**, tap
+  targets ok. No layout fixes needed. **(blocker → done)**
+- `[x]` **Copy / typo review** — **done (track 4-qa, PR #174 ✅):** proofread headings, empty states,
+  buttons, toasts, and the legal/help/about copy site-wide. Only fix needed: the avatar size-limit toast
+  `5mb` → `5MB`. *(Two typos live in MongoDB recipe **data** — "Egg Friend Rice", a granola "Tt's" — not
+  code; out of scope for a code change.)* **(nice-to-have)**
 - `[ ]` **Favicon, page titles, social/OG meta** — verify `index.html` + per-page titles
   (`react-helmet-async` is already a dependency) and an OG image for link previews. **(nice-to-have)**
 - `[x]` **Remove dev-only UI from production** — `@tanstack/react-query-devtools` is a devDependency;
@@ -188,8 +192,11 @@ a feature flag. Do these together:
   - **Backend (Railway, optional):** `MODERATION_IMAGE_HIGH` / `MODERATION_IMAGE_MEDIUM` — override the
     default SafeSearch likelihood cutoffs (`VERY_LIKELY` / `LIKELY`). Leave unset for defaults.
   Shares the `MODERATION_ENABLED` master switch. No DB migration. See `docs/CONTENT_MODERATION.md`.
-- `[ ]` **Performance / Lighthouse pass** — run Lighthouse on the prod build; address obvious image-size
-  and bundle-size wins. **(nice-to-have)**
+- `[x]` **Performance / Lighthouse pass** — **done (track 4-qa, PR #174 ✅):** Lighthouse on the prod
+  preview build (desktop) — **Home 97/96/100/100**, **recipe 88/89/100/100** (perf/a11y/best-practices/seo);
+  recipe a11y **80 → 89** from the cheap a11y wins. The bundle-size win (>500 kB single chunk → route-level
+  code-splitting) is real but structural — **filed to `BACKLOG.md`** (Tech debt) rather than done here.
+  **(nice-to-have)**
 - `[x]` **README cleanup** *(done — PR #151, 2026-06-17)* — replaced the placeholder `your-username`
   clone URL with `jclind/prepify` and refreshed setup steps for the two-service architecture.
   **(nice-to-have)**
