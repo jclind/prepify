@@ -526,6 +526,40 @@ Append a one-liner when a track changes state (started / PR / merged). Keeps ses
   `RELEASE_PLAN.md` §B acceptance items (broken-link, mobile, copy, Lighthouse) flipped `[x]` in the same
   reconcile. All CI green; tsc clean; build passes; **beta tag untouched**. Reusable sweep playbooks added
   under `docs/sweeps/` (#175). **Remaining: Phase 5 cutover only.**
+- _2026-06-24_ — **Pre-cutover blocker sweep (PR #177) + manual-checklist kickoff. SESSION HANDOFF.**
+  Knocked down three release-acceptance blockers in `RELEASE_PLAN.md` and started the manual (dashboard)
+  checklist. **Code (PR #177, merged to `development`, all CI green):**
+  - **Dropped dead Firebase Analytics.** It was never running — `getAnalytics()` is never called; only a
+    dead `measurementId` sat in `src/client/db.ts`. Decided **off for 1.0** (no GA4 ⇒ no cookie/consent
+    banner; Sentry + the first-party admin dashboard cover errors/metrics cookie-free). Removed the config
+    line, the `VITE_FIREBASE_MEASUREMENT_ID` env var (`.env.example`/`.env.test`/`CLAUDE.md`), and the
+    stale `firebase/analytics` test mock. `RELEASE_PLAN.md` §C analytics item → `[x]` resolved-off.
+  - **Refreshed the stale release notes.** `ReleaseNotes.tsx` had `RELEASE_DATE = '3/31/2023'` + 2023
+    copy; replaced with real 1.0 additions/improvements/bug-fixes. **`isBeta` stays `true`** — the beta
+    flip + final `RELEASE_DATE` + the `v{version}` chip (→ `1.0.0`) are the deliberate cutover step
+    (flagged in a code comment). `RELEASE_PLAN.md` release-notes blocker → content done.
+  - **Added Firebase Storage security rules as code.** `storage.rules` (wired via `firebase.json`)
+    replaces the open bucket: public read; writes require auth + 5MB cap + `image/*`;
+    `profilePhotos/{uid}` ownership-enforced; `recipeImages/{filename}` auth-gated; all else denied.
+    **Deployed** (`firebase deploy --only storage`) and **smoke-tested live — 7/7** (own upload allowed;
+    other-user / oversized / non-image / forbidden-path / unauthenticated all denied; data cleaned up).
+    Filed a backlog follow-up to re-key recipe images by uid (path isn't uid-scoped, so the rule can only
+    auth-gate that prefix). `RELEASE_PLAN.md` Firebase-rules blocker → `[x]`.
+  - **Filed → `BACKLOG.md`:** recipe-image uid-keying (Tech debt).
+  **Manual checklist progress (dashboards — Jesse):** ✅ Firebase Auth → Authorized domains includes the
+  prod domain. ✅ Firebase **web API key referrer-restricted** (verified live: prod/www/localhost allowed,
+  empty referer blocked). ✅ Google **Vision API key** locked down. ⏸️ **Edamam key lockdown PAUSED** —
+  Jesse is reworking the `@jclind/ingredient-parser` package first (independent of release work).
+  **WHAT'S LEFT before the Phase-5 cutover (manual unless noted):** (1) **Edamam** — usage cap/alert or
+  proxy server-side; (2) **audit every `VITE_*` var** is safe-to-be-public (Firebase + Edamam confirmed by
+  design; quick final pass); (3) **key rotation** — only if a real key ever hit git history (GitGuardian
+  passed on the #177 diff; a full-history scan wasn't run — offer next session); (4) **set prod env vars**
+  before deploy (`VITE_SENTRY_DSN` at build; `SENTRY_DSN`/`OPENAI_API_KEY`/`MODERATION_ENABLED`/
+  `GOOGLE_VISION_API_KEY`/`ADMIN_NOTIFY_EMAIL` on Railway); (5) **point Railway at the production branch**;
+  (6) **production `FRONTEND_URLS`** (CORS) = real origin(s) only; (7) **production domain + HTTPS**. Then
+  **Phase 5 cutover**: bump `package.json`→`1.0.0`, flip the beta tag (3 edits: `LegalBar.tsx:16`,
+  `PrepifyLogo.tsx:17`, `ReleaseNotes.tsx` `isBeta`), finalize `RELEASE_DATE`, tag a GitHub Release,
+  deploy FE+BE, smoke-test prod. **Beta tag still untouched** (the celebration move).
 
 ---
 

@@ -97,16 +97,24 @@ a feature flag. Do these together:
   server now). Remove both from `.env.example`. **(blocker)**
 - `[ ]` **Rotate any key that ever sat in client code or git history** — if a real OpenAI/Edamam key
   was ever committed or bundled, rotate it. **(blocker if applicable)**
-- `[ ]` **Lock down Edamam / Firebase usage server-side** — since the keys are public, restrict by
+- `[~]` **Lock down Edamam / Firebase usage server-side** — since the keys are public, restrict by
   HTTP referrer / allowed origins / usage quotas in the respective dashboards so a leaked key can't be
-  abused. **(blocker)**
-- `[~]` **Firebase Auth + Storage rules review** — **rules-as-code written (2026-06-23, PR #177):**
-  `storage.rules` (wired via `firebase.json`) replaces the open bucket — public read, but writes require
+  abused. **Progress (2026-06-24):** Firebase **web API key is HTTP-referrer-restricted** — verified live
+  that `prepifymeals.com`, `www.prepifymeals.com`, and `localhost:3000` are allowed while an empty referer
+  is blocked (so prod + local dev work; a lifted key is useless off-domain). **Google Vision API key
+  locked down** (API-restricted, done by Jesse). **Remaining: Edamam** (`VITE_EDAMAM_APP_ID/KEY`) — paused
+  pending the ingredient-parser package rework; set a usage cap/alert and/or proxy it server-side (it's
+  bundled and public; Edamam's lower tiers don't support referrer locking). **(blocker → Edamam portion
+  pending)**
+- `[x]` **Firebase Auth + Storage rules review** — **done + verified live (2026-06-24, PR #177).**
+  `storage.rules` (wired via `firebase.json`) replaced the open bucket — public read, but writes require
   auth + a 5MB cap + `image/*`; `profilePhotos/{uid}` enforces ownership; `recipeImages/{filename}` is
   auth-gated (path isn't uid-keyed — backlog follow-up); all other paths denied. No `allow ... if true`.
-  **Remaining manual steps:** (1) `firebase deploy --only storage` to publish the rules (interactive
-  login required); (2) confirm the production domain is in Firebase Auth → Authorized domains. Firestore
-  is unused (data in MongoDB), so its rules are intentionally not configured. **(blocker → deploy pending)**
+  **Deployed** via `firebase deploy --only storage` (rules compiled + released to `firebase.storage`).
+  **Smoke-tested against the live rules: 7/7 checks passed** — own-profile upload allowed, other-user
+  profile denied, recipe image allowed, oversized/non-image/forbidden-path/unauthenticated all denied
+  (test data cleaned up). Production domain confirmed in Firebase Auth → Authorized domains. Firestore is
+  unused (data in MongoDB), so its rules are intentionally not configured. **(blocker → done)**
 - `[x]` **Server input validation & ownership on write routes** — re-verified 2026-06-09 against
   `server/routes/*`. The high-severity holes from `server-audit.md` are **closed**: `addRecipe` stamps
   `userId`/`_id` server-side and discards client values (`recipes.js:150-152`); `editRecipe` /
