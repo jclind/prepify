@@ -53,10 +53,6 @@ vi.mock('firebase/firestore', () => ({
   getFirestore: vi.fn().mockReturnValue({}),
 }))
 
-vi.mock('firebase/analytics', () => ({
-  getAnalytics: vi.fn().mockReturnValue({}),
-}))
-
 describe('App', () => {
   it('renders without crashing', () => {
     render(
