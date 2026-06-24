@@ -176,8 +176,8 @@ describe('SingleRecipe page', () => {
     // Wait for initial load
     await screen.findByText('Chicken Tacos')
 
-    // The Ingredients component has + button to increment
-    const incButton = screen.getByRole('button', { name: '+' })
+    // The Ingredients component has a + button to increment
+    const incButton = screen.getByRole('button', { name: 'Increase servings' })
     await user.click(incButton)
 
     await waitFor(() => {

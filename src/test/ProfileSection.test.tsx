@@ -267,7 +267,7 @@ describe('Profile settings — avatar', () => {
     fireEvent.change(input, { target: { files: [big] } })
 
     expect(mockToastError).toHaveBeenCalledWith(
-      'File cannot be more than 5mb in size'
+      'Image cannot be more than 5MB in size.'
     )
   })
 

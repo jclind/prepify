@@ -19,7 +19,7 @@ const NotFound: FC = () => {
         <span className='number'>4</span>
       </div>
       <div className='content'>
-        <h1>Something went wrong!</h1>
+        <h1>Page not found</h1>
         <p className='text'>
           It seems like we can't find the page you are looking for, if you think
           this is a mistake, please{' '}
