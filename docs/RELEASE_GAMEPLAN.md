@@ -63,7 +63,7 @@ same commit.**
 | 4-sass | Sass `@import`→`@use` (LONER) | `[x]` | `cb2ac81` ✅ (pre-gameplan) |
 | 4-about | About rewrite (Jesse) | `[x]` | #169 ✅ |
 | 4-tests | Toast/alert + Cypress autocomplete tests | `[x]` | #168 ✅ |
-| 4-qa | Empty/error sweep + links + copy + mobile + Lighthouse | `[P]` | #174 |
+| 4-qa | Empty/error sweep + links + copy + mobile + Lighthouse | `[x]` | #174 ✅ |
 | 5 | Cutover (beta off + 1.0.0 + deploy) | `[ ]` | — |
 
 _Doc ownership: this board owns **progress**; `RELEASE_PLAN.md` owns **launch acceptance** (audited by
@@ -509,6 +509,23 @@ Append a one-liner when a track changes state (started / PR / merged). Keeps ses
   the `BACKLOG.md` Tech-debt item are the only changes (docs-only reconcile). The Rule-1 "everyone rebases
   after the Sass loner" step is a **no-op** (no stylesheet churn). **Remaining: 4-qa finishing sweep (Part 3)
   → Phase 5 cutover.**
+- _2026-06-23_ — **4-qa (release QA finishing sweep) → merged (`[x]` #174 ✅).** The late, app-wide pass on
+  the stabilized post-Sass app, driven headlessly logged-out **and** logged-in (a real Firebase custom-token
+  session). **Empty/error/loading:** every page + error/empty variant has a sane state — no infinite spinners,
+  blank flashes, or unhandled error walls; **fixed** the 404 heading ("Something went wrong!" → "Page not
+  found", which read like a crash) and gave the PublicProfile not-found branch a real `<title>` + `noindex`
+  (it was rendering with an empty title). **Links:** crawled every nav/footer/in-page link across 24 internal
+  routes — **0 dead routes / 404s / `#` placeholders**; logged-out vs logged-in visibility correct; fixed a
+  stale `footerData` comment. **Copy:** avatar size toast `5mb` → `5MB` for consistency (the rest read clean).
+  **Mobile (390px):** hand-walked Add Recipe + Account + all 4 Settings sections — **no overflow, no console
+  errors**, tap targets ok; no fixes needed (the 2a/2d/2e/3d redesigns hold up). **Lighthouse (prod preview,
+  desktop):** Home **97/96/100/100**, recipe **88/89/100/100** — recipe a11y **80 → 89** from cheap wins
+  (StarRating display rows expose their value once via `role="img"` and hide the redundant unnamed `<button>`s;
+  servings input + stepper labelled). **Three larger a11y items filed → `BACKLOG.md`** (ingredient
+  `<li role="checkbox">` refactor, recipe-nav brand-color contrast, servings target-size). The matching
+  `RELEASE_PLAN.md` §B acceptance items (broken-link, mobile, copy, Lighthouse) flipped `[x]` in the same
+  reconcile. All CI green; tsc clean; build passes; **beta tag untouched**. Reusable sweep playbooks added
+  under `docs/sweeps/` (#175). **Remaining: Phase 5 cutover only.**
 
 ---
 
