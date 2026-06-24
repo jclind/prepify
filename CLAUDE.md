@@ -73,7 +73,6 @@ npx cypress open       # Open Cypress test runner
 - `VITE_FIREBASE_STORAGE_BUCKET` - Firebase Storage bucket
 - `VITE_FIREBASE_MESSAGING_SENDER_ID` - Firebase Cloud Messaging sender ID
 - `VITE_FIREBASE_APP_ID` - Firebase app ID
-- `VITE_FIREBASE_MEASUREMENT_ID` - Firebase Analytics measurement ID
 - `VITE_CYPRESS` - Set to `"true"` when running under Cypress; toggles test-mode behavior in `src/client/db.ts`
 
 ### Main Server (.env)

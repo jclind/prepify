@@ -31,10 +31,14 @@ const customStyles = {
   },
 }
 
-const RELEASE_DATE = '3/31/2023'
+// NOTE: confirm/update RELEASE_DATE to the actual ship date at cutover, alongside
+// the package.json 1.0.0 bump and flipping `isBeta` to false (see RELEASE_PLAN.md).
+const RELEASE_DATE = '6/23/2026'
 const isBeta = true
 const description =
-  'With this update, users can now easily update their personal information and customize their profile information and user profile pictures.'
+  "Prepify 1.0 — our biggest update yet. A redesigned home page, smarter search, " +
+  'personalized recommendations, and public profiles, plus a wave of fixes and ' +
+  'accessibility improvements across the app.'
 
 type ReleaseNotesProps = {
   releaseNotesModalIsOpen: boolean
@@ -50,11 +54,23 @@ const ReleaseNotes: FC<ReleaseNotesProps> = ({
   }
 
   const additions: string[] = [
-    'Added settings page for profile editing.',
-    'Added profile pictures',
+    'Personalized "For You" recommendations on the home page.',
+    '"What should I cook?" — a taste-aware random recipe pick.',
+    'Public profiles at /u/username with achievements and recipe stats.',
+    'Report controls for recipes, reviews, and users.',
   ]
-  const bugFixes: string[] = []
-  const improvements: string[] = []
+  const improvements: string[] = [
+    'Redesigned home, recipe browsing, single-recipe, and account pages.',
+    'Smarter search with typo-tolerant autocomplete.',
+    'Faster, more reliable recipe creation with optimistic ingredient add.',
+    'Accessibility and link-preview (SEO) improvements throughout.',
+  ]
+  const bugFixes: string[] = [
+    'Saving recipes now persists reliably.',
+    'Removing a review or rating updates the star average correctly.',
+    'Accurate per-serving price calculation.',
+    'Account ratings now load recipe images without flashing empty.',
+  ]
 
   const location = useLocation()
 
