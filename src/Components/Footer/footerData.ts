@@ -19,7 +19,8 @@ export type FooterLink = {
 }
 export type FooterColumn = { heading: string; links: FooterLink[] }
 
-/** Primary nav columns. Links marked `external: true` are placeholders ('#'). */
+/** Primary nav columns. Links marked `external: true` render as a plain <a>
+ *  (e.g. the `mailto:` Contact link) instead of a router <Link>. */
 export const footerColumns: FooterColumn[] = [
   {
     heading: 'Discover',

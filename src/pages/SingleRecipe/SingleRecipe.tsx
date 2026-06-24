@@ -427,6 +427,7 @@ const SingleRecipe: FC = () => {
                     <button
                       type='button'
                       className='step-btn'
+                      aria-label='Decrease servings'
                       onClick={() => changeServings((servingSize || 1) - 1)}
                     >
                       −
@@ -434,6 +435,7 @@ const SingleRecipe: FC = () => {
                     <input
                       type='tel'
                       className='serv-input'
+                      aria-label='Servings'
                       value={servDraft}
                       onChange={e => {
                         const raw = e.target.value
@@ -449,6 +451,7 @@ const SingleRecipe: FC = () => {
                     <button
                       type='button'
                       className='step-btn'
+                      aria-label='Increase servings'
                       onClick={() => changeServings((servingSize || 0) + 1)}
                     >
                       +
