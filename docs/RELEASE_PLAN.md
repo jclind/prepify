@@ -100,9 +100,13 @@ a feature flag. Do these together:
 - `[ ]` **Lock down Edamam / Firebase usage server-side** — since the keys are public, restrict by
   HTTP referrer / allowed origins / usage quotas in the respective dashboards so a leaked key can't be
   abused. **(blocker)**
-- `[ ]` **Firebase Auth + Storage rules review** — confirm Storage rules only let authenticated users
-  write their own recipe images, and there are no permissive `allow read, write: if true` rules.
-  **(blocker)**
+- `[~]` **Firebase Auth + Storage rules review** — **rules-as-code written (2026-06-23, PR #177):**
+  `storage.rules` (wired via `firebase.json`) replaces the open bucket — public read, but writes require
+  auth + a 5MB cap + `image/*`; `profilePhotos/{uid}` enforces ownership; `recipeImages/{filename}` is
+  auth-gated (path isn't uid-keyed — backlog follow-up); all other paths denied. No `allow ... if true`.
+  **Remaining manual steps:** (1) `firebase deploy --only storage` to publish the rules (interactive
+  login required); (2) confirm the production domain is in Firebase Auth → Authorized domains. Firestore
+  is unused (data in MongoDB), so its rules are intentionally not configured. **(blocker → deploy pending)**
 - `[x]` **Server input validation & ownership on write routes** — re-verified 2026-06-09 against
   `server/routes/*`. The high-severity holes from `server-audit.md` are **closed**: `addRecipe` stamps
   `userId`/`_id` server-side and discards client values (`recipes.js:150-152`); `editRecipe` /

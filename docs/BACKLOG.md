@@ -268,6 +268,14 @@ The triage date stamped on items is the date they were filed here, not when they
   Sass deprecation warnings and all 73 `.scss` compile clean. The only remaining `@import` is the plain CSS
   `@import url('…Montserrat…')` font load in `src/index.scss` — not a Sass partial import, not deprecated.
   *(See the 2026-06-23 4-sass status-log entry in `RELEASE_GAMEPLAN.md`.)*
+- `[ ]` **Recipe images aren't keyed by uid in Storage** — uploads go to `recipeImages/{imageFile.name}`
+  (`src/api/recipes.ts:189`), keyed by the raw filename rather than the owner's uid. Two consequences:
+  (a) two users uploading `photo.jpg` collide/overwrite, and (b) the Storage rules can't scope writes to
+  the owner, so `storage.rules` can only auth-gate that path (any signed-in user could overwrite/delete
+  any recipe image). Re-key to e.g. `recipeImages/{uid}/{uuid}` (and tighten the rule to
+  `request.auth.uid == uid`) for collision-safety + per-owner write scoping. Low severity (writes are
+  auth-gated and the server is the source of truth), but worth doing. *(surfaced 2026-06-23 writing the
+  Storage rules, PR #177.)*
 - `[ ]` **Point Railway at the production branch** — currently not deploying from production.
 - `[ ]` **Social link previews need server-side prerendering (CSR-SPA limitation)** — track 3b (PR #170)
   added per-route OG/Twitter tags + a branded 1200×630 card and strips the static `index.html` fallbacks on JS
