@@ -37,11 +37,14 @@ a feature flag. Do these together:
   (footer suffix, this button, `isBeta`) ship together at the very end. **(blocker — scheduled for cutover)**
 - `[ ]` **Set `isBeta = false`** — `src/Components/ReleaseNotes/ReleaseNotes.tsx:35`; this drives the
   `-beta` suffix at line 87. **(blocker)**
-- `[~]` **Fix the stale release-notes mechanism** — `ReleaseNotes.tsx` has a hardcoded
-  `RELEASE_DATE = '3/31/2023'` (line 34) and hardcoded `description` / `additions` arrays
-  (lines 36-57). For a real release you need either (a) a real changelog flow (e.g. drive it from a
-  `CHANGELOG.md` or GitHub Releases), or (b) at minimum, update the content to reflect the 1.0
-  release before launch. **(blocker)**
+- `[~]` **Fix the stale release-notes mechanism** — **content refreshed (2026-06-23).** Replaced the
+  stale `RELEASE_DATE = '3/31/2023'` and the 2023 profile-editing `description` / `additions` with real
+  1.0 notes (additions + improvements + bug fixes reflecting the release work). Still mechanically
+  hardcoded (not yet driven from a `CHANGELOG.md` / GitHub Releases — that's the option-(a) post-1.0
+  improvement). **Two values remain a deliberate cutover step** (flagged in a code comment): confirm
+  `RELEASE_DATE` to the actual ship date, and the `v{version}` chip resolves to `1.0.0` once
+  `package.json` is bumped — both happen with the beta-tag flip. **(blocker → content done; date/version
+  finalized at cutover)**
 
 > Tip: `grep -rn -iE "beta|isBeta" src` should return **zero** results before you ship (the SCSS
 > class `beta-tag` can stay or be renamed depending on the button decision above).
@@ -94,12 +97,24 @@ a feature flag. Do these together:
   server now). Remove both from `.env.example`. **(blocker)**
 - `[ ]` **Rotate any key that ever sat in client code or git history** — if a real OpenAI/Edamam key
   was ever committed or bundled, rotate it. **(blocker if applicable)**
-- `[ ]` **Lock down Edamam / Firebase usage server-side** — since the keys are public, restrict by
+- `[~]` **Lock down Edamam / Firebase usage server-side** — since the keys are public, restrict by
   HTTP referrer / allowed origins / usage quotas in the respective dashboards so a leaked key can't be
-  abused. **(blocker)**
-- `[ ]` **Firebase Auth + Storage rules review** — confirm Storage rules only let authenticated users
-  write their own recipe images, and there are no permissive `allow read, write: if true` rules.
-  **(blocker)**
+  abused. **Progress (2026-06-24):** Firebase **web API key is HTTP-referrer-restricted** — verified live
+  that `prepifymeals.com`, `www.prepifymeals.com`, and `localhost:3000` are allowed while an empty referer
+  is blocked (so prod + local dev work; a lifted key is useless off-domain). **Google Vision API key
+  locked down** (API-restricted, done by Jesse). **Remaining: Edamam** (`VITE_EDAMAM_APP_ID/KEY`) — paused
+  pending the ingredient-parser package rework; set a usage cap/alert and/or proxy it server-side (it's
+  bundled and public; Edamam's lower tiers don't support referrer locking). **(blocker → Edamam portion
+  pending)**
+- `[x]` **Firebase Auth + Storage rules review** — **done + verified live (2026-06-24, PR #177).**
+  `storage.rules` (wired via `firebase.json`) replaced the open bucket — public read, but writes require
+  auth + a 5MB cap + `image/*`; `profilePhotos/{uid}` enforces ownership; `recipeImages/{filename}` is
+  auth-gated (path isn't uid-keyed — backlog follow-up); all other paths denied. No `allow ... if true`.
+  **Deployed** via `firebase deploy --only storage` (rules compiled + released to `firebase.storage`).
+  **Smoke-tested against the live rules: 7/7 checks passed** — own-profile upload allowed, other-user
+  profile denied, recipe image allowed, oversized/non-image/forbidden-path/unauthenticated all denied
+  (test data cleaned up). Production domain confirmed in Firebase Auth → Authorized domains. Firestore is
+  unused (data in MongoDB), so its rules are intentionally not configured. **(blocker → done)**
 - `[x]` **Server input validation & ownership on write routes** — re-verified 2026-06-09 against
   `server/routes/*`. The high-severity holes from `server-audit.md` are **closed**: `addRecipe` stamps
   `userId`/`_id` server-side and discards client values (`recipes.js:150-152`); `editRecipe` /
@@ -139,10 +154,15 @@ a feature flag. Do these together:
   `/privacy` (`src/App.tsx:122`). **(blocker → done)**
 - `[x]` **Terms of Service page** — real page exists (`src/pages/Terms/Terms.tsx`) and is routed at
   `/terms` (`src/App.tsx:130`). **(blocker → done)**
-- `[?]` **Analytics / cookie disclosure** — if Firebase Analytics (`VITE_FIREBASE_MEASUREMENT_ID`) is
-  active, disclose it; add a cookie/consent notice if targeting EU users. **Deferred (2026-06-17):**
-  Jesse is undecided whether to keep Firebase Analytics on at launch or whether a cookie notice is worth
-  it. Revisit before cutover — if analytics stays on, this becomes a blocker. **(blocker if analytics on)**
+- `[x]` **Analytics / cookie disclosure** — **resolved as "off" (2026-06-23).** Firebase Analytics was
+  never actually running — `getAnalytics()` was never called; only a dead `measurementId` sat in the
+  Firebase config. Decision: **do not enable** Firebase Analytics for 1.0 (GA4 is cookie-based and would
+  force a consent banner + Privacy Policy update for no real benefit at launch — Sentry covers errors and
+  the first-party admin analytics dashboard covers product metrics, both cookie-free). Removed the dead
+  `measurementId` from `src/client/db.ts` + the `VITE_FIREBASE_MEASUREMENT_ID` env var (`.env.example`,
+  `.env.test`, CLAUDE.md) + the stale `firebase/analytics` test mock, so no cookie/consent notice is
+  required. If usage analytics is wanted post-1.0, prefer a cookieless tool (Plausible / Fathom /
+  Cloudflare Web Analytics) to stay banner-free. **(was: blocker if analytics on → resolved, off)**
 - `[x]` **SEO basics** — `public/robots.txt` (allow-all) and a static `public/sitemap.xml`
   (prepifymeals.com URLs) are present, and `react-helmet-async` is wired (`HelmetProvider` in
   `src/App.tsx:60`, per-page titles e.g. SingleRecipe). Recipe pages are crawlable. **(nice-to-have → done)**
