@@ -486,9 +486,12 @@ class RecipeAPIClass {
     try {
       const enrichment = await fetchIngredientEnrichment(parsedIngredient)
 
-      if (enrichment.error || !enrichment.data) {
+      // A clean lookup miss returns `data: null` (the server soft-fails to that;
+      // a real proxy/network failure throws and is caught below). Surface it as
+      // the row's error state so the UI shows its Retry affordance.
+      if (!enrichment.data) {
         return {
-          error: enrichment.error ?? { message: 'No ingredient data returned' },
+          error: { message: 'No ingredient data returned' },
           parsedIngredient,
           ingredientData: null,
           id: uuidv4(),
