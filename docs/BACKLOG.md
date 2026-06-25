@@ -208,10 +208,10 @@ The triage date stamped on items is the date they were filed here, not when they
   styling stayed on the now-inner element, so the 2-column grid is visually unchanged (verified by
   screenshot). Clears Lighthouse `aria-allowed-role` + `list`; recipe page **89 → 97**. Keyboard toggle
   (Enter/Space → `aria-checked`) re-verified.
-- `[x]` **Contrast (WCAG AA) — DONE, Lighthouse a11y 100** *(grey #181; brand + nav-logo + beta-tag this
-  PR #184, 2026-06-25)*. Every page-load route (logged-out + logged-in) plus the key interactive surfaces
-  (filter drawer, cook modal, reviews) is AA; **Lighthouse a11y = 100 on every route except Settings-danger**
-  (the `$error-red` item below, filed separately). What shipped:
+- `[x]` **Contrast (WCAG AA) — DONE, Lighthouse a11y 100 on every route** *(grey #181; brand + nav-logo +
+  beta-tag + error-red this PR #184, 2026-06-25)*. Every page-load route (logged-out + logged-in) plus the
+  key interactive surfaces (filter drawer, cook modal, reviews) is AA; **Lighthouse a11y = 100 on all 22
+  routes.** What shipped:
   - `[x]` **Muted-grey body/meta text (#181):** `$tertiary-text` darkened `#979ba0` → `#666c75` (lightest
     clearing 4.5:1 on white 5.29 / `#fafafa` 5.07 / `#eeeeee` 4.56); three hardcoded `#8a8f99` report-trigger
     greys tokenised onto it.
@@ -228,13 +228,11 @@ The triage date stamped on items is the date they were filed here, not when they
     Lighthouse score** — the binary `color-contrast` audit had been failing on every page purely because of
     the ever-present beta-tag. *(Supersedes the earlier "leave it for Phase-5" note; the Phase-5 cutover will
     still remove the tag entirely.)*
-- `[ ]` **Danger/error red text fails AA (`$error-red #dc3545`)** — the Settings "Danger Zone" nav label
-  (`.settings-navlabel.danger`) and the danger-section row labels (`.sr-row-label`) render `$error-red` on
-  light/red-tinted surfaces at **3.9–4.28:1** (keeps Settings-danger at Lighthouse 96; every other route is
-  100). Out of scope for the brand pass — `$error-red` is a **shared semantic token** (13 files: validation,
-  alerts, danger actions), so darkening it (e.g. to the existing `$error-red-hover #b02a37`, or a new
-  accessible error token) is its own decision with blast radius beyond these two labels. *(surfaced
-  2026-06-25 in the brand-contrast pass.)*
+  - `[x]` **Danger/error red text (#184):** darkened the shared `$error-red` token `#dc3545` → `#c5303f`
+    (the lightest red clearing 4.5:1 on every surface it touches — text on white 5.43 / `#eeeeee` 4.68 /
+    danger tint 5.14, and white-on-fill 5.43). Safe across all 13 usages (text / fill / border each gain
+    contrast); alert boxes unaffected (own `$alert-error-red-text #721c24`). Took the last route —
+    Settings-danger — to 100. Danger zone + inline validation visually re-checked.
 - `[ ]` **Autocomplete dropdown isn't a valid ARIA listbox + has no keyboard nav** — re-confirmed in the
   2026-06-25 accessibility sweep, still as filed above (the `<ul role="listbox"><li><button role="option">`
   shape + no arrow-key/`aria-activedescendant`). Tab-reachable and operable by mouse/Enter, so left for the
