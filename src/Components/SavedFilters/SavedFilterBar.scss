@@ -1,3 +1,5 @@
+@use '../../helpers.scss' as s;
+
 .saved-filter-bar {
   display: flex;
   align-items: center;
@@ -15,8 +17,8 @@
     display: inline-flex;
     align-items: center;
     border: 1px solid #d8dbe0;
-    background: #fff;
-    border-radius: 999px;
+    background: s.$white;
+    border-radius: s.$radius-pill;
     overflow: hidden;
 
     .preset-apply {
@@ -49,10 +51,10 @@
 
   .preset-save {
     border: 1px dashed #cbd2da;
-    background: #fff;
+    background: s.$white;
     color: #6b7280;
     padding: 0.3rem 0.7rem;
-    border-radius: 999px;
+    border-radius: s.$radius-pill;
     font-size: 0.8rem;
     cursor: pointer;
 
