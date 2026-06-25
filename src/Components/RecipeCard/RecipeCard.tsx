@@ -81,16 +81,17 @@ const RecipeCard: FC<RecipeCardProps> = ({ recipe, loading, onMutated }) => {
 
   return (
     <article className='recipe-card'>
-      <Link
-        to={`/recipes/${recipe._id}`}
-        className='recipe-card__link'
-        aria-label={recipe.title}
-      >
+      {/* No aria-label here: it would override the link's name to just the
+          title while the visible card text (cuisine, time, rating) stays
+          unread — a WCAG 2.5.3 label-in-name mismatch. Letting the content name
+          the link keeps the visible text and the accessible name in sync. The
+          thumbnail is decorative (the title sits right beside it), so alt=''. */}
+      <Link to={`/recipes/${recipe._id}`} className='recipe-card__link'>
         <div className='recipe-card__thumb'>
           {recipe.recipeImage && !imgError ? (
             <img
               src={recipe.recipeImage}
-              alt={recipe.title}
+              alt=''
               loading='lazy'
               width={300}
               height={225}

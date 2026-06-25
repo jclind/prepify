@@ -70,6 +70,7 @@ const DietSelector: FC<DietSelectorProps> = ({
         styles={customStyles}
         placeholder='Select diet tag(s)...'
         closeMenuOnSelect={false}
+        aria-label='Diet'
       />
     </div>
   )

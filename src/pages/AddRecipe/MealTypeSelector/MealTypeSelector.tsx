@@ -79,6 +79,7 @@ const MealTypeSelector: FC<MealTypeSelectorProps> = ({
         styles={customStyles}
         placeholder='Select meal type(s)...'
         closeMenuOnSelect={false}
+        aria-label='Course'
       />
     </div>
   )

@@ -161,38 +161,43 @@ const SingleRecipe: FC = () => {
       const isChecked = checked.has(ingr.id)
       const image = ingr.ingredientData?.imagePath
       return (
-        <li
-          key={ingr.id}
-          className={`ing ${isChecked ? 'checked' : ''}`}
-          role='checkbox'
-          aria-checked={isChecked}
-          tabIndex={0}
-          onClick={() => toggleChecked(ingr.id)}
-          onKeyDown={e => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault()
-              toggleChecked(ingr.id)
-            }
-          }}
-        >
-          <span className='box'>{isChecked ? <BiCheckCircle /> : null}</span>
-          <span className='thumb'>
-            {image ? (
-              <img src={image} alt={ingredient ?? ''} loading='lazy' />
-            ) : (
-              <CiShoppingBasket className='no-img' />
-            )}
-          </span>
-          <span className='ing-text'>
-            <span className='qty'>
-              {quantity ? closestFraction(quantity) : ''}
-              {unit ? ` ${unit}` : ''}
-            </span>{' '}
-            <span className='name'>
-              {ingredient}
-              {comment ? `, ${comment}` : ''}
+        // The checkbox role/keyboard handler lives on an inner <div>, not the
+        // <li>: `role="checkbox"` isn't allowed on a list item and stripping the
+        // <li>'s implicit listitem role breaks the parent <ul>. The `.ing`
+        // styling stays on the interactive element, so layout is unchanged.
+        <li key={ingr.id}>
+          <div
+            className={`ing ${isChecked ? 'checked' : ''}`}
+            role='checkbox'
+            aria-checked={isChecked}
+            tabIndex={0}
+            onClick={() => toggleChecked(ingr.id)}
+            onKeyDown={e => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                toggleChecked(ingr.id)
+              }
+            }}
+          >
+            <span className='box'>{isChecked ? <BiCheckCircle /> : null}</span>
+            <span className='thumb'>
+              {image ? (
+                <img src={image} alt={ingredient ?? ''} loading='lazy' />
+              ) : (
+                <CiShoppingBasket className='no-img' />
+              )}
             </span>
-          </span>
+            <span className='ing-text'>
+              <span className='qty'>
+                {quantity ? closestFraction(quantity) : ''}
+                {unit ? ` ${unit}` : ''}
+              </span>{' '}
+              <span className='name'>
+                {ingredient}
+                {comment ? `, ${comment}` : ''}
+              </span>
+            </span>
+          </div>
         </li>
       )
     }
