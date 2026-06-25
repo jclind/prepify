@@ -208,44 +208,33 @@ The triage date stamped on items is the date they were filed here, not when they
   styling stayed on the now-inner element, so the 2-column grid is visually unchanged (verified by
   screenshot). Clears Lighthouse `aria-allowed-role` + `list`; recipe page **89 → 97**. Keyboard toggle
   (Enter/Space → `aria-checked`) re-verified.
-- `[~]` **Contrast (WCAG AA) — muted-grey + brand palette done; tails remain** — the muted-grey text
-  (#181) and the brand orange/teal (this PR) are both **done**; what's left is three small tails: the
-  vivid nav-logo (needs sign-off), the shared `$error-red` danger text, and the beta-tag (Phase-5).
-  Confirmed across Home, Recipes, single-recipe, profile, about/privacy/help, auth, and logged-in
-  Account/Settings/Add-Recipe:
-  - `[x]` **Muted-grey body/meta text — done (#181, merged 2026-06-25):** `$tertiary-text` was darkened
-    `#979ba0` → **`#666c75`** (the lightest value clearing 4.5:1 on every light surface — white 5.29:1,
-    `#fafafa` 5.07:1, `#eeeeee` 4.56:1), and the three hardcoded `#8a8f99` report/bug-report-trigger greys
-    were tokenised onto it. Cleared every muted-grey `color-contrast` flag site-wide (axe failures roughly
-    halved per page: Recipes 17→3, SingleRecipe 11→6, Home 7→4). Did **not** move the Lighthouse score —
-    see the beta-tag note below.
-  - `[x]` **Brand colors as text/CTAs — done (this PR, 2026-06-25):** added accessible on-light brand
-    tokens `$primary-accessible: #bf360c` (orange, 5.60/4.83) and `$secondary-accessible: #00787e` (teal,
-    5.27/4.54), each covering both small-text and white-on-fill cases, and swapped **only** the failing
-    selectors (~25 across nav, home, recipe, about, profile, auth, search drawer, cook-suggestion modal,
-    and the logged-in Account seg / Settings nav / Drafts / Add-Recipe / empty states) — not the 305
-    `$primary` uses. A couple of on-tint cases needed deterministic handling: `.pp-lvl` got a solid
-    `#fff2ed` pill (the translucent tint composited too dark) and the active Settings nav label a darker
-    `#006065` teal. Verified: every page-load route (logged-out + logged-in) and the key interactive
-    surfaces (filter drawer, cook modal, reviews) are AA on brand; **only `.beta-tag` + the red danger
-    labels remain** (below). Kept vivid `#ff5722`/`#00adb5` for large/decorative UI, icons, hovers.
-  - `[ ]` **Nav-logo wordmark left vivid (needs sign-off)** — the `.nav-logo` "Prepify" wordmark is
-    `color: $primary` and, on the *solid* nav over the light surface, hits **2.72:1** (large text, so the
-    bar is only 3:1 — still just under). Deliberately **not** changed: it's the brand centrepiece and the
-    approved direction was to keep the logo vivid. Decide: accept as a documented large-text near-miss,
-    or darken just the solid-nav logo to the accessible orange (`#bf360c` → 4.83:1).
-  - `[ ]` **Danger/error red text fails AA (`$error-red #dc3545`)** — the Settings "Danger Zone" nav label
-    (`.settings-navlabel.danger`) and the danger-section row labels (`.sr-row-label`) render `$error-red`
-    on light/red-tinted surfaces at **3.9–4.28:1**. Out of scope for the brand-orange/teal pass — `$error-red`
-    is a **shared semantic token** (13 files: validation, alerts, danger actions), so darkening it (e.g. to
-    the existing `$error-red-hover #b02a37`, or a new accessible error token) is its own decision with
-    blast radius beyond these two labels. *(surfaced 2026-06-25 in the brand-contrast pass.)*
-  - *(The `.beta-tag` (`#eeeeee`-on-`#00adb5`, 2.78:1) sits in the nav on **every** page and is left for the
-    Phase-5 beta-tag cutover that removes the tag entirely. Because Lighthouse `color-contrast` is a binary
-    pass/fail audit, the beta-tag pins every page's a11y score at ~96 until that cutover — so neither the
-    grey fix (#181) nor the brand fix moves the Lighthouse number; **a11y ~100 lands automatically when the
-    beta tag comes off**, with no further a11y work.)* *(Original `.dnav__*` entry surfaced 2026-06-23 in
-    track 4-qa; broadened 2026-06-25 in the accessibility sweep; grey half shipped #181.)*
+- `[x]` **Contrast (WCAG AA) — DONE, Lighthouse a11y 100** *(grey #181; brand + nav-logo + beta-tag this
+  PR #184, 2026-06-25)*. Every page-load route (logged-out + logged-in) plus the key interactive surfaces
+  (filter drawer, cook modal, reviews) is AA; **Lighthouse a11y = 100 on every route except Settings-danger**
+  (the `$error-red` item below, filed separately). What shipped:
+  - `[x]` **Muted-grey body/meta text (#181):** `$tertiary-text` darkened `#979ba0` → `#666c75` (lightest
+    clearing 4.5:1 on white 5.29 / `#fafafa` 5.07 / `#eeeeee` 4.56); three hardcoded `#8a8f99` report-trigger
+    greys tokenised onto it.
+  - `[x]` **Brand orange/teal (#184):** added on-light tokens `$primary-accessible #bf360c` (5.60/4.83) and
+    `$secondary-accessible #00787e` (5.27/4.54), each covering small-text + white-on-fill, swapped on the ~25
+    failing selectors only (not the 305 `$primary` uses). On-tint cases handled deterministically: `.pp-lvl`
+    → solid `#fff2ed` pill; active Settings nav label → `#006065`.
+  - `[x]` **Nav-logo wordmark (#184):** darkened to `$primary-accessible` on any light nav surface — the
+    desktop solid bar (`.nav--solid`, incl. Home once scrolled) and the mobile bar on non-hero pages (new
+    `.nav--dark-links` class, since `.nav--solid` is desktop-only and Lighthouse a11y emulates mobile). The
+    transparent-over-hero logo keeps vivid `#ff5722` on its dark photo.
+  - `[x]` **Beta-tag (#184):** per owner call (it's removed at the 1.0 cutover anyway), recoloured from
+    light-on-`#00adb5` (2.78:1) to white-on-`$secondary-accessible` (5.27:1). This is what **unpinned the
+    Lighthouse score** — the binary `color-contrast` audit had been failing on every page purely because of
+    the ever-present beta-tag. *(Supersedes the earlier "leave it for Phase-5" note; the Phase-5 cutover will
+    still remove the tag entirely.)*
+- `[ ]` **Danger/error red text fails AA (`$error-red #dc3545`)** — the Settings "Danger Zone" nav label
+  (`.settings-navlabel.danger`) and the danger-section row labels (`.sr-row-label`) render `$error-red` on
+  light/red-tinted surfaces at **3.9–4.28:1** (keeps Settings-danger at Lighthouse 96; every other route is
+  100). Out of scope for the brand pass — `$error-red` is a **shared semantic token** (13 files: validation,
+  alerts, danger actions), so darkening it (e.g. to the existing `$error-red-hover #b02a37`, or a new
+  accessible error token) is its own decision with blast radius beyond these two labels. *(surfaced
+  2026-06-25 in the brand-contrast pass.)*
 - `[ ]` **Autocomplete dropdown isn't a valid ARIA listbox + has no keyboard nav** — re-confirmed in the
   2026-06-25 accessibility sweep, still as filed above (the `<ul role="listbox"><li><button role="option">`
   shape + no arrow-key/`aria-activedescendant`). Tab-reachable and operable by mouse/Enter, so left for the

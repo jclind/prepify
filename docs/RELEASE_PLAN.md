@@ -75,23 +75,20 @@ a feature flag. Do these together:
   buttons, toasts, and the legal/help/about copy site-wide. Only fix needed: the avatar size-limit toast
   `5mb` → `5MB`. *(Two typos live in MongoDB recipe **data** — "Egg Friend Rice", a granola "Tt's" — not
   code; out of scope for a code change.)* **(nice-to-have)**
-- `[~]` **Accessibility (WCAG 2.1 AA) sweep** — **deep pass done (PR #179, 2026-06-25); contrast remainder
-  filed.** Structured axe-core + Lighthouse audit of **every** page, logged-out **and** logged-in (Account
-  tabs / all 4 Settings sections / Add Recipe via the Cypress token bridge), plus keyboard + a11y-tree
-  spot-checks. Lighthouse a11y per page: **logged-out +0→+8** (single recipe **89 → 97**), **logged-in
-  +4→+12** (Add Recipe **84 → 96**); every page now at **96–97**. Cheap wins applied in place: hamburger
-  accessible name, StarRating `nested-interactive`, ingredient `<li role=checkbox>` → inner `<div>`, Add
-  Recipe button-name + react-select labels, heading order, RecipeCard label-in-name, auth-page `<main>`
-  landmarks, skip-to-content link, global `prefers-reduced-motion`. Modals (react-modal) verified for
-  focus-trap + Esc + focus-restore. **Remaining (`[~]`): the only outstanding flag is `color-contrast`,**
-  now nearly closed: the **muted-grey body-text** token shipped (#181, `#979ba0`→`#666c75`) and the
-  **brand orange/teal** palette shipped (accessible `#bf360c`/`#00787e` on ~25 selectors). Three small
-  tails remain, each filed to BACKLOG: the vivid **nav-logo** (large-text near-miss, needs sign-off), the
-  shared **`$error-red`** danger text, and the **`.beta-tag`**. **Key fact:** Lighthouse `color-contrast`
-  is a binary audit and the `.beta-tag` sits on every page, so the score stays ~96 regardless of the grey
-  or brand fixes — **a11y ~100 lands automatically when the beta tag is removed at Phase-5**, no further
-  a11y work needed. *(SR checks were programmatic, headless — no live VoiceOver in CI.)* **(nice-to-have;
-  brand-contrast in progress, then gated on the beta cutover)**
+- `[x]` **Accessibility (WCAG 2.1 AA) sweep — Lighthouse a11y 100** *(PRs #179 structural, #181 grey,
+  #184 brand+nav+beta; 2026-06-25)*. Structured axe-core + Lighthouse audit of **every** page, logged-out
+  **and** logged-in (Account tabs / all 4 Settings sections / Add Recipe via the Cypress token bridge), plus
+  keyboard + a11y-tree spot-checks. **Lighthouse a11y is now 100 on every route except Settings-danger (96)**
+  — up from the 80s/90s baseline. Structural wins (#179): hamburger accessible name, StarRating
+  `nested-interactive`, ingredient `<li role=checkbox>` → inner `<div>`, Add-Recipe button-name +
+  react-select labels, heading order, RecipeCard label-in-name, auth-page `<main>` landmarks,
+  skip-to-content link, global `prefers-reduced-motion`; modals verified for focus-trap + Esc + restore.
+  Contrast fully closed across three PRs: muted-grey token (#181), brand orange/teal on-light variants
+  (#184), the nav-logo on light surfaces (#184), and the **beta-tag** recolour (#184) — the last of which
+  **unpinned the binary `color-contrast` audit** that had held every page at ~96. The Phase-5 cutover still
+  removes the beta tag entirely. **One known tail filed to BACKLOG:** the shared `$error-red #dc3545` danger
+  text (Settings-danger, 3.9–4.28:1) — its own semantic-token decision. *(SR checks were programmatic,
+  headless — no live VoiceOver in CI.)* **(nice-to-have → done; one filed tail: `$error-red`)**
 - `[ ]` **Favicon, page titles, social/OG meta** — verify `index.html` + per-page titles
   (`react-helmet-async` is already a dependency) and an OG image for link previews. **(nice-to-have)**
 - `[x]` **Remove dev-only UI from production** — `@tanstack/react-query-devtools` is a devDependency;
@@ -419,15 +416,17 @@ unchanged (~96)** — the binary `color-contrast` audit still trips on the remai
 accessible `#bf360c`/`#00787e` variants on the failing selectors) and the **beta-tag**; the latter pins the
 score until the Phase-5 cutover, at which point a11y ~100 lands automatically. See BACKLOG → Accessibility.
 
-### 2026-06-25 — a11y contrast: brand orange/teal palette
+### 2026-06-25 — a11y contrast closed: brand + nav-logo + beta-tag → Lighthouse a11y 100 (PR #184)
 Follow-up to #181. Added accessible on-light brand tokens (`$primary-accessible #bf360c`,
 `$secondary-accessible #00787e`) and swapped the ~25 failing brand selectors (nav CTA + solid-nav accents,
 home see-all/meal/cook-modal, recipe eyebrow/price/cost/save buttons, about eyebrows/CTAs, profile level,
 auth buttons, search drawer + chips, and logged-in Account seg / Settings active nav / Drafts / Add-Recipe
-section labels / empty-state CTAs). Verified AA on every page-load route (logged-out + logged-in) and the
-key interactive surfaces (filter drawer, cook modal, reviews); tsc + 516 Vitest + build green. Remaining
-contrast is only `.beta-tag` (Phase-5) and three filed tails — the vivid nav-logo (sign-off) and the
-shared `$error-red` danger text. **Lighthouse still ~96** (beta-tag pins the binary audit). See BACKLOG →
-Accessibility.
+section labels / empty-state CTAs). Then, per owner call, also closed the two "deferred" tails: the
+**nav-logo** wordmark now uses the on-light orange on any light nav surface (desktop `.nav--solid` + a new
+`.nav--dark-links` class for the mobile bar — Lighthouse a11y emulates mobile), and the **beta-tag** was
+recoloured to white-on-`#00787e` (5.27:1). Recolouring the beta-tag **unpinned the binary `color-contrast`
+audit**, so **Lighthouse a11y is now 100 on all 21 routes except Settings-danger (96)** — that last one is
+the shared `$error-red` danger text, filed as its own decision. tsc + 516 Vitest + build green. See
+BACKLOG → Accessibility.
 
 _`/release-readiness` appends dated run summaries here._

@@ -74,6 +74,18 @@
   box-shadow: 0 2px 14px rgba(48, 56, 65, 0.07);
 }
 
+// On any light nav surface the vivid orange wordmark is only 2.72:1 (large text,
+// 3:1 bar): the desktop solid bar (incl. Home once scrolled) and the mobile bar
+// on non-hero pages (`nav--dark-links`). Use the AA on-light orange there; the
+// transparent-over-hero logo keeps $primary on its dark photo. Scoped through
+// `.prepify-logo.nav-link` to beat the base `.nav-logo` rule (0-3-0).
+.nav--solid,
+.nav--dark-links {
+  .prepify-logo.nav-link .nav-logo {
+    color: s.$primary-accessible;
+  }
+}
+
 // Condensed (scrolled) — slim the bar so the persistent search isn't a heavy
 // 100px footprint while reading. Desktop only (class set just for >725px).
 // Items shrink + recenter; the reserved page offset stays $nav-height, so a
@@ -150,10 +162,13 @@
   .beta-tag {
     text-transform: uppercase;
     font-size: 0.875rem;
-    background: s.$secondary;
+    // AA: light text on the vivid teal was 2.78:1; the on-light teal + white
+    // takes it to 5.27:1. (Cosmetic only — the tag is removed at the 1.0 cutover,
+    // but this keeps the binary color-contrast audit passing in the meantime.)
+    background: s.$secondary-accessible;
     padding: 0.25rem 0.5rem;
     border: none;
-    color: s.$primary-background;
+    color: s.$white;
     font-weight: 600;
     border-radius: 5px;
     -webkit-animation: breathing 5s ease-out infinite normal;
