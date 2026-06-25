@@ -24,6 +24,13 @@ The triage date stamped on items is the date they were filed here, not when they
 
 ## Bugs
 
+- `[ ]` **`Received NaN for the \`value\` attribute` console warning on the Edit Recipe form** — React
+  dev warning observed while editing an existing recipe (`/recipes/:id/edit`); a numeric input renders
+  with `value={NaN}` for a render or two before the recipe data settles. No user-visible effect (form
+  fills and saves correctly) — cosmetic console noise only. Likely a numeric field on the edit form
+  (servings / prep-cook time / fridge-freezer life) or the summary bar's est-per-serving math computing
+  before its inputs are populated; coerce/guard the value (`Number.isNaN(x) ? '' : x`). Discovered during
+  the author-selected diet-labels smoke test (2026-06-24); not seen on the create form, only edit. **(nice-to-have)**
 - `[x]` **Deleting a review leaves the star rating behind** — **fixed in PR #150 (merged, track 1a)**:
   added `DELETE /removeRating` (clears just the star; keeps any review; deletes the doc when
   rating-only), and `deleteReview` now keeps the rating and deletes the doc when there's nothing left —
