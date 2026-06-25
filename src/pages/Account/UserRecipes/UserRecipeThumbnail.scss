@@ -10,7 +10,7 @@
   box-sizing: border-box; // keep padding within the grid cell (no overflow)
   padding: 1.15rem;
   background: #fff;
-  border: 1px solid #ece2d6;
+  border: 1px solid s.$surface-warm-border;
   border-radius: 18px;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
   text-decoration: none;

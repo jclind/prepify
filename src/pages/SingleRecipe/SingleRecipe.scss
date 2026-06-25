@@ -187,7 +187,7 @@ $danger: #d23f31;
       background: s.$primary;
       border-color: s.$primary;
       color: s.$white;
-      &:hover { background: #e74e1d; border-color: #e74e1d; }
+      &:hover { background: s.$primary-hover; border-color: s.$primary-hover; }
       &.is-saved {
         background: s.$secondary;
         border-color: s.$secondary;
@@ -648,7 +648,7 @@ $danger: #d23f31;
         font-weight: 700;
         font-size: 0.9rem;
         cursor: pointer;
-        &:hover { background: #e74e1d; }
+        &:hover { background: s.$primary-hover; }
       }
     }
   }
