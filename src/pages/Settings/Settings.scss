@@ -113,7 +113,7 @@
     background: s.$white;
     border: 1px solid s.$surface-warm-border;
     border-radius: 18px;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+    box-shadow: s.$shadow-soft;
     padding: 1.75rem;
 
     .settings-panehead {
@@ -156,8 +156,8 @@
         gap: 0;
         background: s.$white;
         border: 1px solid s.$surface-warm-border;
-        border-radius: 16px;
-        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+        border-radius: s.$radius-3xl;
+        box-shadow: s.$shadow-soft;
         overflow: hidden;
       }
       .settings-navitem {

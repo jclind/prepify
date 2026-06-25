@@ -37,7 +37,7 @@
     text-decoration: none;
     color: #fff;
     background: s.$primary;
-    border-radius: 999px;
+    border-radius: s.$radius-pill;
     padding: 0.6rem 1.5rem;
     transition: filter 0.12s ease;
     &:hover {
@@ -55,7 +55,7 @@
   .pp-avatar {
     width: 116px;
     height: 116px;
-    border-radius: 50%;
+    border-radius: s.$radius-circle;
     object-fit: cover;
     flex-shrink: 0;
     box-shadow: 0 8px 22px rgba(255, 87, 34, 0.18);
@@ -85,7 +85,7 @@
   .pp-share {
     width: 30px;
     height: 30px;
-    border-radius: 50%;
+    border-radius: s.$radius-circle;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -164,7 +164,7 @@
       font-weight: 800;
       color: s.$primary;
       background: rgba(s.$primary, 0.1);
-      border-radius: 999px;
+      border-radius: s.$radius-pill;
       padding: 0.12rem 0.55rem;
     }
   }
@@ -186,7 +186,7 @@
     color: s.$secondary-text;
     background: #fdf3ec;
     border: 1px solid #f0e1d4;
-    border-radius: 999px;
+    border-radius: s.$radius-pill;
     padding: 0.32rem 0.7rem;
     svg {
       color: s.$primary;
@@ -209,8 +209,8 @@
     overflow: hidden;
     background: #fff;
     border: 1px solid s.$surface-warm-border;
-    border-radius: 14px;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+    border-radius: s.$radius-2xl;
+    box-shadow: s.$shadow-soft;
     text-decoration: none;
     color: s.$primary-text;
     transition: transform 0.16s ease, box-shadow 0.16s ease;
@@ -260,7 +260,7 @@
       align-items: center;
       gap: 0.25rem;
       padding: 0.18rem 0.45rem;
-      border-radius: 999px;
+      border-radius: s.$radius-pill;
       background: rgba(0, 0, 0, 0.55);
       backdrop-filter: blur(2px);
       color: #fff;
