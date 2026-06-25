@@ -104,7 +104,7 @@ $danger: #d23f31;
       .avatar {
         width: 28px;
         height: 28px;
-        border-radius: 50%;
+        border-radius: s.$radius-circle;
         background: s.$secondary;
         color: s.$white;
         display: inline-flex;
@@ -172,7 +172,7 @@ $danger: #d23f31;
       font-weight: 700;
       font-size: 0.95rem;
       padding: 0.7rem 1.25rem;
-      border-radius: 10px;
+      border-radius: s.$radius-lg;
       cursor: pointer;
       height: auto !important;
       border: 1.5px solid s.$gray-300;
@@ -201,7 +201,7 @@ $danger: #d23f31;
       align-items: center;
       justify-content: center;
       background: rgba(255, 255, 255, 0.6);
-      border-radius: 10px;
+      border-radius: s.$radius-lg;
     }
   }
 
@@ -236,13 +236,13 @@ $danger: #d23f31;
       align-items: center;
       gap: 0.15rem;
       background: s.$primary-background;
-      border-radius: 999px;
+      border-radius: s.$radius-pill;
       padding: 0.2rem;
       font-weight: 700;
       .step-btn {
         width: 26px;
         height: 26px;
-        border-radius: 50%;
+        border-radius: s.$radius-circle;
         border: none;
         background: s.$white;
         cursor: pointer;
@@ -281,7 +281,7 @@ $danger: #d23f31;
         align-items: center;
         gap: 0.65rem;
         padding: 0.5rem 0.4rem;
-        border-radius: 10px;
+        border-radius: s.$radius-lg;
         cursor: pointer;
         font-size: 0.94rem;
         &:hover { background: s.$primary-background; }
@@ -357,7 +357,7 @@ $danger: #d23f31;
         .num {
           width: 34px;
           height: 34px;
-          border-radius: 50%;
+          border-radius: s.$radius-circle;
           background: s.$primary;
           color: s.$white;
           display: flex;
@@ -385,7 +385,7 @@ $danger: #d23f31;
       background: rgba(s.$secondary, 0.12);
       color: s.$secondary;
       padding: 0.35rem 0.85rem;
-      border-radius: 999px;
+      border-radius: s.$radius-pill;
       font-size: 0.85rem;
       font-weight: 600;
       text-decoration: none;
@@ -407,7 +407,7 @@ $danger: #d23f31;
       width: auto;
       height: auto;
       padding: 0.75rem 1.5rem;
-      border-radius: 10px;
+      border-radius: s.$radius-lg;
       font-weight: 700;
       font-size: 0.95rem;
       background: rgba(s.$secondary, 0.12);
@@ -458,8 +458,8 @@ $danger: #d23f31;
         margin-bottom: 0.3rem;
         span:last-child { color: s.$secondary; }
       }
-      .nd-track { height: 8px; background: s.$primary-background; border-radius: 999px; overflow: hidden; }
-      .nd-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, s.$secondary, #2fd0d8); }
+      .nd-track { height: 8px; background: s.$primary-background; border-radius: s.$radius-pill; overflow: hidden; }
+      .nd-fill { height: 100%; border-radius: s.$radius-pill; background: linear-gradient(90deg, s.$secondary, #2fd0d8); }
     }
     .nd-facts {
       width: 100%;
@@ -555,7 +555,7 @@ $danger: #d23f31;
             letter-spacing: 0;
             color: s.$primary;
             border: 1.5px solid rgba(s.$primary, 0.4);
-            border-radius: 999px;
+            border-radius: s.$radius-pill;
             padding: 0.4rem 0.95rem;
             transition: background 0.12s ease;
           }
@@ -589,7 +589,7 @@ $danger: #d23f31;
       padding: 1rem 1.25rem;
       background: s.$white;
       border: 1px solid $soft-border;
-      border-radius: 12px;
+      border-radius: s.$radius-xl;
       margin-bottom: 1rem;
       .body .text { color: s.$secondary-text; line-height: 1.6; font-size: 0.92rem; }
       // hide the empty options bar on others' reviews (the beta like/dislike was
@@ -629,7 +629,7 @@ $danger: #d23f31;
         min-height: 72px;
         resize: vertical;
         border: 1.5px solid s.$gray-300;
-        border-radius: 10px;
+        border-radius: s.$radius-lg;
         padding: 0.65rem 0.8rem;
         font-family: inherit;
         font-size: 0.9rem;
@@ -642,7 +642,7 @@ $danger: #d23f31;
         background: s.$primary;
         color: s.$white;
         border: none;
-        border-radius: 10px;
+        border-radius: s.$radius-lg;
         padding: 0.6rem 1.25rem;
         font-family: inherit;
         font-weight: 700;
@@ -699,7 +699,7 @@ $danger: #d23f31;
       gap: 0;
       background: s.$gray-50;
       border: 1px solid s.$gray-200;
-      border-radius: 12px;
+      border-radius: s.$radius-xl;
       padding: 0.7rem 0.35rem;
       .m-item {
         flex: 1;
