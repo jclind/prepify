@@ -84,7 +84,7 @@
       font-size: 0.95rem;
       text-decoration: none;
       transition: background 0.12s ease;
-      &:hover { background: #e74e1d; }
+      &:hover { background: s.$primary-hover; }
       &:focus-visible { @include s.outline(); }
     }
   }
