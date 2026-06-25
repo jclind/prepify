@@ -57,7 +57,7 @@
   .home-recipe-card {
     display: block;
     background: s.$white;
-    border-radius: 14px;
+    border-radius: s.$radius-2xl;
     overflow: hidden;
     text-decoration: none;
     color: s.$primary-text;
@@ -71,7 +71,7 @@
         position: absolute; bottom: 0.6rem; right: 0.6rem;
         background: rgba(255, 255, 255, 0.95); color: s.$primary;
         font-weight: 800; font-size: 0.78rem; padding: 0.28rem 0.6rem;
-        border-radius: 999px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+        border-radius: s.$radius-pill; box-shadow: s.$shadow-chip;
       }
     }
     .body { padding: 0.85rem 1rem 1rem; }
@@ -99,7 +99,7 @@
   .home-meal-col {
     background: s.$white;
     border: 1px solid #efe6db;
-    border-radius: 16px;
+    border-radius: s.$radius-3xl;
     padding: 1.25rem;
     box-shadow: rgba(0, 0, 0, 0.04) 0px 4px 14px;
 
@@ -121,11 +121,11 @@
       align-items: center;
       text-decoration: none;
       color: s.$primary-text;
-      border-radius: 10px;
+      border-radius: s.$radius-lg;
       padding: 0.4rem;
       transition: background 0.12s ease;
       &:hover { background: #fbf7f2; }
-      img { width: 56px; height: 56px; border-radius: 10px; object-fit: cover; flex-shrink: 0; }
+      img { width: 56px; height: 56px; border-radius: s.$radius-lg; object-fit: cover; flex-shrink: 0; }
     }
     .info { display: flex; flex-direction: column; gap: 0.2rem; min-width: 0; }
     .title { font-weight: 600; font-size: 0.92rem; text-transform: capitalize; line-height: 1.25; }
@@ -166,7 +166,7 @@
     background: s.$primary;
     color: s.$white;
     padding: 0.95rem 2rem;
-    border-radius: 999px;
+    border-radius: s.$radius-pill;
     font-weight: 700;
     font-size: 1rem;
     text-decoration: none;

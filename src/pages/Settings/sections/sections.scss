@@ -110,7 +110,7 @@
   padding: 1.1rem 1.25rem;
   border: 1px solid rgba(s.$error-red, 0.4);
   background: rgba(s.$error-red, 0.04);
-  border-radius: 14px;
+  border-radius: s.$radius-2xl;
 
   .sr-row-text {
     display: flex;
@@ -155,7 +155,7 @@
 .sr-modal {
   width: min(440px, 100%);
   background: s.$white;
-  border-radius: 16px;
+  border-radius: s.$radius-3xl;
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.24);
   padding: 1.5rem;
   display: flex;
@@ -182,7 +182,7 @@
       height: 32px;
       width: 32px;
       border: none;
-      border-radius: 8px;
+      border-radius: s.$radius-md;
       background: s.$gray-200;
       color: s.$secondary-text;
       cursor: pointer;

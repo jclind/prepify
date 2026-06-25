@@ -26,9 +26,9 @@
     align-items: center;
     background: #fff;
     border: 1px solid s.$surface-warm-border;
-    border-radius: 20px;
+    border-radius: s.$radius-4xl;
     padding: 1.5rem;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+    box-shadow: s.$shadow-soft;
     margin-bottom: 1.75rem;
 
     @media (max-width: 880px) {
@@ -47,7 +47,7 @@
   .acct-avatar {
     width: 80px;
     height: 80px;
-    border-radius: 50%;
+    border-radius: s.$radius-circle;
     object-fit: cover;
     flex-shrink: 0;
     box-shadow: 0 8px 22px rgba(255, 87, 34, 0.18);
@@ -124,7 +124,7 @@
       rgba(s.$primary, 0.09)
     );
     border: 1px solid rgba(s.$primary, 0.22);
-    border-radius: 14px;
+    border-radius: s.$radius-2xl;
     padding: 0.85rem 1rem;
     transition: border-color 0.12s ease, box-shadow 0.12s ease;
 
@@ -149,7 +149,7 @@
     color: s.$secondary-text;
     background: #fff;
     border: 1px solid rgba(s.$primary-text, 0.08);
-    border-radius: 999px;
+    border-radius: s.$radius-pill;
     padding: 0.3rem 0.75rem 0.3rem 0.3rem;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
     white-space: nowrap;
@@ -162,7 +162,7 @@
     color: #fff;
     background: linear-gradient(135deg, s.$primary, #ff8a5c);
     padding: 0.18rem 0.5rem;
-    border-radius: 999px;
+    border-radius: s.$radius-pill;
   }
   .acct-rewards-cta {
     font-weight: 800;
@@ -178,13 +178,13 @@
     .acct-xpbar-track {
       height: 6px;
       background: rgba(s.$primary-text, 0.1);
-      border-radius: 999px;
+      border-radius: s.$radius-pill;
       overflow: hidden;
     }
     .acct-xpbar-fill {
       height: 100%;
       background: linear-gradient(90deg, #ff8a5c, s.$primary);
-      border-radius: 999px;
+      border-radius: s.$radius-pill;
     }
     .acct-xpbar-label {
       display: block;
@@ -220,7 +220,7 @@
     color: s.$secondary-text;
     background: #fff;
     border: 1px solid #e3d9ca;
-    border-radius: 999px;
+    border-radius: s.$radius-pill;
     padding: 0.5rem 1.1rem;
     &:hover {
       border-color: s.$primary;
@@ -231,7 +231,7 @@
     width: 38px;
     height: 38px;
     padding: 0;
-    border-radius: 50%;
+    border-radius: s.$radius-circle;
     color: s.$secondary-text;
     background: #fff;
     border: 1px solid #e3d9ca;
@@ -265,9 +265,9 @@
     gap: 0.3rem;
     background: #fff;
     border: 1px solid s.$surface-warm-border;
-    border-radius: 16px;
+    border-radius: s.$radius-3xl;
     padding: 0.6rem;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+    box-shadow: s.$shadow-soft;
     // Keep the rail in view while scrolling a long sub-page.
     position: sticky;
     top: calc(#{s.$nav-height} + 1rem);
@@ -320,7 +320,7 @@
       font-weight: 800;
       color: s.$secondary-text;
       background: s.$gray-200;
-      border-radius: 999px;
+      border-radius: s.$radius-pill;
       padding: 0.1rem 0.5rem;
     }
     &.active .acct-seg-count {
@@ -416,7 +416,7 @@
       width: 42px;
       height: 42px;
       padding: 0;
-      border-radius: 50%;
+      border-radius: s.$radius-circle;
       span {
         display: none;
       }

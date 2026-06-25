@@ -6,7 +6,7 @@
   position: relative;
   width: min(360px, 90vw);
   background: #fff;
-  border-radius: 16px;
+  border-radius: s.$radius-3xl;
   overflow: hidden;
   text-align: left;
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
@@ -19,7 +19,7 @@
     z-index: 2;
     width: 30px;
     height: 30px;
-    border-radius: 50%;
+    border-radius: s.$radius-circle;
     border: none;
     background: rgba(255, 255, 255, 0.92);
     color: s.$primary-text;
@@ -56,8 +56,8 @@
       font-weight: 800;
       font-size: 0.78rem;
       padding: 0.28rem 0.6rem;
-      border-radius: 999px;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+      border-radius: s.$radius-pill;
+      box-shadow: s.$shadow-chip;
     }
     .reroll-veil {
       position: absolute;
@@ -68,7 +68,7 @@
       .spinner {
         width: 30px;
         height: 30px;
-        border-radius: 50%;
+        border-radius: s.$radius-circle;
         border: 3px solid rgba(0, 0, 0, 0.15);
         border-top-color: s.$primary;
         animation: cook-spin 0.7s linear infinite;
@@ -115,7 +115,7 @@
     gap: 0.35rem;
     flex: 1;
     border: none;
-    border-radius: 999px;
+    border-radius: s.$radius-pill;
     font-size: 0.9rem;
     font-weight: 600;
     padding: 0.6rem 1rem;
@@ -138,7 +138,7 @@
 .cook-modal-state {
   width: min(360px, 90vw);
   background: #fff;
-  border-radius: 16px;
+  border-radius: s.$radius-3xl;
   overflow: hidden;
   .body { padding: 0.9rem 1rem 1rem; }
   &.cook-modal-msg {
@@ -149,7 +149,7 @@
     .ghost {
       background: #f0f1f3;
       border: none;
-      border-radius: 999px;
+      border-radius: s.$radius-pill;
       padding: 0.5rem 1.1rem;
       font-weight: 600;
       cursor: pointer;

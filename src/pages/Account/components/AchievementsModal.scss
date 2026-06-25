@@ -31,7 +31,7 @@
     font-weight: 700;
     color: s.$tertiary-text;
     background: #efe6da;
-    border-radius: 999px;
+    border-radius: s.$radius-pill;
     padding: 0.2rem 0.65rem;
   }
   .am-close {
@@ -41,7 +41,7 @@
     justify-content: center;
     width: 34px;
     height: 34px;
-    border-radius: 50%;
+    border-radius: s.$radius-circle;
     border: 1px solid #e3d9ca;
     background: #fff;
     color: s.$secondary-text;
@@ -67,7 +67,7 @@
     align-items: center;
     gap: 0.85rem;
     padding: 0.7rem 0.75rem;
-    border-radius: 12px;
+    border-radius: s.$radius-xl;
 
     &.locked {
       opacity: 0.55;

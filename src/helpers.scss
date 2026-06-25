@@ -57,11 +57,34 @@ $recipe-body-max-width: 800px;
 
 $home-hero-height: calc(500px - #{$page-top-padding} - #{$page-top-margin});
 
-$border-radius: 10px;
+// Corner-radius scale. Steps are the radii already in use across the app, so
+// every repoint is value-identical. Off-scale one-offs (5/7/9/11/13/18px) and
+// the token-less admin files keep raw values pending normalization / import
+// wiring (see docs/BACKLOG.md).
+$radius-xs: 4px;
+$radius-sm: 6px;
+$radius-md: 8px;
+$radius-lg: 10px;
+$radius-xl: 12px;
+$radius-2xl: 14px;
+$radius-3xl: 16px;
+$radius-4xl: 20px;
+$radius-pill: 999px;
+$radius-circle: 50%;
+
+// Canonical default radius (cards/controls). Alias of $radius-lg; retained for
+// the existing s.$border-radius references.
+$border-radius: $radius-lg;
 
 $max-width: 1400px;
 
 $card-box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
+
+// Elevation — only the shadows that recur verbatim are tokenized so repoints
+// stay value-identical; bespoke one-off shadows remain raw pending an
+// elevation-scale re-author (see docs/BACKLOG.md).
+$shadow-soft: 0 4px 14px rgba(0, 0, 0, 0.05); // soft resting shadow on warm account/settings cards
+$shadow-chip: 0 2px 6px rgba(0, 0, 0, 0.18);  // tight drop shadow on price / floating chips
 
 $font-family: 'Montserrat', sans-serif;
 
