@@ -55,6 +55,10 @@ export type RecipeFormType = {
   recipeImage: File
   cuisine: string
   mealTypes: string[]
+  // Diet/health tags the author selects manually (e.g. VEGAN, GLUTEN_FREE).
+  // Drives the recipes-page diet filter. Empty array = no diet tags. Previously
+  // derived from Edamam; now author-supplied so the values are accurate.
+  nutritionLabels: string[]
 }
 
 // Same shape as RecipeFormType, but the image is optional: when editing, an
@@ -87,6 +91,7 @@ export type RecipeDraftContent = {
   instructions?: InstructionsType[]
   cuisine?: string
   mealTypes?: string[]
+  nutritionLabels?: string[]
 }
 
 export type RecipeDraftType = RecipeDraftContent & {

@@ -1,7 +1,6 @@
 import { parseIngredientString } from '@jclind/ingredient-parser'
 import axios, { type AxiosResponse } from 'axios'
 import { getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage'
-import dietLabels from 'src/recipeData/dietLabels'
 import { calculateServingPrice } from 'src/util/calculateServingPrice'
 import {
   AccountTabCounts,
@@ -207,7 +206,6 @@ class RecipeAPIClass {
     computed: {
       recipeImage: string
       nutritionData: NutritionDataType | null
-      nutritionLabels: string[] | null
       servingPrice: number
       totalTime: number
     }
@@ -224,9 +222,11 @@ class RecipeAPIClass {
       instructions: data.instructions,
       cuisine: data.cuisine,
       mealTypes: data.mealTypes,
+      // Author-selected diet tags. Unlike nutritionData (still computed from
+      // Edamam), these come straight from the form.
+      nutritionLabels: data.nutritionLabels,
       recipeImage: computed.recipeImage,
       nutritionData: computed.nutritionData,
-      nutritionLabels: computed.nutritionLabels,
       servingPrice: computed.servingPrice,
       totalTime: computed.totalTime,
     }
@@ -250,16 +250,13 @@ class RecipeAPIClass {
       )
       setProgress(80)
       const totalTime: number = recipeData.prepTime + (recipeData.cookTime ?? 0)
-      const nutritionDataRes = await this.getRecipeNutrition(
-        recipeData.ingredients
-      )
-      const nutritionData = nutritionDataRes.nutritionData
-      const nutritionLabels = nutritionDataRes.dietLabels
+      // Diet labels now come from the form (recipeData.nutritionLabels); Edamam
+      // only supplies the numeric nutrition facts.
+      const nutritionData = await this.getRecipeNutrition(recipeData.ingredients)
       const returnRecipeData: Omit<RecipeType, '_id'> = {
         ...this.buildEditableRecipeFields(recipeData, {
           recipeImage,
           nutritionData,
-          nutritionLabels,
           servingPrice,
           totalTime,
         }),
@@ -325,10 +322,11 @@ class RecipeAPIClass {
       )
       const totalTime: number = recipeData.prepTime + (recipeData.cookTime ?? 0)
 
-      // Nutrition is a paid Edamam call, so only re-run it when the ingredient set
-      // actually changed; minor edits (title, instructions, times) reuse the
-      // stored nutrition data and labels. Compare the exact strings the lookup
-      // would send, element-wise.
+      // Numeric nutrition is a paid Edamam call, so only re-run it when the
+      // ingredient set actually changed; minor edits (title, instructions, times)
+      // reuse the stored nutrition data. Diet labels are author-supplied via the
+      // form, so they're not part of this check. Compare the exact strings the
+      // lookup would send, element-wise.
       const newIngredients = this.buildNutritionIngredients(recipeData.ingredients)
       const oldIngredients = this.buildNutritionIngredients(originalRecipe.ingredients)
       const ingredientsChanged =
@@ -336,18 +334,16 @@ class RecipeAPIClass {
         newIngredients.some((ingr, i) => ingr !== oldIngredients[i])
 
       let nutritionData = originalRecipe.nutritionData
-      let nutritionLabels = originalRecipe.nutritionLabels
       if (ingredientsChanged) {
-        const nutritionDataRes = await this.getRecipeNutrition(
-          recipeData.ingredients
-        )
         // getRecipeNutrition soft-fails to null when Edamam is unreachable. Only
         // overwrite when it actually returned data — otherwise a transient lookup
         // failure during an ingredient edit would erase the recipe's existing
         // nutrition facts for all viewers.
-        if (nutritionDataRes.nutritionData) {
-          nutritionData = nutritionDataRes.nutritionData
-          nutritionLabels = nutritionDataRes.dietLabels
+        const freshNutritionData = await this.getRecipeNutrition(
+          recipeData.ingredients
+        )
+        if (freshNutritionData) {
+          nutritionData = freshNutritionData
         }
       }
       setProgress(90)
@@ -356,7 +352,6 @@ class RecipeAPIClass {
       const payload = this.buildEditableRecipeFields(recipeData, {
         recipeImage,
         nutritionData,
-        nutritionLabels,
         servingPrice,
         totalTime,
       })
@@ -395,7 +390,13 @@ class RecipeAPIClass {
     })
     return ingr
   }
-  async getRecipeNutrition(ingrArr: IngredientsType[]): Promise<{ nutritionData: NutritionDataType | null; dietLabels: string[] | null }> {
+  // Fetches the numeric nutrition facts (calories, macros…) from Edamam for the
+  // given ingredients. Diet/health labels are no longer derived here — authors
+  // set those manually on the form. Soft-fails to null so a lookup outage never
+  // blocks recipe creation/editing.
+  async getRecipeNutrition(
+    ingrArr: IngredientsType[]
+  ): Promise<NutritionDataType | null> {
     try {
       const ingrData: { title: string; ingr: string[] } = {
         title: 'recipe 1',
@@ -408,25 +409,10 @@ class RecipeAPIClass {
 
       const nutritionResult: NutritionDataType = nutritionResultRes.data
 
-      if (!nutritionResult) return { nutritionData: null, dietLabels: null }
-
-      const currDietLabels: string[] = []
-
-      const returnedNutritionLabels = [
-        ...nutritionResult.dietLabels,
-        ...nutritionResult.healthLabels,
-      ]
-
-      dietLabels.forEach(l => {
-        if (returnedNutritionLabels.includes(l.toUpperCase())) {
-          currDietLabels.push(l)
-        }
-      })
-
-      return { nutritionData: nutritionResult, dietLabels: currDietLabels }
+      return nutritionResult ?? null
     } catch (error: unknown) {
       console.error('getRecipeNutrition failed:', error)
-      return { nutritionData: null, dietLabels: null }
+      return null
     }
   }
 
