@@ -14,6 +14,10 @@ const RECIPE_CONTENT_FIELDS = [
   'instructions',
   'cuisine',
   'mealTypes',
+  // Author-selected diet/health tags (VEGAN, GLUTEN_FREE…). A user content field
+  // so drafts persist it too; it used to be Edamam-computed and lived only in the
+  // edit whitelist below.
+  'nutritionLabels',
 ]
 
 // Editing a published recipe also writes the image and the server-/client-
@@ -22,7 +26,6 @@ const EDITABLE_RECIPE_FIELDS = [
   ...RECIPE_CONTENT_FIELDS,
   'recipeImage',
   'nutritionData',
-  'nutritionLabels',
   'servingPrice',
   'totalTime',
 ]

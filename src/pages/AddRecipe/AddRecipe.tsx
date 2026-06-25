@@ -24,6 +24,7 @@ import IngredientsContainer from 'src/pages/AddRecipe/Ingredients/IngredientsCon
 import InstructionsContainer from 'src/pages/AddRecipe/Instructions/InstructionsContainer'
 import CuisineSelector from 'src/pages/AddRecipe/CuisineSelector/CuisineSelector'
 import MealTypeSelector from 'src/pages/AddRecipe/MealTypeSelector/MealTypeSelector'
+import DietSelector from 'src/pages/AddRecipe/DietSelector/DietSelector'
 import { hrMinToMin } from 'src/util/hrMinToMin'
 import { minToHrMin } from 'src/util/minToHrMin'
 import {
@@ -100,6 +101,12 @@ const AddRecipe: FC<AddRecipeProps> = ({ initialRecipe }) => {
   const [mealTypes, setMealTypes] = useState<string[]>(
     initialRecipe?.mealTypes ?? []
   )
+  // Author-selected diet tags (optional). In edit mode this pre-fills from the
+  // recipe's existing nutritionLabels — including ones Edamam set on older
+  // recipes — so the author can keep or correct them.
+  const [nutritionLabels, setNutritionLabels] = useState<string[]>(
+    initialRecipe?.nutritionLabels ?? []
+  )
   const [errors, setErrors] = useState<Partial<AddRecipeErrorType>>({})
 
   const [isFormValid, setIsFormValid] = useState(false)
@@ -154,6 +161,7 @@ const AddRecipe: FC<AddRecipeProps> = ({ initialRecipe }) => {
           setInstructions(draft.instructions ?? [])
           setCuisine(draft.cuisine ?? '')
           setMealTypes(draft.mealTypes ?? [])
+          setNutritionLabels(draft.nutritionLabels ?? [])
           setResumedFromDraft(true)
         }
         setHydrated(true)
@@ -203,6 +211,7 @@ const AddRecipe: FC<AddRecipeProps> = ({ initialRecipe }) => {
       instructions,
       cuisine,
       mealTypes,
+      nutritionLabels,
     }),
     [
       title,
@@ -216,6 +225,7 @@ const AddRecipe: FC<AddRecipeProps> = ({ initialRecipe }) => {
       instructions,
       cuisine,
       mealTypes,
+      nutritionLabels,
     ]
   )
 
@@ -327,6 +337,7 @@ const AddRecipe: FC<AddRecipeProps> = ({ initialRecipe }) => {
       instructions,
       cuisine,
       mealTypes,
+      nutritionLabels,
     }
     if (isEditMode && initialRecipe) {
       const editData: RecipeEditFormType = { ...formData, recipeImage }
@@ -529,6 +540,13 @@ const AddRecipe: FC<AddRecipeProps> = ({ initialRecipe }) => {
               <MealTypeSelector
                 mealTypes={mealTypes}
                 setMealTypes={setMealTypes}
+              />
+            </div>
+            <div className='diet input-field'>
+              <SectionHeader label='Diet' />
+              <DietSelector
+                nutritionLabels={nutritionLabels}
+                setNutritionLabels={setNutritionLabels}
               />
             </div>
           </div>

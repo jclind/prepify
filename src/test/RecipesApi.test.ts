@@ -63,6 +63,8 @@ const makeFormData = (): RecipeFormType => ({
   recipeImage: new File([''], 'photo.jpg', { type: 'image/jpeg' }),
   cuisine: '',
   mealTypes: ['Dinner'],
+  // Author-selected diet tags now come from the form, independent of Edamam.
+  nutritionLabels: ['VEGAN'],
 })
 
 describe('RecipeAPI.addRecipe — nutrition soft-fail (High #4)', () => {
@@ -84,10 +86,12 @@ describe('RecipeAPI.addRecipe — nutrition soft-fail (High #4)', () => {
     expect(httpPost).toHaveBeenCalledTimes(1)
     expect(httpPost.mock.calls[0][0]).toBe('api/addRecipe')
 
-    // The submitted payload carries null nutrition fields (soft-fail degradation)
+    // The submitted payload carries null numeric nutrition (soft-fail
+    // degradation), but the author-selected diet labels are unaffected by the
+    // Edamam outage — they come straight from the form.
     const submittedRecipe = httpPost.mock.calls[0][1]
     expect(submittedRecipe.nutritionData).toBeNull()
-    expect(submittedRecipe.nutritionLabels).toBeNull()
+    expect(submittedRecipe.nutritionLabels).toEqual(['VEGAN'])
   })
 
   it('still POSTs the recipe and returns the _id when getRecipeNutrition resolves with empty data', async () => {
@@ -160,6 +164,8 @@ describe('RecipeAPI.editRecipe', () => {
     recipeImage: undefined,
     cuisine: '',
     mealTypes: ['Dinner'],
+    // Mirrors the edit form, which pre-fills from the recipe's existing labels.
+    nutritionLabels: ['Vegan'],
     ...overrides,
   })
 
@@ -268,7 +274,8 @@ describe('RecipeAPI.editRecipe', () => {
 
     expect(nutritionPost).toHaveBeenCalledTimes(1)
     const payload = httpPut.mock.calls[0][1]
-    // The soft-fail must NOT erase the recipe's stored nutrition.
+    // The soft-fail must NOT erase the recipe's stored numeric nutrition; diet
+    // labels are form-driven and pass through regardless.
     expect(payload.nutritionData).toEqual({ uri: 'orig' })
     expect(payload.nutritionLabels).toEqual(['Vegan'])
   })
