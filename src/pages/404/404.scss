@@ -60,6 +60,17 @@
         height: 120px;
       }
     }
+    // Smallest phones (≤375px): the two italic digits + donut overrun a ~320px
+    // viewport at 7.5rem — step down once more so the glyph stays inside.
+    @include s.below(s.$bp-xs) {
+      span.number {
+        font-size: 6rem;
+      }
+      .zero {
+        width: 100px;
+        height: 100px;
+      }
+    }
   }
   .content {
     display: flex;

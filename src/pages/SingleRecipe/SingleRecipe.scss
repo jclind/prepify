@@ -230,8 +230,12 @@ $danger: #d23f31;
   .ingredients-card {
     .sec-head {
       display: flex;
+      // Wrap the (fixed-width) servings pill below the heading on very narrow
+      // screens instead of letting it spill past the section's right edge.
+      flex-wrap: wrap;
       justify-content: space-between;
       align-items: center;
+      gap: 0.5rem 1rem;
       margin-bottom: 1.1rem;
       h2 { margin-bottom: 0; }
     }
