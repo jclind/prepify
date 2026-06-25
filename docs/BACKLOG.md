@@ -382,17 +382,26 @@ The triage date stamped on items is the date they were filed here, not when they
   design-consistency sweep (2026-06-25) applied the two pixel-identical cheap wins from the
   [2026-06-13 audit](./DESIGN_CONSISTENCY_AUDIT_2026-06-13.md): `$primary-hover` (`#e74e1d`, was hardcoded
   in 5 spots + a Footer local var) and `$surface-warm-border` (`#ece2d6`, 11 spots across 8 files). The
-  systemic scales remain un-tokenized and need design sign-off because they touch many files / pixels:
-    - **Type scale** — ~367 raw `font-size:` literals, no scale token. Define a small ramp (e.g.
-      `$fs-sm`/`$fs-base`/`$fs-lg`/…) and migrate the common sizes.
-    - **Radius scale** — only `$border-radius: 10px` exists; cards use 10/12/14/16/20px + `999px` pills
-      ad-hoc (audit F4). Define `$radius-sm/md/lg/pill` and map each surface.
-    - **Elevation/shadow scale** — `$card-box-shadow` is used ~twice vs ~31 inline `box-shadow`s, several
-      near-duplicates; the avatar-glow `rgba(255,87,34,0.18)` is repeated verbatim in Account + PublicProfile
-      (audit F5). Define `$shadow-card`/`$shadow-card-hover`/`$shadow-glow-primary`.
+  remaining systemic scales need design sign-off because they touch many files / pixels:
+    - **Type scale** — ~520 raw `font-size:` literals across ~50 distinct values (0.8/0.82/0.84/0.85/0.875…
+      all coexist). A real scale *normalizes* those to a handful of steps, so it is **not** a pixel-identical
+      repoint — it is a deliberate normalization pass needing design sign-off. Define a small ramp (e.g.
+      `$fs-sm`/`$fs-base`/`$fs-lg`/…) and snap each size to its nearest step.
+    - `[x]` **Radius scale** — DONE 2026-06-25 (PR `style/radius-scale-tokens`). `$radius-xs..4xl` +
+      `$radius-pill`/`$radius-circle` now in `helpers.scss`; `$border-radius` aliases `$radius-lg`. ~200
+      value-identical repoints across 32 `s`-importing files (compiled CSS byte-identical). **Remaining:**
+      off-scale one-offs (5/7/9/11/13/18px) need ±1px normalization (design call), and the token-less admin
+      files (`Admin/*`, `AdminRecipeControls`, `SavedFilterBar`) keep raw radii pending the import-wiring item
+      below.
+    - **Elevation/shadow scale** — partly done 2026-06-25: the two shadows that recur verbatim are now
+      `$shadow-soft` (warm card resting, ×8) and `$shadow-chip` (price/floating chips, ×3). **Remaining:** the
+      ~40 other `box-shadow`s are nearly all unique and need a re-authored scale (`$shadow-card`/`-hover`/
+      `-glow-primary`), e.g. the avatar-glow `rgba(255,87,34,0.18)` repeated in Account + PublicProfile
+      (audit F5) — a re-author, not a pixel-identical repoint.
     - **Breakpoint tokens/mixin** — no shared breakpoints; ~77 ad-hoc media queries repeat 725px (navbar
       flip), 768px, 600px, 560px, 640px… Add a `$bp-*` set or a `respond-to()` mixin and converge.
-  *(surfaced 2026-06-25 in the design-consistency sweep; cheap wins applied, scales deferred.)*
+  *(surfaced 2026-06-25 in the design-consistency sweep; cheap wins + radius/recurring-shadow scales applied,
+  type scale + full elevation re-author deferred.)*
 - `[ ]` **Collapse near-duplicate brand shades to one value** — now that `$primary-hover` exists, the
   Drafts primary-button hover `#f4501e` (`Drafts.scss:138`) should point at it, and the avatar/XP gradient
   stops `#ff8a5c` (`Account.scss:163,186`) vs `#ff8a65` (`RecipePlaceholder.scss:13`) should collapse to a
