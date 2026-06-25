@@ -6,7 +6,6 @@
 // ===========================================================================
 $footer-surface: #ffffff;
 $footer-border: #e6e6e6;
-$primary-hover: #e74e1d;
 // Match the navbar (.nav-center) and page content (.page) bounds so the footer
 // edges line up with them on wide screens — all three are width:90% capped here.
 $inner-max: s.$max-width;
@@ -70,7 +69,7 @@ $inner-max: s.$max-width;
   letter-spacing: -0.02em;
   color: s.$primary;
   text-decoration: none;
-  &:hover { color: $primary-hover; }
+  &:hover { color: s.$primary-hover; }
 }
 
 // ---- Link columns ---------------------------------------------------------

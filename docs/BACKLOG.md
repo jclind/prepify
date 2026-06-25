@@ -176,6 +176,38 @@ The triage date stamped on items is the date they were filed here, not when they
   broken-image glyph there (`src/Components/RecipeThumbnail/RecipeThumbnail.tsx`). Mirror RecipeCard: add a
   `useState` + `onError` that flips to `<RecipePlaceholder />`. Low severity (thumbnails are a secondary
   surface and seeded data all has images). *(surfaced 2026-06-23 in the track 3b code review.)*
+- `[ ]` **Consolidate the bespoke pill buttons into a real `.btn` system** — `.btn` in `src/index.scss`
+  only strips defaults (no visual style), so nearly every page re-implements its own orange/ghost pill:
+  `home-btn` (`404.scss`), `pp-browse-btn` (`PublicProfile.scss`), `about-btn`/`about-btn-primary`/
+  `about-btn-ghost` (`About.scss`), `search-recipes-btn`, the Recipes toolbar pills, HomeCookSuggestion
+  `.primary`/`.ghost`, etc. — same shape, slightly different padding/weight/hover each time. Promote
+  `.btn--primary` / `.btn--ghost` / `.btn--pill` variants and migrate the bespoke buttons onto them.
+  *(surfaced 2026-06-25 in the design-consistency sweep.)*
+- `[ ]` **Unify `RecipeCard` and `RecipeThumbnail`** — ~80% duplicate (image + price + rating/time meta);
+  they differ mostly in `<Link>` vs `<button>` wrapper and `AiFillStar` vs `AiOutlineStar`. Same data, two
+  components, two loading-skeleton implementations. Merge into one card with a layout/interaction variant.
+  *(surfaced 2026-06-25 in the design-consistency sweep; pairs with the RecipeThumbnail broken-image item above.)*
+- `[ ]` **One icon per concept (react-icons drift)** — the same concept is drawn from different icon sets:
+  star = `AiFillStar` / `AiOutlineStar` / `BsStar(Fill)` / `FiStar`; close = `AiOutlineClose` / `FiX` /
+  `IoClose`; bookmark = `Bs*` and `Bi*` outline/filled pairs; time = `CgTimer` and `AiOutlineClockCircle`.
+  Pick one icon per concept and re-export from a single `src/Components/icons` module so callers can't drift.
+  *(surfaced 2026-06-25 in the design-consistency sweep.)*
+- `[ ]` **Share one react-modal style config** — each modal repeats its own `customStyles`/overlay inline,
+  and they disagree: `BugReportModal` uses `#fff` + `8px` radius while `ConfirmDeleteReviewModal` /
+  `ReleaseNotes` use `#eeeeee` + `5px`. Extract a shared `modalStyles` constant (content + overlay) and a
+  thin wrapper so every dialog reads the same. *(surfaced 2026-06-25 in the design-consistency sweep.)*
+- `[ ]` **Codify the loading-state pattern (skeleton vs spinner)** — content grids use
+  `react-loading-skeleton`, button actions use `TailSpin`, and several async waits show nothing; the choice
+  is per-developer and `TailSpin` sizes vary (18–30px). Write down the rule (skeleton for content
+  placeholders, spinner for discrete actions/auth) and align the outliers. *(surfaced 2026-06-25 in the
+  design-consistency sweep.)*
+- `[ ]` **Toast copy: consistent terminal punctuation + dedupe strings** — toasts disagree on trailing
+  punctuation (`'Could not copy link'`, `'Could not update collections'`, `'Profile link copied'` have no
+  period; most others end with `.`/`!`) and on phrasing (`'Profile link copied'` vs `'Profile link copied
+  to clipboard'`). Pick one convention (terminal punctuation everywhere is the dominant pattern) and sweep
+  the ~10 call sites; lift duplicated strings (`'Email already in use.'`, `'Password incorrect, please try
+  again.'`, `'Image cannot be more than 5MB in size.'`) into shared constants. *(surfaced 2026-06-25 in the
+  design-consistency sweep; continues the toast-punctuation fix started in track 4-qa.)*
 
 ## Accessibility
 
@@ -351,6 +383,56 @@ The triage date stamped on items is the date they were filed here, not when they
   `withTimeout` (12s) races the enrichment request so a hung/"not found" lookup no longer sticks the UI; on
   timeout the row is kept, flagged errored with a retry, and a toast surfaces. Applied to both add and
   inline-edit paths.
+- `[~]` **Promote the remaining hardcoded design values into `helpers.scss` tokens** — the
+  design-consistency sweep (2026-06-25) applied the two pixel-identical cheap wins from the
+  [2026-06-13 audit](./DESIGN_CONSISTENCY_AUDIT_2026-06-13.md): `$primary-hover` (`#e74e1d`, was hardcoded
+  in 5 spots + a Footer local var) and `$surface-warm-border` (`#ece2d6`, 11 spots across 8 files). The
+  remaining systemic scales need design sign-off because they touch many files / pixels:
+    - **Type scale** — ~520 raw `font-size:` literals across ~50 distinct values (0.8/0.82/0.84/0.85/0.875…
+      all coexist). A real scale *normalizes* those to a handful of steps, so it is **not** a pixel-identical
+      repoint — it is a deliberate normalization pass needing design sign-off. Define a small ramp (e.g.
+      `$fs-sm`/`$fs-base`/`$fs-lg`/…) and snap each size to its nearest step.
+    - `[x]` **Radius scale** — DONE 2026-06-25 (PR `style/radius-scale-tokens`). `$radius-xs..4xl` +
+      `$radius-pill`/`$radius-circle` now in `helpers.scss`; `$border-radius` aliases `$radius-lg`. ~200
+      value-identical repoints across 32 `s`-importing files (compiled CSS byte-identical). **Remaining:**
+      off-scale one-offs (5/7/9/11/13/18px) need ±1px normalization (design call), and the token-less admin
+      files (`Admin/*`, `AdminRecipeControls`, `SavedFilterBar`) keep raw radii pending the import-wiring item
+      below.
+    - **Elevation/shadow scale** — partly done 2026-06-25: the two shadows that recur verbatim are now
+      `$shadow-soft` (warm card resting, ×8) and `$shadow-chip` (price/floating chips, ×3). **Remaining:** the
+      ~40 other `box-shadow`s are nearly all unique and need a re-authored scale (`$shadow-card`/`-hover`/
+      `-glow-primary`), e.g. the avatar-glow `rgba(255,87,34,0.18)` repeated in Account + PublicProfile
+      (audit F5) — a re-author, not a pixel-identical repoint.
+    - **Breakpoint tokens/mixin** — no shared breakpoints; ~77 ad-hoc media queries repeat 725px (navbar
+      flip), 768px, 600px, 560px, 640px… Add a `$bp-*` set or a `respond-to()` mixin and converge.
+  *(surfaced 2026-06-25 in the design-consistency sweep; cheap wins + radius/recurring-shadow scales applied,
+  type scale + full elevation re-author deferred.)*
+- `[ ]` **Collapse near-duplicate brand shades to one value** — now that `$primary-hover` exists, the
+  Drafts primary-button hover `#f4501e` (`Drafts.scss:138`) should point at it, and the avatar/XP gradient
+  stops `#ff8a5c` (`Account.scss:163,186`) vs `#ff8a65` (`RecipePlaceholder.scss:13`) should collapse to a
+  single `$primary-tint` token. Each is a (tiny) visible pixel change, so it's a brand-color call, not a
+  blind repoint. *(surfaced 2026-06-25 in the design-consistency sweep; left out of the repoint-only PR by
+  decision.)*
+- `[ ]` **One danger-red token** — three reds mean the same thing: `$error-red #dc3545` (token), local
+  `$danger #d23f31` (`SingleRecipe.scss`), and `#d64545` (`ReportControl`/`Reports`). Consolidate onto the
+  token. *(audit F6; surfaced 2026-06-25 in the design-consistency sweep.)*
+- `[~]` **Name the admin/“cool” sub-palette and wire the token-less files into `helpers.scss`** — Admin +
+  moderation surfaces hardcode a Tailwind-ish slate/blue palette (`#3b82f6`/`#2563eb` action blue exists
+  nowhere in the brand) and several files `@use` nothing at all (audit F1/F2).
+    - `[x]` **Import-wiring + value-identical repoints** — DONE 2026-06-25 (PR `style/admin-token-wiring`).
+      Added `@use helpers as s` to the 10 token-less files that had a value-identical win and repointed their
+      radii (radius scale) and `#fff`/`#ffffff` → `$white` (compiled CSS byte-identical). The bespoke admin
+      palette in those files was deliberately left raw.
+    - **Remaining (the brand decision):** define a documented `$admin-*` token group for the slate/blue/
+      green/amber/red ramps and migrate the literals so the warm/cool split is a decision, not 200+ loose
+      hexes. Five files stay fully token-less because they hold *only* bespoke-palette values
+      (`RecipePlaceholder`, `ClassifierNote`, `AccountStatusBanner`, `DefaultAvatar`,
+      `AddRecipe/ListComponents/Item`) — they get wired when the `$admin-*` group lands.
+  *(surfaced 2026-06-25 in the design-consistency sweep; import-wiring applied, palette naming deferred.)*
+- `[ ]` **`RecipeFormInput` duplicates the shared `FormInput`** — AddRecipe ships its own ~85%-identical
+  input/textarea (`RecipeFormInput`/`RecipeFormTextArea`) instead of the shared `Components/Form/FormInput`,
+  and Settings/BugReport use raw `<input>`/`<textarea>`/`<select>`. Converge on one input primitive.
+  *(surfaced 2026-06-25 in the design-consistency sweep.)*
 
 ## Testing
 

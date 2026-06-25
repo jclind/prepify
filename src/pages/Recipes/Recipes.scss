@@ -41,7 +41,7 @@
         box-sizing: border-box;
         height: 44px;
         border: 1px solid s.$gray-400;
-        border-radius: 999px;
+        border-radius: s.$radius-pill;
         background: s.$white;
         font-size: 0.95rem;
         padding: 0.1rem 6.5rem 0.1rem 2.85rem;
@@ -61,7 +61,7 @@
         height: 36px;
         font-size: 0.9rem;
         padding: 0 1.15rem;
-        border-radius: 999px;
+        border-radius: s.$radius-pill;
       }
     }
   }
@@ -98,7 +98,7 @@
     padding: 0 1.1rem;
     box-sizing: border-box;
     min-height: 44px; // compact, matches the search pill (G06 sizing)
-    border-radius: 999px;
+    border-radius: s.$radius-pill;
     cursor: pointer;
     white-space: nowrap;
     flex-shrink: 0;
@@ -117,7 +117,7 @@
       padding: 0 0.35rem;
       background: s.$primary;
       color: s.$white;
-      border-radius: 999px;
+      border-radius: s.$radius-pill;
       font-size: 0.72rem;
     }
   }
@@ -139,7 +139,7 @@
       color: s.$primary-text;
       background: s.$white;
       border: 1px solid s.$gray-400;
-      border-radius: 999px;
+      border-radius: s.$radius-pill;
       cursor: pointer;
       white-space: nowrap;
       .chev {
@@ -163,7 +163,7 @@
       list-style: none;
       background: s.$white;
       border: 1px solid s.$gray-300;
-      border-radius: 12px;
+      border-radius: s.$radius-xl;
       box-shadow: 0 12px 30px rgba(0, 0, 0, 0.14);
       padding: 0.4rem;
       button {
@@ -177,7 +177,7 @@
         font-weight: 600;
         color: s.$primary-text;
         padding: 0.45rem 0.6rem;
-        border-radius: 8px;
+        border-radius: s.$radius-md;
         cursor: pointer;
         &:hover {
           background: s.$gray-200;
@@ -204,7 +204,7 @@
       font-weight: 700;
       font-size: 0.78rem;
       padding: 0.35rem 0.75rem;
-      border-radius: 999px;
+      border-radius: s.$radius-pill;
       cursor: pointer;
       text-transform: capitalize;
     }
@@ -240,7 +240,7 @@
       background: s.$white;
       color: s.$primary-text;
       border: 1.5px solid s.$gray-400;
-      border-radius: 999px;
+      border-radius: s.$radius-pill;
       font-family: inherit;
       font-weight: 700;
       font-size: 0.95rem;
@@ -284,7 +284,7 @@
       justify-content: center;
       width: 5rem;
       height: 5rem;
-      border-radius: 50%;
+      border-radius: s.$radius-circle;
       background: s.$primary-background;
       color: s.$primary;
       margin-bottom: 1.25rem;
@@ -321,7 +321,7 @@
       font-weight: 700;
       font-size: 0.95rem;
       padding: 0.7rem 1.6rem;
-      border-radius: 999px;
+      border-radius: s.$radius-pill;
       transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
       &--primary {
         background: s.$primary-accessible;
@@ -421,7 +421,7 @@
       color: s.$secondary-text;
       font-weight: 700;
       padding: 0.75rem 1.25rem;
-      border-radius: 999px;
+      border-radius: s.$radius-pill;
       cursor: pointer;
     }
     &__apply {
@@ -431,7 +431,7 @@
       color: s.$white;
       font-weight: 700;
       padding: 0.75rem;
-      border-radius: 999px;
+      border-radius: s.$radius-pill;
       cursor: pointer;
     }
   }
@@ -440,7 +440,7 @@
     display: inline-flex;
     align-items: center;
     padding: 0.4rem 0.85rem;
-    border-radius: 999px;
+    border-radius: s.$radius-pill;
     border: 1px solid s.$gray-400;
     background: s.$white;
     color: s.$secondary-text;
