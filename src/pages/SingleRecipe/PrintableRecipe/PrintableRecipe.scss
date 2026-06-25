@@ -1,3 +1,5 @@
+@use '../../../helpers.scss' as s;
+
 // Dedicated print-only layout for a recipe. Hidden on screen; react-to-print
 // clones this subtree into an isolated iframe and prints it, so the styles here
 // are fully decoupled from the on-screen SingleRecipe design.
@@ -13,7 +15,7 @@
 .printable-recipe {
   box-sizing: border-box;
   color: #000;
-  background: #fff;
+  background: s.$white;
   font-family: Georgia, 'Times New Roman', serif;
   line-height: 1.45;
   font-size: 12pt;
