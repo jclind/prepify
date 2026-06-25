@@ -273,6 +273,16 @@ The triage date stamped on items is the date they were filed here, not when they
   Ingredients servings pill (`SingleRecipe.tsx`) trips Lighthouse `target-size`. A label was added in
   track 4-qa (`aria-label="Servings"`), but enlarging the tap target is a layout change to the pill.
   *(surfaced 2026-06-23, track 4-qa; re-confirmed 2026-06-25 in the accessibility sweep.)*
+- `[ ]` **`$primary-hover` token (`#e74e1d`) fails WCAG AA on hover** — the design-tokens track added
+  `$primary-hover: #e74e1d` (`helpers.scss`) and points several **white-on-fill button hovers** at it
+  (`Home.scss:175`, `SingleRecipe.scss:655`, `RecipeNotFound.scss:87`) plus a **text** hover
+  (`Footer.scss:72`). White on `#e74e1d` is only **3.81:1** and `#e74e1d` as text on white ~3.8:1 — both
+  under 4.5:1, so these controls drop below AA *while hovered* (axe/Lighthouse scan the default state, so it
+  doesn't show in the per-page scores). The base fills are fine; only the hover regresses. Fix: darken
+  `$primary-hover` to an AA-passing shade (e.g. `≤ #c5421a`, white-on-it 5.04 — or reuse `$primary-accessible
+  #bf360c`). NB the a11y brand pass already side-stepped this on the recipe Save button (`SingleRecipe.scss`
+  uses a literal `#a52f0a` hover with a comment, *not* `$primary-hover`). *(surfaced 2026-06-25 while merging
+  the brand-contrast PR #184 over the design-tokens track.)*
 
 ## Features
 
