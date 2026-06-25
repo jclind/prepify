@@ -40,6 +40,10 @@ const Navbar: FC<NavbarProps> = ({ darkNavLinks, navBackgroundColor }) => {
     `background-${navBackgroundColor}`,
     solid ? 'nav--solid' : '',
     condensed ? 'nav--condensed' : '',
+    // Light nav surface (non-hero pages) at any width — unlike `nav--solid`,
+    // which is desktop-only. Used to swap the logo to its AA on-light orange on
+    // the mobile bar too (the desktop bar is already covered by `nav--solid`).
+    darkNavLinks ? 'nav--dark-links' : '',
   ]
     .filter(Boolean)
     .join(' ')
