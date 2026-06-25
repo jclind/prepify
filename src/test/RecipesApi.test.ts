@@ -1,9 +1,5 @@
 import { vi } from 'vitest'
 
-// Stub VITE_EDAMAM env vars before the module under test is imported.
-vi.stubEnv('VITE_EDAMAM_APP_ID', 'test-app-id')
-vi.stubEnv('VITE_EDAMAM_APP_KEY', 'test-app-key')
-
 // Mock firebase/storage so uploadRecipeImage doesn't reach the real SDK.
 vi.mock('firebase/storage', () => ({
   getStorage: vi.fn(() => ({})),
@@ -21,13 +17,19 @@ vi.mock('src/api/auth', () => ({
 
 const httpPost = vi.fn()
 const httpPut = vi.fn()
+// Nutrition now goes through the server proxy (POST api/nutrition/details) on the
+// shared `http` instance rather than a separate Edamam axios client. Keep the two
+// concerns split in tests by routing that one URL to its own mock, so existing
+// assertions on httpPost (e.g. calls[0] === 'api/addRecipe') stay accurate.
 const nutritionPost = vi.fn()
 vi.mock('src/api/http-common', () => ({
   http: {
-    post: (...args: unknown[]) => httpPost(...args),
+    post: (url: string, ...rest: unknown[]) =>
+      url === 'api/nutrition/details'
+        ? nutritionPost(url, ...rest)
+        : httpPost(url, ...rest),
     put: (...args: unknown[]) => httpPut(...args),
   },
-  nutrition: { post: (...args: unknown[]) => nutritionPost(...args) },
 }))
 
 // Import after mocks are in place.

@@ -17,7 +17,7 @@ import {
 } from 'types'
 import AuthAPI from 'src/api/auth'
 import { fetchIngredientEnrichment } from 'src/api/ingredientParserApi'
-import { http, nutrition } from 'src/api/http-common'
+import { http } from 'src/api/http-common'
 import { v4 as uuidv4 } from 'uuid'
 
 export const ADD_RECIPE_AUTH_ERROR = 'AUTH_ERROR'
@@ -390,10 +390,12 @@ class RecipeAPIClass {
     })
     return ingr
   }
-  // Fetches the numeric nutrition facts (calories, macros…) from Edamam for the
-  // given ingredients. Diet/health labels are no longer derived here — authors
-  // set those manually on the form. Soft-fails to null so a lookup outage never
-  // blocks recipe creation/editing.
+  // Fetches the numeric nutrition facts (calories, macros…) for the given
+  // ingredients via the server proxy (POST /api/nutrition/details), which holds
+  // the Edamam app id/key server-side — they no longer ship in the client bundle.
+  // Diet/health labels are no longer derived here — authors set those manually on
+  // the form. Soft-fails to null so a lookup outage never blocks recipe
+  // creation/editing.
   async getRecipeNutrition(
     ingrArr: IngredientsType[]
   ): Promise<NutritionDataType | null> {
@@ -402,10 +404,7 @@ class RecipeAPIClass {
         title: 'recipe 1',
         ingr: this.buildNutritionIngredients(ingrArr),
       }
-      const nutritionResultRes = await nutrition.post(
-        `nutrition-details?app_id=${import.meta.env.VITE_EDAMAM_APP_ID}&app_key=${import.meta.env.VITE_EDAMAM_APP_KEY}`,
-        ingrData
-      )
+      const nutritionResultRes = await http.post('api/nutrition/details', ingrData)
 
       const nutritionResult: NutritionDataType = nutritionResultRes.data
 
