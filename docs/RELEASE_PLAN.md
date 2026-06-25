@@ -146,7 +146,7 @@ a feature flag. Do these together:
 - `[~]` **Dependency audit** — run `npm audit` for both root and `server/`, and the `dep-audit` skill
   for an upgrade triage. Resolve high/critical advisories. **All high advisories resolved via PR #151**
   (2026-06-17, non-breaking lockfile-only bumps: vite, launch-editor, @grpc/grpc-js, form-data,
-  protobufjs, tmp) — high/critical blocker cleared. Residual moderates (root 8, server 25) require
+  protobufjs, tmp) — high/critical blocker cleared. Residual moderates (re-audited 2026-06-25: root prod 0, server prod 8 moderate) require
   **major** bumps (firebase-admin 13→14, jest major) and are deferred to a dedicated upgrade pass.
   **(blocker for high/critical — cleared)**
 - `[ ]` **Residual low-severity API issues** — surfaced by the audit, not release-blocking: (a)
@@ -387,5 +387,23 @@ through the Cypress custom-token bridge) plus keyboard / a11y-tree spot-checks. 
   — muted-grey body-text token `#979ba0` (2.4–2.8:1) + brand orange/teal CTAs (2.7–3.2:1), a token-level
   design decision. Autocomplete-listbox refactor + servings target-size re-confirmed. `.beta-tag` contrast
   left for the Phase-5 cutover.
+
+### 2026-06-25 — readiness audit run
+- Blockers remaining: 12, but clustered — the 3 beta-flip edits (deliberately held for cutover), the
+  release-notes date/version (also cutover), 4 code/infra items (Edamam key lockdown, VITE_* safety
+  sign-off, prod CORS value, prod domain+HTTPS), and 2 owner-gated (About rewrite — Jesse; key rotation
+  — only if applicable).
+- Changes since last run (2026-06-17): none flipped here, but two things measurably improved —
+  `RELEASE_DATE` is no longer the stale `3/31/2023` (now `6/23/2026` in `ReleaseNotes.tsx:36`; content
+  refreshed 2026-06-23), and the dependency posture improved further (root prod advisories 3 high → **0**;
+  server prod **8 moderate**, 0 high/critical — down from 25). (Separately, PR #179 landed the WCAG AA
+  sweep — see its own log entry above.)
+- Highlights: beta tag still live in exactly the 3 expected places (`LegalBar.tsx:16` `v{version}-beta`,
+  `ReleaseNotes.tsx:37` `isBeta = true`, `:103` suffix) — all intentional, held for the cutover flip.
+  Dead env vars confirmed gone from `.env.example`/`src`. README placeholder gone. ReactQueryDevtools
+  confirmed gated behind `NODE_ENV !== 'production'`. All `VITE_*` vars in `.env.example` are present and
+  used; none are secrets. The one genuinely code-actionable blocker is the **Edamam key lockdown** — proxy
+  `getRecipeNutrition` through the Express server so `VITE_EDAMAM_APP_ID/KEY` leave the client bundle
+  (mirrors the Spoonacular proxy); doing so also closes the "audit every VITE_* var" item.
 
 _`/release-readiness` appends dated run summaries here._
