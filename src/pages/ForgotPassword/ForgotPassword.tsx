@@ -32,7 +32,7 @@ const ForgotPassword: FC = () => {
         <meta charSet='utf-8' />
         <title>Reset Password · Prepify</title>
       </Helmet>
-      <div className='forgot-password-page form-format'>
+      <main className='forgot-password-page form-format'>
         <div className='login-form-container'>
           <div className='brand-mark'>P</div>
           <form onSubmit={handleChangePasswordFormSubmit} className='form'>
@@ -76,7 +76,7 @@ const ForgotPassword: FC = () => {
             </Link>
           </p>
         </div>
-      </div>
+      </main>
     </>
   )
 }

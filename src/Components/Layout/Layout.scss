@@ -1,3 +1,5 @@
+@use '../../helpers.scss' as s;
+
 // App shell: a flexbox sticky-footer column so the footer sits at the bottom of
 // the viewport on short pages and flows after the content on long ones — without
 // any page needing to subtract the footer's height. The footer is content-driven
@@ -13,4 +15,29 @@
   display: flex;
   flex-direction: column;
   flex: 1 0 auto;
+  // Programmatic skip-link target — don't paint a ring when focused via the
+  // skip link (keyboard Tab still rings real controls inside).
+  &:focus {
+    outline: none;
+  }
+}
+
+// Skip-to-content: off-screen until it receives keyboard focus, then pinned to
+// the top-left above the nav so the first Tab on any page jumps past the header.
+.skip-to-content {
+  position: absolute;
+  left: 0.5rem;
+  top: -3rem;
+  z-index: 1000;
+  padding: 0.6rem 1rem;
+  background: s.$white;
+  color: s.$primary;
+  font-weight: 600;
+  border-radius: s.$border-radius;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: top 0.15s ease-in-out;
+
+  &:focus {
+    top: 0.5rem;
+  }
 }
