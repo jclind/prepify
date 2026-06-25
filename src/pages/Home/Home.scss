@@ -32,7 +32,7 @@
       grid-area: see;
       align-self: end;
       display: inline-flex; align-items: center; gap: 0.2rem;
-      text-decoration: none; color: s.$primary; font-weight: 700; font-size: 0.95rem;
+      text-decoration: none; color: s.$primary-accessible; font-weight: 700; font-size: 0.95rem;
       white-space: nowrap;
       &:hover { text-decoration: underline; }
     }
@@ -111,7 +111,7 @@
       padding-bottom: 0.6rem;
       border-bottom: 2px solid s.$primary;
       h3 { font-size: 1.1rem; font-weight: 700; }
-      .meal-see-all { font-size: 0.82rem; font-weight: 700; color: s.$primary; text-decoration: none; &:hover { text-decoration: underline; } }
+      .meal-see-all { font-size: 0.82rem; font-weight: 700; color: s.$primary-accessible; text-decoration: none; &:hover { text-decoration: underline; } }
     }
     ul { list-style: none; }
     li + li { margin-top: 0.5rem; }

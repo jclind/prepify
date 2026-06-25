@@ -324,7 +324,7 @@
       border-radius: s.$radius-pill;
       transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
       &--primary {
-        background: s.$primary;
+        background: s.$primary-accessible;
         color: s.$white;
         &:hover {
           filter: brightness(1.07);
@@ -336,7 +336,7 @@
         border: 1px solid s.$gray-400;
         &:hover {
           border-color: s.$primary;
-          color: s.$primary;
+          color: s.$primary-accessible;
         }
       }
     }
@@ -427,7 +427,7 @@
     &__apply {
       flex: 1;
       border: none;
-      background: s.$primary;
+      background: s.$primary-accessible;
       color: s.$white;
       font-weight: 700;
       padding: 0.75rem;
@@ -451,11 +451,11 @@
     transition: all 0.12s ease;
     &:hover {
       border-color: s.$primary;
-      color: s.$primary;
+      color: s.$primary-accessible;
     }
     &.is-active {
-      background: s.$primary;
-      border-color: s.$primary;
+      background: s.$primary-accessible;
+      border-color: s.$primary-accessible;
       color: s.$white;
     }
   }

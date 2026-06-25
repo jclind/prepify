@@ -43,6 +43,10 @@
   --dnav-border: #{s.$gray-400};
   --dnav-hover: #{s.$gray-200};
   --dnav-active-bg: #{rgba(s.$primary, 0.12)};
+  // On the light solid surface the vivid brand orange as text/accent only hits
+  // ~3.1:1 (link labels, the Create accent) — use the AA on-light variant here.
+  // The transparent-over-hero nav keeps $primary (light text on a dark photo).
+  --dnav-accent: #{s.$primary-accessible};
 }
 
 // ---- search (always present, prominent) ----------------------------------
@@ -245,8 +249,11 @@
 }
 .dnav__cta--signup {
   color: #fff;
-  background: var(--dnav-accent);
-  border: 2px solid var(--dnav-accent);
+  // White on the vivid orange fill is only 3.16:1 in both nav states; the AA
+  // on-light orange takes it to 5.6:1. (Not var(--dnav-accent): the fill must be
+  // accessible over the transparent-hero nav too, where the accent stays vivid.)
+  background: s.$primary-accessible;
+  border: 2px solid s.$primary-accessible;
   &:hover {
     filter: brightness(1.07);
   }
