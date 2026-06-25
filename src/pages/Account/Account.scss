@@ -31,7 +31,7 @@
     box-shadow: s.$shadow-soft;
     margin-bottom: 1.75rem;
 
-    @media (max-width: 880px) {
+    @include s.below(s.$bp-3xl) {
       grid-template-columns: 1fr;
       gap: 1.25rem;
     }
@@ -104,7 +104,7 @@
     align-items: stretch;
     gap: 0.75rem;
 
-    @media (max-width: 880px) {
+    @include s.below(s.$bp-3xl) {
       border-top: 1px solid #f0e8dd;
       padding-top: 1.25rem;
     }
@@ -252,7 +252,7 @@
     gap: 1.5rem;
     align-items: start;
 
-    @media (max-width: 900px) {
+    @include s.below(s.$bp-3xl) {
       grid-template-columns: 1fr;
       gap: 1.25rem;
     }
@@ -274,7 +274,7 @@
 
     // Collapse to a fixed four-up tab bar — all four destinations fit, no
     // horizontal scroll.
-    @media (max-width: 900px) {
+    @include s.below(s.$bp-3xl) {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 0.25rem;
@@ -330,7 +330,7 @@
 
     // Tab-bar cell (≤900px): icon over label, centered; count rides as a corner
     // badge so each cell stays two tidy lines.
-    @media (max-width: 900px) {
+    @include s.below(s.$bp-3xl) {
       flex-direction: column;
       gap: 0.3rem;
       justify-content: center;
@@ -365,7 +365,7 @@
   // segmented control becomes an icon-over-label tab bar. Mobile-first rebuild
   // approved against the "Option B" mock. Placed last so it overrides the ≤880px
   // rules where they overlap.
-  @media (max-width: 600px) {
+  @include s.below(s.$bp-lg) {
     .acct-head {
       grid-template-columns: 1fr;
       justify-items: center;

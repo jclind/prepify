@@ -398,8 +398,13 @@ The triage date stamped on items is the date they were filed here, not when they
       ~40 other `box-shadow`s are nearly all unique and need a re-authored scale (`$shadow-card`/`-hover`/
       `-glow-primary`), e.g. the avatar-glow `rgba(255,87,34,0.18)` repeated in Account + PublicProfile
       (audit F5) — a re-author, not a pixel-identical repoint.
-    - **Breakpoint tokens/mixin** — no shared breakpoints; ~77 ad-hoc media queries repeat 725px (navbar
-      flip), 768px, 600px, 560px, 640px… Add a `$bp-*` set or a `respond-to()` mixin and converge.
+    - `[x]` **Breakpoint tokens/mixin** — DONE 2026-06-25 (PR `style/breakpoint-tokens`). Added an 8-tier
+      `$bp-xs..4xl` scale + `$bp-nav`/`$bp-nav-up` and `below()`/`above()`/`between()` mixins; migrated all 69
+      width queries. The recurring content breakpoints converged to tiers (7 approved small shifts ≤30px:
+      350→375, 420/460/480→450, 550→560, 650→640, 880→900); tuned one-offs (recipe page 700/720/820,
+      isolated 500/520, Home 850/851 boundary pair) and the DesktopNav 860/1000/1080/1240 cascade pass
+      literal px to the mixins and keep their exact values. **Remaining (design call):** converge those
+      deliberately-bespoke one-offs into the scale if/when their layouts are retuned.
   *(surfaced 2026-06-25 in the design-consistency sweep; cheap wins + radius/recurring-shadow scales applied,
   type scale + full elevation re-author deferred.)*
 - `[ ]` **Collapse near-duplicate brand shades to one value** — now that `$primary-hover` exists, the

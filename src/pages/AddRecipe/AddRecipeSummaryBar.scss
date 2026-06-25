@@ -141,7 +141,7 @@
     }
   }
 
-  @media screen and (max-width: 600px) {
+  @include s.below(s.$bp-lg) {
     .summary-inner {
       padding: 0.7rem 1rem;
       gap: 1rem;

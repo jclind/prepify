@@ -135,7 +135,7 @@
     margin-bottom: 0.5rem;
   }
 
-  @media screen and (max-width: 600px) {
+  @include s.below(s.$bp-lg) {
     .container {
       padding: 40px 0 32px;
 

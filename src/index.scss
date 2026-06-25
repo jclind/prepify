@@ -130,7 +130,7 @@ a {
     border-color: s.$tertiary-text;
   }
 
-  @media screen and (max-width: 375px) {
+  @include s.below(s.$bp-xs) {
     font-size: 1.25rem;
   }
 }

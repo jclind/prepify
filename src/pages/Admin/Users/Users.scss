@@ -208,7 +208,7 @@
   }
 }
 
-@media (max-width: 640px) {
+@include s.below(s.$bp-xl) {
   .admin-users .user-card {
     flex-direction: column;
 

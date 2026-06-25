@@ -17,7 +17,7 @@
   border-radius: s.$border-radius;
   padding: 0.75rem 1.25rem;
 
-  @media screen and (max-width: 560px) {
+  @include s.below(s.$bp-md) {
     flex-direction: column;
     align-items: stretch;
     gap: 0.85rem;
@@ -46,7 +46,7 @@
       // On phones a single ellipsed line cuts the title off almost immediately
       // (the "Pick up where you left off on …" prefix eats the width). Let it
       // wrap to a tidy two lines instead so the recipe name is actually visible.
-      @media screen and (max-width: 560px) {
+      @include s.below(s.$bp-md) {
         white-space: normal;
         display: -webkit-box;
         -webkit-line-clamp: 2;
@@ -55,7 +55,7 @@
     }
 
     // Keep the text clear of the corner dismiss button when stacked.
-    @media screen and (max-width: 560px) {
+    @include s.below(s.$bp-md) {
       padding-right: 1.75rem;
     }
   }
@@ -66,7 +66,7 @@
     gap: 1rem;
     flex-shrink: 0;
 
-    @media screen and (max-width: 560px) {
+    @include s.below(s.$bp-md) {
       width: 100%;
       gap: 0.85rem;
     }
@@ -88,7 +88,7 @@
       }
 
       // Comfortable full-width tap target on phones.
-      @media screen and (max-width: 560px) {
+      @include s.below(s.$bp-md) {
         flex: 1;
         padding: 0.6rem 0.9rem;
       }
@@ -122,7 +122,7 @@
       }
 
       // Tuck into the top-right corner so the stacked layout reads cleanly.
-      @media screen and (max-width: 560px) {
+      @include s.below(s.$bp-md) {
         position: absolute;
         top: 0.5rem;
         right: 0.5rem;

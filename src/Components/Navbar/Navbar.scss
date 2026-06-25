@@ -21,7 +21,7 @@
   width: 100%;
 
   // Desktop: fixed so the bar stays put and can solidify + condense on scroll.
-  @media screen and (min-width: 726px) {
+  @include s.above(s.$bp-nav-up) {
     position: fixed;
     transition: background 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease,
       height 0.2s ease;
@@ -46,7 +46,7 @@
       color: s.$white;
     }
 
-    @media screen and (max-width: 725px) {
+    @include s.below(s.$bp-nav) {
       .hamburger {
         position: absolute;
         z-index: 11;
@@ -211,7 +211,7 @@
     }
   }
 
-  @media screen and (max-width: 725px) {
+  @include s.below(s.$bp-nav) {
     .nav-logo {
       font-size: 1.875rem;
     }
@@ -223,7 +223,7 @@
   // Tight desktop band just above the mobile breakpoint: the bar packs logo +
   // search + links + CTAs into little space, so shrink the logo/BETA to give
   // the search room.
-  @media screen and (min-width: 726px) and (max-width: 860px) {
+  @include s.between(s.$bp-nav-up, 860px) {
     .nav-logo {
       font-size: 1.6rem;
     }

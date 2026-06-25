@@ -104,7 +104,7 @@
     color: s.$secondary;
   }
 
-  @media screen and (max-width: 600px) {
+  @include s.below(s.$bp-lg) {
     max-width: 95%;
     width: 95%;
     max-height: 95%;

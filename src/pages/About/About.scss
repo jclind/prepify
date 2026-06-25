@@ -448,7 +448,7 @@
   }
 
   // ---- Responsive ----
-  @media (max-width: 768px) {
+  @include s.below(s.$bp-2xl) {
     .about-steps-grid {
       grid-template-columns: 1fr;
       gap: 2.25rem;
@@ -462,7 +462,7 @@
     }
   }
 
-  @media (max-width: 480px) {
+  @include s.below(s.$bp-sm) {
     padding-top: calc(#{s.$nav-height} + 1rem);
 
     .about-features-grid {

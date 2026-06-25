@@ -46,7 +46,7 @@
       padding: 0 1.25rem;
       border-radius: s.$border-radius;
     }
-    @media screen and (max-width: 500px) {
+    @include s.below(500px) {
       input {
         padding-right: 6.25rem;
       }
@@ -182,7 +182,7 @@
         white-space: nowrap;
       }
 
-      @media screen and (max-width: 600px) {
+      @include s.below(s.$bp-lg) {
         &__tags {
           display: none;
         }

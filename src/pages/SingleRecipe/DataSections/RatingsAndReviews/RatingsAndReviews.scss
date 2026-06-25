@@ -10,7 +10,7 @@
     text-align: center;
     margin-bottom: 3rem;
 
-    @media screen and (max-width: 450px) {
+    @include s.below(s.$bp-sm) {
       margin-bottom: 2rem;
     }
   }
@@ -97,7 +97,7 @@
         }
       }
 
-      @media screen and (max-width: 450px) {
+      @include s.below(s.$bp-sm) {
         flex-direction: column;
         justify-content: flex-start;
         align-items: center;

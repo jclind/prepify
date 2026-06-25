@@ -31,7 +31,7 @@
   align-items: center;
   gap: 1.25rem;
 
-  @media screen and (max-width: 725px) {
+  @include s.below(s.$bp-nav) {
     display: none;
   }
 }
@@ -96,7 +96,7 @@
 // links go full-white (Quiet mutes them, which hurts here), and a soft shadow
 // handles high-contrast spots. Scoped to desktop so the mobile bar is
 // untouched; only the Home hero is ever non-solid.
-@media screen and (min-width: 726px) {
+@include s.above(s.$bp-nav-up) {
   .nav:not(.nav--solid) {
     background: linear-gradient(
       180deg,
@@ -519,7 +519,7 @@
 // avatar). Shrink the search, then collapse link labels to icons, so it never
 // overflows or wraps between the mobile breakpoint (725px) and ~1240px.
 // =============================================================================
-@media screen and (max-width: 1240px) {
+@include s.below(1240px) {
   .dnav {
     gap: 1rem;
   }
@@ -527,7 +527,7 @@
     flex-basis: 420px;
   }
 }
-@media screen and (max-width: 1080px) {
+@include s.below(1080px) {
   .dnav {
     gap: 0.8rem;
   }
@@ -538,7 +538,7 @@
     flex-basis: 300px;
   }
 }
-@media screen and (max-width: 1000px) {
+@include s.below(1000px) {
   // search now fills the remaining space (not a fixed centered width) so it
   // doesn't collapse to a sliver as the bar narrows
   .dnav__search {
@@ -561,7 +561,7 @@
     padding-right: 0.6rem;
   }
 }
-@media screen and (max-width: 860px) {
+@include s.below(860px) {
   .dnav {
     gap: 0.5rem;
   }

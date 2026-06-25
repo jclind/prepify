@@ -38,7 +38,7 @@
     }
     // On narrow screens let the title use the full width and drop "See all"
     // beside the description instead of reserving a tall right-hand column.
-    @media (max-width: 560px) {
+    @include s.below(s.$bp-md) {
       grid-template-areas:
         "title title"
         "desc  see";
@@ -51,8 +51,8 @@
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 1.25rem;
-    @media (max-width: 1100px) { grid-template-columns: repeat(2, 1fr); }
-    @media (max-width: 520px) { grid-template-columns: 1fr; }
+    @include s.below(s.$bp-4xl) { grid-template-columns: repeat(2, 1fr); }
+    @include s.below(520px) { grid-template-columns: 1fr; }
   }
   .home-recipe-card {
     display: block;
@@ -93,8 +93,8 @@
     grid-template-columns: repeat(3, 1fr);
     gap: 1.5rem;
     // Mid-range: three columns get tight — pull the gap in before collapsing.
-    @media (max-width: 1100px) { gap: 1rem; }
-    @media (max-width: 850px) { grid-template-columns: 1fr; gap: 1.5rem; }
+    @include s.below(s.$bp-4xl) { gap: 1rem; }
+    @include s.below(850px) { grid-template-columns: 1fr; gap: 1.5rem; }
   }
   .home-meal-col {
     background: s.$white;
@@ -144,7 +144,7 @@
     // Mid-range (3 narrow columns): tighten padding and shrink rows so recipe
     // titles keep enough width to breathe. Must come after the base nested
     // rules above — same specificity, so source order decides.
-    @media (min-width: 851px) and (max-width: 1100px) {
+    @include s.between(851px, s.$bp-4xl) {
       padding: 0.85rem;
       .meal-col-head h3 { font-size: 1rem; }
       a { gap: 0.6rem; padding: 0.3rem; img { width: 44px; height: 44px; } }
