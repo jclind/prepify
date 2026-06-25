@@ -45,7 +45,7 @@ const Signup: FC = () => {
         <meta charSet='utf-8' />
         <title>Sign Up · Prepify</title>
       </Helmet>
-      <div className='signup-page form-format'>
+      <main className='signup-page form-format'>
         <div className='form-container'>
           <div className='brand-mark'>P</div>
           <form onSubmit={handleEmailAndPasswordFormSubmit} className='form'>
@@ -128,7 +128,7 @@ const Signup: FC = () => {
             </Link>
           </p>
         </div>
-      </div>
+      </main>
     </>
   )
 }

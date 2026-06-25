@@ -58,40 +58,51 @@ const StarRating: FC<StarRatingProps> = ({
 
   return (
     // Display-only stars convey their value once via an img role on the row, so
-    // the individual stars below are hidden from assistive tech (otherwise each
-    // renders as an unnamed <button> — an accessibility failure).
+    // the individual stars below render as plain <span>s (not <button>s). A
+    // focusable <button> inside the row's `role="img"` is a nested-interactive
+    // a11y failure, and the stars carry no name of their own.
     <div
       style={{ display: 'inline-flex', gap: spacing }}
       role={interactive ? undefined : 'img'}
       aria-label={interactive ? undefined : `Rated ${rating} out of 5`}
     >
-      {[1, 2, 3, 4, 5].map(i => (
-        <button
-          key={i}
-          type='button'
-          onClick={interactive ? () => onChange?.(i) : undefined}
-          onMouseEnter={interactive ? () => setHovered(i) : undefined}
-          onMouseLeave={interactive ? () => setHovered(0) : undefined}
-          style={{
-            background: 'none',
-            border: 'none',
-            padding: 0,
-            cursor: interactive ? 'pointer' : 'default',
-            display: 'flex',
-            lineHeight: 0,
-          }}
-          tabIndex={interactive ? 0 : -1}
-          aria-hidden={interactive ? undefined : true}
-          aria-label={interactive ? `Rate ${i} out of 5` : undefined}
-        >
+      {[1, 2, 3, 4, 5].map(i => {
+        const star = (
           <StarSVG
             fill={displayRating - (i - 1)}
             color={color}
             size={size}
             gradientId={`${baseId}-${i}`}
           />
-        </button>
-      ))}
+        )
+        if (!interactive) {
+          return (
+            <span key={i} style={{ display: 'flex', lineHeight: 0 }}>
+              {star}
+            </span>
+          )
+        }
+        return (
+          <button
+            key={i}
+            type='button'
+            onClick={() => onChange?.(i)}
+            onMouseEnter={() => setHovered(i)}
+            onMouseLeave={() => setHovered(0)}
+            style={{
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              cursor: 'pointer',
+              display: 'flex',
+              lineHeight: 0,
+            }}
+            aria-label={`Rate ${i} out of 5`}
+          >
+            {star}
+          </button>
+        )
+      })}
     </div>
   )
 }

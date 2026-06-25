@@ -299,6 +299,9 @@ const Recipes: FC = () => {
           </div>
         ) : (
           <>
+            {/* Gives the results grid a heading so the card <h3>s don't skip a
+                level under the page <h1> (visually hidden). */}
+            <h2 className='sr-only'>Recipe results</h2>
             <div className='recipes-grid'>
               {isInitialLoading
                 ? Array.from({ length: 8 }).map((_, i) => (

@@ -66,6 +66,7 @@ const CuisineSelector: FC<CuisineSelectorProps> = ({ cuisine, setCuisine }) => {
         options={cuisineOptions}
         styles={customStyles}
         placeholder='Select a cuisine...'
+        aria-label='Cuisine'
       />
     </div>
   )

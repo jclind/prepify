@@ -173,6 +173,17 @@ const Account: FC = () => {
           <SegmentedNav counts={counts} />
 
           <div className='account-body'>
+            {/* Heading for the active tab's panel (visually hidden) so the card
+                <h3>s inside don't skip a level under the profile <h1>. */}
+            <h2 className='sr-only'>
+              {location.pathname.includes('ratings')
+                ? 'Your ratings'
+                : location.pathname.includes('your-recipes')
+                ? 'Recipes you created'
+                : location.pathname.includes('drafts')
+                ? 'Your drafts'
+                : 'Saved recipes'}
+            </h2>
             <Outlet />
           </div>
         </div>
