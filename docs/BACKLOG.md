@@ -296,6 +296,13 @@ The triage date stamped on items is the date they were filed here, not when they
 
 ## Tech debt / process / infra
 
+- `[ ]` **Migrate off Edamam (nutrition source)** — Jesse wants to stop using Edamam for nutrition data
+  eventually (filed 2026-06-25). Current state: nutrition is server-proxied via `POST /api/nutrition/details`
+  (`server/routes/nutrition.js`, PR #182), so swapping the provider is now an isolated, server-only change —
+  the client just gets `NutritionDataType | null` and soft-fails to null. When picking a replacement,
+  evaluate licensing/cost and whether it can also cover the macros currently stored in `nutritionData`.
+  Note: because of this planned retirement, the formerly-bundle-public Edamam keys are **intentionally not
+  being rotated** (see RELEASE_PLAN §B "Rotate any key…"). No deadline; not a 1.0 blocker.
 - `[ ]` **Account tab heading duplicates SegmentedNav's route map** — the visually-hidden per-tab `<h2>`
   in `Account.tsx` (added for heading-order in the a11y sweep) derives its label from an inline
   `location.pathname.includes(...)` chain that re-encodes the four account route strings
