@@ -84,10 +84,13 @@ a feature flag. Do these together:
   Recipe button-name + react-select labels, heading order, RecipeCard label-in-name, auth-page `<main>`
   landmarks, skip-to-content link, global `prefers-reduced-motion`. Modals (react-modal) verified for
   focus-trap + Esc + focus-restore. **Remaining (`[~]`): the only outstanding flag site-wide is
-  `color-contrast`** — the muted-grey body-text token `#979ba0` (2.4–2.8:1) and the brand orange/teal
-  CTAs — a **token-level design decision filed to `BACKLOG.md` → Accessibility**, not a blind recolour.
-  *(SR checks were programmatic, headless — no live VoiceOver in CI. `.beta-tag` contrast intentionally
-  left for the Phase-5 beta-tag cutover.)* **(nice-to-have; contrast tokens still open)**
+  `color-contrast`,** now being worked token by token: the **muted-grey body-text** token shipped (#181,
+  `#979ba0`→`#666c75`); the **brand orange/teal** palette is in progress (accessible `#bf360c`/`#00787e`
+  variants); the **`.beta-tag`** is left for the Phase-5 cutover. **Key fact:** Lighthouse `color-contrast`
+  is a binary audit and the `.beta-tag` sits on every page, so the score stays ~96 regardless of the grey
+  or brand fixes — **a11y ~100 lands automatically when the beta tag is removed at Phase-5**, no further
+  a11y work needed. *(SR checks were programmatic, headless — no live VoiceOver in CI.)* **(nice-to-have;
+  brand-contrast in progress, then gated on the beta cutover)**
 - `[ ]` **Favicon, page titles, social/OG meta** — verify `index.html` + per-page titles
   (`react-helmet-async` is already a dependency) and an OG image for link previews. **(nice-to-have)**
 - `[x]` **Remove dev-only UI from production** — `@tanstack/react-query-devtools` is a devDependency;
@@ -405,5 +408,14 @@ through the Cypress custom-token bridge) plus keyboard / a11y-tree spot-checks. 
   used; none are secrets. The one genuinely code-actionable blocker is the **Edamam key lockdown** — proxy
   `getRecipeNutrition` through the Express server so `VITE_EDAMAM_APP_ID/KEY` leave the client bundle
   (mirrors the Spoonacular proxy); doing so also closes the "audit every VITE_* var" item.
+
+### 2026-06-25 — a11y contrast: muted-grey token (PR #181, merged)
+Follow-up to the WCAG AA sweep. Darkened the muted body/meta text token `$tertiary-text` `#979ba0` →
+`#666c75` (~93 usages) and tokenised three hardcoded `#8a8f99` report-trigger greys onto it. Clears every
+muted-grey `color-contrast` flag site-wide (axe failures roughly halve per page). **Lighthouse a11y
+unchanged (~96)** — the binary `color-contrast` audit still trips on the remaining brand colours and on the
+`.beta-tag` present on every page. Remaining contrast work is now just the **brand palette** (in progress —
+accessible `#bf360c`/`#00787e` variants on the failing selectors) and the **beta-tag**; the latter pins the
+score until the Phase-5 cutover, at which point a11y ~100 lands automatically. See BACKLOG → Accessibility.
 
 _`/release-readiness` appends dated run summaries here._
