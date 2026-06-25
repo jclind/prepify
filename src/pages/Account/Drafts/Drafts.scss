@@ -109,13 +109,21 @@
     // their button rows aligned across the grid row.
     .actions {
       display: flex;
+      // Wrap so Delete drops to its own row instead of spilling past the card's
+      // right edge when a narrow grid track (~320px, the 2-up layout) leaves the
+      // two buttons no room side by side.
+      flex-wrap: wrap;
       align-items: stretch;
       gap: 0.5rem;
       margin-top: auto;
       padding-top: 0.15rem;
 
       .resume {
-        flex: 1;
+        flex: 1 1 auto;
+        // min-width:0 lets the button shrink below its nowrap label's intrinsic
+        // width (that intrinsic min is what forced the overflow); with flex-wrap
+        // it shares the row when it fits and drops Delete below when it doesn't.
+        min-width: 0;
         display: inline-flex;
         align-items: center;
         justify-content: center;
