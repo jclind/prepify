@@ -1,5 +1,4 @@
-import { IngredientData, ParsedIngredient } from '@jclind/ingredient-parser'
-import { IngredientsType } from 'types'
+import { IngredientData, ParsedIngredient, IngredientsType } from 'types'
 // import { evalNum } from './validateIngredientQuantityStr'
 
 // const mixedToDecimal = (str: string): number => {

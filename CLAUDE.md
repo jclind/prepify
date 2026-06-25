@@ -78,7 +78,7 @@ npx cypress open       # Open Cypress test runner
 - `FIREBASE_SERVICE_ACCOUNT` - JSON string of Firebase service account
 - `FRONTEND_URLS` - Comma-separated CORS origins
 - `PORT` - Default 4000
-- `SPOONACULAR_API_KEY` - Spoonacular API key used by `POST /api/ingredients/parse` (server/routes/ingredients.js)
+- `INGREDIENT_PARSER_PROXY_URL` - Optional. Overrides the base URL of the hosted ingredient-enrichment proxy used by `@jclind/ingredient-parser` v2 (server/routes/ingredients.js). Unset = the package's default hosted proxy. NOTE: as of `@jclind/ingredient-parser` v2 the parser is key-free on the client — the proxy holds the Spoonacular key — so `SPOONACULAR_API_KEY` is **no longer used by this server** (it was needed only by the v1 in-process library call).
 - `EDAMAM_APP_ID` / `EDAMAM_APP_KEY` - Edamam nutrition API credentials, used server-side only by the `POST /api/nutrition/details` proxy (server/routes/nutrition.js). Moved off the client (formerly `VITE_EDAMAM_APP_ID/KEY`) so the keys aren't shipped in the browser bundle.
 
 ## Key Patterns
@@ -91,7 +91,7 @@ npx cypress open       # Open Cypress test runner
 ### Recipe Data Flow
 1. User creates recipe → image uploaded to Firebase Storage → data posted to main server
 2. Nutrition data calculated via Edamam API, proxied through the server (`src/api/recipes.ts`: `getRecipeNutrition` → `POST /api/nutrition/details` in server/routes/nutrition.js)
-3. Ingredient parsing uses `@jclind/ingredient-parser` library locally
+3. Ingredient parsing/enrichment uses `@jclind/ingredient-parser` **v2**: the client parses locally and synchronously via `parseIngredientString` (legacy flat shape), while enrichment (image + estimated price) goes through `POST /api/ingredients/parse` (server/routes/ingredients.js), which calls the package's `ingredientParser` → hosted proxy (key-free; the proxy holds the Spoonacular key). The server maps the v2 result (`price.cents`/`image`) back onto Prepify's stable persisted shape (`totalPriceUSACents`/`imagePath`), so saved recipe documents and downstream consumers are decoupled from the package's type surface (the app owns `ParsedIngredient`/`IngredientData` in `src/types.ts`)
 4. Serving price calculated via `src/util/calculateServingPrice.ts`
 
 ### Testing

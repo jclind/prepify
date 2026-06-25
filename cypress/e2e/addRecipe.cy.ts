@@ -321,22 +321,14 @@ describe('Add Recipe', () => {
     // distinguishable (the shared fixture would otherwise label them all "flour").
     cy.intercept('POST', PARSE_URL, req => {
       const name = String(req.body.ingredientString || '').trim()
+      // The server returns only the enrichment block; the row's parsed name comes
+      // from the client's own local parse of the typed string.
       req.reply({
-        parsedIngredient: {
-          quantity: null,
-          unit: null,
-          ingredient: name,
-          originalIngredientString: name,
-          comment: '',
-        },
         ingredientData: {
-          _id: `srv-${name}`,
           name,
-          amount: 1,
           imagePath: 'https://img.spoonacular.com/ingredients_100x100/flour.png',
           totalPriceUSACents: 42,
         },
-        id: `srv-${name}`,
       })
     }).as('parseIngredient')
 
