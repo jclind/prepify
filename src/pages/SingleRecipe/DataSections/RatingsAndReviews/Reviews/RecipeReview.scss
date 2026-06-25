@@ -27,7 +27,7 @@
       font-weight: 500;
       color: s.$tertiary-text;
     }
-    @media screen and (max-width: 450px) {
+    @include s.below(s.$bp-sm) {
       position: relative;
       flex-wrap: wrap;
       gap: 0.25rem;
@@ -53,7 +53,7 @@
         font-size: 0.75rem;
       }
     }
-    @media screen and (max-width: 350px) {
+    @include s.below(s.$bp-xs) {
       .name-content {
         max-width: 200px;
       }

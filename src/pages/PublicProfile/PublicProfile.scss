@@ -332,7 +332,7 @@
     }
   }
 
-  @media (max-width: 480px) {
+  @include s.below(s.$bp-sm) {
     .pp-avatar {
       width: 92px;
       height: 92px;

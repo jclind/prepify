@@ -43,7 +43,7 @@ $danger: #d23f31;
     grid-template-columns: 400px 1fr;
     gap: 3.25rem;
     align-items: stretch;
-    @media screen and (max-width: 820px) {
+    @include s.below(820px) {
       grid-template-columns: 1fr;
       gap: 1.75rem;
     }
@@ -222,7 +222,7 @@ $danger: #d23f31;
     border-radius: $soft-radius;
     box-shadow: $soft-shadow;
     padding: 1.5rem 1.75rem;
-    @media screen and (max-width: 600px) { padding: 1.25rem 1rem; }
+    @include s.below(s.$bp-lg) { padding: 1.25rem 1rem; }
     > h2 { font-size: 1.35rem; font-weight: 700; margin-bottom: 1.1rem; }
   }
 
@@ -277,7 +277,7 @@ $danger: #d23f31;
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 0.25rem 1.75rem;
-      @media screen and (max-width: 640px) { grid-template-columns: 1fr; }
+      @include s.below(s.$bp-xl) { grid-template-columns: 1fr; }
 
       .ing {
         display: grid;
@@ -349,7 +349,7 @@ $danger: #d23f31;
       margin: 0;
       column-count: 2;
       column-gap: 2.75rem;
-      @media screen and (max-width: 720px) { column-count: 1; }
+      @include s.below(720px) { column-count: 1; }
 
       .step {
         display: grid;
@@ -442,7 +442,7 @@ $danger: #d23f31;
       grid-template-columns: 1fr 1fr;
       gap: 1.5rem 2.5rem;
       align-items: start;
-      @media screen and (max-width: 700px) { grid-template-columns: 1fr; }
+      @include s.below(700px) { grid-template-columns: 1fr; }
     }
     .nd-cal {
       font-size: 0.95rem;
@@ -677,11 +677,11 @@ $danger: #d23f31;
   // Pull the page in toward the screen edges on phones — the global .page is
   // 90% wide (≈19px gutter at 375px), which wastes room the cards need. Scoped
   // to ≤640px so tablets keep a comfortable margin.
-  @media screen and (max-width: 640px) {
+  @include s.below(s.$bp-xl) {
     width: calc(100% - 1.5rem); // 0.75rem (12px) gutter each side
   }
 
-  @media screen and (max-width: 600px) {
+  @include s.below(s.$bp-lg) {
     .hero-text h1 { font-size: 1.9rem; }
 
     // ── action bar: stack the meta over a full-width, equal 3-up button row ──

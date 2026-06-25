@@ -331,7 +331,7 @@
   }
 }
 
-@media (max-width: 640px) {
+@include s.below(s.$bp-xl) {
   .admin-reports .report-card {
     flex-direction: column;
 

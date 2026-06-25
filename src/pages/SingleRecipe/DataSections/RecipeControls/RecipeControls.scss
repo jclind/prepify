@@ -104,7 +104,7 @@
 
   // ── mobile: stack into a tidy card — heading, equal Edit/Delete row, evenly
   // spaced stats ──────────────────────────────────────────────────────────────
-  @media screen and (max-width: 600px) {
+  @include s.below(s.$bp-lg) {
     gap: 0.85rem;
     padding: 1rem 1.1rem;
     .who {

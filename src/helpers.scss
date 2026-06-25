@@ -101,6 +101,36 @@ $shadow-chip: 0 2px 6px rgba(0, 0, 0, 0.18);  // tight drop shadow on price / fl
 
 $font-family: 'Montserrat', sans-serif;
 
+// Responsive breakpoints. Canonical "down" (max-width) tiers, anchored on the
+// values already used most across the app. Queries reach them through the
+// below()/above()/between() mixins so the breakpoint list lives in one place.
+// Tuned one-offs (the recipe page's 700/720/820, isolated 500/520/850, and the
+// DesktopNav 860/1000/1080/1240 cascade) pass a literal px to the mixins and
+// keep their exact values; convergence of those is a separate design call
+// (see docs/BACKLOG.md).
+$bp-xs: 375px;
+$bp-sm: 450px;
+$bp-md: 560px;
+$bp-lg: 600px;
+$bp-xl: 640px;
+$bp-2xl: 768px;
+$bp-3xl: 900px;
+$bp-4xl: 1100px;
+// Navbar flip — a complementary max/min pair kept distinct from the content
+// scale (the nav reflows on its own breakpoint, not a content one).
+$bp-nav: 725px;
+$bp-nav-up: 726px;
+
+@mixin below($bp) {
+  @media screen and (max-width: $bp) { @content; }
+}
+@mixin above($bp) {
+  @media screen and (min-width: $bp) { @content; }
+}
+@mixin between($min, $max) {
+  @media screen and (min-width: $min) and (max-width: $max) { @content; }
+}
+
 @mixin outline() {
   outline-color: #4d90fe;
   // outline-offset: -2px;
