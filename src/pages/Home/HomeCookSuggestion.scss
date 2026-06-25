@@ -102,7 +102,7 @@
     margin-bottom: 0.95rem;
     overflow: hidden;
     span { display: inline-flex; align-items: center; gap: 0.25rem; white-space: nowrap; }
-    .cuisine { color: s.$primary; font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
+    .cuisine { color: s.$primary-accessible; font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
   }
   .actions { display: flex; gap: 0.6rem; }
   // skeleton stand-ins for the two action buttons
@@ -124,7 +124,7 @@
     transition: filter 0.12s ease, background 0.12s ease;
     svg { font-size: 1.1rem; }
   }
-  .primary { background: s.$primary; color: #fff; &:hover { filter: brightness(1.06); } }
+  .primary { background: s.$primary-accessible; color: #fff; &:hover { filter: brightness(1.06); } }
   .ghost {
     background: #f0f1f3;
     color: s.$primary-text;

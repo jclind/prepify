@@ -77,7 +77,7 @@ $danger: #d23f31;
       font-weight: 700;
       letter-spacing: 0.15em;
       text-transform: uppercase;
-      color: s.$secondary;
+      color: s.$secondary-accessible;
     }
     .description { color: s.$secondary-text; line-height: 1.7; font-size: 1rem; }
     // Compact rating echo by the title (see SingleRecipe.tsx). Pulled snug under
@@ -149,7 +149,7 @@ $danger: #d23f31;
     .m-v { font-weight: 800; font-size: 1.1rem; }
     // cost tile: the per-serving price is a headline number, so color it brand
     // primary to pull the eye — this is the "make pricing prominent" beat
-    .m-cost .m-v { color: s.$primary; }
+    .m-cost .m-v { color: s.$primary-accessible; }
     .m-l {
       font-size: 0.72rem;
       color: s.$tertiary-text;
@@ -184,14 +184,18 @@ $danger: #d23f31;
       &:focus-visible { @include s.outline(); }
     }
     .save-recipe-btn {
-      background: s.$primary;
-      border-color: s.$primary;
+      // AA on-light brand fills (white text needs 4.5:1; vivid #ff5722/#00adb5
+      // give only ~3:1). Hovers darken one step further, still AA.
+      background: s.$primary-accessible;
+      border-color: s.$primary-accessible;
       color: s.$white;
-      &:hover { background: s.$primary-hover; border-color: s.$primary-hover; }
+      // NB: not $primary-hover (#e74e1d, white-on-it 3.81 — fails AA); this
+      // button's base is the accessible orange, so its hover darkens further.
+      &:hover { background: #a52f0a; border-color: #a52f0a; }
       &.is-saved {
-        background: s.$secondary;
-        border-color: s.$secondary;
-        &:hover { background: #009aa1; border-color: #009aa1; }
+        background: s.$secondary-accessible;
+        border-color: s.$secondary-accessible;
+        &:hover { background: #006065; border-color: #006065; }
       }
     }
     .print-recipe-btn .loading {
@@ -333,7 +337,7 @@ $danger: #d23f31;
       margin-top: 1rem;
       font-size: 0.88rem;
       color: s.$tertiary-text;
-      strong { color: s.$primary; }
+      strong { color: s.$primary-accessible; }
     }
   }
 

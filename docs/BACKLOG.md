@@ -240,26 +240,31 @@ The triage date stamped on items is the date they were filed here, not when they
   styling stayed on the now-inner element, so the 2-column grid is visually unchanged (verified by
   screenshot). Clears Lighthouse `aria-allowed-role` + `list`; recipe page **89 → 97**. Keyboard toggle
   (Enter/Space → `aria-checked`) re-verified.
-- `[ ]` **Text + brand colors fail WCAG AA contrast (token-level decision)** — the widest remaining a11y
-  gap. Two token families, both needing a design call (not a blind QA recolor), confirmed across Home,
-  Recipes, single-recipe, profile, about/privacy/help, auth, and the logged-in Account/Settings:
-  - **Muted-grey body/meta text** `#979ba0` (and `#8a8f99` on `.bug-report-trigger`) lands at **2.4:1 on
-    `#eeeeee`** and **2.79:1 on `#ffffff`** — well under 4.5:1. Used pervasively: section subtitles
-    (`.home-section-header p`, Recipes `header p`), `.author-text`, `.effective-date`, `.pp-name`,
-    `.pp-counts span`, `.hr-count`, recipe-card meta (time/cuisine/rating `.count`/`.recipe-card__cuisine`),
-    `.price-line`, `.footer-copy`/`.footer-version`, `.about-nutrition-label`, the meal-plan `.m-l` labels,
-    and `.acct-meta`/`.acct-bio-empty`/`.settings-navlabel`/`.banner-sub` when logged in. A single token
-    bump (e.g. `#979ba0`→~`#6b7280`, ≈4.6:1 on white) clears the bulk of the per-page `color-contrast`
-    flags at once — it's the one change that moves every page off ~96.
-  - **Brand colors as text/CTAs**: orange `#ff5722` (`.see-all`, `.dnav__link-label`/`.dnav__cta--signup`
-    on the solid nav, `.cook-suggestion-btn`, `.about-eyebrow`/`.about-btn-primary`/`.about-card-price`,
-    `.save-control__trigger`, `.price-line strong`, `.pp-lvl`, meal-col headers) at **2.7–3.2:1**, and teal
-    `#00adb5` (`.eyebrow` on the recipe page, the `.form-action-btn` login/signup buttons at white-on-teal
-    **2.74:1**). These are the identity palette — adjusting them (or pairing a darker on-light variant) is a
-    brand decision. Propose tokenizing an accessible "on-light" orange/teal rather than recoloring inline.
-  - *(The `.beta-tag` `#eeeeee`-on-`#00adb5` is also flagged but is intentionally left for the Phase-5
-    beta-tag cutover — leave it.)* *(Original `.dnav__*` entry surfaced 2026-06-23 in track 4-qa; broadened
-    to the full token inventory 2026-06-25 in the accessibility sweep.)*
+- `[x]` **Contrast (WCAG AA) — DONE, Lighthouse a11y 100 on every route** *(grey #181; brand + nav-logo +
+  beta-tag + error-red this PR #184, 2026-06-25)*. Every page-load route (logged-out + logged-in) plus the
+  key interactive surfaces (filter drawer, cook modal, reviews) is AA; **Lighthouse a11y = 100 on all 22
+  routes.** What shipped:
+  - `[x]` **Muted-grey body/meta text (#181):** `$tertiary-text` darkened `#979ba0` → `#666c75` (lightest
+    clearing 4.5:1 on white 5.29 / `#fafafa` 5.07 / `#eeeeee` 4.56); three hardcoded `#8a8f99` report-trigger
+    greys tokenised onto it.
+  - `[x]` **Brand orange/teal (#184):** added on-light tokens `$primary-accessible #bf360c` (5.60/4.83) and
+    `$secondary-accessible #00787e` (5.27/4.54), each covering small-text + white-on-fill, swapped on the ~25
+    failing selectors only (not the 305 `$primary` uses). On-tint cases handled deterministically: `.pp-lvl`
+    → solid `#fff2ed` pill; active Settings nav label → `#006065`.
+  - `[x]` **Nav-logo wordmark (#184):** darkened to `$primary-accessible` on any light nav surface — the
+    desktop solid bar (`.nav--solid`, incl. Home once scrolled) and the mobile bar on non-hero pages (new
+    `.nav--dark-links` class, since `.nav--solid` is desktop-only and Lighthouse a11y emulates mobile). The
+    transparent-over-hero logo keeps vivid `#ff5722` on its dark photo.
+  - `[x]` **Beta-tag (#184):** per owner call (it's removed at the 1.0 cutover anyway), recoloured from
+    light-on-`#00adb5` (2.78:1) to white-on-`$secondary-accessible` (5.27:1). This is what **unpinned the
+    Lighthouse score** — the binary `color-contrast` audit had been failing on every page purely because of
+    the ever-present beta-tag. *(Supersedes the earlier "leave it for Phase-5" note; the Phase-5 cutover will
+    still remove the tag entirely.)*
+  - `[x]` **Danger/error red text (#184):** darkened the shared `$error-red` token `#dc3545` → `#c5303f`
+    (the lightest red clearing 4.5:1 on every surface it touches — text on white 5.43 / `#eeeeee` 4.68 /
+    danger tint 5.14, and white-on-fill 5.43). Safe across all 13 usages (text / fill / border each gain
+    contrast); alert boxes unaffected (own `$alert-error-red-text #721c24`). Took the last route —
+    Settings-danger — to 100. Danger zone + inline validation visually re-checked.
 - `[ ]` **Autocomplete dropdown isn't a valid ARIA listbox + has no keyboard nav** — re-confirmed in the
   2026-06-25 accessibility sweep, still as filed above (the `<ul role="listbox"><li><button role="option">`
   shape + no arrow-key/`aria-activedescendant`). Tab-reachable and operable by mouse/Enter, so left for the

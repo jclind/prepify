@@ -224,7 +224,7 @@
     margin-top: 1.25rem;
     border: none;
     color: s.$white;
-    background: s.$secondary;
+    background: s.$secondary-accessible;
     transition: filter 0.15s ease;
     &:hover:not(:disabled) {
       filter: brightness(0.95);
