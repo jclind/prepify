@@ -1,10 +1,12 @@
+@use '../../helpers.scss' as s;
+
 .report-control-trigger {
   display: inline-flex;
   align-items: center;
   background: none;
   border: none;
   cursor: pointer;
-  color: #8a8f99;
+  color: s.$tertiary-text;
   font-family: inherit;
   font-size: 0.8rem;
   line-height: 1.2;
@@ -47,7 +49,7 @@
     background: none;
     border: none;
     cursor: pointer;
-    color: #8a8f99;
+    color: s.$tertiary-text;
     border-radius: 50%;
     width: 1.9rem;
     height: 1.9rem;

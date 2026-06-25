@@ -1,8 +1,10 @@
+@use '../../helpers.scss' as s;
+
 .bug-report-trigger {
   background: none;
   border: none;
   cursor: pointer;
-  color: #8a8f99;
+  color: s.$tertiary-text;
   font-size: 0.8rem;
   padding: 0.15rem 0.35rem;
   border-radius: 4px;
