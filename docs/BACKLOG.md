@@ -259,6 +259,15 @@ The triage date stamped on items is the date they were filed here, not when they
 
 ## Tech debt / process / infra
 
+- `[ ]` **Account tab heading duplicates SegmentedNav's route map** — the visually-hidden per-tab `<h2>`
+  in `Account.tsx` (added for heading-order in the a11y sweep) derives its label from an inline
+  `location.pathname.includes(...)` chain that re-encodes the four account route strings
+  (`saved-recipes`/`ratings`/`your-recipes`/`drafts`) already defined in
+  `src/pages/Account/components/SegmentedNav.tsx`. Low severity — the SR headings are intentionally
+  fuller than the short tab labels, so they can't just reuse the labels — but if a tab's route is
+  renamed in SegmentedNav, this heading silently goes stale. Fix: derive both from a single
+  route→label source. *(surfaced 2026-06-25 in the accessibility-sweep code review, PR #179; not worth
+  blocking the merge.)*
 - `[ ]` **One-off rating-aggregate reconciliation** — stored `recipes.rating` aggregates can drift from
   the actual `ratings` docs (confirmed live: *Homemade Granola* stored `5/4.6` vs true `4/4.5`). Likely
   legacy/pre-recompute data or a past silent best-effort failure. Write a script (alongside
