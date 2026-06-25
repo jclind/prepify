@@ -1,4 +1,5 @@
 $primary: #ff5722; // Also located in TrendingRecipes.js
+$primary-hover: #e74e1d; // darkened orange for primary-button/link hover
 $secondary: #00adb5;
 
 $primary-text: #303841;
@@ -37,6 +38,9 @@ $alert-warning-amber-text: #856404;
 $primary-background: #eeeeee;
 $secondary-background: #d6d6d6;
 $tertiary-background: #b1b1b1;
+
+// Warm-cream surface family (Account, Public Profile, Home cards)
+$surface-warm-border: #ece2d6;
 
 // Navbar
 $nav-height: 6.25rem;

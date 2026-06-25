@@ -25,7 +25,7 @@
     gap: 1.75rem;
     align-items: center;
     background: #fff;
-    border: 1px solid #ece2d6;
+    border: 1px solid s.$surface-warm-border;
     border-radius: 20px;
     padding: 1.5rem;
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
@@ -264,7 +264,7 @@
     flex-direction: column;
     gap: 0.3rem;
     background: #fff;
-    border: 1px solid #ece2d6;
+    border: 1px solid s.$surface-warm-border;
     border-radius: 16px;
     padding: 0.6rem;
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
