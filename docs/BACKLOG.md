@@ -411,12 +411,19 @@ The triage date stamped on items is the date they were filed here, not when they
 - `[ ]` **One danger-red token** — three reds mean the same thing: `$error-red #dc3545` (token), local
   `$danger #d23f31` (`SingleRecipe.scss`), and `#d64545` (`ReportControl`/`Reports`). Consolidate onto the
   token. *(audit F6; surfaced 2026-06-25 in the design-consistency sweep.)*
-- `[ ]` **Name the admin/“cool” sub-palette and wire the token-less files into `helpers.scss`** — Admin +
+- `[~]` **Name the admin/“cool” sub-palette and wire the token-less files into `helpers.scss`** — Admin +
   moderation surfaces hardcode a Tailwind-ish slate/blue palette (`#3b82f6`/`#2563eb` action blue exists
-  nowhere in the brand) and several files (`Admin/*`, `ReportControl`, `SavedFilterBar`,
-  `AdminRecipeControls`, `AccountStatusBanner`, `Layout`) `@use` nothing at all (audit F1/F2). Define a
-  documented `$admin-*` token group and migrate the literals so the warm/cool split is a decision, not 200+
-  loose hexes. *(surfaced 2026-06-25 in the design-consistency sweep; the bulk of the remaining token work.)*
+  nowhere in the brand) and several files `@use` nothing at all (audit F1/F2).
+    - `[x]` **Import-wiring + value-identical repoints** — DONE 2026-06-25 (PR `style/admin-token-wiring`).
+      Added `@use helpers as s` to the 10 token-less files that had a value-identical win and repointed their
+      radii (radius scale) and `#fff`/`#ffffff` → `$white` (compiled CSS byte-identical). The bespoke admin
+      palette in those files was deliberately left raw.
+    - **Remaining (the brand decision):** define a documented `$admin-*` token group for the slate/blue/
+      green/amber/red ramps and migrate the literals so the warm/cool split is a decision, not 200+ loose
+      hexes. Five files stay fully token-less because they hold *only* bespoke-palette values
+      (`RecipePlaceholder`, `ClassifierNote`, `AccountStatusBanner`, `DefaultAvatar`,
+      `AddRecipe/ListComponents/Item`) — they get wired when the `$admin-*` group lands.
+  *(surfaced 2026-06-25 in the design-consistency sweep; import-wiring applied, palette naming deferred.)*
 - `[ ]` **`RecipeFormInput` duplicates the shared `FormInput`** — AddRecipe ships its own ~85%-identical
   input/textarea (`RecipeFormInput`/`RecipeFormTextArea`) instead of the shared `Components/Form/FormInput`,
   and Settings/BugReport use raw `<input>`/`<textarea>`/`<select>`. Converge on one input primitive.
