@@ -26,7 +26,7 @@
   pointer-events: none;
 
   // mobile only — desktop keeps the inline nav links
-  @media screen and (min-width: 726px) {
+  @include s.above(s.$bp-nav-up) {
     display: none;
   }
 

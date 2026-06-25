@@ -71,7 +71,7 @@
     }
   }
 
-  @media screen and (max-width: 725px) {
+  @include s.below(s.$bp-nav) {
     width: 400px;
     max-width: 400px;
 
@@ -86,7 +86,7 @@
       font-weight: 600;
     }
   }
-  @media screen and (max-width: 550px) {
+  @include s.below(s.$bp-md) {
     width: 325px;
     max-width: 325px;
 
@@ -97,7 +97,7 @@
       }
     }
   }
-  @media screen and (max-width: 375px) {
+  @include s.below(s.$bp-xs) {
     max-width: 250px;
 
     .img-container {

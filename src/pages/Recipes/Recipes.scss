@@ -73,7 +73,7 @@
     gap: 0.6rem;
 
     // Mobile: search takes its own row; Filters + Sort sit beneath it.
-    @media (max-width: 640px) {
+    @include s.below(s.$bp-xl) {
       flex-wrap: wrap;
       .search-recipes-form {
         flex: 1 1 100%;

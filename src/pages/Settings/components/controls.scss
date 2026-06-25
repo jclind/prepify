@@ -343,7 +343,7 @@
 // On mobile the sticky bar can sit below the fold of a long form, so a user can
 // miss it and lose edits. Pin it to the bottom of the viewport instead so it's
 // always visible while there are unsaved changes.
-@media (max-width: 880px) {
+@include s.below(s.$bp-3xl) {
   .sr-savebar.show {
     position: fixed;
     left: 0.9rem;

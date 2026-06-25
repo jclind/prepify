@@ -12,7 +12,7 @@
     grid-template-columns: 1fr 1fr;
     gap: 1rem 1.25rem;
 
-    @media (max-width: 600px) {
+    @include s.below(s.$bp-lg) {
       grid-template-columns: 1fr;
     }
   }
@@ -128,7 +128,7 @@
     max-width: 46ch;
   }
 
-  @media (max-width: 600px) {
+  @include s.below(s.$bp-lg) {
     flex-direction: column;
     align-items: flex-start;
   }

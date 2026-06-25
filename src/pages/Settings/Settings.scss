@@ -137,7 +137,7 @@
 /* ── Mobile master-detail (≤880px) ─────────────────────────────────────────────
    Root (/settings) shows the section list and hides the pane; a section path
    hides the list and shows just that pane with a back link. Desktop is unaffected. */
-@media (max-width: 880px) {
+@include s.below(s.$bp-3xl) {
   .settings-page {
     .settings-shell {
       display: block;
