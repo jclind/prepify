@@ -108,7 +108,12 @@ const ImagePicker: React.FC<ImagePickerProps> = ({
         }
         onClick={handleClick}
       >
-        <button className='remove-btn option-btn' onClick={removeImage}>
+        <button
+          type='button'
+          className='remove-btn option-btn'
+          aria-label='Remove image'
+          onClick={removeImage}
+        >
           <AiOutlineClose className='icon' />
         </button>
         <input

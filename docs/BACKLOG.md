@@ -202,24 +202,40 @@ The triage date stamped on items is the date they were filed here, not when they
   as a plain list of buttons, or implement real listbox keyboarding. *(surfaced 2026-06-22 in the track 2d
   code review; the per-result `role="option"` on a button is the new markup from this track.)*
 
-- `[ ]` **Ingredient checklist `<li role="checkbox">` is an invalid ARIA role + breaks the list** — each
-  ingredient row is a `<li role="checkbox" aria-checked tabIndex={0}>` (`SingleRecipe.tsx`
-  `renderIngredient`), but `checkbox` isn't an allowed role on `<li>`, which also makes the parent
-  `<ul class="ing-list">` "a list that doesn't contain only `<li>`" (the `<li>`s no longer carry an
-  implicit `listitem` role). Fixes Lighthouse `aria-allowed-role` + `list`. Fix: move the
-  checkbox role/keyboard handler onto an inner element (e.g. a `<div role="checkbox">` or a real
-  `<button>`) and keep the `<li>` plain — needs `.ing` CSS re-pointed and a visual re-check, so it's not
-  a blind one-liner. *(surfaced 2026-06-23 in the track 4-qa Lighthouse pass; recipe-page a11y was 80→89
-  after the cheap wins, these are the remainder.)*
-- `[ ]` **Recipe-page nav fails color-contrast (signup CTA + condensed nav link label)** — Lighthouse
-  `color-contrast` flags `.dnav__cta--signup` and `.dnav__link-label` on the solid (`darkNavLinks`) nav.
-  These are brand colors, so adjusting them is a design call, not a QA-sweep polish edit. *(The
-  `.beta-tag` is also flagged but is intentionally left for the Phase-5 beta-tag cutover. surfaced
-  2026-06-23, track 4-qa.)*
+- `[x]` **Ingredient checklist `<li role="checkbox">` is an invalid ARIA role + breaks the list** —
+  **done (accessibility sweep, 2026-06-25):** the checkbox role + keyboard handler moved onto an inner
+  `<div role="checkbox">`, leaving each `<li>` plain (`SingleRecipe.tsx` `renderIngredient`). `.ing`
+  styling stayed on the now-inner element, so the 2-column grid is visually unchanged (verified by
+  screenshot). Clears Lighthouse `aria-allowed-role` + `list`; recipe page **89 → 97**. Keyboard toggle
+  (Enter/Space → `aria-checked`) re-verified.
+- `[ ]` **Text + brand colors fail WCAG AA contrast (token-level decision)** — the widest remaining a11y
+  gap. Two token families, both needing a design call (not a blind QA recolor), confirmed across Home,
+  Recipes, single-recipe, profile, about/privacy/help, auth, and the logged-in Account/Settings:
+  - **Muted-grey body/meta text** `#979ba0` (and `#8a8f99` on `.bug-report-trigger`) lands at **2.4:1 on
+    `#eeeeee`** and **2.79:1 on `#ffffff`** — well under 4.5:1. Used pervasively: section subtitles
+    (`.home-section-header p`, Recipes `header p`), `.author-text`, `.effective-date`, `.pp-name`,
+    `.pp-counts span`, `.hr-count`, recipe-card meta (time/cuisine/rating `.count`/`.recipe-card__cuisine`),
+    `.price-line`, `.footer-copy`/`.footer-version`, `.about-nutrition-label`, the meal-plan `.m-l` labels,
+    and `.acct-meta`/`.acct-bio-empty`/`.settings-navlabel`/`.banner-sub` when logged in. A single token
+    bump (e.g. `#979ba0`→~`#6b7280`, ≈4.6:1 on white) clears the bulk of the per-page `color-contrast`
+    flags at once — it's the one change that moves every page off ~96.
+  - **Brand colors as text/CTAs**: orange `#ff5722` (`.see-all`, `.dnav__link-label`/`.dnav__cta--signup`
+    on the solid nav, `.cook-suggestion-btn`, `.about-eyebrow`/`.about-btn-primary`/`.about-card-price`,
+    `.save-control__trigger`, `.price-line strong`, `.pp-lvl`, meal-col headers) at **2.7–3.2:1**, and teal
+    `#00adb5` (`.eyebrow` on the recipe page, the `.form-action-btn` login/signup buttons at white-on-teal
+    **2.74:1**). These are the identity palette — adjusting them (or pairing a darker on-light variant) is a
+    brand decision. Propose tokenizing an accessible "on-light" orange/teal rather than recoloring inline.
+  - *(The `.beta-tag` `#eeeeee`-on-`#00adb5` is also flagged but is intentionally left for the Phase-5
+    beta-tag cutover — leave it.)* *(Original `.dnav__*` entry surfaced 2026-06-23 in track 4-qa; broadened
+    to the full token inventory 2026-06-25 in the accessibility sweep.)*
+- `[ ]` **Autocomplete dropdown isn't a valid ARIA listbox + has no keyboard nav** — re-confirmed in the
+  2026-06-25 accessibility sweep, still as filed above (the `<ul role="listbox"><li><button role="option">`
+  shape + no arrow-key/`aria-activedescendant`). Tab-reachable and operable by mouse/Enter, so left for the
+  listbox refactor rather than a sweep polish edit. See the dedicated entry earlier in this section.
 - `[ ]` **Servings stepper input is below the 24px touch-target minimum** — the `.serv-input` in the
   Ingredients servings pill (`SingleRecipe.tsx`) trips Lighthouse `target-size`. A label was added in
   track 4-qa (`aria-label="Servings"`), but enlarging the tap target is a layout change to the pill.
-  *(surfaced 2026-06-23, track 4-qa.)*
+  *(surfaced 2026-06-23, track 4-qa; re-confirmed 2026-06-25 in the accessibility sweep.)*
 
 ## Features
 

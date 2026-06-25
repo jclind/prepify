@@ -51,7 +51,11 @@ const Navbar: FC<NavbarProps> = ({ darkNavLinks, navBackgroundColor }) => {
           <div className='nav-header'>
             <PrepifyLogo />
             <div className={!navOpen && !darkNavLinks ? 'hamburger light' : 'hamburger'}>
-              <Hamburger toggled={navOpen} toggle={setNavOpen} />
+              <Hamburger
+                toggled={navOpen}
+                toggle={setNavOpen}
+                label={navOpen ? 'Close menu' : 'Open menu'}
+              />
             </div>
           </div>
 

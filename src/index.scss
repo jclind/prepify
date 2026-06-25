@@ -64,6 +64,35 @@ a {
   }
 }
 
+// Visually hidden but exposed to assistive tech — for headings/labels that give
+// screen-reader structure without altering the visual layout.
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+// Honor the OS "reduce motion" setting globally: near-instant animations and
+// transitions (the nav condense, star hover, skip-link slide, modal fades, …)
+// for users who've opted out of motion. Opt-in only — the default experience is
+// unchanged. Functional transforms still apply; only their duration collapses.
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 .btn {
   background: none;
   outline: none;
