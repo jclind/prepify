@@ -160,7 +160,7 @@ All endpoints hit the main server (`VITE_API_URL`). Auth is via the interceptor 
     ingredients: IngredientsType[]   // Already parsed + enriched
     instructions: InstructionsType[]
     recipeImage: string   // Firebase Storage download URL (image uploaded before this call)
-    nutritionData: NutritionDataType | null   // From Edamam, already fetched
+    nutritionData: NutritionDataType | null   // Numeric facts from Edamam, already fetched
     totalTime: number     // prepTime + (cookTime ?? 0), client-computed
     authorUsername: string
     rating: { rateCount: 0; rateValue: 0 }   // Always zero on creation
@@ -169,7 +169,7 @@ All endpoints hit the main server (`VITE_API_URL`). Auth is via the interceptor 
     servingPrice: number  // Client-computed from ingredient price data
     cuisine: string
     mealTypes: string[]
-    nutritionLabels: string[] | null  // Filtered from Edamam dietLabels/healthLabels
+    nutritionLabels: string[]  // Author-selected diet tags from the form (DietSelector); no longer Edamam-derived
     views: 0
     numTimesSaved: 0
     numTimesMade: 0
@@ -428,7 +428,7 @@ All three tag endpoints are defined but never called anywhere in the application
 ## External: Edamam Nutrition API
 
 ### POST /nutrition-details (Edamam)
-- **Called from:** `src/api/recipes.ts` → `RecipeAPI.getRecipeNutrition(ingrArr)` (private, called by `addRecipe`)
+- **Called from:** `src/api/recipes.ts` → `RecipeAPI.getRecipeNutrition(ingrArr)` (private, called by `addRecipe` and by `editRecipe` only when ingredients change). Returns the numeric `NutritionDataType | null` only — diet/health labels are no longer derived here.
 - **Base URL:** `https://api.edamam.com/api` (separate `nutrition` axios instance)
 - **Full path:** `https://api.edamam.com/api/nutrition-details?app_id=<VITE_EDAMAM_APP_ID>&app_key=<VITE_EDAMAM_APP_KEY>`
 - **Request body:**
@@ -455,9 +455,9 @@ All three tag endpoints are defined but never called anywhere in the application
     totalNutrientsKCal: any
   }
   ```
-  The frontend filters `dietLabels` and `healthLabels` against a local list (`src/recipeData/dietLabels`) to produce `nutritionLabels`.
+  `dietLabels`/`healthLabels` are part of the response but are no longer consumed — recipe `nutritionLabels` are author-selected on the form. Only the numeric facts are stored as `nutritionData`.
 - **Auth:** No Firebase token. API key in query params.
-- **Error handling:** No catch. Returns `{ nutritionData: null, dietLabels: null }` if result is falsy.
+- **Error handling:** Wrapped in try/catch. Soft-fails to `null` (the whole `NutritionDataType | null` return) on any error or falsy result, so a lookup outage never blocks recipe creation/editing.
 
 ---
 
@@ -531,7 +531,7 @@ These are defined and exported but never imported anywhere:
 
 The following are computed on the client before `POST /addRecipe` and sent as-is:
 - `servingPrice` — computed from ingredient price data in `@jclind/ingredient-parser`
-- `nutritionData`, `nutritionLabels` — fetched from Edamam before submission
+- `nutritionData` — numeric facts fetched from Edamam before submission (`nutritionLabels` are author-selected on the form, not computed)
 - `totalTime` — `prepTime + cookTime`
 - `createdAt` — `new Date().getTime().toString()` (epoch ms as string, not ISO 8601)
 - `rating` — always `{ rateCount: 0, rateValue: 0 }` (zero on creation)
