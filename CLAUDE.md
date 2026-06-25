@@ -65,8 +65,6 @@ npx cypress open       # Open Cypress test runner
 
 ### Frontend (.env)
 - `VITE_API_URL` - Main API server URL (default: http://localhost:4000)
-- `VITE_EDAMAM_APP_ID` - Edamam nutrition API app ID
-- `VITE_EDAMAM_APP_KEY` - Edamam nutrition API app key
 - `VITE_FIREBASE_API_KEY` - Firebase Web API key
 - `VITE_FIREBASE_AUTH_DOMAIN` - Firebase auth domain
 - `VITE_FIREBASE_PROJECT_ID` - Firebase project ID
@@ -81,6 +79,7 @@ npx cypress open       # Open Cypress test runner
 - `FRONTEND_URLS` - Comma-separated CORS origins
 - `PORT` - Default 4000
 - `SPOONACULAR_API_KEY` - Spoonacular API key used by `POST /api/ingredients/parse` (server/routes/ingredients.js)
+- `EDAMAM_APP_ID` / `EDAMAM_APP_KEY` - Edamam nutrition API credentials, used server-side only by the `POST /api/nutrition/details` proxy (server/routes/nutrition.js). Moved off the client (formerly `VITE_EDAMAM_APP_ID/KEY`) so the keys aren't shipped in the browser bundle.
 
 ## Key Patterns
 
@@ -91,7 +90,7 @@ npx cypress open       # Open Cypress test runner
 
 ### Recipe Data Flow
 1. User creates recipe → image uploaded to Firebase Storage → data posted to main server
-2. Nutrition data calculated via Edamam API (`src/api/recipes.ts`: `getRecipeNutrition`)
+2. Nutrition data calculated via Edamam API, proxied through the server (`src/api/recipes.ts`: `getRecipeNutrition` → `POST /api/nutrition/details` in server/routes/nutrition.js)
 3. Ingredient parsing uses `@jclind/ingredient-parser` library locally
 4. Serving price calculated via `src/util/calculateServingPrice.ts`
 
