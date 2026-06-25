@@ -77,7 +77,8 @@
     }
     &.active {
       background: rgba(s.$secondary, 0.12);
-      color: #057780;
+      // Darker teal: the prior #057780 hit only 4.09:1 on the teal active tint.
+      color: #006065;
     }
     &.danger {
       color: s.$error-red;

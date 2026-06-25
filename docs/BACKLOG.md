@@ -208,24 +208,38 @@ The triage date stamped on items is the date they were filed here, not when they
   styling stayed on the now-inner element, so the 2-column grid is visually unchanged (verified by
   screenshot). Clears Lighthouse `aria-allowed-role` + `list`; recipe page **89 → 97**. Keyboard toggle
   (Enter/Space → `aria-checked`) re-verified.
-- `[~]` **Brand colors + beta-tag fail WCAG AA contrast** — the muted-grey half of this is **done**; what
-  remains is the identity palette + the beta-tag. Confirmed across Home, Recipes, single-recipe, profile,
-  about/privacy/help, auth, and the logged-in Account/Settings:
+- `[~]` **Contrast (WCAG AA) — muted-grey + brand palette done; tails remain** — the muted-grey text
+  (#181) and the brand orange/teal (this PR) are both **done**; what's left is three small tails: the
+  vivid nav-logo (needs sign-off), the shared `$error-red` danger text, and the beta-tag (Phase-5).
+  Confirmed across Home, Recipes, single-recipe, profile, about/privacy/help, auth, and logged-in
+  Account/Settings/Add-Recipe:
   - `[x]` **Muted-grey body/meta text — done (#181, merged 2026-06-25):** `$tertiary-text` was darkened
     `#979ba0` → **`#666c75`** (the lightest value clearing 4.5:1 on every light surface — white 5.29:1,
     `#fafafa` 5.07:1, `#eeeeee` 4.56:1), and the three hardcoded `#8a8f99` report/bug-report-trigger greys
     were tokenised onto it. Cleared every muted-grey `color-contrast` flag site-wide (axe failures roughly
     halved per page: Recipes 17→3, SingleRecipe 11→6, Home 7→4). Did **not** move the Lighthouse score —
     see the beta-tag note below.
-  - `[ ]` **Brand colors as text/CTAs (identity decision)**: orange `#ff5722` (`.see-all`,
-    `.dnav__link-label`/`.dnav__cta--signup` on the solid nav, `.cook-suggestion-btn`,
-    `.about-eyebrow`/`.about-btn-primary`/`.about-card-price`, `.save-control__trigger`, `.price-line
-    strong`, `.m-v`, `.pp-lvl`, meal-col headers) at **2.7–3.2:1**, and teal `#00adb5` (`.eyebrow` on the
-    recipe page, the `.form-action-btn` login/signup buttons at white-on-teal **2.74:1**). Approved
-    direction (2026-06-25): tokenise an accessible "on-light" variant per brand color — **`#bf360c`**
-    (orange, 5.60/4.83) and **`#00787e`** (teal, 5.27/4.54), each used for both the small-text and the
-    white-on-fill cases — and swap only the failing selectors (not the 305 `$primary` uses). Keep vivid
-    `#ff5722`/`#00adb5` for large/decorative UI, icons, hovers, the logo.
+  - `[x]` **Brand colors as text/CTAs — done (this PR, 2026-06-25):** added accessible on-light brand
+    tokens `$primary-accessible: #bf360c` (orange, 5.60/4.83) and `$secondary-accessible: #00787e` (teal,
+    5.27/4.54), each covering both small-text and white-on-fill cases, and swapped **only** the failing
+    selectors (~25 across nav, home, recipe, about, profile, auth, search drawer, cook-suggestion modal,
+    and the logged-in Account seg / Settings nav / Drafts / Add-Recipe / empty states) — not the 305
+    `$primary` uses. A couple of on-tint cases needed deterministic handling: `.pp-lvl` got a solid
+    `#fff2ed` pill (the translucent tint composited too dark) and the active Settings nav label a darker
+    `#006065` teal. Verified: every page-load route (logged-out + logged-in) and the key interactive
+    surfaces (filter drawer, cook modal, reviews) are AA on brand; **only `.beta-tag` + the red danger
+    labels remain** (below). Kept vivid `#ff5722`/`#00adb5` for large/decorative UI, icons, hovers.
+  - `[ ]` **Nav-logo wordmark left vivid (needs sign-off)** — the `.nav-logo` "Prepify" wordmark is
+    `color: $primary` and, on the *solid* nav over the light surface, hits **2.72:1** (large text, so the
+    bar is only 3:1 — still just under). Deliberately **not** changed: it's the brand centrepiece and the
+    approved direction was to keep the logo vivid. Decide: accept as a documented large-text near-miss,
+    or darken just the solid-nav logo to the accessible orange (`#bf360c` → 4.83:1).
+  - `[ ]` **Danger/error red text fails AA (`$error-red #dc3545`)** — the Settings "Danger Zone" nav label
+    (`.settings-navlabel.danger`) and the danger-section row labels (`.sr-row-label`) render `$error-red`
+    on light/red-tinted surfaces at **3.9–4.28:1**. Out of scope for the brand-orange/teal pass — `$error-red`
+    is a **shared semantic token** (13 files: validation, alerts, danger actions), so darkening it (e.g. to
+    the existing `$error-red-hover #b02a37`, or a new accessible error token) is its own decision with
+    blast radius beyond these two labels. *(surfaced 2026-06-25 in the brand-contrast pass.)*
   - *(The `.beta-tag` (`#eeeeee`-on-`#00adb5`, 2.78:1) sits in the nav on **every** page and is left for the
     Phase-5 beta-tag cutover that removes the tag entirely. Because Lighthouse `color-contrast` is a binary
     pass/fail audit, the beta-tag pins every page's a11y score at ~96 until that cutover — so neither the

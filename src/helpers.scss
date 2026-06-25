@@ -1,5 +1,13 @@
 $primary: #ff5722; // Also located in TrendingRecipes.js
 $secondary: #00adb5;
+// Accessible (WCAG AA) variants of the brand colors, for the cases where the
+// brand color is small text on a light surface OR a fill behind white text —
+// both need 4.5:1, which #ff5722/#00adb5 miss (2.7–3.2:1). One shade covers
+// both cases per color (contrast is symmetric): as text on white/#eeeeee it's
+// 5.60/4.83 (orange) and 5.27/4.54 (teal); as a fill under white text, same.
+// Keep $primary/$secondary for large/decorative UI, icons, hovers, the logo.
+$primary-accessible: #bf360c;
+$secondary-accessible: #00787e;
 
 $primary-text: #303841;
 $secondary-text: #595f66;
