@@ -102,24 +102,27 @@ a feature flag. Do these together:
 > ⚠️ Reminder: **every `VITE_*` variable is compiled into the client bundle** and is publicly
 > visible. Treat them as published, never as secret.
 
-- `[ ]` **Audit every `VITE_*` var** — for each, confirm it's *safe to be public*. Firebase web config
-  and Edamam app id/key are designed to be client-side (acceptable, but lock them down server-side —
-  see below). **(blocker)**
+- `[x]` **Audit every `VITE_*` var** — **done (2026-06-25).** Audited every `VITE_*` in `.env.example`:
+  all are either the Firebase web config (designed to be public, referrer-restricted — see below) or
+  `VITE_API_URL`/`VITE_CYPRESS`/`VITE_SENTRY_DSN` (non-secret). The only genuinely sensitive pair, the
+  Edamam app id/key, was **removed from the client entirely** by the server-proxy (PR #182) — no secret
+  `VITE_*` ships in the bundle. **(blocker → done)**
 - `[x]` **Remove dead/dangerous client env vars** *(done — PR #151, 2026-06-17)* — `VITE_OPEN_AI_API_KEY` is defined in `.env` /
   `.env.example` but has **zero callers** (per CLAUDE.md). A live OpenAI key must never ship to the
   browser — remove it. `VITE_INGREDIENT_PARSER_URL` is also dead (parsing goes through the main
   server now). Remove both from `.env.example`. **(blocker)**
-- `[ ]` **Rotate any key that ever sat in client code or git history** — if a real OpenAI/Edamam key
-  was ever committed or bundled, rotate it. **(blocker if applicable)**
-- `[~]` **Lock down Edamam / Firebase usage server-side** — since the keys are public, restrict by
-  HTTP referrer / allowed origins / usage quotas in the respective dashboards so a leaked key can't be
-  abused. **Progress (2026-06-24):** Firebase **web API key is HTTP-referrer-restricted** — verified live
-  that `prepifymeals.com`, `www.prepifymeals.com`, and `localhost:3000` are allowed while an empty referer
-  is blocked (so prod + local dev work; a lifted key is useless off-domain). **Google Vision API key
-  locked down** (API-restricted, done by Jesse). **Remaining: Edamam** (`VITE_EDAMAM_APP_ID/KEY`) — paused
-  pending the ingredient-parser package rework; set a usage cap/alert and/or proxy it server-side (it's
-  bundled and public; Edamam's lower tiers don't support referrer locking). **(blocker → Edamam portion
-  pending)**
+- `[x]` **Rotate any key that ever sat in client code or git history** — **resolved by decision
+  (2026-06-25).** The Edamam app id/key were bundle-public before PR #182. **Jesse's call: do NOT
+  rotate them** — Prepify intends to migrate off Edamam entirely (see BACKLOG → Tech debt), so rotating
+  a soon-to-be-retired key isn't worth it. The old `VITE_OPEN_AI_API_KEY` was never wired to a live
+  call (removed in PR #151). Firebase web key is public-by-design + referrer-locked. **(blocker → waived)**
+- `[x]` **Lock down Edamam / Firebase usage server-side** — **done (2026-06-25).** Firebase **web API key
+  is HTTP-referrer-restricted** — verified live that `prepifymeals.com`, `www.prepifymeals.com`, and
+  `localhost:3000` are allowed while an empty referer is blocked (so prod + local dev work; a lifted key
+  is useless off-domain). **Google Vision API key locked down** (API-restricted, done by Jesse).
+  **Edamam: now server-proxied (PR #182, merged)** — `POST /api/nutrition/details` (server/routes/nutrition.js)
+  holds the keys server-side; `VITE_EDAMAM_APP_ID/KEY` no longer ship in the client bundle, so referrer
+  locking is moot. `EDAMAM_APP_ID`/`EDAMAM_APP_KEY` **set on Railway (Jesse, 2026-06-25)**. **(blocker → done)**
 - `[x]` **Firebase Auth + Storage rules review** — **done + verified live (2026-06-24, PR #177).**
   `storage.rules` (wired via `firebase.json`) replaced the open bucket — public read, but writes require
   auth + a 5MB cap + `image/*`; `profilePhotos/{uid}` enforces ownership; `recipeImages/{filename}` is
@@ -428,5 +431,15 @@ recoloured to white-on-`#00787e` (5.27:1). Recolouring the beta-tag **unpinned t
 audit**. Finally darkened the shared `$error-red` token `#dc3545`→`#c5303f` (text 5.43/4.68/5.14,
 white-on-fill 5.43; alerts untouched — own token), clearing the last route. **Lighthouse a11y is now 100 on
 all 22 routes** (12 logged-out + 10 logged-in). tsc + 516 Vitest + build green. See BACKLOG → Accessibility.
+
+### 2026-06-25 — Edamam lockdown resolved (post-readiness)
+The one code-actionable blocker called out in the readiness run above is done.
+- **Edamam server proxy shipped + deployed** — PR #182 merged; `POST /api/nutrition/details` holds the
+  keys server-side; `VITE_EDAMAM_*` removed from the bundle. `EDAMAM_APP_ID`/`KEY` set on Railway (Jesse).
+  Flipped §B "Lock down Edamam", "Audit every VITE_* var" → `[x]`.
+- **Key rotation waived by decision** — Jesse won't rotate the formerly-public Edamam keys because Prepify
+  plans to migrate off Edamam (filed to BACKLOG → Tech debt). §B "Rotate any key…" → `[x]` (waived).
+- Net: the only open security *blocker* left in Section B is confirming the production `FRONTEND_URLS`
+  CORS value (tracked `[~]`); the dependency-audit and residual-API items are non-blocking.
 
 _`/release-readiness` appends dated run summaries here._
