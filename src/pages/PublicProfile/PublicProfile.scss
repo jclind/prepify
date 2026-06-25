@@ -162,8 +162,11 @@
     .pp-lvl {
       font-size: 0.76rem;
       font-weight: 800;
-      color: s.$primary;
-      background: rgba(s.$primary, 0.1);
+      color: s.$primary-accessible;
+      // Solid (not a translucent brand tint): the tint composited against the
+      // header surface to ~#f0dfda, dropping the accessible orange to 4.34:1.
+      // This pale solid keeps the same look at a deterministic 5.1:1.
+      background: #fff2ed;
       border-radius: 999px;
       padding: 0.12rem 0.55rem;
     }

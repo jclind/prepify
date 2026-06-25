@@ -78,8 +78,10 @@
       white-space: nowrap;
       padding: 0.4rem 0.9rem;
       border-radius: s.$border-radius;
-      border: 1px solid s.$primary;
-      background: s.$primary;
+      // AA on-light orange so the white label clears 4.5:1 (vivid #ff5722 fill
+      // is only 3.16:1). brightness() hover stays above AA.
+      border: 1px solid s.$primary-accessible;
+      background: s.$primary-accessible;
       color: s.$white;
       transition: filter 0.1s linear;
 
