@@ -15,9 +15,10 @@ Read-only audit — no files modified.
 - **Request interceptor:** If `auth.currentUser` exists, fetches a fresh Firebase ID token and sets `Authorization: Bearer <token>` on every request. If the user is logged out, no header is set — **the header is omitted, not sent as an empty string**.
 - All main-server paths are relative (no leading `/`, no `/api/` prefix) — e.g., `recipes`, `getRecipe`, `addRecipe`.
 
-### External instance (`nutrition`)
-- **Base URL:** `https://api.edamam.com/api`
-- Used only for Edamam nutrition lookups. No Firebase auth. CORS headers set on the client (ineffective for server-to-server; these should be on the server response, not the request).
+> **Note:** the former external `nutrition` axios instance (which posted directly to
+> `https://api.edamam.com/api` from the browser with `VITE_EDAMAM_APP_ID/KEY`) has been
+> removed. Nutrition now goes through the main server via `POST /api/nutrition/details`
+> on the `http` instance — the Edamam keys live server-side only. See that endpoint below.
 
 ---
 
@@ -425,39 +426,35 @@ All three tag endpoints are defined but never called anywhere in the application
 
 ---
 
-## External: Edamam Nutrition API
+## Nutrition (server-proxied Edamam)
 
-### POST /nutrition-details (Edamam)
+Nutrition lookups are **proxied through the main server** — the browser never talks to
+Edamam directly, so the Edamam app id/key stay server-side (formerly the `VITE_EDAMAM_*`
+client vars, which shipped in the bundle).
+
+### POST /api/nutrition/details
 - **Called from:** `src/api/recipes.ts` → `RecipeAPI.getRecipeNutrition(ingrArr)` (private, called by `addRecipe` and by `editRecipe` only when ingredients change). Returns the numeric `NutritionDataType | null` only — diet/health labels are no longer derived here.
-- **Base URL:** `https://api.edamam.com/api` (separate `nutrition` axios instance)
-- **Full path:** `https://api.edamam.com/api/nutrition-details?app_id=<VITE_EDAMAM_APP_ID>&app_key=<VITE_EDAMAM_APP_KEY>`
+- **Handler:** `server/routes/nutrition.js` (mounted at `/api/nutrition`).
+- **Auth:** Bearer token via the `http` interceptor; the route runs `verifyToken` + a per-user rate limiter (paid-quota bucket, mirrors `/api/ingredients/parse`).
 - **Request body:**
   ```typescript
   {
-    title: 'recipe 1',    // hardcoded string
-    ingr: string[]        // e.g. ["2 cups flour", "1 tsp salt"]
+    title?: string        // optional; server defaults to 'recipe 1'
+    ingr: string[]        // non-empty array of strings, e.g. ["2 cups flour", "1 tsp salt"]
   }
   ```
-  - Only ingredients that have a `parsedIngredient.quantity` are included; label-only entries are skipped.
-- **Response typed as `NutritionDataType`:**
-  ```typescript
-  {
-    uri: string
-    yield: any
-    calories: any
-    totalWeight: any
-    dietLabels: string[]
-    healthLabels: string[]
-    cautions: any[]
-    totalNutrients: any
-    totalDaily: any
-    ingredients: any[]
-    totalNutrientsKCal: any
-  }
-  ```
-  `dietLabels`/`healthLabels` are part of the response but are no longer consumed — recipe `nutritionLabels` are author-selected on the form. Only the numeric facts are stored as `nutritionData`.
-- **Auth:** No Firebase token. API key in query params.
-- **Error handling:** Wrapped in try/catch. Soft-fails to `null` (the whole `NutritionDataType | null` return) on any error or falsy result, so a lookup outage never blocks recipe creation/editing.
+  - Client only includes ingredients with a `parsedIngredient.quantity`; label-only entries are skipped.
+- **Response:** the Edamam `NutritionDataType` payload on success, or `null`. The server forwards Edamam's numeric facts (`uri`, `calories`, `totalWeight`, `totalNutrients`, …); `dietLabels`/`healthLabels` are present in the upstream body but unused (recipe `nutritionLabels` are author-selected on the form).
+- **Status codes & soft-fail:**
+  - `200` + Edamam payload — success.
+  - `200` + `null` — Edamam returned non-2xx (e.g. 404/555 "can't compute"); deliberately a soft `200/null` so the client's null-guard keeps the save working and the http-common 5xx→Sentry reporter isn't tripped by routine "no data" cases.
+  - `503` — `EDAMAM_APP_ID`/`EDAMAM_APP_KEY` not configured.
+  - `500` — network/timeout/parse failure reaching Edamam (upstream call is bounded by a 10s `AbortSignal.timeout`).
+  - Every non-2xx is caught by `getRecipeNutrition` and converted to `null`, so a lookup outage never blocks recipe creation/editing.
+
+### Upstream: Edamam `POST /api/nutrition-details`
+- Called **server-side only** from `server/routes/nutrition.js` via global `fetch`.
+- `https://api.edamam.com/api/nutrition-details?app_id=<EDAMAM_APP_ID>&app_key=<EDAMAM_APP_KEY>` — keys from server env (`server/.env`), never the client bundle.
 
 ---
 
@@ -531,7 +528,7 @@ These are defined and exported but never imported anywhere:
 
 The following are computed on the client before `POST /addRecipe` and sent as-is:
 - `servingPrice` — computed from ingredient price data in `@jclind/ingredient-parser`
-- `nutritionData` — numeric facts fetched from Edamam before submission (`nutritionLabels` are author-selected on the form, not computed)
+- `nutritionData` — numeric facts fetched from Edamam (via the `POST /api/nutrition/details` server proxy) before submission (`nutritionLabels` are author-selected on the form, not computed)
 - `totalTime` — `prepTime + cookTime`
 - `createdAt` — `new Date().getTime().toString()` (epoch ms as string, not ISO 8601)
 - `rating` — always `{ rateCount: 0, rateValue: 0 }` (zero on creation)
@@ -563,6 +560,8 @@ The `EnrichmentResult` type declares `source: 'cache' | 'spoonacular'`, but `fet
 
 `TrendingRecipes.tsx` calls `.then()` with no `.catch()`. A server error will produce an unhandled promise rejection.
 
-### [LOW] Edamam CORS headers set on request (not response)
+### [RESOLVED] Edamam CORS headers set on request (not response)
 
-`nutrition` axios instance sets `Access-Control-Allow-*` headers on the outgoing request. These are response headers and have no effect when set by the client. This is dead config.
+Previously the client `nutrition` axios instance set `Access-Control-Allow-*` headers on its
+outgoing request to Edamam (response headers, no effect when set by the client — dead config).
+Resolved: that instance is gone — nutrition is server-proxied via `POST /api/nutrition/details`.
