@@ -26,7 +26,12 @@ $gray-500: #bebebe;
 $gray-600: #a6a6a6;
 
 $success-green: #28a745;
-$error-red: #dc3545;
+// Darkened from #dc3545 (which failed WCAG AA as text on light surfaces — 3.9:1
+// on #eeeeee, 4.28:1 on the danger tint, and a razor-thin 4.53:1 even on white)
+// to the lightest red clearing 4.5:1 everywhere it's used: as text on white
+// 5.43:1 / #eeeeee 4.68:1 / danger tint 5.14:1, and as a fill under white text
+// 5.43:1. Used for inline validation + danger UI (alerts have their own tokens).
+$error-red: #c5303f;
 $error-red-hover: #b02a37;
 $warning-amber: #ffc107;
 

@@ -86,9 +86,9 @@ a feature flag. Do these together:
   Contrast fully closed across three PRs: muted-grey token (#181), brand orange/teal on-light variants
   (#184), the nav-logo on light surfaces (#184), and the **beta-tag** recolour (#184) — the last of which
   **unpinned the binary `color-contrast` audit** that had held every page at ~96. The Phase-5 cutover still
-  removes the beta tag entirely. **One known tail filed to BACKLOG:** the shared `$error-red #dc3545` danger
-  text (Settings-danger, 3.9–4.28:1) — its own semantic-token decision. *(SR checks were programmatic,
-  headless — no live VoiceOver in CI.)* **(nice-to-have → done; one filed tail: `$error-red`)**
+  removes the beta tag entirely. The shared `$error-red` danger token was also darkened (`#dc3545`→`#c5303f`),
+  taking the final route (Settings-danger) to 100. *(SR checks were programmatic, headless — no live
+  VoiceOver in CI.)* **(nice-to-have → done — Lighthouse a11y 100 on all 22 routes)**
 - `[ ]` **Favicon, page titles, social/OG meta** — verify `index.html` + per-page titles
   (`react-helmet-async` is already a dependency) and an OG image for link previews. **(nice-to-have)**
 - `[x]` **Remove dev-only UI from production** — `@tanstack/react-query-devtools` is a devDependency;
@@ -425,8 +425,8 @@ section labels / empty-state CTAs). Then, per owner call, also closed the two "d
 **nav-logo** wordmark now uses the on-light orange on any light nav surface (desktop `.nav--solid` + a new
 `.nav--dark-links` class for the mobile bar — Lighthouse a11y emulates mobile), and the **beta-tag** was
 recoloured to white-on-`#00787e` (5.27:1). Recolouring the beta-tag **unpinned the binary `color-contrast`
-audit**, so **Lighthouse a11y is now 100 on all 21 routes except Settings-danger (96)** — that last one is
-the shared `$error-red` danger text, filed as its own decision. tsc + 516 Vitest + build green. See
-BACKLOG → Accessibility.
+audit**. Finally darkened the shared `$error-red` token `#dc3545`→`#c5303f` (text 5.43/4.68/5.14,
+white-on-fill 5.43; alerts untouched — own token), clearing the last route. **Lighthouse a11y is now 100 on
+all 22 routes** (12 logged-out + 10 logged-in). tsc + 516 Vitest + build green. See BACKLOG → Accessibility.
 
 _`/release-readiness` appends dated run summaries here._
