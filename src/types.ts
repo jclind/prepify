@@ -1,4 +1,54 @@
-import { IngredientData, ParsedIngredient } from '@jclind/ingredient-parser'
+// Prepify-owned ingredient types. These deliberately do NOT import from
+// @jclind/ingredient-parser: v2 restructured its output (nested quantity/unit
+// objects, `price`/`image` renames) and these names are the app's stable,
+// persisted contract. The server projects the v2 result back onto this shape at
+// the /api/ingredients/parse boundary (server/routes/ingredients.js), so both
+// freshly-enriched ingredients and every already-saved recipe document stay
+// valid. The flat ParsedIngredient below matches the package's `parseIngredient
+// String` legacy adapter, which the add-recipe flow still calls locally.
+export type ParsedIngredient = {
+  quantity: number | null
+  unit: string | null
+  unitPlural: string | null
+  symbol: string | null
+  ingredient: string | null
+  originalIngredientString: string
+  minQty: number | null
+  maxQty: number | null
+  comment: string | null
+}
+
+export interface IngredientData {
+  // Fields the app reads/persists today.
+  name: string
+  imagePath?: string
+  totalPriceUSACents?: number
+  possibleUnits?: string[]
+  category?: string
+  // Tolerated extras: older recipe documents persisted the full v1 enrichment
+  // blob. These stay optional so historical reads keep type-checking; new
+  // enrichments only populate the fields above.
+  _id?: string
+  ingredientId?: number
+  originalName?: string
+  amount?: number
+  consistency?: string
+  shoppingListUnits?: string[]
+  aisle?: string
+  image?: string
+  nutrition?: unknown
+  estimatedPrices?: {
+    estimatedGramPrice?: number
+    estimatedSingleUnitPrice?: number
+  }
+  meta?: unknown
+  categoryPath?: unknown
+  unit?: string
+  unitShort?: string
+  unitLong?: string
+  original?: unknown
+  id?: number
+}
 
 export type RecipeType = {
   _id: string
