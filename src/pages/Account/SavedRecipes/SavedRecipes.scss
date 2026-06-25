@@ -22,8 +22,8 @@
     box-sizing: border-box;
     height: 158px;
     overflow: hidden;
-    border: 1px solid #ece2d6;
-    border-radius: 12px;
+    border: 1px solid s.$surface-warm-border;
+    border-radius: s.$radius-xl;
     background: #fff;
     cursor: pointer;
     text-align: left;
@@ -129,7 +129,7 @@
         font-size: 0.85rem;
         padding: 0.45rem 0.6rem;
         border: 1px solid s.$gray-400;
-        border-radius: 8px;
+        border-radius: s.$radius-md;
         color: s.$primary-text;
         &:focus {
           outline: none;
@@ -147,7 +147,7 @@
         font-family: inherit;
         font-weight: 800;
         font-size: 0.82rem;
-        border-radius: 8px;
+        border-radius: s.$radius-md;
         padding: 0.4rem 0.7rem;
         cursor: pointer;
         &:disabled {
@@ -190,7 +190,7 @@
       font-size: 0.9rem;
       padding: 0 2.6rem;
       border: 1px solid s.$gray-400;
-      border-radius: 999px;
+      border-radius: s.$radius-pill;
       background: #fff;
       &:focus {
         outline: none;
@@ -208,7 +208,7 @@
       width: 22px;
       height: 22px;
       border: none;
-      border-radius: 50%;
+      border-radius: s.$radius-circle;
       background: s.$gray-200;
       color: s.$secondary-text;
       cursor: pointer;
@@ -235,7 +235,7 @@
       color: s.$primary-text;
       background: #fff;
       border: 1px solid s.$gray-400;
-      border-radius: 999px;
+      border-radius: s.$radius-pill;
       cursor: pointer;
       white-space: nowrap;
       .chev {
@@ -259,7 +259,7 @@
       margin: 0;
       background: #fff;
       border: 1px solid s.$gray-300;
-      border-radius: 12px;
+      border-radius: s.$radius-xl;
       box-shadow: 0 12px 30px rgba(0, 0, 0, 0.14);
       padding: 0.4rem;
       button {
@@ -273,7 +273,7 @@
         font-weight: 600;
         color: s.$primary-text;
         padding: 0.45rem 0.6rem;
-        border-radius: 8px;
+        border-radius: s.$radius-md;
         cursor: pointer;
         &:hover {
           background: s.$gray-200;
@@ -313,7 +313,7 @@
     font-family: inherit;
     font-size: 0.82rem;
     padding: 0.35rem 0.6rem;
-    border-radius: 8px;
+    border-radius: s.$radius-md;
     border: 1px solid s.$gray-400;
     background: #fff;
     color: s.$secondary-text;
@@ -337,7 +337,7 @@
       font-size: 1rem;
       padding: 0.4rem 0.6rem;
       border: 1px solid s.$gray-400;
-      border-radius: 8px;
+      border-radius: s.$radius-md;
       &:focus {
         outline: none;
         border-color: s.$primary;

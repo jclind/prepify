@@ -94,7 +94,7 @@
       border: none;
       outline: none;
       background: transparent;
-      border-radius: 8px;
+      border-radius: s.$radius-md;
       cursor: pointer;
       text-align: start;
       transition: background 0.1s ease;
@@ -109,7 +109,7 @@
         flex-shrink: 0;
         width: 56px;
         height: 56px;
-        border-radius: 8px;
+        border-radius: s.$radius-md;
         overflow: hidden;
         background: s.$gray-200;
         &-skeleton {
@@ -178,7 +178,7 @@
         color: s.$secondary-text;
         background: s.$primary-background;
         padding: 0.15rem 0.45rem;
-        border-radius: 999px;
+        border-radius: s.$radius-pill;
         white-space: nowrap;
       }
 
@@ -204,7 +204,7 @@
         flex-shrink: 0;
         width: 56px;
         height: 56px;
-        border-radius: 8px;
+        border-radius: s.$radius-md;
       }
       &__body {
         display: flex;

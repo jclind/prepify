@@ -3,7 +3,7 @@
 .recipe-card {
   position: relative;
   background: s.$white;
-  border-radius: 14px;
+  border-radius: s.$radius-2xl;
   overflow: hidden;
   box-shadow: rgba(0, 0, 0, 0.06) 0px 6px 18px;
   display: flex;
@@ -57,8 +57,8 @@
     font-weight: 800;
     font-size: 0.74rem;
     padding: 0.28rem 0.6rem;
-    border-radius: 999px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+    border-radius: s.$radius-pill;
+    box-shadow: s.$shadow-chip;
   }
 
   // Unified save control — floated over the image (sibling of the link).
@@ -74,7 +74,7 @@
     width: 2rem;
     height: 2rem;
     border: none;
-    border-radius: 999px;
+    border-radius: s.$radius-pill;
     background: rgba(255, 255, 255, 0.92);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
     color: s.$secondary-text;

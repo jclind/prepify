@@ -14,9 +14,9 @@
     flex-direction: column;
     margin: 0 0 2rem;
     background: #fff;
-    border: 1px solid #ece2d6;
-    border-radius: 16px;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+    border: 1px solid s.$surface-warm-border;
+    border-radius: s.$radius-3xl;
+    box-shadow: s.$shadow-soft;
     overflow: hidden;
   }
 
@@ -49,11 +49,11 @@
     .sr-thumb {
       width: 52px;
       height: 52px;
-      border-radius: 50%;
+      border-radius: s.$radius-circle;
       overflow: hidden;
       flex-shrink: 0;
       border: 2px solid #fff;
-      box-shadow: 0 0 0 1px #ece2d6;
+      box-shadow: 0 0 0 1px s.$surface-warm-border;
       .img {
         width: 52px;
         height: 52px;

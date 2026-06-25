@@ -33,9 +33,9 @@
     min-width: 0;
     height: 100%;
     background: s.$white;
-    border: 1px solid #ece2d6;
-    border-radius: 16px;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+    border: 1px solid s.$surface-warm-border;
+    border-radius: s.$radius-3xl;
+    box-shadow: s.$shadow-soft;
     padding: 1.15rem 1.25rem;
     transition: transform 0.14s ease, box-shadow 0.14s ease;
 
@@ -126,7 +126,7 @@
         font-size: 0.9rem;
         font-weight: 700;
         padding: 0.55rem 1rem;
-        border-radius: 10px;
+        border-radius: s.$radius-lg;
         border: none;
         background: s.$primary-accessible;
         color: #fff;
@@ -151,7 +151,7 @@
         font-size: 0.82rem;
         font-weight: 700;
         padding: 0.5rem 0.85rem;
-        border-radius: 10px;
+        border-radius: s.$radius-lg;
         background: none;
         border: 1px solid #ecd9d9;
         color: s.$secondary-text;

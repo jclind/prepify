@@ -196,7 +196,7 @@
 .dnav__actions-loading {
   width: 45px;
   height: 45px;
-  border-radius: 50%;
+  border-radius: s.$radius-circle;
 }
 
 .dnav__icon-link {
@@ -205,7 +205,7 @@
   justify-content: center;
   height: 42px;
   width: 42px;
-  border-radius: 50%;
+  border-radius: s.$radius-circle;
   flex-shrink: 0;
   color: var(--dnav-text);
   font-size: 1.35rem;
@@ -280,7 +280,7 @@
     flex-shrink: 0;
     height: 42px;
     width: 42px;
-    border-radius: 50%;
+    border-radius: s.$radius-circle;
     object-fit: cover;
     overflow: hidden;
   }
@@ -410,7 +410,7 @@
   flex-shrink: 0;
   height: 42px;
   width: 42px;
-  border-radius: 50%;
+  border-radius: s.$radius-circle;
   object-fit: cover;
   overflow: hidden;
 }
@@ -487,7 +487,7 @@
   .search-recipes-form .search-recipes-input-label input {
     background: s.$gray-200;
     border: 1px solid s.$gray-400;
-    border-radius: 8px;
+    border-radius: s.$radius-md;
     &:focus {
       background: s.$white;
       border-color: s.$gray-600;

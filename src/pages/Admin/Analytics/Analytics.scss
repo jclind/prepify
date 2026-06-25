@@ -1,3 +1,5 @@
+@use '../../../helpers.scss' as s;
+
 .admin-analytics {
   max-width: 960px;
 
@@ -37,10 +39,10 @@
 
     .range {
       border: 1px solid #d8dbe0;
-      background: #fff;
+      background: s.$white;
       color: #4b5563;
       padding: 0.35rem 0.75rem;
-      border-radius: 999px;
+      border-radius: s.$radius-pill;
       font-size: 0.82rem;
       cursor: pointer;
       transition: all 0.15s;
@@ -52,7 +54,7 @@
       &.active {
         background: #1f2430;
         border-color: #1f2430;
-        color: #fff;
+        color: s.$white;
       }
     }
   }
@@ -85,9 +87,9 @@
       display: flex;
       flex-direction: column;
       gap: 0.2rem;
-      background: #fff;
+      background: s.$white;
       border: 1px solid #e5e7eb;
-      border-radius: 10px;
+      border-radius: s.$radius-lg;
       padding: 1rem 1.1rem;
 
       .stat-value {
@@ -128,9 +130,9 @@
     margin-bottom: 1.75rem;
 
     .trend-card {
-      background: #fff;
+      background: s.$white;
       border: 1px solid #e5e7eb;
-      border-radius: 10px;
+      border-radius: s.$radius-lg;
       padding: 1rem 1.1rem;
 
       h2 {
@@ -191,9 +193,9 @@
   }
 
   .recent-actions {
-    background: #fff;
+    background: s.$white;
     border: 1px solid #e5e7eb;
-    border-radius: 10px;
+    border-radius: s.$radius-lg;
     padding: 1rem 1.25rem;
 
     h2 {
@@ -224,7 +226,7 @@
       .dot {
         width: 9px;
         height: 9px;
-        border-radius: 50%;
+        border-radius: s.$radius-circle;
         margin-top: 0.35rem;
         flex-shrink: 0;
         background: #9ca3af;
