@@ -53,10 +53,3 @@ http.interceptors.response.use(
     return Promise.reject(error)
   }
 )
-
-export const nutrition = axios.create({
-  baseURL: 'https://api.edamam.com/api',
-  headers: {
-    'Content-type': 'application/json',
-  },
-})
