@@ -75,6 +75,19 @@ a feature flag. Do these together:
   buttons, toasts, and the legal/help/about copy site-wide. Only fix needed: the avatar size-limit toast
   `5mb` → `5MB`. *(Two typos live in MongoDB recipe **data** — "Egg Friend Rice", a granola "Tt's" — not
   code; out of scope for a code change.)* **(nice-to-have)**
+- `[~]` **Accessibility (WCAG 2.1 AA) sweep** — **deep pass done (PR #179, 2026-06-25); contrast remainder
+  filed.** Structured axe-core + Lighthouse audit of **every** page, logged-out **and** logged-in (Account
+  tabs / all 4 Settings sections / Add Recipe via the Cypress token bridge), plus keyboard + a11y-tree
+  spot-checks. Lighthouse a11y per page: **logged-out +0→+8** (single recipe **89 → 97**), **logged-in
+  +4→+12** (Add Recipe **84 → 96**); every page now at **96–97**. Cheap wins applied in place: hamburger
+  accessible name, StarRating `nested-interactive`, ingredient `<li role=checkbox>` → inner `<div>`, Add
+  Recipe button-name + react-select labels, heading order, RecipeCard label-in-name, auth-page `<main>`
+  landmarks, skip-to-content link, global `prefers-reduced-motion`. Modals (react-modal) verified for
+  focus-trap + Esc + focus-restore. **Remaining (`[~]`): the only outstanding flag site-wide is
+  `color-contrast`** — the muted-grey body-text token `#979ba0` (2.4–2.8:1) and the brand orange/teal
+  CTAs — a **token-level design decision filed to `BACKLOG.md` → Accessibility**, not a blind recolour.
+  *(SR checks were programmatic, headless — no live VoiceOver in CI. `.beta-tag` contrast intentionally
+  left for the Phase-5 beta-tag cutover.)* **(nice-to-have; contrast tokens still open)**
 - `[ ]` **Favicon, page titles, social/OG meta** — verify `index.html` + per-page titles
   (`react-helmet-async` is already a dependency) and an OG image for link previews. **(nice-to-have)**
 - `[x]` **Remove dev-only UI from production** — `@tanstack/react-query-devtools` is a devDependency;
@@ -216,7 +229,8 @@ a feature flag. Do these together:
   preview build (desktop) — **Home 97/96/100/100**, **recipe 88/89/100/100** (perf/a11y/best-practices/seo);
   recipe a11y **80 → 89** from the cheap a11y wins. The bundle-size win (>500 kB single chunk → route-level
   code-splitting) is real but structural — **filed to `BACKLOG.md`** (Tech debt) rather than done here.
-  **(nice-to-have)**
+  *(A11y was taken further in the dedicated WCAG AA sweep — recipe **89 → 97**, every page to 96–97; see
+  the Accessibility item in Section A + PR #179.)* **(nice-to-have)**
 - `[x]` **README cleanup** *(done — PR #151, 2026-06-17)* — replaced the placeholder `your-username`
   clone URL with `jclind/prepify` and refreshed setup steps for the two-service architecture.
   **(nice-to-have)**
@@ -358,5 +372,20 @@ app (desktop + mobile) via the run-prepify skill.
   `:87`); `RELEASE_DATE` still stale `3/31/2023`; `VITE_OPEN_AI_API_KEY` + `VITE_INGREDIENT_PARSER_URL`
   still in `.env.example` with zero `src` callers; README still has `your-username` placeholder; npm
   audit: root 3 high / server 3 high.
+
+### 2026-06-25 — accessibility (WCAG 2.1 AA) sweep
+Deep a11y pass over every page, logged-out + logged-in, via axe-core + Lighthouse (logged-in routes driven
+through the Cypress custom-token bridge) plus keyboard / a11y-tree spot-checks. PR **#179**.
+- **Scores moved:** Lighthouse a11y now **96–97 on every page** — logged-out +0→+8 (single recipe 89 → 97),
+  logged-in +4→+12 (Add Recipe 84 → 96). Flipped the Section A **Accessibility** item to `[~]` (sweep done,
+  contrast remainder filed).
+- **Cheap wins shipped:** hamburger accessible name, StarRating `nested-interactive`, ingredient
+  `<li role=checkbox>` → inner `<div>`, Add-Recipe button-name + react-select labels, heading order,
+  RecipeCard label-in-name, auth-page `<main>` landmarks, skip-to-content link, global
+  `prefers-reduced-motion`. tsc clean · 516 Vitest pass · build clean.
+- **Remaining (filed to `BACKLOG.md` → Accessibility):** the only site-wide flag left is `color-contrast`
+  — muted-grey body-text token `#979ba0` (2.4–2.8:1) + brand orange/teal CTAs (2.7–3.2:1), a token-level
+  design decision. Autocomplete-listbox refactor + servings target-size re-confirmed. `.beta-tag` contrast
+  left for the Phase-5 cutover.
 
 _`/release-readiness` appends dated run summaries here._
