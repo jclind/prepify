@@ -42,6 +42,13 @@ router.post('/details', verifyToken, nutritionLimiter, async (req, res) => {
     const url = `${EDAMAM_URL}?app_id=${encodeURIComponent(
       appId
     )}&app_key=${encodeURIComponent(appKey)}`
+    // Bound the upstream call. Unlike the old client-side lookup (a hung request
+    // was the browser's problem), this now runs inside the Express handler on
+    // every save — without a timeout a slow/hung Edamam endpoint would hold the
+    // handler (and a rate-limiter slot) for undici's multi-minute default. On
+    // timeout the AbortError lands in the catch below → 500 → client soft-fails
+    // to null, same as any other lookup failure. 10s comfortably covers a normal
+    // nutrition-details response (typically 1–3s).
     const edamamRes = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -50,6 +57,7 @@ router.post('/details', verifyToken, nutritionLimiter, async (req, res) => {
         title: typeof title === 'string' && title ? title : 'recipe 1',
         ingr,
       }),
+      signal: AbortSignal.timeout(10000),
     })
 
     // Edamam answers 404/555 when it can't compute nutrition for the given

@@ -132,6 +132,43 @@ describe('POST /api/nutrition/details', () => {
       const sentBody = JSON.parse(calledOpts.body)
       expect(sentBody.ingr).toEqual(['2 cups flour', '1 tsp salt'])
       expect(sentBody.title).toBe('recipe 1')
+
+      // The upstream call must be bounded by a timeout so a hung Edamam endpoint
+      // can't tie up the handler — assert an AbortSignal is passed.
+      expect(calledOpts.signal).toBeInstanceOf(AbortSignal)
+    })
+
+    it('forwards a caller-supplied title instead of the default', async () => {
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => EDAMAM_RESULT,
+      })
+
+      await request(app)
+        .post('/api/nutrition/details')
+        .set(AUTH_HEADER)
+        .send({ ingr: ['2 cups flour'], title: 'Grandma Pie' })
+
+      const sentBody = JSON.parse(global.fetch.mock.calls[0][1].body)
+      expect(sentBody.title).toBe('Grandma Pie')
+    })
+
+    it('returns a generic 500 when the upstream call times out (AbortError)', async () => {
+      // AbortSignal.timeout(...) rejects the fetch with an AbortError, which must
+      // land in the same catch as any other failure → 500 → client soft-fails.
+      global.fetch = jest
+        .fn()
+        .mockRejectedValue(
+          Object.assign(new Error('The operation was aborted'), { name: 'AbortError' })
+        )
+
+      const res = await request(app)
+        .post('/api/nutrition/details')
+        .set(AUTH_HEADER)
+        .send({ ingr: ['2 cups flour'] })
+
+      expect(res.status).toBe(500)
+      expect(res.body).toHaveProperty('error', 'Internal server error')
     })
 
     it('soft-fails to 200/null when Edamam responds non-2xx (e.g. 404 "no nutrition")', async () => {
