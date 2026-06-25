@@ -3,7 +3,11 @@ $secondary: #00adb5;
 
 $primary-text: #303841;
 $secondary-text: #595f66;
-$tertiary-text: #979ba0;
+// Muted body/meta text. Darkened from #979ba0 (2.4–2.8:1, failed WCAG AA) to
+// the lightest value that clears 4.5:1 on every light surface in the palette —
+// white 5.29:1, gray-50 #fafafa 5.07:1, gray-200 #eeeeee 4.56:1 — so it stays
+// as "muted" as AA allows while passing. (a11y sweep, 2026-06-25)
+$tertiary-text: #666c75;
 
 $white: rgb(255, 255, 255);
 $gray-50: #fafafa;
