@@ -7,8 +7,9 @@
 #   VITE_FIREBASE_APP_ID
 #   VITE_FIREBASE_MEASUREMENT_ID
 #   FIREBASE_SERVICE_ACCOUNT   (base64-encoded service account JSON for backend tests)
-#   MONGO_URI                  (MongoDB connection string for E2E Express server)
 #   CYPRESS_API_URL            (Railway backend URL, e.g. https://prepify.up.railway.app)
+# The E2E Express server runs against an ephemeral Mongo service container (see the
+# e2e job), so no MONGO_URI secret is needed — the Cypress specs mock the API anyway.
 
 name: Tests
 
@@ -59,6 +60,21 @@ jobs:
   e2e:
     name: E2e (Cypress)
     runs-on: ubuntu-latest
+    # The Cypress specs fully intercept the API with fixtures (cy.intercept), so
+    # the Express server only needs to boot and serve /health for the wait-on
+    # gate — it never reads real data. Run it against an ephemeral, throwaway
+    # Mongo so E2E doesn't depend on (and never touches) the prod database or a
+    # rotating MONGO_URI secret. GitHub waits for the healthcheck before steps run.
+    services:
+      mongodb:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.runCommand({ ping: 1 })'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -79,7 +95,7 @@ jobs:
         working-directory: server
         env:
           PORT: 4000
-          MONGO_URI: ${{ secrets.MONGO_URI }}
+          MONGO_URI: mongodb://localhost:27017/prepify
           FRONTEND_URLS: http://localhost:3000
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
       - name: Check Express server startup

@@ -7,7 +7,17 @@ async function connectDB(uri) {
   const mongoUri = uri || process.env.MONGO_URI
   const options = uri
     ? { serverSelectionTimeoutMS: 5000 }
-    : { tls: true, serverSelectionTimeoutMS: 5000, socketTimeoutMS: 45000, maxPoolSize: 10 }
+    : { serverSelectionTimeoutMS: 5000, socketTimeoutMS: 45000, maxPoolSize: 10 }
+
+  // Force TLS for the remote (Atlas/prod) MONGO_URI connection, but never for a
+  // localhost host. A plain mongodb://localhost — local dev or the CI E2E mongo
+  // service container — has no TLS endpoint, so forcing it fails the handshake.
+  // The explicit-`uri` arg path (server unit tests / in-memory Mongo) is already
+  // TLS-free. Remote prod URIs (any non-localhost host) keep TLS exactly as before.
+  const isLocalHost = /^mongodb:\/\/(localhost|127\.0\.0\.1)([:/]|$)/.test(mongoUri || '')
+  if (!uri && !isLocalHost) {
+    options.tls = true
+  }
 
   client = new MongoClient(mongoUri, options)
   await client.connect()
