@@ -31,6 +31,26 @@ If you're Claude Code and were pointed at this file to "continue the sweeps," do
 > Merge hygiene for parallel worktrees: **edit only your own track's row** (distinct lines → git
 > auto-merges) and keep the Status log **append-only** at the bottom. The reviewer reconciles the rest.
 
+### Running it in parallel (tmux, one session per worktree)
+
+Claude Code has no UI for spawning N parallel interactive sessions, and a single session would work the
+tracks *serially*. To actually run a wave in parallel — and survive an SSH drop, since the server keeps the
+sessions alive — give each track **its own Claude session in its own tmux window**, one worktree each:
+
+```bash
+tmux new -s sweeps          # Ctrl-b c → new window (×N) · Ctrl-b 0/1/2 → switch · Ctrl-b d → detach
+```
+
+In each window, from the main repo, start `claude` and hand it **one** track, e.g.:
+*"Read docs/sweeps/ROADMAP.md and run the Security sweep (Wave 1). Use the worktree-create skill."*
+Each session's `/worktree-create` makes its own worktree dir + boots the app on free ports (never 3000/4000),
+so the sessions don't collide on disk or ports — the [Parallelism rules](#parallelism-rules) handle the
+*file-domain* collisions at merge. Have each session **commit its `[~]` claim first** (step 3) so a glance
+across windows shows who owns what. Budget ~2–4 windows for one reviewer.
+
+*(For hands-off automation instead of review-as-you-go, a single session can fan out background subagents via
+the Agent tool's `isolation: "worktree"` — but then you don't get to steer each sweep, which is usually the point.)*
+
 ---
 
 ## Board
