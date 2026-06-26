@@ -1,5 +1,7 @@
 # Code quality & test sweep
 
+> **Status:** _Not yet run._ *(See the [run log](README.md#run-log).)*
+
 Full-coverage health check of the codebase itself: test coverage on the critical paths, E2E journey
 coverage, flaky/skipped tests, type safety, dead code, and error handling. The "is the codebase in
 good shape under the hood?" pass.

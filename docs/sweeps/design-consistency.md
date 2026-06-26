@@ -1,5 +1,12 @@
 # Design consistency sweep
 
+> **Status:** Run 2026-06-25 (PR #180, token follow-ups #183/#185/#186/#192). Cheap wins shipped
+> (`$primary-hover` + `$surface-warm-border` tokens; radius scale, breakpoint tokens, admin import-wiring,
+> decorative tint). **~10 follow-ups open** in [`../BACKLOG.md`](../BACKLOG.md#ux--visual-polish) +
+> [Tech debt](../BACKLOG.md#tech-debt--process--infra): pill `.btn` system, delete `RecipeThumbnail`,
+> icon-per-concept, modal style config, loading-state pattern, toast punctuation; type scale, elevation
+> re-author, danger-red token, `$admin-*` palette, `RecipeFormInput` dup. *(See the [run log](README.md#run-log).)*
+
 Full-coverage visual/UX consistency audit: are colors, spacing, typography, radii, shadows, components,
 states, and copy voice drawn from a shared system — or has each page drifted? Catch the drift, unify the
 cheap cases (point a stray hex at the token), file the systemic ones.

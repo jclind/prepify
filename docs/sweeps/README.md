@@ -21,6 +21,22 @@ one PR with a checklist + before/after metrics).
 Related, already-built tooling: `/release-readiness` (audits the launch checklist in `RELEASE_PLAN.md`),
 `/code-review` and `/security-review` (diff-scoped), and the **run-prepify** skill (headless driver).
 
+## Run log
+
+Which sweeps have actually been run, and what's still open from each. **Each sweep doc also carries a
+one-line `> Status:` banner at the top** — this table is the glanceable index; update both as the last
+step of a sweep PR (method §7). "Open follow-ups" are filed in [`../BACKLOG.md`](../BACKLOG.md) and
+intentionally outlive the sweep (fix-small / file-large), so a sweep is never "all green" — it's "cheap
+wins shipped, tail filed."
+
+| Sweep | Last run | PR | Cheap wins shipped | Open follow-ups |
+|---|---|---|---|---|
+| **Performance** | _not yet run_ | — | — | — |
+| **Security** | _not yet run_ | — | — | — |
+| **Accessibility** | 2026-06-25 | #179 (+#181, #184 contrast follow-ups) | ingredient-checklist role (recipe page 89→97); grey / teal / beta-tag / error-red contrast | 5 → [BACKLOG → Accessibility](../BACKLOG.md#accessibility): autocomplete listbox + keyboard nav, servings target-size, `$primary-hover` AA-on-hover, brand orange (reverted to vivid — owner call), account-heading route-map |
+| **Design consistency** | 2026-06-25 | #180 (+#183, #185, #186, #192) | `$primary-hover` + `$surface-warm-border` tokens; radius scale, breakpoint tokens, admin import-wiring, decorative tint | ~10 → [BACKLOG → UX / visual polish](../BACKLOG.md#ux--visual-polish) + [Tech debt](../BACKLOG.md#tech-debt--process--infra): pill `.btn` system, delete `RecipeThumbnail`, icon-per-concept, modal style config, loading-state pattern, toast punctuation; type scale, elevation re-author, danger-red token, `$admin-*` palette, `RecipeFormInput` dup |
+| **Code quality & tests** | _not yet run_ | — | — | — |
+
 ## The shared method (applies to every sweep)
 
 1. **Isolate.** Run in a fresh worktree off the latest `development` so the sweep can fix-as-it-goes
@@ -43,6 +59,9 @@ Related, already-built tooling: `/release-readiness` (audits the launch checklis
    (Jest) for backend changes. Don't touch the **beta tag** — that's the Phase-5 cutover.
 6. **Ship one PR** into `development` with a short checklist of what was checked, before/after metrics where
    they exist, and links to any backlog items filed.
+7. **Update the run log.** As the last step, refresh this sweep's row in the [Run log](#run-log) above and
+   its `> Status:` banner at the top of the sweep doc (date, PR, cheap wins, open follow-ups) so the next
+   reader can tell at a glance what's been done without re-deriving it from git history.
 
 ## Guardrails common to all sweeps
 
