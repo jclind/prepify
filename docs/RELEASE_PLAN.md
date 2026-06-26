@@ -123,7 +123,8 @@ a feature flag. Do these together:
   is useless off-domain). **Google Vision API key locked down** (API-restricted, done by Jesse).
   **Edamam: now server-proxied (PR #182, merged)** — `POST /api/nutrition/details` (server/routes/nutrition.js)
   holds the keys server-side; `VITE_EDAMAM_APP_ID/KEY` no longer ship in the client bundle, so referrer
-  locking is moot. `EDAMAM_APP_ID`/`EDAMAM_APP_KEY` **set on Railway (Jesse, 2026-06-25)**. **(blocker → done)**
+  locking is moot. `EDAMAM_APP_ID`/`EDAMAM_APP_KEY` **set on Railway** (Jesse, 2026-06-25; re-confirmed set on
+  the new **prod** Railway service after the dev/prod env-split, 2026-06-26). **(blocker → done)**
 - `[x]` **Firebase Auth + Storage rules review** — **done + verified live (2026-06-24, PR #177).**
   `storage.rules` (wired via `firebase.json`) replaced the open bucket — public read, but writes require
   auth + a 5MB cap + `image/*`; `profilePhotos/{uid}` enforces ownership; `recipeImages/{filename}` is
@@ -144,10 +145,12 @@ a feature flag. Do these together:
 - `[x]` **Rate limiting on the API** — implemented: `server/middleware/writeLimiter.js` (+ per-surface
   user limiters / `makeUserLimiter`) guards write endpoints, with `helmet()` applied in `server/app.js:55`.
   Covered by `server/__tests__/writeLimiter.test.js`. **(nice-to-have → done)**
-- `[~]` **Tight CORS allowlist** — mechanism is sound (`server/app.js`: allowlist built from
-  `FRONTEND_URLS` + a `deploy-preview-*--prepify.netlify.app` regex + `credentials: true`, default
-  `localhost:3000`). Just confirm the **production** `FRONTEND_URLS` value is the real origin(s) only.
-  **(blocker)**
+- `[x]` **Tight CORS allowlist** — **done + verified live (2026-06-26).** Mechanism was already sound
+  (`server/app.js`: allowlist built from `FRONTEND_URLS` + a `deploy-preview-*--prepify.netlify.app` regex +
+  `credentials: true`, default `localhost:3000`). The dev/prod env-split set the **production** Railway
+  service's `FRONTEND_URLS` to the real origins only (`https://prepifymeals.com,https://www.prepifymeals.com`)
+  and verified live that those origins are allowed while `localhost` / an arbitrary origin are denied.
+  **(blocker → done)**
 - `[~]` **Dependency audit** — run `npm audit` for both root and `server/`, and the `dep-audit` skill
   for an upgrade triage. Resolve high/critical advisories. **All high advisories resolved via PR #151**
   (2026-06-17, non-breaking lockfile-only bumps: vite, launch-editor, @grpc/grpc-js, form-data,
@@ -165,9 +168,11 @@ a feature flag. Do these together:
 
 ## Section C — Launch & legal
 
-- `[ ]` **Rewrite the About page (personally)** — the current About copy is placeholder/AI-drafted and
-  must be rewritten by Jesse personally before launch — it's the site's voice and shouldn't ship
-  generated. **Owner: Jesse (do not delegate/auto-generate.)** **(blocker)**
+- `[x]` **Rewrite the About page (personally)** — **done (Jesse, 2026-06-26).** The placeholder/AI-drafted
+  copy was rewritten personally and signed off by the owner. Verified live at `/about` (2026-06-26): real,
+  specific product voice — transparency pitch (price + nutrition from real ingredients), a Plan→Shop→Cook
+  walkthrough, and the "Built for the way you cook" feature grid; renders with zero console errors.
+  **Owner: Jesse (was do-not-delegate).** **(blocker → done)**
 - `[x]` **Privacy Policy page** — real page exists (`src/pages/Privacy/Privacy.tsx`) and is routed at
   `/privacy` (`src/App.tsx:122`). **(blocker → done)**
 - `[x]` **Terms of Service page** — real page exists (`src/pages/Terms/Terms.tsx`) and is routed at
@@ -194,37 +199,38 @@ a feature flag. Do these together:
   affected. **Revisit before launch:** either add prerendering for crawler user-agents (prerender.io,
   react-snap, or Netlify/Cloudflare prerender) or consciously accept the generic card for 1.0.
   **(nice-to-have)**
-- `[ ]` **Production domain + HTTPS** — confirm the real domain is configured on Firebase Hosting and
-  the API origin, with valid certs. **(blocker)**
+- `[x]` **Production domain + HTTPS** — **done (2026-06-26).** `prepifymeals.com` is fully live: DNS points
+  at Netlify (the frontend host) with a valid HTTPS cert, `www` 301→apex, and the production API origin
+  (`prepify-production-63a6.up.railway.app`) serves `/health` → 200 over valid SSL. **(blocker → done)**
 - `[ ]` **Support / contact path** — a way for users to report issues (Formspree is already a
   dependency — wire a contact form, or list an email). **(nice-to-have)**
-- `[x]` **Error tracking (Sentry) — wired; prod env vars are a launch step** — Sentry error monitoring
+- `[x]` **Error tracking (Sentry) — wired + prod env vars set (2026-06-26)** — Sentry error monitoring
   is implemented frontend + backend (env-gated; no DSN ⇒ no-ops). Also shipped: an in-app "Report a
   bug" form (footer, open to logged-out users) → `bugReports` collection → `/admin/bug-reports` queue.
-  **Before/at launch, set the production env vars or nothing is captured/emailed:**
-  - **Backend (Railway):** `SENTRY_DSN` = the Node-project DSN.
-  - **Frontend build env (Netlify / Firebase Hosting):** `VITE_SENTRY_DSN` = the React-project DSN.
-    It's compiled into the bundle, so it **must be set before `npm run build`**, not at runtime.
-  - **Backend (Railway):** `ADMIN_NOTIFY_EMAIL` (optional) — where new bug-report alerts are sent;
-    defaults to `jesselindcs@gmail.com`. Only sends when `RESEND_API_KEY` is configured.
+  **Production env vars confirmed set (2026-06-26):**
+  - **Backend (Railway, prod service):** `SENTRY_DSN` ✅ set.
+  - **Frontend build env (Netlify Production context):** `VITE_SENTRY_DSN` ✅ set (compiled into the bundle,
+    so it must be — and is — set before `npm run build`).
+  - **Backend (Railway, prod service):** `ADMIN_NOTIFY_EMAIL` + `RESEND_API_KEY` ✅ set, so new bug-report
+    alerts are emailed.
   DSNs are public (safe to ship in the client bundle). No DB migration — `bugReports` indexes
-  auto-build at startup. **(was: needs decision → done; the env vars are the remaining launch task)**
-- `[x]` **Content moderation (text) — wired; prod env vars are a launch step** — write-time text
+  auto-build at startup. **(was: needs decision → done; prod env vars now set)**
+- `[x]` **Content moderation (text) — wired + prod env vars set (2026-06-26)** — write-time text
   moderation is implemented (PR #138; blocklist + OpenAI Moderation API). Env-gated: with no key the
   curated blocklist still fires, but the OpenAI layer no-ops to "clean".
-  **Before/at launch, set the production env vars or the OpenAI layer stays off:**
-  - **Backend (Railway):** `OPENAI_API_KEY` = OpenAI key (server-side only; the moderation endpoint
+  **Production env vars confirmed set on the prod Railway service (2026-06-26):**
+  - **Backend (Railway):** `OPENAI_API_KEY` ✅ set (server-side only; the moderation endpoint
     is free). **Never expose to the client** — it must not be a `VITE_*` var.
-  - **Backend (Railway):** `MODERATION_ENABLED` = `true` (master kill switch; `false` disables the
+  - **Backend (Railway):** `MODERATION_ENABLED` = `true` ✅ set (master kill switch; `false` disables the
     OpenAI layer even when a key is set).
   - **Backend (Railway, optional):** `MODERATION_HIGH_THRESHOLD` / `MODERATION_MEDIUM_THRESHOLD` —
     override the default score cutoffs (0.85 / 0.5). Leave unset for defaults.
   No DB migration. See `docs/CONTENT_MODERATION.md`.
-- `[x]` **Content moderation (images) — wired; prod env var is a launch step** — write-time image
+- `[x]` **Content moderation (images) — wired + prod env var set (2026-06-26)** — write-time image
   moderation (recipe images + profile photos) via Google Cloud Vision SafeSearch, reusing the same
   pipeline as the text layer. Env-gated: with no key the image layer no-ops (text moderation is
-  unaffected). Live-smoke-tested 2026-06-15. **Before/at launch, set the production env var:**
-  - **Backend (Railway):** `GOOGLE_VISION_API_KEY` = a server-side Cloud Vision API key (the Vision
+  unaffected). Live-smoke-tested 2026-06-15. **Production env var confirmed set (2026-06-26):**
+  - **Backend (Railway):** `GOOGLE_VISION_API_KEY` ✅ set (a server-side Cloud Vision API key; the Vision
     API must be enabled + billing active on the `prepify-9b974` GCP project). **Never expose to the
     client** — server-side only, not a `VITE_*` var. Absent ⇒ the image layer silently no-ops.
   - **Backend (Railway, optional):** `MODERATION_IMAGE_HIGH` / `MODERATION_IMAGE_MEDIUM` — override the
@@ -326,17 +332,22 @@ Chunky design efforts that are bigger than a single checkbox. Tag each as **(blo
 ## Release-day cutover (light)
 
 Infra/deploy is intentionally out of scope for this plan, but here's the minimal ordered checklist for
-the actual flip. Deploy is currently manual (Firebase Hosting frontend + Railway backend; CI in
-`.github/workflows/test.yml` runs tests but does not deploy).
+the actual flip. Deploy is **Netlify** frontend + Railway backend (Firebase is Auth + Storage only,
+**not** Hosting; CI in `.github/workflows/test.yml` runs tests but does not deploy).
+
+> **Infra status (2026-06-26):** the pre-cutover infra is **complete + verified** — the dev/prod split is
+> done (separate prepify-prod/dev Mongo clusters, `prepify-9b974`/`prepify-dev-58579` Firebase projects, two
+> Railway services, Netlify env contexts), **all prod env vars are set** (Railway prod service + Netlify
+> Production `VITE_SENTRY_DSN`), CORS/`FRONTEND_URLS` is prod-origins-only, and `prepifymeals.com` is live
+> with valid HTTPS. Deploy is now **branch-based**: merging `development`→`release` triggers the prod Netlify
+> build + the prod Railway service. So step 5 below is "merge to `release`," not a manual env-var-then-build.
+> The only thing gating cutover is the deliberate beta-flip (held until you say go) + the About-page rewrite.
 
 1. `[ ]` All blockers above are `[x]`.
 2. `[ ]` Bump `version` in `package.json` to `1.0.0`.
 3. `[ ]` Flip the beta tag off (the three edits in the blockers section).
 4. `[ ]` Update release-notes content for 1.0 and tag a GitHub Release.
-5. `[ ]` Deploy frontend (`npm run build` → Firebase Hosting) and backend (Railway). **First set prod
-   env vars:** `VITE_SENTRY_DSN` in the frontend build env (before `npm run build`), and `SENTRY_DSN`
-   + `ADMIN_NOTIFY_EMAIL` + `OPENAI_API_KEY` + `MODERATION_ENABLED` + `GOOGLE_VISION_API_KEY` on Railway.
-   See Section C → "Error tracking (Sentry)", "Content moderation (text)", and "Content moderation (images)".
+5. `[ ]` Deploy by merging `development`→`release` (prod env vars are already set — see Infra status above).
 6. `[ ]` Smoke-test production: load home, view a recipe, sign in, create a recipe, leave a review.
 7. `[ ]` Watch logs/analytics for the first hours.
 
@@ -450,5 +461,23 @@ new `$page-bg` token (the `#eeeeee` fill token is unchanged); (2) per owner deci
 This intentionally re-fails AA on the orange logo/CTAs/accents and drops Lighthouse a11y to ~96–97 on the
 orange routes (rest stay 100); teal/beta/error-red/grey AA fixes are kept. Token plumbing intact → restoring
 AA later is a one-line flip; shade exploration filed in BACKLOG → Accessibility.
+
+### 2026-06-26 — dev/prod env-split reconcile (infra blockers closed)
+Reconciled the plan against the completed dev/prod environment split (Mongo + Firebase + Railway + Netlify),
+with the manual dashboard steps confirmed by Jesse.
+- **Flipped to `[x]`:** §B **Tight CORS allowlist** (prod `FRONTEND_URLS` = prepifymeals.com origins only,
+  verified live) and §C **Production domain + HTTPS** (`prepifymeals.com` live, DNS → Netlify, valid certs,
+  `www` 301→apex; prod API `/health` 200 over SSL) — both were the last open infra blockers.
+- **Prod env vars confirmed set (2026-06-26):** on the new prod Railway service — `SENTRY_DSN`,
+  `OPENAI_API_KEY`, `MODERATION_ENABLED`, `GOOGLE_VISION_API_KEY`, `EDAMAM_APP_ID/KEY`, `ADMIN_NOTIFY_EMAIL`,
+  `RESEND_API_KEY`; and `VITE_SENTRY_DSN` on the Netlify **Production** context. Updated the Sentry + both
+  moderation items from "env vars are a launch step" to "env vars set."
+- **Deploy model:** now branch-based — merging `development`→`release` builds the prod Netlify site + prod
+  Railway service. Cutover step 5 updated accordingly; frontend host corrected from "Firebase Hosting" to
+  **Netlify** (Firebase = Auth + Storage only) site-wide.
+- **Remaining release blockers:** only the held beta-flip (3 edits + release date/version, deliberate
+  cutover step) — the owner-only **About-page rewrite** (§C) was completed + signed off 2026-06-26, so the
+  beta-flip is now the *last* thing gating 1.0. **Open infra TODO (non-blocking):** ~~rotate the exposed
+  `Cluster0` Mongo `jesse` password~~ ✅ done 2026-06-26.
 
 _`/release-readiness` appends dated run summaries here._

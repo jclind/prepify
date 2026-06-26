@@ -4,6 +4,11 @@ Triaged from Jesse's running notes (2026-06-17). This is the general backlog: bu
 a11y, tech debt, testing, and ideas. The beta→1.0 launch checklist lives separately in
 [`RELEASE_PLAN.md`](./RELEASE_PLAN.md) — items here are **not** release blockers unless cross-referenced.
 
+> **Verification pass 2026-06-26:** every open item below was re-checked against the current tree.
+> Stale file/line citations were corrected, several claims were re-diagnosed (notably the edit-form
+> NaN bug and the now-orphaned `RecipeThumbnail`), and a few items were closed (`/recipes` navbar
+> search, Railway prod branch). New findings are folded inline and marked **(verified 2026-06-26)**.
+
 Legend: `[ ]` todo · `[~]` partial · `[x]` done · `[?]` needs a decision.
 
 ## Idea capture & triage workflow
@@ -24,13 +29,18 @@ The triage date stamped on items is the date they were filed here, not when they
 
 ## Bugs
 
-- `[ ]` **`Received NaN for the \`value\` attribute` console warning on the Edit Recipe form** — React
-  dev warning observed while editing an existing recipe (`/recipes/:id/edit`); a numeric input renders
-  with `value={NaN}` for a render or two before the recipe data settles. No user-visible effect (form
-  fills and saves correctly) — cosmetic console noise only. Likely a numeric field on the edit form
-  (servings / prep-cook time / fridge-freezer life) or the summary bar's est-per-serving math computing
-  before its inputs are populated; coerce/guard the value (`Number.isNaN(x) ? '' : x`). Discovered during
-  the author-selected diet-labels smoke test (2026-06-24); not seen on the create form, only edit. **(nice-to-have)**
+- `[ ]` **`Received NaN for the \`value\` attribute` warning on Edit Recipe — root-caused; it's a real
+  hydration bug, not cosmetic (verified 2026-06-26)** — re-diagnosed from source. The culprit is **not** the
+  servings/summary-bar math (those are guarded: `ServingsInput.tsx`, `AddRecipeSummaryBar.tsx:52-56`). It's
+  **`src/pages/AddRecipe/TimeInput/TimeInput.tsx:23-27`**: the hydration effect treats `val` as a *minute
+  number* (`Number(val) % 60`, `Math.floor(Number(val) / 60)`), but `AddRecipe.tsx:82-86` feeds it a
+  `{hours, minutes} | null` object (via `minToHrMin`). `Number({hours,minutes})` is `NaN`, so on edit-mount
+  it sets `minutes`/`hours` to `NaN` → flows into `RecipeFormInput` `value={NaN}` → the React warning.
+  **Bigger than the warning:** because the value is `NaN`, the **prep/cook time fields render blank on edit
+  (and on draft-resume, `AddRecipe.tsx:156-157`)** instead of showing the saved time — looks like data loss.
+  The save still succeeds (the writeback effect `if (minutes || hours)` is falsy for `NaN`, so the parent
+  keeps the correct object), so it's display-only, but confusing. Fix: `setHours(val.hours); setMinutes(val.minutes)`
+  (drop the `Number(val)` arithmetic entirely). Originally filed 2026-06-24 as cosmetic; upgraded after verification.
 - `[x]` **Deleting a review leaves the star rating behind** — **fixed in PR #150 (merged, track 1a)**:
   added `DELETE /removeRating` (clears just the star; keeps any review; deletes the doc when
   rating-only), and `deleteReview` now keeps the rating and deletes the doc when there's nothing left —
@@ -70,17 +80,20 @@ The triage date stamped on items is the date they were filed here, not when they
   the flash and guards the fix.
 - `[ ]` **Account ratings "Load More" count can be off when a rating's recipe is hidden** —
   `GET /getSingleUserReviews` computes `totalCount` from `countDocuments(query)` over *all* of the
-  user's rating docs (`server/routes/reviews.js:283`), but with `returnRecipeData=true` the returned
+  user's rating docs (`server/routes/reviews.js:281-284`), but with `returnRecipeData=true` the returned
   `reviews` array is filtered to recipes that are still visible (`:294-308`, drops soft-hidden/deleted
   recipes). So if a user rated a recipe that was later hidden, `totalCount > reviews.length`, and the
-  client trusts that count to decide pagination (`UserRatings.tsx:113`:
-  `isMoreReviews = Number(totalCount) > updated.length`). Symptom: the "Load More Reviews" button can
+  client trusts that count to decide pagination (`UserRatings.tsx:114`/`:118`:
+  `setIsMoreReviews(Number(data.totalCount) > …length)`). Symptom: the "Load More Reviews" button can
   show with nothing left to load, or a later page returns fewer rows than expected. *(surfaced by
-  track 1c; pre-existing, not a regression — out of that track's scope. Same shape likely in the
-  created-recipes list.)* Fix: count post-visibility-filter, or paginate via an aggregation `$lookup`
-  that excludes hidden recipes before the count.
+  track 1c; pre-existing, not a regression — out of that track's scope.)* **(verified 2026-06-26: the
+  created-recipes list ("Your Recipes") is NOT affected — `server/routes/users.js:59-68` applies the same
+  filter to both `find` and `countDocuments` and does no post-fetch filtering, so its count stays
+  consistent. This bug is ratings-only.)** Fix: count post-visibility-filter, or paginate via an
+  aggregation `$lookup` that excludes hidden recipes before the count.
 - `[~]` **Data export omits saved-recipe content** — `exportMyData` now exports full recipes, drafts,
-  ratings, and profile, but `savedRecipes` is still an array of IDs only (`server/routes/auth.js:323`).
+  ratings, and profile, but `savedRecipes` is still the raw reference array — `recipeId` + metadata
+  (`collectionIds`/`savedAt`), no recipe bodies (`server/routes/auth.js:355`; verified 2026-06-26).
   Expand it to full saved-recipe content. *(partially addressed)*
 
 ## UX / visual polish
@@ -99,8 +112,9 @@ The triage date stamped on items is the date they were filed here, not when they
 - `[ ]` **Autocomplete footer label can disagree with the rows shown** — the dropdown keeps the previous
   query's results visible during the debounce + refetch (`keepPreviousData`), but the "Search for …"
   footer reads the live input (`searchRecipeVal.trim()`), so mid-type it can say *Search for "chica"*
-  while the list still shows `chic` matches. Cosmetic, self-corrects on fetch.
-  (`SearchRecipesInput.tsx:205` + `:124-146`). *(surfaced 2026-06-22 in the track 2d code review.)*
+  while the list still shows `chic` matches (rows + empty-state read the debounced `trimmedQuery`). Cosmetic,
+  self-corrects on fetch. (`SearchRecipesInput.tsx:228` footer vs `:52-64` debounced query + `:127-128`
+  input; lines re-verified 2026-06-26.) *(surfaced 2026-06-22 in the track 2d code review.)*
 - `[x]` **Autocomplete result click "swallowed the instant the row appears"** — *root cause was misfiled
   and is now fixed in PR #171.* The reported symptom (clicking a freshly-appeared dropdown row does
   nothing) was **not** a `keepPreviousData` refetch/node-swap race: a production build shows the list is
@@ -146,8 +160,12 @@ The triage date stamped on items is the date they were filed here, not when they
 - `[x]` **Single-recipe "no recipe found" looks bad** — *fixed in PR #160 (track 2c)*; redesigned
   empty-state card (icon + search + "Browse all recipes" CTA), and fixed 404 routing so a missing
   recipe renders instantly instead of retrying ~7s then showing a generic error.
-- `[ ]` **Drop search from the topmost navbar on /recipes** — for the new navbar, the recipes page
-  shouldn't carry search in the top-most bar. *(noted 2026-06-10)*
+- `[x]` **Drop search from the topmost navbar on /recipes** — **done (verified 2026-06-26):**
+  `src/Components/Navbar/desktop/DesktopBar.tsx:47` gates the top-bar search on
+  `const showSearch = pathname !== '/recipes'` (block at `:51-54`, `dnav--no-search` modifier at `:50`), so
+  the recipes page no longer carries search in the top-most bar; it still shows everywhere else. *(noted
+  2026-06-10; the hardcoded `'/recipes'` literal here is the same one tracked under the route-const tech-debt
+  item.)*
 - `[x]` **Serving price not prominent enough** — *fixed in PR #160 (track 2c)*; per-serving cost is now
   a brand-orange price-tag tile in the top action bar.
 - `[x]` **Review UI needs work** — *fixed in PR #160 (track 2c)*; "Your review" is now an eyebrow label
@@ -164,18 +182,23 @@ The triage date stamped on items is the date they were filed here, not when they
   `EmptyState`, and a working **"Load more"** (new paginated `GET /getPublicProfileRecipes`). Saves/Made
   now come from a server-side aggregate over *all* visible recipes (not just the shown batch). Verified
   live incl. a 15-recipe load-more click-through (12→15, button clears, no dupes).
-- `[ ]` **"Change Password" title is redundant/cluttered** — in Account & Security settings.
+- `[ ]` **"Change password" subhead is redundant/cluttered** — the `<h3 class='sr-subhead'>Change password</h3>`
+  in `src/pages/Settings/sections/AccountSection.tsx:189` (shown only when `hasPasswordProvider`), inside the
+  Settings → Account section. *(verified 2026-06-26: it's lowercase "Change password" in a Settings section,
+  not a dedicated "Account & Security" page as previously worded.)*
 - `[x]` **create-username page revamp** — **done (track 3e):** the page was redesigned into the shared
   soft-glass auth vocabulary alongside login/signup/forgot in **PR #131**, and the escape hatch (a
   "Cancel and log out" control wired to the auth signout, plus a guard that bounces users who already
   have a username) landed in **PR #98**. Reconciled + escape-hatch regression test added in **PR #162**.
   Page lives at `src/pages/CreateUsername/`. Username validation tightening is tracked separately under 3c.
 - `[ ]` **`RecipeThumbnail` shows the broken-image glyph on a failed image load** — track 3b (PR #170) gave
-  `RecipeCard` an `onError` fallback to the icon `RecipePlaceholder`, but `RecipeThumbnail` only swaps in the
-  placeholder when `recipeImage` is *absent* — a present-but-broken URL still renders the browser's
-  broken-image glyph there (`src/Components/RecipeThumbnail/RecipeThumbnail.tsx`). Mirror RecipeCard: add a
-  `useState` + `onError` that flips to `<RecipePlaceholder />`. Low severity (thumbnails are a secondary
-  surface and seeded data all has images). *(surfaced 2026-06-23 in the track 3b code review.)*
+  `RecipeCard` an `onError` fallback to the icon `RecipePlaceholder` (`imgError` state + `onError`), but
+  `RecipeThumbnail` only swaps in the placeholder when `recipeImage` is *absent* — a present-but-broken URL
+  still renders the browser's broken-image glyph there (`src/Components/RecipeThumbnail/RecipeThumbnail.tsx`,
+  no `onError` on the `<img>`). **(verified 2026-06-26: `RecipeThumbnail` is now orphaned — no app code
+  imports it; the only importer is its own test `src/test/RecipeThumbnail.test.tsx`. So the user-facing glyph
+  no longer renders anywhere, and the real fix is to DELETE `RecipeThumbnail` + its test rather than patch it
+  — see the unify item below.)** Low severity. *(surfaced 2026-06-23 in the track 3b code review.)*
 - `[ ]` **Consolidate the bespoke pill buttons into a real `.btn` system** — `.btn` in `src/index.scss`
   only strips defaults (no visual style), so nearly every page re-implements its own orange/ghost pill:
   `home-btn` (`404.scss`), `pp-browse-btn` (`PublicProfile.scss`), `about-btn`/`about-btn-primary`/
@@ -183,10 +206,13 @@ The triage date stamped on items is the date they were filed here, not when they
   `.primary`/`.ghost`, etc. — same shape, slightly different padding/weight/hover each time. Promote
   `.btn--primary` / `.btn--ghost` / `.btn--pill` variants and migrate the bespoke buttons onto them.
   *(surfaced 2026-06-25 in the design-consistency sweep.)*
-- `[ ]` **Unify `RecipeCard` and `RecipeThumbnail`** — ~80% duplicate (image + price + rating/time meta);
-  they differ mostly in `<Link>` vs `<button>` wrapper and `AiFillStar` vs `AiOutlineStar`. Same data, two
-  components, two loading-skeleton implementations. Merge into one card with a layout/interaction variant.
-  *(surfaced 2026-06-25 in the design-consistency sweep; pairs with the RecipeThumbnail broken-image item above.)*
+- `[ ]` **Unify `RecipeCard` and `RecipeThumbnail` — actually: delete `RecipeThumbnail` (verified 2026-06-26)** —
+  the two are ~80% duplicate (image + price + rating/time meta; differ mostly in `<Link>` vs `<button>`,
+  `AiFillStar` vs `AiOutlineStar`, and `skeletonColor` `#e6e6e6` vs `#d6d6d6`), but verification found
+  `RecipeThumbnail` is **dead code** — only its own test imports it; the live card everywhere
+  (`Recipes.tsx`, `SavedRecipes.tsx`) is `RecipeCard`. So this isn't a merge — it's "delete
+  `RecipeThumbnail.tsx` + `src/test/RecipeThumbnail.test.tsx`" (and that closes the broken-image item above
+  for free). Confirm no lazy/string-based import first. *(surfaced 2026-06-25 in the design-consistency sweep.)*
 - `[ ]` **One icon per concept (react-icons drift)** — the same concept is drawn from different icon sets:
   star = `AiFillStar` / `AiOutlineStar` / `BsStar(Fill)` / `FiStar`; close = `AiOutlineClose` / `FiX` /
   `IoClose`; bookmark = `Bs*` and `Bi*` outline/filled pairs; time = `CgTimer` and `AiOutlineClockCircle`.
@@ -194,8 +220,10 @@ The triage date stamped on items is the date they were filed here, not when they
   *(surfaced 2026-06-25 in the design-consistency sweep.)*
 - `[ ]` **Share one react-modal style config** — each modal repeats its own `customStyles`/overlay inline,
   and they disagree: `BugReportModal` uses `#fff` + `8px` radius while `ConfirmDeleteReviewModal` /
-  `ReleaseNotes` use `#eeeeee` + `5px`. Extract a shared `modalStyles` constant (content + overlay) and a
-  thin wrapper so every dialog reads the same. *(surfaced 2026-06-25 in the design-consistency sweep.)*
+  `ReleaseNotes` use `#eeeeee` + `5px`. **(verified 2026-06-26: it's 7 inline copies, not 3 — also
+  `ReportControl`, `RecipeControls`, `AchievementsModal`, and `HomeCookSuggestion`.)** Extract a shared
+  `modalStyles` constant (content + overlay) and a thin wrapper so every dialog reads the same.
+  *(surfaced 2026-06-25 in the design-consistency sweep.)*
 - `[ ]` **Codify the loading-state pattern (skeleton vs spinner)** — content grids use
   `react-loading-skeleton`, button actions use `TailSpin`, and several async waits show nothing; the choice
   is per-developer and `TailSpin` sizes vary (18–30px). Write down the rule (skeleton for content
@@ -227,12 +255,15 @@ The triage date stamped on items is the date they were filed here, not when they
   by track 1c. Took the non-button-wrapper route over making StarRating render `<span>`s.)*
 
 - `[ ]` **Autocomplete dropdown isn't a valid ARIA listbox + has no keyboard nav** — the results render as
-  `<ul role="listbox"><li><button role="option">…` (`SearchRecipesInput.tsx:153-162`): a plain `<li>`
+  `<ul role="listbox"><li><button role="option">…` (`SearchRecipesInput.tsx:176-185`): a plain `<li>`
   sits between the listbox and its options, an `option` shouldn't be a `<button>`, and there's no
-  arrow-key navigation / `aria-activedescendant` — it's mouse-clickable buttons wearing listbox roles.
-  Tab-reachable and fine for sighted/click users, so low severity. Fix: either drop the roles and treat it
-  as a plain list of buttons, or implement real listbox keyboarding. *(surfaced 2026-06-22 in the track 2d
-  code review; the per-result `role="option"` on a button is the new markup from this track.)*
+  arrow-key navigation / `aria-activedescendant` — it's mouse-clickable buttons wearing listbox roles
+  (the input's only `onKeyDown`, `:130-132`, handles Enter→submit, nothing else). **(verified 2026-06-26:
+  also every `aria-selected` is hardcoded `'false'` at `:182`, so selection state isn't wired even if
+  arrow-nav were added.)** Tab-reachable and fine for sighted/click users, so low severity. Fix: either drop
+  the roles and treat it as a plain list of buttons, or implement real listbox keyboarding. *(surfaced
+  2026-06-22 in the track 2d code review; the per-result `role="option"` on a button is the new markup from
+  this track; re-confirmed in the 2026-06-25 accessibility sweep and again 2026-06-26.)*
 
 - `[x]` **Ingredient checklist `<li role="checkbox">` is an invalid ARIA role + breaks the list** —
   **done (accessibility sweep, 2026-06-25):** the checkbox role + keyboard handler moved onto an inner
@@ -285,17 +316,13 @@ The triage date stamped on items is the date they were filed here, not when they
     danger tint 5.14, and white-on-fill 5.43). Safe across all 13 usages (text / fill / border each gain
     contrast); alert boxes unaffected (own `$alert-error-red-text #721c24`). Took the last route —
     Settings-danger — to 100. Danger zone + inline validation visually re-checked.
-- `[ ]` **Autocomplete dropdown isn't a valid ARIA listbox + has no keyboard nav** — re-confirmed in the
-  2026-06-25 accessibility sweep, still as filed above (the `<ul role="listbox"><li><button role="option">`
-  shape + no arrow-key/`aria-activedescendant`). Tab-reachable and operable by mouse/Enter, so left for the
-  listbox refactor rather than a sweep polish edit. See the dedicated entry earlier in this section.
 - `[ ]` **Servings stepper input is below the 24px touch-target minimum** — the `.serv-input` in the
   Ingredients servings pill (`SingleRecipe.tsx`) trips Lighthouse `target-size`. A label was added in
   track 4-qa (`aria-label="Servings"`), but enlarging the tap target is a layout change to the pill.
   *(surfaced 2026-06-23, track 4-qa; re-confirmed 2026-06-25 in the accessibility sweep.)*
 - `[ ]` **`$primary-hover` token (`#e74e1d`) fails WCAG AA on hover** — the design-tokens track added
   `$primary-hover: #e74e1d` (`helpers.scss`) and points several **white-on-fill button hovers** at it
-  (`Home.scss:175`, `SingleRecipe.scss:655`, `RecipeNotFound.scss:87`) plus a **text** hover
+  (`Home.scss:175`, `SingleRecipe.scss:659`, `RecipeNotFound.scss:87`) plus a **text** hover
   (`Footer.scss:72`). White on `#e74e1d` is only **3.81:1** and `#e74e1d` as text on white ~3.8:1 — both
   under 4.5:1, so these controls drop below AA *while hovered* (axe/Lighthouse scan the default state, so it
   doesn't show in the per-page scores). The base fills are fine; only the hover regresses. Fix: darken
@@ -362,24 +389,29 @@ The triage date stamped on items is the date they were filed here, not when they
   (`server/util/recipeRating.js`) to reconcile the whole catalog in one pass. *(surfaced by track 1a /
   PR #150, which only self-heals a recipe when someone next rates it.)*
 - `[ ]` **Harden `deleteAccount`'s rating recompute** — the per-recipe recompute after an account delete
-  is best-effort/post-commit and only `console.error`s on failure (`server/routes/auth.js` ~L447-454),
+  is best-effort/post-commit and only `console.error`s on failure (`server/routes/auth.js:454-461`),
   so a silent failure can re-introduce aggregate drift. The set of recipes is correct
-  (`distinct('recipeId', { userId })` covers rating-only docs); only the failure mode is silent. Consider
-  a periodic reconciliation job (pairs with the item above) or alerting on recompute failure. *(low priority)*
-- `[ ]` **Autocomplete fuzzy fallback is an O(n) scan + in-process ranking** — when exact matches < 8, the
-  `/api/searchAutoCompleteRecipes` handler pulls up to `FUZZY_CANDIDATE_CAP = 1000` `{_id, title}` docs
-  (only the visibility filter narrows them — no title text index) and runs `titleScore` (windowed
-  Levenshtein) over each (`server/routes/recipes.js:227-236`, `server/util/recipeTitleMatch.js`).
+  (`distinct('recipeId', { userId: uid })` at `:396` → `reviewedRecipeIds`, and the loop skips the deleted
+  user's own recipes); only the failure mode is silent. Consider a periodic reconciliation job (pairs with
+  the item above) or alerting on recompute failure. *(low priority; lines re-verified 2026-06-26)*
+- `[ ]` **Autocomplete fuzzy fallback is an O(n) scan + in-process ranking** — when exact matches <
+  `AUTOCOMPLETE_LIMIT = 8` (`server/routes/recipes.js:191`), the `/api/searchAutoCompleteRecipes` handler
+  pulls up to `FUZZY_CANDIDATE_CAP = 1000` (`:204`) `{_id, title}` docs (only the `RECIPE_VISIBLE` filter
+  narrows them — no title text index; `server/db.js` recipes indexes are `{userId, createdAt}` only) and runs
+  `titleScore` (windowed Levenshtein) over each (`server/routes/recipes.js:223-237`,
+  `server/util/recipeTitleMatch.js`).
   Negligible at the current catalog size and correctly skipped when exact ≥ 8, but it grows linearly with
   the recipe count on a hot path. Revisit with a Mongo text index / Atlas Search before the catalog gets
   large. *(surfaced 2026-06-22 in the track 2d code review — shipped intentionally as the simplest
   typo-tolerant fallback.)*
-- `[ ]` **`'/recipes'` route hardcoded in two nav components** — the search-suppression check
-  (`pathname !== '/recipes'`) is copy-pasted into `DesktopBar.tsx:47` and `NavMenu.tsx:20`, and
-  `Recipes.tsx`'s `browseAll` re-issues the same filter-resetting setters as `clearFilters`. A route
-  rename would silently break suppression in two places with no compile error. Extract a shared
-  `RECIPES_PATH` const (or a small hook) and have `browseAll` call `clearFilters`.
-  *(surfaced 2026-06-22 in the track 2d code review.)*
+- `[ ]` **`'/recipes'` route hardcoded across nav + page** — the search-suppression check
+  (`pathname !== '/recipes'`) is copy-pasted into `src/Components/Navbar/desktop/DesktopBar.tsx:47` and
+  `src/Components/Navbar/menu/NavMenu.tsx:20`, and `Recipes.tsx`'s `browseAll` (`:112-118`) re-issues the
+  same filter-resetting setters as `clearFilters` (`:103-107`) instead of calling it. A route rename would
+  silently break suppression with no compile error. **(verified 2026-06-26: the bare `'/recipes'` literal
+  appears in 4+ spots across these three files — the two suppression checks, `browseAll`'s `navigate('/recipes')`,
+  and the `<NavLink to='/recipes'>` in DesktopBar.)** Extract a shared `RECIPES_PATH` const (or a small hook)
+  and have `browseAll` call `clearFilters`. *(surfaced 2026-06-22 in the track 2d code review.)*
 - `[x]` **Migrate Sass `@import` → `@use`** — **already done in `cb2ac81` (2026-05-09), reconciled
   2026-06-23.** Converted all 36 component/page stylesheets from `@import 'helpers.scss'` to
   `@use 'helpers.scss' as s` and namespaced every var/mixin under `s.`. This predates the release gameplan
@@ -388,14 +420,24 @@ The triage date stamped on items is the date they were filed here, not when they
   `@import url('…Montserrat…')` font load in `src/index.scss` — not a Sass partial import, not deprecated.
   *(See the 2026-06-23 4-sass status-log entry in `RELEASE_GAMEPLAN.md`.)*
 - `[ ]` **Recipe images aren't keyed by uid in Storage** — uploads go to `recipeImages/{imageFile.name}`
-  (`src/api/recipes.ts:189`), keyed by the raw filename rather than the owner's uid. Two consequences:
+  (`src/api/recipes.ts:188`), keyed by the raw filename rather than the owner's uid. (`storage.rules:27-32`
+  auth-gates the path but can't scope to the owner — contrast the uid-scoped `profilePhotos/{userId}` at
+  `:15-21`; verified 2026-06-26.) Two consequences:
   (a) two users uploading `photo.jpg` collide/overwrite, and (b) the Storage rules can't scope writes to
   the owner, so `storage.rules` can only auth-gate that path (any signed-in user could overwrite/delete
   any recipe image). Re-key to e.g. `recipeImages/{uid}/{uuid}` (and tighten the rule to
   `request.auth.uid == uid`) for collision-safety + per-owner write scoping. Low severity (writes are
   auth-gated and the server is the source of truth), but worth doing. *(surfaced 2026-06-23 writing the
   Storage rules, PR #177.)*
-- `[ ]` **Point Railway at the production branch** — currently not deploying from production.
+- `[x]` **Point Railway at the production branch** — **done (2026-06-26, per the dev/prod env-split work):**
+  Railway now runs two services — a prod service deploying the `release` branch (→ prepify-prod Mongo +
+  prepify-9b974 Firebase, `FRONTEND_URLS` = the prepifymeals.com origins, CORS verified live) and a dev
+  service deploying `development` (→ prepify-dev infra). *(Branch selection is a Railway-dashboard setting, so
+  not visible in-repo; `docs/RELEASE_GAMEPLAN.md` still lists it as open and should be reconciled too.)*
+- `[x]` **Rotate the exposed `Cluster0` Mongo `jesse` password** — **done (Jesse, 2026-06-26).** The old
+  shared `Cluster0` cluster (which still holds the `@jclind/ingredient-parser` data and serves as the
+  prepify-prod/dev restore fallback) had its previously-exposed `jesse` SCRAM password rotated. *(Distinct
+  from the deliberately-NOT-rotated Edamam keys — that waiver is Edamam-only.)*
 - `[ ]` **Social link previews need server-side prerendering (CSR-SPA limitation)** — track 3b (PR #170)
   added per-route OG/Twitter tags + a branded 1200×630 card and strips the static `index.html` fallbacks on JS
   boot (React 19 hoists meta natively, no cross-`<Helmet>` dedupe). But non-JS social crawlers (Facebook,
@@ -418,13 +460,16 @@ The triage date stamped on items is the date they were filed here, not when they
   `textContent` isn't parsed as a tag. But it **becomes a real injection vector the moment any server-side
   prerendering is added** (see the prerender item above). Escape `<`/`</` in the JSON-LD payload before/when
   prerendering lands. *(surfaced 2026-06-23 in the track 3b code review.)*
-- `[ ]` **Brand-asset script comment drift + dead hero source** — minor cleanup left after track 3b (PR #170):
-  the header comment in `scripts/generate-brand-assets.mjs` lists `Montserrat-{Bold,SemiBold,Italic}.ttf` but
-  the code actually loads `Montserrat-MediumItalic.ttf` (code correct, comment stale); and
-  `public/images/home-images/hero.jpg` (~1.1 MB) is no longer referenced after the WebP swap (`hero.webp`) —
-  safe to delete unless kept as source. *(surfaced 2026-06-23 in the Wave 4 Part 1 verification.)*
+- `[ ]` **Brand-asset script comment drift** — minor cleanup left after track 3b (PR #170): the header
+  comment in `scripts/generate-brand-assets.mjs:6` lists `Montserrat-{Bold,SemiBold,Italic}.ttf` but the code
+  actually loads `Montserrat-MediumItalic.ttf` at `:28` (code correct, comment stale on the `Italic` entry).
+  **(verified 2026-06-26: the "dead `hero.jpg` (~1.1 MB)" half is already resolved — the file no longer exists
+  on disk; only `hero.webp` remains and `HomeHero.tsx:10` references it. So this item is now just the one-line
+  comment fix.)** *(surfaced 2026-06-23 in the Wave 4 Part 1 verification.)*
 - `[ ]` **Post-6-phase-refactor DB check** — confirm no existing database records need updating/migrating
-  after the refactor.
+  after the refactor. *(2026-06-26: the tooling exists — `server/scripts/inventory-collections.js` (the DB
+  inventory utility from commit 85c0208), plus the `backfillRatingUserIds.js` / `backfillServingPrice.js`
+  backfills. This remains a manual run-and-confirm task; nothing in-repo proves it's been done.)*
 - `[ ]` **Establish a code & architecture standard for Claude** — write a conventions doc so generated
   code stays consistent (likely an addition to `CLAUDE.md` or a new `CONVENTIONS.md`).
 - `[ ]` **Refactor the create-recipe page**.
@@ -438,10 +483,11 @@ The triage date stamped on items is the date they were filed here, not when they
   [2026-06-13 audit](./DESIGN_CONSISTENCY_AUDIT_2026-06-13.md): `$primary-hover` (`#e74e1d`, was hardcoded
   in 5 spots + a Footer local var) and `$surface-warm-border` (`#ece2d6`, 11 spots across 8 files). The
   remaining systemic scales need design sign-off because they touch many files / pixels:
-    - **Type scale** — ~520 raw `font-size:` literals across ~50 distinct values (0.8/0.82/0.84/0.85/0.875…
-      all coexist). A real scale *normalizes* those to a handful of steps, so it is **not** a pixel-identical
-      repoint — it is a deliberate normalization pass needing design sign-off. Define a small ramp (e.g.
-      `$fs-sm`/`$fs-base`/`$fs-lg`/…) and snap each size to its nearest step.
+    - **Type scale** — **520** raw `font-size:` literals across ~60 distinct values (verified 2026-06-26;
+      0.8/0.82/0.84/0.85/0.875… all coexist), and **no `$fs-*` tokens exist yet**. A real scale *normalizes*
+      those to a handful of steps, so it is **not** a pixel-identical repoint — it is a deliberate
+      normalization pass needing design sign-off. Define a small ramp (e.g. `$fs-sm`/`$fs-base`/`$fs-lg`/…)
+      and snap each size to its nearest step.
     - `[x]` **Radius scale** — DONE 2026-06-25 (PR `style/radius-scale-tokens`). `$radius-xs..4xl` +
       `$radius-pill`/`$radius-circle` now in `helpers.scss`; `$border-radius` aliases `$radius-lg`. ~200
       value-identical repoints across 32 `s`-importing files (compiled CSS byte-identical). **Remaining:**
@@ -449,10 +495,11 @@ The triage date stamped on items is the date they were filed here, not when they
       files (`Admin/*`, `AdminRecipeControls`, `SavedFilterBar`) keep raw radii pending the import-wiring item
       below.
     - **Elevation/shadow scale** — partly done 2026-06-25: the two shadows that recur verbatim are now
-      `$shadow-soft` (warm card resting, ×8) and `$shadow-chip` (price/floating chips, ×3). **Remaining:** the
-      ~40 other `box-shadow`s are nearly all unique and need a re-authored scale (`$shadow-card`/`-hover`/
-      `-glow-primary`), e.g. the avatar-glow `rgba(255,87,34,0.18)` repeated in Account + PublicProfile
-      (audit F5) — a re-author, not a pixel-identical repoint.
+      `$shadow-soft` (warm card resting, ×8) and `$shadow-chip` (price/floating chips, ×3). **Remaining:** of
+      **75** total `box-shadow:` declarations, ~**52** are still distinct raw literals (verified 2026-06-26)
+      — nearly all unique, needing a re-authored scale (`$shadow-card`/`-hover`/`-glow-primary`), e.g. the
+      avatar-glow `rgba(255,87,34,0.18)` repeated in Account + PublicProfile (audit F5) — a re-author, not a
+      pixel-identical repoint.
     - `[x]` **Breakpoint tokens/mixin** — DONE 2026-06-25 (PR `style/breakpoint-tokens`). Added an 8-tier
       `$bp-xs..4xl` scale + `$bp-nav`/`$bp-nav-up` and `below()`/`above()`/`between()` mixins; migrated all 69
       width queries. The recurring content breakpoints converged to tiers (7 approved small shifts ≤30px:
@@ -470,9 +517,11 @@ The triage date stamped on items is the date they were filed here, not when they
       hovers `#a52f0a` / `#006065` are entangled with the in-flux orange-CTA contrast story (the a11y sweep
       reverted `$primary-accessible` back to vivid `#ff5722`). Resolve them as part of that recolor, not as a
       blind dedupe. *(surfaced 2026-06-25 in the design-consistency sweep.)*
-- `[ ]` **One danger-red token** — three reds mean the same thing: `$error-red #dc3545` (token), local
-  `$danger #d23f31` (`SingleRecipe.scss`), and `#d64545` (`ReportControl`/`Reports`). Consolidate onto the
-  token. *(audit F6; surfaced 2026-06-25 in the design-consistency sweep.)*
+- `[ ]` **One danger-red token** — three reds mean the same thing: `$error-red` (the token — **now
+  `#c5303f`** after the a11y pass, plus a new `$error-red-hover #b02a37`; `helpers.scss:43-44`), local
+  `$danger #d23f31` (`SingleRecipe.scss:13`), and `#d64545` (`ReportControl.scss` ×7, `AdminRecipeControls.scss:87`,
+  `Reports.scss:307`). Consolidate onto the token. *(audit F6; surfaced 2026-06-25; `$error-red` value
+  corrected from the stale `#dc3545` on 2026-06-26.)*
 - `[~]` **Name the admin/“cool” sub-palette and wire the token-less files into `helpers.scss`** — Admin +
   moderation surfaces hardcode a Tailwind-ish slate/blue palette (`#3b82f6`/`#2563eb` action blue exists
   nowhere in the brand) and several files `@use` nothing at all (audit F1/F2).
@@ -502,7 +551,10 @@ The triage date stamped on items is the date they were filed here, not when they
   inline-edit re-enrich + timeout, drag-reorder + id-keyed status survival, summary-bar rollup + submit
   states, and servings/time validation; Cypress gained keyboard drag-reorder specs (ingredient + instruction)
   and the soft-fail spec was updated to the new retry UX. Remaining: cuisine/meal-type selector units
-  (currently E2E-only) and broader E2E happy-path variants.
+  (currently E2E-only) and broader E2E happy-path variants. **(verified 2026-06-26: `DietSelector` has a unit
+  test (`DietSelector.test.tsx`) but the structurally-similar `CuisineSelector`/`MealTypeSelector` are mocked
+  in `AddRecipe.test.tsx:67-75` with no standalone unit test — a focused, low-effort fill-in. Also note: any
+  new `TimeInput` test should cover the edit-mode hydration bug logged under Bugs.)**
 - `[x]` **Cypress: test autocomplete on the Recipes page** — *covered in PR #168 (track 4-tests):* `browse.cy.ts`
   now types a partial query and asserts the dropdown options, types a typo and asserts results surface **with** the
   "showing similar recipes" banner, asserts the banner is **absent** on a literal match, and clicks a result to

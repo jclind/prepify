@@ -95,7 +95,7 @@ All isolated files — safe to run together.
 |---|---|---|
 | **0a** Repo/secrets hygiene | Remove dead `VITE_OPEN_AI_API_KEY` + `VITE_INGREDIENT_PARSER_URL` from `.env.example`; README `your-username` cleanup; dep-audit triage (3 high root / 3 high server) | `.env.example`, `README.md`, `package.json`, `server/package.json` |
 | **0b** Plan reconcile | (done 2026-06-17) flipped footer / mobile-nav / Privacy / Terms / SEO / rate-limit / devtools markers | `RELEASE_PLAN.md` |
-| **0c** Infra — **Jesse, no worktree** | Railway → production branch; set prod env vars; dashboard key lockdown (Edamam/Firebase referrer + quotas); Firebase Storage rules review; production domain + HTTPS | external dashboards |
+| **0c** Infra — **Jesse, no worktree** | **✅ COMPLETE (2026-06-26).** ✅ Railway → production branch (prod service deploys `release`); ✅ prod env vars set (Railway prod + Netlify Production `VITE_SENTRY_DSN`); ✅ dashboard key lockdown (Firebase referrer-restricted + Vision locked; Edamam moot — keys server-side per PR #182); ✅ Firebase Storage rules review (PR #177, 7/7 live); ✅ production domain + HTTPS (`prepifymeals.com` live, valid certs). *(Remaining TODO: rotate `Cluster0` Mongo password — backlog.)* | external dashboards |
 
 ## Phase 1 — Bug squash (4 parallel worktrees; isolated subsystems)
 
@@ -150,7 +150,7 @@ Follow the light checklist in `RELEASE_PLAN.md` → "Release-day cutover":
 2. Bump `package.json` version → `1.0.0`.
 3. **Drop the beta tag** — the three edits, together. *(the celebration move)*
 4. Refresh release-notes content for 1.0 + tag a GitHub Release.
-5. Deploy FE (Firebase Hosting) + BE (Railway) with prod env vars set first.
+5. Deploy FE (Netlify) + BE (Railway) with prod env vars set first.
 6. Smoke-test prod (home → recipe → sign in → create recipe → review).
 7. Watch logs/analytics for the first hours.
 
@@ -549,17 +549,33 @@ Append a one-liner when a track changes state (started / PR / merged). Keeps ses
   **Manual checklist progress (dashboards — Jesse):** ✅ Firebase Auth → Authorized domains includes the
   prod domain. ✅ Firebase **web API key referrer-restricted** (verified live: prod/www/localhost allowed,
   empty referer blocked). ✅ Google **Vision API key** locked down. ⏸️ **Edamam key lockdown PAUSED** —
-  Jesse is reworking the `@jclind/ingredient-parser` package first (independent of release work).
-  **WHAT'S LEFT before the Phase-5 cutover (manual unless noted):** (1) **Edamam** — usage cap/alert or
-  proxy server-side; (2) **audit every `VITE_*` var** is safe-to-be-public (Firebase + Edamam confirmed by
-  design; quick final pass); (3) **key rotation** — only if a real key ever hit git history (GitGuardian
-  passed on the #177 diff; a full-history scan wasn't run — offer next session); (4) **set prod env vars**
-  before deploy (`VITE_SENTRY_DSN` at build; `SENTRY_DSN`/`OPENAI_API_KEY`/`MODERATION_ENABLED`/
-  `GOOGLE_VISION_API_KEY`/`ADMIN_NOTIFY_EMAIL` on Railway); (5) **point Railway at the production branch**;
-  (6) **production `FRONTEND_URLS`** (CORS) = real origin(s) only; (7) **production domain + HTTPS**. Then
-  **Phase 5 cutover**: bump `package.json`→`1.0.0`, flip the beta tag (3 edits: `LegalBar.tsx:16`,
-  `PrepifyLogo.tsx:17`, `ReleaseNotes.tsx` `isBeta`), finalize `RELEASE_DATE`, tag a GitHub Release,
-  deploy FE+BE, smoke-test prod. **Beta tag still untouched** (the celebration move).
+  Jesse is reworking the `@jclind/ingredient-parser` package first (independent of release work); **moot
+  for release** since PR #182 moved the Edamam keys server-side (no `VITE_EDAMAM_*` in the bundle to lock).
+
+  **🟢 PRE-CUTOVER INFRA: COMPLETE + VERIFIED (reconciled 2026-06-26).** The dev/prod environment split
+  (Mongo + Firebase + Railway + Netlify) is fully done and verified live — see the env-split notes. Status
+  of the old "what's left" list:
+  - (1) **Edamam** — **✅ done** (server proxy `POST /api/nutrition/details`, PR #182); usage cap/alert moot
+    (Prepify is migrating off Edamam, keys deliberately not rotated — `BACKLOG.md → Tech debt`).
+  - (2) **audit every `VITE_*` var** — **✅ done 2026-06-25** (`RELEASE_PLAN.md §B` → `[x]`; no secret `VITE_*`
+    ships).
+  - (3) **key rotation** — **waived** for the bundle-public Edamam keys (by decision). **One real TODO remains:**
+    rotate the exposed `Cluster0` Mongo `jesse` password (filed to `BACKLOG.md → Tech debt`).
+  - (4) **set prod env vars** — **✅ done 2026-06-26** (confirmed on the new prod Railway service:
+    `SENTRY_DSN`/`OPENAI_API_KEY`/`MODERATION_ENABLED`/`GOOGLE_VISION_API_KEY`/`EDAMAM_APP_ID`/`EDAMAM_APP_KEY`/
+    `ADMIN_NOTIFY_EMAIL`/`RESEND_API_KEY`; and `VITE_SENTRY_DSN` on the Netlify **Production** context).
+  - (5) **point Railway at the production branch** — **✅ done 2026-06-26** (prod service deploys `release`).
+  - (6) **production `FRONTEND_URLS`** (CORS) — **✅ done 2026-06-26** (= the prepifymeals.com origins only;
+    verified live: prod allowed, localhost/evil denied).
+  - (7) **production domain + HTTPS** — **✅ done 2026-06-26** (`prepifymeals.com` live: DNS → Netlify, valid
+    certs, `www` 301→apex; prod API `/health` → 200 over valid SSL).
+
+  **ONLY remaining is the held Phase-5 cutover** (deliberately on hold until Jesse says go): bump
+  `package.json`→`1.0.0`, flip the beta tag (3 edits: `LegalBar.tsx:16`, `PrepifyLogo.tsx:17`,
+  `ReleaseNotes.tsx` `isBeta`), finalize `RELEASE_DATE`, merge `development`→`release`, tag a GitHub Release,
+  deploy, smoke-test prod. **Beta tag still untouched** (the celebration move). *(The owner-only About-page
+  rewrite — `RELEASE_PLAN.md §C` — was completed + signed off 2026-06-26, so the beta-flip is now the last
+  thing gating 1.0.)*
 
 ---
 
