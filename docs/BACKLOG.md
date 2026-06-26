@@ -240,17 +240,37 @@ The triage date stamped on items is the date they were filed here, not when they
   styling stayed on the now-inner element, so the 2-column grid is visually unchanged (verified by
   screenshot). Clears Lighthouse `aria-allowed-role` + `list`; recipe page **89 → 97**. Keyboard toggle
   (Enter/Space → `aria-checked`) re-verified.
-- `[x]` **Contrast (WCAG AA) — DONE, Lighthouse a11y 100 on every route** *(grey #181; brand + nav-logo +
-  beta-tag + error-red this PR #184, 2026-06-25)*. Every page-load route (logged-out + logged-in) plus the
-  key interactive surfaces (filter drawer, cook modal, reviews) is AA; **Lighthouse a11y = 100 on all 22
-  routes.** What shipped:
+- `[~]` **Contrast (WCAG AA) — grey/teal/beta/red shipped; brand ORANGE reverted to vivid (owner call)**
+  *(grey #181; brand + nav-logo + beta-tag + error-red #184; **orange reverted in the bg-lift PR**, 2026-06-25)*.
+  The muted-grey, teal, beta-tag and error-red fixes are AA and shipped. **The brand orange, however, was
+  intentionally reverted to the vivid `#ff5722` at the owner's request** (`$primary-accessible` points back at
+  `#ff5722`): the AA `#bf360c` read too "brown." This **re-fails AA on the orange logo/CTAs/accents and drops
+  Lighthouse a11y to ~96–97 on the routes that use them** (every other route stays 100) — accepted for now,
+  pending a brand-colour decision. **To restore AA:** set `$primary-accessible` back to ~`#bf360c` (or a
+  chosen on-light orange — see the shade exploration below). What's shipped vs reverted:
   - `[x]` **Muted-grey body/meta text (#181):** `$tertiary-text` darkened `#979ba0` → `#666c75` (lightest
     clearing 4.5:1 on white 5.29 / `#fafafa` 5.07 / `#eeeeee` 4.56); three hardcoded `#8a8f99` report-trigger
     greys tokenised onto it.
-  - `[x]` **Brand orange/teal (#184):** added on-light tokens `$primary-accessible #bf360c` (5.60/4.83) and
-    `$secondary-accessible #00787e` (5.27/4.54), each covering small-text + white-on-fill, swapped on the ~25
-    failing selectors only (not the 305 `$primary` uses). On-tint cases handled deterministically: `.pp-lvl`
-    → solid `#fff2ed` pill; active Settings nav label → `#006065`.
+  - `[x]` **Brand teal (#184):** `$secondary-accessible #00787e` (5.27/4.54) on the teal eyebrow + auth
+    buttons — kept, AA.
+  - `[~]` **Brand orange — REVERTED to vivid `#ff5722` (owner call):** #184 had darkened it to
+    `$primary-accessible #bf360c` (5.60/4.83) across ~25 selectors (logo, CTAs, "See all", eyebrows, price,
+    …); that's now pointed back at `#ff5722`, which re-fails AA (2.7–3.2:1). The `#184` plumbing is intact
+    (single token, on-tint handling like `.pp-lvl` → `#fff2ed`, active Settings nav `#006065`), so restoring
+    AA is a one-line token flip. **Shade exploration (for when you revisit):**
+    - The orange can't be both vivid *and* AA: a bright orange physically can't reach 4.5:1 on a light
+      surface — to pass it has to deepen toward `#bf360c`.
+    - The **logo is large text (≥24px), so its bar is only 3:1**, not 4.5:1 — `#ff5722` already passes 3:1 on
+      *white* (3.16) and `#fafafa` (3.03); it only fails on the `#eeeeee` grey (2.73). A barely-perceptible
+      nudge (`#f4501e`, 3.0+ on grey) clears it while staying iconic — so the logo *alone* needn't go to
+      `#bf360c`.
+    - A **lighter page background lets the whole orange go lighter**: on a white page the lightest AA orange
+      is `#d83a0a` (4.64 on white), vs `#bf360c` on `#eeeeee` — but white kills card/background separation
+      (cards then need a shadow/hairline border). `#bb4b00` (burnt) on `#f5f5f5` (4.68) was the explored
+      middle. Candidates that clear 4.5:1 as small text on their bg: `#bf360c`/`#b84008`/`#a8330b` on
+      `#eeeeee`; `#c5421a` on `#f5f5f5`; `#d83a0a`/`#bb4b00` only on near-white.
+    - Decision axes: how vivid vs how deep · uniform-everywhere vs logo-as-special-case (large-text exemption)
+      · how light to push the page background (card-pop trade-off).
   - `[x]` **Nav-logo wordmark (#184):** darkened to `$primary-accessible` on any light nav surface — the
     desktop solid bar (`.nav--solid`, incl. Home once scrolled) and the mobile bar on non-hero pages (new
     `.nav--dark-links` class, since `.nav--solid` is desktop-only and Lighthouse a11y emulates mobile). The
