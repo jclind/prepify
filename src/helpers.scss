@@ -1,5 +1,9 @@
 $primary: #ff5722; // Also located in TrendingRecipes.js
 $primary-hover: #e74e1d; // darkened orange for primary-button/link hover
+// Light decorative tint of the brand orange — gradient stops + the "no photo"
+// placeholder. Purely decorative (never text/contrast), so it's outside the
+// accessible-orange story below.
+$primary-tint: #ff8a5c;
 $secondary: #00adb5;
 // Accessible (WCAG AA) variants of the brand colors, for the cases where the
 // brand color is small text on a light surface OR a fill behind white text —

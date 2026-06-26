@@ -160,7 +160,7 @@
     font-size: 0.72rem;
     font-weight: 800;
     color: #fff;
-    background: linear-gradient(135deg, s.$primary, #ff8a5c);
+    background: linear-gradient(135deg, s.$primary, s.$primary-tint);
     padding: 0.18rem 0.5rem;
     border-radius: s.$radius-pill;
   }
@@ -183,7 +183,7 @@
     }
     .acct-xpbar-fill {
       height: 100%;
-      background: linear-gradient(90deg, #ff8a5c, s.$primary);
+      background: linear-gradient(90deg, s.$primary-tint, s.$primary);
       border-radius: s.$radius-pill;
     }
     .acct-xpbar-label {
