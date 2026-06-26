@@ -23,11 +23,14 @@ Related, already-built tooling: `/release-readiness` (audits the launch checklis
 
 ## Run log
 
-Which sweeps have actually been run, and what's still open from each. **Each sweep doc also carries a
-one-line `> Status:` banner at the top** — this table is the glanceable index; update both as the last
-step of a sweep PR (method §7). "Open follow-ups" are filed in [`../BACKLOG.md`](../BACKLOG.md) and
-intentionally outlive the sweep (fix-small / file-large), so a sweep is never "all green" — it's "cheap
-wins shipped, tail filed."
+The **historical ledger** — what's been run, when, and the PR. For the **forward plan** (what to run next,
+what can run in parallel, and the per-track status), see [`ROADMAP.md`](ROADMAP.md) — point Claude Code there
+to continue the sweeps where the last session left off. Each sweep doc also carries a one-line `> Status:`
+banner at the top. Update all three (this ledger, the roadmap Board, the banner) as the last step of a sweep
+PR (method §7).
+
+"Open follow-ups" are filed in [`../BACKLOG.md`](../BACKLOG.md) and intentionally outlive the sweep
+(fix-small / file-large), so a sweep is never "all green" — it's "cheap wins shipped, tail filed."
 
 | Sweep | Last run | PR | Cheap wins shipped | Open follow-ups |
 |---|---|---|---|---|
@@ -59,9 +62,10 @@ wins shipped, tail filed."
    (Jest) for backend changes. Don't touch the **beta tag** — that's the Phase-5 cutover.
 6. **Ship one PR** into `development` with a short checklist of what was checked, before/after metrics where
    they exist, and links to any backlog items filed.
-7. **Update the run log.** As the last step, refresh this sweep's row in the [Run log](#run-log) above and
-   its `> Status:` banner at the top of the sweep doc (date, PR, cheap wins, open follow-ups) so the next
-   reader can tell at a glance what's been done without re-deriving it from git history.
+7. **Update the trackers.** As the last step, refresh (a) this sweep's row in the [Run log](#run-log) above,
+   (b) its track on the [`ROADMAP.md`](ROADMAP.md) Board (and append a Status-log entry there), and (c) the
+   `> Status:` banner at the top of the sweep doc — date, PR, cheap wins, open follow-ups. File any newly
+   surfaced deferrals as roadmap Wave-2/3 tracks so the next reader can continue without re-deriving state.
 
 ## Guardrails common to all sweeps
 
