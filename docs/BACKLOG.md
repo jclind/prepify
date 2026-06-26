@@ -449,12 +449,14 @@ The triage date stamped on items is the date they were filed here, not when they
       deliberately-bespoke one-offs into the scale if/when their layouts are retuned.
   *(surfaced 2026-06-25 in the design-consistency sweep; cheap wins + radius/recurring-shadow scales applied,
   type scale + full elevation re-author deferred.)*
-- `[ ]` **Collapse near-duplicate brand shades to one value** — now that `$primary-hover` exists, the
-  Drafts primary-button hover `#f4501e` (`Drafts.scss:138`) should point at it, and the avatar/XP gradient
-  stops `#ff8a5c` (`Account.scss:163,186`) vs `#ff8a65` (`RecipePlaceholder.scss:13`) should collapse to a
-  single `$primary-tint` token. Each is a (tiny) visible pixel change, so it's a brand-color call, not a
-  blind repoint. *(surfaced 2026-06-25 in the design-consistency sweep; left out of the repoint-only PR by
-  decision.)*
+- `[~]` **Collapse near-duplicate brand shades to one value**
+    - `[x]` **Decorative tint** — DONE (PR #192): `$primary-tint: #ff8a5c` collapses the avatar/XP gradient
+      stops (`Account.scss` ×2) + the `RecipePlaceholder` icon `#ff8a65`. Purely decorative, so independent
+      of the contrast work; only compiled change was the imperceptible `#ff8a65`→`#ff8a5c`.
+    - **Remaining — owned by the brand-orange recolor:** the Drafts hover `#f4501e` and the accessible
+      hovers `#a52f0a` / `#006065` are entangled with the in-flux orange-CTA contrast story (the a11y sweep
+      reverted `$primary-accessible` back to vivid `#ff5722`). Resolve them as part of that recolor, not as a
+      blind dedupe. *(surfaced 2026-06-25 in the design-consistency sweep.)*
 - `[ ]` **One danger-red token** — three reds mean the same thing: `$error-red #dc3545` (token), local
   `$danger #d23f31` (`SingleRecipe.scss`), and `#d64545` (`ReportControl`/`Reports`). Consolidate onto the
   token. *(audit F6; surfaced 2026-06-25 in the design-consistency sweep.)*
