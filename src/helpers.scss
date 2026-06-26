@@ -3,11 +3,15 @@ $primary-hover: #e74e1d; // darkened orange for primary-button/link hover
 $secondary: #00adb5;
 // Accessible (WCAG AA) variants of the brand colors, for the cases where the
 // brand color is small text on a light surface OR a fill behind white text —
-// both need 4.5:1, which #ff5722/#00adb5 miss (2.7–3.2:1). One shade covers
-// both cases per color (contrast is symmetric): as text on white/#eeeeee it's
-// 5.60/4.83 (orange) and 5.27/4.54 (teal); as a fill under white text, same.
-// Keep $primary/$secondary for large/decorative UI, icons, hovers, the logo.
-$primary-accessible: #bf360c;
+// both need 4.5:1, which #ff5722/#00adb5 miss (2.7–3.2:1).
+//
+// TEMPORARY — orange reverted to the vivid brand #ff5722 at the owner's request
+// (the AA #bf360c read too "brown"). This intentionally re-fails WCAG AA contrast
+// on the orange logo/CTAs/accents and drops Lighthouse a11y below 100 on the
+// pages that use them, pending a brand-colour decision (the orange-shade
+// exploration is filed in docs/BACKLOG.md). The teal variant stays accessible.
+// To restore AA, set this back to ~#bf360c (or the chosen on-light orange).
+$primary-accessible: #ff5722;
 $secondary-accessible: #00787e;
 
 $primary-text: #303841;
@@ -48,7 +52,10 @@ $alert-warning-amber: #fff3cd;
 $alert-warning-amber-border: #ffeeba;
 $alert-warning-amber-text: #856404;
 
-$primary-background: #eeeeee;
+$primary-background: #eeeeee; // UI fill token (search inputs, tracks, alerts, …)
+// Page backdrop (body). A touch lighter than the #eeeeee fill token for a
+// softer, airier surface. Kept separate so the fills keep their definition.
+$page-bg: #f5f5f5;
 $secondary-background: #d6d6d6;
 $tertiary-background: #b1b1b1;
 

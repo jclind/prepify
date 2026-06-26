@@ -1,0 +1,72 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><style>
+  * { box-sizing: border-box; font-family: 'Montserrat', -apple-system, system-ui, sans-serif; letter-spacing:.02em; }
+  body { margin:0; background:#f4f5f7; color:#303841; padding:28px 32px; }
+  h1 { font-size:22px; margin:0 0 4px; }
+  .sub { color:#666c75; font-size:13px; margin:0 0 22px; }
+  .grid { display:grid; grid-template-columns: 220px 1fr 1fr; gap:0; border:1px solid #e2e2e6; border-radius:12px; overflow:hidden; background:#fff; }
+  .hd { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; padding:10px 16px; background:#30384108; border-bottom:1px solid #e2e2e6; }
+  .hd.after { background:#0a7d3211; }
+  .rowlabel { padding:16px; border-bottom:1px solid #eee; border-right:1px solid #eee; font-size:12.5px; }
+  .rowlabel b { display:block; font-size:13.5px; margin-bottom:5px; }
+  .rowlabel .hex { font-family:ui-monospace,Menlo,monospace; font-size:11px; color:#666c75; }
+  .cell { padding:18px 16px; border-bottom:1px solid #eee; display:flex; flex-direction:column; gap:8px; align-items:flex-start; justify-content:center; }
+  .cell.after { border-left:1px solid #eee; }
+  .ratio { font-family:ui-monospace,monospace; font-size:10.5px; padding:1px 6px; border-radius:5px; }
+  .pass { background:#e7f6ec; color:#1c7a3e; } .fail { background:#fbe7e9; color:#b3192a; }
+  /* sample-component styles */
+  .surface-gray { background:#eeeeee; padding:14px; border-radius:8px; width:100%; }
+  .surface-white { background:#fff; border:1px solid #eee; padding:14px; border-radius:8px; width:100%; }
+  .logo { font-size:26px; font-weight:700; font-style:italic; }
+  .beta { font-size:11px; text-transform:uppercase; font-weight:600; padding:3px 7px; border-radius:5px; vertical-align:middle; margin-left:8px; }
+  .navbar { display:flex; align-items:center; }
+  .btn-fill { border:none; padding:9px 18px; border-radius:8px; color:#fff; font-weight:600; font-size:14px; }
+  .pill { display:inline-block; padding:4px 11px; border-radius:999px; font-weight:700; font-size:12px; }
+  .eyebrow { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.14em; }
+  .link { font-weight:700; font-size:14px; text-decoration:none; }
+  .muted { font-size:14px; }
+  .danger-label { font-weight:700; font-size:14px; }
+  .btn-outline { border:1.5px solid; background:#fff; padding:8px 14px; border-radius:8px; font-weight:700; font-size:13px; }
+</style></head>
+<body>
+  <h1>Prepify a11y contrast — before / after</h1>
+  <p class="sub">Same components, old colors (left) vs the merged AA colors (right). Ratios are WCAG contrast; AA needs 4.5:1 for normal text / 3:1 for large text &amp; UI.</p>
+  <div class="grid">
+    <div class="hd">Change</div><div class="hd">Before</div><div class="hd after">After (shipped)</div>
+
+    <!-- muted text -->
+    <div class="rowlabel"><b>Muted body / meta text</b><span class="hex">#979ba0 → #666c75</span><br>section subtitles, dates, card meta, footer, counts</div>
+    <div class="cell"><div class="surface-gray"><span class="muted" style="color:#979ba0">Last updated: June 10, 2026</span></div><span class="ratio fail">2.4:1 on #eee — fail</span></div>
+    <div class="cell after"><div class="surface-gray"><span class="muted" style="color:#666c75">Last updated: June 10, 2026</span></div><span class="ratio pass">4.56:1 — AA</span></div>
+
+    <!-- brand orange text -->
+    <div class="rowlabel"><b>Brand orange — accent text</b><span class="hex">#ff5722 → #bf360c</span><br>"See all", eyebrows, price, meal headers</div>
+    <div class="cell"><div class="surface-white"><a class="link" style="color:#ff5722">See all →</a></div><span class="ratio fail">2.7:1 — fail</span></div>
+    <div class="cell after"><div class="surface-white"><a class="link" style="color:#bf360c">See all →</a></div><span class="ratio pass">5.6:1 — AA</span></div>
+
+    <!-- brand orange fill -->
+    <div class="rowlabel"><b>Brand orange — CTA fill</b><span class="hex">#ff5722 → #bf360c</span><br>Sign up, Save, cook-suggestion, resume…</div>
+    <div class="cell"><button class="btn-fill" style="background:#ff5722">Sign up</button><span class="ratio fail">white-on-it 3.16:1 — fail</span></div>
+    <div class="cell after"><button class="btn-fill" style="background:#bf360c">Sign up</button><span class="ratio pass">5.6:1 — AA</span></div>
+
+    <!-- brand teal -->
+    <div class="rowlabel"><b>Brand teal</b><span class="hex">#00adb5 → #00787e</span><br>recipe eyebrow, Log in / Create account buttons</div>
+    <div class="cell"><div class="surface-white" style="display:flex;gap:12px;align-items:center"><span class="eyebrow" style="color:#00adb5">ASIAN · LUNCH</span><button class="btn-fill" style="background:#00adb5">Log in</button></div><span class="ratio fail">2.4–2.7:1 — fail</span></div>
+    <div class="cell after"><div class="surface-white" style="display:flex;gap:12px;align-items:center"><span class="eyebrow" style="color:#00787e">ASIAN · LUNCH</span><button class="btn-fill" style="background:#00787e">Log in</button></div><span class="ratio pass">4.5–5.3:1 — AA</span></div>
+
+    <!-- nav logo + beta -->
+    <div class="rowlabel"><b>Nav logo + BETA tag</b><span class="hex">logo #ff5722→#bf360c (light nav)<br>beta #eee/#00adb5 → #fff/#00787e</span></div>
+    <div class="cell"><div class="surface-white navbar"><span class="logo" style="color:#ff5722">Prepify</span><span class="beta" style="background:#00adb5;color:#eeeeee">Beta</span></div><span class="ratio fail">logo 2.7 · beta 2.8 — fail</span></div>
+    <div class="cell after"><div class="surface-white navbar"><span class="logo" style="color:#bf360c">Prepify</span><span class="beta" style="background:#00787e;color:#fff">Beta</span></div><span class="ratio pass">logo 4.8 · beta 5.3 — AA</span></div>
+
+    <!-- level pill -->
+    <div class="rowlabel"><b>Profile level pill</b><span class="hex">text #ff5722→#bf360c<br>bg tint → solid #fff2ed</span></div>
+    <div class="cell"><div class="surface-white"><span class="pill" style="background:rgba(255,87,34,.1);color:#ff5722">★ Lv 4</span></div><span class="ratio fail">2.5:1 — fail</span></div>
+    <div class="cell after"><div class="surface-white"><span class="pill" style="background:#fff2ed;color:#bf360c">★ Lv 4</span></div><span class="ratio pass">5.1:1 — AA</span></div>
+
+    <!-- error/danger red -->
+    <div class="rowlabel"><b>Danger / error red</b><span class="hex">#dc3545 → #c5303f</span><br>Danger Zone label, Delete button, validation</div>
+    <div class="cell"><div class="surface-white" style="display:flex;gap:12px;align-items:center"><span class="danger-label" style="color:#dc3545">⚠ Danger Zone</span><button class="btn-outline" style="border-color:#dc3545;color:#dc3545">Delete account</button></div><span class="ratio fail">3.9–4.3:1 — fail</span></div>
+    <div class="cell after"><div class="surface-white" style="display:flex;gap:12px;align-items:center"><span class="danger-label" style="color:#c5303f">⚠ Danger Zone</span><button class="btn-outline" style="border-color:#c5303f;color:#c5303f">Delete account</button></div><span class="ratio pass">4.7–5.4:1 — AA</span></div>
+  </div>
+</body></html>
