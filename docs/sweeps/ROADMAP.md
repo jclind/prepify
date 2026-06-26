@@ -62,7 +62,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | — | Accessibility sweep (initial) | `[x]` | — | #179 (+#181/#184) |
 | — | Design-consistency sweep (initial) | `[x]` | — | #180 (+#183/#185/#186/#192) |
 | **1** | **Security sweep** | `[ ]` | `server/` (routes, middleware, `app.js` CORS), Firebase rules, `.env.example`, `src/api/http-common.ts` | — |
-| **1** | **Performance sweep** | `[ ]` | measure → backlog; cheap wins = `<img>` dims/`loading` in a few components | — |
+| **1** | **Performance sweep** | `[~]` | measure → backlog; cheap wins = `<img>` dims/`loading` in a few components | `worktree-feat+performance-sweep` (2026-06-26) |
 | **1** | **Code-quality & tests sweep** | `[ ]` | `src/test/`, `server/` tests, `cypress/`, types, **dead-code delete (`RecipeThumbnail`)**, error handling | — |
 | **2-iso** | A11y: autocomplete listbox + keyboard nav | `[ ]` | `SearchRecipesInput.tsx` | — |
 | **2-iso** | A11y: servings stepper target-size | `[ ]` | `SingleRecipe.tsx/.scss` (pill layout) | — |
