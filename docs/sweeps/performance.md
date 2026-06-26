@@ -1,5 +1,7 @@
 # Performance sweep
 
+> **Status:** _Not yet run._ *(See the [run log](README.md#run-log).)*
+
 Full-coverage performance audit of the Prepify client + API: Lighthouse on the key pages, bundle
 weight and code-splitting, image delivery, data-fetching waterfalls, and render cost. Knock out the
 cheap wins; file the structural ones (code-splitting, indexes) to the backlog.
