@@ -1,3 +1,5 @@
+@use '../../helpers.scss' as s;
+
 .recipe-placeholder {
   display: flex;
   align-items: center;
@@ -10,7 +12,7 @@
   aspect-ratio: 4 / 3;
   // Soft tint of the brand orange so it reads as "no photo" not "broken".
   background: linear-gradient(135deg, #fff3ee, #ffe1d4);
-  color: #ff8a65;
+  color: s.$primary-tint;
 
   &__icon {
     width: 36%;
