@@ -75,20 +75,21 @@ a feature flag. Do these together:
   buttons, toasts, and the legal/help/about copy site-wide. Only fix needed: the avatar size-limit toast
   `5mb` → `5MB`. *(Two typos live in MongoDB recipe **data** — "Egg Friend Rice", a granola "Tt's" — not
   code; out of scope for a code change.)* **(nice-to-have)**
-- `[x]` **Accessibility (WCAG 2.1 AA) sweep — Lighthouse a11y 100** *(PRs #179 structural, #181 grey,
-  #184 brand+nav+beta; 2026-06-25)*. Structured axe-core + Lighthouse audit of **every** page, logged-out
-  **and** logged-in (Account tabs / all 4 Settings sections / Add Recipe via the Cypress token bridge), plus
-  keyboard + a11y-tree spot-checks. **Lighthouse a11y is now 100 on every route except Settings-danger (96)**
-  — up from the 80s/90s baseline. Structural wins (#179): hamburger accessible name, StarRating
-  `nested-interactive`, ingredient `<li role=checkbox>` → inner `<div>`, Add-Recipe button-name +
-  react-select labels, heading order, RecipeCard label-in-name, auth-page `<main>` landmarks,
-  skip-to-content link, global `prefers-reduced-motion`; modals verified for focus-trap + Esc + restore.
-  Contrast fully closed across three PRs: muted-grey token (#181), brand orange/teal on-light variants
-  (#184), the nav-logo on light surfaces (#184), and the **beta-tag** recolour (#184) — the last of which
-  **unpinned the binary `color-contrast` audit** that had held every page at ~96. The Phase-5 cutover still
-  removes the beta tag entirely. The shared `$error-red` danger token was also darkened (`#dc3545`→`#c5303f`),
-  taking the final route (Settings-danger) to 100. *(SR checks were programmatic, headless — no live
-  VoiceOver in CI.)* **(nice-to-have → done — Lighthouse a11y 100 on all 22 routes)**
+- `[~]` **Accessibility (WCAG 2.1 AA) sweep — structural + most contrast done; brand orange reverted to vivid
+  (owner call)** *(PRs #179 structural, #181 grey, #184 brand+nav+beta; 2026-06-25)*. Structured axe-core +
+  Lighthouse audit of **every** page, logged-out **and** logged-in (Account tabs / all 4 Settings sections /
+  Add Recipe via the Cypress token bridge), plus keyboard + a11y-tree spot-checks. Structural wins (#179):
+  hamburger accessible name, StarRating `nested-interactive`, ingredient `<li role=checkbox>` → inner
+  `<div>`, Add-Recipe button-name + react-select labels, heading order, RecipeCard label-in-name, auth-page
+  `<main>` landmarks, skip-to-content link, global `prefers-reduced-motion`; modals verified for focus-trap
+  + Esc + restore. Contrast: muted-grey token (#181), brand **teal**, the **beta-tag** recolour, and the
+  shared **`$error-red`** all shipped AA (#184); #184 briefly reached Lighthouse a11y **100 on all 22
+  routes.** **Then the brand ORANGE was reverted to the vivid `#ff5722` at the owner's request** (the AA
+  `#bf360c` read too "brown") — so the orange logo/CTAs/accents re-fail AA and **Lighthouse a11y is back to
+  ~96–97 on the routes that use orange** (the rest stay 100). The token plumbing is intact, so restoring AA
+  is a one-line flip pending a brand-colour decision (shade exploration filed in `BACKLOG.md → Accessibility`).
+  *(SR checks were programmatic, headless — no live VoiceOver in CI.)* **(structural done; brand-orange
+  contrast parked on an owner brand decision)**
 - `[ ]` **Favicon, page titles, social/OG meta** — verify `index.html` + per-page titles
   (`react-helmet-async` is already a dependency) and an OG image for link previews. **(nice-to-have)**
 - `[x]` **Remove dev-only UI from production** — `@tanstack/react-query-devtools` is a devDependency;
@@ -441,5 +442,13 @@ The one code-actionable blocker called out in the readiness run above is done.
   plans to migrate off Edamam (filed to BACKLOG → Tech debt). §B "Rotate any key…" → `[x]` (waived).
 - Net: the only open security *blocker* left in Section B is confirming the production `FRONTEND_URLS`
   CORS value (tracked `[~]`); the dependency-audit and residual-API items are non-blocking.
+
+### 2026-06-25 — ui: lighter page backdrop + brand orange reverted to vivid (owner call)
+Two changes after the a11y contrast work: (1) lifted the page backdrop `body` to a softer `#f5f5f5` via a
+new `$page-bg` token (the `#eeeeee` fill token is unchanged); (2) per owner decision, reverted the brand
+**orange** from the AA `#bf360c` back to the vivid `#ff5722` (`$primary-accessible`) — it read too "brown."
+This intentionally re-fails AA on the orange logo/CTAs/accents and drops Lighthouse a11y to ~96–97 on the
+orange routes (rest stay 100); teal/beta/error-red/grey AA fixes are kept. Token plumbing intact → restoring
+AA later is a one-line flip; shade exploration filed in BACKLOG → Accessibility.
 
 _`/release-readiness` appends dated run summaries here._
