@@ -333,6 +333,19 @@ The triage date stamped on items is the date they were filed here, not when they
   evaluate licensing/cost and whether it can also cover the macros currently stored in `nutritionData`.
   Note: because of this planned retirement, the formerly-bundle-public Edamam keys are **intentionally not
   being rotated** (see RELEASE_PLAN §B "Rotate any key…"). No deadline; not a 1.0 blocker.
+- `[ ]` **`@jclind/ingredient-parser` data is co-mingled in the Prepify app DB** — the parser's
+  ingredient data (from the v1 *in-process* library era, when the package wrote to whatever Mongo it was
+  handed — Prepify's own `prepify` database) lives in the **same** DB as the app's recipes/users/reviews.
+  **Confirmed by the 2026-06-25 inventory:** the two collections are `ingredients` (119 docs, 755KB — the
+  single largest thing in the DB) and `ingredient_names` (135) (plus an empty `kroger_prices`); the Prepify
+  server has **zero** `collection('ingredients'|'ingredient_names'|'kroger_prices')` references, and v2's
+  `ingredientParser` only calls the hosted proxy (it's never handed a Mongo handle —
+  `server/routes/ingredients.js`). **⚠️ NOT vestigial / do NOT delete:** `ingredients` + `ingredient_names`
+  are **live data owned by the `@jclind/ingredient-parser` server** — they just live in the wrong DB. The
+  fix is to **relocate them to the parser service's own database**, not drop them. **Folds into the dev/prod
+  Mongo split:** `mongodump --excludeCollection` these from the Prepify-app prod dump (so the new app prod
+  cluster is born clean) while **preserving** them in `Cluster0` until the parser service has its own home.
+  *(surfaced 2026-06-25 during dev/prod environment-split planning.)* **(post-1.0; not a blocker)**
 - `[ ]` **Account tab heading duplicates SegmentedNav's route map** — the visually-hidden per-tab `<h2>`
   in `Account.tsx` (added for heading-order in the a11y sweep) derives its label from an inline
   `location.pathname.includes(...)` chain that re-encodes the four account route strings
