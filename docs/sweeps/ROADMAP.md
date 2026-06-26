@@ -1,0 +1,131 @@
+# Sweeps — Roadmap & "where are we?"
+
+A parallelism-aware plan for running the five [assurance sweeps](README.md) to completion, designed so
+the inevitable **deferred tail** of each sweep (fix-small / file-large) becomes the next wave of work
+instead of getting lost in the backlog. Companion to [`README.md`](README.md) (the playbooks + run-log
+ledger) and modelled on [`../RELEASE_GAMEPLAN.md`](../RELEASE_GAMEPLAN.md) (the same board/waves/log
+pattern, applied to the release).
+
+**Point Claude Code here to pick up where the last session left off** — the [continue-protocol](#how-to-use-this-doc-the-continue-protocol)
+below tells it how to find the next available track and claim it without colliding with an in-flight worktree.
+
+---
+
+## How to use this doc (the continue-protocol)
+
+If you're Claude Code and were pointed at this file to "continue the sweeps," do exactly this:
+
+1. **Read the [Board](#board).** The active wave is the lowest-numbered wave not yet fully `[x]`.
+2. **Pick the next track** in that wave whose status is `[ ]` *and* whose **Domain** doesn't collide with
+   any `[~]`/`[P]` track already in flight — check the [Parallelism rules](#parallelism-rules) first.
+   If everything runnable is blocked or in-flight, say so and stop; don't force a colliding track.
+3. **Claim it.** `/worktree-create <sweep> — <goal>`, then set the track's Board status to `[~]` with your
+   branch + today's date and **commit that claim first** so a concurrent session sees the worktree is taken.
+4. **Run the sweep** per its playbook in this directory (e.g. [`security.md`](security.md)). Fix small/safe in
+   place; file everything structural to [`../BACKLOG.md`](../BACKLOG.md) with a `surfaced YYYY-MM-DD` note.
+   Newly-surfaced deferrals get added to this roadmap's **Wave 2/3** as new tracks — that's the point of the doc.
+5. **On PR open** flip the track to `[P]`; **on merge** flip to `[x]`, append a [Status log](#status-log)
+   entry, and update the [README run-log](README.md#run-log) ledger + the sweep doc's `> Status:` banner.
+6. **When a wave is fully `[x]`,** advance to the next and re-read its overlap notes before kicking off.
+
+> Merge hygiene for parallel worktrees: **edit only your own track's row** (distinct lines → git
+> auto-merges) and keep the Status log **append-only** at the bottom. The reviewer reconciles the rest.
+
+---
+
+## Board
+
+Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merged · `[blocked]` waiting on a decision.
+
+| Wave | Track | Status | Domain (collision surface) | Branch / PR |
+|---|---|---|---|---|
+| — | Accessibility sweep (initial) | `[x]` | — | #179 (+#181/#184) |
+| — | Design-consistency sweep (initial) | `[x]` | — | #180 (+#183/#185/#186/#192) |
+| **1** | **Security sweep** | `[ ]` | `server/` (routes, middleware, `app.js` CORS), Firebase rules, `.env.example`, `src/api/http-common.ts` | — |
+| **1** | **Performance sweep** | `[ ]` | measure → backlog; cheap wins = `<img>` dims/`loading` in a few components | — |
+| **1** | **Code-quality & tests sweep** | `[ ]` | `src/test/`, `server/` tests, `cypress/`, types, **dead-code delete (`RecipeThumbnail`)**, error handling | — |
+| **2-iso** | A11y: autocomplete listbox + keyboard nav | `[ ]` | `SearchRecipesInput.tsx` | — |
+| **2-iso** | A11y: servings stepper target-size | `[ ]` | `SingleRecipe.tsx/.scss` (pill layout) | — |
+| **2-iso** | A11y: account-heading route-map | `[ ]` | `Account.tsx` | — |
+| **2-iso** | Design: shared react-modal style config | `[ ]` | 7 modal components | — |
+| **2-iso** | Design: one icon per concept | `[ ]` | new `src/Components/icons` + import swaps | — |
+| **2-iso** | Design: `RecipeFormInput` → shared `FormInput` | `[ ]` | `AddRecipe/*`, `Components/Form/*` | — |
+| **2-iso** | Design: toast punctuation + string dedupe | `[ ]` | ~10 toast call sites (TSX strings) | — |
+| **2-iso** | Design: codify loading-state pattern | `[ ]` | convention + `TailSpin`/skeleton outliers | — |
+| **2-scss** | Design: pill `.btn` system | `[ ]` | **`index.scss` + many page `.scss`** ⚠ chokepoint | — |
+| **2-scss** | Design: type scale (~520 `font-size:` literals) | `[ ]` | **`helpers.scss` + ~60 files** ⚠ chokepoint | — |
+| **2-scss** | Design: elevation/shadow re-author (~52 literals) | `[ ]` | **`helpers.scss` + page `.scss`** ⚠ chokepoint | — |
+| **2-scss** | Design: one danger-red token | `[ ]` | **`helpers.scss` + SingleRecipe/ReportControl/…** ⚠ chokepoint | — |
+| **2-scss** | Design: name the `$admin-*` sub-palette | `[ ]` | **`helpers.scss` + Admin/moderation `.scss`** ⚠ chokepoint | — |
+| **2-scss** | A11y: `$primary-hover` AA-on-hover | `[ ]` | **`helpers.scss`** ⚠ chokepoint | — |
+| **blocked** | A11y: brand-orange contrast (AA) | `[blocked]` | `helpers.scss` `$primary-accessible` — **needs the brand-orange decision** | — |
+| **blocked** | Design: collapse remaining brand shades | `[blocked]` | entangled with the brand-orange recolor above | — |
+| **3** | Re-sweep & verify before 1.0 | `[ ]` | re-run baselines (Lighthouse a11y/perf, `npm audit`, `tsc`/tests); reconcile `RELEASE_PLAN.md` §A/§C | — |
+
+*(The 2-iso / 2-scss / blocked items are the deferred tails of the two completed sweeps — see
+[`../BACKLOG.md`](../BACKLOG.md) → Accessibility / UX-visual-polish / Tech-debt for the full write-ups.)*
+
+---
+
+## Parallelism rules
+
+1. **The SCSS token system is the chokepoint.** Every `2-scss` track edits `helpers.scss` and/or shared page
+   styles, so **only one `2-scss` worktree may be in flight at a time** (the sweep-equivalent of the release's
+   "Sass migration is the loner"). The `2-iso` tracks touch *distinct* files and run freely alongside it and
+   each other. This is why Wave 2 is split: `2-iso` parallelizes, `2-scss` serializes.
+2. **`RecipeThumbnail` deletion belongs to exactly one track.** Both the Wave-1 code-quality sweep (dead-code
+   pass) and the design tail want to delete it. **Code-quality owns it** (it's a dead-code delete, verified no
+   live importer); the design "delete `RecipeThumbnail`" backlog item closes when that merges. Don't do it twice.
+3. **Server routes overlap between Security and Code-quality.** Security is read-mostly (small hardening);
+   code-quality's server work should stay in tests + `asyncHandler`/error-middleware checks. If both end up
+   editing the same route file, **merge Security first** and rebase code-quality onto it.
+4. **The brand-orange decision gates the `[blocked]` lane.** The a11y sweep reverted `$primary-accessible` to
+   vivid `#ff5722` at the owner's request, which knowingly re-fails AA on ~96–97 routes. The contrast +
+   shade-dedupe tracks can't land until that brand call is made — don't recolor blind. See
+   [`../BACKLOG.md`](../BACKLOG.md) → Accessibility (the `[~]` contrast item) for the shade exploration.
+5. **Concurrency budget ≈ 2–4 worktrees** for one reviewer (same as the release). Wave 1's three sweeps fit;
+   in Wave 2, run the single `2-scss` lane + up to ~3 `2-iso` tracks.
+
+**A clean parallel kickoff today:** Security + Performance + Code-quality (Wave 1) in three worktrees — their
+domains barely touch (server vs. measurement vs. tests), modulo rule 3.
+
+---
+
+## The waves
+
+### Wave 1 — the three unrun sweeps (run now, ~3 parallel worktrees)
+The sweeps that have never been run. Largely disjoint file domains, so kick all three off together.
+- **Security** — `security.md`. Read-and-report first; the highest-value check is authz/IDOR. Launch-gating
+  findings also flag in `RELEASE_PLAN.md` §C.
+- **Performance** — `performance.md`. Run Lighthouse against a **prod preview**, not the dev server. Most
+  findings (code-splitting, indexes) are backlog; cheap wins are image dims/`loading`.
+- **Code-quality & tests** — `code-quality.md`. Owns the `RecipeThumbnail` deletion (rule 2). Critical-path
+  coverage + E2E journeys + type soft-spots; keep all suites green.
+
+### Wave 2 — the deferred tails (after Wave 1; one `2-scss` lane + parallel `2-iso`)
+The structural items the two completed sweeps filed. Split by collision surface (see rule 1):
+- **`2-iso` (parallel-safe):** autocomplete listbox, servings target-size, account-heading, modal config,
+  icon module, `RecipeFormInput`, toast punctuation, loading-state pattern.
+- **`2-scss` (serialize — one at a time):** pill `.btn` system, type scale, elevation re-author, danger-red
+  token, `$admin-*` palette, `$primary-hover` AA. Each needs design sign-off on the normalization.
+
+### Wave 3 — re-sweep & verify (before the 1.0 cutover)
+Re-run each sweep's automated baseline once to confirm no regressions crept in (Lighthouse a11y/perf,
+`npm audit`, `tsc`/tests), re-run the **accessibility** sweep once the brand-orange decision lands to confirm
+AA is restored, and reconcile `RELEASE_PLAN.md` §A/§C against the final state.
+
+---
+
+## Status log
+
+Append-only; newest at the bottom. Mirrors the run-log ledger in [`README.md`](README.md#run-log) but
+narrates the *why*.
+
+- _2026-06-25_ — **Accessibility sweep** run (PR #179, contrast follow-ups #181/#184). Cheap wins shipped;
+  5 follow-ups filed → Wave 2 (`2-iso`: autocomplete, target-size, account-heading; `2-scss`: `$primary-hover`;
+  `[blocked]`: brand-orange). Recipe page 89→97.
+- _2026-06-25_ — **Design-consistency sweep** run (PR #180, token follow-ups #183/#185/#186/#192). Cheap wins
+  + radius/breakpoint/admin-wiring/decorative-tint shipped; ~10 follow-ups filed → Wave 2.
+- _2026-06-26_ — Roadmap created. Wave 1 (Security / Performance / Code-quality) defined and open; the two
+  completed sweeps' tails organized into Wave 2 (`2-iso` parallel + `2-scss` serialized) and a `[blocked]`
+  brand-orange lane; Wave 3 = pre-1.0 re-sweep. Nothing in Wave 1 started yet.
