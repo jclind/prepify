@@ -316,10 +316,14 @@ The triage date stamped on items is the date they were filed here, not when they
     danger tint 5.14, and white-on-fill 5.43). Safe across all 13 usages (text / fill / border each gain
     contrast); alert boxes unaffected (own `$alert-error-red-text #721c24`). Took the last route —
     Settings-danger — to 100. Danger zone + inline validation visually re-checked.
-- `[ ]` **Servings stepper input is below the 24px touch-target minimum** — the `.serv-input` in the
+- `[x]` **Servings stepper input is below the 24px touch-target minimum** — the `.serv-input` in the
   Ingredients servings pill (`SingleRecipe.tsx`) trips Lighthouse `target-size`. A label was added in
   track 4-qa (`aria-label="Servings"`), but enlarging the tap target is a layout change to the pill.
-  *(surfaced 2026-06-23, track 4-qa; re-confirmed 2026-06-25 in the accessibility sweep.)*
+  *(surfaced 2026-06-23, track 4-qa; re-confirmed 2026-06-25 in the accessibility sweep.)* **Fixed
+  2026-06-27 (Wave 2 `2-iso`):** all three controls in `SingleRecipe.scss` sized past the WCAG 2.5.8
+  minimum — `.step-btn` 26→32px, `.serv-input` given `width:28px`/`height:32px` (was ~14px). Rendered
+  boxes measured 32×32 / 28×32 in the running app; compact pill aesthetic preserved (desktop + 380px
+  mobile re-shot, no overflow). CSS-only; markup/aria untouched.
 - `[ ]` **`$primary-hover` token (`#e74e1d`) fails WCAG AA on hover** — the design-tokens track added
   `$primary-hover: #e74e1d` (`helpers.scss`) and points several **white-on-fill button hovers** at it
   (`Home.scss:175`, `SingleRecipe.scss:659`, `RecipeNotFound.scss:87`) plus a **text** hover
