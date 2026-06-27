@@ -14,7 +14,12 @@ const PER_COL = 4
 const MealRow: FC<{ recipe: RecipeType }> = ({ recipe }) => (
   <li>
     <Link to={`/recipes/${recipe._id}`}>
-      <img src={recipe.recipeImage} alt='' />
+      <img
+        src={recipe.recipeImage}
+        alt=''
+        loading='lazy'
+        decoding='async'
+      />
       <div className='info'>
         <span className='title'>{recipe.title}</span>
         <span className='sub'>

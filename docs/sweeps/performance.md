@@ -1,6 +1,10 @@
 # Performance sweep
 
-> **Status:** _Not yet run._ *(See the [run log](README.md#run-log).)*
+> **Status:** Run 2026-06-26 (PR #198). Cheap wins shipped: image `loading`/`decoding` deferral on the Home
+> cards, `RecipeCard` memo + `decoding`, trending `staleTime`. 6 structural follow-ups → BACKLOG (Tech debt):
+> route code-splitting, missing Mongo indexes, `/recipes/facets` scans, recipe-page CLS pop-in, `AuthContext`
+> memo, image `srcset`. Image `width`/`height` was trialled + reverted (doubled recipe CLS; boxes already
+> CSS-reserved). *(See the [run log](README.md#run-log).)*
 
 Full-coverage performance audit of the Prepify client + API: Lighthouse on the key pages, bundle
 weight and code-splitting, image delivery, data-fetching waterfalls, and render cost. Knock out the

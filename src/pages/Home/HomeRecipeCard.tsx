@@ -13,7 +13,12 @@ import { skeletonColor, fmtPrice, ratingLabel } from './homeFormat'
 export const HomeRecipeCard: FC<{ recipe: RecipeType }> = ({ recipe }) => (
   <Link to={`/recipes/${recipe._id}`} className='home-recipe-card'>
     <div className='thumb'>
-      <img src={recipe.recipeImage} alt={recipe.title} />
+      <img
+        src={recipe.recipeImage}
+        alt={recipe.title}
+        loading='lazy'
+        decoding='async'
+      />
       {recipe.servingPrice != null && (
         <span className='price-chip'>{fmtPrice(recipe.servingPrice)}/serv</span>
       )}
