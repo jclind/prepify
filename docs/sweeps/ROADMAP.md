@@ -62,7 +62,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | — | Accessibility sweep (initial) | `[x]` | — | #179 (+#181/#184) |
 | — | Design-consistency sweep (initial) | `[x]` | — | #180 (+#183/#185/#186/#192) |
 | **1** | **Security sweep** | `[ ]` | `server/` (routes, middleware, `app.js` CORS), Firebase rules, `.env.example`, `src/api/http-common.ts` | — |
-| **1** | **Performance sweep** | `[P]` | measure → backlog; cheap wins = `<img>` dims/`loading` in a few components | #198 (`worktree-feat+performance-sweep`) |
+| **1** | **Performance sweep** | `[P]` | measure → backlog; cheap wins = image `loading`/`decoding` deferral + grid memo + trending cache (img dims trialled & reverted — CLS) | #198 (`worktree-feat+performance-sweep`) |
 | **1** | **Code-quality & tests sweep** | `[ ]` | `src/test/`, `server/` tests, `cypress/`, types, **dead-code delete (`RecipeThumbnail`)**, error handling | — |
 | **2-iso** | A11y: autocomplete listbox + keyboard nav | `[ ]` | `SearchRecipesInput.tsx` | — |
 | **2-iso** | A11y: servings stepper target-size | `[ ]` | `SingleRecipe.tsx/.scss` (pill layout) | — |
@@ -157,3 +157,7 @@ narrates the *why*.
   image `srcset`). Image `width`/`height` was trialled and **reverted** — the hero/thumb boxes are already
   CSS-reserved, so dims gave no benefit and reproducibly doubled recipe-page CLS (0.10 → 0.26). home-mobile
   66 → 69; no regressions.
+- _2026-06-27_ — **Performance sweep code review** (PR #198, still `[P]`). High-effort review of the diff: all
+  four changes correct, no regressions. One follow-up filed (now 7 total) — `React.memo(RecipeCard)` is defeated
+  on the Saved tab because `refreshAfterMutation` is an unmemoized inline callback; the memo lands as intended on
+  the `/recipes` grid. Filed to Tech debt (wrap in `useCallback`); pairs with the `AuthContext` memo item.

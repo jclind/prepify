@@ -585,6 +585,12 @@ The triage date stamped on items is the date they were filed here, not when they
   the remaining list rows (`RecipeReview`, and `IngredientItem` — the latter sits in a `@hello-pangea/dnd` list,
   so verify DnD still works before memoizing). The `/recipes` grid card (`RecipeCard`) was memoized in the sweep.
   *(surfaced 2026-06-26 in the Performance sweep.)*
+- `[ ]` **Perf: `RecipeCard` memo is defeated on the Saved tab** (`src/pages/Account/SavedRecipes/SavedRecipes.tsx:138`)
+  — `refreshAfterMutation` is a plain inline `() => {}` passed as `onMutated`, so its identity changes every parent
+  render and `React.memo(RecipeCard)` always re-renders every saved card. The memo lands correctly on the `/recipes`
+  grid (no `onMutated`, stable `recipe` identities), but to realize it on the Saved tab too, wrap
+  `refreshAfterMutation` in `useCallback`. One line; pairs with the `AuthContext`/list-row memo work above. Low
+  measured impact (TBT ≈ 0). *(surfaced 2026-06-27 in the Performance sweep code review.)*
 - `[ ]` **Perf: Firebase Storage recipe images are served single-size with no `srcset`/resize pipeline** — every
   `recipe.recipeImage` is a direct full-size Storage URL, so mobile downloads desktop-sized images (a contributor
   to the mobile LCP above). Structural: a Storage resize pipeline (or an image CDN) emitting width variants +
