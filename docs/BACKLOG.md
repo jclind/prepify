@@ -437,7 +437,7 @@ findings table.)*
   Mongo split:** `mongodump --excludeCollection` these from the Prepify-app prod dump (so the new app prod
   cluster is born clean) while **preserving** them in `Cluster0` until the parser service has its own home.
   *(surfaced 2026-06-25 during dev/prod environment-split planning.)* **(post-1.0; not a blocker)**
-- `[ ]` **Account tab heading duplicates SegmentedNav's route map** — the visually-hidden per-tab `<h2>`
+- `[x]` **Account tab heading duplicates SegmentedNav's route map** — the visually-hidden per-tab `<h2>`
   in `Account.tsx` (added for heading-order in the a11y sweep) derives its label from an inline
   `location.pathname.includes(...)` chain that re-encodes the four account route strings
   (`saved-recipes`/`ratings`/`your-recipes`/`drafts`) already defined in
@@ -445,7 +445,11 @@ findings table.)*
   fuller than the short tab labels, so they can't just reuse the labels — but if a tab's route is
   renamed in SegmentedNav, this heading silently goes stale. Fix: derive both from a single
   route→label source. *(surfaced 2026-06-25 in the accessibility-sweep code review, PR #179; not worth
-  blocking the merge.)*
+  blocking the merge.)* **Resolved 2026-06-27 (Wave 2 `2-iso`):** extracted the tab defs into
+  `src/pages/Account/components/accountTabs.tsx` (now carrying an `srHeading` field per route) +
+  a shared `activeAccountTabIndex(pathname)` helper; SegmentedNav and Account's `<h2>` both derive
+  from it, so the heading uses the same route-matching as the nav highlight and can't drift. +4 tests
+  asserting the SR heading per route.
 - `[ ]` **One-off rating-aggregate reconciliation** — stored `recipes.rating` aggregates can drift from
   the actual `ratings` docs (confirmed live: *Homemade Granola* stored `5/4.6` vs true `4/4.5`). Likely
   legacy/pre-recompute data or a past silent best-effort failure. Write a script (alongside

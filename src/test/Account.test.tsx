@@ -86,6 +86,10 @@ const renderAccount = (initialPath = '/account/saved-recipes') =>
                 path='your-recipes'
                 element={<div data-testid='your-recipes-outlet' />}
               />
+              <Route
+                path='drafts'
+                element={<div data-testid='drafts-outlet' />}
+              />
             </Route>
           </Routes>
         </HelmetProvider>
@@ -165,6 +169,24 @@ describe('Account page', () => {
       expect(screen.getByText('Saved').closest('.acct-seg')).not.toHaveClass(
         'active'
       )
+    })
+  })
+
+  // The visually-hidden <h2> labels the active tab's panel for screen readers so
+  // the card <h3>s inside don't skip a level under the profile <h1>. It and the
+  // SegmentedNav highlight both derive from accountTabs, so this also guards
+  // against the two drifting apart if a route is renamed.
+  describe('screen-reader panel heading', () => {
+    it.each([
+      ['/account/saved-recipes', 'Saved recipes'],
+      ['/account/ratings', 'Your ratings'],
+      ['/account/your-recipes', 'Recipes you created'],
+      ['/account/drafts', 'Your drafts'],
+    ])('names the panel at %s as "%s"', async (path, heading) => {
+      renderAccount(path)
+      expect(
+        await screen.findByRole('heading', { level: 2, name: heading })
+      ).toBeInTheDocument()
     })
   })
 
