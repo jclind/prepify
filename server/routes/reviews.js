@@ -19,7 +19,7 @@ const router = Router()
 const MAX_PER_PAGE = 50
 
 // POST /addRating
-router.post('/addRating', verifyToken, requireActive, asyncHandler(async (req, res) => {
+router.post('/addRating', verifyToken, requireActive, reviewWriteLimiter, asyncHandler(async (req, res) => {
   const { recipeId, rating } = req.query
   const db = getDB()
   // Identity is the stable uid (D1); the username is denormalized onto the
@@ -111,7 +111,7 @@ router.post('/newReview', verifyToken, requireActive, reviewWriteLimiter, asyncH
 router.get('/checkIfReviewed', verifyToken, asyncHandler(async (req, res) => {
   const db = getDB()
   const { recipeId } = req.query
-  if (!recipeId) {
+  if (!recipeId || typeof recipeId !== 'string') {
     return res.status(400).json({ error: 'recipeId is required' })
   }
 
@@ -158,7 +158,7 @@ router.delete('/deleteReview', verifyToken, asyncHandler(async (req, res) => {
   const db = getDB()
   const { recipeId } = req.query
   const userId = req.uid
-  if (!recipeId) {
+  if (!recipeId || typeof recipeId !== 'string') {
     return res.status(400).json({ error: 'recipeId is required' })
   }
 
@@ -194,7 +194,7 @@ router.delete('/removeRating', verifyToken, asyncHandler(async (req, res) => {
   const db = getDB()
   const { recipeId } = req.query
   const userId = req.uid
-  if (!recipeId) {
+  if (!recipeId || typeof recipeId !== 'string') {
     return res.status(400).json({ error: 'recipeId is required' })
   }
 
@@ -230,7 +230,7 @@ router.delete('/removeRating', verifyToken, asyncHandler(async (req, res) => {
 router.get('/getReviews', optionalAuth, asyncHandler(async (req, res) => {
   const db = getDB()
   const { recipeId, page = 0, reviewsPerPage = 5, filter } = req.query
-  if (!recipeId) return res.status(400).json({ error: 'recipeId is required' })
+  if (!recipeId || typeof recipeId !== 'string') return res.status(400).json({ error: 'recipeId is required' })
 
   const limit = Math.min(parseInt(reviewsPerPage) || 5, MAX_PER_PAGE)
   const skip = (parseInt(page) || 0) * limit

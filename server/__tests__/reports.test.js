@@ -69,7 +69,11 @@ describe('POST /api/reports', () => {
       .set(AUTH_HEADER)
       .send({ targetType: 'review', recipeId: 'recipe-001', reportedUsername: 'baduser', reason: 'offensive' })
     expect(res.status).toBe(201)
-    expect(res.body.reportedUid).toBe('bad-uid')
+    // reportedUid is stamped on the stored doc but never echoed to the reporter
+    // (echoing it leaked any handle's Firebase uid — see the route comment).
+    expect(res.body.reportedUid).toBeUndefined()
+    const stored = await getDB().collection('reports').findOne({ reporterUid: TEST_UID })
+    expect(stored.reportedUid).toBe('bad-uid')
   })
 
   it('leaves reportedUid null when the reported handle has no account', async () => {
@@ -78,7 +82,8 @@ describe('POST /api/reports', () => {
       .set(AUTH_HEADER)
       .send({ targetType: 'review', recipeId: 'recipe-001', reportedUsername: 'ghost', reason: 'offensive' })
     expect(res.status).toBe(201)
-    expect(res.body.reportedUid).toBeNull()
+    const stored = await getDB().collection('reports').findOne({ reporterUid: TEST_UID })
+    expect(stored.reportedUid).toBeNull()
   })
 
   it('does not stamp reportedUid on a recipe report', async () => {
@@ -87,7 +92,8 @@ describe('POST /api/reports', () => {
       .set(AUTH_HEADER)
       .send(validRecipeReport)
     expect(res.status).toBe(201)
-    expect(res.body.reportedUid).toBeUndefined()
+    const stored = await getDB().collection('reports').findOne({ reporterUid: TEST_UID })
+    expect(stored.reportedUid).toBeUndefined()
   })
 
   it('creates a user report carrying reportedUsername and no recipeId', async () => {
@@ -110,7 +116,9 @@ describe('POST /api/reports', () => {
       .set(AUTH_HEADER)
       .send({ targetType: 'user', reportedUsername: 'baduser', reason: 'offensive' })
     expect(res.status).toBe(201)
-    expect(res.body.reportedUid).toBe('bad-uid')
+    expect(res.body.reportedUid).toBeUndefined()
+    const stored = await getDB().collection('reports').findOne({ reporterUid: TEST_UID })
+    expect(stored.reportedUid).toBe('bad-uid')
   })
 
   it('requires reportedUsername for a user report', async () => {
