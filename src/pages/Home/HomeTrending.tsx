@@ -8,6 +8,9 @@ const HomeTrending: FC = () => {
   const { data, isLoading, isError } = useQuery<RecipeType[]>({
     queryKey: ['trending-recipes'],
     queryFn: () => RecipeAPI.getTrendingRecipes(4),
+    // Trending shifts slowly; match the For-You / by-meal rows (5 min) so a
+    // Home re-visit serves from cache instead of refetching on every mount.
+    staleTime: 5 * 60 * 1000,
   })
 
   const recipes = data ?? []
