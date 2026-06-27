@@ -640,6 +640,29 @@ findings table.)*
     never tripped either. The guards are no-ops once the sandbox restores these globals. Surfaced during
     track 1c review, 2026-06-18.)*
 
+- `[ ]` **Server Jest suite is flaky under CPU contention (~load-dependent)** — the full server suite
+  (`cd server && npm test`, i.e. `jest --runInBand`) intermittently fails **one random test per run** while
+  **every suite passes 100% in isolation**. Observed failing tests across runs were all different and all in
+  DB-/auth-heavy suites: `auth setUsername (<3 chars)` → 404 (expected 400), `auth setUsername rename
+  propagation`, `moderation-routes updatePhoto fail-closed` → wrong status, `admin/analytics recent actions`
+  → 404 (expected 200), `reports queue` → 401 (expected 200). Repro rate was ~10–30% **only while the machine
+  was under load** (the worktree's dev servers + concurrent jest runs); on an unloaded machine the suite went
+  10/10 green. Diagnosis: not a product bug (zero source changes; the routes are correct) — it's **test-harness
+  isolation under timing pressure**. Two contributing vectors: (1) each of the 30 suites spins up its **own**
+  `MongoMemoryReplSet` (`server/__tests__/setup.js`), so under contention an operation can trip
+  `serverSelectionTimeoutMS: 5000`; (2) fragile one-shot auth mocks — `admin.auth.mockReturnValueOnce(...)` /
+  `verifyIdToken.mockResolvedValueOnce(...)` in `reviews.test.js`/`security.test.js` assume the *next*
+  `admin.auth()` call is the intended request; a stray/async call (leaked fire-and-forget audit/email work)
+  can consume the "once" and shift it onto the wrong request → spurious 401/wrong-uid. **CI impact is low**
+  because CI runs `--runInBand` on a dedicated runner (one replSet at a time, minimal contention), but the
+  baseline `npm test` *did* fail on a first cold run, so it can still red a PR occasionally. Recommended fix
+  (structural): share a **single** in-memory Mongo across the suite via Jest `globalSetup`/`globalTeardown`
+  with per-file collection cleanup (removes the per-file replSet churn — faster *and* far less contention), and
+  replace the `*Once` auth overrides with scoped per-request mocks (e.g. set `extraClaims`/`__setClaims`
+  deterministically, or a `withUser(uid)` helper that resets after the awaited request). *(surfaced 2026-06-26
+  in the code-quality & tests sweep; characterized over ~30 full-suite runs. NOT introduced by the sweep —
+  pre-existing on `development`.)*
+
 ## Ideas / needs a decision
 
 - `[ ]` **Friend system** — **post-1.0** (decided 2026-06-17). Backlog only; not in the 1.0 scope.
