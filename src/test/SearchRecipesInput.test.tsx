@@ -18,6 +18,12 @@
  *   - the same mounted instance navigates on every click — no stuck guard
  *     (regression: the navbar instance is never remounted),
  *   - keyboard activation (Enter/Space → click, no mousedown) still works.
+ *
+ * A second suite pins the ARIA combobox/listbox contract added in the Wave 2
+ * accessibility sweep: the input is a `role="combobox"`, results are valid
+ * `<li role="option">` direct children of the listbox, and arrow/Home/End/Enter/
+ * Escape drive the highlight via `aria-activedescendant` without moving focus
+ * off the input.
  */
 
 import React from 'react'
@@ -140,5 +146,107 @@ describe('SearchRecipesInput — autocomplete result activation', () => {
     // Keyboard activation dispatches a click with no preceding mousedown.
     fireEvent.click(firstOption)
     expect(navigateSpy).toHaveBeenCalledWith('/recipes/abc123')
+  })
+})
+
+describe('SearchRecipesInput — combobox / listbox semantics + keyboard nav', () => {
+  it('exposes the input as a combobox whose aria-expanded tracks the popup', async () => {
+    const user = userEvent.setup()
+    renderInput()
+    const combobox = screen.getByRole('combobox')
+    expect(combobox).toHaveAttribute('aria-expanded', 'false')
+
+    await openDropdown(user)
+    expect(combobox).toHaveAttribute('aria-expanded', 'true')
+    // aria-controls points at the live listbox element.
+    expect(combobox).toHaveAttribute(
+      'aria-controls',
+      screen.getByRole('listbox').id
+    )
+  })
+
+  it('renders options as <li role="option"> direct children of the listbox', async () => {
+    const user = userEvent.setup()
+    renderInput()
+    await openDropdown(user)
+
+    const listbox = screen.getByRole('listbox')
+    const options = screen.getAllByRole('option')
+    expect(options).toHaveLength(2)
+    options.forEach(opt => {
+      expect(opt.tagName).toBe('LI')
+      // No intermediate wrapper / no <button>: options are direct children.
+      expect(opt.parentElement).toBe(listbox)
+    })
+  })
+
+  it('moves the highlight with ArrowDown via aria-activedescendant + aria-selected', async () => {
+    const user = userEvent.setup()
+    renderInput()
+    await openDropdown(user)
+    const combobox = screen.getByRole('combobox')
+    // No option highlighted until the user navigates.
+    expect(combobox).not.toHaveAttribute('aria-activedescendant')
+
+    await user.keyboard('{ArrowDown}')
+    const [first, second] = screen.getAllByRole('option')
+    expect(combobox).toHaveAttribute('aria-activedescendant', first.id)
+    expect(first).toHaveAttribute('aria-selected', 'true')
+    expect(second).toHaveAttribute('aria-selected', 'false')
+
+    await user.keyboard('{ArrowDown}')
+    expect(combobox).toHaveAttribute('aria-activedescendant', second.id)
+    expect(second).toHaveAttribute('aria-selected', 'true')
+    expect(first).toHaveAttribute('aria-selected', 'false')
+  })
+
+  it('wraps around the ends with ArrowUp/ArrowDown', async () => {
+    const user = userEvent.setup()
+    renderInput()
+    await openDropdown(user)
+    const combobox = screen.getByRole('combobox')
+    const [first, second] = screen.getAllByRole('option')
+
+    // ArrowUp from no selection wraps to the last option.
+    await user.keyboard('{ArrowUp}')
+    expect(combobox).toHaveAttribute('aria-activedescendant', second.id)
+    // ArrowDown from the last option wraps back to the first.
+    await user.keyboard('{ArrowDown}')
+    expect(combobox).toHaveAttribute('aria-activedescendant', first.id)
+  })
+
+  it('Enter on a highlighted option navigates to it (not a full search)', async () => {
+    const user = userEvent.setup()
+    renderInput()
+    await openDropdown(user)
+
+    await user.keyboard('{ArrowDown}{ArrowDown}{Enter}')
+    expect(navigateSpy).toHaveBeenCalledTimes(1)
+    expect(navigateSpy).toHaveBeenCalledWith('/recipes/def456')
+  })
+
+  it('Enter with no highlight runs the full search', async () => {
+    const user = userEvent.setup()
+    renderInput()
+    await openDropdown(user)
+
+    await user.keyboard('{Enter}')
+    expect(navigateSpy).toHaveBeenCalledWith(
+      expect.stringContaining('/recipes?q=')
+    )
+  })
+
+  it('Escape closes the dropdown and collapses the combobox', async () => {
+    const user = userEvent.setup()
+    renderInput()
+    await openDropdown(user)
+    expect(screen.getByRole('listbox')).toBeInTheDocument()
+
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
+    expect(screen.getByRole('combobox')).toHaveAttribute(
+      'aria-expanded',
+      'false'
+    )
   })
 })
