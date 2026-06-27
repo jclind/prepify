@@ -570,6 +570,44 @@ describe('POST /recipes/:id/save', () => {
   })
 })
 
+// ─── POST /madeRecipe ─────────────────────────────────────────────────────────
+
+describe('POST /madeRecipe', () => {
+  beforeEach(async () => {
+    const db = getDB()
+    await db.collection('recipes').insertOne({ ...BASE_RECIPE, numTimesMade: 0 })
+  })
+
+  it('records the recipe and increments numTimesMade on first call', async () => {
+    const res = await request(server)
+      .post(`/api/madeRecipe?recipeId=${RECIPE_ID}`)
+      .set(AUTH_HEADER)
+
+    expect(res.status).toBe(200)
+    expect(res.body).toEqual({ made: true })
+
+    const db = getDB()
+    const recipe = await db.collection('recipes').findOne({ _id: RECIPE_ID })
+    expect(recipe.numTimesMade).toBe(1)
+    const userData = await db.collection('userRecipeData').findOne({ _id: TEST_UID })
+    expect(userData.madeRecipes).toEqual([{ recipeId: RECIPE_ID }])
+  })
+
+  it('does not inflate numTimesMade when the same user re-marks it made', async () => {
+    // Three calls from the same user — madeRecipes is a set, so the global
+    // counter must only count the first (guards against counter inflation).
+    for (let i = 0; i < 3; i++) {
+      await request(server).post(`/api/madeRecipe?recipeId=${RECIPE_ID}`).set(AUTH_HEADER)
+    }
+
+    const db = getDB()
+    const recipe = await db.collection('recipes').findOne({ _id: RECIPE_ID })
+    expect(recipe.numTimesMade).toBe(1)
+    const userData = await db.collection('userRecipeData').findOne({ _id: TEST_UID })
+    expect(userData.madeRecipes).toHaveLength(1)
+  })
+})
+
 // ─── DELETE /recipes/:id/save ─────────────────────────────────────────────────
 
 describe('DELETE /recipes/:id/save', () => {

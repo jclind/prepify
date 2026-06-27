@@ -139,7 +139,13 @@ router.post('/reports', verifyToken, requireActive, asyncHandler(async (req, res
     createdAt: new Date(),
   }
   await db.collection('reports').insertOne(doc)
-  res.status(201).json(doc)
+  // Don't echo the reported account's internal Firebase uid back to the
+  // reporter — returning the raw doc turned this into a username→uid oracle
+  // (file a 'user' report against any handle, read reportedUid off the 201).
+  // The client never reads this body (it only toasts on success), so strip the
+  // internal id; the rest of the doc stays for shape-compatibility.
+  const { reportedUid: _omitReportedUid, ...safeDoc } = doc
+  res.status(201).json(safeDoc)
 }))
 
 // GET /reports — admin queue. Filters by status/targetType, paginates, and

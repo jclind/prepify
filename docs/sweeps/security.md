@@ -1,6 +1,9 @@
 # Security sweep
 
-> **Status:** _Not yet run._ *(See the [run log](README.md#run-log).)*
+> **Status:** Run 2026-06-26 — **PR #197**. Authz/IDOR, CORS, secrets-in-git, and XSS all clean. Cheap
+> hardening shipped (`madeRecipe` counter-inflation, `reports` username→uid oracle, `addRating` limiter,
+> review-route type guards); 8 follow-ups filed → [BACKLOG → Security](../BACKLOG.md#security) (headline:
+> revoke the live OpenAI key on disk). *(See the [run log](README.md#run-log).)*
 
 Full-coverage security audit of the Prepify client + API: secrets, authentication/authorization (incl.
 IDOR), input validation, rate limiting, CORS, Firebase rules, dependency CVEs, and data exposure /
