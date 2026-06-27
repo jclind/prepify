@@ -99,8 +99,11 @@
       text-align: start;
       transition: background 0.1s ease;
 
+      // `.is-active` is the keyboard-navigation highlight (driven by
+      // aria-activedescendant); it mirrors the mouse :hover state.
       &:hover,
-      &:focus-visible {
+      &:focus-visible,
+      &.is-active {
         background: s.$primary-background;
       }
 
