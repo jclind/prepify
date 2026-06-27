@@ -66,7 +66,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **1** | **Code-quality & tests sweep** | `[x]` | `src/test/`, `server/` tests, `cypress/`, types, **dead-code delete (`RecipeThumbnail`)**, error handling | #199 |
 | **2-iso** | A11y: autocomplete listbox + keyboard nav | `[ ]` | `SearchRecipesInput.tsx` | — |
 | **2-iso** | A11y: servings stepper target-size | `[ ]` | `SingleRecipe.tsx/.scss` (pill layout) | — |
-| **2-iso** | A11y: account-heading route-map | `[ ]` | `Account.tsx` | — |
+| **2-iso** | A11y: account-heading route-map | `[~]` | `Account.tsx` | `worktree-feat+account-heading-route-map` (2026-06-27) |
 | **2-iso** | Design: shared react-modal style config | `[ ]` | 7 modal components | — |
 | **2-iso** | Design: one icon per concept | `[ ]` | new `src/Components/icons` + import swaps | — |
 | **2-iso** | Design: `RecipeFormInput` → shared `FormInput` | `[ ]` | `AddRecipe/*`, `Components/Form/*` | — |
