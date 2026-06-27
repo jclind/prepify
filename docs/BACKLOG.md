@@ -539,6 +539,57 @@ The triage date stamped on items is the date they were filed here, not when they
   input/textarea (`RecipeFormInput`/`RecipeFormTextArea`) instead of the shared `Components/Form/FormInput`,
   and Settings/BugReport use raw `<input>`/`<textarea>`/`<select>`. Converge on one input primitive.
   *(surfaced 2026-06-25 in the design-consistency sweep.)*
+- `[ ]` **Perf: no route-level code-splitting — the whole app ships in one ~1.19 MB / 372 kB-gzip JS chunk**
+  — `npm run build` warns the main chunk is >500 kB; `src/App.tsx` statically imports every page (zero
+  `React.lazy`/dynamic `import()` anywhere), and `vite.config.ts` has no `manualChunks`/visualizer. This is
+  **the biggest lever for mobile**: against a prod preview, mobile Performance is 56–68 with LCP 7.8–10.7 s and
+  FCP 3.3–3.9 s while **TBT ≈ 0** — i.e. the bottleneck is downloading/parsing the one bundle, not main-thread
+  work. Desktop is fine (89–97). Fix: lazy-load the heavy/rare routes (Admin/* ≈ 5 pages, AddRecipe/EditRecipe
+  + the ingredient parser + DnD, SingleRecipe) behind `Suspense`; add `manualChunks` + `rollup-plugin-visualizer`
+  to inspect. Needs `App.tsx` route changes + a verification pass → not a blind fix. *(surfaced 2026-06-26 in the
+  Performance sweep; before/after Lighthouse in the sweep PR.)*
+- `[ ]` **Perf: hot read paths have no supporting MongoDB indexes** — `server/db.js` `ensureIndexes()` creates
+  indexes for usernames/recipeDrafts/reports/bugReports/auditLog, but `recipes` is indexed only on
+  `{ userId, createdAt }` and `ratings` only on `{ username }`. So the catalog's hottest queries fall back to
+  collection scans + in-memory sorts as the catalog grows:
+    - `GET /recipes` browse/filter/sort (`server/routes/recipes.js:56+`) — filters on `status`, `title` (regex),
+      `cuisine`, `mealTypes`, `nutritionLabels`; no compound index.
+    - `GET /getTrendingRecipes` (`recipes.js:256+`) — sort by `featured`,`views` with a `status` filter; unindexed.
+    - `GET /recipes/random` (`recipes.js:318+`) — `$sample` after a `status`/`userId` `$match`; unindexed `$match`.
+    - `GET /getReviews` (`server/routes/reviews.js:230+`) — find/sort by `recipeId` + `reviewText`/`moderationHidden`
+      + `reviewCreatedAt`/`rating`; **no `recipeId` index on `ratings`** → a scan per recipe-detail/review page.
+  Propose compound indexes alongside the existing `ensureIndexes()` block (e.g. `recipes {status:1, featured:-1,
+  views:-1}`, `{status:1, mealTypes:1, createdAt:-1}`, `{status:1, nutritionLabels:1}`; `ratings {recipeId:1,
+  reviewCreatedAt:-1}` and `{recipeId:1, rating:-1}`). Confirm each with `.explain()` before/after. Negligible at
+  today's catalog size; grows linearly. *(surfaced 2026-06-26 in the Performance sweep; pairs with the autocomplete
+  fuzzy-fallback scan item above, which is the same missing-index story for title search.)*
+- `[ ]` **Perf: `/recipes/facets` runs 3 unfiltered `distinct()` = 3 full `recipes` scans per browse load**
+  (`server/routes/recipes.js:167-181`, `distinct('cuisine'|'nutritionLabels'|'mealTypes')`). Called on every
+  `/recipes` page load to build the filter UI. Cache the result (short TTL) or maintain a small summary doc
+  (`{_id:'facets', cuisines, diets, mealTypes}`) refreshed on recipe insert/update. *(surfaced 2026-06-26 in the
+  Performance sweep.)*
+- `[ ]` **Perf: recipe-page CLS ≈ 0.10 from the conditional controls block popping in above the hero** —
+  `RecipeControls` (`src/pages/SingleRecipe/SingleRecipe.tsx:296`) renders only after `currRecipe` resolves
+  (`currRecipe && …`), with no reserved space, so on load it inserts above `header.hero` and pushes the hero +
+  body + ingredient list + instructions down in one shift (measured: the dominant layout-shift source on the
+  page, prod preview). Fix structurally by reserving the block's height during load (skeleton / `min-height`),
+  **not** with image dimensions. ⚠ **Verified caveat:** the hero (`SingleRecipe.scss` `.hero-img img` is
+  `width:100%; aspect-ratio:4/3`) and the 40 px ingredient thumbs already reserve their boxes via CSS, so
+  adding HTML `width`/`height` to those `<img>`s gives **no** CLS benefit and empirically *doubled* page CLS
+  (0.10 → 0.26, reproducible) — that experiment was reverted in the sweep PR. *(surfaced 2026-06-26 in the
+  Performance sweep.)*
+- `[ ]` **Perf: `AuthContext` value object is recreated every render** (`src/context/AuthContext.tsx`, the
+  `value` passed to `AuthContext.Provider`), so every `useAuth()` consumer (Navbar, SaveControl, ReportControl,
+  forms, …) re-renders on any provider re-render. Wrap in `useMemo([user, isAdmin, …])`. Low *measured* impact
+  today (TBT ≈ 0 across pages) — file as a scalability/correctness cleanup, not a hot fix. Pairs with memoizing
+  the remaining list rows (`RecipeReview`, and `IngredientItem` — the latter sits in a `@hello-pangea/dnd` list,
+  so verify DnD still works before memoizing). The `/recipes` grid card (`RecipeCard`) was memoized in the sweep.
+  *(surfaced 2026-06-26 in the Performance sweep.)*
+- `[ ]` **Perf: Firebase Storage recipe images are served single-size with no `srcset`/resize pipeline** — every
+  `recipe.recipeImage` is a direct full-size Storage URL, so mobile downloads desktop-sized images (a contributor
+  to the mobile LCP above). Structural: a Storage resize pipeline (or an image CDN) emitting width variants +
+  `srcset`/`sizes` on the card/hero `<img>`s. The static Home hero is already a sized `.webp`. *(surfaced
+  2026-06-26 in the Performance sweep.)*
 
 ## Testing
 
