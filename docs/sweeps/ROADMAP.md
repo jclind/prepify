@@ -63,7 +63,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | — | Design-consistency sweep (initial) | `[x]` | — | #180 (+#183/#185/#186/#192) |
 | **1** | **Security sweep** | `[x]` | `server/` (routes, middleware, `app.js` CORS), Firebase rules, `.env.example`, `src/api/http-common.ts` | #197 |
 | **1** | **Performance sweep** | `[x]` | measure → backlog; cheap wins = image `loading`/`decoding` deferral + grid memo + trending cache (img dims trialled & reverted — CLS) | #198 |
-| **1** | **Code-quality & tests sweep** | `[P]` | `src/test/`, `server/` tests, `cypress/`, types, **dead-code delete (`RecipeThumbnail`)**, error handling | #199 |
+| **1** | **Code-quality & tests sweep** | `[x]` | `src/test/`, `server/` tests, `cypress/`, types, **dead-code delete (`RecipeThumbnail`)**, error handling | #199 |
 | **2-iso** | A11y: autocomplete listbox + keyboard nav | `[ ]` | `SearchRecipesInput.tsx` | — |
 | **2-iso** | A11y: servings stepper target-size | `[ ]` | `SingleRecipe.tsx/.scss` (pill layout) | — |
 | **2-iso** | A11y: account-heading route-map | `[ ]` | `Account.tsx` | — |
@@ -179,3 +179,8 @@ narrates the *why*.
   Testing: **server Jest flakiness under CPU contention** (pre-existing, the headline finding), two E2E gaps
   (review-submit, password-reset), untested `updateIngredients`; → Tech debt: `any`/`asyncHandler`/`CLAUDE.md`
   doc-drift follow-ups. Branch merged onto current `development` (post-#198); ROADMAP conflict reconciled.
+- _2026-06-27_ — **Code-quality & tests sweep merged** (PR #199 → `development`, `[P]`→`[x]`). All five CI checks
+  green (Backend/Supertest, E2E/Cypress, Frontend/Vitest, Fallow advisory, GitGuardian); diff independently
+  verified by driving the running app (recipe + home render clean post-dead-code-removal, `closestFraction` live).
+  Worktree + branch torn down. **Wave 1 now fully `[x]`** (Security #197, Performance #198, Code-quality #199) —
+  advance to Wave 2 (the deferred `2-scss` / `2-iso` tails) per the Board.
