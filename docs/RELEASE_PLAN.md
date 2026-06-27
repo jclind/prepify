@@ -117,6 +117,15 @@ a feature flag. Do these together:
   rotate them** — Prepify intends to migrate off Edamam entirely (see BACKLOG → Tech debt), so rotating
   a soon-to-be-retired key isn't worth it. The old `VITE_OPEN_AI_API_KEY` was never wired to a live
   call (removed in PR #151). Firebase web key is public-by-design + referrer-locked. **(blocker → waived)**
+- `[ ]` **Revoke the live OpenAI `sk-` key still on disk in the local `.env`** — **reopened by the Security
+  sweep (2026-06-26).** PR #151 removed `VITE_OPEN_AI_API_KEY` from the committed `.env.example` (the two
+  `[x]` items above), but the **actual gitignored `.env` still carries a live, full-access
+  `VITE_OPEN_AI_API_KEY = sk-…`** (`.env:9`). It is **dead** (zero `src/` callers → Vite does not bundle it)
+  and **never committed** (`git log -S` clean), so it is not an active leak — but unlike the waived Edamam
+  keys, this is a current, full-access credential sitting in plaintext, so the "never wired → don't rotate"
+  reasoning doesn't apply. **Rotate/revoke it and delete the line.** While there, drop the now-dead
+  `SPOONACULAR_API_KEY` from `server/.env` (the v2 parser is key-free). Operator action on local files — no
+  PR. See BACKLOG → Security. **(launch-gating hygiene)**
 - `[x]` **Lock down Edamam / Firebase usage server-side** — **done (2026-06-25).** Firebase **web API key
   is HTTP-referrer-restricted** — verified live that `prepifymeals.com`, `www.prepifymeals.com`, and
   `localhost:3000` are allowed while an empty referer is blocked (so prod + local dev work; a lifted key

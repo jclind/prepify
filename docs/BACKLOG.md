@@ -331,6 +331,70 @@ The triage date stamped on items is the date they were filed here, not when they
   uses a literal `#a52f0a` hover with a comment, *not* `$primary-hover`). *(surfaced 2026-06-25 while merging
   the brand-contrast PR #184 over the design-tokens track.)*
 
+## Security
+
+*(Filed by the Security sweep, 2026-06-26 — Wave 1 of [`sweeps/ROADMAP.md`](sweeps/ROADMAP.md). The
+sweep's cheap, unambiguous hardening shipped in the sweep PR; these are the structural / debatable tail.
+The headline IDOR/authz, CORS, secrets-in-git, and XSS checks all came back clean — see the sweep PR's
+findings table.)*
+
+- `[ ]` **[action] Revoke the live OpenAI key sitting in cleartext in the local `.env`** *(highest-priority
+  follow-up)* — `.env:9` carries a full-access `VITE_OPEN_AI_API_KEY = sk-…`. Verified **dead** (zero
+  references in `src/`, so Vite does NOT bundle it) and **never committed** (`.env` is gitignored; `git log
+  -S` for the key is clean), so it is not an active leak — but it's a live, full-access credential in
+  plaintext on disk. **Rotate/revoke it and delete the line.** OpenAI is server-side only now
+  (`OPENAI_API_KEY` in `server/.env`). While there, drop the now-dead `SPOONACULAR_API_KEY` from
+  `server/.env` (the v2 parser is key-free — the proxy holds the key). These are local gitignored files, so
+  this is an operator action, not a code change / PR. *(surfaced 2026-06-26 in the security sweep.)*
+- `[ ]` **Public recipe reads return the full Mongo doc, leaking internal fields** — `GET /getRecipe`'s
+  public path (`server/routes/recipes.js:411-437`) returns the entire recipe document with no projection,
+  so internal curation/moderation stamps (`moderatedBy`/`moderatedAt`/`featuredBy`/`featuredAt`/
+  `publishUpdatedBy`/`publishUpdatedAt`/`status` — admin Firebase uids + moderation metadata) leak to
+  anonymous clients on any recipe that was ever featured/unhidden. `publicProfile.js:74` & `:157` share the
+  full-doc pattern (only `RECIPE_VISIBLE`/active recipes, so no moderation-state leak, but they still expose
+  the author uid + other internal fields the card never reads). Fix: a shared public-recipe projection /
+  output whitelist (verify the FE doesn't read the stamped fields first). Low (PII = internal admin uids,
+  not user-facing). *(surfaced 2026-06-26 in the security sweep.)*
+- `[ ]` **Recipe numeric/array fields aren't range- or type-validated server-side** —
+  `validateRecipeBounds` (`server/util/recipeLimits.js`, used by add/editRecipe) bounds title/description
+  length, ingredient/instruction counts, and instruction-content length, but NOT the numeric fields
+  (`servings`/`prepTime`/`cookTime`/`totalTime`/`servingPrice` accept negative/huge/non-numeric), per-element
+  ingredient size, or the shape/size of `nutritionData`/`cuisine`/`mealTypes`/`nutritionLabels` (copied
+  through, bounded only by the global JSON body-size limit). Add numeric type+range clamps and per-element
+  caps. Low. *(surfaced 2026-06-26 in the security sweep.)*
+- `[ ]` **Admin review takedown matches on the stale denormalized `username`** —
+  `PATCH /admin/reviews/moderation` (`server/routes/reviews.js:318-353`) matches `{ username, recipeId }`,
+  but ratings are keyed by the stable `userId` (username is a set-once display field). If an author renames
+  their handle after posting, the admin match can hit the wrong doc or 404, and the audit `targetId`
+  (`${username}:${recipeId}`) inherits the ambiguity. Resolve `username → userId` (as
+  `getSingleUserReviews:267` already does) and match on `userId`. Admin-only ⇒ a moderation-reliability bug,
+  not an exploit. Low. *(surfaced 2026-06-26 in the security sweep.)*
+- `[ ]` **`POST /reports` has no per-user rate limiter (report-spam breadth)** —
+  `server/routes/reports.js:69` enforces one-open-report-per-(reporter,target) but nothing caps *breadth*:
+  one account can open a report against every recipe/user and re-file after each resolve/dismiss to bloat the
+  moderation queue. Only the coarse global per-IP 1000/15min backstop applies. Add a `makeUserLimiter`-style
+  per-uid limiter (mirrors how content writes are bounded in `middleware/writeLimiter.js`). Low-med.
+  *(surfaced 2026-06-26 in the security sweep.)*
+- `[ ]` **Two authed writes lack the per-user write limiter (consistency)** — `POST /updatePrivacy`
+  (`server/routes/auth.js:310`) and `POST /acknowledgeAchievements` (`server/routes/gamification.js:31`) are
+  authed writes with no `profileWriteLimiter`, unlike their sibling profile writes. Both are cheap +
+  idempotent so impact is minimal; add the limiter for consistency. Low. *(surfaced 2026-06-26 in the
+  security sweep.)*
+- `[ ]` **`POST /recipes/:id/save` counter update is read-then-write (TOCTOU)** —
+  `server/routes/recipes.js:760-773` reads `alreadySaved` then `$push`+`$inc`, so two concurrent saves from
+  one user can both pass the guard and double-count `numTimesSaved`. Single-user, low impact. (The sibling
+  `madeRecipe` counter-inflation — same shape but exploitable by *intentional* repeat POSTs — was fixed in
+  the sweep PR by deduping off the atomic `$addToSet` result; `save` still has the narrow concurrent window.)
+  Fix: array-condition update (`$ne` filter) / unique-element write. Low. *(surfaced 2026-06-26 in the
+  security sweep.)*
+- `[ ]` **`firebase-admin` pulls transitive moderate CVEs (needs a breaking major bump)** — `cd server &&
+  npm audit --omit=dev` = **8 moderate, 0 high/critical**, all transitive under `firebase-admin` →
+  `@google-cloud/{firestore,storage}` → `gaxios`/`google-gax`/`teeny-request`/`retry-request`/`uuid`. The
+  `uuid <11.1.1` advisory only triggers when the caller passes a `buf` arg, which firebase-admin doesn't —
+  no runtime exploit path here. Fix requires `firebase-admin@14.x` (**breaking major**). Schedule it; not
+  urgent. (Root/frontend `npm audit` shows 1 high = `undici`, but it's **dev-only/transitive** — `npm audit
+  --omit=dev` at root = 0; the deployed bundle is clean.) Low. *(surfaced 2026-06-26 in the security sweep.)*
+
 ## Features
 
 - `[ ]` **Press `/` to focus search** — global keyboard shortcut to bring up search. No handler exists today.

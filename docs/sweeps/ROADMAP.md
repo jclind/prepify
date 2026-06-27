@@ -61,7 +61,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 |---|---|---|---|---|
 | — | Accessibility sweep (initial) | `[x]` | — | #179 (+#181/#184) |
 | — | Design-consistency sweep (initial) | `[x]` | — | #180 (+#183/#185/#186/#192) |
-| **1** | **Security sweep** | `[ ]` | `server/` (routes, middleware, `app.js` CORS), Firebase rules, `.env.example`, `src/api/http-common.ts` | — |
+| **1** | **Security sweep** | `[x]` | `server/` (routes, middleware, `app.js` CORS), Firebase rules, `.env.example`, `src/api/http-common.ts` | #197 |
 | **1** | **Performance sweep** | `[P]` | measure → backlog; cheap wins = image `loading`/`decoding` deferral + grid memo + trending cache (img dims trialled & reverted — CLS) | #198 (`worktree-feat+performance-sweep`) |
 | **1** | **Code-quality & tests sweep** | `[ ]` | `src/test/`, `server/` tests, `cypress/`, types, **dead-code delete (`RecipeThumbnail`)**, error handling | — |
 | **2-iso** | A11y: autocomplete listbox + keyboard nav | `[ ]` | `SearchRecipesInput.tsx` | — |
@@ -149,6 +149,14 @@ narrates the *why*.
 - _2026-06-26_ — Roadmap created. Wave 1 (Security / Performance / Code-quality) defined and open; the two
   completed sweeps' tails organized into Wave 2 (`2-iso` parallel + `2-scss` serialized) and a `[blocked]`
   brand-orange lane; Wave 3 = pre-1.0 re-sweep. Nothing in Wave 1 started yet.
+- _2026-06-26_ — **Security sweep** run (PR #197). Highest-value authz/IDOR check + CORS, secrets-in-git, and
+  XSS all came back **clean**. Cheap hardening shipped: `madeRecipe` global-counter inflation (single account
+  could re-POST to inflate `numTimesMade`) deduped off the atomic `$addToSet`; `POST /reports` username→uid
+  oracle closed (stopped echoing `reportedUid`); `addRating` got the missing per-user limiter; type guards
+  on 4 review read/delete routes. 8 structural follow-ups filed → [BACKLOG → Security](../BACKLOG.md#security)
+  (headline: **revoke the live OpenAI key on disk** — also `RELEASE_PLAN.md` §B; public `getRecipe` full-doc
+  leak; recipe numeric validation; `firebase-admin` major bump for 8 moderate transitive CVEs). Server suite
+  697/697; authenticated headless smoke confirmed no regressions.
 - _2026-06-26_ — **Performance sweep** run (PR #198, `[P]`). Cheap wins shipped: `loading`/`decoding` deferral
   on the Home cards, `RecipeCard` memo + `decoding`, trending `staleTime`. Measured against a prod preview —
   the app ships as one 1.19 MB / 372 kB-gz JS chunk with **TBT ≈ 0**, so the weak mobile scores (P 56–69, LCP
