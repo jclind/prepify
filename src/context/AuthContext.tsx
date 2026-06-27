@@ -93,7 +93,7 @@ const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
         navigate('/')
       })
       .catch(err => {
-        console.log('sign out NOT success,', err)
+        console.error('sign out NOT success,', err)
       })
   }
   const signInWithGoogle = (setError: (val: string) => void) => {

@@ -660,6 +660,17 @@ findings table.)*
   to the mobile LCP above). Structural: a Storage resize pipeline (or an image CDN) emitting width variants +
   `srcset`/`sizes` on the card/hero `<img>`s. The static Home hero is already a sized `.webp`. *(surfaced
   2026-06-26 in the Performance sweep.)*
+- `[ ]` **Minor code-quality follow-ups from the code-quality sweep** — none are bugs; all low priority:
+  (1) **`any` escape hatches** (~23, tsc is clean) are concentrated in react-select `styles` callbacks
+  (`provided/state: any` across CuisineSelector/MealTypeSelector/DietSelector/ReviewFilters) and a handful of
+  `catch (err: any)` blocks — tightening means `StylesConfig<Option, IsMulti>` generics + `err: unknown`
+  narrowing; fiddly, deferred. (2) **`asyncHandler` consistency**: `routes/ingredients.js` (`/parse`) and
+  `routes/nutrition.js` (`/details`) use a bare `async (req,res)` with a complete internal try/catch instead of
+  the `asyncHandler` wrapper every other route uses — functionally safe, just inconsistent. (3) **Doc drift**:
+  `CLAUDE.md` still describes `src/context/RecipeContext.tsx` as "commented out", but the file has been deleted
+  entirely — update the two references. (4) **Optional rename**: `src/util/validateIngredientQuantityStr.ts` now
+  exports only `closestFraction` (a display formatter) — a rename to `formatQuantity.ts` would match its
+  contents (3 import sites). *(surfaced 2026-06-27 in the code-quality & tests sweep.)*
 
 ## Testing
 
@@ -696,6 +707,51 @@ findings table.)*
   - *(Both are environment-induced, not product bugs — confirmed pre-existing on base; CI's older Node
     never tripped either. The guards are no-ops once the sandbox restores these globals. Surfaced during
     track 1c review, 2026-06-18.)*
+
+- `[ ]` **Server Jest suite is flaky under CPU contention (~load-dependent)** — the full server suite
+  (`cd server && npm test`, i.e. `jest --runInBand`) intermittently fails **one random test per run** while
+  **every suite passes 100% in isolation**. Observed failing tests across runs were all different and all in
+  DB-/auth-heavy suites: `auth setUsername (<3 chars)` → 404 (expected 400), `auth setUsername rename
+  propagation`, `moderation-routes updatePhoto fail-closed` → wrong status, `admin/analytics recent actions`
+  → 404 (expected 200), `reports queue` → 401 (expected 200). Repro rate was ~10–30% **only while the machine
+  was under load** (the worktree's dev servers + concurrent jest runs); on an unloaded machine the suite went
+  10/10 green. Diagnosis: not a product bug (zero source changes; the routes are correct) — it's **test-harness
+  isolation under timing pressure**. Two contributing vectors: (1) each of the 30 suites spins up its **own**
+  `MongoMemoryReplSet` (`server/__tests__/setup.js`), so under contention an operation can trip
+  `serverSelectionTimeoutMS: 5000`; (2) fragile one-shot auth mocks — `admin.auth.mockReturnValueOnce(...)` /
+  `verifyIdToken.mockResolvedValueOnce(...)` in `reviews.test.js`/`security.test.js` assume the *next*
+  `admin.auth()` call is the intended request; a stray/async call (leaked fire-and-forget audit/email work)
+  can consume the "once" and shift it onto the wrong request → spurious 401/wrong-uid. **CI impact is low**
+  because CI runs `--runInBand` on a dedicated runner (one replSet at a time, minimal contention), but the
+  baseline `npm test` *did* fail on a first cold run, so it can still red a PR occasionally. Recommended fix
+  (structural): share a **single** in-memory Mongo across the suite via Jest `globalSetup`/`globalTeardown`
+  with per-file collection cleanup (removes the per-file replSet churn — faster *and* far less contention), and
+  replace the `*Once` auth overrides with scoped per-request mocks (e.g. set `extraClaims`/`__setClaims`
+  deterministically, or a `withUser(uid)` helper that resets after the awaited request). *(surfaced 2026-06-26
+  in the code-quality & tests sweep; characterized over ~30 full-suite runs. NOT introduced by the sweep —
+  pre-existing on `development`.)*
+- `[ ]` **E2E gap: no test submits a rating/review** — the Cypress suite reads reviews from fixtures
+  everywhere (`recipe.cy.ts`, `smoke.cy.ts` stub `GET /api/getReviews`) but **never writes one** — there is no
+  journey that opens the rate/review control, submits, and asserts the new review appears + the hero rating
+  updates. Rating-average is a critical path (the sweep playbook calls it out: `util/recipeRating` +
+  `server/routes/reviews.js`), and the server side is well unit-tested (`__tests__/reviews.test.js`), but the
+  end-to-end write path is unverified. Add a `recipe.cy.ts` spec: logged-in user with `checkIfReviewed` → null,
+  submit a rating+text, intercept the review POST, assert the optimistic row + updated `.hero-rating`. *(surfaced
+  2026-06-27 in the code-quality & tests sweep E2E review.)*
+- `[ ]` **E2E gap: no password-reset journey** — `auth.cy.ts` covers login + logout but not the
+  forgot-password / reset flow. Lower priority (the reset email + link are Firebase-handled, so a true E2E is
+  awkward), but the "request reset email" entry point (form validation + success/error toast) is app code that
+  could be covered. Flag, don't necessarily automate the Firebase leg. *(surfaced 2026-06-27 in the
+  code-quality & tests sweep E2E review.)*
+- `[ ]` **Unit coverage for remaining untested utils** — the sweep added focused tests for the highest-value
+  untested utils (`closestFraction`, `formatRating`, `nutrition` math, `hrMinToMin`/`minToHrMin`). Still
+  untested: **`src/util/updateIngredients.ts`** (the notable one — ~80 lines of ingredient price/quantity
+  merge logic with non-null assertions, on the add/edit-recipe path; also still carries a block of
+  commented-out dead code at the top that should be removed when it's touched), plus the small formatters
+  `capitalize`, `formatPrice`, `formatDate`, `formatCompactCount`, `timeElapsedSince`, `reorder` (DnD reorder —
+  already covered indirectly by `addRecipe.cy.ts`), `recipeLimits`, `invalidateSavedCaches`, `defaultAvatar`.
+  Most are trivial; `updateIngredients` is the one worth a real test pass. *(surfaced 2026-06-27 in the
+  code-quality & tests sweep coverage audit.)*
 
 ## Ideas / needs a decision
 

@@ -254,6 +254,32 @@ describe('RatingsAndReviews integration', () => {
       await screen.findByText(/Add a written review/i)
       expect(screen.queryByText('Your review')).toBeNull()
     })
+
+    it('surfaces a toast and keeps the review when deleteReview fails', async () => {
+      const user = userEvent.setup()
+      mockGetUID.mockReturnValue('author-uid')
+      mockGetUsername.mockResolvedValue('testuser')
+      mockCheckIfReviewed.mockResolvedValue(baseReview)
+      // The delete request rejects — the modal must report it, not fail silently.
+      mockDeleteReview.mockRejectedValue(new Error('network down'))
+
+      render(<IntegrationWrapper initialReview={baseReview} />)
+
+      await screen.findByText(/^Delete$/)
+      await user.click(screen.getByText(/^Delete$/))
+      await screen.findByText('Are you sure you want to delete your review?')
+
+      const deleteButtons = screen.getAllByText(/^Delete$/)
+      await user.click(deleteButtons[deleteButtons.length - 1])
+
+      await waitFor(() =>
+        expect(mockToast.error).toHaveBeenCalledWith(
+          'Could not delete your review. Please try again.'
+        )
+      )
+      // The review is NOT removed (no switch back to the write box).
+      expect(screen.queryByText(/Add a written review/i)).toBeNull()
+    })
   })
 
   describe('rating interaction', () => {
