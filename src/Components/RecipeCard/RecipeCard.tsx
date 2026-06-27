@@ -93,6 +93,7 @@ const RecipeCard: FC<RecipeCardProps> = ({ recipe, loading, onMutated }) => {
               src={recipe.recipeImage}
               alt=''
               loading='lazy'
+              decoding='async'
               width={300}
               height={225}
               onError={() => setImgError(true)}
@@ -127,4 +128,6 @@ const RecipeCard: FC<RecipeCardProps> = ({ recipe, loading, onMutated }) => {
   )
 }
 
-export default RecipeCard
+// Memoized: the /recipes grid is an infinite-scroll list, so already-rendered
+// cards shouldn't re-render when a new page appends or a sibling save mutates.
+export default React.memo(RecipeCard)
