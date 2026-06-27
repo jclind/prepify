@@ -660,6 +660,17 @@ findings table.)*
   to the mobile LCP above). Structural: a Storage resize pipeline (or an image CDN) emitting width variants +
   `srcset`/`sizes` on the card/hero `<img>`s. The static Home hero is already a sized `.webp`. *(surfaced
   2026-06-26 in the Performance sweep.)*
+- `[ ]` **Minor code-quality follow-ups from the code-quality sweep** — none are bugs; all low priority:
+  (1) **`any` escape hatches** (~23, tsc is clean) are concentrated in react-select `styles` callbacks
+  (`provided/state: any` across CuisineSelector/MealTypeSelector/DietSelector/ReviewFilters) and a handful of
+  `catch (err: any)` blocks — tightening means `StylesConfig<Option, IsMulti>` generics + `err: unknown`
+  narrowing; fiddly, deferred. (2) **`asyncHandler` consistency**: `routes/ingredients.js` (`/parse`) and
+  `routes/nutrition.js` (`/details`) use a bare `async (req,res)` with a complete internal try/catch instead of
+  the `asyncHandler` wrapper every other route uses — functionally safe, just inconsistent. (3) **Doc drift**:
+  `CLAUDE.md` still describes `src/context/RecipeContext.tsx` as "commented out", but the file has been deleted
+  entirely — update the two references. (4) **Optional rename**: `src/util/validateIngredientQuantityStr.ts` now
+  exports only `closestFraction` (a display formatter) — a rename to `formatQuantity.ts` would match its
+  contents (3 import sites). *(surfaced 2026-06-27 in the code-quality & tests sweep.)*
 
 ## Testing
 
@@ -732,6 +743,15 @@ findings table.)*
   awkward), but the "request reset email" entry point (form validation + success/error toast) is app code that
   could be covered. Flag, don't necessarily automate the Firebase leg. *(surfaced 2026-06-27 in the
   code-quality & tests sweep E2E review.)*
+- `[ ]` **Unit coverage for remaining untested utils** — the sweep added focused tests for the highest-value
+  untested utils (`closestFraction`, `formatRating`, `nutrition` math, `hrMinToMin`/`minToHrMin`). Still
+  untested: **`src/util/updateIngredients.ts`** (the notable one — ~80 lines of ingredient price/quantity
+  merge logic with non-null assertions, on the add/edit-recipe path; also still carries a block of
+  commented-out dead code at the top that should be removed when it's touched), plus the small formatters
+  `capitalize`, `formatPrice`, `formatDate`, `formatCompactCount`, `timeElapsedSince`, `reorder` (DnD reorder —
+  already covered indirectly by `addRecipe.cy.ts`), `recipeLimits`, `invalidateSavedCaches`, `defaultAvatar`.
+  Most are trivial; `updateIngredients` is the one worth a real test pass. *(surfaced 2026-06-27 in the
+  code-quality & tests sweep coverage audit.)*
 
 ## Ideas / needs a decision
 
