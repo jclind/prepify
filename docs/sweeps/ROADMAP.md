@@ -66,7 +66,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **1** | **Code-quality & tests sweep** | `[x]` | `src/test/`, `server/` tests, `cypress/`, types, **dead-code delete (`RecipeThumbnail`)**, error handling | #199 |
 | **2-iso** | A11y: autocomplete listbox + keyboard nav | `[ ]` | `SearchRecipesInput.tsx` | — |
 | **2-iso** | A11y: servings stepper target-size | `[ ]` | `SingleRecipe.tsx/.scss` (pill layout) | — |
-| **2-iso** | A11y: account-heading route-map | `[~]` | `Account.tsx` | `worktree-feat+account-heading-route-map` (2026-06-27) |
+| **2-iso** | A11y: account-heading route-map | `[P]` | `Account.tsx` | #200 |
 | **2-iso** | Design: shared react-modal style config | `[ ]` | 7 modal components | — |
 | **2-iso** | Design: one icon per concept | `[ ]` | new `src/Components/icons` + import swaps | — |
 | **2-iso** | Design: `RecipeFormInput` → shared `FormInput` | `[ ]` | `AddRecipe/*`, `Components/Form/*` | — |
@@ -184,3 +184,13 @@ narrates the *why*.
   verified by driving the running app (recipe + home render clean post-dead-code-removal, `closestFraction` live).
   Worktree + branch torn down. **Wave 1 now fully `[x]`** (Security #197, Performance #198, Code-quality #199) —
   advance to Wave 2 (the deferred `2-scss` / `2-iso` tails) per the Board.
+- _2026-06-27_ — **Wave 2 kickoff (`2-iso`)**: three account-area accessibility tracks claimed in parallel
+  worktrees — autocomplete-listbox (`SearchRecipesInput.tsx`), servings-target-size (`SingleRecipe.*`), and
+  account-heading route-map (`Account.tsx`). Disjoint file domains, so no `2-scss` chokepoint contention.
+- _2026-06-27_ — **A11y account-heading route-map** PR opened (#200, `[~]`→`[P]`). Single-sourced the account
+  route→label map: extracted the tab defs out of `SegmentedNav.tsx` into a shared `accountTabs.tsx` (now with an
+  `srHeading` field per route) + an `activeAccountTabIndex(pathname)` helper, so the visually-hidden per-panel
+  `<h2>` and the nav highlight derive from one list and can't drift when a route is renamed. Heading text
+  unchanged (SR-only); matching tightened from substring `includes()` to the nav's `startsWith()` prefix. +4
+  tests asserting the SR heading per route. Frontend suite 531/2-skip green, `tsc` clean, build passing. Closes
+  the BACKLOG 'Account tab heading duplicates SegmentedNav's route map' item.
