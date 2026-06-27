@@ -123,8 +123,13 @@
           height: 100%;
           width: 100%;
         }
+        // Fill the box absolutely (not in normal flow): react-loading-skeleton
+        // wraps its span in an `<span aria-live><br></span>`, and that injected
+        // `<br>` would otherwise push an in-flow img down a line so it renders
+        // offset and clipped on top of the skeleton.
         img {
-          position: relative;
+          position: absolute;
+          inset: 0;
           z-index: 1;
           width: 100%;
           height: 100%;
