@@ -43,7 +43,6 @@ import PrivacySection from 'src/pages/Settings/sections/PrivacySection'
 import DangerSection from 'src/pages/Settings/sections/DangerSection'
 import { Sentry } from 'src/util/sentry'
 import AppErrorFallback from 'src/Components/AppErrorFallback/AppErrorFallback'
-// import RecipeAI from './pages/RecipeAI/RecipeAI'
 
 const ScrollToTop: FC = () => {
   const { pathname } = useLocation()
@@ -171,14 +170,6 @@ const App: FC = () => {
                   element={<Navigate to='/settings/account' replace />}
                 />
               </Route>
-              {/* <Route
-                path='recipe-ai'
-                element={
-                  <Layout>
-                    <RecipeAI />
-                  </Layout>
-                }
-              /> */}
               <Route
                 path='/add-recipe'
                 element={
