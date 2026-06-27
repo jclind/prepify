@@ -121,18 +121,22 @@ describe('SearchRecipesInput — autocomplete result activation', () => {
     expect(navigateSpy).toHaveBeenCalledWith('/recipes/abc123')
   })
 
-  it('navigates on every click from the same mounted instance (navbar reuse, no stuck guard)', async () => {
+  it('navigates on every activation from the same mounted instance (navbar reuse, no stuck guard)', async () => {
     // The navbar's SearchRecipesInput is never remounted across navigations, so
-    // activation must not depend on one-shot instance state. Two sequential
-    // clicks on the same instance must both navigate.
+    // activation must not depend on one-shot instance state. Activating a result
+    // closes the dropdown (you've navigated away); re-focusing the still-mounted
+    // instance reopens it, and the next activation must navigate too.
     const user = userEvent.setup()
     renderInput()
     const firstOption = await openDropdown(user)
 
     await user.click(firstOption)
-    await user.click(
-      screen.getByRole('option', { name: /Chinese Lemon Chicken/ })
-    )
+    // Re-focus the persistent instance to reopen the dropdown (query unchanged).
+    await user.click(screen.getByRole('combobox'))
+    const secondOption = await screen.findByRole('option', {
+      name: /Chinese Lemon Chicken/,
+    })
+    await user.click(secondOption)
     expect(navigateSpy).toHaveBeenCalledTimes(2)
     expect(navigateSpy).toHaveBeenNthCalledWith(1, '/recipes/abc123')
     expect(navigateSpy).toHaveBeenNthCalledWith(2, '/recipes/def456')
@@ -248,5 +252,42 @@ describe('SearchRecipesInput — combobox / listbox semantics + keyboard nav', (
       'aria-expanded',
       'false'
     )
+  })
+
+  it('reopens the dropdown when the user keeps typing after Escape', async () => {
+    const user = userEvent.setup()
+    renderInput()
+    await openDropdown(user)
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
+
+    // Still focused; typing another character should bring suggestions back
+    // (no blur/refocus required).
+    await user.keyboard('k')
+    expect(
+      await screen.findByRole('option', { name: /Tuscan Chicken Skillet/ })
+    ).toBeInTheDocument()
+    expect(screen.getByRole('combobox')).toHaveAttribute(
+      'aria-expanded',
+      'true'
+    )
+  })
+
+  it('syncs the highlight to the hovered row so keyboard and mouse agree', async () => {
+    const user = userEvent.setup()
+    renderInput()
+    await openDropdown(user)
+    const combobox = screen.getByRole('combobox')
+    const [first, second] = screen.getAllByRole('option')
+
+    // Hovering the second row makes it the active descendant...
+    await user.hover(second)
+    expect(combobox).toHaveAttribute('aria-activedescendant', second.id)
+    expect(second).toHaveAttribute('aria-selected', 'true')
+
+    // ...and a subsequent ArrowDown continues from there (wraps to the first),
+    // proving keyboard and mouse share one highlight index.
+    await user.keyboard('{ArrowDown}')
+    expect(combobox).toHaveAttribute('aria-activedescendant', first.id)
   })
 })
