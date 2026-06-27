@@ -62,7 +62,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | — | Accessibility sweep (initial) | `[x]` | — | #179 (+#181/#184) |
 | — | Design-consistency sweep (initial) | `[x]` | — | #180 (+#183/#185/#186/#192) |
 | **1** | **Security sweep** | `[x]` | `server/` (routes, middleware, `app.js` CORS), Firebase rules, `.env.example`, `src/api/http-common.ts` | #197 |
-| **1** | **Performance sweep** | `[ ]` | measure → backlog; cheap wins = `<img>` dims/`loading` in a few components | — |
+| **1** | **Performance sweep** | `[x]` | measure → backlog; cheap wins = image `loading`/`decoding` deferral + grid memo + trending cache (img dims trialled & reverted — CLS) | #198 |
 | **1** | **Code-quality & tests sweep** | `[~]` | `src/test/`, `server/` tests, `cypress/`, types, **dead-code delete (`RecipeThumbnail`)**, error handling | worktree-feat+code-quality-tests-sweep · 2026-06-26 |
 | **2-iso** | A11y: autocomplete listbox + keyboard nav | `[ ]` | `SearchRecipesInput.tsx` | — |
 | **2-iso** | A11y: servings stepper target-size | `[ ]` | `SingleRecipe.tsx/.scss` (pill layout) | — |
@@ -157,3 +157,18 @@ narrates the *why*.
   (headline: **revoke the live OpenAI key on disk** — also `RELEASE_PLAN.md` §B; public `getRecipe` full-doc
   leak; recipe numeric validation; `firebase-admin` major bump for 8 moderate transitive CVEs). Server suite
   697/697; authenticated headless smoke confirmed no regressions.
+- _2026-06-26_ — **Performance sweep** run (PR #198, `[P]`). Cheap wins shipped: `loading`/`decoding` deferral
+  on the Home cards, `RecipeCard` memo + `decoding`, trending `staleTime`. Measured against a prod preview —
+  the app ships as one 1.19 MB / 372 kB-gz JS chunk with **TBT ≈ 0**, so the weak mobile scores (P 56–69, LCP
+  7–11 s) are download-bound: **code-splitting is the biggest lever**, filed. 6 structural follow-ups → Tech
+  debt (code-splitting, Mongo indexes, `/recipes/facets` scans, recipe-page CLS pop-in, `AuthContext` memo,
+  image `srcset`). Image `width`/`height` was trialled and **reverted** — the hero/thumb boxes are already
+  CSS-reserved, so dims gave no benefit and reproducibly doubled recipe-page CLS (0.10 → 0.26). home-mobile
+  66 → 69; no regressions.
+- _2026-06-27_ — **Performance sweep code review** (PR #198, still `[P]`). High-effort review of the diff: all
+  four changes correct, no regressions. One follow-up filed (now 7 total) — `React.memo(RecipeCard)` is defeated
+  on the Saved tab because `refreshAfterMutation` is an unmemoized inline callback; the memo lands as intended on
+  the `/recipes` grid. Filed to Tech debt (wrap in `useCallback`); pairs with the `AuthContext` memo item.
+- _2026-06-27_ — **Performance sweep merged** (PR #198 → `development`, `[P]`→`[x]`). All five CI checks green
+  (Backend/Supertest, E2E/Cypress, Frontend/Vitest, Fallow advisory, GitGuardian). Worktree + branch torn down.
+  Wave 1 now: Security `[x]`, Performance `[x]`, Code-quality still in flight.
