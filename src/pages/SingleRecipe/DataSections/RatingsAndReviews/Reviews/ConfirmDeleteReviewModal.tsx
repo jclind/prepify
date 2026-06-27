@@ -1,6 +1,7 @@
 import React, { FC, useState } from 'react'
 import { TailSpin } from 'react-loader-spinner'
 import Modal from 'react-modal'
+import toast from 'react-hot-toast'
 
 type ConfirmDeleteReviewModalProps = {
   deleteModalIsOpen: boolean
@@ -61,9 +62,12 @@ const ConfirmDeleteReviewModal: FC<ConfirmDeleteReviewModalProps> = ({
           className='delete btn'
           onClick={() => {
             setDeleteLoading(true)
-            handleDeleteReview().catch((error: unknown) => {
+            handleDeleteReview().catch(() => {
+              // Surface the failure to the user (and keep the modal open to
+              // retry) instead of failing silently — matches the rating
+              // controls' toast pattern in Ratings.tsx.
               setDeleteLoading(false)
-              console.log(error)
+              toast.error('Could not delete your review. Please try again.')
             })
           }}
           disabled={deleteLoading}
