@@ -830,15 +830,25 @@ router.post('/madeRecipe', verifyToken, requireActive, asyncHandler(async (req, 
     return res.status(400).json({ error: 'recipeId is required' })
   }
   const uid = req.uid
-  await db.collection('recipes').updateOne(
-    recipeIdQuery(recipeId),
-    { $inc: { numTimesMade: 1 } }
-  )
-  await db.collection('userRecipeData').updateOne(
+  // Record the made-recipe first and only bump the global counter when this is
+  // the user's FIRST time marking it made. madeRecipes is a $addToSet, so a
+  // repeat call is idempotent there — but the unconditional $inc let a single
+  // account inflate numTimesMade arbitrarily by re-POSTing the same id. Mirror
+  // the dedup the save route gets from its alreadySaved guard, off the atomic
+  // write result (a fresh user doc shows as an upsert; a new set member as a
+  // modifiedCount of 1) so there's no read-then-write race.
+  const addResult = await db.collection('userRecipeData').updateOne(
     { _id: uid },
     { $addToSet: { madeRecipes: { recipeId } } },
     { upsert: true }
   )
+  const newlyMade = addResult.upsertedCount > 0 || addResult.modifiedCount > 0
+  if (newlyMade) {
+    await db.collection('recipes').updateOne(
+      recipeIdQuery(recipeId),
+      { $inc: { numTimesMade: 1 } }
+    )
+  }
   res.json({ made: true })
 }))
 
