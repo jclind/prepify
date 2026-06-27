@@ -106,7 +106,10 @@ const Account: FC = () => {
 
   useEffect(() => {
     if (location.pathname === '/account') {
-      navigate('/account/saved-recipes')
+      // Redirect bare /account to the default tab. accountTabs[0] (saved) is the
+      // default — same source activeAccountTabIndex treats as the /account
+      // fallback — so the redirect target can't drift from the nav/heading.
+      navigate(accountTabs[0].to)
     }
   }, [location.pathname, navigate])
 
