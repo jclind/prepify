@@ -1,6 +1,8 @@
 # Code quality & test sweep
 
-> **Status:** _Not yet run._ *(See the [run log](README.md#run-log).)*
+> **Status:** _Run 2026-06-27 — PR #199 (`[P]`)._ Dead code removed, a silent delete-review failure fixed,
+> +33 tests on untested critical-path utils; all suites green. Headline follow-up: **server Jest flakiness
+> under CPU contention** (pre-existing) → [BACKLOG → Testing](../BACKLOG.md#testing). *(See the [run log](README.md#run-log).)*
 
 Full-coverage health check of the codebase itself: test coverage on the critical paths, E2E journey
 coverage, flaky/skipped tests, type safety, dead code, and error handling. The "is the codebase in

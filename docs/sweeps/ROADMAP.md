@@ -63,7 +63,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | — | Design-consistency sweep (initial) | `[x]` | — | #180 (+#183/#185/#186/#192) |
 | **1** | **Security sweep** | `[x]` | `server/` (routes, middleware, `app.js` CORS), Firebase rules, `.env.example`, `src/api/http-common.ts` | #197 |
 | **1** | **Performance sweep** | `[x]` | measure → backlog; cheap wins = image `loading`/`decoding` deferral + grid memo + trending cache (img dims trialled & reverted — CLS) | #198 |
-| **1** | **Code-quality & tests sweep** | `[~]` | `src/test/`, `server/` tests, `cypress/`, types, **dead-code delete (`RecipeThumbnail`)**, error handling | worktree-feat+code-quality-tests-sweep · 2026-06-26 |
+| **1** | **Code-quality & tests sweep** | `[P]` | `src/test/`, `server/` tests, `cypress/`, types, **dead-code delete (`RecipeThumbnail`)**, error handling | #199 |
 | **2-iso** | A11y: autocomplete listbox + keyboard nav | `[ ]` | `SearchRecipesInput.tsx` | — |
 | **2-iso** | A11y: servings stepper target-size | `[ ]` | `SingleRecipe.tsx/.scss` (pill layout) | — |
 | **2-iso** | A11y: account-heading route-map | `[ ]` | `Account.tsx` | — |
@@ -172,3 +172,10 @@ narrates the *why*.
 - _2026-06-27_ — **Performance sweep merged** (PR #198 → `development`, `[P]`→`[x]`). All five CI checks green
   (Backend/Supertest, E2E/Cypress, Frontend/Vitest, Fallow advisory, GitGuardian). Worktree + branch torn down.
   Wave 1 now: Security `[x]`, Performance `[x]`, Code-quality still in flight.
+- _2026-06-27_ — **Code-quality & tests sweep** PR opened (#199, `[~]`→`[P]`). Dead code removed (`RecipeThumbnail`
+  + scss + test, `getIndexById`, ~375 commented lines in `validateIngredientQuantityStr`, the dead `RecipeAI`
+  route); a silent delete-review failure now surfaces a toast; +33 tests (closestFraction, formatRating,
+  nutrition math, time converters, delete-failure path). All suites green / tsc clean / build passing. Filed →
+  Testing: **server Jest flakiness under CPU contention** (pre-existing, the headline finding), two E2E gaps
+  (review-submit, password-reset), untested `updateIngredients`; → Tech debt: `any`/`asyncHandler`/`CLAUDE.md`
+  doc-drift follow-ups. Branch merged onto current `development` (post-#198); ROADMAP conflict reconciled.
