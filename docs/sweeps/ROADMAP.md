@@ -64,7 +64,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **1** | **Security sweep** | `[x]` | `server/` (routes, middleware, `app.js` CORS), Firebase rules, `.env.example`, `src/api/http-common.ts` | #197 |
 | **1** | **Performance sweep** | `[x]` | measure → backlog; cheap wins = image `loading`/`decoding` deferral + grid memo + trending cache (img dims trialled & reverted — CLS) | #198 |
 | **1** | **Code-quality & tests sweep** | `[x]` | `src/test/`, `server/` tests, `cypress/`, types, **dead-code delete (`RecipeThumbnail`)**, error handling | #199 |
-| **2-iso** | A11y: autocomplete listbox + keyboard nav | `[ ]` | `SearchRecipesInput.tsx` | — |
+| **2-iso** | A11y: autocomplete listbox + keyboard nav | `[~]` | `SearchRecipesInput.tsx` | worktree-feat+a11y-autocomplete-listbox · 2026-06-27 |
 | **2-iso** | A11y: servings stepper target-size | `[ ]` | `SingleRecipe.tsx/.scss` (pill layout) | — |
 | **2-iso** | A11y: account-heading route-map | `[ ]` | `Account.tsx` | — |
 | **2-iso** | Design: shared react-modal style config | `[ ]` | 7 modal components | — |
