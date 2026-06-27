@@ -719,6 +719,19 @@ findings table.)*
   deterministically, or a `withUser(uid)` helper that resets after the awaited request). *(surfaced 2026-06-26
   in the code-quality & tests sweep; characterized over ~30 full-suite runs. NOT introduced by the sweep —
   pre-existing on `development`.)*
+- `[ ]` **E2E gap: no test submits a rating/review** — the Cypress suite reads reviews from fixtures
+  everywhere (`recipe.cy.ts`, `smoke.cy.ts` stub `GET /api/getReviews`) but **never writes one** — there is no
+  journey that opens the rate/review control, submits, and asserts the new review appears + the hero rating
+  updates. Rating-average is a critical path (the sweep playbook calls it out: `util/recipeRating` +
+  `server/routes/reviews.js`), and the server side is well unit-tested (`__tests__/reviews.test.js`), but the
+  end-to-end write path is unverified. Add a `recipe.cy.ts` spec: logged-in user with `checkIfReviewed` → null,
+  submit a rating+text, intercept the review POST, assert the optimistic row + updated `.hero-rating`. *(surfaced
+  2026-06-27 in the code-quality & tests sweep E2E review.)*
+- `[ ]` **E2E gap: no password-reset journey** — `auth.cy.ts` covers login + logout but not the
+  forgot-password / reset flow. Lower priority (the reset email + link are Firebase-handled, so a true E2E is
+  awkward), but the "request reset email" entry point (form validation + success/error toast) is app code that
+  could be covered. Flag, don't necessarily automate the Firebase leg. *(surfaced 2026-06-27 in the
+  code-quality & tests sweep E2E review.)*
 
 ## Ideas / needs a decision
 
