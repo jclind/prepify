@@ -79,10 +79,17 @@ const SearchRecipesInput: FC<SearchRecipesInputProps> = ({
 
   const [isBlurred, setIsBlurred] = useState(true)
 
-  // Whether the autocomplete popup is currently displayed. Drives the input's
-  // `aria-expanded` as well as the conditional render below — keep the two in
-  // lockstep so assistive tech and the DOM never disagree.
-  const isOpen = autoComplete && !isBlurred && queryActive
+  // Whether the autocomplete popup is currently displayed. Drives the
+  // conditional render below; keep them in lockstep so assistive tech and the
+  // DOM never disagree. (`queryActive` already folds in the `autoComplete`
+  // prop, so it isn't re-checked here.)
+  const isOpen = !isBlurred && queryActive
+
+  // True only while the popup actually contains the `role="listbox"` element —
+  // i.e. we have results to navigate. Drives `aria-expanded`/`aria-controls`
+  // together so we never claim an expanded combobox that owns no listbox (the
+  // loading-skeleton and empty states render a popup but no listbox).
+  const listboxOpen = isOpen && results.length > 0
 
   // Index of the option highlighted by keyboard navigation (-1 = none). The
   // active option is surfaced to AT via the input's `aria-activedescendant`
@@ -102,6 +109,15 @@ const SearchRecipesInput: FC<SearchRecipesInputProps> = ({
     setActiveIndex(-1)
   }, [trimmedQuery, isOpen])
 
+  // Clamp the highlight if a background refetch (same query) shrinks the result
+  // set out from under it — otherwise `activeIndex` would point past the end,
+  // leaving `aria-activedescendant` dangling at an id that's no longer in the
+  // DOM. Only fires when actually out of range, so a same-size refetch keeps
+  // the user's keyboard position.
+  useEffect(() => {
+    if (activeIndex >= results.length) setActiveIndex(-1)
+  }, [results.length, activeIndex])
+
   // Keep the highlighted option scrolled into view within the (scrollable) list.
   useEffect(() => {
     if (activeIndex < 0 || !listRef.current) return
@@ -114,63 +130,70 @@ const SearchRecipesInput: FC<SearchRecipesInputProps> = ({
   // back to a full search); Escape closes the popup.
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     const count = results.length
-    switch (e.key) {
-      case 'ArrowDown':
-        if (!isOpen || count === 0) return
+
+    // The navigation keys share a guard (popup open with at least one option)
+    // and all suppress the default; only the index math differs.
+    if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key)) {
+      if (!isOpen || count === 0) return
+      e.preventDefault()
+      if (e.key === 'ArrowDown') setActiveIndex(i => (i + 1) % count)
+      else if (e.key === 'ArrowUp') setActiveIndex(i => (i <= 0 ? count - 1 : i - 1))
+      else if (e.key === 'Home') setActiveIndex(0)
+      else setActiveIndex(count - 1)
+      return
+    }
+
+    if (e.key === 'Enter') {
+      if (isOpen && activeIndex >= 0 && results[activeIndex]) {
+        // Preventing default suppresses the implicit form submit so we
+        // navigate to the highlighted result instead of running a search.
         e.preventDefault()
-        setActiveIndex(i => (i + 1) % count)
-        break
-      case 'ArrowUp':
-        if (!isOpen || count === 0) return
-        e.preventDefault()
-        setActiveIndex(i => (i <= 0 ? count - 1 : i - 1))
-        break
-      case 'Home':
-        if (!isOpen || count === 0) return
-        e.preventDefault()
-        setActiveIndex(0)
-        break
-      case 'End':
-        if (!isOpen || count === 0) return
-        e.preventDefault()
-        setActiveIndex(count - 1)
-        break
-      case 'Enter':
-        if (isOpen && activeIndex >= 0 && results[activeIndex]) {
-          // Preventing default suppresses the implicit form submit so we
-          // navigate to the highlighted result instead of running a search.
-          e.preventDefault()
-          navigate(`/recipes/${results[activeIndex]._id}`)
-          setIsBlurred(true)
-        } else {
-          handleSubmit(e)
-        }
-        break
-      case 'Escape':
-        if (!isOpen) return
-        setIsBlurred(true)
-        break
-      default:
-        break
+        goToRecipe(results[activeIndex]._id)
+      } else {
+        handleSubmit(e)
+      }
+    } else if (e.key === 'Escape') {
+      if (!isOpen) return
+      setIsBlurred(true)
     }
   }
 
-  // Activate an autocomplete result. Delegated to the stable results container
-  // rather than bound per-row: an in-flight refetch (keepPreviousData, or a
-  // background refetch) can re-render the list and replace the <li>/<button>
-  // mid-interaction, so a handler bound to a row would fire on a node React has
-  // already detached — the click no-ops and the dropdown just sits there. The
-  // container persists across those swaps, so the bubbled click always lands;
-  // we read the target row's id from its data attribute. Click (not mousedown)
-  // covers both mouse and keyboard (Enter/Space dispatches a click), and because
-  // it's stateless it stays correct for the navbar's SearchRecipesInput, which
-  // lives in the persistent <Layout> and is reused across navigations.
+  // The single "activate a result" action, shared by the mouse-click and the
+  // keyboard-Enter paths so the destination (and dropdown-close) can't drift
+  // between them.
+  const goToRecipe = (id: string) => {
+    navigate(`/recipes/${id}`)
+    setIsBlurred(true)
+  }
+
+  // Resolve the result row under a pointer event from its `data-recipe-id`.
+  // Delegated to the stable results container rather than bound per-row: an
+  // in-flight refetch (keepPreviousData, or a background refetch) can re-render
+  // the list and replace the <li> mid-interaction, so a handler bound to a row
+  // would fire on a node React has already detached. The container persists
+  // across those swaps, so the bubbled event always lands. Returns the row's
+  // id, or undefined for non-result targets (skeleton/empty/footer).
+  const resolveRowId = (e: React.MouseEvent<HTMLDivElement>) =>
+    (e.target as HTMLElement).closest<HTMLElement>('[data-recipe-id]')?.dataset
+      .recipeId
+
+  // Click (not mousedown) covers both mouse and keyboard (Enter/Space dispatches
+  // a click); because activation is stateless it stays correct for the navbar's
+  // SearchRecipesInput, which lives in the persistent <Layout> and is reused
+  // across navigations.
   const handleResultActivate = (e: React.MouseEvent<HTMLDivElement>) => {
-    const row = (e.target as HTMLElement).closest<HTMLElement>(
-      '[data-recipe-id]'
-    )
-    const id = row?.dataset.recipeId
-    if (id) navigate(`/recipes/${id}`)
+    const id = resolveRowId(e)
+    if (id) goToRecipe(id)
+  }
+
+  // Sync the keyboard highlight to the hovered row so the mouse `:hover` and the
+  // keyboard `.is-active` states (and `aria-activedescendant`) always name the
+  // same option — never two highlighted rows at once.
+  const handleResultHover = (e: React.MouseEvent<HTMLDivElement>) => {
+    const id = resolveRowId(e)
+    if (!id) return
+    const index = results.findIndex(r => r._id === id)
+    if (index >= 0) setActiveIndex(index)
   }
 
   const handleSubmit = (e: React.SyntheticEvent) => {
@@ -198,13 +221,18 @@ const SearchRecipesInput: FC<SearchRecipesInputProps> = ({
           placeholder='Search All Recipes'
           aria-label='Search all recipes'
           role='combobox'
-          aria-expanded={isOpen}
-          aria-controls={isOpen && results.length > 0 ? listboxId : undefined}
+          aria-expanded={listboxOpen}
+          aria-controls={listboxOpen ? listboxId : undefined}
           aria-autocomplete='list'
           aria-activedescendant={
-            isOpen && activeIndex >= 0 ? optionId(activeIndex) : undefined
+            listboxOpen && activeIndex >= 0 ? optionId(activeIndex) : undefined
           }
-          onChange={e => setSearchRecipeVal(e.target.value)}
+          onChange={e => {
+            setSearchRecipeVal(e.target.value)
+            // Re-open after an Escape (or a prior submit): the user is typing
+            // again, so suggestions should come back without a blur/refocus.
+            setIsBlurred(false)
+          }}
           value={searchRecipeVal}
           onFocus={() => setIsBlurred(false)}
           onKeyDown={handleKeyDown}
@@ -216,7 +244,11 @@ const SearchRecipesInput: FC<SearchRecipesInputProps> = ({
         )}
       </label>
       {isOpen && (
-        <div className='auto-complete-results' onClick={handleResultActivate}>
+        <div
+          className='auto-complete-results'
+          onClick={handleResultActivate}
+          onMouseOver={handleResultHover}
+        >
           {isFetching && results.length === 0 ? (
             <ul className='ac-list' aria-hidden='true'>
               {Array.from({ length: 4 }).map((_, i) => (
