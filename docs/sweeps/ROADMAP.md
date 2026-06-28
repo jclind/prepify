@@ -64,7 +64,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **1** | **Security sweep** | `[x]` | `server/` (routes, middleware, `app.js` CORS), Firebase rules, `.env.example`, `src/api/http-common.ts` | #197 |
 | **1** | **Performance sweep** | `[x]` | measure → backlog; cheap wins = image `loading`/`decoding` deferral + grid memo + trending cache (img dims trialled & reverted — CLS) | #198 |
 | **1** | **Code-quality & tests sweep** | `[x]` | `src/test/`, `server/` tests, `cypress/`, types, **dead-code delete (`RecipeThumbnail`)**, error handling | #199 |
-| **2-iso** | A11y: autocomplete listbox + keyboard nav | `[~]` | `SearchRecipesInput.tsx` | worktree-feat+a11y-autocomplete-listbox · 2026-06-27 |
+| **2-iso** | A11y: autocomplete listbox + keyboard nav | `[P]` | `SearchRecipesInput.tsx` | #201 |
 | **2-iso** | A11y: servings stepper target-size | `[ ]` | `SingleRecipe.tsx/.scss` (pill layout) | — |
 | **2-iso** | A11y: account-heading route-map | `[ ]` | `Account.tsx` | — |
 | **2-iso** | Design: shared react-modal style config | `[ ]` | 7 modal components | — |
@@ -184,3 +184,11 @@ narrates the *why*.
   verified by driving the running app (recipe + home render clean post-dead-code-removal, `closestFraction` live).
   Worktree + branch torn down. **Wave 1 now fully `[x]`** (Security #197, Performance #198, Code-quality #199) —
   advance to Wave 2 (the deferred `2-scss` / `2-iso` tails) per the Board.
+- _2026-06-27_ — **Wave 2 kicked off:** first `2-iso` track claimed — **A11y autocomplete listbox + keyboard nav**
+  (PR #201, `[~]`→`[P]`). Implemented the APG editable-combobox-with-list-autocomplete pattern in
+  `SearchRecipesInput`: input is `role="combobox"` (aria-expanded/controls/activedescendant), results are valid
+  `<li role="option">` direct children of the listbox, and arrow/Home/End/Enter/Escape drive the highlight with
+  focus staying on the input (mouse hover syncs the same index). Closes the BACKLOG a11y item. Two pre-existing
+  dropdown bugs fixed in passing (skeleton-offset thumbnail; box-sizing overflow → horizontal scroll + tag
+  clipping in the navbar instance). +9 tests (suite 536 green), tsc clean, build passing; high-effort code
+  review run and findings addressed; verified live in a headless browser.
