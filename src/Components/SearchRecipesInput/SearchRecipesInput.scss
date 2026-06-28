@@ -82,14 +82,22 @@
       gap: 0.15rem;
       max-height: 26rem;
       overflow-y: auto;
+      // Explicit so it can't compute to `auto` (a `visible` axis paired with a
+      // non-`visible` one resolves to `auto`), which would let scrollIntoView
+      // scroll the list sideways and surface a horizontal scrollbar.
+      overflow-x: hidden;
     }
 
-    // Each result is a borderless button row; the whole row is the hit target.
+    // Each result is a borderless row; the whole row is the hit target.
     .ac-item {
       display: flex;
       align-items: center;
       gap: 0.85rem;
       width: 100%;
+      // border-box: the app's global reset doesn't set box-sizing, so without
+      // this `width: 100%` + `padding` would overflow by 1rem (content-box),
+      // forcing a horizontal scrollbar and clipping the tags on the right.
+      box-sizing: border-box;
       padding: 0.5rem;
       border: none;
       outline: none;
@@ -207,6 +215,7 @@
       align-items: center;
       gap: 0.85rem;
       width: 100%;
+      box-sizing: border-box;
       padding: 0.5rem;
       cursor: default;
 
@@ -260,6 +269,7 @@
       justify-content: center;
       gap: 0.45rem;
       width: 100%;
+      box-sizing: border-box;
       padding: 0.7rem 1rem;
       border: none;
       border-top: 1px solid s.$gray-200;
