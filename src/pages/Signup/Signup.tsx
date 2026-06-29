@@ -1,4 +1,4 @@
-import { EmailIcon, GoogleIcon, LockIcon } from 'src/Components/icons'
+import { EmailIcon, GoogleColorIcon, LockIcon } from 'src/Components/icons'
 import React, { ChangeEvent, FC, useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { useAuth } from 'src/context/AuthContext'
@@ -118,7 +118,7 @@ const Signup: FC = () => {
               authRes?.signInWithGoogle(setError)
             }}
           >
-            <GoogleIcon className='icon' /> Sign up with Google
+            <GoogleColorIcon className='icon' /> Sign up with Google
           </button>
           <p className='switch-prompt'>
             Already have an account?{' '}
