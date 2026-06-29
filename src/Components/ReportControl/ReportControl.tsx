@@ -8,9 +8,8 @@ import { AxiosError } from 'axios'
 import { ReportReason, ReportTargetType } from 'types'
 import { useAuth } from 'src/context/AuthContext'
 import ReportAPI, { ALREADY_REPORTED_CODE } from 'src/api/reports'
+import { panelModalStylesWith } from 'src/util/modalStyles'
 import './ReportControl.scss'
-
-Modal.setAppElement('#root')
 
 type ReportTarget = {
   targetType: ReportTargetType
@@ -36,29 +35,6 @@ const REASON_OPTIONS: { value: ReportReason; label: string }[] = [
   { value: 'dangerous', label: 'Dangerous or unsafe' },
   { value: 'other', label: 'Something else' },
 ]
-
-const customStyles = {
-  content: {
-    // position must be set explicitly: react-modal only applies its default
-    // positioning styles when no `className` is given, and we pass one below.
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    right: 'auto',
-    bottom: 'auto',
-    marginRight: '-50%',
-    transform: 'translate(-50%, -50%)',
-    background: '#fff',
-    padding: '2rem',
-    borderRadius: '8px',
-    maxWidth: '440px',
-    width: '90vw',
-  },
-  overlay: {
-    zIndex: 1000,
-    background: 'rgba(0, 0, 0, 0.5)',
-  },
-} as const
 
 const ReportControl: FC<ReportControlProps> = ({ target, variant = 'link' }) => {
   const authRes = useAuth()
@@ -143,7 +119,7 @@ const ReportControl: FC<ReportControlProps> = ({ target, variant = 'link' }) => 
     <Modal
       isOpen={isOpen}
       onRequestClose={close}
-      style={customStyles}
+      style={panelModalStylesWith({ maxWidth: '440px', width: '90vw' })}
       className='report-modal'
     >
       <h2 className='report-modal-title'>Report this {noun}</h2>

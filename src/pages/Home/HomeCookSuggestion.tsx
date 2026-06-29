@@ -9,27 +9,8 @@ import Skeleton from 'react-loading-skeleton'
 import RecipeAPI from 'src/api/recipes'
 import { RecipeType } from 'types'
 import { fmtPrice, ratingLabel, skeletonColor } from './homeFormat'
+import { bareModalStyles } from 'src/util/modalStyles'
 import './HomeCookSuggestion.scss'
-
-// react-modal positions the overlay; the visible card is styled via
-// .cook-modal-card so the content frame itself stays transparent (same approach
-// as AchievementsModal).
-const modalStyles = {
-  content: {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    right: 'auto',
-    bottom: 'auto',
-    marginRight: '-50%',
-    transform: 'translate(-50%, -50%)',
-    padding: 0,
-    border: 'none',
-    background: 'transparent',
-    overflow: 'visible',
-  },
-  overlay: { zIndex: '1000', background: 'rgba(0, 0, 0, 0.6)' },
-}
 
 // Card-shaped skeleton, matching the real card's layout so the modal doesn't
 // resize between the loading and loaded states.
@@ -87,7 +68,7 @@ const HomeCookSuggestion: FC = () => {
       <Modal
         isOpen={isOpen}
         onRequestClose={close}
-        style={modalStyles}
+        style={bareModalStyles}
         className='cook-modal'
         contentLabel='Recipe suggestion'
       >
