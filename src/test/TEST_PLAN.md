@@ -170,7 +170,7 @@ independently.
 
 - **On a successful submission, navigates to the new recipe and confirms with a toast**
   `navigate('/recipes/<newId>')` must run after a successful API call, and a
-  `toast.success('Recipe published!')` must fire (it persists across the route change).
+  `toast.success('Recipe published.')` must fire (it persists across the route change).
 
 - **On API failure (`addRecipe` returns `null`), fires `toast.error('Failed to create recipe. Please try again.')`**
   Flow-level outcomes route through `react-hot-toast`, not inline state. This is the

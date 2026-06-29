@@ -2,6 +2,10 @@ import { EditIcon, SettingsIcon, ShareIcon } from 'src/Components/icons'
 import React, { FC } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
+import {
+  PROFILE_LINK_COPIED,
+  PROFILE_LINK_COPY_ERROR,
+} from 'src/util/toastMessages'
 
 // ProfileControls — the header action cluster: a subtle Edit button plus icon
 // buttons for Settings and Share. Edit + Settings both route to the existing
@@ -21,9 +25,9 @@ const ProfileControls: FC<ProfileControlsProps> = ({ username }) => {
       : window.location.href
     try {
       await navigator.clipboard.writeText(url)
-      toast.success('Profile link copied to clipboard')
+      toast.success(PROFILE_LINK_COPIED)
     } catch {
-      toast.error('Could not copy link')
+      toast.error(PROFILE_LINK_COPY_ERROR)
     }
   }
 
