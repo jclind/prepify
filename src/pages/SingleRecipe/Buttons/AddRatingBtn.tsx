@@ -17,7 +17,7 @@ const AddRatingBtn: FC<AddRatingBtnProps> = ({ currUserReview }) => {
   // hover is the button's own chrome. See docs/design/icon-system.md.
   return (
     <div className='add-rating'>
-      <button className='add-rating-btn btn' onClick={handleClick}>
+      <button className='add-rating-btn btn btn--outline' onClick={handleClick}>
         {currUserReview ? (
           <>
             <StarFilledIcon className='icon' />
