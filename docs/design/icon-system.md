@@ -32,22 +32,30 @@ table. If it's not a brand asset, it should be a Lucide glyph.
 
 ## Filled vs. outline
 
-Lucide is an **outline** system. Where a concept has a filled counterpart that
-toggles against its outline, the filled version is the **same Lucide glyph** rendered
-with `fill="currentColor"` — so toggling swaps the fill, never the glyph shape:
+Lucide is an **outline** system. The rule for when something fills:
+
+> **Outline by default. Fill marks a persistent ON state (saved, rated) — never a
+> hover effect, and never on a stateless icon. Hover changes the button's chrome,
+> not its icon.**
+
+So a bookmark fills when the recipe is **saved**, a star fills when the user has
+**rated** — and the Save / Rate / Print action buttons all behave identically on
+hover (the icon doesn't move; only the button background/border responds). This is
+why `PrintRecipeBtn` and the AddRecipe form-error warning are always outline: they
+have no ON state, so there's nothing to fill. Emphasis there comes from **color and
+size** (the error is the outline triangle in error-red), the Lucide way.
+
+A filled variant is the **same Lucide glyph** rendered with `fill="currentColor"`, so
+the outline↔filled transition swaps fill, never glyph shape:
 
 ```ts
 export const StarFilledIcon: IconType = props =>
   React.createElement(LuStar, { fill: 'currentColor', ...props })
 ```
 
-Today: `StarFilledIcon` / `BookmarkFilledIcon`.
-
-**Not every concept gets a filled variant.** Glyphs whose interior fills into a
-shapeless blob (the printer, the warning triangle — the `!` disappears) intentionally
-have **no** filled version. Emphasis there comes from **color and size**, the Lucide
-way (e.g. the AddRecipe form error is the outline triangle in error-red, not a filled
-triangle).
+Today: `StarFilledIcon` (rated) / `BookmarkFilledIcon` (saved). Only add a filled
+variant for a real ON state, and only if the glyph fills cleanly (the printer and
+warning triangle fill into a shapeless blob — don't).
 
 ## How to…
 
