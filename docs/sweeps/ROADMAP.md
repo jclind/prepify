@@ -65,7 +65,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **1** | **Performance sweep** | `[x]` | measure → backlog; cheap wins = image `loading`/`decoding` deferral + grid memo + trending cache (img dims trialled & reverted — CLS) | #198 |
 | **1** | **Code-quality & tests sweep** | `[x]` | `src/test/`, `server/` tests, `cypress/`, types, **dead-code delete (`RecipeThumbnail`)**, error handling | #199 |
 | **2-iso** | A11y: autocomplete listbox + keyboard nav | `[x]` | `SearchRecipesInput.tsx` | #201 |
-| **2-iso** | A11y: servings stepper target-size | `[P]` | `SingleRecipe.tsx/.scss` (pill layout) | #202 |
+| **2-iso** | A11y: servings stepper target-size | `[x]` | `SingleRecipe.tsx/.scss` (pill layout) | #202 |
 | **2-iso** | A11y: account-heading route-map | `[x]` | `Account.tsx` | #200 |
 | **2-iso** | Design: shared react-modal style config | `[ ]` | 7 modal components | — |
 | **2-iso** | Design: one icon per concept | `[ ]` | new `src/Components/icons` + import swaps | — |
@@ -215,3 +215,15 @@ narrates the *why*.
   GitGuardian); a mid-flight conflict with #200 over the shared sweep docs was reconciled (Board auto-merged;
   Status log kept append-only) and CI re-ran clean. Worktree + branch torn down. **Second of the three Wave-2
   `2-iso` a11y tracks to land**; servings-target-size still in flight.
+- _2026-06-29_ — **A11y servings stepper target-size merged** (PR #202 → `development`, `[P]`→`[x]`). All five
+  CI checks green against the merge HEAD (Backend/Supertest, E2E/Cypress, Frontend/Vitest, Fallow advisory,
+  GitGuardian). The Ingredients servings pill (`SingleRecipe.scss`) tripped Lighthouse `target-size` (WCAG
+  2.5.8, 24px): the number input was ~14px. Sized all three controls past the minimum — `.step-btn` 26→32px,
+  `.serv-input` `width:28px`/`height:32px` — keeping the compact inline-pill look (CSS-only; markup/aria
+  untouched). Measured in-app (buttons 32×32, input 28×32) and re-shot desktop + 380px mobile (no overflow).
+  High-effort code review run: its one finding (a `width: 2.4ch` that *looked* dead) turned out to be
+  load-bearing on re-measure — removing it ballooned the input to 185px — so it was resolved to an explicit
+  `width: 28px`, not deleted. A mid-flight conflict with #200/#201 over the shared sweep docs was reconciled
+  (Board rows; Status log append-only) and CI re-ran clean. Worktree + branch torn down. **Wave-2 `2-iso` a11y
+  trio (#200/#201/#202) now fully landed**; remaining Wave 2 = the Design `2-iso` tracks + the serialized
+  `2-scss` lane.
