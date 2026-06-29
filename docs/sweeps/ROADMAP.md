@@ -67,7 +67,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **2-iso** | A11y: autocomplete listbox + keyboard nav | `[x]` | `SearchRecipesInput.tsx` | #201 |
 | **2-iso** | A11y: servings stepper target-size | `[x]` | `SingleRecipe.tsx/.scss` (pill layout) | #202 |
 | **2-iso** | A11y: account-heading route-map | `[x]` | `Account.tsx` | #200 |
-| **2-iso** | Design: shared react-modal style config | `[P]` | 7 modal components | #203 |
+| **2-iso** | Design: shared react-modal style config | `[x]` | 7 modal components | #203 |
 | **2-iso** | Design: one icon per concept | `[ ]` | new `src/Components/icons` + import swaps | — |
 | **2-iso** | Design: `RecipeFormInput` → shared `FormInput` | `[ ]` | `AddRecipe/*`, `Components/Form/*` | — |
 | **2-iso** | Design: toast punctuation + string dedupe | `[ ]` | ~10 toast call sites (TSX strings) | — |
@@ -227,3 +227,16 @@ narrates the *why*.
   (Board rows; Status log append-only) and CI re-ran clean. Worktree + branch torn down. **Wave-2 `2-iso` a11y
   trio (#200/#201/#202) now fully landed**; remaining Wave 2 = the Design `2-iso` tracks + the serialized
   `2-scss` lane.
+- _2026-06-29_ — **Design: shared react-modal style config merged** (PR #203 → `development`, `[~]`→`[P]`→`[x]`).
+  All five CI checks green against the merge HEAD (Backend/Supertest, E2E/Cypress, Frontend/Vitest, Fallow
+  advisory, GitGuardian). Replaced 7 near-identical inline react-modal `style` objects (which had drifted: white
+  vs grey panels, 8px vs 5px radius, 2rem vs 2.5rem padding, 0.5 vs 0.6 overlay) with one
+  `src/util/modalStyles.ts` exposing `panelModalStyles` / `bareModalStyles` / `panelModalStylesWith(content)` and
+  a single `Modal.setAppElement('#root')` side-effect every modal imports. Migrated all 7 (BugReport,
+  ReleaseNotes, ReportControl, Achievements, HomeCookSuggestion, ConfirmDeleteReview, RecipeControls); net −144
+  lines. Intentional visual unification: 3 grey panels → white (`#eeeeee`→`#fff`, `2.5rem`→`2rem`, `5px`→`8px`)
+  and the Home cook-suggestion overlay `0.6`→`0.5`. Local high-effort code review run: no correctness bugs; two
+  comment-accuracy nits fixed before commit (the `setAppElement` consolidation rationale + a stale `test/setup.ts`
+  note). Verified live in a headless browser (panels white/8px/2rem, overlay 0.5, `#root` toggles `aria-hidden`,
+  no console warnings). Worktree + branch torn down. **First Design `2-iso` track to land**; remaining Wave 2 =
+  the other Design `2-iso` tracks + the serialized `2-scss` lane.
