@@ -9,8 +9,9 @@ configure({
   defaultIgnore: 'script, style, [aria-hidden="true"], [aria-hidden="true"] *',
 })
 
-// react-modal calls Modal.setAppElement('#root') at module scope in several
-// components. The element must exist in jsdom before those modules are imported.
+// react-modal calls Modal.setAppElement('#root') at module scope in
+// src/util/modalStyles.ts (imported by every modal component). The element must
+// exist in jsdom before those modules are imported.
 const rootEl = document.createElement('div')
 rootEl.id = 'root'
 document.body.appendChild(rootEl)

@@ -15,6 +15,7 @@ import toast from 'react-hot-toast'
 import AuthAPI from 'src/api/auth'
 import RecipeAPI from 'src/api/recipes'
 import { useQueryClient } from '@tanstack/react-query'
+import { panelModalStyles } from 'src/util/modalStyles'
 import './RecipeControls.scss'
 
 type RecipeControlsType = {
@@ -28,26 +29,6 @@ type RecipeControlsType = {
 
 const formatCount = (n: number | null | undefined): string =>
   (n ?? 0).toLocaleString()
-
-const customStyles = {
-  content: {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    right: 'auto',
-    bottom: 'auto',
-    marginRight: '-50%',
-    transform: 'translate(-50%, -50%)',
-
-    background: '#eeeeee',
-    padding: '2.5rem',
-    borderRadius: '5px',
-  },
-  overlay: {
-    zIndex: '1000',
-    background: 'rgba(0, 0, 0, 0.5)',
-  },
-}
 
 const RecipeControls: FC<RecipeControlsType> = ({
   recipeId,
@@ -145,7 +126,7 @@ const RecipeControls: FC<RecipeControlsType> = ({
       <Modal
         isOpen={isDeleteModalOpen}
         onRequestClose={closeDeleteModal}
-        style={customStyles}
+        style={panelModalStyles}
         className='confirm-delete-modal'
       >
         <button className='close-modal btn' onClick={closeDeleteModal}>

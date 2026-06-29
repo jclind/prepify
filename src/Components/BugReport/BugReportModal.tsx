@@ -6,9 +6,8 @@ import { BugReportCategory } from 'types'
 import { useAuth } from 'src/context/AuthContext'
 import BugReportAPI from 'src/api/bugReports'
 import { version } from 'src/Components/Footer/footerData'
+import { panelModalStylesWith } from 'src/util/modalStyles'
 import './BugReportModal.scss'
-
-Modal.setAppElement('#root')
 
 type BugReportModalProps = {
   // Visual style of the trigger: a small text link (default) or a plain button.
@@ -21,27 +20,6 @@ const CATEGORY_OPTIONS: { value: BugReportCategory; label: string }[] = [
   { value: 'idea', label: 'I have an idea' },
   { value: 'other', label: 'Something else' },
 ]
-
-const customStyles = {
-  content: {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    right: 'auto',
-    bottom: 'auto',
-    marginRight: '-50%',
-    transform: 'translate(-50%, -50%)',
-    background: '#fff',
-    padding: '2rem',
-    borderRadius: '8px',
-    maxWidth: '460px',
-    width: '90vw',
-  },
-  overlay: {
-    zIndex: 1000,
-    background: 'rgba(0, 0, 0, 0.5)',
-  },
-} as const
 
 const MAX_DESCRIPTION = 2000
 
@@ -113,7 +91,7 @@ const BugReportModal: FC<BugReportModalProps> = ({ variant = 'link' }) => {
       <Modal
         isOpen={isOpen}
         onRequestClose={close}
-        style={customStyles}
+        style={panelModalStylesWith({ maxWidth: '460px', width: '90vw' })}
         className='bug-report-modal'
       >
         <h2 className='bug-report-modal-title'>Report a bug or send feedback</h2>
