@@ -56,14 +56,12 @@
       b { color: s.$primary-text; font-weight: 800; }
     }
   }
+  // edit/delete are a bespoke "outline that fills on hover" pair on the `.btn`
+  // base (pill + reset); only the compact sizing, 1.5px border, and invert
+  // hovers are local.
   button {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
     border: 1.5px solid s.$gray-300;
     padding: 0.5rem 0.95rem;
-    border-radius: s.$radius-lg;
-    cursor: pointer;
     font-size: 0.9rem;
     font-weight: 700;
     color: s.$primary-text;
@@ -71,9 +69,6 @@
     .icon {
       height: 17px;
       width: 17px;
-    }
-    &:focus-visible {
-      @include s.outline();
     }
   }
   button.edit-btn {
@@ -173,30 +168,12 @@
       gap: 2rem;
       padding-top: 2rem;
 
-      button {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        font-size: 1rem;
-        font-weight: 600;
-        border-radius: s.$border-radius;
-        border: none;
+      // cancel = .btn--outline, confirm = .btn--danger-solid; only the fixed
+      // modal-button footprint is local.
+      .btn {
         width: 180px;
         height: 45px;
-        cursor: pointer;
-      }
-      button.cancel {
-        background: s.$secondary-background;
-        &:hover {
-          background: s.$tertiary-background;
-        }
-      }
-      button.confirm {
-        background: s.$error-red;
-        color: s.$primary-background;
-        &:hover {
-          opacity: 0.9;
-        }
+        font-size: 1rem;
       }
     }
   }

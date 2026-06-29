@@ -84,7 +84,7 @@ const RecipeControls: FC<RecipeControlsType> = ({
       </span>
       <div className='btns-container'>
         <button
-          className='edit-btn'
+          className='edit-btn btn'
           onClick={() => navigate(`/recipes/${recipeId}/edit`)}
           aria-label='Edit recipe'
         >
@@ -92,7 +92,7 @@ const RecipeControls: FC<RecipeControlsType> = ({
           Edit
         </button>
         <button
-          className='delete-btn'
+          className='delete-btn btn'
           onClick={() => setIsDeleteModalOpen(true)}
         >
           <TrashIcon className='icon' aria-hidden='true' />
@@ -133,11 +133,11 @@ const RecipeControls: FC<RecipeControlsType> = ({
           <p>This action cannot be undone.</p>
           {deleteError && <p className='error'>Error: {deleteError}</p>}
           <div className='btns'>
-            <button className='cancel' onClick={closeDeleteModal}>
+            <button className='cancel btn btn--outline' onClick={closeDeleteModal}>
               Cancel
             </button>
             <button
-              className='confirm'
+              className='confirm btn btn--danger-solid'
               onClick={handleDeleteRecipe}
               disabled={deleteLoading}
             >
