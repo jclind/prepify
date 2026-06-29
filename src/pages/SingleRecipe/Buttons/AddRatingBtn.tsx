@@ -1,27 +1,23 @@
 import { StarFilledIcon, StarOutlineIcon } from 'src/Components/icons'
-import React, { FC, useState } from 'react'
+import React, { FC } from 'react'
 
 type AddRatingBtnProps = {
   currUserReview: { rating: string } | null
 }
 
 const AddRatingBtn: FC<AddRatingBtnProps> = ({ currUserReview }) => {
-  const [isHovered, setIsHovered] = useState(false)
-
   const handleClick = () => {
     document.getElementById('recipeReviews')?.scrollIntoView({
       behavior: 'smooth',
     })
   }
 
+  // Fill marks a persistent ON state, never hover: a filled star means the user
+  // has rated (parallels Save's filled bookmark = saved). Unrated stays outline;
+  // hover is the button's own chrome. See docs/design/icon-system.md.
   return (
     <div className='add-rating'>
-      <button
-        className='add-rating-btn btn'
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-        onClick={handleClick}
-      >
+      <button className='add-rating-btn btn' onClick={handleClick}>
         {currUserReview ? (
           <>
             <StarFilledIcon className='icon' />
@@ -29,12 +25,7 @@ const AddRatingBtn: FC<AddRatingBtnProps> = ({ currUserReview }) => {
           </>
         ) : (
           <>
-            {isHovered ? (
-              <StarFilledIcon className='icon' />
-            ) : (
-              <StarOutlineIcon className='icon' />
-            )}{' '}
-            Rate
+            <StarOutlineIcon className='icon' /> Rate
           </>
         )}
       </button>
