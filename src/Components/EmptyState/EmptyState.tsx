@@ -1,6 +1,6 @@
+import { InboxIcon } from 'src/Components/icons'
 import React, { FC, ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { FiInbox } from 'react-icons/fi'
 import './EmptyState.scss'
 
 interface EmptyStateAction {
@@ -32,7 +32,7 @@ const EmptyState: FC<EmptyStateProps> = ({
   className,
 }) => (
   <div className={`empty-state ${className ?? ''}`.trim()}>
-    <span className='empty-state__icon'>{icon ?? <FiInbox />}</span>
+    <span className='empty-state__icon'>{icon ?? <InboxIcon />}</span>
     <h2 className='empty-state__title'>{title}</h2>
     {description ? <p className='empty-state__text'>{description}</p> : null}
     {action ? (

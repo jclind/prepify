@@ -1,10 +1,8 @@
+import { ClockIcon, CloseIcon, DiceIcon, StarOutlineIcon } from 'src/Components/icons'
 import React, { FC, useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import Modal from 'react-modal'
 import { Link } from 'react-router-dom'
-import { CgTimer } from 'react-icons/cg'
-import { AiOutlineStar } from 'react-icons/ai'
-import { IoDiceOutline, IoClose } from 'react-icons/io5'
 import Skeleton from 'react-loading-skeleton'
 import RecipeAPI from 'src/api/recipes'
 import { RecipeType } from 'types'
@@ -62,7 +60,7 @@ const HomeCookSuggestion: FC = () => {
   return (
     <div className='home-cook-suggestion'>
       <button className='cook-suggestion-btn' type='button' onClick={open}>
-        <IoDiceOutline /> What should I cook?
+        <DiceIcon /> What should I cook?
       </button>
 
       <Modal
@@ -74,7 +72,7 @@ const HomeCookSuggestion: FC = () => {
       >
         <div className='cook-modal-card'>
           <button className='cook-modal-close' onClick={close} aria-label='Close' type='button'>
-            <IoClose />
+            <CloseIcon />
           </button>
 
           {pick ? (
@@ -93,8 +91,8 @@ const HomeCookSuggestion: FC = () => {
               <div className='body'>
                 <h3>{pick.title}</h3>
                 <div className='meta'>
-                  <span><CgTimer /> {pick.totalTime}m</span>
-                  <span><AiOutlineStar /> {ratingLabel(pick.rating)}</span>
+                  <span><ClockIcon /> {pick.totalTime}m</span>
+                  <span><StarOutlineIcon /> {ratingLabel(pick.rating)}</span>
                   {pick.cuisine && <span className='cuisine'>{pick.cuisine}</span>}
                 </div>
                 <div className='actions'>
@@ -102,7 +100,7 @@ const HomeCookSuggestion: FC = () => {
                     View recipe
                   </Link>
                   <button className='ghost' onClick={tryAnother} disabled={isPending} type='button'>
-                    <IoDiceOutline /> {isPending ? 'Finding…' : 'Try another'}
+                    <DiceIcon /> {isPending ? 'Finding…' : 'Try another'}
                   </button>
                 </div>
               </div>

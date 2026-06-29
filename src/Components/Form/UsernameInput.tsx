@@ -1,6 +1,6 @@
+import { AtSignIcon } from 'src/Components/icons'
 import React, { useEffect, FC } from 'react'
 import FormInput from 'src/Components/Form/FormInput'
-import { MdAlternateEmail } from 'react-icons/md'
 import AuthAPI from 'src/api/auth'
 
 type UsernameInputProps = {
@@ -69,7 +69,7 @@ const UsernameInput: FC<UsernameInputProps> = ({
   return (
     <>
       <FormInput
-        icon={<MdAlternateEmail className='icon' />}
+        icon={<AtSignIcon className='icon' />}
         type='text'
         name='username'
         label='Username'

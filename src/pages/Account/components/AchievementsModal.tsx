@@ -1,6 +1,6 @@
+import { CloseIcon } from 'src/Components/icons'
 import React, { FC } from 'react'
 import Modal from 'react-modal'
-import { FiX } from 'react-icons/fi'
 import './AchievementsModal.scss'
 import { Achievement } from 'types'
 import { bareModalStyles } from 'src/util/modalStyles'
@@ -33,7 +33,7 @@ const AchievementsModal: FC<AchievementsModalProps> = ({
             {earnedCount} / {achievements.length}
           </span>
           <button className='am-close' onClick={onClose} aria-label='Close'>
-            <FiX />
+            <CloseIcon />
           </button>
         </div>
         <ul className='am-list'>

@@ -1,5 +1,5 @@
+import { CloseIcon } from 'src/Components/icons'
 import React, { useState, useRef } from 'react'
-import { AiOutlineClose } from 'react-icons/ai'
 import toast from 'react-hot-toast'
 import './ImagePicker.scss'
 
@@ -114,7 +114,7 @@ const ImagePicker: React.FC<ImagePickerProps> = ({
           aria-label='Remove image'
           onClick={removeImage}
         >
-          <AiOutlineClose className='icon' />
+          <CloseIcon className='icon' />
         </button>
         <input
           type='file'

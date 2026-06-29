@@ -1,7 +1,6 @@
+import { ClockIcon, StarOutlineIcon } from 'src/Components/icons'
 import React, { FC } from 'react'
 import { Link } from 'react-router-dom'
-import { AiOutlineStar } from 'react-icons/ai'
-import { CgTimer } from 'react-icons/cg'
 import Skeleton from 'react-loading-skeleton'
 import 'react-loading-skeleton/dist/skeleton.css'
 import { RecipeType } from 'types'
@@ -26,8 +25,8 @@ export const HomeRecipeCard: FC<{ recipe: RecipeType }> = ({ recipe }) => (
     <div className='body'>
       <h3>{recipe.title}</h3>
       <div className='meta'>
-        <span><CgTimer /> {recipe.totalTime}m</span>
-        <span><AiOutlineStar /> {ratingLabel(recipe.rating)}</span>
+        <span><ClockIcon /> {recipe.totalTime}m</span>
+        <span><StarOutlineIcon /> {ratingLabel(recipe.rating)}</span>
         {recipe.cuisine && <span className='cuisine'>{recipe.cuisine}</span>}
       </div>
     </div>

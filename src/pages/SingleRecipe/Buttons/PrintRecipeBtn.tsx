@@ -1,8 +1,7 @@
+import { PrinterFilledIcon, PrinterIcon } from 'src/Components/icons'
 import React, { FC, useState } from 'react'
 import { useReactToPrint } from 'react-to-print'
 import { TailSpin } from 'react-loader-spinner'
-
-import { BsPrinter, BsFillPrinterFill } from 'react-icons/bs'
 
 type PrintRecipeBtnProps = {
   printedRef: React.RefObject<HTMLDivElement | null>
@@ -28,9 +27,9 @@ const PrintRecipeBtn: FC<PrintRecipeBtnProps> = ({ printedRef }) => {
         onClick={() => handlePrint()}
       >
         {isHovered ? (
-          <BsFillPrinterFill className='icon' />
+          <PrinterFilledIcon className='icon' />
         ) : (
-          <BsPrinter className='icon' />
+          <PrinterIcon className='icon' />
         )}{' '}
         Print
         {loading && (

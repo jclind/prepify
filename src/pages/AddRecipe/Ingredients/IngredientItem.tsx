@@ -1,9 +1,6 @@
+import { AlertCircleIcon, CloseIcon, DragIcon, RotateCwIcon, ShoppingBasketIcon } from 'src/Components/icons'
 import React, { FC, useState, useRef } from 'react'
 import { DraggableProvided, DraggableStateSnapshot } from '@hello-pangea/dnd'
-import { CiShoppingBasket } from 'react-icons/ci'
-import { MdDragIndicator } from 'react-icons/md'
-import { AiOutlineClose } from 'react-icons/ai'
-import { FiAlertCircle, FiRotateCw } from 'react-icons/fi'
 import Skeleton from 'react-loading-skeleton'
 import { toast } from 'react-hot-toast'
 import RecipeAPI from 'src/api/recipes'
@@ -164,7 +161,7 @@ const IngredientItem: FC<IngredientItemProps> = ({
         aria-label='Drag to reorder'
         {...provided?.dragHandleProps}
       >
-        <MdDragIndicator className='icon' />
+        <DragIcon className='icon' />
       </div>
 
       {isEditing ? null : isParsed ? (
@@ -181,7 +178,7 @@ const IngredientItem: FC<IngredientItemProps> = ({
                     alt=''
                   />
                 ) : (
-                  <CiShoppingBasket className='img no-img' />
+                  <ShoppingBasketIcon className='img no-img' />
                 )}
               </>
             )}
@@ -207,8 +204,8 @@ const IngredientItem: FC<IngredientItemProps> = ({
             retryIngredient(ingredient.id)
           }}
         >
-          <FiAlertCircle className='icon warn' />
-          <FiRotateCw className='icon retry' />
+          <AlertCircleIcon className='icon warn' />
+          <RotateCwIcon className='icon retry' />
         </button>
       )}
 
@@ -226,7 +223,7 @@ const IngredientItem: FC<IngredientItemProps> = ({
           removeIngredient(ingredient.id)
         }}
       >
-        <AiOutlineClose className='icon' />
+        <CloseIcon className='icon' />
       </button>
 
       {!snapshot?.isDragging && (

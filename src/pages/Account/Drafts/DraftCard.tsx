@@ -1,6 +1,6 @@
+import { ClockIcon, EditIcon, FileTextIcon, TrashIcon } from 'src/Components/icons'
 import React, { FC, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { FiEdit3, FiTrash2, FiClock, FiFileText } from 'react-icons/fi'
 import { RecipeDraftType } from 'types'
 
 const formatUpdated = (updatedAt: string) => {
@@ -48,7 +48,7 @@ const DraftCard: FC<DraftCardProps> = ({ draft, onDelete }) => {
     <article className='draft-card'>
       <div className='head'>
         <div className='glyph'>
-          <FiFileText />
+          <FileTextIcon />
         </div>
         <h3 className={`title${isUntitled ? ' untitled' : ''}`}>
           {isUntitled ? 'Untitled draft' : draft.title}
@@ -58,13 +58,13 @@ const DraftCard: FC<DraftCardProps> = ({ draft, onDelete }) => {
         <span className='summary'>{summary}</span>
         {updated && (
           <span className='edited'>
-            <FiClock /> Last edited {updated}
+            <ClockIcon /> Last edited {updated}
           </span>
         )}
       </div>
       <div className='actions'>
         <button type='button' className='resume' onClick={handleResume}>
-          <FiEdit3 /> Continue editing
+          <EditIcon /> Continue editing
         </button>
         <button
           type='button'
@@ -74,7 +74,7 @@ const DraftCard: FC<DraftCardProps> = ({ draft, onDelete }) => {
           aria-label='Delete draft'
           title='Delete draft'
         >
-          <FiTrash2 /> Delete
+          <TrashIcon /> Delete
         </button>
       </div>
     </article>

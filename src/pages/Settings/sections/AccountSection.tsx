@@ -1,8 +1,6 @@
+import { AlertCircleIcon, AtSignIcon, CheckCircleIcon, GoogleColorIcon } from 'src/Components/icons'
 import React, { FC, useState } from 'react'
 import toast from 'react-hot-toast'
-import { FiCheckCircle, FiAlertCircle } from 'react-icons/fi'
-import { FcGoogle } from 'react-icons/fc'
-import { MdAlternateEmail } from 'react-icons/md'
 import { useAuth } from 'src/context/AuthContext'
 import { TextField, SettingRow } from '../components/controls'
 import './sections.scss'
@@ -12,12 +10,12 @@ const NO_PASS_ERRORS: PassErrors = { currPass: '', newPass: '', confirmPass: '' 
 
 const providerMeta = (providerId: string) => {
   if (providerId === 'google.com') {
-    return { label: 'Google', icon: <FcGoogle /> }
+    return { label: 'Google', icon: <GoogleColorIcon /> }
   }
   if (providerId === 'password') {
-    return { label: 'Email & password', icon: <MdAlternateEmail /> }
+    return { label: 'Email & password', icon: <AtSignIcon /> }
   }
-  return { label: providerId, icon: <MdAlternateEmail /> }
+  return { label: providerId, icon: <AtSignIcon /> }
 }
 
 const AccountSection: FC = () => {
@@ -152,11 +150,11 @@ const AccountSection: FC = () => {
         {user &&
           (user.emailVerified ? (
             <span className='sr-verified'>
-              <FiCheckCircle /> Verified
+              <CheckCircleIcon /> Verified
             </span>
           ) : (
             <span className='sr-unverified'>
-              <FiAlertCircle /> Unverified
+              <AlertCircleIcon /> Unverified
             </span>
           ))}
       </div>

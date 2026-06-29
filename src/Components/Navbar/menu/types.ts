@@ -1,4 +1,4 @@
-import { IconType } from 'react-icons'
+import { IconType } from 'src/Components/icons'
 
 /** Auth/profile data the mobile nav menu needs, produced once by `useNavMenu`. */
 export type NavMenuData = {

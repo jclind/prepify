@@ -1,7 +1,7 @@
+import { ClockIcon, StarOutlineIcon } from 'src/Components/icons'
 import React, { FC } from 'react'
 import { Link } from 'react-router-dom'
 import { useQueries } from '@tanstack/react-query'
-import { AiOutlineClockCircle, AiOutlineStar } from 'react-icons/ai'
 import Skeleton from 'react-loading-skeleton'
 import 'react-loading-skeleton/dist/skeleton.css'
 import RecipeAPI from 'src/api/recipes'
@@ -23,9 +23,9 @@ const MealRow: FC<{ recipe: RecipeType }> = ({ recipe }) => (
       <div className='info'>
         <span className='title'>{recipe.title}</span>
         <span className='sub'>
-          <AiOutlineClockCircle /> {recipe.totalTime}m
+          <ClockIcon /> {recipe.totalTime}m
           {' · '}
-          <AiOutlineStar /> {ratingLabel(recipe.rating)}
+          <StarOutlineIcon /> {ratingLabel(recipe.rating)}
           {recipe.servingPrice != null && <> {' · '} {fmtPrice(recipe.servingPrice)}</>}
         </span>
       </div>

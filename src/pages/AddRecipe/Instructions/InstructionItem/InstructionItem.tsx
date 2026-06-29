@@ -1,7 +1,6 @@
+import { CloseIcon, DragIcon } from 'src/Components/icons'
 import React, { Dispatch, FC, SetStateAction, useRef, useState } from 'react'
 import { DraggableProvided, DraggableStateSnapshot } from '@hello-pangea/dnd'
-import { MdDragIndicator } from 'react-icons/md'
-import { AiOutlineClose } from 'react-icons/ai'
 import { InstructionsType } from 'types'
 import './InstructionItem.scss'
 import '../../ListComponents/Item.scss'
@@ -73,7 +72,7 @@ const InstructionItem: FC<InstructionItemProps> = ({
         aria-label='Drag to reorder'
         {...provided?.dragHandleProps}
       >
-        <MdDragIndicator className='icon' />
+        <DragIcon className='icon' />
       </div>
 
       {isEditing ? null : isContent ? (
@@ -95,7 +94,7 @@ const InstructionItem: FC<InstructionItemProps> = ({
           removeInstruction(instruction.id)
         }}
       >
-        <AiOutlineClose className='icon' />
+        <CloseIcon className='icon' />
       </button>
 
       {!snapshot?.isDragging && (
