@@ -1,6 +1,6 @@
 import React, { FC, useState } from 'react'
 import { InstructionsType } from 'types'
-import RecipeFormInput from 'src/pages/AddRecipe/RecipeFormInput'
+import FormInput from 'src/Components/Form/FormInput'
 import { v4 as uuidv4 } from 'uuid'
 import AddLabel from 'src/pages/AddRecipe/AddLabel/AddLabel'
 import InstructionList from 'src/pages/AddRecipe/Instructions/InstructionList/InstructionList'
@@ -69,7 +69,8 @@ const InstructionsContainer: FC<InstructionsContainerProps> = ({
 
   return (
     <div className='ingredients-container'>
-      <RecipeFormInput
+      <FormInput
+        size='compact'
         placeholder='Add instruction for your recipe.'
         val={inputVal}
         setVal={setInputVal}

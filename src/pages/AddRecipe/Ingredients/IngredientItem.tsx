@@ -8,7 +8,7 @@ import Skeleton from 'react-loading-skeleton'
 import { toast } from 'react-hot-toast'
 import RecipeAPI from 'src/api/recipes'
 import { IngredientsType } from 'types'
-import RecipeFormInput from 'src/pages/AddRecipe/RecipeFormInput'
+import FormInput from 'src/Components/Form/FormInput'
 import {
   IngredientEnrichTimeoutError,
   withTimeout,
@@ -231,7 +231,8 @@ const IngredientItem: FC<IngredientItemProps> = ({
 
       {!snapshot?.isDragging && (
         <div className={`${isEditing ? 'edit-input' : 'hidden'}`}>
-          <RecipeFormInput
+          <FormInput
+            size='compact'
             val={editedVal}
             setVal={setEditedVal}
             inputRef={editInputRef}

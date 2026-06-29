@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import RecipeFormInput from 'src/pages/AddRecipe/RecipeFormInput'
+import FormInput from 'src/Components/Form/FormInput'
 import './TimeInput.scss'
 
 interface TimeInputProps {
@@ -64,7 +64,8 @@ const TimeInput: React.FC<TimeInputProps> = ({ label, val, setVal }) => {
     <div className='time-input'>
       <div className='label-title'>{label}</div>
       <div className='time-input-inputs'>
-        <RecipeFormInput
+        <FormInput
+          size='compact'
           type='number'
           placeholder='0'
           val={hours}
@@ -72,7 +73,8 @@ const TimeInput: React.FC<TimeInputProps> = ({ label, val, setVal }) => {
           characterLimit={3}
           inputBeginningText='Hours'
         />
-        <RecipeFormInput
+        <FormInput
+          size='compact'
           type='number'
           placeholder='0'
           val={minutes}
