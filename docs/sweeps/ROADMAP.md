@@ -72,7 +72,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **2-iso** | Design: single icon family (Lucide) | `[x]` | `src/Components/icons` glyph remap (no call-site churn) + temp audit page + docs | #206 |
 | **2-iso** | Design: `RecipeFormInput` → shared `FormInput` | `[x]` | `AddRecipe/*`, `Components/Form/*` | #204 |
 | **2-iso** | Design: toast punctuation + string dedupe | `[ ]` | ~10 toast call sites (TSX strings) | — |
-| **2-iso** | Design: codify loading-state pattern | `[ ]` | convention + `TailSpin`/skeleton outliers | — |
+| **2-iso** | Design: codify loading-state pattern | `[~]` | convention + `TailSpin`/skeleton outliers | `worktree-feat+loading-state-pattern` · 2026-06-29 |
 | **2-scss** | Design: pill `.btn` system | `[ ]` | **`index.scss` + many page `.scss`** ⚠ chokepoint | — |
 | **2-scss** | Design: type scale (~520 `font-size:` literals) | `[ ]` | **`helpers.scss` + ~60 files** ⚠ chokepoint | — |
 | **2-scss** | Design: elevation/shadow re-author (~52 literals) | `[ ]` | **`helpers.scss` + page `.scss`** ⚠ chokepoint | — |
