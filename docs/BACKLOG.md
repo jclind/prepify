@@ -431,6 +431,12 @@ findings table.)*
 
 ## Tech debt / process / infra
 
+- `[ ]` **CI actions pinned to deprecated Node 20 runtime** — `.github/workflows/test.yml` uses
+  `actions/checkout@v4` and `actions/setup-node@v4`, which target the Node 20 actions runtime. GitHub is
+  sunsetting Node 20 on the runners and currently force-runs these on Node 24, emitting a deprecation
+  annotation on every CI run (seen on PR #204). Bump both to the next major (`@v5`, or whatever is current
+  when picked up) to clear the warning before the forced fallback is removed. Low-risk maintenance; not a
+  1.0 blocker. *(surfaced 2026-06-29 in CI logs during the `RecipeFormInput`→`FormInput` track.)*
 - `[ ]` **Migrate off Edamam (nutrition source)** — Jesse wants to stop using Edamam for nutrition data
   eventually (filed 2026-06-25). Current state: nutrition is server-proxied via `POST /api/nutrition/details`
   (`server/routes/nutrition.js`, PR #182), so swapping the provider is now an isolated, server-only change —
