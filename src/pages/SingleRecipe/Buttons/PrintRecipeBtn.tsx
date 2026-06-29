@@ -3,7 +3,6 @@ import React, { FC, useState } from 'react'
 import { useReactToPrint } from 'react-to-print'
 import { TailSpin } from 'react-loader-spinner'
 
-
 type PrintRecipeBtnProps = {
   printedRef: React.RefObject<HTMLDivElement | null>
 }

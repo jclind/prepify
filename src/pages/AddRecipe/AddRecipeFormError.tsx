@@ -1,4 +1,4 @@
-import { AlertTriangleIcon } from 'src/Components/icons'
+import { AlertTriangleFilledIcon } from 'src/Components/icons'
 import React, { FC } from 'react'
 
 type AddRecipeFormErrorProps = {
@@ -11,7 +11,7 @@ type AddRecipeFormErrorProps = {
 const AddRecipeFormError: FC<AddRecipeFormErrorProps> = ({ error, id }) => {
   return (
     <div className='error form-error' id={id} role='alert'>
-      <AlertTriangleIcon aria-hidden='true' />
+      <AlertTriangleFilledIcon aria-hidden='true' />
       {error}
     </div>
   )

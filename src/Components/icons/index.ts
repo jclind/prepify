@@ -17,7 +17,6 @@ export {
   FiArrowUpRight as ArrowUpRightIcon,
   FiAward as AwardIcon,
   FiBookOpen as BookOpenIcon,
-  FiBookmark as BookmarkIcon,
   FiCheck as CheckIcon,
   FiCheckCircle as CheckCircleIcon,
   FiChevronDown as ChevronDownIcon,
@@ -47,21 +46,27 @@ export {
   FiShare as ShareIcon,
   FiShield as ShieldIcon,
   FiShoppingCart as ShoppingCartIcon,
-  FiStar as StarOutlineIcon,
   FiTrash2 as TrashIcon,
   FiTrendingUp as TrendingUpIcon,
   FiUser as UserIcon,
   FiX as CloseIcon,
 } from 'react-icons/fi'
 export {
+  // Star filled/outline are paired in-family (AntDesign) so the rate-button
+  // hover toggle swaps fill, not glyph shape.
   AiFillStar as StarFilledIcon,
+  AiFillWarning as AlertTriangleFilledIcon,
   AiOutlineCloud as CloudIcon,
   AiOutlineGoogle as GoogleIcon,
   AiOutlineHome as HomeIcon,
   AiOutlineInfoCircle as InfoIcon,
+  AiOutlineStar as StarOutlineIcon,
   AiOutlineUsergroupAdd as GroupAddIcon,
 } from 'react-icons/ai'
 export {
+  // Bookmark filled/outline are paired in-family (BoxIcons) so the save
+  // toggle swaps fill, not glyph shape.
+  BiBookmark as BookmarkIcon,
   BiLogOut as LogOutIcon,
   BiSliderAlt as SlidersIcon,
   BiSolidBookmark as BookmarkFilledIcon,
