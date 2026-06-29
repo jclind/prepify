@@ -1,4 +1,4 @@
-import { PrinterFilledIcon, PrinterIcon } from 'src/Components/icons'
+import { PrinterIcon } from 'src/Components/icons'
 import React, { FC, useState } from 'react'
 import { useReactToPrint } from 'react-to-print'
 import { TailSpin } from 'react-loader-spinner'
@@ -8,7 +8,6 @@ type PrintRecipeBtnProps = {
 }
 
 const PrintRecipeBtn: FC<PrintRecipeBtnProps> = ({ printedRef }) => {
-  const [isHovered, setIsHovered] = useState(false)
   const [loading, setLoading] = useState(false)
 
   const handlePrint = useReactToPrint({
@@ -21,17 +20,10 @@ const PrintRecipeBtn: FC<PrintRecipeBtnProps> = ({ printedRef }) => {
     <div className='print-recipe'>
       <button
         className='print-recipe-btn btn'
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
         disabled={loading}
         onClick={() => handlePrint()}
       >
-        {isHovered ? (
-          <PrinterFilledIcon className='icon' />
-        ) : (
-          <PrinterIcon className='icon' />
-        )}{' '}
-        Print
+        <PrinterIcon className='icon' /> Print
         {loading && (
           <div className='loading'>
             <TailSpin
