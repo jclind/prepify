@@ -16,11 +16,11 @@ const EditingReviewOptions: FC<EditingReviewOptionsProps> = ({
 }) => {
   const renderIsEditing = () => (
     <>
-      <button className='edit-btn btn' onClick={() => setEditing(true)}>
+      <button className='edit-btn btn btn--ghost' onClick={() => setEditing(true)}>
         Edit
       </button>
       <button
-        className='delete-btn btn'
+        className='delete-btn btn btn--ghost'
         onClick={() => setDeleteModalIsOpen(true)}
       >
         Delete
@@ -29,11 +29,11 @@ const EditingReviewOptions: FC<EditingReviewOptionsProps> = ({
   )
   const renderIsNotEditing = () => (
     <>
-      <button className='cancel btn' onClick={() => setEditing(false)}>
+      <button className='cancel btn btn--ghost' onClick={() => setEditing(false)}>
         Cancel
       </button>
       <button
-        className='edit-review btn'
+        className='edit-review btn btn--primary'
         onClick={handleEditReview}
         disabled={editLoading}
       >

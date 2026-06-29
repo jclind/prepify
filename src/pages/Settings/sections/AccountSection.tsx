@@ -173,7 +173,7 @@ const AccountSection: FC = () => {
           )}
           <button
             type='button'
-            className='sr-btn-primary sr-self-start'
+            className='sr-btn-primary sr-self-start btn btn--primary'
             onClick={handleUpdateEmail}
             disabled={emailLoading}
           >
@@ -215,7 +215,7 @@ const AccountSection: FC = () => {
           </div>
           <button
             type='button'
-            className='sr-btn-outline'
+            className='sr-btn-outline btn btn--outline'
             onClick={handleChangePassword}
             disabled={passLoading}
           >

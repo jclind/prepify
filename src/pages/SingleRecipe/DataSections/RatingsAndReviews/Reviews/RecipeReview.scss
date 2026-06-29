@@ -92,46 +92,28 @@
         flex: 1;
         gap: 1.5rem;
 
+        // edit/delete/cancel are `.btn .btn--ghost` text-style links; only the
+        // small underlined link look is local. (Ghost supplies colour + hover —
+        // edit's hover→primary matches ghost, so it needs no override; delete
+        // keeps its bespoke red hover.)
         button {
           font-size: 0.875rem;
           font-weight: 600;
           text-decoration: underline;
           color: s.$tertiary-text;
         }
-        button.edit-btn {
-          &:hover {
-            color: s.$primary-text;
-          }
-          &:focus-visible {
-            @include s.outline();
-          }
-        }
         button.delete-btn {
           &:hover {
             color: s.$error-red;
           }
-          &:focus-visible {
-            @include s.outline();
-          }
         }
+        // `.btn .btn--primary`; the fixed height + loader positioning + compact
+        // padding (and undoing the link underline above) are local.
         button.edit-review {
           position: relative;
           text-decoration: none;
           padding: 0.5rem 1rem;
-          background: s.$primary;
           height: 45px;
-          color: s.$white;
-          border-radius: s.$border-radius;
-
-          display: flex;
-          justify-self: center;
-          align-items: center;
-        }
-      }
-      button.like-review-btn,
-      button.dislike-review-btn {
-        &:focus-visible {
-          @include s.outline();
         }
       }
     }
@@ -153,25 +135,14 @@
     display: flex;
     gap: 1.5rem;
     justify-content: center;
+    // cancel = `.btn .btn--outline`, delete = `.btn .btn--danger-solid`; only the
+    // larger modal-button font/padding (and the loader's positioning) are local.
     button {
       font-size: 1.125rem;
       padding: 0.75rem 1.25rem;
-      border-radius: s.$border-radius;
-      transition: all 0.3s linear;
-    }
-    button.cancel {
-      background: s.$gray-300;
-      &:hover {
-        background: s.$gray-400;
-      }
     }
     button.delete {
       position: relative;
-      background: s.$error-red;
-      color: s.$primary-background;
-      &:hover {
-        background: s.$error-red-hover;
-      }
     }
   }
 }

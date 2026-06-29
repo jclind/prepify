@@ -32,19 +32,14 @@
       font-weight: 500;
       background: s.$white;
     }
+    // `.btn .btn--primary` ($primary fill/hover from the variant); only its
+    // in-input placement, larger type, inset height + padding are local.
     .search-recipes-btn {
       position: absolute;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-weight: 600;
-      color: s.$white;
       right: 5px;
       font-size: 1.1rem;
-      background: s.$primary;
       height: 80%;
       padding: 0 1.25rem;
-      border-radius: s.$border-radius;
     }
     @include s.below(500px) {
       input {
