@@ -1,5 +1,5 @@
 import React, { ChangeEvent, FC, KeyboardEvent } from 'react'
-import './RecipeFormInput.scss'
+import './RecipeFormTextArea.scss'
 
 type RecipeFormTextAreaProps = {
   placeholder?: string

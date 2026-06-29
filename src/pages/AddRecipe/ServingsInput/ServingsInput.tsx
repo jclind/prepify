@@ -1,5 +1,5 @@
 import React from 'react'
-import RecipeFormInput from 'src/pages/AddRecipe/RecipeFormInput'
+import FormInput from 'src/Components/Form/FormInput'
 
 interface ServingSizeInputProps {
   servings: number | ''
@@ -27,7 +27,8 @@ const ServingSizeInput: React.FC<ServingSizeInputProps> = ({
   }
 
   return (
-    <RecipeFormInput
+    <FormInput
+      size='compact'
       type='number'
       placeholder='How many servings does your recipe make?'
       val={servings}

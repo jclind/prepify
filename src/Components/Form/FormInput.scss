@@ -6,14 +6,6 @@
   width: 100%;
   text-align: left;
 
-  .label-title {
-    margin-bottom: 0.3rem;
-    font-weight: 600;
-    font-size: 0.78rem;
-    color: s.$primary-text;
-    text-transform: capitalize;
-  }
-
   .input-container {
     position: relative;
     display: flex;
@@ -22,58 +14,18 @@
 
     .icon {
       position: absolute;
-      left: 0.85rem;
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 22px;
-      width: 22px;
-      color: s.$tertiary-text;
       pointer-events: none;
     }
 
     input {
       width: 100%;
-      height: 48px;
-      box-sizing: border-box;
-      padding: 0 2.75rem;
       font-family: inherit;
-      font-size: 0.95rem;
       font-weight: 500;
-      color: s.$primary-text;
-      border: 1.5px solid s.$gray-300;
       border-radius: s.$border-radius;
-      background: s.$white;
       outline: none;
-      transition: border-color 0.15s ease, box-shadow 0.15s ease;
-
-      &:focus {
-        border-color: s.$secondary;
-        box-shadow: 0 0 0 3px rgba(0, 173, 181, 0.15);
-      }
-      &::placeholder {
-        color: s.$tertiary-text;
-        font-weight: 400;
-      }
-    }
-
-    .toggle-visibility {
-      position: absolute;
-      right: 0.6rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0.25rem;
-      border: none;
-      background: transparent;
-      color: s.$tertiary-text;
-      font-size: 1.3rem;
-      cursor: pointer;
-      transition: color 0.15s ease;
-
-      &:hover {
-        color: s.$primary-text;
-      }
     }
   }
 
@@ -88,4 +40,112 @@
       color: s.$tertiary-text;
     }
   }
+
+  // ---- size: md (default — auth / profile fields) ----
+  &--md {
+    .label-title {
+      margin-bottom: 0.3rem;
+      font-weight: 600;
+      font-size: 0.78rem;
+      color: s.$primary-text;
+      text-transform: capitalize;
+    }
+
+    .input-container {
+      .icon {
+        left: 0.85rem;
+        height: 22px;
+        width: 22px;
+        color: s.$tertiary-text;
+      }
+
+      input {
+        height: 48px;
+        box-sizing: border-box;
+        padding: 0 2.75rem;
+        font-size: 0.95rem;
+        color: s.$primary-text;
+        border: 1.5px solid s.$gray-300;
+        background: s.$white;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+        &:focus {
+          border-color: s.$secondary;
+          box-shadow: 0 0 0 3px rgba(0, 173, 181, 0.15);
+        }
+        &::placeholder {
+          color: s.$tertiary-text;
+          font-weight: 400;
+        }
+      }
+
+      .toggle-visibility {
+        position: absolute;
+        right: 0.6rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.25rem;
+        border: none;
+        background: transparent;
+        color: s.$tertiary-text;
+        font-size: 1.3rem;
+        cursor: pointer;
+        transition: color 0.15s ease;
+
+        &:hover {
+          color: s.$primary-text;
+        }
+      }
+    }
+  }
+
+  // ---- size: compact (AddRecipe fields) ----
+  &--compact {
+    .label-title {
+      padding-bottom: 0.5rem;
+      font-weight: 600;
+      font-size: 0.875rem;
+      text-transform: capitalize;
+      color: s.$primary;
+    }
+
+    .input-container {
+      height: 40px;
+
+      .icon {
+        left: 0.75rem;
+        height: 25px;
+        width: 25px;
+        color: s.$primary-text;
+      }
+
+      input {
+        height: 100%;
+        padding: 0 1rem;
+        font-size: 0.9rem;
+        border: 1px solid s.$tertiary-text;
+        background: none;
+      }
+    }
+
+    .input-beginning-text {
+      position: absolute;
+      left: 16px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: s.$secondary-text;
+    }
+  }
+}
+
+/* Hide number-input spinners (Chrome, Safari, Edge, Opera) */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+/* Firefox */
+input[type='number'] {
+  -moz-appearance: textfield;
 }

@@ -40,7 +40,7 @@ vi.mock('src/api/auth', () => ({
 vi.mock('react-top-loading-bar', () => ({ default: () => null }))
 
 // Strip the character-limit guard so tests can type any length string
-vi.mock('src/pages/AddRecipe/RecipeFormInput', () => ({
+vi.mock('src/Components/Form/FormInput', () => ({
   default: ({ val, setVal, placeholder, type, onEnter, onBlur }: any) => (
     <input
       type={type || 'text'}
@@ -250,7 +250,7 @@ describe('AddRecipe form', () => {
   it('shows title error when title exceeds 50 characters', async () => {
     const user = userEvent.setup()
     renderAddRecipe()
-    // RecipeFormInput is mocked without character limit enforcement
+    // FormInput is mocked without character limit enforcement
     await user.type(
       screen.getByPlaceholderText('Add a title to your recipe.'),
       'A'.repeat(51)
@@ -495,7 +495,7 @@ describe('AddRecipe form', () => {
   // --- Additional validation edge cases ---
   describe('validation edge cases', () => {
     // Decimal-rejection in ServingsInput is tricky to assert end-to-end through this
-    // file's mocked RecipeFormInput: typing "1.5" character-by-character causes the
+    // file's mocked FormInput: typing "1.5" character-by-character causes the
     // intermediate value "1." to slip past handleChange (`"1." % 1 === 0`), which sets
     // servings to the truthy string "1.". The form-level validator then passes (`if
     // (!servings)` is false) and no "Servings amount is required" error surfaces. In

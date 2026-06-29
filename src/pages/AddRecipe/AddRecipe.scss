@@ -111,11 +111,11 @@
       }
 
       // f02: slightly larger, airier inputs. Scoped to this page so the shared
-      // RecipeFormInput / RecipeFormTextArea stay unchanged elsewhere.
-      .recipe-form-input .input-container {
+      // FormInput / RecipeFormTextArea stay unchanged elsewhere.
+      .form-input .input-container {
         height: 48px;
       }
-      .recipe-form-input,
+      .form-input,
       .recipe-form-textarea {
         .input-container {
           input,
