@@ -254,16 +254,20 @@ The triage date stamped on items is the date they were filed here, not when they
   button. *(Pre-existing; surfaced during the Wave 2 verification live smoke test 2026-06-18 — NOT introduced
   by track 1c. Took the non-button-wrapper route over making StarRating render `<span>`s.)*
 
-- `[ ]` **Autocomplete dropdown isn't a valid ARIA listbox + has no keyboard nav** — the results render as
-  `<ul role="listbox"><li><button role="option">…` (`SearchRecipesInput.tsx:176-185`): a plain `<li>`
-  sits between the listbox and its options, an `option` shouldn't be a `<button>`, and there's no
-  arrow-key navigation / `aria-activedescendant` — it's mouse-clickable buttons wearing listbox roles
-  (the input's only `onKeyDown`, `:130-132`, handles Enter→submit, nothing else). **(verified 2026-06-26:
-  also every `aria-selected` is hardcoded `'false'` at `:182`, so selection state isn't wired even if
-  arrow-nav were added.)** Tab-reachable and fine for sighted/click users, so low severity. Fix: either drop
-  the roles and treat it as a plain list of buttons, or implement real listbox keyboarding. *(surfaced
-  2026-06-22 in the track 2d code review; the per-result `role="option"` on a button is the new markup from
-  this track; re-confirmed in the 2026-06-25 accessibility sweep and again 2026-06-26.)*
+- `[x]` **Autocomplete dropdown isn't a valid ARIA listbox + has no keyboard nav** —
+  **done (Wave 2 accessibility sweep, 2026-06-27, `worktree-feat+a11y-autocomplete-listbox`):** implemented
+  the APG editable-combobox-with-list-autocomplete pattern in `SearchRecipesInput.tsx`. The input is now a
+  `role="combobox"` with `aria-expanded`/`aria-controls`/`aria-autocomplete="list"`/`aria-activedescendant`;
+  each result is a valid `<li role="option" aria-selected>` *direct child* of the `<ul role="listbox">` (the
+  intermediate `<li>` wrapper and the inner `<button>` are gone); Arrow/Home/End/Enter/Escape drive a real
+  highlight via `aria-activedescendant` (focus stays on the input), Enter on a highlighted option navigates
+  to it (falling back to a full search), and the active row scrolls into view. Mouse activation still routes
+  through the stable delegated container handler. +7 tests (combobox semantics, valid listbox markup, arrow
+  highlight + wrap, Enter-to-navigate, Enter-to-search, Escape); verified live in a headless browser. *(was:
+  `<ul role="listbox"><li><button role="option">` with a plain `<li>` between the listbox and its options,
+  an `option` on a `<button>`, no arrow-key nav, and every `aria-selected` hardcoded `'false'`. Originally
+  surfaced 2026-06-22 in the track 2d code review; re-confirmed in the 2026-06-25 accessibility sweep and
+  again 2026-06-26.)*
 
 - `[x]` **Ingredient checklist `<li role="checkbox">` is an invalid ARIA role + breaks the list** —
   **done (accessibility sweep, 2026-06-25):** the checkbox role + keyboard handler moved onto an inner
@@ -441,7 +445,7 @@ findings table.)*
   Mongo split:** `mongodump --excludeCollection` these from the Prepify-app prod dump (so the new app prod
   cluster is born clean) while **preserving** them in `Cluster0` until the parser service has its own home.
   *(surfaced 2026-06-25 during dev/prod environment-split planning.)* **(post-1.0; not a blocker)**
-- `[ ]` **Account tab heading duplicates SegmentedNav's route map** — the visually-hidden per-tab `<h2>`
+- `[x]` **Account tab heading duplicates SegmentedNav's route map** — the visually-hidden per-tab `<h2>`
   in `Account.tsx` (added for heading-order in the a11y sweep) derives its label from an inline
   `location.pathname.includes(...)` chain that re-encodes the four account route strings
   (`saved-recipes`/`ratings`/`your-recipes`/`drafts`) already defined in
@@ -449,7 +453,25 @@ findings table.)*
   fuller than the short tab labels, so they can't just reuse the labels — but if a tab's route is
   renamed in SegmentedNav, this heading silently goes stale. Fix: derive both from a single
   route→label source. *(surfaced 2026-06-25 in the accessibility-sweep code review, PR #179; not worth
-  blocking the merge.)*
+  blocking the merge.)* **Resolved 2026-06-27 (Wave 2 `2-iso`):** extracted the tab defs into
+  `src/pages/Account/components/accountTabs.tsx` (now carrying an `srHeading` field per route) +
+  a shared `activeAccountTabIndex(pathname)` helper; SegmentedNav and Account's `<h2>` both derive
+  from it, so the heading uses the same route-matching as the nav highlight and can't drift. +4 tests
+  asserting the SR heading per route.
+- `[ ]` **Make `accountTabs` the app-wide source for the four account sub-route strings** — the Wave-2
+  `accountTabs.tsx` refactor (PR #200) centralized the route↔label map for the account-page nav + SR
+  heading, but the same four route strings are still hardcoded as `<Link>`/`navigate` destinations
+  elsewhere: `DesktopBar.tsx:86` (`/account/saved-recipes`), `DesktopAccountMenu.tsx:77`
+  (`/account/your-recipes`), `footerData.ts:43-44` (`/account/your-recipes`, `/account/saved-recipes`),
+  and `DraftResumeBanner.tsx:47` (`/account/drafts`). These are app-wide nav links, not the account tab
+  strip, so wiring each to import the account-tab module is a judgment call (mild over-coupling vs. true
+  single-sourcing) — but if a route is ever renamed, these drift silently. Low priority: either point them
+  at `accountTabs[].to` or pull the four route paths into a tiny shared `routes` constant the tab list also
+  consumes. **Sub-item (ergonomics):** `activeAccountTabIndex` returns an *index*, forcing
+  `accountTabs[activeAccountTabIndex(pathname)].srHeading` at the Account call site; a sibling
+  `activeAccountTab(pathname): AccountTab` would read cleaner there (SegmentedNav still wants the index for
+  its `i === activeIndex` map, so keep both). *(surfaced 2026-06-27 in the PR #200 high-effort code review;
+  out of scope for that PR — the backlog item it closed was scoped to the nav↔heading duplication only.)*
 - `[ ]` **One-off rating-aggregate reconciliation** — stored `recipes.rating` aggregates can drift from
   the actual `ratings` docs (confirmed live: *Homemade Granola* stored `5/4.6` vs true `4/4.5`). Likely
   legacy/pre-recompute data or a past silent best-effort failure. Write a script (alongside
