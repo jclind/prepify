@@ -172,7 +172,7 @@ const CreateUsername: FC = () => {
               setVal={setLocation}
               placeholder='Toronto, Canada'
             />
-            <label className='form-input'>
+            <label className='form-input form-input--md'>
               <span className='label-title'>Bio</span>
               <textarea
                 className='form-textarea'

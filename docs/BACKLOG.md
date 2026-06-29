@@ -98,6 +98,12 @@ The triage date stamped on items is the date they were filed here, not when they
 
 ## UX / visual polish
 
+- `[ ]` **Create-recipe form dropdown inputs aren't visually uniform** — now that the text inputs on
+  AddRecipe all route through the shared `FormInput` (`size='compact'`), the page's dropdown/select-style
+  inputs (cuisine, course/meal-type, diet labels, etc.) still carry their own ad-hoc styling and read
+  inconsistently next to the unified text fields. Align their height, border, radius, padding, and focus
+  treatment with the `compact` `FormInput` so the whole form looks like one design system. *(surfaced
+  2026-06-29 while consolidating `RecipeFormInput` into the shared `FormInput`.)*
 - `[x]` **Better "no results found" on the Recipes page** — *done in PR #167 (track 2d, merged ✅):*
   replaced the weak indicator with a real empty state (icon + contextual copy that names the query and/or
   filters) and Clear-filters / Browse-all affordances.
