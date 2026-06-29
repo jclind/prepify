@@ -15,15 +15,15 @@
   transition: color 0.15s, background 0.15s;
 
   &:hover {
-    color: #d64545;
-    background: rgba(214, 69, 69, 0.08);
+    color: s.$error-red;
+    background: rgba(s.$error-red, 0.08);
   }
 
   // Keyboard users get a clear ring (the hover tint isn't enough on its own).
   &:focus-visible {
-    outline: 2px solid rgba(214, 69, 69, 0.5);
+    outline: 2px solid rgba(s.$error-red, 0.5);
     outline-offset: 1px;
-    color: #d64545;
+    color: s.$error-red;
   }
 
   &.button {
@@ -32,7 +32,7 @@
     font-size: 0.85rem;
 
     &:hover {
-      border-color: #d64545;
+      border-color: s.$error-red;
     }
   }
 }
@@ -105,14 +105,14 @@
     }
 
     &:hover {
-      background: rgba(214, 69, 69, 0.08);
-      color: #d64545;
+      background: rgba(s.$error-red, 0.08);
+      color: s.$error-red;
     }
 
     &:focus-visible {
-      outline: 2px solid rgba(214, 69, 69, 0.5);
+      outline: 2px solid rgba(s.$error-red, 0.5);
       outline-offset: -2px;
-      color: #d64545;
+      color: s.$error-red;
     }
   }
 }
@@ -179,8 +179,8 @@
     }
 
     .report-submit-btn {
-      background: #d64545;
-      border: 1px solid #d64545;
+      background: s.$error-red;
+      border: 1px solid s.$error-red;
       color: #fff;
       display: inline-flex;
       align-items: center;

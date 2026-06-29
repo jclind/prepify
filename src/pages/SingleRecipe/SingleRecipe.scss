@@ -10,7 +10,6 @@
 $soft-border: s.$gray-200;
 $soft-radius: 16px;
 $soft-shadow: rgba(48, 56, 65, 0.05) 0px 6px 20px;
-$danger: #d23f31;
 
 .single-recipe-page {
   max-width: 1080px;
@@ -635,7 +634,7 @@ $danger: #d23f31;
         margin-bottom: 0.6rem;
         span { color: s.$tertiary-text; font-weight: 600; }
       }
-      .error { color: $danger; font-size: 0.85rem; margin-bottom: 0.6rem; }
+      .error { color: s.$error-red; font-size: 0.85rem; margin-bottom: 0.6rem; }
       .review-text-area {
         width: 100%;
         min-height: 72px;
