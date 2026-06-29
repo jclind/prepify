@@ -89,7 +89,8 @@
 }
 
 .sr-btn-icon {
-  margin-right: 0.4rem;
+  // Leading icon spacing now comes from the `.btn` base flex `gap`; a
+  // margin here would be additive. (vertical-align is moot under flex.)
   vertical-align: -2px;
 }
 
