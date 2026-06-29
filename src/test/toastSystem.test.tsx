@@ -42,8 +42,8 @@ afterEach(() => {
 describe('toast system (react-hot-toast contract)', () => {
   it('renders a success toast with its message', async () => {
     renderToaster()
-    fire(() => toast.success('Profile updated!'))
-    expect(await screen.findByText('Profile updated!')).toBeInTheDocument()
+    fire(() => toast.success('Profile updated.'))
+    expect(await screen.findByText('Profile updated.')).toBeInTheDocument()
   })
 
   it('renders an error toast with its message', async () => {
@@ -62,9 +62,9 @@ describe('toast system (react-hot-toast contract)', () => {
 
   it('renders a neutral (blank) toast with its message', async () => {
     renderToaster()
-    fire(() => toast('Recipe marked as read, share your feedback below!'))
+    fire(() => toast('Recipe marked as read, share your feedback below.'))
     expect(
-      await screen.findByText('Recipe marked as read, share your feedback below!')
+      await screen.findByText('Recipe marked as read, share your feedback below.')
     ).toBeInTheDocument()
   })
 

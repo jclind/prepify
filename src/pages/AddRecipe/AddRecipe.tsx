@@ -48,6 +48,10 @@ import DraftResumeBanner from 'src/pages/AddRecipe/DraftResumeBanner'
 
 type TimeVal = { hours: number; minutes: number } | null
 
+// Same auth-expiry message on both the update and publish paths below.
+const SESSION_EXPIRED =
+  'Your session has expired — please sign in again and retry.'
+
 // Shown when a recipe saves but is held by automated moderation for an admin to
 // review before it appears publicly. Longer-lived than a normal toast (and not
 // styled as an error — nothing went wrong) so the owner doesn't miss it.
@@ -348,7 +352,7 @@ const AddRecipe: FC<AddRecipeProps> = ({ initialRecipe }) => {
         setLoadingProgress
       )
       if (result.status === 'auth-error') {
-        toast.error('Your session has expired — please sign in again and retry.')
+        toast.error(SESSION_EXPIRED)
       } else if (result.status === 'success') {
         // Write the server's updated recipe straight into the cache rather than
         // invalidating: invalidation would refetch GET /getRecipe (which bumps
@@ -358,11 +362,11 @@ const AddRecipe: FC<AddRecipeProps> = ({ initialRecipe }) => {
         queryClient.invalidateQueries({ queryKey: ['created-recipes'] })
         // A medium-confidence moderation hold saves the edit but withholds it from
         // public reads until an admin clears it; tell the owner instead of the
-        // usual "updated!" so a silently-hidden recipe isn't a surprise.
+        // usual "updated" so a silently-hidden recipe isn't a surprise.
         if (result.recipe.status === 'pending_review') {
           notifyPendingReview()
         } else {
-          toast.success('Recipe updated!')
+          toast.success('Recipe updated.')
         }
         navigate(`/recipes/${initialRecipe._id}`)
       } else {
@@ -372,7 +376,7 @@ const AddRecipe: FC<AddRecipeProps> = ({ initialRecipe }) => {
       const recipeData: RecipeFormType = { ...formData, recipeImage: recipeImage! }
       const result = await RecipeAPI.addRecipe(recipeData, setLoadingProgress)
       if (result.status === 'auth-error') {
-        toast.error('Your session has expired — please sign in again and retry.')
+        toast.error(SESSION_EXPIRED)
       } else if (result.status === 'success') {
         // Recipe is saved — remove the now-redundant draft (and stop autosave
         // from recreating it on unmount) before navigating away.
@@ -381,7 +385,7 @@ const AddRecipe: FC<AddRecipeProps> = ({ initialRecipe }) => {
         if (result.pendingReview) {
           notifyPendingReview()
         } else {
-          toast.success('Recipe published!')
+          toast.success('Recipe published.')
         }
         navigate(`/recipes/${result.id}`)
       } else {
