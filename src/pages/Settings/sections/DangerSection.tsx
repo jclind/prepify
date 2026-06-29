@@ -4,6 +4,7 @@ import toast from 'react-hot-toast'
 import { useAuth } from 'src/context/AuthContext'
 import AuthAPI from 'src/api/auth'
 import { TextField } from '../components/controls'
+import { PASSWORD_INCORRECT } from 'src/util/toastMessages'
 import './sections.scss'
 
 const CONFIRM_WORD = 'DELETE'
@@ -76,7 +77,7 @@ const DangerSection: FC = () => {
           err.code === 'auth/wrong-password' ||
           err.code === 'auth/invalid-credential'
         ) {
-          toast.error('Password incorrect, please try again.')
+          toast.error(PASSWORD_INCORRECT)
         } else if (err.code === 'auth/popup-closed-by-user') {
           toast.error('Reauthentication was cancelled.')
         } else {

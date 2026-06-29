@@ -3,6 +3,7 @@ import React, { FC, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useAuth } from 'src/context/AuthContext'
 import { TextField, SettingRow } from '../components/controls'
+import { EMAIL_IN_USE, PASSWORD_INCORRECT } from 'src/util/toastMessages'
 import './sections.scss'
 
 type PassErrors = { currPass: string; newPass: string; confirmPass: string }
@@ -48,9 +49,9 @@ const AccountSection: FC = () => {
           err.code === 'auth/wrong-password' ||
           err.code === 'auth/invalid-credential'
         ) {
-          toast.error('Password incorrect, please try again.')
+          toast.error(PASSWORD_INCORRECT)
         } else if (err.code === 'auth/email-already-in-use') {
-          toast.error('Email already in use.')
+          toast.error(EMAIL_IN_USE)
         } else {
           toast.error(err.message || 'Could not update email.')
         }
@@ -107,7 +108,7 @@ const AccountSection: FC = () => {
       .then(() => {
         setPassLoading(false)
         clearPasswords()
-        toast.success('Password successfully changed!')
+        toast.success('Password successfully changed.')
       })
       .catch(err => {
         setPassLoading(false)

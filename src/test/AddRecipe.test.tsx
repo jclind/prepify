@@ -304,7 +304,7 @@ describe('AddRecipe form', () => {
     await waitFor(() =>
       expect(navigateFn).toHaveBeenCalledWith('/recipes/new-1')
     )
-    expect(toastSuccess).toHaveBeenCalledWith('Recipe published!')
+    expect(toastSuccess).toHaveBeenCalledWith('Recipe published.')
   })
 
   it('shows a pending-review notice (not "published") when the recipe is held for review', async () => {
@@ -319,7 +319,7 @@ describe('AddRecipe form', () => {
     // Still navigates to the (owner-visible) recipe, but the notice replaces the
     // usual success toast so the owner knows it isn't public yet.
     await waitFor(() => expect(navigateFn).toHaveBeenCalledWith('/recipes/new-1'))
-    expect(toastSuccess).not.toHaveBeenCalledWith('Recipe published!')
+    expect(toastSuccess).not.toHaveBeenCalledWith('Recipe published.')
     expect(toastBase).toHaveBeenCalledWith(
       expect.stringMatching(/pending review/i),
       expect.anything()
