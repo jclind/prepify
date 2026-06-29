@@ -624,11 +624,14 @@ findings table.)*
       hovers `#a52f0a` / `#006065` are entangled with the in-flux orange-CTA contrast story (the a11y sweep
       reverted `$primary-accessible` back to vivid `#ff5722`). Resolve them as part of that recolor, not as a
       blind dedupe. *(surfaced 2026-06-25 in the design-consistency sweep.)*
-- `[ ]` **One danger-red token** — three reds mean the same thing: `$error-red` (the token — **now
+- `[x]` **One danger-red token** — three reds mean the same thing: `$error-red` (the token — **now
   `#c5303f`** after the a11y pass, plus a new `$error-red-hover #b02a37`; `helpers.scss:43-44`), local
   `$danger #d23f31` (`SingleRecipe.scss:13`), and `#d64545` (`ReportControl.scss` ×7, `AdminRecipeControls.scss:87`,
   `Reports.scss:307`). Consolidate onto the token. *(audit F6; surfaced 2026-06-25; `$error-red` value
-  corrected from the stale `#dc3545` on 2026-06-26.)*
+  corrected from the stale `#dc3545` on 2026-06-26.)* **(done 2026-06-29, PR #208 — repointed the local
+  `$danger` (dropped the dead var) and all 9 `#d64545` usages, incl. ReportControl's `rgba(214,69,69, …)`
+  tints → `rgba(s.$error-red, X)`, onto `s.$error-red`. No `helpers.scss` change. Verified live: shipped CSS
+  has 0× old reds; every danger surface renders `#c5303f`.)**
 - `[~]` **Name the admin/“cool” sub-palette and wire the token-less files into `helpers.scss`** — Admin +
   moderation surfaces hardcode a Tailwind-ish slate/blue palette (`#3b82f6`/`#2563eb` action blue exists
   nowhere in the brand) and several files `@use` nothing at all (audit F1/F2).
