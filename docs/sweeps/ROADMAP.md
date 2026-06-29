@@ -76,7 +76,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **2-scss** | Design: pill `.btn` system | `[ ]` | **`index.scss` + many page `.scss`** ⚠ chokepoint | — |
 | **2-scss** | Design: type scale (~520 `font-size:` literals) | `[ ]` | **`helpers.scss` + ~60 files** ⚠ chokepoint | — |
 | **2-scss** | Design: elevation/shadow re-author (~52 literals) | `[ ]` | **`helpers.scss` + page `.scss`** ⚠ chokepoint | — |
-| **2-scss** | Design: one danger-red token | `[P]` | **`helpers.scss` + SingleRecipe/ReportControl/…** ⚠ chokepoint | #208 |
+| **2-scss** | Design: one danger-red token | `[x]` | **`helpers.scss` + SingleRecipe/ReportControl/…** ⚠ chokepoint | #208 |
 | **2-scss** | Design: name the `$admin-*` sub-palette | `[ ]` | **`helpers.scss` + Admin/moderation `.scss`** ⚠ chokepoint | — |
 | **2-scss** | A11y: `$primary-hover` AA-on-hover | `[ ]` | **`helpers.scss`** ⚠ chokepoint | — |
 | **blocked** | A11y: brand-orange contrast (AA) | `[blocked]` | `helpers.scss` `$primary-accessible` — **needs the brand-orange decision** | — |
@@ -324,3 +324,10 @@ narrates the *why*.
   were driven with a throwaway account (admin claim granted via firebase-admin), then deleted with a full Mongo
   orphan-scan; the prod rating used to surface `.error` was removed, and the real reports queue was observed
   read-only. Awaiting CI.
+- _2026-06-29_ — **Design: one danger-red token merged** (PR #208 → `development`, `[P]`→`[x]`). **First `2-scss`
+  lane to land.** All five CI checks green against the merge HEAD (Backend/Supertest 42s, E2E/Cypress 3m19s,
+  Frontend/Vitest, Fallow advisory, GitGuardian). A mid-flight conflict with the just-merged #207 over the shared
+  sweep docs (`ROADMAP.md` Board + Status log) was reconciled (Board rows auto-merged; Status log kept
+  append-only) and CI re-ran clean on the merge commit. Closes the BACKLOG 'One danger-red token' item (audit
+  F6). Worktree + branch torn down. Remaining Wave 2 = the loading-state pattern (`2-iso`, in flight) + the rest
+  of the serialized `2-scss` lane (pill `.btn`, type scale, elevation, `$admin-*`, `$primary-hover`).
