@@ -14,7 +14,7 @@ import {
   RecipeType,
 } from 'types'
 import LoadingBar from 'react-top-loading-bar'
-import RecipeFormInput from 'src/pages/AddRecipe/RecipeFormInput'
+import FormInput from 'src/Components/Form/FormInput'
 import ImagePicker from 'src/pages/AddRecipe/ImagePicker/ImagePicker'
 import './AddRecipe.scss'
 import RecipeFormTextArea from 'src/pages/AddRecipe/RecipeFormTextArea'
@@ -427,7 +427,8 @@ const AddRecipe: FC<AddRecipeProps> = ({ initialRecipe }) => {
               {errors.title && (
                 <AddRecipeFormError error={errors.title} id='error-title' />
               )}
-              <RecipeFormInput
+              <FormInput
+                size='compact'
                 placeholder='Add a title to your recipe.'
                 val={title}
                 setVal={setTitle}

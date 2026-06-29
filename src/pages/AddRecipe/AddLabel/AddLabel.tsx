@@ -2,7 +2,7 @@ import React, { FC, useEffect, useRef, useState } from 'react'
 import { AiOutlinePlus } from 'react-icons/ai'
 import { LabelType } from 'types'
 import { v4 as uuidv4 } from 'uuid'
-import RecipeFormInput from 'src/pages/AddRecipe/RecipeFormInput'
+import FormInput from 'src/Components/Form/FormInput'
 import './AddLabel.scss'
 
 type AddLabelProps = {
@@ -33,7 +33,8 @@ const AddLabel: FC<AddLabelProps> = ({ addToList }) => {
   return (
     <div className='add-label-container'>
       {isAddLabelVisible ? (
-        <RecipeFormInput
+        <FormInput
+          size='compact'
           val={labelVal}
           setVal={setLabelVal}
           inputRef={inputRef}
