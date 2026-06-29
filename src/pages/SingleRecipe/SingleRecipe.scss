@@ -247,9 +247,11 @@ $danger: #d23f31;
       border-radius: s.$radius-pill;
       padding: 0.2rem;
       font-weight: 700;
+      // All three controls are sized ≥ the 24px WCAG 2.5.8 / Lighthouse
+      // `target-size` minimum (the .serv-input was previously ~14px and failed).
       .step-btn {
-        width: 26px;
-        height: 26px;
+        width: 32px;
+        height: 32px;
         border-radius: s.$radius-circle;
         border: none;
         background: s.$white;
@@ -262,7 +264,9 @@ $danger: #d23f31;
         &:hover { background: s.$primary; color: s.$white; }
       }
       .serv-input {
-        width: 1.7ch;
+        width: 28px;
+        height: 32px;
+        box-sizing: border-box;
         border: none;
         background: none;
         text-align: center;
