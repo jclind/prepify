@@ -21,10 +21,10 @@ const selectImage = () => {
 
 const setPrepTime = () => {
   // TimeInput renders two number inputs prefixed by "Hours" and "Minutes" labels;
-  // they share styling with all other RecipeFormInput instances, so use a scoped
+  // they share styling with all other FormInput instances, so use a scoped
   // selector via the prep-time wrapper.
-  cy.get('.prep-time .recipe-form-input input').first().type('0')
-  cy.get('.prep-time .recipe-form-input input').last().type('30')
+  cy.get('.prep-time .form-input input').first().type('0')
+  cy.get('.prep-time .form-input input').last().type('30')
 }
 
 const setMealType = () => {
@@ -70,8 +70,8 @@ type RecipeScenario = {
 }
 
 const setCookTime = (hours: string, minutes: string) => {
-  cy.get('.cook-time .recipe-form-input input').first().clear().type(hours)
-  cy.get('.cook-time .recipe-form-input input').last().clear().type(minutes)
+  cy.get('.cook-time .form-input input').first().clear().type(hours)
+  cy.get('.cook-time .form-input input').last().clear().type(minutes)
 }
 
 const setCuisine = (cuisine: string) => {
@@ -100,8 +100,8 @@ const fillScenario = (s: RecipeScenario) => {
   cy.get('textarea[placeholder="Add a description to your recipe"]').type(s.description)
   cy.get('input[placeholder="How many servings does your recipe make?"]').type(s.servings)
 
-  cy.get('.prep-time .recipe-form-input input').first().clear().type(s.prepTime.hours)
-  cy.get('.prep-time .recipe-form-input input').last().clear().type(s.prepTime.minutes)
+  cy.get('.prep-time .form-input input').first().clear().type(s.prepTime.hours)
+  cy.get('.prep-time .form-input input').last().clear().type(s.prepTime.minutes)
   if (s.cookTime) setCookTime(s.cookTime.hours, s.cookTime.minutes)
 
   s.ingredients.forEach(ingredient => {
