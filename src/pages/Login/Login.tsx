@@ -1,4 +1,4 @@
-import { EmailIcon, GoogleIcon, LockIcon } from 'src/Components/icons'
+import { EmailIcon, GoogleColorIcon, LockIcon } from 'src/Components/icons'
 import React, { FC, useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import './Login.scss'
@@ -98,7 +98,7 @@ const Login: FC = () => {
               authRes?.signInWithGoogle(setError)
             }}
           >
-            <GoogleIcon className='icon' /> Continue with Google
+            <GoogleColorIcon className='icon' /> Continue with Google
           </button>
           <p className='switch-prompt'>
             New to Prepify?{' '}
