@@ -71,7 +71,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **2-iso** | Design: one icon per concept | `[x]` | new `src/Components/icons` + import swaps | #205 |
 | **2-iso** | Design: single icon family (Lucide) | `[x]` | `src/Components/icons` glyph remap (no call-site churn) + temp audit page + docs | #206 |
 | **2-iso** | Design: `RecipeFormInput` → shared `FormInput` | `[x]` | `AddRecipe/*`, `Components/Form/*` | #204 |
-| **2-iso** | Design: toast punctuation + string dedupe | `[P]` | ~10 toast call sites (TSX strings) | #207 |
+| **2-iso** | Design: toast punctuation + string dedupe | `[x]` | ~10 toast call sites (TSX strings) | #207 |
 | **2-iso** | Design: codify loading-state pattern | `[ ]` | convention + `TailSpin`/skeleton outliers | — |
 | **2-scss** | Design: pill `.btn` system | `[ ]` | **`index.scss` + many page `.scss`** ⚠ chokepoint | — |
 | **2-scss** | Design: type scale (~520 `font-size:` literals) | `[ ]` | **`helpers.scss` + ~60 files** ⚠ chokepoint | — |
@@ -299,3 +299,15 @@ narrates the *why*.
   currently unused. Convention written down at `docs/design/icon-system.md` (first piece of the design-system
   docs). Temp `/icon-audit` page built for owner glyph approval, then removed before the PR. **Fourth Design
   `2-iso` track to land.** Worktree + branch torn down.
+- _2026-06-29_ — **Design: toast punctuation + string dedupe merged** (PR #207 → `development`, `[P]`→`[x]`). All
+  five CI checks green against the merge HEAD (Backend/Supertest, E2E/Cypress 4m, Frontend/Vitest, Fallow
+  advisory, GitGuardian). One toast copy convention now codified and the cross-file duplicate strings extracted
+  into `src/util/toastMessages.ts` (12 constants + `reportsBulkUpdated`/`reportUpdated` helpers) — same
+  single-source pattern as `modalStyles`/`accountTabs`. The "~10 sites" estimate was low (~90 `toast` calls
+  across 25 files), but most already conformed; ~25 edited (8 period-less errors fixed, 6 routine success
+  `!`→`.`, 8 cross-file dups deduped incl. the identical Reports/BugReports mutation block). Verified live
+  (headless): PublicProfile Share renders `Profile link copied.` / `Could not copy link.` (both branches), zero
+  console errors. High-effort multi-agent code review found **no correctness bugs**; two reuse nits
+  (coincidentally-identical admin toggle string; generic sentence shared with `authErrors`' inline default)
+  considered and intentionally left inline. Worktree + branch torn down. **Third Design `2-iso` track to land**;
+  remaining Wave 2 = loading-state pattern (`2-iso`) + the serialized `2-scss` lane.
