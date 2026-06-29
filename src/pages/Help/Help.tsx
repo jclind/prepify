@@ -172,7 +172,7 @@ const Help: FC = () => {
                       placeholder='name@example.com'
                     />
 
-                    <label className='form-input message-field'>
+                    <label className='form-input form-input--md message-field'>
                       <span className='label-title'>Message</span>
                       <textarea
                         name='description'
