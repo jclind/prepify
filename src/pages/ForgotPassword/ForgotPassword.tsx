@@ -1,9 +1,9 @@
+import { EmailIcon } from 'src/Components/icons'
 import React, { FC, useState } from 'react'
 import { Link } from 'react-router-dom'
 import './ForgotPassword.scss'
 import '../../Components/Form/FormStyles.scss'
 import FormInput from 'src/Components/Form/FormInput'
-import { MdOutlineEmail } from 'react-icons/md'
 import { useAuth } from 'src/context/AuthContext'
 import { TailSpin } from 'react-loader-spinner'
 import { Helmet } from 'react-helmet-async'
@@ -46,7 +46,7 @@ const ForgotPassword: FC = () => {
             </div>
             <div className='input-fields'>
               <FormInput
-                icon={<MdOutlineEmail className='icon' />}
+                icon={<EmailIcon className='icon' />}
                 type='email'
                 name='email'
                 label='Email'

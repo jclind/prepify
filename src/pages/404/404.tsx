@@ -1,6 +1,6 @@
+import { DonutIcon } from 'src/Components/icons'
 import React, { FC } from 'react'
 import { Helmet } from 'react-helmet-async'
-import { LuDonut } from 'react-icons/lu'
 import './404.scss'
 import { Link, useNavigate } from 'react-router-dom'
 
@@ -15,7 +15,7 @@ const NotFound: FC = () => {
       </Helmet>
       <div className='header'>
         <span className='number'>4</span>
-        <LuDonut className='zero' aria-hidden='true' />
+        <DonutIcon className='zero' aria-hidden='true' />
         <span className='number'>4</span>
       </div>
       <div className='content'>

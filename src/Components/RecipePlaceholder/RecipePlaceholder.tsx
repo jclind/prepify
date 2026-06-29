@@ -1,5 +1,5 @@
+import { KitchenIcon } from 'src/Components/icons'
 import React, { FC } from 'react'
-import { TbToolsKitchen2 } from 'react-icons/tb'
 import './RecipePlaceholder.scss'
 
 /**
@@ -10,7 +10,7 @@ import './RecipePlaceholder.scss'
  */
 const RecipePlaceholder: FC<{ className?: string }> = ({ className = '' }) => (
   <div className={`recipe-placeholder ${className}`} aria-hidden='true'>
-    <TbToolsKitchen2 className='recipe-placeholder__icon' />
+    <KitchenIcon className='recipe-placeholder__icon' />
   </div>
 )
 

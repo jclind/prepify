@@ -1,5 +1,5 @@
+import { StarOutlineIcon } from 'src/Components/icons'
 import React, { FC } from 'react'
-import { BsStar } from 'react-icons/bs'
 import { Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
@@ -68,7 +68,7 @@ const Ratings: FC<RatingsProps> = ({
       <div className='average-rating-container'>
         <span className='text'>Average Rating:</span>
         <div className='average-rating'>
-          <BsStar className='icon' />
+          <StarOutlineIcon className='icon' />
           <div className='number'>
             {Number(ratingVal) === 0
               ? '0'

@@ -1,5 +1,5 @@
+import { StarFilledIcon, StarOutlineIcon } from 'src/Components/icons'
 import React, { FC, useState } from 'react'
-import { BsStar, BsStarFill } from 'react-icons/bs'
 
 type AddRatingBtnProps = {
   currUserReview: { rating: string } | null
@@ -24,15 +24,15 @@ const AddRatingBtn: FC<AddRatingBtnProps> = ({ currUserReview }) => {
       >
         {currUserReview ? (
           <>
-            <BsStarFill className='icon' />
+            <StarFilledIcon className='icon' />
             {currUserReview.rating}
           </>
         ) : (
           <>
             {isHovered ? (
-              <BsStarFill className='icon' />
+              <StarFilledIcon className='icon' />
             ) : (
-              <BsStar className='icon' />
+              <StarOutlineIcon className='icon' />
             )}{' '}
             Rate
           </>

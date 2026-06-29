@@ -1,9 +1,7 @@
+import { BookmarkIcon, PlusCircleIcon, RecipesMenuIcon } from 'src/Components/icons'
 import React, { FC } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import Skeleton from 'react-loading-skeleton'
-import { MdOutlineRestaurantMenu } from 'react-icons/md'
-import { AiOutlinePlusCircle } from 'react-icons/ai'
-import { BiBookmark } from 'react-icons/bi'
 import SearchRecipesInput from 'src/Components/SearchRecipesInput/SearchRecipesInput'
 import DesktopAccountMenu from './DesktopAccountMenu'
 import { DesktopNavProps } from './types'
@@ -58,7 +56,7 @@ const DesktopBar: FC<DesktopNavProps> = data => {
         {/* aria-label keeps the name when the label collapses to an icon below
             1000px (the icon SVG carries no accessible name on its own). */}
         <NavLink to='/recipes' className={linkClass} aria-label='Recipes'>
-          <MdOutlineRestaurantMenu className='dnav__link-icon' />
+          <RecipesMenuIcon className='dnav__link-icon' />
           <span className='dnav__link-label'>Recipes</span>
         </NavLink>
         {isLoggedIn && (
@@ -71,7 +69,7 @@ const DesktopBar: FC<DesktopNavProps> = data => {
               }`
             }
           >
-            <AiOutlinePlusCircle className='dnav__link-icon' />
+            <PlusCircleIcon className='dnav__link-icon' />
             <span className='dnav__link-label'>Create Recipe</span>
           </NavLink>
         )}
@@ -89,7 +87,7 @@ const DesktopBar: FC<DesktopNavProps> = data => {
                 isActive ? 'dnav__icon-link is-active' : 'dnav__icon-link'
               }
             >
-              <BiBookmark />
+              <BookmarkIcon />
             </NavLink>
             <DesktopAccountMenu {...data} />
           </>

@@ -1,10 +1,7 @@
+import { ChevronsRightIcon, CloseIcon, EditIcon, PlusCircleIcon, WrenchIcon } from 'src/Components/icons'
 import React, { FC, useEffect } from 'react'
 import './ReleaseNotes.scss'
 import { useLocation } from 'react-router-dom'
-import { BsChevronDoubleRight, BsPencil } from 'react-icons/bs'
-import { MdAddCircleOutline } from 'react-icons/md'
-import { AiOutlineClose } from 'react-icons/ai'
-import { BiWrench } from 'react-icons/bi'
 import Modal from 'react-modal'
 import packageJSON from '../../../package.json'
 import { panelModalStyles } from 'src/util/modalStyles'
@@ -74,7 +71,7 @@ const ReleaseNotes: FC<ReleaseNotesProps> = ({
       className='release-notes-modal'
     >
       <button className='close-modal btn' onClick={closeModal}>
-        <AiOutlineClose className='icon' />
+        <CloseIcon className='icon' />
       </button>
       <div className='release-notes-content-container'>
         <h1 className='heading'>Prepify Release Notes • {RELEASE_DATE}</h1>
@@ -87,14 +84,14 @@ const ReleaseNotes: FC<ReleaseNotesProps> = ({
           {additions.length > 0 && (
             <section className='section'>
               <h3 className='sub-heading'>
-                <MdAddCircleOutline className='icon' />
+                <PlusCircleIcon className='icon' />
                 Additions
               </h3>
               <div className='items'>
                 {additions.map((item, idx) => {
                   return (
                     <div className='item' key={idx}>
-                      <BsChevronDoubleRight className='icon' />
+                      <ChevronsRightIcon className='icon' />
                       <div className='text'>{item}</div>
                     </div>
                   )
@@ -105,13 +102,13 @@ const ReleaseNotes: FC<ReleaseNotesProps> = ({
           {bugFixes.length > 0 && (
             <section className='section'>
               <h3 className='sub-heading'>
-                <BiWrench className='icon' /> Bug Fixes
+                <WrenchIcon className='icon' /> Bug Fixes
               </h3>
               <div className='items'>
                 {bugFixes.map((item, idx) => {
                   return (
                     <div className='item' key={idx}>
-                      <BsChevronDoubleRight className='icon' />
+                      <ChevronsRightIcon className='icon' />
                       <div className='text'>{item}</div>
                     </div>
                   )
@@ -122,13 +119,13 @@ const ReleaseNotes: FC<ReleaseNotesProps> = ({
           {improvements.length > 0 && (
             <section className='section'>
               <h3 className='sub-heading'>
-                <BsPencil className='icon' /> Improvements
+                <EditIcon className='icon' /> Improvements
               </h3>
               <div className='items'>
                 {improvements.map((item, idx) => {
                   return (
                     <div className='item' key={idx}>
-                      <BsChevronDoubleRight className='icon' />
+                      <ChevronsRightIcon className='icon' />
                       <div className='text'>{item}</div>
                     </div>
                   )

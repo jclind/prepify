@@ -1,3 +1,4 @@
+import { ChevronRightIcon } from 'src/Components/icons'
 import React, { FC } from 'react'
 import { Helmet } from 'react-helmet-async'
 import { Link } from 'react-router-dom'
@@ -7,7 +8,6 @@ import {
   DEFAULT_TITLE,
   DEFAULT_DESCRIPTION,
 } from 'src/util/seo'
-import { BiChevronRight } from 'react-icons/bi'
 import HomeHero from 'src/pages/Home/HomeHero/HomeHero'
 import HomeForYou from 'src/pages/Home/HomeForYou'
 import HomeTrending from 'src/pages/Home/HomeTrending'
@@ -44,7 +44,7 @@ const Home: FC = () => {
           <div className='home-section-header'>
             <h2>Trending this week</h2>
             <p>What the community is cooking right now</p>
-            <Link to='/recipes' className='see-all'>See all <BiChevronRight /></Link>
+            <Link to='/recipes' className='see-all'>See all <ChevronRightIcon /></Link>
           </div>
           <HomeTrending />
         </section>
@@ -59,7 +59,7 @@ const Home: FC = () => {
 
         <section className='home-section home-view-all-section'>
           <Link to='/recipes' className='home-view-all'>
-            View all recipes <BiChevronRight />
+            View all recipes <ChevronRightIcon />
           </Link>
         </section>
       </div>

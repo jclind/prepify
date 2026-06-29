@@ -1,6 +1,6 @@
+import { CloseIcon, DownloadIcon, TrashIcon } from 'src/Components/icons'
 import React, { FC, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-import { FiDownload, FiTrash2, FiX } from 'react-icons/fi'
 import { useAuth } from 'src/context/AuthContext'
 import AuthAPI from 'src/api/auth'
 import { TextField } from '../components/controls'
@@ -102,7 +102,7 @@ const DangerSection: FC = () => {
           className='sr-btn-danger'
           onClick={() => setModalOpen(true)}
         >
-          <FiTrash2 className='sr-btn-icon' />
+          <TrashIcon className='sr-btn-icon' />
           Delete account
         </button>
       </div>
@@ -129,7 +129,7 @@ const DangerSection: FC = () => {
                 aria-label='Close'
                 onClick={closeModal}
               >
-                <FiX />
+                <CloseIcon />
               </button>
             </header>
             <p className='sr-modal-body'>
@@ -195,7 +195,7 @@ const SettingRowLikeExport: FC<{
         onClick={onExport}
         disabled={exporting}
       >
-        <FiDownload className='sr-btn-icon' />
+        <DownloadIcon className='sr-btn-icon' />
         {exporting ? 'Preparing…' : 'Export'}
       </button>
     </div>

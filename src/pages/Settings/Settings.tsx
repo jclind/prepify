@@ -1,15 +1,7 @@
+import { AlertTriangleIcon, ArrowLeftIcon, ChevronRightIcon, EyeIcon, ShieldIcon, UserIcon, IconType } from 'src/Components/icons'
 import React, { FC } from 'react'
 import { Helmet } from 'react-helmet-async'
 import { Link, Outlet, useLocation } from 'react-router-dom'
-import {
-  FiUser,
-  FiShield,
-  FiEye,
-  FiAlertTriangle,
-  FiChevronRight,
-  FiArrowLeft,
-} from 'react-icons/fi'
-import { IconType } from 'react-icons'
 import { SettingsDirtyProvider, useSettingsDirty } from './SettingsDirtyContext'
 import './Settings.scss'
 
@@ -30,25 +22,25 @@ const SECTIONS: Section[] = [
     label: 'Profile',
     blurb: 'Your public identity — avatar, name, username and bio.',
     path: '/settings/profile',
-    icon: FiUser,
+    icon: UserIcon,
   },
   {
     label: 'Account & Security',
     blurb: 'Your email, password and connected sign-in methods.',
     path: '/settings/account',
-    icon: FiShield,
+    icon: ShieldIcon,
   },
   {
     label: 'Privacy',
     blurb: 'Control who can see your profile and recipes.',
     path: '/settings/privacy',
-    icon: FiEye,
+    icon: EyeIcon,
   },
   {
     label: 'Danger Zone',
     blurb: 'Export your data or permanently delete your account.',
     path: '/settings/danger',
-    icon: FiAlertTriangle,
+    icon: AlertTriangleIcon,
     danger: true,
   },
 ]
@@ -97,7 +89,7 @@ const SettingsShell: FC = () => {
                   <span className='settings-navlabel'>{s.label}</span>
                   <span className='settings-navblurb'>{s.blurb}</span>
                 </span>
-                <FiChevronRight className='settings-navchevron' />
+                <ChevronRightIcon className='settings-navchevron' />
               </Link>
             )
           })}
@@ -105,7 +97,7 @@ const SettingsShell: FC = () => {
 
         <section className='settings-pane'>
           <Link to='/settings' className='settings-back' onClick={guard}>
-            <FiArrowLeft /> Settings
+            <ArrowLeftIcon /> Settings
           </Link>
           <header className='settings-panehead'>
             <h2>{active.label}</h2>

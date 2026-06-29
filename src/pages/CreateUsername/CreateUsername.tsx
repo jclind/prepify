@@ -1,3 +1,4 @@
+import { MapPinIcon, UserIcon } from 'src/Components/icons'
 import React, { ChangeEvent, FC, useEffect, useState } from 'react'
 import { Helmet } from 'react-helmet-async'
 import '../../Components/Form/FormStyles.scss'
@@ -5,8 +6,6 @@ import './CreateUsername.scss'
 import { TailSpin } from 'react-loader-spinner'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { AiOutlineUser } from 'react-icons/ai'
-import { MdOutlineLocationOn } from 'react-icons/md'
 import UsernameInput from 'src/Components/Form/UsernameInput'
 import FormInput from 'src/Components/Form/FormInput'
 import AuthAPI from 'src/api/auth'
@@ -150,7 +149,7 @@ const CreateUsername: FC = () => {
             </div>
 
             <FormInput
-              icon={<AiOutlineUser className='icon' />}
+              icon={<UserIcon className='icon' />}
               type='text'
               name='display-name'
               label='Display name'
@@ -161,7 +160,7 @@ const CreateUsername: FC = () => {
               placeholder='John Smith'
             />
             <FormInput
-              icon={<MdOutlineLocationOn className='icon' />}
+              icon={<MapPinIcon className='icon' />}
               type='text'
               name='location'
               label='Location'

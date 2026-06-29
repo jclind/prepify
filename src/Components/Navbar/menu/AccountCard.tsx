@@ -1,6 +1,6 @@
+import { LogOutIcon } from 'src/Components/icons'
 import React, { FC, useState } from 'react'
 import { NavLink } from 'react-router-dom'
-import { BiLogOut } from 'react-icons/bi'
 import { NavMenuData } from './types'
 import DefaultAvatar from 'src/Components/DefaultAvatar/DefaultAvatar'
 
@@ -80,7 +80,7 @@ const AccountCard: FC<AccountCardProps> = ({
           logout()
         }}
       >
-        <BiLogOut className='icon' />
+        <LogOutIcon className='icon' />
         <span>Log out</span>
       </button>
     </div>
