@@ -1,7 +1,6 @@
+import { ClockIcon, StarFilledIcon } from 'src/Components/icons'
 import React, { FC, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { CgTimer } from 'react-icons/cg'
-import { AiFillStar } from 'react-icons/ai'
 import Skeleton from 'react-loading-skeleton'
 import 'react-loading-skeleton/dist/skeleton.css'
 import RecipePlaceholder from 'src/Components/RecipePlaceholder/RecipePlaceholder'
@@ -29,7 +28,7 @@ const Rating: FC<{ value: number; count: number }> = ({ value, count }) => {
   }
   return (
     <span className='recipe-card__rating'>
-      <AiFillStar className='star' />
+      <StarFilledIcon className='star' />
       <span className='val'>{formatRating(Number(value), c)}</span>
       <span className='count'>({c})</span>
     </span>
@@ -110,7 +109,7 @@ const RecipeCard: FC<RecipeCardProps> = ({ recipe, loading, onMutated }) => {
           <h3 className='recipe-card__title'>{recipe.title}</h3>
           <div className='recipe-card__meta'>
             <span className='recipe-card__time'>
-              <CgTimer /> {time}
+              <ClockIcon /> {time}
             </span>
             <Rating value={recipe.rating.rateValue} count={recipe.rating.rateCount} />
           </div>

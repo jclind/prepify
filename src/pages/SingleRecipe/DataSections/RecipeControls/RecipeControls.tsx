@@ -1,12 +1,5 @@
+import { BookmarkIcon, CheckCircleIcon, CloseIcon, EditIcon, EyeIcon, TrashIcon, UserIcon } from 'src/Components/icons'
 import React, { FC, useState } from 'react'
-import {
-  AiOutlineClose,
-  AiOutlineEdit,
-  AiOutlineDelete,
-  AiOutlineUser,
-  AiOutlineEye,
-} from 'react-icons/ai'
-import { BsBookmark, BsCheck2Circle } from 'react-icons/bs'
 import { TailSpin } from 'react-loader-spinner'
 import Modal from 'react-modal'
 import { useNavigate } from 'react-router-dom'
@@ -84,7 +77,7 @@ const RecipeControls: FC<RecipeControlsType> = ({
   return (
     <div className='recipe-controls-container'>
       <span className='who'>
-        <AiOutlineUser className='icon' aria-hidden='true' />
+        <UserIcon className='icon' aria-hidden='true' />
         <span>
           <strong>You</strong> created this recipe
         </span>
@@ -95,30 +88,30 @@ const RecipeControls: FC<RecipeControlsType> = ({
           onClick={() => navigate(`/recipes/${recipeId}/edit`)}
           aria-label='Edit recipe'
         >
-          <AiOutlineEdit className='icon' aria-hidden='true' />
+          <EditIcon className='icon' aria-hidden='true' />
           Edit
         </button>
         <button
           className='delete-btn'
           onClick={() => setIsDeleteModalOpen(true)}
         >
-          <AiOutlineDelete className='icon' aria-hidden='true' />
+          <TrashIcon className='icon' aria-hidden='true' />
           Delete
         </button>
       </div>
 
       <div className='owner-stats' aria-label='Recipe statistics'>
         <span className='stat'>
-          <AiOutlineEye className='icon' aria-hidden='true' />
+          <EyeIcon className='icon' aria-hidden='true' />
           <b>{formatCount(views)}</b> {views === 1 ? 'view' : 'views'}
         </span>
         <span className='stat'>
-          <BsBookmark className='icon' aria-hidden='true' />
+          <BookmarkIcon className='icon' aria-hidden='true' />
           <b>{formatCount(numTimesSaved)}</b>{' '}
           {numTimesSaved === 1 ? 'save' : 'saves'}
         </span>
         <span className='stat'>
-          <BsCheck2Circle className='icon' aria-hidden='true' />
+          <CheckCircleIcon className='icon' aria-hidden='true' />
           <b>{formatCount(numTimesMade)}</b> made
         </span>
       </div>
@@ -130,7 +123,7 @@ const RecipeControls: FC<RecipeControlsType> = ({
         className='confirm-delete-modal'
       >
         <button className='close-modal btn' onClick={closeDeleteModal}>
-          <AiOutlineClose className='icon' />
+          <CloseIcon className='icon' />
         </button>
         <div className='content'>
           <h4>Delete Recipe?</h4>

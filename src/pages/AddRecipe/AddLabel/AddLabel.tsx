@@ -1,5 +1,5 @@
+import { PlusIcon } from 'src/Components/icons'
 import React, { FC, useEffect, useRef, useState } from 'react'
-import { AiOutlinePlus } from 'react-icons/ai'
 import { LabelType } from 'types'
 import { v4 as uuidv4 } from 'uuid'
 import FormInput from 'src/Components/Form/FormInput'
@@ -47,7 +47,7 @@ const AddLabel: FC<AddLabelProps> = ({ addToList }) => {
           className='add-label-btn'
           onClick={() => setIsAddLabelVisible(true)}
         >
-          <AiOutlinePlus className='icon' />
+          <PlusIcon className='icon' />
           <span className='text'>Add Label</span>
         </button>
       )}

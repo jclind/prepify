@@ -1,17 +1,7 @@
+import { BookmarkIcon, CloseIcon, EditIcon, FolderIcon, FolderPlusIcon, GridIcon, PlusIcon, SearchIcon, TrashIcon } from 'src/Components/icons'
 import React, { FC, useState, useEffect } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
-import {
-  FiPlus,
-  FiFolderPlus,
-  FiEdit2,
-  FiTrash2,
-  FiX,
-  FiSearch,
-  FiGrid,
-  FiBookmark,
-  FiFolder,
-} from 'react-icons/fi'
 import RecipeCard from 'src/Components/RecipeCard/RecipeCard'
 import EmptyState from 'src/Components/EmptyState/EmptyState'
 import SortDropdown from 'src/Components/SortDropdown/SortDropdown'
@@ -212,7 +202,7 @@ const SavedRecipes: FC = () => {
           label='All saved'
           count={savedTotal}
           cover={null}
-          icon={<FiGrid />}
+          icon={<GridIcon />}
           variant='all'
           active={activeCollectionId === null}
           onClick={() => selectCollection(null)}
@@ -251,7 +241,7 @@ const SavedRecipes: FC = () => {
               className='new-submit'
               disabled={creating || !newName.trim()}
             >
-              <FiPlus /> Create
+              <PlusIcon /> Create
             </button>
           </form>
         ) : (
@@ -261,7 +251,7 @@ const SavedRecipes: FC = () => {
             onClick={() => setCreatingNew(true)}
             aria-label='New collection'
           >
-            <FiFolderPlus /> New
+            <FolderPlusIcon /> New
           </button>
         )}
       </div>
@@ -269,7 +259,7 @@ const SavedRecipes: FC = () => {
       {/* Toolbar: full-width search + sort. */}
       <div className='saved-toolbar'>
         <div className='saved-search'>
-          <FiSearch className='saved-search__icon' />
+          <SearchIcon className='saved-search__icon' />
           <input
             type='text'
             placeholder={
@@ -287,7 +277,7 @@ const SavedRecipes: FC = () => {
               aria-label='Clear search'
               onClick={() => onSearchChange('')}
             >
-              <FiX />
+              <CloseIcon />
             </button>
           )}
         </div>
@@ -322,7 +312,7 @@ const SavedRecipes: FC = () => {
               className='btn-small ghost'
               onClick={() => setRenaming(false)}
             >
-              <FiX />
+              <CloseIcon />
             </button>
           </form>
         ) : (
@@ -338,14 +328,14 @@ const SavedRecipes: FC = () => {
                   }}
                   aria-label='Rename collection'
                 >
-                  <FiEdit2 /> Rename
+                  <EditIcon /> Rename
                 </button>
                 <button
                   className='btn-small ghost danger'
                   onClick={handleDelete}
                   aria-label='Delete collection'
                 >
-                  <FiTrash2 /> Delete
+                  <TrashIcon /> Delete
                 </button>
               </div>
             )}
@@ -379,7 +369,7 @@ const SavedRecipes: FC = () => {
       ) : (
         searching ? (
           <EmptyState
-            icon={<FiSearch />}
+            icon={<SearchIcon />}
             title='No matches'
             description={
               <>
@@ -391,13 +381,13 @@ const SavedRecipes: FC = () => {
           />
         ) : activeCollection ? (
           <EmptyState
-            icon={<FiFolder />}
+            icon={<FolderIcon />}
             title='Nothing here yet'
             description='Add saved recipes to this collection from the folder icon on any card.'
           />
         ) : (
           <EmptyState
-            icon={<FiBookmark />}
+            icon={<BookmarkIcon />}
             title='No Recipes Saved Yet'
             description='Start saving your favorite recipes today!'
             action={{ label: 'Browse recipes', to: '/recipes' }}

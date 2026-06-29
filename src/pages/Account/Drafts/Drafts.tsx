@@ -1,8 +1,8 @@
+import { EditIcon } from 'src/Components/icons'
 import React, { FC } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import Skeleton from 'react-loading-skeleton'
 import 'react-loading-skeleton/dist/skeleton.css'
-import { FiEdit3 } from 'react-icons/fi'
 
 import './Drafts.scss'
 import EmptyState from 'src/Components/EmptyState/EmptyState'
@@ -55,7 +55,7 @@ const Drafts: FC = () => {
         </div>
       ) : (
         <EmptyState
-          icon={<FiEdit3 />}
+          icon={<EditIcon />}
           title='No Drafts Yet'
           description='Recipes you start are saved here automatically until you publish them.'
           action={{ label: 'Start a Recipe', to: '/add-recipe' }}

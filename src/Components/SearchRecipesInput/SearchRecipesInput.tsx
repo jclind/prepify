@@ -1,7 +1,6 @@
+import { ClockIcon, SearchIcon, StarOutlineIcon, UserIcon } from 'src/Components/icons'
 import React, { FC, useState, useEffect, useRef, useId } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AiOutlineSearch, AiOutlineStar, AiOutlineUser } from 'react-icons/ai'
-import { CgTimer } from 'react-icons/cg'
 import './SearchRecipesInput.scss'
 import { formatRating } from 'src/util/formatRating'
 import slugify from 'slugify'
@@ -214,7 +213,7 @@ const SearchRecipesInput: FC<SearchRecipesInputProps> = ({
       ref={wrapperRef}
     >
       <label htmlFor={inputId} className='search-recipes-input-label'>
-        <AiOutlineSearch className='icon' />
+        <SearchIcon className='icon' />
         <input
           id={inputId}
           className='search-recipes-input'
@@ -304,13 +303,13 @@ const SearchRecipesInput: FC<SearchRecipesInputProps> = ({
                       <span className='ac-item__title'>{recipe.title}</span>
                       <span className='ac-item__meta'>
                         <span className='ac-item__stat'>
-                          <CgTimer /> {recipe.totalTime}
+                          <ClockIcon /> {recipe.totalTime}
                         </span>
                         <span className='ac-item__stat'>
-                          <AiOutlineUser /> {recipe.servings}
+                          <UserIcon /> {recipe.servings}
                         </span>
                         <span className='ac-item__stat'>
-                          <AiOutlineStar />{' '}
+                          <StarOutlineIcon />{' '}
                           {formatRating(
                             Number(recipe.rating?.rateValue ?? 0),
                             Number(recipe.rating?.rateCount ?? 0)
@@ -333,7 +332,7 @@ const SearchRecipesInput: FC<SearchRecipesInputProps> = ({
                 className='ac-footer'
                 onClick={handleSubmit}
               >
-                <AiOutlineSearch className='ac-footer__icon' />
+                <SearchIcon className='ac-footer__icon' />
                 Search for “{searchRecipeVal.trim()}”
               </button>
             </>

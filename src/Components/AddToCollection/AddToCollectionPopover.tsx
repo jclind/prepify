@@ -1,6 +1,6 @@
+import { CheckIcon, PlusIcon } from 'src/Components/icons'
 import React, { FC, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-import { FiPlus, FiCheck } from 'react-icons/fi'
 import CollectionsAPI from 'src/api/collections'
 import RecipeAPI from 'src/api/recipes'
 import { RecipeCollection } from 'types'
@@ -113,7 +113,7 @@ const AddToCollectionPopover: FC<Props> = ({
         onClick={onToggleSaved}
         disabled={busy}
       >
-        <span className='checkbox'>{saved && <FiCheck />}</span>
+        <span className='checkbox'>{saved && <CheckIcon />}</span>
         <span className='name'>All saved</span>
       </button>
 
@@ -131,7 +131,7 @@ const AddToCollectionPopover: FC<Props> = ({
               onClick={() => toggle(c.id)}
               disabled={busy}
             >
-              <span className='checkbox'>{selected.has(c.id) && <FiCheck />}</span>
+              <span className='checkbox'>{selected.has(c.id) && <CheckIcon />}</span>
               <span className='name'>{c.name}</span>
             </button>
           ))
@@ -158,7 +158,7 @@ const AddToCollectionPopover: FC<Props> = ({
           disabled={!newName.trim() || busy}
           aria-label='Create collection'
         >
-          <FiPlus />
+          <PlusIcon />
         </button>
       </form>
     </div>

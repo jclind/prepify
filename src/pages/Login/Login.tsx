@@ -1,11 +1,10 @@
+import { EmailIcon, GoogleIcon, LockIcon } from 'src/Components/icons'
 import React, { FC, useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import './Login.scss'
 import '../../Components/Form/FormStyles.scss'
 import FormInput from 'src/Components/Form/FormInput'
 import { useAuth } from 'src/context/AuthContext'
-import { AiOutlineGoogle } from 'react-icons/ai'
-import { MdOutlineEmail, MdOutlineLock } from 'react-icons/md'
 import { TailSpin } from 'react-loader-spinner'
 import { Helmet } from 'react-helmet-async'
 
@@ -45,7 +44,7 @@ const Login: FC = () => {
             </div>
             <div className='input-fields'>
               <FormInput
-                icon={<MdOutlineEmail className='icon' />}
+                icon={<EmailIcon className='icon' />}
                 type='email'
                 name='email'
                 label='Email'
@@ -55,7 +54,7 @@ const Login: FC = () => {
                 placeholder='name@example.com'
               />
               <FormInput
-                icon={<MdOutlineLock className='icon' />}
+                icon={<LockIcon className='icon' />}
                 type='password'
                 name='password'
                 label='Password'
@@ -99,7 +98,7 @@ const Login: FC = () => {
               authRes?.signInWithGoogle(setError)
             }}
           >
-            <AiOutlineGoogle className='icon' /> Continue with Google
+            <GoogleIcon className='icon' /> Continue with Google
           </button>
           <p className='switch-prompt'>
             New to Prepify?{' '}

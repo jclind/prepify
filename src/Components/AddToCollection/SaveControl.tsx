@@ -1,9 +1,8 @@
+import { BookmarkFilledIcon, BookmarkIcon, ChevronDownIcon } from 'src/Components/icons'
 import React, { FC, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
-import { BsBookmark, BsFillBookmarkCheckFill } from 'react-icons/bs'
-import { BiBookmark, BiSolidBookmark, BiChevronDown } from 'react-icons/bi'
 import AuthAPI from 'src/api/auth'
 import CollectionsAPI from 'src/api/collections'
 import { useSaveRecipe } from 'src/hooks/useSaveRecipe'
@@ -159,9 +158,7 @@ const SaveControl: FC<Props> = ({
     if (wasSaved) setOpen(false)
   }
 
-  const Filled = variant === 'button' ? BsFillBookmarkCheckFill : BiSolidBookmark
-  const Outline = variant === 'button' ? BsBookmark : BiBookmark
-  const Icon = isSaved ? Filled : Outline
+  const Icon = isSaved ? BookmarkFilledIcon : BookmarkIcon
 
   return (
     <div className={`save-control ${className ?? ''}`.trim()}>
@@ -185,7 +182,7 @@ const SaveControl: FC<Props> = ({
         <Icon className='icon' />
         {variant === 'button' && <span>{isSaved ? 'Saved' : 'Save'}</span>}
         {variant === 'button' && uid && (
-          <BiChevronDown className='save-control__caret' />
+          <ChevronDownIcon className='save-control__caret' />
         )}
       </button>
       {open &&

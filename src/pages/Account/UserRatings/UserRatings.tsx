@@ -1,10 +1,10 @@
+import { CornerDownRightIcon, StarOutlineIcon } from 'src/Components/icons'
 import React, { FC, useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import RecipeAPI from 'src/api/recipes'
 import { OptionalReviewType } from 'types'
 import StarRating from 'src/Components/StarRating/StarRating'
 import EmptyState from 'src/Components/EmptyState/EmptyState'
-import { FiStar, FiCornerDownRight } from 'react-icons/fi'
 import './UserRatings.scss'
 import { timeElapsedSince } from 'src/util/timeElapsedSince'
 import Skeleton from 'react-loading-skeleton'
@@ -77,7 +77,7 @@ const SingleReview: FC<SingleReviewProps> = ({ review, loading }) => {
         </div>
         {!loading && review?.reviewText && (
           <p className='sr-text'>
-            <FiCornerDownRight /> {review?.reviewText}
+            <CornerDownRightIcon /> {review?.reviewText}
           </p>
         )}
       </div>
@@ -166,7 +166,7 @@ const Ratings: FC = () => {
         </>
       ) : (
         <EmptyState
-          icon={<FiStar />}
+          icon={<StarOutlineIcon />}
           title='No Ratings Yet'
           description='All of your future ratings will show up here.'
           action={{ label: 'Find recipes to review', to: '/recipes' }}

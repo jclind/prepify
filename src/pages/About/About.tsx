@@ -1,19 +1,7 @@
+import { ArrowRightIcon, BookOpenIcon, ClockIcon, DollarSignIcon, EditIcon, HeartIcon, PieChartIcon, SearchIcon, ShoppingCartIcon, StarOutlineIcon, UtensilsIcon } from 'src/Components/icons'
 import React, { FC, ReactElement } from 'react'
 import { Link } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
-import {
-  FiDollarSign,
-  FiPieChart,
-  FiSearch,
-  FiEdit3,
-  FiStar,
-  FiHeart,
-  FiClock,
-  FiArrowRight,
-  FiShoppingCart,
-  FiBookOpen,
-} from 'react-icons/fi'
-import { LuUtensils } from 'react-icons/lu'
 import './About.scss'
 
 type Feature = {
@@ -26,32 +14,32 @@ type Feature = {
 // stays balanced (3×2 desktop, 2×3 tablet, 1-up mobile).
 const FEATURES: Feature[] = [
   {
-    icon: <FiDollarSign aria-hidden='true' />,
+    icon: <DollarSignIcon aria-hidden='true' />,
     title: 'Real per-serving prices',
     body: 'Worked out from the actual ingredients, not rough estimates, and shown on every recipe.',
   },
   {
-    icon: <FiPieChart aria-hidden='true' />,
+    icon: <PieChartIcon aria-hidden='true' />,
     title: 'Nutrition, automatically',
     body: 'Calories and macros are computed for you. No spreadsheets, no guesswork.',
   },
   {
-    icon: <FiSearch aria-hidden='true' />,
+    icon: <SearchIcon aria-hidden='true' />,
     title: 'Smart search & filters',
     body: 'Narrow by cuisine, diet, and meal type to find something that fits in seconds.',
   },
   {
-    icon: <FiEdit3 aria-hidden='true' />,
+    icon: <EditIcon aria-hidden='true' />,
     title: 'Build your own recipes',
     body: 'Paste your ingredients and we handle the price and nutrition math for you.',
   },
   {
-    icon: <FiStar aria-hidden='true' />,
+    icon: <StarOutlineIcon aria-hidden='true' />,
     title: 'Ratings & reviews',
     body: 'See what the community thinks, and share your own take on what you cook.',
   },
   {
-    icon: <FiHeart aria-hidden='true' />,
+    icon: <HeartIcon aria-hidden='true' />,
     title: 'Save your favorites',
     body: 'Keep the meals you love a click away, ready for the next time you cook.',
   },
@@ -96,17 +84,17 @@ const ProductShowcase: FC = () => (
   <div className='about-mock' aria-hidden='true'>
     <div className='about-card'>
       <div className='about-card-media'>
-        <LuUtensils className='about-card-media-icon' aria-hidden='true' />
+        <UtensilsIcon className='about-card-media-icon' aria-hidden='true' />
         <span className='about-card-price'>$3.18/serv</span>
       </div>
       <div className='about-card-body'>
         <p className='about-card-title'>Tuscan Chicken Skillet</p>
         <div className='about-card-meta'>
           <span>
-            <FiClock aria-hidden='true' /> 45m
+            <ClockIcon aria-hidden='true' /> 45m
           </span>
           <span>
-            <FiStar aria-hidden='true' /> 4.8
+            <StarOutlineIcon aria-hidden='true' /> 4.8
           </span>
           <span>Italian</span>
         </div>
@@ -166,7 +154,7 @@ const About: FC = () => (
       <div className='about-cta'>
         <Link to='/recipes' className='about-btn about-btn-primary'>
           Browse recipes
-          <FiArrowRight aria-hidden='true' />
+          <ArrowRightIcon aria-hidden='true' />
         </Link>
         <Link to='/signup' className='about-btn about-btn-ghost'>
           Create an account
@@ -264,16 +252,16 @@ const About: FC = () => (
       <div className='about-cta'>
         <Link to='/recipes' className='about-btn about-btn-primary'>
           Browse recipes
-          <FiArrowRight aria-hidden='true' />
+          <ArrowRightIcon aria-hidden='true' />
         </Link>
         <Link to='/signup' className='about-btn about-btn-ghost'>
           Create an account
         </Link>
       </div>
       <div className='about-closing-icons' aria-hidden='true'>
-        <FiShoppingCart />
-        <FiBookOpen />
-        <FiHeart />
+        <ShoppingCartIcon />
+        <BookOpenIcon />
+        <HeartIcon />
       </div>
     </section>
   </div>

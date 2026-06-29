@@ -1,7 +1,6 @@
+import { ChefHatIcon, SearchIcon } from 'src/Components/icons'
 import React from 'react'
 import { Link } from 'react-router-dom'
-import { TbChefHat } from 'react-icons/tb'
-import { BiSearchAlt } from 'react-icons/bi'
 import SearchRecipesInput from 'src/Components/SearchRecipesInput/SearchRecipesInput'
 import './RecipeNotFound.scss'
 
@@ -10,7 +9,7 @@ const RecipeNotFound = () => {
     <div className='recipe-not-found'>
       <div className='rnf-card'>
         <span className='rnf-icon' aria-hidden='true'>
-          <TbChefHat />
+          <ChefHatIcon />
         </span>
         <h1>Recipe not found</h1>
         <p className='text'>
@@ -20,7 +19,7 @@ const RecipeNotFound = () => {
 
         <div className='rnf-search'>
           <div className='rnf-search-label'>
-            <BiSearchAlt aria-hidden='true' />
+            <SearchIcon aria-hidden='true' />
             <span>Search for something else</span>
           </div>
           <SearchRecipesInput autoComplete={true} />

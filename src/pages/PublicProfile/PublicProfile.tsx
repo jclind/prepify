@@ -1,17 +1,9 @@
+import { AwardIcon, BookOpenIcon, BookmarkIcon, ClockIcon, MapPinIcon, ShareIcon, StarOutlineIcon } from 'src/Components/icons'
 import React, { FC, useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import { useQuery } from '@tanstack/react-query'
 import { TailSpin } from 'react-loader-spinner'
-import {
-  FiShare,
-  FiMapPin,
-  FiBookmark,
-  FiAward,
-  FiStar,
-  FiClock,
-  FiBookOpen,
-} from 'react-icons/fi'
 import toast from 'react-hot-toast'
 import './PublicProfile.scss'
 import PublicProfileAPI from 'src/api/publicProfile'
@@ -200,7 +192,7 @@ const PublicProfile: FC = () => {
             aria-label='Share this profile'
             title='Share this profile'
           >
-            <FiShare />
+            <ShareIcon />
           </button>
           {/* Kebab menu with "Report user" — hidden on the viewer's own profile. */}
           {currentUsername !== profile.username && (
@@ -237,7 +229,7 @@ const PublicProfile: FC = () => {
         <p className='pp-loc'>
           {profile.location && (
             <>
-              <FiMapPin /> {profile.location}
+              <MapPinIcon /> {profile.location}
               <span className='pp-sep'>·</span>
             </>
           )}
@@ -250,7 +242,7 @@ const PublicProfile: FC = () => {
           <div className='pp-badges'>
             {profile.achievements.map(a => (
               <span key={a.id} className='pp-badge' title={a.description}>
-                <FiAward /> {a.name}
+                <AwardIcon /> {a.name}
               </span>
             ))}
           </div>
@@ -285,12 +277,12 @@ const PublicProfile: FC = () => {
                         // No image on the recipe — show a neutral placeholder
                         // rather than a broken-image icon.
                         <div className='pp-tile-noimg'>
-                          <FiBookOpen />
+                          <BookOpenIcon />
                         </div>
                       )}
                       {(recipe.numTimesSaved ?? 0) > 0 && (
                         <span className='pp-tile-saves'>
-                          <FiBookmark /> {formatCompactCount(recipe.numTimesSaved)}
+                          <BookmarkIcon /> {formatCompactCount(recipe.numTimesSaved)}
                         </span>
                       )}
                     </div>
@@ -298,7 +290,7 @@ const PublicProfile: FC = () => {
                       <h3 className='pp-tile-title'>{recipe.title}</h3>
                       <div className='pp-tile-meta'>
                         <span className='pp-tile-stat'>
-                          <FiStar />{' '}
+                          <StarOutlineIcon />{' '}
                           {rated
                             ? formatRating(
                                 recipe.rating.rateValue,
@@ -307,7 +299,7 @@ const PublicProfile: FC = () => {
                             : 'New'}
                         </span>
                         <span className='pp-tile-stat'>
-                          <FiClock /> {recipe.totalTime}m
+                          <ClockIcon /> {recipe.totalTime}m
                         </span>
                         {cost && (
                           <span className='pp-tile-stat pp-tile-cost'>
@@ -338,7 +330,7 @@ const PublicProfile: FC = () => {
           </>
         ) : (
           <EmptyState
-            icon={<FiBookOpen />}
+            icon={<BookOpenIcon />}
             title='No recipes yet'
             description={`${profile.displayName} hasn’t published any recipes yet — check back soon.`}
           />

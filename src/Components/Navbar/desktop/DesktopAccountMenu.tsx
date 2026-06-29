@@ -1,9 +1,6 @@
+import { ChevronDownIcon, HelpIcon, LogOutIcon, RecipesMenuIcon, SettingsIcon, UserIcon, IconType } from 'src/Components/icons'
 import React, { FC, useEffect, useId, useRef, useState } from 'react'
 import { NavLink } from 'react-router-dom'
-import { AiOutlineUser, AiOutlineSetting } from 'react-icons/ai'
-import { BiHelpCircle, BiLogOut } from 'react-icons/bi'
-import { MdKeyboardArrowDown, MdOutlineRestaurantMenu } from 'react-icons/md'
-import { IconType } from 'react-icons'
 import { NavMenuData } from 'src/Components/Navbar/menu/types'
 import DefaultAvatar from 'src/Components/DefaultAvatar/DefaultAvatar'
 
@@ -73,10 +70,10 @@ const DesktopAccountMenu: FC<DesktopAccountMenuProps> = ({
     )
 
   const linkItems: LinkItem[] = [
-    { to: '/account', label: 'Account', Icon: AiOutlineUser },
-    { to: '/account/your-recipes', label: 'Your recipes', Icon: MdOutlineRestaurantMenu },
-    { to: '/settings', label: 'Settings', Icon: AiOutlineSetting },
-    { to: '/help', label: 'Help', Icon: BiHelpCircle },
+    { to: '/account', label: 'Account', Icon: UserIcon },
+    { to: '/account/your-recipes', label: 'Your recipes', Icon: RecipesMenuIcon },
+    { to: '/settings', label: 'Settings', Icon: SettingsIcon },
+    { to: '/help', label: 'Help', Icon: HelpIcon },
   ]
 
   return (
@@ -95,7 +92,7 @@ const DesktopAccountMenu: FC<DesktopAccountMenuProps> = ({
         {/* Fixed-size clip box; the inner icon (not this box) rotates, so the
             rotation never enlarges the button's `outline: auto` focus ring. */}
         <span className='dnav-account__caret'>
-          <MdKeyboardArrowDown className='dnav-account__caret-icon' />
+          <ChevronDownIcon className='dnav-account__caret-icon' />
         </span>
       </button>
 
@@ -133,7 +130,7 @@ const DesktopAccountMenu: FC<DesktopAccountMenuProps> = ({
             logout()
           }}
         >
-          <BiLogOut className='icon' />
+          <LogOutIcon className='icon' />
           <span>Log out</span>
         </button>
       </div>

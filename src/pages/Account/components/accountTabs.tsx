@@ -1,5 +1,5 @@
+import { BookOpenIcon, BookmarkIcon, FileTextIcon, StarOutlineIcon } from 'src/Components/icons'
 import React, { ReactNode } from 'react'
-import { FiBookmark, FiStar, FiBookOpen, FiFileText } from 'react-icons/fi'
 import { AccountTabCounts } from 'types'
 
 // The single source of truth for the account sub-routes. Both SegmentedNav (the
@@ -27,14 +27,14 @@ export const accountTabs: AccountTab[] = [
     key: 'saved',
     label: 'Saved',
     srHeading: 'Saved recipes',
-    icon: <FiBookmark />,
+    icon: <BookmarkIcon />,
     to: '/account/saved-recipes',
   },
   {
     key: 'ratings',
     label: 'Ratings',
     srHeading: 'Your ratings',
-    icon: <FiStar />,
+    icon: <StarOutlineIcon />,
     to: '/account/ratings',
   },
   {
@@ -42,14 +42,14 @@ export const accountTabs: AccountTab[] = [
     label: 'Your Recipes',
     short: 'Recipes',
     srHeading: 'Recipes you created',
-    icon: <FiBookOpen />,
+    icon: <BookOpenIcon />,
     to: '/account/your-recipes',
   },
   {
     key: 'drafts',
     label: 'Drafts',
     srHeading: 'Your drafts',
-    icon: <FiFileText />,
+    icon: <FileTextIcon />,
     to: '/account/drafts',
   },
 ]
