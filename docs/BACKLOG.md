@@ -254,16 +254,20 @@ The triage date stamped on items is the date they were filed here, not when they
   button. *(Pre-existing; surfaced during the Wave 2 verification live smoke test 2026-06-18 — NOT introduced
   by track 1c. Took the non-button-wrapper route over making StarRating render `<span>`s.)*
 
-- `[ ]` **Autocomplete dropdown isn't a valid ARIA listbox + has no keyboard nav** — the results render as
-  `<ul role="listbox"><li><button role="option">…` (`SearchRecipesInput.tsx:176-185`): a plain `<li>`
-  sits between the listbox and its options, an `option` shouldn't be a `<button>`, and there's no
-  arrow-key navigation / `aria-activedescendant` — it's mouse-clickable buttons wearing listbox roles
-  (the input's only `onKeyDown`, `:130-132`, handles Enter→submit, nothing else). **(verified 2026-06-26:
-  also every `aria-selected` is hardcoded `'false'` at `:182`, so selection state isn't wired even if
-  arrow-nav were added.)** Tab-reachable and fine for sighted/click users, so low severity. Fix: either drop
-  the roles and treat it as a plain list of buttons, or implement real listbox keyboarding. *(surfaced
-  2026-06-22 in the track 2d code review; the per-result `role="option"` on a button is the new markup from
-  this track; re-confirmed in the 2026-06-25 accessibility sweep and again 2026-06-26.)*
+- `[x]` **Autocomplete dropdown isn't a valid ARIA listbox + has no keyboard nav** —
+  **done (Wave 2 accessibility sweep, 2026-06-27, `worktree-feat+a11y-autocomplete-listbox`):** implemented
+  the APG editable-combobox-with-list-autocomplete pattern in `SearchRecipesInput.tsx`. The input is now a
+  `role="combobox"` with `aria-expanded`/`aria-controls`/`aria-autocomplete="list"`/`aria-activedescendant`;
+  each result is a valid `<li role="option" aria-selected>` *direct child* of the `<ul role="listbox">` (the
+  intermediate `<li>` wrapper and the inner `<button>` are gone); Arrow/Home/End/Enter/Escape drive a real
+  highlight via `aria-activedescendant` (focus stays on the input), Enter on a highlighted option navigates
+  to it (falling back to a full search), and the active row scrolls into view. Mouse activation still routes
+  through the stable delegated container handler. +7 tests (combobox semantics, valid listbox markup, arrow
+  highlight + wrap, Enter-to-navigate, Enter-to-search, Escape); verified live in a headless browser. *(was:
+  `<ul role="listbox"><li><button role="option">` with a plain `<li>` between the listbox and its options,
+  an `option` on a `<button>`, no arrow-key nav, and every `aria-selected` hardcoded `'false'`. Originally
+  surfaced 2026-06-22 in the track 2d code review; re-confirmed in the 2026-06-25 accessibility sweep and
+  again 2026-06-26.)*
 
 - `[x]` **Ingredient checklist `<li role="checkbox">` is an invalid ARIA role + breaks the list** —
   **done (accessibility sweep, 2026-06-25):** the checkbox role + keyboard handler moved onto an inner
