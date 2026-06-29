@@ -9,6 +9,12 @@ import toast from 'react-hot-toast'
 import { AdminBugReportType, BugReportStatus, BugReportCategory } from 'types'
 import BugReportAPI from 'src/api/bugReports'
 import SavedFilterBar from 'src/Components/SavedFilters/SavedFilterBar'
+import {
+  REPORTS_BULK_UPDATE_ERROR,
+  REPORT_UPDATE_ERROR,
+  reportsBulkUpdated,
+  reportUpdated,
+} from 'src/util/toastMessages'
 import './BugReports.scss'
 
 type StatusFilter = BugReportStatus | 'all'
@@ -101,21 +107,21 @@ const BugReports: FC = () => {
     mutationFn: ({ status }: { status: 'resolved' | 'dismissed' }) =>
       BugReportAPI.bulkResolve(Array.from(selected), status),
     onSuccess: (res, vars) => {
-      toast.success(`${res.updated} report${res.updated === 1 ? '' : 's'} ${vars.status}.`)
+      toast.success(reportsBulkUpdated(res.updated, vars.status))
       setSelected(new Set())
       invalidate()
     },
-    onError: () => toast.error('Could not update the selected reports.'),
+    onError: () => toast.error(REPORTS_BULK_UPDATE_ERROR),
   })
 
   const resolveMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: 'resolved' | 'dismissed' }) =>
       BugReportAPI.resolveBugReport(id, status),
     onSuccess: (_d, vars) => {
-      toast.success(`Report ${vars.status}.`)
+      toast.success(reportUpdated(vars.status))
       invalidate()
     },
-    onError: () => toast.error('Could not update the report.'),
+    onError: () => toast.error(REPORT_UPDATE_ERROR),
   })
 
   const busy = resolveMutation.isPending || bulkMutation.isPending

@@ -8,6 +8,14 @@ import AdminAPI from 'src/api/admin'
 import SavedFilterBar from 'src/Components/SavedFilters/SavedFilterBar'
 import ClassifierNote from 'src/Components/ClassifierNote/ClassifierNote'
 import { formatClassifier } from 'src/util/formatClassifier'
+import {
+  RECIPE_APPROVED,
+  RECIPE_APPROVE_ERROR,
+  REPORTS_BULK_UPDATE_ERROR,
+  REPORT_UPDATE_ERROR,
+  reportsBulkUpdated,
+  reportUpdated,
+} from 'src/util/toastMessages'
 import './Reports.scss'
 
 type StatusFilter = ReportStatus | 'all'
@@ -83,11 +91,11 @@ const Reports: FC = () => {
         status
       ),
     onSuccess: (res, vars) => {
-      toast.success(`${res.updated} report${res.updated === 1 ? '' : 's'} ${vars.status}.`)
+      toast.success(reportsBulkUpdated(res.updated, vars.status))
       setSelected(new Set())
       invalidate()
     },
-    onError: () => toast.error('Could not update the selected reports.'),
+    onError: () => toast.error(REPORTS_BULK_UPDATE_ERROR),
   })
 
   // Resolve / dismiss a report (does not itself change the content).
@@ -95,10 +103,10 @@ const Reports: FC = () => {
     mutationFn: ({ id, status }: { id: string; status: 'resolved' | 'dismissed' }) =>
       ReportAPI.resolveReport(id, status),
     onSuccess: (_d, vars) => {
-      toast.success(`Report ${vars.status}.`)
+      toast.success(reportUpdated(vars.status))
       invalidate()
     },
-    onError: () => toast.error('Could not update the report.'),
+    onError: () => toast.error(REPORT_UPDATE_ERROR),
   })
 
   // Take the reported content down, then close the report as resolved.
@@ -155,10 +163,10 @@ const Reports: FC = () => {
     mutationFn: (report: AdminReportType) =>
       AdminAPI.approveRecipe(report.recipeId as string),
     onSuccess: () => {
-      toast.success('Recipe approved and published.')
+      toast.success(RECIPE_APPROVED)
       invalidate()
     },
-    onError: () => toast.error('Could not approve the recipe.'),
+    onError: () => toast.error(RECIPE_APPROVE_ERROR),
   })
 
   // Whether the reported target is currently hidden (from the queue's snapshot).

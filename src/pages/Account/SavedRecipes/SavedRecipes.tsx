@@ -12,6 +12,7 @@ import CollectionsAPI from 'src/api/collections'
 import AuthAPI from 'src/api/auth'
 import { RecipeType } from 'types'
 import { useDelayedLoading } from 'src/pages/Account/useDelayedLoading'
+import { COLLECTION_CREATE_ERROR } from 'src/util/toastMessages'
 import { useDebounce } from 'src/hooks/useDebounce'
 import { invalidateSavedCaches } from 'src/util/invalidateSavedCaches'
 import CollectionCard from './CollectionCard'
@@ -141,7 +142,7 @@ const SavedRecipes: FC = () => {
       await queryClient.invalidateQueries({ queryKey: ['collections'] })
       selectCollection(created.id)
     } catch (err: any) {
-      toast.error(err?.response?.data?.error ?? 'Could not create collection')
+      toast.error(err?.response?.data?.error ?? COLLECTION_CREATE_ERROR)
     } finally {
       setCreating(false)
     }
@@ -155,7 +156,7 @@ const SavedRecipes: FC = () => {
       setRenaming(false)
       queryClient.invalidateQueries({ queryKey: ['collections'] })
     } catch (err: any) {
-      toast.error(err?.response?.data?.error ?? 'Could not rename collection')
+      toast.error(err?.response?.data?.error ?? 'Could not rename collection.')
     }
   }
 
@@ -169,7 +170,7 @@ const SavedRecipes: FC = () => {
       await queryClient.invalidateQueries({ queryKey: ['collections'] })
       selectCollection(null)
     } catch (err: any) {
-      toast.error(err?.response?.data?.error ?? 'Could not delete collection')
+      toast.error(err?.response?.data?.error ?? 'Could not delete collection.')
     }
   }
 
