@@ -89,11 +89,10 @@
         color: s.$secondary-accessible;
       }
     }
+    // `.btn .btn--primary` — kept oversized on this hero 404: larger padding,
+    // 1.5rem type, heavier weight, and the top spacing are local.
     button.home-btn {
-      background: s.$primary;
-      color: s.$white;
       padding: 0.75rem 2rem;
-      border-radius: s.$radius-lg;
       font-size: 1.5rem;
       font-weight: 700;
       margin-top: 2rem;

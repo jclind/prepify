@@ -208,30 +208,25 @@
     color: s.$error-red;
   }
 
+  // Auth-page button sizing: full-width, 48px tall (pill comes from the base
+  // `.btn`). Applies to both the submit CTA and the Google button.
   .btn {
     height: 48px;
     width: 100%;
-    border-radius: s.$border-radius;
     font-weight: 700;
     font-size: 1rem;
-    cursor: pointer;
   }
 
+  // Submit CTA — intentionally the brand TEAL ($secondary-accessible), matching
+  // the auth pages' teal brand mark (not the orange `.btn--primary`). On the
+  // `.btn` base; only the teal fill + spacing are local.
   .form-action-btn {
-    display: flex;
-    justify-content: center;
-    align-items: center;
     margin-top: 1.25rem;
-    border: none;
     color: s.$white;
     background: s.$secondary-accessible;
-    transition: filter 0.15s ease;
+    border-color: s.$secondary-accessible;
     &:hover:not(:disabled) {
       filter: brightness(0.95);
-    }
-    &:disabled {
-      opacity: 0.65;
-      cursor: default;
     }
   }
 
@@ -253,15 +248,13 @@
     }
   }
 
+  // Social button — white with a thin grey border (a bespoke look on the `.btn`
+  // base; not the generic `--outline`, whose hover shifts the border).
   .google-btn {
     border: 1.5px solid s.$gray-300;
     background: s.$white;
     color: s.$primary-text;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     gap: 0.6rem;
-    transition: background 0.15s ease;
     &:hover {
       background: s.$gray-50;
     }

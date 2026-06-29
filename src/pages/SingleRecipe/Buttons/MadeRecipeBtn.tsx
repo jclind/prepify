@@ -71,7 +71,7 @@ const MadeRecipeBtn: FC<MadeRecipeBtnProps> = ({ recipeId }) => {
     <div className='made-this-recipe'>
       <div className='content'>
         <button
-          className='made-recipe'
+          className='made-recipe btn'
           onClick={handleMadeRecipe}
           disabled={loading}
         >

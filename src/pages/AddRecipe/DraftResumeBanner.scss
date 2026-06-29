@@ -71,13 +71,13 @@
       gap: 0.85rem;
     }
 
+    // AA-orange CTA on the `.btn` base — kept off the generic `.btn--primary`
+    // (whose hover fails white-on-fill AA); these fills are AA-tuned.
     .resume-btn {
-      cursor: pointer;
       font-size: 0.85rem;
       font-weight: 600;
       white-space: nowrap;
       padding: 0.4rem 0.9rem;
-      border-radius: s.$border-radius;
       // AA on-light orange so the white label clears 4.5:1 (vivid #ff5722 fill
       // is only 3.16:1). brightness() hover stays above AA.
       border: 1px solid s.$primary-accessible;

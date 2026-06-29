@@ -155,7 +155,7 @@ const AddToCollectionPopover: FC<Props> = ({
         />
         <button
           type='submit'
-          className='create-btn'
+          className='create-btn btn btn--primary btn--sm'
           disabled={!newName.trim() || busy}
           aria-label='Create collection'
         >

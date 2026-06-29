@@ -100,7 +100,7 @@ const DangerSection: FC = () => {
         </div>
         <button
           type='button'
-          className='sr-btn-danger'
+          className='sr-btn-danger btn btn--danger'
           onClick={() => setModalOpen(true)}
         >
           <TrashIcon className='sr-btn-icon' />
@@ -126,7 +126,7 @@ const DangerSection: FC = () => {
               <h3 id='sr-delete-modal-title'>Delete your account?</h3>
               <button
                 type='button'
-                className='sr-modal-close'
+                className='sr-modal-close btn btn--icon'
                 aria-label='Close'
                 onClick={closeModal}
               >
@@ -155,7 +155,7 @@ const DangerSection: FC = () => {
             <div className='sr-modal-actions'>
               <button
                 type='button'
-                className='sr-btn-text'
+                className='sr-btn-text btn btn--ghost'
                 onClick={closeModal}
                 disabled={deleting}
               >
@@ -163,7 +163,7 @@ const DangerSection: FC = () => {
               </button>
               <button
                 type='button'
-                className='sr-btn-danger'
+                className='sr-btn-danger btn btn--danger'
                 onClick={handleDelete}
                 disabled={!canDelete || deleting}
               >
@@ -192,7 +192,7 @@ const SettingRowLikeExport: FC<{
     <div className='sr-row-control'>
       <button
         type='button'
-        className='sr-btn-outline'
+        className='sr-btn-outline btn btn--outline'
         onClick={onExport}
         disabled={exporting}
       >
