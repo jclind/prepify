@@ -4,6 +4,7 @@ import toast from 'react-hot-toast'
 import CollectionsAPI from 'src/api/collections'
 import RecipeAPI from 'src/api/recipes'
 import { RecipeCollection } from 'types'
+import { COLLECTION_CREATE_ERROR } from 'src/util/toastMessages'
 
 type Props = {
   recipeId: string
@@ -53,7 +54,7 @@ const AddToCollectionPopover: FC<Props> = ({
       onMutated()
     } catch {
       setSelected(prev) // roll back on failure
-      toast.error('Could not update collections')
+      toast.error('Could not update collections.')
     } finally {
       setBusy(false)
     }
@@ -74,7 +75,7 @@ const AddToCollectionPopover: FC<Props> = ({
     try {
       created = await CollectionsAPI.create(name)
     } catch (err: any) {
-      toast.error(err?.response?.data?.error ?? 'Could not create collection')
+      toast.error(err?.response?.data?.error ?? COLLECTION_CREATE_ERROR)
       setBusy(false)
       return
     }
@@ -90,7 +91,7 @@ const AddToCollectionPopover: FC<Props> = ({
       await CollectionsAPI.setRecipeCollections(recipeId, [...next])
       setSelected(next)
     } catch {
-      toast.error('Collection created, but the recipe couldn’t be added to it')
+      toast.error('Collection created, but the recipe couldn’t be added to it.')
     } finally {
       onMutated()
       setBusy(false)

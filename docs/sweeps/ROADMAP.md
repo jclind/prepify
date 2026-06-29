@@ -71,7 +71,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **2-iso** | Design: one icon per concept | `[x]` | new `src/Components/icons` + import swaps | #205 |
 | **2-iso** | Design: single icon family (Lucide) | `[x]` | `src/Components/icons` glyph remap (no call-site churn) + temp audit page + docs | #206 |
 | **2-iso** | Design: `RecipeFormInput` → shared `FormInput` | `[x]` | `AddRecipe/*`, `Components/Form/*` | #204 |
-| **2-iso** | Design: toast punctuation + string dedupe | `[ ]` | ~10 toast call sites (TSX strings) | — |
+| **2-iso** | Design: toast punctuation + string dedupe | `[x]` | ~10 toast call sites (TSX strings) | #207 |
 | **2-iso** | Design: codify loading-state pattern | `[ ]` | convention + `TailSpin`/skeleton outliers | — |
 | **2-scss** | Design: pill `.btn` system | `[ ]` | **`index.scss` + many page `.scss`** ⚠ chokepoint | — |
 | **2-scss** | Design: type scale (~520 `font-size:` literals) | `[ ]` | **`helpers.scss` + ~60 files** ⚠ chokepoint | — |
@@ -258,6 +258,18 @@ narrates the *why*.
   GitGuardian). Closes the Design-consistency `RecipeFormInput` dup follow-up; filed one new UX-polish item
   (make the create-recipe **dropdown** inputs visually uniform with the unified text fields). Worktree + branch
   torn down. **Second Design `2-iso` track to land.**
+- _2026-06-29_ — **Design: toast punctuation + string dedupe** PR opened (#207, `[~]`→`[P]`). Codified one toast
+  copy convention (errors → terminal period; success → period except genuine milestones keep `!`; no raw
+  `Error: …` dumps) and extracted the cross-file duplicate strings into a new `src/util/toastMessages.ts` (12
+  constants + `reportsBulkUpdated`/`reportUpdated` helpers) — same single-source pattern as `modalStyles`/
+  `accountTabs`. The roadmap's "~10 sites" estimate was low: ~90 `toast` calls across 25 files, but most already
+  conformed — actual edits ~25 sites (8 period-less errors fixed, 6 routine success `!`→`.`, 8 cross-file dups
+  deduped incl. the identical Reports/BugReports mutation block). `tsc` clean, frontend suite 543/2-skip green,
+  build passing; 3 test assertions + TEST_PLAN updated to the new copy. Verified live (headless): PublicProfile
+  Share renders `Profile link copied.` / `Could not copy link.` (both branches), zero console errors —
+  auth-gated toasts covered by tsc+tests, not driven (no dev creds). High-effort multi-agent code review: no
+  correctness bugs; two reuse nits (coincidentally-identical admin toggle string; generic sentence shared with
+  `authErrors`' inline default) considered and intentionally left inline. **Third Design `2-iso` track to reach PR.**
 - _2026-06-29_ — **Design: one icon per concept merged** (PR #205 → `development`, `[~]`→`[P]`→`[x]`). All five CI
   checks green against the merge HEAD (Backend/Supertest, E2E/Cypress, Frontend/Vitest, Fallow advisory,
   GitGuardian). Collapsed react-icons drift into a single re-export module `src/Components/icons` (94 semantic
@@ -287,6 +299,18 @@ narrates the *why*.
   currently unused. Convention written down at `docs/design/icon-system.md` (first piece of the design-system
   docs). Temp `/icon-audit` page built for owner glyph approval, then removed before the PR. **Fourth Design
   `2-iso` track to land.** Worktree + branch torn down.
+- _2026-06-29_ — **Design: toast punctuation + string dedupe merged** (PR #207 → `development`, `[P]`→`[x]`). All
+  five CI checks green against the merge HEAD (Backend/Supertest, E2E/Cypress 4m, Frontend/Vitest, Fallow
+  advisory, GitGuardian). One toast copy convention now codified and the cross-file duplicate strings extracted
+  into `src/util/toastMessages.ts` (12 constants + `reportsBulkUpdated`/`reportUpdated` helpers) — same
+  single-source pattern as `modalStyles`/`accountTabs`. The "~10 sites" estimate was low (~90 `toast` calls
+  across 25 files), but most already conformed; ~25 edited (8 period-less errors fixed, 6 routine success
+  `!`→`.`, 8 cross-file dups deduped incl. the identical Reports/BugReports mutation block). Verified live
+  (headless): PublicProfile Share renders `Profile link copied.` / `Could not copy link.` (both branches), zero
+  console errors. High-effort multi-agent code review found **no correctness bugs**; two reuse nits
+  (coincidentally-identical admin toggle string; generic sentence shared with `authErrors`' inline default)
+  considered and intentionally left inline. Worktree + branch torn down. **Third Design `2-iso` track to land**;
+  remaining Wave 2 = loading-state pattern (`2-iso`) + the serialized `2-scss` lane.
 - _2026-06-29_ — **Design: one danger-red token** PR opened (#208, `[~]`→`[P]`) — **first `2-scss` lane to reach
   PR**. Collapsed the three off-token "danger" reds onto the shared `s.$error-red` (`#c5303f`): dropped the dead
   local `$danger #d23f31` (SingleRecipe, 1 use), and converted `#d64545` ×9 across ReportControl (×7, incl. its
