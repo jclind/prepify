@@ -2,6 +2,7 @@ import React, { FC, useState } from 'react'
 import { TailSpin } from 'react-loader-spinner'
 import Modal from 'react-modal'
 import toast from 'react-hot-toast'
+import { panelModalStylesWith } from 'src/util/modalStyles'
 
 type ConfirmDeleteReviewModalProps = {
   deleteModalIsOpen: boolean
@@ -9,30 +10,6 @@ type ConfirmDeleteReviewModalProps = {
   handleDeleteReview: () => Promise<void>
 }
 
-const customStyles = {
-  content: {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    right: 'auto',
-    bottom: 'auto',
-    marginRight: '-50%',
-    transform: 'translate(-50%, -50%)',
-
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'center',
-    alignItems: 'center',
-
-    background: '#eeeeee',
-    padding: '2.5rem',
-    borderRadius: '5px',
-  },
-  overlay: {
-    zIndex: '1000',
-    background: 'rgba(0, 0, 0, 0.5)',
-  },
-}
 const ConfirmDeleteReviewModal: FC<ConfirmDeleteReviewModalProps> = ({
   deleteModalIsOpen,
   setDeleteModalIsOpen,
@@ -47,7 +24,12 @@ const ConfirmDeleteReviewModal: FC<ConfirmDeleteReviewModalProps> = ({
     <Modal
       isOpen={deleteModalIsOpen}
       onRequestClose={closeModal}
-      style={customStyles}
+      style={panelModalStylesWith({
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+      })}
       className='delete-modal'
     >
       <div className='heading'>

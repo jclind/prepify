@@ -3,34 +3,12 @@ import Modal from 'react-modal'
 import { FiX } from 'react-icons/fi'
 import './AchievementsModal.scss'
 import { Achievement } from 'types'
+import { bareModalStyles } from 'src/util/modalStyles'
 
 type AchievementsModalProps = {
   isOpen: boolean
   onClose: () => void
   achievements: Achievement[]
-}
-
-// react-modal positions the overlay; the visual card is styled via the
-// .achievements-modal class (see AchievementsModal.scss) so the content frame
-// stays transparent.
-const customStyles = {
-  content: {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    right: 'auto',
-    bottom: 'auto',
-    marginRight: '-50%',
-    transform: 'translate(-50%, -50%)',
-    padding: 0,
-    border: 'none',
-    background: 'transparent',
-    overflow: 'visible',
-  },
-  overlay: {
-    zIndex: '1000',
-    background: 'rgba(0, 0, 0, 0.5)',
-  },
 }
 
 const AchievementsModal: FC<AchievementsModalProps> = ({
@@ -44,7 +22,7 @@ const AchievementsModal: FC<AchievementsModalProps> = ({
     <Modal
       isOpen={isOpen}
       onRequestClose={onClose}
-      style={customStyles}
+      style={bareModalStyles}
       className='achievements-modal'
       contentLabel='Achievements'
     >
