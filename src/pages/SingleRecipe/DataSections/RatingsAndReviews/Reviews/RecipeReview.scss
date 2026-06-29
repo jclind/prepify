@@ -103,7 +103,9 @@
           color: s.$tertiary-text;
         }
         button.delete-btn {
-          &:hover {
+          // :not(:disabled) to outrank `.btn--ghost:hover:not(:disabled)`
+          // (0,3,0) so the danger-red hover survives the ghost variant.
+          &:hover:not(:disabled) {
             color: s.$error-red;
           }
         }

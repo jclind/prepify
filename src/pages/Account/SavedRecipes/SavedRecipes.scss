@@ -187,8 +187,9 @@
         border-color: s.$primary;
       }
     }
-    // `.btn .btn--icon .btn--ghost`; only the in-field position + the smaller
-    // 22px footprint (the icon default is 2.25rem) are local.
+    // `.btn .btn--icon` (no colour variant — it keeps its own grey-circle fill;
+    // `--ghost` would strip the background). Local: in-field position + the
+    // smaller 22px footprint (the icon default is 2.25rem).
     &__clear {
       position: absolute;
       right: 0.7rem;
@@ -196,6 +197,11 @@
       transform: translateY(-50%);
       width: 22px;
       height: 22px;
+      background: s.$gray-200;
+      color: s.$secondary-text;
+      &:hover {
+        background: s.$gray-300;
+      }
     }
   }
   // Custom sort control (mirrors the Recipes page) instead of a react-select box.

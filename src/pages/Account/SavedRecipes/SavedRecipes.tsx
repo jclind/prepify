@@ -274,7 +274,7 @@ const SavedRecipes: FC = () => {
           {searchInput && (
             <button
               type='button'
-              className='btn btn--icon btn--ghost saved-search__clear'
+              className='btn btn--icon saved-search__clear'
               aria-label='Clear search'
               onClick={() => onSearchChange('')}
             >
