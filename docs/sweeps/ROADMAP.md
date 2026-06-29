@@ -76,7 +76,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **2-scss** | Design: pill `.btn` system | `[ ]` | **`index.scss` + many page `.scss`** ⚠ chokepoint | — |
 | **2-scss** | Design: type scale (~520 `font-size:` literals) | `[ ]` | **`helpers.scss` + ~60 files** ⚠ chokepoint | — |
 | **2-scss** | Design: elevation/shadow re-author (~52 literals) | `[ ]` | **`helpers.scss` + page `.scss`** ⚠ chokepoint | — |
-| **2-scss** | Design: one danger-red token | `[ ]` | **`helpers.scss` + SingleRecipe/ReportControl/…** ⚠ chokepoint | — |
+| **2-scss** | Design: one danger-red token | `[~]` | **`helpers.scss` + SingleRecipe/ReportControl/…** ⚠ chokepoint | `worktree-feat+danger-red-token` (2026-06-29) |
 | **2-scss** | Design: name the `$admin-*` sub-palette | `[ ]` | **`helpers.scss` + Admin/moderation `.scss`** ⚠ chokepoint | — |
 | **2-scss** | A11y: `$primary-hover` AA-on-hover | `[ ]` | **`helpers.scss`** ⚠ chokepoint | — |
 | **blocked** | A11y: brand-orange contrast (AA) | `[blocked]` | `helpers.scss` `$primary-accessible` — **needs the brand-orange decision** | — |
