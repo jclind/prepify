@@ -7,29 +7,9 @@ import { AiOutlineClose } from 'react-icons/ai'
 import { BiWrench } from 'react-icons/bi'
 import Modal from 'react-modal'
 import packageJSON from '../../../package.json'
+import { panelModalStyles } from 'src/util/modalStyles'
 
 const version = packageJSON.version
-Modal.setAppElement('#root')
-
-const customStyles = {
-  content: {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    right: 'auto',
-    bottom: 'auto',
-    marginRight: '-50%',
-    transform: 'translate(-50%, -50%)',
-
-    background: '#eeeeee',
-    padding: '2.5rem',
-    borderRadius: '5px',
-  },
-  overlay: {
-    zIndex: '1000',
-    background: 'rgba(0, 0, 0, 0.5)',
-  },
-}
 
 // NOTE: confirm/update RELEASE_DATE to the actual ship date at cutover, alongside
 // the package.json 1.0.0 bump and flipping `isBeta` to false (see RELEASE_PLAN.md).
@@ -90,7 +70,7 @@ const ReleaseNotes: FC<ReleaseNotesProps> = ({
     <Modal
       isOpen={releaseNotesModalIsOpen}
       onRequestClose={closeModal}
-      style={customStyles}
+      style={panelModalStyles}
       className='release-notes-modal'
     >
       <button className='close-modal btn' onClick={closeModal}>

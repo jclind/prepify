@@ -67,7 +67,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **2-iso** | A11y: autocomplete listbox + keyboard nav | `[x]` | `SearchRecipesInput.tsx` | #201 |
 | **2-iso** | A11y: servings stepper target-size | `[x]` | `SingleRecipe.tsx/.scss` (pill layout) | #202 |
 | **2-iso** | A11y: account-heading route-map | `[x]` | `Account.tsx` | #200 |
-| **2-iso** | Design: shared react-modal style config | `[ ]` | 7 modal components | — |
+| **2-iso** | Design: shared react-modal style config | `[P]` | 7 modal components | #203 |
 | **2-iso** | Design: one icon per concept | `[ ]` | new `src/Components/icons` + import swaps | — |
 | **2-iso** | Design: `RecipeFormInput` → shared `FormInput` | `[ ]` | `AddRecipe/*`, `Components/Form/*` | — |
 | **2-iso** | Design: toast punctuation + string dedupe | `[ ]` | ~10 toast call sites (TSX strings) | — |
