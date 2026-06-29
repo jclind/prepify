@@ -69,7 +69,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **2-iso** | A11y: account-heading route-map | `[x]` | `Account.tsx` | #200 |
 | **2-iso** | Design: shared react-modal style config | `[x]` | 7 modal components | #203 |
 | **2-iso** | Design: one icon per concept | `[x]` | new `src/Components/icons` + import swaps | #205 |
-| **2-iso** | Design: single icon family (Lucide) | `[P]` | `src/Components/icons` glyph remap (no call-site churn) + temp audit page + docs | #206 |
+| **2-iso** | Design: single icon family (Lucide) | `[x]` | `src/Components/icons` glyph remap (no call-site churn) + temp audit page + docs | #206 |
 | **2-iso** | Design: `RecipeFormInput` → shared `FormInput` | `[x]` | `AddRecipe/*`, `Components/Form/*` | #204 |
 | **2-iso** | Design: toast punctuation + string dedupe | `[ ]` | ~10 toast call sites (TSX strings) | — |
 | **2-iso** | Design: codify loading-state pattern | `[ ]` | convention + `TailSpin`/skeleton outliers | — |
@@ -277,3 +277,13 @@ narrates the *why*.
   family split rather than patching it). Distinct file domain (`src/Components/icons` mapping + temp audit page +
   docs), no `2-scss` chokepoint contention. A temp `/icon-audit` before/after page is being built first so the
   owner can approve the cross-family swaps and taste picks against rendered glyphs before anything is remapped.
+- _2026-06-29_ — **Design: single icon family (Lucide) merged** (PR #206 → `development`, `[~]`→`[P]`→`[x]`). All
+  five CI checks green (Vitest — incl. the single-source guard, Supertest, Cypress, Fallow, GitGuardian). The
+  whole UI is now one Lucide house family: 92 concepts remapped behind the existing names (no call-site churn),
+  the 4 filled variants collapsed onto their outline glyph via `fill="currentColor"`, and the action-bar
+  Save/Rate/Print hover behavior unified (fill = persistent ON state, never hover). Two filled concepts that read
+  as a blob (printer, warning triangle) intentionally dropped — emphasis there comes from color/size. Brand
+  exceptions: `GoogleColorIcon` (multicolor) now on the Login/Signup buttons too; mono `GoogleIcon` retained but
+  currently unused. Convention written down at `docs/design/icon-system.md` (first piece of the design-system
+  docs). Temp `/icon-audit` page built for owner glyph approval, then removed before the PR. **Fourth Design
+  `2-iso` track to land.** Worktree + branch torn down.

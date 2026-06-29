@@ -226,7 +226,7 @@ The triage date stamped on items is the date they were filed here, not when they
   *(surfaced 2026-06-25 in the design-consistency sweep.)* **(done 2026-06-29 — Wave 2 `2-iso`: added
   `src/Components/icons` single-source module, migrated all 58 call sites, collapsed ~25 drift concepts to one
   glyph each; a Vitest guard `icons-single-source.test.ts` now bans direct `react-icons/*` imports.)***
-  **(follow-up done 2026-06-29 — single house family: remapped all concepts to **Lucide** (`react-icons/lu`),
+  **(follow-up done 2026-06-29, PR #206 — single house family: remapped all concepts to **Lucide** (`react-icons/lu`),
   collapsing the remaining 10-family mix to one stroke weight; 2 documented brand exceptions (the Google marks);
   filled variants now `fill="currentColor"` on the outline glyph. See [`design/icon-system.md`](design/icon-system.md).)***
 - `[ ]` **Share one react-modal style config** — each modal repeats its own `customStyles`/overlay inline,

@@ -4,7 +4,7 @@
 > (`$primary-hover` + `$surface-warm-border` tokens; radius scale, breakpoint tokens, admin import-wiring,
 > decorative tint). **~10 follow-ups open** in [`../BACKLOG.md`](../BACKLOG.md#ux--visual-polish) +
 > [Tech debt](../BACKLOG.md#tech-debt--process--infra): pill `.btn` system, delete `RecipeThumbnail`,
-> ~~icon-per-concept~~ (done — PR #205; single-family Lucide follow-up in flight), ~~modal style config~~ (done — PR #203),
+> ~~icon-per-concept~~ (done — PR #205; ~~single-family Lucide~~ done — PR #206), ~~modal style config~~ (done — PR #203),
 > loading-state pattern, toast punctuation; type scale, elevation
 > re-author, danger-red token, `$admin-*` palette, ~~`RecipeFormInput` dup~~ (done — PR #204). *(See the [run log](README.md#run-log).)*
 
@@ -48,9 +48,10 @@ screenshots of anything changed. Polish only — no redesign.
 5. **States.** For each interactive component, are hover / focus-visible / active / disabled / loading /
    empty / error styled consistently? Loading especially — skeletons vs spinners (`TailSpin`) vs nothing,
    used consistently for the same kind of wait. Empty/error states share a layout + tone.
-6. **Iconography.** `react-icons` pulls from several sets (`Bs`, `Fi`, `Lu`, `Ci`, …) — check the same
-   concept doesn't use different icons in different places (two different "star"s, two "edit"s), and sizes
-   are consistent within a context.
+6. **Iconography.** *Resolved (PR #205 + #206):* the app is now one house family (Lucide) behind one import
+   boundary (`src/Components/icons`), enforced by a Vitest guard — see [`../design/icon-system.md`](../design/icon-system.md).
+   Remaining check is per-context: sizes consistent within a context, and a new concept gets a semantic export
+   in that module rather than a direct `react-icons/*` import.
 7. **Responsive.** One set of breakpoints (the nav flips at ~725px — is that value shared or repeated?);
    no ad-hoc media queries; the master-detail Settings, the Account tabs, Add Recipe, and the recipe grid
    all reflow consistently. Screenshot at 390 / 768 / 1280 and compare alignment, gutters, and card sizing.
