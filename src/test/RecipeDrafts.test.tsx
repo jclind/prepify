@@ -47,7 +47,7 @@ vi.mock('src/api/drafts', () => ({
 
 vi.mock('react-top-loading-bar', () => ({ default: () => null }))
 
-vi.mock('src/pages/AddRecipe/RecipeFormInput', () => ({
+vi.mock('src/Components/Form/FormInput', () => ({
   default: ({ val, setVal, placeholder }: any) => (
     <input
       placeholder={placeholder}

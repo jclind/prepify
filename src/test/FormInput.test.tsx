@@ -53,3 +53,66 @@ describe('FormInput password toggle', () => {
     expect(setVal).toHaveBeenCalledWith('hunter2')
   })
 })
+
+describe('FormInput — accessibility props', () => {
+  it('sets aria-invalid and aria-describedby when invalid', () => {
+    render(
+      <FormInput
+        size='compact'
+        placeholder='Title'
+        val=''
+        setVal={() => {}}
+        invalid
+        describedBy='error-title'
+      />
+    )
+    const input = screen.getByPlaceholderText('Title')
+    expect(input).toHaveAttribute('aria-invalid', 'true')
+    expect(input).toHaveAttribute('aria-describedby', 'error-title')
+  })
+
+  it('omits aria-invalid / aria-describedby when valid', () => {
+    render(
+      <FormInput size='compact' placeholder='Title' val='' setVal={() => {}} />
+    )
+    const input = screen.getByPlaceholderText('Title')
+    expect(input).not.toHaveAttribute('aria-invalid')
+    expect(input).not.toHaveAttribute('aria-describedby')
+  })
+})
+
+describe('FormInput — characterLimit', () => {
+  it('drops the change once the value would exceed the limit', () => {
+    const setVal = vi.fn()
+    render(
+      <FormInput
+        size='compact'
+        placeholder='Title'
+        val='abc'
+        setVal={setVal}
+        characterLimit={3}
+      />
+    )
+    fireEvent.change(screen.getByPlaceholderText('Title'), {
+      target: { value: 'abcd' },
+    })
+    expect(setVal).not.toHaveBeenCalled()
+  })
+
+  it('accepts input up to the limit', () => {
+    const setVal = vi.fn()
+    render(
+      <FormInput
+        size='compact'
+        placeholder='Title'
+        val='ab'
+        setVal={setVal}
+        characterLimit={3}
+      />
+    )
+    fireEvent.change(screen.getByPlaceholderText('Title'), {
+      target: { value: 'abc' },
+    })
+    expect(setVal).toHaveBeenCalledWith('abc')
+  })
+})

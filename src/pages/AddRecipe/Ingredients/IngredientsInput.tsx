@@ -1,5 +1,5 @@
 import React, { FC, useState } from 'react'
-import RecipeFormInput from 'src/pages/AddRecipe/RecipeFormInput'
+import FormInput from 'src/Components/Form/FormInput'
 
 type IngredientsInputProps = {
   // Hands the raw entry to the container, which adds it optimistically and runs
@@ -30,7 +30,8 @@ const IngredientsInput: FC<IngredientsInputProps> = ({ onAdd }) => {
 
   return (
     <div className='input-container'>
-      <RecipeFormInput
+      <FormInput
+        size='compact'
         placeholder='Add ingredients to your recipe.'
         val={inputVal}
         setVal={setInputVal}
