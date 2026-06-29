@@ -69,7 +69,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **2-iso** | A11y: account-heading route-map | `[x]` | `Account.tsx` | #200 |
 | **2-iso** | Design: shared react-modal style config | `[x]` | 7 modal components | #203 |
 | **2-iso** | Design: one icon per concept | `[ ]` | new `src/Components/icons` + import swaps | — |
-| **2-iso** | Design: `RecipeFormInput` → shared `FormInput` | `[P]` | `AddRecipe/*`, `Components/Form/*` | #204 |
+| **2-iso** | Design: `RecipeFormInput` → shared `FormInput` | `[x]` | `AddRecipe/*`, `Components/Form/*` | #204 |
 | **2-iso** | Design: toast punctuation + string dedupe | `[ ]` | ~10 toast call sites (TSX strings) | — |
 | **2-iso** | Design: codify loading-state pattern | `[ ]` | convention + `TailSpin`/skeleton outliers | — |
 | **2-scss** | Design: pill `.btn` system | `[ ]` | **`index.scss` + many page `.scss`** ⚠ chokepoint | — |
@@ -240,3 +240,20 @@ narrates the *why*.
   note). Verified live in a headless browser (panels white/8px/2rem, overlay 0.5, `#root` toggles `aria-hidden`,
   no console warnings). Worktree + branch torn down. **First Design `2-iso` track to land**; remaining Wave 2 =
   the other Design `2-iso` tracks + the serialized `2-scss` lane.
+- _2026-06-29_ — **Design: `RecipeFormInput` → shared `FormInput` merged** (PR #204 → `development`, `[~]`→`[P]`→
+  `[x]`). Collapsed AddRecipe's private `RecipeFormInput` into the shared `Components/Form/FormInput` via a `size`
+  prop — `md` (the existing auth/profile field, unchanged) and `compact` (the AddRecipe field, unchanged) — with
+  `FormInput` absorbing the superset AddRecipe relied on (generic `<T>` value, `characterLimit`,
+  `inputBeginningText`, `onEnter`/`inputRef`/`onBlur`, `aria-invalid`/`describedBy`). Deleted `RecipeFormInput.tsx`
+  /`.scss` (+ its test, folded into `FormInput.test.tsx`); extracted the shared textarea CSS to
+  `RecipeFormTextArea.scss`; migrated 8 call sites to `<FormInput size='compact'>`; repointed AddRecipe's
+  page-scoped f02 48px override `.recipe-form-input`→`.form-input`. **Local high-effort code review caught a
+  regression before merge:** the SCSS refactor moved `.label-title` out of base `.form-input` into `&--md`/
+  `&--compact`, so two pages that hand-roll a bare `<label className='form-input'>` (CreateUsername Bio, Help
+  Message) lost their label styling — both tagged `form-input--md`, verified live on `/help` (bare label now
+  computes identically to a real `FormInput` label). **CI then caught a second miss:** `addRecipe.cy.ts` scoped
+  its prep/cook-time selectors to the renamed `.recipe-form-input` class (6 E2E failures); repointed to
+  `.form-input`. Re-run all five checks green (Backend/Supertest, E2E/Cypress, Frontend/Vitest, Fallow advisory,
+  GitGuardian). Closes the Design-consistency `RecipeFormInput` dup follow-up; filed one new UX-polish item
+  (make the create-recipe **dropdown** inputs visually uniform with the unified text fields). Worktree + branch
+  torn down. **Second Design `2-iso` track to land.**
