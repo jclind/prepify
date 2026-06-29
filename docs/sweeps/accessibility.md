@@ -1,10 +1,10 @@
 # Accessibility sweep
 
 > **Status:** Run 2026-06-25 (PR #179, contrast follow-ups #181/#184). Cheap wins shipped (ingredient-checklist
-> role → recipe page 89→97; grey/teal/beta-tag/error-red contrast). **5 follow-ups filed, 1 resolved** in
-> [`../BACKLOG.md`](../BACKLOG.md#accessibility): autocomplete listbox + keyboard nav, servings target-size,
-> `$primary-hover` AA-on-hover, brand orange (reverted to vivid `#ff5722` — owner call), ~~account-heading
-> route-map~~ (done — PR #200). Re-run after the brand-orange decision lands. *(See the [run log](README.md#run-log).)*
+> role → recipe page 89→97; grey/teal/beta-tag/error-red contrast). **5 follow-ups filed, 2 resolved** in
+> [`../BACKLOG.md`](../BACKLOG.md#accessibility): ~~autocomplete listbox + keyboard nav~~ (done — PR #201),
+> servings target-size, `$primary-hover` AA-on-hover, brand orange (reverted to vivid `#ff5722` — owner call),
+> ~~account-heading route-map~~ (done — PR #200). Re-run after the brand-orange decision lands. *(See the [run log](README.md#run-log).)*
 
 Deep WCAG 2.1 AA pass over every Prepify page, logged-out **and** logged-in: automated (Lighthouse +
 axe), keyboard, screen-reader semantics, ARIA correctness, contrast, and zoom/motion. This goes beyond
