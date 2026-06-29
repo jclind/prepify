@@ -1,6 +1,6 @@
+import { InfoIcon } from 'src/Components/icons'
 import React, { FC, useEffect, useMemo, useRef, useState } from 'react'
 import axios from 'axios'
-import { AiOutlineInfoCircle } from 'react-icons/ai'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import {
@@ -444,7 +444,7 @@ const AddRecipe: FC<AddRecipeProps> = ({ initialRecipe }) => {
               )}
               {resumedFromDraft && !recipeImage && (
                 <p className='draft-image-hint'>
-                  <AiOutlineInfoCircle className='icon' />
+                  <InfoIcon className='icon' />
                   Drafts don't save your image — add it again before publishing.
                 </p>
               )}

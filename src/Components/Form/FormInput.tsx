@@ -1,5 +1,5 @@
+import { EyeIcon, EyeOffIcon } from 'src/Components/icons'
 import React, { ChangeEvent, ReactElement, useState } from 'react'
-import { MdOutlineVisibility, MdOutlineVisibilityOff } from 'react-icons/md'
 import './FormInput.scss'
 
 interface FormInputProps<T extends string | number | undefined> {
@@ -110,7 +110,7 @@ const FormInput = <T extends string | number | undefined>({
             onClick={() => setShow(s => !s)}
             tabIndex={-1}
           >
-            {show ? <MdOutlineVisibilityOff /> : <MdOutlineVisibility />}
+            {show ? <EyeOffIcon /> : <EyeIcon />}
           </button>
         )}
       </div>

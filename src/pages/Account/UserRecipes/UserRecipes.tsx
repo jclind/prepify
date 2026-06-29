@@ -1,6 +1,6 @@
+import { BookOpenIcon } from 'src/Components/icons'
 import React, { FC, useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { FiBookOpen } from 'react-icons/fi'
 
 import './UserRecipes.scss'
 import EmptyState from 'src/Components/EmptyState/EmptyState'
@@ -87,7 +87,7 @@ const UserRecipes: FC = () => {
         </>
       ) : (
         <EmptyState
-          icon={<FiBookOpen />}
+          icon={<BookOpenIcon />}
           title='No Recipes Created Yet'
           description='Share your first recipe with the Prepify community!'
           action={{ label: 'Add a Recipe', to: '/add-recipe' }}

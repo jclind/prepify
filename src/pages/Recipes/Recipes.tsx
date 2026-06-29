@@ -1,9 +1,8 @@
+import { ChevronDownIcon, SearchOffIcon, SlidersIcon } from 'src/Components/icons'
 import React, { FC, useEffect, useState } from 'react'
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
-import { BiChevronDown, BiSliderAlt } from 'react-icons/bi'
-import { TbSearchOff } from 'react-icons/tb'
 import { TailSpin } from 'react-loader-spinner'
 import './Recipes.scss'
 import RecipeCard from 'src/Components/RecipeCard/RecipeCard'
@@ -209,7 +208,7 @@ const Recipes: FC = () => {
             className='recipes-filters-btn'
             onClick={() => setDrawerOpen(true)}
           >
-            <BiSliderAlt /> Filters
+            <SlidersIcon /> Filters
             {activeFilterCount > 0 && (
               <span className='recipes-filters-btn__badge'>
                 {activeFilterCount}
@@ -266,7 +265,7 @@ const Recipes: FC = () => {
         ) : totalResults === 0 ? (
           <div className='recipes-empty'>
             <div className='recipes-empty__icon' aria-hidden='true'>
-              <TbSearchOff />
+              <SearchOffIcon />
             </div>
             <h2 className='recipes-empty__title'>No recipes found</h2>
             <p className='recipes-empty__msg'>
@@ -328,7 +327,7 @@ const Recipes: FC = () => {
                     />
                   ) : (
                     <>
-                      Load more recipes <BiChevronDown />
+                      Load more recipes <ChevronDownIcon />
                     </>
                   )}
                 </button>

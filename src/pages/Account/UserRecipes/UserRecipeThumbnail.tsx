@@ -1,13 +1,6 @@
+import { ArrowUpRightIcon, BookmarkIcon, ClockIcon, EyeIcon, StarOutlineIcon, TrendingUpIcon } from 'src/Components/icons'
 import React, { FC } from 'react'
 import { Link } from 'react-router-dom'
-import {
-  FiClock,
-  FiStar,
-  FiEye,
-  FiBookmark,
-  FiTrendingUp,
-  FiArrowUpRight,
-} from 'react-icons/fi'
 import Skeleton from 'react-loading-skeleton'
 import 'react-loading-skeleton/dist/skeleton.css'
 
@@ -79,12 +72,12 @@ const UserRecipeThumbnail: FC<UserRecipeThumbnailType> = ({
             </div>
           )}
         </div>
-        {!isLoading && <FiArrowUpRight className='go' />}
+        {!isLoading && <ArrowUpRightIcon className='go' />}
       </div>
 
       <div className='tiles'>
         <div className='tile'>
-          <FiEye className='ic' />
+          <EyeIcon className='ic' />
           {isLoading ? (
             <Skeleton baseColor={skeletonColor} height={18} width={24} />
           ) : (
@@ -93,7 +86,7 @@ const UserRecipeThumbnail: FC<UserRecipeThumbnailType> = ({
           <small>views</small>
         </div>
         <div className='tile'>
-          <FiBookmark className='ic' />
+          <BookmarkIcon className='ic' />
           {isLoading ? (
             <Skeleton baseColor={skeletonColor} height={18} width={24} />
           ) : (
@@ -102,7 +95,7 @@ const UserRecipeThumbnail: FC<UserRecipeThumbnailType> = ({
           <small>saves</small>
         </div>
         <div className='tile'>
-          <FiTrendingUp className='ic' />
+          <TrendingUpIcon className='ic' />
           {isLoading ? (
             <Skeleton baseColor={skeletonColor} height={18} width={24} />
           ) : (
@@ -114,7 +107,7 @@ const UserRecipeThumbnail: FC<UserRecipeThumbnailType> = ({
 
       <div className='footer'>
         <span>
-          <FiClock />
+          <ClockIcon />
           {isLoading ? (
             <Skeleton baseColor={skeletonColor} width={50} />
           ) : recipe!.totalTime > 1 ? (
@@ -124,7 +117,7 @@ const UserRecipeThumbnail: FC<UserRecipeThumbnailType> = ({
           )}
         </span>
         <span>
-          <FiStar />
+          <StarOutlineIcon />
           {isLoading ? (
             <Skeleton baseColor={skeletonColor} width={50} />
           ) : Number(recipe!.rating.rateCount) === 0 ? (

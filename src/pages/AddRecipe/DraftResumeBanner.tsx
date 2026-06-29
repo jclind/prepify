@@ -1,7 +1,7 @@
+import { CloseIcon } from 'src/Components/icons'
 import React, { FC, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { AiOutlineClose } from 'react-icons/ai'
 import DraftAPI from 'src/api/drafts'
 import './DraftResumeBanner.scss'
 
@@ -53,7 +53,7 @@ const DraftResumeBanner: FC = () => {
           aria-label='Dismiss'
           onClick={() => setDismissed(true)}
         >
-          <AiOutlineClose />
+          <CloseIcon />
         </button>
       </div>
     </div>

@@ -1,9 +1,8 @@
+import { FlagIcon, MoreIcon } from 'src/Components/icons'
 import React, { FC, useEffect, useRef, useState } from 'react'
 import Modal from 'react-modal'
 import toast from 'react-hot-toast'
 import { TailSpin } from 'react-loader-spinner'
-import { BsThreeDots } from 'react-icons/bs'
-import { FiFlag } from 'react-icons/fi'
 import { AxiosError } from 'axios'
 import { ReportReason, ReportTargetType } from 'types'
 import { useAuth } from 'src/context/AuthContext'
@@ -192,7 +191,7 @@ const ReportControl: FC<ReportControlProps> = ({ target, variant = 'link' }) => 
           aria-label='More options'
           onClick={() => setMenuOpen(o => !o)}
         >
-          <BsThreeDots />
+          <MoreIcon />
         </button>
         {menuOpen && (
           <div className='report-menu-panel' role='menu'>
@@ -203,7 +202,7 @@ const ReportControl: FC<ReportControlProps> = ({ target, variant = 'link' }) => 
               onClick={handleTriggerClick}
               aria-label={`Report this ${noun}`}
             >
-              <FiFlag /> Report {noun}
+              <FlagIcon /> Report {noun}
             </button>
           </div>
         )}

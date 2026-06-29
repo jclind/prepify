@@ -1,5 +1,5 @@
+import { ChevronDownIcon } from 'src/Components/icons'
 import React, { FC, useEffect, useRef, useState } from 'react'
-import { BiChevronDown } from 'react-icons/bi'
 
 export type SortDropdownOption = { value: string; label: string }
 
@@ -48,7 +48,7 @@ const SortDropdown: FC<Props> = ({ className, options, value, onChange }) => {
         onClick={() => setOpen(o => !o)}
       >
         Sort: {currentLabel}
-        <BiChevronDown className='chev' />
+        <ChevronDownIcon className='chev' />
       </button>
       {open && (
         <ul className={`${className}__menu`} role='listbox'>

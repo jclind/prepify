@@ -1,23 +1,21 @@
-import { AiOutlineHome, AiOutlineUser, AiOutlinePlusCircle } from 'react-icons/ai'
-import { MdOutlineRestaurantMenu } from 'react-icons/md'
-import { BiHelpCircle } from 'react-icons/bi'
+import { HelpIcon, HomeIcon, PlusCircleIcon, RecipesMenuIcon, UserIcon } from 'src/Components/icons'
 import { NavItem, NavGroup } from './types'
 
 /** Browse links — always shown (logged in or out). */
 const browseItems: NavItem[] = [
-  { label: 'Home', to: '/', icon: AiOutlineHome },
-  { label: 'Recipes', to: '/recipes', icon: MdOutlineRestaurantMenu },
+  { label: 'Home', to: '/', icon: HomeIcon },
+  { label: 'Recipes', to: '/recipes', icon: RecipesMenuIcon },
 ]
 
 /** Create links — logged-in only. */
 const createItems: NavItem[] = [
-  { label: 'Create Recipe', to: '/add-recipe', icon: AiOutlinePlusCircle },
+  { label: 'Create Recipe', to: '/add-recipe', icon: PlusCircleIcon },
 ]
 
 /** Account links — logged-in only (Logout is rendered separately as a button). */
 const accountNavItems: NavItem[] = [
-  { label: 'Account', to: '/account', icon: AiOutlineUser },
-  { label: 'Help', to: '/help', icon: BiHelpCircle },
+  { label: 'Account', to: '/account', icon: UserIcon },
+  { label: 'Help', to: '/help', icon: HelpIcon },
 ]
 
 /** Sectioned list rendered by the menu (Browse / Create / Account). */

@@ -1,7 +1,6 @@
+import { EmailIcon, GoogleIcon, LockIcon } from 'src/Components/icons'
 import React, { ChangeEvent, FC, useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
-import { AiOutlineGoogle } from 'react-icons/ai'
-import { MdOutlineEmail, MdOutlineLock } from 'react-icons/md'
 import { useAuth } from 'src/context/AuthContext'
 import { TailSpin } from 'react-loader-spinner'
 import { Helmet } from 'react-helmet-async'
@@ -55,7 +54,7 @@ const Signup: FC = () => {
             </div>
             <div className='input-fields'>
               <FormInput
-                icon={<MdOutlineEmail className='icon' />}
+                icon={<EmailIcon className='icon' />}
                 type='email'
                 name='email'
                 label='Email'
@@ -65,7 +64,7 @@ const Signup: FC = () => {
                 placeholder='name@example.com'
               />
               <FormInput
-                icon={<MdOutlineLock className='icon' />}
+                icon={<LockIcon className='icon' />}
                 type='password'
                 name='password'
                 label='Password'
@@ -75,7 +74,7 @@ const Signup: FC = () => {
                 placeholder='6+ characters'
               />
               <FormInput
-                icon={<MdOutlineLock className='icon' />}
+                icon={<LockIcon className='icon' />}
                 type='password'
                 name='confirm-password'
                 label='Confirm password'
@@ -119,7 +118,7 @@ const Signup: FC = () => {
               authRes?.signInWithGoogle(setError)
             }}
           >
-            <AiOutlineGoogle className='icon' /> Sign up with Google
+            <GoogleIcon className='icon' /> Sign up with Google
           </button>
           <p className='switch-prompt'>
             Already have an account?{' '}

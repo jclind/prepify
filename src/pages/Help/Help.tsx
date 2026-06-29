@@ -1,15 +1,8 @@
+import { BugIcon, ChatIcon, EmailIcon, HelpIcon, LightbulbIcon, SubjectIcon } from 'src/Components/icons'
 import React, { FC, ReactElement, useEffect, useState } from 'react'
 import { useForm } from '@formspree/react'
 import { Helmet } from 'react-helmet-async'
 import { TailSpin } from 'react-loader-spinner'
-import {
-  MdOutlineEmail,
-  MdOutlineBugReport,
-  MdOutlineLightbulb,
-  MdOutlineHelpOutline,
-  MdOutlineChatBubbleOutline,
-  MdOutlineSubject,
-} from 'react-icons/md'
 import { useAuth } from 'src/context/AuthContext'
 import { contactEmail } from 'src/Components/Footer/footerData'
 import FormInput from 'src/Components/Form/FormInput'
@@ -31,25 +24,25 @@ const TOPICS: Topic[] = [
   {
     value: 'bug',
     label: 'Report a bug',
-    icon: <MdOutlineBugReport />,
+    icon: <BugIcon />,
     placeholder: 'What went wrong, and what were you doing when it happened?',
   },
   {
     value: 'feature',
     label: 'Suggest an idea',
-    icon: <MdOutlineLightbulb />,
+    icon: <LightbulbIcon />,
     placeholder: 'What would you like to see in Prepify?',
   },
   {
     value: 'question',
     label: 'Ask a question',
-    icon: <MdOutlineHelpOutline />,
+    icon: <HelpIcon />,
     placeholder: 'What can we help you figure out?',
   },
   {
     value: 'other',
     label: 'Something else',
-    icon: <MdOutlineChatBubbleOutline />,
+    icon: <ChatIcon />,
     placeholder: 'How can we help?',
   },
 ]
@@ -162,7 +155,7 @@ const Help: FC = () => {
 
                   <div className='input-fields'>
                     <FormInput
-                      icon={<MdOutlineEmail className='icon' />}
+                      icon={<EmailIcon className='icon' />}
                       type='email'
                       name='email'
                       label='Your email'
@@ -187,7 +180,7 @@ const Help: FC = () => {
 
                     {showSubject ? (
                       <FormInput
-                        icon={<MdOutlineSubject className='icon' />}
+                        icon={<SubjectIcon className='icon' />}
                         type='text'
                         name='title'
                         label='Subject'

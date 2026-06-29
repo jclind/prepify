@@ -1,3 +1,4 @@
+import { ArrowLeftIcon, CheckCircleIcon, ClockIcon, GroupAddIcon, ShoppingBasketIcon, StarFilledIcon, StarOutlineIcon, TagIcon } from 'src/Components/icons'
 import React, { FC, useState, useEffect, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useParams, Link } from 'react-router-dom'
@@ -5,11 +6,6 @@ import { isAxiosError } from 'axios'
 import { Helmet } from 'react-helmet-async'
 import Skeleton from 'react-loading-skeleton'
 import 'react-loading-skeleton/dist/skeleton.css'
-import { AiOutlineClockCircle, AiOutlineUsergroupAdd } from 'react-icons/ai'
-import { BsStar, BsStarFill } from 'react-icons/bs'
-import { BiLeftArrowAlt, BiCheckCircle } from 'react-icons/bi'
-import { CiShoppingBasket } from 'react-icons/ci'
-import { TbTag } from 'react-icons/tb'
 
 import './SingleRecipe.scss'
 
@@ -179,12 +175,12 @@ const SingleRecipe: FC = () => {
               }
             }}
           >
-            <span className='box'>{isChecked ? <BiCheckCircle /> : null}</span>
+            <span className='box'>{isChecked ? <CheckCircleIcon /> : null}</span>
             <span className='thumb'>
               {image ? (
                 <img src={image} alt={ingredient ?? ''} loading='lazy' />
               ) : (
-                <CiShoppingBasket className='no-img' />
+                <ShoppingBasketIcon className='no-img' />
               )}
             </span>
             <span className='ing-text'>
@@ -281,7 +277,7 @@ const SingleRecipe: FC = () => {
         <div className='page single-recipe-page'>
           <div className='sr-controls'>
             <Link to='/recipes' className='sr-back'>
-              <BiLeftArrowAlt /> All recipes
+              <ArrowLeftIcon /> All recipes
             </Link>
             {/* Quick-access report kebab (the quiet footer link below stays too).
                 Hidden for the owner; logged-out clicks nudge to log in. */}
@@ -334,7 +330,7 @@ const SingleRecipe: FC = () => {
                   Only shown once rated, so an unrated recipe isn't labelled. */}
               {currRecipe && ratingCount > 0 && (
                 <div className='hero-rating' aria-label={`Rated ${formatRating(currRecipe.rating?.rateValue, ratingCount)} out of 5 from ${ratingCount} ratings`}>
-                  <BsStarFill className='hr-star' aria-hidden='true' />
+                  <StarFilledIcon className='hr-star' aria-hidden='true' />
                   <span className='hr-val'>
                     {formatRating(currRecipe.rating?.rateValue, ratingCount)}
                   </span>
@@ -370,14 +366,14 @@ const SingleRecipe: FC = () => {
             <div className='meta'>
               <div className='m-item'>
                 <span className='m-top'>
-                  <AiOutlineClockCircle className='m-ic' />
+                  <ClockIcon className='m-ic' />
                   <span className='m-v'>{currRecipe?.totalTime ?? '—'} min</span>
                 </span>
                 <span className='m-l'>Total time</span>
               </div>
               <div className='m-item'>
                 <span className='m-top'>
-                  <AiOutlineUsergroupAdd className='m-ic' />
+                  <GroupAddIcon className='m-ic' />
                   <span className='m-v'>{servingSize || currRecipe?.servings || '—'}</span>
                 </span>
                 <span className='m-l'>Servings</span>
@@ -385,7 +381,7 @@ const SingleRecipe: FC = () => {
               {hasPrice ? (
                 <div className='m-item m-cost'>
                   <span className='m-top'>
-                    <TbTag className='m-ic' />
+                    <TagIcon className='m-ic' />
                     <span className='m-v'>{formatPrice(servPrice)}</span>
                   </span>
                   <span className='m-l'>Per serving</span>
@@ -393,7 +389,7 @@ const SingleRecipe: FC = () => {
               ) : (
                 <div className='m-item'>
                   <span className='m-top'>
-                    <BsStar className='m-ic' />
+                    <StarOutlineIcon className='m-ic' />
                     <span className='m-v'>
                       {currRecipe && ratingCount > 0
                         ? formatRating(currRecipe.rating?.rateValue, ratingCount)
