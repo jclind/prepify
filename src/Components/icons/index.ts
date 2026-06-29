@@ -1,131 +1,126 @@
-// Single source of truth for app icons — one icon per concept.
+// Single source of truth for app icons — one concept, one glyph, one house family.
 //
-// Every UI concept is exported here under a semantic, set-agnostic name so call
-// sites never import from 'react-icons/*' directly and the same concept can't
-// drift across icon families again (a Vitest guard enforces this — see
-// src/test/icons-single-source.test.ts). To change a concept's glyph, edit the
-// single re-export below and every call site updates with it.
+// HOUSE FAMILY: Lucide (react-icons/lu). Every concept below re-exports a Lucide
+// glyph under a semantic, set-agnostic name, so the whole app shares one stroke
+// weight / grid / corner radius. Call sites import from here only; a Vitest guard
+// (src/test/icons-single-source.test.ts) fails the build on any direct
+// react-icons/* import outside this folder. To change a concept's glyph, edit its
+// one line here and every call site updates with it.
 //
-// Generated/curated during the Wave 2 design sweep ("one icon per concept").
+// EXCEPTIONS (Lucide ships no brand logos):
+//   - GoogleColorIcon — the multicolor Google "G" (Flat Color Icons); the
+//     Continue-with-Google button needs the branded color mark.
+//   - GoogleIcon — the mono Google "G" (Simple Icons).
+//
+// FILLED VARIANTS: Lucide is an outline system. Where a concept needs a filled
+// counterpart that toggles against its outline (star, bookmark), it's the SAME
+// Lucide glyph rendered with fill="currentColor" (see the wrappers at the bottom)
+// — so a toggle swaps fill, never glyph shape. Concepts whose fill reads poorly
+// (printer, warning triangle) intentionally have no filled variant; emphasis
+// there comes from color/size, the Lucide way.
 import type { IconType } from 'react-icons'
+import React from 'react'
+import { LuBookmark, LuStar } from 'react-icons/lu'
 
 export {
-  FiAlertCircle as AlertCircleIcon,
-  FiAlertTriangle as AlertTriangleIcon,
-  FiArrowLeft as ArrowLeftIcon,
-  FiArrowRight as ArrowRightIcon,
-  FiArrowUpRight as ArrowUpRightIcon,
-  FiAward as AwardIcon,
-  FiBookOpen as BookOpenIcon,
-  FiCheck as CheckIcon,
-  FiCheckCircle as CheckCircleIcon,
-  FiChevronDown as ChevronDownIcon,
-  FiChevronRight as ChevronRightIcon,
-  FiClock as ClockIcon,
-  FiCornerDownRight as CornerDownRightIcon,
-  FiDollarSign as DollarSignIcon,
-  FiDownload as DownloadIcon,
-  FiEdit3 as EditIcon,
-  FiEye as EyeIcon,
-  FiEyeOff as EyeOffIcon,
-  FiFileText as FileTextIcon,
-  FiFlag as FlagIcon,
-  FiFolder as FolderIcon,
-  FiFolderPlus as FolderPlusIcon,
-  FiGrid as GridIcon,
-  FiHeart as HeartIcon,
-  FiHelpCircle as HelpIcon,
-  FiInbox as InboxIcon,
-  FiMapPin as MapPinIcon,
-  FiPieChart as PieChartIcon,
-  FiPlus as PlusIcon,
-  FiPlusCircle as PlusCircleIcon,
-  FiRotateCw as RotateCwIcon,
-  FiSearch as SearchIcon,
-  FiSettings as SettingsIcon,
-  FiShare as ShareIcon,
-  FiShield as ShieldIcon,
-  FiShoppingCart as ShoppingCartIcon,
-  FiTrash2 as TrashIcon,
-  FiTrendingUp as TrendingUpIcon,
-  FiUser as UserIcon,
-  FiX as CloseIcon,
-} from 'react-icons/fi'
-export {
-  // Star filled/outline are paired in-family (AntDesign) so the rate-button
-  // hover toggle swaps fill, not glyph shape.
-  AiFillStar as StarFilledIcon,
-  AiFillWarning as AlertTriangleFilledIcon,
-  AiOutlineCloud as CloudIcon,
-  AiOutlineGoogle as GoogleIcon,
-  AiOutlineHome as HomeIcon,
-  AiOutlineInfoCircle as InfoIcon,
-  AiOutlineStar as StarOutlineIcon,
-  AiOutlineUsergroupAdd as GroupAddIcon,
-} from 'react-icons/ai'
-export {
-  // Bookmark filled/outline are paired in-family (BoxIcons) so the save
-  // toggle swaps fill, not glyph shape.
-  BiBookmark as BookmarkIcon,
-  BiLogOut as LogOutIcon,
-  BiSliderAlt as SlidersIcon,
-  BiSolidBookmark as BookmarkFilledIcon,
-  BiWrench as WrenchIcon,
-} from 'react-icons/bi'
-export {
-  BsChevronDoubleRight as ChevronsRightIcon,
-  BsFillPrinterFill as PrinterFilledIcon,
-  BsPrinter as PrinterIcon,
-  BsThreeDots as MoreIcon,
-} from 'react-icons/bs'
-export {
-  CiShoppingBasket as ShoppingBasketIcon,
-} from 'react-icons/ci'
-export {
-  FcGoogle as GoogleColorIcon,
-} from 'react-icons/fc'
-export {
-  IoDiceOutline as DiceIcon,
-} from 'react-icons/io5'
-export {
+  LuCircleAlert as AlertCircleIcon,
+  LuTriangleAlert as AlertTriangleIcon,
   LuApple as AppleIcon,
+  LuArrowLeft as ArrowLeftIcon,
+  LuArrowRight as ArrowRightIcon,
+  LuArrowUpRight as ArrowUpRightIcon,
+  LuAtSign as AtSignIcon,
+  LuAward as AwardIcon,
   LuBeef as BeefIcon,
+  LuBookOpen as BookOpenIcon,
+  LuBookmark as BookmarkIcon,
+  LuBug as BugIcon,
   LuCakeSlice as CakeSliceIcon,
   LuCandy as CandyIcon,
   LuCarrot as CarrotIcon,
+  LuMessageCircle as ChatIcon,
+  LuCircleCheck as CheckCircleIcon,
+  LuCheck as CheckIcon,
+  LuChefHat as ChefHatIcon,
   LuCherry as CherryIcon,
+  LuChevronDown as ChevronDownIcon,
+  LuChevronRight as ChevronRightIcon,
+  LuChevronsRight as ChevronsRightIcon,
+  LuClock as ClockIcon,
+  LuX as CloseIcon,
+  LuCloud as CloudIcon,
   LuCoffee as CoffeeIcon,
   LuCookie as CookieIcon,
   LuCookingPot as CookingPotIcon,
+  LuCornerDownRight as CornerDownRightIcon,
   LuCroissant as CroissantIcon,
+  LuDices as DiceIcon,
+  LuDollarSign as DollarSignIcon,
   LuDonut as DonutIcon,
+  LuDownload as DownloadIcon,
+  LuGripVertical as DragIcon,
+  LuPenLine as EditIcon,
   LuEgg as EggIcon,
+  LuMail as EmailIcon,
+  LuEye as EyeIcon,
+  LuEyeOff as EyeOffIcon,
+  LuFileText as FileTextIcon,
   LuFish as FishIcon,
+  LuFlag as FlagIcon,
+  LuFolder as FolderIcon,
+  LuFolderPlus as FolderPlusIcon,
   LuGrape as GrapeIcon,
+  LuLayoutGrid as GridIcon,
+  LuUsers as GroupAddIcon,
+  LuHeart as HeartIcon,
+  LuCircleHelp as HelpIcon,
+  LuHouse as HomeIcon,
   LuIceCreamCone as IceCreamIcon,
+  LuInbox as InboxIcon,
+  LuInfo as InfoIcon,
+  LuCookingPot as KitchenIcon,
+  LuLightbulb as LightbulbIcon,
+  LuLock as LockIcon,
+  LuLogOut as LogOutIcon,
+  LuMapPin as MapPinIcon,
+  LuEllipsis as MoreIcon,
+  LuChartPie as PieChartIcon,
   LuPizza as PizzaIcon,
+  LuCirclePlus as PlusCircleIcon,
+  LuPlus as PlusIcon,
+  LuPrinter as PrinterIcon,
+  LuUtensilsCrossed as RecipesMenuIcon,
+  LuRotateCw as RotateCwIcon,
   LuSalad as SaladIcon,
   LuSandwich as SandwichIcon,
+  LuSearchX as SearchOffIcon,
+  LuSearch as SearchIcon,
+  LuSettings as SettingsIcon,
+  LuShare as ShareIcon,
+  LuShield as ShieldIcon,
+  LuShoppingBasket as ShoppingBasketIcon,
+  LuShoppingCart as ShoppingCartIcon,
+  LuSlidersHorizontal as SlidersIcon,
   LuSoup as SoupIcon,
+  LuStar as StarOutlineIcon,
+  LuAlignLeft as SubjectIcon,
+  LuTag as TagIcon,
+  LuTrash2 as TrashIcon,
+  LuTrendingUp as TrendingUpIcon,
+  LuUser as UserIcon,
   LuUtensils as UtensilsIcon,
   LuWheat as WheatIcon,
+  LuWrench as WrenchIcon,
 } from 'react-icons/lu'
-export {
-  MdAlternateEmail as AtSignIcon,
-  MdDragIndicator as DragIcon,
-  MdOutlineBugReport as BugIcon,
-  MdOutlineChatBubbleOutline as ChatIcon,
-  MdOutlineEmail as EmailIcon,
-  MdOutlineLightbulb as LightbulbIcon,
-  MdOutlineLock as LockIcon,
-  MdOutlineRestaurantMenu as RecipesMenuIcon,
-  MdOutlineSubject as SubjectIcon,
-} from 'react-icons/md'
-export {
-  TbChefHat as ChefHatIcon,
-  TbSearchOff as SearchOffIcon,
-  TbTag as TagIcon,
-  TbToolsKitchen2 as KitchenIcon,
-} from 'react-icons/tb'
+
+// Brand-mark exceptions — Lucide has no logos (see header).
+export { SiGoogle as GoogleIcon } from 'react-icons/si'
+export { FcGoogle as GoogleColorIcon } from 'react-icons/fc'
+
+// Filled variants — same Lucide glyph as the outline, filled (see header).
+export const StarFilledIcon: IconType = props =>
+  React.createElement(LuStar, { fill: 'currentColor', ...props })
+export const BookmarkFilledIcon: IconType = props =>
+  React.createElement(LuBookmark, { fill: 'currentColor', ...props })
 
 export type { IconType }

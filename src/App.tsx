@@ -32,7 +32,6 @@ import Help from 'src/pages/Help/Help'
 import NotFound from 'src/pages/404/404'
 import SingleRecipe from 'src/pages/SingleRecipe/SingleRecipe'
 import About from 'src/pages/About/About'
-import IconAudit from 'src/pages/IconAudit/IconAudit' // TEMP — remove before PR
 import Privacy from 'src/pages/Privacy/Privacy'
 import Terms from 'src/pages/Terms/Terms'
 
@@ -62,8 +61,6 @@ const App: FC = () => {
         <Toaster position='bottom-center' toastOptions={{ duration: 5000 }} />
         <ScrollToTop />
         <Routes>
-            {/* TEMP — Lucide migration review page; remove with this route before PR */}
-            <Route path='/icon-audit' element={<IconAudit />} />
             <Route
               path='*'
               element={
