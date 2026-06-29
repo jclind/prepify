@@ -4,7 +4,7 @@
 > (`$primary-hover` + `$surface-warm-border` tokens; radius scale, breakpoint tokens, admin import-wiring,
 > decorative tint). **~10 follow-ups open** in [`../BACKLOG.md`](../BACKLOG.md#ux--visual-polish) +
 > [Tech debt](../BACKLOG.md#tech-debt--process--infra): pill `.btn` system, delete `RecipeThumbnail`,
-> icon-per-concept, modal style config, loading-state pattern, toast punctuation; type scale, elevation
+> icon-per-concept, ~~modal style config~~ (done — PR #203), loading-state pattern, toast punctuation; type scale, elevation
 > re-author, danger-red token, `$admin-*` palette, `RecipeFormInput` dup. *(See the [run log](README.md#run-log).)*
 
 Full-coverage visual/UX consistency audit: are colors, spacing, typography, radii, shadows, components,
