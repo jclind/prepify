@@ -78,7 +78,7 @@ const Account: FC = () => {
       .map(id => byId.get(id)?.name)
       .filter((n): n is string => !!n)
     if (names.length === 1) {
-      toast.success(`🏅 Achievement unlocked: ${names[0]}`)
+      toast.success(`🏅 Achievement unlocked: ${names[0]}!`)
     } else if (names.length > 1) {
       toast.success(`🏅 ${names.length} achievements unlocked!`)
     }

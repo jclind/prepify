@@ -3,6 +3,7 @@ import toast from 'react-hot-toast'
 import { TailSpin } from 'react-loader-spinner'
 import AuthAPI from 'src/api/auth'
 import RecipeAPI from 'src/api/recipes'
+import { GENERIC_ERROR } from 'src/util/toastMessages'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 
 const canMakeAgain = (lastDateMade: number | null): boolean => {
@@ -47,12 +48,12 @@ const MadeRecipeBtn: FC<MadeRecipeBtnProps> = ({ recipeId }) => {
             })
           )
           setLoading(false)
-          toast.success('Recipe marked as read, share your feedback below!', {
+          toast.success('Recipe marked as read, share your feedback below.', {
             duration: 3000,
           })
         })
-        .catch((error: unknown) => {
-          toast.error(`Error: ${String(error)}`)
+        .catch(() => {
+          toast.error(GENERIC_ERROR)
           setLoading(false)
         })
     } else if (lastDateMade) {
@@ -60,7 +61,7 @@ const MadeRecipeBtn: FC<MadeRecipeBtnProps> = ({ recipeId }) => {
         `Recipe can only be marked as read once an hour. Try again in ${60 - Math.ceil((new Date().getTime() - lastDateMade) / (1000 * 60))} minutes.`
       )
     } else {
-      toast.error('Something went wrong, try refreshing.', { duration: 10000 })
+      toast.error('Something went wrong. Try refreshing.', { duration: 10000 })
     }
   }
 

@@ -54,7 +54,7 @@ const PrivacySection: FC = () => {
         // Keep the shared profile query in sync for the next visit.
         queryClient.invalidateQueries({ queryKey: ['profile', uid] })
         setSaving(false)
-        toast.success('Privacy settings saved!')
+        toast.success('Privacy settings saved.')
       })
       .catch(err => {
         setSaving(false)

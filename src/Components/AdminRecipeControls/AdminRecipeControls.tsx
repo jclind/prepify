@@ -7,6 +7,7 @@ import AdminAPI from 'src/api/admin'
 import ReportAPI from 'src/api/reports'
 import ClassifierNote from 'src/Components/ClassifierNote/ClassifierNote'
 import { formatClassifier } from 'src/util/formatClassifier'
+import { RECIPE_APPROVED, RECIPE_APPROVE_ERROR } from 'src/util/toastMessages'
 import './AdminRecipeControls.scss'
 
 interface AdminRecipeControlsProps {
@@ -72,10 +73,10 @@ const AdminRecipeControls: FC<AdminRecipeControlsProps> = ({ recipe }) => {
   const approveMutation = useMutation({
     mutationFn: () => AdminAPI.approveRecipe(recipe._id),
     onSuccess: () => {
-      toast.success('Recipe approved and published.')
+      toast.success(RECIPE_APPROVED)
       invalidate()
     },
-    onError: () => toast.error('Could not approve the recipe.'),
+    onError: () => toast.error(RECIPE_APPROVE_ERROR),
   })
 
   if (!isAdmin) return null
