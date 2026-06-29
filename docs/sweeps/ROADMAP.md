@@ -73,7 +73,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **2-iso** | Design: `RecipeFormInput` → shared `FormInput` | `[x]` | `AddRecipe/*`, `Components/Form/*` | #204 |
 | **2-iso** | Design: toast punctuation + string dedupe | `[x]` | ~10 toast call sites (TSX strings) | #207 |
 | **2-iso** | Design: codify loading-state pattern | `[ ]` | convention + `TailSpin`/skeleton outliers | — |
-| **2-scss** | Design: pill `.btn` system | `[~]` | **`index.scss` + many page `.scss`** ⚠ chokepoint | `worktree-feat+pill-btn-system` (2026-06-29) |
+| **2-scss** | Design: pill `.btn` system | `[P]` | **`index.scss` + many page `.scss`** ⚠ chokepoint | #210 |
 | **2-scss** | Design: type scale (~520 `font-size:` literals) | `[ ]` | **`helpers.scss` + ~60 files** ⚠ chokepoint | — |
 | **2-scss** | Design: elevation/shadow re-author (~52 literals) | `[ ]` | **`helpers.scss` + page `.scss`** ⚠ chokepoint | — |
 | **2-scss** | Design: one danger-red token | `[x]` | **`helpers.scss` + SingleRecipe/ReportControl/…** ⚠ chokepoint | #208 |
@@ -338,3 +338,20 @@ narrates the *why*.
   single `2-scss` lane runs safely alongside it (same precedent as #208 vs. the `2-iso` trio). This track collapses
   the ad-hoc button styles onto one shared pill `.btn` system (`index.scss` + page `.scss`). Worktree on free ports
   3001/4001.
+- _2026-06-29_ — **Design: pill `.btn` system** PR opened (#210, `[~]`→`[P]`) — **second `2-scss` lane to reach
+  PR.** Collapsed ~70 ad-hoc button styles across ~35 files onto one pill `.btn` base + BEM modifiers (5 colour
+  variants, 3 sizes, `--icon`) defined in `index.scss` and documented at `docs/design/button-system.md` (second
+  design-system doc after `icon-system.md`). Owner sign-off: **pill everywhere** (finishes the migration the
+  redesigned pages started) + **non-admin scope** (admin button *colours* stay for the `$admin-*` lane). Kept
+  bespoke on the base (no colour variant): AA-tuned brand fills (`$primary-accessible`/`#a52f0a`/`#006065` — the
+  generic `--primary` hover fails white-on-fill AA), the teal auth-submit, stateful toggles, and the non-token
+  green/slate; nav CTAs go pill but stay off the variants (theme-variable `--dnav-*`). Out of scope: selection
+  chips/segmented-navs/toggle-switches + the shared `SortDropdown` (also on the out-of-scope Recipes page). Built
+  with one pilot surface (SingleRecipe action bar) verified live first, then a 5-agent parallel sweep + the
+  nuanced surfaces (auth-teal, themed nav, AddRecipe) by hand. `tsc`/build/**543 Vitest** green; high-effort
+  4-angle code review found 3 real regressions, all fixed (SavedRecipes clear-button grey fill dropped by
+  `--ghost`; two `&:hover` overrides lost to the variant's `:hover:not(:disabled)`; a Settings leading-icon
+  additive margin). Verified live (headless) across home/recipes/recipe-detail/about/login/signup/404/profile;
+  the auth-gated surfaces (Settings/SavedRecipes/AddRecipe/review edit-delete) are covered by tsc/build/tests/
+  review, not driven (no dev creds). Net −81 lines. Ran safely alongside the in-flight `2-iso` loading-state
+  worktree (zero file overlap). Awaiting CI.
