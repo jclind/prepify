@@ -68,7 +68,8 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **2-iso** | A11y: servings stepper target-size | `[x]` | `SingleRecipe.tsx/.scss` (pill layout) | #202 |
 | **2-iso** | A11y: account-heading route-map | `[x]` | `Account.tsx` | #200 |
 | **2-iso** | Design: shared react-modal style config | `[x]` | 7 modal components | #203 |
-| **2-iso** | Design: one icon per concept | `[P]` | new `src/Components/icons` + import swaps | `worktree-feat+design-icons-one-per-concept` (2026-06-29) — PR #205 |
+| **2-iso** | Design: one icon per concept | `[x]` | new `src/Components/icons` + import swaps | #205 |
+| **2-iso** | Design: single icon family (Lucide) | `[~]` | `src/Components/icons` glyph remap (no call-site churn) + temp audit page + docs | `worktree-feat+icon-single-family-lucide` (2026-06-29) |
 | **2-iso** | Design: `RecipeFormInput` → shared `FormInput` | `[x]` | `AddRecipe/*`, `Components/Form/*` | #204 |
 | **2-iso** | Design: toast punctuation + string dedupe | `[ ]` | ~10 toast call sites (TSX strings) | — |
 | **2-iso** | Design: codify loading-state pattern | `[ ]` | convention + `TailSpin`/skeleton outliers | — |
@@ -257,3 +258,22 @@ narrates the *why*.
   GitGuardian). Closes the Design-consistency `RecipeFormInput` dup follow-up; filed one new UX-polish item
   (make the create-recipe **dropdown** inputs visually uniform with the unified text fields). Worktree + branch
   torn down. **Second Design `2-iso` track to land.**
+- _2026-06-29_ — **Design: one icon per concept merged** (PR #205 → `development`, `[~]`→`[P]`→`[x]`). All five CI
+  checks green against the merge HEAD (Backend/Supertest, E2E/Cypress, Frontend/Vitest, Fallow advisory,
+  GitGuardian). Collapsed react-icons drift into a single re-export module `src/Components/icons` (94 semantic
+  concepts, one glyph each; 58 call sites migrated off direct `react-icons/*`; a Vitest guard now fails the build
+  on any direct import outside the module). Tree-shaking preserved (static `export … from` re-exports). Local
+  high-effort code review run; its findings applied in a follow-up commit before merge: filled/outline toggle
+  pairs (star/bookmark/printer) unified **in-family** so a hover swaps fill not glyph shape, and the AddRecipe
+  form error kept a filled warning via a new `AlertTriangleFilledIcon`. Verified live in a headless browser (home/
+  recipes/recipe-detail render clean, zero console errors). Worktree + branch torn down. **Third Design `2-iso`
+  track to land.** Surfaced a follow-up → new track below.
+- _2026-06-29_ — **Wave 2 kickoff (`2-iso`) — Design: single icon family (Lucide)**: claimed
+  (`worktree-feat+icon-single-family-lucide`). The icon-per-concept sweep left the app on **10 mixed react-icons
+  families**; this collapses them to one house family (Lucide / `react-icons/lu`, already Prepify's food/avatar
+  set). An audit of the 94 concepts: 21 already Lucide, 40 Feather→Lucide 1:1 renames, 22 cross-family swaps (the
+  visual win), 11 decisions — 1 hard exception (`GoogleColorIcon` must stay multicolor brand), 3 taste picks, and
+  4 filled variants collapsed onto their outline glyph via `fill="currentColor"` (dissolving the filled/outline
+  family split rather than patching it). Distinct file domain (`src/Components/icons` mapping + temp audit page +
+  docs), no `2-scss` chokepoint contention. A temp `/icon-audit` before/after page is being built first so the
+  owner can approve the cross-family swaps and taste picks against rendered glyphs before anything is remapped.
