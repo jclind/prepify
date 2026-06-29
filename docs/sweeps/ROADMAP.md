@@ -76,7 +76,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **2-scss** | Design: pill `.btn` system | `[ ]` | **`index.scss` + many page `.scss`** ⚠ chokepoint | — |
 | **2-scss** | Design: type scale (~520 `font-size:` literals) | `[ ]` | **`helpers.scss` + ~60 files** ⚠ chokepoint | — |
 | **2-scss** | Design: elevation/shadow re-author (~52 literals) | `[ ]` | **`helpers.scss` + page `.scss`** ⚠ chokepoint | — |
-| **2-scss** | Design: one danger-red token | `[ ]` | **`helpers.scss` + SingleRecipe/ReportControl/…** ⚠ chokepoint | — |
+| **2-scss** | Design: one danger-red token | `[P]` | **`helpers.scss` + SingleRecipe/ReportControl/…** ⚠ chokepoint | #208 |
 | **2-scss** | Design: name the `$admin-*` sub-palette | `[ ]` | **`helpers.scss` + Admin/moderation `.scss`** ⚠ chokepoint | — |
 | **2-scss** | A11y: `$primary-hover` AA-on-hover | `[ ]` | **`helpers.scss`** ⚠ chokepoint | — |
 | **blocked** | A11y: brand-orange contrast (AA) | `[blocked]` | `helpers.scss` `$primary-accessible` — **needs the brand-orange decision** | — |
@@ -311,3 +311,16 @@ narrates the *why*.
   (coincidentally-identical admin toggle string; generic sentence shared with `authErrors`' inline default)
   considered and intentionally left inline. Worktree + branch torn down. **Third Design `2-iso` track to land**;
   remaining Wave 2 = loading-state pattern (`2-iso`) + the serialized `2-scss` lane.
+- _2026-06-29_ — **Design: one danger-red token** PR opened (#208, `[~]`→`[P]`) — **first `2-scss` lane to reach
+  PR**. Collapsed the three off-token "danger" reds onto the shared `s.$error-red` (`#c5303f`): dropped the dead
+  local `$danger #d23f31` (SingleRecipe, 1 use), and converted `#d64545` ×9 across ReportControl (×7, incl. its
+  `rgba(214,69,69, …)` tints → `rgba(s.$error-red, X)`), AdminRecipeControls (takedown border), and Reports
+  (takedown bg). **No `helpers.scss` edit** — the token already existed, so this `2-scss` track skips the usual
+  chokepoint (ran safely alongside the two in-flight `2-iso` worktrees; zero file overlap — they touch the `.tsx`,
+  this touches the `.scss`). Closes the BACKLOG 'One danger-red token' item (audit F6). Small **intentional**
+  visual shift: the moderation/error reds now match the brand danger. Verified by driving the running app — built
+  CSS has 0× old reds; all four changed files confirmed rendering `rgb(197,48,63)` live (report menu/link hover +
+  filled submit, review `.error`, admin takedown border + `/admin/reports` takedown bg). The auth/admin surfaces
+  were driven with a throwaway account (admin claim granted via firebase-admin), then deleted with a full Mongo
+  orphan-scan; the prod rating used to surface `.error` was removed, and the real reports queue was observed
+  read-only. Awaiting CI.
