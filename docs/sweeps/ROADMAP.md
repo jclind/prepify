@@ -73,7 +73,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **2-iso** | Design: `RecipeFormInput` → shared `FormInput` | `[x]` | `AddRecipe/*`, `Components/Form/*` | #204 |
 | **2-iso** | Design: toast punctuation + string dedupe | `[x]` | ~10 toast call sites (TSX strings) | #207 |
 | **2-iso** | Design: codify loading-state pattern | `[ ]` | convention + `TailSpin`/skeleton outliers | — |
-| **2-scss** | Design: pill `.btn` system | `[ ]` | **`index.scss` + many page `.scss`** ⚠ chokepoint | — |
+| **2-scss** | Design: pill `.btn` system | `[~]` | **`index.scss` + many page `.scss`** ⚠ chokepoint | `worktree-feat+pill-btn-system` (2026-06-29) |
 | **2-scss** | Design: type scale (~520 `font-size:` literals) | `[ ]` | **`helpers.scss` + ~60 files** ⚠ chokepoint | — |
 | **2-scss** | Design: elevation/shadow re-author (~52 literals) | `[ ]` | **`helpers.scss` + page `.scss`** ⚠ chokepoint | — |
 | **2-scss** | Design: one danger-red token | `[x]` | **`helpers.scss` + SingleRecipe/ReportControl/…** ⚠ chokepoint | #208 |
@@ -331,3 +331,10 @@ narrates the *why*.
   append-only) and CI re-ran clean on the merge commit. Closes the BACKLOG 'One danger-red token' item (audit
   F6). Worktree + branch torn down. Remaining Wave 2 = the loading-state pattern (`2-iso`, in flight) + the rest
   of the serialized `2-scss` lane (pill `.btn`, type scale, elevation, `$admin-*`, `$primary-hover`).
+- _2026-06-29_ — **Design: pill `.btn` system** claimed (`worktree-feat+pill-btn-system`, `[ ]`→`[~]`) — **second
+  `2-scss` lane to open.** Checked the lane is clear first: the only other in-flight worktree is the `2-iso`
+  loading-state pattern (`worktree-feat+loading-state-pattern`, `[~]` but not yet merged so the Board still shows
+  `[ ]`), which touches `.tsx` + `_exports.module.scss` — no `2-scss` chokepoint contention, so per rule 1 a
+  single `2-scss` lane runs safely alongside it (same precedent as #208 vs. the `2-iso` trio). This track collapses
+  the ad-hoc button styles onto one shared pill `.btn` system (`index.scss` + page `.scss`). Worktree on free ports
+  3001/4001.
