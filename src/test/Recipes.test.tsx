@@ -77,11 +77,14 @@ describe('Recipes (Browse) page', () => {
     mockGetAllRecipes.mockReset()
   })
 
-  it('shows loading skeleton cards before the API resolves', () => {
+  it('shows loading skeleton cards before the API resolves', async () => {
     mockGetAllRecipes.mockReturnValue(new Promise(() => {}))
     const { container } = renderRecipes()
-    // Skeleton RecipeCards rendered while data is pending (no images yet)
-    expect(container.querySelectorAll('.recipe-card--loading')).toHaveLength(8)
+    // Skeleton RecipeCards are delay-gated (useDelayedLoading) so a cache hit
+    // can't flash them; on a pending load they appear once the delay elapses.
+    await waitFor(() =>
+      expect(container.querySelectorAll('.recipe-card--loading')).toHaveLength(8)
+    )
     expect(screen.queryByRole('img')).toBeNull()
   })
 

@@ -3,13 +3,18 @@ import { useQuery } from '@tanstack/react-query'
 import RecipeAPI from 'src/api/recipes'
 import { useAuth } from 'src/context/AuthContext'
 import { RecipeType } from 'types'
-import { HomeRecipeCard, HomeRecipeCardSkeleton } from './HomeRecipeCard'
+import { HomeRecipeCard } from './HomeRecipeCard'
 
 // Personalized "For You" row. "Hide until personalized": only renders for a
 // logged-in user, and only once the server returns picks (it returns [] until
-// the user has enough saves/makes/ratings to infer taste). The component owns
-// its whole <section> — header included — so an empty/anonymous state collapses
-// cleanly with no orphaned heading. Silent on error: it's a bonus row, not core.
+// the user has enough saves/makes/ratings to infer taste).
+//
+// Pop-in, no skeleton (a documented exception in docs/design/loading-states.md):
+// because this row frequently resolves to empty, a skeleton would be a promise of
+// content it often can't keep — reserving space then collapsing it is the home
+// page's main layout jump. Instead we render nothing until real picks arrive, then
+// fade the row in (one downward shift, never a shift-in-then-out). Trending above
+// still signals that the page is loading. Silent on error: it's a bonus row.
 const HomeForYou: FC = () => {
   const user = useAuth()?.user ?? null
 
@@ -21,29 +26,15 @@ const HomeForYou: FC = () => {
     staleTime: 5 * 60 * 1000,
   })
 
-  // Logged out → the row doesn't exist.
-  if (!user) return null
-
-  if (isLoading) {
-    return (
-      <section className='home-section'>
-        <div className='home-section-header'>
-          <h2>For you</h2>
-          <p>Picked from recipes you’ve saved and cooked</p>
-        </div>
-        <div className='home-trending-grid'>
-          {Array.from({ length: 4 }).map((_, i) => <HomeRecipeCardSkeleton key={i} />)}
-        </div>
-      </section>
-    )
-  }
+  // Logged out, still loading, errored, or not enough signal → the row doesn't
+  // exist yet. No skeleton, no reserved space.
+  if (!user || isLoading || isError) return null
 
   const recipes = data ?? []
-  // Not enough signal, or a failed fetch → hide the whole row.
-  if (isError || recipes.length === 0) return null
+  if (recipes.length === 0) return null
 
   return (
-    <section className='home-section'>
+    <section className='home-section home-section--pop-in'>
       <div className='home-section-header'>
         <h2>For you</h2>
         <p>Picked from recipes you’ve saved and cooked</p>

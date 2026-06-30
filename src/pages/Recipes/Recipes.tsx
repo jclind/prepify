@@ -4,6 +4,8 @@ import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import { TailSpin } from 'react-loader-spinner'
+import { spinnerColor } from 'src/util/loadingStyles'
+import { useDelayedLoading } from 'src/hooks/useDelayedLoading'
 import './Recipes.scss'
 import RecipeCard from 'src/Components/RecipeCard/RecipeCard'
 import SearchRecipesInput from 'src/Components/SearchRecipesInput/SearchRecipesInput'
@@ -166,6 +168,10 @@ const Recipes: FC = () => {
   const activeFilterCount = diets.length + meals.length + (cuisine ? 1 : 0)
   const hasResults = recipeList.length > 0
   const isInitialLoading = !data && !isError
+  // Hold the skeleton grid behind a short delay (docs/design/loading-states.md)
+  // so a cache hit resolves into cards without a one-frame flash. The empty state
+  // is gated on totalResults === 0 (null while loading), so it can't flash here.
+  const showInitialSkeleton = useDelayedLoading(isInitialLoading)
 
   return (
     <>
@@ -302,7 +308,7 @@ const Recipes: FC = () => {
                 level under the page <h1> (visually hidden). */}
             <h2 className='sr-only'>Recipe results</h2>
             <div className='recipes-grid'>
-              {isInitialLoading
+              {showInitialSkeleton
                 ? Array.from({ length: 8 }).map((_, i) => (
                     <RecipeCard key={i} recipe={null} loading={true} />
                   ))
@@ -322,7 +328,7 @@ const Recipes: FC = () => {
                     <TailSpin
                       height='22'
                       width='22'
-                      color='#ff5722'
+                      color={spinnerColor}
                       ariaLabel='loading'
                     />
                   ) : (

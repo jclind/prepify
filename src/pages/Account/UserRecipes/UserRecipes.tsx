@@ -6,7 +6,7 @@ import './UserRecipes.scss'
 import EmptyState from 'src/Components/EmptyState/EmptyState'
 import RecipeAPI from 'src/api/recipes'
 import { RecipeType } from 'types'
-import { useDelayedLoading } from 'src/pages/Account/useDelayedLoading'
+import { useDelayedLoading } from 'src/hooks/useDelayedLoading'
 import UserRecipeThumbnail from './UserRecipeThumbnail'
 
 // Default order: newest first. (The sort control was removed for now; the query
@@ -51,19 +51,18 @@ const UserRecipes: FC = () => {
   const dataHasRecipes = !!data && data.recipes.length > 0
   const showGrid = recipes.length > 0 || isLoading || dataHasRecipes
 
-  // On the first load, hold an empty frame while a fast query settles, so the
-  // skeleton only shows for genuinely slow loads — and the empty state never
-  // flashes before data. Scoped to the initial load so paging never blanks the
-  // already-rendered grid.
-  if (isLoading && !showSkeleton && recipes.length === 0) {
-    return <div className='user-recipes' />
-  }
-
   return (
     <div className='user-recipes'>
       {showGrid ? (
         <>
-          <div className='thumbnails-container'>
+          {/* Render the skeleton thumbnails whenever loading so the grid reserves
+              its height from frame 1; the flash-guard delay only hides them
+              (sk-hold) until it's worth drawing — no blank-then-grow jump. */}
+          <div
+            className={`thumbnails-container ${
+              isLoading && !showSkeleton ? 'sk-hold' : ''
+            }`}
+          >
             {!isLoading ? (
               recipes.map(recipe => (
                 <UserRecipeThumbnail key={recipe._id} recipe={recipe} />
