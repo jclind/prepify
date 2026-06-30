@@ -77,7 +77,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **2-scss** | Design: type scale (~520 `font-size:` literals) | `[ ]` | **`helpers.scss` + ~60 files** ⚠ chokepoint | — |
 | **2-scss** | Design: elevation/shadow re-author (~52 literals) | `[ ]` | **`helpers.scss` + page `.scss`** ⚠ chokepoint | — |
 | **2-scss** | Design: one danger-red token | `[x]` | **`helpers.scss` + SingleRecipe/ReportControl/…** ⚠ chokepoint | #208 |
-| **2-scss** | Design: name the `$admin-*` sub-palette | `[~]` | **`helpers.scss` + Admin/moderation `.scss`** ⚠ chokepoint | `worktree-feat+admin-palette-tokens` (2026-06-30) |
+| **2-scss** | Design: name the `$admin-*` sub-palette | `[P]` | **`helpers.scss` + Admin/moderation `.scss`** ⚠ chokepoint | #214 |
 | **2-scss** | A11y: `$primary-hover` AA-on-hover | `[ ]` | **`helpers.scss`** ⚠ chokepoint | — |
 | **blocked** | A11y: brand-orange contrast (AA) | `[blocked]` | `helpers.scss` `$primary-accessible` — **needs the brand-orange decision** | — |
 | **blocked** | Design: collapse remaining brand shades | `[blocked]` | entangled with the brand-orange recolor above | — |
@@ -383,3 +383,18 @@ narrates the *why*.
   import-wiring already shipped (`style/admin-token-wiring`); remaining = define a documented `$admin-*` token
   group (slate/blue/green/amber/red ramps) + migrate the ~200 loose literals + wire the 5 token-less files.
   Worktree on free ports 3001/4001.
+- _2026-06-30_ — **Design: name the `$admin-*` sub-palette** PR opened (#214, `[~]`→`[P]`) — **third `2-scss`
+  lane to reach PR.** Defined the cool `$admin-*` group in `helpers.scss` (slate spine + interactive + ok/info/
+  warn/danger/automod status groups) and migrated ~200 literals across 12 admin/moderation `.scss`; ~16 near-dupe
+  values normalized onto scale steps. Warm outliers folded to brand `$primary-*` (`$primary-wash`/`-wash-deep`/
+  `-deep`); `rgba(0,0,0,…)` shadows left raw for the elevation track. Documented at `docs/design/admin-palette.md`
+  (third design-system doc). A high-effort code review surfaced one real maintainability finding — the report-type
+  / bug-category pills (`.type-pill`/`.category-pill`) borrowed status tokens (`$admin-ok`/`$admin-warn`) for an
+  axis orthogonal to status — fixed by a dedicated `$admin-cat-green/amber-*` group (value-identical, decoupled).
+  **No pixel regression** proven mechanically: compiled the migrated `.scss` on `development` vs the branch and
+  diffed emitted CSS — every change maps to a documented collapse or is value-identical; line counts identical.
+  Verified live on the **dev** Firebase project (`prepify-dev-58579`) by seeding a throwaway admin account
+  (kept, per owner) and driving `/admin/bug-reports|reports|analytics` headless — repointed pills render the right
+  green/amber, 0 console errors. (Confirmed during this work that the local env now targets dev infra, not prod —
+  recorded in repo `CLAUDE.md`.) Ran safely alongside the in-flight `2-iso` loading-state worktree (zero file
+  overlap). Awaiting CI.
