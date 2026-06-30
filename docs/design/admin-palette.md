@@ -72,6 +72,19 @@ $admin-automod-bg #faf7ff · $admin-automod-border #c7b3e6 · $admin-automod-tex
 $admin-review-bg #fae8ff · $admin-review-text #86198f
 ```
 
+Classification accents — report-type / bug-category chips. A separate axis from
+status (they label *what kind* of item it is, not its state), so the green/amber
+variants get their own tokens rather than borrowing `$admin-ok-*` / `$admin-warn-*`
+— re-tuning a status hue must not silently shift a category chip. They currently
+mirror those hues. The indigo "general" base and purple "review" category
+legitimately reuse `$admin-info-*` / `$admin-review-*` per their documented
+general / special-category meanings.
+
+```scss
+$admin-cat-green-bg #dcfce7 · $admin-cat-green-text #166534  // report .user, bug .idea
+$admin-cat-amber-bg #fef3c7 · $admin-cat-amber-text #92400e  // bug .confusing
+```
+
 ## Notes
 
 - **Normalization happened.** The migration collapsed ~16 near-duplicate values
