@@ -20,7 +20,7 @@
   }
 
   &__caret {
-    font-size: 1.15rem;
+    font-size: s.$text-lg;
     margin-left: -0.1rem;
   }
 }
@@ -62,7 +62,7 @@
 
   .popover-title {
     font-weight: 800;
-    font-size: 0.82rem;
+    font-size: s.$text-sm;
     color: s.$primary-text;
     padding: 0.15rem 0.35rem 0.5rem;
   }
@@ -76,7 +76,7 @@
   }
 
   .popover-empty {
-    font-size: 0.78rem;
+    font-size: s.$text-fine;
     color: s.$secondary-text;
     padding: 0.4rem 0.35rem;
   }
@@ -100,7 +100,7 @@
     border-radius: 9px;
     padding: 0.5rem 0.4rem;
     font-family: inherit;
-    font-size: 0.85rem;
+    font-size: s.$text-sm;
     color: s.$primary-text;
     cursor: pointer;
     text-align: left;
@@ -122,7 +122,7 @@
       border: 2px solid s.$gray-400;
       border-radius: 5px;
       color: #fff;
-      font-size: 0.7rem;
+      font-size: s.$text-caption;
     }
     &.checked .checkbox {
       background: s.$primary;
@@ -147,7 +147,7 @@
       flex: 1;
       min-width: 0;
       font-family: inherit;
-      font-size: 0.82rem;
+      font-size: s.$text-sm;
       padding: 0.45rem 0.55rem;
       border: 1px solid s.$gray-400;
       border-radius: 9px;
@@ -164,7 +164,7 @@
       flex-shrink: 0;
       width: 34px;
       padding: 0;
-      font-size: 1rem;
+      font-size: s.$text-md;
       &:disabled {
         opacity: 0.5;
       }

@@ -93,16 +93,16 @@
     // 1.5rem type, heavier weight, and the top spacing are local.
     button.home-btn {
       padding: 0.75rem 2rem;
-      font-size: 1.5rem;
+      font-size: s.$text-2xl;
       font-weight: 700;
       margin-top: 2rem;
     }
     @include s.below(s.$bp-sm) {
       h1 {
-        font-size: 1.5rem;
+        font-size: s.$text-2xl;
       }
       p.text {
-        font-size: 0.875rem;
+        font-size: s.$text-sm;
       }
     }
   }

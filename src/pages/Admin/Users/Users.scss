@@ -8,7 +8,7 @@
 
     h1 {
       margin: 0;
-      font-size: 1.6rem;
+      font-size: s.$text-2xl;
     }
   }
 
@@ -22,7 +22,7 @@
       border: 1px solid s.$admin-slate-300;
       border-radius: s.$radius-md;
       padding: 0.55rem 0.8rem;
-      font-size: 0.9rem;
+      font-size: s.$text-base;
     }
 
     .clear-btn {
@@ -31,7 +31,7 @@
       color: s.$admin-slate-600;
       border-radius: s.$radius-md;
       padding: 0.55rem 1.1rem;
-      font-size: 0.9rem;
+      font-size: s.$text-base;
       font-weight: 600;
       cursor: pointer;
 
@@ -43,7 +43,7 @@
 
   .users-meta {
     margin: 0 0 0.75rem;
-    font-size: 0.82rem;
+    font-size: s.$text-sm;
     color: s.$admin-slate-400;
   }
 
@@ -60,7 +60,7 @@
       color: s.$admin-slate-700;
       border-radius: s.$radius-md;
       padding: 0.45rem 1rem;
-      font-size: 0.85rem;
+      font-size: s.$text-sm;
       font-weight: 600;
       cursor: pointer;
 
@@ -75,14 +75,14 @@
     }
 
     .page-indicator {
-      font-size: 0.85rem;
+      font-size: s.$text-sm;
       color: s.$admin-slate-500;
     }
   }
 
   .users-state {
     color: s.$admin-slate-500;
-    font-size: 0.95rem;
+    font-size: s.$text-base;
 
     &.error {
       color: s.$admin-danger-text;
@@ -130,7 +130,7 @@
     }
 
     .status-pill {
-      font-size: 0.68rem;
+      font-size: s.$text-caption;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.03em;
@@ -152,13 +152,13 @@
 
     .user-email {
       margin: 0 0 0.3rem;
-      font-size: 0.85rem;
+      font-size: s.$text-sm;
       color: s.$admin-slate-600;
     }
 
     .user-counts {
       margin: 0;
-      font-size: 0.85rem;
+      font-size: s.$text-sm;
       color: s.$admin-slate-500;
 
       .has-reports {
@@ -169,7 +169,7 @@
 
     .user-reason {
       margin: 0.4rem 0 0;
-      font-size: 0.82rem;
+      font-size: s.$text-sm;
       color: s.$admin-slate-700;
       font-style: italic;
     }
@@ -186,14 +186,14 @@
         border: 1px solid s.$admin-slate-300;
         border-radius: s.$radius-sm;
         padding: 0.35rem 0.5rem;
-        font-size: 0.82rem;
+        font-size: s.$text-sm;
       }
 
       .apply-btn {
         cursor: pointer;
         border-radius: s.$radius-sm;
         padding: 0.4rem 0.8rem;
-        font-size: 0.82rem;
+        font-size: s.$text-sm;
         font-weight: 600;
         border: 1px solid s.$admin-chrome;
         background: s.$admin-chrome;

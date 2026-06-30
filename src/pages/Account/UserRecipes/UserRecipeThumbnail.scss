@@ -55,7 +55,7 @@
       min-width: 0;
     }
     .title {
-      font-size: 1.05rem;
+      font-size: s.$text-md;
       font-weight: 700;
       line-height: 1.25;
       text-transform: capitalize;
@@ -70,20 +70,20 @@
       gap: 0.55rem;
       margin-top: 0.3rem;
       .price {
-        font-size: 0.72rem;
+        font-size: s.$text-caption;
         font-weight: 800;
         text-transform: uppercase;
         letter-spacing: 0.04em;
         color: s.$primary;
       }
       .date {
-        font-size: 0.74rem;
+        font-size: s.$text-caption;
         font-weight: 600;
         color: s.$tertiary-text;
       }
     }
     .go {
-      font-size: 1.2rem;
+      font-size: s.$text-xl;
       color: s.$tertiary-text;
       transition: color 0.18s ease, transform 0.18s ease;
     }
@@ -106,14 +106,14 @@
       padding: 0.45rem 0.4rem;
       .ic {
         color: s.$primary;
-        font-size: 0.82rem;
+        font-size: s.$text-sm;
       }
       b {
-        font-size: 1rem;
+        font-size: s.$text-md;
         font-weight: 800;
       }
       small {
-        font-size: 0.6rem;
+        font-size: s.$text-caption;
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.04em;
@@ -133,12 +133,12 @@
       display: inline-flex;
       align-items: center;
       gap: 0.35rem;
-      font-size: 0.82rem;
+      font-size: s.$text-sm;
       font-weight: 700;
       color: s.$secondary-text;
       svg {
         color: s.$secondary;
-        font-size: 1rem;
+        font-size: s.$text-md;
       }
     }
   }

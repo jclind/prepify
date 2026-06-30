@@ -31,13 +31,13 @@
     min-width: 0;
 
     .banner-title {
-      font-size: 0.95rem;
+      font-size: s.$text-base;
       font-weight: 600;
       color: s.$primary-text;
     }
 
     .banner-sub {
-      font-size: 0.85rem;
+      font-size: s.$text-sm;
       color: s.$tertiary-text;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -74,7 +74,7 @@
     // AA-orange CTA on the `.btn` base — kept off the generic `.btn--primary`
     // (whose hover fails white-on-fill AA); these fills are AA-tuned.
     .resume-btn {
-      font-size: 0.85rem;
+      font-size: s.$text-sm;
       font-weight: 600;
       white-space: nowrap;
       padding: 0.4rem 0.9rem;
@@ -97,7 +97,7 @@
     }
 
     .view-all {
-      font-size: 0.85rem;
+      font-size: s.$text-sm;
       color: s.$tertiary-text;
       text-decoration: none;
       white-space: nowrap;
@@ -117,7 +117,7 @@
       cursor: pointer;
       color: s.$tertiary-text;
       padding: 0.25rem;
-      font-size: 1rem;
+      font-size: s.$text-md;
 
       &:hover {
         color: s.$primary-text;

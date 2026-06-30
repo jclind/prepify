@@ -55,7 +55,7 @@
     background: s.$primary-text;
     color: s.$white;
     font-weight: 700;
-    font-size: 1rem;
+    font-size: s.$text-md;
     border-radius: s.$radius-circle;
   }
 
@@ -63,7 +63,7 @@
     flex: 1;
     min-width: 0;
     text-align: start;
-    font-size: 0.95rem;
+    font-size: s.$text-base;
     font-weight: 500;
     line-height: 1.55;
     padding-top: 4px;
@@ -82,7 +82,7 @@
     border: none;
     cursor: pointer;
     .text {
-      font-size: 0.95rem;
+      font-size: s.$text-base;
       font-weight: 700;
       color: s.$primary;
       white-space: nowrap;

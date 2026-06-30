@@ -8,7 +8,7 @@
 // both classes — `bug-report-trigger btn ${variant}`).
 .bug-report-trigger.btn {
   color: s.$tertiary-text;
-  font-size: 0.8rem;
+  font-size: s.$text-fine;
   padding: 0.15rem 0.35rem;
 
   &:hover {
@@ -19,7 +19,7 @@
   &.button {
     border: 1px solid s.$admin-slate-300;
     padding: 0.4rem 0.75rem;
-    font-size: 0.85rem;
+    font-size: s.$text-sm;
   }
 }
 
@@ -28,13 +28,13 @@
 
   .bug-report-modal-title {
     margin: 0 0 0.35rem;
-    font-size: 1.25rem;
+    font-size: s.$text-xl;
   }
 
   .bug-report-modal-sub {
     margin: 0 0 1.25rem;
     color: s.$admin-slate-500;
-    font-size: 0.9rem;
+    font-size: s.$text-base;
   }
 
   .bug-report-identity {
@@ -43,7 +43,7 @@
     background: s.$admin-slate-100;
     border-radius: s.$radius-sm;
     color: s.$admin-slate-700;
-    font-size: 0.85rem;
+    font-size: s.$text-sm;
 
     strong {
       font-weight: 600;
@@ -55,7 +55,7 @@
     flex-direction: column;
     gap: 0.35rem;
     margin-bottom: 1rem;
-    font-size: 0.85rem;
+    font-size: s.$text-sm;
     font-weight: 600;
     color: s.$admin-slate-700;
 
@@ -63,7 +63,7 @@
     textarea,
     input {
       font-weight: 400;
-      font-size: 0.9rem;
+      font-size: s.$text-base;
       padding: 0.55rem 0.65rem;
       border: 1px solid s.$admin-slate-300;
       border-radius: s.$radius-sm;
@@ -87,7 +87,7 @@
     // font-size and the spinner anchor are local.
     button {
       padding: 0.55rem 1rem;
-      font-size: 0.9rem;
+      font-size: s.$text-base;
       position: relative;
     }
 

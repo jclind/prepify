@@ -75,7 +75,7 @@
     .sr-title {
       flex: 1;
       min-width: 0; // allow the title to shrink + ellipsize, leaving room for the date
-      font-size: 0.98rem;
+      font-size: s.$text-md;
       font-weight: 800;
       color: s.$primary-text;
       text-transform: capitalize;
@@ -84,7 +84,7 @@
       text-overflow: ellipsis;
     }
     .sr-date {
-      font-size: 0.74rem;
+      font-size: s.$text-caption;
       font-weight: 700;
       color: s.$tertiary-text;
       white-space: nowrap;
@@ -96,14 +96,14 @@
       gap: 0.45rem;
       margin-top: 0.25rem;
       .sr-num {
-        font-size: 0.78rem;
+        font-size: s.$text-fine;
         font-weight: 800;
         color: s.$primary;
       }
     }
     .sr-text {
       color: s.$secondary-text;
-      font-size: 0.85rem;
+      font-size: s.$text-sm;
       font-weight: 500;
       line-height: 1.45;
       margin-top: 0.4rem;
@@ -114,7 +114,7 @@
       overflow: hidden;
       svg {
         color: s.$secondary;
-        font-size: 0.82rem;
+        font-size: s.$text-sm;
         margin-right: 0.35rem;
         vertical-align: -0.1rem;
       }

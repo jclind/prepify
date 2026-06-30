@@ -13,7 +13,7 @@
 
     h1 {
       margin: 0;
-      font-size: 1.6rem;
+      font-size: s.$text-2xl;
     }
   }
 
@@ -43,7 +43,7 @@
       color: s.$admin-slate-600;
       padding: 0.35rem 0.75rem;
       border-radius: s.$radius-pill;
-      font-size: 0.82rem;
+      font-size: s.$text-sm;
       cursor: pointer;
       transition: all 0.15s;
 
@@ -61,7 +61,7 @@
 
   .analytics-state {
     color: s.$admin-slate-500;
-    font-size: 0.95rem;
+    font-size: s.$text-base;
 
     &.error {
       color: s.$admin-danger-text;
@@ -70,7 +70,7 @@
 
   .section-eyebrow {
     margin: 0 0 0.6rem;
-    font-size: 0.72rem;
+    font-size: s.$text-caption;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -93,7 +93,7 @@
       padding: 1rem 1.1rem;
 
       .stat-value {
-        font-size: 1.9rem;
+        font-size: s.$text-3xl;
         font-weight: 700;
         color: s.$admin-slate-900;
         line-height: 1.1;
@@ -108,7 +108,7 @@
       }
 
       .stat-label {
-        font-size: 0.82rem;
+        font-size: s.$text-sm;
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.03em;
@@ -117,7 +117,7 @@
 
       .stat-sub {
         margin-top: 0.3rem;
-        font-size: 0.78rem;
+        font-size: s.$text-fine;
         color: s.$admin-slate-400;
       }
     }
@@ -137,14 +137,14 @@
 
       h2 {
         margin: 0 0 0.75rem;
-        font-size: 0.92rem;
+        font-size: s.$text-base;
         font-weight: 600;
         color: s.$admin-slate-700;
       }
 
       .trend-note {
         margin: 0.6rem 0 0;
-        font-size: 0.72rem;
+        font-size: s.$text-caption;
         color: s.$admin-slate-400;
       }
     }
@@ -187,7 +187,7 @@
       display: flex;
       justify-content: space-between;
       margin-top: 0.4rem;
-      font-size: 0.72rem;
+      font-size: s.$text-caption;
       color: s.$admin-slate-400;
     }
   }
@@ -200,7 +200,7 @@
 
     h2 {
       margin: 0 0 0.5rem;
-      font-size: 0.92rem;
+      font-size: s.$text-base;
       font-weight: 600;
       color: s.$admin-slate-700;
     }
@@ -252,7 +252,7 @@
 
       .action-line {
         margin: 0;
-        font-size: 0.9rem;
+        font-size: s.$text-base;
         color: s.$admin-slate-700;
 
         .actor,
@@ -268,7 +268,7 @@
 
       .action-time {
         margin: 0.2rem 0 0;
-        font-size: 0.74rem;
+        font-size: s.$text-caption;
         color: s.$admin-slate-400;
       }
     }

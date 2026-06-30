@@ -20,7 +20,7 @@
     display: flex;
     align-items: center;
     gap: 0.6rem;
-    font-size: 0.92rem;
+    font-size: s.$text-base;
     font-weight: 700;
     color: s.$secondary-text;
     .icon {
@@ -49,7 +49,7 @@
       display: inline-flex;
       align-items: center;
       gap: 0.4rem;
-      font-size: 0.85rem;
+      font-size: s.$text-sm;
       font-weight: 600;
       color: s.$secondary-text;
       .icon { height: 17px; width: 17px; color: s.$secondary; }
@@ -62,7 +62,7 @@
   button {
     border: 1.5px solid s.$gray-300;
     padding: 0.5rem 0.95rem;
-    font-size: 0.9rem;
+    font-size: s.$text-base;
     font-weight: 700;
     color: s.$primary-text;
     background: s.$white;
@@ -104,7 +104,7 @@
     padding: 1rem 1.1rem;
     .who {
       flex-basis: 100%;
-      font-size: 0.88rem;
+      font-size: s.$text-sm;
     }
     .btns-container {
       width: 100%;
@@ -126,7 +126,7 @@
         flex: 1;
         min-width: 0;
         justify-content: center;
-        font-size: 0.8rem;
+        font-size: s.$text-fine;
         white-space: nowrap;
         .icon { height: 15px; width: 15px; }
         & + .stat { border-left: 1px solid rgba(s.$primary, 0.15); }
@@ -152,7 +152,7 @@
     align-items: center;
     h4 {
       font-weight: 700;
-      font-size: 1.2rem;
+      font-size: s.$text-xl;
       padding-bottom: 1rem;
     }
     p {
@@ -173,7 +173,7 @@
       .btn {
         width: 180px;
         height: 45px;
-        font-size: 1rem;
+        font-size: s.$text-md;
       }
     }
   }

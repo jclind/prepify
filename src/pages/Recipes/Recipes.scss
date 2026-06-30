@@ -9,14 +9,14 @@
   .recipes-header {
     margin-bottom: 1.4rem;
     h1 {
-      font-size: 1.9rem;
+      font-size: s.$text-3xl;
       font-weight: 800;
       letter-spacing: -0.015em;
     }
     p {
       color: s.$tertiary-text;
       margin-top: 0.2rem;
-      font-size: 0.95rem;
+      font-size: s.$text-base;
     }
   }
 
@@ -43,7 +43,7 @@
         border: 1px solid s.$gray-400;
         border-radius: s.$radius-pill;
         background: s.$white;
-        font-size: 0.95rem;
+        font-size: s.$text-base;
         padding: 0.1rem 6.5rem 0.1rem 2.85rem;
         transition: border-color 0.14s ease, box-shadow 0.14s ease;
         &::placeholder {
@@ -59,7 +59,7 @@
         transform: translateY(-50%);
         right: 6px;
         height: 36px;
-        font-size: 0.9rem;
+        font-size: s.$text-base;
         padding: 0 1.15rem;
         border-radius: s.$radius-pill;
       }
@@ -94,7 +94,7 @@
     color: s.$primary-text;
     font-family: inherit;
     font-weight: 700;
-    font-size: 0.85rem;
+    font-size: s.$text-sm;
     padding: 0 1.1rem;
     box-sizing: border-box;
     min-height: 44px; // compact, matches the search pill (G06 sizing)
@@ -103,7 +103,7 @@
     white-space: nowrap;
     flex-shrink: 0;
     svg {
-      font-size: 1rem;
+      font-size: s.$text-md;
     }
     &:hover {
       background: s.$primary-text;
@@ -118,7 +118,7 @@
       background: s.$primary;
       color: s.$white;
       border-radius: s.$radius-pill;
-      font-size: 0.72rem;
+      font-size: s.$text-caption;
     }
   }
 
@@ -135,7 +135,7 @@
       padding: 0 1rem;
       font-family: inherit;
       font-weight: 700;
-      font-size: 0.85rem;
+      font-size: s.$text-sm;
       color: s.$primary-text;
       background: s.$white;
       border: 1px solid s.$gray-400;
@@ -143,7 +143,7 @@
       cursor: pointer;
       white-space: nowrap;
       .chev {
-        font-size: 1rem;
+        font-size: s.$text-md;
         transition: transform 0.14s ease;
       }
       &:hover {
@@ -173,7 +173,7 @@
         border: none;
         background: none;
         font-family: inherit;
-        font-size: 0.88rem;
+        font-size: s.$text-sm;
         font-weight: 600;
         color: s.$primary-text;
         padding: 0.45rem 0.6rem;
@@ -202,7 +202,7 @@
       background: rgba(255, 87, 34, 0.1);
       color: s.$primary;
       font-weight: 700;
-      font-size: 0.78rem;
+      font-size: s.$text-fine;
       padding: 0.35rem 0.75rem;
       border-radius: s.$radius-pill;
       cursor: pointer;
@@ -213,7 +213,7 @@
       background: none;
       color: s.$secondary-text;
       font-weight: 700;
-      font-size: 0.8rem;
+      font-size: s.$text-fine;
       text-decoration: underline;
       cursor: pointer;
     }
@@ -243,13 +243,13 @@
       border-radius: s.$radius-pill;
       font-family: inherit;
       font-weight: 700;
-      font-size: 0.95rem;
+      font-size: s.$text-base;
       padding: 0.85rem 2.2rem;
       cursor: pointer;
       transition: color 0.16s ease, border-color 0.16s ease,
         transform 0.16s ease, box-shadow 0.16s ease;
       svg {
-        font-size: 1.2rem;
+        font-size: s.$text-xl;
         transition: transform 0.16s ease;
       }
       &:hover:not(:disabled) {
@@ -296,12 +296,12 @@
     &__title {
       margin: 0 0 0.5rem;
       color: s.$primary-text;
-      font-size: 1.4rem;
+      font-size: s.$text-2xl;
       font-weight: 700;
     }
     &__msg {
       margin: 0 0 1.75rem;
-      font-size: 1rem;
+      font-size: s.$text-md;
       line-height: 1.5;
       color: s.$secondary-text;
       strong {
@@ -319,7 +319,7 @@
       border: none;
       cursor: pointer;
       font-weight: 700;
-      font-size: 0.95rem;
+      font-size: s.$text-base;
       padding: 0.7rem 1.6rem;
       border-radius: s.$radius-pill;
       transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
@@ -378,13 +378,13 @@
       padding: 1.25rem 1.5rem;
       border-bottom: 1px solid s.$gray-200;
       h2 {
-        font-size: 1.3rem;
+        font-size: s.$text-xl;
         font-weight: 800;
       }
       button {
         border: none;
         background: none;
-        font-size: 1.1rem;
+        font-size: s.$text-lg;
         cursor: pointer;
         color: s.$secondary-text;
       }
@@ -397,7 +397,7 @@
         margin-top: 1.5rem;
       }
       h3 {
-        font-size: 0.78rem;
+        font-size: s.$text-fine;
         text-transform: uppercase;
         letter-spacing: 0.05em;
         color: s.$tertiary-text;
@@ -444,7 +444,7 @@
     border: 1px solid s.$gray-400;
     background: s.$white;
     color: s.$secondary-text;
-    font-size: 0.82rem;
+    font-size: s.$text-sm;
     font-weight: 600;
     cursor: pointer;
     white-space: nowrap;

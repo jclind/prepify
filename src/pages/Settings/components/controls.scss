@@ -49,12 +49,12 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 0.82rem;
+    font-size: s.$text-sm;
     font-weight: 700;
     color: s.$primary-text;
 
     .sr-counter {
-      font-size: 0.72rem;
+      font-size: s.$text-caption;
       font-weight: 600;
       color: s.$tertiary-text;
     }
@@ -67,7 +67,7 @@
     background: s.$white;
     border: 1px solid #e2dccf;
     border-radius: 11px;
-    font-size: 0.95rem;
+    font-size: s.$text-base;
     font-family: inherit;
     color: s.$primary-text;
     padding: 0.6rem 0.75rem;
@@ -96,7 +96,7 @@
     &.has-prefix .sr-input-prefix {
       position: absolute;
       left: 0.75rem;
-      font-size: 0.95rem;
+      font-size: s.$text-base;
       font-weight: 600;
       color: s.$tertiary-text;
       pointer-events: none;
@@ -107,7 +107,7 @@
   }
 
   .sr-field-hint {
-    font-size: 0.76rem;
+    font-size: s.$text-fine;
     color: s.$tertiary-text;
 
     &.is-success {
@@ -116,7 +116,7 @@
     }
   }
   .sr-field-error {
-    font-size: 0.76rem;
+    font-size: s.$text-fine;
     font-weight: 600;
     color: s.$error-red;
   }
@@ -188,12 +188,12 @@
     gap: 0.15rem;
 
     .sr-row-label {
-      font-size: 0.92rem;
+      font-size: s.$text-base;
       font-weight: 600;
       color: s.$primary-text;
     }
     .sr-row-desc {
-      font-size: 0.8rem;
+      font-size: s.$text-fine;
       color: s.$tertiary-text;
       line-height: 1.45;
     }
@@ -211,7 +211,7 @@
    sizing (and the outline's deliberate teal hover + warm border) stays local. */
 .sr-btn-primary {
   // Compact size parity (base `.btn` is 0.95rem / .6rem 1.3rem).
-  font-size: 0.88rem;
+  font-size: s.$text-sm;
   padding: 0.6rem 1.2rem;
 }
 
@@ -219,7 +219,7 @@
   // Warm border + teal hover are deliberate, not the `.btn--outline` defaults.
   // `:not(:disabled)` matches the variant hover's specificity so the teal wins.
   border-color: #d9d2c6;
-  font-size: 0.85rem;
+  font-size: s.$text-sm;
   padding: 0.45rem 0.95rem;
   &:hover:not(:disabled) {
     border-color: s.$secondary;
@@ -228,18 +228,18 @@
 }
 
 .sr-btn-text {
-  font-size: 0.85rem;
+  font-size: s.$text-sm;
   padding: 0.45rem 0.5rem;
 }
 
 .sr-btn-danger {
   // Colour + hover come from `.btn--danger`; only the compact size is local.
-  font-size: 0.85rem;
+  font-size: s.$text-sm;
   padding: 0.5rem 1rem;
 }
 
 .sr-hint {
-  font-size: 0.74rem;
+  font-size: s.$text-caption;
   color: s.$tertiary-text;
 }
 
@@ -277,7 +277,7 @@
 
   .sr-savebar-msg {
     color: s.$white;
-    font-size: 0.85rem;
+    font-size: s.$text-sm;
     font-weight: 600;
   }
   .sr-savebar-actions {
@@ -311,7 +311,7 @@
     z-index: 50;
 
     .sr-savebar-msg {
-      font-size: 0.78rem;
+      font-size: s.$text-fine;
       line-height: 1.2;
     }
   }

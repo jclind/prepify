@@ -452,6 +452,17 @@ findings table.)*
   annotation on every CI run (seen on PR #204). Bump both to the next major (`@v5`, or whatever is current
   when picked up) to clear the warning before the forced fallback is removed. Low-risk maintenance; not a
   1.0 blocker. *(surfaced 2026-06-29 in CI logs during the `RecipeFormInput`→`FormInput` track.)*
+- `[ ]` **Colour tokens → CSS custom properties when theming lands** — Jesse wants user-selectable
+  themes (dark mode + other palettes) **post-1.0**. That's a *colour* concern: themes swap colours, not
+  sizes — so the design tokens that need to become runtime-swappable are the colour groups (`$primary*`,
+  `$gray-*`, `$secondary*`, `$alert-*`, `$admin-*`), not the type/space/radius scales. Plan: migrate the
+  colour tokens from SCSS variables to CSS custom properties in `:root` (with a `[data-theme]` /
+  `.dark` override block per theme), keeping the SCSS-var scales (`$text-*`, `$radius-*`, `$bp-*`) as-is.
+  Entangled with the **brand-orange decision** (the blocked a11y lane) — the accessible-vs-vivid orange
+  call should be made *before* baking colours into a theme system. The `rem`-based type scale already
+  covers a "large text"/density mode via the root font-size, independent of this. *(surfaced 2026-06-30
+  during the type-scale sweep, when CSS-custom-properties-vs-SCSS was weighed for `$text-*` and correctly
+  deferred to the colour layer; see `docs/design/type-scale.md` rule 4.)* **(post-1.0; not a blocker)**
 - `[ ]` **Migrate off Edamam (nutrition source)** — Jesse wants to stop using Edamam for nutrition data
   eventually (filed 2026-06-25). Current state: nutrition is server-proxied via `POST /api/nutrition/details`
   (`server/routes/nutrition.js`, PR #182), so swapping the provider is now an isolated, server-only change —

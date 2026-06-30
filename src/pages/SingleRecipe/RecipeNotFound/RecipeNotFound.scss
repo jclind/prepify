@@ -38,7 +38,7 @@
   }
 
   h1 {
-    font-size: 1.85rem;
+    font-size: s.$text-3xl;
     font-weight: 700;
     letter-spacing: -0.02em;
     margin: 0 0 0.6rem;
@@ -61,7 +61,7 @@
       justify-content: center;
       gap: 0.4rem;
       margin-bottom: 0.6rem;
-      font-size: 0.75rem;
+      font-size: s.$text-caption;
       font-weight: 700;
       letter-spacing: 0.06em;
       text-transform: uppercase;
@@ -81,7 +81,7 @@
       background: s.$primary;
       color: s.$white;
       font-weight: 700;
-      font-size: 0.95rem;
+      font-size: s.$text-base;
       text-decoration: none;
       transition: background 0.12s ease;
       &:hover { background: s.$primary-hover; }
@@ -91,7 +91,7 @@
 
   .rnf-help {
     margin: 1.6rem 0 0;
-    font-size: 0.85rem;
+    font-size: s.$text-sm;
     color: s.$tertiary-text;
     .contact-link {
       color: s.$secondary;

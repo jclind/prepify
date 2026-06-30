@@ -12,7 +12,7 @@
   background: s.$admin-automod-bg;
 
   .arc-label {
-    font-size: 0.7rem;
+    font-size: s.$text-caption;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.04em;
@@ -23,7 +23,7 @@
   }
 
   .arc-pill {
-    font-size: 0.68rem;
+    font-size: s.$text-caption;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.03em;
@@ -62,7 +62,7 @@
     cursor: pointer;
     border-radius: s.$radius-sm;
     padding: 0.4rem 0.85rem;
-    font-size: 0.82rem;
+    font-size: s.$text-sm;
     font-weight: 600;
     border: 1px solid s.$admin-slate-300;
     background: s.$white;

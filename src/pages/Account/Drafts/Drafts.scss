@@ -60,12 +60,12 @@
       border-radius: 13px;
       background: #fdf3ec;
       color: s.$primary;
-      font-size: 1.25rem;
+      font-size: s.$text-xl;
     }
     .title {
       flex: 1;
       min-width: 0;
-      font-size: 1.08rem;
+      font-size: s.$text-lg;
       font-weight: 700;
       color: s.$primary-text;
       margin: 0;
@@ -84,7 +84,7 @@
       display: flex;
       flex-direction: column;
       gap: 0.4rem;
-      font-size: 0.84rem;
+      font-size: s.$text-sm;
       color: s.$tertiary-text;
 
       // The ingredient/step summary is the primary fact — give it a touch more
@@ -98,9 +98,9 @@
         display: inline-flex;
         align-items: center;
         gap: 0.3rem;
-        font-size: 0.78rem;
+        font-size: s.$text-fine;
         svg {
-          font-size: 0.8rem;
+          font-size: s.$text-fine;
         }
       }
     }
@@ -127,13 +127,13 @@
         // width (that intrinsic min is what forced the overflow); with flex-wrap
         // it shares the row when it fits and drops Delete below when it doesn't.
         min-width: 0;
-        font-size: 0.9rem;
+        font-size: s.$text-base;
         font-weight: 700;
         padding: 0.55rem 1rem;
         background: s.$primary-accessible;
         color: #fff;
         svg {
-          font-size: 1rem;
+          font-size: s.$text-md;
         }
         &:hover {
           background: #f4501e;
@@ -145,13 +145,13 @@
       // tinted hover don't match `.btn--danger`'s fill, so kept bespoke.
       .del {
         flex-shrink: 0;
-        font-size: 0.82rem;
+        font-size: s.$text-sm;
         font-weight: 700;
         padding: 0.5rem 0.85rem;
         border: 1px solid #ecd9d9;
         color: s.$secondary-text;
         svg {
-          font-size: 1rem;
+          font-size: s.$text-md;
         }
         &:hover:not(:disabled) {
           color: s.$error-red;

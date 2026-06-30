@@ -25,7 +25,7 @@
       border-radius: s.$border-radius;
       height: 50px;
       width: 100%;
-      font-size: 1.1rem;
+      font-size: s.$text-lg;
       padding: 0.1rem 2.75rem;
       padding-right: 7.25rem;
       color: s.$primary-text;
@@ -37,7 +37,7 @@
     .search-recipes-btn {
       position: absolute;
       right: 5px;
-      font-size: 1.1rem;
+      font-size: s.$text-lg;
       height: 80%;
       padding: 0 1.25rem;
     }
@@ -46,7 +46,7 @@
         padding-right: 6.25rem;
       }
       .search-recipes-btn {
-        font-size: 1rem;
+        font-size: s.$text-md;
         padding: 0 1rem;
       }
     }
@@ -148,7 +148,7 @@
         min-width: 0;
       }
       &__title {
-        font-size: 0.98rem;
+        font-size: s.$text-md;
         font-weight: 600;
         text-transform: capitalize;
         color: s.$primary-text;
@@ -165,7 +165,7 @@
         display: inline-flex;
         align-items: center;
         gap: 0.25rem;
-        font-size: 0.82rem;
+        font-size: s.$text-sm;
         font-weight: 500;
         white-space: nowrap;
         color: s.$secondary-text;
@@ -184,7 +184,7 @@
         max-width: 9rem;
       }
       &__tag {
-        font-size: 0.62rem;
+        font-size: s.$text-caption;
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.02em;
@@ -233,7 +233,7 @@
     .ac-corrected {
       margin: 0;
       padding: 0.55rem 0.85rem;
-      font-size: 0.8rem;
+      font-size: s.$text-fine;
       font-weight: 600;
       color: s.$secondary-text;
       background: s.$primary-background;
@@ -252,7 +252,7 @@
         color: s.$primary-text;
       }
       &__hint {
-        font-size: 0.85rem;
+        font-size: s.$text-sm;
         color: s.$tertiary-text;
       }
     }
@@ -270,7 +270,7 @@
       border-top: 1px solid s.$gray-200;
       background: s.$white;
       color: s.$primary;
-      font-size: 0.9rem;
+      font-size: s.$text-base;
       font-weight: 700;
       cursor: pointer;
       transition: background 0.1s ease;

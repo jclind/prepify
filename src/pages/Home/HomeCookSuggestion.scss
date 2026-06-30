@@ -23,7 +23,7 @@
     height: 30px;
     background: rgba(255, 255, 255, 0.92);
     color: s.$primary-text;
-    font-size: 1.1rem;
+    font-size: s.$text-lg;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     &:hover { background: #fff; }
   }
@@ -51,7 +51,7 @@
       background: rgba(255, 255, 255, 0.95);
       color: s.$primary;
       font-weight: 800;
-      font-size: 0.78rem;
+      font-size: s.$text-fine;
       padding: 0.28rem 0.6rem;
       border-radius: s.$radius-pill;
       box-shadow: s.$shadow-chip;
@@ -75,7 +75,7 @@
 
   .body { padding: 0.9rem 1rem 1rem; }
   h3 {
-    font-size: 1.1rem;
+    font-size: s.$text-lg;
     font-weight: 600;
     line-height: 1.3;
     text-transform: capitalize;
@@ -95,7 +95,7 @@
     align-items: center;
     gap: 0.7rem;
     color: #6b7480;
-    font-size: 0.85rem;
+    font-size: s.$text-sm;
     margin-bottom: 0.95rem;
     overflow: hidden;
     span { display: inline-flex; align-items: center; gap: 0.25rem; white-space: nowrap; }
@@ -109,11 +109,11 @@
   .primary,
   .ghost {
     flex: 1;
-    font-size: 0.9rem;
+    font-size: s.$text-base;
     padding: 0.6rem 1rem;
     text-decoration: none;
     transition: filter 0.12s ease, background 0.12s ease;
-    svg { font-size: 1.1rem; }
+    svg { font-size: s.$text-lg; }
   }
   .primary { background: s.$primary-accessible; color: #fff; &:hover { filter: brightness(1.06); } }
   .ghost {

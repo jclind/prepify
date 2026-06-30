@@ -26,7 +26,7 @@
 
     .sr-subhead {
       margin: 0;
-      font-size: 0.95rem;
+      font-size: s.$text-base;
       font-weight: 700;
       color: s.$primary-text;
     }
@@ -50,7 +50,7 @@
       align-items: center;
       gap: 0.3rem;
       margin-top: 1.7rem;
-      font-size: 0.8rem;
+      font-size: s.$text-fine;
       font-weight: 600;
       white-space: nowrap;
 
@@ -77,7 +77,7 @@
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
-    font-size: 0.82rem;
+    font-size: s.$text-sm;
     font-weight: 600;
     color: s.$secondary-text;
 
@@ -123,7 +123,7 @@
     color: s.$error-red;
   }
   .sr-row-desc {
-    font-size: 0.8rem;
+    font-size: s.$text-fine;
     color: s.$secondary-text;
     line-height: 1.45;
     max-width: 46ch;
@@ -171,7 +171,7 @@
 
     h3 {
       margin: 0;
-      font-size: 1.15rem;
+      font-size: s.$text-lg;
       font-weight: 800;
       color: s.$primary-text;
     }
@@ -190,7 +190,7 @@
 
   .sr-modal-body {
     margin: 0;
-    font-size: 0.88rem;
+    font-size: s.$text-sm;
     line-height: 1.5;
     color: s.$secondary-text;
   }

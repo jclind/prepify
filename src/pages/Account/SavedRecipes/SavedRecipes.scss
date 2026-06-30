@@ -59,7 +59,7 @@
         object-fit: cover;
       }
       &.empty svg {
-        font-size: 1.3rem;
+        font-size: s.$text-xl;
       }
       // Loading placeholder fills the fixed 88px thumb box.
       .cc-thumb-sk {
@@ -78,7 +78,7 @@
         background: rgba(s.$primary, 0.1);
         color: s.$primary;
         svg {
-          font-size: 1.6rem;
+          font-size: s.$text-2xl;
         }
       }
     }
@@ -94,7 +94,7 @@
     }
     &__name {
       font-weight: 800;
-      font-size: 0.85rem;
+      font-size: s.$text-sm;
       line-height: 1.25;
       display: -webkit-box;
       -webkit-line-clamp: 2;
@@ -104,7 +104,7 @@
     &__count {
       color: s.$tertiary-text;
       font-weight: 700;
-      font-size: 0.72rem;
+      font-size: s.$text-caption;
     }
   }
 
@@ -117,7 +117,7 @@
     border-color: s.$primary;
     color: s.$primary;
     font-weight: 800;
-    font-size: 0.85rem;
+    font-size: s.$text-sm;
 
     &:hover {
       background: s.$gray-50;
@@ -136,7 +136,7 @@
         width: 100%;
         box-sizing: border-box;
         font-family: inherit;
-        font-size: 0.85rem;
+        font-size: s.$text-sm;
         padding: 0.45rem 0.6rem;
         border: 1px solid s.$gray-400;
         border-radius: s.$radius-md;
@@ -149,7 +149,7 @@
       // `.btn .btn--primary`; only the heavier weight + compact size are local.
       .new-submit {
         font-weight: 800;
-        font-size: 0.82rem;
+        font-size: s.$text-sm;
         padding: 0.4rem 0.7rem;
         &:disabled {
           opacity: 0.5;
@@ -178,7 +178,7 @@
       left: 0.95rem;
       top: 50%;
       transform: translateY(-50%);
-      font-size: 1.05rem;
+      font-size: s.$text-md;
       color: s.$tertiary-text;
       pointer-events: none;
     }
@@ -187,7 +187,7 @@
       height: 44px;
       box-sizing: border-box;
       font-family: inherit;
-      font-size: 0.9rem;
+      font-size: s.$text-base;
       padding: 0 2.6rem;
       border: 1px solid s.$gray-400;
       border-radius: s.$radius-pill;
@@ -228,7 +228,7 @@
       padding: 0 1rem;
       font-family: inherit;
       font-weight: 700;
-      font-size: 0.85rem;
+      font-size: s.$text-sm;
       color: s.$primary-text;
       background: #fff;
       border: 1px solid s.$gray-400;
@@ -236,7 +236,7 @@
       cursor: pointer;
       white-space: nowrap;
       .chev {
-        font-size: 1rem;
+        font-size: s.$text-md;
         transition: transform 0.14s ease;
       }
       &:hover {
@@ -266,7 +266,7 @@
         border: none;
         background: none;
         font-family: inherit;
-        font-size: 0.88rem;
+        font-size: s.$text-sm;
         font-weight: 600;
         color: s.$primary-text;
         padding: 0.45rem 0.6rem;
@@ -294,7 +294,7 @@
 
     h2 {
       margin: 0;
-      font-size: 1.25rem;
+      font-size: s.$text-xl;
     }
   }
   .saved-collection-actions {
@@ -305,7 +305,7 @@
   // `.btn .btn--outline` base; the compact size + secondary-text resting colour
   // are local, and the `.ghost`/`.danger` modifiers stay as local tweaks.
   .btn-small {
-    font-size: 0.82rem;
+    font-size: s.$text-sm;
     padding: 0.35rem 0.6rem;
     color: s.$secondary-text;
     &.ghost {
@@ -327,7 +327,7 @@
     gap: 0.4rem;
     input {
       font-family: inherit;
-      font-size: 1rem;
+      font-size: s.$text-md;
       padding: 0.4rem 0.6rem;
       border: 1px solid s.$gray-400;
       border-radius: s.$radius-md;

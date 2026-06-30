@@ -1,3 +1,5 @@
+@use '../../../helpers.scss' as s;
+
 .item {
   position: relative;
   justify-content: center;
@@ -48,7 +50,7 @@
     background: none;
     padding-right: 2rem;
     .text {
-      font-size: 1rem;
+      font-size: s.$text-md;
       font-weight: 700;
       text-align: start;
       transition: all 0.1s linear;

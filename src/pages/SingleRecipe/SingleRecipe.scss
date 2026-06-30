@@ -30,10 +30,10 @@ $soft-shadow: rgba(48, 56, 65, 0.05) 0px 6px 20px;
       align-items: center;
       gap: 0.3rem;
       font-weight: 700;
-      font-size: 0.9rem;
+      font-size: s.$text-base;
       color: s.$secondary-text;
       text-decoration: none;
-      svg { font-size: 1.2rem; }
+      svg { font-size: s.$text-xl; }
       &:hover { color: s.$primary; }
       &:focus-visible { @include s.outline(); }
     }
@@ -85,7 +85,7 @@ $soft-shadow: rgba(48, 56, 65, 0.05) 0px 6px 20px;
     gap: 1.35rem;
     padding: 0.5rem 0;
     h1 {
-      font-size: 2.3rem;
+      font-size: s.$text-4xl;
       font-weight: 700;
       letter-spacing: -0.02em;
       line-height: 1.18;
@@ -96,13 +96,13 @@ $soft-shadow: rgba(48, 56, 65, 0.05) 0px 6px 20px;
       .title-skeleton { display: block; }
     }
     .eyebrow {
-      font-size: 0.75rem;
+      font-size: s.$text-caption;
       font-weight: 700;
       letter-spacing: 0.15em;
       text-transform: uppercase;
       color: s.$secondary-accessible;
     }
-    .description { color: s.$secondary-text; line-height: 1.7; font-size: 1rem; }
+    .description { color: s.$secondary-text; line-height: 1.7; font-size: s.$text-md; }
     // Compact rating echo by the title (see SingleRecipe.tsx). Pulled snug under
     // the heading rather than treated as its own stacked block.
     .hero-rating {
@@ -110,9 +110,9 @@ $soft-shadow: rgba(48, 56, 65, 0.05) 0px 6px 20px;
       align-items: center;
       gap: 0.3rem;
       margin-top: -0.6rem;
-      font-size: 0.95rem;
+      font-size: s.$text-base;
       color: s.$primary-text;
-      .hr-star { color: #f5a623; font-size: 1rem; }
+      .hr-star { color: #f5a623; font-size: s.$text-md; }
       .hr-val { font-weight: 700; }
       .hr-count { color: s.$tertiary-text; font-weight: 500; }
     }
@@ -121,7 +121,7 @@ $soft-shadow: rgba(48, 56, 65, 0.05) 0px 6px 20px;
       display: flex;
       align-items: center;
       gap: 0.5rem;
-      font-size: 0.85rem;
+      font-size: s.$text-sm;
       color: s.$tertiary-text;
       strong { color: s.$primary-text; font-weight: 700; }
       .avatar {
@@ -133,7 +133,7 @@ $soft-shadow: rgba(48, 56, 65, 0.05) 0px 6px 20px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-size: 0.85rem;
+        font-size: s.$text-sm;
         font-weight: 800;
         flex-shrink: 0;
       }
@@ -168,13 +168,13 @@ $soft-shadow: rgba(48, 56, 65, 0.05) 0px 6px 20px;
       & + .m-item { border-left: 1px solid s.$gray-300; }
     }
     .m-top { display: inline-flex; align-items: baseline; gap: 0.45rem; }
-    .m-ic { align-self: center; color: s.$primary; font-size: 1.1rem; }
-    .m-v { font-weight: 800; font-size: 1.1rem; }
+    .m-ic { align-self: center; color: s.$primary; font-size: s.$text-lg; }
+    .m-v { font-weight: 800; font-size: s.$text-lg; }
     // cost tile: the per-serving price is a headline number, so color it brand
     // primary to pull the eye — this is the "make pricing prominent" beat
     .m-cost .m-v { color: s.$primary-accessible; }
     .m-l {
-      font-size: 0.72rem;
+      font-size: s.$text-caption;
       color: s.$tertiary-text;
       font-weight: 700;
       text-transform: uppercase;
@@ -243,7 +243,7 @@ $soft-shadow: rgba(48, 56, 65, 0.05) 0px 6px 20px;
     box-shadow: $soft-shadow;
     padding: 1.5rem 1.75rem;
     @include s.below(s.$bp-lg) { padding: 1.25rem 1rem; }
-    > h2 { font-size: 1.35rem; font-weight: 700; margin-bottom: 1.1rem; }
+    > h2 { font-size: s.$text-xl; font-weight: 700; margin-bottom: 1.1rem; }
   }
 
   // ── ingredients (two-up grid, square thumb, left check, servings pill) ──────
@@ -291,7 +291,7 @@ $soft-shadow: rgba(48, 56, 65, 0.05) 0px 6px 20px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.05rem;
+        font-size: s.$text-md;
         color: s.$primary-text;
         &:hover { background: s.$primary; color: s.$white; }
       }
@@ -303,12 +303,12 @@ $soft-shadow: rgba(48, 56, 65, 0.05) 0px 6px 20px;
         background: none;
         text-align: center;
         font-weight: 700;
-        font-size: 0.9rem;
+        font-size: s.$text-base;
         outline: none;
         color: s.$primary-text;
         padding: 0;
       }
-      .serv-unit { font-size: 0.85rem; color: s.$secondary-text; margin: 0 0.35rem 0 0.05rem; }
+      .serv-unit { font-size: s.$text-sm; color: s.$secondary-text; margin: 0 0.35rem 0 0.05rem; }
     }
     .ing-list {
       list-style: none;
@@ -327,7 +327,7 @@ $soft-shadow: rgba(48, 56, 65, 0.05) 0px 6px 20px;
         padding: 0.5rem 0.4rem;
         border-radius: s.$radius-lg;
         cursor: pointer;
-        font-size: 0.94rem;
+        font-size: s.$text-base;
         &:hover { background: s.$primary-background; }
         &:focus-visible { @include s.outline(); }
         // qty + name flow as one inline text block, so a long name wraps
@@ -342,7 +342,7 @@ $soft-shadow: rgba(48, 56, 65, 0.05) 0px 6px 20px;
           align-items: center;
           justify-content: center;
           color: transparent;
-          font-size: 1.2rem;
+          font-size: s.$text-xl;
         }
         .thumb {
           width: 40px;
@@ -383,7 +383,7 @@ $soft-shadow: rgba(48, 56, 65, 0.05) 0px 6px 20px;
     }
     .price-line {
       margin-top: 1rem;
-      font-size: 0.88rem;
+      font-size: s.$text-sm;
       color: s.$tertiary-text;
       strong { color: s.$primary-accessible; }
     }
@@ -438,7 +438,7 @@ $soft-shadow: rgba(48, 56, 65, 0.05) 0px 6px 20px;
       color: s.$secondary;
       padding: 0.35rem 0.85rem;
       border-radius: s.$radius-pill;
-      font-size: 0.85rem;
+      font-size: s.$text-sm;
       font-weight: 600;
       text-decoration: none;
       &:hover { background: rgba(s.$secondary, 0.2); }
@@ -458,7 +458,7 @@ $soft-shadow: rgba(48, 56, 65, 0.05) 0px 6px 20px;
       height: auto;
       padding: 0.75rem 1.5rem;
       font-weight: 700;
-      font-size: 0.95rem;
+      font-size: s.$text-base;
       background: rgba(s.$secondary, 0.12);
       color: s.$secondary;
       border: 1.5px solid rgba(s.$secondary, 0.4);
@@ -473,9 +473,9 @@ $soft-shadow: rgba(48, 56, 65, 0.05) 0px 6px 20px;
       align-items: baseline;
       gap: 0.6rem;
       margin-bottom: 1rem;
-      h3 { font-size: 1.35rem; font-weight: 700; }
+      h3 { font-size: s.$text-xl; font-weight: 700; }
       .nd-per {
-        font-size: 0.72rem;
+        font-size: s.$text-caption;
         color: s.$tertiary-text;
         font-weight: 700;
         text-transform: uppercase;
@@ -490,11 +490,11 @@ $soft-shadow: rgba(48, 56, 65, 0.05) 0px 6px 20px;
       @include s.below(700px) { grid-template-columns: 1fr; }
     }
     .nd-cal {
-      font-size: 0.95rem;
+      font-size: s.$text-base;
       color: s.$secondary-text;
       margin-bottom: 1rem;
-      strong { font-size: 1.6rem; color: s.$primary-text; }
-      &.solo { margin-bottom: 0; strong { font-size: 2rem; } }
+      strong { font-size: s.$text-2xl; color: s.$primary-text; }
+      &.solo { margin-bottom: 0; strong { font-size: s.$text-3xl; } }
     }
     .nd-facts-only { max-width: 420px; }
     .nd-macros { display: flex; flex-direction: column; gap: 0.65rem; }
@@ -502,7 +502,7 @@ $soft-shadow: rgba(48, 56, 65, 0.05) 0px 6px 20px;
       .nd-macro-top {
         display: flex;
         justify-content: space-between;
-        font-size: 0.85rem;
+        font-size: s.$text-sm;
         font-weight: 700;
         margin-bottom: 0.3rem;
         span:last-child { color: s.$secondary; }
@@ -516,10 +516,10 @@ $soft-shadow: rgba(48, 56, 65, 0.05) 0px 6px 20px;
       td {
         padding: 0.5rem 0;
         border-bottom: 1px solid s.$gray-200;
-        font-size: 0.9rem;
+        font-size: s.$text-base;
         &:last-child { text-align: right; font-weight: 700; }
       }
-      tr:first-child td { font-weight: 800; font-size: 0.95rem; }
+      tr:first-child td { font-weight: 800; font-size: s.$text-base; }
       tr:last-child td { border-bottom: none; }
     }
   }
@@ -541,14 +541,14 @@ $soft-shadow: rgba(48, 56, 65, 0.05) 0px 6px 20px;
       gap: 1.5rem;
       flex-wrap: wrap;
       margin-bottom: 1.5rem;
-      .title { width: auto; text-align: left; font-size: 1.45rem; font-weight: 700; margin: 0; }
+      .title { width: auto; text-align: left; font-size: s.$text-2xl; font-weight: 700; margin: 0; }
       .rr-avg {
         display: flex;
         align-items: center;
         gap: 0.85rem;
-        .big { font-size: 2.4rem; font-weight: 800; line-height: 1; color: s.$primary; }
+        .big { font-size: s.$text-4xl; font-weight: 800; line-height: 1; color: s.$primary; }
         .stars { display: flex; align-items: center; }
-        .count { font-size: 0.8rem; color: s.$tertiary-text; font-weight: 600; }
+        .count { font-size: s.$text-fine; color: s.$tertiary-text; font-weight: 600; }
       }
     }
 
@@ -594,13 +594,13 @@ $soft-shadow: rgba(48, 56, 65, 0.05) 0px 6px 20px;
         width: auto;
         max-width: none;
         .user-rate-container { width: auto; height: auto !important; }
-        .rate-heading { font-size: 0.95rem; font-weight: 700; color: s.$primary-text; }
+        .rate-heading { font-size: s.$text-base; font-weight: 700; color: s.$primary-text; }
         .rate-active {
           display: flex;
           align-items: center;
           flex-wrap: wrap;
           gap: 0.4rem 0.6rem;
-          .rate-hint { font-size: 0.8rem; color: s.$tertiary-text; font-weight: 700; }
+          .rate-hint { font-size: s.$text-fine; color: s.$tertiary-text; font-weight: 700; }
         }
         .signin-rate {
           display: inline-flex;
@@ -609,7 +609,7 @@ $soft-shadow: rgba(48, 56, 65, 0.05) 0px 6px 20px;
           gap: 0.4rem 0.6rem;
           text-decoration: none;
           .signin-label {
-            font-size: 0.85rem;
+            font-size: s.$text-sm;
             font-weight: 700;
             // keep the pill on one line; flex-wrap drops it below the stars when
             // space is tight rather than collapsing it into a circle
@@ -633,7 +633,7 @@ $soft-shadow: rgba(48, 56, 65, 0.05) 0px 6px 20px;
       background: linear-gradient(135deg, rgba(s.$secondary, 0.1), rgba(s.$primary, 0.06));
       border: 1.5px solid $soft-border;
       border-radius: $soft-radius;
-      font-size: 0.92rem;
+      font-size: s.$text-base;
       font-weight: 600;
       color: s.$secondary-text;
     }
@@ -654,7 +654,7 @@ $soft-shadow: rgba(48, 56, 65, 0.05) 0px 6px 20px;
       border: 1px solid $soft-border;
       border-radius: s.$radius-xl;
       margin-bottom: 1rem;
-      .body .text { color: s.$secondary-text; line-height: 1.6; font-size: 0.92rem; }
+      .body .text { color: s.$secondary-text; line-height: 1.6; font-size: s.$text-base; }
       // hide the empty options bar on others' reviews (the beta like/dislike was
       // removed); owners still get their edit/delete row
       .review-options:empty { display: none; }
@@ -680,13 +680,13 @@ $soft-shadow: rgba(48, 56, 65, 0.05) 0px 6px 20px;
       border: 1px solid $soft-border;
       border-radius: $soft-radius;
       .write-review-title {
-        font-size: 0.95rem;
+        font-size: s.$text-base;
         font-weight: 700;
         color: s.$primary-text;
         margin-bottom: 0.6rem;
         span { color: s.$tertiary-text; font-weight: 600; }
       }
-      .error { color: s.$error-red; font-size: 0.85rem; margin-bottom: 0.6rem; }
+      .error { color: s.$error-red; font-size: s.$text-sm; margin-bottom: 0.6rem; }
       .review-text-area {
         width: 100%;
         min-height: 72px;
@@ -695,7 +695,7 @@ $soft-shadow: rgba(48, 56, 65, 0.05) 0px 6px 20px;
         border-radius: s.$radius-lg;
         padding: 0.65rem 0.8rem;
         font-family: inherit;
-        font-size: 0.9rem;
+        font-size: s.$text-base;
         color: s.$primary-text;
         box-sizing: border-box;
         &:focus { outline: none; border-color: s.$primary; }
@@ -704,7 +704,7 @@ $soft-shadow: rgba(48, 56, 65, 0.05) 0px 6px 20px;
       .submit-review-btn {
         margin-top: 0.85rem;
         font-weight: 700;
-        font-size: 0.9rem;
+        font-size: s.$text-base;
       }
     }
   }
@@ -720,9 +720,9 @@ $soft-shadow: rgba(48, 56, 65, 0.05) 0px 6px 20px;
     margin-top: 2.5rem;
     padding-top: 1.5rem;
     border-top: 1px solid s.$gray-200;
-    font-size: 0.85rem;
+    font-size: s.$text-sm;
     color: s.$tertiary-text;
-    .report-control-trigger { font-size: 0.85rem; font-weight: 700; }
+    .report-control-trigger { font-size: s.$text-sm; font-weight: 700; }
   }
 
   // ── responsive ──────────────────────────────────────────────────────────────
@@ -734,7 +734,7 @@ $soft-shadow: rgba(48, 56, 65, 0.05) 0px 6px 20px;
   }
 
   @include s.below(s.$bp-lg) {
-    .hero-text h1 { font-size: 1.9rem; }
+    .hero-text h1 { font-size: s.$text-3xl; }
 
     // ── action bar: stack the meta over a full-width, equal 3-up button row ──
     .action-bar {
@@ -766,9 +766,9 @@ $soft-shadow: rgba(48, 56, 65, 0.05) 0px 6px 20px;
         gap: 0.12rem;
         padding: 0;
         .m-top { display: inline-flex; align-items: center; gap: 0.3rem; }
-        .m-ic { font-size: 0.9rem; }
-        .m-v { font-size: 1rem; white-space: nowrap; }
-        .m-l { text-align: center; font-size: 0.62rem; }
+        .m-ic { font-size: s.$text-base; }
+        .m-v { font-size: s.$text-md; white-space: nowrap; }
+        .m-l { text-align: center; font-size: s.$text-caption; }
         & + .m-item { border-left: 1px solid s.$gray-300; }
       }
     }
@@ -794,7 +794,7 @@ $soft-shadow: rgba(48, 56, 65, 0.05) 0px 6px 20px;
       grid-template-columns: 18px 30px 1fr;
       gap: 0.45rem;
       padding: 0.45rem 0.1rem;
-      font-size: 0.92rem;
+      font-size: s.$text-base;
       .box { width: 18px; height: 18px; }
       .thumb { width: 30px; height: 30px; img { width: 24px; height: 24px; } }
     }
@@ -804,7 +804,7 @@ $soft-shadow: rgba(48, 56, 65, 0.05) 0px 6px 20px;
       grid-template-columns: 26px 1fr;
       gap: 0.7rem;
       margin-bottom: 1.25rem;
-      .num { width: 26px; height: 26px; font-size: 0.8rem; }
+      .num { width: 26px; height: 26px; font-size: s.$text-fine; }
       p { line-height: 1.6; }
     }
   }
