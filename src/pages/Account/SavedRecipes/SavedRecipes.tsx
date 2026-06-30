@@ -239,7 +239,7 @@ const SavedRecipes: FC = () => {
             />
             <button
               type='submit'
-              className='new-submit'
+              className='btn btn--primary new-submit'
               disabled={creating || !newName.trim()}
             >
               <PlusIcon /> Create
@@ -274,7 +274,7 @@ const SavedRecipes: FC = () => {
           {searchInput && (
             <button
               type='button'
-              className='saved-search__clear'
+              className='btn btn--icon saved-search__clear'
               aria-label='Clear search'
               onClick={() => onSearchChange('')}
             >
@@ -307,10 +307,10 @@ const SavedRecipes: FC = () => {
               maxLength={50}
               onChange={e => setRenameValue(e.target.value)}
             />
-            <button type='submit' className='btn-small'>Save</button>
+            <button type='submit' className='btn btn--outline btn-small'>Save</button>
             <button
               type='button'
-              className='btn-small ghost'
+              className='btn btn--outline btn-small ghost'
               onClick={() => setRenaming(false)}
             >
               <CloseIcon />
@@ -322,7 +322,7 @@ const SavedRecipes: FC = () => {
             {activeCollection && (
               <div className='saved-collection-actions'>
                 <button
-                  className='btn-small ghost'
+                  className='btn btn--outline btn-small ghost'
                   onClick={() => {
                     setRenameValue(activeCollection.name)
                     setRenaming(true)
@@ -332,7 +332,7 @@ const SavedRecipes: FC = () => {
                   <EditIcon /> Rename
                 </button>
                 <button
-                  className='btn-small ghost danger'
+                  className='btn btn--outline btn-small ghost danger'
                   onClick={handleDelete}
                   aria-label='Delete collection'
                 >
@@ -362,7 +362,7 @@ const SavedRecipes: FC = () => {
                 ))}
           </div>
           {isMoreRecipes && recipes.length > 0 ? (
-            <button className='load-more-btn btn' onClick={handleLoadMoreRecipes}>
+            <button className='load-more-btn' onClick={handleLoadMoreRecipes}>
               Load More Recipes
             </button>
           ) : null}

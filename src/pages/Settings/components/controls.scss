@@ -206,83 +206,36 @@
   }
 }
 
-/* Buttons */
+/* Buttons — migrated onto the canonical `.btn` system (src/index.scss).
+   Each keeps `.btn .btn--*` at the call site; only intentionally-different
+   sizing (and the outline's deliberate teal hover + warm border) stays local. */
 .sr-btn-primary {
-  border: none;
-  background: s.$primary;
-  color: s.$white;
-  font-family: inherit;
+  // Compact size parity (base `.btn` is 0.95rem / .6rem 1.3rem).
   font-size: 0.88rem;
-  font-weight: 600;
-  white-space: nowrap;
   padding: 0.6rem 1.2rem;
-  border-radius: s.$radius-lg;
-  cursor: pointer;
-  transition: opacity 0.12s ease;
-  &:hover {
-    opacity: 0.88;
-  }
-  &:disabled {
-    opacity: 0.6;
-    cursor: default;
-  }
 }
 
 .sr-btn-outline {
-  border: 1px solid #d9d2c6;
-  background: s.$white;
-  color: s.$primary-text;
-  font-family: inherit;
+  // Warm border + teal hover are deliberate, not the `.btn--outline` defaults.
+  // `:not(:disabled)` matches the variant hover's specificity so the teal wins.
+  border-color: #d9d2c6;
   font-size: 0.85rem;
-  font-weight: 600;
   padding: 0.45rem 0.95rem;
-  border-radius: s.$radius-lg;
-  cursor: pointer;
-  transition: all 0.12s ease;
-  &:hover {
+  &:hover:not(:disabled) {
     border-color: s.$secondary;
     color: #057780;
-  }
-  &:disabled {
-    opacity: 0.6;
-    cursor: default;
   }
 }
 
 .sr-btn-text {
-  border: none;
-  background: none;
-  font-family: inherit;
   font-size: 0.85rem;
-  font-weight: 600;
-  color: s.$secondary-text;
-  cursor: pointer;
   padding: 0.45rem 0.5rem;
-  border-radius: s.$radius-md;
-  &:hover {
-    color: s.$primary-text;
-  }
 }
 
 .sr-btn-danger {
-  border: 1px solid s.$error-red;
-  background: s.$white;
-  color: s.$error-red;
-  font-family: inherit;
+  // Colour + hover come from `.btn--danger`; only the compact size is local.
   font-size: 0.85rem;
-  font-weight: 600;
   padding: 0.5rem 1rem;
-  border-radius: s.$radius-lg;
-  cursor: pointer;
-  transition: all 0.12s ease;
-  &:hover {
-    background: s.$error-red;
-    color: s.$white;
-  }
-  &:disabled {
-    opacity: 0.6;
-    cursor: default;
-  }
 }
 
 .sr-hint {

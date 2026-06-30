@@ -1,14 +1,15 @@
 @use '../../helpers.scss' as s;
 
-.bug-report-trigger {
-  background: none;
-  border: none;
-  cursor: pointer;
+// Adopts the `.btn` base for layout/reset/pill, but keeps its bespoke tertiary
+// text + blue (#2563eb) hover — these aren't the `--ghost` palette, so no colour
+// variant is applied (base only, like the KEEP-BESPOKE buttons). Selector is
+// `.bug-report-trigger.btn` (0,2,0) so its compact padding reliably outranks the
+// base `.btn` (0,1,0) regardless of stylesheet order (the element always carries
+// both classes — `bug-report-trigger btn ${variant}`).
+.bug-report-trigger.btn {
   color: s.$tertiary-text;
   font-size: 0.8rem;
   padding: 0.15rem 0.35rem;
-  border-radius: s.$radius-xs;
-  transition: color 0.15s, background 0.15s;
 
   &:hover {
     color: #2563eb;
@@ -82,32 +83,29 @@
     gap: 0.6rem;
     margin-top: 0.5rem;
 
+    // Both buttons ride the `.btn` base; only the modal's tighter padding /
+    // font-size and the spinner anchor are local.
     button {
-      cursor: pointer;
-      border-radius: s.$radius-sm;
       padding: 0.55rem 1rem;
       font-size: 0.9rem;
-      font-weight: 600;
       position: relative;
     }
 
+    // Bespoke grey secondary (not the white `--outline` palette) — base only.
     .bug-report-cancel-btn {
       background: #f1f2f4;
       border: 1px solid #d8dbe0;
       color: #374151;
     }
 
+    // KEEP BESPOKE: non-token green fill on the `.btn` base, no colour variant.
     .bug-report-submit-btn {
       background: #16a34a;
       border: 1px solid #16a34a;
       color: #fff;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
 
       &:disabled {
         opacity: 0.7;
-        cursor: default;
       }
     }
 

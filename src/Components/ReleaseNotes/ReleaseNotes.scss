@@ -8,6 +8,8 @@
   overflow-y: auto;
   max-width: 900px;
 
+  // `.btn .btn--icon`; only its absolute placement + icon size are local.
+  // (Focus ring is global on `button`.)
   .close-modal {
     top: 1rem;
     right: 1rem;
@@ -15,9 +17,6 @@
     .icon {
       height: 30px;
       width: 30px;
-    }
-    &:focus-visible {
-      @include s.outline();
     }
   }
   .release-notes-content-container {
@@ -90,14 +89,13 @@
     }
   }
 
+  // `.btn .btn--ghost` (secondary-text comes from the variant); keeps the
+  // underlined text-link treatment + left alignment + spacing.
   .all-release-notes-btn {
-    font-weight: 600;
     font-size: 1rem;
     text-decoration: underline;
     text-align: left;
-    margin: 0;
-    color: s.$secondary-text;
-    margin-top: 1rem;
+    margin: 1rem 0 0;
   }
 
   .link {

@@ -124,7 +124,7 @@ const PublicProfile: FC = () => {
         <div className='pp-notfound'>
           <h1>Profile not found</h1>
           <p>We couldn’t find a cook with the username “{username}”.</p>
-          <Link to='/recipes' className='pp-browse-btn'>
+          <Link to='/recipes' className='pp-browse-btn btn btn--primary'>
             Browse recipes
           </Link>
         </div>
@@ -191,7 +191,7 @@ const PublicProfile: FC = () => {
           <h1 className='pp-handle'>@{profile.username}</h1>
           <button
             type='button'
-            className='pp-share'
+            className='pp-share btn btn--icon btn--ghost'
             onClick={handleShare}
             aria-label='Share this profile'
             title='Share this profile'
@@ -320,7 +320,7 @@ const PublicProfile: FC = () => {
               <div className='pp-more'>
                 <button
                   type='button'
-                  className='load-more-btn btn'
+                  className='load-more-btn'
                   onClick={() => setExtraPage(p => p + 1)}
                   disabled={isLoadingMore}
                 >
