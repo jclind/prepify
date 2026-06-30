@@ -85,7 +85,7 @@
       font-size: 0.95rem;
     }
     // :not(:disabled) to outrank `.btn--ghost:hover:not(:disabled)` (0,3,0) so
-    // the brand-teal hover survives the ghost variant.
+    // the brand-orange hover survives the ghost variant.
     &:hover:not(:disabled) {
       color: s.$primary;
       background: rgba(s.$primary, 0.08);
