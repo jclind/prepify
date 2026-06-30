@@ -205,7 +205,12 @@ The triage date stamped on items is the date they were filed here, not when they
   imports it; the only importer is its own test `src/test/RecipeThumbnail.test.tsx`. So the user-facing glyph
   no longer renders anywhere, and the real fix is to DELETE `RecipeThumbnail` + its test rather than patch it
   — see the unify item below.)** Low severity. *(surfaced 2026-06-23 in the track 3b code review.)*
-- `[ ]` **Consolidate the bespoke pill buttons into a real `.btn` system** — `.btn` in `src/index.scss`
+- `[x]` **Consolidate the bespoke pill buttons into a real `.btn` system** — **done (PR #210, merged 2026-06-30):**
+  promoted `.btn` to a full pill base + 5 BEM colour variants (`--primary`/`--outline`/`--ghost`/`--danger`/
+  `--danger-solid`) + sizes + `--icon`, migrated ~70 bespoke buttons across ~35 files, documented at
+  `docs/design/button-system.md`. Two review passes fixed specificity/leak regressions (review-edit Submit
+  grey-on-orange, `load-more-btn` base leak, lost filter-hover transitions). *(original problem, for context:)*
+  `.btn` in `src/index.scss`
   only strips defaults (no visual style), so nearly every page re-implements its own orange/ghost pill:
   `home-btn` (`404.scss`), `pp-browse-btn` (`PublicProfile.scss`), `about-btn`/`about-btn-primary`/
   `about-btn-ghost` (`About.scss`), `search-recipes-btn`, the Recipes toolbar pills, HomeCookSuggestion
