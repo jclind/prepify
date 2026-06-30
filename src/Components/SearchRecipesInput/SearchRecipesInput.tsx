@@ -8,9 +8,9 @@ import RecipeAPI from 'src/api/recipes'
 import { useDebounce } from 'src/hooks/useDebounce'
 import { RecipeSearchResponseType } from 'types'
 import Skeleton from 'react-loading-skeleton'
+import { skeletonBase as skeletonColor } from 'src/util/loadingStyles'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 
-const skeletonColor = '#d6d6d6'
 
 function useOutsideAlerter(
   ref: React.RefObject<HTMLFormElement | null>,

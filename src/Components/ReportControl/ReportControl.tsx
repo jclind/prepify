@@ -169,7 +169,7 @@ const ReportControl: FC<ReportControlProps> = ({ target, variant = 'link' }) => 
           Submit report
           {submitting && (
             <span className='report-btn-spinner'>
-              <TailSpin height='18' width='18' color='#fff' ariaLabel='loading' />
+              <TailSpin height='18' width='18' color='white' ariaLabel='loading' />
             </span>
           )}
         </button>

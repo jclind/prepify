@@ -18,11 +18,11 @@ const CardSkeleton: FC = () => (
       <Skeleton baseColor={skeletonColor} height='100%' style={{ aspectRatio: '4 / 3', display: 'block' }} />
     </div>
     <div className='body'>
-      <h3><Skeleton baseColor={skeletonColor} width='75%' /></h3>
-      <div className='meta'><Skeleton baseColor={skeletonColor} width={170} /></div>
+      <h3><Skeleton inline baseColor={skeletonColor} width='75%' /></h3>
+      <div className='meta'><Skeleton inline baseColor={skeletonColor} width={170} /></div>
       <div className='actions'>
-        <span className='sk-btn'><Skeleton baseColor={skeletonColor} height={38} borderRadius={999} /></span>
-        <span className='sk-btn'><Skeleton baseColor={skeletonColor} height={38} borderRadius={999} /></span>
+        <span className='sk-btn'><Skeleton inline baseColor={skeletonColor} height={38} borderRadius={999} /></span>
+        <span className='sk-btn'><Skeleton inline baseColor={skeletonColor} height={38} borderRadius={999} /></span>
       </div>
     </div>
   </>

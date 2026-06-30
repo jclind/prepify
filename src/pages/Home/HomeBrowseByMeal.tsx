@@ -6,6 +6,7 @@ import Skeleton from 'react-loading-skeleton'
 import 'react-loading-skeleton/dist/skeleton.css'
 import RecipeAPI from 'src/api/recipes'
 import { RecipeType } from 'types'
+import { useDelayedLoading } from 'src/hooks/useDelayedLoading'
 import { skeletonColor, fmtPrice, ratingLabel } from './homeFormat'
 
 const MEALS = ['Breakfast', 'Lunch', 'Dinner'] as const
@@ -33,12 +34,19 @@ const MealRow: FC<{ recipe: RecipeType }> = ({ recipe }) => (
   </li>
 )
 
+// Mirror the real MealRow: the thumb is sized by CSS (so it tracks the
+// responsive 56→44px image) and the text block reserves two title lines + the
+// sub line, so a column of skeletons is the same height as a column of loaded
+// rows (whose titles clamp to two lines) — no jump on swap.
 const SkeletonRow: FC = () => (
-  <li className='skeleton-row'>
-    <Skeleton baseColor={skeletonColor} width={56} height={56} borderRadius={10} />
+  <li className='skeleton-row' aria-hidden='true'>
+    <span className='sk-thumb'>
+      <Skeleton baseColor={skeletonColor} height='100%' />
+    </span>
     <div className='info'>
-      <Skeleton baseColor={skeletonColor} height={14} width='90%' />
-      <Skeleton baseColor={skeletonColor} height={11} width='60%' />
+      <Skeleton inline baseColor={skeletonColor} height={12} width='95%' />
+      <Skeleton inline baseColor={skeletonColor} height={12} width='65%' />
+      <Skeleton inline baseColor={skeletonColor} height={9} width='45%' />
     </div>
   </li>
 )
@@ -73,6 +81,12 @@ const HomeBrowseByMeal: FC = () => {
     return { meal, picks, isLoading: results[i].isLoading, isError: results[i].isError }
   })
 
+  // Per docs/design/loading-states.md: one shared delay gate for the column
+  // skeletons so a cache hit fills the rows without a flash. `isLoading` still
+  // gates each column (so the "no recipes" row can't flash), the delay only
+  // decides skeleton-vs-blank within a still-loading column.
+  const showSkeleton = useDelayedLoading(results.some(r => r.isLoading))
+
   return (
     <div className='home-meal-cols'>
       {columns.map(({ meal, picks, isLoading, isError }) => (
@@ -81,8 +95,11 @@ const HomeBrowseByMeal: FC = () => {
             <h3>{meal}</h3>
             <Link to='/recipes' className='meal-see-all'>See all</Link>
           </div>
-          <ul>
+          <ul className={(isLoading) && !showSkeleton ? 'sk-hold' : ''}>
             {isLoading ? (
+              // Always render the skeleton rows while loading so the column holds
+              // its height from frame 1; the flash-guard delay only hides them
+              // (visibility) until it's worth drawing — no grow-on-appear jump.
               Array.from({ length: PER_COL }).map((_, k) => <SkeletonRow key={k} />)
             ) : isError ? (
               <li className='empty-row'>Couldn’t load recipes.</li>

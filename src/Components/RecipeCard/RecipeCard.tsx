@@ -2,6 +2,7 @@ import { ClockIcon, StarFilledIcon } from 'src/Components/icons'
 import React, { FC, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Skeleton from 'react-loading-skeleton'
+import { skeletonBase as skeletonColor } from 'src/util/loadingStyles'
 import 'react-loading-skeleton/dist/skeleton.css'
 import RecipePlaceholder from 'src/Components/RecipePlaceholder/RecipePlaceholder'
 import SaveControl from 'src/Components/AddToCollection/SaveControl'
@@ -11,7 +12,6 @@ import { minToHrMin } from 'src/util/minToHrMin'
 import { RecipeType } from 'types'
 import './RecipeCard.scss'
 
-const skeletonColor = '#e6e6e6'
 
 /**
  * Filled star + numeric rating + count (compact, single-star). `rateValue` /
@@ -51,6 +51,9 @@ type RecipeCardProps = {
 const RecipeCard: FC<RecipeCardProps> = ({ recipe, loading, onMutated }) => {
   // Hooks must run before the loading early-return below.
   const [imgError, setImgError] = useState(false)
+  // Hold a skeleton over the thumb until the image actually decodes (onLoad), so
+  // a card never shows an empty box painting in top-down. Reset if the URL changes.
+  const [imgLoaded, setImgLoaded] = useState(false)
 
   if (loading || !recipe) {
     return (
@@ -58,10 +61,18 @@ const RecipeCard: FC<RecipeCardProps> = ({ recipe, loading, onMutated }) => {
         <div className='recipe-card__thumb'>
           <Skeleton className='recipe-card__img-skeleton' baseColor={skeletonColor} />
         </div>
+        {/* Mirror the real body: cuisine eyebrow, a 2-line title (the card reserves
+            two lines so 1- and 2-line titles are the same height), and a meta row
+            pinned to the bottom — so the skeleton→content swap doesn't reflow. */}
         <div className='recipe-card__body'>
-          <Skeleton width={70} height={10} baseColor={skeletonColor} />
-          <Skeleton height={20} baseColor={skeletonColor} style={{ margin: '0.4rem 0' }} />
-          <Skeleton width='60%' height={14} baseColor={skeletonColor} />
+          <Skeleton inline width={70} height={10} baseColor={skeletonColor} />
+          <div className='recipe-card__title recipe-card__title--skeleton'>
+            <Skeleton height={15} count={2} baseColor={skeletonColor} />
+          </div>
+          <div className='recipe-card__meta'>
+            <Skeleton inline width={70} height={14} baseColor={skeletonColor} />
+            <Skeleton inline width={48} height={14} baseColor={skeletonColor} />
+          </div>
         </div>
       </article>
     )
@@ -88,24 +99,47 @@ const RecipeCard: FC<RecipeCardProps> = ({ recipe, loading, onMutated }) => {
       <Link to={`/recipes/${recipe._id}`} className='recipe-card__link'>
         <div className='recipe-card__thumb'>
           {recipe.recipeImage && !imgError ? (
-            <img
-              src={recipe.recipeImage}
-              alt=''
-              loading='lazy'
-              decoding='async'
-              width={300}
-              height={225}
-              onError={() => setImgError(true)}
-            />
+            <>
+              <img
+                src={recipe.recipeImage}
+                alt=''
+                loading='lazy'
+                decoding='async'
+                width={300}
+                height={225}
+                // A cached image can finish decoding before React attaches
+                // onLoad, so the event never fires and the skeleton sticks over a
+                // decoded image. The ref re-checks `complete` on every commit to
+                // catch that case (and recover if onLoad was missed).
+                ref={node => {
+                  if (node?.complete && node.naturalWidth > 0 && !imgLoaded) {
+                    setImgLoaded(true)
+                  }
+                }}
+                className={imgLoaded ? 'is-loaded' : ''}
+                onLoad={() => setImgLoaded(true)}
+                onError={() => setImgError(true)}
+              />
+              {!imgLoaded && (
+                <Skeleton
+                  className='recipe-card__img-skeleton'
+                  baseColor={skeletonColor}
+                />
+              )}
+            </>
           ) : (
             <RecipePlaceholder />
           )}
           {price && <span className='recipe-card__price'>{price}</span>}
         </div>
         <div className='recipe-card__body'>
-          {recipe.cuisine && (
-            <span className='recipe-card__cuisine'>{recipe.cuisine}</span>
-          )}
+          {/* Always render the eyebrow (nbsp fallback when there's no cuisine) so
+              the line is reserved — the skeleton always draws an eyebrow bar, and
+              a cuisine-less card would otherwise be one line shorter than its
+              skeleton and shift the grid up on swap. */}
+          <span className='recipe-card__cuisine'>
+            {recipe.cuisine || ' '}
+          </span>
           <h3 className='recipe-card__title'>{recipe.title}</h3>
           <div className='recipe-card__meta'>
             <span className='recipe-card__time'>

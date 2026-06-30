@@ -11,7 +11,7 @@ import RecipeAPI from 'src/api/recipes'
 import CollectionsAPI from 'src/api/collections'
 import AuthAPI from 'src/api/auth'
 import { RecipeType } from 'types'
-import { useDelayedLoading } from 'src/pages/Account/useDelayedLoading'
+import { useDelayedLoading } from 'src/hooks/useDelayedLoading'
 import { useDebounce } from 'src/hooks/useDebounce'
 import { invalidateSavedCaches } from 'src/util/invalidateSavedCaches'
 import CollectionCard from './CollectionCard'
@@ -58,7 +58,7 @@ const SavedRecipes: FC = () => {
     setCurrPage(0)
   }, [query])
 
-  const { data: collections = [] } = useQuery({
+  const { data: collections = [], isLoading: collectionsLoading } = useQuery({
     queryKey: ['collections'],
     queryFn: CollectionsAPI.list,
   })
@@ -94,6 +94,10 @@ const SavedRecipes: FC = () => {
       ),
   })
   const showSkeleton = useDelayedLoading(isLoading)
+  // Collections load on their own query; reserve their row with skeleton tiles
+  // (delay-gated, same as the grid) so collections don't pop in and shove the
+  // grid down.
+  const showCollSkeleton = useDelayedLoading(collectionsLoading)
 
   useEffect(() => {
     if (!data) return
@@ -184,14 +188,6 @@ const SavedRecipes: FC = () => {
     !activeCollection &&
     collections.length === 0
 
-  // On the first load, hold an empty frame while a fast query settles so the
-  // skeleton only shows for genuinely slow loads and the empty state never
-  // flashes before data. Scoped to the initial load so paging never blanks the
-  // already-rendered list.
-  if (isLoading && !showSkeleton && recipes.length === 0) {
-    return <div className='saved-recipes' />
-  }
-
   return (
     <div className='saved-recipes'>
       {!blankSlate && (
@@ -201,22 +197,34 @@ const SavedRecipes: FC = () => {
         <CollectionCard
           label='All saved'
           count={savedTotal}
+          countLoading={savedTotal === null}
           cover={null}
           icon={<GridIcon />}
           variant='all'
           active={activeCollectionId === null}
           onClick={() => selectCollection(null)}
         />
-        {collections.map(c => (
-          <CollectionCard
-            key={c.id}
-            label={c.name}
-            count={c.count}
-            cover={c.coverImage}
-            active={activeCollectionId === c.id}
-            onClick={() => selectCollection(c.id)}
-          />
-        ))}
+        {collectionsLoading
+          ? // Reserve the tile slots for the whole load (so "New" doesn't get
+            // nudged when they appear); sk-hold holds them invisible until the
+            // flash-guard delay elapses — same reserve pattern as the grid.
+            Array.from({ length: 3 }).map((_, i) => (
+              <CollectionCard
+                key={i}
+                loading
+                className={showCollSkeleton ? '' : 'sk-hold'}
+              />
+            ))
+          : collections.map(c => (
+              <CollectionCard
+                key={c.id}
+                label={c.name}
+                count={c.count}
+                cover={c.coverImage}
+                active={activeCollectionId === c.id}
+                onClick={() => selectCollection(c.id)}
+              />
+            ))}
         {creatingNew ? (
           <form
             className='collection-card collection-card--new is-form'
@@ -347,7 +355,14 @@ const SavedRecipes: FC = () => {
 
       {recipes.length > 0 || isLoading ? (
         <>
-          <div className='saved-grid'>
+          {/* Render the skeleton cards whenever loading so the grid reserves its
+              height from frame 1; the flash-guard delay only hides them (sk-hold)
+              until it's worth drawing — no blank-then-grow jump. */}
+          <div
+            className={`saved-grid ${
+              isLoading && !showSkeleton ? 'sk-hold' : ''
+            }`}
+          >
             {!isLoading
               ? recipes.map(recipe => (
                   <RecipeCard

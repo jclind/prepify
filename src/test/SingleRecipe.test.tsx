@@ -114,10 +114,12 @@ describe('SingleRecipe page', () => {
     localStorage.clear()
   })
 
-  it('shows loading state in header while API call is pending', () => {
+  it('shows loading state in header while API call is pending', async () => {
     mockGetRecipe.mockReturnValue(new Promise(() => {}))
     renderSingleRecipe()
-    expect(screen.getByTestId('header-loading')).toBeInTheDocument()
+    // The body skeletons are delay-gated (useDelayedLoading); on a pending load
+    // the header skeleton appears once the delay elapses.
+    expect(await screen.findByTestId('header-loading')).toBeInTheDocument()
     expect(screen.queryByTestId('ratings-section')).toBeNull()
   })
 

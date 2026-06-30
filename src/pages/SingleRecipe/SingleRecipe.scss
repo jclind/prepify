@@ -22,6 +22,10 @@ $danger: #d23f31;
     align-items: center;
     justify-content: space-between;
     margin-bottom: 1.25rem;
+    // Reserve the row height so the page doesn't drop ~11px when the report
+    // kebab (taller than the back link) appears on load — it's absent during
+    // loading and for owners, so without this the whole page shifts down.
+    min-height: 30px;
     .sr-back {
       display: inline-flex;
       align-items: center;
@@ -49,15 +53,32 @@ $danger: #d23f31;
     }
   }
   .hero-img {
+    // Own the 4/3 box on the container (align-self:start so the grid's
+    // align-items:stretch doesn't pull it to the taller text column). Both the
+    // skeleton and the image fill it absolutely, so they're pixel-identical and
+    // the swap can't shift layout.
+    align-self: start;
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    min-height: 280px;
     img, .img-skeleton {
+      position: absolute;
+      inset: 0;
       width: 100%;
-      aspect-ratio: 4 / 3;
+      height: 100%;
       object-fit: cover;
       border-radius: $soft-radius;
-      box-shadow: rgba(48, 56, 65, 0.1) 0px 12px 28px;
       display: block;
     }
-    .img-skeleton { height: 100%; min-height: 280px; }
+    img {
+      box-shadow: rgba(48, 56, 65, 0.1) 0px 12px 28px;
+      // Held at 0 until the image actually decodes (onLoad), then faded in over
+      // the skeleton — no top-down paint over an empty box.
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      &.is-loaded { opacity: 1; }
+    }
   }
   .hero-text {
     display: flex;
@@ -71,6 +92,9 @@ $danger: #d23f31;
       line-height: 1.18;
       text-transform: capitalize;
       margin: 0;
+      // Reserve one title line while loading so the skeleton-to-title swap holds
+      // height (the skeleton inherits the h1 font, so it's one line tall).
+      .title-skeleton { display: block; }
     }
     .eyebrow {
       font-size: 0.75rem;
@@ -163,6 +187,14 @@ $danger: #d23f31;
     gap: 0.6rem;
     flex-wrap: wrap;
     .save-recipe, .add-rating, .print-recipe { display: inline-flex; }
+    // Loading stand-ins for the Save/Rate/Print buttons — same row, same height.
+    // The class is on the react-loading-skeleton *wrapper* (the flex item); keep
+    // its line-box collapsed so its height equals the skeleton's (43px), not 62px.
+    .action-btn-skeleton {
+      display: inline-flex;
+      line-height: 0;
+      .react-loading-skeleton { display: block; }
+    }
     .save-recipe-btn, .add-rating-btn, .print-recipe-btn {
       position: relative;
       display: inline-flex;
@@ -237,7 +269,19 @@ $danger: #d23f31;
       align-items: center;
       gap: 0.5rem 1rem;
       margin-bottom: 1.1rem;
+      // Reserve the pill's height so the heading row doesn't grow when the real
+      // stepper replaces the skeleton (the pill is taller than the bare <h2>).
+      min-height: 38px;
       h2 { margin-bottom: 0; }
+      // Skeleton stand-in for the servings stepper. Class is on the
+      // react-loading-skeleton wrapper; keep its line-box collapsed so the
+      // wrapper height equals the pill (38px), not 57px (the trailing-<br> trap),
+      // which would otherwise grow .sec-head and shove the <h2> down.
+      .servings-pill-skeleton {
+        display: inline-flex;
+        line-height: 0;
+        .react-loading-skeleton { display: block; }
+      }
     }
     .servings-pill {
       display: inline-flex;
@@ -339,7 +383,15 @@ $danger: #d23f31;
         color: s.$primary;
         margin: 0.5rem 0 0.1rem;
       }
-      .skeleton-row { display: block; padding: 0.35rem 0; }
+      // Skeleton rows reuse the real `.ing` grid; the thumb placeholder fills the
+      // bordered 40px tile (overflow-clipped, slightly inset corners) so it reads
+      // as a loading product image and is centred by construction.
+      .ing .thumb .thumb-skeleton.react-loading-skeleton {
+        display: block;
+        width: 100%;
+        height: 100%;
+        border-radius: 8px;
+      }
     }
     .price-line {
       margin-top: 1rem;
@@ -513,6 +565,20 @@ $danger: #d23f31;
         .stars { display: flex; align-items: center; }
         .count { font-size: 0.8rem; color: s.$tertiary-text; font-weight: 600; }
       }
+    }
+
+    // Skeleton average block: collapse the stacked bars' line boxes so they stay
+    // under the 38px big-number height, and pin the header to the loaded 38px so
+    // the title shares the exact baseline (no couple-px nudge on swap).
+    // `&.rr-skeleton` (not `.rr-skeleton`): the skeleton root carries BOTH
+    // `recipe-ratings` and `rr-skeleton` on the same element, so it must combine,
+    // not descend.
+    &.rr-skeleton .rr-header { height: 38px; }
+    &.rr-skeleton .rr-avg-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      line-height: 0;
     }
 
     .ratings-reviews-container { gap: 0.5rem; }
@@ -732,6 +798,12 @@ $danger: #d23f31;
       width: 100%;
       gap: 0.5rem;
       .save-recipe, .add-rating, .print-recipe { flex: 1 1 0; min-width: 0; }
+      // Skeleton buttons stretch to fill the row like the real ones do here.
+      .action-btn-skeleton {
+        flex: 1 1 0;
+        min-width: 0;
+        .react-loading-skeleton { width: 100% !important; }
+      }
       .save-recipe-btn, .add-rating-btn, .print-recipe-btn {
         width: 100%;
         justify-content: center;

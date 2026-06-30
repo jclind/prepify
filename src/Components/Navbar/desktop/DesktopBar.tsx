@@ -2,11 +2,11 @@ import { BookmarkIcon, PlusCircleIcon, RecipesMenuIcon } from 'src/Components/ic
 import React, { FC } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import Skeleton from 'react-loading-skeleton'
+import { skeletonBase as skeletonColor } from 'src/util/loadingStyles'
 import SearchRecipesInput from 'src/Components/SearchRecipesInput/SearchRecipesInput'
 import DesktopAccountMenu from './DesktopAccountMenu'
 import { DesktopNavProps } from './types'
 
-const skeletonColor = '#d6d6d6'
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   isActive ? 'dnav__link is-active' : 'dnav__link'

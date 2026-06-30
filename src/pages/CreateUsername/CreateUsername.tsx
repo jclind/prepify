@@ -4,6 +4,7 @@ import { Helmet } from 'react-helmet-async'
 import '../../Components/Form/FormStyles.scss'
 import './CreateUsername.scss'
 import { TailSpin } from 'react-loader-spinner'
+import { spinnerColor } from 'src/util/loadingStyles'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import UsernameInput from 'src/Components/Form/UsernameInput'
@@ -111,7 +112,7 @@ const CreateUsername: FC = () => {
     return (
       <div className='create-username-page form-format'>
         <div className='login-form-container loading-state'>
-          <TailSpin height='50' width='50' color='gray' ariaLabel='loading' />
+          <TailSpin height='50' width='50' color={spinnerColor} ariaLabel='loading' />
         </div>
       </div>
     )
