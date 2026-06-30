@@ -178,13 +178,13 @@
         color: s.$admin-info-text;
 
         &.idea {
-          background: s.$admin-ok-bg;
-          color: s.$admin-ok-text;
+          background: s.$admin-cat-green-bg;
+          color: s.$admin-cat-green-text;
         }
 
         &.confusing {
-          background: s.$admin-warn-bg;
-          color: s.$admin-warn-text-dk;
+          background: s.$admin-cat-amber-bg;
+          color: s.$admin-cat-amber-text;
         }
 
         &.other {

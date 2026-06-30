@@ -124,6 +124,17 @@ $admin-automod-text: #6b21a8;
 $admin-automod-label-bg: #ede4fb;
 $admin-review-bg: #fae8ff; // "review"-type report pill
 $admin-review-text: #86198f;
+// Classification accents — report-type / bug-category chips (the green/amber
+// variants). These label *what kind* of item it is, an axis orthogonal to
+// status, so they're kept separate from the $admin-ok / $admin-warn status
+// hues: re-tuning a status colour must not silently shift a category chip.
+// They currently mirror those hues. (The indigo "general" base and purple
+// "review" category legitimately reuse $admin-info / $admin-review per their
+// documented general / special-category meanings.)
+$admin-cat-green-bg: #dcfce7;
+$admin-cat-green-text: #166534;
+$admin-cat-amber-bg: #fef3c7;
+$admin-cat-amber-text: #92400e;
 
 // Navbar
 $nav-height: 6.25rem;
