@@ -2,6 +2,7 @@ import React, { FC } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import RecipeAPI from 'src/api/recipes'
 import { RecipeType } from 'types'
+import { useDelayedLoading } from 'src/hooks/useDelayedLoading'
 import { HomeRecipeCard, HomeRecipeCardSkeleton } from './HomeRecipeCard'
 
 const HomeTrending: FC = () => {
@@ -14,11 +15,22 @@ const HomeTrending: FC = () => {
   })
 
   const recipes = data ?? []
+  // Per docs/design/loading-states.md: gate the skeleton behind a short delay so
+  // a cache hit / fast fetch resolves into cards without a one-frame flash. The
+  // isLoading branch still owns this frame (so the empty state can't flash either
+  // — it just holds a blank grid until the skeleton is due).
+  const showSkeleton = useDelayedLoading(isLoading)
 
   if (isLoading) {
+    // Render the skeleton cards immediately so the grid reserves its full height
+    // from the first frame (no jump when the cards/real content arrive). The
+    // delay gate only controls *visibility* — during the brief flash-guard window
+    // the cards are `visibility:hidden` (space held, nothing drawn), then revealed.
     return (
-      <div className='home-trending-grid'>
-        {Array.from({ length: 4 }).map((_, i) => <HomeRecipeCardSkeleton key={i} />)}
+      <div className={`home-trending-grid ${showSkeleton ? '' : 'sk-hold'}`}>
+        {Array.from({ length: 4 }).map((_, i) => (
+          <HomeRecipeCardSkeleton key={i} />
+        ))}
       </div>
     )
   }

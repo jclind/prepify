@@ -2,6 +2,7 @@ import { AlertCircleIcon, CloseIcon, DragIcon, RotateCwIcon, ShoppingBasketIcon 
 import React, { FC, useState, useRef } from 'react'
 import { DraggableProvided, DraggableStateSnapshot } from '@hello-pangea/dnd'
 import Skeleton from 'react-loading-skeleton'
+import { skeletonBase as skeletonColor, spinnerColor } from 'src/util/loadingStyles'
 import { toast } from 'react-hot-toast'
 import RecipeAPI from 'src/api/recipes'
 import { IngredientsType } from 'types'
@@ -13,10 +14,8 @@ import {
 import { IngredientStatus } from 'src/pages/AddRecipe/Ingredients/IngredientsContainer/IngredientsContainer'
 import '../ListComponents/Item.scss'
 import { TailSpin } from 'react-loader-spinner'
-import styles from 'src/_exports.module.scss'
 import IngredientItemText from 'src/Components/IngredientItemText/IngredientItemText'
 
-const skeletonColor = '#d6d6d6'
 
 type IngredientItemProps = {
   ingredients: IngredientsType[]
@@ -241,7 +240,7 @@ const IngredientItem: FC<IngredientItemProps> = ({
               <TailSpin
                 height='20'
                 width='20'
-                color={styles.primaryText}
+                color={spinnerColor}
                 ariaLabel='loading'
               />
             </div>

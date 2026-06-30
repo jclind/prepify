@@ -1,14 +1,13 @@
 import { EditIcon } from 'src/Components/icons'
 import React, { FC } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import Skeleton from 'react-loading-skeleton'
 import 'react-loading-skeleton/dist/skeleton.css'
 
 import './Drafts.scss'
 import EmptyState from 'src/Components/EmptyState/EmptyState'
 import DraftAPI from 'src/api/drafts'
 import DraftCard from './DraftCard'
-import { useDelayedLoading } from 'src/pages/Account/useDelayedLoading'
+import { useDelayedLoading } from 'src/hooks/useDelayedLoading'
 
 const Drafts: FC = () => {
   const queryClient = useQueryClient()
@@ -27,21 +26,22 @@ const Drafts: FC = () => {
   const hasDrafts = !!drafts && drafts.length > 0
   const showList = hasDrafts || isLoading
 
-  // Hold an empty frame while a fast query settles, so the skeleton only shows
-  // for genuinely slow loads — and the empty state never flashes before data.
-  if (isLoading && !showSkeleton) {
-    return <div className='drafts' />
-  }
-
   return (
     <div className='drafts'>
       {showList ? (
-        <div className='drafts-list'>
+        // Render the skeleton cards whenever loading so the grid reserves its
+        // height from frame 1; the flash-guard delay only hides them (sk-hold)
+        // until it's worth drawing — no blank-then-grow jump.
+        <div
+          className={`drafts-list ${
+            isLoading && !showSkeleton ? 'sk-hold' : ''
+          }`}
+        >
           {isLoading ? (
             <>
-              <Skeleton height={92} borderRadius={12} />
-              <Skeleton height={92} borderRadius={12} />
-              <Skeleton height={92} borderRadius={12} />
+              <DraftCard loading />
+              <DraftCard loading />
+              <DraftCard loading />
             </>
           ) : (
             drafts!.map(draft => (

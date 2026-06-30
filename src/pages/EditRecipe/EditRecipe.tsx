@@ -2,11 +2,11 @@ import React, { FC, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { TailSpin } from 'react-loader-spinner'
+import { spinnerColor } from 'src/util/loadingStyles'
 import toast from 'react-hot-toast'
 import AuthAPI from 'src/api/auth'
 import RecipeAPI from 'src/api/recipes'
 import AddRecipe from 'src/pages/AddRecipe/AddRecipe'
-import styles from 'src/_exports.module.scss'
 
 // Wrapper for /recipes/:recipeId/edit. Fetches the recipe, confirms the signed-in
 // user is its author, then renders the AddRecipe form pre-populated for editing.
@@ -60,7 +60,7 @@ const EditRecipe: FC = () => {
           minHeight: '60vh',
         }}
       >
-        <TailSpin height='60' width='60' color={styles.primary} ariaLabel='loading' />
+        <TailSpin height='60' width='60' color={spinnerColor} ariaLabel='loading' />
       </div>
     )
   }

@@ -118,6 +118,14 @@
         margin-right: 0.35rem;
         vertical-align: -0.1rem;
       }
+      // Skeleton variant: keep the real font-size/line-height (so the two
+      // placeholder bars reserve the exact 2-line height a loaded review takes)
+      // but drop the -webkit-box clamp that would otherwise hide the 2nd bar.
+      &--skeleton {
+        display: block;
+        -webkit-line-clamp: none;
+        overflow: visible;
+      }
     }
   }
 

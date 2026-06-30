@@ -2,6 +2,7 @@ import { PrinterIcon } from 'src/Components/icons'
 import React, { FC, useState } from 'react'
 import { useReactToPrint } from 'react-to-print'
 import { TailSpin } from 'react-loader-spinner'
+import { spinnerColor } from 'src/util/loadingStyles'
 
 type PrintRecipeBtnProps = {
   printedRef: React.RefObject<HTMLDivElement | null>
@@ -29,7 +30,7 @@ const PrintRecipeBtn: FC<PrintRecipeBtnProps> = ({ printedRef }) => {
             <TailSpin
               height='30'
               width='30'
-              color='#303841'
+              color={spinnerColor}
               ariaLabel='loading'
             />
           </div>

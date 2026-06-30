@@ -106,10 +106,16 @@ describe('Home page', () => {
   })
 
   describe('Trending this week', () => {
-    it('shows 4 skeleton cards while the API call is pending', () => {
+    it('shows 4 skeleton cards while the API call is pending', async () => {
       mockGetTrendingRecipes.mockReturnValue(new Promise(() => {}))
       const { container } = renderHome()
-      expect(container.querySelectorAll('.home-trending-grid .home-recipe-card')).toHaveLength(4)
+      // Skeletons are delay-gated (useDelayedLoading) so a fast load can't flash
+      // them — on a genuinely pending load they appear once the delay elapses.
+      await waitFor(() =>
+        expect(
+          container.querySelectorAll('.home-trending-grid .home-recipe-card')
+        ).toHaveLength(4)
+      )
     })
 
     it('replaces skeletons with recipe cards after getTrendingRecipes resolves', async () => {
@@ -168,13 +174,15 @@ describe('Home page', () => {
       await waitFor(() => expect(screen.queryByText('For you')).not.toBeInTheDocument())
     })
 
-    it('shows skeletons while the personalized fetch is pending', () => {
+    it('stays hidden while the personalized fetch is pending (pop-in, no skeleton)', async () => {
       loggedIn()
       mockGetForYouRecipes.mockReturnValue(new Promise(() => {}))
       renderHome()
-      const section = screen.getByText('For you').closest('.home-section')
-      expect(section).not.toBeNull()
-      expect(section!.querySelectorAll('.home-recipe-card')).toHaveLength(4)
+      // For You has no loading skeleton: it often resolves to empty, so it renders
+      // nothing until real picks arrive (then pops in) rather than reserving space
+      // it may take back. The header must not appear while the fetch is pending.
+      await waitFor(() => expect(mockGetForYouRecipes).toHaveBeenCalled())
+      expect(screen.queryByText('For you')).not.toBeInTheDocument()
     })
   })
 

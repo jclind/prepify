@@ -10,6 +10,20 @@
     &:first-of-type { margin-top: 3rem; }
   }
 
+  // "For you" pops in once it has real picks (it has no loading skeleton — see
+  // HomeForYou). A soft fade/rise makes the single downward shift read as
+  // intentional. Respect reduced-motion: no transform, instant.
+  .home-section--pop-in {
+    animation: homeSectionPopIn 0.35s ease both;
+  }
+  @keyframes homeSectionPopIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .home-section--pop-in { animation: none; }
+  }
+
   // Empty / error message for a section that has no data to show.
   .home-empty {
     color: s.$tertiary-text;
@@ -66,7 +80,17 @@
     &:hover { transform: translateY(-3px); box-shadow: rgba(0, 0, 0, 0.12) 0px 12px 26px; }
     .thumb {
       position: relative;
-      img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; }
+      // Container owns the 4/3 box; image and the hold-skeleton both fill it
+      // absolutely so the swap (and the image's byte-load) never shifts the card.
+      aspect-ratio: 4 / 3;
+      img, .react-loading-skeleton {
+        position: absolute; inset: 0;
+        width: 100%; height: 100%; object-fit: cover; display: block;
+      }
+      img {
+        opacity: 0; transition: opacity 0.3s ease;
+        &.is-loaded { opacity: 1; }
+      }
       .price-chip {
         position: absolute; bottom: 0.6rem; right: 0.6rem;
         background: rgba(255, 255, 255, 0.95); color: s.$primary;
@@ -128,14 +152,35 @@
       img { width: 56px; height: 56px; border-radius: s.$radius-lg; object-fit: cover; flex-shrink: 0; }
     }
     .info { display: flex; flex-direction: column; gap: 0.2rem; min-width: 0; }
-    .title { font-weight: 600; font-size: 0.92rem; text-transform: capitalize; line-height: 1.25; }
+    // Clamp to two lines so a long title can't push the row taller than the
+    // skeleton (which reserves exactly two title lines) — keeps the swap
+    // shift-free.
+    .title {
+      font-weight: 600; font-size: 0.92rem; text-transform: capitalize; line-height: 1.25;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
     .sub {
       font-size: 0.74rem; color: s.$tertiary-text; font-weight: 600;
       svg { vertical-align: -2px; }
     }
     .skeleton-row {
       display: flex; gap: 0.75rem; align-items: center; padding: 0.4rem;
-      .info { flex: 1; display: flex; flex-direction: column; gap: 0.35rem; }
+      // Thumb sized by CSS (not inline props) so it tracks the same responsive
+      // dimensions as the real `a img` below and at the mid-range breakpoint.
+      .sk-thumb {
+        width: 56px; height: 56px; flex-shrink: 0;
+        border-radius: s.$radius-lg; overflow: hidden; line-height: 1;
+        .react-loading-skeleton { display: block; height: 100%; }
+      }
+      // Pin the text block to the thumb height (the loaded rows are image-bound,
+      // since their 2-line-clamped title never exceeds the 56px image) and centre
+      // the bars within it — so a skeleton row is the same height as a real row
+      // and the column doesn't shrink on load. The bar line-box overhead is
+      // absorbed by the fixed height + overflow instead of growing the row.
+      .info {
+        flex: 1; min-width: 0; display: flex; flex-direction: column;
+        justify-content: center; gap: 0.3rem; height: 56px; overflow: hidden;
+      }
     }
     .empty-row {
       padding: 0.6rem 0.4rem; color: s.$tertiary-text; font-size: 0.85rem; font-weight: 600;
@@ -150,6 +195,12 @@
       a { gap: 0.6rem; padding: 0.3rem; img { width: 44px; height: 44px; } }
       .title { font-size: 0.85rem; }
       .sub { font-size: 0.7rem; }
+      // Match the skeleton thumb + padding to the shrunken real rows above.
+      .skeleton-row {
+        gap: 0.6rem; padding: 0.3rem;
+        .sk-thumb { width: 44px; height: 44px; }
+        .info { height: 44px; }
+      }
     }
   }
 
