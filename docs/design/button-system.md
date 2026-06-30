@@ -16,8 +16,12 @@ one set of tokens. This doc is the convention; the code that implements it is th
    About, Home, EmptyState, PublicProfile, Account) already started; the older
    form/settings/recipe-detail surfaces move onto it.
 3. **Color comes from a variant modifier, never inline.** Pick one of the five
-   variants below. The hover treatment is an explicit color/border change (never
-   `filter: brightness()` or bare `opacity`), the danger color is the single
+   variants below. Each variant's hover is an explicit color/border change, not
+   `filter: brightness()` or bare `opacity`. (A few KEEP-BESPOKE buttons sit on
+   the base *without* a variant — the teal auth submit, the brand-orange
+   suggestion CTA — and do use a `filter: brightness()` hover; the base `.btn`
+   transition animates `filter`, so they ease like the rest.) The danger color is
+   the single
    `$error-red` token (see [one-danger-red-token, #208]), and the focus ring stays
    on the global `button:focus-visible` rule in `index.scss` (the `s.outline()`
    mixin) — variants never re-declare focus.
