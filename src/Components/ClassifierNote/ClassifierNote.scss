@@ -1,3 +1,5 @@
+@use '../../helpers.scss' as s;
+
 // Shared visual identity for an automod classifier note (see ClassifierNote.tsx).
 // Surface-specific layout (margins, flex-basis) lives in each caller's stylesheet
 // on its own override class, which wins on specificity when nested under a parent.
@@ -5,6 +7,6 @@
   margin: 0;
   font-size: 0.8rem;
   font-weight: 600;
-  color: #4338ca;
+  color: s.$admin-info-text;
   text-transform: capitalize;
 }

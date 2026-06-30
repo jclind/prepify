@@ -38,9 +38,9 @@
     gap: 0.3rem;
 
     .range {
-      border: 1px solid #d8dbe0;
+      border: 1px solid s.$admin-slate-300;
       background: s.$white;
-      color: #4b5563;
+      color: s.$admin-slate-600;
       padding: 0.35rem 0.75rem;
       border-radius: s.$radius-pill;
       font-size: 0.82rem;
@@ -48,23 +48,23 @@
       transition: all 0.15s;
 
       &:hover {
-        border-color: #9ca3af;
+        border-color: s.$admin-slate-400;
       }
 
       &.active {
-        background: #1f2430;
-        border-color: #1f2430;
+        background: s.$admin-chrome;
+        border-color: s.$admin-chrome;
         color: s.$white;
       }
     }
   }
 
   .analytics-state {
-    color: #6b7280;
+    color: s.$admin-slate-500;
     font-size: 0.95rem;
 
     &.error {
-      color: #b91c1c;
+      color: s.$admin-danger-text;
     }
   }
 
@@ -74,7 +74,7 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: #9ca3af;
+    color: s.$admin-slate-400;
   }
 
   .stat-cards {
@@ -88,22 +88,22 @@
       flex-direction: column;
       gap: 0.2rem;
       background: s.$white;
-      border: 1px solid #e5e7eb;
+      border: 1px solid s.$admin-slate-200;
       border-radius: s.$radius-lg;
       padding: 1rem 1.1rem;
 
       .stat-value {
         font-size: 1.9rem;
         font-weight: 700;
-        color: #111827;
+        color: s.$admin-slate-900;
         line-height: 1.1;
 
         &.danger {
-          color: #b91c1c;
+          color: s.$admin-danger-text;
         }
 
         &.warn {
-          color: #b45309;
+          color: s.$admin-warn-text;
         }
       }
 
@@ -112,13 +112,13 @@
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.03em;
-        color: #6b7280;
+        color: s.$admin-slate-500;
       }
 
       .stat-sub {
         margin-top: 0.3rem;
         font-size: 0.78rem;
-        color: #9ca3af;
+        color: s.$admin-slate-400;
       }
     }
   }
@@ -131,7 +131,7 @@
 
     .trend-card {
       background: s.$white;
-      border: 1px solid #e5e7eb;
+      border: 1px solid s.$admin-slate-200;
       border-radius: s.$radius-lg;
       padding: 1rem 1.1rem;
 
@@ -139,13 +139,13 @@
         margin: 0 0 0.75rem;
         font-size: 0.92rem;
         font-weight: 600;
-        color: #374151;
+        color: s.$admin-slate-700;
       }
 
       .trend-note {
         margin: 0.6rem 0 0;
         font-size: 0.72rem;
-        color: #9ca3af;
+        color: s.$admin-slate-400;
       }
     }
   }
@@ -162,7 +162,7 @@
       flex: 1;
       min-width: 1px;
       border-radius: 2px 2px 0 0;
-      background: #9ca3af;
+      background: s.$admin-slate-400;
       transition: opacity 0.15s;
 
       &:hover {
@@ -170,16 +170,16 @@
       }
 
       &.good {
-        background: #16a34a;
+        background: s.$admin-ok-fill;
       }
       &.danger {
-        background: #dc2626;
+        background: s.$admin-danger-fill;
       }
       &.warn {
-        background: #d97706;
+        background: s.$admin-warn-fill;
       }
       &.neutral {
-        background: #6b7280;
+        background: s.$admin-slate-500;
       }
     }
 
@@ -188,13 +188,13 @@
       justify-content: space-between;
       margin-top: 0.4rem;
       font-size: 0.72rem;
-      color: #9ca3af;
+      color: s.$admin-slate-400;
     }
   }
 
   .recent-actions {
     background: s.$white;
-    border: 1px solid #e5e7eb;
+    border: 1px solid s.$admin-slate-200;
     border-radius: s.$radius-lg;
     padding: 1rem 1.25rem;
 
@@ -202,7 +202,7 @@
       margin: 0 0 0.5rem;
       font-size: 0.92rem;
       font-weight: 600;
-      color: #374151;
+      color: s.$admin-slate-700;
     }
 
     .action-list {
@@ -217,7 +217,7 @@
       display: flex;
       gap: 0.75rem;
       padding: 0.7rem 0;
-      border-bottom: 1px solid #eef0f2;
+      border-bottom: 1px solid s.$admin-slate-200;
 
       &:last-child {
         border-bottom: none;
@@ -229,19 +229,19 @@
         border-radius: s.$radius-circle;
         margin-top: 0.35rem;
         flex-shrink: 0;
-        background: #9ca3af;
+        background: s.$admin-slate-400;
 
         &.good {
-          background: #16a34a;
+          background: s.$admin-ok-fill;
         }
         &.warn {
-          background: #d97706;
+          background: s.$admin-warn-fill;
         }
         &.danger {
-          background: #dc2626;
+          background: s.$admin-danger-fill;
         }
         &.neutral {
-          background: #9ca3af;
+          background: s.$admin-slate-400;
         }
       }
 
@@ -253,11 +253,11 @@
       .action-line {
         margin: 0;
         font-size: 0.9rem;
-        color: #374151;
+        color: s.$admin-slate-700;
 
         .actor,
         .target {
-          color: #111827;
+          color: s.$admin-slate-900;
         }
 
         .target {
@@ -269,7 +269,7 @@
       .action-time {
         margin: 0.2rem 0 0;
         font-size: 0.74rem;
-        color: #9ca3af;
+        color: s.$admin-slate-400;
       }
     }
   }

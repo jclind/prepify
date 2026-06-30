@@ -17,8 +17,8 @@
     .open-count {
       font-size: 0.85rem;
       font-weight: 600;
-      color: #b45309;
-      background: #fef3c7;
+      color: s.$admin-warn-text;
+      background: s.$admin-warn-bg;
       padding: 0.2rem 0.55rem;
       border-radius: s.$radius-pill;
     }
@@ -30,9 +30,9 @@
     margin-bottom: 1.5rem;
 
     .tab {
-      border: 1px solid #d8dbe0;
+      border: 1px solid s.$admin-slate-300;
       background: s.$white;
-      color: #4b5563;
+      color: s.$admin-slate-600;
       padding: 0.4rem 0.9rem;
       border-radius: s.$radius-pill;
       font-size: 0.85rem;
@@ -40,23 +40,23 @@
       transition: all 0.15s;
 
       &:hover {
-        border-color: #9ca3af;
+        border-color: s.$admin-slate-400;
       }
 
       &.active {
-        background: #1f2430;
-        border-color: #1f2430;
+        background: s.$admin-chrome;
+        border-color: s.$admin-chrome;
         color: s.$white;
       }
     }
   }
 
   .reports-state {
-    color: #6b7280;
+    color: s.$admin-slate-500;
     font-size: 0.95rem;
 
     &.error {
-      color: #b91c1c;
+      color: s.$admin-danger-text;
     }
   }
 
@@ -68,8 +68,8 @@
     flex-wrap: wrap;
     margin-bottom: 1rem;
     padding: 0.6rem 0.9rem;
-    background: #f9fafb;
-    border: 1px solid #e5e7eb;
+    background: s.$admin-slate-50;
+    border: 1px solid s.$admin-slate-200;
     border-radius: s.$radius-md;
 
     .bulk-select-all {
@@ -77,7 +77,7 @@
       align-items: center;
       gap: 0.5rem;
       font-size: 0.85rem;
-      color: #374151;
+      color: s.$admin-slate-700;
       cursor: pointer;
     }
 
@@ -100,15 +100,15 @@
         }
 
         &.resolve {
-          background: #16a34a;
-          border-color: #16a34a;
+          background: s.$admin-ok-fill;
+          border-color: s.$admin-ok-fill;
           color: s.$white;
         }
 
         &.dismiss {
           background: s.$white;
-          border-color: #d1d5db;
-          color: #6b7280;
+          border-color: s.$admin-slate-300;
+          color: s.$admin-slate-500;
         }
       }
     }
@@ -133,7 +133,7 @@
 
   .report-card {
     background: s.$white;
-    border: 1px solid #e5e7eb;
+    border: 1px solid s.$admin-slate-200;
     border-radius: s.$radius-lg;
     padding: 1.1rem 1.25rem;
     display: flex;
@@ -164,44 +164,44 @@
       }
 
       .type-pill {
-        background: #e0e7ff;
-        color: #3730a3;
+        background: s.$admin-info-bg;
+        color: s.$admin-info-text;
 
         &.review {
-          background: #fae8ff;
-          color: #86198f;
+          background: s.$admin-review-bg;
+          color: s.$admin-review-text;
         }
 
         &.user {
-          background: #dcfce7;
-          color: #166534;
+          background: s.$admin-ok-bg;
+          color: s.$admin-ok-text;
         }
       }
 
       .reason-pill {
-        background: #f3f4f6;
-        color: #374151;
+        background: s.$admin-slate-100;
+        color: s.$admin-slate-700;
       }
 
       .status-pill {
-        background: #fef3c7;
-        color: #92400e;
+        background: s.$admin-warn-bg;
+        color: s.$admin-warn-text-dk;
 
         &.resolved {
-          background: #dcfce7;
-          color: #166534;
+          background: s.$admin-ok-bg;
+          color: s.$admin-ok-text;
         }
 
         &.dismissed {
-          background: #f3f4f6;
-          color: #6b7280;
+          background: s.$admin-slate-100;
+          color: s.$admin-slate-500;
         }
       }
 
       // Machine-filed report — visually set apart from human reports.
       .automod-pill {
-        background: #0f172a;
-        color: #e2e8f0;
+        background: s.$admin-slate-900;
+        color: s.$admin-slate-200;
       }
     }
 
@@ -227,7 +227,7 @@
 
       .preview-title {
         font-weight: 600;
-        color: #111827;
+        color: s.$admin-slate-900;
         text-decoration: none;
 
         &:hover {
@@ -237,18 +237,18 @@
 
       .preview-meta {
         font-size: 0.85rem;
-        color: #4b5563;
+        color: s.$admin-slate-600;
         margin-bottom: 0.3rem;
 
         a {
-          color: #2563eb;
+          color: s.$admin-link;
         }
       }
 
       .preview-text {
         margin: 0;
         font-style: italic;
-        color: #374151;
+        color: s.$admin-slate-700;
         font-size: 0.9rem;
       }
     }
@@ -259,14 +259,14 @@
       font-size: 0.65rem;
       font-weight: 700;
       text-transform: uppercase;
-      background: #fee2e2;
-      color: #991b1b;
+      background: s.$admin-danger-bg;
+      color: s.$admin-danger-text;
       padding: 0.1rem 0.35rem;
       border-radius: s.$radius-xs;
     }
 
     .preview-missing {
-      color: #9ca3af;
+      color: s.$admin-slate-400;
       font-style: italic;
       font-size: 0.9rem;
     }
@@ -274,13 +274,13 @@
     .report-details {
       margin: 0.6rem 0 0;
       font-size: 0.9rem;
-      color: #374151;
+      color: s.$admin-slate-700;
     }
 
     .report-foot {
       margin: 0.6rem 0 0;
       font-size: 0.78rem;
-      color: #9ca3af;
+      color: s.$admin-slate-400;
     }
 
     .report-actions {
@@ -310,21 +310,21 @@
 
         &.restore,
         &.approve {
-          background: #16a34a;
-          border-color: #16a34a;
+          background: s.$admin-ok-fill;
+          border-color: s.$admin-ok-fill;
           color: s.$white;
         }
 
         &.resolve {
           background: s.$white;
-          border-color: #16a34a;
-          color: #16a34a;
+          border-color: s.$admin-ok-fill;
+          color: s.$admin-ok-fill;
         }
 
         &.dismiss {
           background: s.$white;
-          border-color: #d1d5db;
-          color: #6b7280;
+          border-color: s.$admin-slate-300;
+          color: s.$admin-slate-500;
         }
       }
     }

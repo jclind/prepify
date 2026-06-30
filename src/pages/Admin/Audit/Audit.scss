@@ -17,8 +17,8 @@
     .total-count {
       font-size: 0.85rem;
       font-weight: 600;
-      color: #4b5563;
-      background: #f3f4f6;
+      color: s.$admin-slate-600;
+      background: s.$admin-slate-100;
       padding: 0.2rem 0.55rem;
       border-radius: s.$radius-pill;
     }
@@ -32,9 +32,9 @@
     flex-wrap: wrap;
 
     .action-select {
-      border: 1px solid #d8dbe0;
+      border: 1px solid s.$admin-slate-300;
       background: s.$white;
-      color: #374151;
+      color: s.$admin-slate-700;
       padding: 0.4rem 0.7rem;
       border-radius: s.$radius-md;
       font-size: 0.85rem;
@@ -47,9 +47,9 @@
       flex-wrap: wrap;
 
       .tab {
-        border: 1px solid #d8dbe0;
+        border: 1px solid s.$admin-slate-300;
         background: s.$white;
-        color: #4b5563;
+        color: s.$admin-slate-600;
         padding: 0.35rem 0.8rem;
         border-radius: s.$radius-pill;
         font-size: 0.82rem;
@@ -57,12 +57,12 @@
         transition: all 0.15s;
 
         &:hover {
-          border-color: #9ca3af;
+          border-color: s.$admin-slate-400;
         }
 
         &.active {
-          background: #1f2430;
-          border-color: #1f2430;
+          background: s.$admin-chrome;
+          border-color: s.$admin-chrome;
           color: s.$white;
         }
       }
@@ -70,11 +70,11 @@
   }
 
   .audit-state {
-    color: #6b7280;
+    color: s.$admin-slate-500;
     font-size: 0.95rem;
 
     &.error {
-      color: #b91c1c;
+      color: s.$admin-danger-text;
     }
   }
 
@@ -90,7 +90,7 @@
     display: flex;
     gap: 0.75rem;
     padding: 0.85rem 0;
-    border-bottom: 1px solid #eef0f2;
+    border-bottom: 1px solid s.$admin-slate-200;
 
     .dot {
       width: 9px;
@@ -98,19 +98,19 @@
       border-radius: s.$radius-circle;
       margin-top: 0.4rem;
       flex-shrink: 0;
-      background: #9ca3af;
+      background: s.$admin-slate-400;
 
       &.good {
-        background: #16a34a;
+        background: s.$admin-ok-fill;
       }
       &.warn {
-        background: #d97706;
+        background: s.$admin-warn-fill;
       }
       &.danger {
-        background: #dc2626;
+        background: s.$admin-danger-fill;
       }
       &.neutral {
-        background: #9ca3af;
+        background: s.$admin-slate-400;
       }
     }
 
@@ -122,15 +122,15 @@
     .audit-line {
       margin: 0;
       font-size: 0.92rem;
-      color: #374151;
+      color: s.$admin-slate-700;
 
       .actor {
-        color: #111827;
+        color: s.$admin-slate-900;
       }
 
       .target {
         font-weight: 600;
-        color: #111827;
+        color: s.$admin-slate-900;
         word-break: break-word;
       }
     }
@@ -139,13 +139,13 @@
       margin: 0.25rem 0 0;
       font-size: 0.85rem;
       font-style: italic;
-      color: #6b7280;
+      color: s.$admin-slate-500;
     }
 
     .audit-time {
       margin: 0.25rem 0 0;
       font-size: 0.76rem;
-      color: #9ca3af;
+      color: s.$admin-slate-400;
     }
   }
 
@@ -155,12 +155,12 @@
     gap: 1rem;
     margin-top: 1.5rem;
     font-size: 0.85rem;
-    color: #4b5563;
+    color: s.$admin-slate-600;
 
     button {
-      border: 1px solid #d8dbe0;
+      border: 1px solid s.$admin-slate-300;
       background: s.$white;
-      color: #374151;
+      color: s.$admin-slate-700;
       padding: 0.4rem 0.9rem;
       border-radius: s.$radius-md;
       cursor: pointer;

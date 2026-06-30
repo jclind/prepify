@@ -19,16 +19,16 @@
 
     input {
       flex: 1;
-      border: 1px solid #d8dbe0;
+      border: 1px solid s.$admin-slate-300;
       border-radius: s.$radius-md;
       padding: 0.55rem 0.8rem;
       font-size: 0.9rem;
     }
 
     .clear-btn {
-      border: 1px solid #d8dbe0;
+      border: 1px solid s.$admin-slate-300;
       background: s.$white;
-      color: #4b5563;
+      color: s.$admin-slate-600;
       border-radius: s.$radius-md;
       padding: 0.55rem 1.1rem;
       font-size: 0.9rem;
@@ -36,7 +36,7 @@
       cursor: pointer;
 
       &:hover {
-        border-color: #9ca3af;
+        border-color: s.$admin-slate-400;
       }
     }
   }
@@ -44,7 +44,7 @@
   .users-meta {
     margin: 0 0 0.75rem;
     font-size: 0.82rem;
-    color: #9ca3af;
+    color: s.$admin-slate-400;
   }
 
   .users-pagination {
@@ -55,9 +55,9 @@
     margin-top: 1.5rem;
 
     button {
-      border: 1px solid #d8dbe0;
+      border: 1px solid s.$admin-slate-300;
       background: s.$white;
-      color: #374151;
+      color: s.$admin-slate-700;
       border-radius: s.$radius-md;
       padding: 0.45rem 1rem;
       font-size: 0.85rem;
@@ -65,7 +65,7 @@
       cursor: pointer;
 
       &:hover:not(:disabled) {
-        border-color: #9ca3af;
+        border-color: s.$admin-slate-400;
       }
 
       &:disabled {
@@ -76,16 +76,16 @@
 
     .page-indicator {
       font-size: 0.85rem;
-      color: #6b7280;
+      color: s.$admin-slate-500;
     }
   }
 
   .users-state {
-    color: #6b7280;
+    color: s.$admin-slate-500;
     font-size: 0.95rem;
 
     &.error {
-      color: #b91c1c;
+      color: s.$admin-danger-text;
     }
   }
 
@@ -100,7 +100,7 @@
 
   .user-card {
     background: s.$white;
-    border: 1px solid #e5e7eb;
+    border: 1px solid s.$admin-slate-200;
     border-radius: s.$radius-lg;
     padding: 1.1rem 1.25rem;
     display: flex;
@@ -115,7 +115,7 @@
 
       .user-name {
         font-weight: 600;
-        color: #111827;
+        color: s.$admin-slate-900;
         text-decoration: none;
 
         &:hover {
@@ -123,7 +123,7 @@
         }
 
         &.no-name {
-          color: #9ca3af;
+          color: s.$admin-slate-400;
           font-style: italic;
         }
       }
@@ -136,33 +136,33 @@
       letter-spacing: 0.03em;
       padding: 0.15rem 0.45rem;
       border-radius: s.$radius-xs;
-      background: #dcfce7;
-      color: #166534;
+      background: s.$admin-ok-bg;
+      color: s.$admin-ok-text;
 
       &.suspended {
-        background: #fef3c7;
-        color: #92400e;
+        background: s.$admin-warn-bg;
+        color: s.$admin-warn-text-dk;
       }
 
       &.banned {
-        background: #fee2e2;
-        color: #991b1b;
+        background: s.$admin-danger-bg;
+        color: s.$admin-danger-text;
       }
     }
 
     .user-email {
       margin: 0 0 0.3rem;
       font-size: 0.85rem;
-      color: #4b5563;
+      color: s.$admin-slate-600;
     }
 
     .user-counts {
       margin: 0;
       font-size: 0.85rem;
-      color: #6b7280;
+      color: s.$admin-slate-500;
 
       .has-reports {
-        color: #b45309;
+        color: s.$admin-warn-text;
         font-weight: 600;
       }
     }
@@ -170,7 +170,7 @@
     .user-reason {
       margin: 0.4rem 0 0;
       font-size: 0.82rem;
-      color: #374151;
+      color: s.$admin-slate-700;
       font-style: italic;
     }
 
@@ -183,7 +183,7 @@
 
       select,
       .reason-input {
-        border: 1px solid #d8dbe0;
+        border: 1px solid s.$admin-slate-300;
         border-radius: s.$radius-sm;
         padding: 0.35rem 0.5rem;
         font-size: 0.82rem;
@@ -195,8 +195,8 @@
         padding: 0.4rem 0.8rem;
         font-size: 0.82rem;
         font-weight: 600;
-        border: 1px solid #1f2430;
-        background: #1f2430;
+        border: 1px solid s.$admin-chrome;
+        background: s.$admin-chrome;
         color: s.$white;
 
         &:disabled {
