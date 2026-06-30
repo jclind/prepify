@@ -73,7 +73,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **2-iso** | Design: `RecipeFormInput` → shared `FormInput` | `[x]` | `AddRecipe/*`, `Components/Form/*` | #204 |
 | **2-iso** | Design: toast punctuation + string dedupe | `[x]` | ~10 toast call sites (TSX strings) | #207 |
 | **2-iso** | Design: codify loading-state pattern | `[ ]` | convention + `TailSpin`/skeleton outliers | — |
-| **2-scss** | Design: pill `.btn` system | `[P]` | **`index.scss` + many page `.scss`** ⚠ chokepoint | #210 |
+| **2-scss** | Design: pill `.btn` system | `[x]` | **`index.scss` + many page `.scss`** ⚠ chokepoint | #210 |
 | **2-scss** | Design: type scale (~520 `font-size:` literals) | `[ ]` | **`helpers.scss` + ~60 files** ⚠ chokepoint | — |
 | **2-scss** | Design: elevation/shadow re-author (~52 literals) | `[ ]` | **`helpers.scss` + page `.scss`** ⚠ chokepoint | — |
 | **2-scss** | Design: one danger-red token | `[x]` | **`helpers.scss` + SingleRecipe/ReportControl/…** ⚠ chokepoint | #208 |
@@ -355,3 +355,16 @@ narrates the *why*.
   the auth-gated surfaces (Settings/SavedRecipes/AddRecipe/review edit-delete) are covered by tsc/build/tests/
   review, not driven (no dev creds). Net −81 lines. Ran safely alongside the in-flight `2-iso` loading-state
   worktree (zero file overlap). Awaiting CI.
+- _2026-06-30_ — **Design: pill `.btn` system** merged (#210, `[P]`→`[x]`, merge commit `173ea88`) — **second
+  `2-scss` lane closed.** Before merge a *second* high-effort review of the full PR caught regressions the first
+  pass missed: the review-edit **Submit rendered grey-on-orange** (a `.review-options .actions button` rule at
+  (0,4,1) outranked `.btn--primary`'s white at (0,1,0)) and edit/cancel lost their ghost hover — fixed by scoping
+  the grey link look to `button.btn--ghost`. Also fixed: the "More reviews" CTA greyed by `--ghost`; the global
+  `.btn` redefinition leaking `font-weight`/transition into the 4 deferred `load-more-btn` sites (decoupled —
+  `.load-more-btn` made self-contained, vestigial `btn` dropped); the lost `filter` hover transition on the
+  kept-bespoke brightness buttons (added `filter` to the base transition). Nits: `bug-report-trigger` selector
+  hardened to `.bug-report-trigger.btn` (no source-order dependence), dead `.leave-review-btn` rules removed,
+  `button-system.md` Rule 3 reconciled with the kept-bespoke filter hovers. F1 visually re-verified (Submit now
+  white-on-orange) via a seeded review, torn down + Mongo orphan-scanned clean; `tsc`/build/**543 Vitest**/Cypress
+  E2E green on the merge commit. Run-log + BACKLOG 'pill `.btn` system' item flipped to done. **Worktree kept up**
+  (owner still verifying). Remaining `2-scss` lane: type scale, elevation, `$admin-*`, `$primary-hover`.
