@@ -42,7 +42,7 @@ const ReviewsList: FC<ReviewsListProps> = ({
       {isMoreReviews && (
         <div className='get-more-reviews'>
           <button
-            className='get-more-reviews-btn btn'
+            className='get-more-reviews-btn btn btn--ghost'
             onClick={getNextReviewsPage}
           >
             More Reviews

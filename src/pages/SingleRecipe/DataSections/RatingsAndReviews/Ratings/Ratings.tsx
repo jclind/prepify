@@ -93,7 +93,7 @@ const Ratings: FC<RatingsProps> = ({
               {rating > 0 && (
                 <button
                   type='button'
-                  className='remove-rating'
+                  className='remove-rating btn btn--ghost'
                   onClick={handleRemoveRating}
                 >
                   Remove rating

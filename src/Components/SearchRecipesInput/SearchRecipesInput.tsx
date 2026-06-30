@@ -237,7 +237,7 @@ const SearchRecipesInput: FC<SearchRecipesInputProps> = ({
           onKeyDown={handleKeyDown}
         />
         {searchRecipeVal && (
-          <div className='search-recipes-btn btn' onClick={handleSubmit}>
+          <div className='search-recipes-btn btn btn--primary' onClick={handleSubmit}>
             Search
           </div>
         )}

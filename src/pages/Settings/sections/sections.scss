@@ -89,7 +89,8 @@
 }
 
 .sr-btn-icon {
-  margin-right: 0.4rem;
+  // Leading icon spacing now comes from the `.btn` base flex `gap`; a
+  // margin here would be additive. (vertical-align is moot under flex.)
   vertical-align: -2px;
 }
 
@@ -174,18 +175,12 @@
       font-weight: 800;
       color: s.$primary-text;
     }
+    // Shape/size come from `.btn .btn--icon` (circular); only the grey fill +
+    // hover are local (the `--icon` variant carries no colour of its own).
     .sr-modal-close {
       flex-shrink: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 32px;
-      width: 32px;
-      border: none;
-      border-radius: s.$radius-md;
       background: s.$gray-200;
       color: s.$secondary-text;
-      cursor: pointer;
       &:hover {
         background: s.$gray-300;
         color: s.$primary-text;

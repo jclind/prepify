@@ -99,28 +99,121 @@ a {
   }
 }
 
+// ── Button system ──────────────────────────────────────────────────────────
+// One pill `.btn` base + BEM modifiers. See docs/design/button-system.md.
+// Base = reset + inline-flex layout + default (md) size + pill shape. Compose
+// with a colour variant (`.btn--primary` etc.) and, optionally, a size
+// (`.btn--sm`/`.btn--lg`/`.btn--block`). The :focus-visible ring is provided
+// globally by the `button` rule above — variants never re-declare focus.
 .btn {
-  background: none;
-  outline: none;
-  border: none;
-  cursor: pointer;
-  font-size: 1.5rem;
-  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  white-space: nowrap;
+  line-height: 1;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 0.95rem;
+  padding: 0.6rem 1.3rem;
   color: s.$primary-text;
-}
-.action-btn {
-  padding: 0.75rem 1.5rem;
-  border: 2px solid s.$primary-text;
-  border-radius: s.$border-radius;
-  transition: all 0.1s linear;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: s.$radius-pill;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease,
+    color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease,
+    filter 0.15s ease;
 
-  &:hover {
-    border: 2px solid s.$primary;
-    background: s.$primary;
+  svg {
+    font-size: 1.1em;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
   }
 }
 
+// Sizes (default = md, baked into `.btn`)
+.btn--sm {
+  padding: 0.45rem 0.95rem;
+  font-size: 0.85rem;
+}
+.btn--lg {
+  padding: 0.7rem 1.6rem;
+  font-size: 1rem;
+}
+.btn--block {
+  width: 100%;
+}
+
+// Colour variants
+.btn--primary {
+  background: s.$primary;
+  border-color: s.$primary;
+  color: s.$white;
+
+  &:hover:not(:disabled) {
+    background: s.$primary-hover;
+    border-color: s.$primary-hover;
+  }
+}
+.btn--outline {
+  background: s.$white;
+  border-color: s.$gray-400;
+  color: s.$primary-text;
+
+  &:hover:not(:disabled) {
+    border-color: s.$primary-text;
+  }
+}
+.btn--ghost {
+  background: none;
+  border-color: transparent;
+  color: s.$secondary-text;
+
+  &:hover:not(:disabled) {
+    color: s.$primary-text;
+  }
+}
+.btn--danger {
+  background: s.$white;
+  border-color: s.$error-red;
+  color: s.$error-red;
+
+  &:hover:not(:disabled) {
+    background: s.$error-red;
+    color: s.$white;
+  }
+}
+.btn--danger-solid {
+  background: s.$error-red;
+  border-color: s.$error-red;
+  color: s.$white;
+
+  &:hover:not(:disabled) {
+    background: s.$error-red-hover;
+    border-color: s.$error-red-hover;
+  }
+}
+
+// Icon-only — square, circular; composes with a colour variant for its hover.
+.btn--icon {
+  padding: 0;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: s.$radius-circle;
+}
+
 .load-more-btn {
+  // Self-contained, deferred from the `.btn` system: supplies its own reset
+  // (background / cursor / colour / weight) that the old no-op `.btn` base used
+  // to provide, so it renders correctly WITHOUT a `btn` class on the element.
+  background: none;
+  color: s.$primary-text;
+  font-weight: 600;
+  cursor: pointer;
   display: flex;
   justify-content: center;
   align-items: center;

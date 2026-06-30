@@ -38,11 +38,11 @@ const ConfirmDeleteReviewModal: FC<ConfirmDeleteReviewModalProps> = ({
       </div>
       <p className='text'>This action is permanent and cannot be undone.</p>
       <div className='options'>
-        <button className='cancel btn' onClick={closeModal}>
+        <button className='cancel btn btn--outline' onClick={closeModal}>
           Cancel
         </button>
         <button
-          className='delete btn'
+          className='delete btn btn--danger-solid'
           onClick={() => {
             setDeleteLoading(true)
             handleDeleteReview().catch(() => {

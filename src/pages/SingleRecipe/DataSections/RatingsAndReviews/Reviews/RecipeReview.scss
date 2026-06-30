@@ -92,46 +92,34 @@
         flex: 1;
         gap: 1.5rem;
 
-        button {
+        // edit / delete / cancel are `.btn .btn--ghost` text-style links: the
+        // small underlined grey look + their hovers are local. SCOPED to
+        // `.btn--ghost` — a bare `button` selector here is (0,4,1) and would
+        // outrank `.btn--primary`'s colour (0,1,0), rendering the Submit button
+        // (edit-review) grey-on-orange. The resting colour also outranks the
+        // ghost variant's own hover, so each hover is restated locally.
+        button.btn--ghost {
           font-size: 0.875rem;
           font-weight: 600;
           text-decoration: underline;
           color: s.$tertiary-text;
-        }
-        button.edit-btn {
-          &:hover {
+
+          &:hover:not(:disabled) {
             color: s.$primary-text;
           }
-          &:focus-visible {
-            @include s.outline();
-          }
         }
-        button.delete-btn {
-          &:hover {
-            color: s.$error-red;
-          }
-          &:focus-visible {
-            @include s.outline();
-          }
+        // delete keeps its bespoke red hover (wins over the ghost hover above by
+        // equal-specificity source order).
+        button.delete-btn:hover:not(:disabled) {
+          color: s.$error-red;
         }
+        // `.btn .btn--primary` Submit — fixed height + loader anchor + compact
+        // padding are local; the white-on-orange comes from the variant (no
+        // underline to undo now that the link look is scoped to `.btn--ghost`).
         button.edit-review {
           position: relative;
-          text-decoration: none;
           padding: 0.5rem 1rem;
-          background: s.$primary;
           height: 45px;
-          color: s.$white;
-          border-radius: s.$border-radius;
-
-          display: flex;
-          justify-self: center;
-          align-items: center;
-        }
-      }
-      button.like-review-btn,
-      button.dislike-review-btn {
-        &:focus-visible {
-          @include s.outline();
         }
       }
     }
@@ -153,25 +141,14 @@
     display: flex;
     gap: 1.5rem;
     justify-content: center;
+    // cancel = `.btn .btn--outline`, delete = `.btn .btn--danger-solid`; only the
+    // larger modal-button font/padding (and the loader's positioning) are local.
     button {
       font-size: 1.125rem;
       padding: 0.75rem 1.25rem;
-      border-radius: s.$border-radius;
-      transition: all 0.3s linear;
-    }
-    button.cancel {
-      background: s.$gray-300;
-      &:hover {
-        background: s.$gray-400;
-      }
     }
     button.delete {
       position: relative;
-      background: s.$error-red;
-      color: s.$primary-background;
-      &:hover {
-        background: s.$error-red-hover;
-      }
     }
   }
 }

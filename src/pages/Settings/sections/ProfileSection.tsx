@@ -4,6 +4,11 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from 'src/context/AuthContext'
 import AuthAPI from 'src/api/auth'
 import { getApiErrorMessage } from 'src/util/getApiErrorMessage'
+import {
+  EMAIL_IN_USE,
+  GENERIC_ERROR,
+  IMAGE_TOO_LARGE,
+} from 'src/util/toastMessages'
 import { AvatarField, TextField, TextArea, SaveBar } from '../components/controls'
 import { useSettingsDirty } from '../SettingsDirtyContext'
 import './sections.scss'
@@ -110,7 +115,7 @@ const ProfileSection: FC = () => {
     const file = event.target.files?.[0]
     if (file && /\.(jpe?g|png)$/i.test(file.name)) {
       if (file.size > MAX_FILE_SIZE) {
-        toast.error('Image cannot be more than 5MB in size.')
+        toast.error(IMAGE_TOO_LARGE)
         return
       }
       setImgFile(file)
@@ -211,16 +216,16 @@ const ProfileSection: FC = () => {
         setSaving(false)
         setImgFile(null)
         setAvatarRemoved(false)
-        toast.success('Profile updated!')
+        toast.success('Profile updated.')
       })
       .catch(err => {
         setSaving(false)
         if (err.code === 'auth/email-already-in-use') {
-          toast.error('Email already in use.')
+          toast.error(EMAIL_IN_USE)
         } else {
           // Prefer the server's reason (e.g. a 422 moderation block on the
           // username, bio, or location) over axios's generic "Request failed…".
-          toast.error(getApiErrorMessage(err, 'Something went wrong.'))
+          toast.error(getApiErrorMessage(err, GENERIC_ERROR))
         }
       })
   }

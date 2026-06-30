@@ -71,12 +71,12 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **2-iso** | Design: one icon per concept | `[x]` | new `src/Components/icons` + import swaps | #205 |
 | **2-iso** | Design: single icon family (Lucide) | `[x]` | `src/Components/icons` glyph remap (no call-site churn) + temp audit page + docs | #206 |
 | **2-iso** | Design: `RecipeFormInput` → shared `FormInput` | `[x]` | `AddRecipe/*`, `Components/Form/*` | #204 |
-| **2-iso** | Design: toast punctuation + string dedupe | `[ ]` | ~10 toast call sites (TSX strings) | — |
-| **2-iso** | Design: codify loading-state pattern | `[~]` | convention + `TailSpin`/skeleton outliers | `worktree-feat+loading-state-pattern` · 2026-06-29 |
-| **2-scss** | Design: pill `.btn` system | `[ ]` | **`index.scss` + many page `.scss`** ⚠ chokepoint | — |
+| **2-iso** | Design: toast punctuation + string dedupe | `[x]` | ~10 toast call sites (TSX strings) | #207 |
+| **2-iso** | Design: codify loading-state pattern | `[P]` | convention + `TailSpin`/skeleton outliers | #213 |
+| **2-scss** | Design: pill `.btn` system | `[x]` | **`index.scss` + many page `.scss`** ⚠ chokepoint | #210 |
 | **2-scss** | Design: type scale (~520 `font-size:` literals) | `[ ]` | **`helpers.scss` + ~60 files** ⚠ chokepoint | — |
 | **2-scss** | Design: elevation/shadow re-author (~52 literals) | `[ ]` | **`helpers.scss` + page `.scss`** ⚠ chokepoint | — |
-| **2-scss** | Design: one danger-red token | `[ ]` | **`helpers.scss` + SingleRecipe/ReportControl/…** ⚠ chokepoint | — |
+| **2-scss** | Design: one danger-red token | `[x]` | **`helpers.scss` + SingleRecipe/ReportControl/…** ⚠ chokepoint | #208 |
 | **2-scss** | Design: name the `$admin-*` sub-palette | `[ ]` | **`helpers.scss` + Admin/moderation `.scss`** ⚠ chokepoint | — |
 | **2-scss** | A11y: `$primary-hover` AA-on-hover | `[ ]` | **`helpers.scss`** ⚠ chokepoint | — |
 | **blocked** | A11y: brand-orange contrast (AA) | `[blocked]` | `helpers.scss` `$primary-accessible` — **needs the brand-orange decision** | — |
@@ -258,6 +258,18 @@ narrates the *why*.
   GitGuardian). Closes the Design-consistency `RecipeFormInput` dup follow-up; filed one new UX-polish item
   (make the create-recipe **dropdown** inputs visually uniform with the unified text fields). Worktree + branch
   torn down. **Second Design `2-iso` track to land.**
+- _2026-06-29_ — **Design: toast punctuation + string dedupe** PR opened (#207, `[~]`→`[P]`). Codified one toast
+  copy convention (errors → terminal period; success → period except genuine milestones keep `!`; no raw
+  `Error: …` dumps) and extracted the cross-file duplicate strings into a new `src/util/toastMessages.ts` (12
+  constants + `reportsBulkUpdated`/`reportUpdated` helpers) — same single-source pattern as `modalStyles`/
+  `accountTabs`. The roadmap's "~10 sites" estimate was low: ~90 `toast` calls across 25 files, but most already
+  conformed — actual edits ~25 sites (8 period-less errors fixed, 6 routine success `!`→`.`, 8 cross-file dups
+  deduped incl. the identical Reports/BugReports mutation block). `tsc` clean, frontend suite 543/2-skip green,
+  build passing; 3 test assertions + TEST_PLAN updated to the new copy. Verified live (headless): PublicProfile
+  Share renders `Profile link copied.` / `Could not copy link.` (both branches), zero console errors —
+  auth-gated toasts covered by tsc+tests, not driven (no dev creds). High-effort multi-agent code review: no
+  correctness bugs; two reuse nits (coincidentally-identical admin toggle string; generic sentence shared with
+  `authErrors`' inline default) considered and intentionally left inline. **Third Design `2-iso` track to reach PR.**
 - _2026-06-29_ — **Design: one icon per concept merged** (PR #205 → `development`, `[~]`→`[P]`→`[x]`). All five CI
   checks green against the merge HEAD (Backend/Supertest, E2E/Cypress, Frontend/Vitest, Fallow advisory,
   GitGuardian). Collapsed react-icons drift into a single re-export module `src/Components/icons` (94 semantic
@@ -287,3 +299,75 @@ narrates the *why*.
   currently unused. Convention written down at `docs/design/icon-system.md` (first piece of the design-system
   docs). Temp `/icon-audit` page built for owner glyph approval, then removed before the PR. **Fourth Design
   `2-iso` track to land.** Worktree + branch torn down.
+- _2026-06-29_ — **Design: toast punctuation + string dedupe merged** (PR #207 → `development`, `[P]`→`[x]`). All
+  five CI checks green against the merge HEAD (Backend/Supertest, E2E/Cypress 4m, Frontend/Vitest, Fallow
+  advisory, GitGuardian). One toast copy convention now codified and the cross-file duplicate strings extracted
+  into `src/util/toastMessages.ts` (12 constants + `reportsBulkUpdated`/`reportUpdated` helpers) — same
+  single-source pattern as `modalStyles`/`accountTabs`. The "~10 sites" estimate was low (~90 `toast` calls
+  across 25 files), but most already conformed; ~25 edited (8 period-less errors fixed, 6 routine success
+  `!`→`.`, 8 cross-file dups deduped incl. the identical Reports/BugReports mutation block). Verified live
+  (headless): PublicProfile Share renders `Profile link copied.` / `Could not copy link.` (both branches), zero
+  console errors. High-effort multi-agent code review found **no correctness bugs**; two reuse nits
+  (coincidentally-identical admin toggle string; generic sentence shared with `authErrors`' inline default)
+  considered and intentionally left inline. Worktree + branch torn down. **Third Design `2-iso` track to land**;
+  remaining Wave 2 = loading-state pattern (`2-iso`) + the serialized `2-scss` lane.
+- _2026-06-29_ — **Design: one danger-red token** PR opened (#208, `[~]`→`[P]`) — **first `2-scss` lane to reach
+  PR**. Collapsed the three off-token "danger" reds onto the shared `s.$error-red` (`#c5303f`): dropped the dead
+  local `$danger #d23f31` (SingleRecipe, 1 use), and converted `#d64545` ×9 across ReportControl (×7, incl. its
+  `rgba(214,69,69, …)` tints → `rgba(s.$error-red, X)`), AdminRecipeControls (takedown border), and Reports
+  (takedown bg). **No `helpers.scss` edit** — the token already existed, so this `2-scss` track skips the usual
+  chokepoint (ran safely alongside the two in-flight `2-iso` worktrees; zero file overlap — they touch the `.tsx`,
+  this touches the `.scss`). Closes the BACKLOG 'One danger-red token' item (audit F6). Small **intentional**
+  visual shift: the moderation/error reds now match the brand danger. Verified by driving the running app — built
+  CSS has 0× old reds; all four changed files confirmed rendering `rgb(197,48,63)` live (report menu/link hover +
+  filled submit, review `.error`, admin takedown border + `/admin/reports` takedown bg). The auth/admin surfaces
+  were driven with a throwaway account (admin claim granted via firebase-admin), then deleted with a full Mongo
+  orphan-scan; the prod rating used to surface `.error` was removed, and the real reports queue was observed
+  read-only. Awaiting CI.
+- _2026-06-29_ — **Design: one danger-red token merged** (PR #208 → `development`, `[P]`→`[x]`). **First `2-scss`
+  lane to land.** All five CI checks green against the merge HEAD (Backend/Supertest 42s, E2E/Cypress 3m19s,
+  Frontend/Vitest, Fallow advisory, GitGuardian). A mid-flight conflict with the just-merged #207 over the shared
+  sweep docs (`ROADMAP.md` Board + Status log) was reconciled (Board rows auto-merged; Status log kept
+  append-only) and CI re-ran clean on the merge commit. Closes the BACKLOG 'One danger-red token' item (audit
+  F6). Worktree + branch torn down. Remaining Wave 2 = the loading-state pattern (`2-iso`, in flight) + the rest
+  of the serialized `2-scss` lane (pill `.btn`, type scale, elevation, `$admin-*`, `$primary-hover`).
+- _2026-06-29_ — **Design: pill `.btn` system** claimed (`worktree-feat+pill-btn-system`, `[ ]`→`[~]`) — **second
+  `2-scss` lane to open.** Checked the lane is clear first: the only other in-flight worktree is the `2-iso`
+  loading-state pattern (`worktree-feat+loading-state-pattern`, `[~]` but not yet merged so the Board still shows
+  `[ ]`), which touches `.tsx` + `_exports.module.scss` — no `2-scss` chokepoint contention, so per rule 1 a
+  single `2-scss` lane runs safely alongside it (same precedent as #208 vs. the `2-iso` trio). This track collapses
+  the ad-hoc button styles onto one shared pill `.btn` system (`index.scss` + page `.scss`). Worktree on free ports
+  3001/4001.
+- _2026-06-29_ — **Design: pill `.btn` system** PR opened (#210, `[~]`→`[P]`) — **second `2-scss` lane to reach
+  PR.** Collapsed ~70 ad-hoc button styles across ~35 files onto one pill `.btn` base + BEM modifiers (5 colour
+  variants, 3 sizes, `--icon`) defined in `index.scss` and documented at `docs/design/button-system.md` (second
+  design-system doc after `icon-system.md`). Owner sign-off: **pill everywhere** (finishes the migration the
+  redesigned pages started) + **non-admin scope** (admin button *colours* stay for the `$admin-*` lane). Kept
+  bespoke on the base (no colour variant): AA-tuned brand fills (`$primary-accessible`/`#a52f0a`/`#006065` — the
+  generic `--primary` hover fails white-on-fill AA), the teal auth-submit, stateful toggles, and the non-token
+  green/slate; nav CTAs go pill but stay off the variants (theme-variable `--dnav-*`). Out of scope: selection
+  chips/segmented-navs/toggle-switches + the shared `SortDropdown` (also on the out-of-scope Recipes page). Built
+  with one pilot surface (SingleRecipe action bar) verified live first, then a 5-agent parallel sweep + the
+  nuanced surfaces (auth-teal, themed nav, AddRecipe) by hand. `tsc`/build/**543 Vitest** green; high-effort
+  4-angle code review found 3 real regressions, all fixed (SavedRecipes clear-button grey fill dropped by
+  `--ghost`; two `&:hover` overrides lost to the variant's `:hover:not(:disabled)`; a Settings leading-icon
+  additive margin). Verified live (headless) across home/recipes/recipe-detail/about/login/signup/404/profile;
+  the auth-gated surfaces (Settings/SavedRecipes/AddRecipe/review edit-delete) are covered by tsc/build/tests/
+  review, not driven (no dev creds). Net −81 lines. Ran safely alongside the in-flight `2-iso` loading-state
+  worktree (zero file overlap). Awaiting CI.
+- _2026-06-30_ — **Design: pill `.btn` system** merged (#210, `[P]`→`[x]`, merge commit `173ea88`) — **second
+  `2-scss` lane closed.** Before merge a *second* high-effort review of the full PR caught regressions the first
+  pass missed: the review-edit **Submit rendered grey-on-orange** (a `.review-options .actions button` rule at
+  (0,4,1) outranked `.btn--primary`'s white at (0,1,0)) and edit/cancel lost their ghost hover — fixed by scoping
+  the grey link look to `button.btn--ghost`. Also fixed: the "More reviews" CTA greyed by `--ghost`; the global
+  `.btn` redefinition leaking `font-weight`/transition into the 4 deferred `load-more-btn` sites (decoupled —
+  `.load-more-btn` made self-contained, vestigial `btn` dropped); the lost `filter` hover transition on the
+  kept-bespoke brightness buttons (added `filter` to the base transition). Nits: `bug-report-trigger` selector
+  hardened to `.bug-report-trigger.btn` (no source-order dependence), dead `.leave-review-btn` rules removed,
+  `button-system.md` Rule 3 reconciled with the kept-bespoke filter hovers. F1 visually re-verified (Submit now
+  white-on-orange) via a seeded review, torn down + Mongo orphan-scanned clean; `tsc`/build/**543 Vitest**/Cypress
+  E2E green on the merge commit. Run-log + BACKLOG 'pill `.btn` system' item flipped to done. **Worktree kept up**
+  (owner still verifying). Remaining `2-scss` lane: type scale, elevation, `$admin-*`, `$primary-hover`.
+- _2026-06-30_ — pill `.btn` worktree (`worktree-feat+pill-btn-system`) + branch **torn down** after the owner's
+  final verification pass (board already `[x]` from the merge entry above; this reconciles the "kept up" note).
+  The `2-scss` chokepoint lane is now free for the next track (type scale / elevation / `$admin-*` / `$primary-hover`).

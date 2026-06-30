@@ -20,7 +20,7 @@ const PrintRecipeBtn: FC<PrintRecipeBtnProps> = ({ printedRef }) => {
   return (
     <div className='print-recipe'>
       <button
-        className='print-recipe-btn btn'
+        className='print-recipe-btn btn btn--outline'
         disabled={loading}
         onClick={() => handlePrint()}
       >

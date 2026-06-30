@@ -66,50 +66,35 @@
     gap: 0.75rem;
   }
 
+  // cancel = a quiet outline on the `.btn` base; only the fixed height + the
+  // muted transparent look are local.
   .cancel-btn {
     flex-shrink: 0;
     height: 46px;
     padding: 0 1.25rem;
-    border-radius: s.$border-radius;
     font-size: 1rem;
     font-weight: 600;
-    cursor: pointer;
-    outline: none;
     background: none;
     color: s.$secondary-text;
     border: 1px solid s.$tertiary-background;
-    transition: all 0.1s linear;
 
     &:hover {
       color: s.$primary-text;
       border-color: s.$tertiary-text;
     }
-    &:focus-visible {
-      @include s.outline();
-    }
     &:disabled {
-      opacity: 0.6;
       cursor: not-allowed;
     }
   }
 
+  // submit toggles .invalid/.valid (stateful) on the `.btn` base; the state
+  // colours are local.
   .submit-btn {
-    display: flex;
-    justify-content: center;
-    align-items: center;
     flex-shrink: 0;
     width: 170px;
     height: 46px;
-    border-radius: s.$border-radius;
     font-size: 1rem;
     font-weight: 600;
-    cursor: pointer;
-    outline: none;
-    transition: all 0.1s linear;
-
-    &:focus-visible {
-      @include s.outline();
-    }
   }
   .submit-btn.invalid {
     background: none;
@@ -131,7 +116,6 @@
     }
   }
   .submit-btn:disabled {
-    opacity: 0.6;
     cursor: not-allowed;
 
     &:hover {

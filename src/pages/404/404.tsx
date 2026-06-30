@@ -28,7 +28,7 @@ const NotFound: FC = () => {
           </Link>
           .
         </p>
-        <button className='home-btn btn' onClick={() => navigate('/')}>
+        <button className='home-btn btn btn--primary' onClick={() => navigate('/')}>
           Return Home
         </button>
       </div>

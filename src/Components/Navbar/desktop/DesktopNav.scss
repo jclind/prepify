@@ -166,7 +166,10 @@
 // Create — promoted action. In the Quiet skin this is an outlined accent button
 // (override below) rather than a filled one, to keep the bar restrained.
 .dnav__create {
-  border-radius: s.$border-radius;
+  // Pill shape to match the app-wide `.btn` system. Kept off the `.btn` variant
+  // classes because the nav CTAs are theme-variable (colours flip via --dnav-*
+  // custom props as the bar goes transparent→solid over the hero).
+  border-radius: s.$radius-pill;
   .dnav__link-icon {
     display: block;
   }
@@ -227,7 +230,8 @@
   align-items: center;
   justify-content: center;
   padding: 0.5rem 1.1rem;
-  border-radius: s.$border-radius;
+  // Pill shape; themed colours kept off the `.btn` variants (see .dnav__create).
+  border-radius: s.$radius-pill;
   font-size: 1rem;
   font-weight: 700;
   text-decoration: none;
