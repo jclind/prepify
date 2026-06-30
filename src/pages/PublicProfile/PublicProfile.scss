@@ -317,8 +317,55 @@
     }
   }
 
+  // ── Loading skeleton ─────────────────────────────────────────────────────────
+  // Mirrors the header + grid markup so the skeleton→content swap doesn't reflow.
+  .pp-skeleton {
+    // The handle row's height is driven by the 30px share affordance; zero the
+    // line-box so the inline skeleton bars don't spill past it and grow the row
+    // (which would push the whole header — counts included — down ~2px on load).
+    .pp-handle-row {
+      line-height: 0;
+    }
+    // Avatar: size the bar in CSS (not via width/height props) so the responsive
+    // 116→92 shrink below applies — keeps it the same size as the real avatar.
+    .pp-avatar-sk {
+      line-height: 0;
+      .react-loading-skeleton {
+        width: 116px;
+        height: 116px;
+      }
+    }
+    // Square media fill — same absolute-inset technique as the real tile image,
+    // so the placeholder and the eventual photo occupy identical boxes.
+    .pp-tile-media-sk {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border-radius: 0;
+    }
+    // The real title clamps to a -webkit-box; for the 2-bar skeleton we want a
+    // plain block so both lines show (the count={2} <br> stacks them).
+    .pp-tile-title--sk {
+      display: block;
+      overflow: visible;
+    }
+    // Inert placeholder tiles: no hover lift, no pointer.
+    .pp-tile--sk {
+      pointer-events: none;
+      &:hover {
+        transform: none;
+        box-shadow: s.$shadow-soft;
+      }
+    }
+  }
+
   @include s.below(s.$bp-sm) {
     .pp-avatar {
+      width: 92px;
+      height: 92px;
+    }
+    .pp-skeleton .pp-avatar-sk .react-loading-skeleton {
       width: 92px;
       height: 92px;
     }

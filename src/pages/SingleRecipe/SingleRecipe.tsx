@@ -5,6 +5,7 @@ import { useParams, Link } from 'react-router-dom'
 import { isAxiosError } from 'axios'
 import { Helmet } from 'react-helmet-async'
 import Skeleton from 'react-loading-skeleton'
+import { skeletonBase as skeletonColor } from 'src/util/loadingStyles'
 import 'react-loading-skeleton/dist/skeleton.css'
 
 import './SingleRecipe.scss'
@@ -16,6 +17,7 @@ import SaveControl from 'src/Components/AddToCollection/SaveControl'
 import AddRatingBtn from 'src/pages/SingleRecipe/Buttons/AddRatingBtn'
 import PrintRecipeBtn from 'src/pages/SingleRecipe/Buttons/PrintRecipeBtn'
 import RatingsAndReviews from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/RatingsAndReviews'
+import ReviewCardSkeleton from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/ReviewCardSkeleton'
 import RecipeNotFound from 'src/pages/SingleRecipe/RecipeNotFound/RecipeNotFound'
 import PrintableRecipe from 'src/pages/SingleRecipe/PrintableRecipe/PrintableRecipe'
 import ReportControl from 'src/Components/ReportControl/ReportControl'
@@ -23,6 +25,7 @@ import AdminRecipeControls from 'src/Components/AdminRecipeControls/AdminRecipeC
 import { SITE_URL, DEFAULT_OG_IMAGE } from 'src/util/seo'
 import DefaultAvatar from 'src/Components/DefaultAvatar/DefaultAvatar'
 
+import { useDelayedLoading } from 'src/hooks/useDelayedLoading'
 import { updateIngredients } from 'src/util/updateIngredients'
 import { capitalize } from 'src/util/capitalize'
 import { formatRating } from 'src/util/formatRating'
@@ -36,8 +39,6 @@ import AuthAPI from 'src/api/auth'
 import { buildRecipeJsonLd } from 'src/pages/SingleRecipe/buildRecipeJsonLd'
 
 type LocalStorageRecipeType = { recipeId: string; numServings: number }
-
-const skeletonColor = '#d6d6d6'
 
 const SingleRecipe: FC = () => {
   const { recipeId } = useParams<{ recipeId: string }>()
@@ -60,6 +61,13 @@ const SingleRecipe: FC = () => {
   })
 
   const loading = isPending
+  // Per docs/design/loading-states.md: gate the body skeletons behind a short
+  // delay so a warm/cached recipe fills in without a one-frame skeleton flash.
+  // The `!loading &&` content-reveal guards below stay on `loading` itself — only
+  // the skeleton-vs-content swaps read `showSkeleton`. All content branches are
+  // null-safe (ingredients/instructions `?? []`, `currRecipe?.…`), so the brief
+  // blank frame before the skeleton is due renders cleanly.
+  const showSkeleton = useDelayedLoading(isPending)
   const recipe404 =
     !isPending && !isError && (!fetchedRecipe || !fetchedRecipe.title)
   const recipeError = isError ? 'Failed to load recipe. Please try again.' : null
@@ -73,6 +81,14 @@ const SingleRecipe: FC = () => {
   // in-progress value while typing; the committed numeric value is servingSize.
   const [servDraft, setServDraft] = useState('')
   const [checked, setChecked] = useState<Set<string>>(new Set())
+  // Hero image: hold the skeleton until the image has actually decoded (onLoad),
+  // not just until the recipe JSON arrives. Otherwise the skeleton clears the
+  // instant `loading` flips and you watch the image paint in top-down over an
+  // empty box. Reset when the image URL changes (navigating between recipes).
+  const [heroLoaded, setHeroLoaded] = useState(false)
+  useEffect(() => {
+    setHeroLoaded(false)
+  }, [currRecipe?.recipeImage])
   const printedRef = useRef<HTMLDivElement>(null)
 
   const updateRecipeLocalStorage = (recipeId: string, numServings: number) => {
@@ -302,23 +318,44 @@ const SingleRecipe: FC = () => {
 
           <header className='hero'>
             <div className='hero-img'>
-              {loading || !currRecipe?.recipeImage ? (
-                <Skeleton baseColor={skeletonColor} className='img-skeleton' />
-              ) : (
+              {currRecipe?.recipeImage && (
                 <img
                   src={currRecipe.recipeImage}
                   alt={currRecipe.title}
                   title={currRecipe.title}
                   loading='eager'
+                  decoding='async'
+                  // `heroLoaded` is reset in a passive effect when the recipe
+                  // image changes (navigating between recipes). If the new image
+                  // is cached, its load can fire before that effect resets — or
+                  // be missed entirely — leaving the skeleton stuck over a decoded
+                  // image. Re-check `complete` on each commit to close that race.
+                  ref={node => {
+                    if (node?.complete && node.naturalWidth > 0 && !heroLoaded) {
+                      setHeroLoaded(true)
+                    }
+                  }}
+                  onLoad={() => setHeroLoaded(true)}
+                  className={heroLoaded ? 'is-loaded' : ''}
                 />
+              )}
+              {(!currRecipe?.recipeImage || !heroLoaded) && (
+                <Skeleton baseColor={skeletonColor} className='img-skeleton' />
               )}
             </div>
             <div className='hero-text'>
               {eyebrow && <div className='eyebrow'>{eyebrow}</div>}
               <h1>
+                {/* Render the skeleton through the whole load so the title line
+                    is reserved from frame 1; the flash-guard delay only holds it
+                    invisible (sk-hold) until it's worth drawing — same reserve
+                    pattern as the body, so the text below doesn't grow at ~220ms. */}
                 {loading ? (
-                  <span data-testid='header-loading'>
-                    <Skeleton baseColor={skeletonColor} width={320} />
+                  <span
+                    data-testid='header-loading'
+                    className={`title-skeleton ${showSkeleton ? '' : 'sk-hold'}`}
+                  >
+                    <Skeleton inline baseColor={skeletonColor} width='75%' />
                   </span>
                 ) : (
                   capitalize(currRecipe?.title || '')
@@ -339,8 +376,15 @@ const SingleRecipe: FC = () => {
                   </span>
                 </div>
               )}
+              {/* Reserve the 2-line description from frame 1 too (held invisible
+                  until the delay) so the action bar below doesn't drop ~2 lines
+                  when the skeleton becomes due on a slow load. */}
               {loading ? (
-                <Skeleton baseColor={skeletonColor} count={2} />
+                <Skeleton
+                  baseColor={skeletonColor}
+                  count={2}
+                  containerClassName={showSkeleton ? '' : 'sk-hold'}
+                />
               ) : (
                 <p className='description'>{currRecipe?.description}</p>
               )}
@@ -400,19 +444,45 @@ const SingleRecipe: FC = () => {
                 </div>
               )}
             </div>
-            <div className='sr-actions'>
-              {currRecipe && (
-                <>
-                  <SaveControl
-                    recipeId={currRecipe._id}
-                    variant='button'
-                    className='save-recipe'
-                    triggerClassName='save-recipe-btn btn'
-                    align='left'
+            <div
+              className={`sr-actions ${
+                loading && !showSkeleton ? 'sk-hold' : ''
+              }`}
+            >
+              {loading ? (
+                // Reserve the Save/Rate/Print row from frame 1 so the action bar
+                // doesn't grow (and the buttons don't pop in) when the recipe
+                // resolves. Held invisible until the flash-guard delay elapses.
+                // Widths/height match the real Save/Rate/Print buttons (107/106/
+                // 109 × 43) so the row is pixel-identical on swap. `inline` drops
+                // react-loading-skeleton's trailing <br> (whose line-box otherwise
+                // inflates the wrapper to ~62px and grows the whole action bar);
+                // the class goes on the wrapper (the flex item) via containerClassName.
+                [107, 106, 109].map((w, i) => (
+                  <Skeleton
+                    key={i}
+                    baseColor={skeletonColor}
+                    inline
+                    containerClassName='action-btn-skeleton'
+                    width={w}
+                    height={43}
+                    borderRadius={12}
                   />
-                  <AddRatingBtn currUserReview={currUserReview} />
-                  <PrintRecipeBtn printedRef={printedRef} />
-                </>
+                ))
+              ) : (
+                currRecipe && (
+                  <>
+                    <SaveControl
+                      recipeId={currRecipe._id}
+                      variant='button'
+                      className='save-recipe'
+                      triggerClassName='save-recipe-btn btn'
+                      align='left'
+                    />
+                    <AddRatingBtn currUserReview={currUserReview} />
+                    <PrintRecipeBtn printedRef={printedRef} />
+                  </>
+                )
               )}
             </div>
           </div>
@@ -423,7 +493,21 @@ const SingleRecipe: FC = () => {
             <section className='card ingredients-card'>
               <div className='sec-head'>
                 <h2>Ingredients</h2>
-                {!loading && (
+                {loading ? (
+                  // Placeholder for the servings stepper so the head row keeps
+                  // its height and the pill doesn't pop in on load. Held until
+                  // the flash-guard delay elapses.
+                  <Skeleton
+                    baseColor={skeletonColor}
+                    inline
+                    containerClassName={`servings-pill-skeleton ${
+                      showSkeleton ? '' : 'sk-hold'
+                    }`}
+                    width={145}
+                    height={38}
+                    borderRadius={999}
+                  />
+                ) : (
                   <div className='servings-pill'>
                     <button
                       type='button'
@@ -460,16 +544,43 @@ const SingleRecipe: FC = () => {
                   </div>
                 )}
               </div>
-              <ul className='ing-list'>
+              <ul
+                className={`ing-list ${
+                  loading && !showSkeleton ? 'sk-hold' : ''
+                }`}
+              >
                 {loading
                   ? Array.from({ length: 6 }).map((_, i) => (
-                      <li className='ing skeleton-row' key={i}>
-                        <Skeleton baseColor={skeletonColor} height={40} />
+                      // Mirror the real `.ing` row (checkbox · thumb · text) so the
+                      // grid columns and row height match and nothing shifts on load.
+                      <li key={i} aria-hidden='true'>
+                        <div className='ing'>
+                          <span className='box' />
+                          <span className='thumb'>
+                            <Skeleton
+                              baseColor={skeletonColor}
+                              className='thumb-skeleton'
+                            />
+                          </span>
+                          <span className='ing-text'>
+                            <Skeleton
+                              baseColor={skeletonColor}
+                              width={`${78 - (i % 3) * 14}%`}
+                            />
+                          </span>
+                        </div>
                       </li>
                     ))
                   : ingredients.map(renderIngredient)}
               </ul>
-              {!loading && currRecipe?.servingPrice ? (
+              {loading ? (
+                // Reserve the price line from frame 1 so Instructions/Tags below
+                // don't get shoved down when the real estimate arrives. Held
+                // invisible until the flash-guard delay elapses.
+                <div className={`price-line ${showSkeleton ? '' : 'sk-hold'}`}>
+                  <Skeleton baseColor={skeletonColor} inline width={240} />
+                </div>
+              ) : currRecipe?.servingPrice ? (
                 <div className='price-line'>
                   Estimated{' '}
                   <strong>
@@ -482,7 +593,11 @@ const SingleRecipe: FC = () => {
 
             <section className='card instructions-card'>
               <h2>Instructions</h2>
-              <ol className='step-list'>
+              <ol
+                className={`step-list ${
+                  loading && !showSkeleton ? 'sk-hold' : ''
+                }`}
+              >
                 {loading
                   ? Array.from({ length: 4 }).map((_, i) => (
                       <li className='step' key={i}>
@@ -520,16 +635,57 @@ const SingleRecipe: FC = () => {
 
           </div>
 
-          {!loading && currRecipe && (
-            <RatingsAndReviews
-              recipeId={currRecipe._id}
-              ratingVal={currRecipe.rating && currRecipe.rating.rateValue}
-              ratingCount={currRecipe.rating && currRecipe.rating.rateCount}
-              currUserReview={currUserReview}
-              setCurrUserReview={setCurrUserReview}
-              isOwner={isOwner}
-            />
-          )}
+          {loading
+            ? (
+                // Page-load skeleton for the whole Ratings & Reviews block —
+                // reuses `.recipe-ratings` so the divider, header, and review
+                // cards land in the same place as the real subsystem below.
+                // Reserved from frame 1, held invisible until the delay elapses.
+                <div
+                  className={`recipe-ratings rr-skeleton ${
+                    showSkeleton ? '' : 'sk-hold'
+                  }`}
+                  aria-hidden='true'
+                >
+                  <div className='rr-header'>
+                    {/* Title (243×28, the fixed "Ratings & Reviews" width) + the
+                        average-rating block on the right, so the header is the
+                        same 38px tall and the title shares the loaded baseline. */}
+                    <Skeleton
+                      baseColor={skeletonColor}
+                      className='title'
+                      width={243}
+                      height={28}
+                    />
+                    <div className='rr-avg'>
+                      <Skeleton inline baseColor={skeletonColor} width={44} height={38} />
+                      <div className='rr-avg-meta'>
+                        <div>
+                          <Skeleton inline baseColor={skeletonColor} width={80} height={14} />
+                        </div>
+                        <div>
+                          <Skeleton inline baseColor={skeletonColor} width={54} height={11} />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className='ratings-reviews-container'>
+                    <div className='reviews'>
+                      <ReviewCardSkeleton count={2} />
+                    </div>
+                  </div>
+                </div>
+              )
+            : currRecipe && (
+                <RatingsAndReviews
+                  recipeId={currRecipe._id}
+                  ratingVal={currRecipe.rating && currRecipe.rating.rateValue}
+                  ratingCount={currRecipe.rating && currRecipe.rating.rateCount}
+                  currUserReview={currUserReview}
+                  setCurrUserReview={setCurrUserReview}
+                  isOwner={isOwner}
+                />
+              )}
 
           {!loading && currRecipe && !isOwner && (
             <div className='sr-report-foot'>

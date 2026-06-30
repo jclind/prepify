@@ -2,6 +2,7 @@ import { ArrowUpRightIcon, BookmarkIcon, ClockIcon, EyeIcon, StarOutlineIcon, Tr
 import React, { FC } from 'react'
 import { Link } from 'react-router-dom'
 import Skeleton from 'react-loading-skeleton'
+import { skeletonBase as skeletonColor } from 'src/util/loadingStyles'
 import 'react-loading-skeleton/dist/skeleton.css'
 
 import './UserRecipeThumbnail.scss'
@@ -10,7 +11,6 @@ import { formatRating } from 'src/util/formatRating'
 import { formatCompactCount } from 'src/util/formatCompactCount'
 import { formatPrice } from 'src/util/formatPrice'
 
-const skeletonColor = '#d6d6d6'
 
 const formatDate = (createdAt: string) => {
   const ms = Number(createdAt)
@@ -61,7 +61,7 @@ const UserRecipeThumbnail: FC<UserRecipeThumbnailType> = ({
         </div>
         <div className='id'>
           {isLoading ? (
-            <Skeleton baseColor={skeletonColor} height={20} width={'14ch'} />
+            <Skeleton inline baseColor={skeletonColor} height={20} width={'14ch'} />
           ) : (
             <h3 className='title'>{recipe!.title}</h3>
           )}
@@ -79,7 +79,7 @@ const UserRecipeThumbnail: FC<UserRecipeThumbnailType> = ({
         <div className='tile'>
           <EyeIcon className='ic' />
           {isLoading ? (
-            <Skeleton baseColor={skeletonColor} height={18} width={24} />
+            <Skeleton inline baseColor={skeletonColor} height={18} width={24} />
           ) : (
             <b>{formatCompactCount(recipe!.views)}</b>
           )}
@@ -88,7 +88,7 @@ const UserRecipeThumbnail: FC<UserRecipeThumbnailType> = ({
         <div className='tile'>
           <BookmarkIcon className='ic' />
           {isLoading ? (
-            <Skeleton baseColor={skeletonColor} height={18} width={24} />
+            <Skeleton inline baseColor={skeletonColor} height={18} width={24} />
           ) : (
             <b>{formatCompactCount(recipe!.numTimesSaved)}</b>
           )}
@@ -97,7 +97,7 @@ const UserRecipeThumbnail: FC<UserRecipeThumbnailType> = ({
         <div className='tile'>
           <TrendingUpIcon className='ic' />
           {isLoading ? (
-            <Skeleton baseColor={skeletonColor} height={18} width={24} />
+            <Skeleton inline baseColor={skeletonColor} height={18} width={24} />
           ) : (
             <b>{formatCompactCount(recipe!.numTimesMade)}</b>
           )}
@@ -109,7 +109,7 @@ const UserRecipeThumbnail: FC<UserRecipeThumbnailType> = ({
         <span>
           <ClockIcon />
           {isLoading ? (
-            <Skeleton baseColor={skeletonColor} width={50} />
+            <Skeleton inline baseColor={skeletonColor} width={50} />
           ) : recipe!.totalTime > 1 ? (
             `${recipe!.totalTime} mins`
           ) : (
@@ -119,7 +119,7 @@ const UserRecipeThumbnail: FC<UserRecipeThumbnailType> = ({
         <span>
           <StarOutlineIcon />
           {isLoading ? (
-            <Skeleton baseColor={skeletonColor} width={50} />
+            <Skeleton inline baseColor={skeletonColor} width={50} />
           ) : Number(recipe!.rating.rateCount) === 0 ? (
             'New'
           ) : (

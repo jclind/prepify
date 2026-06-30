@@ -1,5 +1,6 @@
 import React, { FC, useState } from 'react'
 import { TailSpin } from 'react-loader-spinner'
+import { spinnerColor } from 'src/util/loadingStyles'
 import Modal from 'react-modal'
 import toast from 'react-hot-toast'
 import { panelModalStylesWith } from 'src/util/modalStyles'
@@ -60,7 +61,7 @@ const ConfirmDeleteReviewModal: FC<ConfirmDeleteReviewModalProps> = ({
               <TailSpin
                 height='30'
                 width='30'
-                color='#303841'
+                color={spinnerColor}
                 ariaLabel='loading'
               />
             </div>

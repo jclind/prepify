@@ -78,6 +78,12 @@ a {
   border: 0;
 }
 
+// Flash-guard hold for skeletons (see useDelayedLoading / loading-states.md):
+// skeletons are rendered while loading so their container reserves full height
+// from the first frame (no grow-on-appear jump), but stay unpainted until the
+// delay elapses. visibility (not display) keeps the layout box intact.
+.sk-hold { visibility: hidden; }
+
 // Honor the OS "reduce motion" setting globally: near-instant animations and
 // transitions (the nav condense, star hover, skip-link slide, modal fades, …)
 // for users who've opted out of motion. Opt-in only — the default experience is
