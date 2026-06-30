@@ -1,6 +1,7 @@
 import React, { FC, useState } from 'react'
 import toast from 'react-hot-toast'
 import { TailSpin } from 'react-loader-spinner'
+import { spinnerColor } from 'src/util/loadingStyles'
 import AuthAPI from 'src/api/auth'
 import RecipeAPI from 'src/api/recipes'
 import { GENERIC_ERROR } from 'src/util/toastMessages'
@@ -79,7 +80,7 @@ const MadeRecipeBtn: FC<MadeRecipeBtnProps> = ({ recipeId }) => {
             <TailSpin
               height='26'
               width='26'
-              color='black'
+              color={spinnerColor}
               ariaLabel='loading'
             />
           ) : (

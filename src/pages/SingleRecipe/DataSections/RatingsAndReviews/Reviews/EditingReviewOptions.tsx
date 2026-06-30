@@ -1,5 +1,6 @@
 import React, { FC } from 'react'
 import { TailSpin } from 'react-loader-spinner'
+import { spinnerColor } from 'src/util/loadingStyles'
 type EditingReviewOptionsProps = {
   editLoading: boolean
   editing: boolean
@@ -43,7 +44,7 @@ const EditingReviewOptions: FC<EditingReviewOptionsProps> = ({
             <TailSpin
               height='30'
               width='30'
-              color='#303841'
+              color={spinnerColor}
               ariaLabel='loading'
             />
           </div>
