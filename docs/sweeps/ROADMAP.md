@@ -72,7 +72,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **2-iso** | Design: single icon family (Lucide) | `[x]` | `src/Components/icons` glyph remap (no call-site churn) + temp audit page + docs | #206 |
 | **2-iso** | Design: `RecipeFormInput` → shared `FormInput` | `[x]` | `AddRecipe/*`, `Components/Form/*` | #204 |
 | **2-iso** | Design: toast punctuation + string dedupe | `[x]` | ~10 toast call sites (TSX strings) | #207 |
-| **2-iso** | Design: codify loading-state pattern | `[P]` | convention + `TailSpin`/skeleton outliers | #213 |
+| **2-iso** | Design: codify loading-state pattern | `[x]` | convention + `TailSpin`/skeleton outliers | #213 |
 | **2-scss** | Design: pill `.btn` system | `[x]` | **`index.scss` + many page `.scss`** ⚠ chokepoint | #210 |
 | **2-scss** | Design: type scale (~520 `font-size:` literals) | `[ ]` | **`helpers.scss` + ~60 files** ⚠ chokepoint | — |
 | **2-scss** | Design: elevation/shadow re-author (~52 literals) | `[ ]` | **`helpers.scss` + page `.scss`** ⚠ chokepoint | — |
@@ -371,3 +371,28 @@ narrates the *why*.
 - _2026-06-30_ — pill `.btn` worktree (`worktree-feat+pill-btn-system`) + branch **torn down** after the owner's
   final verification pass (board already `[x]` from the merge entry above; this reconciles the "kept up" note).
   The `2-scss` chokepoint lane is now free for the next track (type scale / elevation / `$admin-*` / `$primary-hover`).
+- _2026-06-30_ — **Design: codify loading-state pattern** merged (#213, `[P]`→`[x]`, merge commit `c84c498`) —
+  **the last Design `2-iso` track lands; the whole `2-iso` lane is now closed** (icons ×2, modal config,
+  `RecipeFormInput`, toast dedupe, loading-state). Two parts: (1) the convention — one `loadingStyles` token
+  module (`skeletonBase` `$gray-400` / `spinnerColor` `$primary-text`, collapsing ~9 per-file `skeletonColor`
+  hexes in two greys + the scattered `TailSpin` colours), `useDelayedLoading` promoted `pages/Account/`→`src/hooks/`
+  (220ms flash-guard), a global `.sk-hold { visibility:hidden }` reserve-height utility, all written down at
+  [`design/loading-states.md`](../design/loading-states.md). (2) a CLS / skeleton-fidelity pass: skeletons rebuilt
+  to *self-mirror* their loaded markup (same wrappers → same height by construction), `inline` swept onto sized
+  single-line skeletons to drop react-loading-skeleton's trailing `<br>` (the line-box that was inflating button/
+  pill wrappers), images hold a skeleton until `onLoad` then fade in, and **PublicProfile** converted from a
+  whole-view `TailSpin` to a self-mirroring header + tile-grid skeleton. Measured CLS: Home 0.21→0.0002,
+  SingleRecipe 0.27→0.02, account tabs 0 (desktop + mobile, via a throwaway Cypress-auth + CDP layout-shift
+  harness — no prod data touched). A high-effort code review caught 4 fixes folded in before merge: a cached-image
+  race (skeleton stuck over a decoded image when `onLoad` fires before React attaches → `img.complete` ref guard),
+  RecipeCard reserving its cuisine eyebrow unconditionally, the hero title/description reserving through the
+  flash-guard window, and dead `const loading = isLoading` aliases removed. **CI footnote:** the PR sat green-less
+  for a while not from any account/billing issue but because the branch was 27 commits behind `development` and
+  *conflicting* — GitHub can't build the merge commit `pull_request` CI runs on, so the Tests workflow never
+  scheduled. Merging `development` in (3 conflicts: the `useDelayedLoading` path move vs a new `COLLECTION_CREATE_ERROR`
+  import, the `.action-btn-skeleton` rules vs the pill-`.btn` refactor, and this board) unblocked it; `tsc`/build/
+  **543 Vitest**/Supertest/Cypress E2E/Fallow/GitGuardian all green on the merge commit. Deferred polish (not
+  blockers, left as follow-ups): the SingleRecipe no-tags Instructions↔Nutrition spacing gap, and the Recipes-page
+  footer FOUT (a Montserrat `display=swap` font reflow, not CLS — wants font preload/self-host, its own change).
+  Worktree (`worktree-feat+loading-state-pattern`) kept up pending owner verification. Remaining Wave 2 = the
+  serialized `2-scss` chokepoint lane only (type scale / elevation / `$admin-*` / `$primary-hover`).
