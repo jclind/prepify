@@ -17,8 +17,8 @@
     .open-count {
       font-size: 0.85rem;
       font-weight: 600;
-      color: #b45309;
-      background: #fef3c7;
+      color: s.$admin-warn-text;
+      background: s.$admin-warn-bg;
       padding: 0.2rem 0.55rem;
       border-radius: s.$radius-pill;
     }
@@ -32,9 +32,9 @@
     align-items: center;
 
     .tab {
-      border: 1px solid #d8dbe0;
+      border: 1px solid s.$admin-slate-300;
       background: s.$white;
-      color: #4b5563;
+      color: s.$admin-slate-600;
       padding: 0.4rem 0.9rem;
       border-radius: s.$radius-pill;
       font-size: 0.85rem;
@@ -42,21 +42,21 @@
       transition: all 0.15s;
 
       &:hover {
-        border-color: #9ca3af;
+        border-color: s.$admin-slate-400;
       }
 
       &.active {
-        background: #1f2430;
-        border-color: #1f2430;
+        background: s.$admin-chrome;
+        border-color: s.$admin-chrome;
         color: s.$white;
       }
     }
 
     .category-select {
       margin-left: auto;
-      border: 1px solid #d8dbe0;
+      border: 1px solid s.$admin-slate-300;
       background: s.$white;
-      color: #374151;
+      color: s.$admin-slate-700;
       padding: 0.4rem 0.7rem;
       border-radius: s.$radius-md;
       font-size: 0.85rem;
@@ -65,11 +65,11 @@
   }
 
   .bug-reports-state {
-    color: #6b7280;
+    color: s.$admin-slate-500;
     font-size: 0.95rem;
 
     &.error {
-      color: #b91c1c;
+      color: s.$admin-danger-text;
     }
   }
 
@@ -81,8 +81,8 @@
     flex-wrap: wrap;
     margin-bottom: 1rem;
     padding: 0.6rem 0.9rem;
-    background: #f9fafb;
-    border: 1px solid #e5e7eb;
+    background: s.$admin-slate-50;
+    border: 1px solid s.$admin-slate-200;
     border-radius: s.$radius-md;
 
     .bulk-select-all {
@@ -90,7 +90,7 @@
       align-items: center;
       gap: 0.5rem;
       font-size: 0.85rem;
-      color: #374151;
+      color: s.$admin-slate-700;
       cursor: pointer;
     }
 
@@ -113,15 +113,15 @@
         }
 
         &.resolve {
-          background: #16a34a;
-          border-color: #16a34a;
+          background: s.$admin-ok-fill;
+          border-color: s.$admin-ok-fill;
           color: s.$white;
         }
 
         &.dismiss {
           background: s.$white;
-          border-color: #d1d5db;
-          color: #6b7280;
+          border-color: s.$admin-slate-300;
+          color: s.$admin-slate-500;
         }
       }
     }
@@ -146,7 +146,7 @@
 
   .bug-report-card {
     background: s.$white;
-    border: 1px solid #e5e7eb;
+    border: 1px solid s.$admin-slate-200;
     border-radius: s.$radius-lg;
     padding: 1.1rem 1.25rem;
     display: flex;
@@ -174,37 +174,37 @@
       }
 
       .category-pill {
-        background: #e0e7ff;
-        color: #3730a3;
+        background: s.$admin-info-bg;
+        color: s.$admin-info-text;
 
         &.idea {
-          background: #dcfce7;
-          color: #166534;
+          background: s.$admin-ok-bg;
+          color: s.$admin-ok-text;
         }
 
         &.confusing {
-          background: #fef3c7;
-          color: #92400e;
+          background: s.$admin-warn-bg;
+          color: s.$admin-warn-text-dk;
         }
 
         &.other {
-          background: #f3f4f6;
-          color: #374151;
+          background: s.$admin-slate-100;
+          color: s.$admin-slate-700;
         }
       }
 
       .status-pill {
-        background: #fef3c7;
-        color: #92400e;
+        background: s.$admin-warn-bg;
+        color: s.$admin-warn-text-dk;
 
         &.resolved {
-          background: #dcfce7;
-          color: #166534;
+          background: s.$admin-ok-bg;
+          color: s.$admin-ok-text;
         }
 
         &.dismissed {
-          background: #f3f4f6;
-          color: #6b7280;
+          background: s.$admin-slate-100;
+          color: s.$admin-slate-500;
         }
       }
     }
@@ -212,7 +212,7 @@
     .bug-report-description {
       margin: 0;
       font-size: 0.95rem;
-      color: #111827;
+      color: s.$admin-slate-900;
       line-height: 1.5;
       white-space: pre-wrap;
       word-break: break-word;
@@ -226,8 +226,8 @@
 
       .ctx {
         font-size: 0.78rem;
-        color: #4b5563;
-        background: #f3f4f6;
+        color: s.$admin-slate-600;
+        background: s.$admin-slate-100;
         padding: 0.1rem 0.4rem;
         border-radius: s.$radius-xs;
         max-width: 100%;
@@ -240,7 +240,7 @@
     .bug-report-ua {
       margin: 0.4rem 0 0;
       font-size: 0.72rem;
-      color: #9ca3af;
+      color: s.$admin-slate-400;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -249,7 +249,7 @@
     .bug-report-foot {
       margin: 0.6rem 0 0;
       font-size: 0.78rem;
-      color: #9ca3af;
+      color: s.$admin-slate-400;
     }
 
     .bug-report-actions {
@@ -274,14 +274,14 @@
 
         &.resolve {
           background: s.$white;
-          border-color: #16a34a;
-          color: #16a34a;
+          border-color: s.$admin-ok-fill;
+          color: s.$admin-ok-fill;
         }
 
         &.dismiss {
           background: s.$white;
-          border-color: #d1d5db;
-          color: #6b7280;
+          border-color: s.$admin-slate-300;
+          color: s.$admin-slate-500;
         }
       }
     }
@@ -297,7 +297,7 @@
 
     .page-info {
       font-size: 0.82rem;
-      color: #6b7280;
+      color: s.$admin-slate-500;
     }
 
     .page-controls {
@@ -307,21 +307,21 @@
 
       .page-indicator {
         font-size: 0.82rem;
-        color: #374151;
+        color: s.$admin-slate-700;
       }
 
       .page-btn {
         cursor: pointer;
-        border: 1px solid #d8dbe0;
+        border: 1px solid s.$admin-slate-300;
         background: s.$white;
-        color: #374151;
+        color: s.$admin-slate-700;
         border-radius: s.$radius-sm;
         padding: 0.4rem 0.8rem;
         font-size: 0.82rem;
         font-weight: 600;
 
         &:hover:not(:disabled) {
-          border-color: #9ca3af;
+          border-color: s.$admin-slate-400;
         }
 
         &:disabled {

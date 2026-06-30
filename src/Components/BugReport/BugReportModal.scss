@@ -1,7 +1,7 @@
 @use '../../helpers.scss' as s;
 
 // Adopts the `.btn` base for layout/reset/pill, but keeps its bespoke tertiary
-// text + blue (#2563eb) hover — these aren't the `--ghost` palette, so no colour
+// text + blue (s.$admin-link) hover — these aren't the `--ghost` palette, so no colour
 // variant is applied (base only, like the KEEP-BESPOKE buttons). Selector is
 // `.bug-report-trigger.btn` (0,2,0) so its compact padding reliably outranks the
 // base `.btn` (0,1,0) regardless of stylesheet order (the element always carries
@@ -12,12 +12,12 @@
   padding: 0.15rem 0.35rem;
 
   &:hover {
-    color: #2563eb;
-    background: rgba(37, 99, 235, 0.08);
+    color: s.$admin-link;
+    background: rgba(s.$admin-link, 0.08);
   }
 
   &.button {
-    border: 1px solid #d8dbe0;
+    border: 1px solid s.$admin-slate-300;
     padding: 0.4rem 0.75rem;
     font-size: 0.85rem;
   }
@@ -33,16 +33,16 @@
 
   .bug-report-modal-sub {
     margin: 0 0 1.25rem;
-    color: #6b7280;
+    color: s.$admin-slate-500;
     font-size: 0.9rem;
   }
 
   .bug-report-identity {
     margin: -0.75rem 0 1.25rem;
     padding: 0.5rem 0.7rem;
-    background: #f1f5f9;
+    background: s.$admin-slate-100;
     border-radius: s.$radius-sm;
-    color: #374151;
+    color: s.$admin-slate-700;
     font-size: 0.85rem;
 
     strong {
@@ -57,7 +57,7 @@
     margin-bottom: 1rem;
     font-size: 0.85rem;
     font-weight: 600;
-    color: #374151;
+    color: s.$admin-slate-700;
 
     select,
     textarea,
@@ -65,14 +65,14 @@
       font-weight: 400;
       font-size: 0.9rem;
       padding: 0.55rem 0.65rem;
-      border: 1px solid #d8dbe0;
+      border: 1px solid s.$admin-slate-300;
       border-radius: s.$radius-sm;
       font-family: inherit;
       resize: vertical;
 
       &:focus {
         outline: none;
-        border-color: #3b82f6;
+        border-color: s.$admin-action;
       }
     }
   }
@@ -93,16 +93,16 @@
 
     // Bespoke grey secondary (not the white `--outline` palette) — base only.
     .bug-report-cancel-btn {
-      background: #f1f2f4;
-      border: 1px solid #d8dbe0;
-      color: #374151;
+      background: s.$admin-slate-100;
+      border: 1px solid s.$admin-slate-300;
+      color: s.$admin-slate-700;
     }
 
     // KEEP BESPOKE: non-token green fill on the `.btn` base, no colour variant.
     .bug-report-submit-btn {
-      background: #16a34a;
-      border: 1px solid #16a34a;
-      color: #fff;
+      background: s.$admin-ok-fill;
+      border: 1px solid s.$admin-ok-fill;
+      color: s.$white;
 
       &:disabled {
         opacity: 0.7;
