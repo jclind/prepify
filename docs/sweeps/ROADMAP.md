@@ -368,3 +368,6 @@ narrates the *why*.
   white-on-orange) via a seeded review, torn down + Mongo orphan-scanned clean; `tsc`/build/**543 Vitest**/Cypress
   E2E green on the merge commit. Run-log + BACKLOG 'pill `.btn` system' item flipped to done. **Worktree kept up**
   (owner still verifying). Remaining `2-scss` lane: type scale, elevation, `$admin-*`, `$primary-hover`.
+- _2026-06-30_ — pill `.btn` worktree (`worktree-feat+pill-btn-system`) + branch **torn down** after the owner's
+  final verification pass (board already `[x]` from the merge entry above; this reconciles the "kept up" note).
+  The `2-scss` chokepoint lane is now free for the next track (type scale / elevation / `$admin-*` / `$primary-hover`).
