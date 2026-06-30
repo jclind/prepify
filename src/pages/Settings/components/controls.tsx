@@ -40,11 +40,19 @@ export const AvatarField: FC<AvatarFieldProps> = ({
         )}
       </div>
       <div className='sr-avatar-actions'>
-        <button type='button' className='sr-btn-outline' onClick={onUpload}>
+        <button
+          type='button'
+          className='sr-btn-outline btn btn--outline'
+          onClick={onUpload}
+        >
           Upload photo
         </button>
         {imgUrl && (
-          <button type='button' className='sr-btn-text' onClick={onRemove}>
+          <button
+            type='button'
+            className='sr-btn-text btn btn--ghost'
+            onClick={onRemove}
+          >
             Remove
           </button>
         )}
@@ -209,12 +217,16 @@ export const SaveBar: FC<{
   <div className={`sr-savebar ${dirty ? 'show' : ''}`}>
     <span className='sr-savebar-msg'>You have unsaved changes</span>
     <div className='sr-savebar-actions'>
-      <button type='button' className='sr-btn-text' onClick={onReset}>
+      <button
+        type='button'
+        className='sr-btn-text btn btn--ghost'
+        onClick={onReset}
+      >
         Discard
       </button>
       <button
         type='button'
-        className='sr-btn-primary'
+        className='sr-btn-primary btn btn--primary'
         onClick={onSave}
         disabled={loading}
       >

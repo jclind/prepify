@@ -39,7 +39,7 @@ const DraftResumeBanner: FC = () => {
       <div className='banner-actions'>
         <button
           type='button'
-          className='resume-btn'
+          className='resume-btn btn'
           onClick={() => navigate(`/add-recipe?draftId=${mostRecent._id}`)}
         >
           Resume

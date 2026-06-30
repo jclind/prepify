@@ -162,34 +162,23 @@ $soft-shadow: rgba(48, 56, 65, 0.05) 0px 6px 20px;
     gap: 0.6rem;
     flex-wrap: wrap;
     .save-recipe, .add-rating, .print-recipe { display: inline-flex; }
+    // rate/print are `.btn .btn--outline`; save is a bespoke AA-tuned toggle on
+    // the `.btn` base. Shared locally: the action bar's heavier 1.5px border,
+    // 700 weight, and 18px icons. (Layout/shape/padding come from `.btn`.)
     .save-recipe-btn, .add-rating-btn, .print-recipe-btn {
       position: relative;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      font-family: inherit;
       font-weight: 700;
-      font-size: 0.95rem;
-      padding: 0.7rem 1.25rem;
-      border-radius: s.$radius-lg;
-      cursor: pointer;
+      border-width: 1.5px;
       height: auto !important;
-      border: 1.5px solid s.$gray-300;
-      background: s.$white;
-      color: s.$primary-text;
-      transition: all 0.12s ease;
       .icon { height: 18px; width: 18px; }
-      &:hover { border-color: s.$primary-text; }
-      &:focus-visible { @include s.outline(); }
     }
     .save-recipe-btn {
-      // AA on-light brand fills (white text needs 4.5:1; vivid #ff5722/#00adb5
-      // give only ~3:1). Hovers darken one step further, still AA.
+      // Stateful save toggle. Kept off the generic `.btn--primary` because its
+      // $primary-hover (#e74e1d, white-on-it 3.81) fails AA; these fills/hovers
+      // are AA-tuned. is-saved flips to the accessible teal.
       background: s.$primary-accessible;
       border-color: s.$primary-accessible;
       color: s.$white;
-      // NB: not $primary-hover (#e74e1d, white-on-it 3.81 — fails AA); this
-      // button's base is the accessible orange, so its hover darkens further.
       &:hover { background: #a52f0a; border-color: #a52f0a; }
       &.is-saved {
         background: s.$secondary-accessible;
@@ -204,7 +193,7 @@ $soft-shadow: rgba(48, 56, 65, 0.05) 0px 6px 20px;
       align-items: center;
       justify-content: center;
       background: rgba(255, 255, 255, 0.6);
-      border-radius: s.$radius-lg;
+      border-radius: s.$radius-pill;
     }
   }
 
@@ -410,15 +399,12 @@ $soft-shadow: rgba(48, 56, 65, 0.05) 0px 6px 20px;
     margin: 0;
     width: auto;
     max-width: none;
+    // Teal-tinted "made it" toggle on the `.btn` base (pill + reset/layout); the
+    // tint fill/border/hover + sizing are bespoke, kept off the colour variants.
     .made-recipe {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.45rem;
       width: auto;
       height: auto;
       padding: 0.75rem 1.5rem;
-      border-radius: s.$radius-lg;
       font-weight: 700;
       font-size: 0.95rem;
       background: rgba(s.$secondary, 0.12);
@@ -648,18 +634,11 @@ $soft-shadow: rgba(48, 56, 65, 0.05) 0px 6px 20px;
         box-sizing: border-box;
         &:focus { outline: none; border-color: s.$primary; }
       }
+      // `.btn .btn--primary`; only the review-form spacing + weight are local.
       .submit-review-btn {
         margin-top: 0.85rem;
-        background: s.$primary;
-        color: s.$white;
-        border: none;
-        border-radius: s.$radius-lg;
-        padding: 0.6rem 1.25rem;
-        font-family: inherit;
         font-weight: 700;
         font-size: 0.9rem;
-        cursor: pointer;
-        &:hover { background: s.$primary-hover; }
       }
     }
   }

@@ -34,7 +34,7 @@ const ProfileControls: FC<ProfileControlsProps> = ({ username }) => {
   return (
     <div className='acct-controls'>
       <button
-        className='acct-btn acct-edit'
+        className='btn acct-btn acct-edit'
         onClick={() => navigate('/settings')}
         title='Edit profile'
       >
@@ -42,7 +42,7 @@ const ProfileControls: FC<ProfileControlsProps> = ({ username }) => {
         <span>Edit profile</span>
       </button>
       <button
-        className='acct-btn acct-iconbtn'
+        className='btn btn--icon acct-btn acct-iconbtn'
         onClick={() => navigate('/settings')}
         aria-label='Account settings'
         title='Settings'
@@ -50,7 +50,7 @@ const ProfileControls: FC<ProfileControlsProps> = ({ username }) => {
         <SettingsIcon />
       </button>
       <button
-        className='acct-btn acct-iconbtn'
+        className='btn btn--icon acct-btn acct-iconbtn'
         onClick={onShare}
         aria-label='Share profile'
         title='Share'

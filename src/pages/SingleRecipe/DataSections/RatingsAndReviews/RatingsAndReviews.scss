@@ -79,21 +79,13 @@
             @include s.outline();
           }
         }
+        // `.btn .btn--ghost` link-style: ghost supplies the colour + hover; only
+        // the compact link treatment (no padding, smaller, underlined) is local.
         .remove-rating {
-          background: none;
-          border: none;
           padding: 0;
           margin-left: 0.5rem;
           font-size: 0.8125rem;
-          color: s.$secondary-text;
           text-decoration: underline;
-          cursor: pointer;
-          &:hover {
-            color: s.$primary-text;
-          }
-          &:focus-visible {
-            @include s.outline();
-          }
         }
       }
 
@@ -173,29 +165,9 @@
           font-weight: 500;
           color: s.$secondary-text;
         }
-        .leave-review-btn,
-        .submit-review-btn {
-          font-size: 1rem;
-          background: s.$primary;
-          color: s.$primary-background;
-          padding: 0.5rem 1rem;
-          border-radius: s.$border-radius;
-          &:focus-visible {
-            @include s.outline();
-          }
-        }
-        .leave-review-btn {
-          position: absolute;
-          display: none;
-          right: 200%;
-          opacity: 0;
-        }
-        .leave-review-btn.visible {
-          position: relative;
-          display: flex;
-          right: 0;
-          opacity: 1;
-        }
+        // NB: `.submit-review-btn` is migrated to `.btn .btn--primary` (markup in
+        // AddReview.tsx; local spacing/weight in SingleRecipe.scss). It's dropped
+        // from this rule so this deep selector no longer overrides its pill shape.
         .review-open {
           position: absolute;
           right: 200%;
@@ -237,6 +209,13 @@
           padding-top: 2rem;
           margin: 0 auto;
           text-align: center;
+          // Readable CTA, not the muted `--ghost` grey: dark resting text + an
+          // underline on hover. This is the only "more reviews" control, so the
+          // variant's secondary-text grey reads too quiet as the resting state.
+          color: s.$primary-text;
+          &:hover:not(:disabled) {
+            text-decoration: underline;
+          }
         }
       }
     }
