@@ -240,11 +240,16 @@ The triage date stamped on items is the date they were filed here, not when they
   `ReportControl`, `RecipeControls`, `AchievementsModal`, and `HomeCookSuggestion`.)** Extract a shared
   `modalStyles` constant (content + overlay) and a thin wrapper so every dialog reads the same.
   *(surfaced 2026-06-25 in the design-consistency sweep.)*
-- `[ ]` **Codify the loading-state pattern (skeleton vs spinner)** — content grids use
+- `[x]` **Codify the loading-state pattern (skeleton vs spinner)** — content grids use
   `react-loading-skeleton`, button actions use `TailSpin`, and several async waits show nothing; the choice
   is per-developer and `TailSpin` sizes vary (18–30px). Write down the rule (skeleton for content
   placeholders, spinner for discrete actions/auth) and align the outliers. *(surfaced 2026-06-25 in the
-  design-consistency sweep.)*
+  design-consistency sweep.)* **(done 2026-06-30, PR #213 — single `loadingStyles` token module
+  (`skeletonBase`/`spinnerColor`), `useDelayedLoading` flash-guard promoted to `src/hooks/`, a `.sk-hold`
+  reserve-height utility, and a CLS / skeleton-fidelity pass: self-mirroring skeletons, `inline` to drop
+  react-loading-skeleton's trailing `<br>`, image hold-until-`onLoad` fade-in, PublicProfile spinner→skeleton.
+  Convention written at [`design/loading-states.md`](design/loading-states.md). Measured CLS Home 0.21→0.0002,
+  SingleRecipe 0.27→0.02.)***
 - `[ ]` **Toast copy: consistent terminal punctuation + dedupe strings** — toasts disagree on trailing
   punctuation (`'Could not copy link'`, `'Could not update collections'`, `'Profile link copied'` have no
   period; most others end with `.`/`!`) and on phrasing (`'Profile link copied'` vs `'Profile link copied

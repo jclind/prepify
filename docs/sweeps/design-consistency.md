@@ -5,7 +5,7 @@
 > decorative tint). **~10 follow-ups open** in [`../BACKLOG.md`](../BACKLOG.md#ux--visual-polish) +
 > [Tech debt](../BACKLOG.md#tech-debt--process--infra): pill `.btn` system, delete `RecipeThumbnail`,
 > ~~icon-per-concept~~ (done — PR #205; ~~single-family Lucide~~ done — PR #206), ~~modal style config~~ (done — PR #203),
-> loading-state pattern, toast punctuation; type scale, elevation
+> ~~loading-state pattern~~ (done — PR #213), toast punctuation; type scale, elevation
 > re-author, ~~danger-red token~~ (done — PR #208), `$admin-*` palette, ~~`RecipeFormInput` dup~~ (done — PR #204). *(See the [run log](README.md#run-log).)*
 
 Full-coverage visual/UX consistency audit: are colors, spacing, typography, radii, shadows, components,
@@ -46,8 +46,11 @@ screenshots of anything changed. Polish only — no redesign.
    (recipe empty, profile empty, 404, profile-not-found — same visual language?), and the
    `RecipeCard` vs `RecipeThumbnail` overlap. Note duplication to consolidate.
 5. **States.** For each interactive component, are hover / focus-visible / active / disabled / loading /
-   empty / error styled consistently? Loading especially — skeletons vs spinners (`TailSpin`) vs nothing,
-   used consistently for the same kind of wait. Empty/error states share a layout + tone.
+   empty / error styled consistently? *Loading resolved (PR #213):* one convention — skeleton for known-shape
+   content, `TailSpin` for discrete actions — with single colour tokens (`src/util/loadingStyles`), a
+   `useDelayedLoading` flash-guard, and a `.sk-hold` reserve-height utility; see
+   [`../design/loading-states.md`](../design/loading-states.md). Remaining check is per-context: empty/error
+   states still share a layout + tone.
 6. **Iconography.** *Resolved (PR #205 + #206):* the app is now one house family (Lucide) behind one import
    boundary (`src/Components/icons`), enforced by a Vitest guard — see [`../design/icon-system.md`](../design/icon-system.md).
    Remaining check is per-context: sizes consistent within a context, and a new concept gets a semantic export
