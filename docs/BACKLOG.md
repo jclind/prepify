@@ -642,19 +642,26 @@ findings table.)*
   `$danger` (dropped the dead var) and all 9 `#d64545` usages, incl. ReportControl's `rgba(214,69,69, …)`
   tints → `rgba(s.$error-red, X)`, onto `s.$error-red`. No `helpers.scss` change. Verified live: shipped CSS
   has 0× old reds; every danger surface renders `#c5303f`.)**
-- `[~]` **Name the admin/“cool” sub-palette and wire the token-less files into `helpers.scss`** — Admin +
+- `[x]` **Name the admin/“cool” sub-palette and wire the token-less files into `helpers.scss`** — Admin +
   moderation surfaces hardcode a Tailwind-ish slate/blue palette (`#3b82f6`/`#2563eb` action blue exists
-  nowhere in the brand) and several files `@use` nothing at all (audit F1/F2).
+  nowhere in the brand) and several files `@use` nothing at all (audit F1/F2). **(done 2026-06-30, PR #214 —
+  see the `[x]` sub-items below.)**
     - `[x]` **Import-wiring + value-identical repoints** — DONE 2026-06-25 (PR `style/admin-token-wiring`).
       Added `@use helpers as s` to the 10 token-less files that had a value-identical win and repointed their
       radii (radius scale) and `#fff`/`#ffffff` → `$white` (compiled CSS byte-identical). The bespoke admin
       palette in those files was deliberately left raw.
-    - **Remaining (the brand decision):** define a documented `$admin-*` token group for the slate/blue/
-      green/amber/red ramps and migrate the literals so the warm/cool split is a decision, not 200+ loose
-      hexes. Five files stay fully token-less because they hold *only* bespoke-palette values
-      (`RecipePlaceholder`, `ClassifierNote`, `AccountStatusBanner`, `DefaultAvatar`,
-      `AddRecipe/ListComponents/Item`) — they get wired when the `$admin-*` group lands.
-  *(surfaced 2026-06-25 in the design-consistency sweep; import-wiring applied, palette naming deferred.)*
+    - `[x]` **`$admin-*` token group + literal migration** — DONE 2026-06-30 (PR #214). Defined a documented
+      cool `$admin-*` group in `helpers.scss` (slate spine + `action`/`link` + ok/info/warn/danger/automod
+      status groups + `cat-green`/`cat-amber` classification accents) and migrated ~200 literals across 12
+      admin/moderation `.scss`; ~16 near-dupes normalized onto scale steps. Warm outliers folded to brand
+      `$primary-wash`/`-wash-deep`/`-deep`; `rgba(0,0,0,…)` shadows left raw for the elevation track. Of the 5
+      previously token-less files, 3 were wired in (`RecipePlaceholder` → warm washes, `ClassifierNote` →
+      `$admin-info-text`, `AccountStatusBanner` → warn/danger + `$primary-deep`); `DefaultAvatar` +
+      `AddRecipe/ListComponents/Item` hold no colour literals so they stayed raw. No pixel regression
+      (compiled-CSS diff: every change a documented collapse or
+      value-identical). Documented at `docs/design/admin-palette.md`. The category/type pills were decoupled from
+      status tokens (own `$admin-cat-*` group) after a code-review finding.
+  *(surfaced 2026-06-25 in the design-consistency sweep; import-wiring applied 2026-06-25, palette naming + migration done 2026-06-30 PR #214.)*
 - `[ ]` **`RecipeFormInput` duplicates the shared `FormInput`** — AddRecipe ships its own ~85%-identical
   input/textarea (`RecipeFormInput`/`RecipeFormTextArea`) instead of the shared `Components/Form/FormInput`,
   and Settings/BugReport use raw `<input>`/`<textarea>`/`<select>`. Converge on one input primitive.

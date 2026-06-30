@@ -77,7 +77,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **2-scss** | Design: type scale (~520 `font-size:` literals) | `[ ]` | **`helpers.scss` + ~60 files** ⚠ chokepoint | — |
 | **2-scss** | Design: elevation/shadow re-author (~52 literals) | `[ ]` | **`helpers.scss` + page `.scss`** ⚠ chokepoint | — |
 | **2-scss** | Design: one danger-red token | `[x]` | **`helpers.scss` + SingleRecipe/ReportControl/…** ⚠ chokepoint | #208 |
-| **2-scss** | Design: name the `$admin-*` sub-palette | `[P]` | **`helpers.scss` + Admin/moderation `.scss`** ⚠ chokepoint | #214 |
+| **2-scss** | Design: name the `$admin-*` sub-palette | `[x]` | **`helpers.scss` + Admin/moderation `.scss`** ⚠ chokepoint | #214 |
 | **2-scss** | A11y: `$primary-hover` AA-on-hover | `[ ]` | **`helpers.scss`** ⚠ chokepoint | — |
 | **blocked** | A11y: brand-orange contrast (AA) | `[blocked]` | `helpers.scss` `$primary-accessible` — **needs the brand-orange decision** | — |
 | **blocked** | Design: collapse remaining brand shades | `[blocked]` | entangled with the brand-orange recolor above | — |
@@ -423,3 +423,16 @@ narrates the *why*.
   footer FOUT (a Montserrat `display=swap` font reflow, not CLS — wants font preload/self-host, its own change).
   Worktree (`worktree-feat+loading-state-pattern`) kept up pending owner verification. Remaining Wave 2 = the
   serialized `2-scss` chokepoint lane only (type scale / elevation / `$admin-*` / `$primary-hover`).
+- _2026-06-30_ — **Design: name the `$admin-*` sub-palette** merged (#214, `[P]`→`[x]`, merge commit `d5681c6`) —
+  **third `2-scss` lane to land.** All five CI checks green on the merge commit (Backend/Supertest, Frontend/
+  Vitest, E2E/Cypress, Fallow advisory, GitGuardian). Two mid-flight syncs with `development` over the shared
+  sweep docs were reconciled: the first (#213's merge) auto-merged the ROADMAP Board + Status log; the second
+  (#213's `[P]`→`[x]` bookkeeping, #9ff3391) conflicted in the Status log and was resolved **append-only** (both
+  tracks' entries kept, none reordered). Closes the BACKLOG 'Name the admin/cool sub-palette' item (audit F1/F2):
+  defined the cool `$admin-*` group in `helpers.scss` + migrated ~200 literals across 12 admin/moderation `.scss`
+  (~16 near-dupes normalized), category/type pills decoupled from status tokens (own `$admin-cat-*` group) after a
+  code-review finding, warm outliers folded to `$primary-*`, documented at `docs/design/admin-palette.md`. No
+  pixel regression (compiled-CSS diff). Also recorded in `CLAUDE.md` that the local env targets **dev** infra
+  (Firebase `prepify-dev-58579` + `prepify-dev` Mongo), not prod. Run-log + design-consistency banner + BACKLOG
+  flipped to done. Remaining `2-scss` lane: type scale, elevation, `$primary-hover`. Worktree kept up (owner still
+  has the seeded dev admin account).
