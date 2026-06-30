@@ -168,29 +168,6 @@
         // NB: `.submit-review-btn` is migrated to `.btn .btn--primary` (markup in
         // AddReview.tsx; local spacing/weight in SingleRecipe.scss). It's dropped
         // from this rule so this deep selector no longer overrides its pill shape.
-        // `.leave-review-btn` below is legacy markup (no current call site).
-        .leave-review-btn {
-          font-size: 1rem;
-          background: s.$primary;
-          color: s.$primary-background;
-          padding: 0.5rem 1rem;
-          border-radius: s.$border-radius;
-          &:focus-visible {
-            @include s.outline();
-          }
-        }
-        .leave-review-btn {
-          position: absolute;
-          display: none;
-          right: 200%;
-          opacity: 0;
-        }
-        .leave-review-btn.visible {
-          position: relative;
-          display: flex;
-          right: 0;
-          opacity: 1;
-        }
         .review-open {
           position: absolute;
           right: 200%;
