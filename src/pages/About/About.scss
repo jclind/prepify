@@ -49,17 +49,13 @@
     justify-content: center;
   }
 
+  // `.btn` base supplies layout (inline-flex/centred/gap), pill shape, weight,
+  // and the transition; only the slightly larger CTA padding/size, the lift-on-
+  // hover, and the icon nudge are local.
   .about-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.45rem;
     padding: 0.65rem 1.35rem;
-    border-radius: s.$radius-pill;
     font-size: 0.9375rem;
-    font-weight: 600;
     text-decoration: none;
-    transition: transform 0.18s ease, background-color 0.18s ease,
-      box-shadow 0.18s ease, color 0.18s ease, border-color 0.18s ease;
 
     svg {
       font-size: 1.05em;
@@ -68,11 +64,6 @@
 
     &:hover {
       transform: translateY(-2px);
-    }
-
-    &:focus-visible {
-      outline: 2px solid s.$primary;
-      outline-offset: 2px;
     }
   }
 
@@ -472,7 +463,6 @@
 
     .about-btn {
       width: 100%;
-      justify-content: center;
     }
 
     .about-cta {

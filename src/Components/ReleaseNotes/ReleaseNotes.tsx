@@ -70,7 +70,7 @@ const ReleaseNotes: FC<ReleaseNotesProps> = ({
       style={panelModalStyles}
       className='release-notes-modal'
     >
-      <button className='close-modal btn' onClick={closeModal}>
+      <button className='close-modal btn btn--icon' onClick={closeModal}>
         <CloseIcon className='icon' />
       </button>
       <div className='release-notes-content-container'>
@@ -136,7 +136,7 @@ const ReleaseNotes: FC<ReleaseNotesProps> = ({
         </div>
         <a
           href='https://github.com/jclind/prepify/releases'
-          className='all-release-notes-btn btn'
+          className='all-release-notes-btn btn btn--ghost'
         >
           View All Release Notes
         </a>

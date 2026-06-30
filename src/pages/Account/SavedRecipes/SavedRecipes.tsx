@@ -12,6 +12,7 @@ import CollectionsAPI from 'src/api/collections'
 import AuthAPI from 'src/api/auth'
 import { RecipeType } from 'types'
 import { useDelayedLoading } from 'src/hooks/useDelayedLoading'
+import { COLLECTION_CREATE_ERROR } from 'src/util/toastMessages'
 import { useDebounce } from 'src/hooks/useDebounce'
 import { invalidateSavedCaches } from 'src/util/invalidateSavedCaches'
 import CollectionCard from './CollectionCard'
@@ -145,7 +146,7 @@ const SavedRecipes: FC = () => {
       await queryClient.invalidateQueries({ queryKey: ['collections'] })
       selectCollection(created.id)
     } catch (err: any) {
-      toast.error(err?.response?.data?.error ?? 'Could not create collection')
+      toast.error(err?.response?.data?.error ?? COLLECTION_CREATE_ERROR)
     } finally {
       setCreating(false)
     }
@@ -159,7 +160,7 @@ const SavedRecipes: FC = () => {
       setRenaming(false)
       queryClient.invalidateQueries({ queryKey: ['collections'] })
     } catch (err: any) {
-      toast.error(err?.response?.data?.error ?? 'Could not rename collection')
+      toast.error(err?.response?.data?.error ?? 'Could not rename collection.')
     }
   }
 
@@ -173,7 +174,7 @@ const SavedRecipes: FC = () => {
       await queryClient.invalidateQueries({ queryKey: ['collections'] })
       selectCollection(null)
     } catch (err: any) {
-      toast.error(err?.response?.data?.error ?? 'Could not delete collection')
+      toast.error(err?.response?.data?.error ?? 'Could not delete collection.')
     }
   }
 
@@ -246,7 +247,7 @@ const SavedRecipes: FC = () => {
             />
             <button
               type='submit'
-              className='new-submit'
+              className='btn btn--primary new-submit'
               disabled={creating || !newName.trim()}
             >
               <PlusIcon /> Create
@@ -281,7 +282,7 @@ const SavedRecipes: FC = () => {
           {searchInput && (
             <button
               type='button'
-              className='saved-search__clear'
+              className='btn btn--icon saved-search__clear'
               aria-label='Clear search'
               onClick={() => onSearchChange('')}
             >
@@ -314,10 +315,10 @@ const SavedRecipes: FC = () => {
               maxLength={50}
               onChange={e => setRenameValue(e.target.value)}
             />
-            <button type='submit' className='btn-small'>Save</button>
+            <button type='submit' className='btn btn--outline btn-small'>Save</button>
             <button
               type='button'
-              className='btn-small ghost'
+              className='btn btn--outline btn-small ghost'
               onClick={() => setRenaming(false)}
             >
               <CloseIcon />
@@ -329,7 +330,7 @@ const SavedRecipes: FC = () => {
             {activeCollection && (
               <div className='saved-collection-actions'>
                 <button
-                  className='btn-small ghost'
+                  className='btn btn--outline btn-small ghost'
                   onClick={() => {
                     setRenameValue(activeCollection.name)
                     setRenaming(true)
@@ -339,7 +340,7 @@ const SavedRecipes: FC = () => {
                   <EditIcon /> Rename
                 </button>
                 <button
-                  className='btn-small ghost danger'
+                  className='btn btn--outline btn-small ghost danger'
                   onClick={handleDelete}
                   aria-label='Delete collection'
                 >
@@ -376,7 +377,7 @@ const SavedRecipes: FC = () => {
                 ))}
           </div>
           {isMoreRecipes && recipes.length > 0 ? (
-            <button className='load-more-btn btn' onClick={handleLoadMoreRecipes}>
+            <button className='load-more-btn' onClick={handleLoadMoreRecipes}>
               Load More Recipes
             </button>
           ) : null}

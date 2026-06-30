@@ -152,11 +152,11 @@ const About: FC = () => (
         getting into before you start cooking.
       </p>
       <div className='about-cta'>
-        <Link to='/recipes' className='about-btn about-btn-primary'>
+        <Link to='/recipes' className='about-btn about-btn-primary btn'>
           Browse recipes
           <ArrowRightIcon aria-hidden='true' />
         </Link>
-        <Link to='/signup' className='about-btn about-btn-ghost'>
+        <Link to='/signup' className='about-btn about-btn-ghost btn'>
           Create an account
         </Link>
       </div>
@@ -250,11 +250,11 @@ const About: FC = () => (
         Find your next meal. Price and nutrition included.
       </p>
       <div className='about-cta'>
-        <Link to='/recipes' className='about-btn about-btn-primary'>
+        <Link to='/recipes' className='about-btn about-btn-primary btn'>
           Browse recipes
           <ArrowRightIcon aria-hidden='true' />
         </Link>
-        <Link to='/signup' className='about-btn about-btn-ghost'>
+        <Link to='/signup' className='about-btn about-btn-ghost btn'>
           Create an account
         </Link>
       </div>

@@ -118,27 +118,20 @@
       margin-top: auto;
       padding-top: 0.15rem;
 
+      // Bespoke filled CTA on the `.btn` base: the AA-tuned accessible-orange
+      // fill + warm hover/shadow don't map to `.btn--primary`, so no variant.
+      // Layout/shape/reset come from `.btn`.
       .resume {
         flex: 1 1 auto;
         // min-width:0 lets the button shrink below its nowrap label's intrinsic
         // width (that intrinsic min is what forced the overflow); with flex-wrap
         // it shares the row when it fits and drops Delete below when it doesn't.
         min-width: 0;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.4rem;
-        white-space: nowrap;
-        cursor: pointer;
-        font-family: inherit;
         font-size: 0.9rem;
         font-weight: 700;
         padding: 0.55rem 1rem;
-        border-radius: s.$radius-lg;
-        border: none;
         background: s.$primary-accessible;
         color: #fff;
-        transition: background 0.14s ease, box-shadow 0.14s ease;
         svg {
           font-size: 1rem;
         }
@@ -148,22 +141,15 @@
         }
       }
 
+      // Soft warm-red outline on the `.btn` base — the muted #ecd9d9 border +
+      // tinted hover don't match `.btn--danger`'s fill, so kept bespoke.
       .del {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.4rem;
         flex-shrink: 0;
-        cursor: pointer;
-        font-family: inherit;
         font-size: 0.82rem;
         font-weight: 700;
         padding: 0.5rem 0.85rem;
-        border-radius: s.$radius-lg;
-        background: none;
         border: 1px solid #ecd9d9;
         color: s.$secondary-text;
-        transition: color 0.14s ease, border-color 0.14s ease, background 0.14s ease;
         svg {
           font-size: 1rem;
         }
@@ -174,7 +160,6 @@
         }
         &:disabled {
           opacity: 0.5;
-          cursor: default;
         }
       }
     }

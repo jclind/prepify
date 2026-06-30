@@ -77,7 +77,7 @@ const UserRecipes: FC = () => {
           </div>
           {isMoreRecipes && recipes.length > 0 ? (
             <button
-              className='load-more-btn btn'
+              className='load-more-btn'
               onClick={handleLoadMoreRecipes}
             >
               Load More Recipes

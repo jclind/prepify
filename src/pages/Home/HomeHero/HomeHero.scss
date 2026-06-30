@@ -54,20 +54,16 @@
   display: flex;
   justify-content: center;
 
+  // Bespoke AA brand-orange CTA on the `.btn` base — keep its accessible fill,
+  // larger padding/size, drop shadow, and the lift + brightness hover. (The
+  // base transition now covers `transform` AND `filter`, so the lift and the
+  // brightness both ease — no local transition needed.)
   .cook-suggestion-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
     padding: 0.7rem 1.4rem;
-    border: none;
-    border-radius: s.$radius-pill;
     background: s.$primary-accessible;
     color: s.$white;
     font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
-    transition: transform 0.12s ease, filter 0.12s ease;
 
     svg {
       font-size: 1.25rem;

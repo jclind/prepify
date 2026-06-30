@@ -146,23 +146,13 @@
           border-color: s.$primary;
         }
       }
+      // `.btn .btn--primary`; only the heavier weight + compact size are local.
       .new-submit {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.3rem;
-        border: none;
-        background: s.$primary;
-        color: #fff;
-        font-family: inherit;
         font-weight: 800;
         font-size: 0.82rem;
-        border-radius: s.$radius-md;
         padding: 0.4rem 0.7rem;
-        cursor: pointer;
         &:disabled {
           opacity: 0.5;
-          cursor: default;
         }
       }
     }
@@ -207,21 +197,18 @@
         border-color: s.$primary;
       }
     }
+    // `.btn .btn--icon` (no colour variant — it keeps its own grey-circle fill;
+    // `--ghost` would strip the background). Local: in-field position + the
+    // smaller 22px footprint (the icon default is 2.25rem).
     &__clear {
       position: absolute;
       right: 0.7rem;
       top: 50%;
       transform: translateY(-50%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
       width: 22px;
       height: 22px;
-      border: none;
-      border-radius: s.$radius-circle;
       background: s.$gray-200;
       color: s.$secondary-text;
-      cursor: pointer;
       &:hover {
         background: s.$gray-300;
       }
@@ -315,22 +302,18 @@
     align-items: center;
     gap: 0.35rem;
   }
+  // `.btn .btn--outline` base; the compact size + secondary-text resting colour
+  // are local, and the `.ghost`/`.danger` modifiers stay as local tweaks.
   .btn-small {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.3rem;
-    font-family: inherit;
     font-size: 0.82rem;
     padding: 0.35rem 0.6rem;
-    border-radius: s.$radius-md;
-    border: 1px solid s.$gray-400;
-    background: #fff;
     color: s.$secondary-text;
-    cursor: pointer;
     &.ghost {
       border-color: transparent;
+      // keep the ghost borderless on hover too (the outline variant would
+      // otherwise draw a border in on :hover).
       &:hover {
+        border-color: transparent;
         background: s.$gray-50;
       }
     }

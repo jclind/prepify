@@ -1,6 +1,7 @@
 import { CloseIcon } from 'src/Components/icons'
 import React, { useState, useRef } from 'react'
 import toast from 'react-hot-toast'
+import { IMAGE_TOO_LARGE } from 'src/util/toastMessages'
 import './ImagePicker.scss'
 
 const MAX_IMAGE_SIZE = 5000 * 1024 // 5MB
@@ -45,7 +46,7 @@ const ImagePicker: React.FC<ImagePickerProps> = ({
         return
       }
       if (file.size > MAX_IMAGE_SIZE) {
-        toast.error('Image cannot be more than 5MB in size.')
+        toast.error(IMAGE_TOO_LARGE)
         resetInput()
         return
       }

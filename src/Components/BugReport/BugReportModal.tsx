@@ -82,7 +82,7 @@ const BugReportModal: FC<BugReportModalProps> = ({ variant = 'link' }) => {
     <>
       <button
         type='button'
-        className={`bug-report-trigger ${variant}`}
+        className={`bug-report-trigger btn ${variant}`}
         onClick={() => setIsOpen(true)}
       >
         Report a bug
@@ -145,7 +145,7 @@ const BugReportModal: FC<BugReportModalProps> = ({ variant = 'link' }) => {
         <div className='bug-report-modal-actions'>
           <button
             type='button'
-            className='bug-report-cancel-btn'
+            className='bug-report-cancel-btn btn'
             onClick={close}
             disabled={submitting}
           >
@@ -153,7 +153,7 @@ const BugReportModal: FC<BugReportModalProps> = ({ variant = 'link' }) => {
           </button>
           <button
             type='button'
-            className='bug-report-submit-btn'
+            className='bug-report-submit-btn btn'
             onClick={handleSubmit}
             disabled={submitting}
           >

@@ -66,7 +66,7 @@ const AddReview: FC<AddReviewProps> = ({
         value={newReviewText}
         onChange={e => setNewReviewText(e.target.value)}
       />
-      <button className='submit-review-btn btn' onClick={handleSubmitReview}>
+      <button className='submit-review-btn btn btn--primary' onClick={handleSubmitReview}>
         Submit Review
       </button>
     </div>

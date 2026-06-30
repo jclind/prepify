@@ -205,7 +205,12 @@ The triage date stamped on items is the date they were filed here, not when they
   imports it; the only importer is its own test `src/test/RecipeThumbnail.test.tsx`. So the user-facing glyph
   no longer renders anywhere, and the real fix is to DELETE `RecipeThumbnail` + its test rather than patch it
   — see the unify item below.)** Low severity. *(surfaced 2026-06-23 in the track 3b code review.)*
-- `[ ]` **Consolidate the bespoke pill buttons into a real `.btn` system** — `.btn` in `src/index.scss`
+- `[x]` **Consolidate the bespoke pill buttons into a real `.btn` system** — **done (PR #210, merged 2026-06-30):**
+  promoted `.btn` to a full pill base + 5 BEM colour variants (`--primary`/`--outline`/`--ghost`/`--danger`/
+  `--danger-solid`) + sizes + `--icon`, migrated ~70 bespoke buttons across ~35 files, documented at
+  `docs/design/button-system.md`. Two review passes fixed specificity/leak regressions (review-edit Submit
+  grey-on-orange, `load-more-btn` base leak, lost filter-hover transitions). *(original problem, for context:)*
+  `.btn` in `src/index.scss`
   only strips defaults (no visual style), so nearly every page re-implements its own orange/ghost pill:
   `home-btn` (`404.scss`), `pp-browse-btn` (`PublicProfile.scss`), `about-btn`/`about-btn-primary`/
   `about-btn-ghost` (`About.scss`), `search-recipes-btn`, the Recipes toolbar pills, HomeCookSuggestion
@@ -624,11 +629,14 @@ findings table.)*
       hovers `#a52f0a` / `#006065` are entangled with the in-flux orange-CTA contrast story (the a11y sweep
       reverted `$primary-accessible` back to vivid `#ff5722`). Resolve them as part of that recolor, not as a
       blind dedupe. *(surfaced 2026-06-25 in the design-consistency sweep.)*
-- `[ ]` **One danger-red token** — three reds mean the same thing: `$error-red` (the token — **now
+- `[x]` **One danger-red token** — three reds mean the same thing: `$error-red` (the token — **now
   `#c5303f`** after the a11y pass, plus a new `$error-red-hover #b02a37`; `helpers.scss:43-44`), local
   `$danger #d23f31` (`SingleRecipe.scss:13`), and `#d64545` (`ReportControl.scss` ×7, `AdminRecipeControls.scss:87`,
   `Reports.scss:307`). Consolidate onto the token. *(audit F6; surfaced 2026-06-25; `$error-red` value
-  corrected from the stale `#dc3545` on 2026-06-26.)*
+  corrected from the stale `#dc3545` on 2026-06-26.)* **(done 2026-06-29, PR #208 — repointed the local
+  `$danger` (dropped the dead var) and all 9 `#d64545` usages, incl. ReportControl's `rgba(214,69,69, …)`
+  tints → `rgba(s.$error-red, X)`, onto `s.$error-red`. No `helpers.scss` change. Verified live: shipped CSS
+  has 0× old reds; every danger surface renders `#c5303f`.)**
 - `[~]` **Name the admin/“cool” sub-palette and wire the token-less files into `helpers.scss`** — Admin +
   moderation surfaces hardcode a Tailwind-ish slate/blue palette (`#3b82f6`/`#2563eb` action blue exists
   nowhere in the brand) and several files `@use` nothing at all (audit F1/F2).

@@ -30,15 +30,11 @@
       justify-content: center;
       flex-wrap: wrap;
 
+      // Rides the global `.btn` base (layout/reset/pill). KEEP BESPOKE: the dark
+      // slate (#1f2430) fill + white/border `.secondary` aren't a token variant,
+      // so the colours stay local; only the radius is dropped to inherit pill.
       .btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
         padding: 0.65rem 1.25rem;
-        border-radius: s.$radius-md;
-        border: none;
-        cursor: pointer;
-        font-weight: 600;
         text-decoration: none;
         background: #1f2430;
         color: s.$white;

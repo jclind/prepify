@@ -93,12 +93,12 @@ const DraftCard: FC<DraftCardProps> = ({ draft, loading = false, onDelete }) => 
         )}
       </div>
       <div className='actions'>
-        <button type='button' className='resume' onClick={handleResume}>
+        <button type='button' className='btn resume' onClick={handleResume}>
           <EditIcon /> Continue editing
         </button>
         <button
           type='button'
-          className='del'
+          className='btn del'
           onClick={handleDelete}
           disabled={deleting}
           aria-label='Delete draft'
