@@ -116,7 +116,8 @@ a {
   border-radius: s.$radius-pill;
   cursor: pointer;
   transition: background-color 0.15s ease, border-color 0.15s ease,
-    color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+    color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease,
+    filter 0.15s ease;
 
   svg {
     font-size: 1.1em;
@@ -200,6 +201,13 @@ a {
 }
 
 .load-more-btn {
+  // Self-contained, deferred from the `.btn` system: supplies its own reset
+  // (background / cursor / colour / weight) that the old no-op `.btn` base used
+  // to provide, so it renders correctly WITHOUT a `btn` class on the element.
+  background: none;
+  color: s.$primary-text;
+  font-weight: 600;
+  cursor: pointer;
   display: flex;
   justify-content: center;
   align-items: center;

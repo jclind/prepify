@@ -320,7 +320,7 @@ const PublicProfile: FC = () => {
               <div className='pp-more'>
                 <button
                   type='button'
-                  className='load-more-btn btn'
+                  className='load-more-btn'
                   onClick={() => setExtraPage(p => p + 1)}
                   disabled={isLoadingMore}
                 >
