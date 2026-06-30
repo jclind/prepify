@@ -63,6 +63,14 @@ npx cypress open       # Open Cypress test runner
 
 ## Environment Variables
 
+> **Environment target:** the local `.env` / `server/.env` in this checkout point at
+> **dedicated dev infrastructure** — Firebase project `prepify-dev-58579` (auth +
+> storage) and the `prepify-dev` MongoDB cluster — not production. So local writes,
+> seeded/admin accounts, and destructive testing hit dev, not live user data. (This
+> is the dev side of the pre-1.0 env separation; earlier notes that "Mongo is prod"
+> are stale.) Always confirm `VITE_FIREBASE_PROJECT_ID` / the `MONGO_URI` host before
+> assuming an environment, since prod credentials may be swapped in elsewhere.
+
 ### Frontend (.env)
 - `VITE_API_URL` - Main API server URL (default: http://localhost:4000)
 - `VITE_FIREBASE_API_KEY` - Firebase Web API key

@@ -7,17 +7,17 @@
   flex-wrap: wrap;
   margin: 1rem 0;
   padding: 0.6rem 0.8rem;
-  border: 1px dashed #c7b3e6;
+  border: 1px dashed s.$admin-automod-border;
   border-radius: s.$radius-md;
-  background: #faf7ff;
+  background: s.$admin-automod-bg;
 
   .arc-label {
     font-size: 0.7rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    color: #6b21a8;
-    background: #ede4fb;
+    color: s.$admin-automod-text;
+    background: s.$admin-automod-label-bg;
     padding: 0.15rem 0.45rem;
     border-radius: s.$radius-xs;
   }
@@ -31,23 +31,23 @@
     border-radius: s.$radius-xs;
 
     &.hidden {
-      background: #fee2e2;
-      color: #991b1b;
+      background: s.$admin-danger-bg;
+      color: s.$admin-danger-text;
     }
 
     &.unpublished {
-      background: #e5e7eb;
-      color: #374151;
+      background: s.$admin-slate-200;
+      color: s.$admin-slate-700;
     }
 
     &.featured {
-      background: #fef3c7;
-      color: #b45309;
+      background: s.$admin-warn-bg;
+      color: s.$admin-warn-text;
     }
 
     &.pending {
-      background: #e0e7ff;
-      color: #3730a3;
+      background: s.$admin-info-bg;
+      color: s.$admin-info-text;
     }
   }
 
@@ -64,13 +64,13 @@
     padding: 0.4rem 0.85rem;
     font-size: 0.82rem;
     font-weight: 600;
-    border: 1px solid #d1d5db;
+    border: 1px solid s.$admin-slate-300;
     background: s.$white;
-    color: #374151;
+    color: s.$admin-slate-700;
     transition: all 0.15s;
 
     &:hover:not(:disabled) {
-      border-color: #9ca3af;
+      border-color: s.$admin-slate-400;
     }
 
     &:disabled {
@@ -79,25 +79,25 @@
     }
 
     &.feature {
-      border-color: #d97706;
-      color: #b45309;
+      border-color: s.$admin-warn-fill;
+      color: s.$admin-warn-text;
     }
 
     &.takedown {
       border-color: s.$error-red;
-      color: #b91c1c;
+      color: s.$admin-danger-text;
     }
 
     // Primary action for an auto-held recipe — filled green so it reads as the
     // recommended way out of pending_review.
     &.approve {
-      border-color: #15803d;
-      background: #16a34a;
+      border-color: s.$admin-ok-fill-hover;
+      background: s.$admin-ok-fill;
       color: s.$white;
 
       &:hover:not(:disabled) {
-        background: #15803d;
-        border-color: #166534;
+        background: s.$admin-ok-fill-hover;
+        border-color: s.$admin-ok-text;
       }
     }
   }

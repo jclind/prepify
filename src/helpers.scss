@@ -4,6 +4,14 @@ $primary-hover: #e74e1d; // darkened orange for primary-button/link hover
 // placeholder. Purely decorative (never text/contrast), so it's outside the
 // accessible-orange story below.
 $primary-tint: #ff8a5c;
+// Decorative warm washes — very light tints of the brand orange, used only as
+// non-text surface fills (the "no photo" RecipePlaceholder gradient). Like
+// $primary-tint, purely decorative, outside the accessible-orange story.
+$primary-wash: #fff3ee; // lightest warm wash (placeholder gradient start)
+$primary-wash-deep: #ffe1d4; // warmer wash (placeholder gradient end)
+// Deep warm brand tone — dark desaturated orange used as text on a warm tint
+// (the account-restriction status banner). The dark warm sibling of the washes.
+$primary-deep: #7c2d12;
 $secondary: #00adb5;
 // Accessible (WCAG AA) variants of the brand colors, for the cases where the
 // brand color is small text on a light surface OR a fill behind white text —
@@ -65,6 +73,68 @@ $tertiary-background: #b1b1b1;
 
 // Warm-cream surface family (Account, Public Profile, Home cards)
 $surface-warm-border: #ece2d6;
+
+// ── Admin / moderation sub-palette ──────────────────────────────────────────
+// A cool, Tailwind-derived slate/blue system, deliberately distinct from the
+// warm brand neutrals above ($gray-* are warm; these slates are cool): the
+// admin console reads as a separate "tool" surface, not a brand page. Named
+// hybrid — neutrals as a scale (like $gray-*), statuses by role (like $alert-*).
+// Status hues are intentionally NOT the brand $alert-* set; they're the denser
+// cool moderation palette. Documented in docs/design/admin-palette.md.
+//
+// Cool neutral spine: text hierarchy → surfaces → borders.
+$admin-slate-900: #111827; // headings, stat values (max contrast)
+$admin-slate-700: #374151; // body text, neutral-pill text
+$admin-slate-600: #4b5563; // secondary / default control text
+$admin-slate-500: #6b7280; // muted labels, meta, section eyebrows
+$admin-slate-400: #9ca3af; // hints, timestamps (AA floor on white)
+$admin-slate-300: #d8dbe0; // default input/button border
+$admin-slate-200: #e5e7eb; // card borders, inert pill bg, row separators
+$admin-slate-100: #f3f4f6; // neutral surface, count-badge bg
+$admin-slate-50: #f9fafb; // lightest surface (bulk bar, page bg)
+$admin-chrome: #1f2430; // dark sidebar + active tab/toggle fill
+$admin-on-chrome: #b9bec9; // nav-link text on the dark chrome
+// Interactive.
+$admin-action: #3b82f6; // active nav, badge, focus ring
+$admin-link: #2563eb; // hyperlinks
+// Status — approved / resolved (green).
+$admin-ok-bg: #dcfce7;
+$admin-ok-text: #166534;
+$admin-ok-fill: #16a34a; // approve/resolve action buttons
+$admin-ok-fill-hover: #15803d;
+// Status — pending / review / general (indigo).
+$admin-info-bg: #e0e7ff;
+$admin-info-text: #3730a3;
+// Status — open / featured / suspended (amber).
+$admin-warn-bg: #fef3c7;
+$admin-warn-text: #b45309;
+$admin-warn-text-dk: #92400e;
+$admin-warn-border: #fcd34d;
+$admin-warn-fill: #d97706; // warn bars/dots in analytics/audit
+// Status — hidden / banned / rejected (red). Distinct from brand $error-red.
+$admin-danger-bg: #fee2e2;
+$admin-danger-text: #b91c1c;
+$admin-danger-text-dk: #7f1d1d;
+$admin-danger-border: #fca5a5;
+$admin-danger-fill: #dc2626; // danger bars/dots, bright reject red
+// Automod / special-category accents (purple).
+$admin-automod-bg: #faf7ff;
+$admin-automod-border: #c7b3e6;
+$admin-automod-text: #6b21a8;
+$admin-automod-label-bg: #ede4fb;
+$admin-review-bg: #fae8ff; // "review"-type report pill
+$admin-review-text: #86198f;
+// Classification accents — report-type / bug-category chips (the green/amber
+// variants). These label *what kind* of item it is, an axis orthogonal to
+// status, so they're kept separate from the $admin-ok / $admin-warn status
+// hues: re-tuning a status colour must not silently shift a category chip.
+// They currently mirror those hues. (The indigo "general" base and purple
+// "review" category legitimately reuse $admin-info / $admin-review per their
+// documented general / special-category meanings.)
+$admin-cat-green-bg: #dcfce7;
+$admin-cat-green-text: #166534;
+$admin-cat-amber-bg: #fef3c7;
+$admin-cat-amber-text: #92400e;
 
 // Navbar
 $nav-height: 6.25rem;

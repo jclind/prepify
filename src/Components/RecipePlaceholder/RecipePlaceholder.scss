@@ -11,7 +11,7 @@
   // the placeholder also carries the .img class, whose explicit height wins.
   aspect-ratio: 4 / 3;
   // Soft tint of the brand orange so it reads as "no photo" not "broken".
-  background: linear-gradient(135deg, #fff3ee, #ffe1d4);
+  background: linear-gradient(135deg, s.$primary-wash, s.$primary-wash-deep);
   color: s.$primary-tint;
 
   &__icon {
