@@ -1,5 +1,6 @@
 import { defineConfig } from 'cypress'
 import admin from 'firebase-admin'
+import getCompareSnapshotsPlugin from 'cypress-image-diff-js/plugin'
 
 export default defineConfig({
   projectId: 'k156x8',
@@ -7,6 +8,10 @@ export default defineConfig({
   e2e: {
     baseUrl: 'http://localhost:3000',
     setupNodeEvents(on, config) {
+      // Visual-regression plugin (cypress-image-diff-js). Registers its own
+      // tasks + after:screenshot hook; Cypress merges these with the on('task')
+      // registration below.
+      const updatedConfig = getCompareSnapshotsPlugin(on, config)
       on('task', {
         // Accepts a bare uid, or { uid, claims } to bake developer claims (e.g.
         // { admin: true }) into the token — these propagate to the ID token's
@@ -26,7 +31,7 @@ export default defineConfig({
           return admin.auth().createCustomToken(uid, claims)
         },
       })
-      return config
+      return updatedConfig
     },
   },
 })

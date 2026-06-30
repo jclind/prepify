@@ -23,6 +23,9 @@
 cypress/videos/
 cypress/screenshots/
 cypress.env.json
+# Visual-regression artifacts — regenerated per run, never a git-tracked baseline.
+cypress-image-diff-screenshots/
+cypress-image-diff-html-report/
 
 
 npm-debug.log*
