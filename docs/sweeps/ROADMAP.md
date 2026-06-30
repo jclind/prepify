@@ -77,7 +77,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **2-scss** | Design: type scale (~520 `font-size:` literals) | `[ ]` | **`helpers.scss` + ~60 files** ⚠ chokepoint | — |
 | **2-scss** | Design: elevation/shadow re-author (~52 literals) | `[ ]` | **`helpers.scss` + page `.scss`** ⚠ chokepoint | — |
 | **2-scss** | Design: one danger-red token | `[x]` | **`helpers.scss` + SingleRecipe/ReportControl/…** ⚠ chokepoint | #208 |
-| **2-scss** | Design: name the `$admin-*` sub-palette | `[ ]` | **`helpers.scss` + Admin/moderation `.scss`** ⚠ chokepoint | — |
+| **2-scss** | Design: name the `$admin-*` sub-palette | `[~]` | **`helpers.scss` + Admin/moderation `.scss`** ⚠ chokepoint | `worktree-feat+admin-palette-tokens` (2026-06-30) |
 | **2-scss** | A11y: `$primary-hover` AA-on-hover | `[ ]` | **`helpers.scss`** ⚠ chokepoint | — |
 | **blocked** | A11y: brand-orange contrast (AA) | `[blocked]` | `helpers.scss` `$primary-accessible` — **needs the brand-orange decision** | — |
 | **blocked** | Design: collapse remaining brand shades | `[blocked]` | entangled with the brand-orange recolor above | — |
@@ -371,3 +371,15 @@ narrates the *why*.
 - _2026-06-30_ — pill `.btn` worktree (`worktree-feat+pill-btn-system`) + branch **torn down** after the owner's
   final verification pass (board already `[x]` from the merge entry above; this reconciles the "kept up" note).
   The `2-scss` chokepoint lane is now free for the next track (type scale / elevation / `$admin-*` / `$primary-hover`).
+- _2026-06-30_ — **Design: name the `$admin-*` sub-palette** claimed (`worktree-feat+admin-palette-tokens`,
+  `[ ]`→`[~]`) — **third `2-scss` lane to open.** Checked the lane is clear first: the only other in-flight
+  worktree is the `2-iso` loading-state pattern (`worktree-feat+loading-state-pattern`, `[~]` but pre-PR so the
+  Board still shows `[ ]`). Per rule 1 a single `2-scss` lane runs safely alongside a `2-iso` track — but the
+  literal next-in-order `2-scss` tracks (type scale, elevation) were **skipped to avoid interference**: that
+  loading-state worktree has uncommitted edits to `index.scss` + `Home/SingleRecipe/PublicProfile/RecipeCard.scss`
+  touching the very `font-size:`/`box-shadow:` lines those tracks would re-author (direct line-level collision).
+  `$admin-*` was chosen instead because it touches **`helpers.scss` + Admin/moderation `.scss` only** — zero
+  overlap with loading-state (which touches neither). This track resumes the deferred half of BACKLOG audit F1/F2:
+  import-wiring already shipped (`style/admin-token-wiring`); remaining = define a documented `$admin-*` token
+  group (slate/blue/green/amber/red ramps) + migrate the ~200 loose literals + wire the 5 token-less files.
+  Worktree on free ports 3001/4001.
