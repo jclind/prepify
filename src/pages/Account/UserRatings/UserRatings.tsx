@@ -157,7 +157,7 @@ const Ratings: FC = () => {
           </div>
           {isMoreReviews && reviews.length > 0 ? (
             <button
-              className='load-more-btn btn'
+              className='load-more-btn'
               onClick={handleLoadMoreReviews}
             >
               Load More Reviews

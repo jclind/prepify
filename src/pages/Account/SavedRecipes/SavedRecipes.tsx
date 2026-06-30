@@ -362,7 +362,7 @@ const SavedRecipes: FC = () => {
                 ))}
           </div>
           {isMoreRecipes && recipes.length > 0 ? (
-            <button className='load-more-btn btn' onClick={handleLoadMoreRecipes}>
+            <button className='load-more-btn' onClick={handleLoadMoreRecipes}>
               Load More Recipes
             </button>
           ) : null}

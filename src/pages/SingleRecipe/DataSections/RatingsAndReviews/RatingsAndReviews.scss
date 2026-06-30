@@ -232,6 +232,13 @@
           padding-top: 2rem;
           margin: 0 auto;
           text-align: center;
+          // Readable CTA, not the muted `--ghost` grey: dark resting text + an
+          // underline on hover. This is the only "more reviews" control, so the
+          // variant's secondary-text grey reads too quiet as the resting state.
+          color: s.$primary-text;
+          &:hover:not(:disabled) {
+            text-decoration: underline;
+          }
         }
       }
     }
