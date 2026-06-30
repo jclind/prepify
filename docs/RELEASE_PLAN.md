@@ -299,6 +299,19 @@ Chunky design efforts that are bigger than a single checkbox. Tag each as **(blo
     usages (Home hero, `src/Components/Navbar/menu/`).
   - Gates nothing for 1.0 — tracked here so it isn't lost.
 
+- `[ ]` **Ratings & Reviews area overhaul** — **(blocker)**
+  - **Now:** the ratings/reviews experience on the single-recipe page is functional but rough
+    ("scuffed") — the rating summary/breakdown, the "your review" vs the public list, and the
+    add/edit/delete review affordances need a visual + interaction pass to match the current design
+    vocabulary. (The pill `.btn` sweep, 2026-06-29, restyled the buttons in this area onto the shared
+    system but did **not** touch the layout/UX — that's this item.)
+  - **Goal:** _(dedicated session)_ redesign the ratings + reviews UI end-to-end — summary/breakdown,
+    your-review card, add/edit/delete flow, and empty/loading states.
+  - **Touches:** `src/pages/SingleRecipe/DataSections/RatingsAndReviews/*` (+ `.scss` — `RatingsAndReviews`,
+    `Ratings`, `Reviews/` incl. `AddReview`, `RecipeReview`, `ReviewsList`, `EditingReviewOptions`,
+    `ConfirmDeleteReviewModal`), and likely `server/routes/reviews.js` if the data shape changes.
+  - **Why a blocker:** owner wants this looking right before dropping beta (filed 2026-06-29).
+
 - `[x]` **Homepage redesign** — **(design shipped)**
   - **Shipped:** the redesign landed earlier (`e1539c3`) — Home is now `HomeHero → Trending → Browse by
     meal → View all recipes`, fully responsive with empty/loading states. The "sparse Home" wording here
