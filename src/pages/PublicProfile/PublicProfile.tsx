@@ -3,7 +3,9 @@ import React, { FC, useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import { useQuery } from '@tanstack/react-query'
-import { TailSpin } from 'react-loader-spinner'
+import Skeleton from 'react-loading-skeleton'
+import { skeletonBase as skeletonColor } from 'src/util/loadingStyles'
+import { useDelayedLoading } from 'src/hooks/useDelayedLoading'
 import toast from 'react-hot-toast'
 import './PublicProfile.scss'
 import PublicProfileAPI from 'src/api/publicProfile'
@@ -20,6 +22,99 @@ import { RecipeType } from 'types'
 // Page size for "load more". Matches the server's initial-batch limit so the
 // first extra page (page 1) picks up exactly where the profile payload ended.
 const PROFILE_PAGE_SIZE = 12
+
+// Number of placeholder tiles to reserve while the profile loads. Half a page —
+// enough to fill the fold without over-reserving for cooks with few recipes.
+const SKELETON_TILE_COUNT = 6
+
+// One recipe tile, mirroring `.pp-tile`'s real markup so the skeleton→content
+// swap is the same height: a square media fill, a 2-line title, and a meta row.
+const PpTileSkeleton: FC = () => (
+  <div className='pp-tile pp-tile--sk' aria-hidden='true'>
+    <div className='pp-tile-media'>
+      <Skeleton className='pp-tile-media-sk' baseColor={skeletonColor} />
+    </div>
+    <div className='pp-tile-body'>
+      <h3 className='pp-tile-title pp-tile-title--sk'>
+        <Skeleton height={13} count={2} baseColor={skeletonColor} />
+      </h3>
+      <div className='pp-tile-meta'>
+        <Skeleton inline width={42} height={12} baseColor={skeletonColor} />
+        <Skeleton inline width={34} height={12} baseColor={skeletonColor} />
+        <Skeleton inline width={38} height={12} baseColor={skeletonColor} />
+      </div>
+    </div>
+  </div>
+)
+
+// Full-page profile skeleton: the centered identity header (avatar, handle,
+// divided counts, bio/level line) plus the tile grid — same wrappers as the
+// loaded page so the layout box is reserved from frame 1 (see
+// docs/design/loading-states.md).
+const ProfileSkeleton: FC = () => (
+  <>
+    {/* Each bar sits INSIDE the real element (`.pp-handle`, `.pp-name`, `b`,
+        `span`, `.pp-loc`) so it inherits that element's font-size/line-height —
+        the line-box that sets the row's height. A free-floating bar with a fixed
+        pixel height reserves a shorter line than the real text and the row below
+        it drops on load (measured the counts row jumping 9px before this). */}
+    <header className='pp-head'>
+      <Skeleton
+        circle
+        containerClassName='pp-avatar-sk'
+        baseColor={skeletonColor}
+      />
+      <div className='pp-handle-row'>
+        <h1 className='pp-handle'>
+          <Skeleton inline width={150} baseColor={skeletonColor} />
+        </h1>
+        <Skeleton inline circle width={30} height={30} baseColor={skeletonColor} />
+      </div>
+      <p className='pp-name'>
+        <Skeleton inline width={120} baseColor={skeletonColor} />
+      </p>
+      <div className='pp-counts'>
+        <div>
+          <b>
+            <Skeleton inline width={28} baseColor={skeletonColor} />
+          </b>
+          <span>
+            <Skeleton inline width={46} baseColor={skeletonColor} />
+          </span>
+        </div>
+        <div className='pp-div' />
+        <div>
+          <b>
+            <Skeleton inline width={28} baseColor={skeletonColor} />
+          </b>
+          <span>
+            <Skeleton inline width={36} baseColor={skeletonColor} />
+          </span>
+        </div>
+        <div className='pp-div' />
+        <div>
+          <b>
+            <Skeleton inline width={28} baseColor={skeletonColor} />
+          </b>
+          <span>
+            <Skeleton inline width={36} baseColor={skeletonColor} />
+          </span>
+        </div>
+      </div>
+      <p className='pp-loc'>
+        <Skeleton inline width={140} baseColor={skeletonColor} />
+      </p>
+    </header>
+
+    <section className='pp-recipes'>
+      <div className='pp-grid'>
+        {Array.from({ length: SKELETON_TILE_COUNT }).map((_, i) => (
+          <PpTileSkeleton key={i} />
+        ))}
+      </div>
+    </section>
+  </>
+)
 
 const PublicProfile: FC = () => {
   const { username } = useParams<{ username: string }>()
@@ -54,6 +149,8 @@ const PublicProfile: FC = () => {
     // focus (which would also churn the recipe accumulation below).
     refetchOnWindowFocus: false,
   })
+
+  const showSkeleton = useDelayedLoading(isLoading)
 
   // Reset the avatar fallback when the profile (and its photo) changes.
   useEffect(() => setAvatarError(false), [data?.photoURL])
@@ -103,9 +200,17 @@ const PublicProfile: FC = () => {
   }
 
   if (isLoading) {
+    // Render the skeleton whenever loading so the page reserves its height from
+    // frame 1; the flash-guard delay only hides it (sk-hold) until it's worth
+    // drawing, so a fast cache hit fills in content without a skeleton flash.
     return (
-      <div className='page public-profile pp-centered'>
-        <TailSpin height='40' width='40' color='#ff5722' ariaLabel='loading' />
+      <div className='page public-profile'>
+        <Helmet>
+          <title>Profile · Prepify</title>
+        </Helmet>
+        <div className={`pp-skeleton ${showSkeleton ? '' : 'sk-hold'}`}>
+          <ProfileSkeleton />
+        </div>
       </div>
     )
   }

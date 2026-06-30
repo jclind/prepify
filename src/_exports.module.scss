@@ -4,4 +4,8 @@
   primary: s.$primary;
   borderColor: s.$tertiary-text;
   primaryText: s.$primary-text;
+  // Loading-state tokens (docs/design/loading-states.md): one skeleton grey and
+  // one neutral-dark spinner colour, consumed by Skeleton baseColor / TailSpin color.
+  skeletonBase: s.$gray-400;
+  spinnerColor: s.$primary-text;
 }

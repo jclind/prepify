@@ -146,21 +146,34 @@ describe('UserRecipes — empty-state flash (Bug B)', () => {
     ).toBeInTheDocument()
   })
 
-  it('holds a blank frame — never mounts a skeleton — while a fast load settles', async () => {
-    mockedAPI.getCreatedRecipes.mockResolvedValue({
+  it('reserves the skeletons hidden (sk-hold) while a fast load settles — no skeleton or empty-state flash', async () => {
+    // Hold the query pending so we can inspect the flash-guard window.
+    let resolveQuery: (v: { recipes: RecipeType[]; totalCount: number }) => void =
+      () => {}
+    mockedAPI.getCreatedRecipes.mockReturnValue(
+      new Promise(res => {
+        resolveQuery = res
+      })
+    )
+
+    const { container } = renderWithProviders(<UserRecipes />)
+
+    // Reserve-space pattern (docs/design/loading-states.md): the skeletons mount
+    // immediately so the grid holds its height from frame 1, but the container is
+    // `sk-hold` (visibility:hidden) until the delay elapses — so nothing flashes,
+    // and the empty state never mounts.
+    const grid = container.querySelector('.thumbnails-container')
+    expect(grid).toHaveClass('sk-hold')
+    expect(screen.getAllByTestId('skeleton').length).toBeGreaterThan(0)
+    expect(emptyStateTitles).toHaveLength(0)
+
+    // Resolving swaps the held skeletons for content — still no empty-state flash.
+    resolveQuery({
       recipes: [makeRecipe({ _id: 'r1', title: 'Pancakes' })],
       totalCount: 1,
     })
-
-    renderWithProviders(<UserRecipes />)
-
     expect(await screen.findByText('Pancakes')).toBeInTheDocument()
-    // `useDelayedLoading` keeps the skeleton hidden on a fast resolve: the
-    // initial frame is the empty placeholder div (the early-return guard), not a
-    // skeleton. Without that guard the isLoading frame would render skeletons,
-    // which the mount spy would catch even though they'd be gone from final DOM.
-    // (Skeletons are reserved for genuinely slow loads past the delay.)
-    expect(skeletonMounts.count).toBe(0)
+    expect(emptyStateTitles).toHaveLength(0)
   })
 
   it('appends the next page on "Load More" and hides the button, without flashing empty state', async () => {

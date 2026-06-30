@@ -8,8 +8,9 @@ import EmptyState from 'src/Components/EmptyState/EmptyState'
 import './UserRatings.scss'
 import { timeElapsedSince } from 'src/util/timeElapsedSince'
 import Skeleton from 'react-loading-skeleton'
+import { skeletonBase as skeletonColor } from 'src/util/loadingStyles'
 import { useNavigate } from 'react-router-dom'
-import { useDelayedLoading } from 'src/pages/Account/useDelayedLoading'
+import { useDelayedLoading } from 'src/hooks/useDelayedLoading'
 
 type SingleReviewProps = {
   review?: OptionalReviewType
@@ -47,9 +48,21 @@ const SingleReview: FC<SingleReviewProps> = ({ review, loading }) => {
         )}
       </div>
       <div className='sr-body'>
+        {/* Mirror each real element (title / date / rating / text) inside its own
+            wrapper so the skeleton inherits the same line-heights and the row is
+            the same height as a loaded review by construction (the 2-line text is
+            the part the old thumb-only skeleton was missing — it left review rows
+            ~30px short). See docs/design/loading-states.md. */}
         <div className='sr-line'>
           {loading ? (
-            <Skeleton baseColor={skeletonColor} width={'18ch'} height={18} />
+            <>
+              <h4 className='sr-title'>
+                <Skeleton inline baseColor={skeletonColor} width={'65%'} />
+              </h4>
+              <span className='sr-date'>
+                <Skeleton inline baseColor={skeletonColor} width={52} />
+              </span>
+            </>
           ) : (
             <>
               <h4 className='sr-title'>{review?.recipeTitle}</h4>
@@ -61,7 +74,7 @@ const SingleReview: FC<SingleReviewProps> = ({ review, loading }) => {
         </div>
         <div className='sr-sub'>
           {loading ? (
-            <Skeleton baseColor={skeletonColor} width={'12ch'} height={16} />
+            <Skeleton inline baseColor={skeletonColor} width={92} height={14} />
           ) : (
             <>
               <StarRating
@@ -75,17 +88,20 @@ const SingleReview: FC<SingleReviewProps> = ({ review, loading }) => {
             </>
           )}
         </div>
-        {!loading && review?.reviewText && (
+        {loading ? (
+          <p className='sr-text sr-text--skeleton'>
+            <Skeleton baseColor={skeletonColor} count={2} width={'95%'} />
+          </p>
+        ) : review?.reviewText ? (
           <p className='sr-text'>
             <CornerDownRightIcon /> {review?.reviewText}
           </p>
-        )}
+        ) : null}
       </div>
     </div>
   )
 }
 
-const skeletonColor = '#d6d6d6'
 // Default order: most recently rated first. (The sort control was removed for
 // now; the query keeps this fixed order.)
 const SORT = 'newAdd'
@@ -125,19 +141,18 @@ const Ratings: FC = () => {
     setCurrPage(prev => prev + 1)
   }
 
-  // On the first load, hold an empty frame while a fast query settles, so the
-  // skeleton only shows for genuinely slow loads — and the empty state never
-  // flashes before data. Scoped to the initial load so paging never blanks the
-  // already-rendered list.
-  if (isLoading && !showSkeleton && reviews.length === 0) {
-    return <div className='user-ratings' />
-  }
-
   return (
     <div className='user-ratings'>
       {showList ? (
         <>
-          <div className='thumbnails-container'>
+          {/* Render the skeleton rows whenever loading so the list reserves its
+              height from frame 1; the flash-guard delay only hides them (sk-hold)
+              until it's worth drawing — no blank-then-grow jump. */}
+          <div
+            className={`thumbnails-container ${
+              isLoading && !showSkeleton ? 'sk-hold' : ''
+            }`}
+          >
             {isLoading ? (
               <>
                 <SingleReview loading={true} />

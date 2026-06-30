@@ -160,7 +160,7 @@ const BugReportModal: FC<BugReportModalProps> = ({ variant = 'link' }) => {
             Send report
             {submitting && (
               <span className='bug-report-btn-spinner'>
-                <TailSpin height='18' width='18' color='#fff' ariaLabel='loading' />
+                <TailSpin height='18' width='18' color='white' ariaLabel='loading' />
               </span>
             )}
           </button>

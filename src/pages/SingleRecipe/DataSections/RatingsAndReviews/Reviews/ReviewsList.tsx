@@ -1,10 +1,8 @@
 import React, { FC } from 'react'
-import Skeleton from 'react-loading-skeleton'
-import 'react-loading-skeleton/dist/skeleton.css'
 import { ReviewType } from 'types'
+import { useDelayedLoading } from 'src/hooks/useDelayedLoading'
 import RecipeReview from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/RecipeReview'
-
-const skeletonColor = '#d6d6d6'
+import ReviewCardSkeleton from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/ReviewCardSkeleton'
 
 type ReviewsListProps = {
   recipeId: string
@@ -23,23 +21,21 @@ const ReviewsList: FC<ReviewsListProps> = ({
   getNextReviewsPage,
   loading = false,
 }) => {
+  // Per docs/design/loading-states.md: keep `loading` as the gate (so "No Reviews"
+  // never flashes mid-load) but only paint the skeleton once the load is slow
+  // enough to warrant one.
+  const showSkeleton = useDelayedLoading(loading)
+
+  const reviewSkeletons = showSkeleton ? <ReviewCardSkeleton count={2} /> : null
+
   return (
     <div className='reviews-list-container'>
       {reviewList.length > 0 ? (
-        reviewList.map(review => {
-          return (
-            <RecipeReview
-              key={review._id}
-              review={review}
-              recipeId={recipeId}
-            />
-          )
-        })
+        reviewList.map(review => (
+          <RecipeReview key={review._id} review={review} recipeId={recipeId} />
+        ))
       ) : loading ? (
-        <>
-          <Skeleton baseColor={skeletonColor} height={80} />
-          <Skeleton baseColor={skeletonColor} height={80} />
-        </>
+        reviewSkeletons
       ) : !currUserReview ? (
         <div className='no-reviews'>No Reviews</div>
       ) : null}

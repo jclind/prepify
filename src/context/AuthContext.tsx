@@ -21,6 +21,7 @@ import {
 import { useNavigate } from 'react-router-dom'
 import AuthAPI from 'src/api/auth'
 import { TailSpin } from 'react-loader-spinner'
+import { spinnerColor } from 'src/util/loadingStyles'
 import { getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage'
 import { ErrorWithData } from 'src/util/ErrorWithData'
 import { setSentryUser } from 'src/util/sentry'
@@ -392,7 +393,7 @@ const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
       {loading ? (
         <div className='auth-loading-container'>
           <h2>Auth Loading...</h2>
-          <TailSpin height='30' width='30' color='black' ariaLabel='loading' />
+          <TailSpin height='30' width='30' color={spinnerColor} ariaLabel='loading' />
         </div>
       ) : (
         children

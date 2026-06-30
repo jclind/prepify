@@ -61,6 +61,16 @@
       &.empty svg {
         font-size: 1.3rem;
       }
+      // Loading placeholder fills the fixed 88px thumb box.
+      .cc-thumb-sk {
+        width: 100%;
+        line-height: 0;
+        .react-loading-skeleton {
+          display: block;
+          height: 88px;
+          border-radius: 0;
+        }
+      }
       // The "All saved" view is a system entry, not a folder — tint its thumb
       // and brand + enlarge the icon so it reads as the primary all-view rather
       // than looking like an empty-folder fallback (same gray + icon).
