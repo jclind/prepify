@@ -74,7 +74,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **2-iso** | Design: toast punctuation + string dedupe | `[x]` | ~10 toast call sites (TSX strings) | #207 |
 | **2-iso** | Design: codify loading-state pattern | `[x]` | convention + `TailSpin`/skeleton outliers | #213 |
 | **2-scss** | Design: pill `.btn` system | `[x]` | **`index.scss` + many page `.scss`** ⚠ chokepoint | #210 |
-| **2-scss** | Design: type scale (~520 `font-size:` literals) | `[P]` | **`helpers.scss` + ~60 files** ⚠ chokepoint | #216 |
+| **2-scss** | Design: type scale (~520 `font-size:` literals) | `[x]` | **`helpers.scss` + ~60 files** ⚠ chokepoint | #216 |
 | **2-scss** | Design: elevation/shadow re-author (~52 literals) | `[ ]` | **`helpers.scss` + page `.scss`** ⚠ chokepoint | — |
 | **2-scss** | Design: one danger-red token | `[x]` | **`helpers.scss` + SingleRecipe/ReportControl/…** ⚠ chokepoint | #208 |
 | **2-scss** | Design: name the `$admin-*` sub-palette | `[x]` | **`helpers.scss` + Admin/moderation `.scss`** ⚠ chokepoint | #214 |
@@ -454,3 +454,13 @@ narrates the *why*.
   zero-byte — nothing but font-size values moved; and a two-pass Cypress pixel-diff (tooling split to its own PR
   #215, CI green) across 6 routes × {desktop, mobile} showed clean text reflow — containers stable, out-of-scope
   display type untouched, no truncation/overflow.
+- _2026-07-01_ — **Design: type scale (~490 `font-size:` literals)** merged (#216, `[P]`→`[x]`, merge commit
+  `d2fae2b`) — **fourth `2-scss` lane to land.** All five CI checks green on the merge commit (Backend/Supertest,
+  Frontend/Vitest, E2E/Cypress, Fallow advisory, GitGuardian). Ten-step modular `$text-*` scale in `helpers.scss`;
+  62 `.scss` repointed (218/491 exact, 273 normalized ≤2.8px); out-of-scope display type (PrintableRecipe `pt`,
+  About `clamp()`, 404/profile numerals, icon `em`) left bespoke. Documented at `docs/design/type-scale.md`
+  (fourth design-system doc); BACKLOG 'Type scale' finding flipped to done, run-log + design-consistency banner
+  updated. The visual-regression harness built to verify it landed as its own PR (#215, merged, merge commit
+  `f1ecadf`) — a manual two-pass `cypress-image-diff-js` check under `cypress/visual/` kept out of the CI suite
+  (needs a separate baseline server; baselines not committed, owner's call). Remaining `2-scss` lane: elevation
+  re-author, `$primary-hover`. **Worktree + both branches torn down.**
