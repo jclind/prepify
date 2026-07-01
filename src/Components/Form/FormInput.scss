@@ -126,6 +126,14 @@
         font-size: s.$text-base;
         border: 1px solid s.$tertiary-text;
         background: none;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        // The base rule sets outline:none; compact fields (every AddRecipe
+        // input) previously had NO focus indicator. Restore one, matching the
+        // md variant's teal ring (WCAG 2.4.7).
+        &:focus-visible {
+          border-color: s.$secondary;
+          box-shadow: 0 0 0 3px rgba(0, 173, 181, 0.15);
+        }
       }
     }
 

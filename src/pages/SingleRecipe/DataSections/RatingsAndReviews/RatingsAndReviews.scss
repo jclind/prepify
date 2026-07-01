@@ -58,16 +58,10 @@
       .user-rating {
         display: flex;
         flex-direction: column;
-        .star-ratings,
-        .star-grad,
-        .star-container,
-        .star,
-        svg,
-        path {
-          &:focus-visible {
-            @include s.outline();
-          }
-        }
+        // (Removed dead :focus-visible selectors targeting .star-ratings /
+        // .star-grad / .star-container / .star / svg / path — none of those are
+        // rendered or focusable in the current StarRating; the interactive rating
+        // is a single <button> that gets the global focus ring.)
       }
       .user-rate-container {
         height: 30px !important;
