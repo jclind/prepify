@@ -55,7 +55,7 @@ the Agent tool's `isolation: "worktree"` — but then you don't get to steer eac
 
 ## Board
 
-Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merged · `[blocked]` waiting on a decision.
+Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merged · `[blocked]` waiting on a decision · `[dropped]` off the board (owner's call).
 
 | Wave | Track | Status | Domain (collision surface) | Branch / PR |
 |---|---|---|---|---|
@@ -78,12 +78,14 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **2-scss** | Design: elevation/shadow re-author (~52 literals) | `[x]` | **`helpers.scss` + page `.scss`** ⚠ chokepoint | #218 |
 | **2-scss** | Design: one danger-red token | `[x]` | **`helpers.scss` + SingleRecipe/ReportControl/…** ⚠ chokepoint | #208 |
 | **2-scss** | Design: name the `$admin-*` sub-palette | `[x]` | **`helpers.scss` + Admin/moderation `.scss`** ⚠ chokepoint | #214 |
-| **2-scss** | A11y: `$primary-hover` AA-on-hover | `[ ]` | **`helpers.scss`** ⚠ chokepoint | — |
-| **blocked** | A11y: brand-orange contrast (AA) | `[blocked]` | `helpers.scss` `$primary-accessible` — **needs the brand-orange decision** | — |
-| **blocked** | Design: collapse remaining brand shades | `[blocked]` | entangled with the brand-orange recolor above | — |
+| **2-scss** | Design: normalize button hover motion | `[~]` | **`helpers.scss` + ~20 page `.scss` hover blocks** ⚠ chokepoint | `worktree-feat+button-hover-audit` (2026-07-01) |
+| **2-scss** | A11y: `$primary-hover` AA-on-hover | `[dropped]` | folded into the owner's brand-orange recolor (it's a hover *contrast* recolor); off the sweep board | — |
+| **blocked→dropped** | A11y: brand-orange contrast (AA) | `[dropped]` | owner owns the brand-orange/logo recolor; not a sweep track | — |
+| **blocked→dropped** | Design: collapse remaining brand shades | `[dropped]` | entangled with the brand-orange recolor above; owner's call | — |
 | **3** | Re-sweep & verify before 1.0 | `[ ]` | re-run baselines (Lighthouse a11y/perf, `npm audit`, `tsc`/tests); reconcile `RELEASE_PLAN.md` §A/§C | — |
 
-*(The 2-iso / 2-scss / blocked items are the deferred tails of the two completed sweeps — see
+*(The 2-iso / 2-scss items are the deferred tails of the two completed sweeps; the `[dropped]` rows moved to
+the owner's brand-orange recolor and are no longer sweep work — see
 [`../BACKLOG.md`](../BACKLOG.md) → Accessibility / UX-visual-polish / Tech-debt for the full write-ups.)*
 
 ---
@@ -100,10 +102,13 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 3. **Server routes overlap between Security and Code-quality.** Security is read-mostly (small hardening);
    code-quality's server work should stay in tests + `asyncHandler`/error-middleware checks. If both end up
    editing the same route file, **merge Security first** and rebase code-quality onto it.
-4. **The brand-orange decision gates the `[blocked]` lane.** The a11y sweep reverted `$primary-accessible` to
-   vivid `#ff5722` at the owner's request, which knowingly re-fails AA on ~96–97 routes. The contrast +
-   shade-dedupe tracks can't land until that brand call is made — don't recolor blind. See
-   [`../BACKLOG.md`](../BACKLOG.md) → Accessibility (the `[~]` contrast item) for the shade exploration.
+4. **The brand-orange recolor is the owner's — its tracks are off the board (`[dropped]`).** The a11y sweep
+   reverted `$primary-accessible` to vivid `#ff5722` at the owner's request, which knowingly re-fails AA on
+   ~96–97 routes. Rather than keep the contrast + shade-dedupe tracks parked as `[blocked]`, they're now
+   `[dropped]`: the owner is handling the brand-orange / logo recolor himself, and the `$primary-hover`
+   AA-on-hover fix is folded into that same recolor (it's a hover *contrast* choice). **Don't recolor the brand
+   orange blind.** The remaining sweep hover work is the *motion* normalization track below, which is orthogonal
+   to colour. See [`../BACKLOG.md`](../BACKLOG.md) → Accessibility for the shade exploration (kept for the owner).
 5. **Concurrency budget ≈ 2–4 worktrees** for one reviewer (same as the release). Wave 1's three sweeps fit;
    in Wave 2, run the single `2-scss` lane + up to ~3 `2-iso` tracks.
 
@@ -128,7 +133,9 @@ The structural items the two completed sweeps filed. Split by collision surface 
 - **`2-iso` (parallel-safe):** autocomplete listbox, servings target-size, account-heading, modal config,
   icon module, `RecipeFormInput`, toast punctuation, loading-state pattern.
 - **`2-scss` (serialize — one at a time):** pill `.btn` system, type scale, elevation re-author, danger-red
-  token, `$admin-*` palette, `$primary-hover` AA. Each needs design sign-off on the normalization.
+  token, `$admin-*` palette, **button hover-motion normalization** (the last open track). Each needs design
+  sign-off on the normalization. *(The `$primary-hover` AA + brand-orange contrast/shade tracks were dropped —
+  they belong to the owner's brand-orange recolor, not the sweep; see rule 4.)*
 
 ### Wave 3 — re-sweep & verify (before the 1.0 cutover)
 Re-run each sweep's automated baseline once to confirm no regressions crept in (Lighthouse a11y/perf,
@@ -495,3 +502,17 @@ narrates the *why*.
   `docs/design/elevation.md` (fifth design-system doc); BACKLOG item done, run-log + design-consistency banner
   updated. Before push the wip `/elevation-audit` commit was squashed out (branch rebuilt to 4 clean commits,
   tree byte-identical). Remaining `2-scss` lane: `$primary-hover` (last track). **Worktree + branch torn down.**
+- _2026-07-01_ — **Brand-orange lane dropped; hover work re-scoped to motion.** At the owner's direction, the
+  three remaining orange-recolor tracks — `$primary-hover` AA-on-hover, brand-orange contrast (AA), and collapse
+  remaining brand shades — moved off the sweep board to `[dropped]`: they're all part of the owner's own
+  brand-orange / logo recolor, not sweep work (rule 4 rewritten; memory already flagged `$primary-hover #e74e1d`
+  as owner-owned). **In their place, a new `2-scss` track: normalize button hover *motion*** (orthogonal to
+  colour). Claimed (`worktree-feat+button-hover-audit`, `[~]`) — lane confirmed clear first (`git worktree list`
+  main-only, `gh pr list` empty, Board had no `[~]`/`[P]`). Ran the audit the button-system doc never did: the
+  `.btn` colour system is uniform but ~20 buttons layer ad-hoc hover motion — lift at −1/−2/−3/−4px, brightness
+  at six magnitudes incl. a backwards `0.95`, scale at 1.03/1.04/1.08, and timing across 0.1–0.3s / ease·linear·
+  cubic + stray `transition: all`. Findings + three candidate hover languages (A Calm colour-only · B Lift
+  uniform rise+shadow *(rec)* · C Press brightness+active-press, all sharing one 150ms token + reduced-motion)
+  written to `docs/design/button-hover-audit.md` and rendered live on a temp `/button-hover-audit` page (added
+  then removed in-branch, `/icon-audit` precedent) for the owner's column pick before migration. Worktree on
+  free ports 3001/4001.
