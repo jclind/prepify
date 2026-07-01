@@ -194,7 +194,7 @@ a {
     background: s.$error-red;
     color: s.$white;
     transform: translateY(s.$hover-lift);
-    box-shadow: s.$elevation-2;
+    box-shadow: s.$shadow-danger;
   }
 }
 .btn--danger-solid {
@@ -206,7 +206,7 @@ a {
     background: s.$error-red-hover;
     border-color: s.$error-red-hover;
     transform: translateY(s.$hover-lift);
-    box-shadow: s.$elevation-2;
+    box-shadow: s.$shadow-danger;
   }
 }
 
@@ -240,7 +240,7 @@ a {
   transition: border-color s.$hover-timing, transform s.$hover-timing,
     box-shadow s.$hover-timing;
 
-  &:hover {
+  &:hover:not(:disabled) {
     border-color: s.$tertiary-text;
     transform: translateY(s.$hover-lift);
     box-shadow: s.$elevation-2;

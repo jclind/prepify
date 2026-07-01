@@ -197,6 +197,7 @@ $elevation-6: 0 24px 60px rgba($primary-text, 0.4); //  full-screen overlay back
 $shadow-brand: 0 8px 20px rgba($primary, 0.18); //        primary CTA hover glow
 $shadow-brand-strong: 0 6px 16px rgba($primary, 0.28); // stronger CTA glow (draft publish)
 $shadow-teal: 0 8px 18px rgba($secondary, 0.3); //        teal auth-submit glow
+$shadow-danger: 0 8px 20px rgba($error-red, 0.22); //     danger CTA hover glow
 
 // ── Hover motion ─────────────────────────────────────────────────────────────
 // One shared "how a surface reacts to your cursor" language (the button-system's

@@ -75,8 +75,10 @@ already what RecipeCard does.
 **System** (`index.scss`): the `.btn` base transition is retimed to `$hover-timing`
 and now animates every hover property together; the surfaced variants
 (`--primary`/`--outline`/`--danger`/`--danger-solid`) rise `$hover-lift` + gain a
-shadow (`$shadow-brand` for the orange fill, `$elevation-2` for the rest), while
-`--ghost` stays flat (no surface). `.load-more-btn` gets the outline treatment.
+shadow whose glow follows the fill — `$shadow-brand` for the orange primary,
+`$shadow-danger` for the red danger variants, and neutral `$elevation-2` for the
+colourless outline — while `--ghost` stays flat (no surface). `.load-more-btn`
+gets the outline treatment.
 
 **Buttons migrated off bespoke hovers** → the lift + a shadow, colour-neutral:
 `home-view-all`, `about-btn`, `cook-suggestion-btn`, EmptyState `__cta`,

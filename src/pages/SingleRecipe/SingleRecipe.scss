@@ -221,9 +221,13 @@ $soft-radius: 16px;
       &.is-saved {
         background: s.$secondary-accessible;
         border-color: s.$secondary-accessible;
+        // Re-state the lift explicitly (rather than leaning on the base
+        // `.save-recipe-btn:hover` to supply it) so this saved-state hover is
+        // self-contained — only the colour + glow differ from the base.
         &:hover {
           background: #006065;
           border-color: #006065;
+          transform: translateY(s.$hover-lift);
           box-shadow: s.$shadow-teal;
         }
       }
