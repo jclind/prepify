@@ -107,7 +107,8 @@
     background: none;
     color: s.$tertiary-text;
     cursor: pointer;
-    transition: all 0.1s linear;
+    transition: color s.$hover-timing, background-color s.$hover-timing,
+      border-color s.$hover-timing;
     .icon {
       height: 16px;
       width: 16px;

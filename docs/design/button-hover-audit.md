@@ -4,10 +4,11 @@
 > **colour** (PR #210); this one audits the button **hover motion**, which was
 > never standardized, and proposes one language to collapse it onto.
 >
-> **Status:** audit + candidate exploration. A temp `/button-hover-audit` page
-> renders the drift and the candidates live for sign-off (added then removed
-> in-branch, same as the `/icon-audit` / `/elevation-audit` precedent). Awaiting
-> the owner's column pick before any migration.
+> **Status:** ✅ implemented — **B · Lift** chosen and migrated. Hover motion is
+> now tokenized in `helpers.scss` (`$hover-lift` / `$hover-lift-card` /
+> `$hover-timing`) and every action button + card routes through it. The temp
+> `/button-hover-audit` page (used for the pick) was removed in-branch, same as
+> the `/icon-audit` / `/elevation-audit` precedent.
 
 ## Why
 
@@ -56,16 +57,51 @@ values), and every button presses `translateY(1px)` on `:active`. Motion happens
 on *click*, not hover — energetic and physical, no vertical drift. Closest in
 spirit to the brightness-heavy surfaces (SummaryBar, HomeHero) but unified.
 
-## Recommendation
+## Decision: B · Lift *(chosen 2026-07-01)*
 
-**B · Lift.** It's the least disruptive normalization — most buttons already lift,
-so this mostly means agreeing on one distance (`-2px`), one shadow, and one timing,
-then deleting the six one-off brightness values and the backwards `0.95`. It keeps
-the app feeling responsive, reads as intentional, and the card lift (`-4px`) it
-formalizes is already what RecipeCard does. A and C are live on the audit page for
-direct comparison; the final call is the owner's.
+The least disruptive normalization — most buttons already lifted, so it mostly
+meant agreeing on one distance (`-2px`), one shadow, and one timing, then deleting
+the six one-off brightness values and the backwards `0.95`. Keeps the app feeling
+responsive, reads as intentional, and the card lift (`-4px`) it formalizes is
+already what RecipeCard does.
 
-Whichever wins, the migration is the same shape as the other `2-scss` tracks:
-define `$hover-lift` / `$hover-timing` (+ any shadow) tokens in `helpers.scss`,
-route buttons through the `.btn` base's already-declared `transform`/`box-shadow`
-transition, delete the ~20 bespoke hover blocks, and drop every `transition: all`.
+## What shipped
+
+**Tokens** (`helpers.scss`): `$hover-lift: -2px`, `$hover-lift-card: -4px`,
+`$hover-timing: 0.15s ease` — one duration/easing for every hover property.
+
+**System** (`index.scss`): the `.btn` base transition is retimed to `$hover-timing`
+and now animates every hover property together; the surfaced variants
+(`--primary`/`--outline`/`--danger`/`--danger-solid`) rise `$hover-lift` + gain a
+shadow (`$shadow-brand` for the orange fill, `$elevation-2` for the rest), while
+`--ghost` stays flat (no surface). `.load-more-btn` gets the outline treatment.
+
+**Buttons migrated off bespoke hovers** → the lift + a shadow, colour-neutral:
+`home-view-all`, `about-btn`, `cook-suggestion-btn`, EmptyState `__cta`,
+`form-action-btn` (was the backwards `0.95` → now teal glow `$shadow-teal`),
+Recipes `load-more-btn` / `__btn--primary` / `__btn--ghost`, AddRecipe `submit-btn`,
+DraftResumeBanner, HomeCookSuggestion `.primary`/`.ghost`, Account `.acct-iconbtn`.
+Every `filter: brightness()` hover on a button is gone (six magnitudes + the
+backwards one), replaced by the lift.
+
+**Cards** normalized to `$hover-lift-card` + `$elevation-4`: RecipeCard, Home
+trending, SavedRecipes `collection-card`, UserRecipeThumbnail, Drafts, PublicProfile
+tiles.
+
+**`transition: all` dropped** (12 sites) → explicit property lists on the dense
+row/pill controls (RecipeControls, IngredientList, InstructionItem, ListComponents,
+AdminRecipeControls, the admin `.tab`/`.range` filter pills, AchievementsModal,
+Recipes clear-control).
+
+## Deliberately out of scope (kept bespoke)
+
+- **Navbar internals** — the logo/hamburger `scale()` micro-animations and nav-link
+  `brightness()` are a distinct navigation system (the button-system doc already
+  scoped nav CTAs off the variants). Left alone.
+- **Media zoom** — the `scale(1.04/1.08)` on the RecipeCard image and PublicProfile
+  tile photo is an image affordance *inside* a card, not a button hover. Kept.
+- **Selection state** — filter chips / segmented navs / toggle switches don't lift
+  (they signal state, not an action). The admin `.tab`/`.range` pills only had their
+  `transition: all` cleaned up; they stay flat.
+- **Admin action buttons** stay flat (no lift), same boundary as the `$admin-*`
+  palette track — only their `transition: all` was fixed.

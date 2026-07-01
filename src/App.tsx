@@ -43,8 +43,6 @@ import PrivacySection from 'src/pages/Settings/sections/PrivacySection'
 import DangerSection from 'src/pages/Settings/sections/DangerSection'
 import { Sentry } from 'src/util/sentry'
 import AppErrorFallback from 'src/Components/AppErrorFallback/AppErrorFallback'
-// TEMP — button hover-effect audit page. Remove before PR merge.
-import ButtonHoverAudit from 'src/pages/ButtonHoverAudit/ButtonHoverAudit'
 
 const ScrollToTop: FC = () => {
   const { pathname } = useLocation()
@@ -63,8 +61,6 @@ const App: FC = () => {
         <Toaster position='bottom-center' toastOptions={{ duration: 5000 }} />
         <ScrollToTop />
         <Routes>
-            {/* TEMP — button hover-effect audit. Remove before PR merge. */}
-            <Route path='/button-hover-audit' element={<ButtonHoverAudit />} />
             <Route
               path='*'
               element={

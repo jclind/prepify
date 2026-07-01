@@ -53,7 +53,7 @@
       font-size: s.$text-md;
       font-weight: 700;
       text-align: start;
-      transition: all 0.1s linear;
+      transition: color s.$hover-timing;
     }
   }
 }

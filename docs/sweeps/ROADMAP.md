@@ -516,3 +516,17 @@ narrates the *why*.
   written to `docs/design/button-hover-audit.md` and rendered live on a temp `/button-hover-audit` page (added
   then removed in-branch, `/icon-audit` precedent) for the owner's column pick before migration. Worktree on
   free ports 3001/4001.
+- _2026-07-01_ — **Button hover-motion normalization migrated (B · Lift).** Owner picked **B · Lift**; migrated
+  the whole app onto it. New tokens in `helpers.scss` (`$hover-lift -2px` / `$hover-lift-card -4px` /
+  `$hover-timing 0.15s ease`); the `.btn` base retimed to the token and its surfaced variants
+  (primary/outline/danger/danger-solid) now rise + gain a shadow (`$shadow-brand` for the orange fill,
+  `$elevation-2` otherwise) while `--ghost` stays flat. ~14 bespoke button hovers converted off `filter:
+  brightness()` (all six magnitudes + the backwards `0.95` on the auth submit → teal `$shadow-teal` lift) and
+  off the −1/−3px one-offs onto the −2px token; 6 cards normalized to −4px + `$elevation-4`; **12 `transition:
+  all` catch-alls** replaced with explicit property lists. Out of scope (documented): Navbar scale/brightness
+  micro-animations, media-zoom `scale()` on card/tile images, selection chips/tabs, and admin action-button
+  colour (admin only had its `transition: all` cleaned). Temp `/button-hover-audit` page removed. Verified:
+  `tsc` clean, production build compiles (SCSS tokens resolve), **543 Vitest** green (2 skipped); computed-style
+  probe on the running app confirms primary→`translateY(-2px)`+`$shadow-brand`, outline→lift+shadow, teal
+  submit→lift+`$shadow-teal`, all at 0.15s. Doc `docs/design/button-hover-audit.md` flipped to ✅ implemented.
+  Ready for PR (worktree still up on 3001/4001 for owner verification).

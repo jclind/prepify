@@ -105,22 +105,31 @@
   // skeleton stand-ins for the two action buttons
   .actions .sk-btn { flex: 1; line-height: 1; }
   // Both sit on the `.btn` base; locally they flex to equal widths in the
-  // .actions row and keep the compact modal sizing + a filter/bg hover.
+  // .actions row and keep the compact modal sizing + the shared Lift hover.
   .primary,
   .ghost {
     flex: 1;
     font-size: s.$text-base;
     padding: 0.6rem 1rem;
     text-decoration: none;
-    transition: filter 0.12s ease, background 0.12s ease;
+    transition: background s.$hover-timing, transform s.$hover-timing,
+      box-shadow s.$hover-timing;
     svg { font-size: s.$text-lg; }
   }
-  .primary { background: s.$primary-accessible; color: #fff; &:hover { filter: brightness(1.06); } }
+  .primary {
+    background: s.$primary-accessible;
+    color: #fff;
+    &:hover { transform: translateY(s.$hover-lift); box-shadow: s.$shadow-brand; }
+  }
   .ghost {
     background: #f0f1f3;
     color: s.$primary-text;
     font-weight: 500;
-    &:hover { background: #e4e6e9; }
+    &:hover {
+      background: #e4e6e9;
+      transform: translateY(s.$hover-lift);
+      box-shadow: s.$elevation-2;
+    }
     &:disabled { opacity: 0.7; cursor: default; }
   }
 }

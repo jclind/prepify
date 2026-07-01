@@ -79,14 +79,15 @@
       white-space: nowrap;
       padding: 0.4rem 0.9rem;
       // AA on-light orange so the white label clears 4.5:1 (vivid #ff5722 fill
-      // is only 3.16:1). brightness() hover stays above AA.
+      // is only 3.16:1). Hover is the shared Lift (rise + brand glow).
       border: 1px solid s.$primary-accessible;
       background: s.$primary-accessible;
       color: s.$white;
-      transition: filter 0.1s linear;
+      transition: transform s.$hover-timing, box-shadow s.$hover-timing;
 
       &:hover {
-        filter: brightness(108%);
+        transform: translateY(s.$hover-lift);
+        box-shadow: s.$shadow-brand;
       }
 
       // Comfortable full-width tap target on phones.

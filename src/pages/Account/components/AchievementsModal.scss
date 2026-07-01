@@ -46,7 +46,8 @@
     background: #fff;
     color: s.$secondary-text;
     cursor: pointer;
-    transition: all 0.12s ease;
+    transition: color s.$hover-timing, background-color s.$hover-timing,
+      border-color s.$hover-timing;
     svg {
       font-size: s.$text-lg;
     }

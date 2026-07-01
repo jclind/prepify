@@ -59,11 +59,11 @@
 
     svg {
       font-size: 1.05em;
-      transition: transform 0.18s ease;
+      transition: transform s.$hover-timing;
     }
 
     &:hover {
-      transform: translateY(-2px);
+      transform: translateY(s.$hover-lift);
     }
   }
 

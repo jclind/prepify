@@ -234,7 +234,8 @@
     &:hover {
       border-color: s.$primary;
       color: s.$primary;
-      transform: translateY(-1px);
+      transform: translateY(s.$hover-lift);
+      box-shadow: s.$elevation-2;
     }
   }
 

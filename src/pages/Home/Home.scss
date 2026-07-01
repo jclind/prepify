@@ -76,8 +76,8 @@
     text-decoration: none;
     color: s.$primary-text;
     box-shadow: s.$elevation-3;
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
-    &:hover { transform: translateY(-3px); box-shadow: s.$elevation-4; }
+    transition: transform s.$hover-timing, box-shadow s.$hover-timing;
+    &:hover { transform: translateY(s.$hover-lift-card); box-shadow: s.$elevation-4; }
     .thumb {
       position: relative;
       // Container owns the 4/3 box; image and the hold-skeleton both fill it
@@ -221,8 +221,13 @@
     font-weight: 700;
     font-size: s.$text-md;
     text-decoration: none;
-    transition: background 0.12s ease, transform 0.12s ease;
+    transition: background s.$hover-timing, transform s.$hover-timing,
+      box-shadow s.$hover-timing;
     svg { font-size: s.$text-xl; }
-    &:hover { background: s.$primary-hover; transform: translateY(-2px); }
+    &:hover {
+      background: s.$primary-hover;
+      transform: translateY(s.$hover-lift);
+      box-shadow: s.$shadow-brand;
+    }
   }
 }
