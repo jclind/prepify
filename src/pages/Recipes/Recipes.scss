@@ -102,12 +102,15 @@
     cursor: pointer;
     white-space: nowrap;
     flex-shrink: 0;
+    transition: color s.$hover-timing, border-color s.$hover-timing;
     svg {
       font-size: s.$text-md;
     }
+    // Outline-language hover (orange border + text) to match the app's other
+    // outline buttons, instead of the one-off dark charcoal fill inversion.
     &:hover {
-      background: s.$primary-text;
-      color: s.$white;
+      border-color: s.$primary;
+      color: s.$primary;
     }
     &__badge {
       display: inline-grid;

@@ -476,9 +476,12 @@
   .dnav__link:not(.dnav__create) {
     font-weight: 600;
     color: var(--dnav-muted);
+    // Shift to the accent on hover — same colour as the active state, and clear
+    // feedback matching the Saved icon's hover. (The old `color: --dnav-text`
+    // was ~invisible: on the hero both muted and text resolve to white.)
     &:hover {
       opacity: 1;
-      color: var(--dnav-text);
+      color: var(--dnav-accent);
     }
     &.is-active {
       color: var(--dnav-accent);
