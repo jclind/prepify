@@ -183,7 +183,7 @@
   }
   &:hover {
     opacity: 1;
-    filter: brightness(1.07);
+    filter: s.$hover-brighten;
   }
   &.is-active {
     color: #fff;
@@ -259,7 +259,7 @@
   background: s.$primary-accessible;
   border: 2px solid s.$primary-accessible;
   &:hover {
-    filter: brightness(1.07);
+    filter: s.$hover-brighten;
   }
 }
 

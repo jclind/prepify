@@ -227,7 +227,7 @@
     background: var(--menu-accent);
     color: #fff;
     &:hover {
-      filter: brightness(1.07);
+      filter: s.$hover-brighten;
     }
   }
   .account-cta--login {

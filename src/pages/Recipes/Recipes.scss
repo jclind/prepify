@@ -145,12 +145,16 @@
       border-radius: s.$radius-pill;
       cursor: pointer;
       white-space: nowrap;
+      transition: color s.$hover-timing, border-color s.$hover-timing;
       .chev {
         font-size: s.$text-md;
         transition: transform 0.14s ease;
       }
+      // Match the Filters button beside it (orange border + text) so the two
+      // toolbar pills share one hover language.
       &:hover {
-        border-color: s.$tertiary-text;
+        border-color: s.$primary;
+        color: s.$primary;
       }
       &.is-open .chev {
         transform: rotate(180deg);

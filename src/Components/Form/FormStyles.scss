@@ -256,13 +256,18 @@
     background: s.$white;
     color: s.$primary-text;
     gap: 0.6rem;
+    // Outline-consistent hover (border darkens + lift + shadow) instead of the
+    // near-invisible grey wash, so it responds like the app's other buttons.
     &:hover {
-      background: s.$gray-50;
+      border-color: s.$primary-text;
+      transform: translateY(s.$hover-lift);
+      box-shadow: s.$elevation-2;
     }
     .icon {
       height: 24px;
       width: 24px;
-      color: s.$secondary;
+      // No `color` override — GoogleColorIcon (FcGoogle) is a multicolour mark;
+      // tinting it teal defeated the recognisable Google colours.
     }
   }
 
