@@ -105,10 +105,12 @@
   // skeleton stand-ins for the two action buttons
   .actions .sk-btn { flex: 1; line-height: 1; }
   // The primary action composes the shared `.btn.btn--primary` (fill + Lift
-  // hover come from the system); `.ghost` is a local soft-grey neutral. Both
-  // flex to equal widths in the .actions row and keep the compact modal sizing.
+  // hover come from the system); `.cook-secondary` is a local soft-grey neutral.
+  // It's deliberately NOT called `.ghost` — the system `.btn--ghost` is a
+  // transparent/flat button, and a grey fill sharing that name shadowed it.
+  // Both flex to equal widths in the .actions row and keep the compact sizing.
   .btn--primary,
-  .ghost {
+  .cook-secondary {
     flex: 1;
     font-size: s.$text-base;
     padding: 0.6rem 1rem;
@@ -117,12 +119,14 @@
       transform s.$hover-timing, box-shadow s.$hover-timing;
     svg { font-size: s.$text-lg; }
   }
-  .ghost {
-    background: #f0f1f3;
+  .cook-secondary {
+    // Greys ride the shared $gray ramp ($gray-200 → $gray-300 on hover); it
+    // lifts like every other content button — one hover language, not two.
+    background: s.$gray-200;
     color: s.$primary-text;
     font-weight: 500;
     &:hover {
-      background: #e4e6e9;
+      background: s.$gray-300;
       transform: translateY(s.$hover-lift);
       box-shadow: s.$elevation-2;
     }
@@ -142,11 +146,9 @@
     text-align: center;
     color: s.$primary-text;
     p { margin: 0 0 0.9rem; }
-    .ghost {
-      background: #f0f1f3;
-      padding: 0.5rem 1.1rem;
-      &:hover { background: #e4e6e9; }
-    }
+    // The "Try again" button here is the same `.cook-secondary` as the card
+    // actions and inherits that one treatment (grey fill, single lift hover) —
+    // no local override, so the two secondaries can't drift apart again.
   }
 }
 
