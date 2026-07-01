@@ -98,7 +98,7 @@ const DraftCard: FC<DraftCardProps> = ({ draft, loading = false, onDelete }) => 
         </button>
         <button
           type='button'
-          className='btn del'
+          className='btn btn--danger del'
           onClick={handleDelete}
           disabled={deleting}
           aria-label='Delete draft'

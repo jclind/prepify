@@ -91,14 +91,23 @@
       }
     }
   }
+  // Destructive: red outline at rest so it telegraphs danger (was neutral grey,
+  // indistinguishable from Edit), deepening to a red fill + lift + glow on hover
+  // — the same language as its confirm modal's `.btn--danger-solid`. Matched
+  // explicitly here because the shared `button` base out-specifies `.btn--danger`.
   button.delete-btn {
     background: none;
+    border-color: s.$error-red;
+    color: s.$error-red;
     transition: color s.$hover-timing, background-color s.$hover-timing,
-      border-color s.$hover-timing;
+      border-color s.$hover-timing, transform s.$hover-timing,
+      box-shadow s.$hover-timing;
     &:hover {
-      color: s.$primary-background;
+      color: s.$white;
       background: s.$error-red;
       border-color: s.$error-red;
+      transform: translateY(s.$hover-lift);
+      box-shadow: s.$shadow-danger;
     }
   }
 

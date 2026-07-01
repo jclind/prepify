@@ -304,27 +304,21 @@
   }
   // `.btn .btn--outline` base; the compact size + secondary-text resting colour
   // are local, and the `.ghost`/`.danger` modifiers stay as local tweaks.
+  // Compact size modifier for the subhead Rename/Delete + the rename form.
+  // Rename stays a quiet ghost; Delete now composes `.btn--danger` for the full
+  // destructive language (red outline -> red fill + lift + glow), so this only
+  // carries the compact sizing + the ghost's muted colour.
   .btn-small {
     font-size: s.$text-sm;
     padding: 0.35rem 0.6rem;
-    color: s.$secondary-text;
     &.ghost {
+      color: s.$secondary-text;
       border-color: transparent;
       // keep the ghost borderless on hover too (the outline variant would
       // otherwise draw a border in on :hover).
       &:hover {
         border-color: transparent;
         background: s.$gray-50;
-      }
-    }
-    // Destructive: red at rest (so Delete reads different from Rename), red
-    // tint on hover. Uses the $error-red token (was a hard-coded #c0392b that
-    // only appeared on hover).
-    &.danger {
-      color: s.$error-red;
-      &:hover {
-        color: s.$error-red;
-        background: rgba(s.$error-red, 0.08);
       }
     }
   }

@@ -340,7 +340,7 @@ const SavedRecipes: FC = () => {
                   <EditIcon /> Rename
                 </button>
                 <button
-                  className='btn btn--outline btn-small ghost danger'
+                  className='btn btn--danger btn-small'
                   onClick={handleDelete}
                   aria-label='Delete collection'
                 >
