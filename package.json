@@ -60,6 +60,7 @@
     "@types/uuid": "^10.0.0",
     "@vitejs/plugin-react": "^6.0.1",
     "cypress": "^15.14.2",
+    "cypress-image-diff-js": "^2.8.0",
     "firebase-admin": "^13.9.0",
     "jsdom": "^29.1.0",
     "start-server-and-test": "^2.1.5",
