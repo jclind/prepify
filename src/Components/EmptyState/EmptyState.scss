@@ -58,11 +58,13 @@
     font-size: s.$text-base;
     text-decoration: none;
     cursor: pointer;
-    transition: filter 0.12s ease, transform 0.12s ease;
+    transition: filter s.$hover-timing, transform s.$hover-timing,
+      box-shadow s.$hover-timing;
 
     &:hover {
-      filter: brightness(1.05);
-      transform: translateY(-1px);
+      filter: s.$hover-brighten;
+      transform: translateY(s.$hover-lift);
+      box-shadow: s.$shadow-brand;
     }
   }
 }

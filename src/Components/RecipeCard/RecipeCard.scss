@@ -8,10 +8,10 @@
   box-shadow: s.$elevation-3;
   display: flex;
   flex-direction: column;
-  transition: transform 0.16s ease, box-shadow 0.16s ease;
+  transition: transform s.$hover-timing, box-shadow s.$hover-timing;
 
   &:hover {
-    transform: translateY(-4px);
+    transform: translateY(s.$hover-lift-card);
     box-shadow: s.$elevation-4;
   }
 

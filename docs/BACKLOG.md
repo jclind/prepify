@@ -349,7 +349,12 @@ The triage date stamped on items is the date they were filed here, not when they
   minimum — `.step-btn` 26→32px, `.serv-input` given `width:28px`/`height:32px` (was ~14px). Rendered
   boxes measured 32×32 / 28×32 in the running app; compact pill aesthetic preserved (desktop + 380px
   mobile re-shot, no overflow). CSS-only; markup/aria untouched.
-- `[ ]` **`$primary-hover` token (`#e74e1d`) fails WCAG AA on hover** — the design-tokens track added
+- `[dropped]` **`$primary-hover` token (`#e74e1d`) fails WCAG AA on hover** — *folded into the owner's
+  brand-orange recolor (2026-07-01); off the sweep board.* This is a hover **contrast** choice on the brand
+  orange, so it belongs with the reverted-`$primary-accessible` decision above, not as an independent sweep
+  track. The sweep's remaining hover work is **button hover-*motion* normalization** (a separate, colour-neutral
+  concern — see [`design/button-hover-audit.md`](./design/button-hover-audit.md)). Original finding, kept for
+  when the owner does the recolor: the design-tokens track added
   `$primary-hover: #e74e1d` (`helpers.scss`) and points several **white-on-fill button hovers** at it
   (`Home.scss:175`, `SingleRecipe.scss:659`, `RecipeNotFound.scss:87`) plus a **text** hover
   (`Footer.scss:72`). White on `#e74e1d` is only **3.81:1** and `#e74e1d` as text on white ~3.8:1 — both

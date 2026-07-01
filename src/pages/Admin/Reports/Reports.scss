@@ -37,7 +37,8 @@
       border-radius: s.$radius-pill;
       font-size: s.$text-sm;
       cursor: pointer;
-      transition: all 0.15s;
+      transition: color s.$hover-timing, background-color s.$hover-timing,
+        border-color s.$hover-timing;
 
       &:hover {
         border-color: s.$admin-slate-400;

@@ -55,9 +55,9 @@
   justify-content: center;
 
   // Bespoke AA brand-orange CTA on the `.btn` base — keep its accessible fill,
-  // larger padding/size, drop shadow, and the lift + brightness hover. (The
-  // base transition now covers `transform` AND `filter`, so the lift and the
-  // brightness both ease — no local transition needed.)
+  // larger padding/size, and resting drop shadow; the hover is the shared Lift
+  // (rise + brand glow + $hover-brighten lighten), eased by the base `.btn`
+  // transition — no local one.
   .cook-suggestion-btn {
     padding: 0.7rem 1.4rem;
     background: s.$primary-accessible;
@@ -69,8 +69,9 @@
       font-size: s.$text-xl;
     }
     &:hover {
-      transform: translateY(-1px);
-      filter: brightness(1.06);
+      filter: s.$hover-brighten;
+      transform: translateY(s.$hover-lift);
+      box-shadow: s.$shadow-brand;
     }
   }
 }

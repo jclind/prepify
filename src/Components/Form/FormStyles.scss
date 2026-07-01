@@ -226,7 +226,8 @@
     background: s.$secondary-accessible;
     border-color: s.$secondary-accessible;
     &:hover:not(:disabled) {
-      filter: brightness(0.95);
+      transform: translateY(s.$hover-lift);
+      box-shadow: s.$shadow-teal;
     }
   }
 

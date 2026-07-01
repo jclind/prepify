@@ -37,10 +37,10 @@
     border-radius: s.$radius-3xl;
     box-shadow: s.$elevation-3;
     padding: 1.15rem 1.25rem;
-    transition: transform 0.14s ease, box-shadow 0.14s ease;
+    transition: transform s.$hover-timing, box-shadow s.$hover-timing;
 
     &:hover {
-      transform: translateY(-2px);
+      transform: translateY(s.$hover-lift-card);
       box-shadow: s.$elevation-4;
     }
 
@@ -132,11 +132,12 @@
         padding: 0.55rem 1rem;
         background: s.$primary-accessible;
         color: #fff;
+        transition: filter s.$hover-timing, box-shadow s.$hover-timing;
         svg {
           font-size: s.$text-md;
         }
         &:hover {
-          background: #f4501e;
+          filter: s.$hover-brighten;
           box-shadow: s.$shadow-brand-strong;
         }
       }

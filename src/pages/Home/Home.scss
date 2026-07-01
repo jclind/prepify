@@ -76,8 +76,8 @@
     text-decoration: none;
     color: s.$primary-text;
     box-shadow: s.$elevation-3;
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
-    &:hover { transform: translateY(-3px); box-shadow: s.$elevation-4; }
+    transition: transform s.$hover-timing, box-shadow s.$hover-timing;
+    &:hover { transform: translateY(s.$hover-lift-card); box-shadow: s.$elevation-4; }
     .thumb {
       position: relative;
       // Container owns the 4/3 box; image and the hold-skeleton both fill it
@@ -139,7 +139,10 @@
     }
     ul { list-style: none; }
     li + li { margin-top: 0.5rem; }
-    a {
+    // Scope the row-link hover to the list only — the `.meal-see-all` in the
+    // column head is also an <a>, and an unscoped `a:hover` here leaked the row
+    // background chip onto it (making it inconsistent with Trending's underline).
+    ul a {
       display: flex;
       gap: 0.75rem;
       align-items: center;
@@ -221,8 +224,13 @@
     font-weight: 700;
     font-size: s.$text-md;
     text-decoration: none;
-    transition: background 0.12s ease, transform 0.12s ease;
+    transition: filter s.$hover-timing, transform s.$hover-timing,
+      box-shadow s.$hover-timing;
     svg { font-size: s.$text-xl; }
-    &:hover { background: s.$primary-hover; transform: translateY(-2px); }
+    &:hover {
+      filter: s.$hover-brighten;
+      transform: translateY(s.$hover-lift);
+      box-shadow: s.$shadow-brand;
+    }
   }
 }

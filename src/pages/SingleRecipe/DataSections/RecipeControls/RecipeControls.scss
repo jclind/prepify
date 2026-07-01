@@ -73,7 +73,8 @@
   }
   button.edit-btn {
     background: none;
-    transition: all 0.1s linear;
+    transition: color s.$hover-timing, background-color s.$hover-timing,
+      border-color s.$hover-timing;
     &:hover {
       color: s.$primary-background;
       background: s.$primary-text;
@@ -89,7 +90,8 @@
   }
   button.delete-btn {
     background: none;
-    transition: all 0.1s linear;
+    transition: color s.$hover-timing, background-color s.$hover-timing,
+      border-color s.$hover-timing;
     &:hover {
       color: s.$primary-background;
       background: s.$error-red;

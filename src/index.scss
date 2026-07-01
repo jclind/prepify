@@ -54,6 +54,14 @@ input {
 // pointer click no longer leaves an outline behind. Modern browsers already drive
 // their default ring off the same heuristic, so no `:focus` fallback is needed.
 button {
+  // Every button reads as clickable. Bare <button>s otherwise fall back to the
+  // UA default arrow (only `.btn` set a cursor), so non-`.btn` buttons across the
+  // app looked non-interactive. Disabled buttons keep the default arrow; a
+  // component may still override (e.g. `not-allowed`).
+  cursor: pointer;
+  &:disabled {
+    cursor: default;
+  }
   &:focus-visible {
     @include s.outline();
   }
@@ -121,9 +129,11 @@ a {
   border: 1px solid transparent;
   border-radius: s.$radius-pill;
   cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease,
-    color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease,
-    filter 0.15s ease;
+  // Motion tokens: $hover-timing (0.15s ease) drives every hover property so the
+  // lift, colour, shadow and filter all ease together. See button-hover-audit.md.
+  transition: background-color s.$hover-timing, border-color s.$hover-timing,
+    color s.$hover-timing, transform s.$hover-timing, box-shadow s.$hover-timing,
+    filter s.$hover-timing;
 
   svg {
     font-size: 1.1em;
@@ -149,14 +159,18 @@ a {
 }
 
 // Colour variants
+// Hover "Lift": surfaced variants rise $hover-lift + gain a shadow; ghost stays
+// flat (no surface to raise). Motion eases via the base `.btn` transition.
 .btn--primary {
   background: s.$primary;
   border-color: s.$primary;
   color: s.$white;
 
   &:hover:not(:disabled) {
-    background: s.$primary-hover;
-    border-color: s.$primary-hover;
+    // Orange fill lightens (not darkens) on hover — the shared $hover-brighten.
+    filter: s.$hover-brighten;
+    transform: translateY(s.$hover-lift);
+    box-shadow: s.$shadow-brand;
   }
 }
 .btn--outline {
@@ -166,6 +180,8 @@ a {
 
   &:hover:not(:disabled) {
     border-color: s.$primary-text;
+    transform: translateY(s.$hover-lift);
+    box-shadow: s.$elevation-2;
   }
 }
 .btn--ghost {
@@ -185,6 +201,8 @@ a {
   &:hover:not(:disabled) {
     background: s.$error-red;
     color: s.$white;
+    transform: translateY(s.$hover-lift);
+    box-shadow: s.$shadow-danger;
   }
 }
 .btn--danger-solid {
@@ -195,6 +213,8 @@ a {
   &:hover:not(:disabled) {
     background: s.$error-red-hover;
     border-color: s.$error-red-hover;
+    transform: translateY(s.$hover-lift);
+    box-shadow: s.$shadow-danger;
   }
 }
 
@@ -225,8 +245,13 @@ a {
   font-size: s.$text-xl;
   white-space: nowrap;
 
-  &:hover {
+  transition: border-color s.$hover-timing, transform s.$hover-timing,
+    box-shadow s.$hover-timing;
+
+  &:hover:not(:disabled) {
     border-color: s.$tertiary-text;
+    transform: translateY(s.$hover-lift);
+    box-shadow: s.$elevation-2;
   }
 
   @include s.below(s.$bp-xs) {

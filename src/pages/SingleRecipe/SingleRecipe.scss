@@ -210,11 +210,24 @@ $soft-radius: 16px;
       background: s.$primary-accessible;
       border-color: s.$primary-accessible;
       color: s.$white;
-      &:hover { background: #a52f0a; border-color: #a52f0a; }
+      // Filled button → the shared Lift: rise + brand glow + the $hover-brighten
+      // lighten (matching the orange CTAs site-wide), instead of a darker fill.
+      &:hover {
+        filter: s.$hover-brighten;
+        transform: translateY(s.$hover-lift);
+        box-shadow: s.$shadow-brand;
+      }
       &.is-saved {
         background: s.$secondary-accessible;
         border-color: s.$secondary-accessible;
-        &:hover { background: #006065; border-color: #006065; }
+        // Same treatment on the saved (teal) state — lighten + teal glow. The
+        // lift is re-stated (not inherited from the base hover) so this is
+        // self-contained; only the glow colour differs from the base.
+        &:hover {
+          filter: s.$hover-brighten;
+          transform: translateY(s.$hover-lift);
+          box-shadow: s.$shadow-teal;
+        }
       }
     }
     .print-recipe-btn .loading {

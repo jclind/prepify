@@ -29,12 +29,12 @@
     text-align: left;
     color: s.$primary-text;
     font-family: inherit;
-    transition: box-shadow 0.14s ease, transform 0.14s ease,
-      border-color 0.14s ease;
+    transition: box-shadow s.$hover-timing, transform s.$hover-timing,
+      border-color s.$hover-timing;
 
     &:hover {
-      box-shadow: s.$elevation-3;
-      transform: translateY(-1px);
+      box-shadow: s.$elevation-4;
+      transform: translateY(s.$hover-lift-card);
     }
     &.active {
       border-color: s.$primary;

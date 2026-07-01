@@ -201,10 +201,10 @@
     box-shadow: s.$elevation-3;
     text-decoration: none;
     color: s.$primary-text;
-    transition: transform 0.16s ease, box-shadow 0.16s ease;
+    transition: transform s.$hover-timing, box-shadow s.$hover-timing;
 
     &:hover {
-      transform: translateY(-2px);
+      transform: translateY(s.$hover-lift-card);
       box-shadow: s.$elevation-4;
     }
     &:focus-visible {

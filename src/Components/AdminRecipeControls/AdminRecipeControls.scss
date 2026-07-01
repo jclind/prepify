@@ -67,7 +67,8 @@
     border: 1px solid s.$admin-slate-300;
     background: s.$white;
     color: s.$admin-slate-700;
-    transition: all 0.15s;
+    transition: color s.$hover-timing, background-color s.$hover-timing,
+      border-color s.$hover-timing;
 
     &:hover:not(:disabled) {
       border-color: s.$admin-slate-400;

@@ -112,7 +112,9 @@
     border: 1px solid s.$primary;
 
     &:hover {
-      filter: brightness(110%);
+      filter: s.$hover-brighten;
+      transform: translateY(s.$hover-lift);
+      box-shadow: s.$shadow-brand;
     }
   }
   .submit-btn:disabled {
@@ -120,6 +122,8 @@
 
     &:hover {
       filter: none;
+      transform: none;
+      box-shadow: none;
       color: inherit;
       border-color: inherit;
     }
