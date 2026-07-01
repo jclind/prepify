@@ -74,7 +74,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **2-iso** | Design: toast punctuation + string dedupe | `[x]` | ~10 toast call sites (TSX strings) | #207 |
 | **2-iso** | Design: codify loading-state pattern | `[x]` | convention + `TailSpin`/skeleton outliers | #213 |
 | **2-scss** | Design: pill `.btn` system | `[x]` | **`index.scss` + many page `.scss`** ⚠ chokepoint | #210 |
-| **2-scss** | Design: type scale (~520 `font-size:` literals) | `[~]` | **`helpers.scss` + ~60 files** ⚠ chokepoint | `worktree-feat+type-scale` · 2026-06-30 |
+| **2-scss** | Design: type scale (~520 `font-size:` literals) | `[P]` | **`helpers.scss` + ~60 files** ⚠ chokepoint | #216 |
 | **2-scss** | Design: elevation/shadow re-author (~52 literals) | `[ ]` | **`helpers.scss` + page `.scss`** ⚠ chokepoint | — |
 | **2-scss** | Design: one danger-red token | `[x]` | **`helpers.scss` + SingleRecipe/ReportControl/…** ⚠ chokepoint | #208 |
 | **2-scss** | Design: name the `$admin-*` sub-palette | `[x]` | **`helpers.scss` + Admin/moderation `.scss`** ⚠ chokepoint | #214 |
@@ -445,3 +445,12 @@ narrates the *why*.
   hover`), per owner sign-off. This track collapses the ~520 ad-hoc `font-size:` literals across `helpers.scss` +
   ~60 files onto a documented modular type scale (next design-system doc after icon/button/admin-palette).
   Worktree on free ports 3001/4001.
+- _2026-06-30_ — **Design: type scale (~490 `font-size:` literals)** PR opened (#216, `[~]`→`[P]`). Ten-step
+  modular `$text-*` scale in `helpers.scss`; 62 `.scss` files repointed (218/491 land exactly on a step, 273
+  normalize onto the nearest — typical ≤0.8px, max 2.8px). Out of scope, left bespoke: PrintableRecipe `pt`, About
+  `clamp()` headings, 404/profile display numerals, icon `em`. New design doc `docs/design/type-scale.md` (fourth
+  after icon/button/admin-palette); BACKLOG item filed for colour tokens → CSS custom properties when theming lands.
+  Verified two ways: the masked-CSS compile diff (`development` vs branch, every `font-size` value blanked) is
+  zero-byte — nothing but font-size values moved; and a two-pass Cypress pixel-diff (tooling split to its own PR
+  #215, CI green) across 6 routes × {desktop, mobile} showed clean text reflow — containers stable, out-of-scope
+  display type untouched, no truncation/overflow.
