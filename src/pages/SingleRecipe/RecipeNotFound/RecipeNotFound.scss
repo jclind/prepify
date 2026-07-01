@@ -83,8 +83,13 @@
       font-weight: 700;
       font-size: s.$text-base;
       text-decoration: none;
-      transition: background 0.12s ease;
-      &:hover { background: s.$primary-hover; }
+      transition: filter s.$hover-timing, transform s.$hover-timing,
+        box-shadow s.$hover-timing;
+      &:hover {
+        filter: s.$hover-brighten;
+        transform: translateY(s.$hover-lift);
+        box-shadow: s.$shadow-brand;
+      }
       &:focus-visible { @include s.outline(); }
     }
   }

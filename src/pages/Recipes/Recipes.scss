@@ -319,12 +319,13 @@
       padding: 0.7rem 1.6rem;
       border-radius: s.$radius-pill;
       transition: background s.$hover-timing, color s.$hover-timing,
-        border-color s.$hover-timing, transform s.$hover-timing,
-        box-shadow s.$hover-timing;
+        border-color s.$hover-timing, filter s.$hover-timing,
+        transform s.$hover-timing, box-shadow s.$hover-timing;
       &--primary {
         background: s.$primary-accessible;
         color: s.$white;
         &:hover {
+          filter: s.$hover-brighten;
           transform: translateY(s.$hover-lift);
           box-shadow: s.$shadow-brand;
         }

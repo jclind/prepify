@@ -70,7 +70,9 @@ already what RecipeCard does.
 ## What shipped
 
 **Tokens** (`helpers.scss`): `$hover-lift: -2px`, `$hover-lift-card: -4px`,
-`$hover-timing: 0.15s ease` — one duration/easing for every hover property.
+`$hover-timing: 0.15s ease` — one duration/easing for every hover property — plus
+`$hover-brighten: brightness(1.06)`, the single canonical "lighten on hover" for
+orange fills.
 
 **System** (`index.scss`): the `.btn` base transition is retimed to `$hover-timing`
 and now animates every hover property together; the surfaced variants
@@ -80,13 +82,22 @@ shadow whose glow follows the fill — `$shadow-brand` for the orange primary,
 colourless outline — while `--ghost` stays flat (no surface). `.load-more-btn`
 gets the outline treatment.
 
-**Buttons migrated off bespoke hovers** → the lift + a shadow, colour-neutral:
-`home-view-all`, `about-btn`, `cook-suggestion-btn`, EmptyState `__cta`,
-`form-action-btn` (was the backwards `0.95` → now teal glow `$shadow-teal`),
-Recipes `load-more-btn` / `__btn--primary` / `__btn--ghost`, AddRecipe `submit-btn`,
-DraftResumeBanner, HomeCookSuggestion `.primary`/`.ghost`, Account `.acct-iconbtn`.
-Every `filter: brightness()` hover on a button is gone (six magnitudes + the
-backwards one), replaced by the lift.
+**Orange fills lighten (not darken) on hover.** The colour half of the language:
+every orange **fill** button applies the single `$hover-brighten` on hover instead
+of swapping to a darker shade (the old mix of `$primary-hover` darkens, hardcoded
+`#a52f0a`/`#f4501e`, and six ad-hoc `brightness()` magnitudes collapses to this one
+value). Covers `.btn--primary`, `home-view-all`, `cook-suggestion-btn`,
+`save-recipe-btn` (both saved/unsaved), EmptyState `__cta`, HomeCookSuggestion
+`.primary`, AddRecipe `submit-btn`, DraftResumeBanner, Drafts publish, Recipes
+`__btn--primary`, `about-btn-primary`, and the RecipeNotFound CTA. Outline/ghost
+buttons keep their colour-only response; the backwards `0.95` darken on the auth
+submit is gone (now teal glow `$shadow-teal`).
+
+> **A11y note:** lightening reduces contrast, and the vivid `#ff5722` fill is only
+> 3.16:1 on white *at rest* — i.e. these buttons already fail AA before hover. This
+> change doesn't create a new pass→fail; the real fix is the deferred owner-owned
+> brand-orange recolor (`$primary-accessible` becoming a true AA shade), after which
+> `$hover-brighten` should be re-checked so hover doesn't dip a passing fill below AA.
 
 **Cards** normalized to `$hover-lift-card` + `$elevation-4`: RecipeCard, Home
 trending, SavedRecipes `collection-card`, UserRecipeThumbnail, Drafts, PublicProfile

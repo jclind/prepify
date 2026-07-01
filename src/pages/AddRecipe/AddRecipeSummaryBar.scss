@@ -112,6 +112,7 @@
     border: 1px solid s.$primary;
 
     &:hover {
+      filter: s.$hover-brighten;
       transform: translateY(s.$hover-lift);
       box-shadow: s.$shadow-brand;
     }
@@ -120,6 +121,7 @@
     cursor: not-allowed;
 
     &:hover {
+      filter: none;
       transform: none;
       box-shadow: none;
       color: inherit;

@@ -132,11 +132,12 @@
         padding: 0.55rem 1rem;
         background: s.$primary-accessible;
         color: #fff;
+        transition: filter s.$hover-timing, box-shadow s.$hover-timing;
         svg {
           font-size: s.$text-md;
         }
         &:hover {
-          background: #f4501e;
+          filter: s.$hover-brighten;
           box-shadow: s.$shadow-brand-strong;
         }
       }

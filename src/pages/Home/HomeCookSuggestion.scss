@@ -112,14 +112,18 @@
     font-size: s.$text-base;
     padding: 0.6rem 1rem;
     text-decoration: none;
-    transition: background s.$hover-timing, transform s.$hover-timing,
-      box-shadow s.$hover-timing;
+    transition: background s.$hover-timing, filter s.$hover-timing,
+      transform s.$hover-timing, box-shadow s.$hover-timing;
     svg { font-size: s.$text-lg; }
   }
   .primary {
     background: s.$primary-accessible;
     color: #fff;
-    &:hover { transform: translateY(s.$hover-lift); box-shadow: s.$shadow-brand; }
+    &:hover {
+      filter: s.$hover-brighten;
+      transform: translateY(s.$hover-lift);
+      box-shadow: s.$shadow-brand;
+    }
   }
   .ghost {
     background: #f0f1f3;

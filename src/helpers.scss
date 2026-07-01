@@ -204,13 +204,17 @@ $shadow-danger: 0 8px 20px rgba($error-red, 0.22); //     danger CTA hover glow
 // hover normalization — "Lift"). Buttons rise $hover-lift, cards rise the larger
 // $hover-lift-card, both eased over $hover-timing; surfaced buttons (primary /
 // outline / danger) also gain a shadow, while ghost stays flat (it has no surface
-// to raise). Under `prefers-reduced-motion` (index.scss) the lift still applies but
-// its transition duration collapses to ~0, so it snaps into place with no animation.
-// Replaces the old ad-hoc mix of -1/-2/-3/-4px lifts, six brightness magnitudes,
-// and scattered 0.1–0.3s timings. Documented in docs/design/button-hover-audit.md.
+// to raise). Orange FILL buttons additionally lighten by the single $hover-brighten
+// (so the fill responds to the cursor, lighter — not darker). Under
+// `prefers-reduced-motion` (index.scss) the lift still applies but its transition
+// duration collapses to ~0, so it snaps into place with no animation.
+// Replaces the old ad-hoc mix of -1/-2/-3/-4px lifts and six brightness magnitudes
+// (now one canonical lighten) and scattered 0.1–0.3s timings. Documented in
+// docs/design/button-hover-audit.md.
 $hover-lift: -2px; //        buttons rise this far on hover
 $hover-lift-card: -4px; //   cards rise this far on hover
 $hover-timing: 0.15s ease; // single duration/easing token for hover motion
+$hover-brighten: brightness(1.06); // the one canonical "lighten on hover" for orange fills
 
 $font-family: 'Montserrat', sans-serif;
 

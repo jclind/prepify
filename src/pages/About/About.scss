@@ -72,6 +72,9 @@
     color: s.$white;
     box-shadow: s.$shadow-brand-strong;
 
+    &:hover {
+      filter: s.$hover-brighten;
+    }
     &:hover svg {
       transform: translateX(3px);
     }

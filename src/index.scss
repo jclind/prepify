@@ -54,6 +54,14 @@ input {
 // pointer click no longer leaves an outline behind. Modern browsers already drive
 // their default ring off the same heuristic, so no `:focus` fallback is needed.
 button {
+  // Every button reads as clickable. Bare <button>s otherwise fall back to the
+  // UA default arrow (only `.btn` set a cursor), so non-`.btn` buttons across the
+  // app looked non-interactive. Disabled buttons keep the default arrow; a
+  // component may still override (e.g. `not-allowed`).
+  cursor: pointer;
+  &:disabled {
+    cursor: default;
+  }
   &:focus-visible {
     @include s.outline();
   }
@@ -159,8 +167,8 @@ a {
   color: s.$white;
 
   &:hover:not(:disabled) {
-    background: s.$primary-hover;
-    border-color: s.$primary-hover;
+    // Orange fill lightens (not darkens) on hover — the shared $hover-brighten.
+    filter: s.$hover-brighten;
     transform: translateY(s.$hover-lift);
     box-shadow: s.$shadow-brand;
   }
