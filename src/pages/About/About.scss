@@ -70,10 +70,13 @@
   .about-btn-primary {
     background-color: s.$primary-accessible;
     color: s.$white;
-    box-shadow: s.$shadow-brand-strong;
 
+    // Match the shared primary CTA: no resting shadow; brand glow arrives on
+    // hover with the brighten + lift (lift comes from `.about-btn:hover`). The
+    // icon nudge stays as the one About-specific flourish.
     &:hover {
       filter: s.$hover-brighten;
+      box-shadow: s.$shadow-brand;
     }
     &:hover svg {
       transform: translateX(3px);

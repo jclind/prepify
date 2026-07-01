@@ -118,9 +118,9 @@
       margin-top: auto;
       padding-top: 0.15rem;
 
-      // Bespoke filled CTA on the `.btn` base: the AA-tuned accessible-orange
-      // fill + warm hover/shadow don't map to `.btn--primary`, so no variant.
-      // Layout/shape/reset come from `.btn`.
+      // Filled CTA on the `.btn` base with the accessible-orange fill; its hover
+      // now mirrors `.btn--primary` (brighten + lift + brand glow). Only the
+      // flex/min-width layout for the draft-card row stays local.
       .resume {
         flex: 1 1 auto;
         // min-width:0 lets the button shrink below its nowrap label's intrinsic
@@ -132,13 +132,17 @@
         padding: 0.55rem 1rem;
         background: s.$primary-accessible;
         color: #fff;
-        transition: filter s.$hover-timing, box-shadow s.$hover-timing;
+        // Match the shared primary-CTA hover exactly: brighten + lift + brand
+        // glow (was missing the lift, and used the stronger glow).
+        transition: filter s.$hover-timing, transform s.$hover-timing,
+          box-shadow s.$hover-timing;
         svg {
           font-size: s.$text-md;
         }
         &:hover {
           filter: s.$hover-brighten;
-          box-shadow: s.$shadow-brand-strong;
+          transform: translateY(s.$hover-lift);
+          box-shadow: s.$shadow-brand;
         }
       }
 

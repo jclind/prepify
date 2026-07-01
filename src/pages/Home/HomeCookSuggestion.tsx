@@ -96,7 +96,7 @@ const HomeCookSuggestion: FC = () => {
                   {pick.cuisine && <span className='cuisine'>{pick.cuisine}</span>}
                 </div>
                 <div className='actions'>
-                  <Link to={`/recipes/${pick._id}`} className='primary btn' onClick={close}>
+                  <Link to={`/recipes/${pick._id}`} className='btn btn--primary' onClick={close}>
                     View recipe
                   </Link>
                   <button className='ghost btn' onClick={tryAnother} disabled={isPending} type='button'>

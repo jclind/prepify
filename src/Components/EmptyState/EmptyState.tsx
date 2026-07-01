@@ -37,13 +37,13 @@ const EmptyState: FC<EmptyStateProps> = ({
     {description ? <p className='empty-state__text'>{description}</p> : null}
     {action ? (
       action.to ? (
-        <Link to={action.to} className='empty-state__cta'>
+        <Link to={action.to} className='empty-state__cta btn btn--primary'>
           {action.label}
         </Link>
       ) : (
         <button
           type='button'
-          className='empty-state__cta'
+          className='empty-state__cta btn btn--primary'
           onClick={action.onClick}
         >
           {action.label}

@@ -108,7 +108,9 @@
   }
   .submit-btn.valid {
     background: s.$primary;
-    color: s.$primary-background;
+    // White label to match every other orange fill (.btn--primary) — was the
+    // off-pattern $primary-background (#eee).
+    color: s.$white;
     border: 1px solid s.$primary;
 
     &:hover {

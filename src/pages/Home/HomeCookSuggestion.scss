@@ -104,9 +104,10 @@
   .actions { display: flex; gap: 0.6rem; }
   // skeleton stand-ins for the two action buttons
   .actions .sk-btn { flex: 1; line-height: 1; }
-  // Both sit on the `.btn` base; locally they flex to equal widths in the
-  // .actions row and keep the compact modal sizing + the shared Lift hover.
-  .primary,
+  // The primary action composes the shared `.btn.btn--primary` (fill + Lift
+  // hover come from the system); `.ghost` is a local soft-grey neutral. Both
+  // flex to equal widths in the .actions row and keep the compact modal sizing.
+  .btn--primary,
   .ghost {
     flex: 1;
     font-size: s.$text-base;
@@ -115,15 +116,6 @@
     transition: background s.$hover-timing, filter s.$hover-timing,
       transform s.$hover-timing, box-shadow s.$hover-timing;
     svg { font-size: s.$text-lg; }
-  }
-  .primary {
-    background: s.$primary-accessible;
-    color: #fff;
-    &:hover {
-      filter: s.$hover-brighten;
-      transform: translateY(s.$hover-lift);
-      box-shadow: s.$shadow-brand;
-    }
   }
   .ghost {
     background: #f0f1f3;
