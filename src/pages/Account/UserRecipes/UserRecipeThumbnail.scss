@@ -12,7 +12,7 @@
   background: #fff;
   border: 1px solid s.$surface-warm-border;
   border-radius: 18px;
-  box-shadow: s.$shadow-soft;
+  box-shadow: s.$elevation-3;
   text-decoration: none;
   color: s.$primary-text;
   transition: box-shadow 0.18s ease, transform 0.18s ease;
@@ -23,7 +23,7 @@
     @include s.outline();
   }
   &:hover {
-    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.1);
+    box-shadow: s.$elevation-4;
     transform: translateY(-2px);
     .go {
       color: s.$secondary;

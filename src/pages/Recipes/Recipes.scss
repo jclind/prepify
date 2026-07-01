@@ -164,7 +164,7 @@
       background: s.$white;
       border: 1px solid s.$gray-300;
       border-radius: s.$radius-xl;
-      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.14);
+      box-shadow: s.$elevation-4;
       padding: 0.4rem;
       button {
         display: block;
@@ -256,7 +256,7 @@
         color: s.$primary;
         border-color: s.$primary;
         transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(255, 87, 34, 0.16);
+        box-shadow: s.$shadow-brand;
       }
       &:hover:not(:disabled) svg {
         transform: translateY(2px);

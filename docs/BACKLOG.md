@@ -624,12 +624,19 @@ findings table.)*
       off-scale one-offs (5/7/9/11/13/18px) need ±1px normalization (design call), and the token-less admin
       files (`Admin/*`, `AdminRecipeControls`, `SavedFilterBar`) keep raw radii pending the import-wiring item
       below.
-    - **Elevation/shadow scale** — partly done 2026-06-25: the two shadows that recur verbatim are now
-      `$shadow-soft` (warm card resting, ×8) and `$shadow-chip` (price/floating chips, ×3). **Remaining:** of
-      **75** total `box-shadow:` declarations, ~**52** are still distinct raw literals (verified 2026-06-26)
-      — nearly all unique, needing a re-authored scale (`$shadow-card`/`-hover`/`-glow-primary`), e.g. the
-      avatar-glow `rgba(255,87,34,0.18)` repeated in Account + PublicProfile (audit F5) — a re-author, not a
-      pixel-identical repoint.
+    - `[x]` **Elevation/shadow scale** — DONE 2026-07-01 (PR #218, `worktree-feat+elevation-shadow-reauthor`).
+      Re-authored the interim `$shadow-soft`/`$shadow-chip`/`$card-box-shadow` stopgap into a documented 6-step
+      `$elevation-1..6` ramp + `$shadow-brand`/`-strong`/`$shadow-teal` glow tokens in `helpers.scss` (owner
+      sign-off via a temp `/elevation-audit` page). Migrated ~51 declarations across 28 files: 37 distinct old
+      values → 9 tokens (2 value-identical). Unified tint — one slate `rgba($primary-text, …)` across the ramp,
+      replacing the old black/slate/warm mix; the repeated avatar-glow `rgba(255,87,34,0.18)` (audit F5) folded
+      onto `$shadow-brand`. Kept bespoke: the two-layer add-ingredient bar, the horizontal drawer, the two
+      upward sticky-bar shadows. No pixel regression beyond shadows (compiled-CSS diff vs development
+      byte-identical outside `box-shadow`). Documented in `docs/design/elevation.md`.
+    - **Focus-ring tokens** — surfaced 2026-07-01, deferred out of the elevation track (they're focus
+      indicators, not elevation). ~13 `box-shadow: 0 0 0 3px rgba(…)` rings across FormInput/FormStyles/Settings
+      controls/CreateUsername/Recipes/Help, in teal/error/ok-green/orange variants — a `$focus-ring-*` token
+      group would single-source them. Pairs loosely with the `$primary-hover` a11y `2-scss` track.
     - `[x]` **Breakpoint tokens/mixin** — DONE 2026-06-25 (PR `style/breakpoint-tokens`). Added an 8-tier
       `$bp-xs..4xl` scale + `$bp-nav`/`$bp-nav-up` and `below()`/`above()`/`between()` mixins; migrated all 69
       width queries. The recurring content breakpoints converged to tiers (7 approved small shifts ≤30px:
@@ -638,7 +645,7 @@ findings table.)*
       literal px to the mixins and keep their exact values. **Remaining (design call):** converge those
       deliberately-bespoke one-offs into the scale if/when their layouts are retuned.
   *(surfaced 2026-06-25 in the design-consistency sweep; cheap wins + radius/recurring-shadow scales applied,
-  type scale done 2026-07-01 PR #216; full elevation re-author still deferred.)*
+  type scale done 2026-07-01 PR #216; elevation re-author done 2026-07-01.)*
 - `[~]` **Collapse near-duplicate brand shades to one value**
     - `[x]` **Decorative tint** — DONE (PR #192): `$primary-tint: #ff8a5c` collapses the avatar/XP gradient
       stops (`Account.scss` ×2) + the `RecipePlaceholder` icon `#ff8a65`. Purely decorative, so independent

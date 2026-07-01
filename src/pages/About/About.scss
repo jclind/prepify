@@ -70,7 +70,7 @@
   .about-btn-primary {
     background-color: s.$primary-accessible;
     color: s.$white;
-    box-shadow: 0 6px 16px rgba(255, 87, 34, 0.22);
+    box-shadow: s.$shadow-brand-strong;
 
     &:hover svg {
       transform: translateX(3px);
@@ -142,7 +142,7 @@
   .about-card {
     background-color: s.$white;
     border-radius: s.$border-radius;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    box-shadow: s.$elevation-4;
     border: 1px solid s.$gray-200;
     overflow: hidden;
     width: 280px;
@@ -212,7 +212,7 @@
   .about-nutrition {
     background-color: s.$white;
     border-radius: s.$border-radius;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    box-shadow: s.$elevation-4;
     border: 1px solid s.$gray-200;
     padding: 1.25rem;
     width: 280px;
@@ -322,7 +322,7 @@
     height: 2.5rem;
     border-radius: s.$radius-pill;
     background-color: s.$white;
-    box-shadow: s.$card-box-shadow;
+    box-shadow: s.$elevation-2;
     color: s.$primary;
     font-weight: 800;
     font-size: s.$text-md;

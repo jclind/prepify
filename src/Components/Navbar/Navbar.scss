@@ -71,7 +71,7 @@
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border-bottom: 1px solid s.$gray-300;
-  box-shadow: 0 2px 14px rgba(48, 56, 65, 0.07);
+  box-shadow: s.$elevation-2;
 }
 
 // On any light nav surface the vivid orange wordmark is only 2.72:1 (large text,

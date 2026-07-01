@@ -79,7 +79,7 @@
     background: s.$white;
     border: 1px solid s.$admin-slate-200;
     border-radius: s.$radius-md;
-    box-shadow: 0 6px 20px rgba(s.$admin-slate-900, 0.12);
+    box-shadow: s.$elevation-3;
   }
 
   .report-menu-item {

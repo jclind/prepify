@@ -51,7 +51,7 @@
     border-radius: s.$radius-circle;
     object-fit: cover;
     flex-shrink: 0;
-    box-shadow: 0 8px 22px rgba(255, 87, 34, 0.18);
+    box-shadow: s.$shadow-brand;
 
     &.not-set {
       display: flex;
@@ -198,14 +198,14 @@
     background: #fff;
     border: 1px solid s.$surface-warm-border;
     border-radius: s.$radius-2xl;
-    box-shadow: s.$shadow-soft;
+    box-shadow: s.$elevation-3;
     text-decoration: none;
     color: s.$primary-text;
     transition: transform 0.16s ease, box-shadow 0.16s ease;
 
     &:hover {
       transform: translateY(-2px);
-      box-shadow: 0 12px 26px rgba(0, 0, 0, 0.1);
+      box-shadow: s.$elevation-4;
     }
     &:focus-visible {
       outline: 2px solid s.$primary;
@@ -355,7 +355,7 @@
       pointer-events: none;
       &:hover {
         transform: none;
-        box-shadow: s.$shadow-soft;
+        box-shadow: s.$elevation-3;
       }
     }
   }

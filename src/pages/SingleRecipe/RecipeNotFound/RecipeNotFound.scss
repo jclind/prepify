@@ -21,7 +21,7 @@
     background: s.$white;
     border: 1.5px solid s.$gray-200;
     border-radius: s.$radius-4xl;
-    box-shadow: rgba(48, 56, 65, 0.06) 0px 10px 30px;
+    box-shadow: s.$elevation-4;
   }
 
   .rnf-icon {

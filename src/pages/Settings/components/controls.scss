@@ -160,7 +160,7 @@
     width: 20px;
     border-radius: s.$radius-circle;
     background: s.$white;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+    box-shadow: s.$elevation-1;
     transition: transform 0.15s ease;
   }
   &.on {
@@ -253,7 +253,7 @@
   gap: 1rem;
   background: s.$primary-text;
   border-radius: s.$radius-2xl;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  box-shadow: s.$elevation-3;
   // Collapsed by default so the hidden bar reserves no space under the form
   // (opacity alone left ~3.5rem of dead padding at the bottom of every section).
   max-height: 0;

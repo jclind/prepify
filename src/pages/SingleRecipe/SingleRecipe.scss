@@ -9,7 +9,6 @@
 
 $soft-border: s.$gray-200;
 $soft-radius: 16px;
-$soft-shadow: rgba(48, 56, 65, 0.05) 0px 6px 20px;
 
 .single-recipe-page {
   max-width: 1080px;
@@ -71,7 +70,7 @@ $soft-shadow: rgba(48, 56, 65, 0.05) 0px 6px 20px;
       display: block;
     }
     img {
-      box-shadow: rgba(48, 56, 65, 0.1) 0px 12px 28px;
+      box-shadow: s.$elevation-4;
       // Held at 0 until the image actually decodes (onLoad), then faded in over
       // the skeleton — no top-down paint over an empty box.
       opacity: 0;
@@ -152,7 +151,7 @@ $soft-shadow: rgba(48, 56, 65, 0.05) 0px 6px 20px;
     background: s.$white;
     border: 1.5px solid $soft-border;
     border-radius: $soft-radius;
-    box-shadow: $soft-shadow;
+    box-shadow: s.$elevation-3;
   }
   .meta {
     display: flex;
@@ -240,7 +239,7 @@ $soft-shadow: rgba(48, 56, 65, 0.05) 0px 6px 20px;
     background: s.$white;
     border: 1.5px solid $soft-border;
     border-radius: $soft-radius;
-    box-shadow: $soft-shadow;
+    box-shadow: s.$elevation-3;
     padding: 1.5rem 1.75rem;
     @include s.below(s.$bp-lg) { padding: 1.25rem 1rem; }
     > h2 { font-size: s.$text-xl; font-weight: 700; margin-bottom: 1.1rem; }
