@@ -35,7 +35,7 @@
     border: 1px solid rgba(255, 255, 255, 0.7);
     background: rgba(255, 255, 255, 0.92);
     backdrop-filter: blur(18px);
-    box-shadow: 0 22px 55px rgba(40, 30, 20, 0.18);
+    box-shadow: s.$elevation-5;
   }
 
   // Brand mark — teal rounded square with a thin, cursive-leaning white "P"
@@ -55,7 +55,7 @@
     letter-spacing: 0;
     color: s.$white;
     background: linear-gradient(135deg, #2ec0c8, s.$secondary);
-    box-shadow: 0 8px 18px rgba(0, 173, 181, 0.3);
+    box-shadow: s.$shadow-teal;
     margin-bottom: 1rem;
   }
 

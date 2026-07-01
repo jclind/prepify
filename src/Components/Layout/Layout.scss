@@ -34,7 +34,7 @@
   color: s.$primary;
   font-weight: 600;
   border-radius: s.$border-radius;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: s.$elevation-2;
   transition: top 0.15s ease-in-out;
 
   &:focus {

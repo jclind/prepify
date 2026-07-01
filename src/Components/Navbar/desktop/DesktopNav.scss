@@ -327,7 +327,7 @@
     background: s.$white;
     border: 1px solid s.$gray-300;
     border-radius: s.$border-radius;
-    box-shadow: 0 12px 28px rgba(48, 56, 65, 0.18);
+    box-shadow: s.$elevation-4;
 
     visibility: hidden;
     opacity: 0;

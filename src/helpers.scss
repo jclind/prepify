@@ -172,13 +172,31 @@ $border-radius: $radius-lg;
 
 $max-width: 1400px;
 
-$card-box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
+// ── Elevation scale ──────────────────────────────────────────────────────────
+// A 6-step shadow ramp that the app's ~40 ad-hoc `box-shadow:` literals collapse
+// onto. Steps read as height: 1 barely lifts a surface, 6 floats a full-screen
+// overlay. One slate tint runs across the whole ramp — rgba($primary-text, …),
+// i.e. rgb(48,56,65), the brand text colour — replacing the old mix of pure-black,
+// slate, and warm shadows so every raised surface casts the same cool, on-brand
+// shadow. Documented in docs/design/elevation.md.
+//
+// Out of scope, kept bespoke (NOT on this ramp) — directional or multi-layer
+// shadows where the ramp geometry would be wrong: the two-layer add-ingredient
+// bar (index.scss), the horizontal off-canvas drawer (Recipes.scss), and the two
+// upward sticky-bar shadows (AccountStatusBanner / AddRecipeSummaryBar). Focus
+// rings (`box-shadow: 0 0 0 3px …`) are a separate concern, left for a later pass.
+$elevation-1: 0 1px 3px rgba($primary-text, 0.14); //   hairline — toggle knobs, faint insets
+$elevation-2: 0 2px 8px rgba($primary-text, 0.12); //   small — sticky nav, badges, chips
+$elevation-3: 0 6px 18px rgba($primary-text, 0.1); //   resting cards (RecipeCard, Home, panels)
+$elevation-4: 0 12px 28px rgba($primary-text, 0.14); // raised — hovers, dropdowns, popovers
+$elevation-5: 0 18px 50px rgba($primary-text, 0.22); // modals / dialogs
+$elevation-6: 0 24px 60px rgba($primary-text, 0.4); //  full-screen overlay backdrop
 
-// Elevation — only the shadows that recur verbatim are tokenized so repoints
-// stay value-identical; bespoke one-off shadows remain raw pending an
-// elevation-scale re-author (see docs/BACKLOG.md).
-$shadow-soft: 0 4px 14px rgba(0, 0, 0, 0.05); // soft resting shadow on warm account/settings cards
-$shadow-chip: 0 2px 6px rgba(0, 0, 0, 0.18);  // tight drop shadow on price / floating chips
+// Colored brand "glow" shadows — accent shadows tinted to the brand hue for CTAs.
+// Kept separate from the neutral elevation ramp: these signal emphasis, not height.
+$shadow-brand: 0 8px 20px rgba($primary, 0.18); //        primary CTA hover glow
+$shadow-brand-strong: 0 6px 16px rgba($primary, 0.28); // stronger CTA glow (draft publish)
+$shadow-teal: 0 8px 18px rgba($secondary, 0.3); //        teal auth-submit glow
 
 $font-family: 'Montserrat', sans-serif;
 

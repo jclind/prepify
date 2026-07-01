@@ -75,9 +75,9 @@
     overflow: hidden;
     text-decoration: none;
     color: s.$primary-text;
-    box-shadow: rgba(0, 0, 0, 0.06) 0px 6px 18px;
+    box-shadow: s.$elevation-3;
     transition: transform 0.15s ease, box-shadow 0.15s ease;
-    &:hover { transform: translateY(-3px); box-shadow: rgba(0, 0, 0, 0.12) 0px 12px 26px; }
+    &:hover { transform: translateY(-3px); box-shadow: s.$elevation-4; }
     .thumb {
       position: relative;
       // Container owns the 4/3 box; image and the hold-skeleton both fill it
@@ -95,7 +95,7 @@
         position: absolute; bottom: 0.6rem; right: 0.6rem;
         background: rgba(255, 255, 255, 0.95); color: s.$primary;
         font-weight: 800; font-size: s.$text-fine; padding: 0.28rem 0.6rem;
-        border-radius: s.$radius-pill; box-shadow: s.$shadow-chip;
+        border-radius: s.$radius-pill; box-shadow: s.$elevation-2;
       }
     }
     .body { padding: 0.85rem 1rem 1rem; }
@@ -125,7 +125,7 @@
     border: 1px solid #efe6db;
     border-radius: s.$radius-3xl;
     padding: 1.25rem;
-    box-shadow: rgba(0, 0, 0, 0.04) 0px 4px 14px;
+    box-shadow: s.$elevation-2;
 
     .meal-col-head {
       display: flex;

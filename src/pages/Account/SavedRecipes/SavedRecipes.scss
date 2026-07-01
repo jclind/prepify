@@ -33,7 +33,7 @@
       border-color 0.14s ease;
 
     &:hover {
-      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+      box-shadow: s.$elevation-3;
       transform: translateY(-1px);
     }
     &.active {
@@ -257,7 +257,7 @@
       background: #fff;
       border: 1px solid s.$gray-300;
       border-radius: s.$radius-xl;
-      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.14);
+      box-shadow: s.$elevation-4;
       padding: 0.4rem;
       button {
         display: block;
