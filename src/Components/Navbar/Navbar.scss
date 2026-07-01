@@ -98,11 +98,11 @@
   // `.nav--condensed .nav-logo` (0-2-0) loses to them and the shrink is silently
   // dropped.
   .prepify-logo.nav-link .nav-logo {
-    font-size: 1.7rem;
+    font-size: s.$text-3xl;
     transition: font-size 0.2s ease;
   }
   .prepify-logo.nav-link .beta-tag {
-    font-size: 0.7rem;
+    font-size: s.$text-caption;
     padding: 0.15rem 0.4rem;
   }
   .dnav {
@@ -117,7 +117,7 @@
     .dnav__icon-link {
       height: 38px;
       width: 38px;
-      font-size: 1.2rem;
+      font-size: s.$text-xl;
     }
     .dnav__create {
       padding-top: 0.4rem;
@@ -142,12 +142,12 @@
   text-decoration: none;
   text-transform: capitalize;
   text-decoration: none;
-  font-size: 1.125rem;
+  font-size: s.$text-lg;
   font-weight: 700;
   color: s.$primary-background;
 
   .nav-logo {
-    font-size: 2.25rem;
+    font-size: s.$text-4xl;
     font-weight: 700;
     font-style: italic;
     color: s.$primary;
@@ -161,7 +161,7 @@
 
   .beta-tag {
     text-transform: uppercase;
-    font-size: 0.875rem;
+    font-size: s.$text-sm;
     // AA: light text on the vivid teal was 2.78:1; the on-light teal + white
     // takes it to 5.27:1. (Cosmetic only — the tag is removed at the 1.0 cutover,
     // but this keeps the binary color-contrast audit passing in the meantime.)
@@ -228,10 +228,10 @@
 
   @include s.below(s.$bp-nav) {
     .nav-logo {
-      font-size: 1.875rem;
+      font-size: s.$text-3xl;
     }
     .beta-tag {
-      font-size: 0.75rem;
+      font-size: s.$text-caption;
     }
   }
 
@@ -240,10 +240,10 @@
   // the search room.
   @include s.between(s.$bp-nav-up, 860px) {
     .nav-logo {
-      font-size: 1.6rem;
+      font-size: s.$text-2xl;
     }
     .beta-tag {
-      font-size: 0.7rem;
+      font-size: s.$text-caption;
       padding: 0.18rem 0.4rem;
     }
   }

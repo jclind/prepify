@@ -15,7 +15,7 @@
     cursor: pointer;
     text-decoration: underline;
     font-weight: 500;
-    font-size: 0.875rem;
+    font-size: s.$text-sm;
     color: s.$secondary-text;
     width: fit-content;
     align-self: center;
@@ -28,7 +28,7 @@
     gap: 0.6rem;
     margin: 0.15rem 0;
     color: s.$tertiary-text;
-    font-size: 0.72rem;
+    font-size: s.$text-caption;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.04em;
@@ -47,7 +47,7 @@
     box-sizing: border-box;
     padding: 0.65rem 0.85rem;
     font-family: inherit;
-    font-size: 0.95rem;
+    font-size: s.$text-base;
     font-weight: 500;
     color: s.$primary-text;
     border: 1.5px solid s.$gray-300;

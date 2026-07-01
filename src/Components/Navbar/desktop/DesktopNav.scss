@@ -138,7 +138,7 @@
   align-items: center;
   gap: 0.45rem;
   padding: 0.4rem 0.25rem;
-  font-size: 1.05rem;
+  font-size: s.$text-md;
   font-weight: 700;
   text-decoration: none;
   white-space: nowrap;
@@ -211,7 +211,7 @@
   border-radius: s.$radius-circle;
   flex-shrink: 0;
   color: var(--dnav-text);
-  font-size: 1.35rem;
+  font-size: s.$text-xl;
   text-decoration: none;
   transition: background 0.12s linear, color 0.12s linear;
   &:hover {
@@ -232,7 +232,7 @@
   padding: 0.5rem 1.1rem;
   // Pill shape; themed colours kept off the `.btn` variants (see .dnav__create).
   border-radius: s.$radius-pill;
-  font-size: 1rem;
+  font-size: s.$text-md;
   font-weight: 700;
   text-decoration: none;
   white-space: nowrap;
@@ -294,7 +294,7 @@
     justify-content: center;
     background: s.$primary-text;
     color: s.$white;
-    font-size: 1.4rem;
+    font-size: s.$text-2xl;
     font-weight: 600;
     border: 1px solid #{rgba(s.$white, 0.6)};
   }
@@ -345,7 +345,7 @@
 
   &__email {
     display: block;
-    font-size: 0.75rem;
+    font-size: s.$text-caption;
     font-weight: 500;
     color: s.$secondary-text;
     overflow: hidden;
@@ -365,7 +365,7 @@
     text-align: left;
     text-decoration: none;
     cursor: pointer;
-    font-size: 0.9rem;
+    font-size: s.$text-base;
     font-weight: 600;
     color: s.$primary-text;
     .icon {
@@ -424,7 +424,7 @@
   justify-content: center;
   background: s.$primary-text;
   color: s.$white;
-  font-size: 1.25rem;
+  font-size: s.$text-xl;
   font-weight: 600;
 }
 .dnav-account__profile-meta {
@@ -433,7 +433,7 @@
   min-width: 0;
 }
 .dnav-account__profile-name {
-  font-size: 0.95rem;
+  font-size: s.$text-base;
   font-weight: 700;
   color: s.$primary-text;
   white-space: nowrap;
@@ -451,7 +451,7 @@
   border-radius: s.$border-radius;
   background: none;
   color: s.$primary-text;
-  font-size: 0.9rem;
+  font-size: s.$text-base;
   font-weight: 600;
   cursor: pointer;
   transition: border-color 0.12s linear, color 0.12s linear, background 0.12s linear;
@@ -581,7 +581,7 @@
   }
   // smaller search text so "Search All Recipes" isn't clipped in the tight band
   .dnav__search .search-recipes-form .search-recipes-input-label input {
-    font-size: 0.95rem;
+    font-size: s.$text-base;
     padding-left: 2.4rem;
   }
 }

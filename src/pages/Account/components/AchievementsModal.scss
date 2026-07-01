@@ -23,11 +23,11 @@
     border-bottom: 1px solid #f0e8dd;
   }
   .am-title {
-    font-size: 1.2rem;
+    font-size: s.$text-xl;
     font-weight: 800;
   }
   .am-progress {
-    font-size: 0.8rem;
+    font-size: s.$text-fine;
     font-weight: 700;
     color: s.$tertiary-text;
     background: #efe6da;
@@ -48,7 +48,7 @@
     cursor: pointer;
     transition: all 0.12s ease;
     svg {
-      font-size: 1.1rem;
+      font-size: s.$text-lg;
     }
     &:hover {
       border-color: s.$primary;
@@ -78,7 +78,7 @@
     }
   }
   .am-icon {
-    font-size: 1.4rem;
+    font-size: s.$text-2xl;
     flex-shrink: 0;
   }
   .am-text {
@@ -88,11 +88,11 @@
   }
   .am-name {
     font-weight: 700;
-    font-size: 0.95rem;
+    font-size: s.$text-base;
     color: s.$primary-text;
   }
   .am-desc {
-    font-size: 0.82rem;
+    font-size: s.$text-sm;
     color: s.$secondary-text;
   }
 }

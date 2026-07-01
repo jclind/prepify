@@ -26,12 +26,12 @@
     justify-content: center;
   }
   .heading {
-    // font-size: 1.875rem;
+    // font-size: s.$text-3xl;
     padding-top: 1rem;
     text-align: center;
   }
   .release-tag {
-    font-size: 1.125rem;
+    font-size: s.$text-lg;
     font-weight: 700;
     color: s.$primary;
     padding-top: 0.5rem;
@@ -55,7 +55,7 @@
         display: flex;
         align-items: center;
         gap: 0.5rem;
-        font-size: 1.25rem;
+        font-size: s.$text-xl;
         font-weight: 700;
         // color: s.$primary;
         text-align: left;
@@ -92,7 +92,7 @@
   // `.btn .btn--ghost` (secondary-text comes from the variant); keeps the
   // underlined text-link treatment + left alignment + spacing.
   .all-release-notes-btn {
-    font-size: 1rem;
+    font-size: s.$text-md;
     text-decoration: underline;
     text-align: left;
     margin: 1rem 0 0;

@@ -182,6 +182,29 @@ $shadow-chip: 0 2px 6px rgba(0, 0, 0, 0.18);  // tight drop shadow on price / fl
 
 $font-family: 'Montserrat', sans-serif;
 
+// ── Type scale ───────────────────────────────────────────────────────────────
+// A 10-step modular scale that the app's ~490 ad-hoc `font-size:` literals
+// collapse onto. Steps are anchored on the frequency peaks already in use, so
+// the most-common sizes (.85/.95/1/1.25rem) are kept verbatim and the long tail
+// of near-dupes (drift like .82≈.85, .9≈.95, 1.4≈1.5) normalizes onto the
+// nearest step — an intentional, documented collapse (the biggest single shift
+// is 2.8px, the typical one ≤0.8px). `rem` so the scale honours the user's root
+// font size. Documented in docs/design/type-scale.md.
+//
+// Out of scope (kept bespoke, NOT on this scale): the PrintableRecipe `pt` print
+// scale, the About `clamp()` fluid headings, the 404/PublicProfile giant display
+// numerals, and the icon-relative `em` sizes.
+$text-caption: 0.72rem; // 11.5px — tiny meta: timestamps, counts, eyebrow labels
+$text-fine: 0.78rem; //    12.5px — small meta / dense secondary text
+$text-sm: 0.85rem; //      13.6px — small UI: pills, chips, helper text (most common)
+$text-base: 0.95rem; //    15.2px — default body / paragraph text
+$text-md: 1rem; //         16px   — emphasized body, standard control text
+$text-lg: 1.125rem; //     18px   — lead paragraphs, large controls
+$text-xl: 1.25rem; //      20px   — card titles, sub-headings
+$text-2xl: 1.5rem; //      24px   — section headings (h3)
+$text-3xl: 1.875rem; //    30px   — page headings (h2)
+$text-4xl: 2.25rem; //     36px   — hero / top-level headings (h1)
+
 // Responsive breakpoints. Canonical "down" (max-width) tiers, anchored on the
 // values already used most across the app. Queries reach them through the
 // below()/above()/between() mixins so the breakpoint list lives in one place.

@@ -11,11 +11,11 @@
 
     h1 {
       margin: 0;
-      font-size: 1.6rem;
+      font-size: s.$text-2xl;
     }
 
     .open-count {
-      font-size: 0.85rem;
+      font-size: s.$text-sm;
       font-weight: 600;
       color: s.$admin-warn-text;
       background: s.$admin-warn-bg;
@@ -37,7 +37,7 @@
       color: s.$admin-slate-600;
       padding: 0.4rem 0.9rem;
       border-radius: s.$radius-pill;
-      font-size: 0.85rem;
+      font-size: s.$text-sm;
       cursor: pointer;
       transition: all 0.15s;
 
@@ -59,14 +59,14 @@
       color: s.$admin-slate-700;
       padding: 0.4rem 0.7rem;
       border-radius: s.$radius-md;
-      font-size: 0.85rem;
+      font-size: s.$text-sm;
       cursor: pointer;
     }
   }
 
   .bug-reports-state {
     color: s.$admin-slate-500;
-    font-size: 0.95rem;
+    font-size: s.$text-base;
 
     &.error {
       color: s.$admin-danger-text;
@@ -89,7 +89,7 @@
       display: flex;
       align-items: center;
       gap: 0.5rem;
-      font-size: 0.85rem;
+      font-size: s.$text-sm;
       color: s.$admin-slate-700;
       cursor: pointer;
     }
@@ -102,7 +102,7 @@
         cursor: pointer;
         border-radius: s.$radius-sm;
         padding: 0.4rem 0.8rem;
-        font-size: 0.82rem;
+        font-size: s.$text-sm;
         font-weight: 600;
         border: 1px solid transparent;
         white-space: nowrap;
@@ -165,7 +165,7 @@
       flex-wrap: wrap;
 
       span {
-        font-size: 0.7rem;
+        font-size: s.$text-caption;
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.03em;
@@ -211,7 +211,7 @@
 
     .bug-report-description {
       margin: 0;
-      font-size: 0.95rem;
+      font-size: s.$text-base;
       color: s.$admin-slate-900;
       line-height: 1.5;
       white-space: pre-wrap;
@@ -225,7 +225,7 @@
       gap: 0.4rem;
 
       .ctx {
-        font-size: 0.78rem;
+        font-size: s.$text-fine;
         color: s.$admin-slate-600;
         background: s.$admin-slate-100;
         padding: 0.1rem 0.4rem;
@@ -239,7 +239,7 @@
 
     .bug-report-ua {
       margin: 0.4rem 0 0;
-      font-size: 0.72rem;
+      font-size: s.$text-caption;
       color: s.$admin-slate-400;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -248,7 +248,7 @@
 
     .bug-report-foot {
       margin: 0.6rem 0 0;
-      font-size: 0.78rem;
+      font-size: s.$text-fine;
       color: s.$admin-slate-400;
     }
 
@@ -262,7 +262,7 @@
         cursor: pointer;
         border-radius: s.$radius-sm;
         padding: 0.4rem 0.8rem;
-        font-size: 0.82rem;
+        font-size: s.$text-sm;
         font-weight: 600;
         border: 1px solid transparent;
         white-space: nowrap;
@@ -296,7 +296,7 @@
     margin-top: 1.5rem;
 
     .page-info {
-      font-size: 0.82rem;
+      font-size: s.$text-sm;
       color: s.$admin-slate-500;
     }
 
@@ -306,7 +306,7 @@
       gap: 0.75rem;
 
       .page-indicator {
-        font-size: 0.82rem;
+        font-size: s.$text-sm;
         color: s.$admin-slate-700;
       }
 
@@ -317,7 +317,7 @@
         color: s.$admin-slate-700;
         border-radius: s.$radius-sm;
         padding: 0.4rem 0.8rem;
-        font-size: 0.82rem;
+        font-size: s.$text-sm;
         font-weight: 600;
 
         &:hover:not(:disabled) {

@@ -58,7 +58,7 @@
       justify-content: center;
       color: s.$primary;
       font-weight: 600;
-      font-size: 2.25rem;
+      font-size: s.$text-4xl;
       background: s.$primary-text;
     }
   }
@@ -66,7 +66,7 @@
     min-width: 0;
   }
   .acct-name {
-    font-size: 1.7rem;
+    font-size: s.$text-3xl;
     font-weight: 800;
     letter-spacing: -0.02em;
     line-height: 1.1;
@@ -74,20 +74,20 @@
   .acct-meta {
     color: s.$tertiary-text;
     font-weight: 600;
-    font-size: 0.84rem;
+    font-size: s.$text-sm;
     margin-top: 0.3rem;
   }
   .acct-bio {
     color: s.$secondary-text;
     line-height: 1.55;
-    font-size: 0.93rem;
+    font-size: s.$text-base;
     margin-top: 0.6rem;
     max-width: 600px;
   }
   .acct-bio-empty {
     display: inline-block;
     margin-top: 0.6rem;
-    font-size: 0.86rem;
+    font-size: s.$text-sm;
     font-weight: 600;
     color: s.$tertiary-text;
     text-decoration: none;
@@ -144,7 +144,7 @@
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
-    font-size: 0.78rem;
+    font-size: s.$text-fine;
     font-weight: 700;
     color: s.$secondary-text;
     background: #fff;
@@ -157,7 +157,7 @@
   .acct-lvl-chip-num {
     flex-shrink: 0;
     white-space: nowrap;
-    font-size: 0.72rem;
+    font-size: s.$text-caption;
     font-weight: 800;
     color: #fff;
     background: linear-gradient(135deg, s.$primary, s.$primary-tint);
@@ -166,11 +166,11 @@
   }
   .acct-rewards-cta {
     font-weight: 800;
-    font-size: 0.8rem;
+    font-size: s.$text-fine;
     color: s.$primary;
     white-space: nowrap;
     span {
-      font-size: 1rem;
+      font-size: s.$text-md;
     }
   }
   .acct-xpbar {
@@ -189,7 +189,7 @@
     .acct-xpbar-label {
       display: block;
       margin-top: 0.35rem;
-      font-size: 0.72rem;
+      font-size: s.$text-caption;
       font-weight: 700;
       color: s.$tertiary-text;
     }
@@ -207,13 +207,13 @@
   .acct-btn {
     font-weight: 700;
     svg {
-      font-size: 1.05rem;
+      font-size: s.$text-md;
     }
   }
   // Warm-palette outline pill on the `.btn` base — bespoke cream border + brand
   // hover, so no colour variant. Tighter padding + smaller text than the base.
   .acct-edit {
-    font-size: 0.86rem;
+    font-size: s.$text-sm;
     color: s.$secondary-text;
     background: #fff;
     border: 1px solid #e3d9ca;
@@ -285,7 +285,7 @@
     gap: 0.7rem;
     font-family: inherit;
     font-weight: 700;
-    font-size: 0.9rem;
+    font-size: s.$text-base;
     color: s.$secondary-text;
     text-decoration: none;
     border-radius: 11px;
@@ -304,7 +304,7 @@
 
     .acct-seg-icon {
       display: flex;
-      font-size: 1.15rem;
+      font-size: s.$text-lg;
     }
     // The short label is phone-only (≤600px); the full label shows otherwise.
     .acct-seg-label-short {
@@ -312,7 +312,7 @@
     }
     .acct-seg-count {
       margin-left: auto;
-      font-size: 0.72rem;
+      font-size: s.$text-caption;
       font-weight: 800;
       color: s.$secondary-text;
       background: s.$gray-200;
@@ -332,16 +332,16 @@
       justify-content: center;
       text-align: center;
       padding: 0.65rem 0.25rem;
-      font-size: 0.8rem;
+      font-size: s.$text-fine;
       .acct-seg-icon {
-        font-size: 1.3rem;
+        font-size: s.$text-xl;
       }
       .acct-seg-count {
         position: absolute;
         top: 0.25rem;
         right: 0.4rem;
         margin-left: 0;
-        font-size: 0.58rem;
+        font-size: s.$text-caption;
         padding: 0.05rem 0.3rem;
       }
     }
@@ -381,7 +381,7 @@
       width: 76px;
       height: 76px;
       &.not-set {
-        font-size: 2rem;
+        font-size: s.$text-3xl;
       }
     }
     .acct-id-text {
@@ -390,7 +390,7 @@
       align-items: center;
     }
     .acct-name {
-      font-size: 1.5rem;
+      font-size: s.$text-2xl;
     }
     .acct-bio {
       max-width: 100%;
@@ -417,7 +417,7 @@
         display: none;
       }
       svg {
-        font-size: 1.1rem;
+        font-size: s.$text-lg;
       }
     }
     .acct-iconbtn {
@@ -430,7 +430,7 @@
     // phones we just shrink the cells and swap "Your Recipes" → "Recipes" so a
     // single line fits.
     .acct-seg {
-      font-size: 0.7rem;
+      font-size: s.$text-caption;
       padding: 0.55rem 0.2rem;
       line-height: 1;
 

@@ -20,7 +20,7 @@
       align-items: center;
       gap: 0.5rem;
       font-weight: 700;
-      font-size: 1.15rem;
+      font-size: s.$text-lg;
 
       a {
         color: s.$white;
@@ -28,7 +28,7 @@
       }
 
       .admin-badge {
-        font-size: 0.65rem;
+        font-size: s.$text-caption;
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.05em;
@@ -49,7 +49,7 @@
         text-decoration: none;
         padding: 0.5rem 0.75rem;
         border-radius: s.$radius-sm;
-        font-size: 0.95rem;
+        font-size: s.$text-base;
         transition: background 0.15s, color 0.15s;
 
         &:hover {

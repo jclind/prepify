@@ -22,7 +22,7 @@
       color: s.$primary;
     }
     .text {
-      font-size: 0.85rem;
+      font-size: s.$text-sm;
       font-weight: 600;
     }
     &:hover {

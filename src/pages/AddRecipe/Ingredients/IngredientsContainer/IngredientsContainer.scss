@@ -36,7 +36,7 @@
     }
 
     .ingredients-subtotal {
-      font-size: 0.82rem;
+      font-size: s.$text-sm;
       font-weight: 600;
       color: s.$secondary-text;
       b {
@@ -47,7 +47,7 @@
 
     // Generic right-aligned meta (e.g. instruction step count).
     .footer-meta {
-      font-size: 0.82rem;
+      font-size: s.$text-sm;
       font-weight: 600;
       color: s.$secondary-text;
     }

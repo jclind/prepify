@@ -51,7 +51,7 @@ $inner-max: s.$max-width;
   }
   .ftr-blurb {
     color: s.$secondary-text;
-    font-size: 0.9rem;
+    font-size: s.$text-base;
     line-height: 1.55;
     max-width: 32ch;
   }
@@ -64,7 +64,7 @@ $inner-max: s.$max-width;
   gap: 0.35rem;
 }
 .footer-wordmark {
-  font-size: 1.5rem;
+  font-size: s.$text-2xl;
   font-weight: 800;
   letter-spacing: -0.02em;
   color: s.$primary;
@@ -97,7 +97,7 @@ $inner-max: s.$max-width;
   }
 }
 .footer-col-heading {
-  font-size: 0.78rem;
+  font-size: s.$text-fine;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -110,7 +110,7 @@ $inner-max: s.$max-width;
   color: s.$secondary-text;
   text-decoration: none;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: s.$text-base;
   transition: color 0.12s ease;
   &:hover { color: s.$primary; }
 }
@@ -121,7 +121,7 @@ $inner-max: s.$max-width;
   align-items: center;
   flex-wrap: wrap;
   gap: 0.75rem 1.25rem;
-  font-size: 0.82rem;
+  font-size: s.$text-sm;
   color: s.$tertiary-text;
   font-weight: 600;
   margin-top: 2.25rem;

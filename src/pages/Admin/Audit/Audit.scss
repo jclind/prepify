@@ -11,11 +11,11 @@
 
     h1 {
       margin: 0;
-      font-size: 1.6rem;
+      font-size: s.$text-2xl;
     }
 
     .total-count {
-      font-size: 0.85rem;
+      font-size: s.$text-sm;
       font-weight: 600;
       color: s.$admin-slate-600;
       background: s.$admin-slate-100;
@@ -37,7 +37,7 @@
       color: s.$admin-slate-700;
       padding: 0.4rem 0.7rem;
       border-radius: s.$radius-md;
-      font-size: 0.85rem;
+      font-size: s.$text-sm;
       cursor: pointer;
     }
 
@@ -52,7 +52,7 @@
         color: s.$admin-slate-600;
         padding: 0.35rem 0.8rem;
         border-radius: s.$radius-pill;
-        font-size: 0.82rem;
+        font-size: s.$text-sm;
         cursor: pointer;
         transition: all 0.15s;
 
@@ -71,7 +71,7 @@
 
   .audit-state {
     color: s.$admin-slate-500;
-    font-size: 0.95rem;
+    font-size: s.$text-base;
 
     &.error {
       color: s.$admin-danger-text;
@@ -121,7 +121,7 @@
 
     .audit-line {
       margin: 0;
-      font-size: 0.92rem;
+      font-size: s.$text-base;
       color: s.$admin-slate-700;
 
       .actor {
@@ -137,14 +137,14 @@
 
     .audit-reason {
       margin: 0.25rem 0 0;
-      font-size: 0.85rem;
+      font-size: s.$text-sm;
       font-style: italic;
       color: s.$admin-slate-500;
     }
 
     .audit-time {
       margin: 0.25rem 0 0;
-      font-size: 0.76rem;
+      font-size: s.$text-fine;
       color: s.$admin-slate-400;
     }
   }
@@ -154,7 +154,7 @@
     align-items: center;
     gap: 1rem;
     margin-top: 1.5rem;
-    font-size: 0.85rem;
+    font-size: s.$text-sm;
     color: s.$admin-slate-600;
 
     button {

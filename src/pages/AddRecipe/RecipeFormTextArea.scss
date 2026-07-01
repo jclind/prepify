@@ -11,7 +11,7 @@
   .label-title {
     padding-bottom: 0.5rem;
     font-weight: 600;
-    font-size: 0.875rem;
+    font-size: s.$text-sm;
     text-transform: capitalize;
     color: s.$primary;
   }
@@ -29,7 +29,7 @@
       width: 100%;
       height: 10ch;
       padding: 1rem;
-      font-size: 0.9rem;
+      font-size: s.$text-base;
       font-weight: 500;
       resize: none;
     }

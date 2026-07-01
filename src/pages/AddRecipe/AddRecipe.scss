@@ -34,7 +34,7 @@
   }
 
   h1 {
-    font-size: 2rem;
+    font-size: s.$text-3xl;
     font-weight: 700;
     text-align: center;
   }
@@ -46,12 +46,12 @@
     align-items: center;
     gap: 0.4rem;
     margin: 0 0 0.65rem;
-    font-size: 0.85rem;
+    font-size: s.$text-sm;
     color: s.$secondary-text;
 
     .icon {
       flex-shrink: 0;
-      font-size: 1rem;
+      font-size: s.$text-md;
       color: s.$primary;
     }
   }
@@ -91,7 +91,7 @@
         .text {
           color: s.$primary-accessible;
           font-weight: 700;
-          font-size: 1rem;
+          font-size: s.$text-md;
           text-transform: uppercase;
           letter-spacing: 0.08em;
           white-space: nowrap;
@@ -102,7 +102,7 @@
           background: s.$gray-400;
         }
         .req {
-          font-size: 0.7rem;
+          font-size: s.$text-caption;
           font-weight: 600;
           text-transform: uppercase;
           letter-spacing: 0.06em;
@@ -120,7 +120,7 @@
         .input-container {
           input,
           textarea {
-            font-size: 1rem;
+            font-size: s.$text-md;
             border-radius: s.$border-radius;
           }
           textarea {

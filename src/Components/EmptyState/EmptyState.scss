@@ -26,19 +26,19 @@
     border-radius: s.$radius-circle;
     background: rgba(255, 87, 34, 0.09);
     color: s.$primary;
-    font-size: 1.85rem;
+    font-size: s.$text-3xl;
   }
 
   &__title {
     margin: 0 0 0.5rem;
-    font-size: 1.4rem;
+    font-size: s.$text-2xl;
     font-weight: 800;
     color: s.$primary-text;
   }
 
   &__text {
     margin: 0;
-    font-size: 0.95rem;
+    font-size: s.$text-base;
     line-height: 1.55;
     color: s.$secondary-text;
   }
@@ -55,7 +55,7 @@
     color: #fff;
     font-family: inherit;
     font-weight: 700;
-    font-size: 0.9rem;
+    font-size: s.$text-base;
     text-decoration: none;
     cursor: pointer;
     transition: filter 0.12s ease, transform 0.12s ease;

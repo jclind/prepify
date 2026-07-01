@@ -74,7 +74,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **2-iso** | Design: toast punctuation + string dedupe | `[x]` | ~10 toast call sites (TSX strings) | #207 |
 | **2-iso** | Design: codify loading-state pattern | `[x]` | convention + `TailSpin`/skeleton outliers | #213 |
 | **2-scss** | Design: pill `.btn` system | `[x]` | **`index.scss` + many page `.scss`** ⚠ chokepoint | #210 |
-| **2-scss** | Design: type scale (~520 `font-size:` literals) | `[ ]` | **`helpers.scss` + ~60 files** ⚠ chokepoint | — |
+| **2-scss** | Design: type scale (~520 `font-size:` literals) | `[P]` | **`helpers.scss` + ~60 files** ⚠ chokepoint | #216 |
 | **2-scss** | Design: elevation/shadow re-author (~52 literals) | `[ ]` | **`helpers.scss` + page `.scss`** ⚠ chokepoint | — |
 | **2-scss** | Design: one danger-red token | `[x]` | **`helpers.scss` + SingleRecipe/ReportControl/…** ⚠ chokepoint | #208 |
 | **2-scss** | Design: name the `$admin-*` sub-palette | `[x]` | **`helpers.scss` + Admin/moderation `.scss`** ⚠ chokepoint | #214 |
@@ -436,3 +436,21 @@ narrates the *why*.
   (Firebase `prepify-dev-58579` + `prepify-dev` Mongo), not prod. Run-log + design-consistency banner + BACKLOG
   flipped to done. Remaining `2-scss` lane: type scale, elevation, `$primary-hover`. Worktree kept up (owner still
   has the seeded dev admin account).
+- _2026-06-30_ — **Design: type scale (~520 `font-size:` literals)** claimed (`worktree-feat+type-scale`,
+  `[ ]`→`[~]`) — **fourth `2-scss` lane to open.** Checked the lane is clear first: `git worktree list` shows
+  only the main checkout (the #213 loading-state and #214 admin-palette worktrees are gone), `gh pr list` is
+  empty, and the Board has no `[~]`/`[P]` track in flight — so the serialized `2-scss` chokepoint is free (rule 1)
+  and the earlier line-level collision with the loading-state worktree's `font-size:` edits is moot now that #213
+  merged. Next-in-board-order pick of the three remaining `2-scss` tracks (type scale → elevation → `$primary-
+  hover`), per owner sign-off. This track collapses the ~520 ad-hoc `font-size:` literals across `helpers.scss` +
+  ~60 files onto a documented modular type scale (next design-system doc after icon/button/admin-palette).
+  Worktree on free ports 3001/4001.
+- _2026-06-30_ — **Design: type scale (~490 `font-size:` literals)** PR opened (#216, `[~]`→`[P]`). Ten-step
+  modular `$text-*` scale in `helpers.scss`; 62 `.scss` files repointed (218/491 land exactly on a step, 273
+  normalize onto the nearest — typical ≤0.8px, max 2.8px). Out of scope, left bespoke: PrintableRecipe `pt`, About
+  `clamp()` headings, 404/profile display numerals, icon `em`. New design doc `docs/design/type-scale.md` (fourth
+  after icon/button/admin-palette); BACKLOG item filed for colour tokens → CSS custom properties when theming lands.
+  Verified two ways: the masked-CSS compile diff (`development` vs branch, every `font-size` value blanked) is
+  zero-byte — nothing but font-size values moved; and a two-pass Cypress pixel-diff (tooling split to its own PR
+  #215, CI green) across 6 routes × {desktop, mobile} showed clean text reflow — containers stable, out-of-scope
+  display type untouched, no truncation/overflow.

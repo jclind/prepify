@@ -11,11 +11,11 @@
 
     h1 {
       margin: 0;
-      font-size: 1.6rem;
+      font-size: s.$text-2xl;
     }
 
     .open-count {
-      font-size: 0.85rem;
+      font-size: s.$text-sm;
       font-weight: 600;
       color: s.$admin-warn-text;
       background: s.$admin-warn-bg;
@@ -35,7 +35,7 @@
       color: s.$admin-slate-600;
       padding: 0.4rem 0.9rem;
       border-radius: s.$radius-pill;
-      font-size: 0.85rem;
+      font-size: s.$text-sm;
       cursor: pointer;
       transition: all 0.15s;
 
@@ -53,7 +53,7 @@
 
   .reports-state {
     color: s.$admin-slate-500;
-    font-size: 0.95rem;
+    font-size: s.$text-base;
 
     &.error {
       color: s.$admin-danger-text;
@@ -76,7 +76,7 @@
       display: flex;
       align-items: center;
       gap: 0.5rem;
-      font-size: 0.85rem;
+      font-size: s.$text-sm;
       color: s.$admin-slate-700;
       cursor: pointer;
     }
@@ -89,7 +89,7 @@
         cursor: pointer;
         border-radius: s.$radius-sm;
         padding: 0.4rem 0.8rem;
-        font-size: 0.82rem;
+        font-size: s.$text-sm;
         font-weight: 600;
         border: 1px solid transparent;
         white-space: nowrap;
@@ -155,7 +155,7 @@
       flex-wrap: wrap;
 
       span {
-        font-size: 0.7rem;
+        font-size: s.$text-caption;
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.03em;
@@ -236,7 +236,7 @@
       }
 
       .preview-meta {
-        font-size: 0.85rem;
+        font-size: s.$text-sm;
         color: s.$admin-slate-600;
         margin-bottom: 0.3rem;
 
@@ -249,14 +249,14 @@
         margin: 0;
         font-style: italic;
         color: s.$admin-slate-700;
-        font-size: 0.9rem;
+        font-size: s.$text-base;
       }
     }
 
     .hidden-pill {
       display: inline-block;
       margin-left: 0.4rem;
-      font-size: 0.65rem;
+      font-size: s.$text-caption;
       font-weight: 700;
       text-transform: uppercase;
       background: s.$admin-danger-bg;
@@ -268,18 +268,18 @@
     .preview-missing {
       color: s.$admin-slate-400;
       font-style: italic;
-      font-size: 0.9rem;
+      font-size: s.$text-base;
     }
 
     .report-details {
       margin: 0.6rem 0 0;
-      font-size: 0.9rem;
+      font-size: s.$text-base;
       color: s.$admin-slate-700;
     }
 
     .report-foot {
       margin: 0.6rem 0 0;
-      font-size: 0.78rem;
+      font-size: s.$text-fine;
       color: s.$admin-slate-400;
     }
 
@@ -293,7 +293,7 @@
         cursor: pointer;
         border-radius: s.$radius-sm;
         padding: 0.4rem 0.8rem;
-        font-size: 0.82rem;
+        font-size: s.$text-sm;
         font-weight: 600;
         border: 1px solid transparent;
         white-space: nowrap;

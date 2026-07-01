@@ -5,7 +5,7 @@
 // on its own override class, which wins on specificity when nested under a parent.
 .classifier-note {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: s.$text-fine;
   font-weight: 600;
   color: s.$admin-info-text;
   text-transform: capitalize;

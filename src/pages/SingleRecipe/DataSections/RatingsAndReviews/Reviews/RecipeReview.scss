@@ -23,7 +23,7 @@
     .date {
       flex: 1;
       text-align: right;
-      font-size: 0.8rem;
+      font-size: s.$text-fine;
       font-weight: 500;
       color: s.$tertiary-text;
     }
@@ -37,7 +37,7 @@
         max-width: 300px;
         column-gap: 0.35rem;
         .name {
-          font-size: 0.875rem;
+          font-size: s.$text-sm;
         }
       }
       .rating {
@@ -50,7 +50,7 @@
         position: absolute;
         color: s.$tertiary-text;
         right: 0;
-        font-size: 0.75rem;
+        font-size: s.$text-caption;
       }
     }
     @include s.below(s.$bp-xs) {
@@ -61,7 +61,7 @@
   }
   .body {
     .text {
-      font-size: 1rem;
+      font-size: s.$text-md;
       font-weight: 500;
       color: s.$primary-text;
       line-height: 1.5;
@@ -99,7 +99,7 @@
         // (edit-review) grey-on-orange. The resting colour also outranks the
         // ghost variant's own hover, so each hover is restated locally.
         button.btn--ghost {
-          font-size: 0.875rem;
+          font-size: s.$text-sm;
           font-weight: 600;
           text-decoration: underline;
           color: s.$tertiary-text;
@@ -128,7 +128,7 @@
 
 .delete-modal {
   .heading {
-    font-size: 1.25rem;
+    font-size: s.$text-xl;
     font-weight: 600;
     margin-bottom: 0.5rem;
   }
@@ -144,7 +144,7 @@
     // cancel = `.btn .btn--outline`, delete = `.btn .btn--danger-solid`; only the
     // larger modal-button font/padding (and the loader's positioning) are local.
     button {
-      font-size: 1.125rem;
+      font-size: s.$text-lg;
       padding: 0.75rem 1.25rem;
     }
     button.delete {

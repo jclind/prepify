@@ -71,7 +71,7 @@
       flex: 1;
       min-width: 0;
       text-align: start;
-      font-size: 1rem;
+      font-size: s.$text-md;
       font-weight: 500;
       padding-right: 0;
     }
@@ -89,7 +89,7 @@
       border: none;
       cursor: pointer;
       .text {
-        font-size: 0.95rem;
+        font-size: s.$text-base;
         font-weight: 700;
         color: s.$primary;
         white-space: nowrap;
@@ -107,7 +107,7 @@
       min-width: 56px;
       text-align: right;
       font-weight: 700;
-      font-size: 0.9rem;
+      font-size: s.$text-base;
       color: s.$secondary-text;
       &.na {
         color: s.$tertiary-text;

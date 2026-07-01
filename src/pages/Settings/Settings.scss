@@ -8,7 +8,7 @@
   padding-bottom: 2rem;
 
   .settings-title {
-    font-size: 1.7rem;
+    font-size: s.$text-3xl;
     font-weight: 800;
     letter-spacing: -0.02em;
     color: s.$primary-text;
@@ -40,7 +40,7 @@
     border: none;
     background: transparent;
     font-family: inherit;
-    font-size: 0.9rem;
+    font-size: s.$text-base;
     font-weight: 600;
     color: s.$secondary-text;
     text-decoration: none;
@@ -96,7 +96,7 @@
     align-self: flex-start;
     color: #057780;
     font-weight: 700;
-    font-size: 0.9rem;
+    font-size: s.$text-base;
     text-decoration: none;
     margin-bottom: 1rem;
 
@@ -120,13 +120,13 @@
     .settings-panehead {
       margin-bottom: 1.5rem;
       h2 {
-        font-size: 1.25rem;
+        font-size: s.$text-xl;
         font-weight: 800;
         color: s.$primary-text;
         margin: 0 0 0.25rem;
       }
       p {
-        font-size: 0.85rem;
+        font-size: s.$text-sm;
         color: s.$tertiary-text;
         margin: 0;
       }
@@ -184,14 +184,14 @@
           color: s.$secondary-text;
         }
         .settings-navlabel {
-          font-size: 0.95rem;
+          font-size: s.$text-base;
           font-weight: 700;
           color: s.$primary-text;
           white-space: normal;
         }
         .settings-navblurb {
           display: block;
-          font-size: 0.78rem;
+          font-size: s.$text-fine;
           font-weight: 500;
           color: s.$tertiary-text;
           margin-top: 0.1rem;

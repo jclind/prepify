@@ -35,7 +35,7 @@
   // so they're outside `.form` and styled here rather than inheriting the
   // FormStyles `.form .title` / `.prompt` rules.
   .title {
-    font-size: 1.55rem;
+    font-size: s.$text-2xl;
     font-weight: 800;
     color: s.$primary-text;
     margin-bottom: 0.4rem;
@@ -44,7 +44,7 @@
     margin: 0 auto 1.5rem;
     max-width: 34ch;
     font-weight: 500;
-    font-size: 0.9rem;
+    font-size: s.$text-base;
     line-height: 1.5;
     color: s.$secondary-text;
   }
@@ -68,14 +68,14 @@
       background: s.$white;
       color: s.$secondary-text;
       font-weight: 600;
-      font-size: 0.85rem;
+      font-size: s.$text-sm;
       cursor: pointer;
       transition: border-color 0.15s ease, color 0.15s ease,
         background 0.15s ease, box-shadow 0.15s ease;
 
       .chip-icon {
         display: flex;
-        font-size: 1.45rem;
+        font-size: s.$text-2xl;
         color: s.$tertiary-text;
         transition: color 0.15s ease;
       }
@@ -115,7 +115,7 @@
         box-sizing: border-box;
         padding: 0.7rem 0.85rem;
         font-family: inherit;
-        font-size: 0.95rem;
+        font-size: s.$text-base;
         font-weight: 500;
         line-height: 1.5;
         color: s.$primary-text;
@@ -147,7 +147,7 @@
       background: transparent;
       color: s.$secondary;
       font-weight: 600;
-      font-size: 0.82rem;
+      font-size: s.$text-sm;
       cursor: pointer;
       &:hover {
         text-decoration: underline;
@@ -158,7 +158,7 @@
   // "Prefer email?" fallback for people who'd rather not use the form.
   .email-fallback {
     margin-top: 1.5rem;
-    font-size: 0.82rem;
+    font-size: s.$text-sm;
     color: s.$tertiary-text;
     // The address is one unbreakable token — let it wrap rather than force the
     // card wider than a narrow viewport.
