@@ -91,10 +91,28 @@ lane.
 
 ---
 
+## Radii
+
+Corner radii come from the `$radius-*` scale — `$radius-xs 4 · $radius-sm 6 ·
+$radius-md 8 · $radius-lg 10 · $radius-xl 12 · … · $radius-pill 999px` (the alias
+`$border-radius` is `$radius-lg`). **No off-scale literals** — a stray `7px` or
+`10px` one-off should snap to the nearest step. Primary CTAs are pills
+(`$radius-pill`); small square icon buttons land around `$radius-md`.
+
+## Focus rings
+
+**One focus ring, everywhere:** the shared **`@include outline()`** — the blue
+`#4d90fe`, `outline-style: auto` ring — on every focusable control, shown for
+keyboard focus only (`:focus-visible`). It's provided globally for `<button>`
+and `<a>` in `index.scss`; a bespoke control includes the mixin directly. Never
+`outline: none` without a `:focus-visible` restore, and don't hand-roll a
+coloured ring (an orange 2px ring on a card is drift, not a variant). Use
+`outline-offset` when a control needs the ring inset (a row) or nudged out (a
+tile).
+
+---
+
 ## To document later
 
 - Colour tokens (`$primary` vs `$primary-accessible`, the teal pair) and the
   pending brand-orange recolor.
-- The radius scale (`$radius-xs … $radius-pill`) — no off-scale literals.
-- Focus rings: the shared `@include outline()` (blue `#4d90fe`) on every
-  focusable control; never `outline: none` without a `:focus-visible` restore.

@@ -78,7 +78,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **2-scss** | Design: elevation/shadow re-author (~52 literals) | `[x]` | **`helpers.scss` + page `.scss`** ⚠ chokepoint | #218 |
 | **2-scss** | Design: one danger-red token | `[x]` | **`helpers.scss` + SingleRecipe/ReportControl/…** ⚠ chokepoint | #208 |
 | **2-scss** | Design: name the `$admin-*` sub-palette | `[x]` | **`helpers.scss` + Admin/moderation `.scss`** ⚠ chokepoint | #214 |
-| **2-scss** | Design: normalize button hover motion | `[~]` | **`helpers.scss` + ~20 page `.scss` hover blocks** ⚠ chokepoint | `worktree-feat+button-hover-audit` (2026-07-01) |
+| **2-scss** | Design: button hover-motion + clickable consistency pass | `[x]` | **`helpers.scss` + ~20 page `.scss` hover blocks** ⚠ chokepoint | #220 |
 | **2-scss** | A11y: `$primary-hover` AA-on-hover | `[dropped]` | folded into the owner's brand-orange recolor (it's a hover *contrast* recolor); off the sweep board | — |
 | **blocked→dropped** | A11y: brand-orange contrast (AA) | `[dropped]` | owner owns the brand-orange/logo recolor; not a sweep track | — |
 | **blocked→dropped** | Design: collapse remaining brand shades | `[dropped]` | entangled with the brand-orange recolor above; owner's call | — |
@@ -133,9 +133,10 @@ The structural items the two completed sweeps filed. Split by collision surface 
 - **`2-iso` (parallel-safe):** autocomplete listbox, servings target-size, account-heading, modal config,
   icon module, `RecipeFormInput`, toast punctuation, loading-state pattern.
 - **`2-scss` (serialize — one at a time):** pill `.btn` system, type scale, elevation re-author, danger-red
-  token, `$admin-*` palette, **button hover-motion normalization** (the last open track). Each needs design
-  sign-off on the normalization. *(The `$primary-hover` AA + brand-orange contrast/shade tracks were dropped —
-  they belong to the owner's brand-orange recolor, not the sweep; see rule 4.)*
+  token, `$admin-*` palette, **button hover-motion + clickable consistency** — all done; the last of these
+  (hover-motion normalization + the second-pass consistency pass) landed in **PR #220**, closing the `2-scss`
+  lane. *(The `$primary-hover` AA + brand-orange contrast/shade tracks were dropped — they belong to the owner's
+  brand-orange recolor, not the sweep; see rule 4.)*
 
 ### Wave 3 — re-sweep & verify (before the 1.0 cutover)
 Re-run each sweep's automated baseline once to confirm no regressions crept in (Lighthouse a11y/perf,
@@ -530,3 +531,20 @@ narrates the *why*.
   probe on the running app confirms primary→`translateY(-2px)`+`$shadow-brand`, outline→lift+shadow, teal
   submit→lift+`$shadow-teal`, all at 0.15s. Doc `docs/design/button-hover-audit.md` flipped to ✅ implemented.
   Ready for PR (worktree still up on 3001/4001 for owner verification).
+- _2026-07-01_ — **Button/clickable consistency pass merged (#220, `[~]`→`[x]`, merge commit `bbfde62`).** After
+  the Lift migration, a second-pass full-app clickable audit drove the remaining button/clickable
+  inconsistencies to closure on the same worktree: restored the two focus rings the earlier sweep missed + made
+  the image dropzone and the primary Search control real, keyboard-operable `<button>`s (were `<div>`s); folded
+  the stray control/label teals onto `$secondary-accessible` and unified the destructive controls onto one
+  danger-red language; reconciled the navbar + footer chrome hovers under one `$nav-timing` ("content lifts,
+  chrome doesn't") and gave previously-inert controls (settings toggle, modal closes, servings stepper,
+  cook-modal secondary) real hover feedback; unified the two Home "See all" treatments + the recipe-nav row
+  hover; gave the outline family one lift rule (lift to match neighbours; compact toolbars stay flat); snapped
+  off-scale radii to the token scale, unified the two bespoke-orange focus rings onto the shared blue
+  `@include outline()`, aligned the nav/footer auth labels, moved the footer bug-report hover off the admin
+  palette, and replaced the hidden dead react-select review-sort dropdown with a plain default-sort constant.
+  Rules written to `docs/scss-conventions.md` (hover/motion + the chrome boundary + the outline lanes; the
+  radius + focus-ring sections were added there post-merge). Verified per-finding by driving the running app
+  (Playwright computed-styles / screenshots) on public surfaces + compiled-CSS + specificity on the auth-gated
+  ones; all 5 CI checks (Vitest / Supertest / Cypress E2E / dead-code / security) green on the merge commit. The
+  temp `/button-audit` review page was added then removed in-branch (`/icon-audit` precedent).
