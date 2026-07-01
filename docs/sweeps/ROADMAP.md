@@ -75,7 +75,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **2-iso** | Design: codify loading-state pattern | `[x]` | convention + `TailSpin`/skeleton outliers | #213 |
 | **2-scss** | Design: pill `.btn` system | `[x]` | **`index.scss` + many page `.scss`** ⚠ chokepoint | #210 |
 | **2-scss** | Design: type scale (~520 `font-size:` literals) | `[x]` | **`helpers.scss` + ~60 files** ⚠ chokepoint | #216 |
-| **2-scss** | Design: elevation/shadow re-author (~52 literals) | `[ ]` | **`helpers.scss` + page `.scss`** ⚠ chokepoint | — |
+| **2-scss** | Design: elevation/shadow re-author (~52 literals) | `[~]` | **`helpers.scss` + page `.scss`** ⚠ chokepoint | worktree-feat+elevation-shadow-reauthor (2026-07-01) |
 | **2-scss** | Design: one danger-red token | `[x]` | **`helpers.scss` + SingleRecipe/ReportControl/…** ⚠ chokepoint | #208 |
 | **2-scss** | Design: name the `$admin-*` sub-palette | `[x]` | **`helpers.scss` + Admin/moderation `.scss`** ⚠ chokepoint | #214 |
 | **2-scss** | A11y: `$primary-hover` AA-on-hover | `[ ]` | **`helpers.scss`** ⚠ chokepoint | — |
@@ -464,3 +464,11 @@ narrates the *why*.
   `f1ecadf`) — a manual two-pass `cypress-image-diff-js` check under `cypress/visual/` kept out of the CI suite
   (needs a separate baseline server; baselines not committed, owner's call). Remaining `2-scss` lane: elevation
   re-author, `$primary-hover`. **Worktree + both branches torn down.**
+- _2026-07-01_ — **Design: elevation/shadow re-author (~52 literals)** claimed (`worktree-feat+elevation-shadow-reauthor`,
+  `[ ]`→`[~]`) — **fifth `2-scss` lane to open.** Checked the lane is clear first: `git worktree list` shows only
+  the main checkout (type-scale #216 and its harness #215 both merged + torn down), `gh pr list` is empty, and the
+  Board has no `[~]`/`[P]` track in flight — so the serialized `2-scss` chokepoint is free (rule 1). Next-in-board-
+  order pick of the two remaining `2-scss` tracks (elevation → `$primary-hover`); `$primary-hover` is also `2-scss`
+  so it can't run alongside anyway. This track collapses the ~52 ad-hoc `box-shadow:` literals across `helpers.scss`
+  + page `.scss` onto a documented elevation token scale (next design-system doc after icon/button/admin-palette/
+  type-scale). Worktree on free ports 3001/4001.
