@@ -210,6 +210,11 @@
       border-radius: s.$radius-pill;
       cursor: pointer;
       text-transform: capitalize;
+      transition: background-color s.$hover-timing;
+      // Deepen the tint on hover so the dismiss affordance reads as interactive.
+      &:hover {
+        background: rgba(255, 87, 34, 0.18);
+      }
     }
     &__clear {
       border: none;
@@ -219,6 +224,10 @@
       font-size: s.$text-fine;
       text-decoration: underline;
       cursor: pointer;
+      transition: color s.$hover-timing;
+      &:hover {
+        color: s.$primary-text;
+      }
     }
   }
 
@@ -365,6 +374,10 @@
         font-size: s.$text-lg;
         cursor: pointer;
         color: s.$secondary-text;
+        transition: color s.$hover-timing;
+        &:hover {
+          color: s.$primary-text;
+        }
       }
     }
     &__body {
@@ -401,6 +414,12 @@
       padding: 0.75rem 1.25rem;
       border-radius: s.$radius-pill;
       cursor: pointer;
+      // Neutral outline hover (border + text to ink), matching `.btn--outline`.
+      transition: color s.$hover-timing, border-color s.$hover-timing;
+      &:hover {
+        border-color: s.$primary-text;
+        color: s.$primary-text;
+      }
     }
     &__apply {
       flex: 1;
@@ -411,6 +430,14 @@
       padding: 0.75rem;
       border-radius: s.$radius-pill;
       cursor: pointer;
+      // The drawer's primary CTA now reads like every other `.btn--primary`.
+      transition: filter s.$hover-timing, transform s.$hover-timing,
+        box-shadow s.$hover-timing;
+      &:hover {
+        filter: s.$hover-brighten;
+        transform: translateY(s.$hover-lift);
+        box-shadow: s.$shadow-brand;
+      }
     }
   }
 
