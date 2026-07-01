@@ -154,6 +154,14 @@
     text-decoration: none;
     padding: 0.25rem 0.35rem;
     margin: -0.25rem -0.35rem;
+    // The brand link had no hover while the footer wordmark darkens on hover —
+    // same link, two behaviours. Opacity gives feedback over both the
+    // transparent-hero and solid bar without touching the brand shade, and keeps
+    // the bar flat (chrome doesn't lift).
+    transition: opacity s.$nav-timing;
+    &:hover {
+      opacity: 0.8;
+    }
     &:focus-visible {
       @include s.outline();
     }
@@ -170,12 +178,24 @@
     border: none;
     color: s.$white;
     font-weight: 600;
-    border-radius: 5px;
+    border-radius: s.$radius-sm;
     -webkit-animation: breathing 5s ease-out infinite normal;
     animation: breathing 5s ease-out infinite normal;
     cursor: pointer;
+    // It's a real button (opens the release notes) — give it a subtle hover so
+    // it doesn't read as a static badge.
+    transition: filter s.$nav-timing;
+    &:hover {
+      filter: s.$hover-brighten;
+    }
     &:focus-visible {
       @include s.outline();
+    }
+    // The perpetual "breathing" pulse is decorative — stop it for users who ask
+    // for reduced motion.
+    @media (prefers-reduced-motion: reduce) {
+      -webkit-animation: none;
+      animation: none;
     }
   }
 

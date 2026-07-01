@@ -143,8 +143,8 @@
   text-decoration: none;
   white-space: nowrap;
   color: var(--dnav-text);
-  transition: color 0.12s linear, background 0.12s linear, opacity 0.12s linear,
-    border-color 0.12s linear, filter 0.12s linear;
+  transition: color s.$nav-timing, background s.$nav-timing, opacity s.$nav-timing,
+    border-color s.$nav-timing, filter s.$nav-timing;
 
   .dnav__link-icon {
     display: none; // shown by the Create button, and at narrow widths
@@ -213,7 +213,7 @@
   color: var(--dnav-text);
   font-size: s.$text-xl;
   text-decoration: none;
-  transition: background 0.12s linear, color 0.12s linear;
+  transition: background s.$nav-timing, color s.$nav-timing;
   &:hover {
     background: var(--dnav-hover);
   }
@@ -236,8 +236,8 @@
   font-weight: 700;
   text-decoration: none;
   white-space: nowrap;
-  transition: filter 0.12s linear, background 0.12s linear, border-color 0.12s linear,
-    color 0.12s linear;
+  transition: filter s.$nav-timing, background s.$nav-timing, border-color s.$nav-timing,
+    color s.$nav-timing;
   &:focus-visible {
     @include s.outline();
   }
@@ -276,6 +276,13 @@
     border: none;
     cursor: pointer;
     color: var(--dnav-text);
+    // Subtle feedback on the menu trigger (was none — it sat dead beside the
+    // Saved icon, which tints). Opacity matches the nav's link language and
+    // keeps the bar flat (chrome doesn't lift).
+    transition: opacity s.$nav-timing;
+    &:hover {
+      opacity: 0.85;
+    }
     &:focus-visible {
       @include s.outline();
     }
@@ -333,14 +340,14 @@
     opacity: 0;
     transform: translateY(-4px);
     pointer-events: none;
-    transition: opacity 0.12s linear, transform 0.12s ease, visibility 0s linear 0.12s;
+    transition: opacity s.$nav-timing, transform 0.12s ease, visibility 0s linear 0.12s;
   }
   &.is-open &__menu {
     visibility: visible;
     opacity: 1;
     transform: translateY(0);
     pointer-events: auto;
-    transition: opacity 0.12s linear, transform 0.12s ease;
+    transition: opacity s.$nav-timing, transform 0.12s ease;
   }
 
   &__email {
@@ -368,6 +375,7 @@
     font-size: s.$text-base;
     font-weight: 600;
     color: s.$primary-text;
+    transition: background s.$nav-timing;
     .icon {
       height: 20px;
       width: 20px;
@@ -402,6 +410,7 @@
   padding: 0.9rem 1rem;
   text-decoration: none;
   border-bottom: 1px solid s.$gray-300;
+  transition: background s.$nav-timing;
   &:hover {
     background: s.$gray-200;
   }
@@ -454,7 +463,7 @@
   font-size: s.$text-base;
   font-weight: 600;
   cursor: pointer;
-  transition: border-color 0.12s linear, color 0.12s linear, background 0.12s linear;
+  transition: border-color s.$nav-timing, color s.$nav-timing, background s.$nav-timing;
   .icon {
     height: 20px;
     width: 20px;

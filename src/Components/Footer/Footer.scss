@@ -69,6 +69,8 @@ $inner-max: s.$max-width;
   letter-spacing: -0.02em;
   color: s.$primary;
   text-decoration: none;
+  // Was missing a transition, so the darken snapped. One chrome timing.
+  transition: color s.$nav-timing;
   &:hover { color: s.$primary-hover; }
 }
 
@@ -111,7 +113,7 @@ $inner-max: s.$max-width;
   text-decoration: none;
   font-weight: 600;
   font-size: s.$text-base;
-  transition: color 0.12s ease;
+  transition: color s.$nav-timing;
   &:hover { color: s.$primary; }
 }
 
