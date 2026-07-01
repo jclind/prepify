@@ -25,7 +25,10 @@
     color: s.$primary-text;
     font-size: s.$text-lg;
     box-shadow: s.$elevation-2;
-    &:hover { background: #fff; }
+    // Solid white + a stronger shadow on hover so the over-image chip reads as
+    // interactive (was a near-imperceptible 92%→100% white swap). Shadow eases
+    // via the `.btn` base transition.
+    &:hover { background: #fff; box-shadow: s.$elevation-3; }
   }
 
   .thumb {

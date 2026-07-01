@@ -161,9 +161,18 @@
     position: absolute;
     top: 1rem;
     right: 1rem;
+    // Grey ghost hover on the `.btn .btn--icon` circle, matching the
+    // Settings/Account modal closes (the `--icon` variant carries no colour of
+    // its own, and the bare `.btn` gave this zero hover + oversized md padding).
+    background: s.$gray-200;
+    color: s.$secondary-text;
+    &:hover {
+      background: s.$gray-300;
+      color: s.$primary-text;
+    }
     .icon {
-      height: 30px;
-      width: 30px;
+      height: 18px;
+      width: 18px;
     }
   }
   .content {
