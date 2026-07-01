@@ -35,9 +35,11 @@ and a few `transition: all` catch-alls animate whatever happens to change.
 ## Candidate hover languages
 
 Three coherent options, each covering primary / outline / ghost / card. All three
-share **one 150 ms `ease` timing token** and rely on the existing
-`prefers-reduced-motion` block in `index.scss` (motion collapses to ~0, colour
-stays), so reduced-motion is handled for free regardless of the pick.
+share **one 150 ms `ease` timing token**. Under the existing
+`prefers-reduced-motion` block in `index.scss`, the hover state still applies but
+its transition *duration* collapses to ~0 — so the lift/colour snap in with no
+animation, regardless of the pick. (The block zeroes durations, not the transforms
+themselves; a 2px instant offset isn't animated motion.)
 
 ### A · Calm — colour only
 Buttons never move; hover is a pure colour response (the current `.btn` baseline,

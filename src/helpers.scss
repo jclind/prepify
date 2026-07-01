@@ -203,8 +203,8 @@ $shadow-teal: 0 8px 18px rgba($secondary, 0.3); //        teal auth-submit glow
 // hover normalization — "Lift"). Buttons rise $hover-lift, cards rise the larger
 // $hover-lift-card, both eased over $hover-timing; surfaced buttons (primary /
 // outline / danger) also gain a shadow, while ghost stays flat (it has no surface
-// to raise). The `prefers-reduced-motion` block in index.scss collapses the
-// transform to ~0 automatically, so the colour shift still reads with motion off.
+// to raise). Under `prefers-reduced-motion` (index.scss) the lift still applies but
+// its transition duration collapses to ~0, so it snaps into place with no animation.
 // Replaces the old ad-hoc mix of -1/-2/-3/-4px lifts, six brightness magnitudes,
 // and scattered 0.1–0.3s timings. Documented in docs/design/button-hover-audit.md.
 $hover-lift: -2px; //        buttons rise this far on hover
