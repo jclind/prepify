@@ -316,9 +316,13 @@ $soft-radius: 16px;
         text-align: center;
         font-weight: 700;
         font-size: s.$text-base;
-        outline: none;
         color: s.$primary-text;
         padding: 0;
+        // Was outline:none with no replacement — restore a visible keyboard
+        // focus ring (matches the +/- step buttons beside it). WCAG 2.4.7.
+        &:focus-visible {
+          @include s.outline();
+        }
       }
       .serv-unit { font-size: s.$text-sm; color: s.$secondary-text; margin: 0 0.35rem 0 0.05rem; }
     }
