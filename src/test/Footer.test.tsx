@@ -64,12 +64,12 @@ describe('Footer', () => {
   })
 
   describe('Account column by auth state', () => {
-    it('shows Sign in / Create account when signed out', () => {
+    it('shows Log in / Sign up when signed out', () => {
       authState.user = null
       renderFooter()
-      expect(screen.getByRole('link', { name: 'Sign in' })).toBeInTheDocument()
+      expect(screen.getByRole('link', { name: 'Log in' })).toBeInTheDocument()
       expect(
-        screen.getByRole('link', { name: 'Create account' })
+        screen.getByRole('link', { name: 'Sign up' })
       ).toBeInTheDocument()
       expect(
         screen.queryByRole('link', { name: 'My recipes' })
@@ -86,10 +86,10 @@ describe('Footer', () => {
         screen.getByRole('link', { name: 'Saved recipes' })
       ).toBeInTheDocument()
       expect(
-        screen.queryByRole('link', { name: 'Sign in' })
+        screen.queryByRole('link', { name: 'Log in' })
       ).not.toBeInTheDocument()
       expect(
-        screen.queryByRole('link', { name: 'Create account' })
+        screen.queryByRole('link', { name: 'Sign up' })
       ).not.toBeInTheDocument()
     })
 

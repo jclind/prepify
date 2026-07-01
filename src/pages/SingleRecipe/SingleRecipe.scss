@@ -305,6 +305,8 @@ $soft-radius: 16px;
         justify-content: center;
         font-size: s.$text-md;
         color: s.$primary-text;
+        // Ease the white→orange fill (was a hard snap — no transition).
+        transition: background-color s.$hover-timing, color s.$hover-timing;
         &:hover { background: s.$primary; color: s.$white; }
       }
       .serv-input {

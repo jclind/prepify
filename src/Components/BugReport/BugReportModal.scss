@@ -1,8 +1,9 @@
 @use '../../helpers.scss' as s;
 
 // Adopts the `.btn` base for layout/reset/pill, but keeps its bespoke tertiary
-// text + blue (s.$admin-link) hover — these aren't the `--ghost` palette, so no colour
-// variant is applied (base only, like the KEEP-BESPOKE buttons). Selector is
+// text + brand-orange (s.$primary) hover — this sits in the consumer footer, so
+// the hover matches the footer links (was the admin-palette blue $admin-link).
+// No `--ghost` colour variant is applied (base only). Selector is
 // `.bug-report-trigger.btn` (0,2,0) so its compact padding reliably outranks the
 // base `.btn` (0,1,0) regardless of stylesheet order (the element always carries
 // both classes — `bug-report-trigger btn ${variant}`).
@@ -12,8 +13,8 @@
   padding: 0.15rem 0.35rem;
 
   &:hover {
-    color: s.$admin-link;
-    background: rgba(s.$admin-link, 0.08);
+    color: s.$primary;
+    background: rgba(s.$primary, 0.08);
   }
 
   &.button {

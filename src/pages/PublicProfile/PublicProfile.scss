@@ -208,7 +208,9 @@
       box-shadow: s.$elevation-4;
     }
     &:focus-visible {
-      outline: 2px solid s.$primary;
+      // Shared blue focus ring (was a bespoke orange 2px), sitting just outside
+      // the tile.
+      @include s.outline();
       outline-offset: 2px;
     }
 

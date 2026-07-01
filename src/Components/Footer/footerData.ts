@@ -38,8 +38,8 @@ export const footerColumns: FooterColumn[] = [
   {
     heading: 'Account',
     links: [
-      { label: 'Sign in', to: '/login', auth: 'out' },
-      { label: 'Create account', to: '/signup', auth: 'out' },
+      { label: 'Log in', to: '/login', auth: 'out' },
+      { label: 'Sign up', to: '/signup', auth: 'out' },
       { label: 'My recipes', to: '/account/your-recipes', auth: 'in' },
       { label: 'Saved recipes', to: '/account/saved-recipes', auth: 'in' },
     ],

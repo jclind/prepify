@@ -41,7 +41,9 @@
       background: s.$gray-50;
     }
     &:focus-visible {
-      outline: 2px solid s.$primary;
+      // Shared blue focus ring (was a bespoke orange 2px). Inset so it stays
+      // within the row.
+      @include s.outline();
       outline-offset: -2px;
     }
 
