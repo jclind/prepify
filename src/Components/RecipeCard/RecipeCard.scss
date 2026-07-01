@@ -89,13 +89,21 @@
     font-size: s.$text-md;
     line-height: 1;
     cursor: pointer;
-    transition: transform 0.12s ease, color 0.12s ease;
+    transition: transform s.$hover-timing, color s.$hover-timing;
+    // Unsaved: grey at rest, orange on hover. (Scale — not lift — is the right
+    // affordance for a corner icon chip; the card itself lifts underneath.)
     &:hover {
       transform: scale(1.08);
       color: s.$primary;
     }
+    // Saved reads TEAL, matching the action-bar Save button's saved state, and
+    // keeps that teal on hover so saved/unsaved stay visually distinct (the
+    // action bar makes the same distinction; the card previously did not).
     &.is-saved {
-      color: s.$primary;
+      color: s.$secondary-accessible;
+      &:hover {
+        color: s.$secondary-accessible;
+      }
     }
   }
 

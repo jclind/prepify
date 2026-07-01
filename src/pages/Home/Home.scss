@@ -31,6 +31,22 @@
     padding: 1rem 0;
   }
 
+  // One "See all" treatment — orange link + right chevron, underline on hover.
+  // Shared by the top-level section headers and the meal-column heads, which
+  // only override placement/size: same words + same action → one signifier.
+  .see-all {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    text-decoration: none;
+    color: s.$primary-accessible;
+    font-weight: 700;
+    font-size: s.$text-base;
+    white-space: nowrap;
+    &:hover { text-decoration: underline; }
+    svg { font-size: 1.05em; }
+  }
+
   .home-section-header {
     display: grid;
     grid-template-columns: 1fr auto;
@@ -42,14 +58,8 @@
     margin-bottom: 1.35rem;
     h2 { grid-area: title; font-size: s.$text-3xl; font-weight: 700; letter-spacing: -0.015em; }
     p { grid-area: desc; color: s.$tertiary-text; font-size: s.$text-base; margin-top: 0.2rem; }
-    .see-all {
-      grid-area: see;
-      align-self: end;
-      display: inline-flex; align-items: center; gap: 0.2rem;
-      text-decoration: none; color: s.$primary-accessible; font-weight: 700; font-size: s.$text-base;
-      white-space: nowrap;
-      &:hover { text-decoration: underline; }
-    }
+    // Placement only — the visual grammar comes from the shared `.see-all`.
+    .see-all { grid-area: see; align-self: end; }
     // On narrow screens let the title use the full width and drop "See all"
     // beside the description instead of reserving a tall right-hand column.
     @include s.below(s.$bp-md) {
@@ -135,12 +145,13 @@
       padding-bottom: 0.6rem;
       border-bottom: 2px solid s.$primary;
       h3 { font-size: s.$text-lg; font-weight: 700; }
-      .meal-see-all { font-size: s.$text-sm; font-weight: 700; color: s.$primary-accessible; text-decoration: none; &:hover { text-decoration: underline; } }
+      // Same shared `.see-all` treatment, just compact for the smaller head.
+      .see-all { font-size: s.$text-sm; }
     }
     ul { list-style: none; }
     li + li { margin-top: 0.5rem; }
-    // Scope the row-link hover to the list only — the `.meal-see-all` in the
-    // column head is also an <a>, and an unscoped `a:hover` here leaked the row
+    // Scope the row-link hover to the list only — the `.see-all` in the column
+    // head is also an <a>, and an unscoped `a:hover` here leaked the row
     // background chip onto it (making it inconsistent with Trending's underline).
     ul a {
       display: flex;
@@ -150,8 +161,11 @@
       color: s.$primary-text;
       border-radius: s.$radius-lg;
       padding: 0.4rem;
-      transition: background 0.12s ease;
-      &:hover { background: #fbf7f2; }
+      // Recipe-nav rows tint on hover — the same $primary-background the
+      // autocomplete result rows use — tokenised off the old warm #fbf7f2 and
+      // moved onto the shared content timing (was a one-off 0.12s).
+      transition: background s.$hover-timing;
+      &:hover { background: s.$primary-background; }
       img { width: 56px; height: 56px; border-radius: s.$radius-lg; object-fit: cover; flex-shrink: 0; }
     }
     .info { display: flex; flex-direction: column; gap: 0.2rem; min-width: 0; }

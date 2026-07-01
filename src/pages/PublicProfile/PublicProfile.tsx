@@ -1,4 +1,4 @@
-import { AwardIcon, BookOpenIcon, BookmarkIcon, ClockIcon, MapPinIcon, ShareIcon, StarOutlineIcon } from 'src/Components/icons'
+import { AwardIcon, BookOpenIcon, BookmarkIcon, ChevronDownIcon, ClockIcon, MapPinIcon, ShareIcon, StarOutlineIcon } from 'src/Components/icons'
 import React, { FC, useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
@@ -429,7 +429,13 @@ const PublicProfile: FC = () => {
                   onClick={() => setExtraPage(p => p + 1)}
                   disabled={isLoadingMore}
                 >
-                  {isLoadingMore ? 'Loading…' : 'Load more recipes'}
+                  {isLoadingMore ? (
+                    'Loading…'
+                  ) : (
+                    <>
+                      Load more recipes <ChevronDownIcon />
+                    </>
+                  )}
                 </button>
                 <p className='pp-more-count'>
                   Showing {shownRecipes.length} of {profile.recipesTotalCount}

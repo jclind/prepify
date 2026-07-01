@@ -4,6 +4,8 @@
   primary: s.$primary;
   borderColor: s.$tertiary-text;
   primaryText: s.$primary-text;
+  // Neutral hover fill for react-select option rows (recipe form selectors).
+  optionHover: s.$gray-200;
   // Loading-state tokens (docs/design/loading-states.md): one skeleton grey and
   // one neutral-dark spinner colour, consumed by Skeleton baseColor / TailSpin color.
   skeletonBase: s.$gray-400;

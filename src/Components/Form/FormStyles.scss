@@ -80,7 +80,7 @@
       line-height: 1.45;
       color: s.$secondary-text;
       .prompt-btn {
-        color: s.$secondary;
+        color: s.$secondary-accessible;
         font-weight: 700;
         text-decoration: none;
       }
@@ -143,7 +143,7 @@
       }
       .forgot-password-prompt {
         margin-left: auto;
-        color: s.$secondary;
+        color: s.$secondary-accessible;
         font-weight: 600;
         text-decoration: none;
         &:hover {
@@ -161,7 +161,7 @@
     color: s.$tertiary-text;
     text-align: center;
     .terms-consent-link {
-      color: s.$secondary;
+      color: s.$secondary-accessible;
       font-weight: 600;
       text-decoration: none;
       &:hover {
@@ -256,13 +256,18 @@
     background: s.$white;
     color: s.$primary-text;
     gap: 0.6rem;
+    // Outline-consistent hover (border darkens + lift + shadow) instead of the
+    // near-invisible grey wash, so it responds like the app's other buttons.
     &:hover {
-      background: s.$gray-50;
+      border-color: s.$primary-text;
+      transform: translateY(s.$hover-lift);
+      box-shadow: s.$elevation-2;
     }
     .icon {
       height: 24px;
       width: 24px;
-      color: s.$secondary;
+      // No `color` override — GoogleColorIcon (FcGoogle) is a multicolour mark;
+      // tinting it teal defeated the recognisable Google colours.
     }
   }
 
@@ -273,7 +278,7 @@
     text-align: center;
     color: s.$secondary-text;
     .prompt-btn {
-      color: s.$secondary;
+      color: s.$secondary-accessible;
       font-weight: 700;
       text-decoration: none;
       &:hover {

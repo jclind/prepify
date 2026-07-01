@@ -1,5 +1,6 @@
 import React, { FC } from 'react'
 import { ReviewType } from 'types'
+import { ChevronDownIcon } from 'src/Components/icons'
 import { useDelayedLoading } from 'src/hooks/useDelayedLoading'
 import RecipeReview from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/RecipeReview'
 import ReviewCardSkeleton from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/ReviewCardSkeleton'
@@ -41,11 +42,8 @@ const ReviewsList: FC<ReviewsListProps> = ({
       ) : null}
       {isMoreReviews && (
         <div className='get-more-reviews'>
-          <button
-            className='get-more-reviews-btn btn btn--ghost'
-            onClick={getNextReviewsPage}
-          >
-            More Reviews
+          <button className='load-more-btn' onClick={getNextReviewsPage}>
+            Load more reviews <ChevronDownIcon />
           </button>
         </div>
       )}

@@ -118,9 +118,9 @@
       margin-top: auto;
       padding-top: 0.15rem;
 
-      // Bespoke filled CTA on the `.btn` base: the AA-tuned accessible-orange
-      // fill + warm hover/shadow don't map to `.btn--primary`, so no variant.
-      // Layout/shape/reset come from `.btn`.
+      // Filled CTA on the `.btn` base with the accessible-orange fill; its hover
+      // now mirrors `.btn--primary` (brighten + lift + brand glow). Only the
+      // flex/min-width layout for the draft-card row stays local.
       .resume {
         flex: 1 1 auto;
         // min-width:0 lets the button shrink below its nowrap label's intrinsic
@@ -132,32 +132,30 @@
         padding: 0.55rem 1rem;
         background: s.$primary-accessible;
         color: #fff;
-        transition: filter s.$hover-timing, box-shadow s.$hover-timing;
+        // Match the shared primary-CTA hover exactly: brighten + lift + brand
+        // glow (was missing the lift, and used the stronger glow).
+        transition: filter s.$hover-timing, transform s.$hover-timing,
+          box-shadow s.$hover-timing;
         svg {
           font-size: s.$text-md;
         }
         &:hover {
           filter: s.$hover-brighten;
-          box-shadow: s.$shadow-brand-strong;
+          transform: translateY(s.$hover-lift);
+          box-shadow: s.$shadow-brand;
         }
       }
 
-      // Soft warm-red outline on the `.btn` base — the muted #ecd9d9 border +
-      // tinted hover don't match `.btn--danger`'s fill, so kept bespoke.
+      // Destructive action composing `.btn--danger` (red outline at rest ->
+      // red fill + lift + glow on hover) so every Delete in the app reads one
+      // way; only the compact size + flex-shrink stay local here.
       .del {
         flex-shrink: 0;
         font-size: s.$text-sm;
         font-weight: 700;
         padding: 0.5rem 0.85rem;
-        border: 1px solid #ecd9d9;
-        color: s.$secondary-text;
         svg {
           font-size: s.$text-md;
-        }
-        &:hover:not(:disabled) {
-          color: s.$error-red;
-          border-color: #f0c2c2;
-          background: #fdf0f0;
         }
         &:disabled {
           opacity: 0.5;

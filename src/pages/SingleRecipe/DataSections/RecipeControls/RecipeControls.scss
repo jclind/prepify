@@ -74,28 +74,47 @@
   button.edit-btn {
     background: none;
     transition: color s.$hover-timing, background-color s.$hover-timing,
-      border-color s.$hover-timing;
+      border-color s.$hover-timing, transform s.$hover-timing,
+      box-shadow s.$hover-timing;
+    // Orange outline hover (border + text) + a lift, matching its Delete sibling
+    // (which lifts) and the app's other standalone outline buttons — was a
+    // one-off charcoal fill, the only dark-fill hover around.
     &:hover {
-      color: s.$primary-background;
-      background: s.$primary-text;
+      color: s.$primary;
+      border-color: s.$primary;
+      transform: translateY(s.$hover-lift);
+      box-shadow: s.$elevation-2;
     }
     &:disabled {
       opacity: 0.5;
       cursor: not-allowed;
+      // Disabled stays flat — no lift echo of the enabled hover.
       &:hover {
         color: s.$primary-text;
+        border-color: s.$gray-300;
         background: none;
+        transform: none;
+        box-shadow: none;
       }
     }
   }
+  // Destructive: red outline at rest so it telegraphs danger (was neutral grey,
+  // indistinguishable from Edit), deepening to a red fill + lift + glow on hover
+  // — the same language as its confirm modal's `.btn--danger-solid`. Matched
+  // explicitly here because the shared `button` base out-specifies `.btn--danger`.
   button.delete-btn {
     background: none;
+    border-color: s.$error-red;
+    color: s.$error-red;
     transition: color s.$hover-timing, background-color s.$hover-timing,
-      border-color s.$hover-timing;
+      border-color s.$hover-timing, transform s.$hover-timing,
+      box-shadow s.$hover-timing;
     &:hover {
-      color: s.$primary-background;
+      color: s.$white;
       background: s.$error-red;
       border-color: s.$error-red;
+      transform: translateY(s.$hover-lift);
+      box-shadow: s.$shadow-danger;
     }
   }
 
@@ -142,9 +161,18 @@
     position: absolute;
     top: 1rem;
     right: 1rem;
+    // Grey ghost hover on the `.btn .btn--icon` circle, matching the
+    // Settings/Account modal closes (the `--icon` variant carries no colour of
+    // its own, and the bare `.btn` gave this zero hover + oversized md padding).
+    background: s.$gray-200;
+    color: s.$secondary-text;
+    &:hover {
+      background: s.$gray-300;
+      color: s.$primary-text;
+    }
     .icon {
-      height: 30px;
-      width: 30px;
+      height: 18px;
+      width: 18px;
     }
   }
   .content {

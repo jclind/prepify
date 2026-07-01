@@ -19,6 +19,12 @@
     color: s.$secondary-text;
     width: fit-content;
     align-self: center;
+    // Was a static grey link with no hover — darken to ink like every other
+    // text link so it reads as interactive.
+    transition: color s.$hover-timing;
+    &:hover {
+      color: s.$primary-text;
+    }
   }
 
   // Quiet separator between the required username and the optional details.

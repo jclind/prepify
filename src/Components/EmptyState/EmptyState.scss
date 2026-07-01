@@ -43,28 +43,12 @@
     color: s.$secondary-text;
   }
 
+  // Composes the shared primary CTA (`.btn.btn--primary`) — fill, hover
+  // (brighten + lift + brand glow), pill shape and transition all come from the
+  // system. Only the empty-state spacing + slightly larger CTA padding are local.
   &__cta {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
     margin-top: 1.5rem;
     padding: 0.7rem 1.5rem;
-    border: none;
-    border-radius: s.$radius-pill;
-    background: s.$primary-accessible;
-    color: #fff;
-    font-family: inherit;
-    font-weight: 700;
-    font-size: s.$text-base;
     text-decoration: none;
-    cursor: pointer;
-    transition: filter s.$hover-timing, transform s.$hover-timing,
-      box-shadow s.$hover-timing;
-
-    &:hover {
-      filter: s.$hover-brighten;
-      transform: translateY(s.$hover-lift);
-      box-shadow: s.$shadow-brand;
-    }
   }
 }

@@ -1,4 +1,4 @@
-import { ClockIcon, StarOutlineIcon } from 'src/Components/icons'
+import { ChevronRightIcon, ClockIcon, StarOutlineIcon } from 'src/Components/icons'
 import React, { FC } from 'react'
 import { Link } from 'react-router-dom'
 import { useQueries } from '@tanstack/react-query'
@@ -93,7 +93,7 @@ const HomeBrowseByMeal: FC = () => {
         <div className='home-meal-col' key={meal}>
           <div className='meal-col-head'>
             <h3>{meal}</h3>
-            <Link to='/recipes' className='meal-see-all'>See all</Link>
+            <Link to='/recipes' className='see-all'>See all <ChevronRightIcon /></Link>
           </div>
           <ul className={(isLoading) && !showSkeleton ? 'sk-hold' : ''}>
             {isLoading ? (

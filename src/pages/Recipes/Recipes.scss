@@ -89,7 +89,9 @@
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
-    border: 1px solid s.$primary-text;
+    // Grey rest border to match the Sort pill beside it — the two toolbar pills
+    // were disagreeing at rest (this was a heavier ink border).
+    border: 1px solid s.$gray-400;
     background: s.$white;
     color: s.$primary-text;
     font-family: inherit;
@@ -145,12 +147,16 @@
       border-radius: s.$radius-pill;
       cursor: pointer;
       white-space: nowrap;
+      transition: color s.$hover-timing, border-color s.$hover-timing;
       .chev {
         font-size: s.$text-md;
         transition: transform 0.14s ease;
       }
+      // Match the Filters button beside it (orange border + text) so the two
+      // toolbar pills share one hover language.
       &:hover {
-        border-color: s.$tertiary-text;
+        border-color: s.$primary;
+        color: s.$primary;
       }
       &.is-open .chev {
         transform: rotate(180deg);
@@ -210,6 +216,11 @@
       border-radius: s.$radius-pill;
       cursor: pointer;
       text-transform: capitalize;
+      transition: background-color s.$hover-timing;
+      // Deepen the tint on hover so the dismiss affordance reads as interactive.
+      &:hover {
+        background: rgba(255, 87, 34, 0.18);
+      }
     }
     &__clear {
       border: none;
@@ -219,6 +230,10 @@
       font-size: s.$text-fine;
       text-decoration: underline;
       cursor: pointer;
+      transition: color s.$hover-timing;
+      &:hover {
+        color: s.$primary-text;
+      }
     }
   }
 
@@ -231,39 +246,12 @@
   }
 
   // ---- Load more ----
+  // The button itself is the shared global `.load-more-btn` (index.scss) — this
+  // wrapper only owns the top spacing on the grid.
   .recipes-load-more {
     display: flex;
     justify-content: center;
     margin-top: 3rem;
-    .load-more-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      min-height: 3rem;
-      background: s.$white;
-      color: s.$primary-text;
-      border: 1.5px solid s.$gray-400;
-      border-radius: s.$radius-pill;
-      font-family: inherit;
-      font-weight: 700;
-      font-size: s.$text-base;
-      padding: 0.85rem 2.2rem;
-      cursor: pointer;
-      transition: color s.$hover-timing, border-color s.$hover-timing,
-        transform s.$hover-timing, box-shadow s.$hover-timing;
-      svg {
-        font-size: s.$text-xl;
-      }
-      &:hover:not(:disabled) {
-        color: s.$primary;
-        border-color: s.$primary;
-        transform: translateY(s.$hover-lift);
-        box-shadow: s.$shadow-brand;
-      }
-      &:disabled {
-        cursor: default;
-      }
-    }
   }
 
   // ---- Empty / error ----
@@ -392,6 +380,10 @@
         font-size: s.$text-lg;
         cursor: pointer;
         color: s.$secondary-text;
+        transition: color s.$hover-timing;
+        &:hover {
+          color: s.$primary-text;
+        }
       }
     }
     &__body {
@@ -428,6 +420,17 @@
       padding: 0.75rem 1.25rem;
       border-radius: s.$radius-pill;
       cursor: pointer;
+      // Neutral outline — border+text→ink and a lift, matching `.btn--outline`.
+      // A standalone dialog-footer secondary, so it lifts (unlike the compact
+      // Filters/Sort toolbar pills, which stay flat).
+      transition: color s.$hover-timing, border-color s.$hover-timing,
+        transform s.$hover-timing, box-shadow s.$hover-timing;
+      &:hover {
+        border-color: s.$primary-text;
+        color: s.$primary-text;
+        transform: translateY(s.$hover-lift);
+        box-shadow: s.$elevation-2;
+      }
     }
     &__apply {
       flex: 1;
@@ -438,6 +441,14 @@
       padding: 0.75rem;
       border-radius: s.$radius-pill;
       cursor: pointer;
+      // The drawer's primary CTA now reads like every other `.btn--primary`.
+      transition: filter s.$hover-timing, transform s.$hover-timing,
+        box-shadow s.$hover-timing;
+      &:hover {
+        filter: s.$hover-brighten;
+        transform: translateY(s.$hover-lift);
+        box-shadow: s.$shadow-brand;
+      }
     }
   }
 

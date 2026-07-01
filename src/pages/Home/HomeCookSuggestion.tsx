@@ -96,10 +96,10 @@ const HomeCookSuggestion: FC = () => {
                   {pick.cuisine && <span className='cuisine'>{pick.cuisine}</span>}
                 </div>
                 <div className='actions'>
-                  <Link to={`/recipes/${pick._id}`} className='primary btn' onClick={close}>
+                  <Link to={`/recipes/${pick._id}`} className='btn btn--primary' onClick={close}>
                     View recipe
                   </Link>
-                  <button className='ghost btn' onClick={tryAnother} disabled={isPending} type='button'>
+                  <button className='cook-secondary btn' onClick={tryAnother} disabled={isPending} type='button'>
                     <DiceIcon /> {isPending ? 'Finding…' : 'Try another'}
                   </button>
                 </div>
@@ -110,7 +110,7 @@ const HomeCookSuggestion: FC = () => {
           ) : isError ? (
             <div className='cook-modal-state cook-modal-msg'>
               <p>Couldn’t pick a recipe.</p>
-              <button className='ghost btn' onClick={() => mutate(undefined)} type='button'>
+              <button className='cook-secondary btn' onClick={() => mutate(undefined)} type='button'>
                 Try again
               </button>
             </div>

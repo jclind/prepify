@@ -216,6 +216,12 @@ $hover-lift-card: -4px; //   cards rise this far on hover
 $hover-timing: 0.15s ease; // single duration/easing token for hover motion
 $hover-brighten: brightness(1.06); // the one canonical "lighten on hover" for orange fills
 
+// Chrome (navbar + footer) hover timing. Snappier than $hover-timing, and the
+// chrome dialect is deliberately FLAT — its hovers give colour/fill feedback but
+// never lift (a -2px lift belongs to content on a page, not a fixed bar). One
+// timing for the whole nav/footer surface. See docs/scss-conventions.md.
+$nav-timing: 0.12s ease;
+
 $font-family: 'Montserrat', sans-serif;
 
 // ── Type scale ───────────────────────────────────────────────────────────────

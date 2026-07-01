@@ -87,6 +87,10 @@
       color: s.$secondary-text;
       .contact-link {
         color: s.$secondary-accessible;
+        text-decoration: none;
+        &:hover {
+          text-decoration: underline;
+        }
       }
     }
     // `.btn .btn--primary` — kept oversized on this hero 404: larger padding,

@@ -218,9 +218,14 @@
     background: #fff;
     border: 1px solid #e3d9ca;
     padding: 0.5rem 1.1rem;
+    // Lifts on hover to match its `.acct-iconbtn` siblings in the same row
+    // (they lift) — Edit shouldn't be the flat odd-one-out. Transform + shadow
+    // ease via the `.btn` base transition.
     &:hover {
       border-color: s.$primary;
       color: s.$primary;
+      transform: translateY(s.$hover-lift);
+      box-shadow: s.$elevation-2;
     }
   }
   // `.btn--icon` gives the circular shape; the warm colours are bespoke (kept).

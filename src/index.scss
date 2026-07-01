@@ -227,35 +227,47 @@ a {
 }
 
 .load-more-btn {
-  // Self-contained, deferred from the `.btn` system: supplies its own reset
-  // (background / cursor / colour / weight) that the old no-op `.btn` base used
-  // to provide, so it renders correctly WITHOUT a `btn` class on the element.
-  background: none;
-  color: s.$primary-text;
-  font-weight: 600;
-  cursor: pointer;
+  // One canonical "load more" for the whole app — recipes grid, saved, ratings,
+  // your-recipes, public profile, and the reviews list. Self-contained, deferred
+  // from the `.btn` system: supplies its own reset so it renders WITHOUT a `btn`
+  // class. `width: fit-content` + `margin: 0 auto` centres it standalone (the
+  // account pages render it bare) and it also centres inside a flex wrapper.
+  // Hover is the branded pill (orange border + text, lift, brand glow) that the
+  // /recipes grid used to define locally — now the single shared treatment.
   display: flex;
-  justify-content: center;
   align-items: center;
-  width: 250px;
-  height: 45px;
-  border: 1px solid s.$gray-400;
+  justify-content: center;
+  gap: 0.5rem;
+  width: fit-content;
   margin: 0 auto;
-  border-radius: s.$border-radius;
-  font-size: s.$text-xl;
+  min-height: 3rem;
+  padding: 0.85rem 2.2rem;
+  background: s.$white;
+  color: s.$primary-text;
+  border: 1.5px solid s.$gray-400;
+  border-radius: s.$radius-pill;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: s.$text-base;
+  cursor: pointer;
   white-space: nowrap;
 
-  transition: border-color s.$hover-timing, transform s.$hover-timing,
-    box-shadow s.$hover-timing;
+  transition: color s.$hover-timing, border-color s.$hover-timing,
+    transform s.$hover-timing, box-shadow s.$hover-timing;
 
-  &:hover:not(:disabled) {
-    border-color: s.$tertiary-text;
-    transform: translateY(s.$hover-lift);
-    box-shadow: s.$elevation-2;
+  svg {
+    font-size: s.$text-xl;
   }
 
-  @include s.below(s.$bp-xs) {
-    font-size: s.$text-xl;
+  &:hover:not(:disabled) {
+    color: s.$primary;
+    border-color: s.$primary;
+    transform: translateY(s.$hover-lift);
+    box-shadow: s.$shadow-brand;
+  }
+
+  &:disabled {
+    cursor: default;
   }
 }
 

@@ -75,15 +75,17 @@
       background: rgba(0, 0, 0, 0.04);
       color: s.$primary-text;
     }
+    // Orange active tint, matching the Account segmented nav — one "you are
+    // here" colour across the app's two rails (was teal here).
     &.active {
-      background: rgba(s.$secondary, 0.12);
-      // Darker teal: the prior #057780 hit only 4.09:1 on the teal active tint.
-      color: #006065;
+      background: rgba(s.$primary, 0.1);
+      color: s.$primary-accessible;
     }
     &.danger {
       color: s.$error-red;
       &.active {
         background: rgba(s.$error-red, 0.1);
+        color: s.$error-red;
       }
     }
   }
@@ -94,7 +96,7 @@
     align-items: center;
     gap: 0.45rem;
     align-self: flex-start;
-    color: #057780;
+    color: s.$secondary-accessible;
     font-weight: 700;
     font-size: s.$text-base;
     text-decoration: none;

@@ -1,4 +1,4 @@
-import { BookmarkIcon, CloseIcon, EditIcon, FolderIcon, FolderPlusIcon, GridIcon, PlusIcon, SearchIcon, TrashIcon } from 'src/Components/icons'
+import { BookmarkIcon, ChevronDownIcon, CloseIcon, EditIcon, FolderIcon, FolderPlusIcon, GridIcon, PlusIcon, SearchIcon, TrashIcon } from 'src/Components/icons'
 import React, { FC, useState, useEffect } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
@@ -340,7 +340,7 @@ const SavedRecipes: FC = () => {
                   <EditIcon /> Rename
                 </button>
                 <button
-                  className='btn btn--outline btn-small ghost danger'
+                  className='btn btn--danger btn-small'
                   onClick={handleDelete}
                   aria-label='Delete collection'
                 >
@@ -378,7 +378,7 @@ const SavedRecipes: FC = () => {
           </div>
           {isMoreRecipes && recipes.length > 0 ? (
             <button className='load-more-btn' onClick={handleLoadMoreRecipes}>
-              Load More Recipes
+              Load more recipes <ChevronDownIcon />
             </button>
           ) : null}
         </>

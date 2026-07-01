@@ -116,7 +116,7 @@
     text-decoration: none;
     font-size: s.$text-xl;
     font-weight: 600;
-    transition: background 0.12s linear, color 0.12s linear;
+    transition: background s.$nav-timing, color s.$nav-timing;
 
     .menu-link__icon {
       flex-shrink: 0;
@@ -148,6 +148,16 @@
     gap: 0.85rem;
     text-decoration: none;
     color: var(--menu-text);
+    // Tappable row -> give it feedback (was none, while the desktop equivalent
+    // tints). Padding + negative margin lets the hover fill have room without
+    // shifting the layout.
+    padding: 0.5rem;
+    margin: -0.5rem;
+    border-radius: var(--menu-radius);
+    transition: background s.$nav-timing;
+    &:hover {
+      background: var(--menu-link-hover);
+    }
   }
   .account-card__avatar {
     flex-shrink: 0;
@@ -196,14 +206,17 @@
     font-size: s.$text-md;
     font-weight: 600;
     cursor: pointer;
-    transition: border-color 0.12s linear, background 0.12s linear;
+    transition: border-color s.$nav-timing, color s.$nav-timing,
+      background s.$nav-timing;
     .icon {
       height: 20px;
       width: 20px;
     }
+    // Red hover, matching the desktop dropdown logout (was brand orange — the
+    // same action shouldn't read two different ways across surfaces).
     &:hover {
-      border-color: var(--menu-accent);
-      color: var(--menu-accent);
+      border-color: s.$error-red;
+      color: s.$error-red;
     }
   }
 
@@ -217,17 +230,25 @@
     align-items: center;
     justify-content: center;
     padding: 0.85rem;
-    border-radius: var(--menu-radius);
+    // Pill to match the desktop nav CTAs + the app button system (was the mobile
+    // menu's 10px card radius — the same control read two shapes by breakpoint).
+    border-radius: s.$radius-pill;
     font-size: s.$text-md;
     font-weight: 700;
     text-decoration: none;
-    transition: filter 0.12s linear, background 0.12s linear;
+    // Include border-color + colour so the login CTA's hover eases instead of
+    // snapping (the list previously omitted the properties it animates).
+    transition: filter s.$nav-timing, background s.$nav-timing,
+      border-color s.$nav-timing, color s.$nav-timing;
   }
   .account-cta--signup {
-    background: var(--menu-accent);
+    // Fill with the accessible-orange token, matching the DESKTOP signup CTA;
+    // this one filled vivid $primary via --menu-accent, so the two signup CTAs
+    // disagreed on the AA fill (and only this one failed).
+    background: s.$primary-accessible;
     color: #fff;
     &:hover {
-      filter: brightness(1.07);
+      filter: s.$hover-brighten;
     }
   }
   .account-cta--login {

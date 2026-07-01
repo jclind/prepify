@@ -122,7 +122,7 @@ const RecipeControls: FC<RecipeControlsType> = ({
         style={panelModalStyles}
         className='confirm-delete-modal'
       >
-        <button className='close-modal btn' onClick={closeDeleteModal}>
+        <button className='close-modal btn btn--icon' onClick={closeDeleteModal}>
           <CloseIcon className='icon' />
         </button>
         <div className='content'>

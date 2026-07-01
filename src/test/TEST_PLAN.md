@@ -261,10 +261,10 @@ Tested in isolation from the full form since the list logic is independent.
   The user's own review is shown in the container above, so the "No Reviews" copy
   would be inaccurate.
 
-- **"More Reviews" button is visible when `isMoreReviews=true`**
+- **"Load more reviews" button is visible when `isMoreReviews=true`**
   ReviewsList renders the button only when there are additional pages.
 
-- **Clicking "More Reviews" calls `getReviews` with the next page and appends results**
+- **Clicking "Load more reviews" calls `getReviews` with the next page and appends results**
   Same append-vs-replace concern as the browse page. `recipesPage !== 0` must
   concatenate, not overwrite.
 

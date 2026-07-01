@@ -55,3 +55,30 @@ describe('ImagePicker — file validation', () => {
     expect(toastError).not.toHaveBeenCalled()
   })
 })
+
+describe('ImagePicker — accessibility', () => {
+  it('exposes the empty dropzone as a keyboard-operable button', () => {
+    const { container } = render(
+      <ImagePicker image={undefined} setImage={vi.fn()} />
+    )
+    const box = container.querySelector('.image-picker-box') as HTMLElement
+    expect(box).toHaveAttribute('role', 'button')
+    expect(box).toHaveAttribute('tabindex', '0')
+    expect(box).toHaveAttribute('aria-label', 'Select an image')
+  })
+
+  it('opens the file dialog on Enter/Space when empty', () => {
+    const { container } = render(
+      <ImagePicker image={undefined} setImage={vi.fn()} />
+    )
+    const box = container.querySelector('.image-picker-box') as HTMLElement
+    const click = vi
+      .spyOn(getFileInput(container), 'click')
+      .mockImplementation(() => {})
+
+    fireEvent.keyDown(box, { key: 'Enter' })
+    fireEvent.keyDown(box, { key: ' ' })
+
+    expect(click).toHaveBeenCalledTimes(2)
+  })
+})
