@@ -223,7 +223,7 @@
   padding: 0.45rem 0.95rem;
   &:hover:not(:disabled) {
     border-color: s.$secondary;
-    color: #057780;
+    color: s.$secondary-accessible;
   }
 }
 

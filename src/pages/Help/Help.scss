@@ -89,7 +89,7 @@
       }
       &.selected {
         border-color: s.$secondary;
-        color: s.$secondary;
+        color: s.$secondary-accessible;
         background: rgba(s.$secondary, 0.07);
         box-shadow: 0 0 0 3px rgba(s.$secondary, 0.12);
         .chip-icon {

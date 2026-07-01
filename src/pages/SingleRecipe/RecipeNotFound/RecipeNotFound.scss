@@ -99,7 +99,7 @@
     font-size: s.$text-sm;
     color: s.$tertiary-text;
     .contact-link {
-      color: s.$secondary;
+      color: s.$secondary-accessible;
       font-weight: 600;
       &:hover { text-decoration: underline; }
     }

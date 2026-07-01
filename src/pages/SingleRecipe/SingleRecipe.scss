@@ -451,7 +451,7 @@ $soft-radius: 16px;
     gap: 0.4rem;
     .tag {
       background: rgba(s.$secondary, 0.12);
-      color: s.$secondary;
+      color: s.$secondary-accessible;
       padding: 0.35rem 0.85rem;
       border-radius: s.$radius-pill;
       font-size: s.$text-sm;
@@ -476,9 +476,9 @@ $soft-radius: 16px;
       font-weight: 700;
       font-size: s.$text-base;
       background: rgba(s.$secondary, 0.12);
-      color: s.$secondary;
+      color: s.$secondary-accessible;
       border: 1.5px solid rgba(s.$secondary, 0.4);
-      &:hover { background: rgba(s.$secondary, 0.2); color: s.$secondary; }
+      &:hover { background: rgba(s.$secondary, 0.2); color: s.$secondary-accessible; }
     }
   }
 
