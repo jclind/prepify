@@ -5,8 +5,8 @@
 > decorative tint). **~10 follow-ups open** in [`../BACKLOG.md`](../BACKLOG.md#ux--visual-polish) +
 > [Tech debt](../BACKLOG.md#tech-debt--process--infra): pill `.btn` system, delete `RecipeThumbnail`,
 > ~~icon-per-concept~~ (done — PR #205; ~~single-family Lucide~~ done — PR #206), ~~modal style config~~ (done — PR #203),
-> ~~loading-state pattern~~ (done — PR #213), ~~toast punctuation~~ (done — PR #207); ~~type scale~~ (done — PR #216), elevation
-> re-author, ~~danger-red token~~ (done — PR #208), ~~`$admin-*` palette~~ (done — PR #214), ~~`RecipeFormInput` dup~~ (done — PR #204). *(See the [run log](README.md#run-log).)*
+> ~~loading-state pattern~~ (done — PR #213), ~~toast punctuation~~ (done — PR #207); ~~type scale~~ (done — PR #216), ~~elevation
+> re-author~~ (done — PR #TBD), ~~danger-red token~~ (done — PR #208), ~~`$admin-*` palette~~ (done — PR #214), ~~`RecipeFormInput` dup~~ (done — PR #204). *(See the [run log](README.md#run-log).)*
 
 Full-coverage visual/UX consistency audit: are colors, spacing, typography, radii, shadows, components,
 states, and copy voice drawn from a shared system — or has each page drifted? Catch the drift, unify the
