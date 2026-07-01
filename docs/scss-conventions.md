@@ -64,6 +64,31 @@ nav control needs more presence, give it colour/fill, not motion.
 | A button/card/tile in the page body | the Lift system (`.btn` / `$hover-timing` / `$hover-lift`) |
 | Anything in the navbar or footer | the chrome dialect (`$nav-timing`, flat) |
 
+### Outlines: lift, except in a compact toolbar
+
+`.btn--outline` (grey border → ink text, **lift**) is the neutral secondary —
+Cancel, Print, Save, Add rating. It lifts like any content button, and it never
+hovers to a brand colour (a *Cancel* turning orange reads wrong).
+
+Some surfaces also have **bespoke outline pills** — a warm/neutral border that
+hovers **border+text → brand orange** — for edit/utility actions: the recipe
+owner's *Edit*, the account *Edit profile*, the `/recipes` *Filters* and *Sort*.
+Two rules keep them coherent:
+
+1. **An outline lifts to match its neighbours.** A standalone outline sitting
+   next to controls that lift — owner *Edit* beside *Delete*, account *Edit
+   profile* beside the lifting icon buttons, the drawer *Reset* beside *Apply* —
+   lifts too. It shouldn't be the one flat control in a lifting row.
+2. **A compact toolbar is a flat exception** — the same reasoning as nav chrome.
+   The `/recipes` *Filters* + *Sort* pills are a dense control strip; a −2px lift
+   on a 44px pill in a toolbar reads twitchy, so they stay flat. They still
+   share one hover (orange border+text) and one **resting** border
+   (grey `$gray-400`).
+
+The Settings outlines (`.sr-btn-outline`) are a deliberate teal-hover accent —
+their own consistent set, documented as an exception, not part of the orange
+lane.
+
 ---
 
 ## To document later

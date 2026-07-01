@@ -74,20 +74,27 @@
   button.edit-btn {
     background: none;
     transition: color s.$hover-timing, background-color s.$hover-timing,
-      border-color s.$hover-timing;
-    // Orange outline hover (border + text), matching the app's other outline
-    // buttons — was a one-off charcoal fill, the only dark-fill hover around.
+      border-color s.$hover-timing, transform s.$hover-timing,
+      box-shadow s.$hover-timing;
+    // Orange outline hover (border + text) + a lift, matching its Delete sibling
+    // (which lifts) and the app's other standalone outline buttons — was a
+    // one-off charcoal fill, the only dark-fill hover around.
     &:hover {
       color: s.$primary;
       border-color: s.$primary;
+      transform: translateY(s.$hover-lift);
+      box-shadow: s.$elevation-2;
     }
     &:disabled {
       opacity: 0.5;
       cursor: not-allowed;
+      // Disabled stays flat — no lift echo of the enabled hover.
       &:hover {
         color: s.$primary-text;
         border-color: s.$gray-300;
         background: none;
+        transform: none;
+        box-shadow: none;
       }
     }
   }
