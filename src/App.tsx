@@ -43,6 +43,8 @@ import PrivacySection from 'src/pages/Settings/sections/PrivacySection'
 import DangerSection from 'src/pages/Settings/sections/DangerSection'
 import { Sentry } from 'src/util/sentry'
 import AppErrorFallback from 'src/Components/AppErrorFallback/AppErrorFallback'
+// TEMPORARY — full-app button/clickable audit review page. Remove before merge.
+import ButtonAudit from 'src/pages/ButtonAudit/ButtonAudit'
 
 const ScrollToTop: FC = () => {
   const { pathname } = useLocation()
@@ -207,6 +209,9 @@ const App: FC = () => {
                 <Route path='audit' element={<Audit />} />
               </Route>
             </Route>
+
+            {/* TEMPORARY audit page — standalone (no Layout), remove before merge. */}
+            <Route path='/button-audit' element={<ButtonAudit />} />
 
             <Route path='/login' element={<Login />} />
             <Route path='/signup' element={<Signup />} />
