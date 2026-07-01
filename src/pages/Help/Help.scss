@@ -145,7 +145,7 @@
       padding: 0.15rem 0;
       border: none;
       background: transparent;
-      color: s.$secondary;
+      color: s.$secondary-accessible;
       font-weight: 600;
       font-size: s.$text-sm;
       cursor: pointer;
@@ -164,7 +164,7 @@
     // card wider than a narrow viewport.
     overflow-wrap: anywhere;
     a {
-      color: s.$secondary;
+      color: s.$secondary-accessible;
       font-weight: 600;
       text-decoration: none;
       &:hover {

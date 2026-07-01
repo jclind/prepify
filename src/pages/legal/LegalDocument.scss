@@ -76,7 +76,8 @@
     }
 
     a {
-      color: s.$primary;
+      // Inline links use the app's one accessible teal (was orange here).
+      color: s.$secondary-accessible;
       font-weight: 600;
       text-decoration: none;
 
