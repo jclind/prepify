@@ -154,18 +154,18 @@ describe('ReviewsContainer', () => {
     expect(screen.queryByText('Add Review')).toBeNull()
   })
 
-  it('"More Reviews" button appears when totalCount exceeds the fetched list length', async () => {
+  it('"Load more reviews" button appears when totalCount exceeds the fetched list length', async () => {
     mockGetReviews.mockResolvedValue({ reviews: [baseReview], totalCount: 10 })
     renderContainer()
-    await screen.findByText('More Reviews')
+    await screen.findByText('Load more reviews')
   })
 
-  it('clicking "More Reviews" calls getReviews with an incremented page number', async () => {
+  it('clicking "Load more reviews" calls getReviews with an incremented page number', async () => {
     const user = userEvent.setup()
     mockGetReviews.mockResolvedValue({ reviews: [baseReview], totalCount: 10 })
     renderContainer()
-    await screen.findByText('More Reviews')
-    await user.click(screen.getByText('More Reviews'))
+    await screen.findByText('Load more reviews')
+    await user.click(screen.getByText('Load more reviews'))
     await waitFor(() =>
       expect(mockGetReviews).toHaveBeenCalledWith('recipe-1', 'new', 1, 5)
     )

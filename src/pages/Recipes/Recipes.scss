@@ -231,39 +231,12 @@
   }
 
   // ---- Load more ----
+  // The button itself is the shared global `.load-more-btn` (index.scss) — this
+  // wrapper only owns the top spacing on the grid.
   .recipes-load-more {
     display: flex;
     justify-content: center;
     margin-top: 3rem;
-    .load-more-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      min-height: 3rem;
-      background: s.$white;
-      color: s.$primary-text;
-      border: 1.5px solid s.$gray-400;
-      border-radius: s.$radius-pill;
-      font-family: inherit;
-      font-weight: 700;
-      font-size: s.$text-base;
-      padding: 0.85rem 2.2rem;
-      cursor: pointer;
-      transition: color s.$hover-timing, border-color s.$hover-timing,
-        transform s.$hover-timing, box-shadow s.$hover-timing;
-      svg {
-        font-size: s.$text-xl;
-      }
-      &:hover:not(:disabled) {
-        color: s.$primary;
-        border-color: s.$primary;
-        transform: translateY(s.$hover-lift);
-        box-shadow: s.$shadow-brand;
-      }
-      &:disabled {
-        cursor: default;
-      }
-    }
   }
 
   // ---- Empty / error ----

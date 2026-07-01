@@ -1,4 +1,4 @@
-import { BookOpenIcon } from 'src/Components/icons'
+import { BookOpenIcon, ChevronDownIcon } from 'src/Components/icons'
 import React, { FC, useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 
@@ -80,7 +80,7 @@ const UserRecipes: FC = () => {
               className='load-more-btn'
               onClick={handleLoadMoreRecipes}
             >
-              Load More Recipes
+              Load more recipes <ChevronDownIcon />
             </button>
           ) : null}
         </>

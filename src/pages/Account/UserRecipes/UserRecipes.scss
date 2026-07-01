@@ -16,9 +16,6 @@
       grid-template-columns: 1fr;
     }
   }
-
-  .load-more-btn {
-    display: block;
-    margin: 0 auto;
-  }
+  // Load-more uses the shared global `.load-more-btn` (index.scss); it centres
+  // itself (width: fit-content + margin auto), so no local override is needed.
 }

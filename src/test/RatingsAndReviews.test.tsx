@@ -209,21 +209,21 @@ describe('ReviewsList', () => {
     expect(screen.queryByText('No Reviews')).toBeNull()
   })
 
-  it('"More Reviews" button is visible when isMoreReviews=true', () => {
+  it('"Load more reviews" button is visible when isMoreReviews=true', () => {
     renderReviewsList({ isMoreReviews: true })
-    expect(screen.getByText('More Reviews')).toBeInTheDocument()
+    expect(screen.getByText('Load more reviews')).toBeInTheDocument()
   })
 
-  it('"More Reviews" button is absent when isMoreReviews=false', () => {
+  it('"Load more reviews" button is absent when isMoreReviews=false', () => {
     renderReviewsList({ isMoreReviews: false })
-    expect(screen.queryByText('More Reviews')).toBeNull()
+    expect(screen.queryByText('Load more reviews')).toBeNull()
   })
 
-  it('clicking "More Reviews" calls getNextReviewsPage', async () => {
+  it('clicking "Load more reviews" calls getNextReviewsPage', async () => {
     const user = userEvent.setup()
     const getNextReviewsPage = vi.fn()
     renderReviewsList({ isMoreReviews: true, getNextReviewsPage })
-    await user.click(screen.getByText('More Reviews'))
+    await user.click(screen.getByText('Load more reviews'))
     expect(getNextReviewsPage).toHaveBeenCalledTimes(1)
   })
 

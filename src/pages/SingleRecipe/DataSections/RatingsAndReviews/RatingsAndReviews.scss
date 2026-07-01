@@ -199,24 +199,14 @@
           right: 0;
         }
       }
+      // Reviews now use the shared global `.load-more-btn` (index.scss) so the
+      // "load more" control reads the same on the recipe page as on the recipes
+      // grid and account tabs. This wrapper only owns the top spacing.
       .get-more-reviews {
         display: flex;
         justify-content: center;
         width: 100%;
-
-        .get-more-reviews-btn {
-          font-size: s.$text-lg;
-          padding-top: 2rem;
-          margin: 0 auto;
-          text-align: center;
-          // Readable CTA, not the muted `--ghost` grey: dark resting text + an
-          // underline on hover. This is the only "more reviews" control, so the
-          // variant's secondary-text grey reads too quiet as the resting state.
-          color: s.$primary-text;
-          &:hover:not(:disabled) {
-            text-decoration: underline;
-          }
-        }
+        margin-top: 2rem;
       }
     }
   }

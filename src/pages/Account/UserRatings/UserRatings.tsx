@@ -1,4 +1,4 @@
-import { CornerDownRightIcon, StarOutlineIcon } from 'src/Components/icons'
+import { ChevronDownIcon, CornerDownRightIcon, StarOutlineIcon } from 'src/Components/icons'
 import React, { FC, useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import RecipeAPI from 'src/api/recipes'
@@ -175,7 +175,7 @@ const Ratings: FC = () => {
               className='load-more-btn'
               onClick={handleLoadMoreReviews}
             >
-              Load More Reviews
+              Load more reviews <ChevronDownIcon />
             </button>
           ) : null}
         </>
