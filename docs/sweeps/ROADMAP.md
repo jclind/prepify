@@ -75,7 +75,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **2-iso** | Design: codify loading-state pattern | `[x]` | convention + `TailSpin`/skeleton outliers | #213 |
 | **2-scss** | Design: pill `.btn` system | `[x]` | **`index.scss` + many page `.scss`** ⚠ chokepoint | #210 |
 | **2-scss** | Design: type scale (~520 `font-size:` literals) | `[x]` | **`helpers.scss` + ~60 files** ⚠ chokepoint | #216 |
-| **2-scss** | Design: elevation/shadow re-author (~52 literals) | `[~]` | **`helpers.scss` + page `.scss`** ⚠ chokepoint | worktree-feat+elevation-shadow-reauthor (2026-07-01) |
+| **2-scss** | Design: elevation/shadow re-author (~52 literals) | `[P]` | **`helpers.scss` + page `.scss`** ⚠ chokepoint | #218 |
 | **2-scss** | Design: one danger-red token | `[x]` | **`helpers.scss` + SingleRecipe/ReportControl/…** ⚠ chokepoint | #208 |
 | **2-scss** | Design: name the `$admin-*` sub-palette | `[x]` | **`helpers.scss` + Admin/moderation `.scss`** ⚠ chokepoint | #214 |
 | **2-scss** | A11y: `$primary-hover` AA-on-hover | `[ ]` | **`helpers.scss`** ⚠ chokepoint | — |
@@ -472,3 +472,16 @@ narrates the *why*.
   so it can't run alongside anyway. This track collapses the ~52 ad-hoc `box-shadow:` literals across `helpers.scss`
   + page `.scss` onto a documented elevation token scale (next design-system doc after icon/button/admin-palette/
   type-scale). Worktree on free ports 3001/4001.
+- _2026-07-01_ — **Design: elevation/shadow re-author (~52 literals)** PR opened (#218, `[~]`→`[P]`) — **fifth
+  `2-scss` lane to reach review.** 51 declarations across 28 files repointed onto the 6-step `$elevation-1..6`
+  ramp + `$shadow-brand`/`-strong`/`$shadow-teal` glow tokens in `helpers.scss`; the interim
+  `$card-box-shadow`/`$shadow-soft`/`$shadow-chip` stopgap and the local `$soft-shadow` in `SingleRecipe` retired.
+  Two repoints value-identical (teal auth glow, draft-publish brand glow), the rest normalize onto the nearest
+  step. Left bespoke (directional/multi-layer): the two-layer add-ingredient bar, the horizontal off-canvas
+  drawer, and the two upward sticky-bar shadows; focus rings + the two `0 0 0 1px` outlines out of scope.
+  Verified two ways: masked compiled-CSS diff vs `development` (every `box-shadow` value blanked) is zero-byte —
+  nothing but shadow values moved — and a headless computed-`box-shadow` pass across home / recipes / recipe-
+  detail / about / profile (+ a card hover) read the intended token on every surface. Documented at
+  `docs/design/elevation.md` (fifth design-system doc); BACKLOG item flipped to done, run-log banner updated.
+  Remaining `2-scss` lane: `$primary-hover` (last track). Owner sign-off via a temp `/elevation-audit` page
+  (added then removed in-branch).

@@ -624,7 +624,7 @@ findings table.)*
       off-scale one-offs (5/7/9/11/13/18px) need ±1px normalization (design call), and the token-less admin
       files (`Admin/*`, `AdminRecipeControls`, `SavedFilterBar`) keep raw radii pending the import-wiring item
       below.
-    - `[x]` **Elevation/shadow scale** — DONE 2026-07-01 (PR #TBD, `worktree-feat+elevation-shadow-reauthor`).
+    - `[x]` **Elevation/shadow scale** — DONE 2026-07-01 (PR #218, `worktree-feat+elevation-shadow-reauthor`).
       Re-authored the interim `$shadow-soft`/`$shadow-chip`/`$card-box-shadow` stopgap into a documented 6-step
       `$elevation-1..6` ramp + `$shadow-brand`/`-strong`/`$shadow-teal` glow tokens in `helpers.scss` (owner
       sign-off via a temp `/elevation-audit` page). Migrated ~51 declarations across 28 files: 37 distinct old
