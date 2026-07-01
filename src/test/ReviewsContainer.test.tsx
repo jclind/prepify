@@ -8,24 +8,8 @@ import ReviewsContainer from 'src/pages/SingleRecipe/DataSections/RatingsAndRevi
 import RecipeAPI from 'src/api/recipes'
 import AuthAPI from 'src/api/auth'
 
-// ReviewFilters calls setReviewListSort on mount — that's the trigger for the first
-// data fetch inside ReviewsContainer. Mock it to call through immediately so tests
-// don't have to interact with react-select to kick off data loading.
-vi.mock(
-  'src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/ReviewFilters',
-  async () => {
-    const { useEffect } = await import('react')
-    return {
-      default: ({ setReviewListSort }: any) => {
-        useEffect(() => {
-          setReviewListSort('new')
-        }, [])
-        return null
-      },
-    }
-  }
-)
-
+// ReviewsContainer defaults the sort to 'new', so the reviews query fires on
+// mount without any sort UI to drive it.
 vi.mock('src/api/recipes', () => ({
   default: {
     getReviews: vi.fn(),

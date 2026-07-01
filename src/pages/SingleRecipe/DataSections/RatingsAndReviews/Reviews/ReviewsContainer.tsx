@@ -3,7 +3,6 @@ import { useQuery } from '@tanstack/react-query'
 import AuthAPI from 'src/api/auth'
 import RecipeAPI from 'src/api/recipes'
 import { ReviewType } from 'types'
-import ReviewFilters from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/ReviewFilters'
 import ReviewsList from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/ReviewsList'
 import AddReview from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/AddReview'
 import RecipeReview from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/RecipeReview'
@@ -28,7 +27,10 @@ const ReviewsContainer: FC<ReviewsContainerProps> = ({
   const [reviewList, setReviewList] = useState<ReviewType[]>([])
   const [reviewListPage, setReviewListPage] = useState(0)
   const [isMoreReviews, setIsMoreReviews] = useState(false)
-  const [reviewListSort, setReviewListSort] = useState<string>('')
+  // Reviews are always shown newest-first. The sort dropdown that once drove
+  // this was hidden (display:none) and existed only to set 'new' on mount, so
+  // it's replaced by this constant — the query now fetches directly on mount.
+  const reviewListSort = 'new'
 
   const uid = AuthAPI.getUID()
 
@@ -36,7 +38,6 @@ const ReviewsContainer: FC<ReviewsContainerProps> = ({
     queryKey: ['reviews', recipeId, reviewListSort, reviewListPage],
     queryFn: () =>
       RecipeAPI.getReviews(recipeId, reviewListSort, reviewListPage, recipesPerPage),
-    enabled: reviewListPage >= 0 && !!reviewListSort,
   })
 
   useEffect(() => {
@@ -52,11 +53,6 @@ const ReviewsContainer: FC<ReviewsContainerProps> = ({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data])
-
-  const handleSortChange = (sort: string) => {
-    setReviewListPage(0)
-    setReviewListSort(sort)
-  }
 
   const handleLoadMoreReviews = () => {
     setReviewListPage(prev => prev + 1)
@@ -85,13 +81,6 @@ const ReviewsContainer: FC<ReviewsContainerProps> = ({
           )}
         </div>
       )}
-      <div className='review-filters'>
-        <ReviewFilters
-          reviewListSort={reviewListSort}
-          setReviewListSort={handleSortChange}
-          isList={reviewList.length > 0}
-        />
-      </div>
       <ReviewsList
         recipeId={recipeId}
         currUserReview={currUserReview}

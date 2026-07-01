@@ -10,23 +10,6 @@ import RecipeAPI from 'src/api/recipes'
 import AuthAPI from 'src/api/auth'
 import { ReviewType } from 'types'
 
-// ReviewFilters sets reviewListSort on mount — that's the gateway for data fetching
-// inside ReviewsContainer. Mock it to call through immediately.
-vi.mock(
-  'src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/ReviewFilters',
-  async () => {
-    const { useEffect } = await import('react')
-    return {
-      default: ({ setReviewListSort }: any) => {
-        useEffect(() => {
-          setReviewListSort('new')
-        }, [])
-        return null
-      },
-    }
-  }
-)
-
 vi.mock('src/api/recipes', () => ({
   default: {
     checkIfReviewed: vi.fn().mockResolvedValue(null),
@@ -139,8 +122,8 @@ describe('RatingsAndReviews integration', () => {
     it('does not call checkIfReviewed when uid is null', async () => {
       mockGetUID.mockReturnValue(null)
       render(<IntegrationWrapper />)
-      // Wait for getReviews (ReviewFilters mock fires on mount) as evidence
-      // that useEffects have run, then confirm checkIfReviewed was skipped.
+      // Wait for getReviews (fires on mount) as evidence that the effects have
+      // run, then confirm checkIfReviewed was skipped.
       await waitFor(() => expect(mockGetReviews).toHaveBeenCalled())
       expect(mockCheckIfReviewed).not.toHaveBeenCalled()
     })

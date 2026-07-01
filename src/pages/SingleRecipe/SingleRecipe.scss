@@ -661,9 +661,6 @@ $soft-radius: 16px;
       max-width: none;
       margin: 0;
       gap: 0.85rem;
-      // omit the sort dropdown to match the design (default sort = newest, set
-      // on mount by ReviewFilters regardless of visibility)
-      .review-filters { display: none; }
     }
     .recipe-review {
       border-top: none;
