@@ -210,11 +210,22 @@ $soft-radius: 16px;
       background: s.$primary-accessible;
       border-color: s.$primary-accessible;
       color: s.$white;
-      &:hover { background: #a52f0a; border-color: #a52f0a; }
+      // Filled button → the shared Lift, matching its outline neighbours
+      // (rate/print). Colour still AA-tuned; the glow follows the fill.
+      &:hover {
+        background: #a52f0a;
+        border-color: #a52f0a;
+        transform: translateY(s.$hover-lift);
+        box-shadow: s.$shadow-brand;
+      }
       &.is-saved {
         background: s.$secondary-accessible;
         border-color: s.$secondary-accessible;
-        &:hover { background: #006065; border-color: #006065; }
+        &:hover {
+          background: #006065;
+          border-color: #006065;
+          box-shadow: s.$shadow-teal;
+        }
       }
     }
     .print-recipe-btn .loading {
