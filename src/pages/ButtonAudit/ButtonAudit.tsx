@@ -18,6 +18,7 @@ const SEV: Record<Severity, { label: string; color: string; bg: string }> = {
 const INK = '#303841'
 const MUTED = '#8a8f98'
 const LINE = '#ececec'
+const GREEN = '#2f855a'
 
 const Pill: FC<{ sev: Severity; children?: React.ReactNode }> = ({ sev, children }) => (
   <span
@@ -59,26 +60,39 @@ const Card: FC<{ children: React.ReactNode; style?: React.CSSProperties }> = ({ 
   <div style={{ border: `1px solid ${LINE}`, borderRadius: 14, background: '#fff', ...style }}>{children}</div>
 )
 
-const FindingCard: FC<{ f: Finding; n: number }> = ({ f, n }) => (
-  <Card style={{ padding: '16px 18px', borderLeft: `4px solid ${SEV[f.severity].color}` }}>
-    <div style={{ display: 'flex', gap: 10, alignItems: 'baseline', flexWrap: 'wrap' }}>
-      <span style={{ fontWeight: 800, color: MUTED, fontSize: 13 }}>#{n}</span>
-      <Pill sev={f.severity} />
-      <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, flex: 1, minWidth: 240 }}>{f.title}</h3>
-    </div>
-    <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '6px 12px', marginTop: 12, fontSize: 13.5, lineHeight: 1.5 }}>
-      <span style={{ color: '#2f855a', fontWeight: 700 }}>Peers</span><span>{f.peers}</span>
-      <span style={{ color: f.severity === 'ok' ? MUTED : SEV[f.severity].color, fontWeight: 700 }}>Outlier</span><span>{f.offender}</span>
-      <span style={{ color: INK, fontWeight: 700 }}>Fix</span><span>{f.recommend}</span>
-    </div>
-    <div style={{ marginTop: 10, fontSize: 11.5, color: MUTED, fontFamily: 'ui-monospace, Menlo, monospace' }}>{f.refs}</div>
-  </Card>
-)
+const FindingCard: FC<{ f: Finding; n: number }> = ({ f, n }) => {
+  const resolved = f.status === 'resolved'
+  const accent = resolved ? GREEN : SEV[f.severity].color
+  return (
+    <Card style={{ padding: '16px 18px', borderLeft: `4px solid ${accent}`, opacity: resolved ? 0.9 : 1 }}>
+      <div style={{ display: 'flex', gap: 10, alignItems: 'baseline', flexWrap: 'wrap' }}>
+        <span style={{ fontWeight: 800, color: resolved ? GREEN : MUTED, fontSize: 13 }}>{resolved ? '✓' : `#${n}`}</span>
+        {resolved ? (
+          <span style={{ display: 'inline-block', padding: '2px 9px', borderRadius: 999, fontSize: 11.5, fontWeight: 700, color: GREEN, background: '#eaf6ef', whiteSpace: 'nowrap' }}>
+            Resolved · was {SEV[f.severity].label}
+          </span>
+        ) : (
+          <Pill sev={f.severity} />
+        )}
+        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, flex: 1, minWidth: 240 }}>{f.title}</h3>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '6px 12px', marginTop: 12, fontSize: 13.5, lineHeight: 1.5 }}>
+        <span style={{ color: GREEN, fontWeight: 700 }}>{resolved ? 'System' : 'Peers'}</span><span>{f.peers}</span>
+        <span style={{ color: resolved ? MUTED : SEV[f.severity].color, fontWeight: 700 }}>{resolved ? 'Was' : 'Outlier'}</span><span>{f.offender}</span>
+        <span style={{ color: INK, fontWeight: 700 }}>{resolved ? 'Fixed' : 'Fix'}</span><span>{resolved ? f.recommend.replace(/^FIXED:\s*/, '') : f.recommend}</span>
+      </div>
+      <div style={{ marginTop: 10, fontSize: 11.5, color: MUTED, fontFamily: 'ui-monospace, Menlo, monospace' }}>{f.refs}</div>
+    </Card>
+  )
+}
 
 const ButtonAudit: FC = () => {
   const [famFilter, setFamFilter] = useState<Family | 'All'>('All')
   const [sevFilter, setSevFilter] = useState<Severity | 'All'>('All')
   const [q, setQ] = useState('')
+
+  const openFindings = FINDINGS.filter(f => f.status === 'open')
+  const resolvedFindings = FINDINGS.filter(f => f.status === 'resolved')
 
   const counts = useMemo(() => {
     const bySev: Record<string, number> = {}
@@ -113,22 +127,24 @@ const ButtonAudit: FC = () => {
       `}</style>
 
       <header style={{ marginBottom: 8 }}>
-        <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: '#ff5722' }}>Design audit · temporary</div>
-        <h1 style={{ margin: '6px 0 0', fontSize: 34, fontWeight: 800, letterSpacing: '-.02em' }}>Clickables &amp; buttons — full-app audit</h1>
+        <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: '#ff5722' }}>Design audit · second pass · temporary</div>
+        <h1 style={{ margin: '6px 0 0', fontSize: 34, fontWeight: 800, letterSpacing: '-.02em' }}>Clickables &amp; buttons — the second look</h1>
         <p style={{ margin: '10px 0 0', color: MUTED, fontSize: 15, lineHeight: 1.55, maxWidth: 820 }}>
-          An outside-eye pass over every clickable in the app — buttons, links, icon controls, toggles, cards,
-          nav items — cataloguing its <strong>text &amp; icon format</strong>, <strong>base style</strong>, <strong>hover behaviour</strong>,
-          and how likely it is to be an <strong>outlier</strong> against its peers. Read straight from the SCSS; no assumptions.
-          Reachable at <code>/button-audit</code>; deleted before the PR. Not a to-do list — a map of where the button system is and isn’t coherent.
+          A fresh outside-eye pass over every clickable in the app — buttons, links, icon controls, toggles, cards,
+          nav items — taken <strong>after</strong> the three-tier consistency fix. Five independent surveyors re-read the
+          current code for each control’s <strong>text &amp; icon format</strong>, <strong>base style</strong>, <strong>hover behaviour</strong>,
+          and <strong>outlier likelihood</strong> against the canonical <code>.btn</code> language — with no reference to the first pass.
+          The structural inconsistencies that audit found are closed; what’s left is the honest remaining tail. Read straight
+          from the SCSS. Reachable at <code>/button-audit</code>; deleted before the PR.
         </p>
       </header>
 
       {/* Coverage strip */}
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', margin: '22px 0 34px' }}>
-        <Stat big={String(INVENTORY.length)} label="controls catalogued" />
-        <Stat big={String(FINDINGS.length)} label="systemic findings" />
-        <Stat big={String(flagged)} label="critical/high/medium outliers" />
-        <Stat big="10" label="surfaces swept" />
+        <Stat big={String(INVENTORY.length)} label="controls re-catalogued" />
+        <Stat big={String(resolvedFindings.length)} label="findings closed by the pass" />
+        <Stat big={String(openFindings.length)} label="findings still open" />
+        <Stat big={String(flagged)} label="high/medium outliers remain" />
         {SEV_ORDER.map(s => (
           <button key={s} className="ba-chip" onClick={() => { setSevFilter(sevFilter === s ? 'All' : s); const el = document.getElementById('inventory'); el?.scrollIntoView({ behavior: 'smooth' }) }}
             style={{ border: `1px solid ${sevFilter === s ? SEV[s].color : LINE}`, background: sevFilter === s ? SEV[s].bg : '#fff', borderRadius: 12, padding: '10px 14px', textAlign: 'left', cursor: 'pointer' }}>
@@ -156,10 +172,17 @@ const ButtonAudit: FC = () => {
         </Card>
       </Section>
 
-      {/* Findings */}
-      <Section title="Systemic findings" blurb="Cross-cutting inconsistencies, ranked by severity. Each pairs what the peer group does against the outlier and a fix.">
+      {/* Findings — still open */}
+      <Section title="Still open" blurb="What a fresh critical eye flags on the post-fix code, ranked by severity. No criticals remain — the structural problems are closed — so this is the tail: two focus-ring gaps the fix didn’t reach, the nav-as-its-own-system boundary, and a set of mediums and polish.">
         <div style={{ display: 'grid', gap: 12 }}>
-          {FINDINGS.map((f, i) => <FindingCard key={f.title} f={f} n={i + 1} />)}
+          {openFindings.map((f, i) => <FindingCard key={f.title} f={f} n={i + 1} />)}
+        </div>
+      </Section>
+
+      {/* Findings — closed by the pass */}
+      <Section title="Closed by the consistency pass" blurb="The first audit’s findings that the three-tier fix resolved — each shown with its ‘before’ so you can confirm it on the live app. These are no longer outliers; they’re here as the record of what moved.">
+        <div style={{ display: 'grid', gap: 12 }}>
+          {resolvedFindings.map((f, i) => <FindingCard key={f.title} f={f} n={i + 1} />)}
         </div>
       </Section>
 

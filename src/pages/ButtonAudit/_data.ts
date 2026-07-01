@@ -2,10 +2,13 @@
 // ButtonAudit.tsx) before the PR opens; never ships. See docs/design/
 // button-hover-audit.md for the shipped hover-motion work this audits against.
 //
-// Compiled from a full-app sweep of every clickable (buttons, links, styled
-// divs, toggles) across the navbar, Home, /recipes, single-recipe, add/edit,
-// account, settings, public profile, auth, and company/legal pages. Base +
-// hover are read straight from the SCSS; token values resolved from helpers.scss.
+// SECOND PASS. This is a re-audit taken AFTER the three-tier consistency fix
+// (branch feat/button-consistency-fixes). Every clickable was re-read from the
+// CURRENT code by five independent surveyors — global+navbar, Home+/recipes,
+// single-recipe+reviews, add-recipe+forms, account/settings/auth — with no
+// reference to the first pass. Base + hover are read straight from the SCSS;
+// token values resolved from helpers.scss. Findings are split into what the
+// pass CLOSED and what a fresh eye still flags (ranked).
 
 export type Severity = 'critical' | 'high' | 'medium' | 'low' | 'ok'
 
@@ -39,16 +42,19 @@ export interface Clickable {
 
 // ── Canonical reference: the shipped .btn language (renders live on the page) ──
 export const CANON = [
-  { cls: 'btn btn--primary', label: 'Primary', note: 'orange fill · brighten 1.06 + lift −2px + brand glow' },
-  { cls: 'btn btn--outline', label: 'Outline', note: 'white · border→ink + lift −2px + elevation-2' },
+  { cls: 'btn btn--primary', label: 'Primary', note: 'orange fill · brighten 1.06 + lift -2px + brand glow' },
+  { cls: 'btn btn--outline', label: 'Outline', note: 'white · border->ink + lift -2px + elevation-2' },
   { cls: 'btn btn--ghost', label: 'Ghost', note: 'transparent · colour only, stays flat' },
-  { cls: 'btn btn--danger', label: 'Danger', note: 'red outline → red fill + lift + danger glow' },
-  { cls: 'btn btn--danger-solid', label: 'Danger solid', note: 'red fill → DARKER red + lift + danger glow' },
+  { cls: 'btn btn--danger', label: 'Danger', note: 'red outline -> red fill + lift + danger glow' },
+  { cls: 'btn btn--danger-solid', label: 'Danger solid', note: 'red fill -> DARKER red + lift + danger glow' },
 ]
 
-// ── Ranked systemic findings (the designer's critique) ───────────────────────
+// ── Findings ─────────────────────────────────────────────────────────────────
+// status 'resolved' = closed by the three-tier consistency pass (shown as the
+// "before" so you can confirm it); status 'open' = still flagged on this pass.
 export interface Finding {
   severity: Severity
+  status: 'open' | 'resolved'
   title: string
   peers: string
   offender: string
@@ -57,321 +63,413 @@ export interface Finding {
 }
 
 export const FINDINGS: Finding[] = [
+  // ─────────────────────────── STILL OPEN (ranked) ───────────────────────────
+  {
+    severity: 'high',
+    status: 'open',
+    title: 'Two focus-ring gaps slipped through the focus-ring fix (WCAG 2.4.7)',
+    peers:
+      'The Tier-2 pass restored a visible focus ring on the compact inputs, the description textarea, the image dropzone, and every remove/retry X — the global button:focus-visible ring covers everything else.',
+    offender:
+      'The click-to-edit rows for EVERY ingredient and EVERY instruction still have none: Item.scss sets outline:none on .item-btn and .label-text-container, and at .item .item-btn specificity (0,2,0) that beats the global ring (0,1,1) with no :focus-visible restore. The single-recipe servings input also strips its ring (outline:none) with no replacement. Keyboard focus is invisible on the primary edit control of the recipe builder.',
+    recommend:
+      'Add `&:focus-visible { @include s.outline(); }` to .item-btn / .label-text-container (or drop the resting outline:none), and give .serv-input a focus ring. One-line fixes; the hardest part was that they hid behind a higher-specificity file the Tier-2 sweep did not touch.',
+    refs: 'Item.scss:22 · Item.scss:48 · SingleRecipe.scss:319',
+  },
+  {
+    severity: 'medium',
+    status: 'open',
+    title: 'The navbar is still a second motion system — and internally inconsistent',
+    peers:
+      'The .btn / load-more family eases every property together over one $hover-timing (0.15s ease) and surfaced controls lift -2px.',
+    offender:
+      'No nav control speaks that language. The whole bar runs 0.12s LINEAR, the footer links 0.12s ease, autocomplete 0.1s, and several rows (account items, profile header, footer wordmark) have no transition at all — they snap. The two Sign-up CTAs disagree on the AA fix (desktop fills $primary-accessible, mobile fills vivid $primary) AND on shape (pill vs 10px); the mobile Log-in animates border/colour but omits them from its transition list, so its hover snaps. This is the deferred "nav is its own dialect" boundary — still undocumented, and now shown to be fragmented even inside itself.',
+    recommend:
+      'Make the call explicitly: either document the nav as a deliberate separate system (defensible) or fold the two button-analogues (Sign up / Create) onto the shared timing + lift. Either way, reconcile mobile vs desktop Sign-up (one fill token, one radius) and fix the snapping transition lists.',
+    refs: 'DesktopNav.scss · NavMenu.scss:218/229 · Footer.scss:109',
+  },
+  {
+    severity: 'medium',
+    status: 'open',
+    title: 'Prominent controls that still give no hover feedback',
+    peers: 'Almost every actionable control now responds to the cursor (colour and/or lift).',
+    offender:
+      'Zero-hover holdouts remain, several beside peers that DO respond: the nav Prepify wordmark (the footer wordmark darkens on hover — same link, two behaviours), the Beta tag button, the desktop account trigger (its neighbour the Saved icon tints), the mobile account-identity row (the desktop equivalent tints), the Settings toggle switches, and the CreateUsername "Cancel and log out".',
+    recommend:
+      'Give each a hover state (or, for the toggles, accept state-change-only but confirm that is deliberate). The brand wordmark reading two ways across surfaces is the one to fix first.',
+    refs: 'Navbar.scss:149 · DesktopNav.scss:270 · controls.scss:143 · CreateUsername.scss:11',
+  },
+  {
+    severity: 'medium',
+    status: 'open',
+    title: 'Destructive actions are red-at-rest now, but still three different shapes',
+    peers:
+      'Settings "Delete account" is the canonical .btn--danger: red outline -> red fill + lift + $shadow-danger.',
+    offender:
+      'The pass made every Delete red at rest on the one $error-red token (good) — but the shapes never converged. Collection Delete is a BORDERLESS ghost-danger (tint-only hover, no lift); draft Delete carries a SOFT RED BORDER (tint-only hover, no lift); the owner-recipe Delete rests as a neutral grey pill (no red until hover) and its hover text is the fill token #eeeeee, not white. So the two account Deletes do not even match each other, and none reaches the system danger.',
+    recommend:
+      'Route destructive buttons through .btn--danger (keep the quiet ghost-danger only for low-stakes inline links like a review Delete). At minimum make the two account Deletes identical.',
+    refs: 'controls.scss:235 · SavedRecipes.scss:323 · Drafts.scss:153 · RecipeControls.scss:94',
+  },
+  {
+    severity: 'medium',
+    status: 'open',
+    title: 'The primary Search button is a non-semantic <div>',
+    peers: 'Primary actions are <button>/<a> with a focus ring and keyboard activation.',
+    offender:
+      'The Search submit is a <div onClick> wearing btn btn--primary — no role, no tabIndex, no focus ring, not Space/Enter-activatable on its own. The form’s Enter-to-submit is the only keyboard path; the visible orange control itself is inert to assistive tech. (Both the navbar and the Home/recipes surveyors independently flagged this.)',
+    recommend:
+      'Make it a real <button type="submit"> (or add role=button + tabIndex + key handler + focus ring). It already looks like a primary button; it should behave like one.',
+    refs: 'SearchRecipesInput.tsx:240',
+  },
+  {
+    severity: 'medium',
+    status: 'open',
+    title: 'Off-token teal text still fails AA where the link fix did not reach',
+    peers: 'Inline text links were unified on the accessible teal $secondary-accessible #00787e.',
+    offender:
+      'Control/label teals were left behind and sit below AA: the recipe diet-tag chips, the "Made It" toggle, and the RecipeNotFound contact link use raw $secondary #00adb5; the Settings back link and the Settings outline-button hover text hardcode #057780; the Help SELECTED topic-chip label uses #00adb5 as text on a pale tint. Three teal shades where the link family has exactly one.',
+    recommend:
+      'Extend the #00787e token to these control/label teals (or add an accessible-teal variable and use it everywhere). Delete the #057780 literals.',
+    refs: 'SingleRecipe.scss:448/468 · RecipeNotFound.scss:101 · Settings.scss:99 · controls.scss:227 · Help.scss:96',
+  },
+  {
+    severity: 'medium',
+    status: 'open',
+    title: 'A local .ghost still shadows the system ghost — and hovers two ways',
+    peers: '.btn--ghost is transparent, muted, colour->ink on hover, and deliberately flat.',
+    offender:
+      'HomeCookSuggestion keeps a local .ghost that is a GREY FILL (#f0f1f3, ink text) — the opposite of the system ghost, and a name collision with it. It lifts + gains elevation-2 inside the modal card but goes flat (bg-only) in the error state: one class, two hovers, off-token greys. (The sibling .primary was correctly folded onto .btn--primary; .ghost was left.)',
+    recommend: 'Rename it (e.g. .cook-secondary) or compose .btn--outline; pick one hover; tokenise the greys.',
+    refs: 'HomeCookSuggestion.scss:120 · HomeCookSuggestion.scss:145',
+  },
+  {
+    severity: 'medium',
+    status: 'open',
+    title: 'Recipe-navigation hovers still fork; "See all" ships in two forms',
+    peers: 'Every recipe card/tile lifts (-4px + elevation-4) over $hover-timing.',
+    offender:
+      'The Home meal-column rows hover to a warm chip #fbf7f2 on an off-token 0.12s — the only recipe-nav hover not on the lift metaphor or the shared timing. And "See all" appears twice: chevron + $text-base in section headers vs chevron-less + $text-sm in the meal columns — same words, two treatments.',
+    recommend: 'Give the meal rows the same lift (or a tokenised tint on $hover-timing); pick one "See all" treatment.',
+    refs: 'Home.scss:154 · Home.scss:138 · Home.tsx:47',
+  },
+  {
+    severity: 'medium',
+    status: 'open',
+    title: '"Half-outline" buttons keep opting out of the lift',
+    peers: '.btn--outline hovers border->ink + lift -2px + elevation-2.',
+    offender:
+      'Several outline-family controls take part of that and drop the rest: /recipes Filters + Sort recolour to orange and stay flat (and disagree at rest — Filters on a dark-ink border, Sort on grey), the drawer Reset stays flat, Account "Edit profile" recolours to orange and stays flat while its own sibling icon buttons lift, the owner Edit recolours to brand not ink and stays flat, and the Settings outline buttons hover teal (not ink). Each is defensible alone; together the outline family has no single hover.',
+    recommend: 'Decide whether outlines lift; apply it uniformly. If the compact toolbar deliberately stays flat, at least align the resting borders and the hover target.',
+    refs: 'Recipes.scss:92/144/413 · Account.scss:215 · RecipeControls.scss:74 · controls.scss:218',
+  },
+  {
+    severity: 'low',
+    status: 'open',
+    title: 'Modal close X buttons give no or near-no hover',
+    peers: 'Icon buttons compose a colour variant (.btn--icon + a hover), or at least tint on hover.',
+    offender:
+      'The owner delete-modal close is a bare .btn with no colour/--icon variant, so it has ZERO hover (and md pill padding wraps a 30px icon). The Home cook-modal close only swaps its translucent bg to solid white. Both read as static.',
+    recommend: 'Give modal closes the .btn--icon + ghost hover the Settings/Account closes already use.',
+    refs: 'RecipeControls.scss:144 · HomeCookSuggestion.scss:17',
+  },
+  {
+    severity: 'low',
+    status: 'open',
+    title: 'Off-scale radii and a dead hidden control',
+    peers: 'Radii come from the $radius-* scale; controls that render are styled on-system.',
+    offender:
+      'ingr-remove + instr-remove use border-radius:7px (off the 4/6/8 scale), the Beta tag 5px, and the RecipeNotFound CTA a 10px rounded-rect where every other primary CTA is a pill. Separately, the review sort dropdown is dead weight: mounted only for an on-mount setSort side-effect, hidden via display:none, styled with hardcoded #eeeeee + pure-black text + a null:null boxShadow — it would be the ugliest control on the page if it ever showed.',
+    recommend: 'Snap the radii to the scale; make the not-found CTA a pill; replace the hidden dropdown with a plain default-sort constant.',
+    refs: 'IngredientList.scss:161 · Navbar.scss:162 · RecipeNotFound.scss:75 · ReviewFilters.tsx:12',
+  },
+  {
+    severity: 'low',
+    status: 'open',
+    title: 'Smaller drift: focus-ring colour, snap-timing, dead code, grammar',
+    peers: 'One focus ring, one timing token, one label voice.',
+    offender:
+      'The UserRatings row and the PublicProfile tile use a bespoke ORANGE 2px focus ring where everything else uses the shared blue @include outline(). Servings +/- hard-fill orange with NO transition; several menu rows/footer wordmark snap. Item.scss has a malformed `button: {}` nested block that compiles to garbage, and the DesktopNav Create base rule is dead (the quiet skin always wins). Labels drift across surfaces: nav "Log in / Sign up" vs footer "Sign in / Create account". The footer "Report a bug" hovers to the admin cool-blue #2563eb in the consumer footer.',
+    recommend: 'Pick one focus-ring colour; add the timing token to the snappers; delete the dead blocks; align label grammar; move the bug-report hover off the admin palette.',
+    refs: 'UserRatings.scss:23 · PublicProfile.scss:194 · Item.scss:10 · Footer / BugReportModal.scss',
+  },
+
+  // ────────────────────── CLOSED BY THE CONSISTENCY PASS ──────────────────────
   {
     severity: 'critical',
-    title: '“Load more” exists as three different components',
-    peers:
-      'The /recipes grid load-more is a real pill: outline → turns orange, lifts −2px, gains a brand glow, carries a chevron.',
+    status: 'resolved',
+    title: '"Load more" was three different components',
+    peers: 'One shared .load-more-btn: white pill, chevron, orange border + lift + brand glow on hover.',
     offender:
-      'The global .load-more-btn (Saved, Ratings, Your Recipes, Public Profile) is a 250×45 near-square box with a grey→grey border hover, no orange, no glow. The reviews “More Reviews” button is a .btn--ghost whose only hover is an underline — no colour, no lift, no icon. Three separate definitions of the same control (index.scss, Recipes.scss, RatingsAndReviews.scss).',
-    recommend:
-      'Collapse all “load more” onto one treatment (the /recipes pill is the strongest candidate). Normalise the label grammar too — currently “Load More Recipes”, “Load More Reviews”, and lowercase “Load more recipes” all coexist.',
-    refs: 'index.scss:229 · Recipes.scss:238 · RatingsAndReviews.scss:207',
+      'Was a 250x45 grey box (index.scss), a separate /recipes pill, and a ghost "More Reviews" that only underlined — three definitions, three grammars.',
+    recommend: 'FIXED: collapsed onto one self-centering .load-more-btn used by /recipes, reviews, Saved, Ratings, Your Recipes, and Public Profile; labels normalised to sentence case + chevron.',
+    refs: 'index.scss:229',
   },
   {
     severity: 'critical',
-    title: 'The primary CTA is hand-built in six places',
-    peers:
-      'The design system ships one orange CTA: .btn--primary (fill + brighten 1.06 + lift + $shadow-brand).',
+    status: 'resolved',
+    title: 'The primary CTA was hand-built in six places',
+    peers: 'One orange CTA language: fill + brighten 1.06 + lift + $shadow-brand.',
     offender:
-      '.about-btn-primary (always-on $shadow-brand-strong, not hover-only), .empty-state__cta (not even on the .btn base), Home’s .primary, the summary-bar .submit-btn (text colour #eee, not white), and the draft .resume (brighten + glow but never lifts) each redeclare the orange CTA and quietly drift on shadow, text colour, and whether they lift.',
+      'about-btn-primary (always-on strong shadow), empty-state cta (not on .btn), Home .primary, the summary submit (text #eee), and draft Resume (never lifted) each drifted.',
     recommend:
-      'Route every orange CTA through .btn--primary. Delete the bespoke copies; where a size differs, add a size modifier rather than a new class.',
-    refs: 'About.scss:70 · EmptyState.scss:46 · HomeCookSuggestion.scss:119 · AddRecipeSummaryBar.scss:109 · Drafts.scss:124',
+      'FIXED: EmptyState composes .btn--primary; Home .primary -> .btn--primary; About shadow is hover-only; summary text is white; Resume lifts.',
+    refs: 'EmptyState.scss · About.scss:70 · AddRecipeSummaryBar.scss · Drafts.scss:124',
   },
   {
     severity: 'high',
-    title: 'Two hover “languages” never reconciled: .btn Lift vs the navbar dialect',
-    peers:
-      'Everything on the .btn system lifts −2px, eases every property over one 0.15s token, and lightens fills with brightness(1.06).',
+    status: 'resolved',
+    title: 'Drawer + toolbar controls gave no hover feedback',
+    peers: 'Every drawer/toolbar control now responds.',
     offender:
-      'Every navbar control speaks a different dialect: no lift, no shadow, 0.12s linear, and either an opacity/colour shift or a hard-coded brightness(1.07). The nav CTAs are pill-shaped “to match” the system but share none of its motion — they read as a separate component family.',
+      'The drawer "Show recipes" primary had no hover at all; Reset, the close X, the active filter chips, and "Clear all" were inert.',
     recommend:
-      'Decide whether the nav is deliberately its own system (defensible) — and if so, document that boundary. If not, adopt the shared timing + lift on the nav CTAs.',
-    refs: 'DesktopNav.scss · NavMenu.scss',
+      'FIXED: "Show recipes" brightens + lifts + glows like any primary; Reset/close/chips/Clear all all hover; Filters + Sort share one orange-border language.',
+    refs: 'Recipes.scss:428/413/207',
   },
   {
     severity: 'high',
-    title: 'Fill-on-hover runs in two opposite directions',
-    peers:
-      'The orange primary fill LIGHTENS on hover (brightness 1.06 — the shipped decision).',
-    offender:
-      '.btn--danger-solid DARKENS on hover (swaps to $error-red-hover). So the two solid fills in the same system move in opposite tonal directions on the same gesture. Separately, three “brighten” magnitudes exist for the identical gesture: canonical 1.06 vs 1.07 on both signup CTAs and the nav Create button.',
-    recommend:
-      'Pick one fill-hover direction (lighten) and one magnitude ($hover-brighten). If danger must darken, treat that as an explicit, documented exception.',
-    refs: 'index.scss:208 · DesktopNav.scss:254 · NavMenu.scss:226',
-  },
-  {
-    severity: 'high',
-    title: 'Primary CTAs and drawer controls that give NO hover feedback',
-    peers: 'Every surfaced button in the system responds to the cursor (colour and/or lift + shadow).',
-    offender:
-      'The filters drawer’s “Show recipes” apply — a solid orange primary CTA — has no hover rule at all. So do the drawer Reset, the drawer close ✕, the active filter chips, “Clear all”, both modal close ✕ buttons, the settings toggle switches, the Prepify logo, the Beta tag, and the account-menu trigger. Several are high-traffic primary controls whose only affordance is the cursor.',
-    recommend:
-      'Give every actionable control a hover state. The drawer apply especially should read like any other .btn--primary.',
-    refs: 'Recipes.scss:432/423/389 · Recipes.scss:203/214 · DesktopNav.scss:270 · controls.scss:143',
-  },
-  {
-    severity: 'high',
-    title: 'Focus-visible is missing on entire input + control families',
-    peers: 'The global button/a rules add a focus ring, and .btn inherits it.',
-    offender:
-      'The compact FormInput variant (every AddRecipe field: title, servings, times, ingredient/instruction entry, inline edits) has no focus ring; the description textarea sets outline:none with no replacement (a WCAG failure); drag-handle divs are non-focusable with no ring; and RatingsAndReviews.scss carries stale :focus-visible selectors targeting star markup that no longer exists.',
-    recommend:
-      'Add a visible focus indicator to the compact input variant and the textarea; make reorder handles real, focusable controls; delete the dead star-focus CSS.',
-    refs: 'FormInput.scss · RecipeFormTextArea.scss:24 · IngredientList.scss:27 · RatingsAndReviews.scss:61',
-  },
-  {
-    severity: 'high',
-    title: 'react-select brand hover is silently a no-op',
+    status: 'resolved',
+    title: 'react-select brand hover was a silent no-op (x3)',
     peers: 'Brand controls hover to an orange border.',
     offender:
-      'The cuisine / meal-type / diet selectors set control hover to { borderColor: \'primary\' } — a literal string that is not a valid CSS colour, so the intended orange border never renders. The three customStyles objects are copy-pasted, so the bug is tripled.',
+      "The cuisine/meal/diet selectors set borderColor:'primary' — a literal string, not a colour — so the hover never painted, and the three style objects were copy-pasted.",
+    recommend: 'FIXED: one shared recipeSelectStyles resolves the real token (styles.primary), so the orange hover paints; all three deduped.',
+    refs: 'recipeSelectStyles.ts',
+  },
+  {
+    severity: 'high',
+    status: 'resolved',
+    title: 'Focus-visible was missing on whole input families',
+    peers: 'Inputs show a visible focus ring.',
+    offender:
+      'The compact FormInput (every AddRecipe field) had no ring; the description textarea set outline:none with no replacement; stale star :focus-visible selectors targeted removed markup.',
     recommend:
-      'Use the real token value (or a shared style object) so the hover actually paints; dedupe the three customStyles blocks.',
-    refs: 'CuisineSelector.tsx · MealTypeSelector.tsx · DietSelector.tsx',
+      'FIXED: compact inputs + textarea get a teal :focus-visible ring; dead star selectors removed. (Two rows the sweep did not reach are now the top OPEN finding.)',
+    refs: 'FormInput.scss · RecipeFormTextArea.scss',
   },
   {
     severity: 'medium',
-    title: 'Selection-state active colour disagrees between the two nav rails',
-    peers: '“You are here” should read the same everywhere.',
-    offender:
-      'The account SegmentedNav marks the active tab ORANGE ($primary on a 10% orange tint); the Settings section nav marks active TEAL (#006065 on a secondary tint). Moving from Account to Settings, the selected-state hue flips.',
-    recommend: 'Choose one active-selection colour for segmented navigation and apply it to both rails.',
-    refs: 'Account.scss:282 · Settings.scss:34',
+    status: 'resolved',
+    title: 'The image dropzone was not a real control',
+    peers: 'Actionable elements are keyboard-operable with a focus ring.',
+    offender: 'The AddRecipe dropzone was a div with onClick — no role, no keyboard, no focus; its remove-X carried a dead .option-btn class.',
+    recommend: 'FIXED: role=button + tabIndex + Enter/Space handler + focus ring; hexes tokenised; dead class gone.',
+    refs: 'ImagePicker.tsx',
   },
   {
     severity: 'medium',
-    title: 'Inline text links use three different colours for one role',
-    peers: 'An inline text link is a single role and should read as one colour.',
-    offender:
-      'Auth/Help links are teal #00adb5; the 404 support link is teal #00787e (a visibly different shade); legal-body links are orange #ff5722. Three colours for “inline text link”, two of them near-identical teals on white.',
-    recommend: 'Standardise inline link colour to one token; if legal pages want orange, make that a deliberate, documented variant.',
-    refs: 'FormStyles.scss:144 · 404.scss:88 · LegalDocument.scss:78',
+    status: 'resolved',
+    title: 'Segmented-nav active colour disagreed (orange vs teal)',
+    peers: '"You are here" should read one colour.',
+    offender: 'The Account rail marked active ORANGE; the Settings rail marked active TEAL — the hue flipped between the two.',
+    recommend: 'FIXED: both rails mark the active tab orange ($primary on a 10% tint).',
+    refs: 'Settings.scss:34',
   },
   {
     severity: 'medium',
-    title: 'The Filters toolbar shows three hover languages side by side',
-    peers: 'Adjacent controls in one toolbar should share a hover language.',
-    offender:
-      'Filters (outline) hovers colour-only with no lift; the Sort trigger beside it hovers to a different neutral border ($tertiary-text) with no lift; the Search submit is an orange .btn--primary that lifts + glows. Three pills, three behaviours, one row.',
-    recommend: 'Give Filters + Sort the same outline hover; decide whether the toolbar wants lift at all and apply it uniformly.',
-    refs: 'Recipes.scss:88 · Recipes.scss:132',
-  },
-  {
-    severity: 'medium',
-    title: 'Destructive actions have no single vocabulary',
-    peers:
-      'The Danger-zone delete does it right: red outline → red fill + danger glow, clearly destructive at rest.',
-    offender:
-      'Collection Delete is a ghost visually identical to Rename until hover, then shifts to a hard-coded #c0392b (not $error-red). Draft Delete reads neutral grey at rest, red only on hover. Desktop logout hovers RED; mobile logout hovers ORANGE for the same action. No consistent “this is destructive” signal.',
-    recommend: 'Adopt one destructive treatment (the .btn--danger family) and one red token; make logout read the same on both surfaces.',
-    refs: 'SavedRecipes.scss:320 · Drafts.scss:147 · DesktopNav.scss:443 · NavMenu.scss:185',
-  },
-  {
-    severity: 'medium',
-    title: '“Save” hovers two different ways depending on surface',
-    peers: 'One control should behave the same wherever it appears.',
-    offender:
-      'On the recipe card the save chip SCALES (1.08) and uses the identical hover for saved and unsaved (both go orange) — a saved card gives no distinct saved-hover cue. On the action bar the same control LIFTS and correctly differentiates (orange glow unsaved vs teal glow saved).',
-    recommend: 'Unify the save control’s hover across surfaces and preserve the saved/unsaved distinction in both.',
-    refs: 'RecipeCard.scss:79 · SingleRecipe.scss:206',
-  },
-  {
-    severity: 'medium',
-    title: 'System class names shadowed by look-alikes',
-    peers: 'The system ships .btn--primary and .btn--ghost with defined behaviours.',
-    offender:
-      'Home’s modal defines local .primary (sidesteps .btn--primary) and .ghost that is actually a solid GREY FILL, not the transparent system ghost. These shadow the BEM variants and give different hovers, fragmenting the system by name collision.',
-    recommend: 'Rename or remove the look-alike classes; compose the real variants.',
-    refs: 'HomeCookSuggestion.scss:119/128',
-  },
-  {
-    severity: 'medium',
-    title: 'Recipe links open two ways; “See all” appears in two forms',
-    peers: 'The same semantic object should get the same affordance.',
-    offender:
-      'A recipe link is a −4px card lift in the grid, but a warm background chip (#fbf7f2, one-off 0.12s) in the Home meal columns. And “See all” is chevron + $text-base in section headers vs chevron-less + $text-sm in the meal columns.',
-    recommend: 'Pick one recipe-link hover and one “See all” treatment.',
-    refs: 'Home.scss:80 · Home.scss:145 · Home.scss:45/138',
-  },
-  {
-    severity: 'medium',
-    title: 'The Google sign-in button is a weak, off-brand one-off',
-    peers: 'Secondary CTAs use .btn--outline (border + lift + shadow).',
-    offender:
-      'The Google button is hand-built (not .btn--outline); its only hover is a #fafafa background wash — no lift, no shadow, no border move — so it feels inert next to the teal submit above it. Its “GoogleColorIcon” is recoloured teal, defeating the recognisable multicolour Google mark.',
-    recommend: 'Base it on .btn--outline for consistent hover; restore the true-colour Google mark.',
-    refs: 'FormStyles.scss:254',
-  },
-  {
-    severity: 'low',
-    title: 'Bespoke fills opt out of the lift silently',
-    peers: 'Surfaced .btn variants rise −2px on hover.',
-    offender:
-      'Several filled/outline buttons (acct-edit, am-close, collection Rename/Delete, and the prominent draft Resume CTA) brighten and/or glow but never lift, because their local transition lists omit transform.',
-    recommend: 'Include transform in the transition (or compose the variant) so like buttons move alike.',
-    refs: 'Account.scss:215 · AchievementsModal.scss:37 · Drafts.scss:124',
-  },
-  {
-    severity: 'low',
-    title: 'Hard-coded hexes and off-scale radii bypass the token system',
-    peers: 'Colours come from the palette tokens; radii from the $radius-* scale.',
-    offender:
-      'Row hover #fbf7f2, modal ghost greys #f0f1f3/#e4e6e9, destructive #c0392b, teal literals #006065/#057780, radius 7px (ingr/instr remove) and 5px (Beta tag), and $primary-background (#eee) used as a button TEXT colour all sit off the token system.',
-    recommend: 'Replace with tokens; add scale entries if a value is genuinely needed.',
-    refs: 'Home.scss:154 · HomeCookSuggestion.scss · IngredientList.scss:161 · Navbar.scss:162',
-  },
-  {
-    severity: 'low',
-    title: 'The image dropzone is not a real control',
-    peers: 'Actionable elements are buttons/links with keyboard + focus.',
-    offender:
-      'The AddRecipe image picker is a div with onClick — no role="button", no keyboard handler, no focus style, and raw off-token hex (#f0f0f0/#ccc/#666). Keyboard users can’t add an image. Its remove-X carries a dead .option-btn class with no CSS.',
-    recommend: 'Make the dropzone a real button (or add role + key handlers + focus ring); drop the dead class.',
-    refs: 'ImagePicker.tsx:104',
-  },
-  {
-    severity: 'low',
-    title: 'Contrast debt is real but owner-deferred',
-    peers: 'White text on a fill should clear WCAG AA (4.5:1).',
-    offender:
-      '$primary-accessible is currently aliased back to the vivid $primary (#ff5722), so every white-on-orange fill (~3.6:1) and every small orange text link/chip fails AA today. Documented in helpers.scss as the pending brand-orange recolor.',
+    status: 'resolved',
+    title: 'Inline text links used three colours for one role',
+    peers: 'One inline-link colour.',
+    offender: 'Auth/Help teal #00adb5, 404 teal #00787e, legal-body ORANGE #ff5722 — three colours, two near-identical teals.',
     recommend:
-      'Out of scope for a hover/consistency pass — but once the accessible orange lands, re-check that $hover-brighten doesn’t dip a passing fill back below AA.',
-    refs: 'helpers.scss:26',
+      'FIXED: the text-link family is unified on the accessible teal #00787e (auth/help/404/legal). (Stray control/label teals that remain are an OPEN finding.)',
+    refs: 'FormStyles.scss · 404.scss · LegalDocument.scss',
+  },
+  {
+    severity: 'medium',
+    status: 'resolved',
+    title: 'Fill-on-hover ran at two magnitudes; logout read two ways',
+    peers: 'One brighten magnitude ($hover-brighten 1.06); one destructive colour.',
+    offender: 'Both signup CTAs and the nav Create used brightness(1.07); desktop logout hovered RED while mobile hovered ORANGE.',
+    recommend: 'FIXED: nav brighten is the canonical 1.06; both logouts hover red on the $error-red token.',
+    refs: 'DesktopNav.scss · NavMenu.scss:207',
+  },
+  {
+    severity: 'medium',
+    status: 'resolved',
+    title: 'Card "Save" gave no distinct saved cue; Edit inverted to charcoal',
+    peers: 'A toggle should differentiate its states; outline Edit should not fill dark.',
+    offender:
+      'The card save used the identical orange hover for saved + unsaved; the owner Edit hovered to a one-off charcoal #303841 fill.',
+    recommend:
+      'FIXED: the card save reads teal when saved (matching the action bar) and orange when unsaved; owner Edit now hovers to an orange outline. Google button rebuilt on the outline hover with the true-colour icon.',
+    refs: 'RecipeCard.scss:79 · RecipeControls.scss:74 · FormStyles.scss:254',
   },
 ]
 
 // ── Full inventory ───────────────────────────────────────────────────────────
-// outlier: how likely this control is an outlier vs its family peers.
+// outlier: how likely this control is an outlier vs its family peers, re-rated
+// on the CURRENT (post-fix) code. Most are now 'ok'; the flagged rows are the
+// remaining tail behind the OPEN findings above.
 export const INVENTORY: Clickable[] = [
-  // —— Navbar / global system ——
-  { name: '.btn--primary (system)', surface: 'System', loc: 'index.scss:164', element: '.btn variant', label: '—', icon: 'either', family: 'Primary fill', base: 'orange #ff5722 fill, white text, pill', hover: 'brighten 1.06 + lift −2px + $shadow-brand', outlier: 'ok', why: 'The canonical orange CTA.' },
-  { name: '.btn--outline (system)', surface: 'System', loc: 'index.scss:176', element: '.btn variant', label: '—', icon: 'either', family: 'Outline', base: 'white, grey-400 border, ink text, pill', hover: 'border→ink + lift −2px + elevation-2', outlier: 'ok' },
-  { name: '.btn--ghost (system)', surface: 'System', loc: 'index.scss:187', element: '.btn variant', label: '—', icon: 'either', family: 'Ghost', base: 'transparent, secondary-text', hover: 'colour→ink only (flat)', outlier: 'ok', why: 'Deliberately the flat member.' },
-  { name: '.btn--danger (system)', surface: 'System', loc: 'index.scss:196', element: '.btn variant', label: '—', icon: 'either', family: 'Danger', base: 'white, red border+text', hover: 'red fill + lift + $shadow-danger', outlier: 'ok' },
-  { name: '.btn--danger-solid (system)', surface: 'System', loc: 'index.scss:208', element: '.btn variant', label: '—', icon: 'either', family: 'Danger', base: 'red fill, white text', hover: 'DARKER red + lift + glow', outlier: 'medium', why: 'Only fill that darkens; primary lightens.' },
-  { name: 'Global .load-more-btn', surface: 'Global', loc: 'index.scss:229', element: 'button', label: 'Load More…', icon: 'none', family: 'Load more', base: '250×45 near-square, grey-400 border, $text-xl', hover: 'border→tertiary + lift + elevation-2', outlier: 'critical', why: 'One of three load-more definitions; no brand cue.' },
-  { name: 'Prepify logo', surface: 'Navbar', loc: 'PrepifyLogo.tsx:14', element: 'NavLink', label: 'Prepify', icon: 'none', family: 'Text link', base: 'italic 700 orange wordmark', hover: 'NONE (colour flips by nav state only)', outlier: 'high', why: 'Primary brand link with zero hover.' },
-  { name: 'Beta tag', surface: 'Navbar', loc: 'PrepifyLogo.tsx:17', element: 'button', label: 'Beta', icon: 'none', family: 'Chip / toggle', base: 'teal fill, white, 5px radius, breathing animation', hover: 'NONE', outlier: 'high', why: 'Animates forever but no hover; off-scale radius.' },
-  { name: 'Hamburger', surface: 'Navbar', loc: 'Navbar.tsx:58', element: 'button (lib)', label: 'aria: menu', icon: 'icon-only: bars', family: 'Icon-only', base: '3rd-party hamburger-react, 40px', hover: 'library internal', outlier: 'low' },
-  { name: 'Recipes link', surface: 'Navbar', loc: 'DesktopBar.tsx:58', element: 'NavLink', label: 'Recipes', icon: 'left: Recipes', family: 'Nav / segmented', base: 'muted var, 600, 0.12s', hover: 'opacity 1 + colour→accent (orange)', outlier: 'medium', why: 'Nav dialect, not .btn Lift.' },
-  { name: 'Create Recipe', surface: 'Navbar', loc: 'DesktopBar.tsx:63', element: 'NavLink', label: 'Create Recipe', icon: 'left: PlusCircle', family: 'Outline', base: 'outlined neutral pill (quiet skin)', hover: 'bg var + border→text (brightness 1.07 base)', outlier: 'medium', why: 'Bespoke vs .btn; 1.07 brighten drift.' },
-  { name: 'Log in CTA (desktop)', surface: 'Navbar', loc: 'DesktopBar.tsx:17', element: 'NavLink', label: 'Log in', icon: 'none', family: 'Outline', base: 'transparent, 2px border, pill', hover: 'border+colour→accent', outlier: 'low', why: 'Dead is-active class wired, no rule.' },
-  { name: 'Sign up CTA (desktop)', surface: 'Navbar', loc: 'DesktopBar.tsx:25', element: 'NavLink', label: 'Sign up', icon: 'none', family: 'Primary fill', base: 'orange fill (accessible token), pill', hover: 'brightness 1.07 (no lift/shadow)', outlier: 'medium', why: '1.07 ≠ canonical 1.06; no lift.' },
-  { name: 'Saved bookmark', surface: 'Navbar', loc: 'DesktopBar.tsx:83', element: 'NavLink', label: 'aria: Saved', icon: 'icon-only: Bookmark', family: 'Icon-only', base: '42px circle, muted', hover: 'bg var + colour→text', outlier: 'low' },
-  { name: 'Account menu trigger', surface: 'Navbar', loc: 'DesktopAccountMenu.tsx:81', element: 'button', label: 'aria: Account', icon: 'icon-only: avatar+caret', family: 'Icon-only', base: 'avatar 42px + chevron', hover: 'NONE (caret rotates on open only)', outlier: 'high', why: 'Primary control, no hover feedback.' },
-  { name: 'Account dropdown links ×4', surface: 'Navbar', loc: 'DesktopAccountMenu.tsx:117', element: 'NavLink', label: 'Account / Your recipes / Settings / Help', icon: 'left: various', family: 'Nav / segmented', base: 'row, 600, ink', hover: 'bg grey-200; active→vivid $primary', outlier: 'low', why: 'Active uses raw $primary, not accessible.' },
-  { name: 'Log out (desktop)', surface: 'Navbar', loc: 'DesktopAccountMenu.tsx:125', element: 'button', label: 'Log out', icon: 'left: LogOut', family: 'Danger', base: 'outlined, grey-300, 10px radius', hover: 'border+colour→RED (no fill/lift)', outlier: 'medium', why: 'Bespoke danger; red here, orange on mobile.' },
-  { name: 'Menu row ×5 (mobile)', surface: 'Navbar', loc: 'MenuLink.tsx:14', element: 'NavLink', label: 'Home/Recipes/Create/Account/Help', icon: 'left: various', family: 'Nav / segmented', base: 'row, $text-xl, 600', hover: 'bg grey-50; active→orange tint', outlier: 'low' },
-  { name: 'Account identity (mobile)', surface: 'Navbar', loc: 'AccountCard.tsx:52', element: 'NavLink', label: 'username + email', icon: 'left: avatar', family: 'Nav / segmented', base: 'tappable row', hover: 'NONE', outlier: 'medium', why: 'Tappable row with no feedback.' },
-  { name: 'Log out (mobile)', surface: 'Navbar', loc: 'AccountCard.tsx:76', element: 'button', label: 'Log out', icon: 'left: LogOut', family: 'Danger', base: 'full-width outline, 10px radius', hover: 'border+colour→ORANGE', outlier: 'medium', why: 'Same action as desktop logout but orange, not red.' },
-  { name: 'Sign up CTA (mobile)', surface: 'Navbar', loc: 'AccountCard.tsx:39', element: 'NavLink', label: 'Sign up', icon: 'none', family: 'Primary fill', base: 'vivid $primary fill (not accessible token), 10px radius', hover: 'brightness 1.07', outlier: 'high', why: 'Uses vivid orange (worse AA); square vs desktop pill.' },
-  { name: 'Log in CTA (mobile)', surface: 'Navbar', loc: 'AccountCard.tsx:32', element: 'NavLink', label: 'Log in', icon: 'none', family: 'Outline', base: 'transparent, 2px border, 10px radius', hover: 'border+colour→accent', outlier: 'low', why: 'Square corners vs desktop pill.' },
+  // —— System (the yardstick) ——
+  { name: '.btn--primary', surface: 'System', loc: 'index.scss:164', element: '.btn variant', label: '—', icon: 'either', family: 'Primary fill', base: 'orange #ff5722 fill, white, pill', hover: 'brighten 1.06 + lift -2px + $shadow-brand', outlier: 'ok', why: 'The canonical orange CTA.' },
+  { name: '.btn--outline', surface: 'System', loc: 'index.scss:176', element: '.btn variant', label: '—', icon: 'either', family: 'Outline', base: 'white, grey-400 border, ink', hover: 'border->ink + lift -2px + elevation-2', outlier: 'ok' },
+  { name: '.btn--ghost', surface: 'System', loc: 'index.scss:187', element: '.btn variant', label: '—', icon: 'either', family: 'Ghost', base: 'transparent, secondary-text', hover: 'colour->ink only (flat)', outlier: 'ok', why: 'Deliberately the flat member.' },
+  { name: '.btn--danger', surface: 'System', loc: 'index.scss:196', element: '.btn variant', label: '—', icon: 'either', family: 'Danger', base: 'white, red border+text', hover: 'red fill + lift + $shadow-danger', outlier: 'ok' },
+  { name: '.btn--danger-solid', surface: 'System', loc: 'index.scss:208', element: '.btn variant', label: '—', icon: 'either', family: 'Danger', base: 'red fill, white', hover: 'DARKER red + lift + glow', outlier: 'low', why: 'Only fill that darkens; primary lightens (documented exception).' },
+  { name: '.load-more-btn (shared)', surface: 'Global', loc: 'index.scss:229', element: 'standalone class', label: 'Load more…', icon: 'right: Chevron', family: 'Load more', base: 'white, grey-400 1.5px, pill, wt700', hover: 'colour+border->orange + lift + $shadow-brand', outlier: 'ok', why: 'One shared load-more now; the strongest treatment won.' },
+
+  // —— Navbar: desktop ——
+  { name: 'Prepify wordmark', surface: 'Navbar', loc: 'Navbar.scss:149', element: 'NavLink', label: 'Prepify', icon: 'none', family: 'Text link', base: 'italic 700 orange wordmark', hover: 'NONE', outlier: 'medium', why: 'Primary brand link with no hover; the footer wordmark darkens.' },
+  { name: 'Beta tag', surface: 'Navbar', loc: 'Navbar.scss:162', element: 'button', label: 'Beta', icon: 'none', family: 'Chip / toggle', base: 'teal fill, 5px radius, breathing pulse', hover: 'NONE', outlier: 'medium', why: 'Interactive button, no hover; off-scale 5px radius.' },
+  { name: 'Hamburger', surface: 'Navbar', loc: 'Navbar.tsx:58', element: 'button (lib)', label: 'aria: menu', icon: 'icon-only: bars', family: 'Icon-only', base: '3rd-party hamburger-react', hover: 'library default (no app CSS)', outlier: 'low' },
+  { name: 'Recipes link', surface: 'Navbar', loc: 'DesktopNav.scss:136', element: 'NavLink', label: 'Recipes', icon: 'left (<1000px)', family: 'Nav / segmented', base: 'muted, 600, 0.12s linear', hover: 'colour->accent orange', outlier: 'low', why: 'Nav dialect (0.12s linear, no lift).' },
+  { name: 'Create Recipe', surface: 'Navbar', loc: 'DesktopNav.scss:506', element: 'NavLink', label: 'Create Recipe', icon: 'left: PlusCircle', family: 'Outline', base: 'outlined neutral pill (quiet skin)', hover: 'neutral bg-fill + border->text (no lift)', outlier: 'medium', why: 'Outline twin that hovers by bg-fill, not border->ink+lift; base rule is dead code.' },
+  { name: 'Log in CTA (desktop)', surface: 'Navbar', loc: 'DesktopNav.scss:245', element: 'NavLink', label: 'Log in', icon: 'none', family: 'Outline', base: 'transparent, 2px border, pill', hover: 'border+colour->orange (no lift)', outlier: 'low', why: '2px border + orange hover, nav dialect.' },
+  { name: 'Sign up CTA (desktop)', surface: 'Navbar', loc: 'DesktopNav.scss:254', element: 'NavLink', label: 'Sign up', icon: 'none', family: 'Primary fill', base: 'accessible-orange fill, pill', hover: 'brighten 1.06 only (no lift/glow)', outlier: 'medium', why: 'Primary twin, half-hover; disagrees with mobile Sign up.' },
+  { name: 'Saved icon', surface: 'Navbar', loc: 'DesktopNav.scss:205', element: 'NavLink', label: 'aria: Saved', icon: 'icon-only: Bookmark', family: 'Icon-only', base: '42px circle, muted', hover: 'bg tint + colour->text', outlier: 'low' },
+  { name: 'Account trigger', surface: 'Navbar', loc: 'DesktopNav.scss:270', element: 'button', label: 'aria: Account menu', icon: 'icon-only: avatar+caret', family: 'Icon-only', base: 'avatar 42px + chevron', hover: 'NONE (caret rotates on open)', outlier: 'medium', why: 'No hover; the Saved icon beside it tints.' },
+  { name: 'Account dropdown items x4', surface: 'Navbar', loc: 'DesktopNav.scss:356', element: 'NavLink', label: 'Account / Your recipes / Settings / Help', icon: 'left: various', family: 'Nav / segmented', base: 'row, 600, ink', hover: 'bg grey-200 (snaps, no transition)', outlier: 'low', why: 'Un-eased; active uses vivid $primary.' },
+  { name: 'Log out (desktop)', surface: 'Navbar', loc: 'DesktopNav.scss:443', element: 'button', label: 'Log out', icon: 'left: LogOut', family: 'Danger', base: 'outline, 10px radius', hover: 'border+colour->red (no fill/lift)', outlier: 'low', why: 'Restrained danger-tint; matches mobile logout (deliberate).' },
+
+  // —— Navbar: mobile menu ——
+  { name: 'Menu rows x5', surface: 'Navbar', loc: 'MenuLink.tsx:14', element: 'NavLink', label: 'Home / Recipes / Create / Account / Help', icon: 'left: various', family: 'Nav / segmented', base: 'row, $text-xl, 10px radius', hover: 'bg grey-50; active orange tint', outlier: 'low', why: 'Nav dialect.' },
+  { name: 'Account identity (mobile)', surface: 'Navbar', loc: 'AccountCard.tsx:52', element: 'NavLink', label: 'username + email', icon: 'left: avatar', family: 'Card', base: 'tappable row', hover: 'NONE', outlier: 'medium', why: 'No feedback; the desktop equivalent tints.' },
+  { name: 'Log out (mobile)', surface: 'Navbar', loc: 'NavMenu.scss:185', element: 'button', label: 'Log out', icon: 'left: LogOut', family: 'Danger', base: 'full-width outline, 10px radius', hover: 'border+colour->red', outlier: 'ok', why: 'Now matches desktop logout.' },
+  { name: 'Log in CTA (mobile)', surface: 'Navbar', loc: 'NavMenu.scss:218', element: 'NavLink', label: 'Log in', icon: 'none', family: 'Outline', base: 'transparent, 10px radius', hover: 'border+colour->accent (SNAPS)', outlier: 'medium', why: '10px vs desktop pill; transition omits the animated props.' },
+  { name: 'Sign up CTA (mobile)', surface: 'Navbar', loc: 'NavMenu.scss:229', element: 'NavLink', label: 'Sign up', icon: 'none', family: 'Primary fill', base: 'VIVID $primary fill, 10px radius', hover: 'brighten 1.06', outlier: 'medium', why: 'Vivid orange (worse AA) vs desktop accessible; 10px vs pill.' },
+
+  // —— Search (shared) ——
+  { name: 'Search submit', surface: 'Search', loc: 'SearchRecipesInput.tsx:240', element: 'div onClick', label: 'Search', icon: 'none', family: 'Primary fill', base: '.btn--primary skin on a <div>', hover: 'brighten + lift + $shadow-brand', outlier: 'medium', why: 'Non-semantic: no role/tabindex/focus; keyboard only via form Enter.' },
+  { name: 'Autocomplete option rows', surface: 'Search', loc: 'SearchRecipesInput.tsx:287', element: 'li[role=option]', label: 'recipe title', icon: 'left: thumb', family: 'Select / combobox', base: 'row, 0.1s', hover: 'bg grey-200', outlier: 'ok', why: 'Correct APG combobox (activedescendant).' },
+  { name: 'Autocomplete footer', surface: 'Search', loc: 'SearchRecipesInput.tsx:330', element: 'button', label: 'Search for "…"', icon: 'left: Search', family: 'Text link', base: 'orange text, 700', hover: 'bg grey-200', outlier: 'low', why: 'Vivid orange on white (~2.7:1); 0.1s timing.' },
+
+  // —— Footer ——
+  { name: 'Footer wordmark', surface: 'Footer', loc: 'Footer.scss:66', element: 'Link', label: 'Prepify', icon: 'none', family: 'Text link', base: '800 orange (nav is 700)', hover: 'colour->$primary-hover (SNAPS)', outlier: 'low', why: 'Has a hover the nav wordmark lacks; different weight; un-eased.' },
+  { name: 'Footer links x12', surface: 'Footer', loc: 'Footer.scss:109', element: 'Link/a', label: 'Home / All recipes / Sign in / Create account / …', icon: 'none', family: 'Text link', base: 'secondary-text, 600, 0.12s ease', hover: 'colour->orange', outlier: 'low', why: 'Yet another timing; grammar drift ("Sign in" vs nav "Log in").' },
+  { name: 'Report a bug', surface: 'Footer', loc: 'BugReportModal.scss:9', element: 'button.btn.link', label: 'Report a bug', icon: 'none', family: 'Text link', base: '.btn base, tertiary text', hover: 'colour->admin blue #2563eb + tint', outlier: 'low', why: 'Admin cool-blue surfacing in the consumer footer.' },
 
   // —— Home ——
-  { name: 'What should I cook?', surface: 'Home', loc: 'HomeCookSuggestion.tsx:62', element: 'button.btn', label: 'What should I cook?', icon: 'left: Dice', family: 'Primary fill', base: 'orange fill, resting elevation-2', hover: 'brighten 1.06 + lift + $shadow-brand', outlier: 'ok' },
-  { name: 'View all recipes', surface: 'Home', loc: 'Home.tsx:61', element: 'Link', label: 'View all recipes', icon: 'right: Chevron', family: 'Primary fill', base: 'orange fill ($primary), no resting shadow', hover: 'brighten 1.06 + lift + $shadow-brand', outlier: 'low', why: 'Uses $primary vs sibling’s accessible token.' },
-  { name: 'See all (section header)', surface: 'Home', loc: 'Home.tsx:47', element: 'Link', label: 'See all', icon: 'right: Chevron', family: 'Text link', base: 'orange 700 $text-base', hover: 'underline only', outlier: 'medium', why: 'Divergent from meal-col See all.' },
-  { name: 'See all (meal col ×3)', surface: 'Home', loc: 'HomeBrowseByMeal.tsx:96', element: 'Link', label: 'See all', icon: 'none', family: 'Text link', base: 'orange 700 $text-sm, no chevron', hover: 'underline only', outlier: 'medium', why: 'Smaller + chevron-less twin of header See all.' },
-  { name: 'Meal row link', surface: 'Home', loc: 'HomeBrowseByMeal.tsx:17', element: 'Link', label: 'recipe title', icon: 'left: thumb', family: 'Card', base: 'row, ink, radius-lg', hover: 'bg #fbf7f2 chip (0.12s)', outlier: 'medium', why: 'Different hover than the recipe card for same object.' },
-  { name: 'Recipe card', surface: 'Home', loc: 'HomeRecipeCard.tsx:17', element: 'Link', label: 'recipe title', icon: 'left: thumb', family: 'Card', base: 'white, elevation-3, radius-2xl', hover: 'lift −4px + elevation-4', outlier: 'ok' },
-  { name: 'Modal close', surface: 'Home', loc: 'HomeCookSuggestion.tsx:74', element: 'button.btn--icon', label: 'aria: Close', icon: 'icon-only: X', family: 'Icon-only', base: '30px circle, translucent white', hover: 'bg→solid white only (faint)', outlier: 'medium', why: 'Weakest hover; sub-44 target; shrinks base icon size.' },
-  { name: 'Modal View recipe', surface: 'Home', loc: 'HomeCookSuggestion.tsx:99', element: 'Link.primary', label: 'View recipe', icon: 'none', family: 'Primary fill', base: 'local .primary orange fill', hover: 'brighten 1.06 + lift + $shadow-brand', outlier: 'high', why: 'Local .primary shadows .btn--primary.' },
-  { name: 'Modal Try another', surface: 'Home', loc: 'HomeCookSuggestion.tsx:102', element: 'button.ghost', label: 'Try another', icon: 'left: Dice', family: 'Other', base: 'local .ghost = GREY FILL (#f0f1f3)', hover: 'bg #e4e6e9 + lift + elevation-2', outlier: 'high', why: '“ghost” is a grey fill; hard-coded greys.' },
+  { name: 'What should I cook?', surface: 'Home', loc: 'HomeCookSuggestion.tsx:62', element: 'button.btn', label: 'What should I cook?', icon: 'left: Dice', family: 'Primary fill', base: 'orange fill, resting elevation-2', hover: 'brighten + lift + $shadow-brand', outlier: 'low', why: 'Hand-rolled primary on the .btn base.' },
+  { name: 'View all recipes', surface: 'Home', loc: 'Home.tsx:61', element: 'Link', label: 'View all recipes', icon: 'right: Chevron', family: 'Primary fill', base: 'orange fill ($primary)', hover: 'brighten + lift + $shadow-brand', outlier: 'ok', why: 'On-system; sourced from $primary vs accessible token (latent).' },
+  { name: 'See all (section header)', surface: 'Home', loc: 'Home.tsx:47', element: 'Link', label: 'See all', icon: 'right: Chevron', family: 'Text link', base: 'orange 700 $text-base', hover: 'underline', outlier: 'medium', why: 'Two-forms twin of the meal-col See all.' },
+  { name: 'See all (meal col x3)', surface: 'Home', loc: 'HomeBrowseByMeal.tsx:96', element: 'Link', label: 'See all', icon: 'none', family: 'Text link', base: 'orange 700 $text-sm, no chevron', hover: 'underline', outlier: 'medium', why: 'Smaller, chevron-less twin.' },
+  { name: 'Meal row link', surface: 'Home', loc: 'HomeBrowseByMeal.tsx:17', element: 'Link', label: 'recipe title', icon: 'left: thumb', family: 'Card', base: 'row, ink', hover: 'bg #fbf7f2 chip (0.12s)', outlier: 'medium', why: 'Off-token warm chip + off-timing; clashes with the card lift.' },
+  { name: 'Recipe card', surface: 'Home', loc: 'HomeRecipeCard.tsx:17', element: 'Link', label: 'recipe title', icon: 'left: thumb', family: 'Card', base: 'white, elevation-3', hover: 'lift -4px + elevation-4', outlier: 'ok' },
+  { name: 'Cook-modal close', surface: 'Home', loc: 'HomeCookSuggestion.scss:17', element: 'button.btn--icon', label: 'aria: Close', icon: 'icon-only: X', family: 'Icon-only', base: '30px circle, translucent', hover: 'bg->solid white only', outlier: 'low', why: 'No colour variant composed; bg-only hover.' },
+  { name: 'Modal View recipe', surface: 'Home', loc: 'HomeCookSuggestion.tsx:99', element: 'Link.btn--primary', label: 'View recipe', icon: 'none', family: 'Primary fill', base: 'orange fill', hover: 'brighten + lift + $shadow-brand', outlier: 'ok', why: 'Now on the real .btn--primary.' },
+  { name: 'Modal Try another', surface: 'Home', loc: 'HomeCookSuggestion.scss:120', element: 'button.ghost', label: 'Try another', icon: 'left: Dice', family: 'Other', base: 'local .ghost = GREY FILL #f0f1f3', hover: 'bg + lift + elevation-2', outlier: 'medium', why: 'Local .ghost shadows the BEM ghost; grey fill that lifts.' },
+  { name: 'Modal Try again (error)', surface: 'Home', loc: 'HomeCookSuggestion.scss:145', element: 'button.ghost', label: 'Try again', icon: 'none', family: 'Other', base: 'same local .ghost', hover: 'bg only (flat)', outlier: 'medium', why: 'Same class, different (flat) hover than Try another.' },
 
-  // —— Recipes listing ——
-  { name: 'Filters', surface: '/recipes', loc: 'Recipes.scss:88', element: 'button', label: 'Filters (+badge)', icon: 'left: Sliders', family: 'Outline', base: 'outline pill, ink border', hover: 'border+colour→orange (NO lift)', outlier: 'high', why: 'Only outline that refuses to lift; toolbar mismatch.' },
-  { name: 'Sort trigger', surface: '/recipes', loc: 'Recipes.scss:132', element: 'button', label: 'Sort: {label}', icon: 'right: Chevron', family: 'Outline', base: 'outline pill, grey-400 border', hover: 'border→tertiary only (NO lift)', outlier: 'medium', why: 'Different neutral hover than Filters beside it.' },
-  { name: 'Sort menu item', surface: '/recipes', loc: 'Recipes.scss:172', element: 'button', label: 'option', icon: 'none', family: 'Other', base: 'list row', hover: 'bg grey-200; active orange tint', outlier: 'ok' },
-  { name: 'Active filter chip', surface: '/recipes', loc: 'Recipes.scss:203', element: 'button', label: '{value} ✕', icon: 'text ✕', family: 'Chip / toggle', base: 'orange-tint chip', hover: 'NONE', outlier: 'high', why: 'Primary dismiss affordance with no hover; ✕ is text.' },
-  { name: 'Clear all', surface: '/recipes', loc: 'Recipes.scss:214', element: 'button', label: 'Clear all', icon: 'none', family: 'Text link', base: 'underlined secondary-text', hover: 'NONE', outlier: 'medium' },
-  { name: 'Load more recipes', surface: '/recipes', loc: 'Recipes.scss:238', element: 'button', label: 'Load more recipes', icon: 'right: Chevron', family: 'Load more', base: 'outline pill, min-h 3rem', hover: 'orange border+colour + lift + $shadow-brand', outlier: 'ok', why: 'The strongest load-more; the target treatment.' },
-  { name: 'Empty Clear filters', surface: '/recipes', loc: 'Recipes.scss:336', element: 'button', label: 'Clear filters', icon: 'none', family: 'Ghost', base: 'ghost pill, grey border', hover: 'border→orange + lift + elevation-2', outlier: 'low', why: 'A “ghost” that lifts (system ghost stays flat).' },
-  { name: 'Empty Browse all', surface: '/recipes', loc: 'Recipes.scss:327', element: 'button', label: 'Browse all recipes', icon: 'none', family: 'Primary fill', base: 'orange fill', hover: 'brighten + lift + $shadow-brand', outlier: 'ok' },
-  { name: 'Drawer close', surface: '/recipes', loc: 'Recipes.scss:389', element: 'button', label: '✕ (aria Close)', icon: 'text ✕', family: 'Icon-only', base: 'bare text ✕', hover: 'NONE', outlier: 'medium' },
-  { name: 'Drawer chip', surface: '/recipes', loc: 'Recipes.scss:444', element: 'button', label: 'option', icon: 'none', family: 'Chip / toggle', base: 'grey-400 border pill', hover: 'border+colour→orange; active fill', outlier: 'ok', why: 'Hovers, unlike the active filter chips.' },
-  { name: 'Drawer Reset', surface: '/recipes', loc: 'Recipes.scss:423', element: 'button', label: 'Reset', icon: 'none', family: 'Outline', base: 'outline pill', hover: 'NONE', outlier: 'medium' },
-  { name: 'Drawer Show recipes', surface: '/recipes', loc: 'Recipes.scss:432', element: 'button', label: 'Show recipes', icon: 'none', family: 'Primary fill', base: 'orange fill, flex:1', hover: 'NONE', outlier: 'high', why: 'Primary CTA with zero hover.' },
-  { name: 'Recipe card (grid)', surface: '/recipes', loc: 'RecipeCard.scss:3', element: 'article>a', label: 'recipe', icon: 'left: thumb', family: 'Card', base: 'white, elevation-3, radius-2xl', hover: 'lift −4px + elevation-4', outlier: 'ok' },
-  { name: 'Card save bookmark', surface: '/recipes', loc: 'RecipeCard.scss:79', element: 'button', label: 'aria: save', icon: 'icon-only: Bookmark', family: 'Icon-only', base: '2rem chip, translucent white', hover: 'scale 1.08 + colour→orange (same saved/unsaved)', outlier: 'medium', why: 'Scales not lifts; no distinct saved-hover.' },
+  // —— /recipes ——
+  { name: 'Filters', surface: '/recipes', loc: 'Recipes.scss:92', element: 'button', label: 'Filters (+badge)', icon: 'left: Sliders', family: 'Outline', base: 'dark-ink border pill', hover: 'border+colour->orange (no lift)', outlier: 'medium', why: 'Flat orange hover; resting ink border disagrees with Sort.' },
+  { name: 'Sort trigger', surface: '/recipes', loc: 'Recipes.scss:132', element: 'button', label: 'Sort: {label}', icon: 'right: Chevron', family: 'Select / combobox', base: 'grey-400 border pill', hover: 'border+colour->orange (no lift)', outlier: 'low', why: 'Now shares Filters hover, but rests on a grey border.' },
+  { name: 'Sort menu item', surface: '/recipes', loc: 'Recipes.scss:176', element: 'button', label: 'option', icon: 'none', family: 'Other', base: 'list row', hover: 'bg grey-200; active orange tint', outlier: 'ok' },
+  { name: 'Active filter chip', surface: '/recipes', loc: 'Recipes.scss:207', element: 'button', label: '{value} x', icon: 'text x', family: 'Chip / toggle', base: 'orange-tint chip', hover: 'tint deepens 0.10->0.18', outlier: 'ok', why: 'Now hovers.' },
+  { name: 'Clear all', surface: '/recipes', loc: 'Recipes.scss:223', element: 'button', label: 'Clear all', icon: 'none', family: 'Text link', base: 'underlined secondary-text', hover: 'colour->ink', outlier: 'ok' },
+  { name: 'Empty Clear filters', surface: '/recipes', loc: 'Recipes.scss:322', element: 'button', label: 'Clear filters', icon: 'none', family: 'Outline', base: 'grey border pill (named --ghost)', hover: 'border->orange + lift + elevation-2', outlier: 'low', why: 'Misnamed --ghost; a lifting orange outline (a 3rd outline hover).' },
+  { name: 'Empty Browse all', surface: '/recipes', loc: 'Recipes.scss:313', element: 'button', label: 'Browse all recipes', icon: 'none', family: 'Primary fill', base: 'orange fill', hover: 'brighten + lift + $shadow-brand', outlier: 'ok' },
+  { name: 'Load more recipes', surface: '/recipes', loc: 'Recipes.tsx:322', element: 'button.load-more-btn', label: 'Load more recipes', icon: 'right: Chevron', family: 'Load more', base: 'shared pill', hover: 'orange border + lift + $shadow-brand', outlier: 'ok' },
+  { name: 'Drawer close', surface: '/recipes', loc: 'Recipes.scss:375', element: 'button', label: 'aria: Close', icon: 'text x', family: 'Ghost', base: 'bare text x', hover: 'colour->ink', outlier: 'ok', why: 'Now hovers.' },
+  { name: 'Drawer chip', surface: '/recipes', loc: 'Recipes.scss:448', element: 'button', label: 'option', icon: 'none', family: 'Chip / toggle', base: 'grey-400 border pill', hover: 'border+colour->orange; active fill', outlier: 'ok' },
+  { name: 'Drawer Reset', surface: '/recipes', loc: 'Recipes.scss:413', element: 'button', label: 'Reset', icon: 'none', family: 'Outline', base: 'outline pill', hover: 'border+colour->ink (no lift)', outlier: 'low', why: 'Claims to match .btn--outline but omits the lift.' },
+  { name: 'Drawer Show recipes', surface: '/recipes', loc: 'Recipes.scss:428', element: 'button', label: 'Show recipes', icon: 'none', family: 'Primary fill', base: 'orange fill, flex:1', hover: 'brighten + lift + $shadow-brand', outlier: 'ok', why: 'Now reads as a system primary.' },
+
+  // —— RecipeCard (shared) ——
+  { name: 'Recipe card (grid)', surface: 'Shared', loc: 'RecipeCard.scss:3', element: 'article>a', label: 'recipe', icon: 'left: thumb', family: 'Card', base: 'white, elevation-3', hover: 'lift -4px + elevation-4', outlier: 'ok', why: 'Focus ring is a hard-coded #4d90fe blue (off-token).' },
+  { name: 'Card save bookmark', surface: 'Shared', loc: 'RecipeCard.scss:79', element: 'button', label: 'aria: save', icon: 'icon-only: Bookmark', family: 'Icon-only', base: '2rem chip', hover: 'scale 1.08; unsaved->orange, saved stays teal', outlier: 'ok', why: 'Now teal-when-saved; scale is the documented corner-chip affordance.' },
 
   // —— Single recipe ——
-  { name: 'Back “All recipes”', surface: 'Recipe', loc: 'SingleRecipe.scss:27', element: 'a', label: 'All recipes', icon: 'left: ArrowLeft', family: 'Text link', base: 'secondary-text 700', hover: 'colour→orange', outlier: 'ok' },
-  { name: 'Owner Edit', surface: 'Recipe', loc: 'RecipeControls.scss:74', element: 'button.btn', label: 'Edit', icon: 'left: Edit', family: 'Outline', base: 'grey-300 outline pill', hover: 'CHARCOAL fill #303841 (no lift)', outlier: 'high', why: 'Only dark-fill inversion in the app.' },
-  { name: 'Owner Delete', surface: 'Recipe', loc: 'RecipeControls.scss:91', element: 'button.btn', label: 'Delete', icon: 'left: Trash', family: 'Danger', base: 'grey-300 outline pill', hover: 'red fill (no lift)', outlier: 'medium', why: 'Danger without the danger-variant lift/glow.' },
-  { name: 'Save — unsaved', surface: 'Recipe', loc: 'SingleRecipe.scss:206', element: 'button.btn', label: 'Save', icon: 'left: Bookmark + caret', family: 'Primary fill', base: 'orange fill toggle', hover: 'brighten + lift + $shadow-brand', outlier: 'ok' },
-  { name: 'Save — is-saved', surface: 'Recipe', loc: 'SingleRecipe.scss:220', element: 'button.btn', label: 'Saved', icon: 'left: BookmarkFilled + caret', family: 'Primary fill', base: 'teal fill toggle', hover: 'brighten + lift + $shadow-teal', outlier: 'low', why: 'Good state differentiation (vs the card save).' },
-  { name: 'Rate', surface: 'Recipe', loc: 'SingleRecipe.scss:199', element: 'button.btn--outline', label: 'Rate / {n}', icon: 'left: Star', family: 'Outline', base: 'outline pill', hover: 'border→ink + lift + elevation-2', outlier: 'ok' },
-  { name: 'Print', surface: 'Recipe', loc: 'PrintRecipeBtn.tsx:23', element: 'button.btn--outline', label: 'Print', icon: 'left: Printer', family: 'Outline', base: 'outline pill', hover: 'border→ink + lift + elevation-2', outlier: 'ok' },
-  { name: 'Made It', surface: 'Recipe', loc: 'SingleRecipe.scss:468', element: 'button.btn', label: 'Made It', icon: 'none', family: 'Chip / toggle', base: 'teal-tint toggle', hover: 'bg deepens (no lift)', outlier: 'low' },
-  { name: 'Servings −/+', surface: 'Recipe', loc: 'SingleRecipe.scss:296', element: 'button', label: 'aria: ± servings', icon: 'icon-only: ±', family: 'Icon-only', base: '32px circle, white', hover: 'bg→orange + white', outlier: 'ok' },
-  { name: 'Ingredient row (check)', surface: 'Recipe', loc: 'SingleRecipe.scss:334', element: 'div[role=checkbox]', label: 'ingredient', icon: 'left: check+thumb', family: 'Chip / toggle', base: 'interactive grid row', hover: 'bg primary-background', outlier: 'low', why: 'Div, not button (keyboarded).' },
-  { name: 'Tag link', surface: 'Recipe', loc: 'SingleRecipe.scss:448', element: 'a', label: 'tag', icon: 'none', family: 'Chip / toggle', base: 'teal-tint chip link', hover: 'bg deepens', outlier: 'ok' },
-  { name: 'Star rating input ×5', surface: 'Recipe', loc: 'StarRating.tsx:86', element: 'button', label: 'aria: Rate n/5', icon: 'icon-only: star', family: 'Icon-only', base: 'reset, 24px', hover: 'JS-only fill preview', outlier: 'low', why: 'Hover via JS, no CSS fallback.' },
-  { name: 'More Reviews (load more)', surface: 'Recipe', loc: 'RatingsAndReviews.scss:207', element: 'button.btn--ghost', label: 'More Reviews', icon: 'none', family: 'Load more', base: 'ghost, ink, $text-lg', hover: 'underline only (no colour/lift/shadow)', outlier: 'critical', why: 'Third load-more definition; hovers nothing but underline.' },
+  { name: 'Back "All recipes"', surface: 'Recipe', loc: 'SingleRecipe.scss:27', element: 'a', label: 'All recipes', icon: 'left: ArrowLeft', family: 'Text link', base: 'secondary-text 700', hover: 'colour->orange', outlier: 'ok' },
+  { name: 'Servings -/+', surface: 'Recipe', loc: 'SingleRecipe.scss:296', element: 'button', label: 'aria: +/- servings', icon: 'icon-only: +/-', family: 'Icon-only', base: '32px circle, white', hover: 'bg->orange + white (NO transition)', outlier: 'low', why: 'Hard fill with no timing token (snaps).' },
+  { name: 'Servings input', surface: 'Recipe', loc: 'SingleRecipe.scss:310', element: 'input', label: 'aria: Servings', icon: 'none', family: 'Other', base: 'transparent centred', hover: 'none', outlier: 'medium', why: 'outline:none with no focus replacement (WCAG).' },
+  { name: 'Ingredient row (check)', surface: 'Recipe', loc: 'SingleRecipe.scss:334', element: 'div[role=checkbox]', label: 'ingredient', icon: 'left: check+thumb', family: 'Chip / toggle', base: 'interactive row', hover: 'bg grey-200', outlier: 'ok', why: 'Has a focus ring.' },
+  { name: 'Diet tag links', surface: 'Recipe', loc: 'SingleRecipe.scss:448', element: 'a', label: 'tag', icon: 'none', family: 'Chip / toggle', base: 'teal-tint chip, raw $secondary text', hover: 'bg deepens', outlier: 'medium', why: 'Raw #00adb5 small text fails AA; hover has no timing token.' },
+  { name: 'Save / Saved toggle', surface: 'Recipe', loc: 'SingleRecipe.scss:206', element: 'button.btn', label: 'Save / Saved', icon: 'left: Bookmark + caret', family: 'Primary fill', base: 'orange (unsaved) / teal (saved) fill', hover: 'brighten + lift + brand/teal glow', outlier: 'ok', why: 'AA-tuned; faithful primary Lift.' },
+  { name: 'Rate', surface: 'Recipe', loc: 'AddRatingBtn.tsx:20', element: 'button.btn--outline', label: 'Rate / {n}', icon: 'left: Star', family: 'Outline', base: 'outline pill', hover: 'border->ink + lift + elevation-2', outlier: 'ok' },
+  { name: 'Print', surface: 'Recipe', loc: 'PrintRecipeBtn.tsx:22', element: 'button.btn--outline', label: 'Print', icon: 'left: Printer', family: 'Outline', base: 'outline pill', hover: 'border->ink + lift + elevation-2', outlier: 'ok' },
+  { name: 'Made It', surface: 'Recipe', loc: 'SingleRecipe.scss:468', element: 'button.btn', label: 'Made It', icon: 'none', family: 'Chip / toggle', base: 'teal-tint, raw $secondary', hover: 'bg deepens (no lift)', outlier: 'medium', why: 'Opts out of the Lift its row-mates get; inaccessible teal.' },
+  { name: 'Owner Edit', surface: 'Recipe', loc: 'RecipeControls.scss:74', element: 'button.btn', label: 'Edit', icon: 'left: Edit', family: 'Outline', base: 'cream outline pill', hover: 'border+colour->orange (no lift)', outlier: 'low', why: 'Charcoal regression fixed; still flat + recolours brand not ink.' },
+  { name: 'Owner Delete', surface: 'Recipe', loc: 'RecipeControls.scss:94', element: 'button.btn', label: 'Delete', icon: 'left: Trash', family: 'Danger', base: 'neutral grey pill (identical to Edit at rest)', hover: 'red fill, text #eeeeee (no lift/glow)', outlier: 'medium', why: 'No danger telegraph at rest; opts out of danger Lift; hover text off-token.' },
+  { name: 'Delete-modal close', surface: 'Recipe', loc: 'RecipeControls.scss:144', element: 'button.btn', label: 'aria: close', icon: 'icon-only: X', family: 'Icon-only', base: '.btn, no variant', hover: 'NONE', outlier: 'medium', why: 'No colour/--icon variant -> zero hover; md padding around a 30px icon.' },
+  { name: 'Delete-modal Cancel', surface: 'Recipe', loc: 'RecipeControls.tsx:136', element: 'button.btn--outline', label: 'Cancel', icon: 'none', family: 'Outline', base: 'outline pill', hover: 'border->ink + lift + elevation-2', outlier: 'ok' },
+  { name: 'Delete-modal Delete Recipe', surface: 'Recipe', loc: 'RecipeControls.tsx:139', element: 'button.btn--danger-solid', label: 'Delete Recipe', icon: 'none', family: 'Danger', base: 'red fill', hover: 'darker red + lift + $shadow-danger', outlier: 'ok', why: 'Canonical danger — but pairs with the non-canonical toolbar Delete.' },
+  { name: 'Remove rating', surface: 'Recipe', loc: 'RatingsAndReviews.scss:78', element: 'button.btn--ghost', label: 'Remove rating', icon: 'none', family: 'Ghost', base: 'underlined ghost', hover: 'colour->ink', outlier: 'ok' },
+  { name: 'Sign In To Rate', surface: 'Recipe', loc: 'SingleRecipe.scss:617', element: 'Link', label: 'Sign In To Rate', icon: 'left: stars', family: 'Text link', base: 'orange, soft border pill', hover: 'bg tint (0.12s)', outlier: 'low', why: 'Off-token timing; Title-Case label.' },
+  { name: 'Star rating input x5', surface: 'Recipe', loc: 'StarRating.tsx:85', element: 'button x5', label: 'aria: Rate n/5', icon: 'icon-only: star', family: 'Icon-only', base: 'reset', hover: 'JS fill preview', outlier: 'ok', why: 'Real buttons; dead star :focus selectors removed.' },
   { name: 'Submit Review', surface: 'Recipe', loc: 'AddReview.tsx:69', element: 'button.btn--primary', label: 'Submit Review', icon: 'none', family: 'Primary fill', base: 'orange fill', hover: 'brighten + lift + $shadow-brand', outlier: 'ok' },
-  { name: 'Review Delete (own)', surface: 'Recipe', loc: 'RecipeReview.scss:113', element: 'button.btn--ghost', label: 'Delete', icon: 'none', family: 'Ghost', base: 'ghost link', hover: 'colour→red (bespoke)', outlier: 'low' },
-  { name: 'Delete confirm modal', surface: 'Recipe', loc: 'RecipeControls.tsx:139', element: 'button.btn--danger-solid', label: 'Delete Recipe', icon: 'none', family: 'Danger', base: 'red fill', hover: 'darker red + lift + $shadow-danger', outlier: 'ok' },
-  { name: 'RecipeNotFound CTA', surface: 'Recipe', loc: 'RecipeNotFound.scss:75', element: 'a', label: 'Browse all recipes', icon: 'none', family: 'Primary fill', base: 'orange fill, radius-lg (NOT pill)', hover: 'brighten + lift + $shadow-brand', outlier: 'medium', why: 'Lone non-pill CTA.' },
+  { name: 'Load more reviews', surface: 'Recipe', loc: 'ReviewsList.tsx:45', element: 'button.load-more-btn', label: 'Load more reviews', icon: 'right: Chevron', family: 'Load more', base: 'shared pill', hover: 'orange border + lift + $shadow-brand', outlier: 'ok', why: 'Was the bare underline ghost; now the shared pill.' },
+  { name: 'Review sort dropdown', surface: 'Recipe', loc: 'ReviewFilters.tsx:12', element: 'react-select (hidden)', label: 'Date: Newest', icon: 'right: caret', family: 'Select / combobox', base: 'hardcoded #eeeeee + pure black', hover: 'react-select default (dead null:null shadow)', outlier: 'medium', why: 'Rendered-but-hidden for an on-mount side-effect; off-token if ever shown.' },
+  { name: 'Per-review Edit / Delete / Cancel', surface: 'Recipe', loc: 'RecipeReview.scss:101', element: 'button.btn--ghost x3', label: 'Edit / Delete / Cancel', icon: 'none', family: 'Ghost', base: 'underlined ghost links', hover: 'colour->ink (Delete->red)', outlier: 'ok' },
+  { name: 'Per-review Submit', surface: 'Recipe', loc: 'RecipeReview.scss:119', element: 'button.btn--primary', label: 'Submit', icon: 'none', family: 'Primary fill', base: 'orange fill', hover: 'brighten + lift + $shadow-brand', outlier: 'ok' },
+  { name: 'Delete-review modal Cancel/Delete', surface: 'Recipe', loc: 'ConfirmDeleteReviewModal.tsx:41', element: 'btn--outline / btn--danger-solid', label: 'Cancel / Delete', icon: 'none', family: 'Danger', base: 'outline + red fill', hover: 'canonical', outlier: 'ok' },
+  { name: 'Not-found CTA', surface: 'Recipe', loc: 'RecipeNotFound.scss:75', element: 'a', label: 'Browse all recipes', icon: 'none', family: 'Primary fill', base: 'orange fill, 10px radius (NOT pill)', hover: 'brighten + lift + $shadow-brand', outlier: 'medium', why: 'Lone non-pill primary CTA.' },
+  { name: 'Not-found contact link', surface: 'Recipe', loc: 'RecipeNotFound.scss:101', element: 'Link', label: 'Contact our help team', icon: 'none', family: 'Text link', base: 'raw $secondary #00adb5', hover: 'underline', outlier: 'medium', why: 'Raw teal small text fails AA (token #00787e used nearby).' },
 
-  // —— Add / Edit recipe + forms ——
-  { name: 'Summary Submit (valid)', surface: 'AddRecipe', loc: 'AddRecipeSummaryBar.scss:109', element: 'button.btn', label: 'Create Recipe / Save Changes', icon: 'none', family: 'Primary fill', base: 'orange fill, text #eee (not white)', hover: 'brighten + lift + $shadow-brand', outlier: 'medium', why: 'Text colour is $primary-background, not white.' },
-  { name: 'Summary Submit (invalid)', surface: 'AddRecipe', loc: 'AddRecipeSummaryBar.scss:99', element: 'button.btn', label: 'Create Recipe', icon: 'none', family: 'Outline', base: 'ghost/muted — looks disabled', hover: 'colour+border shift', outlier: 'high', why: 'Looks disabled but is clickable (runs validation).' },
-  { name: 'Summary Cancel', surface: 'AddRecipe', loc: 'AddRecipeSummaryBar.scss:71', element: 'button.btn', label: 'Cancel', icon: 'none', family: 'Outline', base: 'outline, secondary-text', hover: 'colour+border shift; no disabled-hover reset', outlier: 'low', why: 'Disabled-hover handled differently than Submit.' },
-  { name: 'Draft Resume banner', surface: 'AddRecipe', loc: 'DraftResumeBanner.scss:76', element: 'button.btn', label: 'Resume', icon: 'none', family: 'Primary fill', base: 'orange fill (accessible token)', hover: 'brighten + lift + $shadow-brand', outlier: 'ok' },
-  { name: 'Draft dismiss (X)', surface: 'AddRecipe', loc: 'DraftResumeBanner.scss:114', element: 'button', label: 'aria: Dismiss', icon: 'icon-only: X', family: 'Icon-only', base: 'icon-ghost ~24px', hover: 'colour→ink', outlier: 'low', why: 'Sub-44 target.' },
-  { name: 'Image dropzone', surface: 'AddRecipe', loc: 'ImagePicker.tsx:104', element: 'div onClick', label: 'Click to select an image', icon: 'none', family: 'Other', base: 'dashed box, off-token hex', hover: 'NONE', outlier: 'high', why: 'Not a real control; no keyboard/focus.' },
-  { name: 'Image remove (X)', surface: 'AddRecipe', loc: 'ImagePicker.tsx:112', element: 'button.option-btn', label: 'aria: Remove image', icon: 'icon-only: X', family: 'Icon-only', base: '28px circle; dead .option-btn class', hover: 'bg→opaque white', outlier: 'medium', why: 'Dead class; renders over empty dropzone.' },
-  { name: 'Ingredient row (edit)', surface: 'AddRecipe', loc: 'IngredientItem.tsx:167', element: 'button.item-btn', label: 'parsed text', icon: 'left: thumb', family: 'Other', base: 'ghost row', hover: 'none on button (parent row bg)', outlier: 'medium', why: 'No per-control hover/focus; click-to-edit undiscoverable.' },
-  { name: 'Ingredient remove (X)', surface: 'AddRecipe', loc: 'IngredientList.scss:161', element: 'button.ingr-remove', label: 'aria: Remove', icon: 'icon-only: X', family: 'Icon-only', base: '30px, radius 7px (off-scale)', hover: 'colour→orange + bg white', outlier: 'low', why: 'Off-scale radius; dup of instr-remove.' },
-  { name: 'Ingredient retry', surface: 'AddRecipe', loc: 'IngredientList.scss:121', element: 'button.ingr-retry', label: 'aria: Retry', icon: 'icon-only: Alert→Rotate', family: 'Icon-only', base: 'icon, red', hover: 'colour→orange + glyph cross-fade', outlier: 'ok', why: 'Has focus ring (siblings often don’t).' },
-  { name: 'Drag handle ×2', surface: 'AddRecipe', loc: 'IngredientList.scss:27', element: 'div', label: 'aria: Drag', icon: 'icon-only: Grip', family: 'Icon-only', base: 'div, cursor grab', hover: 'colour→orange', outlier: 'medium', why: 'Div, non-focusable, no keyboard reorder.' },
-  { name: 'Add Label', surface: 'AddRecipe', loc: 'AddLabel.tsx:46', element: 'button', label: 'Add Label', icon: 'left: Plus', family: 'Text link', base: 'link/ghost, secondary-text', hover: 'colour→orange', outlier: 'ok', why: 'Has focus ring.' },
-  { name: 'Instruction remove (X)', surface: 'AddRecipe', loc: 'InstructionItem.scss:98', element: 'button.instr-remove', label: 'aria: Remove step', icon: 'icon-only: X', family: 'Icon-only', base: '30px, radius 7px', hover: 'colour→orange + bg white', outlier: 'low', why: 'Byte-dup of ingr-remove in another file.' },
-  { name: 'Compact inputs (title/servings/…)', surface: 'AddRecipe', loc: 'FormInput.tsx', element: 'input', label: 'placeholders', icon: 'none', family: 'Other', base: 'compact FormInput 40–48px', hover: 'none; NO focus ring', outlier: 'high', why: 'Every AddRecipe field focuses with no indicator.' },
-  { name: 'Edit textarea', surface: 'AddRecipe', loc: 'RecipeFormTextArea.scss:24', element: 'textarea', label: '—', icon: 'none', family: 'Other', base: 'bordered, resize none', hover: 'outline:none, NO replacement', outlier: 'high', why: 'WCAG focus-visible failure.' },
-  { name: 'Cuisine / Meal / Diet select', surface: 'AddRecipe', loc: 'CuisineSelector.tsx:63', element: 'react-select', label: 'placeholders', icon: 'right: caret', family: 'Select / combobox', base: '2px border combobox', hover: "borderColor:'primary' — INVALID string", outlier: 'high', why: 'Brand hover never renders; 3× copy-paste.' },
-  { name: 'Password show/hide', surface: 'Auth', loc: 'FormInput.tsx:106', element: 'button', label: 'aria: Show/Hide', icon: 'icon-only: Eye', family: 'Icon-only', base: 'icon-ghost', hover: 'colour→ink', outlier: 'low', why: 'tabIndex −1 (unfocusable).' },
+  // —— Add / edit recipe + forms ——
+  { name: 'Text input (compact)', surface: 'AddRecipe', loc: 'FormInput.scss:123', element: 'input', label: 'placeholders', icon: 'optional left', family: 'Other', base: 'compact 40px', hover: 'none', outlier: 'ok', why: 'Teal :focus-visible ring restored.' },
+  { name: 'Text input (md)', surface: 'Forms', loc: 'FormInput.scss:62', element: 'input', label: '—', icon: 'optional left', family: 'Other', base: '48px', hover: 'none', outlier: 'low', why: 'Rings on :focus (not :focus-visible) — minor convention drift.' },
+  { name: 'Description textarea', surface: 'AddRecipe', loc: 'RecipeFormTextArea.scss:24', element: 'textarea', label: '—', icon: 'none', family: 'Other', base: 'bordered', hover: 'none', outlier: 'ok', why: 'outline:none but teal :focus-visible ring restored (WCAG ok).' },
+  { name: 'Image dropzone (empty)', surface: 'AddRecipe', loc: 'ImagePicker.tsx:104', element: 'div[role=button]', label: 'Select an image', icon: 'none', family: 'Card', base: 'dashed box', hover: 'NONE', outlier: 'low', why: 'Real keyboard control now; only gap is no hover on a big target.' },
+  { name: 'Image remove (X)', surface: 'AddRecipe', loc: 'ImagePicker.tsx:130', element: 'button', label: 'aria: Remove image', icon: 'icon-only: X', family: 'Icon-only', base: '28px circle', hover: 'bg->opaque white', outlier: 'low', why: 'Off-token color:black; dead .option-btn is gone.' },
+  { name: 'Ingredient/Instruction row (edit)', surface: 'AddRecipe', loc: 'Item.scss:19', element: 'button.item-btn', label: 'ingredient / step text', icon: 'left: thumb/number', family: 'Card', base: 'transparent row', hover: 'row bg tint', outlier: 'high', why: 'outline:none beats the global ring, no restore -> no focus indicator (WCAG).' },
+  { name: 'Ingredient/Instruction label row', surface: 'AddRecipe', loc: 'Item.scss:43', element: 'button.label-text-container', label: 'group label', icon: 'none', family: 'Card', base: 'transparent row', hover: 'row bg tint', outlier: 'high', why: 'Same outline:none focus gap (WCAG).' },
+  { name: 'Drag handle x2', surface: 'AddRecipe', loc: 'IngredientList.scss:27', element: 'div[role=button] (dnd)', label: 'aria: Drag', icon: 'icon-only: Grip', family: 'Icon-only', base: 'div, cursor grab', hover: 'colour->orange', outlier: 'low', why: 'Keyboard reorder works; but <div> so the branded ring never applies.' },
+  { name: 'Ingredient/Instruction remove (X)', surface: 'AddRecipe', loc: 'IngredientList.scss:161', element: 'button', label: 'aria: Remove', icon: 'icon-only: X', family: 'Icon-only', base: '30px, radius 7px', hover: 'colour->orange + bg white', outlier: 'low', why: 'Off-scale 7px radius; has a focus ring.' },
+  { name: 'Ingredient retry', surface: 'AddRecipe', loc: 'IngredientList.scss:121', element: 'button', label: 'aria: Retry', icon: 'icon-only: Alert->Rotate', family: 'Icon-only', base: 'icon, red', hover: 'colour->orange + glyph swap', outlier: 'ok', why: 'Has focus ring.' },
+  { name: 'Add Label', surface: 'AddRecipe', loc: 'AddLabel.tsx:46', element: 'button', label: 'Add Label', icon: 'left: Plus', family: 'Text link', base: 'secondary-text + orange +', hover: 'colour->orange', outlier: 'low', why: 'Off-token transition (0.1s linear).' },
+  { name: 'Cuisine / Course / Diet select', surface: 'AddRecipe', loc: 'recipeSelectStyles.ts:12', element: 'react-select', label: 'placeholders', icon: 'right: caret', family: 'Select / combobox', base: '2px border combobox', hover: 'border->orange (real token now)', outlier: 'ok', why: 'Brand hover paints; all three deduped onto one style object.' },
+  { name: 'Summary Cancel', surface: 'AddRecipe', loc: 'AddRecipeSummaryBar.scss:71', element: 'button.btn', label: 'Cancel', icon: 'none', family: 'Outline', base: 'muted outline', hover: 'colour+border->ink (flat)', outlier: 'low', why: 'Bespoke muted outline, no lift.' },
+  { name: 'Summary Submit (valid)', surface: 'AddRecipe', loc: 'AddRecipeSummaryBar.scss:109', element: 'button.btn', label: 'Create Recipe / Save Changes', icon: 'none', family: 'Primary fill', base: 'orange fill, WHITE text', hover: 'brighten + lift + $shadow-brand', outlier: 'ok', why: 'Text is white now.' },
+  { name: 'Summary Submit (invalid)', surface: 'AddRecipe', loc: 'AddRecipeSummaryBar.scss:99', element: 'button.btn', label: 'Create Recipe', icon: 'none', family: 'Outline', base: 'muted — looks disabled', hover: 'colour+border shift', outlier: 'medium', why: 'Looks disabled but is clickable (runs validation); only hover reveals it.' },
+  { name: 'Draft Resume banner', surface: 'AddRecipe', loc: 'DraftResumeBanner.scss:76', element: 'button.btn', label: 'Resume', icon: 'none', family: 'Primary fill', base: 'orange fill', hover: 'brighten + lift + $shadow-brand', outlier: 'ok' },
+  { name: 'Draft banner Dismiss', surface: 'AddRecipe', loc: 'DraftResumeBanner.scss:114', element: 'button', label: 'aria: Dismiss', icon: 'icon-only: X', family: 'Icon-only', base: 'icon ghost', hover: 'colour->ink', outlier: 'ok' },
 
-  // —— Auth / company / legal ——
-  { name: 'Auth submit', surface: 'Auth', loc: 'FormStyles.scss:213', element: 'button.btn', label: 'Log in / Create account / …', icon: 'none', family: 'Primary fill', base: 'TEAL fill, white, 48px', hover: 'lift + $shadow-teal (no brighten)', outlier: 'ok', why: 'Teal CTA; backwards darken now fixed.' },
-  { name: 'Google sign-in', surface: 'Auth', loc: 'FormStyles.scss:254', element: 'button.btn', label: 'Continue/Sign up with Google', icon: 'left: GoogleColor', family: 'Outline', base: 'white, grey-300 border, 48px', hover: 'bg #fafafa only (no lift/shadow/border)', outlier: 'high', why: 'Weak inert hover; icon recoloured teal.' },
-  { name: 'Forgot password / switch links', surface: 'Auth', loc: 'FormStyles.scss:144', element: 'Link', label: 'Forgot password? / Sign up / Log in', icon: 'none', family: 'Text link', base: 'teal #00adb5, no underline', hover: 'underline', outlier: 'ok' },
-  { name: 'Remember-me checkbox', surface: 'Auth', loc: 'FormStyles.scss:114', element: 'input', label: 'Remember me', icon: 'icon-only: check', family: 'Chip / toggle', base: 'custom 18px box', hover: 'border→teal; teal focus ring', outlier: 'ok' },
-  { name: 'Cancel and log out', surface: 'Auth', loc: 'CreateUsername.scss:11', element: 'button', label: 'Cancel and log out', icon: 'none', family: 'Text link', base: 'muted grey, permanently underlined', hover: 'NONE', outlier: 'high', why: 'No hover; already underlined so no cue at all.' },
-  { name: 'About primary CTA ×2', surface: 'About', loc: 'About.scss:70', element: 'Link', label: 'Browse recipes', icon: 'right: ArrowRight', family: 'Primary fill', base: 'orange fill, always-on $shadow-brand-strong', hover: 'lift + brighten + arrow slide', outlier: 'medium', why: 'Hand-built primary; resting strong shadow vs system.' },
-  { name: 'About ghost CTA ×2', surface: 'About', loc: 'About.scss:83', element: 'Link', label: 'Create an account', icon: 'none', family: 'Ghost', base: 'transparent, grey-300 border', hover: 'lift + bg grey-50 + border lightens', outlier: 'low', why: 'Bordered “ghost” (system ghost is borderless).' },
-  { name: 'Help topic chips ×4', surface: 'Help', loc: 'Help.scss:59', element: 'button', label: 'Report a bug / Suggest / Ask / Else', icon: 'top: various', family: 'Chip / toggle', base: 'card chip, radius-2xl', hover: 'border+text→teal; selected teal ring', outlier: 'ok' },
-  { name: 'Add a subject', surface: 'Help', loc: 'Help.scss:143', element: 'button', label: '+ Add a subject', icon: 'none', family: 'Text link', base: 'teal link-text', hover: 'underline', outlier: 'ok' },
-  { name: '404 Return Home', surface: '404', loc: '404.scss:94', element: 'button.btn--primary', label: 'Return Home', icon: 'none', family: 'Primary fill', base: 'orange fill, oversized $text-2xl', hover: 'brighten + lift + $shadow-brand', outlier: 'low' },
-  { name: '404 support link', surface: '404', loc: '404.scss:88', element: 'Link', label: 'contact our support team', icon: 'none', family: 'Text link', base: 'teal #00787e (different shade)', hover: 'NONE', outlier: 'high', why: 'No hover; third teal shade.' },
-  { name: 'Legal body links', surface: 'Legal', loc: 'LegalDocument.scss:78', element: 'a', label: 'email', icon: 'none', family: 'Text link', base: 'ORANGE #ff5722', hover: 'underline', outlier: 'medium', why: 'Orange link where auth uses teal.' },
-  { name: 'EmptyState CTA', surface: 'Shared', loc: 'EmptyState.scss:46', element: 'Link/button', label: 'dynamic', icon: 'optional', family: 'Primary fill', base: 'orange fill, NOT on .btn base', hover: 'brighten + lift + $shadow-brand', outlier: 'medium', why: 'Reimplements primary by hand.' },
+  // —— Account ——
+  { name: 'Level/XP card', surface: 'Account', loc: 'Account.scss:114', element: 'button', label: 'Lv N · rank · Rewards ›', icon: 'right: › char', family: 'Card', base: 'gradient-tint card', hover: 'border + $shadow-brand (no lift)', outlier: 'medium', why: 'Card that shadows but does not lift; off-token 0.12s.' },
+  { name: 'Edit profile', surface: 'Account', loc: 'Account.scss:215', element: 'button.btn', label: 'Edit profile', icon: 'left: Edit', family: 'Outline', base: 'cream-border pill', hover: 'border+colour->orange (no lift)', outlier: 'medium', why: 'Opts out of the lift while its sibling icon buttons lift.' },
+  { name: 'Settings / Share (icon)', surface: 'Account', loc: 'Account.scss:228', element: 'button', label: 'aria', icon: 'icon-only: gear/share', family: 'Icon-only', base: '38px circle, cream border', hover: 'border+colour->orange + lift + elevation-2', outlier: 'low' },
+  { name: 'Account nav tab x4', surface: 'Account', loc: 'Account.scss:282', element: 'Link', label: 'Saved / Ratings / Your Recipes / Drafts', icon: 'left + badge', family: 'Nav / segmented', base: 'segmented rail', hover: 'bg grey-50; active ORANGE', outlier: 'ok', why: 'Active hue now agrees with Settings.' },
+  { name: 'Add a bio', surface: 'Account', loc: 'Account.scss:87', element: 'Link', label: '+ Add a bio', icon: 'none', family: 'Text link', base: 'tertiary text', hover: 'colour->orange', outlier: 'low', why: 'Prompt link hovers orange, not the area teal.' },
 
-  // —— Account / settings / public profile ——
-  { name: 'Level/XP card', surface: 'Account', loc: 'Account.scss:114', element: 'button', label: 'Lv N · rank · Rewards ›', icon: 'right: › char', family: 'Card', base: 'gradient-tint card', hover: 'border + $shadow-brand (no lift)', outlier: 'low' },
-  { name: 'Edit profile', surface: 'Account', loc: 'Account.scss:215', element: 'button.btn', label: 'Edit profile', icon: 'left: Edit', family: 'Outline', base: 'cream-border pill', hover: 'border+colour→orange (no lift)', outlier: 'medium', why: 'Bespoke outline, opts out of lift.' },
-  { name: 'Settings / Share (icon)', surface: 'Account', loc: 'Account.scss:228', element: 'button.btn--icon', label: 'aria', icon: 'icon-only: gear/share', family: 'Icon-only', base: '38px circle, cream border', hover: 'border+colour→orange + lift + elevation-2', outlier: 'ok' },
-  { name: 'Account nav tab ×4', surface: 'Account', loc: 'Account.scss:282', element: 'Link', label: 'Saved / Ratings / Your Recipes / Drafts', icon: 'left + badge', family: 'Nav / segmented', base: 'segmented rail', hover: 'bg grey-50; active ORANGE', outlier: 'medium', why: 'Active hue disagrees with Settings nav (teal).' },
-  { name: 'Collection tile', surface: 'Saved', loc: 'SavedRecipes.scss:16', element: 'button', label: 'collection + count', icon: 'left: thumb', family: 'Card', base: '158px tile', hover: 'lift −4px + elevation-4; active ring', outlier: 'ok' },
-  { name: 'New collection tile', surface: 'Saved', loc: 'SavedRecipes.scss:111', element: 'button', label: 'New', icon: 'left: FolderPlus', family: 'Card', base: 'dashed orange tile', hover: 'bg grey-50, transform NONE (cancels card lift)', outlier: 'medium', why: 'Sibling tiles lift; this one explicitly doesn’t.' },
-  { name: 'Collection Rename', surface: 'Saved', loc: 'SavedRecipes.scss:307', element: 'button.btn--outline.ghost', label: 'Rename', icon: 'left: Edit', family: 'Ghost', base: 'outline+ghost override', hover: 'bg grey-50 (border stays transparent)', outlier: 'low', why: 'Ghost override defeats outline hover.' },
-  { name: 'Collection Delete', surface: 'Saved', loc: 'SavedRecipes.scss:320', element: 'button.btn--outline.ghost.danger', label: 'Delete', icon: 'left: Trash', family: 'Danger', base: 'ghost, identical to Rename', hover: 'colour→#c0392b (hard-coded)', outlier: 'high', why: 'Weak destructive signal; non-token red.' },
-  { name: 'Create collection', surface: 'Saved', loc: 'SavedRecipes.scss:150', element: 'button.btn--primary', label: 'Create', icon: 'left: Plus', family: 'Primary fill', base: 'orange fill', hover: 'brighten + lift + $shadow-brand', outlier: 'ok' },
-  { name: 'Load more (Saved/Ratings/Recipes/Profile)', surface: 'Account', loc: 'index.scss:229', element: 'button.load-more-btn', label: 'Load More Recipes / Reviews', icon: 'none', family: 'Load more', base: 'global 250×45 box', hover: 'border→tertiary + lift + elevation-2', outlier: 'critical', why: 'Plain global load-more; diverges from /recipes pill.' },
-  { name: 'Rating row', surface: 'Ratings', loc: 'UserRatings.scss:23', element: 'div[role=button]', label: 'recipe title', icon: 'left: thumb', family: 'Card', base: 'list row', hover: 'bg grey-50; inset orange focus', outlier: 'low', why: 'Div-button (avoids nested buttons).' },
-  { name: 'User recipe tile', surface: 'Your Recipes', loc: 'UserRecipeThumbnail.scss:5', element: 'Link', label: 'recipe', icon: 'various', family: 'Card', base: 'card radius-18', hover: 'lift −4px + elevation-4; inner arrow slides', outlier: 'ok' },
-  { name: 'Draft Resume', surface: 'Drafts', loc: 'Drafts.scss:124', element: 'button.btn', label: 'Continue editing', icon: 'left: Edit', family: 'Primary fill', base: 'orange fill, $shadow-brand-strong', hover: 'brighten + glow (NO lift)', outlier: 'medium', why: 'Prominent CTA that never lifts; label ≠ “Resume”.' },
-  { name: 'Draft Delete', surface: 'Drafts', loc: 'Drafts.scss:147', element: 'button.btn', label: 'Delete', icon: 'left: Trash', family: 'Danger', base: 'warm-red border, neutral grey text', hover: 'colour→red, bg #fdf0f0', outlier: 'medium', why: 'Reads neutral at rest; red only on hover.' },
-  { name: 'Profile share (icon)', surface: 'Profile', loc: 'PublicProfile.scss:80', element: 'button.btn--icon.btn--ghost', label: 'aria: Share', icon: 'icon-only: Share', family: 'Icon-only', base: '30px ghost circle', hover: 'colour→orange + bg tint', outlier: 'low', why: 'The only social control — no Follow exists.' },
-  { name: 'Profile recipe tile', surface: 'Profile', loc: 'PublicProfile.scss:194', element: 'Link', label: 'recipe', icon: 'various', family: 'Card', base: 'square-media card', hover: 'lift −4px + elevation-4 + img scale', outlier: 'ok' },
-  { name: 'Settings section nav ×4', surface: 'Settings', loc: 'Settings.scss:34', element: 'Link', label: 'Profile / Account / Privacy / Danger Zone', icon: 'left + chevron', family: 'Nav / segmented', base: 'segmented rail', hover: 'bg tint; active TEAL; danger red', outlier: 'medium', why: 'Active hue disagrees with Account nav (orange).' },
-  { name: 'Toggle switch ×2', surface: 'Settings', loc: 'controls.scss:143', element: 'button[role=switch]', label: 'aria', icon: 'icon-only: knob', family: 'Chip / toggle', base: '44×26 pill switch', hover: 'NONE (state change only)', outlier: 'medium', why: 'No hover affordance among hover-reactive peers.' },
-  { name: 'Upload photo / Update password / Export', surface: 'Settings', loc: 'controls.scss:218', element: 'button.btn--outline', label: 'Upload photo / …', icon: 'optional', family: 'Outline', base: 'warm-border pill', hover: 'border→TEAL, colour #057780 (no lift)', outlier: 'low', why: 'Teal-hover override on outline; opts out of lift.' },
-  { name: 'SaveBar Save changes', surface: 'Settings', loc: 'controls.scss:212', element: 'button.btn--primary', label: 'Save changes', icon: 'none', family: 'Primary fill', base: 'orange fill, compact', hover: 'brighten + lift + $shadow-brand', outlier: 'ok' },
-  { name: 'Delete account', surface: 'Settings', loc: 'index.scss:196', element: 'button.btn--danger', label: 'Delete account', icon: 'left: Trash', family: 'Danger', base: 'red outline', hover: 'red fill + lift + $shadow-danger', outlier: 'ok', why: 'The correct destructive treatment.' },
+  // —— Saved ——
+  { name: 'Collection tile', surface: 'Saved', loc: 'SavedRecipes.scss:16', element: 'button', label: 'collection + count', icon: 'left: thumb', family: 'Card', base: '158px tile', hover: 'lift -4px + elevation-4; active ring', outlier: 'ok' },
+  { name: 'New collection tile', surface: 'Saved', loc: 'SavedRecipes.scss:111', element: 'button', label: 'New', icon: 'left: FolderPlus', family: 'Card', base: 'dashed orange tile', hover: 'bg grey-50, no lift', outlier: 'low', why: 'Deliberately flat create-affordance.' },
+  { name: 'Create collection', surface: 'Saved', loc: 'SavedRecipes.scss:150', element: 'button.btn--primary', label: 'Create', icon: 'none', family: 'Primary fill', base: 'orange fill', hover: 'brighten + lift + $shadow-brand', outlier: 'ok' },
+  { name: 'Search clear', surface: 'Saved', loc: 'SavedRecipes.scss:203', element: 'button.btn--icon', label: 'aria: Clear', icon: 'icon-only: X', family: 'Icon-only', base: '22px grey chip', hover: 'bg darken (no lift)', outlier: 'low' },
+  { name: 'Sort trigger / menu', surface: 'Saved', loc: 'SavedRecipes.scss:222', element: 'button', label: 'Sort: {current}', icon: 'right: Chevron', family: 'Select / combobox', base: 'grey border pill', hover: 'border->tertiary', outlier: 'ok' },
+  { name: 'Collection Rename', surface: 'Saved', loc: 'SavedRecipes.scss:307', element: 'button.btn--outline.ghost', label: 'Rename', icon: 'left: Edit', family: 'Ghost', base: 'borderless override', hover: 'bg grey-50 (greys not inks)', outlier: 'low' },
+  { name: 'Collection Delete', surface: 'Saved', loc: 'SavedRecipes.scss:323', element: 'button.…ghost.danger', label: 'Delete', icon: 'left: Trash', family: 'Danger', base: 'borderless, RED at rest', hover: 'red tint (no border/fill/lift)', outlier: 'medium', why: 'Red at rest now, but borderless tint-hover; differs from draft Delete.' },
+
+  // —— Ratings / Your Recipes / Drafts ——
+  { name: 'Rating row', surface: 'Ratings', loc: 'UserRatings.scss:23', element: 'div[role=button]', label: 'recipe title', icon: 'left: thumb', family: 'Card', base: 'list row', hover: 'bg grey-50', outlier: 'low', why: 'Bespoke ORANGE 2px focus ring (vs the shared blue ring).' },
+  { name: 'User recipe tile', surface: 'Your Recipes', loc: 'UserRecipeThumbnail.scss:5', element: 'Link', label: 'recipe', icon: 'right: arrow', family: 'Card', base: 'card radius-18', hover: 'lift -4px + elevation-4; arrow slides', outlier: 'ok' },
+  { name: 'Draft Resume', surface: 'Drafts', loc: 'Drafts.scss:124', element: 'button.btn', label: 'Continue editing', icon: 'left: Edit', family: 'Primary fill', base: 'orange fill', hover: 'brighten + lift + $shadow-brand', outlier: 'ok', why: 'Now lifts (was static).' },
+  { name: 'Draft Delete', surface: 'Drafts', loc: 'Drafts.scss:153', element: 'button.btn', label: 'Delete', icon: 'left: Trash', family: 'Danger', base: 'soft red border, RED at rest', hover: 'red tint (no fill/lift)', outlier: 'medium', why: 'Red at rest now, but soft-border tint-hover; differs from collection Delete.' },
+
+  // —— Public profile ——
+  { name: 'Profile share (icon)', surface: 'Profile', loc: 'PublicProfile.scss:80', element: 'button.btn--icon.btn--ghost', label: 'aria: Share', icon: 'icon-only: Share', family: 'Icon-only', base: '30px ghost circle', hover: 'colour->orange + bg tint', outlier: 'low' },
+  { name: 'Profile recipe tile', surface: 'Profile', loc: 'PublicProfile.scss:194', element: 'Link', label: 'recipe', icon: 'photo + badge', family: 'Card', base: 'square-media card', hover: 'lift -4px + elevation-4 + img scale', outlier: 'low', why: 'Bespoke ORANGE 2px focus ring (vs the shared blue ring).' },
+
+  // —— Settings ——
+  { name: 'Settings nav item x4', surface: 'Settings', loc: 'Settings.scss:34', element: 'NavLink', label: 'Profile / Account / Privacy / Danger Zone', icon: 'left + chevron', family: 'Nav / segmented', base: 'segmented rail', hover: 'bg tint; active ORANGE; danger red', outlier: 'ok', why: 'Active hue now agrees with Account.' },
+  { name: 'Settings back link', surface: 'Settings', loc: 'Settings.scss:99', element: 'Link', label: 'Back', icon: 'left: chevron', family: 'Text link', base: 'hardcoded #057780 teal', hover: 'underline', outlier: 'medium', why: 'Stray teal shade, not the #00787e token.' },
+  { name: 'Toggle switch x2', surface: 'Settings', loc: 'controls.scss:143', element: 'button[role=switch]', label: 'aria', icon: 'icon-only: knob', family: 'Chip / toggle', base: '44x26 pill switch', hover: 'NONE', outlier: 'medium', why: 'No hover affordance.' },
+  { name: 'Upload / Update password / Export', surface: 'Settings', loc: 'controls.scss:218', element: 'button.btn--outline', label: 'Upload photo / …', icon: 'optional', family: 'Outline', base: 'warm-border pill', hover: 'border->teal + text #057780 + lift', outlier: 'medium', why: 'Outline hovers teal (stray #057780) not ink.' },
+  { name: 'Save changes / Update email', surface: 'Settings', loc: 'controls.scss:212', element: 'button.btn--primary', label: 'Save changes / Update email', icon: 'none', family: 'Primary fill', base: 'orange fill, compact', hover: 'brighten + lift + $shadow-brand', outlier: 'ok' },
+  { name: 'Discard / Remove (avatar)', surface: 'Settings', loc: 'controls.scss:230', element: 'button.btn--ghost', label: 'Discard / Remove', icon: 'none', family: 'Ghost', base: 'ghost', hover: 'colour->ink (or white on dark bar)', outlier: 'ok' },
+  { name: 'Delete account (card + modal)', surface: 'Settings', loc: 'controls.scss:235', element: 'button.btn--danger', label: 'Delete account', icon: 'none', family: 'Danger', base: 'red outline', hover: 'red fill + lift + $shadow-danger', outlier: 'ok', why: 'The one true canonical destructive control.' },
+  { name: 'Modal close (X)', surface: 'Settings', loc: 'sections.scss:180', element: 'button.btn--icon', label: 'aria: close', icon: 'icon-only: X', family: 'Icon-only', base: 'grey circle', hover: 'bg + colour->ink (no lift)', outlier: 'low' },
+
+  // —— Auth ——
+  { name: 'Auth Submit CTA', surface: 'Auth', loc: 'FormStyles.scss:223', element: 'button', label: 'Log in / Create account / …', icon: 'none', family: 'Primary fill', base: 'TEAL fill (accessible), 48px', hover: 'lift + $shadow-teal', outlier: 'ok', why: 'Deliberate teal CTA; darken bug fixed.' },
+  { name: 'Google sign-in', surface: 'Auth', loc: 'FormStyles.scss:254', element: 'button', label: 'Continue with Google', icon: 'left: FcGoogle', family: 'Outline', base: 'white, grey border, 48px', hover: 'border->ink + lift + elevation-2', outlier: 'ok', why: 'Now the canonical outline hover; true-colour icon restored.' },
+  { name: 'Auth text links', surface: 'Auth', loc: 'FormStyles.scss:144', element: 'Link x N', label: 'Forgot password? / Sign up / Terms / …', icon: 'none', family: 'Text link', base: 'teal #00787e', hover: 'underline', outlier: 'ok' },
+  { name: 'Prompt link', surface: 'Auth', loc: 'FormStyles.scss:82', element: 'Link', label: 'inline Log in', icon: 'none', family: 'Text link', base: 'teal #00787e 700', hover: 'NONE', outlier: 'low', why: 'On-brand teal but no hover (siblings underline).' },
+  { name: 'Remember-me checkbox', surface: 'Auth', loc: 'FormStyles.scss:114', element: 'input', label: 'Remember me', icon: 'icon-only: check', family: 'Chip / toggle', base: 'custom 18px box', hover: 'border->teal; teal focus ring', outlier: 'ok' },
+  { name: 'Cancel and log out', surface: 'Auth', loc: 'CreateUsername.scss:11', element: 'button', label: 'Cancel and log out', icon: 'none', family: 'Text link', base: 'grey, permanently underlined', hover: 'NONE', outlier: 'medium', why: 'No hover; grey, off the auth teal family.' },
+
+  // —— Company / legal / shared ——
+  { name: 'About primary CTA x2', surface: 'About', loc: 'About.scss:70', element: 'Link', label: 'Browse recipes', icon: 'right: ArrowRight', family: 'Primary fill', base: 'orange fill, NO resting shadow', hover: 'brighten + lift + $shadow-brand + arrow slide', outlier: 'ok', why: 'Resting shadow removed; glow is hover-only now.' },
+  { name: 'About ghost CTA x2', surface: 'About', loc: 'About.scss:86', element: 'Link', label: 'Create an account', icon: 'none', family: 'Ghost', base: 'transparent, grey border', hover: 'lift + bg grey-50 + border lightens', outlier: 'low', why: 'Bordered "ghost" that lifts; border lightens, not ->ink.' },
+  { name: 'Help topic chips x4', surface: 'Help', loc: 'Help.scss:59', element: 'button', label: 'Report a bug / Suggest / Ask / Else', icon: 'top: various', family: 'Chip / toggle', base: 'card chip', hover: 'border+text->teal', outlier: 'medium', why: 'Selected label uses raw #00adb5 as text (fails AA).' },
+  { name: 'Add a subject / Email fallback', surface: 'Help', loc: 'Help.scss:143', element: 'button / a', label: 'Add a subject / email', icon: 'none', family: 'Text link', base: 'teal #00787e', hover: 'underline', outlier: 'ok' },
+  { name: '404 Return Home', surface: '404', loc: '404.scss:98', element: 'button.btn--primary', label: 'Return Home', icon: 'none', family: 'Primary fill', base: 'orange fill, oversized', hover: 'brighten + lift + $shadow-brand', outlier: 'ok' },
+  { name: '404 support link', surface: '404', loc: '404.scss:88', element: 'Link', label: 'contact our support team', icon: 'none', family: 'Text link', base: 'teal #00787e', hover: 'underline', outlier: 'ok', why: 'Now on the accessible teal + hovers.' },
+  { name: 'Legal body links', surface: 'Legal', loc: 'LegalDocument.scss:78', element: 'a', label: 'inline links', icon: 'none', family: 'Text link', base: 'teal #00787e (was orange)', hover: 'underline', outlier: 'ok' },
+  { name: 'EmptyState CTA', surface: 'Shared', loc: 'EmptyState.scss:49', element: 'Link/button.btn--primary', label: 'dynamic', icon: 'optional', family: 'Primary fill', base: 'orange fill on the .btn base', hover: 'brighten + lift + $shadow-brand', outlier: 'ok', why: 'Now composes .btn--primary.' },
 ]
 
 export const FAMILIES: Family[] = [
