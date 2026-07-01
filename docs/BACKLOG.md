@@ -611,11 +611,13 @@ findings table.)*
   [2026-06-13 audit](./DESIGN_CONSISTENCY_AUDIT_2026-06-13.md): `$primary-hover` (`#e74e1d`, was hardcoded
   in 5 spots + a Footer local var) and `$surface-warm-border` (`#ece2d6`, 11 spots across 8 files). The
   remaining systemic scales need design sign-off because they touch many files / pixels:
-    - **Type scale** — **520** raw `font-size:` literals across ~60 distinct values (verified 2026-06-26;
-      0.8/0.82/0.84/0.85/0.875… all coexist), and **no `$fs-*` tokens exist yet**. A real scale *normalizes*
-      those to a handful of steps, so it is **not** a pixel-identical repoint — it is a deliberate
-      normalization pass needing design sign-off. Define a small ramp (e.g. `$fs-sm`/`$fs-base`/`$fs-lg`/…)
-      and snap each size to its nearest step.
+    - `[x]` **Type scale** — DONE 2026-07-01 (PR #216). Ten-step modular `$text-*` scale in `helpers.scss`
+      (t-shirt names, not the `$fs-*` floated here); ~490 `font-size:` literals across 62 `.scss` normalized
+      onto it — 218 land exactly on a step, 273 snap to the nearest (typical ≤0.8px, max 2.8px), the deliberate
+      normalization this item called for. Out-of-scope display type left bespoke (PrintableRecipe `pt`, About
+      `clamp()`, 404/profile numerals, icon `em`). Documented at `docs/design/type-scale.md`; verified by a
+      zero-byte masked-CSS compile diff (only font-size values moved) + a two-pass Cypress pixel-diff (tooling
+      PR #215) showing clean reflow, no truncation/overflow.
     - `[x]` **Radius scale** — DONE 2026-06-25 (PR `style/radius-scale-tokens`). `$radius-xs..4xl` +
       `$radius-pill`/`$radius-circle` now in `helpers.scss`; `$border-radius` aliases `$radius-lg`. ~200
       value-identical repoints across 32 `s`-importing files (compiled CSS byte-identical). **Remaining:**
@@ -636,7 +638,7 @@ findings table.)*
       literal px to the mixins and keep their exact values. **Remaining (design call):** converge those
       deliberately-bespoke one-offs into the scale if/when their layouts are retuned.
   *(surfaced 2026-06-25 in the design-consistency sweep; cheap wins + radius/recurring-shadow scales applied,
-  type scale + full elevation re-author deferred.)*
+  type scale done 2026-07-01 PR #216; full elevation re-author still deferred.)*
 - `[~]` **Collapse near-duplicate brand shades to one value**
     - `[x]` **Decorative tint** — DONE (PR #192): `$primary-tint: #ff8a5c` collapses the avatar/XP gradient
       stops (`Account.scss` ×2) + the `RecipePlaceholder` icon `#ff8a65`. Purely decorative, so independent
