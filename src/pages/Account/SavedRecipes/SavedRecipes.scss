@@ -317,8 +317,15 @@
         background: s.$gray-50;
       }
     }
-    &.danger:hover {
-      color: #c0392b;
+    // Destructive: red at rest (so Delete reads different from Rename), red
+    // tint on hover. Uses the $error-red token (was a hard-coded #c0392b that
+    // only appeared on hover).
+    &.danger {
+      color: s.$error-red;
+      &:hover {
+        color: s.$error-red;
+        background: rgba(s.$error-red, 0.08);
+      }
     }
   }
   .saved-rename {

@@ -196,14 +196,17 @@
     font-size: s.$text-md;
     font-weight: 600;
     cursor: pointer;
-    transition: border-color 0.12s linear, background 0.12s linear;
+    transition: border-color 0.12s linear, color 0.12s linear,
+      background 0.12s linear;
     .icon {
       height: 20px;
       width: 20px;
     }
+    // Red hover, matching the desktop dropdown logout (was brand orange — the
+    // same action shouldn't read two different ways across surfaces).
     &:hover {
-      border-color: var(--menu-accent);
-      color: var(--menu-accent);
+      border-color: s.$error-red;
+      color: s.$error-red;
     }
   }
 

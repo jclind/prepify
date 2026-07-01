@@ -146,22 +146,23 @@
         }
       }
 
-      // Soft warm-red outline on the `.btn` base — the muted #ecd9d9 border +
-      // tinted hover don't match `.btn--danger`'s fill, so kept bespoke.
+      // Destructive outline on the `.btn` base: red text + soft red border at
+      // rest (so Delete reads destructive, not neutral), deepening to a solid
+      // red border + red tint on hover. All keyed off the $error-red token
+      // (was hard-coded #ecd9d9 / #f0c2c2 / #fdf0f0 and neutral-grey at rest).
       .del {
         flex-shrink: 0;
         font-size: s.$text-sm;
         font-weight: 700;
         padding: 0.5rem 0.85rem;
-        border: 1px solid #ecd9d9;
-        color: s.$secondary-text;
+        border: 1px solid rgba(s.$error-red, 0.35);
+        color: s.$error-red;
         svg {
           font-size: s.$text-md;
         }
         &:hover:not(:disabled) {
-          color: s.$error-red;
-          border-color: #f0c2c2;
-          background: #fdf0f0;
+          border-color: s.$error-red;
+          background: rgba(s.$error-red, 0.08);
         }
         &:disabled {
           opacity: 0.5;
