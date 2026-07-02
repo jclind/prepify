@@ -82,7 +82,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **2-scss** | A11y: `$primary-hover` AA-on-hover | `[dropped]` | folded into the owner's brand-orange recolor (it's a hover *contrast* recolor); off the sweep board | — |
 | **blocked→dropped** | A11y: brand-orange contrast (AA) | `[dropped]` | owner owns the brand-orange/logo recolor; not a sweep track | — |
 | **blocked→dropped** | Design: collapse remaining brand shades | `[dropped]` | entangled with the brand-orange recolor above; owner's call | — |
-| **3** | Re-sweep & verify before 1.0 | `[P]` | re-run baselines (Lighthouse a11y/perf, `npm audit`, `tsc`/tests); reconcile `RELEASE_PLAN.md` §A/§C | #222 |
+| **3** | Re-sweep & verify before 1.0 | `[x]` | re-run baselines (Lighthouse a11y/perf, `npm audit`, `tsc`/tests); reconcile `RELEASE_PLAN.md` §A/§C | #222 |
 
 *(The 2-iso / 2-scss items are the deferred tails of the two completed sweeps; the `[dropped]` rows moved to
 the owner's brand-orange recolor and are no longer sweep work — see
@@ -568,3 +568,10 @@ narrates the *why*.
   usage cap mid-run; the 29 stranded findings were re-adjudicated deterministically (direct greps + compiled-CSS
   diff) rather than re-spawning ~60 agents. **Remaining after this merges:** only the owner-gated brand-orange
   recolor → post-recolor a11y re-run, and the beta-flip cutover.
+- _2026-07-02_ — **Wave 3: re-sweep & verify merged** (PR #222 → `development`, `[P]`→`[x]`, merge commit
+  `cf3becd`). All five CI checks green on the merge head (Backend/Supertest, E2E/Cypress, Frontend/Vitest,
+  Fallow advisory, GitGuardian); merge kept after owner review of the auto-merge. Worktree + branch torn down.
+  **The sweep board is now fully closed** — every wave `[x]` or `[dropped]`. What outlives the board: the
+  owner's brand-orange recolor (+ the post-recolor accessibility re-run this roadmap gates on it), the beta-flip
+  cutover (`RELEASE_PLAN.md` blockers section), the OpenAI-key revoke (operator action, `RELEASE_PLAN.md` §B),
+  and the structural BACKLOG items the sweeps filed (headline: route code-splitting).
