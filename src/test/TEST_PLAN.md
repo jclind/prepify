@@ -9,6 +9,10 @@ Nothing below is implemented yet — this file is purely the plan.
 
 ## RecipeThumbnail
 
+> **Retired (2026-07-02):** `RecipeThumbnail` and its test were deleted as dead code in PR #199
+> (the code-quality sweep) — `RecipeCard` is the live card everywhere. This section is kept for
+> the historical plan only; the equivalent coverage lives on `RecipeCard`.
+
 The thumbnail is the most-rendered component in the app and has two very different
 modes (loading skeleton vs populated card). Getting those branches right matters.
 
@@ -45,9 +49,9 @@ interplay between URL state, filter state, API calls, and the results list.
   The skeleton path (`!recipeList[0]`) must render while `filtersLoading` is true
   and no data has arrived yet.
 
-- **Renders recipe thumbnails once the API resolves with results**
-  Happy-path check: the recipeList maps to the correct number of RecipeThumbnail
-  components.
+- **Renders recipe cards once the API resolves with results**
+  Happy-path check: the recipeList maps to the correct number of `RecipeCard`
+  components. *(Originally written against `RecipeThumbnail`, deleted in PR #199.)*
 
 - **Shows "No Results Found" when the API returns `total_results: 0`**
   The component only shows this message for the explicit zero case. An empty list

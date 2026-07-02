@@ -4,7 +4,10 @@
 > cards, `RecipeCard` memo + `decoding`, trending `staleTime`. 6 structural follow-ups → BACKLOG (Tech debt):
 > route code-splitting, missing Mongo indexes, `/recipes/facets` scans, recipe-page CLS pop-in, `AuthContext`
 > memo, image `srcset`. Image `width`/`height` was trialled + reverted (doubled recipe CLS; boxes already
-> CSS-reserved). *(See the [run log](README.md#run-log).)*
+> CSS-reserved). **Wave-3 re-measure (2026-07-02, prod preview):** no regression — bundle 1.17 MB/363 kB-gz
+> (slightly down), TBT ≈ 0, mobile P 65–70 / LCP 7.6–12.1 s (still download-bound; code-splitting stays the
+> lever), desktop Home 94 / recipe 92; CLS Home 0 (the #213 skeletons hold), recipes 0.105 = the two filed
+> #213 follow-ups (footer FOUT + grid pop-in). *(See the [run log](README.md#run-log).)*
 
 Full-coverage performance audit of the Prepify client + API: Lighthouse on the key pages, bundle
 weight and code-splitting, image delivery, data-fetching waterfalls, and render cost. Knock out the

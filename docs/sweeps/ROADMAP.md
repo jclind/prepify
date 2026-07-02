@@ -82,7 +82,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **2-scss** | A11y: `$primary-hover` AA-on-hover | `[dropped]` | folded into the owner's brand-orange recolor (it's a hover *contrast* recolor); off the sweep board | — |
 | **blocked→dropped** | A11y: brand-orange contrast (AA) | `[dropped]` | owner owns the brand-orange/logo recolor; not a sweep track | — |
 | **blocked→dropped** | Design: collapse remaining brand shades | `[dropped]` | entangled with the brand-orange recolor above; owner's call | — |
-| **3** | Re-sweep & verify before 1.0 | `[ ]` | re-run baselines (Lighthouse a11y/perf, `npm audit`, `tsc`/tests); reconcile `RELEASE_PLAN.md` §A/§C | — |
+| **3** | Re-sweep & verify before 1.0 | `[P]` | re-run baselines (Lighthouse a11y/perf, `npm audit`, `tsc`/tests); reconcile `RELEASE_PLAN.md` §A/§C | #222 |
 
 *(The 2-iso / 2-scss items are the deferred tails of the two completed sweeps; the `[dropped]` rows moved to
 the owner's brand-orange recolor and are no longer sweep work — see
@@ -548,3 +548,23 @@ narrates the *why*.
   (Playwright computed-styles / screenshots) on public surfaces + compiled-CSS + specificity on the auth-gated
   ones; all 5 CI checks (Vitest / Supertest / Cypress E2E / dead-code / security) green on the merge commit. The
   temp `/button-audit` review page was added then removed in-branch (`/icon-audit` precedent).
+- _2026-07-02_ — **Wave 3: re-sweep & verify** PR opened (#222, `[~]`→`[P]`) — the last track on the board.
+  Two halves. **(1) Verification of Waves 1–2** (the owner's ask: "confirm every step"): a multi-agent pass —
+  20 per-track verifiers (one per merged PR, #179→#220, each fed that track's status-log claims) + 11
+  cross-cutting drift hunts + adversarial adjudication — returned **confirmed on all 20 tracks**; 7 hunts fully
+  clean, and the whole drift tail was: `SavedFilterBar.scss` (the one admin file #214 missed — 9 hexes →
+  `$admin-*`), 8 raw `rgba(255,87,34,…)` washes → `rgba($primary,…)` (recolor-proofing; compiled-CSS
+  byte-identical except one documented near-dupe normalize), and ~11 stale tracker lines (BACKLOG done-markers
+  for #199/#203/#204/#207, the code-quality banner's `[P]`, two wrong follow-up counts, elevation.md's orphaned
+  `$shadow-brand-strong` row, TEST_PLAN's retired section). One finding refuted (test-file `setAppElement` is
+  jsdom scaffolding); one kept-and-documented (the 2px Analytics chart-bar cap — a 4px floor would distort
+  1px-wide bars). **(2) Baselines re-run:** `tsc` clean · Vitest 545/2-skip · build 1.17 MB/363 kB gz (≤ #198's
+  baseline) · server Jest 697/697 no-flake · audits root prod 0 / server prod 8 moderate (unchanged; a new
+  dev-only `undici` high via `jsdom` fixed lockfile-only) · Lighthouse a11y **96–97 orange / 100 off-orange**
+  (exactly the documented owner-gated state) · perf same download-bound class (TBT≈0; code-splitting stays the
+  lever) · CLS Home 0 (#213 holds). `RELEASE_PLAN.md` §A/§C reconciled (favicon/OG + support-path flipped done,
+  empty/error/loading → `[~]`, §B re-annotated — **the live OpenAI key is still on disk**, operator action) +
+  dated audit-log entry. Wave-3 usage note: the adjudication phase of the verification workflow hit the session
+  usage cap mid-run; the 29 stranded findings were re-adjudicated deterministically (direct greps + compiled-CSS
+  diff) rather than re-spawning ~60 agents. **Remaining after this merges:** only the owner-gated brand-orange
+  recolor → post-recolor a11y re-run, and the beta-flip cutover.

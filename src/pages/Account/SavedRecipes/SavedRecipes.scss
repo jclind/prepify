@@ -277,7 +277,7 @@
         }
         &.is-active {
           color: s.$primary;
-          background: rgba(255, 87, 34, 0.08);
+          background: rgba(s.$primary, 0.08);
         }
       }
     }
