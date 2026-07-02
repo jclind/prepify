@@ -2,11 +2,15 @@
 
 > **Status:** Run 2026-06-25 (PR #180, token follow-ups #183/#185/#186/#192). Cheap wins shipped
 > (`$primary-hover` + `$surface-warm-border` tokens; radius scale, breakpoint tokens, admin import-wiring,
-> decorative tint). **~10 follow-ups open** in [`../BACKLOG.md`](../BACKLOG.md#ux--visual-polish) +
-> [Tech debt](../BACKLOG.md#tech-debt--process--infra): pill `.btn` system, delete `RecipeThumbnail`,
+> decorative tint). **All filed follow-ups now closed** in [`../BACKLOG.md`](../BACKLOG.md#ux--visual-polish) +
+> [Tech debt](../BACKLOG.md#tech-debt--process--infra): ~~pill `.btn` system~~ (done — PR #210), ~~delete `RecipeThumbnail`~~ (done — PR #199),
 > ~~icon-per-concept~~ (done — PR #205; ~~single-family Lucide~~ done — PR #206), ~~modal style config~~ (done — PR #203),
 > ~~loading-state pattern~~ (done — PR #213), ~~toast punctuation~~ (done — PR #207); ~~type scale~~ (done — PR #216), ~~elevation
-> re-author~~ (done — PR #218), ~~danger-red token~~ (done — PR #208), ~~`$admin-*` palette~~ (done — PR #214), ~~`RecipeFormInput` dup~~ (done — PR #204). *(See the [run log](README.md#run-log).)*
+> re-author~~ (done — PR #218), ~~danger-red token~~ (done — PR #208), ~~`$admin-*` palette~~ (done — PR #214), ~~`RecipeFormInput` dup~~ (done — PR #204);
+> plus the follow-on ~~button hover-motion + clickable consistency~~ (done — PR #220). Only the brand-shade
+> collapse remains, `[dropped]` to the owner's recolor. **Wave-3 re-verify (2026-07-02):** all tracks confirmed
+> intact; drift hunts clean except a small tail fixed in the Wave-3 PR (the admin `SavedFilterBar` hexes #214
+> missed, 8 raw `rgba(255,87,34,…)` washes → `rgba($primary,…)`). *(See the [run log](README.md#run-log).)*
 
 Full-coverage visual/UX consistency audit: are colors, spacing, typography, radii, shadows, components,
 states, and copy voice drawn from a shared system — or has each page drifted? Catch the drift, unify the

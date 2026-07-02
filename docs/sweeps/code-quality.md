@@ -1,8 +1,11 @@
 # Code quality & test sweep
 
-> **Status:** _Run 2026-06-27 — PR #199 (`[P]`)._ Dead code removed, a silent delete-review failure fixed,
+> **Status:** _Run 2026-06-27 — PR #199 (merged 2026-06-27)._ Dead code removed, a silent delete-review failure fixed,
 > +33 tests on untested critical-path utils; all suites green. Headline follow-up: **server Jest flakiness
-> under CPU contention** (pre-existing) → [BACKLOG → Testing](../BACKLOG.md#testing). *(See the [run log](README.md#run-log).)*
+> under CPU contention** (pre-existing) → [BACKLOG → Testing](../BACKLOG.md#testing).
+> **Wave-3 re-verify (2026-07-02):** deletions confirmed still dead (no `RecipeThumbnail`/`getIndexById`/
+> `RecipeAI` returns); gates re-run green — `tsc` clean, Vitest **545 pass/2 skip**, build passing, server
+> Jest **697/697** (no flake, `--runInBand`). *(See the [run log](README.md#run-log).)*
 
 Full-coverage health check of the codebase itself: test coverage on the critical paths, E2E journey
 coverage, flaky/skipped tests, type safety, dead code, and error handling. The "is the codebase in

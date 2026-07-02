@@ -1,10 +1,14 @@
 # Accessibility sweep
 
 > **Status:** Run 2026-06-25 (PR #179, contrast follow-ups #181/#184). Cheap wins shipped (ingredient-checklist
-> role → recipe page 89→97; grey/teal/beta-tag/error-red contrast). **5 follow-ups filed, 2 resolved** in
-> [`../BACKLOG.md`](../BACKLOG.md#accessibility): ~~autocomplete listbox + keyboard nav~~ (done — PR #201),
-> ~~servings target-size~~ (done — PR #202), `$primary-hover` AA-on-hover, brand orange (reverted to vivid `#ff5722` — owner call),
-> ~~account-heading route-map~~ (done — PR #200). Re-run after the brand-orange decision lands. *(See the [run log](README.md#run-log).)*
+> role → recipe page 89→97; grey/teal/beta-tag/error-red contrast). **5 follow-ups filed — 3 resolved, 2 moved
+> to the owner** in [`../BACKLOG.md`](../BACKLOG.md#accessibility): ~~autocomplete listbox + keyboard nav~~ (done — PR #201),
+> ~~servings target-size~~ (done — PR #202), ~~account-heading route-map~~ (done — PR #200); `$primary-hover`
+> AA-on-hover + brand orange (reverted to vivid `#ff5722`) are `[dropped]` off the sweep board (2026-07-01) —
+> both belong to the owner's brand-orange/logo recolor. Re-run after that recolor lands.
+> **Wave-3 re-verify (2026-07-02):** structural fixes confirmed intact by per-track verification; Lighthouse
+> a11y re-measured at **96–97 orange routes / 100 off-orange** — exactly the documented owner-gated state,
+> no regression from the Wave-1/2 merges. *(See the [run log](README.md#run-log).)*
 
 Deep WCAG 2.1 AA pass over every Prepify page, logged-out **and** logged-in: automated (Lighthouse +
 axe), keyboard, screen-reader semantics, ARIA correctness, contrast, and zoom/motion. This goes beyond

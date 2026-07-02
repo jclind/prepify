@@ -197,7 +197,7 @@ The triage date stamped on items is the date they were filed here, not when they
   "Cancel and log out" control wired to the auth signout, plus a guard that bounces users who already
   have a username) landed in **PR #98**. Reconciled + escape-hatch regression test added in **PR #162**.
   Page lives at `src/pages/CreateUsername/`. Username validation tightening is tracked separately under 3c.
-- `[ ]` **`RecipeThumbnail` shows the broken-image glyph on a failed image load** — track 3b (PR #170) gave
+- `[x]` **`RecipeThumbnail` shows the broken-image glyph on a failed image load** — track 3b (PR #170) gave
   `RecipeCard` an `onError` fallback to the icon `RecipePlaceholder` (`imgError` state + `onError`), but
   `RecipeThumbnail` only swaps in the placeholder when `recipeImage` is *absent* — a present-but-broken URL
   still renders the browser's broken-image glyph there (`src/Components/RecipeThumbnail/RecipeThumbnail.tsx`,
@@ -205,6 +205,8 @@ The triage date stamped on items is the date they were filed here, not when they
   imports it; the only importer is its own test `src/test/RecipeThumbnail.test.tsx`. So the user-facing glyph
   no longer renders anywhere, and the real fix is to DELETE `RecipeThumbnail` + its test rather than patch it
   — see the unify item below.)** Low severity. *(surfaced 2026-06-23 in the track 3b code review.)*
+  **(closed by the delete — PR #199 removed `RecipeThumbnail` + its test entirely; marker reconciled
+  2026-07-02 in the Wave-3 re-sweep.)**
 - `[x]` **Consolidate the bespoke pill buttons into a real `.btn` system** — **done (PR #210, merged 2026-06-30):**
   promoted `.btn` to a full pill base + 5 BEM colour variants (`--primary`/`--outline`/`--ghost`/`--danger`/
   `--danger-solid`) + sizes + `--icon`, migrated ~70 bespoke buttons across ~35 files, documented at
@@ -217,7 +219,10 @@ The triage date stamped on items is the date they were filed here, not when they
   `.primary`/`.ghost`, etc. — same shape, slightly different padding/weight/hover each time. Promote
   `.btn--primary` / `.btn--ghost` / `.btn--pill` variants and migrate the bespoke buttons onto them.
   *(surfaced 2026-06-25 in the design-consistency sweep.)*
-- `[ ]` **Unify `RecipeCard` and `RecipeThumbnail` — actually: delete `RecipeThumbnail` (verified 2026-06-26)** —
+- `[x]` **Unify `RecipeCard` and `RecipeThumbnail` — actually: delete `RecipeThumbnail` (verified 2026-06-26)**
+  — **done (PR #199, merged 2026-06-27 — the code-quality sweep's dead-code pass deleted
+  `RecipeThumbnail.tsx` + `.scss` + its test; marker reconciled 2026-07-02 in the Wave-3 re-sweep).**
+  *(original write-up, for context:)*
   the two are ~80% duplicate (image + price + rating/time meta; differ mostly in `<Link>` vs `<button>`,
   `AiFillStar` vs `AiOutlineStar`, and `skeletonColor` `#e6e6e6` vs `#d6d6d6`), but verification found
   `RecipeThumbnail` is **dead code** — only its own test imports it; the live card everywhere
@@ -234,12 +239,15 @@ The triage date stamped on items is the date they were filed here, not when they
   **(follow-up done 2026-06-29, PR #206 — single house family: remapped all concepts to **Lucide** (`react-icons/lu`),
   collapsing the remaining 10-family mix to one stroke weight; 2 documented brand exceptions (the Google marks);
   filled variants now `fill="currentColor"` on the outline glyph. See [`design/icon-system.md`](design/icon-system.md).)***
-- `[ ]` **Share one react-modal style config** — each modal repeats its own `customStyles`/overlay inline,
+- `[x]` **Share one react-modal style config** — each modal repeats its own `customStyles`/overlay inline,
   and they disagree: `BugReportModal` uses `#fff` + `8px` radius while `ConfirmDeleteReviewModal` /
   `ReleaseNotes` use `#eeeeee` + `5px`. **(verified 2026-06-26: it's 7 inline copies, not 3 — also
   `ReportControl`, `RecipeControls`, `AchievementsModal`, and `HomeCookSuggestion`.)** Extract a shared
   `modalStyles` constant (content + overlay) and a thin wrapper so every dialog reads the same.
-  *(surfaced 2026-06-25 in the design-consistency sweep.)*
+  *(surfaced 2026-06-25 in the design-consistency sweep.)* **(done 2026-06-29, PR #203 —
+  `src/util/modalStyles.ts` (`panelModalStyles`/`bareModalStyles`/`panelModalStylesWith` + one
+  `setAppElement`), all 7 modals migrated, net −144 lines; marker reconciled 2026-07-02 in the Wave-3
+  re-sweep.)**
 - `[x]` **Codify the loading-state pattern (skeleton vs spinner)** — content grids use
   `react-loading-skeleton`, button actions use `TailSpin`, and several async waits show nothing; the choice
   is per-developer and `TailSpin` sizes vary (18–30px). Write down the rule (skeleton for content
@@ -250,13 +258,15 @@ The triage date stamped on items is the date they were filed here, not when they
   react-loading-skeleton's trailing `<br>`, image hold-until-`onLoad` fade-in, PublicProfile spinner→skeleton.
   Convention written at [`design/loading-states.md`](design/loading-states.md). Measured CLS Home 0.21→0.0002,
   SingleRecipe 0.27→0.02.)***
-- `[ ]` **Toast copy: consistent terminal punctuation + dedupe strings** — toasts disagree on trailing
+- `[x]` **Toast copy: consistent terminal punctuation + dedupe strings** — toasts disagree on trailing
   punctuation (`'Could not copy link'`, `'Could not update collections'`, `'Profile link copied'` have no
   period; most others end with `.`/`!`) and on phrasing (`'Profile link copied'` vs `'Profile link copied
   to clipboard'`). Pick one convention (terminal punctuation everywhere is the dominant pattern) and sweep
   the ~10 call sites; lift duplicated strings (`'Email already in use.'`, `'Password incorrect, please try
   again.'`, `'Image cannot be more than 5MB in size.'`) into shared constants. *(surfaced 2026-06-25 in the
-  design-consistency sweep; continues the toast-punctuation fix started in track 4-qa.)*
+  design-consistency sweep; continues the toast-punctuation fix started in track 4-qa.)* **(done 2026-06-29,
+  PR #207 — one copy convention codified + `src/util/toastMessages.ts` (12 constants + 2 helpers), ~25 of
+  ~90 call sites edited; marker reconciled 2026-07-02 in the Wave-3 re-sweep.)**
 
 ## Accessibility
 
@@ -626,9 +636,10 @@ findings table.)*
     - `[x]` **Radius scale** — DONE 2026-06-25 (PR `style/radius-scale-tokens`). `$radius-xs..4xl` +
       `$radius-pill`/`$radius-circle` now in `helpers.scss`; `$border-radius` aliases `$radius-lg`. ~200
       value-identical repoints across 32 `s`-importing files (compiled CSS byte-identical). **Remaining:**
-      off-scale one-offs (5/7/9/11/13/18px) need ±1px normalization (design call), and the token-less admin
-      files (`Admin/*`, `AdminRecipeControls`, `SavedFilterBar`) keep raw radii pending the import-wiring item
-      below.
+      off-scale one-offs (5/7/9/11/13/18px) need ±1px normalization (design call). *(Updated 2026-07-02,
+      Wave-3 re-sweep: the admin files are wired + tokenized now — the only remaining sub-scale admin literal
+      is the deliberate `2px` cap rounding on the Analytics chart bars (`Analytics.scss:165`), left bespoke:
+      the bars are as narrow as 1px, where a 4px scale-floor radius would distort the data-viz.)*
     - `[x]` **Elevation/shadow scale** — DONE 2026-07-01 (PR #218, `worktree-feat+elevation-shadow-reauthor`).
       Re-authored the interim `$shadow-soft`/`$shadow-chip`/`$card-box-shadow` stopgap into a documented 6-step
       `$elevation-1..6` ramp + `$shadow-brand`/`-strong`/`$shadow-teal` glow tokens in `helpers.scss` (owner
@@ -687,10 +698,13 @@ findings table.)*
       value-identical). Documented at `docs/design/admin-palette.md`. The category/type pills were decoupled from
       status tokens (own `$admin-cat-*` group) after a code-review finding.
   *(surfaced 2026-06-25 in the design-consistency sweep; import-wiring applied 2026-06-25, palette naming + migration done 2026-06-30 PR #214.)*
-- `[ ]` **`RecipeFormInput` duplicates the shared `FormInput`** — AddRecipe ships its own ~85%-identical
+- `[x]` **`RecipeFormInput` duplicates the shared `FormInput`** — AddRecipe ships its own ~85%-identical
   input/textarea (`RecipeFormInput`/`RecipeFormTextArea`) instead of the shared `Components/Form/FormInput`,
   and Settings/BugReport use raw `<input>`/`<textarea>`/`<select>`. Converge on one input primitive.
-  *(surfaced 2026-06-25 in the design-consistency sweep.)*
+  *(surfaced 2026-06-25 in the design-consistency sweep.)* **(done 2026-06-29, PR #204 — `RecipeFormInput`
+  deleted, `FormInput` gained `size='md'|'compact'`, 8 call sites migrated; the Settings/BugReport raw-input
+  half wasn't in #204's scope and no separate item tracks it — fold into the create-recipe dropdown
+  UX-polish item if it comes up. Marker reconciled 2026-07-02 in the Wave-3 re-sweep.)**
 - `[ ]` **Perf: no route-level code-splitting — the whole app ships in one ~1.19 MB / 372 kB-gzip JS chunk**
   — `npm run build` warns the main chunk is >500 kB; `src/App.tsx` statically imports every page (zero
   `React.lazy`/dynamic `import()` anywhere), and `vite.config.ts` has no `manualChunks`/visualizer. This is

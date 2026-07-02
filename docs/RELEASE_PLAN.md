@@ -55,9 +55,12 @@ a feature flag. Do these together:
 
 - `[ ]` **Beta tag fully removed** — see blockers above. **(blocker)**
 - `[ ]` **Release notes refreshed** — see blockers above. **(blocker)**
-- `[ ]` **Empty / error / loading states sweep** — every page that fetches data (Recipes, SingleRecipe,
-  Account, Home) should have a sensible empty state, an error state, and a loading skeleton. Spot-check
-  by loading with the API down. **(nice-to-have, but high-impact)**
+- `[~]` **Empty / error / loading states sweep** — **loading states done (PR #213, 2026-06-30):** one
+  codified pattern (`loadingStyles` tokens, `useDelayedLoading` flash-guard, self-mirroring skeletons,
+  `docs/design/loading-states.md`) swept across the app; measured CLS Home 0.21→0.0002, SingleRecipe
+  0.27→0.02; PublicProfile converted off its whole-view spinner. **Still open:** the empty-state and
+  error-state halves — spot-check every fetching page (Recipes, SingleRecipe, Account, Home) with the
+  API down. **(nice-to-have, but high-impact)**
 - `[x]` **Broken-link & dead-route check** — **done (track 4-qa, PR #174 ✅):** crawled every nav/footer/
   in-page link across 24 internal routes — **0 dead routes, 404s, or `#` placeholders** — and confirmed
   logged-out vs logged-in link visibility is correct. The earlier **2026-06-09** fix (the 404's "contact
@@ -88,10 +91,17 @@ a feature flag. Do these together:
   `#bf360c` read too "brown") — so the orange logo/CTAs/accents re-fail AA and **Lighthouse a11y is back to
   ~96–97 on the routes that use orange** (the rest stay 100). The token plumbing is intact, so restoring AA
   is a one-line flip pending a brand-colour decision (shade exploration filed in `BACKLOG.md → Accessibility`).
-  *(SR checks were programmatic, headless — no live VoiceOver in CI.)* **(structural done; brand-orange
-  contrast parked on an owner brand decision)**
-- `[ ]` **Favicon, page titles, social/OG meta** — verify `index.html` + per-page titles
-  (`react-helmet-async` is already a dependency) and an OG image for link previews. **(nice-to-have)**
+  *(SR checks were programmatic, headless — no live VoiceOver in CI.)* *(Wave-3 re-measure, 2026-07-02:
+  Lighthouse a11y **holds at exactly the documented state** — 96–97 on the orange routes (home/recipes/
+  recipe/about), **100** off-orange (login) — no a11y regression from the ~20 Wave-1/2 sweep merges. The
+  three brand-orange tracks were formally moved off the sweep board to `[dropped]` (2026-07-01) — they
+  belong to the owner's brand-orange/logo recolor; the post-recolor a11y re-run stays gated on that.)*
+  **(structural done; brand-orange contrast parked on an owner brand decision)**
+- `[x]` **Favicon, page titles, social/OG meta** — **verified done (Wave-3 re-sweep, 2026-07-02):**
+  full favicon set wired in `index.html:19-21` (`favicon.ico` + 16/32 PNGs + `apple-touch-icon`, all
+  present in `public/`); per-page titles via `react-helmet-async` (`HelmetProvider` in `App.tsx`, §C SEO
+  basics); OG/Twitter meta + branded 1200×630 OG card shipped in track 3b (PR #170). The SPA
+  social-crawler limitation is tracked as its own §C item. **(nice-to-have → done)**
 - `[x]` **Remove dev-only UI from production** — `@tanstack/react-query-devtools` is a devDependency;
   confirmed gated behind `process.env.NODE_ENV !== 'production'` in `src/index.tsx:23-25`, so the panel
   is not rendered in the production build. **(blocker → done)**
@@ -125,7 +135,9 @@ a feature flag. Do these together:
   keys, this is a current, full-access credential sitting in plaintext, so the "never wired → don't rotate"
   reasoning doesn't apply. **Rotate/revoke it and delete the line.** While there, drop the now-dead
   `SPOONACULAR_API_KEY` from `server/.env` (the v2 parser is key-free). Operator action on local files — no
-  PR. See BACKLOG → Security. **(launch-gating hygiene)**
+  PR. See BACKLOG → Security. *(Re-checked 2026-07-02, Wave-3 re-sweep: both keys are **still on disk** —
+  `VITE_OPEN_AI_API_KEY` in `.env`, `SPOONACULAR_API_KEY` in `server/.env`. Still open, still Jesse's
+  operator action.)* **(launch-gating hygiene)**
 - `[x]` **Lock down Edamam / Firebase usage server-side** — **done (2026-06-25).** Firebase **web API key
   is HTTP-referrer-restricted** — verified live that `prepifymeals.com`, `www.prepifymeals.com`, and
   `localhost:3000` are allowed while an empty referer is blocked (so prod + local dev work; a lifted key
@@ -165,7 +177,9 @@ a feature flag. Do these together:
   (2026-06-17, non-breaking lockfile-only bumps: vite, launch-editor, @grpc/grpc-js, form-data,
   protobufjs, tmp) — high/critical blocker cleared. Residual moderates (re-audited 2026-06-25: root prod 0, server prod 8 moderate) require
   **major** bumps (firebase-admin 13→14, jest major) and are deferred to a dedicated upgrade pass.
-  **(blocker for high/critical — cleared)**
+  *(Re-audited 2026-07-02, Wave-3 re-sweep: **root prod 0, server prod 8 moderate — unchanged**; one new
+  dev-only high — `undici` ≤7.27.2 via `jsdom`, test env only — fixed in-range lockfile-only in the
+  Wave-3 PR, Vitest re-run green.)* **(blocker for high/critical — cleared)**
 - `[ ]` **Residual low-severity API issues** — surfaced by the audit, not release-blocking: (a)
   `getReviews` derives `isCurrentUser` from the `username` *query param* rather than the token
   (`reviews.js:165,183`) — cosmetic, since edit/delete are token-scoped; (b) `newReview` upserts with
@@ -211,8 +225,10 @@ a feature flag. Do these together:
 - `[x]` **Production domain + HTTPS** — **done (2026-06-26).** `prepifymeals.com` is fully live: DNS points
   at Netlify (the frontend host) with a valid HTTPS cert, `www` 301→apex, and the production API origin
   (`prepify-production-63a6.up.railway.app`) serves `/health` → 200 over valid SSL. **(blocker → done)**
-- `[ ]` **Support / contact path** — a way for users to report issues (Formspree is already a
-  dependency — wire a contact form, or list an email). **(nice-to-have)**
+- `[x]` **Support / contact path** — **done, reconciled 2026-07-02 (was stale — shipped in PR #158):**
+  `/help` is a public Formspree contact form (redesigned for logged-out users, footer link un-gated —
+  see the §D Help/Contact item), and the in-app "Report a bug" form (footer, open to logged-out users)
+  feeds the `/admin/bug-reports` queue with email alerts (`ADMIN_NOTIFY_EMAIL`). **(nice-to-have → done)**
 - `[x]` **Error tracking (Sentry) — wired + prod env vars set (2026-06-26)** — Sentry error monitoring
   is implemented frontend + backend (env-gated; no DSN ⇒ no-ops). Also shipped: an in-app "Report a
   bug" form (footer, open to logged-out users) → `bugReports` collection → `/admin/bug-reports` queue.
@@ -250,7 +266,12 @@ a feature flag. Do these together:
   recipe a11y **80 → 89** from the cheap a11y wins. The bundle-size win (>500 kB single chunk → route-level
   code-splitting) is real but structural — **filed to `BACKLOG.md`** (Tech debt) rather than done here.
   *(A11y was taken further in the dedicated WCAG AA sweep — recipe **89 → 97**, every page to 96–97; see
-  the Accessibility item in Section A + PR #179.)* **(nice-to-have)**
+  the Accessibility item in Section A + PR #179.)* *(Wave-3 re-measure vs prod preview, 2026-07-02:
+  desktop Home **94**, recipe **92** (was 88); mobile P 65–70, LCP 7.6–12.1 s, TBT ≤50 ms — still
+  download-bound on the one 1.17 MB/363 kB-gz chunk, so route code-splitting stays the biggest filed
+  lever; CLS Home **0** (the #213 skeleton work holds), recipe 0.088, recipes 0.105 — the last is the
+  two already-filed #213 follow-ups (recipes-footer FOUT + grid image pop-in). BP 100 everywhere; SEO
+  100 except `/login` 91 — missing meta description, pre-existing nit.)* **(nice-to-have)**
 - `[x]` **README cleanup** *(done — PR #151, 2026-06-17)* — replaced the placeholder `your-username`
   clone URL with `jclind/prepify` and refreshed setup steps for the two-service architecture.
   **(nice-to-have)**
@@ -501,5 +522,30 @@ with the manual dashboard steps confirmed by Jesse.
   cutover step) — the owner-only **About-page rewrite** (§C) was completed + signed off 2026-06-26, so the
   beta-flip is now the *last* thing gating 1.0. **Open infra TODO (non-blocking):** ~~rotate the exposed
   `Cluster0` Mongo `jesse` password~~ ✅ done 2026-06-26.
+
+### 2026-07-02 — Wave-3 re-sweep & verify (sweeps ROADMAP Wave 3)
+Full verification pass over the ~20 merged Wave-1/2 sweep PRs plus fresh baselines, run from
+`worktree-feat+wave3-resweep`.
+- **Every prior sweep track verified intact:** 20 per-track verifiers (PRs #179–#220) all returned
+  *confirmed* against current `development` (`568fe52`); 11 cross-cutting drift hunts (type scale,
+  elevation, icons, colour, motion, modals, toasts, loading, radius, dead code, doc consistency) — 7 fully
+  clean, and the tail was small + fixed in the Wave-3 PR: the admin `SavedFilterBar` hexes PR #214 missed
+  (→ `$admin-*` tokens), 8 raw `rgba(255,87,34,…)` orange washes (→ `rgba($primary,…)`, compiled-CSS
+  byte-identical except one documented near-dupe normalize), and stale done-markers across
+  BACKLOG / run-log / sweep banners.
+- **Gates re-run green:** `tsc` clean · Vitest **545 pass/2 skip** · build passing (1.17 MB / 363 kB gz,
+  slightly down vs the #198 baseline) · server Jest **697/697** (no flake).
+- **Audits:** root prod **0**, server prod **8 moderate** (unchanged — the known firebase-admin
+  transitives); one new dev-only high (`undici` via `jsdom`) fixed in-range, lockfile-only.
+- **Lighthouse (prod preview):** a11y **96–97 orange routes / 100 off-orange** — exactly the documented
+  owner-gated state, no regression; perf same download-bound class as #198 (mobile 65–70, TBT ≈ 0 —
+  code-splitting remains the biggest lever); CLS Home 0 (the #213 skeleton work holds). One nit: `/login`
+  lacks a meta description (SEO 91).
+- **§A/§C reconciled** (this entry's edits): favicon/titles/OG → `[x]`; support/contact path → `[x]`
+  (was stale — shipped in PR #158); empty/error/loading states → `[~]` (loading half done via #213);
+  a11y + performance rows annotated with the re-measures; §B rows annotated (OpenAI key **still on
+  disk** — operator action; dependency re-audit).
+- **Still owner-gated:** the brand-orange recolor (and the post-recolor a11y re-run) + the deliberate
+  beta-flip cutover steps.
 
 _`/release-readiness` appends dated run summaries here._

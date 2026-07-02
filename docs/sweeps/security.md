@@ -3,7 +3,11 @@
 > **Status:** Run 2026-06-26 — **PR #197**. Authz/IDOR, CORS, secrets-in-git, and XSS all clean. Cheap
 > hardening shipped (`madeRecipe` counter-inflation, `reports` username→uid oracle, `addRating` limiter,
 > review-route type guards); 8 follow-ups filed → [BACKLOG → Security](../BACKLOG.md#security) (headline:
-> revoke the live OpenAI key on disk). *(See the [run log](README.md#run-log).)*
+> revoke the live OpenAI key on disk). **Wave-3 re-verify (2026-07-02):** all four hardening fixes confirmed
+> intact in `server/`; `npm audit` unchanged (root prod **0**, server prod **8 moderate** — the known
+> firebase-admin transitives); one new dev-only high (`undici` via `jsdom`) fixed lockfile-only in the Wave-3
+> PR. The OpenAI key is **still on disk** in the local `.env` — operator action still open. *(See the
+> [run log](README.md#run-log).)*
 
 Full-coverage security audit of the Prepify client + API: secrets, authentication/authorization (incl.
 IDOR), input validation, rate limiting, CORS, Firebase rules, dependency CVEs, and data exposure /

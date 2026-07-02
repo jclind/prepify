@@ -52,8 +52,9 @@ CTAs. Kept separate from the neutral ramp:
 | Token | Value | Use |
 |---|---|---|
 | `$shadow-brand` | `0 8px 20px rgba($primary, .18)` | primary CTA hover glow |
-| `$shadow-brand-strong` | `0 6px 16px rgba($primary, .28)` | stronger CTA glow (draft publish) |
+| `$shadow-brand-strong` | `0 6px 16px rgba($primary, .28)` | *defined but currently unreferenced* — PR #220 folded both former call sites (About CTA, draft publish) onto `$shadow-brand`; kept for a future stronger-glow need |
 | `$shadow-teal` | `0 8px 18px rgba($secondary, .30)` | teal auth-submit glow |
+| `$shadow-danger` | `0 8px 20px rgba($error-red, .22)` | danger CTA hover glow (added with the PR #220 hover-motion pass; see `scss-conventions.md`) |
 
 ## Out of scope — left bespoke
 
