@@ -705,7 +705,7 @@ findings table.)*
   deleted, `FormInput` gained `size='md'|'compact'`, 8 call sites migrated; the Settings/BugReport raw-input
   half wasn't in #204's scope and no separate item tracks it — fold into the create-recipe dropdown
   UX-polish item if it comes up. Marker reconciled 2026-07-02 in the Wave-3 re-sweep.)**
-- `[ ]` **Perf: no route-level code-splitting — the whole app ships in one ~1.19 MB / 372 kB-gzip JS chunk**
+- `[x]` **Perf: no route-level code-splitting — the whole app ships in one ~1.19 MB / 372 kB-gzip JS chunk**
   — `npm run build` warns the main chunk is >500 kB; `src/App.tsx` statically imports every page (zero
   `React.lazy`/dynamic `import()` anywhere), and `vite.config.ts` has no `manualChunks`/visualizer. This is
   **the biggest lever for mobile**: against a prod preview, mobile Performance is 56–68 with LCP 7.8–10.7 s and
@@ -713,7 +713,21 @@ findings table.)*
   work. Desktop is fine (89–97). Fix: lazy-load the heavy/rare routes (Admin/* ≈ 5 pages, AddRecipe/EditRecipe
   + the ingredient parser + DnD, SingleRecipe) behind `Suspense`; add `manualChunks` + `rollup-plugin-visualizer`
   to inspect. Needs `App.tsx` route changes + a verification pass → not a blind fix. *(surfaced 2026-06-26 in the
-  Performance sweep; before/after Lighthouse in the sweep PR.)*
+  Performance sweep; before/after Lighthouse in the sweep PR.)* **(done 2026-07-02 — ~22 routes lazy via
+  `src/util/lazyRoute.ts` (React.lazy + one-shot stale-deploy reload guard: offline-aware, storage-safe,
+  never auto-re-armed; post-reload failures surface as `ChunkLoadError` to the app boundary, whose
+  "Try again" hard-reloads since React.lazy caches rejections) behind per-page-keyed `Suspense` inside the
+  Layout/outlet shells (keyed because react-router's `startTransition` only shows fallbacks of newly
+  mounted boundaries — unkeyed, lazy→lazy navigation freezes on the old page). Eager kept: Home, Recipes,
+  SingleRecipe, Login, Signup, 404 — landing surfaces; PublicProfile stays lazy despite being one because
+  eager-importing it hoists ~96 kB of shared graph into entry. Initial payload 393 → 274 kB gz (−30%:
+  JS 363→257, CSS 30→17), >500 kB warning gone; heaviest splits: AddRecipe 69 kB gz (dnd + react-select),
+  Help 11 kB gz (formspree + its stripe transitive). Known tradeoff: first visit to /account, /settings or
+  /admin per session loads shell then section chunks sequentially (both tiny, flash-guarded 220 ms so fast
+  loads show no spinner at all). Same-machine Lighthouse mobile: Home 69→72 (LCP 7.1→6.6 s), /recipes
+  66→67 (LCP 10.8→9.3 s); remaining LCP is image-bound, not JS-bound. `ANALYZE=1 npm run build` writes a
+  `rollup-plugin-visualizer` treemap to `reports/stats.html` (gitignored, outside the publish dir); no
+  `manualChunks` — rolldown's default shared-chunking already dedupes cleanly.)**
 - `[ ]` **Perf: hot read paths have no supporting MongoDB indexes** — `server/db.js` `ensureIndexes()` creates
   indexes for usernames/recipeDrafts/reports/bugReports/auditLog, but `recipes` is indexed only on
   `{ userId, createdAt }` and `ratings` only on `{ username }`. So the catalog's hottest queries fall back to

@@ -1,48 +1,118 @@
-import React, { FC, useEffect } from 'react'
+import React, { FC, ReactElement, Suspense, useEffect } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { HelmetProvider } from 'react-helmet-async'
 import AuthProvider from 'src/context/AuthContext'
 
+// Eager routes — the pages visitors land on directly (home, browse, shared
+// recipe and profile links, auth entries) plus the catch-all. Everything else
+// is a lazy chunk fetched on first navigation (see docs/BACKLOG.md
+// route-splitting item: the whole app used to ship as one >1 MB bundle).
 import Home from 'src/pages/Home/Home'
 import Recipes from 'src/pages/Recipes/Recipes'
+import SingleRecipe from 'src/pages/SingleRecipe/SingleRecipe'
 import Login from 'src/pages/Login/Login'
 import Signup from 'src/pages/Signup/Signup'
-import ForgotPassword from 'src/pages/ForgotPassword/ForgotPassword'
+import NotFound from 'src/pages/404/404'
 import PrivateRoute from 'src/Components/PrivateRoute'
 import AdminRoute from 'src/Components/AdminRoute'
-import AdminLayout from 'src/pages/Admin/AdminLayout'
-import Analytics from 'src/pages/Admin/Analytics/Analytics'
-import Reports from 'src/pages/Admin/Reports/Reports'
-import BugReports from 'src/pages/Admin/BugReports/BugReports'
-import Users from 'src/pages/Admin/Users/Users'
-import Audit from 'src/pages/Admin/Audit/Audit'
-import CreateUsername from 'src/pages/CreateUsername/CreateUsername'
-
-import Account from 'src/pages/Account/Account'
-import PublicProfile from 'src/pages/PublicProfile/PublicProfile'
-import SavedRecipes from 'src/pages/Account/SavedRecipes/SavedRecipes'
-import UserRatings from 'src/pages/Account/UserRatings/UserRatings'
-import UserRecipes from 'src/pages/Account/UserRecipes/UserRecipes'
-import Drafts from 'src/pages/Account/Drafts/Drafts'
-
-import AddRecipe from 'src/pages/AddRecipe/AddRecipe'
-import EditRecipe from 'src/pages/EditRecipe/EditRecipe'
 import Layout from 'src/Components/Layout/Layout'
-import Help from 'src/pages/Help/Help'
-import NotFound from 'src/pages/404/404'
-import SingleRecipe from 'src/pages/SingleRecipe/SingleRecipe'
-import About from 'src/pages/About/About'
-import Privacy from 'src/pages/Privacy/Privacy'
-import Terms from 'src/pages/Terms/Terms'
 
 import { Toaster } from 'react-hot-toast'
-import Settings from 'src/pages/Settings/Settings'
-import ProfileSection from 'src/pages/Settings/sections/ProfileSection'
-import AccountSection from 'src/pages/Settings/sections/AccountSection'
-import PrivacySection from 'src/pages/Settings/sections/PrivacySection'
-import DangerSection from 'src/pages/Settings/sections/DangerSection'
 import { Sentry } from 'src/util/sentry'
 import AppErrorFallback from 'src/Components/AppErrorFallback/AppErrorFallback'
+import RouteFallback from 'src/Components/RouteFallback/RouteFallback'
+import { lazyRoute } from 'src/util/lazyRoute'
+
+// Auth side flows.
+const ForgotPassword = lazyRoute(
+  () => import('src/pages/ForgotPassword/ForgotPassword')
+)
+const CreateUsername = lazyRoute(
+  () => import('src/pages/CreateUsername/CreateUsername')
+)
+
+// Admin section (admin-only — pure dead weight for everyone else).
+const AdminLayout = lazyRoute(() => import('src/pages/Admin/AdminLayout'))
+const Analytics = lazyRoute(
+  () => import('src/pages/Admin/Analytics/Analytics')
+)
+const Reports = lazyRoute(() => import('src/pages/Admin/Reports/Reports'))
+const BugReports = lazyRoute(
+  () => import('src/pages/Admin/BugReports/BugReports')
+)
+const Users = lazyRoute(() => import('src/pages/Admin/Users/Users'))
+const Audit = lazyRoute(() => import('src/pages/Admin/Audit/Audit'))
+
+// Account area. PublicProfile is a direct-landing surface (shared profile
+// links), but eager-importing it hoists ~100 kB of shared graph into the
+// entry chunk — so it stays lazy; the flash-guarded fallback means a fast
+// chunk load never even shows a spinner.
+const PublicProfile = lazyRoute(
+  () => import('src/pages/PublicProfile/PublicProfile')
+)
+const Account = lazyRoute(() => import('src/pages/Account/Account'))
+const SavedRecipes = lazyRoute(
+  () => import('src/pages/Account/SavedRecipes/SavedRecipes')
+)
+const UserRatings = lazyRoute(
+  () => import('src/pages/Account/UserRatings/UserRatings')
+)
+const UserRecipes = lazyRoute(
+  () => import('src/pages/Account/UserRecipes/UserRecipes')
+)
+const Drafts = lazyRoute(() => import('src/pages/Account/Drafts/Drafts'))
+
+// Recipe editor — the heaviest split (drag-and-drop + react-select live here).
+const AddRecipe = lazyRoute(() => import('src/pages/AddRecipe/AddRecipe'))
+const EditRecipe = lazyRoute(() => import('src/pages/EditRecipe/EditRecipe'))
+
+// Settings.
+const Settings = lazyRoute(() => import('src/pages/Settings/Settings'))
+const ProfileSection = lazyRoute(
+  () => import('src/pages/Settings/sections/ProfileSection')
+)
+const AccountSection = lazyRoute(
+  () => import('src/pages/Settings/sections/AccountSection')
+)
+const PrivacySection = lazyRoute(
+  () => import('src/pages/Settings/sections/PrivacySection')
+)
+const DangerSection = lazyRoute(
+  () => import('src/pages/Settings/sections/DangerSection')
+)
+
+// Company/legal + help (Help also keeps @formspree out of the entry chunk).
+const About = lazyRoute(() => import('src/pages/About/About'))
+const Privacy = lazyRoute(() => import('src/pages/Privacy/Privacy'))
+const Terms = lazyRoute(() => import('src/pages/Terms/Terms'))
+const Help = lazyRoute(() => import('src/pages/Help/Help'))
+
+// react-router v7 wraps navigation in React.startTransition, and a transition
+// only shows the fallback of a *newly mounted* Suspense boundary — an existing
+// one keeps the old page on screen, so navigating between two lazy siblings
+// (About → Help, Account tab → tab) would silently freeze until the chunk
+// arrives. Keying the boundary by the wrapped page component remounts it per
+// page (fallback shows), while shells (Account/Settings/AdminLayout) keep a
+// stable key across child-route changes so they don't re-spin on tab switches.
+let nextBoundaryKey = 0
+const boundaryKeys = new WeakMap<object, number>()
+const boundaryKeyFor = (type: unknown): number => {
+  let key = boundaryKeys.get(type as object)
+  if (key === undefined) {
+    key = ++nextBoundaryKey
+    boundaryKeys.set(type as object, key)
+  }
+  return key
+}
+
+// Suspense boundary for a lazy page. Sits inside Layout (and inside nested
+// outlets like Account/Settings/AdminLayout), so the surrounding shell stays
+// mounted while the chunk downloads — only the content area shows the spinner.
+const Lazy: FC<{ children: ReactElement }> = ({ children }) => (
+  <Suspense key={boundaryKeyFor(children.type)} fallback={<RouteFallback />}>
+    {children}
+  </Suspense>
+)
 
 const ScrollToTop: FC = () => {
   const { pathname } = useLocation()
@@ -54,7 +124,9 @@ const ScrollToTop: FC = () => {
 const App: FC = () => {
   return (
     <Sentry.ErrorBoundary
-      fallback={({ resetError }) => <AppErrorFallback resetError={resetError} />}
+      fallback={({ error, resetError }) => (
+        <AppErrorFallback error={error} resetError={resetError} />
+      )}
     >
       <HelmetProvider>
         <AuthProvider>
@@ -103,7 +175,9 @@ const App: FC = () => {
               path='/u/:username'
               element={
                 <Layout darkNavLinks={true}>
-                  <PublicProfile />
+                  <Lazy>
+                    <PublicProfile />
+                  </Lazy>
                 </Layout>
               }
             />
@@ -113,7 +187,9 @@ const App: FC = () => {
               path='/about'
               element={
                 <Layout darkNavLinks={true}>
-                  <About />
+                  <Lazy>
+                    <About />
+                  </Lazy>
                 </Layout>
               }
             />
@@ -121,7 +197,9 @@ const App: FC = () => {
               path='/privacy'
               element={
                 <Layout darkNavLinks={true}>
-                  <Privacy />
+                  <Lazy>
+                    <Privacy />
+                  </Lazy>
                 </Layout>
               }
             />
@@ -129,7 +207,9 @@ const App: FC = () => {
               path='/terms'
               element={
                 <Layout darkNavLinks={true}>
-                  <Terms />
+                  <Lazy>
+                    <Terms />
+                  </Lazy>
                 </Layout>
               }
             />
@@ -139,31 +219,98 @@ const App: FC = () => {
                 path='/account'
                 element={
                   <Layout darkNavLinks={true}>
-                    <Account />
+                    <Lazy>
+                      <Account />
+                    </Lazy>
                   </Layout>
                 }
               >
-                <Route path='saved-recipes' element={<SavedRecipes />} />
-                <Route path='ratings' element={<UserRatings />} />
-                <Route path='your-recipes' element={<UserRecipes />} />
-                <Route path='drafts' element={<Drafts />} />
+                <Route
+                  path='saved-recipes'
+                  element={
+                    <Lazy>
+                      <SavedRecipes />
+                    </Lazy>
+                  }
+                />
+                <Route
+                  path='ratings'
+                  element={
+                    <Lazy>
+                      <UserRatings />
+                    </Lazy>
+                  }
+                />
+                <Route
+                  path='your-recipes'
+                  element={
+                    <Lazy>
+                      <UserRecipes />
+                    </Lazy>
+                  }
+                />
+                <Route
+                  path='drafts'
+                  element={
+                    <Lazy>
+                      <Drafts />
+                    </Lazy>
+                  }
+                />
               </Route>
               <Route
                 path='/settings'
                 element={
                   <Layout darkNavLinks={true}>
-                    <Settings />
+                    <Lazy>
+                      <Settings />
+                    </Lazy>
                   </Layout>
                 }
               >
                 {/* Index renders Profile so a direct /settings visit (and the
                     desktop landing) shows it; /settings/profile is the canonical
                     route the nav + mobile master-detail link to. */}
-                <Route path='' element={<ProfileSection />} />
-                <Route path='profile' element={<ProfileSection />} />
-                <Route path='account' element={<AccountSection />} />
-                <Route path='privacy' element={<PrivacySection />} />
-                <Route path='danger' element={<DangerSection />} />
+                <Route
+                  path=''
+                  element={
+                    <Lazy>
+                      <ProfileSection />
+                    </Lazy>
+                  }
+                />
+                <Route
+                  path='profile'
+                  element={
+                    <Lazy>
+                      <ProfileSection />
+                    </Lazy>
+                  }
+                />
+                <Route
+                  path='account'
+                  element={
+                    <Lazy>
+                      <AccountSection />
+                    </Lazy>
+                  }
+                />
+                <Route
+                  path='privacy'
+                  element={
+                    <Lazy>
+                      <PrivacySection />
+                    </Lazy>
+                  }
+                />
+                <Route
+                  path='danger'
+                  element={
+                    <Lazy>
+                      <DangerSection />
+                    </Lazy>
+                  }
+                />
                 {/* Old bookmark — the password form now lives under Account. */}
                 <Route
                   path='password'
@@ -174,7 +321,9 @@ const App: FC = () => {
                 path='/add-recipe'
                 element={
                   <Layout darkNavLinks={true}>
-                    <AddRecipe />
+                    <Lazy>
+                      <AddRecipe />
+                    </Lazy>
                   </Layout>
                 }
               />
@@ -182,7 +331,9 @@ const App: FC = () => {
                 path='/recipes/:recipeId/edit'
                 element={
                   <Layout darkNavLinks={true}>
-                    <EditRecipe />
+                    <Lazy>
+                      <EditRecipe />
+                    </Lazy>
                   </Layout>
                 }
               />
@@ -191,27 +342,84 @@ const App: FC = () => {
               path='/help'
               element={
                 <Layout darkNavLinks={true}>
-                  <Help />
+                  <Lazy>
+                    <Help />
+                  </Lazy>
                 </Layout>
               }
             />
             {/* Admin section — gated by AdminRoute (login + admin claim),
                 outside the public Layout (its own AdminLayout shell). */}
             <Route path='/admin' element={<AdminRoute />}>
-              <Route element={<AdminLayout />}>
+              <Route
+                element={
+                  <Lazy>
+                    <AdminLayout />
+                  </Lazy>
+                }
+              >
                 <Route index element={<Navigate to='/admin/analytics' replace />} />
-                <Route path='analytics' element={<Analytics />} />
-                <Route path='reports' element={<Reports />} />
-                <Route path='bug-reports' element={<BugReports />} />
-                <Route path='users' element={<Users />} />
-                <Route path='audit' element={<Audit />} />
+                <Route
+                  path='analytics'
+                  element={
+                    <Lazy>
+                      <Analytics />
+                    </Lazy>
+                  }
+                />
+                <Route
+                  path='reports'
+                  element={
+                    <Lazy>
+                      <Reports />
+                    </Lazy>
+                  }
+                />
+                <Route
+                  path='bug-reports'
+                  element={
+                    <Lazy>
+                      <BugReports />
+                    </Lazy>
+                  }
+                />
+                <Route
+                  path='users'
+                  element={
+                    <Lazy>
+                      <Users />
+                    </Lazy>
+                  }
+                />
+                <Route
+                  path='audit'
+                  element={
+                    <Lazy>
+                      <Audit />
+                    </Lazy>
+                  }
+                />
               </Route>
             </Route>
 
             <Route path='/login' element={<Login />} />
             <Route path='/signup' element={<Signup />} />
-            <Route path='/create-username' element={<CreateUsername />} />
-            <Route path='/forgot-password' element={<ForgotPassword />} />
+            <Route
+              path='/create-username'
+              element={
+                <Lazy>
+                  <CreateUsername />
+                </Lazy>
+              }
+            />
+            <Route
+              path='/forgot-password'
+              element={
+                <Lazy>
+                  <ForgotPassword />
+                </Lazy>
+              }
+            />
           </Routes>
         </AuthProvider>
       </HelmetProvider>
