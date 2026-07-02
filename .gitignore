@@ -12,6 +12,9 @@
 /build
 /dist
 
+# local analysis output (`ANALYZE=1 npm run build` → reports/stats.html)
+/reports
+
 # misc
 .DS_Store
 .env
