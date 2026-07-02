@@ -743,7 +743,7 @@ findings table.)*
   reviewCreatedAt:-1}` and `{recipeId:1, rating:-1}`). Confirm each with `.explain()` before/after. Negligible at
   today's catalog size; grows linearly. *(surfaced 2026-06-26 in the Performance sweep; pairs with the autocomplete
   fuzzy-fallback scan item above, which is the same missing-index story for title search.)*
-  **(done 2026-07-02, PR #TBD — grounded in `.explain('executionStats')` against dev, not the proposed keys.
+  **(done 2026-07-02, PR #224 — grounded in `.explain('executionStats')` against dev, not the proposed keys.
   Two findings reshaped the fix: (1) the proposed `status`-leading compounds are WRONG — `RECIPE_VISIBLE` is
   `status: { $nin: [...] }`, a low-selectivity RANGE, so by equality→sort→range it must stay a FETCH residual, not
   a leading key (leading with it fragments the index into intervals and defeats the sort). (2) A prior manual

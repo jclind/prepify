@@ -88,6 +88,17 @@ async function ensureIndexes() {
   // (createdAt/servingPrice/totalTime) intentionally aren't indexed here — popular is
   // the default and dominant path; the rest are lower-frequency and can be added if
   // they become hot.
+  //
+  // This (and the getReviews indexes below) live in startup rather than the deliberate
+  // `scripts/createModerationIndexes.js` step ON PURPOSE, even though they're on the
+  // large recipes/ratings collections: they back per-page-load hot paths, so the index
+  // must exist the instant the querying code goes live — putting them in the script
+  // would open a window where a deploy runs the new query against an unindexed
+  // collection until someone remembers to run it. The build is online (reads/writes
+  // keep working) and sub-second at current scale; if these collections ever grow big
+  // enough that a cold build stalls readiness, that concerns the whole awaited
+  // ensureIndexes() set, and the fix then is to make the heavy set non-blocking — not
+  // to special-case these two paths now.
   try {
     await db.collection('recipes').createIndex({ numTimesSaved: -1, views: -1, _id: -1 })
   } catch (err) {
@@ -111,7 +122,8 @@ async function ensureIndexes() {
   // right after the equality prefix so the sort is served by the index walk (ESR:
   // recipeId=equality, then sort key; the `moderationHidden: { $ne: true }` /
   // `reviewText` predicates stay FETCH residuals). Both are needed because a single
-  // recipeId-prefixed index can only order by one trailing key.
+  // recipeId-prefixed index can only order by one trailing key. (In startup, not the
+  // migration script — same hot-path rationale as the browse-popular index above.)
   try {
     await db.collection('ratings').createIndex({ recipeId: 1, reviewCreatedAt: -1 })
     await db.collection('ratings').createIndex({ recipeId: 1, rating: -1 })
