@@ -51,7 +51,7 @@
         }
         &:focus {
           border-color: s.$primary;
-          box-shadow: 0 0 0 3px rgba(255, 87, 34, 0.12);
+          box-shadow: 0 0 0 3px rgba(s.$primary, 0.12);
         }
       }
       .search-recipes-btn {
@@ -193,7 +193,7 @@
         }
         &.is-active {
           color: s.$primary;
-          background: rgba(255, 87, 34, 0.08);
+          background: rgba(s.$primary, 0.08);
         }
       }
     }
@@ -208,7 +208,7 @@
     margin-top: 1rem;
     &__chip {
       border: none;
-      background: rgba(255, 87, 34, 0.1);
+      background: rgba(s.$primary, 0.1);
       color: s.$primary;
       font-weight: 700;
       font-size: s.$text-fine;
@@ -219,7 +219,7 @@
       transition: background-color s.$hover-timing;
       // Deepen the tint on hover so the dismiss affordance reads as interactive.
       &:hover {
-        background: rgba(255, 87, 34, 0.18);
+        background: rgba(s.$primary, 0.18);
       }
     }
     &__clear {

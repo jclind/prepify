@@ -24,7 +24,7 @@
     height: 72px;
     margin-bottom: 1.25rem;
     border-radius: s.$radius-circle;
-    background: rgba(255, 87, 34, 0.09);
+    background: rgba(s.$primary, 0.09);
     color: s.$primary;
     font-size: s.$text-3xl;
   }

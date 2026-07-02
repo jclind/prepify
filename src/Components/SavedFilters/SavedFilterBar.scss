@@ -16,7 +16,7 @@
   .preset-chip {
     display: inline-flex;
     align-items: center;
-    border: 1px solid #d8dbe0;
+    border: 1px solid s.$admin-slate-300;
     background: s.$white;
     border-radius: s.$radius-pill;
     overflow: hidden;
@@ -24,43 +24,44 @@
     .preset-apply {
       border: none;
       background: transparent;
-      color: #374151;
+      color: s.$admin-slate-700;
       padding: 0.3rem 0.5rem 0.3rem 0.7rem;
       font-size: s.$text-fine;
       cursor: pointer;
 
       &:hover {
-        color: #111827;
+        color: s.$admin-slate-900;
       }
     }
 
     .preset-delete {
       border: none;
       background: transparent;
-      color: #9ca3af;
+      color: s.$admin-slate-400;
       padding: 0.3rem 0.55rem 0.3rem 0.2rem;
       font-size: s.$text-base;
       line-height: 1;
       cursor: pointer;
 
       &:hover {
-        color: #b91c1c;
+        color: s.$admin-danger-text;
       }
     }
   }
 
   .preset-save {
-    border: 1px dashed #cbd2da;
+    // #cbd2da normalized onto the scale step (same near-dupe class PR #214 collapsed)
+    border: 1px dashed s.$admin-slate-300;
     background: s.$white;
-    color: #6b7280;
+    color: s.$admin-slate-500;
     padding: 0.3rem 0.7rem;
     border-radius: s.$radius-pill;
     font-size: s.$text-fine;
     cursor: pointer;
 
     &:hover {
-      border-color: #9ca3af;
-      color: #374151;
+      border-color: s.$admin-slate-400;
+      color: s.$admin-slate-700;
     }
   }
 }
