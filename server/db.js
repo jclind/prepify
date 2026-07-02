@@ -75,12 +75,48 @@ async function ensureIndexes() {
     console.error('Failed to create index on recipes.userId:', err.message)
   }
 
+  // Backs the default GET /recipes browse listing (the catalog page hit on every
+  // visit), which sorts by SORTS.popular = { numTimesSaved:-1, views:-1, _id:-1 }.
+  // Key order mirrors that sort EXACTLY so the walk is served in order and the
+  // blocking in-memory SORT is eliminated (before: SORT <- COLLSCAN over the whole
+  // visible catalog per page load). The public `status: { $nin: [...] }` visibility
+  // predicate (RECIPE_VISIBLE) is deliberately NOT led with here: it's a low-
+  // selectivity range ($nin), so by the equality->sort->range rule it stays a FETCH
+  // residual filter rather than a leading key (leading with it would fragment the
+  // index into multiple intervals and defeat the sort). The `_id:-1` tiebreak is in
+  // the index so pagination stays stable without a residual sort. Other browse sorts
+  // (createdAt/servingPrice/totalTime) intentionally aren't indexed here — popular is
+  // the default and dominant path; the rest are lower-frequency and can be added if
+  // they become hot.
+  try {
+    await db.collection('recipes').createIndex({ numTimesSaved: -1, views: -1, _id: -1 })
+  } catch (err) {
+    console.error('Failed to create browse-popular index on recipes:', err.message)
+  }
+
   // Backs GET /api/getSingleUserReviews (a user's ratings) and the ratings count
   // in GET /api/getAccountCounts, both of which filter ratings by username.
   try {
     await db.collection('ratings').createIndex({ username: 1 })
   } catch (err) {
     console.error('Failed to create index on ratings.username:', err.message)
+  }
+
+  // Backs GET /getReviews, the per-recipe review list on every recipe-detail page.
+  // It filters by `recipeId` (equality) then sorts either newest-first
+  // (filter=new -> { reviewCreatedAt:-1 }) or highest-rated (filter=top ->
+  // { rating:-1 }). The existing { recipeId, username } index serves the recipeId
+  // MATCH but not the sort, so the query fetched the matches and then ran a blocking
+  // in-memory SORT (verified via explain). These two compounds put the sort key
+  // right after the equality prefix so the sort is served by the index walk (ESR:
+  // recipeId=equality, then sort key; the `moderationHidden: { $ne: true }` /
+  // `reviewText` predicates stay FETCH residuals). Both are needed because a single
+  // recipeId-prefixed index can only order by one trailing key.
+  try {
+    await db.collection('ratings').createIndex({ recipeId: 1, reviewCreatedAt: -1 })
+    await db.collection('ratings').createIndex({ recipeId: 1, rating: -1 })
+  } catch (err) {
+    console.error('Failed to create getReviews indexes on ratings:', err.message)
   }
 
   // Moderation reports (P1/P2). The `reports` collection is new, so these build

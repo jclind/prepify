@@ -728,7 +728,7 @@ findings table.)*
   66→67 (LCP 10.8→9.3 s); remaining LCP is image-bound, not JS-bound. `ANALYZE=1 npm run build` writes a
   `rollup-plugin-visualizer` treemap to `reports/stats.html` (gitignored, outside the publish dir); no
   `manualChunks` — rolldown's default shared-chunking already dedupes cleanly.)**
-- `[ ]` **Perf: hot read paths have no supporting MongoDB indexes** — `server/db.js` `ensureIndexes()` creates
+- `[x]` **Perf: hot read paths have no supporting MongoDB indexes** — `server/db.js` `ensureIndexes()` creates
   indexes for usernames/recipeDrafts/reports/bugReports/auditLog, but `recipes` is indexed only on
   `{ userId, createdAt }` and `ratings` only on `{ username }`. So the catalog's hottest queries fall back to
   collection scans + in-memory sorts as the catalog grows:
@@ -743,6 +743,33 @@ findings table.)*
   reviewCreatedAt:-1}` and `{recipeId:1, rating:-1}`). Confirm each with `.explain()` before/after. Negligible at
   today's catalog size; grows linearly. *(surfaced 2026-06-26 in the Performance sweep; pairs with the autocomplete
   fuzzy-fallback scan item above, which is the same missing-index story for title search.)*
+  **(done 2026-07-02, PR #TBD — grounded in `.explain('executionStats')` against dev, not the proposed keys.
+  Two findings reshaped the fix: (1) the proposed `status`-leading compounds are WRONG — `RECIPE_VISIBLE` is
+  `status: { $nin: [...] }`, a low-selectivity RANGE, so by equality→sort→range it must stay a FETCH residual, not
+  a leading key (leading with it fragments the index into intervals and defeats the sort). (2) A prior manual
+  migration (`server/scripts/createModerationIndexes.js`) had already added `recipes {featured:-1,views:-1}`,
+  `{createdAt:-1}`, `{userId:1}` and `ratings {recipeId:1,username:1}`, `{userId:1,recipeId:1}` to dev/prod — so
+  two of the four paths were NOT actually unindexed. Net-new gaps, both confirmed COLLSCAN/blocking-SORT→IXSCAN:
+    - **`GET /recipes` default browse** (SORTS.popular) — added `recipes {numTimesSaved:-1, views:-1, _id:-1}`
+      (key order mirrors the sort exactly). BEFORE `SORT ← COLLSCAN`, docsExamined 12, in-memory sort. AFTER
+      `FETCH ← IXSCAN`, docsExamined 5 (=limit), **no blocking sort**. Bonus: the mealTypes/diets/cuisine-filtered
+      popular listings also ride it (filters become residuals) — sort eliminated there too.
+    - **`GET /getReviews`** — added `ratings {recipeId:1, reviewCreatedAt:-1}` (filter=new) and
+      `{recipeId:1, rating:-1}` (filter=top). BEFORE `SORT ← FETCH ← IXSCAN(recipeId_1_username_1)` — the recipeId
+      MATCH was indexed but the sort was a blocking in-memory sort; docsExamined 10. AFTER `FETCH ← IXSCAN`,
+      **no blocking sort**, docsExamined 6/8.
+    - **`GET /getTrendingRecipes`** — already optimal via the migration's `featured_-1_views_-1`
+      (`IXSCAN`, no sort, docsExamined = limit). No new index; backlog's "unindexed" was stale.
+    - **`GET /recipes/random`** — left as-is by design: the `$match` is `status: $nin` (+ `userId: $ne`), both
+      low-selectivity ranges, and `$sample` after a non-first-stage `$match` can't use the random-cursor
+      optimization, so any index would examine ~all docs anyway for negligible gain.
+  Multikey note: `mealTypes`/`nutritionLabels` are arrays — deliberately NOT indexed as leading keys here (each
+  would be a separate multikey index, and they're residual filters on the popular walk). `title`/`cuisine` regex
+  can't use a normal index (separate autocomplete fuzzy-fallback item; not regressed). Deferred siblings, both the
+  same story, low-frequency so not added: the non-popular browse sorts (createdAt/servingPrice/totalTime — each
+  needs its own `{sortKey, _id}` index) and `getSingleUserReviews` (userId-keyed, still blocking-sorts on
+  `{userId:1,reviewCreatedAt:-1}`/`{userId:1,rating:-1}`). All three additions went into `ensureIndexes()` so they
+  deploy with the code; `createIndex` is idempotent and the new names don't collide with the migration's.)**
 - `[ ]` **Perf: `/recipes/facets` runs 3 unfiltered `distinct()` = 3 full `recipes` scans per browse load**
   (`server/routes/recipes.js:167-181`, `distinct('cuisine'|'nutritionLabels'|'mealTypes')`). Called on every
   `/recipes` page load to build the filter UI. Cache the result (short TTL) or maintain a small summary doc
