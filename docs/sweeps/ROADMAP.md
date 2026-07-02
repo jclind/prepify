@@ -82,7 +82,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **2-scss** | A11y: `$primary-hover` AA-on-hover | `[dropped]` | folded into the owner's brand-orange recolor (it's a hover *contrast* recolor); off the sweep board | — |
 | **blocked→dropped** | A11y: brand-orange contrast (AA) | `[dropped]` | owner owns the brand-orange/logo recolor; not a sweep track | — |
 | **blocked→dropped** | Design: collapse remaining brand shades | `[dropped]` | entangled with the brand-orange recolor above; owner's call | — |
-| **3** | Re-sweep & verify before 1.0 | `[ ]` | re-run baselines (Lighthouse a11y/perf, `npm audit`, `tsc`/tests); reconcile `RELEASE_PLAN.md` §A/§C | — |
+| **3** | Re-sweep & verify before 1.0 | `[~]` | re-run baselines (Lighthouse a11y/perf, `npm audit`, `tsc`/tests); reconcile `RELEASE_PLAN.md` §A/§C | `worktree-feat+wave3-resweep` (claimed 2026-07-02) |
 
 *(The 2-iso / 2-scss items are the deferred tails of the two completed sweeps; the `[dropped]` rows moved to
 the owner's brand-orange recolor and are no longer sweep work — see
