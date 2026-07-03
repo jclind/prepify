@@ -1,5 +1,6 @@
 const express = require('express')
 const admin = require('firebase-admin')
+const Sentry = require('@sentry/node')
 const { asyncHandler } = require('../util/asyncHandler')
 const router = express.Router()
 const { getDB, getClient } = require('../db')
@@ -7,7 +8,12 @@ const { verifyToken, requireActive } = require('../middleware/auth')
 const { profileWriteLimiter } = require('../middleware/writeLimiter')
 const { recordAudit } = require('../util/auditLog')
 const { deleteRecipeImage, deleteProfilePhoto } = require('../util/firebaseStorage')
-const { recomputeRecipeRating } = require('../util/recipeRating')
+// Imported as a namespace (not a destructured binding) so tests can spy on the
+// recompute — deleteAccount's post-commit reconciliation must survive a failing
+// recompute without going silent.
+const recipeRating = require('../util/recipeRating')
+const { recipeIdInQuery } = require('../util/recipeIdQuery')
+const { RECIPE_VISIBLE } = require('../util/moderation')
 const { moderateText } = require('../util/textModeration')
 const { moderateImage } = require('../util/imageModeration')
 const { respondBlocked } = require('../util/automod')
@@ -307,7 +313,7 @@ router.post('/updateDisplayName', verifyToken, requireActive, profileWriteLimite
 // Upserts the authenticated user's privacy toggles (public-profile +
 // hide-location). These gate the public /u/:username view served by
 // GET /getPublicProfile.
-router.post('/updatePrivacy', verifyToken, requireActive, asyncHandler(async (req, res) => {
+router.post('/updatePrivacy', verifyToken, requireActive, profileWriteLimiter, asyncHandler(async (req, res) => {
   const { isPublic, hideLocation } = req.body || {}
   const validationError = validatePrivacy(isPublic, hideLocation)
   if (validationError) {
@@ -341,6 +347,27 @@ router.get('/exportMyData', verifyToken, asyncHandler(async (req, res) => {
     db.collection('ratings').find({ userId: uid }).toArray(),
   ])
 
+  // Hydrate the saved-recipe references into the actual recipe bodies so the
+  // export is a self-contained, portable archive rather than a list of opaque
+  // ids. Each element keeps its original save metadata (dateSaved, collectionIds)
+  // and gains a `recipe` field. A saved recipe that's since been deleted — or
+  // hidden by moderation (RECIPE_VISIBLE, matching what GET /getSavedRecipes will
+  // serve) — is preserved as its bare reference with `recipe: null`, so the user
+  // never loses the record of what they saved and we never leak a hidden body.
+  const savedRefs = userRecipeData?.savedRecipes ?? []
+  const savedIds = savedRefs.map((e) => e.recipeId).filter(Boolean)
+  const savedBodies = savedIds.length
+    ? await db
+        .collection('recipes')
+        .find({ ...recipeIdInQuery(savedIds), ...RECIPE_VISIBLE })
+        .toArray()
+    : []
+  const savedById = new Map(savedBodies.map((r) => [String(r._id), r]))
+  const savedRecipes = savedRefs.map((entry) => ({
+    ...entry,
+    recipe: savedById.get(String(entry.recipeId)) ?? null,
+  }))
+
   const data = {
     exportedAt: new Date().toISOString(),
     username,
@@ -352,7 +379,7 @@ router.get('/exportMyData', verifyToken, asyncHandler(async (req, res) => {
           hideLocation: profile.hideLocation ?? false,
         }
       : null,
-    savedRecipes: userRecipeData?.savedRecipes ?? [],
+    savedRecipes,
     recipes,
     drafts,
     ratings,
@@ -365,6 +392,24 @@ router.get('/exportMyData', verifyToken, asyncHandler(async (req, res) => {
   res.setHeader('Content-Type', 'application/json')
   res.send(JSON.stringify(data, null, 2))
 }))
+
+// Retry a recipe-rating recompute a few times before giving up. The recompute
+// is a single read + single write, so a failure is almost always a transient
+// Mongo blip — one more attempt usually clears it rather than leaving a stale
+// aggregate. Throws the last error if every attempt fails, so the caller can
+// escalate instead of swallowing.
+const RECOMPUTE_ATTEMPTS = 3
+async function recomputeWithRetry(db, recipeId) {
+  let lastErr
+  for (let attempt = 1; attempt <= RECOMPUTE_ATTEMPTS; attempt++) {
+    try {
+      return await recipeRating.recomputeRecipeRating(db, recipeId)
+    } catch (err) {
+      lastErr = err
+    }
+  }
+  throw lastErr
+}
 
 // POST /deleteAccount
 // Permanently deletes the authenticated user and all of their data. Removes the
@@ -450,12 +495,23 @@ router.post('/deleteAccount', verifyToken, asyncHandler(async (req, res) => {
 
   // D4: recompute the aggregate for recipes the user reviewed but did NOT own
   // (the ones they owned are gone). Post-commit, so it reflects the removed
-  // reviews. Best-effort: a recompute failure must not block the account delete.
+  // reviews. Best-effort: a recompute failure must not block the account delete —
+  // but it must NOT be silent either. A surviving recipe whose recompute failed
+  // now carries a stale aggregate that still counts the just-deleted user's
+  // review, so we retry, then escalate any hold-outs to Sentry AND stamp their
+  // ids onto the audit entry below — a durable to-do the S6 reconciliation script
+  // can sweep — instead of losing them in a console line.
+  const staleRatingRecipeIds = []
   for (const recipeId of reviewedRecipeIds) {
     if (ownRecipeIds.has(recipeId)) continue
     try {
-      await recomputeRecipeRating(db, recipeId)
+      await recomputeWithRetry(db, recipeId)
     } catch (err) {
+      staleRatingRecipeIds.push(recipeId)
+      Sentry.captureException(err, {
+        tags: { area: 'deleteAccount.recompute' },
+        extra: { uid, recipeId },
+      })
       console.error('deleteAccount: rating recompute failed for', recipeId, err.message)
     }
   }
@@ -480,6 +536,9 @@ router.post('/deleteAccount', verifyToken, asyncHandler(async (req, res) => {
     targetType: 'user',
     targetId: uid,
     targetLabel: username ? `@${username}` : null,
+    // Only present when a post-commit recompute couldn't be salvaged — leaves a
+    // durable, queryable record of which surviving recipes need reconciliation.
+    metadata: staleRatingRecipeIds.length ? { staleRatingRecipeIds } : null,
   })
 
   await admin.auth().deleteUser(uid)
