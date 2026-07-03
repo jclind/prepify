@@ -443,6 +443,18 @@ findings table.)*
       fields" (both profile endpoints). Gates: server Jest **714/714**, `tsc --noEmit` clean. Low (PII =
       internal admin uids, not user-facing). *(surfaced 2026-06-26 in the security sweep; list-endpoint leak
       caught 2026-07-02 in code review of the fix.)*
+- `[ ]` **`getCreatedRecipes` leaks the same admin moderation stamps to the (non-admin) author** —
+  `GET /getCreatedRecipes` (`server/routes/users.js:61`), the account "My Recipes" list, returns full recipe
+  docs with **no projection** (`.find(filter).sort(...).toArray()`, `filter = { userId: uid,
+  ...RECIPE_OWNER_VISIBLE }`). If any of the author's own recipes was ever moderated/featured, the doc carries
+  `moderatedBy`/`featuredBy`/`publishUpdatedBy` (admin Firebase uids), so the response ships them to the
+  non-admin author — the **same leak class** as the #397 public-projection item, just on an authenticated
+  owner endpoint (narrower audience: only the recipe's own author, not anonymous). Pre-existing; not touched by
+  PR #226 (which scoped to *public* reads). Note the plain card projection won't do here: the owner list needs
+  `status` to badge held recipes, so use `publicRecipeProjection` (keeps `status`/`userId`, drops the six
+  stamps) or a small owner-card projection. Sibling reads are already clean — `getSavedRecipes` uses
+  `SAVED_CARD_PROJECTION`. Low. *(caught 2026-07-02 in the same code review that found the list-endpoint leak;
+  see the #397 item above.)*
 - `[ ]` **Recipe numeric/array fields aren't range- or type-validated server-side** —
   `validateRecipeBounds` (`server/util/recipeLimits.js`, used by add/editRecipe) bounds title/description
   length, ingredient/instruction counts, and instruction-content length, but NOT the numeric fields
