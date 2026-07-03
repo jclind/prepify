@@ -1,6 +1,8 @@
-// Server-side bounds for recipe input. Mirrors src/util/recipeLimits.ts — keep
-// the two files in sync. This is the authoritative, defense-in-depth check:
-// the client enforces the same limits, but never trust the client.
+// Server-side bounds for recipe input. The string/count limits below mirror
+// src/util/recipeLimits.ts — keep those two in sync. The numeric range bounds
+// are server-only: the client constrains those through stricter input-widget
+// caps, so they aren't mirrored client-side. Either way this is the
+// authoritative, defense-in-depth check: never trust the client.
 const TITLE_MAX_LENGTH = 50
 const DESCRIPTION_MAX_LENGTH = 2000
 const INSTRUCTION_MAX_LENGTH = 1000
@@ -14,7 +16,9 @@ const MAX_INSTRUCTIONS = 50
 // an absurdly large value that skews sorts/aggregates — so clamp type AND range
 // here too. Times are whole minutes: the client's max prep+cook is ~12000 min, so a
 // shared two-week ceiling covers legitimate long cures/ferments while rejecting
-// garbage. Storage life is in whole days; servingPrice is in whole US cents.
+// garbage. Storage life is in whole days. servingPrice is in US cents but is
+// derived (rounded) rather than typed, so it's bounded and non-negative but not
+// integer-pinned — see the `integer: false` note on NUMERIC_RECIPE_FIELDS below.
 const MAX_TIME_MINUTES = 60 * 24 * 14 // 20160 (two weeks)
 const MAX_STORAGE_DAYS = 365
 const MAX_SERVINGS = 1000
