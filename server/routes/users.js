@@ -24,6 +24,27 @@ const SAVED_CARD_PROJECTION = {
   rating: 1,
 }
 
+// The "My Recipes" grid (UserRecipeThumbnail) renders only these fields — the
+// image/title, a price + created date, the three-up views/saves/made strip, and
+// a time/rating footer. Projecting to them keeps this list off the full recipe
+// bodies (ingredients, instructions, nutritionData) it never shows, and — being
+// a whitelist, like the public projections — structurally keeps the internal
+// moderation stamps (moderatedBy/moderatedAt, featuredBy/featuredAt,
+// publishUpdatedBy/publishUpdatedAt, which carry admin Firebase uids) out of the
+// author's response. _id rides along by default. No status/userId: the thumbnail
+// renders neither (add them here if a "held for review" badge is introduced).
+const CREATED_CARD_PROJECTION = {
+  title: 1,
+  recipeImage: 1,
+  servingPrice: 1,
+  createdAt: 1,
+  views: 1,
+  numTimesSaved: 1,
+  numTimesMade: 1,
+  totalTime: 1,
+  rating: 1,
+}
+
 // Field sorts order by attributes that live on the recipe docs (title, rating,
 // cook time) rather than on the saved-entry (dateSaved), so getSavedRecipes
 // has to fetch the docs before it can sort. Save-time orders ('newAdd'/'oldAdd'
@@ -59,7 +80,7 @@ router.get('/getCreatedRecipes', verifyToken, asyncHandler(async (req, res) => {
   const filter = { userId: uid, ...RECIPE_OWNER_VISIBLE }
   const [recipes, totalCount] = await Promise.all([
     collection
-      .find(filter)
+      .find(filter, { projection: CREATED_CARD_PROJECTION })
       .sort(sort)
       .skip(pageNum * perPage)
       .limit(perPage)

@@ -301,6 +301,71 @@ describe('GET /getCreatedRecipes', () => {
     expect(res.body.recipes).toHaveLength(1)
     expect(res.body.recipes[0]._id).toBe('r1')
   })
+
+  it('projects to the card shape — never leaks internal moderation stamps to the author', async () => {
+    // Regression: the endpoint used to return full recipe docs, so the admin-uid
+    // moderation/curation stamps ($set by the moderation routes) reached the
+    // non-admin author. The card projection is a whitelist, so they can't.
+    await seedRecipes([
+      {
+        _id: 'r1',
+        title: 'Mine',
+        userId: TEST_UID,
+        createdAt: '1000',
+        recipeImage: 'img.jpg',
+        servingPrice: 3,
+        totalTime: 20,
+        views: 5,
+        numTimesSaved: 2,
+        numTimesMade: 1,
+        rating: { rateValue: 4, rateCount: 3 },
+        // Heavy body the card never renders + the internal stamps that must not leak.
+        ingredients: [{ name: 'flour' }],
+        instructions: ['mix'],
+        nutritionData: { calories: 100 },
+        moderatedBy: 'admin-uid',
+        moderatedAt: '2000',
+        featuredBy: 'admin-uid',
+        featuredAt: '3000',
+        publishUpdatedBy: 'admin-uid',
+        publishUpdatedAt: '4000',
+      },
+    ])
+
+    const res = await request(app)
+      .get('/api/getCreatedRecipes')
+      .set(AUTH_HEADER)
+
+    expect(res.status).toBe(200)
+    const recipe = res.body.recipes[0]
+    // The six admin-uid stamps and the heavy body are gone.
+    for (const key of [
+      'moderatedBy',
+      'moderatedAt',
+      'featuredBy',
+      'featuredAt',
+      'publishUpdatedBy',
+      'publishUpdatedAt',
+      'ingredients',
+      'instructions',
+      'nutritionData',
+    ]) {
+      expect(recipe).not.toHaveProperty(key)
+    }
+    // The fields the thumbnail renders survive.
+    expect(recipe).toMatchObject({
+      _id: 'r1',
+      title: 'Mine',
+      recipeImage: 'img.jpg',
+      servingPrice: 3,
+      createdAt: '1000',
+      totalTime: 20,
+      views: 5,
+      numTimesSaved: 2,
+      numTimesMade: 1,
+      rating: { rateValue: 4, rateCount: 3 },
+    })
+  })
 })
 
 // ─── getAccountCountsFor (shared helper) ──────────────────────────────────────
