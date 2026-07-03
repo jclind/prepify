@@ -382,7 +382,7 @@ sweep's cheap, unambiguous hardening shipped in the sweep PR; these are the stru
 The headline IDOR/authz, CORS, secrets-in-git, and XSS checks all came back clean — see the sweep PR's
 findings table.)*
 
-- `[ ]` **[action] Revoke the live OpenAI key sitting in cleartext in the local `.env`** *(highest-priority
+- `[x]` **[action] Revoke the live OpenAI key sitting in cleartext in the local `.env`** *(highest-priority
   follow-up)* — `.env:9` carries a full-access `VITE_OPEN_AI_API_KEY = sk-…`. Verified **dead** (zero
   references in `src/`, so Vite does NOT bundle it) and **never committed** (`.env` is gitignored; `git log
   -S` for the key is clean), so it is not an active leak — but it's a live, full-access credential in
@@ -390,6 +390,10 @@ findings table.)*
   (`OPENAI_API_KEY` in `server/.env`). While there, drop the now-dead `SPOONACULAR_API_KEY` from
   `server/.env` (the v2 parser is key-free — the proxy holds the key). These are local gitignored files, so
   this is an operator action, not a code change / PR. *(surfaced 2026-06-26 in the security sweep.)*
+  **(done 2026-07-03 — both keys revoked in their provider dashboards (OpenAI + Spoonacular) and the dead
+  lines deleted from local `.env` (`VITE_OPEN_AI_API_KEY`) and `server/.env` (`SPOONACULAR_API_KEY`); swept
+  the tree afterward, no other on-disk copies remain. The `.env.example` comment noting the key is unneeded
+  was left in place.)**
 - `[ ]` **Public recipe reads return the full Mongo doc, leaking internal fields** — `GET /getRecipe`'s
   public path (`server/routes/recipes.js:411-437`) returns the entire recipe document with no projection,
   so internal curation/moderation stamps (`moderatedBy`/`moderatedAt`/`featuredBy`/`featuredAt`/
