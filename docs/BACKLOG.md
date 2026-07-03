@@ -394,15 +394,34 @@ findings table.)*
   lines deleted from local `.env` (`VITE_OPEN_AI_API_KEY`) and `server/.env` (`SPOONACULAR_API_KEY`); swept
   the tree afterward, no other on-disk copies remain. The `.env.example` comment noting the key is unneeded
   was left in place.)**
-- `[ ]` **Public recipe reads return the full Mongo doc, leaking internal fields** — `GET /getRecipe`'s
-  public path (`server/routes/recipes.js:411-437`) returns the entire recipe document with no projection,
+- `[x]` **Public recipe reads return the full Mongo doc, leaking internal fields** — `GET /getRecipe`'s
+  public path (`server/routes/recipes.js:411-437`) returned the entire recipe document with no projection,
   so internal curation/moderation stamps (`moderatedBy`/`moderatedAt`/`featuredBy`/`featuredAt`/
-  `publishUpdatedBy`/`publishUpdatedAt`/`status` — admin Firebase uids + moderation metadata) leak to
-  anonymous clients on any recipe that was ever featured/unhidden. `publicProfile.js:74` & `:157` share the
-  full-doc pattern (only `RECIPE_VISIBLE`/active recipes, so no moderation-state leak, but they still expose
-  the author uid + other internal fields the card never reads). Fix: a shared public-recipe projection /
-  output whitelist (verify the FE doesn't read the stamped fields first). Low (PII = internal admin uids,
-  not user-facing). *(surfaced 2026-06-26 in the security sweep.)*
+  `publishUpdatedBy`/`publishUpdatedAt` — admin Firebase uids + moderation metadata) leaked to
+  anonymous clients on any recipe that was ever featured/unhidden. `publicProfile.js:74` & `:157` shared the
+  full-doc pattern (only `RECIPE_VISIBLE`/active recipes, so no moderation-state leak, but they still exposed
+  the author uid + other internal fields the card never reads).
+  - **DONE (PR #226).** Added a shared **whitelist** (not a blacklist of the six stamps, so a future internal
+    field can't silently leak) in `server/util/recipeFields.js`: `publicRecipeProjection` = exactly the client
+    `RecipeType` shape, built on `CREATABLE_RECIPE_FIELDS` so new user-content fields propagate automatically;
+    and a lighter `publicRecipeCardProjection` (drops `userId`/`status` too) for profile cards.
+    - `getRecipe` public (`findOneAndUpdate`) + owner-preview (`findOne`) paths now project to
+      `publicRecipeProjection`; the **admin** path keeps the full doc. `publicProfile.js` `getPublicProfile` +
+      `getPublicProfileRecipes` project to `publicRecipeCardProjection`.
+    - **FE-read check first** (Explore over `src/`): the client reads `userId` (owner-gating on
+      `SingleRecipe`/`EditRecipe`) and `status` (owner "held for review" notice) — both **kept** on the detail
+      response — but reads **none** of the six stamps anywhere, and the profile page reads neither `userId`
+      nor `status`. So the whitelist keeps every field the UI consumes and drops only the unread internal ones.
+    - **Evidence — live dev server, anonymous `GET /api/getRecipe` on a recipe seeded with all six stamps +
+      `featured:true`:** response keys = `_id, authorUsername, cuisine, description, featured, ingredients,
+      instructions, mealTypes, numTimesMade, numTimesSaved, nutritionLabels, rating, status, title, userId,
+      views` → **zero** moderation stamps; `userId`/`status` retained; `views` still incremented 10→11 (the
+      `$inc` coexists with the projection). Profile cards (`getPublicProfile` + paged): stamps **and**
+      `userId`/`status` absent, display fields (title/rating/totalTime/servingPrice/numTimesSaved) present.
+    - Tests: `recipes.test.js` "GET /getRecipe — public projection" (anon strips stamps, keeps client fields,
+      view still increments, **admin still gets full doc**, owner-preview stripped) + `publicProfile.test.js`
+      "cards omit internal fields" (both profile endpoints). Gates: server Jest **712/712**, `tsc --noEmit`
+      clean. Low (PII = internal admin uids, not user-facing). *(surfaced 2026-06-26 in the security sweep.)*
 - `[ ]` **Recipe numeric/array fields aren't range- or type-validated server-side** —
   `validateRecipeBounds` (`server/util/recipeLimits.js`, used by add/editRecipe) bounds title/description
   length, ingredient/instruction counts, and instruction-content length, but NOT the numeric fields

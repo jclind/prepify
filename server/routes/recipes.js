@@ -15,7 +15,7 @@ const { validateRequiredRecipeFields, validateRecipeBounds } = require('../util/
 const { moderateText } = require('../util/textModeration')
 const { moderateImage } = require('../util/imageModeration')
 const { gatherRecipeText, holdRecipeForReview, respondBlocked, worstVerdict, openAutomodReportQuery, restoreHeldRecipe } = require('../util/automod')
-const { EDITABLE_RECIPE_FIELDS, CREATABLE_RECIPE_FIELDS, pickFields } = require('../util/recipeFields')
+const { EDITABLE_RECIPE_FIELDS, CREATABLE_RECIPE_FIELDS, pickFields, publicRecipeProjection } = require('../util/recipeFields')
 const { deleteRecipeImage } = require('../util/firebaseStorage')
 const { teardownRecipeDocs } = require('../util/teardownRecipe')
 const { facetsCache } = require('../util/facetsCache')
@@ -421,7 +421,10 @@ router.get('/getRecipe', optionalAuth, asyncHandler(async (req, res) => {
   const recipe = await db.collection('recipes').findOneAndUpdate(
     { ...recipeIdQuery(id), ...RECIPE_VISIBLE },
     { $inc: { views: 1 } },
-    { returnDocument: 'after' }
+    // Public response: project to the client-facing recipe shape so the internal
+    // moderation/curation stamps (admin uids + timestamps) never reach anonymous
+    // callers on an ever-featured/unhidden recipe. See util/recipeFields.
+    { returnDocument: 'after', projection: publicRecipeProjection }
   )
 
   if (!recipe) {
@@ -432,7 +435,12 @@ router.get('/getRecipe', optionalAuth, asyncHandler(async (req, res) => {
     if (req.uid) {
       const own = await db
         .collection('recipes')
-        .findOne({ ...recipeIdQuery(id), userId: req.uid, ...RECIPE_OWNER_VISIBLE })
+        .findOne(
+          { ...recipeIdQuery(id), userId: req.uid, ...RECIPE_OWNER_VISIBLE },
+          // Same public projection: the owner needs status (the held-for-review
+          // notice) + their own userId, but not the admin moderation stamps.
+          { projection: publicRecipeProjection }
+        )
       if (own) return res.json(own)
     }
     return res.status(404).json({ error: 'Not found' })

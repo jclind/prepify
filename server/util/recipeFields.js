@@ -42,6 +42,48 @@ const CREATABLE_RECIPE_FIELDS = [
   'editedAt',
 ]
 
+// The recipe fields safe to return on PUBLIC (unauthenticated / non-admin)
+// responses. This is exactly the shape the client's `RecipeType` consumes; the
+// internal moderation/curation stamps are deliberately excluded because no
+// client reads them and they carry admin Firebase uids + curation metadata:
+//   moderatedBy, moderatedAt, featuredBy, featuredAt, publishUpdatedBy, publishUpdatedAt
+// A whitelist (not a blacklist of those six) so a future internal stamp added to
+// the doc can't silently leak — it stays out of public responses until added
+// here on purpose. Built on CREATABLE_RECIPE_FIELDS so new user-content fields
+// propagate automatically, matching the drafts/edit whitelists above.
+const PUBLIC_RECIPE_FIELDS = [
+  '_id',
+  ...CREATABLE_RECIPE_FIELDS,
+  // Server-maintained stats/social counters + the curation flag the client renders.
+  'rating',
+  'views',
+  'numTimesSaved',
+  'numTimesMade',
+  'featured',
+  // Author uid — the recipe-detail client compares it to the signed-in user to
+  // gate the owner-only Edit/Delete controls, so it must reach the detail response.
+  'userId',
+  // Moderation state — drives the owner's "held for review" notice (and the
+  // admin controls); benign on a publicly-visible recipe, where it's 'published'.
+  'status',
+  // Only ever populated in-memory on the admin getRecipe path; absent otherwise.
+  'automodClassifier',
+]
+
+// The lighter shape for recipe CARDS on a public profile. A card renders only
+// image/title/rating/time/price/saves, so it never reads the author uid or the
+// moderation state — drop them here so the profile lists don't ship the author's
+// Firebase uid to anonymous callers.
+const PUBLIC_RECIPE_CARD_FIELDS = PUBLIC_RECIPE_FIELDS.filter(
+  (f) => !['userId', 'status', 'automodClassifier'].includes(f)
+)
+
+// Mongo inclusion projections derived from the whitelists above, for use as the
+// `projection`/`.project()` argument on the public recipe reads.
+const toProjection = (fields) => Object.fromEntries(fields.map((f) => [f, 1]))
+const publicRecipeProjection = toProjection(PUBLIC_RECIPE_FIELDS)
+const publicRecipeCardProjection = toProjection(PUBLIC_RECIPE_CARD_FIELDS)
+
 // Copy only the whitelisted keys that are present in `body`. Absent keys are
 // left out (callers merge via $set), so a field the client doesn't send is
 // untouched rather than overwritten.
@@ -53,4 +95,13 @@ function pickFields(body, fields) {
   return out
 }
 
-module.exports = { RECIPE_CONTENT_FIELDS, EDITABLE_RECIPE_FIELDS, CREATABLE_RECIPE_FIELDS, pickFields }
+module.exports = {
+  RECIPE_CONTENT_FIELDS,
+  EDITABLE_RECIPE_FIELDS,
+  CREATABLE_RECIPE_FIELDS,
+  PUBLIC_RECIPE_FIELDS,
+  PUBLIC_RECIPE_CARD_FIELDS,
+  publicRecipeProjection,
+  publicRecipeCardProjection,
+  pickFields,
+}
