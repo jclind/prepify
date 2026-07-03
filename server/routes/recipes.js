@@ -18,6 +18,7 @@ const { gatherRecipeText, holdRecipeForReview, respondBlocked, worstVerdict, ope
 const { EDITABLE_RECIPE_FIELDS, CREATABLE_RECIPE_FIELDS, pickFields } = require('../util/recipeFields')
 const { deleteRecipeImage } = require('../util/firebaseStorage')
 const { teardownRecipeDocs } = require('../util/teardownRecipe')
+const { facetsCache } = require('../util/facetsCache')
 
 const router = Router()
 
@@ -164,20 +165,29 @@ router.get('/recipes', asyncHandler(async (req, res) => {
 // offer "Jamaican" when nothing is tagged Jamaican). `distinct` returns raw
 // stored values including null/'' — drop the empties; the client maps the rest
 // back to its curated label lists.
+//
+// Served from a short-TTL in-process cache (util/facetsCache): each distinct()
+// is an unavoidable full COLLSCAN, and this route is hit on every /recipes load,
+// so caching collapses three catalog scans per load to one refresh per TTL
+// window. Recipe writes (add/edit/delete) bust the cache so new values surface
+// on the next load; see facetsCache for the invalidation reasoning.
 router.get('/recipes/facets', asyncHandler(async (req, res) => {
-  const collection = getDB().collection('recipes')
-  const clean = (arr) =>
-    arr.filter((v) => typeof v === 'string' && v.trim() !== '')
-  const [cuisines, diets, mealTypes] = await Promise.all([
-    collection.distinct('cuisine'),
-    collection.distinct('nutritionLabels'),
-    collection.distinct('mealTypes'),
-  ])
-  res.json({
-    cuisines: clean(cuisines),
-    diets: clean(diets),
-    mealTypes: clean(mealTypes),
+  const facets = await facetsCache.get(async () => {
+    const collection = getDB().collection('recipes')
+    const clean = (arr) =>
+      arr.filter((v) => typeof v === 'string' && v.trim() !== '')
+    const [cuisines, diets, mealTypes] = await Promise.all([
+      collection.distinct('cuisine'),
+      collection.distinct('nutritionLabels'),
+      collection.distinct('mealTypes'),
+    ])
+    return {
+      cuisines: clean(cuisines),
+      diets: clean(diets),
+      mealTypes: clean(mealTypes),
+    }
   })
+  res.json(facets)
 }))
 
 // GET /searchAutoCompleteRecipes — quick title search for autocomplete.
@@ -486,6 +496,11 @@ router.post('/addRecipe', verifyToken, requireActive, recipeWriteLimiter, asyncH
     views: 0,
   }
   await db.collection('recipes').insertOne(docToInsert)
+  // A new recipe can introduce a cuisine/diet/mealType the browse filter UI has
+  // never seen; bust the facets cache so it surfaces on the next load, not after
+  // the TTL. (Held/pending recipes count too — the facets distinct is unfiltered
+  // by status.)
+  facetsCache.invalidate()
   await db.collection('userRecipeData').updateOne(
     { _id: uid },
     { $push: { userRecipes: { recipeId: newId } } },
@@ -570,6 +585,9 @@ router.put('/editRecipe', verifyToken, requireActive, recipeWriteLimiter, asyncH
   if (!updated) {
     return res.status(404).json({ error: 'Recipe not found' })
   }
+  // An edit can change cuisine/diet/mealType (introduce a new value or drop the
+  // last of an old one), so refresh the facets cache on the next load.
+  facetsCache.invalidate()
   if (shouldHold) {
     const held = await holdRecipeForReview(db, { recipeId, title: body.title, verdict })
     if (held) updated.status = 'pending_review'
@@ -605,6 +623,10 @@ router.delete('/deleteRecipe', verifyToken, asyncHandler(async (req, res) => {
   } finally {
     await session.endSession()
   }
+
+  // Deleting the last recipe of a cuisine/diet/mealType should drop its filter
+  // chip; busting the cache makes the next load recompute without it.
+  facetsCache.invalidate()
 
   // External side effect — runs after the transaction commits and never
   // fails the request (an orphaned image is preferable to a 500 here).

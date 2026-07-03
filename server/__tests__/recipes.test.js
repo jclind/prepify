@@ -251,6 +251,56 @@ describe('GET /recipes/facets', () => {
     // The empty-string cuisine from f-3 is filtered out.
     expect(res.body.cuisines).not.toContain('')
   })
+
+  it('serves a cached response — a direct DB insert is not reflected until the cache is busted', async () => {
+    const { facetsCache } = require('../util/facetsCache')
+    const db = getDB()
+
+    // Warm the cache.
+    const first = await request(server).get('/api/recipes/facets')
+    expect(first.body.cuisines.sort()).toEqual(['Italian', 'Mexican'])
+
+    // Insert straight into the collection, bypassing the write routes that bust
+    // the cache — so this new cuisine must NOT appear while the cache is warm.
+    await db.collection('recipes').insertOne({
+      ...BASE_RECIPE,
+      _id: 'f-cache',
+      cuisine: 'Thai',
+    })
+    const cached = await request(server).get('/api/recipes/facets')
+    expect(cached.body.cuisines.sort()).toEqual(['Italian', 'Mexican'])
+
+    // After an explicit bust, the next load rescans and picks it up.
+    facetsCache.invalidate()
+    const fresh = await request(server).get('/api/recipes/facets')
+    expect(fresh.body.cuisines.sort()).toEqual(['Italian', 'Mexican', 'Thai'])
+  })
+
+  it('surfaces a newly added recipe\'s cuisine on the next load (addRecipe busts the cache)', async () => {
+    // Warm the cache without the new cuisine.
+    const before = await request(server).get('/api/recipes/facets')
+    expect(before.body.cuisines).not.toContain('Thai')
+
+    // Adding through the real route must invalidate the cache…
+    const add = await request(server)
+      .post('/api/addRecipe')
+      .set(AUTH_HEADER)
+      .send({
+        title: 'Pad See Ew',
+        description: 'Thai noodles',
+        ingredients: [{ id: 'i1', name: 'noodles' }],
+        instructions: [{ step: 'Stir fry' }],
+        cuisine: 'Thai',
+        mealTypes: ['dinner'],
+        nutritionLabels: ['vegetarian'],
+      })
+    expect(add.status).toBe(201)
+
+    // …so the next facets load (no explicit bust) already includes it.
+    const after = await request(server).get('/api/recipes/facets')
+    expect(after.body.cuisines).toContain('Thai')
+    expect(after.body.diets).toContain('vegetarian')
+  })
 })
 
 // ─── POST /addRecipe ──────────────────────────────────────────────────────────

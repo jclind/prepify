@@ -1,6 +1,7 @@
 const timers = require('node:timers')
 const { MongoMemoryReplSet } = require('mongodb-memory-server')
 const { connectDB, closeDB } = require('../db')
+const { facetsCache } = require('../util/facetsCache')
 
 // Under Node 26's jest environment the global timer functions aren't stable
 // across a fake-timer test: once a test runs `jest.useFakeTimers()` and then
@@ -24,6 +25,12 @@ const installRealTimers = () => {
 }
 installRealTimers()
 beforeEach(installRealTimers)
+
+// The /recipes/facets cache is a process-wide singleton that outlives the
+// per-test DB reset (recipes.test.js afterEach deleteMany). Clear it before
+// every test so a facets response cached from one test's seed data can't leak
+// into another test that seeded different recipes.
+beforeEach(() => facetsCache.invalidate())
 
 let mongod
 

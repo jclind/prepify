@@ -774,11 +774,33 @@ findings table.)*
   needs its own `{sortKey, _id}` index) and `getSingleUserReviews` (userId-keyed, still blocking-sorts on
   `{userId:1,reviewCreatedAt:-1}`/`{userId:1,rating:-1}`). All three additions went into `ensureIndexes()` so they
   deploy with the code; `createIndex` is idempotent and the new names don't collide with the migration's.)**
-- `[ ]` **Perf: `/recipes/facets` runs 3 unfiltered `distinct()` = 3 full `recipes` scans per browse load**
-  (`server/routes/recipes.js:167-181`, `distinct('cuisine'|'nutritionLabels'|'mealTypes')`). Called on every
-  `/recipes` page load to build the filter UI. Cache the result (short TTL) or maintain a small summary doc
-  (`{_id:'facets', cuisines, diets, mealTypes}`) refreshed on recipe insert/update. *(surfaced 2026-06-26 in the
-  Performance sweep.)*
+- `[x]` **Perf: `/recipes/facets` runs 3 unfiltered `distinct()` = 3 full `recipes` scans per browse load**
+  (`server/routes/recipes.js`, `distinct('cuisine'|'nutritionLabels'|'mealTypes')`). Called on every
+  `/recipes` page load to build the filter UI. *(surfaced 2026-06-26 in the Performance sweep.)* **DONE (this PR).
+  Chose the short-TTL in-process cache over a summary doc: a `distinct` with no predicate is a COLLSCAN that no
+  index can serve, and a summary doc buys nothing here — a delete or a cuisine-edit-away can't be reasoned about
+  incrementally (you can't know a value is gone everywhere without a rescan), so it would still need a full
+  recompute on those paths, at the cost of extra invalidation surface and a persisted doc to keep consistent. The
+  cache also preserves the exact all-statuses `distinct` semantics for free. New `server/util/facetsCache.js`: a
+  5-min TTL cache with single-flight (one scan serves a burst of cold-cache requests) and a generation guard (a
+  scan invalidated mid-flight returns to its caller but doesn't poison the cache). The route reads through it; the
+  write paths that can introduce a NEW value — `addRecipe`/`editRecipe` — plus `deleteRecipe` call
+  `invalidate()`, so a new cuisine/diet/mealType surfaces on the *next* load, not after the TTL. The rare bulk
+  removers (account-delete cascade, admin status flips) ride the TTL backstop; a chip lingering for a briefly-empty
+  cuisine is harmless and already possible today (the `distinct` is unfiltered by status, so hidden/pending recipes
+  already contribute chips). Client tolerance is high regardless — the browse page already React-Query-caches this
+  response for 10 min and only uses `cuisines` (to gray out empty filter chips; diets/mealTypes render from
+  hardcoded lists).
+  **Evidence (dev Mongo, `prepify-dev`; catalog is small so the plan is the proof, not the timing):**
+    - BEFORE — `explain('executionStats')` on each `distinct` (empty query): winningPlan stage **COLLSCAN**,
+      `totalDocsExamined = 12` (= full collection), `totalKeysExamined = 0` (no index possible). Three of these ran
+      per `/recipes` load.
+    - AFTER — live server, two back-to-back `GET /api/recipes/facets`: cold **0.223 s** (runs the three scans) →
+      warm **0.0013 s** (served from cache, no DB round-trip; ~170×), identical payload.
+    - Behaviour locked by tests: `__tests__/facetsCache.test.js` (compute-once-within-TTL, TTL expiry, invalidate,
+      single-flight, mid-flight-invalidate guard) and two `recipes.test.js` cases (a warm cache hides a direct DB
+      insert until busted; `POST /addRecipe` busts the cache so the new cuisine appears on the next load).
+    - Gates: server Jest **705 pass**, root Vitest **550 pass / 2 skip** (untouched), `tsc --noEmit` clean.**
 - `[ ]` **Perf: recipe-page CLS ≈ 0.10 from the conditional controls block popping in above the hero** —
   `RecipeControls` (`src/pages/SingleRecipe/SingleRecipe.tsx:296`) renders only after `currRecipe` resolves
   (`currRecipe && …`), with no reserved space, so on load it inserts above `header.hero` and pushes the hero +
