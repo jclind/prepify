@@ -14,6 +14,7 @@ const { deleteRecipeImage, deleteProfilePhoto } = require('../util/firebaseStora
 const recipeRating = require('../util/recipeRating')
 const { recipeIdInQuery } = require('../util/recipeIdQuery')
 const { RECIPE_VISIBLE } = require('../util/moderation')
+const { publicRecipeProjection } = require('../util/recipeFields')
 const { moderateText } = require('../util/textModeration')
 const { moderateImage } = require('../util/imageModeration')
 const { respondBlocked } = require('../util/automod')
@@ -354,12 +355,21 @@ router.get('/exportMyData', verifyToken, asyncHandler(async (req, res) => {
   // hidden by moderation (RECIPE_VISIBLE, matching what GET /getSavedRecipes will
   // serve) — is preserved as its bare reference with `recipe: null`, so the user
   // never loses the record of what they saved and we never leak a hidden body.
+  //
+  // Saved recipes are, by definition, OTHER users' recipes, so hydrate through
+  // publicRecipeProjection — the same non-owner whitelist the public reads use.
+  // Without it the export would ship the internal admin-uid moderation stamps
+  // (moderatedBy/moderatedAt, featuredBy/featuredAt, publishUpdatedBy/At) of
+  // another user's recipe to this user, re-leaking exactly what #226/#227 sealed.
   const savedRefs = userRecipeData?.savedRecipes ?? []
   const savedIds = savedRefs.map((e) => e.recipeId).filter(Boolean)
   const savedBodies = savedIds.length
     ? await db
         .collection('recipes')
-        .find({ ...recipeIdInQuery(savedIds), ...RECIPE_VISIBLE })
+        .find(
+          { ...recipeIdInQuery(savedIds), ...RECIPE_VISIBLE },
+          { projection: publicRecipeProjection }
+        )
         .toArray()
     : []
   const savedById = new Map(savedBodies.map((r) => [String(r._id), r]))

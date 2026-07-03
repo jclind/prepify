@@ -653,6 +653,47 @@ describe('GET /exportMyData', () => {
     expect(res.body.savedRecipes[0].recipeId).toBe('hidden-1')
     expect(res.body.savedRecipes[0].recipe).toBeNull()
   })
+
+  it('does not leak another user\'s admin moderation stamps into the hydrated body', async () => {
+    await seedUser(TEST_UID, 'saver')
+    const db = getDB()
+    // A saved recipe is someone else's recipe, and it may carry internal admin
+    // stamps (admin Firebase uids) from a prior moderation/curation action. The
+    // export must hydrate it through the public whitelist, not the raw doc.
+    await db.collection('recipes').insertOne({
+      _id: 'stamped-1',
+      userId: 'other',
+      title: 'Stamped Stew',
+      status: 'published',
+      ingredients: [{ name: 'water' }],
+      moderatedBy: 'admin-uid-1',
+      moderatedAt: '2026-01-01',
+      featuredBy: 'admin-uid-2',
+      featuredAt: '2026-01-02',
+      publishUpdatedBy: 'admin-uid-3',
+      publishUpdatedAt: '2026-01-03',
+    })
+    await db
+      .collection('userRecipeData')
+      .insertOne({ _id: TEST_UID, savedRecipes: [{ recipeId: 'stamped-1', dateSaved: '1' }] })
+
+    const res = await request(app).get('/api/exportMyData').set(AUTH_HEADER)
+
+    const { recipe } = res.body.savedRecipes[0]
+    // Public content still hydrates...
+    expect(recipe.title).toBe('Stamped Stew')
+    // ...but none of the six admin-uid moderation/curation stamps ride along.
+    for (const field of [
+      'moderatedBy',
+      'moderatedAt',
+      'featuredBy',
+      'featuredAt',
+      'publishUpdatedBy',
+      'publishUpdatedAt',
+    ]) {
+      expect(recipe).not.toHaveProperty(field)
+    }
+  })
 })
 
 // ─── POST /deleteAccount ─────────────────────────────────────────────────────
