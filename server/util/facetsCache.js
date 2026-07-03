@@ -16,8 +16,13 @@
 // Invalidation correctness — "a newly added recipe's cuisine/diet/mealType must
 // surface in the filter UI":
 //   - New VALUES only ever enter the catalog via addRecipe / editRecipe. Those
-//     paths call invalidate() so the value is picked up on the very next load
-//     rather than waiting out the TTL (immediate, not merely eventual).
+//     paths call invalidate() so the value is picked up on the next load rather
+//     than waiting out the TTL. (One concurrency nuance: a scan already in flight
+//     when invalidate() lands is still shared with any request that arrives before
+//     it resolves, so that one request can return the pre-write result. The
+//     generation guard below keeps that stale result out of the cache, so the
+//     load after it recomputes fresh — the value surfaces within one extra load,
+//     never delayed to the TTL.)
 //   - deleteRecipe also invalidates, so a removed value's chip drops on the next
 //     load (the fresh recompute simply no longer sees it).
 //   - The rare bulk removers (account-deletion cascade, admin status changes)
