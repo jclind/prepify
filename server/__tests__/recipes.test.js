@@ -556,6 +556,37 @@ describe('POST /addRecipe', () => {
       await expectRejected({ instructions }, /instruction cannot exceed/i)
     })
 
+    it('rejects an ingredient line over 200 characters', async () => {
+      const ingredients = [
+        { id: 'i1', parsedIngredient: { originalIngredientString: 'x'.repeat(201) } },
+      ]
+      await expectRejected({ ingredients }, /ingredient cannot exceed/i)
+    })
+
+    it('rejects a negative prep time', async () => {
+      await expectRejected({ prepTime: -5 }, /Prep time must be between/)
+    })
+
+    it('rejects a non-numeric servings', async () => {
+      await expectRejected({ servings: '4' }, /Servings must be a number/)
+    })
+
+    it('rejects a fractional servings', async () => {
+      await expectRejected({ servings: 2.5 }, /Servings must be a whole number/)
+    })
+
+    it('rejects zero servings', async () => {
+      await expectRejected({ servings: 0 }, /Servings must be between/)
+    })
+
+    it('rejects a serving price over the cap', async () => {
+      await expectRejected({ servingPrice: 5_000_000 }, /Serving price must be between/)
+    })
+
+    it('rejects an absurdly large total time', async () => {
+      await expectRejected({ totalTime: Number.MAX_VALUE }, /Total time must be between/)
+    })
+
     it('accepts a payload exactly at the limits (201)', async () => {
       const res = await request(server)
         .post('/api/addRecipe')
@@ -564,6 +595,23 @@ describe('POST /addRecipe', () => {
           ...validBody(),
           title: 'A'.repeat(50),
           description: 'A'.repeat(2000),
+        })
+      expect(res.status).toBe(201)
+    })
+
+    it('accepts valid numeric fields (201)', async () => {
+      const res = await request(server)
+        .post('/api/addRecipe')
+        .set(AUTH_HEADER)
+        .send({
+          ...validBody(),
+          prepTime: 15,
+          cookTime: 30,
+          totalTime: 45,
+          servings: 4,
+          fridgeLife: 3,
+          freezerLife: 90,
+          servingPrice: 250,
         })
       expect(res.status).toBe(201)
     })
@@ -746,6 +794,27 @@ describe('POST /recipes/:id/save', () => {
 
     expect(res.status).toBe(409)
     expect(res.body.error).toMatch(/already saved/)
+  })
+
+  it('does not double-count numTimesSaved under concurrent saves (TOCTOU)', async () => {
+    // Fire several saves of the SAME recipe from the SAME user at once. The old
+    // read-check-then-write let two both pass the "already saved?" check and
+    // double-push / double-inc; the atomic conditional write must land exactly
+    // one save and one increment, the rest 409. (No userRecipeData doc exists
+    // yet, so this also exercises the concurrent-insert / dup-retry path.)
+    const results = await Promise.all(
+      Array.from({ length: 5 }, () =>
+        request(server).post(`/api/recipes/${RECIPE_ID}/save`).set(AUTH_HEADER)
+      )
+    )
+    expect(results.filter(r => r.status === 200)).toHaveLength(1)
+    expect(results.filter(r => r.status === 409)).toHaveLength(4)
+
+    const db = getDB()
+    const recipe = await db.collection('recipes').findOne({ _id: RECIPE_ID })
+    expect(recipe.numTimesSaved).toBe(1)
+    const userData = await db.collection('userRecipeData').findOne({ _id: TEST_UID })
+    expect(userData.savedRecipes).toHaveLength(1)
   })
 })
 
