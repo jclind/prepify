@@ -65,7 +65,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 
 | Wave | Track | Backlog items covered | Status | Domain (collision surface) | Notes / deps |
 |---|---|---|---|---|---|
-| **1** | **S1 · recipes.js write-safety** | `save` TOCTOU (`recipes.js:778-801`); numeric/array bounds in `recipeLimits.js` | `[ ]` | `server/routes/recipes.js`, `server/util/recipeLimits.js` | blocks **I3** (also edits recipes.js) |
+| **1** | **S1 · recipes.js write-safety** | `save` TOCTOU (`recipes.js:778-801`); numeric/array bounds in `recipeLimits.js` | `[~]` `worktree-feat+recipes-write-safety` (2026-07-03) | `server/routes/recipes.js`, `server/util/recipeLimits.js` | blocks **I3** (also edits recipes.js) |
 | **1** | **S2 · auth.js account routes** | data-export saved-recipe bodies (`:355`); `updatePrivacy` writeLimiter (`:310`); harden `deleteAccount` recompute (`:454-461`) | `[ ]` | `server/routes/auth.js` | recompute pairs with **S6** |
 | **1** | **S3 · reviews.js correctness** | ratings Load-More count (`:281-308`); admin-takedown username→userId (`:318-353`) | `[ ]` | `server/routes/reviews.js` | — |
 | **1** | **S4 · rate-limit breadth** | reports per-uid limiter (`reports.js:69`); `acknowledgeAchievements` limiter (`gamification.js:31`) | `[ ]` | `server/routes/reports.js`, `server/routes/gamification.js` | disjoint from S2 |
