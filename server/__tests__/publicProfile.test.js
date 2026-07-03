@@ -325,3 +325,66 @@ describe('GET /getPublicProfileRecipes', () => {
     expect(res.body.totalCount).toBe(2)
   })
 })
+
+// A profile card renders image/title/rating/time/price/saves only, so the
+// endpoints project to a card shape that omits the author's Firebase uid and the
+// internal moderation fields the card never reads. See util/recipeFields.
+describe('public profile recipe cards omit internal fields', () => {
+  const CARD_INTERNAL = [
+    'userId',
+    'status',
+    'moderatedBy',
+    'moderatedAt',
+    'featuredBy',
+    'featuredAt',
+    'publishUpdatedBy',
+    'publishUpdatedAt',
+  ]
+
+  const seedStampedProfileRecipe = async () => {
+    await seedUser(PUB_UID, 'CoolUser')
+    await seedRecipes([
+      {
+        _id: 'card1',
+        userId: PUB_UID,
+        title: 'Shown On A Card',
+        createdAt: '2000',
+        status: 'published',
+        rating: { rateCount: 1, rateValue: 5 },
+        totalTime: 30,
+        servingPrice: 4,
+        numTimesSaved: 2,
+        recipeImage: 'https://example.com/card1.jpg',
+        moderatedBy: 'admin-uid-AAA',
+        featuredBy: 'admin-uid-BBB',
+        publishUpdatedBy: 'admin-uid-CCC',
+      },
+    ])
+  }
+
+  it('GET /getPublicProfile card carries display fields but no author uid / internal fields', async () => {
+    await seedStampedProfileRecipe()
+    const res = await request(app).get('/api/getPublicProfile?username=CoolUser')
+    expect(res.status).toBe(200)
+    const card = res.body.recipes.find(r => r._id === 'card1')
+    expect(card).toBeDefined()
+    for (const k of CARD_INTERNAL) expect(card).not.toHaveProperty(k)
+    // The fields the profile page actually renders are still present.
+    expect(card).toMatchObject({
+      title: 'Shown On A Card',
+      totalTime: 30,
+      servingPrice: 4,
+      numTimesSaved: 2,
+    })
+    expect(card.rating).toEqual({ rateCount: 1, rateValue: 5 })
+  })
+
+  it('GET /getPublicProfileRecipes card omits the same internal fields', async () => {
+    await seedStampedProfileRecipe()
+    const res = await request(app).get('/api/getPublicProfileRecipes?username=CoolUser')
+    expect(res.status).toBe(200)
+    const card = res.body.recipes.find(r => r._id === 'card1')
+    expect(card).toBeDefined()
+    for (const k of CARD_INTERNAL) expect(card).not.toHaveProperty(k)
+  })
+})

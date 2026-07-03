@@ -15,7 +15,7 @@ const { validateRequiredRecipeFields, validateRecipeBounds } = require('../util/
 const { moderateText } = require('../util/textModeration')
 const { moderateImage } = require('../util/imageModeration')
 const { gatherRecipeText, holdRecipeForReview, respondBlocked, worstVerdict, openAutomodReportQuery, restoreHeldRecipe } = require('../util/automod')
-const { EDITABLE_RECIPE_FIELDS, CREATABLE_RECIPE_FIELDS, pickFields } = require('../util/recipeFields')
+const { EDITABLE_RECIPE_FIELDS, CREATABLE_RECIPE_FIELDS, pickFields, publicRecipeProjection, publicRecipeCardProjection } = require('../util/recipeFields')
 const { deleteRecipeImage } = require('../util/firebaseStorage')
 const { teardownRecipeDocs } = require('../util/teardownRecipe')
 const { facetsCache } = require('../util/facetsCache')
@@ -25,20 +25,6 @@ const router = Router()
 // Hard ceiling on client-requested page sizes so a single request can never
 // dump a whole collection (audit §4.5). Shared by every paginated route here.
 const MAX_PER_PAGE = 50
-
-// Fields the home recipe cards (For You row + "What should I cook?" pick) need
-// to render. Shared so the personalized routes project an identical shape.
-const RECIPE_CARD_PROJECTION = {
-  title: 1,
-  recipeImage: 1,
-  cuisine: 1,
-  totalTime: 1,
-  servingPrice: 1,
-  rating: 1,
-  mealTypes: 1,
-  nutritionLabels: 1,
-  numTimesSaved: 1,
-}
 
 // The id-shape variants (string + ObjectId) for a list of recipe ids, ready to
 // drop into an `_id: { $nin: [...] }` clause. Thin wrapper over recipeIdInQuery
@@ -153,7 +139,14 @@ router.get('/recipes', asyncHandler(async (req, res) => {
 
   const collection = db.collection('recipes')
   const [recipes, totalCount] = await Promise.all([
-    collection.find(filter).sort(sort).skip(skip).limit(limit).toArray(),
+    // Card projection: browse renders recipe cards only, so ship the card shape
+    // (no author uid / internal moderation stamps) — see util/recipeFields.
+    collection
+      .find(filter, { projection: publicRecipeCardProjection })
+      .sort(sort)
+      .skip(skip)
+      .limit(limit)
+      .toArray(),
     collection.countDocuments(filter),
   ])
 
@@ -270,7 +263,10 @@ router.get('/getTrendingRecipes', asyncHandler(async (req, res) => {
   // the usual most-viewed ordering fills the rest.
   const recipes = await db
     .collection('recipes')
-    .find({ ...RECIPE_VISIBLE })
+    // Card projection: the trending row renders cards. This row sorts featured
+    // recipes to the front, so it's the read most likely to surface `featuredBy`
+    // (an admin uid) — project it out with the rest of the internal stamps.
+    .find({ ...RECIPE_VISIBLE }, { projection: publicRecipeCardProjection })
     .sort({ featured: -1, views: -1 })
     .limit(limit)
     .toArray()
@@ -306,7 +302,7 @@ router.get('/getForYouRecipes', verifyToken, asyncHandler(async (req, res) => {
     .collection('recipes')
     .find(
       { ...RECIPE_VISIBLE, userId: { $ne: uid }, _id: { $nin: excludeVariants } },
-      { projection: RECIPE_CARD_PROJECTION }
+      { projection: publicRecipeCardProjection }
     )
     .toArray()
 
@@ -350,7 +346,7 @@ router.get('/recipes/random', optionalAuth, asyncHandler(async (req, res) => {
             userId: { $ne: uid },
             _id: { $nin: [...seenVariants, ...excludeVariants] },
           },
-          { projection: RECIPE_CARD_PROJECTION }
+          { projection: publicRecipeCardProjection }
         )
         .toArray()
 
@@ -376,7 +372,7 @@ router.get('/recipes/random', optionalAuth, asyncHandler(async (req, res) => {
     const match = notIds.length ? { ...baseMatch, _id: { $nin: notIds } } : baseMatch
     const [doc] = await db
       .collection('recipes')
-      .aggregate([{ $match: match }, { $sample: { size: 1 } }, { $project: RECIPE_CARD_PROJECTION }])
+      .aggregate([{ $match: match }, { $sample: { size: 1 } }, { $project: publicRecipeCardProjection }])
       .toArray()
     return doc
   }
@@ -421,7 +417,10 @@ router.get('/getRecipe', optionalAuth, asyncHandler(async (req, res) => {
   const recipe = await db.collection('recipes').findOneAndUpdate(
     { ...recipeIdQuery(id), ...RECIPE_VISIBLE },
     { $inc: { views: 1 } },
-    { returnDocument: 'after' }
+    // Public response: project to the client-facing recipe shape so the internal
+    // moderation/curation stamps (admin uids + timestamps) never reach anonymous
+    // callers on an ever-featured/unhidden recipe. See util/recipeFields.
+    { returnDocument: 'after', projection: publicRecipeProjection }
   )
 
   if (!recipe) {
@@ -432,7 +431,12 @@ router.get('/getRecipe', optionalAuth, asyncHandler(async (req, res) => {
     if (req.uid) {
       const own = await db
         .collection('recipes')
-        .findOne({ ...recipeIdQuery(id), userId: req.uid, ...RECIPE_OWNER_VISIBLE })
+        .findOne(
+          { ...recipeIdQuery(id), userId: req.uid, ...RECIPE_OWNER_VISIBLE },
+          // Same public projection: the owner needs status (the held-for-review
+          // notice) + their own userId, but not the admin moderation stamps.
+          { projection: publicRecipeProjection }
+        )
       if (own) return res.json(own)
     }
     return res.status(404).json({ error: 'Not found' })

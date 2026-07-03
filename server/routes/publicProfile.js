@@ -6,6 +6,7 @@ const { getDB } = require('../db')
 const { getAccountCountsFor } = require('../util/accountCounts')
 const { computeGamification } = require('../util/gamification')
 const { RECIPE_VISIBLE } = require('../util/moderation')
+const { publicRecipeCardProjection } = require('../util/recipeFields')
 
 const PROFILE_RECIPE_LIMIT = 12
 
@@ -72,6 +73,9 @@ router.get('/getPublicProfile', asyncHandler(async (req, res) => {
       // a held or taken-down recipe never appears on someone's public profile.
       .collection('recipes')
       .find({ userId: uid, ...RECIPE_VISIBLE })
+      // Card projection: a profile card renders image/title/rating/time/price/
+      // saves only, so don't ship the author's uid or internal fields it never reads.
+      .project(publicRecipeCardProjection)
       // _id tiebreaker keeps ordering deterministic and aligned with the paged
       // /getPublicProfileRecipes endpoint (same sort) across the page boundary.
       .sort({ createdAt: -1, _id: 1 })
@@ -156,6 +160,8 @@ router.get('/getPublicProfileRecipes', asyncHandler(async (req, res) => {
     db
       .collection('recipes')
       .find(filter)
+      // Card projection — see /getPublicProfile above: no author uid / internal fields.
+      .project(publicRecipeCardProjection)
       // _id tiebreaker matches /getPublicProfile's sort so paging stays aligned
       // (no skipped/duplicated recipe when two share a createdAt at a boundary).
       .sort({ createdAt: -1, _id: 1 })

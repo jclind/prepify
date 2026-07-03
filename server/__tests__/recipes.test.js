@@ -303,6 +303,135 @@ describe('GET /recipes/facets', () => {
   })
 })
 
+// ─── GET /getRecipe — public projection ───────────────────────────────────────
+
+// The internal moderation/curation stamps carry admin Firebase uids + curation
+// metadata and must never reach public callers; the client-facing fields must
+// still come through. See util/recipeFields.publicRecipeProjection.
+describe('GET /getRecipe — public projection', () => {
+  const STAMPS = ['moderatedBy', 'moderatedAt', 'featuredBy', 'featuredAt', 'publishUpdatedBy', 'publishUpdatedAt']
+
+  // A published recipe stamped as if it had been moderated + featured by an admin.
+  const seedStamped = (over = {}) =>
+    seedRecipe({
+      ...BASE_RECIPE,
+      _id: 'r-stamped',
+      userId: TEST_UID,
+      status: 'published',
+      featured: true,
+      moderatedBy: 'admin-uid-AAA',
+      moderatedAt: new Date().toISOString(),
+      featuredBy: 'admin-uid-BBB',
+      featuredAt: new Date().toISOString(),
+      publishUpdatedBy: 'admin-uid-CCC',
+      publishUpdatedAt: new Date().toISOString(),
+      ...over,
+    })
+
+  afterEach(() => admin.__resetClaims())
+
+  it('strips the internal moderation stamps from an anonymous read', async () => {
+    await seedStamped()
+    const res = await request(server).get('/api/getRecipe?id=r-stamped')
+    expect(res.status).toBe(200)
+    for (const k of STAMPS) expect(res.body).not.toHaveProperty(k)
+  })
+
+  it('keeps the client-facing fields the UI depends on', async () => {
+    await seedStamped()
+    const res = await request(server).get('/api/getRecipe?id=r-stamped')
+    // userId → owner-gating; status → owner "held for review" notice; plus the
+    // display fields.
+    expect(res.body).toMatchObject({
+      _id: 'r-stamped',
+      title: BASE_RECIPE.title,
+      userId: TEST_UID,
+      status: 'published',
+      featured: true,
+    })
+    expect(res.body.rating).toEqual(BASE_RECIPE.rating)
+  })
+
+  it('still increments the view counter through the projection', async () => {
+    await seedStamped({ views: 4 })
+    const res = await request(server).get('/api/getRecipe?id=r-stamped')
+    expect(res.body.views).toBe(5)
+  })
+
+  it('an admin read still sees the full doc (moderation stamps intact)', async () => {
+    await seedStamped()
+    admin.__setClaims({ admin: true })
+    const res = await request(server).get('/api/getRecipe?id=r-stamped').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    for (const k of STAMPS) expect(res.body).toHaveProperty(k)
+    expect(res.body.moderatedBy).toBe('admin-uid-AAA')
+  })
+
+  it('an owner previewing their own held recipe gets it without the admin stamps', async () => {
+    await seedStamped({ _id: 'r-stamped-held', status: 'pending_review' })
+    const res = await request(server).get('/api/getRecipe?id=r-stamped-held').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(res.body._id).toBe('r-stamped-held')
+    // The owner needs status (the held-for-review notice) but not the admin uids.
+    expect(res.body.status).toBe('pending_review')
+    for (const k of STAMPS) expect(res.body).not.toHaveProperty(k)
+  })
+})
+
+// The public LIST surfaces (browse + trending) render recipe cards, so they
+// project to the lighter card shape — which, like the detail projection, keeps
+// the internal moderation stamps (and the author uid) off anonymous responses.
+describe('public list endpoints — card projection', () => {
+  const CARD_INTERNAL = [
+    'userId',
+    'status',
+    'moderatedBy',
+    'moderatedAt',
+    'featuredBy',
+    'featuredAt',
+    'publishUpdatedBy',
+    'publishUpdatedAt',
+  ]
+
+  // A published, featured recipe carrying all six admin stamps.
+  const seedStampedCard = () =>
+    seedRecipe({
+      ...BASE_RECIPE,
+      _id: 'card-stamped',
+      userId: TEST_UID,
+      status: 'published',
+      featured: true,
+      moderatedBy: 'admin-uid-AAA',
+      moderatedAt: new Date().toISOString(),
+      featuredBy: 'admin-uid-BBB',
+      featuredAt: new Date().toISOString(),
+      publishUpdatedBy: 'admin-uid-CCC',
+      publishUpdatedAt: new Date().toISOString(),
+    })
+
+  it('GET /recipes browse card omits the author uid + internal stamps', async () => {
+    await seedStampedCard()
+    const res = await request(server).get('/api/recipes')
+    expect(res.status).toBe(200)
+    const card = res.body.recipeList.find((r) => r._id === 'card-stamped')
+    expect(card).toBeDefined()
+    for (const k of CARD_INTERNAL) expect(card).not.toHaveProperty(k)
+    // The fields the browse card renders are still present.
+    expect(card).toMatchObject({ title: BASE_RECIPE.title, cuisine: 'Italian' })
+    expect(card.rating).toEqual(BASE_RECIPE.rating)
+  })
+
+  it('GET /getTrendingRecipes card omits the author uid + internal stamps (incl. featuredBy)', async () => {
+    await seedStampedCard()
+    const res = await request(server).get('/api/getTrendingRecipes')
+    expect(res.status).toBe(200)
+    const card = res.body.find((r) => r._id === 'card-stamped')
+    expect(card).toBeDefined()
+    for (const k of CARD_INTERNAL) expect(card).not.toHaveProperty(k)
+    expect(card).toMatchObject({ title: BASE_RECIPE.title })
+  })
+})
+
 // ─── POST /addRecipe ──────────────────────────────────────────────────────────
 
 describe('POST /addRecipe', () => {
