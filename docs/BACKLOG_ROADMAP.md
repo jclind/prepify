@@ -181,6 +181,13 @@ Verified-present but intentionally not scheduled — decisions, post-1.0, or own
   `$primary-accessible` to vivid `#ff5722`). *Note: the shade literals this item wanted to dedupe are now
   **STALE in source** — see below.*
 - **Ideas needing a decision** — friend system · AI-search paid membership · fridge/freezer-life fields — all post-1.0.
+- **`numTimesSaved` counter ↔ save-list cross-collection atomicity** — *filed while reviewing S1.* Save/unsave/made
+  each write the user's list (`userRecipeData`) and the recipe's tally (`recipes.numTimesSaved`/`numTimesMade`) as
+  **two separate `updateOne`s with no transaction**, so a crash/failure between them drifts the counter (list says
+  saved, tally not bumped, or vice-versa on unsave). S1 fixed the *concurrency* double-count within each write, but
+  not this cross-collection seam. **Low severity** (a soft popularity counter used only for the `popular` sort, ±1
+  drift, self-heals on the `$max`-floored unsave), and a real fix needs a **multi-document transaction** (client
+  session + `withTransaction`, requires the replica-set deployment) — hence an infra/design call, not a quick patch.
 
 ---
 
@@ -212,3 +219,9 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
 
 - **2026-07-03** — Roadmap created. All 39 open BACKLOG items verified against the tree (5 parallel verification
   agents); 3 pulled as STALE, the rest placed on Waves 1–5. No tracks started yet.
+- **2026-07-03** — **S1** implemented in `worktree-feat+recipes-write-safety`: atomic conditional `save` (kills the
+  `numTimesSaved` double-count TOCTOU) + numeric/per-ingredient bounds in `validateRecipeBounds`. Local code review
+  extended the atomic fix to the symmetric **unsave** TOCTOU (`DELETE /recipes/:id/save` was still read-then-write).
+  Two follow-ups filed off-board: the cross-collection counter-atomicity seam (see Deferred, needs a txn), and
+  wiring the client `INGREDIENT_MAX_LENGTH` guard into `IngredientsInput` (done in-lane). Verified via the running
+  API + full test gates; not yet PR'd.
