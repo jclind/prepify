@@ -70,13 +70,27 @@ const PUBLIC_RECIPE_FIELDS = [
   'automodClassifier',
 ]
 
-// The lighter shape for recipe CARDS on a public profile. A card renders only
-// image/title/rating/time/price/saves, so it never reads the author uid or the
-// moderation state — drop them here so the profile lists don't ship the author's
-// Firebase uid to anonymous callers.
-const PUBLIC_RECIPE_CARD_FIELDS = PUBLIC_RECIPE_FIELDS.filter(
-  (f) => !['userId', 'status', 'automodClassifier'].includes(f)
-)
+// The lighter shape for recipe CARDS — the single projection shared by every
+// public LIST surface: browse (`GET /recipes`), the home trending / For-You /
+// random rows, and the public-profile tiles. A card renders only
+// image/title/cuisine/time/price/rating/saves, and the For-You/random
+// personalization scores on the tag arrays — none of it needs the heavy detail
+// fields (ingredients/instructions/nutritionData/description) or the author uid /
+// moderation state. An explicit lean whitelist (not the full public shape minus a
+// few keys): cards stay small, and — like the detail whitelist — it structurally
+// can't carry the internal moderation stamps to anonymous callers.
+const PUBLIC_RECIPE_CARD_FIELDS = [
+  '_id',
+  'title',
+  'recipeImage',
+  'cuisine',
+  'totalTime',
+  'servingPrice',
+  'rating',
+  'mealTypes',
+  'nutritionLabels',
+  'numTimesSaved',
+]
 
 // Mongo inclusion projections derived from the whitelists above, for use as the
 // `projection`/`.project()` argument on the public recipe reads.

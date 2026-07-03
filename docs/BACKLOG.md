@@ -400,14 +400,24 @@ findings table.)*
   `publishUpdatedBy`/`publishUpdatedAt` — admin Firebase uids + moderation metadata) leaked to
   anonymous clients on any recipe that was ever featured/unhidden. `publicProfile.js:74` & `:157` shared the
   full-doc pattern (only `RECIPE_VISIBLE`/active recipes, so no moderation-state leak, but they still exposed
-  the author uid + other internal fields the card never reads).
+  the author uid + other internal fields the card never reads). A follow-up code review found the same full-doc
+  leak on the two highest-traffic public LIST reads too: `GET /recipes` (browse) and `GET /getTrendingRecipes`
+  both `.toArray()`'d unprojected docs — and trending sorts `featured:-1` first, so it was the read *most*
+  likely to surface `featuredBy` (an admin uid) to anonymous callers. (The other list reads —
+  `searchAutoCompleteRecipes`, `getForYouRecipes`, `recipes/random` — already projected to a card shape.)
   - **DONE (PR #226).** Added a shared **whitelist** (not a blacklist of the six stamps, so a future internal
     field can't silently leak) in `server/util/recipeFields.js`: `publicRecipeProjection` = exactly the client
     `RecipeType` shape, built on `CREATABLE_RECIPE_FIELDS` so new user-content fields propagate automatically;
-    and a lighter `publicRecipeCardProjection` (drops `userId`/`status` too) for profile cards.
-    - `getRecipe` public (`findOneAndUpdate`) + owner-preview (`findOne`) paths now project to
-      `publicRecipeProjection`; the **admin** path keeps the full doc. `publicProfile.js` `getPublicProfile` +
-      `getPublicProfileRecipes` project to `publicRecipeCardProjection`.
+    and a lighter `publicRecipeCardProjection` — the single lean card shape (image/title/cuisine/time/price/
+    rating/saves + the tag arrays For-You scores on; drops `userId`/`status` and all the heavy detail fields)
+    now **shared by every public list surface**. This absorbed the pre-existing local `RECIPE_CARD_PROJECTION`
+    in `recipes.js` (was used by For-You/random), so there's one card projection instead of two divergent ones.
+    - `getRecipe` public (`findOneAndUpdate`) + owner-preview (`findOne`) paths project to
+      `publicRecipeProjection`; the **admin** path keeps the full doc. The list reads —
+      `GET /recipes` (browse), `getTrendingRecipes`, `getForYouRecipes`, `recipes/random`, and both
+      `publicProfile.js` endpoints — project to `publicRecipeCardProjection`. (Browse/trending sort on
+      `views`/`featured`/`createdAt`, which stay sortable even though they're not in the projected shape —
+      Mongo sorts the stored doc, then projects.)
     - **FE-read check first** (Explore over `src/`): the client reads `userId` (owner-gating on
       `SingleRecipe`/`EditRecipe`) and `status` (owner "held for review" notice) — both **kept** on the detail
       response — but reads **none** of the six stamps anywhere, and the profile page reads neither `userId`
@@ -418,10 +428,21 @@ findings table.)*
       views` → **zero** moderation stamps; `userId`/`status` retained; `views` still incremented 10→11 (the
       `$inc` coexists with the projection). Profile cards (`getPublicProfile` + paged): stamps **and**
       `userId`/`status` absent, display fields (title/rating/totalTime/servingPrice/numTimesSaved) present.
+      **Browse + trending** (anon, recipe seeded with all six stamps + `featured:true`): both return exactly the
+      10 card keys (`_id, cuisine, mealTypes, numTimesSaved, nutritionLabels, rating, recipeImage, servingPrice,
+      title, totalTime`) — zero stamps, no `userId`/`status`, and none of the heavy detail fields; the
+      featured-first sort still surfaced the recipe, confirming sort-on-unprojected-field.
+    - **FE-read check for the card shape** (Explore over `src/`): browse (`RecipeCard`), trending/For-You
+      (`HomeRecipeCard`), and the public-profile tiles all read only the 10 card fields — none read `userId`,
+      `status`, or any detail field — so narrowing browse/trending/profile to the shared card shape drops
+      nothing the UI renders (and made the profile cards lighter, since the old `publicRecipeCardProjection`
+      still shipped the full `nutritionData`/ingredients/instructions a card never uses).
     - Tests: `recipes.test.js` "GET /getRecipe — public projection" (anon strips stamps, keeps client fields,
-      view still increments, **admin still gets full doc**, owner-preview stripped) + `publicProfile.test.js`
-      "cards omit internal fields" (both profile endpoints). Gates: server Jest **712/712**, `tsc --noEmit`
-      clean. Low (PII = internal admin uids, not user-facing). *(surfaced 2026-06-26 in the security sweep.)*
+      view still increments, **admin still gets full doc**, owner-preview stripped) + "public list endpoints —
+      card projection" (browse + trending omit uid/stamps) + `publicProfile.test.js` "cards omit internal
+      fields" (both profile endpoints). Gates: server Jest **714/714**, `tsc --noEmit` clean. Low (PII =
+      internal admin uids, not user-facing). *(surfaced 2026-06-26 in the security sweep; list-endpoint leak
+      caught 2026-07-02 in code review of the fix.)*
 - `[ ]` **Recipe numeric/array fields aren't range- or type-validated server-side** —
   `validateRecipeBounds` (`server/util/recipeLimits.js`, used by add/editRecipe) bounds title/description
   length, ingredient/instruction counts, and instruction-content length, but NOT the numeric fields

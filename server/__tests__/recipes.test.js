@@ -378,6 +378,60 @@ describe('GET /getRecipe — public projection', () => {
   })
 })
 
+// The public LIST surfaces (browse + trending) render recipe cards, so they
+// project to the lighter card shape — which, like the detail projection, keeps
+// the internal moderation stamps (and the author uid) off anonymous responses.
+describe('public list endpoints — card projection', () => {
+  const CARD_INTERNAL = [
+    'userId',
+    'status',
+    'moderatedBy',
+    'moderatedAt',
+    'featuredBy',
+    'featuredAt',
+    'publishUpdatedBy',
+    'publishUpdatedAt',
+  ]
+
+  // A published, featured recipe carrying all six admin stamps.
+  const seedStampedCard = () =>
+    seedRecipe({
+      ...BASE_RECIPE,
+      _id: 'card-stamped',
+      userId: TEST_UID,
+      status: 'published',
+      featured: true,
+      moderatedBy: 'admin-uid-AAA',
+      moderatedAt: new Date().toISOString(),
+      featuredBy: 'admin-uid-BBB',
+      featuredAt: new Date().toISOString(),
+      publishUpdatedBy: 'admin-uid-CCC',
+      publishUpdatedAt: new Date().toISOString(),
+    })
+
+  it('GET /recipes browse card omits the author uid + internal stamps', async () => {
+    await seedStampedCard()
+    const res = await request(server).get('/api/recipes')
+    expect(res.status).toBe(200)
+    const card = res.body.recipeList.find((r) => r._id === 'card-stamped')
+    expect(card).toBeDefined()
+    for (const k of CARD_INTERNAL) expect(card).not.toHaveProperty(k)
+    // The fields the browse card renders are still present.
+    expect(card).toMatchObject({ title: BASE_RECIPE.title, cuisine: 'Italian' })
+    expect(card.rating).toEqual(BASE_RECIPE.rating)
+  })
+
+  it('GET /getTrendingRecipes card omits the author uid + internal stamps (incl. featuredBy)', async () => {
+    await seedStampedCard()
+    const res = await request(server).get('/api/getTrendingRecipes')
+    expect(res.status).toBe(200)
+    const card = res.body.find((r) => r._id === 'card-stamped')
+    expect(card).toBeDefined()
+    for (const k of CARD_INTERNAL) expect(card).not.toHaveProperty(k)
+    expect(card).toMatchObject({ title: BASE_RECIPE.title })
+  })
+})
+
 // ─── POST /addRecipe ──────────────────────────────────────────────────────────
 
 describe('POST /addRecipe', () => {
