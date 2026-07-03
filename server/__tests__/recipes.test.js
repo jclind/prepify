@@ -904,6 +904,40 @@ describe('DELETE /recipes/:id/save', () => {
     const recipe = await db.collection('recipes').findOne({ _id: RECIPE_ID })
     expect(recipe.numTimesSaved).toBe(0)
   })
+
+  it('lands exactly one decrement across concurrent unsaves', async () => {
+    // The atomic conditional $pull makes this correct BY CONSTRUCTION: single-
+    // document update semantics guarantee only one racing write removes the
+    // entry (modifiedCount 1) and thus decrements; the rest see recipeId absent
+    // (modifiedCount 0) and 404 without touching the counter. This test asserts
+    // that invariant on the fixed code and exercises the concurrent path.
+    //
+    // NOTE (verified, not assumed): unlike the save-side concurrency test — which
+    // reliably reproduces its pre-fix race because concurrent upserts on a
+    // not-yet-existing doc all read null and multi-$push — the pre-fix unsave
+    // race (read isSaved, then $pull) does NOT reproduce at this HTTP layer even
+    // at 20-way concurrency: the first request's $pull commits before the others'
+    // read resolves, so racy code serializes to the same 1×200/N×404 here. So
+    // this test is path coverage + the atomicity contract, not a regression trap
+    // for that specific TOCTOU — the guarantee rests on the single-doc update,
+    // and reviewers should treat a regression to read-then-write as un-caught by
+    // CI. Seed the counter high so a decrement is observable, not floored at 0.
+    const db = getDB()
+    await db.collection('recipes').updateOne({ _id: RECIPE_ID }, { $set: { numTimesSaved: 5 } })
+
+    const results = await Promise.all(
+      Array.from({ length: 5 }, () =>
+        request(server).delete(`/api/recipes/${RECIPE_ID}/save`).set(AUTH_HEADER)
+      )
+    )
+    expect(results.filter(r => r.status === 200)).toHaveLength(1)
+    expect(results.filter(r => r.status === 404)).toHaveLength(4)
+
+    const recipe = await db.collection('recipes').findOne({ _id: RECIPE_ID })
+    expect(recipe.numTimesSaved).toBe(4)
+    const userData = await db.collection('userRecipeData').findOne({ _id: TEST_UID })
+    expect(userData.savedRecipes).toHaveLength(0)
+  })
 })
 
 // ─── GET /getSavedRecipeIds ────────────────────────────────────────────────────

@@ -844,15 +844,23 @@ router.delete('/recipes/:id/save', verifyToken, requireActive, asyncHandler(asyn
     return res.status(400).json({ error: 'recipeId is required' })
   }
   const uid = req.uid
-  const savedData = await db.collection('userRecipeData').findOne({ _id: uid })
-  const isSaved = savedData?.savedRecipes?.some(e => e.recipeId === recipeId) ?? false
-  if (!isSaved) {
-    return res.status(404).json({ error: 'Recipe not in saved list' })
-  }
-  await db.collection('userRecipeData').updateOne(
-    { _id: uid },
+  // Remove the recipe from savedRecipes in ONE atomic conditional write, and
+  // decrement numTimesSaved only when that pull actually removed an entry. This
+  // mirrors the save route: the old read-check-then-write shape let two
+  // concurrent unsaves both pass the `isSaved` check and both decrement, skewing
+  // the global tally low (the $max floor stops it going negative but not the
+  // over-decrement). Requiring the recipeId be PRESENT in the filter means only
+  // one racing write matches — MongoDB re-checks it under the document write
+  // lock — so modifiedCount reports whether this request is the one that removed
+  // it. No upsert here: unsaving a recipe the user never saved is a 404, not a
+  // doc to create.
+  const pullResult = await db.collection('userRecipeData').updateOne(
+    { _id: uid, 'savedRecipes.recipeId': recipeId },
     { $pull: { savedRecipes: { recipeId } } }
   )
+  if (pullResult.modifiedCount === 0) {
+    return res.status(404).json({ error: 'Recipe not in saved list' })
+  }
   await db.collection('recipes').updateOne(
     recipeIdQuery(recipeId),
     [{ $set: { numTimesSaved: { $max: [{ $subtract: ['$numTimesSaved', 1] }, 0] } } }]
