@@ -1,5 +1,6 @@
 import React, { FC, useState } from 'react'
 import FormInput from 'src/Components/Form/FormInput'
+import { INGREDIENT_MAX_LENGTH } from 'src/util/recipeLimits'
 
 type IngredientsInputProps = {
   // Hands the raw entry to the container, which adds it optimistically and runs
@@ -18,6 +19,13 @@ const IngredientsInput: FC<IngredientsInputProps> = ({ onAdd }) => {
     const trimmed = inputVal.trim()
     if (!trimmed) {
       setHint('Enter an ingredient before adding it.')
+      return
+    }
+    // Mirror the server's per-ingredient cap (validateRecipeBounds) so an
+    // over-long line is caught here with the same message, not bounced as a 400
+    // after the user has moved on.
+    if (trimmed.length > INGREDIENT_MAX_LENGTH) {
+      setHint(`An ingredient cannot exceed ${INGREDIENT_MAX_LENGTH} characters.`)
       return
     }
 

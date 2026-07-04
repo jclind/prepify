@@ -12,6 +12,7 @@ const { fuzzyRankTitles } = require('../util/recipeTitleMatch')
 const { recordAudit } = require('../util/auditLog')
 const { notifyInBackground, notifyRecipeHidden } = require('../util/email')
 const { validateRequiredRecipeFields, validateRecipeBounds } = require('../util/recipeLimits')
+const { upsertWithDupRetry } = require('../util/upsertWithDupRetry')
 const { moderateText } = require('../util/textModeration')
 const { moderateImage } = require('../util/imageModeration')
 const { gatherRecipeText, holdRecipeForReview, respondBlocked, worstVerdict, openAutomodReportQuery, restoreHeldRecipe } = require('../util/automod')
@@ -783,16 +784,27 @@ router.post('/recipes/:id/save', verifyToken, requireActive, asyncHandler(async 
     return res.status(400).json({ error: 'recipeId is required' })
   }
   const uid = req.uid
-  const existingData = await db.collection('userRecipeData').findOne({ _id: uid })
-  const alreadySaved = existingData?.savedRecipes?.some(e => e.recipeId === recipeId) ?? false
-  if (alreadySaved) {
+  // Add the recipe to savedRecipes in ONE atomic conditional write, and bump
+  // numTimesSaved only when that push actually landed. The old shape read the
+  // user doc, checked `alreadySaved`, then pushed + $inc'd — a TOCTOU where two
+  // concurrent saves (double-click, retried request) both passed the check and
+  // double-pushed / double-counted the global save tally. savedRecipes entries
+  // carry a dateSaved, so $addToSet can't dedup them the way madeRecipe does;
+  // instead the filter requires the recipeId be ABSENT, which MongoDB re-checks
+  // under the document write lock, so only one racing write can match. The
+  // write result reports whether it landed (fresh user doc ⇒ upsert; new list
+  // member ⇒ modifiedCount 1). upsertWithDupRetry covers the first-ever save
+  // racing a concurrent insert of this user's doc (unique _id ⇒ E11000 ⇒ retry
+  // as a plain update against the doc that now exists).
+  const addResult = await upsertWithDupRetry(
+    db.collection('userRecipeData'),
+    { _id: uid, 'savedRecipes.recipeId': { $ne: recipeId } },
+    { $push: { savedRecipes: { recipeId, dateSaved: Date.now().toString() } } }
+  )
+  const newlySaved = addResult.upsertedCount > 0 || addResult.modifiedCount > 0
+  if (!newlySaved) {
     return res.status(409).json({ error: 'Recipe already saved' })
   }
-  await db.collection('userRecipeData').updateOne(
-    { _id: uid },
-    { $push: { savedRecipes: { recipeId, dateSaved: Date.now().toString() } } },
-    { upsert: true }
-  )
   await db.collection('recipes').updateOne(
     recipeIdQuery(recipeId),
     { $inc: { numTimesSaved: 1 } }
@@ -832,15 +844,23 @@ router.delete('/recipes/:id/save', verifyToken, requireActive, asyncHandler(asyn
     return res.status(400).json({ error: 'recipeId is required' })
   }
   const uid = req.uid
-  const savedData = await db.collection('userRecipeData').findOne({ _id: uid })
-  const isSaved = savedData?.savedRecipes?.some(e => e.recipeId === recipeId) ?? false
-  if (!isSaved) {
-    return res.status(404).json({ error: 'Recipe not in saved list' })
-  }
-  await db.collection('userRecipeData').updateOne(
-    { _id: uid },
+  // Remove the recipe from savedRecipes in ONE atomic conditional write, and
+  // decrement numTimesSaved only when that pull actually removed an entry. This
+  // mirrors the save route: the old read-check-then-write shape let two
+  // concurrent unsaves both pass the `isSaved` check and both decrement, skewing
+  // the global tally low (the $max floor stops it going negative but not the
+  // over-decrement). Requiring the recipeId be PRESENT in the filter means only
+  // one racing write matches — MongoDB re-checks it under the document write
+  // lock — so modifiedCount reports whether this request is the one that removed
+  // it. No upsert here: unsaving a recipe the user never saved is a 404, not a
+  // doc to create.
+  const pullResult = await db.collection('userRecipeData').updateOne(
+    { _id: uid, 'savedRecipes.recipeId': recipeId },
     { $pull: { savedRecipes: { recipeId } } }
   )
+  if (pullResult.modifiedCount === 0) {
+    return res.status(404).json({ error: 'Recipe not in saved list' })
+  }
   await db.collection('recipes').updateOne(
     recipeIdQuery(recipeId),
     [{ $set: { numTimesSaved: { $max: [{ $subtract: ['$numTimesSaved', 1] }, 0] } } }]

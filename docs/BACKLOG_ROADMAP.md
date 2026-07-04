@@ -65,7 +65,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 
 | Wave | Track | Backlog items covered | Status | Domain (collision surface) | Notes / deps |
 |---|---|---|---|---|---|
-| **1** | **S1 · recipes.js write-safety** | `save` TOCTOU (`recipes.js:778-801`); numeric/array bounds in `recipeLimits.js` | `[ ]` | `server/routes/recipes.js`, `server/util/recipeLimits.js` | blocks **I3** (also edits recipes.js) |
+| **1** | **S1 · recipes.js write-safety** | `save` TOCTOU (`recipes.js:778-801`); numeric/array bounds in `recipeLimits.js` | `[P]` [#228](https://github.com/jclind/prepify/pull/228) (2026-07-03) | `server/routes/recipes.js`, `server/util/recipeLimits.js` | blocks **I3** (also edits recipes.js) |
 | **1** | **S2 · auth.js account routes** | data-export saved-recipe bodies (`:355`); `updatePrivacy` writeLimiter (`:310`); harden `deleteAccount` recompute (`:454-461`) | `[ ]` | `server/routes/auth.js` | recompute pairs with **S6** |
 | **1** | **S3 · reviews.js correctness** | ratings Load-More count (`:281-308`); admin-takedown username→userId (`:318-353`) | `[ ]` | `server/routes/reviews.js` | — |
 | **1** | **S4 · rate-limit breadth** | reports per-uid limiter (`reports.js:69`); `acknowledgeAchievements` limiter (`gamification.js:31`) | `[ ]` | `server/routes/reports.js`, `server/routes/gamification.js` | disjoint from S2 |
@@ -181,6 +181,13 @@ Verified-present but intentionally not scheduled — decisions, post-1.0, or own
   `$primary-accessible` to vivid `#ff5722`). *Note: the shade literals this item wanted to dedupe are now
   **STALE in source** — see below.*
 - **Ideas needing a decision** — friend system · AI-search paid membership · fridge/freezer-life fields — all post-1.0.
+- **`numTimesSaved` counter ↔ save-list cross-collection atomicity** — *filed while reviewing S1.* Save/unsave/made
+  each write the user's list (`userRecipeData`) and the recipe's tally (`recipes.numTimesSaved`/`numTimesMade`) as
+  **two separate `updateOne`s with no transaction**, so a crash/failure between them drifts the counter (list says
+  saved, tally not bumped, or vice-versa on unsave). S1 fixed the *concurrency* double-count within each write, but
+  not this cross-collection seam. **Low severity** (a soft popularity counter used only for the `popular` sort, ±1
+  drift, self-heals on the `$max`-floored unsave), and a real fix needs a **multi-document transaction** (client
+  session + `withTransaction`, requires the replica-set deployment) — hence an infra/design call, not a quick patch.
 
 ---
 
@@ -212,3 +219,9 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
 
 - **2026-07-03** — Roadmap created. All 39 open BACKLOG items verified against the tree (5 parallel verification
   agents); 3 pulled as STALE, the rest placed on Waves 1–5. No tracks started yet.
+- **2026-07-03** — **S1** implemented in `worktree-feat+recipes-write-safety`: atomic conditional `save` (kills the
+  `numTimesSaved` double-count TOCTOU) + numeric/per-ingredient bounds in `validateRecipeBounds`. Local code review
+  extended the atomic fix to the symmetric **unsave** TOCTOU (`DELETE /recipes/:id/save` was still read-then-write).
+  Two follow-ups filed off-board: the cross-collection counter-atomicity seam (see Deferred, needs a txn), and
+  wiring the client `INGREDIENT_MAX_LENGTH` guard into `IngredientsInput` (done in-lane). Verified via the running
+  API + full test gates; not yet PR'd.

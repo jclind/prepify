@@ -556,6 +556,37 @@ describe('POST /addRecipe', () => {
       await expectRejected({ instructions }, /instruction cannot exceed/i)
     })
 
+    it('rejects an ingredient line over 200 characters', async () => {
+      const ingredients = [
+        { id: 'i1', parsedIngredient: { originalIngredientString: 'x'.repeat(201) } },
+      ]
+      await expectRejected({ ingredients }, /ingredient cannot exceed/i)
+    })
+
+    it('rejects a negative prep time', async () => {
+      await expectRejected({ prepTime: -5 }, /Prep time must be between/)
+    })
+
+    it('rejects a non-numeric servings', async () => {
+      await expectRejected({ servings: '4' }, /Servings must be a number/)
+    })
+
+    it('rejects a fractional servings', async () => {
+      await expectRejected({ servings: 2.5 }, /Servings must be a whole number/)
+    })
+
+    it('rejects zero servings', async () => {
+      await expectRejected({ servings: 0 }, /Servings must be between/)
+    })
+
+    it('rejects a serving price over the cap', async () => {
+      await expectRejected({ servingPrice: 5_000_000 }, /Serving price must be between/)
+    })
+
+    it('rejects an absurdly large total time', async () => {
+      await expectRejected({ totalTime: Number.MAX_VALUE }, /Total time must be between/)
+    })
+
     it('accepts a payload exactly at the limits (201)', async () => {
       const res = await request(server)
         .post('/api/addRecipe')
@@ -564,6 +595,23 @@ describe('POST /addRecipe', () => {
           ...validBody(),
           title: 'A'.repeat(50),
           description: 'A'.repeat(2000),
+        })
+      expect(res.status).toBe(201)
+    })
+
+    it('accepts valid numeric fields (201)', async () => {
+      const res = await request(server)
+        .post('/api/addRecipe')
+        .set(AUTH_HEADER)
+        .send({
+          ...validBody(),
+          prepTime: 15,
+          cookTime: 30,
+          totalTime: 45,
+          servings: 4,
+          fridgeLife: 3,
+          freezerLife: 90,
+          servingPrice: 250,
         })
       expect(res.status).toBe(201)
     })
@@ -747,6 +795,27 @@ describe('POST /recipes/:id/save', () => {
     expect(res.status).toBe(409)
     expect(res.body.error).toMatch(/already saved/)
   })
+
+  it('does not double-count numTimesSaved under concurrent saves (TOCTOU)', async () => {
+    // Fire several saves of the SAME recipe from the SAME user at once. The old
+    // read-check-then-write let two both pass the "already saved?" check and
+    // double-push / double-inc; the atomic conditional write must land exactly
+    // one save and one increment, the rest 409. (No userRecipeData doc exists
+    // yet, so this also exercises the concurrent-insert / dup-retry path.)
+    const results = await Promise.all(
+      Array.from({ length: 5 }, () =>
+        request(server).post(`/api/recipes/${RECIPE_ID}/save`).set(AUTH_HEADER)
+      )
+    )
+    expect(results.filter(r => r.status === 200)).toHaveLength(1)
+    expect(results.filter(r => r.status === 409)).toHaveLength(4)
+
+    const db = getDB()
+    const recipe = await db.collection('recipes').findOne({ _id: RECIPE_ID })
+    expect(recipe.numTimesSaved).toBe(1)
+    const userData = await db.collection('userRecipeData').findOne({ _id: TEST_UID })
+    expect(userData.savedRecipes).toHaveLength(1)
+  })
 })
 
 // ─── POST /madeRecipe ─────────────────────────────────────────────────────────
@@ -834,6 +903,40 @@ describe('DELETE /recipes/:id/save', () => {
 
     const recipe = await db.collection('recipes').findOne({ _id: RECIPE_ID })
     expect(recipe.numTimesSaved).toBe(0)
+  })
+
+  it('lands exactly one decrement across concurrent unsaves', async () => {
+    // The atomic conditional $pull makes this correct BY CONSTRUCTION: single-
+    // document update semantics guarantee only one racing write removes the
+    // entry (modifiedCount 1) and thus decrements; the rest see recipeId absent
+    // (modifiedCount 0) and 404 without touching the counter. This test asserts
+    // that invariant on the fixed code and exercises the concurrent path.
+    //
+    // NOTE (verified, not assumed): unlike the save-side concurrency test — which
+    // reliably reproduces its pre-fix race because concurrent upserts on a
+    // not-yet-existing doc all read null and multi-$push — the pre-fix unsave
+    // race (read isSaved, then $pull) does NOT reproduce at this HTTP layer even
+    // at 20-way concurrency: the first request's $pull commits before the others'
+    // read resolves, so racy code serializes to the same 1×200/N×404 here. So
+    // this test is path coverage + the atomicity contract, not a regression trap
+    // for that specific TOCTOU — the guarantee rests on the single-doc update,
+    // and reviewers should treat a regression to read-then-write as un-caught by
+    // CI. Seed the counter high so a decrement is observable, not floored at 0.
+    const db = getDB()
+    await db.collection('recipes').updateOne({ _id: RECIPE_ID }, { $set: { numTimesSaved: 5 } })
+
+    const results = await Promise.all(
+      Array.from({ length: 5 }, () =>
+        request(server).delete(`/api/recipes/${RECIPE_ID}/save`).set(AUTH_HEADER)
+      )
+    )
+    expect(results.filter(r => r.status === 200)).toHaveLength(1)
+    expect(results.filter(r => r.status === 404)).toHaveLength(4)
+
+    const recipe = await db.collection('recipes').findOne({ _id: RECIPE_ID })
+    expect(recipe.numTimesSaved).toBe(4)
+    const userData = await db.collection('userRecipeData').findOne({ _id: TEST_UID })
+    expect(userData.savedRecipes).toHaveLength(0)
   })
 })
 
