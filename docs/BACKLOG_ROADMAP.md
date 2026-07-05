@@ -69,7 +69,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **1** | **S2 · auth.js account routes** | data-export saved-recipe bodies (`:355`); `updatePrivacy` writeLimiter (`:310`); harden `deleteAccount` recompute (`:454-461`) | `[x]` [#229](https://github.com/jclind/prepify/pull/229) (2026-07-05) | `server/routes/auth.js` | **merged** — recompute pairs with **S6** |
 | **1** | **S3 · reviews.js correctness** | ratings Load-More count (`:281-308`); admin-takedown username→userId (`:318-353`) | `[x]` [#231](https://github.com/jclind/prepify/pull/231) (2026-07-05) | `server/routes/reviews.js` | **merged** |
 | **1** | **S4 · rate-limit breadth** | reports per-uid limiter (`reports.js:69`); `acknowledgeAchievements` limiter (`gamification.js:31`) | `[P]` [#230](https://github.com/jclind/prepify/pull/230) `worktree-feat+s4-rate-limit-breadth` 2026-07-05 | `server/routes/reports.js`, `server/routes/gamification.js` | disjoint from S2 |
-| **1** | **S5 · asyncHandler consistency** | `nutrition.js` `/details` + `ingredients.js` `/parse` bare async → wrapper | `[ ]` | `server/routes/nutrition.js`, `ingredients.js` | trivial |
+| **1** | **S5 · asyncHandler consistency** | `nutrition.js` `/details` + `ingredients.js` `/parse` bare async → wrapper | `[~]` `worktree-feat+s5-asynchandler-consistency` 2026-07-05 | `server/routes/nutrition.js`, `ingredients.js` | trivial |
 | **1** | **S6 · rating-aggregate ops** | one-off reconciliation script; post-6-phase DB check | `[ ]` | `server/scripts/` (+ ops run) | new files; pairs w/ S2 |
 | **1** | **S7 · firebase-admin@14 bump** | 8 moderate transitive CVEs (breaking major, on `^13.8.0`) | `[ ]` | `server/package.json` + lockfile | ⚠ breaking; own full regression |
 | **2** | **F1 · TimeInput NaN bug** | edit/draft-resume blank prep/cook time (`TimeInput.tsx:23-27` + `AddRecipe.tsx:86-91,160-161`) | `[ ]` | `TimeInput.tsx` + `AddRecipe.tsx` | ⚠ first claim on AddRecipe.tsx — do before/inside **C1** |
@@ -264,3 +264,11 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   itself never conflicted (S3-exclusive file). Third Wave-1 correctness track done. **Out-of-lane sibling still
   open:** `reports.js:188`'s moderation-queue preview fetches the review snapshot by the same stale
   `{ username, recipeId }` — belongs to **S4** (owns `reports.js`).
+- **2026-07-05** — **S5 claimed** (`worktree-feat+s5-asynchandler-consistency`). Claim recorded directly on
+  `development` (same convention as S4) so concurrent sessions see the lane taken. Scope: wrap the two remaining
+  bare-async routes — `POST /details` (`nutrition.js:20`) and `POST /parse` (`ingredients.js:52`) — in the shared
+  `asyncHandler` wrapper like every other route. Verified both are still bare-async and `development` is in sync
+  with origin (0/0) before claiming. **Heads-up for the lane:** the orphan, non-board branch
+  `worktree-feat+moderation-pr-c-ratelimiter` (unmerged, no worktree) also edits `ingredients.js` (rate-limiter
+  rework) — if it ever lands, this lane rebases; disjoint change (handler wrapping vs limiter wiring), low
+  collision. Worktree not yet created.
