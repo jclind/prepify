@@ -198,10 +198,18 @@ router.get('/reports', verifyToken, requireAdmin, asyncHandler(async (req, res) 
         : null
       let review = null
       if (r.targetType === 'review') {
+        // ratings are keyed by the stable userId; username is a renameable
+        // display field, so matching the stored handle blanks the preview once
+        // the author renames (the reports.js twin of the S3 reviews.js fix).
+        // Prefer the uid snapshotted on the report (D1); fall back to the handle
+        // only for legacy/edge reports that never captured a reportedUid.
+        const authorMatch = r.reportedUid
+          ? { userId: r.reportedUid }
+          : { username: r.reportedUsername }
         review = await db
           .collection('ratings')
           .findOne(
-            { username: r.reportedUsername, recipeId: r.recipeId },
+            { ...authorMatch, recipeId: r.recipeId },
             { projection: { reviewText: 1, rating: 1, moderationHidden: 1 } }
           )
       }

@@ -296,6 +296,26 @@ describe('GET /api/reports', () => {
     expect(reviewReport.target.review.reviewText).toBe('nasty')
   })
 
+  it('previews a reported review by the stable userId, surviving an author rename', async () => {
+    admin.__setClaims({ admin: true })
+    await seedRecipe({ _id: 'recipe-001', title: 'Reported Dish', recipeImage: 'img', userId: 'owner' })
+    // The review author has since renamed: the ratings doc is keyed by the
+    // stable userId 'bad-uid' and now carries the CURRENT handle 'newhandle'.
+    // The report snapshotted the OLD handle plus the uid (D1).
+    await seedRating({ userId: 'bad-uid', username: 'newhandle', recipeId: 'recipe-001', reviewText: 'nasty', rating: 1 })
+    await getDB().collection('reports').insertOne({
+      _id: new ObjectId(), targetType: 'review', recipeId: 'recipe-001',
+      reportedUsername: 'oldhandle', reportedUid: 'bad-uid',
+      reporterUid: 'u2', reason: 'offensive', status: 'open', createdAt: new Date(),
+    })
+
+    const res = await request(app).get('/api/reports').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    const reviewReport = res.body.reports.find((r) => r.targetType === 'review')
+    // Matched by the snapshotted userId, not the stale handle → preview resolves.
+    expect(reviewReport.target.review.reviewText).toBe('nasty')
+  })
+
   it('surfaces a user report in the queue with no recipe/review snapshot', async () => {
     admin.__setClaims({ admin: true })
     await getDB().collection('reports').insertOne({
