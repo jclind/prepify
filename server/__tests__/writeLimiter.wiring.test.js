@@ -23,6 +23,8 @@ const recipesRouter = require('../routes/recipes')
 const reviewsRouter = require('../routes/reviews')
 const authRouter = require('../routes/auth')
 const ingredientsRouter = require('../routes/ingredients')
+const gamificationRouter = require('../routes/gamification')
+const reportsRouter = require('../routes/reports')
 
 // Ordered handler chain for a single route on a router, or throws if missing.
 const routeHandlers = (router, method, path) => {
@@ -72,5 +74,23 @@ describe('per-surface write limiters are wired onto every moderated write route'
     const handlers = routeHandlers(ingredientsRouter, 'post', '/parse')
     expect(handlers[0]).toBe(verifyToken)
     expect(handlers).toHaveLength(3) // verifyToken, parseLimiter, handler
+  })
+
+  it('gamification POST /acknowledgeAchievements mounts profileWriteLimiter after verifyToken', () => {
+    // A userProfiles write that shares the profile budget. Unlike the profile
+    // routes above it has no requireActive, so assert only verifyToken → limiter.
+    const handlers = routeHandlers(gamificationRouter, 'post', '/acknowledgeAchievements')
+    expect(handlers).toContain(verifyToken)
+    expect(handlers).toContain(profileWriteLimiter)
+    expect(handlers.indexOf(verifyToken)).toBeLessThan(handlers.indexOf(profileWriteLimiter))
+  })
+
+  it('reports POST /reports mounts a breadth limiter after verifyToken + requireActive', () => {
+    // reportLimiter is internal to the route file (not exported), so assert
+    // structurally: verifyToken → requireActive → (limiter) → handler.
+    const handlers = routeHandlers(reportsRouter, 'post', '/reports')
+    expect(handlers[0]).toBe(verifyToken)
+    expect(handlers[1]).toBe(requireActive)
+    expect(handlers).toHaveLength(4) // verifyToken, requireActive, reportLimiter, handler
   })
 })

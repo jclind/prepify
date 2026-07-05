@@ -3,6 +3,7 @@ const { asyncHandler } = require('../util/asyncHandler')
 const router = express.Router()
 const { getDB } = require('../db')
 const { verifyToken } = require('../middleware/auth')
+const { profileWriteLimiter } = require('../middleware/writeLimiter')
 const { getAccountCountsFor } = require('../util/accountCounts')
 const { computeGamification, ACHIEVEMENTS } = require('../util/gamification')
 
@@ -28,7 +29,12 @@ router.get('/getGamification', verifyToken, asyncHandler(async (req, res) => {
 // Records that the given achievement ids have been shown to the user, so the
 // unlock toast won't fire again. Body: { ids: string[] }. Unknown ids are
 // ignored; $addToSet makes it idempotent.
-router.post('/acknowledgeAchievements', verifyToken, asyncHandler(async (req, res) => {
+//
+// profileWriteLimiter mirrors the sibling userProfiles writes (updateProfile,
+// updatePrivacy, …): cheap + idempotent, but it's still an authed per-user write,
+// so it shares the same per-uid write budget rather than relying only on the
+// coarse global per-IP backstop.
+router.post('/acknowledgeAchievements', verifyToken, profileWriteLimiter, asyncHandler(async (req, res) => {
   const { ids } = req.body || {}
   if (!Array.isArray(ids)) {
     return res.status(400).json({ error: 'ids must be an array' })
