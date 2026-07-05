@@ -238,3 +238,17 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   Two follow-ups filed off this lane's review, **not** fixed here: the `exportMyData` *own*-recipes/drafts admin-stamp
   leak (unprojected owner export — BACKLOG.md, low) and the `acknowledgeAchievements` limiter (the other half of the
   two-writes item — folded into **S4**). Second Wave-1 track done; the recompute still pairs with **S6**.
+- **2026-07-04** — **S3** implemented in `worktree-feat+s3-reviews-correctness`. (1) `getSingleUserReviews`
+  Load-More count: the `returnRecipeData=true` path filtered soft-hidden-recipe ratings *after* paging/counting,
+  so `totalCount` counted rows the list never returns and the client's "loaded < totalCount" never settled →
+  moved the recipe-visibility join **into** the query as a `$lookup`+`$match`+`$facet` aggregation so page and
+  count both run over the visible set (`$toString` join spans the ObjectId/string `_id` duality; hidden-status
+  list single-sourced off `RECIPE_VISIBLE`). (2) admin takedown matched the rating by its **denormalized**
+  `username` (stale after a rename → takedown 404s, content stays up); now resolves handle→uid (the
+  `getSingleUserReviews`/unique-index lookup) and matches `{ userId, recipeId }`, stamping audit/notify with the
+  author's *current* canonical handle. Extended Jest: rename-resilient takedown, unknown-handle 404, and
+  totalCount==returnable on both `getSingleUserReviews` paths; updated 3 existing takedown tests to seed a
+  resolvable `usernames` doc + `userId`. Server suite green (the lone `ingredients.test.js` timeout is a
+  pre-existing proxy-flake, passes in isolation). **Out-of-lane sibling filed:** the moderation-queue preview in
+  `reports.js:188` fetches the review snapshot by the same stale `{ username, recipeId }` — belongs to **S4**
+  (owns `reports.js`); a renamed author shows a blank preview there until fixed. Not yet PR'd.

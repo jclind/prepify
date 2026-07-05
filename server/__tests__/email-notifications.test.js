@@ -399,7 +399,7 @@ describe('moderation routes trigger the right sends', () => {
     const db = getDB()
     await seedUser('author-uid', 'author')
     await seedRecipe({ _id: 'r1', title: 'Dish', userId: 'someone' })
-    await seedRating({ username: 'author', recipeId: 'r1', rating: 4, reviewText: 'bad' })
+    await seedRating({ userId: 'author-uid', username: 'author', recipeId: 'r1', rating: 4, reviewText: 'bad' })
 
     const takedown = await request(app)
       .patch('/api/admin/reviews/moderation')

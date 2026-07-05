@@ -3,7 +3,6 @@ const { asyncHandler } = require('../util/asyncHandler')
 const { getDB } = require('../db')
 const { verifyToken, optionalAuth, requireAdmin, requireActive } = require('../middleware/auth')
 const { reviewWriteLimiter } = require('../middleware/writeLimiter')
-const { recipeIdQuery } = require('../util/recipeIdQuery')
 const { REVIEW_VISIBLE, RECIPE_VISIBLE } = require('../util/moderation')
 const { DESCRIPTION_MAX_LENGTH } = require('../util/recipeLimits')
 const { recordAudit } = require('../util/auditLog')
@@ -278,43 +277,93 @@ router.get('/getSingleUserReviews', asyncHandler(async (req, res) => {
   if (filter === 'new') sort = { reviewCreatedAt: -1 }
   else if (filter === 'top') sort = { rating: -1 }
 
-  const [rawReviews, totalCount] = await Promise.all([
-    db.collection('ratings').find(query).sort(sort).skip(skip).limit(limit).toArray(),
-    db.collection('ratings').countDocuments(query),
-  ])
-
-  let reviews = rawReviews
+  let reviews
+  let totalCount
   if (returnRecipeData === 'true') {
-    // Only attach (and keep) ratings whose recipe is still publicly visible —
-    // a rating for a soft-hidden recipe shouldn't surface in the user's list.
-    const withRecipe = await Promise.all(
-      rawReviews.map(async (r) => {
-        const recipeData = await db
-          .collection('recipes')
-          .findOne({ ...recipeIdQuery(r.recipeId), ...RECIPE_VISIBLE })
-        if (!recipeData) return null
-        // The account "Ratings" list reads flat `recipeImage`/`recipeTitle` off
-        // each review (the rating doc itself stores neither). Denormalize them
-        // from the recipe doc so the thumbnail and title actually render; keep
-        // the full `recipeData` for callers (e.g. admin) that need the rest.
-        return {
-          ...r,
-          recipeImage: recipeData.recipeImage,
-          recipeTitle: recipeData.title,
-          recipeData,
-        }
-      })
-    )
-    reviews = withRecipe.filter(Boolean)
+    // The account "Ratings" list joins each rating to its recipe and DROPS any
+    // whose recipe is soft-hidden. That filter has to happen INSIDE the query,
+    // not after paging, or two things break: a page can come back short (rows
+    // filtered out post-limit), and — the Load-More bug this fixes — totalCount
+    // would count hidden-recipe ratings the list never shows, so the client's
+    // "loaded < totalCount" check never settles and Load-More never disappears.
+    // So join + filter first, then page and count over the visible set in one
+    // $facet. Single-source the hidden-status list off RECIPE_VISIBLE.
+    const hiddenStatuses = RECIPE_VISIBLE.status.$nin
+    const [facet] = await db
+      .collection('ratings')
+      .aggregate([
+        { $match: query },
+        {
+          $lookup: {
+            from: 'recipes',
+            let: { rid: '$recipeId' },
+            pipeline: [
+              {
+                $match: {
+                  // $toString normalises the recipe _id (native ObjectId
+                  // post-migration, plain string for legacy) to the string form
+                  // rating.recipeId is stored in, so the join spans both shapes
+                  // (mirrors recipeIdQuery). The status guard is the aggregation
+                  // form of RECIPE_VISIBLE's $nin — legacy-safe: a doc with no
+                  // status field isn't in the list, so it stays visible.
+                  $expr: {
+                    $and: [
+                      { $eq: [{ $toString: '$_id' }, '$$rid'] },
+                      { $not: [{ $in: ['$status', hiddenStatuses] }] },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: 'recipe',
+          },
+        },
+        // Keep only ratings whose recipe survived the visibility join.
+        { $match: { 'recipe.0': { $exists: true } } },
+        {
+          $facet: {
+            // $sort rejects an empty spec, so only add the stage when sorting.
+            page: [...(Object.keys(sort).length ? [{ $sort: sort }] : []), { $skip: skip }, { $limit: limit }],
+            total: [{ $count: 'n' }],
+          },
+        },
+      ])
+      .toArray()
+
+    totalCount = facet.total[0]?.n || 0
+    reviews = facet.page.map(({ recipe, ...r }) => {
+      const recipeData = recipe[0]
+      // The account "Ratings" list reads flat `recipeImage`/`recipeTitle` off
+      // each review (the rating doc itself stores neither). Denormalize them
+      // from the recipe doc so the thumbnail and title actually render; keep
+      // the full `recipeData` for callers (e.g. admin) that need the rest.
+      return {
+        ...r,
+        recipeImage: recipeData.recipeImage,
+        recipeTitle: recipeData.title,
+        recipeData,
+      }
+    })
+  } else {
+    // No recipe join → every visible review is returnable, so a plain
+    // find + countDocuments over the same query keeps totalCount exact.
+    ;[reviews, totalCount] = await Promise.all([
+      db.collection('ratings').find(query).sort(sort).skip(skip).limit(limit).toArray(),
+      db.collection('ratings').countDocuments(query),
+    ])
   }
 
   res.json({ reviews, totalCount })
 }))
 
 // PATCH /admin/reviews/moderation — admin take down / restore a review.
-// Reviews have no stable id; identity is the (username, recipeId) pair. Uses a
-// distinct `moderationHidden` flag rather than blanking reviewText, so the
-// takedown is reversible and the original text is preserved for audit/appeal.
+// Reviews have no stable id of their own; their identity is the author's stable
+// uid + recipeId (D1). The admin UI hands us the reported *handle*, so resolve
+// it to that uid and match on it — the username stored on the rating doc is a
+// denormalized display field that goes stale on a rename, so matching it
+// directly would miss the very reviews a renamed author left. Uses a distinct
+// `moderationHidden` flag rather than blanking reviewText, so the takedown is
+// reversible and the original text is preserved for audit/appeal.
 router.patch('/admin/reviews/moderation', verifyToken, requireAdmin, asyncHandler(async (req, res) => {
   const db = getDB()
   const { recipeId, username, moderationHidden } = req.body
@@ -324,8 +373,22 @@ router.patch('/admin/reviews/moderation', verifyToken, requireAdmin, asyncHandle
   if (typeof moderationHidden !== 'boolean') {
     return res.status(400).json({ error: 'moderationHidden must be a boolean' })
   }
+
+  // Resolve handle → stable uid (case-insensitive, the same lookup the unique
+  // index / getSingleUserReviews use). An unknown handle can own no review.
+  const ownerDoc = await db
+    .collection('usernames')
+    .findOne({ username_lower: username.toLowerCase() })
+  if (!ownerDoc) {
+    return res.status(404).json({ error: 'Review not found' })
+  }
+  const userId = ownerDoc._id
+  // Prefer the author's CURRENT handle for the audit trail + notification, so a
+  // rename between review and takedown doesn't stamp a stale label.
+  const canonicalUsername = ownerDoc.username
+
   const result = await db.collection('ratings').updateOne(
-    { username, recipeId },
+    { userId, recipeId },
     {
       $set: {
         moderationHidden,
@@ -343,13 +406,14 @@ router.patch('/admin/reviews/moderation', verifyToken, requireAdmin, asyncHandle
     action: moderationHidden ? 'review.takedown' : 'review.restore',
     actorUid: req.uid,
     targetType: 'review',
-    targetId: `${username}:${recipeId}`,
-    targetLabel: `@${username}`,
-    metadata: { recipeId, username },
+    // Stable key for the target: uid + recipeId (survives renames).
+    targetId: `${userId}:${recipeId}`,
+    targetLabel: `@${canonicalUsername}`,
+    metadata: { recipeId, userId, username: canonicalUsername },
   })
   // Notify the review author on a takedown (background). Restore is silent.
-  if (moderationHidden) notifyInBackground(notifyReviewTakenDown(db, username, recipeId))
-  res.json({ recipeId, username, moderationHidden })
+  if (moderationHidden) notifyInBackground(notifyReviewTakenDown(db, canonicalUsername, recipeId))
+  res.json({ recipeId, username: canonicalUsername, moderationHidden })
 }))
 
 module.exports = router
