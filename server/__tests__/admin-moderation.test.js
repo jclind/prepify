@@ -198,9 +198,10 @@ describe('PATCH /api/admin/reviews/moderation', () => {
     expect(res.status).toBe(403)
   })
 
-  it('takes down and restores a review by (username, recipeId), preserving text', async () => {
+  it('takes down and restores a review (resolves handle → uid), preserving text', async () => {
     admin.__setClaims({ admin: true })
-    await seedRating({ username: 'baduser', recipeId: 'r1', reviewText: 'nasty stuff', rating: 1, reviewCreatedAt: '1', reviewLastUpdated: '1' })
+    await seedUser('baduser-uid', 'baduser')
+    await seedRating({ userId: 'baduser-uid', username: 'baduser', recipeId: 'r1', reviewText: 'nasty stuff', rating: 1, reviewCreatedAt: '1', reviewLastUpdated: '1' })
 
     const hide = await request(app)
       .patch('/api/admin/reviews/moderation')
@@ -247,8 +248,9 @@ describe('PATCH /api/admin/reviews/moderation', () => {
   it('excludes a taken-down rating from the recipe score, and restores it on un-hide', async () => {
     admin.__setClaims({ admin: true })
     await seedRecipe({ ...BASE_RECIPE, _id: 'r1', rating: { rateCount: 2, rateValue: 3 } })
+    await seedUser('troll-uid', 'troll')
     await seedRating({ username: 'good', recipeId: 'r1', rating: 5, reviewText: 'great' })
-    await seedRating({ username: 'troll', recipeId: 'r1', rating: 1, reviewText: 'abusive' })
+    await seedRating({ userId: 'troll-uid', username: 'troll', recipeId: 'r1', rating: 1, reviewText: 'abusive' })
 
     // Take down the 1-star troll review.
     await request(app)
@@ -269,6 +271,37 @@ describe('PATCH /api/admin/reviews/moderation', () => {
     recipe = await getDB().collection('recipes').findOne({ _id: 'r1' })
     expect(recipe.rating.rateCount).toBe(2)
     expect(recipe.rating.rateValue).toBe(3) // (5 + 1) / 2
+  })
+
+  // D1 identity: the takedown resolves the supplied handle → uid and matches on
+  // it, so it still finds a review whose DENORMALIZED username went stale after
+  // a rename. Matching the stale username directly (the old behaviour) would
+  // 404 and leave reported content up.
+  it('takes down a review whose stored username is stale (matches by resolved uid)', async () => {
+    admin.__setClaims({ admin: true })
+    // Current handle is 'newhandle'; the rating doc still carries the OLD one.
+    await seedUser('renamed-uid', 'newhandle')
+    await seedRating({ userId: 'renamed-uid', username: 'oldhandle', recipeId: 'r1', reviewText: 'stale-handle review', rating: 2, reviewCreatedAt: '1', reviewLastUpdated: '1' })
+
+    const res = await request(app)
+      .patch('/api/admin/reviews/moderation')
+      .set(AUTH_HEADER)
+      .send({ recipeId: 'r1', username: 'newhandle', moderationHidden: true })
+    expect(res.status).toBe(200)
+    // Response echoes the author's CURRENT canonical handle, not the stale one.
+    expect(res.body.username).toBe('newhandle')
+
+    const doc = await getDB().collection('ratings').findOne({ userId: 'renamed-uid', recipeId: 'r1' })
+    expect(doc.moderationHidden).toBe(true)
+  })
+
+  it('404s a takedown for an unknown handle (resolves to no user)', async () => {
+    admin.__setClaims({ admin: true })
+    const res = await request(app)
+      .patch('/api/admin/reviews/moderation')
+      .set(AUTH_HEADER)
+      .send({ recipeId: 'r1', username: 'ghost', moderationHidden: true })
+    expect(res.status).toBe(404)
   })
 
   it('validates the body and 404s an unknown review', async () => {

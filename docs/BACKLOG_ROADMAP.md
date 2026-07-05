@@ -67,7 +67,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 |---|---|---|---|---|---|
 | **1** | **S1 · recipes.js write-safety** | `save` TOCTOU (`recipes.js:778-801`); numeric/array bounds in `recipeLimits.js` | `[x]` [#228](https://github.com/jclind/prepify/pull/228) (2026-07-04) | `server/routes/recipes.js`, `server/util/recipeLimits.js` | **merged** — unblocks **I3** |
 | **1** | **S2 · auth.js account routes** | data-export saved-recipe bodies (`:355`); `updatePrivacy` writeLimiter (`:310`); harden `deleteAccount` recompute (`:454-461`) | `[x]` [#229](https://github.com/jclind/prepify/pull/229) (2026-07-05) | `server/routes/auth.js` | **merged** — recompute pairs with **S6** |
-| **1** | **S3 · reviews.js correctness** | ratings Load-More count (`:281-308`); admin-takedown username→userId (`:318-353`) | `[ ]` | `server/routes/reviews.js` | — |
+| **1** | **S3 · reviews.js correctness** | ratings Load-More count (`:281-308`); admin-takedown username→userId (`:318-353`) | `[P]` `worktree-feat+s3-reviews-correctness` (2026-07-04) | `server/routes/reviews.js` | — |
 | **1** | **S4 · rate-limit breadth** | reports per-uid limiter (`reports.js:69`); `acknowledgeAchievements` limiter (`gamification.js:31`) | `[P]` [#230](https://github.com/jclind/prepify/pull/230) `worktree-feat+s4-rate-limit-breadth` 2026-07-05 | `server/routes/reports.js`, `server/routes/gamification.js` | disjoint from S2 |
 | **1** | **S5 · asyncHandler consistency** | `nutrition.js` `/details` + `ingredients.js` `/parse` bare async → wrapper | `[ ]` | `server/routes/nutrition.js`, `ingredients.js` | trivial |
 | **1** | **S6 · rating-aggregate ops** | one-off reconciliation script; post-6-phase DB check | `[ ]` | `server/scripts/` (+ ops run) | new files; pairs w/ S2 |
@@ -238,3 +238,22 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   Two follow-ups filed off this lane's review, **not** fixed here: the `exportMyData` *own*-recipes/drafts admin-stamp
   leak (unprojected owner export — BACKLOG.md, low) and the `acknowledgeAchievements` limiter (the other half of the
   two-writes item — folded into **S4**). Second Wave-1 track done; the recompute still pairs with **S6**.
+- **2026-07-04** — **S3** implemented in `worktree-feat+s3-reviews-correctness`. (1) `getSingleUserReviews`
+  Load-More count: the `returnRecipeData=true` path filtered soft-hidden-recipe ratings *after* paging/counting,
+  so `totalCount` counted rows the list never returns and the client's "loaded < totalCount" never settled →
+  moved the recipe-visibility join **into** the query as a `$lookup`+`$match`+`$facet` aggregation so page and
+  count both run over the visible set (`$toString` join spans the ObjectId/string `_id` duality; hidden-status
+  list single-sourced off `RECIPE_VISIBLE`). (2) admin takedown matched the rating by its **denormalized**
+  `username` (stale after a rename → takedown 404s, content stays up); now resolves handle→uid (the
+  `getSingleUserReviews`/unique-index lookup) and matches `{ userId, recipeId }`, stamping audit/notify with the
+  author's *current* canonical handle. Extended Jest: rename-resilient takedown, unknown-handle 404, and
+  totalCount==returnable on both `getSingleUserReviews` paths; updated 3 existing takedown tests to seed a
+  resolvable `usernames` doc + `userId`. Server suite green (the lone `ingredients.test.js` timeout is a
+  pre-existing proxy-flake, passes in isolation). **Out-of-lane sibling filed:** the moderation-queue preview in
+  `reports.js:188` fetches the review snapshot by the same stale `{ username, recipeId }` — belongs to **S4**
+  (owns `reports.js`); a renamed author shows a blank preview there until fixed. Not yet PR'd.
+- **2026-07-05** — **S3** runtime-verified (live API on dev Firebase/Mongo, both fixes driven end-to-end incl.
+  the newest-page-all-hidden killer case + case-insensitive/rename-resilient takedown; artifacts cleaned up) and
+  code-reviewed (2 non-blocking notes: unindexed correlated `$lookup` scans `recipes` per rating — bounded by a
+  user's rating count, correctness requires it; aggregation reaches into `RECIPE_VISIBLE.status.$nin` vs
+  spreading the whole predicate → drift risk if it grows). PR opened → `[P]`.

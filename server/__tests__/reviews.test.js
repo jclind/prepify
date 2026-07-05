@@ -835,6 +835,45 @@ describe('GET /getSingleUserReviews', () => {
     ).toBe(false)
   })
 
+  // Load-More count bug: totalCount must count only the ratings the list can
+  // actually return — i.e. AFTER the soft-hidden-recipe filter, not before.
+  // If it counted the hidden-recipe rating too, the client's
+  // "loaded (1) < totalCount (2)" check would keep Load-More visible forever.
+  it('totalCount excludes soft-hidden-recipe ratings when returnRecipeData=true', async () => {
+    const db = getDB()
+    await db.collection('recipes').insertOne({
+      _id: 'recipe-hidden-002',
+      title: 'Hidden Recipe',
+      recipeImage: 'https://example.com/hidden.jpg',
+      status: 'hidden',
+      rating: { rateCount: 0, rateValue: 0 },
+    })
+    await seedRating({ userId: TEST_UID, username: TEST_USERNAME, recipeId: RECIPE_ID, rating: 4, reviewText: 'Visible', reviewCreatedAt: '1000' })
+    await seedRating({ userId: TEST_UID, username: TEST_USERNAME, recipeId: 'recipe-hidden-002', rating: 5, reviewText: 'On a hidden recipe', reviewCreatedAt: '2000' })
+
+    const res = await request(app).get(
+      `/api/getSingleUserReviews?username=${TEST_USERNAME}&returnRecipeData=true`
+    )
+    expect(res.status).toBe(200)
+    // One returnable rating → count and list agree, so Load-More settles.
+    expect(res.body.reviews).toHaveLength(1)
+    expect(res.body.totalCount).toBe(1)
+  })
+
+  // Sibling to the above without the recipe join: totalCount matches the
+  // visible reviews on the plain (non-returnRecipeData) path too.
+  it('totalCount matches returnable reviews on the non-returnRecipeData path', async () => {
+    await seedRating({ userId: TEST_UID, username: TEST_USERNAME, recipeId: RECIPE_ID, rating: 4, reviewText: 'A', reviewCreatedAt: '1000' })
+    await seedRating({ userId: TEST_UID, username: TEST_USERNAME, recipeId: 'recipe-x', rating: 5, reviewText: 'B', reviewCreatedAt: '2000' })
+
+    const res = await request(app).get(
+      `/api/getSingleUserReviews?username=${TEST_USERNAME}&reviewsPerPage=1`
+    )
+    expect(res.status).toBe(200)
+    expect(res.body.reviews).toHaveLength(1)
+    expect(res.body.totalCount).toBe(2)
+  })
+
   // Defensive: a recipe doc missing title/recipeImage must not crash the join —
   // the flattened fields are simply absent (undefined → omitted from JSON), and
   // recipeData is still attached. Documents the no-fallback contract.
