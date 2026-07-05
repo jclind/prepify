@@ -67,7 +67,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 |---|---|---|---|---|---|
 | **1** | **S1 · recipes.js write-safety** | `save` TOCTOU (`recipes.js:778-801`); numeric/array bounds in `recipeLimits.js` | `[x]` [#228](https://github.com/jclind/prepify/pull/228) (2026-07-04) | `server/routes/recipes.js`, `server/util/recipeLimits.js` | **merged** — unblocks **I3** |
 | **1** | **S2 · auth.js account routes** | data-export saved-recipe bodies (`:355`); `updatePrivacy` writeLimiter (`:310`); harden `deleteAccount` recompute (`:454-461`) | `[x]` [#229](https://github.com/jclind/prepify/pull/229) (2026-07-05) | `server/routes/auth.js` | **merged** — recompute pairs with **S6** |
-| **1** | **S3 · reviews.js correctness** | ratings Load-More count (`:281-308`); admin-takedown username→userId (`:318-353`) | `[P]` `worktree-feat+s3-reviews-correctness` (2026-07-04) | `server/routes/reviews.js` | — |
+| **1** | **S3 · reviews.js correctness** | ratings Load-More count (`:281-308`); admin-takedown username→userId (`:318-353`) | `[x]` [#231](https://github.com/jclind/prepify/pull/231) (2026-07-05) | `server/routes/reviews.js` | **merged** |
 | **1** | **S4 · rate-limit breadth** | reports per-uid limiter (`reports.js:69`); `acknowledgeAchievements` limiter (`gamification.js:31`) | `[P]` [#230](https://github.com/jclind/prepify/pull/230) `worktree-feat+s4-rate-limit-breadth` 2026-07-05 | `server/routes/reports.js`, `server/routes/gamification.js` | disjoint from S2 |
 | **1** | **S5 · asyncHandler consistency** | `nutrition.js` `/details` + `ingredients.js` `/parse` bare async → wrapper | `[ ]` | `server/routes/nutrition.js`, `ingredients.js` | trivial |
 | **1** | **S6 · rating-aggregate ops** | one-off reconciliation script; post-6-phase DB check | `[ ]` | `server/scripts/` (+ ops run) | new files; pairs w/ S2 |
@@ -257,3 +257,10 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   code-reviewed (2 non-blocking notes: unindexed correlated `$lookup` scans `recipes` per rating — bounded by a
   user's rating count, correctness requires it; aggregation reaches into `RECIPE_VISIBLE.status.$nin` vs
   spreading the whole predicate → drift risk if it grows). PR opened → `[P]`.
+- **2026-07-05** — **S3 merged** ([#231](https://github.com/jclind/prepify/pull/231), CI green — Backend/Frontend/
+  E2e/Fallow all pass) into `development`; worktree torn down. Rebased onto `development` before merge to clear a
+  `BACKLOG_ROADMAP.md` chokepoint conflict (S2 had landed since the fork point) — that conflict had left the PR
+  `DIRTY`, which silently suppressed the `pull_request` CI workflow until the rebase cleared it; `reviews.js`
+  itself never conflicted (S3-exclusive file). Third Wave-1 correctness track done. **Out-of-lane sibling still
+  open:** `reports.js:188`'s moderation-queue preview fetches the review snapshot by the same stale
+  `{ username, recipeId }` — belongs to **S4** (owns `reports.js`).

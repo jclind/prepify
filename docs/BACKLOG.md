@@ -78,7 +78,7 @@ The triage date stamped on items is the date they were filed here, not when they
   empty state only renders once the query genuinely returns zero recipes. Same latent flash existed in
   the Ratings list and got the same gate. A Vitest test (records every `EmptyState` mount) reproduces
   the flash and guards the fix.
-- `[ ]` **Account ratings "Load More" count can be off when a rating's recipe is hidden** —
+- `[x]` **Account ratings "Load More" count can be off when a rating's recipe is hidden** — *(fixed in [#231](https://github.com/jclind/prepify/pull/231), S3: the `returnRecipeData=true` path now joins + filters hidden recipes inside a `$lookup`+`$facet` so page and `totalCount` run over the same visible set.)*
   `GET /getSingleUserReviews` computes `totalCount` from `countDocuments(query)` over *all* of the
   user's rating docs (`server/routes/reviews.js:281-284`), but with `returnRecipeData=true` the returned
   `reviews` array is filtered to recipes that are still visible (`:294-308`, drops soft-hidden/deleted
@@ -481,7 +481,7 @@ findings table.)*
   ingredient size, or the shape/size of `nutritionData`/`cuisine`/`mealTypes`/`nutritionLabels` (copied
   through, bounded only by the global JSON body-size limit). Add numeric type+range clamps and per-element
   caps. Low. *(surfaced 2026-06-26 in the security sweep.)*
-- `[ ]` **Admin review takedown matches on the stale denormalized `username`** —
+- `[x]` **Admin review takedown matches on the stale denormalized `username`** — *(fixed in [#231](https://github.com/jclind/prepify/pull/231), S3: resolves `username → userId` and matches `{ userId, recipeId }`; audit `targetId` + notification now use the stable uid and current canonical handle.)*
   `PATCH /admin/reviews/moderation` (`server/routes/reviews.js:318-353`) matches `{ username, recipeId }`,
   but ratings are keyed by the stable `userId` (username is a set-once display field). If an author renames
   their handle after posting, the admin match can hit the wrong doc or 404, and the audit `targetId`
