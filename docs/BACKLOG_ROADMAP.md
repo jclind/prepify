@@ -66,7 +66,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | Wave | Track | Backlog items covered | Status | Domain (collision surface) | Notes / deps |
 |---|---|---|---|---|---|
 | **1** | **S1 · recipes.js write-safety** | `save` TOCTOU (`recipes.js:778-801`); numeric/array bounds in `recipeLimits.js` | `[x]` [#228](https://github.com/jclind/prepify/pull/228) (2026-07-04) | `server/routes/recipes.js`, `server/util/recipeLimits.js` | **merged** — unblocks **I3** |
-| **1** | **S2 · auth.js account routes** | data-export saved-recipe bodies (`:355`); `updatePrivacy` writeLimiter (`:310`); harden `deleteAccount` recompute (`:454-461`) | `[P]` `worktree-feat+s2-auth-account-routes` 2026-07-03 | `server/routes/auth.js` | recompute pairs with **S6** |
+| **1** | **S2 · auth.js account routes** | data-export saved-recipe bodies (`:355`); `updatePrivacy` writeLimiter (`:310`); harden `deleteAccount` recompute (`:454-461`) | `[x]` [#229](https://github.com/jclind/prepify/pull/229) (2026-07-05) | `server/routes/auth.js` | **merged** — recompute pairs with **S6** |
 | **1** | **S3 · reviews.js correctness** | ratings Load-More count (`:281-308`); admin-takedown username→userId (`:318-353`) | `[ ]` | `server/routes/reviews.js` | — |
 | **1** | **S4 · rate-limit breadth** | reports per-uid limiter (`reports.js:69`); `acknowledgeAchievements` limiter (`gamification.js:31`) | `[~]` `worktree-feat+s4-rate-limit-breadth` 2026-07-04 | `server/routes/reports.js`, `server/routes/gamification.js` | disjoint from S2 |
 | **1** | **S5 · asyncHandler consistency** | `nutrition.js` `/details` + `ingredients.js` `/parse` bare async → wrapper | `[ ]` | `server/routes/nutrition.js`, `ingredients.js` | trivial |
@@ -232,3 +232,9 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   left **S2**/**S3** looking `[ ]` on `development` while their claims sat on their own branches. Scope: per-uid
   limiter on `POST /reports` (currently `verifyToken, requireActive` only) + `profileWriteLimiter` on
   `POST /acknowledgeAchievements` (currently `verifyToken` only). Worktree not yet created.
+- **2026-07-05** — **S2 merged** ([#229](https://github.com/jclind/prepify/pull/229), CI green) into `development`;
+  worktree torn down. `exportMyData` saved recipes hydrated to full bodies via `publicRecipeProjection`;
+  `profileWriteLimiter` on `updatePrivacy`; `deleteAccount` rating recompute made non-silent (`recomputeWithRetry`).
+  Two follow-ups filed off this lane's review, **not** fixed here: the `exportMyData` *own*-recipes/drafts admin-stamp
+  leak (unprojected owner export — BACKLOG.md, low) and the `acknowledgeAchievements` limiter (the other half of the
+  two-writes item — folded into **S4**). Second Wave-1 track done; the recompute still pairs with **S6**.

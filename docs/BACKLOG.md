@@ -91,12 +91,12 @@ The triage date stamped on items is the date they were filed here, not when they
   filter to both `find` and `countDocuments` and does no post-fetch filtering, so its count stays
   consistent. This bug is ratings-only.)** Fix: count post-visibility-filter, or paginate via an
   aggregation `$lookup` that excludes hidden recipes before the count.
-- `[~]` **Data export omits saved-recipe content** — was: `exportMyData` exported full recipes, drafts,
+- `[x]` **Data export omits saved-recipe content** — was: `exportMyData` exported full recipes, drafts,
   ratings, and profile, but `savedRecipes` was still the raw reference array — `recipeId` + metadata
   (`collectionIds`/`savedAt`), no recipe bodies (`server/routes/auth.js:355`; verified 2026-06-26).
-  **Addressed in S2/PR #229 (open):** each saved entry is now hydrated with its recipe body (through
-  `publicRecipeProjection`, since saved recipes are other users'), keeping the ref with `recipe: null` for
-  deleted/hidden ones. Flip to `[x]` on merge.
+  **Fixed in S2/PR [#229](https://github.com/jclind/prepify/pull/229) (merged 2026-07-05):** each saved entry is
+  now hydrated with its recipe body (through `publicRecipeProjection`, since saved recipes are other users'),
+  keeping the ref with `recipe: null` for deleted/hidden ones.
 
 ## UX / visual polish
 
@@ -494,11 +494,13 @@ findings table.)*
   moderation queue. Only the coarse global per-IP 1000/15min backstop applies. Add a `makeUserLimiter`-style
   per-uid limiter (mirrors how content writes are bounded in `middleware/writeLimiter.js`). Low-med.
   *(surfaced 2026-06-26 in the security sweep.)*
-- `[ ]` **Two authed writes lack the per-user write limiter (consistency)** — `POST /updatePrivacy`
+- `[~]` **Two authed writes lack the per-user write limiter (consistency)** — `POST /updatePrivacy`
   (`server/routes/auth.js:310`) and `POST /acknowledgeAchievements` (`server/routes/gamification.js:31`) are
   authed writes with no `profileWriteLimiter`, unlike their sibling profile writes. Both are cheap +
   idempotent so impact is minimal; add the limiter for consistency. Low. *(surfaced 2026-06-26 in the
-  security sweep.)*
+  security sweep.)* **Half done:** the `updatePrivacy` limiter merged in S2/PR
+  [#229](https://github.com/jclind/prepify/pull/229) (2026-07-05); the `acknowledgeAchievements` half remains,
+  tracked under **S4** (rate-limit breadth) in the roadmap.
 - `[ ]` **`POST /recipes/:id/save` counter update is read-then-write (TOCTOU)** —
   `server/routes/recipes.js:760-773` reads `alreadySaved` then `$push`+`$inc`, so two concurrent saves from
   one user can both pass the guard and double-count `numTimesSaved`. Single-user, low impact. (The sibling
@@ -606,12 +608,14 @@ findings table.)*
   `server/scripts/`) that loops every recipe and runs `recomputeRecipeRating(db, recipeId)`
   (`server/util/recipeRating.js`) to reconcile the whole catalog in one pass. *(surfaced by track 1a /
   PR #150, which only self-heals a recipe when someone next rates it.)*
-- `[ ]` **Harden `deleteAccount`'s rating recompute** — the per-recipe recompute after an account delete
+- `[x]` **Harden `deleteAccount`'s rating recompute** — was: the per-recipe recompute after an account delete
   is best-effort/post-commit and only `console.error`s on failure (`server/routes/auth.js:454-461`),
   so a silent failure can re-introduce aggregate drift. The set of recipes is correct
   (`distinct('recipeId', { userId: uid })` at `:396` → `reviewedRecipeIds`, and the loop skips the deleted
-  user's own recipes); only the failure mode is silent. Consider a periodic reconciliation job (pairs with
-  the item above) or alerting on recompute failure. *(low priority; lines re-verified 2026-06-26)*
+  user's own recipes); only the failure mode is silent. **Fixed in S2/PR
+  [#229](https://github.com/jclind/prepify/pull/229) (merged 2026-07-05):** the recompute now runs through
+  `recomputeWithRetry` (bounded retries) and surfaces non-silently rather than a bare `console.error`. A
+  standing catalog-wide reconciliation job remains desirable — tracked under **S6** (rating-aggregate ops).
 - `[ ]` **Autocomplete fuzzy fallback is an O(n) scan + in-process ranking** — when exact matches <
   `AUTOCOMPLETE_LIMIT = 8` (`server/routes/recipes.js:191`), the `/api/searchAutoCompleteRecipes` handler
   pulls up to `FUZZY_CANDIDATE_CAP = 1000` (`:204`) `{_id, title}` docs (only the `RECIPE_VISIBLE` filter
