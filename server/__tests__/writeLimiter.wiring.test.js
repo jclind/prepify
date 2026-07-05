@@ -43,6 +43,7 @@ describe('per-surface write limiters are wired onto every moderated write route'
     ['auth', authRouter, 'post', '/updateProfile', profileWriteLimiter],
     ['auth', authRouter, 'post', '/updatePhoto', profileWriteLimiter],
     ['auth', authRouter, 'post', '/updateDisplayName', profileWriteLimiter],
+    ['auth', authRouter, 'post', '/updatePrivacy', profileWriteLimiter],
   ]
 
   it.each(cases)(

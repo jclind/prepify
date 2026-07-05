@@ -91,10 +91,12 @@ The triage date stamped on items is the date they were filed here, not when they
   filter to both `find` and `countDocuments` and does no post-fetch filtering, so its count stays
   consistent. This bug is ratings-only.)** Fix: count post-visibility-filter, or paginate via an
   aggregation `$lookup` that excludes hidden recipes before the count.
-- `[~]` **Data export omits saved-recipe content** — `exportMyData` now exports full recipes, drafts,
-  ratings, and profile, but `savedRecipes` is still the raw reference array — `recipeId` + metadata
+- `[~]` **Data export omits saved-recipe content** — was: `exportMyData` exported full recipes, drafts,
+  ratings, and profile, but `savedRecipes` was still the raw reference array — `recipeId` + metadata
   (`collectionIds`/`savedAt`), no recipe bodies (`server/routes/auth.js:355`; verified 2026-06-26).
-  Expand it to full saved-recipe content. *(partially addressed)*
+  **Addressed in S2/PR #229 (open):** each saved entry is now hydrated with its recipe body (through
+  `publicRecipeProjection`, since saved recipes are other users'), keeping the ref with `recipe: null` for
+  deleted/hidden ones. Flip to `[x]` on merge.
 
 ## UX / visual polish
 
@@ -459,6 +461,19 @@ findings table.)*
   Verified against the live DEV endpoint with a minted token + seeded stamped recipe (response carried only the
   10 card fields). *(caught 2026-07-02 in the same code review that found the list-endpoint leak; see the #397
   item above. Fixed 2026-07-03.)*
+- `[ ]` **`exportMyData` returns the author's own `recipes`/`drafts` as full Mongo docs** — same leak class
+  as #397/#446, on the last unprojected account read. `GET /exportMyData` (`server/routes/auth.js:344`) builds
+  its `recipes`/`drafts` arrays with `db.collection('recipes').find({ userId: uid }).toArray()` (and the
+  `recipeDrafts` equivalent) — **no projection** — so any of the user's own recipes that an admin ever
+  moderated/featured carries `moderatedBy`/`featuredBy`/`publishUpdatedBy` (admin Firebase uids) straight into
+  the exported JSON the (non-admin) owner downloads. Narrowest audience of the three (only the recipe's own
+  author, and only via an explicit data export), which is why it wasn't bundled into the S2 fix. Note the
+  **saved-recipe** bodies on this same endpoint are NOT affected — S2/PR #229 hydrates them through
+  `publicRecipeProjection`; this is only the owner's *own* `recipes`/`drafts`. **Decision needed:** a data
+  export arguably *should* be higher-fidelity than a card, so the fix isn't necessarily the card whitelist —
+  more likely strip just the six admin stamps (a small shared `RECIPE_INTERNAL_STAMPS` exclusion) while
+  keeping the full user-authored body. Pre-existing; not a regression. Low (PII = internal admin uids, and the
+  owner already authored everything else in the doc). *(caught 2026-07-03 in local review of S2.)*
 - `[ ]` **Recipe numeric/array fields aren't range- or type-validated server-side** —
   `validateRecipeBounds` (`server/util/recipeLimits.js`, used by add/editRecipe) bounds title/description
   length, ingredient/instruction counts, and instruction-content length, but NOT the numeric fields

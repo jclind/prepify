@@ -605,6 +605,95 @@ describe('GET /exportMyData', () => {
     expect(res.body.recipes).toEqual([])
     expect(res.body.ratings).toEqual([])
   })
+
+  it('hydrates saved-recipe references into full recipe bodies', async () => {
+    await seedUser(TEST_UID, 'saver')
+    const db = getDB()
+    // A live recipe the user saved (owned by someone else) + a dangling ref
+    // whose recipe has since been deleted.
+    await db
+      .collection('recipes')
+      .insertOne({ _id: 'saved-1', userId: 'other', title: 'Saved Soup', status: 'published' })
+    await db.collection('userRecipeData').insertOne({
+      _id: TEST_UID,
+      savedRecipes: [
+        { recipeId: 'saved-1', dateSaved: '100' },
+        { recipeId: 'missing', dateSaved: '200' },
+      ],
+    })
+
+    const res = await request(app).get('/api/exportMyData').set(AUTH_HEADER)
+
+    expect(res.status).toBe(200)
+    const [hit, miss] = res.body.savedRecipes
+    // Original save metadata is preserved on both entries.
+    expect(hit.recipeId).toBe('saved-1')
+    expect(hit.dateSaved).toBe('100')
+    // The live recipe is hydrated into its full body...
+    expect(hit.recipe.title).toBe('Saved Soup')
+    // ...and a since-deleted one keeps its reference with recipe: null.
+    expect(miss.recipeId).toBe('missing')
+    expect(miss.dateSaved).toBe('200')
+    expect(miss.recipe).toBeNull()
+  })
+
+  it('does not leak the body of a saved recipe that was later hidden', async () => {
+    await seedUser(TEST_UID, 'saver')
+    const db = getDB()
+    await db
+      .collection('recipes')
+      .insertOne({ _id: 'hidden-1', userId: 'other', title: 'Gone', status: 'hidden' })
+    await db
+      .collection('userRecipeData')
+      .insertOne({ _id: TEST_UID, savedRecipes: [{ recipeId: 'hidden-1', dateSaved: '1' }] })
+
+    const res = await request(app).get('/api/exportMyData').set(AUTH_HEADER)
+
+    expect(res.body.savedRecipes).toHaveLength(1)
+    expect(res.body.savedRecipes[0].recipeId).toBe('hidden-1')
+    expect(res.body.savedRecipes[0].recipe).toBeNull()
+  })
+
+  it('does not leak another user\'s admin moderation stamps into the hydrated body', async () => {
+    await seedUser(TEST_UID, 'saver')
+    const db = getDB()
+    // A saved recipe is someone else's recipe, and it may carry internal admin
+    // stamps (admin Firebase uids) from a prior moderation/curation action. The
+    // export must hydrate it through the public whitelist, not the raw doc.
+    await db.collection('recipes').insertOne({
+      _id: 'stamped-1',
+      userId: 'other',
+      title: 'Stamped Stew',
+      status: 'published',
+      ingredients: [{ name: 'water' }],
+      moderatedBy: 'admin-uid-1',
+      moderatedAt: '2026-01-01',
+      featuredBy: 'admin-uid-2',
+      featuredAt: '2026-01-02',
+      publishUpdatedBy: 'admin-uid-3',
+      publishUpdatedAt: '2026-01-03',
+    })
+    await db
+      .collection('userRecipeData')
+      .insertOne({ _id: TEST_UID, savedRecipes: [{ recipeId: 'stamped-1', dateSaved: '1' }] })
+
+    const res = await request(app).get('/api/exportMyData').set(AUTH_HEADER)
+
+    const { recipe } = res.body.savedRecipes[0]
+    // Public content still hydrates...
+    expect(recipe.title).toBe('Stamped Stew')
+    // ...but none of the six admin-uid moderation/curation stamps ride along.
+    for (const field of [
+      'moderatedBy',
+      'moderatedAt',
+      'featuredBy',
+      'featuredAt',
+      'publishUpdatedBy',
+      'publishUpdatedAt',
+    ]) {
+      expect(recipe).not.toHaveProperty(field)
+    }
+  })
 })
 
 // ─── POST /deleteAccount ─────────────────────────────────────────────────────
@@ -801,6 +890,40 @@ describe('POST /deleteAccount', () => {
       expect(
         await db.collection('ratings').findOne({ userId: KEEPER_UID, recipeId: 'kept' })
       ).not.toBeNull()
+    })
+
+    it('retries, alerts, and records a failed post-commit recompute instead of swallowing it', async () => {
+      await seedCascade()
+      // Force the surviving-recipe recompute ('kept') to fail on every attempt.
+      const recipeRating = require('../util/recipeRating')
+      const Sentry = require('@sentry/node')
+      const recomputeSpy = jest
+        .spyOn(recipeRating, 'recomputeRecipeRating')
+        .mockRejectedValue(new Error('mongo down'))
+      const sentrySpy = jest
+        .spyOn(Sentry, 'captureException')
+        .mockImplementation(() => {})
+
+      try {
+        const res = await request(app).post('/api/deleteAccount').set(AUTH_HEADER)
+
+        // Best-effort: the account delete still completes despite the failure.
+        expect(res.status).toBe(200)
+        expect(admin.__deleteUser).toHaveBeenCalledWith(TEST_UID)
+        // The one surviving reviewed recipe ('kept') is retried before giving up.
+        expect(recomputeSpy).toHaveBeenCalledTimes(3)
+        expect(recomputeSpy).toHaveBeenCalledWith(expect.anything(), 'kept')
+        // Escalated to Sentry — not silently console.error'd.
+        expect(sentrySpy).toHaveBeenCalledTimes(1)
+        // And left a durable, queryable to-do on the audit entry for S6 reconciliation.
+        const entry = await getDB()
+          .collection('auditLog')
+          .findOne({ action: 'user.delete' })
+        expect(entry.metadata.staleRatingRecipeIds).toEqual(['kept'])
+      } finally {
+        recomputeSpy.mockRestore()
+        sentrySpy.mockRestore()
+      }
     })
   })
 })
