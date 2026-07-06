@@ -119,6 +119,6 @@ npx cypress open       # Open Cypress test runner
 ## Important Notes
 
 - RecipeContext in `src/context/RecipeContext.tsx` is commented out - recipe operations are called directly via `RecipeAPI` class
-- Firebase Admin SDK initialization is guarded with `if (!admin.apps.length)` to prevent double initialization
+- Firebase Admin SDK is on **v14** and uses the **modular API** (`firebase-admin/app`, `firebase-admin/auth`, `firebase-admin/storage`) — v14 removed the legacy `admin.*` namespace. Init is guarded with `if (!getApps().length)` (from `firebase-admin/app`) to prevent double initialization (`server/middleware/auth.js`). The frontend's Cypress config (`cypress.config.ts`) also runs Admin v14 for E2E token minting. Both `package.json`s carry an `overrides` pinning `uuid` to `^11.1.1` in the Admin dependency subtree — the `@google-cloud/storage` chain otherwise pulls a `uuid@9` with a moderate CVE and there's no fixed storage release yet; drop the override once one ships.
 - MongoDB connections use connection pooling with maxPoolSize: 10
 - The main server exposes a `/health` endpoint for health checks
