@@ -10,12 +10,13 @@ function hasNumericRating(rating) {
   return Number.isFinite(parseFloat(rating))
 }
 
-// Recompute and persist a recipe's aggregate rating from its ratings docs,
-// EXCLUDING any that have been taken down by moderation (REVIEW_VISIBLE). Called
-// whenever ratings change (new rating) or a review is hidden/restored, so a
-// moderated rating no longer influences the recipe's score. Returns the new
-// aggregate. count === 0 yields rateValue 0 (avoids divide-by-zero).
-async function recomputeRecipeRating(db, recipeId) {
+// Compute a recipe's aggregate rating from its ratings docs WITHOUT persisting,
+// EXCLUDING any taken down by moderation (REVIEW_VISIBLE). This is the pure read
+// half of recomputeRecipeRating — split out so read-only callers (e.g. the
+// catalog reconciliation script in server/scripts/) can diff the true aggregate
+// against the stored one without writing. count === 0 yields rateValue 0
+// (avoids divide-by-zero).
+async function computeRecipeRating(db, recipeId) {
   const docs = await db
     .collection('ratings')
     .find({ recipeId, ...REVIEW_VISIBLE })
@@ -28,10 +29,20 @@ async function recomputeRecipeRating(db, recipeId) {
   const rateValue = rateCount
     ? ratings.reduce((sum, r) => sum + parseFloat(r.rating), 0) / rateCount
     : 0
-  await db
-    .collection('recipes')
-    .updateOne(recipeIdQuery(recipeId), { $set: { rating: { rateCount, rateValue } } })
   return { rateCount, rateValue }
 }
 
-module.exports = { recomputeRecipeRating, hasNumericRating }
+// Recompute and persist a recipe's aggregate rating from its ratings docs,
+// EXCLUDING any that have been taken down by moderation (REVIEW_VISIBLE). Called
+// whenever ratings change (new rating) or a review is hidden/restored, so a
+// moderated rating no longer influences the recipe's score. Returns the new
+// aggregate. count === 0 yields rateValue 0 (avoids divide-by-zero).
+async function recomputeRecipeRating(db, recipeId) {
+  const agg = await computeRecipeRating(db, recipeId)
+  await db
+    .collection('recipes')
+    .updateOne(recipeIdQuery(recipeId), { $set: { rating: agg } })
+  return agg
+}
+
+module.exports = { computeRecipeRating, recomputeRecipeRating, hasNumericRating }
