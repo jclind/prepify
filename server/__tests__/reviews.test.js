@@ -1,17 +1,17 @@
 /**
  * Auth approach
  * ─────────────
- * server/__mocks__/firebase-admin.js is the automatic mock. Its admin.auth is
+ * server/__mocks__/firebase-admin/auth.js is the automatic mock. Its getAuth is
  * a jest.fn() whose default implementation returns { verifyIdToken } resolving
  * to { uid: 'test-uid' }.
  *
  * For tests that need a DIFFERENT uid (non-author 403 cases), we call:
  *
- *   admin.auth.mockReturnValueOnce({
+ *   getAuth.mockReturnValueOnce({
  *     verifyIdToken: jest.fn().mockResolvedValueOnce({ uid: OTHER_UID }),
  *   })
  *
- * mockReturnValueOnce is consumed by the very next admin.auth() call inside
+ * mockReturnValueOnce is consumed by the very next getAuth() call inside
  * verifyToken middleware, then the default implementation resumes.
  *
  * Why beforeEach instead of beforeAll for seeding:
@@ -24,7 +24,7 @@
 const request = require('supertest')
 const app = require('../app')
 const { getDB } = require('../db')
-const admin = require('firebase-admin')
+const { getAuth } = require('firebase-admin/auth')
 const { seedRating } = require('./helpers/seed')
 
 const TEST_UID = 'test-uid'
@@ -51,8 +51,8 @@ beforeEach(async () => {
     rating: { rateCount: 0, rateValue: 0 },
   })
   // Reset to default: verifyToken resolves req.uid = TEST_UID
-  admin.auth.mockReset()
-  admin.auth.mockImplementation(() => ({
+  getAuth.mockReset()
+  getAuth.mockImplementation(() => ({
     verifyIdToken: jest.fn().mockResolvedValue({ uid: TEST_UID }),
   }))
 })
@@ -183,9 +183,9 @@ describe('POST /editReview', () => {
   })
 
   it('rejects request from non-author (403)', async () => {
-    // Next admin.auth() call in verifyToken returns other-uid →
+    // Next getAuth() call in verifyToken returns other-uid →
     // route looks up 'otheruser' → no ratings doc matches → matchedCount 0 → 403
-    admin.auth.mockReturnValueOnce({
+    getAuth.mockReturnValueOnce({
       verifyIdToken: jest.fn().mockResolvedValueOnce({ uid: OTHER_UID }),
     })
 
@@ -243,7 +243,7 @@ describe('DELETE /deleteReview', () => {
   })
 
   it('rejects request from non-author (403)', async () => {
-    admin.auth.mockReturnValueOnce({
+    getAuth.mockReturnValueOnce({
       verifyIdToken: jest.fn().mockResolvedValueOnce({ uid: OTHER_UID }),
     })
 
@@ -452,7 +452,7 @@ describe('POST /newReview', () => {
   })
 
   it('returns 400 if the user has no username set', async () => {
-    admin.auth.mockReturnValueOnce({
+    getAuth.mockReturnValueOnce({
       verifyIdToken: jest.fn().mockResolvedValueOnce({ uid: 'no-username-uid' }),
     })
 

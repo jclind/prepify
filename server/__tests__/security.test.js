@@ -14,7 +14,7 @@
 const request = require('supertest')
 const app = require('../app')
 const { getDB } = require('../db')
-const admin = require('firebase-admin')
+const { getAuth } = require('firebase-admin/auth')
 const { recipeIdQuery, recipeIdInQuery } = require('../util/recipeIdQuery')
 
 const TEST_UID = 'test-uid'
@@ -34,8 +34,8 @@ beforeEach(async () => {
     { _id: RECIPE_ID, title: 'Security Test Recipe', rating: { rateCount: 0, rateValue: 0 }, views: 0 },
     { _id: OTHER_RECIPE_ID, title: 'Bystander Recipe', rating: { rateCount: 5, rateValue: 4.8 }, views: 0 },
   ])
-  admin.auth.mockReset()
-  admin.auth.mockImplementation(() => ({
+  getAuth.mockReset()
+  getAuth.mockImplementation(() => ({
     verifyIdToken: jest.fn().mockResolvedValue({ uid: TEST_UID }),
   }))
 })
@@ -157,7 +157,7 @@ describe('recipeIdQuery non-string ids', () => {
 // verifyToken sets req.isAdmin = decoded.admin === true.
 
 function asAdminOnce() {
-  admin.auth.mockReturnValueOnce({
+  getAuth.mockReturnValueOnce({
     verifyIdToken: jest.fn().mockResolvedValueOnce({ uid: TEST_UID, admin: true }),
   })
 }

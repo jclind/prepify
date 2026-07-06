@@ -1,4 +1,4 @@
-const admin = require('firebase-admin')
+const { getAuth } = require('firebase-admin/auth')
 const { recipeIdQuery } = require('./recipeIdQuery')
 
 // Transactional email for moderation outcomes, behind one thin Resend wrapper so
@@ -100,7 +100,7 @@ async function sendEmail({ to, subject, html, text }) {
 // lookup fails — a missing address just means "nobody to notify", never an error.
 async function emailForUid(uid) {
   try {
-    const user = await admin.auth().getUser(uid)
+    const user = await getAuth().getUser(uid)
     return user.email || null
   } catch (err) {
     return null

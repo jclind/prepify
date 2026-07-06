@@ -1,7 +1,7 @@
 const express = require('express')
 const { asyncHandler } = require('../util/asyncHandler')
 const router = express.Router()
-const admin = require('firebase-admin')
+const { getAuth } = require('firebase-admin/auth')
 const { getDB } = require('../db')
 const { getAccountCountsFor } = require('../util/accountCounts')
 const { computeGamification } = require('../util/gamification')
@@ -36,7 +36,7 @@ router.get('/getPublicProfile', asyncHandler(async (req, res) => {
   // profile still renders (deleted user / transient error).
   const fetchAuthRecord = async () => {
     try {
-      const r = await admin.auth().getUser(uid)
+      const r = await getAuth().getUser(uid)
       return {
         displayName: r.displayName || usernameDoc.username,
         photoURL: r.photoURL || null,

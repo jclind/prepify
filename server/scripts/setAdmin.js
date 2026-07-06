@@ -16,7 +16,8 @@
  */
 const path = require('path')
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') })
-const admin = require('firebase-admin')
+const { initializeApp, getApps, cert } = require('firebase-admin/app')
+const { getAuth } = require('firebase-admin/auth')
 
 async function main() {
   const args = process.argv.slice(2)
@@ -34,17 +35,17 @@ async function main() {
     process.exit(2)
   }
 
-  if (!admin.apps.length) {
-    admin.initializeApp({
-      credential: admin.credential.cert(JSON.parse(rawServiceAccount)),
+  if (!getApps().length) {
+    initializeApp({
+      credential: cert(JSON.parse(rawServiceAccount)),
     })
   }
 
   try {
     // Accept either a uid or an email. An "@" is the cheap tell for an email.
     const user = identifier.includes('@')
-      ? await admin.auth().getUserByEmail(identifier)
-      : await admin.auth().getUser(identifier)
+      ? await getAuth().getUserByEmail(identifier)
+      : await getAuth().getUser(identifier)
 
     // Merge with any existing claims so we never clobber unrelated ones.
     const existingClaims = user.customClaims || {}
@@ -55,7 +56,7 @@ async function main() {
       nextClaims.admin = true
     }
 
-    await admin.auth().setCustomUserClaims(user.uid, nextClaims)
+    await getAuth().setCustomUserClaims(user.uid, nextClaims)
 
     console.log(
       `${revoke ? 'Revoked' : 'Granted'} admin for ${user.email || user.uid} (uid: ${user.uid}).`

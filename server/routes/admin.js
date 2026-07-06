@@ -1,6 +1,6 @@
 const { Router } = require('express')
 const { asyncHandler } = require('../util/asyncHandler')
-const admin = require('firebase-admin')
+const { getAuth } = require('firebase-admin/auth')
 const { getDB } = require('../db')
 const { verifyToken, requireAdmin } = require('../middleware/auth')
 const { USER_STATUSES } = require('../util/userStatus')
@@ -175,7 +175,7 @@ router.get('/admin/users', verifyToken, requireAdmin, asyncHandler(async (req, r
   // Email lookup: resolve to a uid via Firebase, then surface that one user.
   if (query.includes('@')) {
     try {
-      const fbUser = await admin.auth().getUserByEmail(query)
+      const fbUser = await getAuth().getUserByEmail(query)
       const usernameDoc =
         (await db.collection('usernames').findOne({ _id: fbUser.uid })) || {
           _id: fbUser.uid,
@@ -223,7 +223,7 @@ router.get('/admin/users/:uid', verifyToken, requireAdmin, asyncHandler(async (r
 
   let email = null
   try {
-    const fbUser = await admin.auth().getUser(uid)
+    const fbUser = await getAuth().getUser(uid)
     email = fbUser.email || null
   } catch (e) {
     // No Firebase user (or lookup failed) — detail still renders without email.
@@ -272,7 +272,7 @@ router.patch('/admin/users/:uid/status', verifyToken, requireAdmin, asyncHandler
 
   // An admin cannot suspend/ban a fellow admin.
   try {
-    const target = await admin.auth().getUser(uid)
+    const target = await getAuth().getUser(uid)
     if (target.customClaims?.admin === true) {
       return res
         .status(403)

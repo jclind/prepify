@@ -1,4 +1,4 @@
-const admin = require('firebase-admin')
+const { getStorage } = require('firebase-admin/storage')
 
 // Firebase Storage download URLs look like:
 //   https://firebasestorage.googleapis.com/v0/b/<bucket>/o/<url-encoded-path>?alt=media&token=...
@@ -19,7 +19,7 @@ async function deleteRecipeImage(url) {
   const parsed = parseStorageUrl(url)
   if (!parsed) return false
   try {
-    await admin.storage().bucket(parsed.bucket).file(parsed.path).delete()
+    await getStorage().bucket(parsed.bucket).file(parsed.path).delete()
     return true
   } catch (err) {
     console.error('Failed to delete recipe image from storage:', err.message)
@@ -44,8 +44,8 @@ async function deleteProfilePhoto(uid) {
   try {
     const bucketName = process.env.FIREBASE_STORAGE_BUCKET
     const bucket = bucketName
-      ? admin.storage().bucket(bucketName)
-      : admin.storage().bucket()
+      ? getStorage().bucket(bucketName)
+      : getStorage().bucket()
     await bucket.file(path).delete()
     return true
   } catch (err) {
