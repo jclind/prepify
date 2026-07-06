@@ -72,7 +72,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **1** | **S5 · asyncHandler consistency** | `nutrition.js` `/details` + `ingredients.js` `/parse` bare async → wrapper | `[x]` [#232](https://github.com/jclind/prepify/pull/232) (2026-07-06) | `server/routes/nutrition.js`, `ingredients.js` | **merged** |
 | **1** | **S6 · rating-aggregate ops** | one-off reconciliation script; post-6-phase DB check | `[x]` [#233](https://github.com/jclind/prepify/pull/233) (2026-07-06) | `server/scripts/` (+ ops run) | **merged** — new files; pairs w/ S2 |
 | **1** | **S7 · firebase-admin@14 bump** | 8 moderate transitive CVEs (breaking major, on `^13.8.0`) | `[P]` [#234](https://github.com/jclind/prepify/pull/234) `worktree-feat+s7-firebase-admin-14` 2026-07-06 | `server/package.json` + lockfile | ⚠ breaking; own full regression |
-| **2** | **F1 · TimeInput NaN bug** | edit/draft-resume blank prep/cook time (`TimeInput.tsx:23-27` + `AddRecipe.tsx:86-91,160-161`) | `[ ]` | `TimeInput.tsx` + `AddRecipe.tsx` | ⚠ first claim on AddRecipe.tsx — do before/inside **C1** |
+| **2** | **F1 · TimeInput NaN bug** | edit/draft-resume blank prep/cook time (`TimeInput.tsx:23-27` + `AddRecipe.tsx:86-91,160-161`) | `[~]` `worktree-feat+f1-timeinput-nan` 2026-07-06 | `TimeInput.tsx` + `AddRecipe.tsx` | ⚠ first claim on AddRecipe.tsx — do before/inside **C1** |
 | **2** | **F2 · AuthContext memo** | `value` object recreated every render → wrap in `useMemo` | `[ ]` | `src/context/AuthContext.tsx` | — |
 | **2** | **F3 · Saved-tab memo** | `refreshAfterMutation` not `useCallback`'d → defeats `React.memo(RecipeCard)` (`SavedRecipes.tsx:133-136,372`) | `[ ]` | `SavedRecipes.tsx` | one line |
 | **2** | **F4 · change-password subhead** | redundant `<h3 class='sr-subhead'>` (`AccountSection.tsx:188`) | `[ ]` | `Settings/sections/AccountSection.tsx` | — |
@@ -360,3 +360,25 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   baseline. CI green (Backend/Frontend/E2e/Fallow). The **prod ops run** (`--apply` against prod Mongo) stays
   owner-gated for the cutover — the scripts are the deliverable, the run is separate. Sixth Wave-1 track done;
   only **S7** (in flight, `[P]`) remains open in Wave 1. No follow-ups filed.
+- **2026-07-06** — **F1 claimed** (`worktree-feat+f1-timeinput-nan`). Claim recorded directly on `development`
+  (same convention as S4–S7) so concurrent sessions see the lane taken. Scope: the TimeInput hydration NaN bug —
+  the effect in `TimeInput/TimeInput.tsx:23-27` does `Number(val)` on `val` (a `{hours, minutes} | null` object),
+  which is always `NaN`, so on edit/draft-resume the prep/cook fields blank out instead of rehydrating. Fix the
+  effect to read `val.hours`/`val.minutes` (+ the paired `AddRecipe.tsx:86-91,160-161` shape). **First claim on
+  `AddRecipe.tsx`** — per parallelism rule 4, F1 ships first/standalone so the AddRecipe lane (C1/R1) rebases onto
+  it; verified no AddRecipe worktree is in flight (only S7, server-only) and `development` is in sync with origin
+  (0/0) before claiming. Worktree not yet created.
+- **2026-07-06** — **S7** scope widened after a local review of PR #234: the server bump alone left the **repo
+  root** on `firebase-admin ^13.9.0` (a devDependency used only by `cypress.config.ts` for E2E token minting),
+  so root `npm audit` still reported the same 8 moderate advisories the lane exists to kill. Folded the
+  frontend/tooling side into the same PR — root → `^14.1.0`; `cypress.config.ts` migrated to the modular API
+  (v14 removed the `admin.*` namespace, so its `admin.auth().createCustomToken`/`admin.apps`/
+  `admin.credential.cert` would have thrown); `overrides.uuid ^11.1.1` **scoped under `firebase-admin`** (not
+  blanket — the root has a direct `uuid@^14.0.0` the frontend bundles, which a top-level override would
+  downgrade and npm rejects as conflicting with a direct dep). Result: **both trees `npm audit` = 0** (server
+  was 9→0, root 8→0). Also refreshed `CLAUDE.md` (the stale `if (!admin.apps.length)` note → modular API +
+  the uuid-override removal condition) and annotated the auto-applied subpath mocks. Re-verified: server Jest
+  737/737, frontend tsc/Vitest 553/build green, and a live dev-Firebase `createCustomToken` through the
+  migrated cypress path. **Standing cleanup for a future session:** both `package.json`s carry the `uuid`
+  override only because `@google-cloud/storage` has no release with a patched `uuid` yet — **remove both
+  overrides once one ships** (tracked in `CLAUDE.md`).
