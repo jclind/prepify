@@ -2,8 +2,8 @@
 // for display (e.g. 1.5 → "1 1/2", 0.33 → "1/3"). The old in-app quantity
 // *validation* this file was named for is gone — ingredient parsing now happens
 // via @jclind/ingredient-parser — so the only surviving export is this display
-// helper. (Filename kept to avoid churning import sites; a rename to e.g.
-// formatQuantity.ts is a safe follow-up.)
+// helper, and the file was renamed from validateIngredientQuantityStr.ts to
+// match.
 export const closestFraction = (num: number): string => {
   const fractions = [
     { num: 1, den: 8 },

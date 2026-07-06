@@ -17,9 +17,9 @@ Prepify is a recipe website built with React/TypeScript frontend and an Express 
 
 - `src/pages/` - Route components (Home, Recipes, AddRecipe, Account, etc.)
 - `src/Components/` - Reusable UI components (Layout, Navbar, RecipeThumbnail, Form, etc.)
-- `src/context/` - React Context providers (AuthContext is active; RecipeContext is commented out/migrated)
+- `src/context/` - React Context providers (AuthContext is active; RecipeContext has been removed/migrated)
 - `src/api/` - API client modules
-- `src/util/` - Utility functions (calculateServingPrice, validateIngredientQuantityStr, etc.)
+- `src/util/` - Utility functions (calculateServingPrice, formatQuantity, etc.)
 - `src/recipeData/` - Static data (cuisinesList, dietLabels, mealTypesList)
 - `src/test/` - Vitest test suite with jsdom environment
 
@@ -118,7 +118,7 @@ npx cypress open       # Open Cypress test runner
 
 ## Important Notes
 
-- RecipeContext in `src/context/RecipeContext.tsx` is commented out - recipe operations are called directly via `RecipeAPI` class
+- RecipeContext has been removed (the former `src/context/RecipeContext.tsx` no longer exists) - recipe operations are called directly via `RecipeAPI` class
 - Firebase Admin SDK is on **v14** and uses the **modular API** (`firebase-admin/app`, `firebase-admin/auth`, `firebase-admin/storage`) — v14 removed the legacy `admin.*` namespace. Init is guarded with `if (!getApps().length)` (from `firebase-admin/app`) to prevent double initialization (`server/middleware/auth.js`). The frontend's Cypress config (`cypress.config.ts`) also runs Admin v14 for E2E token minting. Both `package.json`s carry an `overrides` pinning `uuid` to `^11.1.1` in the Admin dependency subtree — the `@google-cloud/storage` chain otherwise pulls a `uuid@9` with a moderate CVE and there's no fixed storage release yet; drop the override once one ships.
 - MongoDB connections use connection pooling with maxPoolSize: 10
 - The main server exposes a `/health` endpoint for health checks

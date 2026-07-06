@@ -1,5 +1,5 @@
 import { IngredientData, ParsedIngredient, IngredientsType } from 'types'
-// import { evalNum } from './validateIngredientQuantityStr'
+// import { evalNum } from './formatQuantity'
 
 // const mixedToDecimal = (str: string): number => {
 //   const split: string[] = str.split(' ')

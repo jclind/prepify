@@ -31,7 +31,7 @@ import { capitalize } from 'src/util/capitalize'
 import { formatRating } from 'src/util/formatRating'
 import { formatMonthYear } from 'src/util/formatDate'
 import { formatPrice } from 'src/util/formatPrice'
-import { closestFraction } from 'src/util/validateIngredientQuantityStr'
+import { closestFraction } from 'src/util/formatQuantity'
 
 import { IngredientsType, InstructionsType, RecipeType, ReviewType } from 'types'
 import RecipeAPI from 'src/api/recipes'

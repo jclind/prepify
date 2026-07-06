@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { closestFraction } from 'src/util/validateIngredientQuantityStr'
+import { closestFraction } from 'src/util/formatQuantity'
 
 // closestFraction renders a decimal ingredient quantity as the nearest "nice"
 // cooking fraction for display (the recipe page + printable view + ingredient
