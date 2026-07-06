@@ -21,9 +21,12 @@ const TimeInput: React.FC<TimeInputProps> = ({ label, val, setVal }) => {
   const [hours, setHours] = useState<number | ''>('')
 
   useEffect(() => {
-    if (Number(val) !== 0 && !minutes && !hours) {
-      setMinutes(Number(val) % 60)
-      setHours(Math.floor(Number(val) / 60))
+    // Hydrate from the parent's { hours, minutes } value (edit / draft-resume).
+    // `val` is an object, so the old `Number(val)` produced NaN and blanked the
+    // fields — read the members directly instead.
+    if (val && !minutes && !hours) {
+      setMinutes(val.minutes || '')
+      setHours(val.hours || '')
     }
     if (!val) {
       setMinutes('')
