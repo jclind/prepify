@@ -908,9 +908,11 @@ findings table.)*
   (1) **`any` escape hatches** (~23, tsc is clean) are concentrated in react-select `styles` callbacks
   (`provided/state: any` across CuisineSelector/MealTypeSelector/DietSelector/ReviewFilters) and a handful of
   `catch (err: any)` blocks — tightening means `StylesConfig<Option, IsMulti>` generics + `err: unknown`
-  narrowing; fiddly, deferred. (2) **`asyncHandler` consistency**: `routes/ingredients.js` (`/parse`) and
+  narrowing; fiddly, deferred. (2) ~~**`asyncHandler` consistency**: `routes/ingredients.js` (`/parse`) and
   `routes/nutrition.js` (`/details`) use a bare `async (req,res)` with a complete internal try/catch instead of
-  the `asyncHandler` wrapper every other route uses — functionally safe, just inconsistent. (3) **Doc drift**:
+  the `asyncHandler` wrapper every other route uses — functionally safe, just inconsistent.~~ *(fixed in
+  [#232](https://github.com/jclind/prepify/pull/232), S5: both wrapped in `asyncHandler`; internal soft-fail
+  try/catch kept — no behaviour change.)* (3) **Doc drift**:
   `CLAUDE.md` still describes `src/context/RecipeContext.tsx` as "commented out", but the file has been deleted
   entirely — update the two references. (4) **Optional rename**: `src/util/validateIngredientQuantityStr.ts` now
   exports only `closestFraction` (a display formatter) — a rename to `formatQuantity.ts` would match its
