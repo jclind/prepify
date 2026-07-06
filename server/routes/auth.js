@@ -1,5 +1,5 @@
 const express = require('express')
-const admin = require('firebase-admin')
+const { getAuth } = require('firebase-admin/auth')
 const Sentry = require('@sentry/node')
 const { asyncHandler } = require('../util/asyncHandler')
 const router = express.Router()
@@ -276,7 +276,7 @@ router.post('/updatePhoto', verifyToken, requireActive, profileWriteLimiter, asy
   }
 
   // Admin SDK clears the avatar with null (an empty string is rejected).
-  await admin.auth().updateUser(req.uid, { photoURL: url || null })
+  await getAuth().updateUser(req.uid, { photoURL: url || null })
   res.json({ success: true, photoURL: url })
 }))
 
@@ -306,7 +306,7 @@ router.post('/updateDisplayName', verifyToken, requireActive, profileWriteLimite
     return respondBlocked(res, { db, uid: req.uid, surface: 'displayName', verdict })
   }
 
-  await admin.auth().updateUser(req.uid, { displayName: name })
+  await getAuth().updateUser(req.uid, { displayName: name })
   res.json({ success: true, displayName: name })
 }))
 
@@ -551,7 +551,7 @@ router.post('/deleteAccount', verifyToken, asyncHandler(async (req, res) => {
     metadata: staleRatingRecipeIds.length ? { staleRatingRecipeIds } : null,
   })
 
-  await admin.auth().deleteUser(uid)
+  await getAuth().deleteUser(uid)
 
   res.json({ success: true })
 }))

@@ -4,7 +4,7 @@
 // state. Used by the recipe write routes; reviews/profile block inline and need
 // none of this.
 
-const admin = require('firebase-admin')
+const { getAuth } = require('firebase-admin/auth')
 const { ObjectId } = require('mongodb')
 const { recordAudit, SYSTEM_ACTOR } = require('./auditLog')
 const { recipeIdQuery } = require('./recipeIdQuery')
@@ -51,7 +51,7 @@ async function auditContentBlock(db, { uid, surface, verdict } = {}) {
       // the account's Firebase email — still a human identifier an admin can act
       // on (and already shown in the user-detail view), rather than a bare uid.
       if (!targetLabel) {
-        const userRecord = await admin.auth().getUser(uid)
+        const userRecord = await getAuth().getUser(uid)
         if (userRecord?.email) targetLabel = userRecord.email
       }
     }

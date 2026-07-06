@@ -1,13 +1,14 @@
-const admin = require('firebase-admin')
+const { initializeApp, getApps, cert } = require('firebase-admin/app')
+const { getAuth } = require('firebase-admin/auth')
 const { respondServerError } = require('../util/respondServerError')
 const { getDB } = require('../db')
 const { isBlocked } = require('../util/userStatus')
 
 // Initialize once — guard against double init
-if (!admin.apps.length) {
+if (!getApps().length) {
   const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
+  initializeApp({
+    credential: cert(serviceAccount),
   })
 }
 
@@ -19,7 +20,7 @@ async function verifyToken(req, res, next) {
 
   const token = authHeader.split('Bearer ')[1]
   try {
-    const decoded = await admin.auth().verifyIdToken(token)
+    const decoded = await getAuth().verifyIdToken(token)
     req.uid = decoded.uid
     // Admin identity rides the existing token via a custom claim — no per-request
     // DB lookup. Stashed here so owner-only write routes can offer an admin bypass
@@ -39,7 +40,7 @@ async function optionalAuth(req, res, next) {
   const authHeader = req.headers.authorization
   if (authHeader?.startsWith('Bearer ')) {
     try {
-      const decoded = await admin.auth().verifyIdToken(authHeader.split('Bearer ')[1])
+      const decoded = await getAuth().verifyIdToken(authHeader.split('Bearer ')[1])
       req.uid = decoded.uid
       req.isAdmin = decoded.admin === true
     } catch (err) {
