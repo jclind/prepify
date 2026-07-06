@@ -70,7 +70,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **1** | **S3 · reviews.js correctness** | ratings Load-More count (`:281-308`); admin-takedown username→userId (`:318-353`) | `[x]` [#231](https://github.com/jclind/prepify/pull/231) (2026-07-05) | `server/routes/reviews.js` | **merged** |
 | **1** | **S4 · rate-limit breadth** | reports per-uid limiter (`reports.js:69`); `acknowledgeAchievements` limiter (`gamification.js:31`) | `[x]` [#230](https://github.com/jclind/prepify/pull/230) (2026-07-06) | `server/routes/reports.js`, `server/routes/gamification.js` | **merged** — also folded in the `reports.js` review-preview userId fix (S3 twin) |
 | **1** | **S5 · asyncHandler consistency** | `nutrition.js` `/details` + `ingredients.js` `/parse` bare async → wrapper | `[x]` [#232](https://github.com/jclind/prepify/pull/232) (2026-07-06) | `server/routes/nutrition.js`, `ingredients.js` | **merged** |
-| **1** | **S6 · rating-aggregate ops** | one-off reconciliation script; post-6-phase DB check | `[~]` `worktree-feat+s6-rating-aggregate-ops` 2026-07-06 | `server/scripts/` (+ ops run) | new files; pairs w/ S2 |
+| **1** | **S6 · rating-aggregate ops** | one-off reconciliation script; post-6-phase DB check | `[P]` [#233](https://github.com/jclind/prepify/pull/233) `worktree-feat+s6-rating-aggregate-ops` 2026-07-06 | `server/scripts/` (+ ops run) | new files; pairs w/ S2 |
 | **1** | **S7 · firebase-admin@14 bump** | 8 moderate transitive CVEs (breaking major, on `^13.8.0`) | `[~]` `worktree-feat+s7-firebase-admin-14` 2026-07-06 | `server/package.json` + lockfile | ⚠ breaking; own full regression |
 | **2** | **F1 · TimeInput NaN bug** | edit/draft-resume blank prep/cook time (`TimeInput.tsx:23-27` + `AddRecipe.tsx:86-91,160-161`) | `[ ]` | `TimeInput.tsx` + `AddRecipe.tsx` | ⚠ first claim on AddRecipe.tsx — do before/inside **C1** |
 | **2** | **F2 · AuthContext memo** | `value` object recreated every render → wrap in `useMemo` | `[ ]` | `src/context/AuthContext.tsx` | — |
@@ -317,3 +317,19 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   + lockfile (+ any call-site fallout), no collision with the in-flight S6 (`server/scripts/`). Verified
   `development` in sync with origin (0/0) and installed version 13.10.0 before claiming. Worktree not yet
   created.
+- **2026-07-06** — **S6** implemented in `worktree-feat+s6-rating-aggregate-ops` → PR
+  [#233](https://github.com/jclind/prepify/pull/233) opened (`[P]`). Both open rating-aggregate ops items
+  shipped as read-first ops scripts under `server/scripts/` (dry-run/report by default, modeled on the
+  existing backfills): (1) `reconcileRatingAggregates.js` loops every recipe, computes the true aggregate
+  from its visible `ratings` docs via the canonical util, reports drift, and `--apply` heals each drifted
+  recipe through `recomputeRecipeRating` (idempotent); (2) `checkMigrationState.js` — READ-ONLY post-6-phase
+  DB check counting records still pending each shipped migration (Phase 5-D string `_id`, `ratings.userId` /
+  `reports.reportedUid` backfills, the `rating` aggregate field), naming the fix script for any found and
+  exiting `2` when pending (a pre-cutover gate). To let the dry-run diff without writing, split the pure read
+  half out of `recomputeRecipeRating` into **`computeRecipeRating`** (delegates then persists — no behaviour
+  change); added `recipeRating.test.js` pinning the read-only contract + moderation/numeric filter rules.
+  Verified against the **dev** DB: reconciliation caught + healed a real drift (recipe stored `rateCount 2`
+  with only 1 visible rating), idempotent on re-run; the migration check surfaced dev's pending 5-D `_id`
+  (8) + `userId` (1) records. Server Jest **741/741** (the lone `reports.js` rate-limit full-suite flake
+  passes in isolation + cleared on re-run). The actual **prod ops run** (`--apply` against prod Mongo) stays
+  owner-gated for the cutover — the scripts are the deliverable; the run is separate. Sixth Wave-1 track PR'd.
