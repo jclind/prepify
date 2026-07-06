@@ -289,3 +289,29 @@ describe('AuthContext — updateProfileData', () => {
     expect(verifyBeforeUpdateEmail).not.toHaveBeenCalled()
   })
 })
+
+// ─── referential stability (the memoization fix) ──────────────────────────────
+
+describe('AuthContext — referential stability', () => {
+  it('keeps a stable context value across an incidental re-render', async () => {
+    h.authUser = makeUser()
+    const { result, rerender } = renderHook(() => useAuth(), { wrapper })
+    await waitFor(() => expect(result.current!.user).not.toBeNull())
+
+    const first = result.current
+    // An incidental re-render of the provider tree (e.g. a parent re-rendering)
+    // with no change to auth state.
+    act(() => {
+      rerender()
+    })
+    const second = result.current
+
+    // The provider memoizes its value and useCallback's its handlers, so the
+    // identity must not change here. Before the fix, `value` was rebuilt every
+    // render, forcing every useAuth() consumer to re-render for nothing.
+    expect(second).toBe(first)
+    expect(second!.logout).toBe(first!.logout)
+    expect(second!.deleteAccount).toBe(first!.deleteAccount)
+    expect(second!.updateProfileData).toBe(first!.updateProfileData)
+  })
+})

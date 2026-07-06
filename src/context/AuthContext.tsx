@@ -1,4 +1,12 @@
-import React, { FC, ReactNode, useState, useEffect, useContext } from 'react'
+import React, {
+  FC,
+  ReactNode,
+  useState,
+  useEffect,
+  useContext,
+  useCallback,
+  useMemo,
+} from 'react'
 import {
   signOut,
   getAuth,
@@ -80,15 +88,18 @@ const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
   // getAuth() is resolved here rather than at module scope so that merely
   // importing this module (e.g. for the useAuth hook, as ReportControl does)
   // never triggers Firebase init — which would throw in environments/tests
-  // where no Firebase app has been created. getAuth() is idempotent.
-  const auth = getAuth()
+  // where no Firebase app has been created. Memoized so it's resolved once and
+  // stays a stable reference: the handlers below close over `auth` in their
+  // useCallback deps, and a fresh `auth` each render would bust those (and the
+  // value memo) needlessly.
+  const auth = useMemo(() => getAuth(), [])
   const [user, setUser] = useState<UserCredential['user'] | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
   const [loading, setLoading] = useState(true)
 
   const navigate = useNavigate()
 
-  const logout = () => {
+  const logout = useCallback(() => {
     signOut(auth)
       .then(() => {
         navigate('/')
@@ -96,8 +107,8 @@ const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
       .catch(err => {
         console.error('sign out NOT success,', err)
       })
-  }
-  const signInWithGoogle = (setError: (val: string) => void) => {
+  }, [auth, navigate])
+  const signInWithGoogle = useCallback((setError: (val: string) => void) => {
     const provider = new GoogleAuthProvider()
 
     signInWithPopup(auth, provider)
@@ -110,8 +121,8 @@ const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
         const message = authErrorMessage(err.code)
         if (message) setError(message)
       })
-  }
-  const signInDefault = (
+  }, [auth, navigate])
+  const signInDefault = useCallback((
     email: string,
     password: string,
     remember: boolean,
@@ -140,8 +151,8 @@ const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
         setLoading(false)
         setError(authErrorMessage(err.code))
       })
-  }
-  const signUp = (
+  }, [auth, navigate])
+  const signUp = useCallback((
     email: string,
     password: string,
     setLoading: (val: boolean) => void,
@@ -166,8 +177,8 @@ const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
         setLoading(false)
         setError(authErrorMessage(err.code))
       })
-  }
-  const forgotPassword = (
+  }, [auth, navigate])
+  const forgotPassword = useCallback((
     email: string,
     setLoading: (val: boolean) => void,
     setSuccess: (val: string) => void,
@@ -193,13 +204,13 @@ const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
           setError(authErrorMessage(err.code))
         }
       })
-  }
+  }, [auth])
 
   // Avatar intent is encoded in imgFile: a File uploads + sets a new photo,
   // `null` explicitly clears it, and `undefined` (the key omitted) leaves the
   // existing photo untouched. Likewise an omitted displayName is left as-is. This
   // lets an email-only or name-only save run without clobbering the avatar.
-  const updateProfileData = async (data: {
+  const updateProfileData = useCallback(async (data: {
     displayName?: string
     username?: string
     imgFile?: File | null
@@ -265,15 +276,15 @@ const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
         await user.reload()
       }
     }
-  }
-  const changePassword = async (oldPass: string, newPass: string) => {
+  }, [user])
+  const changePassword = useCallback(async (oldPass: string, newPass: string) => {
     if (user && user.email) {
       const credential = EmailAuthProvider.credential(user.email, oldPass)
       await reauthenticateWithCredential(user, credential)
       await updatePassword(user, newPass)
     }
-  }
-  const deleteAccount = async (password?: string) => {
+  }, [user])
+  const deleteAccount = useCallback(async (password?: string) => {
     if (!user) return
     // Firebase requires a recent login before a destructive op. Reauthenticate
     // with the method the account actually uses: password accounts re-enter
@@ -305,7 +316,7 @@ const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
     // The auth account no longer exists; clear local state and leave.
     await signOut(auth)
     navigate('/')
-  }
+  }, [user, auth, navigate])
 
   // Check for auth status on page load
   useEffect(() => {
@@ -374,19 +385,38 @@ const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, user])
 
-  const value: AuthContextValueType = {
-    user,
-    isAdmin,
-    logout,
-    signInWithGoogle,
-    signInDefault,
-    signUp,
-    forgotPassword,
-    authLoading: loading,
-    updateProfileData,
-    changePassword,
-    deleteAccount,
-  }
+  // Memoize the context value so consumers (everything under useAuth) don't
+  // re-render every time AuthProvider itself re-renders — the identity now only
+  // changes when a real input does. The handlers are individually useCallback'd
+  // above, so they're stable deps here; without that this memo would never hit.
+  const value: AuthContextValueType = useMemo(
+    () => ({
+      user,
+      isAdmin,
+      logout,
+      signInWithGoogle,
+      signInDefault,
+      signUp,
+      forgotPassword,
+      authLoading: loading,
+      updateProfileData,
+      changePassword,
+      deleteAccount,
+    }),
+    [
+      user,
+      isAdmin,
+      loading,
+      logout,
+      signInWithGoogle,
+      signInDefault,
+      signUp,
+      forgotPassword,
+      updateProfileData,
+      changePassword,
+      deleteAccount,
+    ]
+  )
 
   return (
     <AuthContext.Provider value={value}>
