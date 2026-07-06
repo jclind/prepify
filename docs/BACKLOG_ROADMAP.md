@@ -71,7 +71,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **1** | **S4 · rate-limit breadth** | reports per-uid limiter (`reports.js:69`); `acknowledgeAchievements` limiter (`gamification.js:31`) | `[x]` [#230](https://github.com/jclind/prepify/pull/230) (2026-07-06) | `server/routes/reports.js`, `server/routes/gamification.js` | **merged** — also folded in the `reports.js` review-preview userId fix (S3 twin) |
 | **1** | **S5 · asyncHandler consistency** | `nutrition.js` `/details` + `ingredients.js` `/parse` bare async → wrapper | `[x]` [#232](https://github.com/jclind/prepify/pull/232) (2026-07-06) | `server/routes/nutrition.js`, `ingredients.js` | **merged** |
 | **1** | **S6 · rating-aggregate ops** | one-off reconciliation script; post-6-phase DB check | `[~]` `worktree-feat+s6-rating-aggregate-ops` 2026-07-06 | `server/scripts/` (+ ops run) | new files; pairs w/ S2 |
-| **1** | **S7 · firebase-admin@14 bump** | 8 moderate transitive CVEs (breaking major, on `^13.8.0`) | `[ ]` | `server/package.json` + lockfile | ⚠ breaking; own full regression |
+| **1** | **S7 · firebase-admin@14 bump** | 8 moderate transitive CVEs (breaking major, on `^13.8.0`) | `[~]` `worktree-feat+s7-firebase-admin-14` 2026-07-06 | `server/package.json` + lockfile | ⚠ breaking; own full regression |
 | **2** | **F1 · TimeInput NaN bug** | edit/draft-resume blank prep/cook time (`TimeInput.tsx:23-27` + `AddRecipe.tsx:86-91,160-161`) | `[ ]` | `TimeInput.tsx` + `AddRecipe.tsx` | ⚠ first claim on AddRecipe.tsx — do before/inside **C1** |
 | **2** | **F2 · AuthContext memo** | `value` object recreated every render → wrap in `useMemo` | `[ ]` | `src/context/AuthContext.tsx` | — |
 | **2** | **F3 · Saved-tab memo** | `refreshAfterMutation` not `useCallback`'d → defeats `React.memo(RecipeCard)` (`SavedRecipes.tsx:133-136,372`) | `[ ]` | `SavedRecipes.tsx` | one line |
@@ -307,3 +307,13 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   outside-the-try safety net → **no behaviour change**. Verified via server Jest (734/734, one unrelated
   `admin-recipe-curation` 401 full-suite flake that passes in isolation) + live 401-unauth routing on both
   routes. Fifth Wave-1 track done; only **S6** (in flight) and **S7** remain open in Wave 1. No follow-ups filed.
+- **2026-07-06** — **S7 claimed** (`worktree-feat+s7-firebase-admin-14`). Claim recorded directly on
+  `development` (same convention as S4/S5/S6) so concurrent sessions see the lane taken. Scope: bump
+  `server/` `firebase-admin` `^13.8.0` → `@14` (breaking major) to clear the 8 moderate transitive CVEs;
+  audit the changelog/migration notes against our actual Admin SDK surface (auth token verification in
+  `server/middleware/`, user deletion in `auth.js`, any storage/app init), then run the **full server
+  regression pass** the board mandates — server Jest suite + live dev-API smoke of the auth-verification
+  path. Solo lane per rule: breaking major isolated in its own worktree; touches only `server/package.json`
+  + lockfile (+ any call-site fallout), no collision with the in-flight S6 (`server/scripts/`). Verified
+  `development` in sync with origin (0/0) and installed version 13.10.0 before claiming. Worktree not yet
+  created.
