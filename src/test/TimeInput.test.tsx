@@ -59,3 +59,32 @@ describe('TimeInput validation', () => {
     expect(minutes.value).toBe('59')
   })
 })
+
+// Regression: on edit / draft-resume the parent passes a { hours, minutes } object.
+// The old effect did `Number(val)` (NaN for an object) and blanked both fields —
+// it should hydrate them from the object members instead.
+describe('TimeInput hydration', () => {
+  const renderWith = (val: { hours: number; minutes: number } | null) => {
+    render(<TimeInput label='Prep time' val={val} setVal={vi.fn()} />)
+    const [hours, minutes] = screen.getAllByPlaceholderText('0') as HTMLInputElement[]
+    return { hours, minutes }
+  }
+
+  it('populates both fields from a full { hours, minutes } value', () => {
+    const { hours, minutes } = renderWith({ hours: 1, minutes: 30 })
+    expect(hours.value).toBe('1')
+    expect(minutes.value).toBe('30')
+  })
+
+  it('shows the minutes and leaves hours empty when hours is 0', () => {
+    const { hours, minutes } = renderWith({ hours: 0, minutes: 45 })
+    expect(minutes.value).toBe('45')
+    expect(hours.value).toBe('')
+  })
+
+  it('leaves both fields empty for a null value', () => {
+    const { hours, minutes } = renderWith(null)
+    expect(hours.value).toBe('')
+    expect(minutes.value).toBe('')
+  })
+})
