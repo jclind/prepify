@@ -73,7 +73,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **1** | **S6 · rating-aggregate ops** | one-off reconciliation script; post-6-phase DB check | `[x]` [#233](https://github.com/jclind/prepify/pull/233) (2026-07-06) | `server/scripts/` (+ ops run) | **merged** — new files; pairs w/ S2 |
 | **1** | **S7 · firebase-admin@14 bump** | 8 moderate transitive CVEs (breaking major, on `^13.8.0`) | `[x]` [#234](https://github.com/jclind/prepify/pull/234) (2026-07-06) | `server/package.json` + lockfile (+ root/`cypress.config.ts`) | **merged** — folded in the root/cypress Admin bump so audit=0 in **both** trees |
 | **2** | **F1 · TimeInput NaN bug** | edit/draft-resume blank prep/cook time (`TimeInput.tsx:23-27` + `AddRecipe.tsx:86-91,160-161`) | `[P]` [#235](https://github.com/jclind/prepify/pull/235) `worktree-feat+f1-timeinput-nan` 2026-07-06 | `TimeInput.tsx` + `AddRecipe.tsx` | ⚠ first claim on AddRecipe.tsx — do before/inside **C1** |
-| **2** | **F2 · AuthContext memo** | `value` object recreated every render → wrap in `useMemo` | `[ ]` | `src/context/AuthContext.tsx` | — |
+| **2** | **F2 · AuthContext memo** | `value` object recreated every render → wrap in `useMemo` | `[~]` `worktree-feat+f2-authcontext-memo` 2026-07-06 | `src/context/AuthContext.tsx` | — |
 | **2** | **F3 · Saved-tab memo** | `refreshAfterMutation` not `useCallback`'d → defeats `React.memo(RecipeCard)` (`SavedRecipes.tsx:133-136,372`) | `[ ]` | `SavedRecipes.tsx` | one line |
 | **2** | **F4 · change-password subhead** | redundant `<h3 class='sr-subhead'>` (`AccountSection.tsx:188`) | `[ ]` | `Settings/sections/AccountSection.tsx` | — |
 | **2** | **F5 · housekeeping one-liners** | brand-asset comment (`generate-brand-assets.mjs:6`); CLAUDE.md RecipeContext drift; rename `validateIngredientQuantityStr`→`formatQuantity` (3 imports) | `[ ]` | `scripts/`, `CLAUDE.md`, `src/util/` | rename touches 3 call sites |
@@ -411,3 +411,12 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   exercises the migrated config. `CLAUDE.md` refreshed (modular API + override-removal condition). **Wave 1
   is now fully complete (S1–S7 all `[x]`).** **Standing cleanup:** remove both `uuid` overrides once
   `@google-cloud/storage` ships a patched-uuid release (tracked in `CLAUDE.md` + memory).
+- **2026-07-06** — **F2 claimed** (`worktree-feat+f2-authcontext-memo`). Claim recorded directly on
+  `development` (same convention as S4-S7/F1) so concurrent sessions see the lane taken. Scope: the
+  `AuthContext` provider builds its `value` object inline every render (`AuthContext.tsx:377`, passed at
+  `:392`) with no `useMemo`, handing consumers a fresh reference each render and defeating memoization for
+  the whole auth-consuming subtree; wrap it in `useMemo` keyed on its members. Disjoint from both in-flight
+  lanes (F1 = `TimeInput`/`AddRecipe`, S7 = server/root deps) -> no collision. Verified the bug is still
+  present and `development` in sync with origin (0/0) before claiming; confirmed the two live worktrees are
+  on their marked tracks (F1 = PR #235 open, S7 = #234 merged) with no forgotten/unmarked work. Worktree not
+  yet created.
