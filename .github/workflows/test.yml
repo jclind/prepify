@@ -57,6 +57,28 @@ jobs:
         run: npm install @rolldown/binding-linux-x64-gnu --no-save
       - run: npm test
 
+  static:
+    name: Static (typecheck + build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit
+      # vite build needs the platform-specific rolldown binding (see frontend job).
+      - name: Install platform-specific rolldown binding
+        run: npm install @rolldown/binding-linux-x64-gnu --no-save
+      # Typecheck first — it's fast and fails clearly before the heavier build.
+      # `tsc --noEmit` enforces the tsconfig `strict` setting, which `vite build`
+      # (per-file esbuild/rolldown transpile) does NOT check.
+      - name: Typecheck (tsc --noEmit)
+        run: npm run typecheck
+      # Verify the production bundle actually builds (Netlify parity).
+      - name: Production build (vite build)
+        run: npm run build
+
   e2e:
     name: E2e (Cypress)
     runs-on: ubuntu-latest

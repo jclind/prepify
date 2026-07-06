@@ -39,6 +39,7 @@
     "start": "vite",
     "start-port": "vite --port 1337",
     "build": "vite build",
+    "typecheck": "tsc --noEmit",
     "preview": "vite preview",
     "gen:brand": "node scripts/generate-brand-assets.mjs",
     "test": "vitest run",
