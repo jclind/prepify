@@ -508,8 +508,12 @@ findings table.)*
   the sweep PR by deduping off the atomic `$addToSet` result; `save` still has the narrow concurrent window.)
   Fix: array-condition update (`$ne` filter) / unique-element write. Low. *(surfaced 2026-06-26 in the
   security sweep.)*
-- `[ ]` **`firebase-admin` pulls transitive moderate CVEs (needs a breaking major bump)** — `cd server &&
-  npm audit --omit=dev` = **8 moderate, 0 high/critical**, all transitive under `firebase-admin` →
+- `[x]` **`firebase-admin` pulls transitive moderate CVEs (needs a breaking major bump)** *(fixed in
+  [#234](https://github.com/jclind/prepify/pull/234), S7: bumped `firebase-admin` `^13`→`^14.1.0` in **both**
+  trees + migrated to the modular API, and a `uuid ^11.1.1` override to clear the `@google-cloud/storage`
+  chain that has no patched release yet — `npm audit` now 0 in server **and** root; remove the override once
+  storage ships a fix)* — `cd server &&
+  npm audit --omit=dev` was **8 moderate, 0 high/critical**, all transitive under `firebase-admin` →
   `@google-cloud/{firestore,storage}` → `gaxios`/`google-gax`/`teeny-request`/`retry-request`/`uuid`. The
   `uuid <11.1.1` advisory only triggers when the caller passes a `buf` arg, which firebase-admin doesn't —
   no runtime exploit path here. Fix requires `firebase-admin@14.x` (**breaking major**). Schedule it; not
