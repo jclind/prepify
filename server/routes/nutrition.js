@@ -2,6 +2,7 @@ const { Router } = require('express')
 const { verifyToken } = require('../middleware/auth')
 const { makeUserLimiter } = require('../middleware/writeLimiter')
 const { GENERIC_500_MESSAGE } = require('../util/respondServerError')
+const { asyncHandler } = require('../util/asyncHandler')
 
 const router = Router()
 
@@ -17,7 +18,7 @@ const nutritionLimiter = makeUserLimiter({
   message: 'Too many nutrition lookups — wait a minute and try again.',
 })
 
-router.post('/details', verifyToken, nutritionLimiter, async (req, res) => {
+router.post('/details', verifyToken, nutritionLimiter, asyncHandler(async (req, res) => {
   const { ingr, title } = req.body
   if (
     !Array.isArray(ingr) ||
@@ -82,6 +83,6 @@ router.post('/details', verifyToken, nutritionLimiter, async (req, res) => {
     )
     return res.status(500).json({ error: GENERIC_500_MESSAGE })
   }
-})
+}))
 
 module.exports = router

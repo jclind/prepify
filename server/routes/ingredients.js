@@ -3,6 +3,7 @@ const { ingredientParser } = require('@jclind/ingredient-parser')
 const { verifyToken } = require('../middleware/auth')
 const { makeUserLimiter } = require('../middleware/writeLimiter')
 const { GENERIC_500_MESSAGE } = require('../util/respondServerError')
+const { asyncHandler } = require('../util/asyncHandler')
 
 const router = Router()
 
@@ -49,7 +50,7 @@ function mapIngredientData(data) {
   return out
 }
 
-router.post('/parse', verifyToken, parseLimiter, async (req, res) => {
+router.post('/parse', verifyToken, parseLimiter, asyncHandler(async (req, res) => {
   const { ingredientString } = req.body
   if (!ingredientString || typeof ingredientString !== 'string') {
     return res.status(400).json({ error: 'ingredientString must be a non-empty string' })
@@ -89,6 +90,6 @@ router.post('/parse', verifyToken, parseLimiter, async (req, res) => {
     )
     return res.status(500).json({ error: GENERIC_500_MESSAGE })
   }
-})
+}))
 
 module.exports = router
