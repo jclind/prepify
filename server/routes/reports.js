@@ -3,6 +3,7 @@ const { asyncHandler } = require('../util/asyncHandler')
 const { ObjectId } = require('mongodb')
 const { getDB } = require('../db')
 const { verifyToken, requireAdmin, requireActive } = require('../middleware/auth')
+const { makeUserLimiter } = require('../middleware/writeLimiter')
 const { recipeIdQuery } = require('../util/recipeIdQuery')
 const { recordAudit, recordAuditMany } = require('../util/auditLog')
 const { restoreHeldRecipe } = require('../util/automod')
@@ -31,6 +32,20 @@ const { notifyInBackground, notifyReportResolved, notifyReportResolvedMany } = r
 const isAutomodRecipeReport = (r) => r && r.source === 'automod' && r.targetType === 'recipe'
 
 const router = Router()
+
+// Per-user breadth limiter for filing reports, keyed by req.uid (an independent
+// bucket from the content-write limiters — see middleware/writeLimiter). The
+// one-open-report-per-(reporter,target) rule below already stops re-filing the
+// SAME target, but nothing caps the breadth: one account could open a report
+// against a distinct recipe/user/review every few seconds and bloat the
+// moderation queue, with only the coarse global per-IP backstop applying. 10/min
+// is far above any human's manual report cadence (read → pick a reason → submit)
+// yet bounds a scripted breadth-spam run hard. Mounted after verifyToken so
+// req.uid is set; skipped under Jest like every makeUserLimiter instance.
+const reportLimiter = makeUserLimiter({
+  limit: 10,
+  message: 'You’re filing reports too quickly — wait a minute and try again.',
+})
 
 // A report targets a recipe, a single review, or a whole user. Reviews have no
 // stable id (they live in `ratings` keyed by username+recipeId), so a review
@@ -64,9 +79,10 @@ function targetMatch({ targetType, recipeId, reportedUsername }) {
     : { targetType, recipeId, ...handle }
 }
 
-// POST /reports — any logged-in user files a report. Rate-limited to one OPEN
-// report per (reporter, target) so a single user can't flood the queue.
-router.post('/reports', verifyToken, requireActive, asyncHandler(async (req, res) => {
+// POST /reports — any logged-in user files a report. Rate-limited two ways: a
+// per-user breadth cap (reportLimiter, 10/min across all targets) and, below, one
+// OPEN report per (reporter, target) so a single user can't flood the queue.
+router.post('/reports', verifyToken, requireActive, reportLimiter, asyncHandler(async (req, res) => {
   const db = getDB()
   const { targetType, recipeId, reportedUsername, reason, details } = req.body
 
@@ -182,10 +198,18 @@ router.get('/reports', verifyToken, requireAdmin, asyncHandler(async (req, res) 
         : null
       let review = null
       if (r.targetType === 'review') {
+        // ratings are keyed by the stable userId; username is a renameable
+        // display field, so matching the stored handle blanks the preview once
+        // the author renames (the reports.js twin of the S3 reviews.js fix).
+        // Prefer the uid snapshotted on the report (D1); fall back to the handle
+        // only for legacy/edge reports that never captured a reportedUid.
+        const authorMatch = r.reportedUid
+          ? { userId: r.reportedUid }
+          : { username: r.reportedUsername }
         review = await db
           .collection('ratings')
           .findOne(
-            { username: r.reportedUsername, recipeId: r.recipeId },
+            { ...authorMatch, recipeId: r.recipeId },
             { projection: { reviewText: 1, rating: 1, moderationHidden: 1 } }
           )
       }
