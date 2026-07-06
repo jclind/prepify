@@ -68,7 +68,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **1** | **S1 · recipes.js write-safety** | `save` TOCTOU (`recipes.js:778-801`); numeric/array bounds in `recipeLimits.js` | `[x]` [#228](https://github.com/jclind/prepify/pull/228) (2026-07-04) | `server/routes/recipes.js`, `server/util/recipeLimits.js` | **merged** — unblocks **I3** |
 | **1** | **S2 · auth.js account routes** | data-export saved-recipe bodies (`:355`); `updatePrivacy` writeLimiter (`:310`); harden `deleteAccount` recompute (`:454-461`) | `[x]` [#229](https://github.com/jclind/prepify/pull/229) (2026-07-05) | `server/routes/auth.js` | **merged** — recompute pairs with **S6** |
 | **1** | **S3 · reviews.js correctness** | ratings Load-More count (`:281-308`); admin-takedown username→userId (`:318-353`) | `[x]` [#231](https://github.com/jclind/prepify/pull/231) (2026-07-05) | `server/routes/reviews.js` | **merged** |
-| **1** | **S4 · rate-limit breadth** | reports per-uid limiter (`reports.js:69`); `acknowledgeAchievements` limiter (`gamification.js:31`) | `[P]` [#230](https://github.com/jclind/prepify/pull/230) `worktree-feat+s4-rate-limit-breadth` 2026-07-05 | `server/routes/reports.js`, `server/routes/gamification.js` | disjoint from S2 |
+| **1** | **S4 · rate-limit breadth** | reports per-uid limiter (`reports.js:69`); `acknowledgeAchievements` limiter (`gamification.js:31`) | `[x]` [#230](https://github.com/jclind/prepify/pull/230) (2026-07-06) | `server/routes/reports.js`, `server/routes/gamification.js` | **merged** — also folded in the `reports.js` review-preview userId fix (S3 twin) |
 | **1** | **S5 · asyncHandler consistency** | `nutrition.js` `/details` + `ingredients.js` `/parse` bare async → wrapper | `[P]` [#232](https://github.com/jclind/prepify/pull/232) `worktree-feat+s5-asynchandler-consistency` 2026-07-05 | `server/routes/nutrition.js`, `ingredients.js` | trivial |
 | **1** | **S6 · rating-aggregate ops** | one-off reconciliation script; post-6-phase DB check | `[ ]` | `server/scripts/` (+ ops run) | new files; pairs w/ S2 |
 | **1** | **S7 · firebase-admin@14 bump** | 8 moderate transitive CVEs (breaking major, on `^13.8.0`) | `[ ]` | `server/package.json` + lockfile | ⚠ breaking; own full regression |
@@ -280,3 +280,13 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   change**. Server Jest 734/734 green (one unrelated `admin-recipe-curation` 401 full-suite flake, passes in
   isolation + cleared on re-run); both routes runtime-verified (401 unauth = route resolves). PR
   [#232](https://github.com/jclind/prepify/pull/232) opened → `[P]`.
+- **2026-07-06** — **S4 merged** ([#230](https://github.com/jclind/prepify/pull/230), CI green — Backend/Frontend/
+  E2e/Fallow/GitGuardian all pass) into `development`; worktree torn down. Per-uid `reportLimiter` (10/min,
+  independent bucket) on `POST /reports` — bounds report *breadth* (distinct targets), which the existing
+  one-open-report-per-target rule didn't cap; `profileWriteLimiter` on `POST /acknowledgeAchievements`, closing
+  the other half of the two-writes item. Rate limiters runtime-verified against the live dev API (per-uid 429
+  isolation confirmed). **Folded in the out-of-lane sibling** flagged from S3: `reports.js`'s moderation-queue
+  review preview now matches the reported author by the stable `reportedUid` (snapshotted at report creation),
+  falling back to the stored handle only for legacy reports with no `reportedUid` — so a renamed author's review
+  preview no longer blanks. Kept as a distinct commit; regression test added (Jest 733 green). Fourth Wave-1
+  track done. **Still filed, not fixed:** the `exportMyData` own-recipes admin-stamp leak (BACKLOG.md, low).

@@ -488,19 +488,19 @@ findings table.)*
   (`${username}:${recipeId}`) inherits the ambiguity. Resolve `username → userId` (as
   `getSingleUserReviews:267` already does) and match on `userId`. Admin-only ⇒ a moderation-reliability bug,
   not an exploit. Low. *(surfaced 2026-06-26 in the security sweep.)*
-- `[ ]` **`POST /reports` has no per-user rate limiter (report-spam breadth)** —
+- `[x]` **`POST /reports` has no per-user rate limiter (report-spam breadth)** — *(fixed in [#230](https://github.com/jclind/prepify/pull/230), S4: per-uid `reportLimiter` at 10/min in an independent bucket, mounted after `verifyToken, requireActive`.)*
   `server/routes/reports.js:69` enforces one-open-report-per-(reporter,target) but nothing caps *breadth*:
   one account can open a report against every recipe/user and re-file after each resolve/dismiss to bloat the
   moderation queue. Only the coarse global per-IP 1000/15min backstop applies. Add a `makeUserLimiter`-style
   per-uid limiter (mirrors how content writes are bounded in `middleware/writeLimiter.js`). Low-med.
   *(surfaced 2026-06-26 in the security sweep.)*
-- `[~]` **Two authed writes lack the per-user write limiter (consistency)** — `POST /updatePrivacy`
+- `[x]` **Two authed writes lack the per-user write limiter (consistency)** — `POST /updatePrivacy`
   (`server/routes/auth.js:310`) and `POST /acknowledgeAchievements` (`server/routes/gamification.js:31`) are
   authed writes with no `profileWriteLimiter`, unlike their sibling profile writes. Both are cheap +
   idempotent so impact is minimal; add the limiter for consistency. Low. *(surfaced 2026-06-26 in the
-  security sweep.)* **Half done:** the `updatePrivacy` limiter merged in S2/PR
-  [#229](https://github.com/jclind/prepify/pull/229) (2026-07-05); the `acknowledgeAchievements` half remains,
-  tracked under **S4** (rate-limit breadth) in the roadmap.
+  security sweep.)* **Done:** the `updatePrivacy` limiter merged in S2/PR
+  [#229](https://github.com/jclind/prepify/pull/229) (2026-07-05); the `acknowledgeAchievements` half landed in
+  S4/PR [#230](https://github.com/jclind/prepify/pull/230) (2026-07-06) with `profileWriteLimiter`.
 - `[ ]` **`POST /recipes/:id/save` counter update is read-then-write (TOCTOU)** —
   `server/routes/recipes.js:760-773` reads `alreadySaved` then `$push`+`$inc`, so two concurrent saves from
   one user can both pass the guard and double-count `numTimesSaved`. Single-user, low impact. (The sibling
