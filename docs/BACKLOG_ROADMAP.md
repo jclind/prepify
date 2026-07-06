@@ -71,7 +71,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **1** | **S4 · rate-limit breadth** | reports per-uid limiter (`reports.js:69`); `acknowledgeAchievements` limiter (`gamification.js:31`) | `[x]` [#230](https://github.com/jclind/prepify/pull/230) (2026-07-06) | `server/routes/reports.js`, `server/routes/gamification.js` | **merged** — also folded in the `reports.js` review-preview userId fix (S3 twin) |
 | **1** | **S5 · asyncHandler consistency** | `nutrition.js` `/details` + `ingredients.js` `/parse` bare async → wrapper | `[x]` [#232](https://github.com/jclind/prepify/pull/232) (2026-07-06) | `server/routes/nutrition.js`, `ingredients.js` | **merged** |
 | **1** | **S6 · rating-aggregate ops** | one-off reconciliation script; post-6-phase DB check | `[P]` [#233](https://github.com/jclind/prepify/pull/233) `worktree-feat+s6-rating-aggregate-ops` 2026-07-06 | `server/scripts/` (+ ops run) | new files; pairs w/ S2 |
-| **1** | **S7 · firebase-admin@14 bump** | 8 moderate transitive CVEs (breaking major, on `^13.8.0`) | `[~]` `worktree-feat+s7-firebase-admin-14` 2026-07-06 | `server/package.json` + lockfile | ⚠ breaking; own full regression |
+| **1** | **S7 · firebase-admin@14 bump** | 8 moderate transitive CVEs (breaking major, on `^13.8.0`) | `[P]` [#234](https://github.com/jclind/prepify/pull/234) `worktree-feat+s7-firebase-admin-14` 2026-07-06 | `server/package.json` + lockfile | ⚠ breaking; own full regression |
 | **2** | **F1 · TimeInput NaN bug** | edit/draft-resume blank prep/cook time (`TimeInput.tsx:23-27` + `AddRecipe.tsx:86-91,160-161`) | `[ ]` | `TimeInput.tsx` + `AddRecipe.tsx` | ⚠ first claim on AddRecipe.tsx — do before/inside **C1** |
 | **2** | **F2 · AuthContext memo** | `value` object recreated every render → wrap in `useMemo` | `[ ]` | `src/context/AuthContext.tsx` | — |
 | **2** | **F3 · Saved-tab memo** | `refreshAfterMutation` not `useCallback`'d → defeats `React.memo(RecipeCard)` (`SavedRecipes.tsx:133-136,372`) | `[ ]` | `SavedRecipes.tsx` | one line |
@@ -333,3 +333,19 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   (8) + `userId` (1) records. Server Jest **741/741** (the lone `reports.js` rate-limit full-suite flake
   passes in isolation + cleared on re-run). The actual **prod ops run** (`--apply` against prod Mongo) stays
   owner-gated for the cutover — the scripts are the deliverable; the run is separate. Sixth Wave-1 track PR'd.
+- **2026-07-06** — **S7** implemented in `worktree-feat+s7-firebase-admin-14`: `firebase-admin` `^13.8.0` →
+  `^14.1.0`. The breaking change bit exactly where expected — v14 **removes the legacy namespaced API**
+  (`require('firebase-admin')` no longer exposes `admin.auth()`/`admin.storage()`/`admin.credential`/
+  `admin.apps`) — so all 8 production call sites moved to the modular entries (`firebase-admin/app`'s
+  `initializeApp`/`getApps`/`cert`; `getAuth()`; `getStorage()`), and the Jest mock became a shared-state
+  root (`__mocks__/firebase-admin.js`, all `__` handles unchanged → 14 suites untouched) + submodule mocks
+  (`__mocks__/firebase-admin/{app,auth,storage}.js`); `reviews`/`security` suites now swap the auth instance
+  via the `getAuth` mock fn instead of the `admin.auth` factory. **Audit: 9 moderate → 0** — the bump clears
+  the Firestore chain; `overrides.uuid ^11.1.1` clears the `@google-cloud/storage@7.21.0` chain (no fixed
+  storage release exists yet — drop the override when one ships); `npm audit fix` bumped dev-only `js-yaml`.
+  `@google-cloud/storage` pinned as an explicit direct dep (v14 demoted it to optional; `firebaseStorage.js`
+  uses it). Node floor ≥22 satisfied (repo pins 24). Full regression per the lane mandate: server Jest
+  **737/737** (identical to the v13 baseline), live dev-Firebase smoke (v14 `createCustomToken` → real ID
+  token → 200 through migrated `verifyToken`; invalid-token 401; `deleteUser` cleanup), storage chain
+  load-verified under the uuid override, frontend gates green. PR
+  [#234](https://github.com/jclind/prepify/pull/234) opened → `[P]`.
