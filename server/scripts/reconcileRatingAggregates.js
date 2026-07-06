@@ -30,7 +30,8 @@
  *   node server/scripts/reconcileRatingAggregates.js            # dry run (default)
  *   node server/scripts/reconcileRatingAggregates.js --apply    # actually write
  *
- * Reads MONGO_URI from server/.env. Exit code 0 = success, 1 = error.
+ * Reads MONGO_URI from server/.env (override the DB with DB_NAME, default
+ * "prepify"). Exit code 0 = success, 1 = error.
  */
 const path = require('path')
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') })
@@ -84,6 +85,8 @@ async function main() {
     process.exit(1)
   }
 
+  const dbName = process.env.DB_NAME || 'prepify'
+
   const client = new MongoClient(uri, {
     tls: true,
     serverSelectionTimeoutMS: 5000,
@@ -93,9 +96,9 @@ async function main() {
 
   try {
     await client.connect()
-    const db = client.db('prepify')
+    const db = client.db(dbName)
     console.log(
-      `Connected to MongoDB (prepify). Mode: ${APPLY ? 'APPLY (writing)' : 'DRY RUN (read-only)'}\n`
+      `Connected to MongoDB (${dbName}). Mode: ${APPLY ? 'APPLY (writing)' : 'DRY RUN (read-only)'}\n`
     )
 
     let scanned = 0
