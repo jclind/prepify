@@ -602,12 +602,16 @@ findings table.)*
   `activeAccountTab(pathname): AccountTab` would read cleaner there (SegmentedNav still wants the index for
   its `i === activeIndex` map, so keep both). *(surfaced 2026-06-27 in the PR #200 high-effort code review;
   out of scope for that PR — the backlog item it closed was scoped to the nav↔heading duplication only.)*
-- `[ ]` **One-off rating-aggregate reconciliation** — stored `recipes.rating` aggregates can drift from
+- `[x]` **One-off rating-aggregate reconciliation** — stored `recipes.rating` aggregates can drift from
   the actual `ratings` docs (confirmed live: *Homemade Granola* stored `5/4.6` vs true `4/4.5`). Likely
   legacy/pre-recompute data or a past silent best-effort failure. Write a script (alongside
   `server/scripts/`) that loops every recipe and runs `recomputeRecipeRating(db, recipeId)`
   (`server/util/recipeRating.js`) to reconcile the whole catalog in one pass. *(surfaced by track 1a /
-  PR #150, which only self-heals a recipe when someone next rates it.)*
+  PR #150, which only self-heals a recipe when someone next rates it.)* *(fixed in
+  [#233](https://github.com/jclind/prepify/pull/233), S6: `server/scripts/reconcileRatingAggregates.js` —
+  dry-run/`--apply`, idempotent, heals through the canonical `recomputeRecipeRating`; the pure read half was
+  split into `computeRecipeRating` so the dry-run diffs without writing. Shipped alongside
+  `checkMigrationState.js` (post-6-phase DB check). The prod `--apply` run stays owner-gated for the cutover.)*
 - `[x]` **Harden `deleteAccount`'s rating recompute** — was: the per-recipe recompute after an account delete
   is best-effort/post-commit and only `console.error`s on failure (`server/routes/auth.js:454-461`),
   so a silent failure can re-introduce aggregate drift. The set of recipes is correct

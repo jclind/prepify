@@ -70,7 +70,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **1** | **S3 · reviews.js correctness** | ratings Load-More count (`:281-308`); admin-takedown username→userId (`:318-353`) | `[x]` [#231](https://github.com/jclind/prepify/pull/231) (2026-07-05) | `server/routes/reviews.js` | **merged** |
 | **1** | **S4 · rate-limit breadth** | reports per-uid limiter (`reports.js:69`); `acknowledgeAchievements` limiter (`gamification.js:31`) | `[x]` [#230](https://github.com/jclind/prepify/pull/230) (2026-07-06) | `server/routes/reports.js`, `server/routes/gamification.js` | **merged** — also folded in the `reports.js` review-preview userId fix (S3 twin) |
 | **1** | **S5 · asyncHandler consistency** | `nutrition.js` `/details` + `ingredients.js` `/parse` bare async → wrapper | `[x]` [#232](https://github.com/jclind/prepify/pull/232) (2026-07-06) | `server/routes/nutrition.js`, `ingredients.js` | **merged** |
-| **1** | **S6 · rating-aggregate ops** | one-off reconciliation script; post-6-phase DB check | `[P]` [#233](https://github.com/jclind/prepify/pull/233) `worktree-feat+s6-rating-aggregate-ops` 2026-07-06 | `server/scripts/` (+ ops run) | new files; pairs w/ S2 |
+| **1** | **S6 · rating-aggregate ops** | one-off reconciliation script; post-6-phase DB check | `[x]` [#233](https://github.com/jclind/prepify/pull/233) (2026-07-06) | `server/scripts/` (+ ops run) | **merged** — new files; pairs w/ S2 |
 | **1** | **S7 · firebase-admin@14 bump** | 8 moderate transitive CVEs (breaking major, on `^13.8.0`) | `[P]` [#234](https://github.com/jclind/prepify/pull/234) `worktree-feat+s7-firebase-admin-14` 2026-07-06 | `server/package.json` + lockfile | ⚠ breaking; own full regression |
 | **2** | **F1 · TimeInput NaN bug** | edit/draft-resume blank prep/cook time (`TimeInput.tsx:23-27` + `AddRecipe.tsx:86-91,160-161`) | `[ ]` | `TimeInput.tsx` + `AddRecipe.tsx` | ⚠ first claim on AddRecipe.tsx — do before/inside **C1** |
 | **2** | **F2 · AuthContext memo** | `value` object recreated every render → wrap in `useMemo` | `[ ]` | `src/context/AuthContext.tsx` | — |
@@ -349,3 +349,14 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   token → 200 through migrated `verifyToken`; invalid-token 401; `deleteUser` cleanup), storage chain
   load-verified under the uuid override, frontend gates green. PR
   [#234](https://github.com/jclind/prepify/pull/234) opened → `[P]`.
+- **2026-07-06** — **S6 merged** ([#233](https://github.com/jclind/prepify/pull/233), merge `686829f`) → `[x]`.
+  Landed the two read-first ops scripts (`reconcileRatingAggregates.js`, `checkMigrationState.js`) + the
+  behaviour-preserving `computeRecipeRating` split and its `recipeRating.test.js`. Review-driven follow-up
+  folded in before merge: `reconcileRatingAggregates.js` now honors `DB_NAME` (default `"prepify"`) like its
+  sibling `checkMigrationState.js`, so the two scripts — meant to run back-to-back before a cutover — can't
+  silently target different databases. Verified via runtime `/verify` against the **dev** DB (controlled
+  inject→detect→heal→verify→cleanup loop: dry-run reads only, `--apply` heals + is idempotent, missing/empty
+  `MONGO_URI` and typo'd flag both fail safe) and re-smoked the `DB_NAME` override post-fix; dev restored to
+  baseline. CI green (Backend/Frontend/E2e/Fallow). The **prod ops run** (`--apply` against prod Mongo) stays
+  owner-gated for the cutover — the scripts are the deliverable, the run is separate. Sixth Wave-1 track done;
+  only **S7** (in flight, `[P]`) remains open in Wave 1. No follow-ups filed.
