@@ -76,7 +76,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **2** | **F2 · AuthContext memo** | `value` object recreated every render → wrap in `useMemo` | `[~]` `worktree-feat+f2-authcontext-memo` 2026-07-06 | `src/context/AuthContext.tsx` | — |
 | **2** | **F3 · Saved-tab memo** | `refreshAfterMutation` not `useCallback`'d → defeats `React.memo(RecipeCard)` (`SavedRecipes.tsx:133-136,372`) | `[P]` [#237](https://github.com/jclind/prepify/pull/237) `worktree-feat+f3-savedtab-memo` 2026-07-06 | `SavedRecipes.tsx` | one line |
 | **2** | **F4 · change-password subhead** | redundant `<h3 class='sr-subhead'>` (`AccountSection.tsx:188`) | `[~]` `worktree-feat+f4-changepw-subhead` 2026-07-06 | `Settings/sections/AccountSection.tsx` | — |
-| **2** | **F5 · housekeeping one-liners** | brand-asset comment (`generate-brand-assets.mjs:6`); CLAUDE.md RecipeContext drift; rename `validateIngredientQuantityStr`→`formatQuantity` (3 imports) | `[ ]` | `scripts/`, `CLAUDE.md`, `src/util/` | rename touches 3 call sites |
+| **2** | **F5 · housekeeping one-liners** | brand-asset comment (`generate-brand-assets.mjs:6`); CLAUDE.md RecipeContext drift; rename `validateIngredientQuantityStr`→`formatQuantity` (3 imports) | `[~]` `worktree-feat+f5-housekeeping` 2026-07-06 | `scripts/`, `CLAUDE.md`, `src/util/` | rename touches 3 call sites |
 | **2** | **F6 · account nav polish** | Saved/Ratings section-nav styling (`SegmentedNav.tsx`) | `[ ]` | `Account/components/SegmentedNav.tsx` | subjective; better inside **R2** |
 | **3** | **C1 · AddRecipe cluster** ⚠ lane | dropdown/`FormInput` uniformity (`recipeSelectStyles.ts`); summary-bar sticky; group-label styling; `/add-recipe` `noindex`; Cuisine/MealType selector unit tests; `updateIngredients` test + dead-code | `[ ]` | `src/pages/AddRecipe/**`, `src/test/` | ⚠ **subsumed by R1** — decide refactor-vs-smalls first |
 | **3** | **C2 · route-constant single-sourcing** | `RECIPES_PATH` const (`DesktopBar:45`,`NavMenu:20`,`Recipes.tsx:113-119`); `browseAll`→`clearFilters`; `accountTabs` as app-wide route source (`DesktopAccountMenu:74`,`footerData:43-44`,`DraftResumeBanner:47`) + `activeAccountTab` helper | `[ ]` | Navbar/* + `Recipes.tsx` + `accountTabs.tsx` + `footerData.ts` + `DraftResumeBanner.tsx` | both share DesktopBar → one lane |
@@ -458,3 +458,17 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   keeps the old prep/cook time and the `!prepTime` required-field guard still passes — latent before F1, reachable now that
   hydration works (BACKLOG.md Bugs, low; belongs to the AddRecipe C1/R1 lane). First Wave-2 track merged; F2 (worktree) + F3
   ([#237](https://github.com/jclind/prepify/pull/237) `[P]`) still open.
+- **2026-07-06** — **F5 claimed** (`worktree-feat+f5-housekeeping`). Claim recorded directly on `development` (same convention
+  as S4–S7/F1–F3) so concurrent sessions see the lane taken. **Caught an F4 race while picking:** I had scoped F4
+  (change-password subhead) and was about to claim it, but a pull surfaced a concurrent session's commit
+  (`45682f4`, session `01JwP5…`) that had *already* flipped F1→[x] (merged #235) **and** claimed F4 with the exact branch
+  name I'd chosen — my identical board edit was a clean no-op. Per the anti-race protocol (same as the F2→F3 pivot) I backed
+  off F4 and took the next open disjoint track, **F5**. Scope: the three verified housekeeping one-liners — (1) `generate-brand-assets.mjs:6`
+  header comment lists `Montserrat-{…,Italic}.ttf` but `:28` loads `Montserrat-MediumItalic.ttf` (comment stale, fix the
+  `Italic` entry); (2) `CLAUDE.md:20,121` still call `src/context/RecipeContext.tsx` "commented out" but the file is **deleted**
+  (only `AuthContext.tsx` remains) — correct both references; (3) rename `src/util/validateIngredientQuantityStr.ts` →
+  `formatQuantity.ts` (it now exports only the `closestFraction` display formatter) + update its imports —
+  `IngredientItemText.tsx`, `SingleRecipe.tsx`, `PrintableRecipe/PrintableRecipe.tsx`, and the `closestFraction.test.ts` /
+  commented `updateIngredients.ts` refs. Disjoint from all in-flight lanes (F2 = `AuthContext`, F3 = `SavedRecipes`, F4 =
+  `AccountSection`) — none touch `scripts/`, `CLAUDE.md`, or `src/util/`. Verified all three sub-items still present and
+  `development` in sync with origin (0/0) before claiming. Worktree not yet created.
