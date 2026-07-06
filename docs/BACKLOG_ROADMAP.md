@@ -81,7 +81,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **3** | **C1 · AddRecipe cluster** ⚠ lane | dropdown/`FormInput` uniformity (`recipeSelectStyles.ts`); summary-bar sticky; group-label styling; `/add-recipe` `noindex`; Cuisine/MealType selector unit tests; `updateIngredients` test + dead-code | `[ ]` | `src/pages/AddRecipe/**`, `src/test/` | ⚠ **subsumed by R1** — decide refactor-vs-smalls first |
 | **3** | **C2 · route-constant single-sourcing** | `RECIPES_PATH` const (`DesktopBar:45`,`NavMenu:20`,`Recipes.tsx:113-119`); `browseAll`→`clearFilters`; `accountTabs` as app-wide route source (`DesktopAccountMenu:74`,`footerData:43-44`,`DraftResumeBanner:47`) + `activeAccountTab` helper | `[ ]` | Navbar/* + `Recipes.tsx` + `accountTabs.tsx` + `footerData.ts` + `DraftResumeBanner.tsx` | both share DesktopBar → one lane |
 | **3** | **C3 · SingleRecipe lane** ⚠ lane | CLS controls-block reserve (`SingleRecipe.tsx:308-317`, `RecipeControls.scss`); JSON-LD `</script>` escaping (`buildRecipeJsonLd.ts:38-39`) | `[ ]` | `SingleRecipe.tsx`, `RecipeControls.scss`, `buildRecipeJsonLd.ts` | hero `srcset` deferred to **I1**; JSON-LD gates with prerender |
-| **3** | **C4 · SearchRecipesInput lane** | autocomplete footer-label debounce disagreement (`:274` vs `:336`); press-`/` global focus-search feature | `[ ]` | `SearchRecipesInput.tsx` (+ Layout for key handler) | both touch same file → one lane |
+| **3** | **C4 · SearchRecipesInput lane** | autocomplete footer-label debounce disagreement (`:274` vs `:336`); press-`/` global focus-search feature | `[~]` `worktree-feat+c4-searchinput-lane` 2026-07-06 | `SearchRecipesInput.tsx` (+ Layout for key handler) | both touch same file → one lane |
 | **3** | **C5 · focus-ring tokens** ⚠ SCSS loner | `$focus-ring-*` group in `helpers.scss` + migrate ~13 literal `0 0 0 3px` rings | `[ ]` | `helpers.scss` + ~9 component `.scss` | only one SCSS-token worktree at a time |
 | **4** | **I1 · image resize pipeline** | Storage width variants + `srcset`/`sizes` on card + hero (mobile LCP) | `[ ]` | Storage pipeline/CDN + `RecipeCard.tsx`, `SingleRecipe.tsx` hero | structural; unblocks C3 hero srcset |
 | **4** | **I2 · uid-key recipe images** | re-key `recipeImages/{uid}/{uuid}` (`src/api/recipes.ts:188`) + tighten `storage.rules:27-32` to owner | `[ ]` | `src/api/recipes.ts`, `storage.rules` | pairs w/ I1; migrate existing objects |
@@ -472,3 +472,19 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   commented `updateIngredients.ts` refs. Disjoint from all in-flight lanes (F2 = `AuthContext`, F3 = `SavedRecipes`, F4 =
   `AccountSection`) — none touch `scripts/`, `CLAUDE.md`, or `src/util/`. Verified all three sub-items still present and
   `development` in sync with origin (0/0) before claiming. Worktree not yet created.
+- **2026-07-06** — **C4 claimed** (`worktree-feat+c4-searchinput-lane`). Claim recorded directly on
+  `development` (same convention as S4–S7/F1–F5) so concurrent sessions see the lane taken. **First Wave-3
+  lane opened.** Picked C4 over the strictly-next board items on purpose: Wave 2's only remaining open item
+  **F6** is flagged "defer to R2" and **C1** needs the refactor-vs-smalls decision (rule 5) — both are
+  owner-decision-gated, not clean picks — while C2 (overlaps R2's account routes) and C3 (JSON-LD half
+  entangled with deferred prerender, rule 6) each carry a soft dependency. C4 is fully self-contained with no
+  overlap or deferral. Scope, both verified still present in `SearchRecipesInput.tsx`: (1) the autocomplete
+  footer-label debounce disagreement — the empty-state quotes the **debounced** query (`trimmedQuery`,
+  `:274`) while the "Search for …" footer button quotes the **live** input (`searchRecipeVal.trim()`,
+  `:336`), so during the 300ms debounce window the two affordances show different text; reconcile them onto
+  one value. (2) the press-`/` global focus-search feature — no global keydown handler exists yet; add one
+  (in `Layout`, guarded so it doesn't steal `/` while the user is typing in an input/textarea/contenteditable)
+  that focuses the navbar search input. Disjoint from all in-flight lanes (F2 = `AuthContext`, F3 =
+  `SavedRecipes` [#237 `[P]`], F5 = `scripts`/`CLAUDE.md`/`src/util`; F4 = `AccountSection`, claimed on
+  another machine). Verified the three live local worktrees (f2/f3/f5) all match their board claims — no
+  forgotten/unmarked work — and `development` in sync with origin (0/0) before claiming. Worktree not yet created.
