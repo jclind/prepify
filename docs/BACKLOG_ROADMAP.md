@@ -72,10 +72,10 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **1** | **S5 · asyncHandler consistency** | `nutrition.js` `/details` + `ingredients.js` `/parse` bare async → wrapper | `[x]` [#232](https://github.com/jclind/prepify/pull/232) (2026-07-06) | `server/routes/nutrition.js`, `ingredients.js` | **merged** |
 | **1** | **S6 · rating-aggregate ops** | one-off reconciliation script; post-6-phase DB check | `[x]` [#233](https://github.com/jclind/prepify/pull/233) (2026-07-06) | `server/scripts/` (+ ops run) | **merged** — new files; pairs w/ S2 |
 | **1** | **S7 · firebase-admin@14 bump** | 8 moderate transitive CVEs (breaking major, on `^13.8.0`) | `[x]` [#234](https://github.com/jclind/prepify/pull/234) (2026-07-06) | `server/package.json` + lockfile (+ root/`cypress.config.ts`) | **merged** — folded in the root/cypress Admin bump so audit=0 in **both** trees |
-| **2** | **F1 · TimeInput NaN bug** | edit/draft-resume blank prep/cook time (`TimeInput.tsx:23-27` + `AddRecipe.tsx:86-91,160-161`) | `[P]` [#235](https://github.com/jclind/prepify/pull/235) `worktree-feat+f1-timeinput-nan` 2026-07-06 | `TimeInput.tsx` + `AddRecipe.tsx` | ⚠ first claim on AddRecipe.tsx — do before/inside **C1** |
+| **2** | **F1 · TimeInput NaN bug** | edit/draft-resume blank prep/cook time (`TimeInput.tsx:23-27`) | `[x]` [#235](https://github.com/jclind/prepify/pull/235) (2026-07-06) | `TimeInput.tsx` | **merged** — scope narrowed to `TimeInput.tsx` only (AddRecipe already passed the object shape); review filed the "clear doesn't propagate" follow-up (BACKLOG.md Bugs, low). AddRecipe lane (C1/R1) rebases onto this. |
 | **2** | **F2 · AuthContext memo** | `value` object recreated every render → wrap in `useMemo` | `[~]` `worktree-feat+f2-authcontext-memo` 2026-07-06 | `src/context/AuthContext.tsx` | — |
 | **2** | **F3 · Saved-tab memo** | `refreshAfterMutation` not `useCallback`'d → defeats `React.memo(RecipeCard)` (`SavedRecipes.tsx:133-136,372`) | `[P]` [#237](https://github.com/jclind/prepify/pull/237) `worktree-feat+f3-savedtab-memo` 2026-07-06 | `SavedRecipes.tsx` | one line |
-| **2** | **F4 · change-password subhead** | redundant `<h3 class='sr-subhead'>` (`AccountSection.tsx:188`) | `[ ]` | `Settings/sections/AccountSection.tsx` | — |
+| **2** | **F4 · change-password subhead** | redundant `<h3 class='sr-subhead'>` (`AccountSection.tsx:188`) | `[~]` `worktree-feat+f4-changepw-subhead` 2026-07-06 | `Settings/sections/AccountSection.tsx` | — |
 | **2** | **F5 · housekeeping one-liners** | brand-asset comment (`generate-brand-assets.mjs:6`); CLAUDE.md RecipeContext drift; rename `validateIngredientQuantityStr`→`formatQuantity` (3 imports) | `[ ]` | `scripts/`, `CLAUDE.md`, `src/util/` | rename touches 3 call sites |
 | **2** | **F6 · account nav polish** | Saved/Ratings section-nav styling (`SegmentedNav.tsx`) | `[ ]` | `Account/components/SegmentedNav.tsx` | subjective; better inside **R2** |
 | **3** | **C1 · AddRecipe cluster** ⚠ lane | dropdown/`FormInput` uniformity (`recipeSelectStyles.ts`); summary-bar sticky; group-label styling; `/add-recipe` `noindex`; Cuisine/MealType selector unit tests; `updateIngredients` test + dead-code | `[ ]` | `src/pages/AddRecipe/**`, `src/test/` | ⚠ **subsumed by R1** — decide refactor-vs-smalls first |
@@ -440,3 +440,21 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   `tsc` clean, Vitest **553 passed / 2 skipped** (75 files), `npm run build` clean; app boots (client + dev
   API healthy, MongoDB connected). Second Wave-2 track PR'd (F1 #235 + F3 #237 now both `[P]`; F2 in a
   worktree).
+- **2026-07-06** — **F1 merged** ([#235](https://github.com/jclind/prepify/pull/235), merge `642e259`) → `[x]`.
+  The `TimeInput` hydration effect read `Number(val)` where `val` is a `{ hours, minutes } | null` **object** — `Number({...})`
+  is `NaN`, so `Number(val) !== 0` was always true and both prep/cook fields were set to `NaN`, blanking them on recipe edit and
+  draft-resume (read as data loss). Fixed to read `val.hours`/`val.minutes` directly (a `0` component renders empty, matching
+  `minToHrMin`'s intent). **Scope narrowed to `TimeInput.tsx` only** — `AddRecipe.tsx:86-91,160-161` already convert stored
+  minutes via `minToHrMin` into the object shape before passing it down, so the stale effect was the whole bug (the board's wider
+  file list predated that migration). Added a `TimeInput hydration` regression block — the prior tests only rendered `val={null}`,
+  never the object path the bug lived in. **Verified via runtime `/verify`**: drove the real authed draft-resume flow (custom-token
+  sign-in → create draft prep 2h15m/cook 0h45m → reload into `?draftId=`) — fixed code repopulated `2/15/''/45`, and the buggy
+  counterfactual (restored via HMR) blanked all four while the title still hydrated, the exact reported symptom. **Also
+  code-reviewed** (local): fix approved, no blocking findings. CI green (Backend/Frontend/E2e/Fallow/GitGuardian). **Merged via
+  owner-authorized admin override** of the phantom `Static (typecheck + build)` required check — that context was on `development`'s
+  branch protection but no workflow produced it until #236 (a concurrent lane) landed the job hours earlier; matches how S1–S7
+  landed (`enforce_admins=false`). **Follow-up filed, not fixed** (off the code review): clearing **both** `TimeInput` fields to
+  empty never fires the `if (minutes || hours) setVal(...)` writeback (`TimeInput.tsx:61-64`), so on an edit the parent silently
+  keeps the old prep/cook time and the `!prepTime` required-field guard still passes — latent before F1, reachable now that
+  hydration works (BACKLOG.md Bugs, low; belongs to the AddRecipe C1/R1 lane). First Wave-2 track merged; F2 (worktree) + F3
+  ([#237](https://github.com/jclind/prepify/pull/237) `[P]`) still open.

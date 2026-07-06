@@ -29,8 +29,12 @@ The triage date stamped on items is the date they were filed here, not when they
 
 ## Bugs
 
-- `[ ]` **`Received NaN for the \`value\` attribute` warning on Edit Recipe — root-caused; it's a real
-  hydration bug, not cosmetic (verified 2026-06-26)** — re-diagnosed from source. The culprit is **not** the
+- `[x]` **`Received NaN for the \`value\` attribute` warning on Edit Recipe — root-caused; it's a real
+  hydration bug, not cosmetic (verified 2026-06-26)** — *(fixed in [#235](https://github.com/jclind/prepify/pull/235), F1:
+  hydrate `TimeInput` from `val.hours`/`val.minutes` — the `Number(val)` arithmetic that produced `NaN` on an object `val` is
+  gone; a `0` component renders empty per `minToHrMin`'s intent. Added a `TimeInput hydration` regression block. Runtime-verified:
+  the authed draft-resume flow repopulated prep/cook `2/15/''/45`, and the buggy counterfactual blanked all four. Scope narrowed —
+  `AddRecipe.tsx` needed no change, it already fed the object shape.)* re-diagnosed from source. The culprit is **not** the
   servings/summary-bar math (those are guarded: `ServingsInput.tsx`, `AddRecipeSummaryBar.tsx:52-56`). It's
   **`src/pages/AddRecipe/TimeInput/TimeInput.tsx:23-27`**: the hydration effect treats `val` as a *minute
   number* (`Number(val) % 60`, `Math.floor(Number(val) / 60)`), but `AddRecipe.tsx:82-86` feeds it a
@@ -41,6 +45,16 @@ The triage date stamped on items is the date they were filed here, not when they
   The save still succeeds (the writeback effect `if (minutes || hours)` is falsy for `NaN`, so the parent
   keeps the correct object), so it's display-only, but confusing. Fix: `setHours(val.hours); setMinutes(val.minutes)`
   (drop the `Number(val)` arithmetic entirely). Originally filed 2026-06-24 as cosmetic; upgraded after verification.
+- `[ ]` **Clearing a `TimeInput` field silently keeps the old prep/cook time on edit (filed 2026-07-06, off the F1 review)** —
+  surfaced reviewing the F1 fix ([#235](https://github.com/jclind/prepify/pull/235)). The writeback effect in
+  **`src/pages/AddRecipe/TimeInput/TimeInput.tsx:61-64`** is `if (minutes || hours) setVal(...)`, so when the user clears **both**
+  the hours and minutes fields back to empty, `setVal` never fires and the parent's `prepTime`/`cookTime` stays at the last
+  non-empty `{hours, minutes}`. On an **edit**, clearing a time and saving therefore silently re-persists the *old* time — and
+  `AddRecipe.tsx`'s `if (!prepTime)` required-field guard reads the (still-populated) parent state, so it passes too. **Latent
+  before F1** (the broken `NaN` hydration meant the field was never in a populated state to clear); **reachable now** that
+  edit/draft-resume rehydrates correctly. **Fix:** emit a clearing signal when both go empty — e.g. an `else setVal(null)` branch
+  on that effect (`null` re-triggers the sibling effect's `!val` reset, which is harmless). **Low severity** (only bites
+  edit/draft-resume + an intentional clear-to-blank), one file — belongs to the AddRecipe lane (**C1/R1**) or a small F-track.
 - `[x]` **Deleting a review leaves the star rating behind** — **fixed in PR #150 (merged, track 1a)**:
   added `DELETE /removeRating` (clears just the star; keeps any review; deletes the doc when
   rating-only), and `deleteReview` now keeps the rating and deletes the doc when there's nothing left —
