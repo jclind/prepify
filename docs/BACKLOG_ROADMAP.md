@@ -70,7 +70,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **1** | **S3 · reviews.js correctness** | ratings Load-More count (`:281-308`); admin-takedown username→userId (`:318-353`) | `[x]` [#231](https://github.com/jclind/prepify/pull/231) (2026-07-05) | `server/routes/reviews.js` | **merged** |
 | **1** | **S4 · rate-limit breadth** | reports per-uid limiter (`reports.js:69`); `acknowledgeAchievements` limiter (`gamification.js:31`) | `[x]` [#230](https://github.com/jclind/prepify/pull/230) (2026-07-06) | `server/routes/reports.js`, `server/routes/gamification.js` | **merged** — also folded in the `reports.js` review-preview userId fix (S3 twin) |
 | **1** | **S5 · asyncHandler consistency** | `nutrition.js` `/details` + `ingredients.js` `/parse` bare async → wrapper | `[P]` [#232](https://github.com/jclind/prepify/pull/232) `worktree-feat+s5-asynchandler-consistency` 2026-07-05 | `server/routes/nutrition.js`, `ingredients.js` | trivial |
-| **1** | **S6 · rating-aggregate ops** | one-off reconciliation script; post-6-phase DB check | `[ ]` | `server/scripts/` (+ ops run) | new files; pairs w/ S2 |
+| **1** | **S6 · rating-aggregate ops** | one-off reconciliation script; post-6-phase DB check | `[~]` `worktree-feat+s6-rating-aggregate-ops` 2026-07-06 | `server/scripts/` (+ ops run) | new files; pairs w/ S2 |
 | **1** | **S7 · firebase-admin@14 bump** | 8 moderate transitive CVEs (breaking major, on `^13.8.0`) | `[ ]` | `server/package.json` + lockfile | ⚠ breaking; own full regression |
 | **2** | **F1 · TimeInput NaN bug** | edit/draft-resume blank prep/cook time (`TimeInput.tsx:23-27` + `AddRecipe.tsx:86-91,160-161`) | `[ ]` | `TimeInput.tsx` + `AddRecipe.tsx` | ⚠ first claim on AddRecipe.tsx — do before/inside **C1** |
 | **2** | **F2 · AuthContext memo** | `value` object recreated every render → wrap in `useMemo` | `[ ]` | `src/context/AuthContext.tsx` | — |
@@ -290,3 +290,11 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   falling back to the stored handle only for legacy reports with no `reportedUid` — so a renamed author's review
   preview no longer blanks. Kept as a distinct commit; regression test added (Jest 733 green). Fourth Wave-1
   track done. **Still filed, not fixed:** the `exportMyData` own-recipes admin-stamp leak (BACKLOG.md, low).
+- **2026-07-06** — **S6 claimed** (`worktree-feat+s6-rating-aggregate-ops`). Claim recorded directly on
+  `development` (same convention as S4/S5) so concurrent sessions see the lane taken. Scope: the two open
+  rating-aggregate ops items — (1) a one-off catalog-wide reconciliation script alongside `server/scripts/`
+  that loops every recipe and runs `recomputeRecipeRating(db, recipeId)` (`server/util/recipeRating.js`) to
+  heal stored `recipes.rating` aggregates that drifted from legacy/pre-recompute data (BACKLOG.md:605); and
+  (2) the post-6-phase-refactor DB check (BACKLOG.md:691). Pairs with the merged S2 `deleteAccount` recompute.
+  Verified no in-flight S6 work exists (no branch, no `server/scripts/` reconciliation file) and only S5 is
+  live before claiming. Worktree not yet created.
