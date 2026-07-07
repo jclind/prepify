@@ -1,12 +1,11 @@
 import { BookOpenIcon, ChevronDownIcon } from 'src/Components/icons'
-import React, { FC, useState, useEffect } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import React, { FC } from 'react'
 
 import './UserRecipes.scss'
 import EmptyState from 'src/Components/EmptyState/EmptyState'
 import RecipeAPI from 'src/api/recipes'
 import { RecipeType } from 'types'
-import { useDelayedLoading } from 'src/hooks/useDelayedLoading'
+import { usePaginatedLoadMore } from 'src/pages/Account/usePaginatedLoadMore'
 import UserRecipeThumbnail from './UserRecipeThumbnail'
 
 // Default order: newest first. (The sort control was removed for now; the query
@@ -14,42 +13,23 @@ import UserRecipeThumbnail from './UserRecipeThumbnail'
 const SORT = 'new'
 
 const UserRecipes: FC = () => {
-  const [recipes, setRecipes] = useState<RecipeType[]>([])
-  const [currPage, setCurrPage] = useState(0)
-  const [isMoreRecipes, setIsMoreRecipes] = useState(false)
-
-  const { data, isLoading } = useQuery({
-    queryKey: ['created-recipes', SORT, currPage],
-    queryFn: () => RecipeAPI.getCreatedRecipes(currPage, 6, SORT),
+  // `showGrid` (the hook's showList) stays true across the one-frame gap where
+  // the query has settled but the accumulator hasn't populated yet, so the
+  // "no recipes" empty state can't flash before a genuine zero result.
+  const {
+    items: recipes,
+    isLoading,
+    showSkeleton,
+    isMore,
+    showList: showGrid,
+    loadMore,
+  } = usePaginatedLoadMore<RecipeType>({
+    queryKey: page => ['created-recipes', SORT, page],
+    queryFn: page =>
+      RecipeAPI.getCreatedRecipes(page, 6, SORT).then(
+        d => d && { items: d.recipes, totalCount: d.totalCount }
+      ),
   })
-
-  useEffect(() => {
-    if (data) {
-      if (currPage === 0) {
-        setRecipes([...data.recipes])
-        setIsMoreRecipes(Number(data.totalCount) > data.recipes.length)
-      } else {
-        const updated = [...recipes, ...data.recipes]
-        setRecipes(updated)
-        setIsMoreRecipes(Number(data.totalCount) > updated.length)
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data])
-
-  const handleLoadMoreRecipes = () => {
-    setCurrPage(prev => prev + 1)
-  }
-
-  const showSkeleton = useDelayedLoading(isLoading)
-  // `recipes` is populated by the effect above one render AFTER react-query
-  // flips `isLoading` to false, so on a fast load there's a frame where the
-  // query has settled but `recipes` is still []. Gate the grid on the resolved
-  // payload too (`data.recipes`) so that frame shows the grid, not a flash of
-  // the "no recipes" empty state. The empty state then appears only once the
-  // query has genuinely returned zero recipes.
-  const dataHasRecipes = !!data && data.recipes.length > 0
-  const showGrid = recipes.length > 0 || isLoading || dataHasRecipes
 
   return (
     <div className='user-recipes'>
@@ -75,11 +55,8 @@ const UserRecipes: FC = () => {
               </>
             )}
           </div>
-          {isMoreRecipes && recipes.length > 0 ? (
-            <button
-              className='load-more-btn'
-              onClick={handleLoadMoreRecipes}
-            >
+          {isMore && recipes.length > 0 ? (
+            <button className='load-more-btn' onClick={loadMore}>
               Load more recipes <ChevronDownIcon />
             </button>
           ) : null}
