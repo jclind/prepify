@@ -1,5 +1,5 @@
 import { BookmarkIcon, ChevronDownIcon, CloseIcon, EditIcon, FolderIcon, FolderPlusIcon, GridIcon, PlusIcon, SearchIcon, TrashIcon } from 'src/Components/icons'
-import React, { FC, useState, useEffect } from 'react'
+import React, { FC, useState, useEffect, useCallback } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import RecipeCard from 'src/Components/RecipeCard/RecipeCard'
@@ -130,10 +130,13 @@ const SavedRecipes: FC = () => {
   // refetch. The grid must refetch too — an unsave from the popover removes a
   // card even in the unfiltered "All saved" view — so reset to page 0 and
   // refetch unconditionally rather than only when a collection filter is active.
-  const refreshAfterMutation = () => {
+  // useCallback so the reference is stable across renders — it's passed as
+  // `onMutated` to the memoized RecipeCard grid, and a fresh function each
+  // render would defeat React.memo and re-render every saved card.
+  const refreshAfterMutation = useCallback(() => {
     invalidateSavedCaches(queryClient, uid)
     setCurrPage(0)
-  }
+  }, [queryClient, uid])
 
   const handleCreate = async () => {
     const name = newName.trim()
