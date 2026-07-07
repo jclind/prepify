@@ -11,6 +11,19 @@ describe('parseStorageUrl', () => {
     })
   })
 
+  it('extracts the full nested path for uid-keyed images (I2 re-key)', () => {
+    // After I2, uploads land at recipeImages/{uid}/{uuid} — the whole slash-bearing
+    // object path is percent-encoded as one URL segment, so decoding it must yield
+    // the full nested path (not just the last segment) or server-side
+    // deletion/moderation would target the wrong object.
+    const url =
+      'https://firebasestorage.googleapis.com/v0/b/test-bucket/o/recipeImages%2Fuser-abc%2F123e4567-e89b-12d3-a456-426614174000?alt=media&token=xyz'
+    expect(parseStorageUrl(url)).toEqual({
+      bucket: 'test-bucket',
+      path: 'recipeImages/user-abc/123e4567-e89b-12d3-a456-426614174000',
+    })
+  })
+
   it('returns null for empty, non-string, or non-Firebase values', () => {
     expect(parseStorageUrl('')).toBeNull()
     expect(parseStorageUrl(null)).toBeNull()

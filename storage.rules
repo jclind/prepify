@@ -20,15 +20,31 @@ service firebase.storage {
                    && request.resource.contentType.matches('image/.*');
     }
 
-    // Recipe images: stored at recipeImages/{filename} (api/recipes.ts) — the
-    // path is keyed by filename, not uid, so ownership can't be enforced here.
-    // Require auth + size + image type as defense-in-depth (the previous gap was
-    // an open bucket). See BACKLOG: key recipe images by uid to allow scoping.
-    match /recipeImages/{imageId} {
+    // Recipe images (I2): stored at recipeImages/{uid}/{uuid} (api/recipes.ts), so
+    // — like profilePhotos/{uid} above — we can enforce that a user only writes
+    // under their OWN uid prefix. The I1 "Resize Images" extension writes its WxH
+    // variants into this same {uid}/ directory; the {imageId} wildcard covers them
+    // for public read, and the extension writes via the Admin SDK so it bypasses
+    // the owner-write check below.
+    match /recipeImages/{uid}/{imageId} {
       allow read: if true;
       allow write: if request.auth != null
+                   && request.auth.uid == uid
                    && request.resource.size < 5 * 1024 * 1024
                    && request.resource.contentType.matches('image/.*');
+    }
+
+    // Legacy recipe images (pre-I2): keyed by bare filename at recipeImages/{file},
+    // one segment under recipeImages/ (so disjoint from the uid-scoped match above,
+    // whose objects are two segments deep). Kept publicly READABLE so existing
+    // recipes keep rendering until these objects are migrated to the uid-scoped
+    // path, but writes are DENIED — nothing writes here anymore (uploads re-keyed),
+    // and denying closes the old "any signed-in user can overwrite any recipe
+    // image" gap for the flat path too. The server Admin SDK bypasses rules, so the
+    // owner-run migration is unaffected.
+    match /recipeImages/{imageId} {
+      allow read: if true;
+      allow write: if false;
     }
 
     // Everything else is denied. The specific matches above grant access for

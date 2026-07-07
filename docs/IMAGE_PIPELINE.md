@@ -7,16 +7,20 @@ wiring in `RecipeCard.tsx` + `SingleRecipe.tsx`.
 
 ## What it does
 
-Recipe photos upload full-resolution to Firebase Storage (`recipeImages/<name>`).
-The Firebase **Resize Images** extension (`storage-resize-images`) generates three
-WebP width variants next to each original on upload:
+Recipe photos upload full-resolution to Firebase Storage, keyed by owner uid at
+`recipeImages/{uid}/{uuid}` (BACKLOG I2). The Firebase **Resize Images** extension
+(`storage-resize-images`) generates three WebP width variants next to each original
+on upload — in the **same `{uid}/` directory**, so they inherit the owner prefix:
 
 ```
-recipeImages/photo.jpg           (original, kept)
-recipeImages/photo_400x400.webp  (variants, generated)
-recipeImages/photo_800x800.webp
-recipeImages/photo_1600x1600.webp
+recipeImages/{uid}/{uuid}            (original, kept)
+recipeImages/{uid}/{uuid}_400x400.webp   (variants, generated)
+recipeImages/{uid}/{uuid}_800x800.webp
+recipeImages/{uid}/{uuid}_1600x1600.webp
 ```
+
+(The extension's `INCLUDE_PATH_LIST=/recipeImages` is a leading-segment match, so it
+covers this nested path exactly as it did the old flat `recipeImages/{name}` key.)
 
 The browse-grid card and the single-recipe hero then render a `srcset` over those
 variants, so a phone downloads a ~40 KB WebP instead of the ~190 KB original — the
@@ -75,7 +79,7 @@ This is the one assumption the frontend can't self-check. After the extension is
 live, upload a test recipe image (or re-upload one), then list the bucket:
 
 ```bash
-gsutil ls 'gs://<bucket>/recipeImages/' | grep _400x400
+gsutil ls 'gs://<bucket>/recipeImages/**' | grep _400x400
 ```
 
 Confirm the generated name is **`<stem>_400x400.webp`** (extension stripped), e.g.
@@ -123,6 +127,10 @@ serving originals. The extension + variants can stay in place (harmless, unused)
   report preview still render the original — intentionally out of scope (the board
   scoped I1 to the card + hero, the LCP surfaces). They can adopt `recipeImageSrcSet`
   later with no infra change.
-- **Pairs with I2.** I2 (uid-keyed `recipeImages/{uid}/{uuid}` + owner-scoped rules)
-  changes the object path. If I2 lands after this, keep resized variants in the same
-  directory as their original so the derivation + read rule still hold.
+- **Pairs with I2 (landed).** I2 re-keyed uploads to `recipeImages/{uid}/{uuid}` and
+  tightened `storage.rules` to owner-scoped writes (`request.auth.uid == uid`). The
+  resize config was kept compatible: `RESIZED_IMAGES_PATH` stays empty so variants
+  land in the same `{uid}/` directory as their original (the derivation helper splits
+  on the last `/`, so the deeper path just works; the two-segment read rule covers the
+  variants). `INCLUDE_PATH_LIST=/recipeImages` is a leading-segment match, so it still
+  catches the nested originals with no change.

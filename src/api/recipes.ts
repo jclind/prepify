@@ -183,9 +183,25 @@ class RecipeAPIClass {
         setProgress(70)
         return 'https://cypress.test/fake-recipe-image.jpg'
       }
+      // Key the object by owner uid + a random uuid: `recipeImages/{uid}/{uuid}`
+      // (BACKLOG I2). The old `recipeImages/{imageFile.name}` key let two users'
+      // `photo.jpg` collide and — because the path carried no uid — meant
+      // storage.rules could only auth-gate writes, not scope them to the owner.
+      // The uid prefix lets the rule enforce `request.auth.uid == uid` (mirroring
+      // profilePhotos/{uid}); the uuid makes the object collision-proof so we no
+      // longer need the original filename. No extension is needed — Firebase sets
+      // the content type from the File, and the I1 variant helper derives the
+      // srcset stem from the object path regardless of extension.
+      const uid = AuthAPI.getUID()
+      if (!uid) {
+        // Defensive: both addRecipe/editRecipe run behind auth, and the tightened
+        // storage.rules would reject a uid-less write anyway — fail closed rather
+        // than fall back to an unscoped path.
+        throw new Error('Must be signed in to upload a recipe image')
+      }
       const storage = getStorage()
 
-      const recipeImagesRef = ref(storage, `recipeImages/${imageFile.name}`)
+      const recipeImagesRef = ref(storage, `recipeImages/${uid}/${uuidv4()}`)
       setProgress(40)
       await uploadBytes(recipeImagesRef, imageFile)
       setProgress(50)
