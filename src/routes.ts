@@ -1,14 +1,20 @@
-// Central route-path constants. The single source of truth for route strings that
-// appear in more than one place — nav links, redirects, and the `pathname === …`
-// search-suppression checks — so renaming a route can't silently drift copies out
-// of sync: every consumer resolves through TypeScript instead of a bare literal.
+// Central route-path constants — the source of truth for route strings shared
+// across the nav/footer/browse surface, so renaming a route can't silently drift
+// those copies out of sync: consumers resolve through TypeScript, not a bare
+// literal.
 //
-// Scope note: only route strings duplicated across files live here. Single-use
-// route literals stay inline at their one call site (nothing to drift from).
+// Scope note: migration is intentionally partial. The account sub-routes below are
+// fully centralized (every consumer points here). RECIPES_PATH covers only the
+// nav/footer/browse surface touched by this change — other `'/recipes'` links
+// (Home, About, PublicProfile, SingleRecipe, SavedRecipes, UserRatings, …) still
+// use the inline literal and will migrate as their files are next touched. Until
+// then this const is authoritative for its consumers, NOT for every `/recipes`
+// reference app-wide.
 
-/** The browse/catalog page. Referenced by the navbar link, the two navbar
- *  search-suppression checks (`pathname === RECIPES_PATH`), and the Recipes
- *  page's own "browse all" reset. */
+/** The browse/catalog page. Referenced here by the navbar link, the two navbar
+ *  search-suppression checks (`pathname === RECIPES_PATH`), the footer, and the
+ *  Recipes page's own "browse all" reset — see the scope note above re: the
+ *  `'/recipes'` literals elsewhere not yet routed through this const. */
 export const RECIPES_PATH = '/recipes'
 
 // Account sub-routes. `accountTabs` (src/pages/Account/components/accountTabs.tsx)
