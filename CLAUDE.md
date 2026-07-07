@@ -6,6 +6,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Prepify is a recipe website built with React/TypeScript frontend and an Express backend. Key features include recipe creation, search/filter, ingredient parsing with nutrition data, recipe ratings/reviews, and user authentication.
 
+> **Coding standard:** [`docs/CONVENTIONS.md`](docs/CONVENTIONS.md) is the house code & architecture standard
+> — frontend layering, the API-client and render-stability patterns, the server route/auth/validation
+> conventions, the design-system rules, testing gates, and process conventions. Read it before non-trivial
+> work; the R1/R2 refactors follow it.
+
 ## Architecture
 
 ### Two-Service Architecture
