@@ -73,10 +73,10 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **1** | **S6 · rating-aggregate ops** | one-off reconciliation script; post-6-phase DB check | `[x]` [#233](https://github.com/jclind/prepify/pull/233) (2026-07-06) | `server/scripts/` (+ ops run) | **merged** — new files; pairs w/ S2 |
 | **1** | **S7 · firebase-admin@14 bump** | 8 moderate transitive CVEs (breaking major, on `^13.8.0`) | `[x]` [#234](https://github.com/jclind/prepify/pull/234) (2026-07-06) | `server/package.json` + lockfile (+ root/`cypress.config.ts`) | **merged** — folded in the root/cypress Admin bump so audit=0 in **both** trees |
 | **2** | **F1 · TimeInput NaN bug** | edit/draft-resume blank prep/cook time (`TimeInput.tsx:23-27`) | `[x]` [#235](https://github.com/jclind/prepify/pull/235) (2026-07-06) | `TimeInput.tsx` | **merged** — scope narrowed to `TimeInput.tsx` only (AddRecipe already passed the object shape); review filed the "clear doesn't propagate" follow-up (BACKLOG.md Bugs, low). AddRecipe lane (C1/R1) rebases onto this. |
-| **2** | **F2 · AuthContext memo** | `value` object recreated every render → wrap in `useMemo` | `[P]` [#240](https://github.com/jclind/prepify/pull/240) | `src/context/AuthContext.tsx` | — |
+| **2** | **F2 · AuthContext memo** | `value` object recreated every render → wrap in `useMemo` | `[x]` [#240](https://github.com/jclind/prepify/pull/240) (2026-07-07) | `src/context/AuthContext.tsx` | **merged** — full fix, not just the `value` memo: `getAuth()`→`useMemo`, all 8 handlers `useCallback`'d, then `value` memoized (a bare `value` memo would no-op against per-render handler identities). Added a referential-stability regression test; runtime-verified the full auth lifecycle. Rebased onto current `development` before merge. |
 | **2** | **F3 · Saved-tab memo** | `refreshAfterMutation` not `useCallback`'d → defeats `React.memo(RecipeCard)` (`SavedRecipes.tsx:133-136,372`) | `[x]` [#237](https://github.com/jclind/prepify/pull/237) (2026-07-07) | `SavedRecipes.tsx` | **merged** — `useCallback(refreshAfterMutation, [queryClient, uid])` stabilizes the handler passed as `onMutated` to the memoized grid; verified live (0 vs 54 re-renders, search/unsave refresh intact). Rebased onto current `development` before merge. |
 | **2** | **F4 · change-password subhead** | redundant `<h3 class='sr-subhead'>` (`AccountSection.tsx:188`) | `[~]` `worktree-feat+f4-changepw-subhead` 2026-07-06 | `Settings/sections/AccountSection.tsx` | — |
-| **2** | **F5 · housekeeping one-liners** | brand-asset comment (`generate-brand-assets.mjs:6`); CLAUDE.md RecipeContext drift; rename `validateIngredientQuantityStr`→`formatQuantity` (3 imports) | `[~]` `worktree-feat+f5-housekeeping` 2026-07-06 | `scripts/`, `CLAUDE.md`, `src/util/` | rename touches 3 call sites |
+| **2** | **F5 · housekeeping one-liners** | brand-asset comment (`generate-brand-assets.mjs:6`); CLAUDE.md RecipeContext drift; rename `validateIngredientQuantityStr`→`formatQuantity` (3 imports) | `[x]` [#239](https://github.com/jclind/prepify/pull/239) (2026-07-07) | `scripts/`, `CLAUDE.md`, `src/util/` | **merged** — rename repointed 4 importers (+1 commented ref); both comment/doc fixes verified true against disk (font file is `MediumItalic`, `src/context/` has only `AuthContext.tsx`) |
 | **2** | **F6 · account nav polish** | Saved/Ratings section-nav styling (`SegmentedNav.tsx`) | `[ ]` | `Account/components/SegmentedNav.tsx` | subjective; better inside **R2** |
 | **3** | **C1 · AddRecipe cluster** ⚠ lane | dropdown/`FormInput` uniformity (`recipeSelectStyles.ts`); summary-bar sticky; group-label styling; `/add-recipe` `noindex`; Cuisine/MealType selector unit tests; `updateIngredients` test + dead-code | `[ ]` | `src/pages/AddRecipe/**`, `src/test/` | ⚠ **subsumed by R1** — decide refactor-vs-smalls first |
 | **3** | **C2 · route-constant single-sourcing** | `RECIPES_PATH` const (`DesktopBar:45`,`NavMenu:20`,`Recipes.tsx:113-119`); `browseAll`→`clearFilters`; `accountTabs` as app-wide route source (`DesktopAccountMenu:74`,`footerData:43-44`,`DraftResumeBanner:47`) + `activeAccountTab` helper | `[ ]` | Navbar/* + `Recipes.tsx` + `accountTabs.tsx` + `footerData.ts` + `DraftResumeBanner.tsx` | both share DesktopBar → one lane |
@@ -524,3 +524,35 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   Wave-3 lane PR'd. **Claim/`[P]` flips recorded on `development` directly** (not the lane branch) to keep
   backlog edits off the PR — a prior lane (S3) hit a BACKLOG chokepoint conflict that marked the PR DIRTY and
   silently suppressed its `pull_request` CI until rebased.
+- **2026-07-07** — **C5 claimed** (`worktree-feat+c5-focus-ring-tokens`). Claim recorded directly on
+  `development` (same convention as S4–S7/F1–F5/C4) so concurrent sessions see the lane taken. **Second Wave-3
+  lane, and the SCSS loner** — verified no other SCSS-token worktree is in flight (the live lanes F2/F5/C4 and
+  the off-machine F4 touch `AuthContext`/`scripts`+`CLAUDE.md`+`src/util`/`SearchRecipesInput`+`Layout`/
+  `AccountSection` respectively — none touch `helpers.scss` or the ring-bearing component `.scss`), so C5 owns
+  the one-SCSS-token-lane-at-a-time slot cleanly. Picked C5 over the other open `[ ]` tracks on purpose: every
+  remaining open item is decision-gated — **F6** "defer to R2", **C1** needs the refactor-vs-smalls call
+  (rule 5), **C2** overlaps R2's account routes, **C3**'s JSON-LD half gates with deferred prerender (rule 6),
+  and Waves 4/5 are structural/owner-scoped — while C5 is fully self-contained. Scope: add a documented
+  `$focus-ring-*` token group (or `@include focus-ring(...)` mixin, since ring **colour/opacity vary** — teal
+  `$primary`/`$secondary`, `$error-red`, a green `#29a155`) to `src/helpers.scss` alongside the existing
+  elevation/shadow ramps (the `:187` comment already flags rings as "a separate concern, left for a later
+  pass"), then migrate the **12 verified literal `box-shadow: 0 0 0 3px …` rings** across 7 component `.scss`
+  (`CreateUsername`, `RecipeFormTextArea`, `Recipes`, `Help` ×3, `FormStyles`, `FormInput` ×2, `controls` ×3)
+  onto it; also reconcile the now-focus-rings-only "remaining hardcoded values" BACKLOG sub-item. **Anti-race
+  note:** while claiming, a pull surfaced a concurrent session's uncommitted board flips in this checkout —
+  **C4 → `[P]` #238** (with its status-log entry) and **F2 → `[P]` #240** — carried along in this same commit
+  (line-distinct rows, all truthful current state; F2's own status-log entry left for its session). Verified
+  the three live local worktrees (f2/f5/c4) each match their board claims with real committed work — no
+  forgotten/unmarked lanes — and `development` in sync with origin (0/0) before claiming. Worktree not yet created.
+- **2026-07-07** — **F5 merged** ([#239](https://github.com/jclind/prepify/pull/239), merge `23e7183`). The three
+  housekeeping one-liners landed as scoped: (1) `generate-brand-assets.mjs:6` comment now names `Montserrat-MediumItalic.ttf`
+  (the file `:28` actually loads / that exists in `scripts/fonts/`); (2) both `CLAUDE.md` RecipeContext references flipped from
+  "commented out" to "removed" (`src/context/` holds only `AuthContext.tsx`); (3) `src/util/validateIngredientQuantityStr.ts`
+  → `formatQuantity.ts` via `git mv`, repointing all **4** live importers (`SingleRecipe`, `PrintableRecipe`, `IngredientItemText`,
+  the `closestFraction` test) plus the one commented ref in `updateIngredients.ts`. **Verified:** runtime — drove 3 live recipe
+  pages, `closestFraction` renders whole + fractional quantities (`8 ounce`, `1/2 cup`, `1 1/2 cup`, `1/4 cup`) with zero console
+  errors (a broken import would throw a Vite overlay); local high-effort code review — 0 findings (all importers repoint, old file
+  gone, no stale source refs, both doc-claims true against disk). Gates green (tsc, Vitest 556/2-skip, build, full CI incl. Cypress).
+  **Follow-up filed-not-fixed (out of F5's `scripts/`+`CLAUDE.md`+`src/util/` domain, low):** two *other* docs still name the old
+  filename — `docs/ADD_RECIPE_AUDIT.md:268` and `docs/sweeps/ROADMAP.md:185` — harmless (historical audit/sweep prose, no build
+  impact); the backlog docs mention it correctly as the task description.
