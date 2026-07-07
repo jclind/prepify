@@ -9,6 +9,7 @@ import SaveControl from 'src/Components/AddToCollection/SaveControl'
 import { formatRating } from 'src/util/formatRating'
 import { formatPrice } from 'src/util/formatPrice'
 import { minToHrMin } from 'src/util/minToHrMin'
+import { recipeImageSrcSet } from 'src/util/recipeImageVariants'
 import { RecipeType } from 'types'
 import './RecipeCard.scss'
 
@@ -54,6 +55,10 @@ const RecipeCard: FC<RecipeCardProps> = ({ recipe, loading, onMutated }) => {
   // Hold a skeleton over the thumb until the image actually decodes (onLoad), so
   // a card never shows an empty box painting in top-down. Reset if the URL changes.
   const [imgLoaded, setImgLoaded] = useState(false)
+  // If a resized variant 404s (legacy/un-backfilled image, or the brief window
+  // after upload before the extension runs), drop srcset and retry the original
+  // — only give up to the placeholder if the original itself then fails.
+  const [variantFailed, setVariantFailed] = useState(false)
 
   if (loading || !recipe) {
     return (
@@ -82,6 +87,12 @@ const RecipeCard: FC<RecipeCardProps> = ({ recipe, loading, onMutated }) => {
     recipe.servingPrice != null
       ? `${formatPrice(recipe.servingPrice)}/serving`
       : null
+  // Responsive variants for the thumb (no-op until VITE_IMAGE_VARIANTS_ENABLED);
+  // cleared once a variant has failed so the retry uses the original only.
+  const imgSrcSet = variantFailed
+    ? undefined
+    : recipeImageSrcSet(recipe.recipeImage)
+
   const hm = minToHrMin(recipe.totalTime)
   const time = !hm
     ? `${recipe.totalTime} min`
@@ -102,6 +113,8 @@ const RecipeCard: FC<RecipeCardProps> = ({ recipe, loading, onMutated }) => {
             <>
               <img
                 src={recipe.recipeImage}
+                srcSet={imgSrcSet}
+                sizes={imgSrcSet ? '(max-width: 700px) 90vw, 300px' : undefined}
                 alt=''
                 loading='lazy'
                 decoding='async'
@@ -118,7 +131,9 @@ const RecipeCard: FC<RecipeCardProps> = ({ recipe, loading, onMutated }) => {
                 }}
                 className={imgLoaded ? 'is-loaded' : ''}
                 onLoad={() => setImgLoaded(true)}
-                onError={() => setImgError(true)}
+                onError={() =>
+                  imgSrcSet ? setVariantFailed(true) : setImgError(true)
+                }
               />
               {!imgLoaded && (
                 <Skeleton
