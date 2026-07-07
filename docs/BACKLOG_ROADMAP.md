@@ -735,3 +735,23 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   glow opacities is a separate visual-design decision, noted in `scss-conventions.md`. Also the `controls.scss`
   `.has-success` green is a bare `#29a155` literal (≠ the `$success-green` token) for both its border and glow — a
   colour-token dedup that's a different concern from the ring geometry this track owned.
+- **2026-07-07** — **R0 claimed** (`worktree-feat+r0-conventions-doc`). Claim recorded directly on
+  `development` (same convention as S4–S7/F1–F5/C2–C5) so concurrent sessions see the lane taken. **First
+  Wave-5 lane** — opened only after confirming every cleaner track is gone: the four self-contained Wave-3
+  lanes are all resolved (**C4** `[x]` #238, **C5** `[x]` #241, **C2** `[P]` #242, **C3** `[P]` #243) and every
+  remaining open item is decision-gated (**F6** "defer to R2", **C1** needs the rule-5 refactor-vs-smalls call),
+  structural/infra-gated (**I1**/**I2** image pipeline, **I3** the Mongo-text-index-vs-Atlas-Search call), or
+  owner-scoped (**R1**/**R2**). Presented that state to the owner via a decision prompt; **owner picked R0**
+  over I3/C1/holding — a new doc with zero collision surface and the explicit prerequisite the board says to
+  land "before R1/R2". Scope: write the Claude code & architecture standard (`CONVENTIONS.md`, cross-linked
+  from `CLAUDE.md`) that **R1** (create-recipe refactor) and **R2** (account refactor) will follow, extracting
+  the conventions already latent in the tree — route-constant single-sourcing (C2's `src/routes.ts`), the
+  `asyncHandler`-wraps-every-route server invariant (S5), the Lucide single-icon-family import boundary, the
+  SCSS focus-glow-vs-`outline()` split + `helpers.scss` token discipline (C5), the memo/`useCallback` render-
+  stability patterns (F2/F3), the persisted-shape/type-ownership decoupling in the ingredient parser, and the
+  test-gate expectations (tsc + Vitest + build; Jest for `server/`). **Anti-race:** a concurrent session's
+  commit `9db0b2e` (C5 → `[x]`) swept in this R0 board flip alongside its own C5 edit mid-claim — verified both
+  rows are truthful (C5 #241 genuinely merged, the R0 flip is mine) and line-distinct before proceeding.
+  Verified the three then-live worktrees each match their board rows with real committed work — no
+  forgotten/unmarked lane (c2 = #242 `[P]`, c3 = #243 `[P]`, c5 = merged/tearing down) — and re-synced
+  `development` before appending. Worktree not yet created.
