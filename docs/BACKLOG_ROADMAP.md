@@ -79,13 +79,13 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **2** | **F5 · housekeeping one-liners** | brand-asset comment (`generate-brand-assets.mjs:6`); CLAUDE.md RecipeContext drift; rename `validateIngredientQuantityStr`→`formatQuantity` (3 imports) | `[x]` [#239](https://github.com/jclind/prepify/pull/239) (2026-07-07) | `scripts/`, `CLAUDE.md`, `src/util/` | **merged** — rename repointed 4 importers (+1 commented ref); both comment/doc fixes verified true against disk (font file is `MediumItalic`, `src/context/` has only `AuthContext.tsx`) |
 | **2** | **F6 · account nav polish** | Saved/Ratings section-nav styling (`SegmentedNav.tsx`) | `[ ]` | `Account/components/SegmentedNav.tsx` | subjective; better inside **R2** |
 | **3** | **C1 · AddRecipe cluster** ⚠ lane | dropdown/`FormInput` uniformity (`recipeSelectStyles.ts`); summary-bar sticky; group-label styling; `/add-recipe` `noindex`; Cuisine/MealType selector unit tests; `updateIngredients` test + dead-code | `[ ]` | `src/pages/AddRecipe/**`, `src/test/` | ⚠ **subsumed by R1** — decide refactor-vs-smalls first |
-| **3** | **C2 · route-constant single-sourcing** | `RECIPES_PATH` const (`DesktopBar:45`,`NavMenu:20`,`Recipes.tsx:113-119`); `browseAll`→`clearFilters`; `accountTabs` as app-wide route source (`DesktopAccountMenu:74`,`footerData:43-44`,`DraftResumeBanner:47`) + `activeAccountTab` helper | `[P]` [#242](https://github.com/jclind/prepify/pull/242) `worktree-feat+c2-route-constants` 2026-07-07 | Navbar/* + `Recipes.tsx` + `accountTabs.tsx` + `footerData.ts` + `DraftResumeBanner.tsx` | both share DesktopBar → one lane |
-| **3** | **C3 · SingleRecipe lane** ⚠ lane | CLS controls-block reserve (`SingleRecipe.tsx:308-317`, `RecipeControls.scss`); JSON-LD `</script>` escaping (`buildRecipeJsonLd.ts:38-39`) | `[P]` [#243](https://github.com/jclind/prepify/pull/243) `worktree-feat+c3-singlerecipe-lane` 2026-07-07 | `SingleRecipe.tsx`, `RecipeControls.scss`, `buildRecipeJsonLd.ts` | hero `srcset` deferred to **I1**; JSON-LD gates with prerender; **CLS half is a no-op** — `RecipeControls` is owner-only, non-owner path already fully reserved (see status log) |
+| **3** | **C2 · route-constant single-sourcing** | `RECIPES_PATH` const (`DesktopBar:45`,`NavMenu:20`,`Recipes.tsx:113-119`); `browseAll`→`clearFilters`; `accountTabs` as app-wide route source (`DesktopAccountMenu:74`,`footerData:43-44`,`DraftResumeBanner:47`) + `activeAccountTab` helper | `[x]` [#242](https://github.com/jclind/prepify/pull/242) (2026-07-07) | Navbar/* + `Recipes.tsx` + `accountTabs.tsx` + `footerData.ts` + `DraftResumeBanner.tsx` | **merged** — RECIPES_PATH migration is partial by design (nav/footer/browse only; other `/recipes` links deferred) |
+| **3** | **C3 · SingleRecipe lane** ⚠ lane | CLS controls-block reserve (`SingleRecipe.tsx:308-317`, `RecipeControls.scss`); JSON-LD `</script>` escaping (`buildRecipeJsonLd.ts:38-39`) | `[x]` [#243](https://github.com/jclind/prepify/pull/243) (2026-07-07) | `SingleRecipe.tsx`, `buildRecipeJsonLd.ts` | **merged** — JSON-LD `</script>` escape only; hero `srcset` deferred to **I1**; **CLS half was a no-op** (`RecipeControls` owner-only, non-owner path already fully reserved) so `RecipeControls.scss` untouched (see status log) |
 | **3** | **C4 · SearchRecipesInput lane** | autocomplete footer-label debounce disagreement (`:274` vs `:336`); press-`/` global focus-search feature | `[x]` [#238](https://github.com/jclind/prepify/pull/238) (2026-07-07) | `SearchRecipesInput.tsx` (+ Layout for key handler) | **merged** |
 | **3** | **C5 · focus-ring tokens** ⚠ SCSS loner | `$focus-ring-*` group in `helpers.scss` + migrate ~13 literal `0 0 0 3px` rings | `[x]` [#241](https://github.com/jclind/prepify/pull/241) 2026-07-07 | `helpers.scss` + ~9 component `.scss` | **merged** — shipped as `@mixin focus-glow()` (parametrised, not a `$focus-ring-*` token set) |
 | **4** | **I1 · image resize pipeline** | Storage width variants + `srcset`/`sizes` on card + hero (mobile LCP) | `[ ]` | Storage pipeline/CDN + `RecipeCard.tsx`, `SingleRecipe.tsx` hero | structural; unblocks C3 hero srcset |
 | **4** | **I2 · uid-key recipe images** | re-key `recipeImages/{uid}/{uuid}` (`src/api/recipes.ts:188`) + tighten `storage.rules:27-32` to owner | `[ ]` | `src/api/recipes.ts`, `storage.rules` | pairs w/ I1; migrate existing objects |
-| **4** | **I3 · autocomplete title index** | Mongo text index / Atlas Search for fuzzy fallback (`recipes.js:194-240`) | `[ ]` | `server/routes/recipes.js` | ⚠ after **S1**; low urgency/scalability |
+| **4** | **I3 · autocomplete title index** | Mongo text index / Atlas Search for fuzzy fallback (`recipes.js:194-240`) | `[~]` `worktree-feat+i3-autocomplete-index` 2026-07-07 | `server/routes/recipes.js` (+ `server/db.js`) | ⚠ after **S1** (merged); index-back the *existing* in-process fuzzy scan |
 | **5** | **R0 · Claude conventions doc** | code & architecture standard (`CONVENTIONS.md`/CLAUDE.md) | `[~]` `worktree-feat+r0-conventions-doc` 2026-07-07 | new doc | do **before** R1/R2 |
 | **5** | **R1 · refactor create-recipe page** | the big AddRecipe refactor | `[ ]` | `src/pages/AddRecipe/**` | **subsumes C1** |
 | **5** | **R2 · refactor account page** | the big Account refactor | `[ ]` | `src/pages/Account/**` | **subsumes F6**; overlaps C2 |
@@ -755,3 +755,21 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   Verified the three then-live worktrees each match their board rows with real committed work — no
   forgotten/unmarked lane (c2 = #242 `[P]`, c3 = #243 `[P]`, c5 = merged/tearing down) — and re-synced
   `development` before appending. Worktree not yet created.
+- **2026-07-07** — **C3 merged** ([#243](https://github.com/jclind/prepify/pull/243), merge `7028520`, all 6 checks
+  green) into `development`. The **SingleRecipe lane** landed as a **1-file security hardening** — `buildRecipeJsonLd.ts`
+  gains `serializeRecipeJsonLd()` (stringify → replace every `<` with its backslash-u003c escape; still valid JSON,
+  decoded back to `<` by any JSON-LD parser) and `SingleRecipe.tsx` renders that pre-escaped string straight into the
+  `<script type="application/ld+json">` instead of `{JSON.stringify(...)}`. Closes the `</script>` breakout from
+  user-controlled `title`/`description`/`instructions`: inert under today's CSR (React sets it as a text node) but a
+  real vector the instant SSR/prerender serializes the subtree (rule 6) — shipped now so the deferred prerender PR has
+  one less thing to remember. +6 tests (`buildRecipeJsonLd.test.ts`): no raw `<` survives, escape present, original
+  text recoverable for a malicious title/description/instruction, plus core build output. **CLS controls-block reserve
+  shipped as a no-op** — investigation found `RecipeControls` renders only for the recipe owner
+  (`RecipeControls.tsx:52`), so the BACKLOG item's "CLS ≈ 0.10" was an owner-view measurement; the SEO-relevant
+  logged-out/non-owner path is already fully reserved (action-bar skeletons, `.sr-controls` `min-height`), and per an
+  explicit product call ("tailor to non-owners, don't reserve for the signed-in owner") the owner-only shift is left
+  unreserved. Net: `RecipeControls.scss` untouched, hero `srcset` still deferred to **I1**. **Verified** pre-merge:
+  tsc + Vitest (563 pass) + build clean, and runtime — headless Chrome route-intercepted a `</script>` payload into a
+  live recipe's title/description and confirmed the rendered ld+json script escaped it to `</script>` with
+  `JSON.parse` recovering the exact payload, no raw `</script>`, 0 console errors (no shared-DB mutation). Remote
+  branch deleted, worktree torn down. (**R0** lane left running untouched.)

@@ -697,7 +697,7 @@ findings table.)*
   SEO/privacy wart (crawlers just bounce off the login wall). Add `noindex` to the **create** mode (edit mode
   already canonicalizes to the public recipe URL, which is correct). Low severity. *(surfaced 2026-06-23 in the
   Wave 4 Part 1 verification.)*
-- `[ ]` **JSON-LD recipe title/description isn't `</script>`-escaped** — `SingleRecipe.tsx` interpolates
+- `[x]` **JSON-LD recipe title/description isn't `</script>`-escaped** *(fixed in [#243](https://github.com/jclind/prepify/pull/243), C3: added `serializeRecipeJsonLd()` in `buildRecipeJsonLd.ts` — stringify then replace every `<` with its backslash-u003c escape, still valid JSON that JSON-LD parsers decode back to `<`; `SingleRecipe.tsx` renders the pre-escaped string. Shipped ahead of the prerender PR so the hole is closed before prerendering can make it live. +6 tests.)* — `SingleRecipe.tsx` interpolates
   user-supplied recipe `title`/`description` into a `<script type="application/ld+json">{JSON.stringify(...)}</script>`
   block, and `JSON.stringify` does not escape `<` / `</`. **Not exploitable today** — this is a CSR app, so
   react-helmet-async sets the JSON as a text node via React (not string serialization), and `</script>` in
@@ -903,7 +903,7 @@ findings table.)*
       single-flight, mid-flight-invalidate guard) and two `recipes.test.js` cases (a warm cache hides a direct DB
       insert until busted; `POST /addRecipe` busts the cache so the new cuisine appears on the next load).
     - Gates: server Jest **705 pass**, root Vitest **550 pass / 2 skip** (untouched), `tsc --noEmit` clean.**
-- `[ ]` **Perf: recipe-page CLS ≈ 0.10 from the conditional controls block popping in above the hero** —
+- `[x]` **Perf: recipe-page CLS ≈ 0.10 from the conditional controls block popping in above the hero** *(resolved won't-reserve in [#243](https://github.com/jclind/prepify/pull/243), C3: `RecipeControls` renders only for the recipe **owner** (`RecipeControls.tsx:52` `if (!isUsersRecipe) return null`), so the ≈0.10 was an owner-view measurement. The SEO-relevant logged-out / non-owner path is already fully CLS-reserved (action-bar skeletons, servings placeholder, ratings skeleton, `.sr-controls` `min-height:30px`). A speculative reserve can't know ownership until the fetch resolves, so it would regress the common path to fix the rarest view — per an explicit product call ("tailor to non-owners, don't reserve for the signed-in owner") the owner-only shift is left unreserved. No code change.)* —
   `RecipeControls` (`src/pages/SingleRecipe/SingleRecipe.tsx:296`) renders only after `currRecipe` resolves
   (`currRecipe && …`), with no reserved space, so on load it inserts above `header.hero` and pushes the hero +
   body + ingredient list + instructions down in one shift (measured: the dominant layout-shift source on the
