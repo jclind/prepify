@@ -1,35 +1,8 @@
 import { IngredientData, ParsedIngredient, IngredientsType } from 'types'
-// import { evalNum } from './formatQuantity'
 
-// const mixedToDecimal = (str: string): number => {
-//   const split: string[] = str.split(' ')
-
-//   const decimal = split.reduce((prev, curr) => {
-//     return evalNum(prev) + evalNum(curr)
-//   }, 0)
-
-//   return decimal || 0
-// }
-// const decimalToFraction = (num: number) => {
-//   const fracs = [
-//     { frac: '0', num: 0 },
-//     { frac: '1/8', num: 0.125 },
-//     { frac: '1/4', num: 0.25 },
-//     { frac: '1/3', num: 0.333 },
-//     { frac: '3/8', num: 0.375 },
-//     { frac: '1/2', num: 0.5 },
-//     { frac: '5/8', num: 0.625 },
-//     { frac: '2/3', num: 0.666 },
-//     { frac: '3/4', num: 0.75 },
-//     { frac: '7/8', num: 0.875 },
-//   ]
-
-//   const closest = fracs.sort(
-//     (a, b) => Math.abs(num - a.num) - Math.abs(num - b.num)
-//   )[0]
-//   return closest.frac
-// }
-
+// Rescale a recipe's ingredient quantities and per-ingredient prices from
+// `originalServings` to `newServings` (used by the SingleRecipe servings
+// stepper). Labels (entries without a parsedIngredient) pass through unchanged.
 export const updateIngredients = (
   ingredients: IngredientsType[],
   originalServings: number,
