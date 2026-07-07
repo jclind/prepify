@@ -704,12 +704,13 @@ findings table.)*
   `textContent` isn't parsed as a tag. But it **becomes a real injection vector the moment any server-side
   prerendering is added** (see the prerender item above). Escape `<`/`</` in the JSON-LD payload before/when
   prerendering lands. *(surfaced 2026-06-23 in the track 3b code review.)*
-- `[ ]` **Brand-asset script comment drift** — minor cleanup left after track 3b (PR #170): the header
+- `[x]` **Brand-asset script comment drift** — minor cleanup left after track 3b (PR #170): the header
   comment in `scripts/generate-brand-assets.mjs:6` lists `Montserrat-{Bold,SemiBold,Italic}.ttf` but the code
   actually loads `Montserrat-MediumItalic.ttf` at `:28` (code correct, comment stale on the `Italic` entry).
   **(verified 2026-06-26: the "dead `hero.jpg` (~1.1 MB)" half is already resolved — the file no longer exists
   on disk; only `hero.webp` remains and `HomeHero.tsx:10` references it. So this item is now just the one-line
-  comment fix.)** *(surfaced 2026-06-23 in the Wave 4 Part 1 verification.)*
+  comment fix.)** *(surfaced 2026-06-23 in the Wave 4 Part 1 verification.)* *(fixed in
+  [#239](https://github.com/jclind/prepify/pull/239), F5: comment now names `Montserrat-MediumItalic.ttf`.)*
 - `[ ]` **Post-6-phase-refactor DB check** — confirm no existing database records need updating/migrating
   after the refactor. *(2026-06-26: the tooling exists — `server/scripts/inventory-collections.js` (the DB
   inventory utility from commit 85c0208), plus the `backfillRatingUserIds.js` / `backfillServingPrice.js`
@@ -908,13 +909,17 @@ findings table.)*
   adding HTML `width`/`height` to those `<img>`s gives **no** CLS benefit and empirically *doubled* page CLS
   (0.10 → 0.26, reproducible) — that experiment was reverted in the sweep PR. *(surfaced 2026-06-26 in the
   Performance sweep.)*
-- `[ ]` **Perf: `AuthContext` value object is recreated every render** (`src/context/AuthContext.tsx`, the
+- `[x]` **Perf: `AuthContext` value object is recreated every render** (`src/context/AuthContext.tsx`, the
   `value` passed to `AuthContext.Provider`), so every `useAuth()` consumer (Navbar, SaveControl, ReportControl,
   forms, …) re-renders on any provider re-render. Wrap in `useMemo([user, isAdmin, …])`. Low *measured* impact
   today (TBT ≈ 0 across pages) — file as a scalability/correctness cleanup, not a hot fix. Pairs with memoizing
   the remaining list rows (`RecipeReview`, and `IngredientItem` — the latter sits in a `@hello-pangea/dnd` list,
   so verify DnD still works before memoizing). The `/recipes` grid card (`RecipeCard`) was memoized in the sweep.
   *(surfaced 2026-06-26 in the Performance sweep.)*
+  — *(fixed in [#240](https://github.com/jclind/prepify/pull/240), F2: memoized `value` — but a bare `value` memo
+  would no-op, so also `getAuth()`→`useMemo` and all 8 handlers `useCallback`'d for stable deps. Added a
+  referential-stability regression test; runtime-verified the full auth lifecycle. The list-row memos
+  (`RecipeReview`, `IngredientItem`) remain open follow-ups.)*
 - `[x]` **Perf: `RecipeCard` memo is defeated on the Saved tab** (`src/pages/Account/SavedRecipes/SavedRecipes.tsx:138`)
   — *(fixed in [#237](https://github.com/jclind/prepify/pull/237), F3: wrapped `refreshAfterMutation` in `useCallback([queryClient, uid])` so the `onMutated` handler keeps a stable identity and `React.memo(RecipeCard)` holds on the Saved tab too. Verified live — 0 saved-card re-renders with the fix vs 54 without across 9 parent renders.)*
   `refreshAfterMutation` was a plain inline `() => {}` passed as `onMutated`, so its identity changed every parent
@@ -935,11 +940,14 @@ findings table.)*
   `routes/nutrition.js` (`/details`) use a bare `async (req,res)` with a complete internal try/catch instead of
   the `asyncHandler` wrapper every other route uses — functionally safe, just inconsistent.~~ *(fixed in
   [#232](https://github.com/jclind/prepify/pull/232), S5: both wrapped in `asyncHandler`; internal soft-fail
-  try/catch kept — no behaviour change.)* (3) **Doc drift**:
+  try/catch kept — no behaviour change.)* (3) ~~**Doc drift**:
   `CLAUDE.md` still describes `src/context/RecipeContext.tsx` as "commented out", but the file has been deleted
-  entirely — update the two references. (4) **Optional rename**: `src/util/validateIngredientQuantityStr.ts` now
+  entirely — update the two references.~~ *(fixed in [#239](https://github.com/jclind/prepify/pull/239), F5: both
+  references now say "removed".)* (4) ~~**Optional rename**: `src/util/validateIngredientQuantityStr.ts` now
   exports only `closestFraction` (a display formatter) — a rename to `formatQuantity.ts` would match its
-  contents (3 import sites). *(surfaced 2026-06-27 in the code-quality & tests sweep.)*
+  contents (3 import sites).~~ *(fixed in [#239](https://github.com/jclind/prepify/pull/239), F5: renamed to
+  `formatQuantity.ts`, 4 importers repointed.)* Only part (1) (`any` escape hatches) remains open.
+  *(surfaced 2026-06-27 in the code-quality & tests sweep.)*
 
 ## Testing
 

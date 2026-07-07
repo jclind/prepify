@@ -556,3 +556,22 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   **Follow-up filed-not-fixed (out of F5's `scripts/`+`CLAUDE.md`+`src/util/` domain, low):** two *other* docs still name the old
   filename — `docs/ADD_RECIPE_AUDIT.md:268` and `docs/sweeps/ROADMAP.md:185` — harmless (historical audit/sweep prose, no build
   impact); the backlog docs mention it correctly as the task description.
+- **2026-07-07** — **F2 merged** ([#240](https://github.com/jclind/prepify/pull/240), merge `aeb5337`). The
+  `AuthContext` provider `value` was a fresh object literal every render, so its identity churned constantly and
+  forced **every** `useAuth()` consumer to re-render for nothing. Shipped the *complete* fix, not the literal
+  "wrap `value` in `useMemo`" (which would no-op): (1) `getAuth()` → `useMemo(() => getAuth(), [])` so `auth` is a
+  stable reference — still resolved lazily inside the provider, preserving the "importing this module never
+  triggers Firebase init" invariant; (2) all **8** handlers wrapped in `useCallback` with exhaustive deps
+  (`logout`/`signInWithGoogle`/`signInDefault`/`signUp` → `[auth, navigate]`, `forgotPassword` → `[auth]`,
+  `updateProfileData`/`changePassword` → `[user]`, `deleteAccount` → `[user, auth, navigate]`); (3) `value`
+  memoized over `[user, isAdmin, loading, …8 handlers]` — the handlers had to be stable first or the value memo
+  would never hit. **Verified:** runtime — drove the full auth lifecycle in a real browser against dev infra
+  (Firebase `prepify-dev-58579` / `prepify-dev` Mongo): signup → set-username → signed-in render → reload
+  (persistence) → logout → login → wrong-password probe → delete-account cleanup; all steps passed, only console
+  error the expected Firebase 400 from the wrong-password probe, test account self-cleaned via the delete flow.
+  Local high-effort code review — 0 findings (deps exhaustive so no stale closures; grepped all 18 `useAuth`
+  consumers — none place a handler or the value object in a dependency array, so stabilizing identity is a pure
+  re-render reduction with no behavioral coupling). Added a `referential stability` regression test that fails on
+  the pre-fix code and asserts value + handler identity survive an incidental re-render; no new `exhaustive-deps`
+  disables needed. Gates green (tsc, Vitest, build, full CI incl. Cypress 3m29s). Rebased onto current
+  `development` (8 behind, `AuthContext` had moved under `8680f2a`) — clean, no semantic conflict — before merge.
