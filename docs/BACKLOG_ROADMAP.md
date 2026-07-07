@@ -73,7 +73,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **1** | **S6 · rating-aggregate ops** | one-off reconciliation script; post-6-phase DB check | `[x]` [#233](https://github.com/jclind/prepify/pull/233) (2026-07-06) | `server/scripts/` (+ ops run) | **merged** — new files; pairs w/ S2 |
 | **1** | **S7 · firebase-admin@14 bump** | 8 moderate transitive CVEs (breaking major, on `^13.8.0`) | `[x]` [#234](https://github.com/jclind/prepify/pull/234) (2026-07-06) | `server/package.json` + lockfile (+ root/`cypress.config.ts`) | **merged** — folded in the root/cypress Admin bump so audit=0 in **both** trees |
 | **2** | **F1 · TimeInput NaN bug** | edit/draft-resume blank prep/cook time (`TimeInput.tsx:23-27`) | `[x]` [#235](https://github.com/jclind/prepify/pull/235) (2026-07-06) | `TimeInput.tsx` | **merged** — scope narrowed to `TimeInput.tsx` only (AddRecipe already passed the object shape); review filed the "clear doesn't propagate" follow-up (BACKLOG.md Bugs, low). AddRecipe lane (C1/R1) rebases onto this. |
-| **2** | **F2 · AuthContext memo** | `value` object recreated every render → wrap in `useMemo` | `[~]` `worktree-feat+f2-authcontext-memo` 2026-07-06 | `src/context/AuthContext.tsx` | — |
+| **2** | **F2 · AuthContext memo** | `value` object recreated every render → wrap in `useMemo` | `[P]` [#240](https://github.com/jclind/prepify/pull/240) | `src/context/AuthContext.tsx` | — |
 | **2** | **F3 · Saved-tab memo** | `refreshAfterMutation` not `useCallback`'d → defeats `React.memo(RecipeCard)` (`SavedRecipes.tsx:133-136,372`) | `[x]` [#237](https://github.com/jclind/prepify/pull/237) (2026-07-07) | `SavedRecipes.tsx` | **merged** — `useCallback(refreshAfterMutation, [queryClient, uid])` stabilizes the handler passed as `onMutated` to the memoized grid; verified live (0 vs 54 re-renders, search/unsave refresh intact). Rebased onto current `development` before merge. |
 | **2** | **F4 · change-password subhead** | redundant `<h3 class='sr-subhead'>` (`AccountSection.tsx:188`) | `[~]` `worktree-feat+f4-changepw-subhead` 2026-07-06 | `Settings/sections/AccountSection.tsx` | — |
 | **2** | **F5 · housekeeping one-liners** | brand-asset comment (`generate-brand-assets.mjs:6`); CLAUDE.md RecipeContext drift; rename `validateIngredientQuantityStr`→`formatQuantity` (3 imports) | `[~]` `worktree-feat+f5-housekeeping` 2026-07-06 | `scripts/`, `CLAUDE.md`, `src/util/` | rename touches 3 call sites |
@@ -81,8 +81,8 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **3** | **C1 · AddRecipe cluster** ⚠ lane | dropdown/`FormInput` uniformity (`recipeSelectStyles.ts`); summary-bar sticky; group-label styling; `/add-recipe` `noindex`; Cuisine/MealType selector unit tests; `updateIngredients` test + dead-code | `[ ]` | `src/pages/AddRecipe/**`, `src/test/` | ⚠ **subsumed by R1** — decide refactor-vs-smalls first |
 | **3** | **C2 · route-constant single-sourcing** | `RECIPES_PATH` const (`DesktopBar:45`,`NavMenu:20`,`Recipes.tsx:113-119`); `browseAll`→`clearFilters`; `accountTabs` as app-wide route source (`DesktopAccountMenu:74`,`footerData:43-44`,`DraftResumeBanner:47`) + `activeAccountTab` helper | `[ ]` | Navbar/* + `Recipes.tsx` + `accountTabs.tsx` + `footerData.ts` + `DraftResumeBanner.tsx` | both share DesktopBar → one lane |
 | **3** | **C3 · SingleRecipe lane** ⚠ lane | CLS controls-block reserve (`SingleRecipe.tsx:308-317`, `RecipeControls.scss`); JSON-LD `</script>` escaping (`buildRecipeJsonLd.ts:38-39`) | `[ ]` | `SingleRecipe.tsx`, `RecipeControls.scss`, `buildRecipeJsonLd.ts` | hero `srcset` deferred to **I1**; JSON-LD gates with prerender |
-| **3** | **C4 · SearchRecipesInput lane** | autocomplete footer-label debounce disagreement (`:274` vs `:336`); press-`/` global focus-search feature | `[~]` `worktree-feat+c4-searchinput-lane` 2026-07-06 | `SearchRecipesInput.tsx` (+ Layout for key handler) | both touch same file → one lane |
-| **3** | **C5 · focus-ring tokens** ⚠ SCSS loner | `$focus-ring-*` group in `helpers.scss` + migrate ~13 literal `0 0 0 3px` rings | `[ ]` | `helpers.scss` + ~9 component `.scss` | only one SCSS-token worktree at a time |
+| **3** | **C4 · SearchRecipesInput lane** | autocomplete footer-label debounce disagreement (`:274` vs `:336`); press-`/` global focus-search feature | `[P]` [#238](https://github.com/jclind/prepify/pull/238) `worktree-feat+c4-searchinput-lane` 2026-07-07 | `SearchRecipesInput.tsx` (+ Layout for key handler) | both touch same file → one lane |
+| **3** | **C5 · focus-ring tokens** ⚠ SCSS loner | `$focus-ring-*` group in `helpers.scss` + migrate ~13 literal `0 0 0 3px` rings | `[~]` `worktree-feat+c5-focus-ring-tokens` 2026-07-07 | `helpers.scss` + ~9 component `.scss` | only one SCSS-token worktree at a time |
 | **4** | **I1 · image resize pipeline** | Storage width variants + `srcset`/`sizes` on card + hero (mobile LCP) | `[ ]` | Storage pipeline/CDN + `RecipeCard.tsx`, `SingleRecipe.tsx` hero | structural; unblocks C3 hero srcset |
 | **4** | **I2 · uid-key recipe images** | re-key `recipeImages/{uid}/{uuid}` (`src/api/recipes.ts:188`) + tighten `storage.rules:27-32` to owner | `[ ]` | `src/api/recipes.ts`, `storage.rules` | pairs w/ I1; migrate existing objects |
 | **4** | **I3 · autocomplete title index** | Mongo text index / Atlas Search for fuzzy fallback (`recipes.js:194-240`) | `[ ]` | `server/routes/recipes.js` | ⚠ after **S1**; low urgency/scalability |
@@ -500,3 +500,27 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   F1/TimeInput + the C4 claim) before merge so history stays linear; force-pushed, re-ran CI green (Backend,
   E2e/Cypress, Vitest 553✓, Static typecheck+build, Fallow advisory all pass), merged. Second Wave-2 track
   landed (F1 #235 + F3 #237 both merged; F2/F4/F5 still in worktrees, C4 first Wave-3 lane claimed).
+- **2026-07-07** — **C4** implemented in `worktree-feat+c4-searchinput-lane` → PR
+  [#238](https://github.com/jclind/prepify/pull/238) opened (`[P]`). Both `SearchRecipesInput` items shipped;
+  frontend-only, no `server/` changes. (1) **Footer-label debounce disagreement:** the `Search for "…"` footer
+  button quoted the **live** input (`searchRecipeVal.trim()`) while the empty-state above it quotes the
+  **debounced** query (`trimmedQuery`) — the whole dropdown (results, corrected banner, empty-state) describes
+  the query that actually ran, so within the 300ms debounce window the footer could disagree with its `No
+  matches for …` sibling. Pointed the footer label at `trimmedQuery` too; the submit *action* stays on the live
+  value (shared with Enter / the top Search button, which must fire for <3-char queries that never open a
+  dropdown). (2) **Press-`/` focus-search:** new `useSlashFocusSearch` hook attached once at the app shell
+  (`Layout`) — a bare `/` outside a text field focuses the page's primary recipe search and selects its text;
+  modifier combos, IME composition, and keystrokes already inside an input/textarea/select/contenteditable are
+  ignored. Targeting walks the **ancestor chain** for `display:none`/`visibility:hidden` (not just the input's
+  own style) to pick the first *focusable-visible* `.search-recipes-input` — so it skips the desktop nav search
+  hidden in a `display:none .dnav__search` on the Home hero and the `visibility:hidden` closed mobile menu,
+  landing on the navbar search on most pages, the page's own search on `/recipes`, or the hero search on Home.
+  `getComputedStyle` (not `offsetParent`) keeps the check meaningful under jsdom so the happy path stays
+  unit-testable. Added `src/test/useSlashFocusSearch.test.tsx` (focus+select, typing-context guard, modifier
+  guard, visibility-skip). Gates: `tsc` clean, Vitest **560 passed / 2 skipped** (76 files), `npm run build`
+  clean. **Runtime-verified** end-to-end in the running app (Playwright, Home + `/recipes`): `/` focuses the
+  *visible* search (skips the `display:none` nav search → hero search), the `/` isn't inserted into the field,
+  the typing-guard holds, the footer renders the settled query, and `/recipes` focuses its own search. First
+  Wave-3 lane PR'd. **Claim/`[P]` flips recorded on `development` directly** (not the lane branch) to keep
+  backlog edits off the PR — a prior lane (S3) hit a BACKLOG chokepoint conflict that marked the PR DIRTY and
+  silently suppressed its `pull_request` CI until rebased.
