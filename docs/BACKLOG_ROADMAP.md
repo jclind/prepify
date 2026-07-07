@@ -83,7 +83,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **3** | **C3 · SingleRecipe lane** ⚠ lane | CLS controls-block reserve (`SingleRecipe.tsx:308-317`, `RecipeControls.scss`); JSON-LD `</script>` escaping (`buildRecipeJsonLd.ts:38-39`) | `[x]` [#243](https://github.com/jclind/prepify/pull/243) (2026-07-07) | `SingleRecipe.tsx`, `buildRecipeJsonLd.ts` | **merged** — JSON-LD `</script>` escape only; hero `srcset` deferred to **I1**; **CLS half was a no-op** (`RecipeControls` owner-only, non-owner path already fully reserved) so `RecipeControls.scss` untouched (see status log) |
 | **3** | **C4 · SearchRecipesInput lane** | autocomplete footer-label debounce disagreement (`:274` vs `:336`); press-`/` global focus-search feature | `[x]` [#238](https://github.com/jclind/prepify/pull/238) (2026-07-07) | `SearchRecipesInput.tsx` (+ Layout for key handler) | **merged** |
 | **3** | **C5 · focus-ring tokens** ⚠ SCSS loner | `$focus-ring-*` group in `helpers.scss` + migrate ~13 literal `0 0 0 3px` rings | `[x]` [#241](https://github.com/jclind/prepify/pull/241) 2026-07-07 | `helpers.scss` + ~9 component `.scss` | **merged** — shipped as `@mixin focus-glow()` (parametrised, not a `$focus-ring-*` token set) |
-| **4** | **I1 · image resize pipeline** | Storage width variants + `srcset`/`sizes` on card + hero (mobile LCP) | `[P]` [#247](https://github.com/jclind/prepify/pull/247) 2026-07-07 | Storage pipeline/CDN + `RecipeCard.tsx`, `SingleRecipe.tsx` hero | structural; unblocks C3 hero srcset — owner chose the **Firebase Resize Images extension** approach |
+| **4** | **I1 · image resize pipeline** | Storage width variants + `srcset`/`sizes` on card + hero (mobile LCP) | `[x]` [#247](https://github.com/jclind/prepify/pull/247) (2026-07-07) | Storage pipeline/CDN + `RecipeCard.tsx`, `SingleRecipe.tsx` hero | **merged** — frontend `srcset` + owner-gated Firebase Resize Images extension; **inert until the owner installs the extension, backfills, and flips `VITE_IMAGE_VARIANTS_ENABLED`** (two safety nets: build-flag + per-`<img>` fallback). Also carries C3's deferred hero `srcset` |
 | **4** | **I2 · uid-key recipe images** | re-key `recipeImages/{uid}/{uuid}` (`src/api/recipes.ts:188`) + tighten `storage.rules:27-32` to owner | `[ ]` | `src/api/recipes.ts`, `storage.rules` | pairs w/ I1; migrate existing objects |
 | **4** | **I3 · autocomplete title index** | Mongo text index / Atlas Search for fuzzy fallback (`recipes.js:194-240`) | `[x]` [#245](https://github.com/jclind/prepify/pull/245) (2026-07-07) | `server/routes/recipes.js` (+ `server/db.js`) | **merged** — index-backed `$text` tier between exact + fuzzy; fuzzy scan now typo-only |
 | **5** | **R0 · Claude conventions doc** | code & architecture standard (`CONVENTIONS.md`/CLAUDE.md) | `[x]` [#244](https://github.com/jclind/prepify/pull/244) (2026-07-07) | new doc | **merged** — shipped `docs/CONVENTIONS.md` (grounded in a 4-way survey + REFACTOR.md), cross-linked from `CLAUDE.md`; **R1/R2 now have a standard to follow** |
@@ -1025,3 +1025,20 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   F4's) — `development` was fast-forwarded to origin `b7f1384` (my F4 merge) with the I3 doc edits preserved before
   this append. **Wave 2's active items are all landed** (F1–F5 merged; **F6** remains `[ ]`, intentionally deferred
   into R2). Other live lanes untouched: I1 `[P]` #247, R1 claimed.
+- **2026-07-07** — **I1 merged** ([#247](https://github.com/jclind/prepify/pull/247), squash `2270777`). Responsive
+  recipe-image variants: a bucket-agnostic URL helper (`src/util/recipeImageVariants.ts`) derives a token-less
+  WebP `srcset` (400/800/1600w) from the stored original URL, wired onto the browse-card thumb (`RecipeCard.tsx`)
+  and the SingleRecipe hero (`SingleRecipe.tsx`) — the latter is **C3's deferred hero `srcset`**, landed here.
+  Backend is the owner-gated **Firebase Resize Images** extension pinned in `firebase.json` +
+  `extensions/storage-resize-images.env` (same-dir variants ⇒ no `storage.rules` change; runbook in
+  `docs/IMAGE_PIPELINE.md`). **Ships inert:** `VITE_IMAGE_VARIANTS_ENABLED` defaults off (no `srcset`, zero
+  behaviour change) and even flag-on keeps the original as `<img src>` with a per-image `onError` fallback, so a
+  missing/un-backfilled variant never shows a broken image. **Owner follow-ups (filed-not-fixed):** install the
+  extension on dev then prod (Blaze), backfill existing images, VERIFY the variant naming is `<stem>_WxH.webp`
+  (the one thing the frontend can't self-check — see runbook §2), then flip the flag. **Verified** pre-merge:
+  CI green (Vitest/Supertest/typecheck+build/Cypress all pass) + a runtime Playwright pass — flag **off** = 0
+  variant requests / no `srcset` (identical to pre-I1); flag **on** = `srcset` emitted, browser selects the
+  DPR-appropriate variant, and 9 malicious `recipeImage` payloads (HTML/attr/`javascript:`-injection, path
+  traversal, malformed `%`-encoding, 9 KB URL) all rendered inert (no XSS/throw). **Local code review:** clean,
+  no blocking issues. **Other live lanes untouched:** R1 claimed. **I2** (uid-key recipe images) is the natural
+  next pair — keep resized variants in the same directory as their original if I2 re-keys the path.

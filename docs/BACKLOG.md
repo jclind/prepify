@@ -934,7 +934,11 @@ findings table.)*
   grid (no `onMutated`, stable `recipe` identities), but to realize it on the Saved tab too, wrap
   `refreshAfterMutation` in `useCallback`. One line; pairs with the `AuthContext`/list-row memo work above. Low
   measured impact (TBT ≈ 0). *(surfaced 2026-06-27 in the Performance sweep code review.)*
-- `[ ]` **Perf: Firebase Storage recipe images are served single-size with no `srcset`/resize pipeline** — every
+- `[x]` **Perf: Firebase Storage recipe images are served single-size with no `srcset`/resize pipeline** *(fixed in
+  [#247](https://github.com/jclind/prepify/pull/247), I1: frontend emits a token-less WebP `srcset` (400/800/1600w)
+  on the card thumb + SingleRecipe hero, derived from the stored URL by `src/util/recipeImageVariants.ts`; backend
+  is the owner-gated Firebase Resize Images extension. **Ships inert** behind `VITE_IMAGE_VARIANTS_ENABLED` (default
+  off) + a per-`<img>` fallback — owner installs/backfills/flips per `docs/IMAGE_PIPELINE.md`.)* — every
   `recipe.recipeImage` is a direct full-size Storage URL, so mobile downloads desktop-sized images (a contributor
   to the mobile LCP above). Structural: a Storage resize pipeline (or an image CDN) emitting width variants +
   `srcset`/`sizes` on the card/hero `<img>`s. The static Home hero is already a sized `.webp`. *(surfaced
