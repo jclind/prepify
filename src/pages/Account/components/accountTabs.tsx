@@ -1,6 +1,12 @@
 import { BookOpenIcon, BookmarkIcon, FileTextIcon, StarOutlineIcon } from 'src/Components/icons'
 import React, { ReactNode } from 'react'
 import { AccountTabCounts } from 'types'
+import {
+  ACCOUNT_DRAFTS_PATH,
+  ACCOUNT_RATINGS_PATH,
+  ACCOUNT_SAVED_RECIPES_PATH,
+  ACCOUNT_YOUR_RECIPES_PATH,
+} from 'src/routes'
 
 // The single source of truth for the account sub-routes. Both SegmentedNav (the
 // rail/tab-bar switcher) and Account (the visually-hidden per-panel <h2>) derive
@@ -28,14 +34,14 @@ export const accountTabs: AccountTab[] = [
     label: 'Saved',
     srHeading: 'Saved recipes',
     icon: <BookmarkIcon />,
-    to: '/account/saved-recipes',
+    to: ACCOUNT_SAVED_RECIPES_PATH,
   },
   {
     key: 'ratings',
     label: 'Ratings',
     srHeading: 'Your ratings',
     icon: <StarOutlineIcon />,
-    to: '/account/ratings',
+    to: ACCOUNT_RATINGS_PATH,
   },
   {
     key: 'recipes',
@@ -43,14 +49,14 @@ export const accountTabs: AccountTab[] = [
     short: 'Recipes',
     srHeading: 'Recipes you created',
     icon: <BookOpenIcon />,
-    to: '/account/your-recipes',
+    to: ACCOUNT_YOUR_RECIPES_PATH,
   },
   {
     key: 'drafts',
     label: 'Drafts',
     srHeading: 'Your drafts',
     icon: <FileTextIcon />,
-    to: '/account/drafts',
+    to: ACCOUNT_DRAFTS_PATH,
   },
 ]
 
@@ -66,3 +72,9 @@ export const activeAccountTabIndex = (pathname: string): number =>
         : pathname.startsWith(t.to)
     )
   )
+
+// The active tab itself, for callers that want the tab object rather than its
+// index (e.g. Account's SR heading). SegmentedNav still uses the index for its
+// `i === activeIndex` highlight, so both are exported.
+export const activeAccountTab = (pathname: string): AccountTab =>
+  accountTabs[activeAccountTabIndex(pathname)]

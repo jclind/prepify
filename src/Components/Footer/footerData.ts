@@ -1,4 +1,9 @@
 import pjson from '../../../package.json'
+import {
+  ACCOUNT_SAVED_RECIPES_PATH,
+  ACCOUNT_YOUR_RECIPES_PATH,
+  RECIPES_PATH,
+} from 'src/routes'
 
 // ---------------------------------------------------------------------------
 // Shared footer content — single source of truth for the footer's links, blurb,
@@ -26,7 +31,7 @@ export const footerColumns: FooterColumn[] = [
     heading: 'Discover',
     links: [
       { label: 'Home', to: '/' },
-      { label: 'All recipes', to: '/recipes' },
+      { label: 'All recipes', to: RECIPES_PATH },
       // Add a recipe is behind PrivateRoute — only show it to signed-in users so
       // logged-out visitors aren't bounced to the login wall from the footer.
       { label: 'Add a recipe', to: '/add-recipe', auth: 'in' },
@@ -40,8 +45,8 @@ export const footerColumns: FooterColumn[] = [
     links: [
       { label: 'Log in', to: '/login', auth: 'out' },
       { label: 'Sign up', to: '/signup', auth: 'out' },
-      { label: 'My recipes', to: '/account/your-recipes', auth: 'in' },
-      { label: 'Saved recipes', to: '/account/saved-recipes', auth: 'in' },
+      { label: 'My recipes', to: ACCOUNT_YOUR_RECIPES_PATH, auth: 'in' },
+      { label: 'Saved recipes', to: ACCOUNT_SAVED_RECIPES_PATH, auth: 'in' },
     ],
   },
   {

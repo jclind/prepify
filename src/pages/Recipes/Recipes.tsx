@@ -12,6 +12,7 @@ import SearchRecipesInput from 'src/Components/SearchRecipesInput/SearchRecipesI
 import SortDropdown from 'src/Components/SortDropdown/SortDropdown'
 import RecipeAPI from 'src/api/recipes'
 import { SITE_URL, DEFAULT_OG_IMAGE } from 'src/util/seo'
+import { RECIPES_PATH } from 'src/routes'
 import { dietLabelsOptions } from 'src/recipeData/dietLabels'
 import cuisinesList from 'src/recipeData/cuisinesList'
 import mealTypesList from 'src/recipeData/mealTypesList'
@@ -75,7 +76,7 @@ const Recipes: FC = () => {
     d.length ? params.set('dietTags', d.join(',')) : params.delete('dietTags')
     c ? params.set('cuisine', c) : params.delete('cuisine')
     m.length ? params.set('mealTypes', m.join(',')) : params.delete('mealTypes')
-    navigate(`/recipes?${params.toString()}`)
+    navigate(`${RECIPES_PATH}?${params.toString()}`)
   }
 
   const changeSort = (value: string) => {
@@ -101,21 +102,27 @@ const Recipes: FC = () => {
     setMeals(next)
     syncUrl({ meals: next })
   }
-  const clearFilters = () => {
+  // Reset just the filter selections (diets/cuisine/meals). Shared by the in-list
+  // "Clear filters" button (which re-syncs the URL, preserving the search term)
+  // and the empty-state "Browse all" reset (which drops the search term too), so
+  // the two affordances can't drift on which filters they clear.
+  const resetFilters = () => {
     setDiets([])
     setCuisine('')
     setMeals([])
+  }
+  const clearFilters = () => {
+    resetFilters()
     syncUrl({ diets: [], cuisine: '', meals: [] })
   }
   // Full reset escape-hatch for the empty state: drop the search term AND every
   // filter, landing on the unfiltered catalog. `syncUrl`/`clearFilters` both
-  // preserve `q`, so we reset the local state and navigate to a bare /recipes.
+  // preserve `q`, so navigating to a bare RECIPES_PATH (no query string) is what
+  // additionally clears the search term.
   const browseAll = () => {
     setSort('popular')
-    setDiets([])
-    setCuisine('')
-    setMeals([])
-    navigate('/recipes')
+    resetFilters()
+    navigate(RECIPES_PATH)
   }
 
   const { data, isFetching, isError, fetchNextPage, hasNextPage } =

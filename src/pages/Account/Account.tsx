@@ -13,7 +13,7 @@ import ProfileControls from 'src/pages/Account/components/ProfileControls'
 import SegmentedNav from 'src/pages/Account/components/SegmentedNav'
 import {
   accountTabs,
-  activeAccountTabIndex,
+  activeAccountTab,
 } from 'src/pages/Account/components/accountTabs'
 import AchievementsModal from 'src/pages/Account/components/AchievementsModal'
 import DefaultAvatar from 'src/Components/DefaultAvatar/DefaultAvatar'
@@ -185,7 +185,7 @@ const Account: FC = () => {
                 from the same accountTabs source as SegmentedNav's highlight, so
                 the heading and the active tab always name the same route. */}
             <h2 className='sr-only'>
-              {accountTabs[activeAccountTabIndex(location.pathname)].srHeading}
+              {activeAccountTab(location.pathname).srHeading}
             </h2>
             <Outlet />
           </div>

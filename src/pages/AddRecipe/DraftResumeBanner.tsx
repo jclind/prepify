@@ -3,6 +3,7 @@ import React, { FC, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import DraftAPI from 'src/api/drafts'
+import { ACCOUNT_DRAFTS_PATH } from 'src/routes'
 import './DraftResumeBanner.scss'
 
 // Shown at the top of the create-recipe page when the user already has saved
@@ -44,7 +45,7 @@ const DraftResumeBanner: FC = () => {
         >
           Resume
         </button>
-        <Link to='/account/drafts' className='view-all'>
+        <Link to={ACCOUNT_DRAFTS_PATH} className='view-all'>
           View all drafts
         </Link>
         <button
