@@ -88,3 +88,34 @@ describe('TimeInput hydration', () => {
     expect(minutes.value).toBe('')
   })
 })
+
+// Regression: clearing BOTH fields (on edit) must push null up so the parent
+// drops the old time. Previously the writeback effect only fired for a truthy
+// value (`if (minutes || hours)`), so emptying both left the parent holding the
+// stale pre-clear time and the "prep time required" guard kept passing.
+describe('TimeInput clear-both-fields', () => {
+  it('emits null once the user empties both fields', () => {
+    const setVal = vi.fn()
+    render(<TimeInput label='Prep time' val={{ hours: 2, minutes: 15 }} setVal={setVal} />)
+    const [hours, minutes] = screen.getAllByPlaceholderText('0') as HTMLInputElement[]
+    // Sanity: hydrated from the object.
+    expect(hours.value).toBe('2')
+    expect(minutes.value).toBe('15')
+
+    change(hours, '')
+    change(minutes, '')
+
+    expect(hours.value).toBe('')
+    expect(minutes.value).toBe('')
+    // The final emission is an explicit null (not the stale {2,15}).
+    expect(setVal.mock.calls.at(-1)![0]).toBeNull()
+  })
+
+  it('does not emit null on the initial pre-hydration render (no clobber)', () => {
+    const setVal = vi.fn()
+    // Fields start empty while the parent already holds a value; the hydration
+    // pass must not be mistaken for a user clear.
+    render(<TimeInput label='Prep time' val={{ hours: 1, minutes: 30 }} setVal={setVal} />)
+    expect(setVal).not.toHaveBeenCalledWith(null)
+  })
+})
