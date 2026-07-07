@@ -34,6 +34,8 @@ vi.mock('src/api/http-common', () => ({
 
 // Import after mocks are in place.
 import RecipeAPI from 'src/api/recipes'
+import AuthAPI from 'src/api/auth'
+import { ref, uploadBytes } from 'firebase/storage'
 import type { RecipeEditFormType, RecipeFormType, RecipeType } from 'types'
 
 const makeFormData = (): RecipeFormType => ({
@@ -312,5 +314,46 @@ describe('RecipeAPI.editRecipe', () => {
       () => {}
     )
     expect(result).toEqual({ status: 'error', message: 'Forbidden' })
+  })
+})
+
+describe('RecipeAPI.uploadRecipeImage — uid-keyed Storage path (I2)', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    vi.mocked(ref).mockClear()
+    vi.mocked(uploadBytes).mockClear()
+    vi.mocked(AuthAPI.getUID).mockReturnValue('test-uid')
+  })
+
+  it('keys the upload at recipeImages/{uid}/{uuid}, never the raw filename', async () => {
+    // The suite runs with VITE_CYPRESS='true' (the fake-URL short-circuit); stub it
+    // off so the real, mocked-SDK upload path runs and we can inspect the ref path.
+    vi.stubEnv('VITE_CYPRESS', 'false')
+    const file = new File([''], 'photo.jpg', { type: 'image/jpeg' })
+
+    const url = await RecipeAPI.uploadRecipeImage(file, () => {})
+
+    // getDownloadURL mock => the stored original URL is returned unchanged.
+    expect(url).toBe('https://fake.cdn/image.jpg')
+    // ref(storage, path): the object path is scoped to the owner uid + a uuid, so
+    // two users' "photo.jpg" can't collide and storage.rules can scope by uid.
+    const objectPath = vi.mocked(ref).mock.calls[0][1]
+    expect(objectPath).toMatch(
+      /^recipeImages\/test-uid\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+    )
+    expect(objectPath).not.toContain('photo.jpg')
+    expect(uploadBytes).toHaveBeenCalledOnce()
+  })
+
+  it('fails closed (throws, no upload) when there is no authenticated uid', async () => {
+    vi.stubEnv('VITE_CYPRESS', 'false')
+    vi.mocked(AuthAPI.getUID).mockReturnValueOnce(null)
+    const file = new File([''], 'photo.jpg', { type: 'image/jpeg' })
+
+    await expect(RecipeAPI.uploadRecipeImage(file, () => {})).rejects.toThrow(
+      /signed in/i
+    )
+    // Never reaches the SDK — no unscoped/uid-less object is written.
+    expect(ref).not.toHaveBeenCalled()
   })
 })

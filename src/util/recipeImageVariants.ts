@@ -73,9 +73,12 @@ export function recipeImageVariantUrl(
     return null // malformed percent-encoding
   }
 
-  // Split dir / filename / extension so the variant sits beside the original
-  // with the extension swapped, matching the extension's naming:
-  //   recipeImages/photo.jpg  ->  recipeImages/photo_400x400.webp
+  // Split dir / filename / extension so the variant sits beside the original,
+  // matching the extension's naming. Since I2 originals are keyed by a bare uuid
+  // with no extension, so the stem is the whole filename:
+  //   recipeImages/{uid}/{uuid}  ->  recipeImages/{uid}/{uuid}_400x400.webp
+  // (The last-dot split still handles a legacy extensioned name too, e.g.
+  //   recipeImages/photo.jpg  ->  recipeImages/photo_400x400.webp.)
   const slash = objectPath.lastIndexOf('/')
   const dir = slash === -1 ? '' : objectPath.slice(0, slash + 1)
   const file = slash === -1 ? objectPath : objectPath.slice(slash + 1)
