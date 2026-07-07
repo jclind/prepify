@@ -115,9 +115,13 @@ tile).
 Text inputs, textareas, and the Settings controls also cast a soft **coloured
 halo** while focused (paired with a `border-color` shift) — the `box-shadow: 0 0
 0 3px rgba(accent, …)` you see on a focused field. That is **not** the a11y
-`outline()` ring and the two coexist: `outline()` is the keyboard-focus
-indicator (`:focus-visible`), the glow is the "this field is active" affordance
-(`:focus` / `:focus-within`, so it shows on click too). Both are legitimate.
+`outline()` ring: `outline()` is the blue `outline-style: auto` ring, the glow is
+a coloured `box-shadow`. They usually coexist — the glow most often sits on
+`:focus` / `:focus-within` (so it shows on click too), while `outline()` handles
+`:focus-visible`. But on a few fields (the textarea, the `md` input, the signup
+checkbox) the glow *is* the `:focus-visible` indicator, doubling as the keyboard
+focus ring (WCAG 2.4.7) where a bespoke control drops `outline`. Both are
+legitimate.
 
 The glow comes from **`@include focus-glow($color, $opacity)`** in `helpers.scss`.
 The geometry (`0 0 0 3px`) is fixed — the mixin *is* the one definition — while

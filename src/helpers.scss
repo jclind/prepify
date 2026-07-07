@@ -285,13 +285,13 @@ $bp-nav-up: 726px;
 //                         style: auto), shown on :focus-visible. One ring on every
 //                         control; see "Focus rings" in docs/scss-conventions.md.
 //   @mixin focus-glow() — the soft coloured halo a *form field* casts while
-//                         focused (paired with a border-colour shift), on :focus /
-//                         :focus-within. Fixed 3px spread; the tint follows the
+//                         focused (paired with a border-colour shift), typically on
+//                         :focus / :focus-within — and as the :focus-visible ring
+//                         where a field's glow doubles as its keyboard indicator
+//                         (WCAG 2.4.7). Fixed 3px spread; the tint follows the
 //                         field's accent — teal $secondary by default, or $primary
 //                         / $error-red / a success green for branded & validation
-//                         states. It's :focus (mouse + keyboard) not :focus-visible
-//                         — an active input should always show it. Documented in
-//                         docs/scss-conventions.md.
+//                         states. Documented in docs/scss-conventions.md.
 @mixin focus-glow($color: $secondary, $opacity: 0.15) {
   box-shadow: 0 0 0 3px rgba($color, $opacity);
 }
