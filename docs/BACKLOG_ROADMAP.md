@@ -75,7 +75,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **2** | **F1 · TimeInput NaN bug** | edit/draft-resume blank prep/cook time (`TimeInput.tsx:23-27`) | `[x]` [#235](https://github.com/jclind/prepify/pull/235) (2026-07-06) | `TimeInput.tsx` | **merged** — scope narrowed to `TimeInput.tsx` only (AddRecipe already passed the object shape); review filed the "clear doesn't propagate" follow-up (BACKLOG.md Bugs, low). AddRecipe lane (C1/R1) rebases onto this. |
 | **2** | **F2 · AuthContext memo** | `value` object recreated every render → wrap in `useMemo` | `[x]` [#240](https://github.com/jclind/prepify/pull/240) (2026-07-07) | `src/context/AuthContext.tsx` | **merged** — full fix, not just the `value` memo: `getAuth()`→`useMemo`, all 8 handlers `useCallback`'d, then `value` memoized (a bare `value` memo would no-op against per-render handler identities). Added a referential-stability regression test; runtime-verified the full auth lifecycle. Rebased onto current `development` before merge. |
 | **2** | **F3 · Saved-tab memo** | `refreshAfterMutation` not `useCallback`'d → defeats `React.memo(RecipeCard)` (`SavedRecipes.tsx:133-136,372`) | `[x]` [#237](https://github.com/jclind/prepify/pull/237) (2026-07-07) | `SavedRecipes.tsx` | **merged** — `useCallback(refreshAfterMutation, [queryClient, uid])` stabilizes the handler passed as `onMutated` to the memoized grid; verified live (0 vs 54 re-renders, search/unsave refresh intact). Rebased onto current `development` before merge. |
-| **2** | **F4 · change-password subhead** | redundant `<h3 class='sr-subhead'>` (`AccountSection.tsx:188`) | `[~]` `worktree-feat+f4-changepw-subhead` 2026-07-06 | `Settings/sections/AccountSection.tsx` | — |
+| **2** | **F4 · change-password subhead** | redundant `<h3 class='sr-subhead'>` (`AccountSection.tsx:188`) | `[~]` `worktree-feat+f4-changepw-subhead` 2026-07-07 (reclaimed; prior claim orphaned) | `Settings/sections/AccountSection.tsx` | — |
 | **2** | **F5 · housekeeping one-liners** | brand-asset comment (`generate-brand-assets.mjs:6`); CLAUDE.md RecipeContext drift; rename `validateIngredientQuantityStr`→`formatQuantity` (3 imports) | `[x]` [#239](https://github.com/jclind/prepify/pull/239) (2026-07-07) | `scripts/`, `CLAUDE.md`, `src/util/` | **merged** — rename repointed 4 importers (+1 commented ref); both comment/doc fixes verified true against disk (font file is `MediumItalic`, `src/context/` has only `AuthContext.tsx`) |
 | **2** | **F6 · account nav polish** | Saved/Ratings section-nav styling (`SegmentedNav.tsx`) | `[ ]` | `Account/components/SegmentedNav.tsx` | subjective; better inside **R2** |
 | **3** | **C1 · AddRecipe cluster** ⚠ lane | dropdown/`FormInput` uniformity (`recipeSelectStyles.ts`); summary-bar sticky; group-label styling; `/add-recipe` `noindex`; Cuisine/MealType selector unit tests; `updateIngredients` test + dead-code | `[ ]` | `src/pages/AddRecipe/**`, `src/test/` | ⚠ **subsumed by R1** — decide refactor-vs-smalls first |
@@ -810,3 +810,19 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   audit (no forgotten/unmarked work):** c2 = #242 `[P]` with real committed route-constant work; c3 = merged
   (#243) / torn down; r0 = `[~]` claim-only (0/0 vs development, claim commit only — expected, just claimed).
   `development` in sync with origin (0/0) before appending. Worktree not yet created.
+- **2026-07-07** — **F4 reclaimed** (`worktree-feat+f4-changepw-subhead`, keeping the original branch name — it's
+  free). The prior `[~]` claim was an **orphan**: traced it to commit `45682f4` (2026-07-06 17:26, *"flip F1 to
+  [x] (merged #235)"*), a **docs-only** commit that recorded the F4 claim on `development` but **never created a
+  worktree or touched code** — the standard "claim first, worktree second" step that then got stranded. The **F5
+  log entry (above)** is the smoking gun: that same session (`01JwP5…`) bundled the F4 claim into its F1-merge
+  commit, then **backed off F4 and took F5**, leaving the `[~]` behind; later sessions saw the branch name with no
+  local worktree and *guessed* "another machine," but the real cause is the abandoned claim step. **Verified
+  abandoned, not in-flight:** no `worktree-feat+f4-changepw-subhead` ref in any namespace (local/remote/tags/notes,
+  post `--prune` fetch), no PR ever (open/closed/merged), the claim commit was docs-only so the target still sits
+  unfixed at `AccountSection.tsx:188`, the claim is >24h old (every other same-day claim here PR'd within hours),
+  and `development` is 0/0 with origin. Owner authorized the reclaim after this diagnosis. Scope (single verified
+  item): drop the redundant `<h3 class='sr-subhead'>Change password</h3>` at
+  `src/pages/Settings/sections/AccountSection.tsx:188` — the section is already labelled, so the SR-only subhead is
+  duplicative (mirror the audit note; confirm the paired `Connected accounts` subhead at `:229` and the
+  `.sr-subhead` rule in `sections.scss:27` before touching either). Frontend-only, one file, disjoint from the two
+  live worktrees (I3 = `server/`, R0 = new doc). Worktree not yet created.
