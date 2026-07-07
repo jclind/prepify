@@ -15,6 +15,7 @@ import { useDelayedLoading } from 'src/hooks/useDelayedLoading'
 import { COLLECTION_CREATE_ERROR } from 'src/util/toastMessages'
 import { useDebounce } from 'src/hooks/useDebounce'
 import { invalidateSavedCaches } from 'src/util/invalidateSavedCaches'
+import { usePaginatedLoadMore } from 'src/pages/Account/usePaginatedLoadMore'
 import CollectionCard from './CollectionCard'
 
 type SortOption = { value: string; label: string }
@@ -36,9 +37,6 @@ const SavedRecipes: FC = () => {
   const uid = AuthAPI.getUID()
   const queryClient = useQueryClient()
 
-  const [recipes, setRecipes] = useState<RecipeType[]>([])
-  const [currPage, setCurrPage] = useState(0)
-  const [isMoreRecipes, setIsMoreRecipes] = useState(false)
   const [sort, setSort] = useState(SORT_OPTIONS[0])
 
   // null = the "All" view (the master saved list); otherwise a collection id.
@@ -53,11 +51,41 @@ const SavedRecipes: FC = () => {
   // actually drives the request, so we don't fire one per keystroke.
   const [searchInput, setSearchInput] = useState('')
   const query = useDebounce(searchInput.trim(), 300)
+
+  // The saved grid's load-more core (page cursor, accumulate, is-more,
+  // flash-guarded skeleton) lives in the shared hook; sort/collection/search are
+  // baked into the key so changing any of them refetches, paired with
+  // resetToFirstPage() at each of those change sites to jump back to page 0.
+  const {
+    items: recipes,
+    isLoading,
+    showSkeleton,
+    isMore: isMoreRecipes,
+    loadMore: handleLoadMoreRecipes,
+    reset: resetToFirstPage,
+  } = usePaginatedLoadMore<RecipeType>({
+    queryKey: page => [
+      'saved-recipes',
+      sort.value,
+      page,
+      activeCollectionId,
+      query,
+    ],
+    queryFn: page =>
+      RecipeAPI.getSavedRecipes(
+        page,
+        PER_PAGE,
+        sort.value,
+        activeCollectionId ?? undefined,
+        query || undefined
+      ).then(d => d && { items: d.recipes, totalCount: d.totalCount }),
+  })
+
   // Reset to the first page off the debounced term, not the keystroke, so a new
   // search doesn't fire a throwaway page-0 request for the old term first.
   useEffect(() => {
-    setCurrPage(0)
-  }, [query])
+    resetToFirstPage()
+  }, [query, resetToFirstPage])
 
   const { data: collections = [], isLoading: collectionsLoading } = useQuery({
     queryKey: ['collections'],
@@ -78,53 +106,27 @@ const SavedRecipes: FC = () => {
   useEffect(() => {
     if (activeCollectionId && collections.length > 0 && !activeCollection) {
       setActiveCollectionId(null)
-      setCurrPage(0)
+      resetToFirstPage()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeCollectionId, activeCollection, collections.length])
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['saved-recipes', sort.value, currPage, activeCollectionId, query],
-    queryFn: () =>
-      RecipeAPI.getSavedRecipes(
-        currPage,
-        PER_PAGE,
-        sort.value,
-        activeCollectionId ?? undefined,
-        query || undefined
-      ),
-  })
-  const showSkeleton = useDelayedLoading(isLoading)
   // Collections load on their own query; reserve their row with skeleton tiles
   // (delay-gated, same as the grid) so collections don't pop in and shove the
   // grid down.
   const showCollSkeleton = useDelayedLoading(collectionsLoading)
 
-  useEffect(() => {
-    if (!data) return
-    if (currPage === 0) {
-      setRecipes([...data.recipes])
-      setIsMoreRecipes(Number(data.totalCount) > data.recipes.length)
-    } else {
-      const updated = [...recipes, ...data.recipes]
-      setRecipes(updated)
-      setIsMoreRecipes(Number(data.totalCount) > updated.length)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data])
-
   const selectCollection = (id: string | null) => {
     setActiveCollectionId(id)
-    setCurrPage(0)
+    resetToFirstPage()
     setRenaming(false)
   }
   const changeSort = (value: string) => {
     const next = SORT_OPTIONS.find(o => o.value === value)
     if (next) setSort(next)
-    setCurrPage(0)
+    resetToFirstPage()
   }
   const onSearchChange = (v: string) => setSearchInput(v)
-  const handleLoadMoreRecipes = () => setCurrPage(prev => prev + 1)
 
   // Refresh after a membership/collection change. Counts + covers always
   // refetch. The grid must refetch too — an unsave from the popover removes a
@@ -135,8 +137,8 @@ const SavedRecipes: FC = () => {
   // render would defeat React.memo and re-render every saved card.
   const refreshAfterMutation = useCallback(() => {
     invalidateSavedCaches(queryClient, uid)
-    setCurrPage(0)
-  }, [queryClient, uid])
+    resetToFirstPage()
+  }, [queryClient, uid, resetToFirstPage])
 
   const handleCreate = async () => {
     const name = newName.trim()
