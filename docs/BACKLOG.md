@@ -131,9 +131,9 @@ The triage date stamped on items is the date they were filed here, not when they
   endpoint, so typos like `chikcen` surface `…Chicken…` results, with a "showing similar recipes" banner
   and a redesigned dropdown. *(Follow-ups on the fallback's scalability and the dropdown's a11y are filed
   separately below.)*
-- `[ ]` **Autocomplete footer label can disagree with the rows shown** — the dropdown keeps the previous
+- `[x]` **Autocomplete footer label can disagree with the rows shown** — *(fixed in [#238](https://github.com/jclind/prepify/pull/238), C4: pointed the footer label at the debounced `trimmedQuery` so it matches the rows + empty-state; the submit action deliberately stays on the live value — shared with Enter / top Search, which must fire for <3-char queries — a one-directional, self-correcting skew documented on `handleSubmit`.)* The dropdown keeps the previous
   query's results visible during the debounce + refetch (`keepPreviousData`), but the "Search for …"
-  footer reads the live input (`searchRecipeVal.trim()`), so mid-type it can say *Search for "chica"*
+  footer read the live input (`searchRecipeVal.trim()`), so mid-type it could say *Search for "chica"*
   while the list still shows `chic` matches (rows + empty-state read the debounced `trimmedQuery`). Cosmetic,
   self-corrects on fetch. (`SearchRecipesInput.tsx:228` footer vs `:52-64` debounced query + `:127-128`
   input; lines re-verified 2026-06-26.) *(surfaced 2026-06-22 in the track 2d code review.)*

@@ -81,7 +81,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **3** | **C1 · AddRecipe cluster** ⚠ lane | dropdown/`FormInput` uniformity (`recipeSelectStyles.ts`); summary-bar sticky; group-label styling; `/add-recipe` `noindex`; Cuisine/MealType selector unit tests; `updateIngredients` test + dead-code | `[ ]` | `src/pages/AddRecipe/**`, `src/test/` | ⚠ **subsumed by R1** — decide refactor-vs-smalls first |
 | **3** | **C2 · route-constant single-sourcing** | `RECIPES_PATH` const (`DesktopBar:45`,`NavMenu:20`,`Recipes.tsx:113-119`); `browseAll`→`clearFilters`; `accountTabs` as app-wide route source (`DesktopAccountMenu:74`,`footerData:43-44`,`DraftResumeBanner:47`) + `activeAccountTab` helper | `[P]` [#242](https://github.com/jclind/prepify/pull/242) `worktree-feat+c2-route-constants` 2026-07-07 | Navbar/* + `Recipes.tsx` + `accountTabs.tsx` + `footerData.ts` + `DraftResumeBanner.tsx` | both share DesktopBar → one lane |
 | **3** | **C3 · SingleRecipe lane** ⚠ lane | CLS controls-block reserve (`SingleRecipe.tsx:308-317`, `RecipeControls.scss`); JSON-LD `</script>` escaping (`buildRecipeJsonLd.ts:38-39`) | `[~]` `worktree-feat+c3-singlerecipe-lane` 2026-07-07 | `SingleRecipe.tsx`, `RecipeControls.scss`, `buildRecipeJsonLd.ts` | hero `srcset` deferred to **I1**; JSON-LD gates with prerender |
-| **3** | **C4 · SearchRecipesInput lane** | autocomplete footer-label debounce disagreement (`:274` vs `:336`); press-`/` global focus-search feature | `[P]` [#238](https://github.com/jclind/prepify/pull/238) `worktree-feat+c4-searchinput-lane` 2026-07-07 | `SearchRecipesInput.tsx` (+ Layout for key handler) | both touch same file → one lane |
+| **3** | **C4 · SearchRecipesInput lane** | autocomplete footer-label debounce disagreement (`:274` vs `:336`); press-`/` global focus-search feature | `[x]` [#238](https://github.com/jclind/prepify/pull/238) (2026-07-07) | `SearchRecipesInput.tsx` (+ Layout for key handler) | **merged** |
 | **3** | **C5 · focus-ring tokens** ⚠ SCSS loner | `$focus-ring-*` group in `helpers.scss` + migrate ~13 literal `0 0 0 3px` rings | `[P]` [#241](https://github.com/jclind/prepify/pull/241) `worktree-feat+c5-focus-ring-tokens` 2026-07-07 | `helpers.scss` + ~9 component `.scss` | only one SCSS-token worktree at a time |
 | **4** | **I1 · image resize pipeline** | Storage width variants + `srcset`/`sizes` on card + hero (mobile LCP) | `[ ]` | Storage pipeline/CDN + `RecipeCard.tsx`, `SingleRecipe.tsx` hero | structural; unblocks C3 hero srcset |
 | **4** | **I2 · uid-key recipe images** | re-key `recipeImages/{uid}/{uuid}` (`src/api/recipes.ts:188`) + tighten `storage.rules:27-32` to owner | `[ ]` | `src/api/recipes.ts`, `storage.rules` | pairs w/ I1; migrate existing objects |
@@ -666,3 +666,16 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   `/account/saved-recipes` serve 200. Third Wave-3 lane PR'd. **`[P]` flip recorded on `development` directly** (not
   the lane branch), same convention as C4/C5 — keeps backlog edits off the PR so a BACKLOG chokepoint conflict
   can't mark it DIRTY and suppress its `pull_request` CI.
+- **2026-07-07** — **C4 merged** (PR [#238](https://github.com/jclind/prepify/pull/238), merge commit
+  `3ac9b31`; board row → `[x]`). First Wave-3 lane to land. All six required checks green before merge
+  (Backend/Supertest, Frontend/Vitest, Static typecheck+build, E2e/Cypress 3m34s, Fallow advisory, GitGuardian);
+  merged as a merge commit per convention, remote branch `worktree-feat+c4-searchinput-lane` deleted, worktree
+  torn down. **What landed:** (1) footer label now quotes the **debounced** query (`trimmedQuery`) so it can't
+  disagree with the `No matches for …` empty-state / results within the 300ms window; the submit *action* stays
+  on the **live** value (shared with Enter / the top Search button, which must fire for <3-char queries) — a
+  `/code-review` pass flagged the label-vs-action skew, judged it one-directional + self-correcting (a click
+  always searches the freshest query, never a staler one) and **intentional**, so it was left as-is with a
+  clarifying comment added on `handleSubmit` (commit `469beb5`) rather than "reconciled". (2) `useSlashFocusSearch`
+  press-`/` focus hook at the app shell, with the modal-focus-trap guard (`[aria-modal="true"], [role="dialog"]`)
+  that a mid-lane `/verify` runtime pass caught and fixed (a bare `/` had escaped an open modal and stolen focus
+  to the background search) + regression test. No follow-ups filed.
