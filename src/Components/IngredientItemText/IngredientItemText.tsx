@@ -1,5 +1,5 @@
 import React, { FC } from 'react'
-import { closestFraction } from 'src/util/validateIngredientQuantityStr'
+import { closestFraction } from 'src/util/formatQuantity'
 import './IngredientItemText.scss'
 
 type IngredientItemTextProps = {

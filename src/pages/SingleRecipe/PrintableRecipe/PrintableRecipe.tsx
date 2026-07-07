@@ -3,7 +3,7 @@ import React, { FC } from 'react'
 import './PrintableRecipe.scss'
 
 import { capitalize } from 'src/util/capitalize'
-import { closestFraction } from 'src/util/validateIngredientQuantityStr'
+import { closestFraction } from 'src/util/formatQuantity'
 import { formatRating } from 'src/util/formatRating'
 import { formatMonthYear } from 'src/util/formatDate'
 import { formatPrice } from 'src/util/formatPrice'

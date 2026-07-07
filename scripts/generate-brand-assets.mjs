@@ -3,7 +3,7 @@
 //
 //   npm run gen:brand
 //
-// Fonts: scripts/fonts/Montserrat-{Bold,SemiBold,Italic}.ttf (SIL OFL, see OFL.txt).
+// Fonts: scripts/fonts/Montserrat-{Bold,SemiBold,MediumItalic}.ttf (SIL OFL, see OFL.txt).
 // Requires the @resvg/resvg-js devDependency.
 //
 // NOTE: the social link-preview card (public/images/og-card.png) is a
