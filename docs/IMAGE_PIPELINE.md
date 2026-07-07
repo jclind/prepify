@@ -1,9 +1,16 @@
-# Recipe image pipeline — responsive variants (BACKLOG I1)
+# Recipe image pipeline — responsive variants (I1) + uid re-key (I2)
 
-How Prepify serves right-sized recipe images, and the **owner-run** steps to turn
-it on. Companion to the code: `src/util/recipeImageVariants.ts` (URL derivation),
-`extensions/storage-resize-images.env` (the extension config), and the `srcset`
-wiring in `RecipeCard.tsx` + `SingleRecipe.tsx`.
+How Prepify serves right-sized recipe images, and the **owner-run** steps to turn it
+on and to roll out the uid-scoped Storage keying. Companion to the code:
+`src/util/recipeImageVariants.ts` (URL derivation), `extensions/storage-resize-images.env`
+(the extension config), the `srcset` wiring in `RecipeCard.tsx` + `SingleRecipe.tsx`,
+and — for I2 — `src/api/recipes.ts` (`uploadRecipeImage`) + `storage.rules`.
+
+Two owner-run rollouts live here: **I1** (install the resize extension + backfill +
+flip the `srcset` flag — "Runbook — enabling it") and **I2** (deploy the uid-scoped
+rules + migrate existing objects — "Runbook — I2 uid re-key rollout"). They're
+independent but touch the same objects, so the I2 migration section notes where they
+interlock (re-run the I1 backfill after moving originals).
 
 ## What it does
 
@@ -115,6 +122,82 @@ serving originals. The extension + variants can stay in place (harmless, unused)
 
 ---
 
+## Runbook — I2 uid re-key rollout (owner)
+
+I2 changed two coupled things that must go live **together**: the frontend now
+uploads to `recipeImages/{uid}/{uuid}` (was `recipeImages/{filename}`), and
+`storage.rules` now (a) allows owner-scoped writes to that uid path and (b) **denies**
+writes to the old flat path. The merged code is inert on the current deployment until
+the rules are deployed — verified live: a new-frontend upload to the uid path returns
+**403 `storage/unauthorized`** under the still-deployed flat rules.
+
+### ⚠ Ordering — rules and frontend ship together
+
+Each half breaks the *other* half's uploads if it lands alone:
+
+| live rules ↓ / live frontend → | old frontend (flat write) | new frontend (uid write) |
+|---|---|---|
+| **old rules** (deployed today) | ✅ works | ❌ 403 — uid path unmatched |
+| **new rules** (this PR) | ❌ 403 — flat write denied | ✅ works |
+
+So deploy `storage.rules` **and** the client in the same window. At beta traffic a
+brief (seconds–minutes) window where image *uploads* fail is acceptable — reads are
+unaffected and only the create/edit-recipe image step is touched. For
+**zero-downtime**, first deploy a transitional rules file that allows writes to
+*both* paths (keep the old flat `allow write: if request.auth != null && …` block
+beside the new uid-scoped one), cut the frontend over, then deploy this PR's final
+rules (flat writes denied) once no old clients remain.
+
+### 1. Deploy the rules
+
+```bash
+firebase use prepify-dev-58579        # dev first
+firebase deploy --only storage         # applies storage.rules
+# smoke-test an upload on dev (step 3), then repeat for prod:
+firebase use <prod-project>
+firebase deploy --only storage
+```
+
+### 2. Migrate existing objects (flat → uid path)
+
+Existing images live at `recipeImages/{filename}`; their download URLs are stored in
+`recipes.recipeImage`. Until migrated, the **legacy read-only rule keeps them
+rendering** (`match /recipeImages/{imageId} { allow read: if true }`), so this can run
+lazily *after* the deploy. Write a one-off script modelled on the read-first ops
+scripts in `server/scripts/` (e.g. `reconcileRatingAggregates.js` — dry-run by
+default, `--apply` to write). Per recipe whose `recipeImage` is still a flat path:
+
+1. Parse the bucket + object path from the stored URL with
+   `server/util/firebaseStorage.js` `parseStorageUrl` — it decodes the full path and
+   surfaces the bucket, which matters because the catalog is **mixed-bucket** (some
+   URLs point at `prepify-9b974`, others at the dev/prod buckets). **Copy within the
+   same bucket.**
+2. Resolve the owner **uid** from `recipes.userId` (the field `addRecipe` stamps;
+   fall back to `authorUsername` → `usernames` lookup for any legacy doc missing it).
+3. `bucket.file(oldPath).copy('recipeImages/${uid}/${uuid}')` via the Admin SDK
+   (bypasses rules), then `getDownloadURL` on the new object.
+4. Update the recipe's `recipeImage` to the new URL. **Idempotent:** skip recipes
+   whose `recipeImage` already decodes to a `recipeImages/{uid}/…` path.
+5. Once verified, optionally delete the old flat object (or leave it for a later
+   purge sweep — flat writes are denied, but the object stays public-read).
+
+Then re-run the **I1 backfill** (§ "Backfill existing images") so the moved originals
+get their `{uid}/`-directory variants (any variants generated at the old flat path
+are now orphaned — regenerating at the new path is simplest).
+
+### 3. Verify + finish
+
+- Create a recipe with a photo through the deployed app; confirm the upload `200`s to
+  `recipeImages/{uid}/{uuid}` (devtools **Network**, or
+  `gsutil ls 'gs://<bucket>/recipeImages/**'`).
+- Spot-check that a **pre-migration** recipe still renders (legacy read rule) and a
+  **post-migration** one serves from the uid path.
+- **Optional final tighten:** once every object is migrated *and* I1 variants are
+  backfilled, drop the legacy `match /recipeImages/{imageId}` block so `recipeImages/*`
+  is uid-scoped end to end.
+
+---
+
 ## Notes & follow-ups
 
 - **Hero `srcset` (C3 carry-over).** The SingleRecipe hero `srcset` that C3 deferred
@@ -133,4 +216,5 @@ serving originals. The extension + variants can stay in place (harmless, unused)
   land in the same `{uid}/` directory as their original (the derivation helper splits
   on the last `/`, so the deeper path just works; the two-segment read rule covers the
   variants). `INCLUDE_PATH_LIST=/recipeImages` is a leading-segment match, so it still
-  catches the nested originals with no change.
+  catches the nested originals with no change. **Rolling it out** (deploy rules +
+  migrate objects) is the "Runbook — I2 uid re-key rollout" section above.
