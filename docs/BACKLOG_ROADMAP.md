@@ -82,7 +82,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **3** | **C2 · route-constant single-sourcing** | `RECIPES_PATH` const (`DesktopBar:45`,`NavMenu:20`,`Recipes.tsx:113-119`); `browseAll`→`clearFilters`; `accountTabs` as app-wide route source (`DesktopAccountMenu:74`,`footerData:43-44`,`DraftResumeBanner:47`) + `activeAccountTab` helper | `[ ]` | Navbar/* + `Recipes.tsx` + `accountTabs.tsx` + `footerData.ts` + `DraftResumeBanner.tsx` | both share DesktopBar → one lane |
 | **3** | **C3 · SingleRecipe lane** ⚠ lane | CLS controls-block reserve (`SingleRecipe.tsx:308-317`, `RecipeControls.scss`); JSON-LD `</script>` escaping (`buildRecipeJsonLd.ts:38-39`) | `[~]` `worktree-feat+c3-singlerecipe-lane` 2026-07-07 | `SingleRecipe.tsx`, `RecipeControls.scss`, `buildRecipeJsonLd.ts` | hero `srcset` deferred to **I1**; JSON-LD gates with prerender |
 | **3** | **C4 · SearchRecipesInput lane** | autocomplete footer-label debounce disagreement (`:274` vs `:336`); press-`/` global focus-search feature | `[P]` [#238](https://github.com/jclind/prepify/pull/238) `worktree-feat+c4-searchinput-lane` 2026-07-07 | `SearchRecipesInput.tsx` (+ Layout for key handler) | both touch same file → one lane |
-| **3** | **C5 · focus-ring tokens** ⚠ SCSS loner | `$focus-ring-*` group in `helpers.scss` + migrate ~13 literal `0 0 0 3px` rings | `[~]` `worktree-feat+c5-focus-ring-tokens` 2026-07-07 | `helpers.scss` + ~9 component `.scss` | only one SCSS-token worktree at a time |
+| **3** | **C5 · focus-ring tokens** ⚠ SCSS loner | `$focus-ring-*` group in `helpers.scss` + migrate ~13 literal `0 0 0 3px` rings | `[P]` [#241](https://github.com/jclind/prepify/pull/241) `worktree-feat+c5-focus-ring-tokens` 2026-07-07 | `helpers.scss` + ~9 component `.scss` | only one SCSS-token worktree at a time |
 | **4** | **I1 · image resize pipeline** | Storage width variants + `srcset`/`sizes` on card + hero (mobile LCP) | `[ ]` | Storage pipeline/CDN + `RecipeCard.tsx`, `SingleRecipe.tsx` hero | structural; unblocks C3 hero srcset |
 | **4** | **I2 · uid-key recipe images** | re-key `recipeImages/{uid}/{uuid}` (`src/api/recipes.ts:188`) + tighten `storage.rules:27-32` to owner | `[ ]` | `src/api/recipes.ts`, `storage.rules` | pairs w/ I1; migrate existing objects |
 | **4** | **I3 · autocomplete title index** | Mongo text index / Atlas Search for fuzzy fallback (`recipes.js:194-240`) | `[ ]` | `server/routes/recipes.js` | ⚠ after **S1**; low urgency/scalability |
@@ -601,3 +601,25 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   `public-recipe-projection`, `s4`, `s6`) are all merged into `development`; `moderation-pr-c-ratelimiter` is the
   known off-board orphan (S5 log); only `c4-searchinput-lane` is a live worktree and it matches its `[P]` board
   row. `development` in sync with origin (0/0) before claiming. Worktree not yet created.
+- **2026-07-07** — **C5** implemented in `worktree-feat+c5-focus-ring-tokens` → PR
+  [#241](https://github.com/jclind/prepify/pull/241) opened (`[P]`). The **field-focus glow** (the soft coloured
+  halo a focused form field casts, paired with a `border-color` shift) was hand-rolled as
+  `box-shadow: 0 0 0 3px rgba(accent, …)` at **12 sites across 7 component `.scss`** — the same fixed 3px
+  geometry repeated, several with the teal accent as a raw `rgba(0, 173, 181, …)` literal instead of
+  `$secondary`. Collapsed onto one **`@mixin focus-glow($color: $secondary, $opacity: 0.15)`** in `helpers.scss`
+  (grouped beside `@mixin outline()`); every ring routes through it keeping its **exact colour + opacity**, so
+  the compiled CSS is **byte-identical** — verified against the production build (all 12 rings emit the same
+  hex+alpha: teal `#00adb5` at .12/.15×5/.16/.2/.25, green `#29a155`/.18, `$error-red`/.15, `$primary`/.12) —
+  a pure de-dup, **zero visual change**. **Deliberately distinct from the a11y `@mixin outline()`** (the blue
+  `#4d90fe` `:focus-visible` keyboard ring): the glow is the ":focus/:focus-within, field is active" affordance
+  and the two coexist — this lane doesn't touch `outline()`. Documented the split in `docs/scss-conventions.md`
+  (new field-glow subsection) + repointed the stale helpers.scss "focus rings left for a later pass" comment at
+  the mixin; reconciles the now-focus-rings-only "remaining hardcoded values" sub-item. **Opacity preserved,
+  not normalised** — the teal glows still vary .12–.25 (intentional-vs-drift is a follow-up design call, noted
+  in the doc). **Out-of-lane observation (not touched):** `controls.scss` `.has-success` uses a bare `#29a155`
+  for *both* its border-colour and glow (≠ the `$success-green` token, and a third green `#0a7d2c` for the hint)
+  — a colour-token dedup, separate from the focus-ring concern; the glow keeps `#29a155` to stay coherent with
+  its border. Gates: `tsc` clean, `npm run build` clean (SCSS compiles through the mixin), Vitest **557 passed /
+  2 skipped** (75 files); no `server/` changes → no Jest. Second Wave-3 lane PR'd. **Anti-race:** the row `[~]`
+  claim reached origin earlier by being swept into a concurrent session's push; verified the live worktrees
+  match their board rows (no forgotten/unmarked work) before claiming.
