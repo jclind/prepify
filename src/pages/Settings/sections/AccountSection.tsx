@@ -185,7 +185,6 @@ const AccountSection: FC = () => {
       {/* Change password — only meaningful for password-based accounts. */}
       {hasPasswordProvider && (
         <div className='sr-subsection'>
-          <h3 className='sr-subhead'>Change password</h3>
           <div className='sr-grid-2'>
             <TextField
               label='Current password'

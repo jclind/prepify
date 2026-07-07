@@ -250,7 +250,7 @@ describe('Account & Security — federated (Google) account', () => {
 
   it('hides the change-password section', () => {
     render(<AccountSection />)
-    expect(screen.queryByText('Change password')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('New password')).not.toBeInTheDocument()
     expect(screen.queryByText('Update password')).not.toBeInTheDocument()
   })
 
