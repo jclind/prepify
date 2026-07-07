@@ -209,7 +209,10 @@ The triage date stamped on items is the date they were filed here, not when they
   a compact `.hero-rating` echo (`★ 4.5 · N ratings`) sits just under the title, shown only once the recipe
   has ratings, so an unrated recipe isn't labelled. Not a 4th action-bar tile (would crowd mobile); the full
   breakdown still lives in the Ratings & Reviews header.
-- `[ ]` **Account nav sections UI** — improve the Saved / Ratings / etc. section navigation styling.
+- `[dropped]` **Account nav sections UI** — ~~improve the Saved / Ratings / etc. section navigation styling.~~
+  **Closed stale 2026-07-07 (R2).** The account section nav was already redesigned (#136 vertical rail, 2026-06-14)
+  and token-normalized after; this line was a bulk backlog-seed added 2026-06-17 — *after* that work — with no
+  concrete defect behind it. R2 (#250) subsumes F6 by closing it, not by restyling.
 - `[x]` **`/u/:username` public profile visual polish** — **done (track 2e):** centered identity
   (avatar, @handle + share, divided Recipes/Saves/Made counts, "location · Lv N", achievement chips),
   image-first square recipe tiles with rating · time · cost + a bookmark save-count badge, richer

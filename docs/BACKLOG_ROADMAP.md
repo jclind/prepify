@@ -77,7 +77,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **2** | **F3 · Saved-tab memo** | `refreshAfterMutation` not `useCallback`'d → defeats `React.memo(RecipeCard)` (`SavedRecipes.tsx:133-136,372`) | `[x]` [#237](https://github.com/jclind/prepify/pull/237) (2026-07-07) | `SavedRecipes.tsx` | **merged** — `useCallback(refreshAfterMutation, [queryClient, uid])` stabilizes the handler passed as `onMutated` to the memoized grid; verified live (0 vs 54 re-renders, search/unsave refresh intact). Rebased onto current `development` before merge. |
 | **2** | **F4 · change-password subhead** | redundant `<h3 class='sr-subhead'>` (`AccountSection.tsx:188`) | `[x]` [#246](https://github.com/jclind/prepify/pull/246) (2026-07-07) | `Settings/sections/AccountSection.tsx` | **merged** — reclaimed an orphaned claim first; dropped the redundant subhead (`Connected accounts` heading kept); runtime-verified via a real signup→settings flow |
 | **2** | **F5 · housekeeping one-liners** | brand-asset comment (`generate-brand-assets.mjs:6`); CLAUDE.md RecipeContext drift; rename `validateIngredientQuantityStr`→`formatQuantity` (3 imports) | `[x]` [#239](https://github.com/jclind/prepify/pull/239) (2026-07-07) | `scripts/`, `CLAUDE.md`, `src/util/` | **merged** — rename repointed 4 importers (+1 commented ref); both comment/doc fixes verified true against disk (font file is `MediumItalic`, `src/context/` has only `AuthContext.tsx`) |
-| **2** | **F6 · account nav polish** | Saved/Ratings section-nav styling (`SegmentedNav.tsx`) | `[ ]` | `Account/components/SegmentedNav.tsx` | subjective; better inside **R2** |
+| **2** | **F6 · account nav polish** | Saved/Ratings section-nav styling (`SegmentedNav.tsx`) | `[dropped]` stale (R2, 2026-07-07) | `Account/components/SegmentedNav.tsx` | closed as stale — nav already redesigned (#136 rail) + token-normalized; no concrete defect |
 | **3** | **C1 · AddRecipe cluster** ⚠ lane | dropdown/`FormInput` uniformity (`recipeSelectStyles.ts`); summary-bar sticky; group-label styling; `/add-recipe` `noindex`; Cuisine/MealType selector unit tests; `updateIngredients` test + dead-code | `[ ]` | `src/pages/AddRecipe/**`, `src/test/` | ⚠ **subsumed by R1** — decide refactor-vs-smalls first |
 | **3** | **C2 · route-constant single-sourcing** | `RECIPES_PATH` const (`DesktopBar:45`,`NavMenu:20`,`Recipes.tsx:113-119`); `browseAll`→`clearFilters`; `accountTabs` as app-wide route source (`DesktopAccountMenu:74`,`footerData:43-44`,`DraftResumeBanner:47`) + `activeAccountTab` helper | `[x]` [#242](https://github.com/jclind/prepify/pull/242) (2026-07-07) | Navbar/* + `Recipes.tsx` + `accountTabs.tsx` + `footerData.ts` + `DraftResumeBanner.tsx` | **merged** — RECIPES_PATH migration is partial by design (nav/footer/browse only; other `/recipes` links deferred) |
 | **3** | **C3 · SingleRecipe lane** ⚠ lane | CLS controls-block reserve (`SingleRecipe.tsx:308-317`, `RecipeControls.scss`); JSON-LD `</script>` escaping (`buildRecipeJsonLd.ts:38-39`) | `[x]` [#243](https://github.com/jclind/prepify/pull/243) (2026-07-07) | `SingleRecipe.tsx`, `buildRecipeJsonLd.ts` | **merged** — JSON-LD `</script>` escape only; hero `srcset` deferred to **I1**; **CLS half was a no-op** (`RecipeControls` owner-only, non-owner path already fully reserved) so `RecipeControls.scss` untouched (see status log) |
@@ -88,7 +88,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **4** | **I3 · autocomplete title index** | Mongo text index / Atlas Search for fuzzy fallback (`recipes.js:194-240`) | `[x]` [#245](https://github.com/jclind/prepify/pull/245) (2026-07-07) | `server/routes/recipes.js` (+ `server/db.js`) | **merged** — index-backed `$text` tier between exact + fuzzy; fuzzy scan now typo-only |
 | **5** | **R0 · Claude conventions doc** | code & architecture standard (`CONVENTIONS.md`/CLAUDE.md) | `[x]` [#244](https://github.com/jclind/prepify/pull/244) (2026-07-07) | new doc | **merged** — shipped `docs/CONVENTIONS.md` (grounded in a 4-way survey + REFACTOR.md), cross-linked from `CLAUDE.md`; **R1/R2 now have a standard to follow** |
 | **5** | **R1 · refactor create-recipe page** | the big AddRecipe refactor | `[P]` [#248](https://github.com/jclind/prepify/pull/248) `worktree-feat+r1-addrecipe-refactor` 2026-07-07 | `src/pages/AddRecipe/**` | **subsumes C1** |
-| **5** | **R2 · refactor account page** | the big Account refactor | `[~]` `worktree-feat+r2-account-refactor` 2026-07-07 | `src/pages/Account/**` | **subsumes F6**; overlaps C2 |
+| **5** | **R2 · refactor account page** | the big Account refactor; **closes F6 (stale)** | `[P]` [#250](https://github.com/jclind/prepify/pull/250) `worktree-feat+r2-account-refactor` 2026-07-07 | `src/pages/Account/**` | subsumes F6 (closed stale); overlaps merged C2 |
 | **—** | **Deferred / post-1.0 / owner** | see [that section](#deferred--post-10--owner-off-the-active-board) | `[blocked]`/`[dropped]` | — | prerendering, Edamam, theming, brand-orange, DB relocation, ideas |
 
 ---
@@ -1133,3 +1133,31 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   today's uploads working. **Off-board note (pre-existing, not fixed):** `deleteRecipeImage` removes only the
   original, so a deleted recipe orphans its I1 resize variants (latent since I1, independent of this re-key). Lane
   disjoint from the two live tracks (R1 `AddRecipe`, R2 `Account`).
+- **2026-07-07** — **R2** implemented in `worktree-feat+r2-account-refactor` → PR
+  [#250](https://github.com/jclind/prepify/pull/250) opened (`[P]`). The **account-page refactor** — owner-scoped to
+  **structural, behaviour-preserving** (F6 restyle deliberately excluded, see below), following `docs/CONVENTIONS.md`,
+  four sequenced commits. **(1) `usePaginatedLoadMore`** (`src/pages/Account/usePaginatedLoadMore.ts`): the load-more
+  state machine (page cursor, page-0-replaces/later-pages-append accumulation, `isMore` off `totalCount`,
+  flash-guarded skeleton gate) was **triplicated** across the Saved/Ratings/Your-Recipes tabs — collapsed to one
+  typed hook exposing primitives + a convenience `showList`; +5 unit tests. **(2) Wired all three list tabs** onto it:
+  `UserRecipes`/`UserRatings` (DOM/CSS untouched, each keeps its exact `showList` gate incl. the `dataHasItems`
+  flash-guard the two carry and SavedRecipes doesn't) and `SavedRecipes` (kept its collections/search/sort chrome,
+  `blankSlate` logic, and the **F3 `useCallback(refreshAfterMutation)` memo** — the four `setCurrPage(0)` reset sites
+  now route through the hook's `reset()`; no-flash-guard `showList` preserved byte-for-byte). **(3) Account shell
+  tidy:** lifted the four header reads (username/profile/counts/gamification) + derived display strings into
+  `useAccountData` and the newly-unlocked achievements toast into `useAchievementsToast` — `Account.tsx` **204 → 126
+  lines**, now presentational. Net +426/−201 across 8 files. **F6 closed as stale (owner-confirmed):** the account
+  section nav F6 names was **already redesigned** (#136 vertical rail, 2026-06-14) and token-normalized after; the F6
+  line was a bulk backlog-seed added 2026-06-17 (three days *after* the rail shipped) with no concrete defect behind
+  it — so R2 subsumes it by closing it, not restyling. **Verified:** gates — `tsc` clean, Vitest **582 passed / 2
+  skipped** (577 baseline + 5 new hook tests), `npm run build` clean (eslint passes); **runtime `/verify`** (headless
+  Chromium vs the running dev app, custom-token auth via `__cy_signIn__`) — authed `/account` rendered the shell + all
+  four tabs with correct active-tab tracking and **zero console errors**, and the load-more path was driven against the
+  **real** Saved component/hook over a **stubbed** `getSavedRecipes` multi-page payload (6 → Load-More → 9 accumulated,
+  button hides at `totalCount`; search → reset-to-page-0 + refetch → 1 filtered, button gone; clear → 6 restored) —
+  **no dev-DB writes / no mutation of the shared Cypress user** (chose the network-stub over seeding `test-cypress-user`,
+  which has no saved/rated/created data and is used by CI). **`[P]` flip + F6 stale-closure recorded on `development`
+  directly** (not the lane branch), same convention as C2–C5/I1/I3/R1 — keeps backlog edits off the PR. **Disjoint from
+  the one live lane:** I2 (`src/api/recipes.ts` + `storage.rules`) — R2 owns `src/pages/Account/**`; R1 (`AddRecipe`)
+  already merged/landing. `development` was 0/0 with origin (a sweep had carried the R2 claim + R1 doc entries up)
+  before this append.
