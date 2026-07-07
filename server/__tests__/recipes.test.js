@@ -1383,6 +1383,36 @@ describe('GET /searchAutoCompleteRecipes', () => {
     const res = await request(server).get('/api/searchAutoCompleteRecipes?title=apple')
     expect(res.body.map((r) => r.title)).not.toContain('Banana Bread')
   })
+
+  it('surfaces a stemmed word match via the $text tier (index-backed)', async () => {
+    await seedRecipes([{ _id: 'ac-grill', title: 'Grilled Salmon' }])
+    // "grilling" is not a substring of "Grilled Salmon" (tier 1 misses) and its
+    // fuzzy score is below threshold (0.625 < 0.7, tier 3 misses) — only the
+    // $text tier, which stems grilling→grill ← grilled, can surface it.
+    const res = await request(server).get('/api/searchAutoCompleteRecipes?title=grilling')
+    expect(res.status).toBe(200)
+    expect(res.body.map((r) => r.title)).toContain('Grilled Salmon')
+  })
+
+  it('degrades gracefully (no 500) when the title text index is absent', async () => {
+    await seedRecipes([{ _id: 'ac-grill2', title: 'Grilled Salmon' }])
+    const recipes = getDB().collection('recipes')
+    const textIndex = (await recipes.indexes()).find((i) => i.textIndexVersion)
+    await recipes.dropIndex(textIndex.name)
+    try {
+      // With no text index the $text tier throws internally; the route must catch
+      // it and fall through to the (here empty) fuzzy tier rather than 500.
+      const res = await request(server).get('/api/searchAutoCompleteRecipes?title=grilling')
+      expect(res.status).toBe(200)
+      expect(res.body.map((r) => r.title)).not.toContain('Grilled Salmon')
+    } finally {
+      // Restore the index so the rest of the suite keeps its $text tier.
+      await recipes.createIndex({ title: 'text' })
+    }
+    // And with it restored, the same query surfaces the match again.
+    const res = await request(server).get('/api/searchAutoCompleteRecipes?title=grilling')
+    expect(res.body.map((r) => r.title)).toContain('Grilled Salmon')
+  })
 })
 
 // ─── GET /getTrendingRecipes ──────────────────────────────────────────────────

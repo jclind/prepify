@@ -4,6 +4,7 @@ const {
   ratio,
   titleScore,
   fuzzyRankTitles,
+  toTextSearch,
   FUZZY_THRESHOLD,
 } = require('../util/recipeTitleMatch')
 
@@ -103,5 +104,28 @@ describe('fuzzyRankTitles', () => {
 
   it('returns [] when nothing clears the threshold', () => {
     expect(fuzzyRankTitles('zzzqwerty', candidates)).toEqual([])
+  })
+})
+
+describe('toTextSearch', () => {
+  it('lowercases and collapses to an OR-of-terms string', () => {
+    expect(toTextSearch('  Chicken   Soup ')).toBe('chicken soup')
+  })
+
+  it('strips leading dashes so a term is never negated', () => {
+    // Raw "-apple" would negate apple in a $text query; sanitized it just searches it.
+    expect(toTextSearch('-apple')).toBe('apple')
+    expect(toTextSearch('soup -chicken')).toBe('soup chicken')
+  })
+
+  it('strips double quotes so nothing forces phrase mode', () => {
+    expect(toTextSearch('"apple pie"')).toBe('apple pie')
+  })
+
+  it('returns empty string when nothing searchable remains', () => {
+    expect(toTextSearch('')).toBe('')
+    expect(toTextSearch('  ')).toBe('')
+    expect(toTextSearch('"')).toBe('')
+    expect(toTextSearch('-')).toBe('')
   })
 })

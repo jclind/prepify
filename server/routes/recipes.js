@@ -8,7 +8,7 @@ const { recipeIdQuery, recipeIdInQuery } = require('../util/recipeIdQuery')
 const { MIN_SIGNAL, selectForYou, tasteScore, weightedSample } = require('../util/forYou')
 const { loadInteractions, buildSeenProfile } = require('../util/tasteContext')
 const { RECIPE_VISIBLE, RECIPE_OWNER_VISIBLE } = require('../util/moderation')
-const { fuzzyRankTitles } = require('../util/recipeTitleMatch')
+const { fuzzyRankTitles, toTextSearch } = require('../util/recipeTitleMatch')
 const { recordAudit } = require('../util/auditLog')
 const { notifyInBackground, notifyRecipeHidden } = require('../util/email')
 const { validateRequiredRecipeFields, validateRecipeBounds } = require('../util/recipeLimits')
@@ -186,12 +186,20 @@ router.get('/recipes/facets', asyncHandler(async (req, res) => {
 
 // GET /searchAutoCompleteRecipes — quick title search for autocomplete.
 //
-// Typo-tolerant: a literal case-insensitive substring match runs first (fast,
-// covers the common case and preserves the original ordering/behaviour). When
-// that returns fewer than AUTOCOMPLETE_LIMIT hits, a fuzzy fallback ranks the
-// remaining visible titles by approximate similarity and fills the open slots,
-// so "chikcen" still surfaces "...Chicken..." results. Scoped to this endpoint
-// only — the main /recipes grid search is unchanged.
+// Three tiers fill up to AUTOCOMPLETE_LIMIT slots, best-behaviour first, each
+// deduped against the ones before it:
+//   1. Exact-ish substring — a literal case-insensitive `$regex` match (fast,
+//      precise, preserves the original ordering/behaviour for the common case).
+//   2. `$text` word/stem match — index-backed via the `{ title: 'text' }` index,
+//      so it scales to any catalog size (no capped in-memory scan) and matches
+//      the query words in any order/position, e.g. "soup chicken" surfaces
+//      "Chicken Noodle Soup" which the adjacent-substring pass above misses.
+//   3. Fuzzy Levenshtein fallback — ranks a capped candidate scan so a typo like
+//      "chikcen" still surfaces "...Chicken...". `$text` is word/stem-tokenised
+//      and can't match misspellings, so this tier catches what tiers 1-2 can't;
+//      it now only runs when they leave slots open (typically just typo queries),
+//      keeping the correctly-spelled hot path off the capped scan entirely.
+// Scoped to this endpoint only — the main /recipes grid search is unchanged.
 const AUTOCOMPLETE_LIMIT = 8
 const AUTOCOMPLETE_PROJECTION = {
   _id: 1,
@@ -212,7 +220,21 @@ router.get('/searchAutoCompleteRecipes', asyncHandler(async (req, res) => {
   const title = typeof req.query.title === 'string' ? req.query.title.trim() : ''
   if (!title) return res.json([])
 
-  // 1. Exact-ish substring match (original behaviour).
+  // Accumulate up to AUTOCOMPLETE_LIMIT unique results across the tiers below,
+  // preserving insertion order (tier 1 first) and skipping any _id already added.
+  const results = []
+  const seen = new Set()
+  const addUnique = (docs) => {
+    for (const doc of docs) {
+      if (results.length >= AUTOCOMPLETE_LIMIT) break
+      const id = String(doc._id)
+      if (seen.has(id)) continue
+      seen.add(id)
+      results.push(doc)
+    }
+  }
+
+  // Tier 1 — exact-ish substring match (original behaviour: precise, ordered).
   const exact = await db
     .collection('recipes')
     .find(
@@ -221,13 +243,41 @@ router.get('/searchAutoCompleteRecipes', asyncHandler(async (req, res) => {
     )
     .limit(AUTOCOMPLETE_LIMIT)
     .toArray()
+  addUnique(exact)
+  if (results.length >= AUTOCOMPLETE_LIMIT) return res.json(results)
 
-  if (exact.length >= AUTOCOMPLETE_LIMIT) return res.json(exact)
+  // Tier 2 — index-backed `$text` word/stem match. Fills remaining slots ordered
+  // by relevance (textScore). Guarded: if the text index isn't there yet (build
+  // deferred/failed at startup — see ensureIndexes) a `$text` query throws, so we
+  // log and fall through to the fuzzy tier rather than 500 the endpoint.
+  const textSearch = toTextSearch(title)
+  if (textSearch) {
+    try {
+      const textDocs = await db
+        .collection('recipes')
+        .find(
+          { $text: { $search: textSearch }, ...RECIPE_VISIBLE },
+          {
+            projection: {
+              ...AUTOCOMPLETE_PROJECTION,
+              _score: { $meta: 'textScore' },
+            },
+          }
+        )
+        .sort({ _score: { $meta: 'textScore' } })
+        .limit(AUTOCOMPLETE_LIMIT)
+        .toArray()
+      // Drop the internal _score before it reaches the client.
+      addUnique(textDocs.map(({ _score, ...doc }) => doc))
+    } catch (err) {
+      console.error('[autocomplete] $text search unavailable:', err.message)
+    }
+  }
+  if (results.length >= AUTOCOMPLETE_LIMIT) return res.json(results)
 
-  // 2. Fuzzy fallback fills the remaining slots with near-misses. Pull a capped
-  // set of lightweight {_id, title} candidates, rank them, then hydrate only the
-  // winners with the full projection (preserving the ranked order).
-  const seen = new Set(exact.map((r) => String(r._id)))
+  // Tier 3 — fuzzy Levenshtein fallback for misspellings. Pull a capped set of
+  // lightweight {_id, title} candidates, rank them, then hydrate only the winners
+  // with the full projection (preserving the ranked order).
   const candidates = await db
     .collection('recipes')
     .find({ ...RECIPE_VISIBLE }, { projection: { _id: 1, title: 1 } })
@@ -237,23 +287,21 @@ router.get('/searchAutoCompleteRecipes', asyncHandler(async (req, res) => {
   const ranked = fuzzyRankTitles(
     title,
     candidates.filter((c) => !seen.has(String(c._id))),
-    { limit: AUTOCOMPLETE_LIMIT - exact.length }
+    { limit: AUTOCOMPLETE_LIMIT - results.length }
   )
-  if (!ranked.length) return res.json(exact)
+  if (ranked.length) {
+    const fuzzyDocs = await db
+      .collection('recipes')
+      .find(
+        { _id: { $in: ranked.map((r) => r._id) }, ...RECIPE_VISIBLE },
+        { projection: AUTOCOMPLETE_PROJECTION }
+      )
+      .toArray()
+    const byId = new Map(fuzzyDocs.map((d) => [String(d._id), d]))
+    addUnique(ranked.map((r) => byId.get(String(r._id))).filter(Boolean))
+  }
 
-  const fuzzyDocs = await db
-    .collection('recipes')
-    .find(
-      { _id: { $in: ranked.map((r) => r._id) }, ...RECIPE_VISIBLE },
-      { projection: AUTOCOMPLETE_PROJECTION }
-    )
-    .toArray()
-  const byId = new Map(fuzzyDocs.map((d) => [String(d._id), d]))
-  const fuzzyOrdered = ranked
-    .map((r) => byId.get(String(r._id)))
-    .filter(Boolean)
-
-  res.json([...exact, ...fuzzyOrdered])
+  res.json(results)
 }))
 
 // GET /getTrendingRecipes
