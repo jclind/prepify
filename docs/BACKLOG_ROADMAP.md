@@ -84,7 +84,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **3** | **C4 · SearchRecipesInput lane** | autocomplete footer-label debounce disagreement (`:274` vs `:336`); press-`/` global focus-search feature | `[x]` [#238](https://github.com/jclind/prepify/pull/238) (2026-07-07) | `SearchRecipesInput.tsx` (+ Layout for key handler) | **merged** |
 | **3** | **C5 · focus-ring tokens** ⚠ SCSS loner | `$focus-ring-*` group in `helpers.scss` + migrate ~13 literal `0 0 0 3px` rings | `[x]` [#241](https://github.com/jclind/prepify/pull/241) 2026-07-07 | `helpers.scss` + ~9 component `.scss` | **merged** — shipped as `@mixin focus-glow()` (parametrised, not a `$focus-ring-*` token set) |
 | **4** | **I1 · image resize pipeline** | Storage width variants + `srcset`/`sizes` on card + hero (mobile LCP) | `[x]` [#247](https://github.com/jclind/prepify/pull/247) (2026-07-07) | Storage pipeline/CDN + `RecipeCard.tsx`, `SingleRecipe.tsx` hero | **merged** — frontend `srcset` + owner-gated Firebase Resize Images extension; **inert until the owner installs the extension, backfills, and flips `VITE_IMAGE_VARIANTS_ENABLED`** (two safety nets: build-flag + per-`<img>` fallback). Also carries C3's deferred hero `srcset` |
-| **4** | **I2 · uid-key recipe images** | re-key `recipeImages/{uid}/{uuid}` (`src/api/recipes.ts:188`) + tighten `storage.rules:27-32` to owner | `[~]` `worktree-feat+i2-uid-key-recipe-images` 2026-07-07 | `src/api/recipes.ts`, `storage.rules` | pairs w/ I1; migrate existing objects |
+| **4** | **I2 · uid-key recipe images** | re-key `recipeImages/{uid}/{uuid}` (`src/api/recipes.ts:188`) + tighten `storage.rules:27-32` to owner | `[P]` [#249](https://github.com/jclind/prepify/pull/249) (2026-07-07) | `src/api/recipes.ts`, `storage.rules` | pairs w/ I1; migrate existing objects |
 | **4** | **I3 · autocomplete title index** | Mongo text index / Atlas Search for fuzzy fallback (`recipes.js:194-240`) | `[x]` [#245](https://github.com/jclind/prepify/pull/245) (2026-07-07) | `server/routes/recipes.js` (+ `server/db.js`) | **merged** — index-backed `$text` tier between exact + fuzzy; fuzzy scan now typo-only |
 | **5** | **R0 · Claude conventions doc** | code & architecture standard (`CONVENTIONS.md`/CLAUDE.md) | `[x]` [#244](https://github.com/jclind/prepify/pull/244) (2026-07-07) | new doc | **merged** — shipped `docs/CONVENTIONS.md` (grounded in a 4-way survey + REFACTOR.md), cross-linked from `CLAUDE.md`; **R1/R2 now have a standard to follow** |
 | **5** | **R1 · refactor create-recipe page** | the big AddRecipe refactor | `[P]` [#248](https://github.com/jclind/prepify/pull/248) `worktree-feat+r1-addrecipe-refactor` 2026-07-07 | `src/pages/AddRecipe/**` | **subsumes C1** |
@@ -1109,3 +1109,27 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   untouched); **R1** `[P]` #248 (`feat+r1-addrecipe-refactor`) is CLEAN/all-6-checks-green/MERGEABLE, being landed
   elsewhere. The four stale local branches are merged; `moderation-pr-c-ratelimiter` is the known off-board orphan.
   `development` in sync with origin (0/0) before this append. Worktree not yet created.
+- **2026-07-07** — **I2** implemented in `worktree-feat+i2-uid-key-recipe-images` → PR
+  [#249](https://github.com/jclind/prepify/pull/249) opened (`[P]`). Recipe-image uploads landed at
+  `recipeImages/{imageFile.name}` (`src/api/recipes.ts`), keyed by the **raw filename**, so (a) two users'
+  `photo.jpg` collided/overwrote and (b) `storage.rules` could only *auth-gate* the path — any signed-in user
+  could overwrite/delete **any** recipe image. Re-keyed uploads to `recipeImages/${uid}/${uuidv4()}` (`uid` from
+  `AuthAPI.getUID()`, both already imported; **fails closed** if no uid rather than falling back to an unscoped
+  path; no extension — Firebase sets `contentType` from the `File` and the I1 helper derives the srcset stem
+  regardless). Tightened `storage.rules`: new `match /recipeImages/{uid}/{imageId}` enforces
+  `request.auth.uid == uid` + 5 MB + `image/*` (mirrors `profilePhotos/{uid}`) and covers the I1 resize
+  **variants** (same `{uid}/` dir) for public read; the legacy one-segment `match /recipeImages/{imageId}` (disjoint)
+  is kept publicly **readable** so un-migrated images still render but **write-denied**, closing the old flat-path
+  overwrite gap. **I1 compatibility preserved:** `RESIZED_IMAGES_PATH` stays empty (variants co-located under
+  `{uid}/`); `INCLUDE_PATH_LIST=/recipeImages` leading-segment match still catches nested originals; server
+  `parseStorageUrl` decodes the whole `/o/<enc>` segment so moderation/delete are depth-agnostic (**no server
+  change**) — config/doc comments updated (`extensions/storage-resize-images.env`, `docs/IMAGE_PIPELINE.md`).
+  Tests: `RecipesApi.test.ts` asserts the exact uid-keyed `ref` path + fail-closed throw; `firebaseStorage.test.js`
+  covers nested-path extraction. Gates: `tsc` clean, Vitest **579 passed / 2 skipped**, `npm run build` clean,
+  server Jest green. **Rules exercised under the Firebase Storage rules emulator — 11/11** (owner write; cross-uid,
+  anon, oversize, non-image, legacy-flat writes all denied; public read on original + `_400x400.webp` variant +
+  legacy; `profilePhotos` regression). **Owner-gated (ships inert like I1):** `firebase deploy --only storage`
+  (dev→prod) + migrate existing filename-keyed objects to the uid path — until then the deployed flat rules keep
+  today's uploads working. **Off-board note (pre-existing, not fixed):** `deleteRecipeImage` removes only the
+  original, so a deleted recipe orphans its I1 resize variants (latent since I1, independent of this re-key). Lane
+  disjoint from the two live tracks (R1 `AddRecipe`, R2 `Account`).
