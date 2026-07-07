@@ -1175,3 +1175,23 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   writes (network-stub). Local code review found no correctness issues; three non-blocking notes filed-not-fixed
   (dropped defensive `Number(totalCount)` cast — still safe via JS coercion; unused `page` export; pre-existing
   load-more skeleton-swap while a never-cached page fetches — out of scope, carried forward untouched).
+- **2026-07-07** — **R1 merged** ([#248](https://github.com/jclind/prepify/pull/248), merge `8b652fd`, all 6 checks
+  green) into `development`; worktree torn down. The 579-line `AddRecipe.tsx` is now a presentational shell (257
+  lines) over three extracted units: `useRecipeForm` (a `useReducer`-backed hook owning all field state, draft
+  autosave/hydration/URL-sync, validation, and submit orchestration — with per-field setters that preserve the
+  `Dispatch<SetStateAction<T>>` contract so `React.memo` child boundaries stay stable), a **pure**
+  `recipeFormValidation` module (one source of truth for the field-error map, unit-testable in isolation), and a
+  `FormField` section wrapper (collapses the header/error/control boilerplate every field repeated). Behaviour-
+  preserving except one intended bug fix carried over from F1's review: **TimeInput now propagates `null` when the
+  user clears both fields** (previously the all-empty writeback branch never fired, so clearing a time on edit left
+  the stale value and the required-guard kept passing) — guarded by a `hasUserEdited` ref so the pre-hydration empty
+  render can't be mistaken for a user clear. Added 38 tests (validation rules, TimeInput hydrate/clear regressions,
+  Cuisine/MealType selector value↔option mapping, `updateIngredients` rescale). **Folded in part of C1** (noindex on
+  `/add-recipe`, the two selector test suites, `updateIngredients` test + dead-code prune); **C1's three visual smalls
+  stay open** (dropdown/`FormInput` uniformity, summary-bar sticky, group-label styling) → C1 flipped to `[~]` for a
+  small tail lane. Verified pre-merge via the running dev app (headless, fresh user, custom-token auth): create flow
+  publishes, validation gates + clears correctly, TimeInput clear-both invalidates, double-submit guarded, draft
+  resume rehydrates, XSS payloads escape (React default) — all on dev infra. Local code review + full suite (597
+  pass / 2 skip, tsc clean) green; whitespace-only-title guard gap left filed-not-fixed (pre-existing `!title` vs
+  `.trim()`, BACKLOG.md Bugs, low). Board/doc edits committed on `development` in the main checkout, not the lane
+  branch (same convention as C2–C5/I1/I3/R2).

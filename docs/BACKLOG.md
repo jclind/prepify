@@ -45,7 +45,7 @@ The triage date stamped on items is the date they were filed here, not when they
   The save still succeeds (the writeback effect `if (minutes || hours)` is falsy for `NaN`, so the parent
   keeps the correct object), so it's display-only, but confusing. Fix: `setHours(val.hours); setMinutes(val.minutes)`
   (drop the `Number(val)` arithmetic entirely). Originally filed 2026-06-24 as cosmetic; upgraded after verification.
-- `[ ]` **Clearing a `TimeInput` field silently keeps the old prep/cook time on edit (filed 2026-07-06, off the F1 review)** —
+- `[x]` *(fixed in [#248](https://github.com/jclind/prepify/pull/248), R1)* **Clearing a `TimeInput` field silently keeps the old prep/cook time on edit (filed 2026-07-06, off the F1 review)** —
   surfaced reviewing the F1 fix ([#235](https://github.com/jclind/prepify/pull/235)). The writeback effect in
   **`src/pages/AddRecipe/TimeInput/TimeInput.tsx:61-64`** is `if (minutes || hours) setVal(...)`, so when the user clears **both**
   the hours and minutes fields back to empty, `setVal` never fires and the parent's `prepTime`/`cookTime` stays at the last
@@ -57,7 +57,7 @@ The triage date stamped on items is the date they were filed here, not when they
   edit/draft-resume + an intentional clear-to-blank), one file — belongs to the AddRecipe lane (**C1/R1**) or a small F-track.
   *(**Fixed in [#248](https://github.com/jclind/prepify/pull/248)**, R1: writeback now emits `setVal(null)` when both fields
   clear, gated behind a `hasUserEdited` ref so the pre-hydration render can't be mistaken for a user clear; +2 regression tests,
-  runtime-verified — filled→valid, clear-both→invalid, re-enter→valid. Tick on merge.)*
+  runtime-verified — filled→valid, clear-both→invalid, re-enter→valid. Merged 2026-07-07.)*
 - `[ ]` **Whitespace-only recipe title bypasses the "Title is required" guard (filed 2026-07-07, off the R1 runtime verification)** —
   found acting as a malicious user against the running create-recipe form. `validateRecipeForm` (`src/pages/AddRecipe/recipeFormValidation.ts`)
   tests the title with `!form.title`, so an all-spaces title (`"     "`) is truthy → **no "Title is required" error**. Fill the other
