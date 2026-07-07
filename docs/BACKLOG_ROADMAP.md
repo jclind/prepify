@@ -88,7 +88,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **4** | **I3 · autocomplete title index** | Mongo text index / Atlas Search for fuzzy fallback (`recipes.js:194-240`) | `[x]` [#245](https://github.com/jclind/prepify/pull/245) (2026-07-07) | `server/routes/recipes.js` (+ `server/db.js`) | **merged** — index-backed `$text` tier between exact + fuzzy; fuzzy scan now typo-only |
 | **5** | **R0 · Claude conventions doc** | code & architecture standard (`CONVENTIONS.md`/CLAUDE.md) | `[x]` [#244](https://github.com/jclind/prepify/pull/244) (2026-07-07) | new doc | **merged** — shipped `docs/CONVENTIONS.md` (grounded in a 4-way survey + REFACTOR.md), cross-linked from `CLAUDE.md`; **R1/R2 now have a standard to follow** |
 | **5** | **R1 · refactor create-recipe page** | the big AddRecipe refactor | `[P]` [#248](https://github.com/jclind/prepify/pull/248) `worktree-feat+r1-addrecipe-refactor` 2026-07-07 | `src/pages/AddRecipe/**` | **subsumes C1** |
-| **5** | **R2 · refactor account page** | the big Account refactor | `[ ]` | `src/pages/Account/**` | **subsumes F6**; overlaps C2 |
+| **5** | **R2 · refactor account page** | the big Account refactor | `[~]` `worktree-feat+r2-account-refactor` 2026-07-07 | `src/pages/Account/**` | **subsumes F6**; overlaps C2 |
 | **—** | **Deferred / post-1.0 / owner** | see [that section](#deferred--post-10--owner-off-the-active-board) | `[blocked]`/`[dropped]` | — | prerendering, Edamam, theming, brand-orange, DB relocation, ideas |
 
 ---
@@ -1090,3 +1090,22 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   backlog edits off the PR. **Anti-race:** a concurrent session claimed **I2** (`src/api/recipes.ts` +
   `storage.rules`) mid-lane — disjoint from R1 (`src/pages/AddRecipe/**`), its claim already committed to
   `development`; my R1 row + this entry are line-distinct. `development` was 0/0 with origin before this append.
+- **2026-07-07** — **R2 claimed** (`worktree-feat+r2-account-refactor`). Claim recorded directly on
+  `development` (same convention as S4–S7/F1–F5/C2–C5/R0/I3/F4/I1/R1) so concurrent sessions see the lane taken.
+  **Third Wave-5 lane, and the last substantive open track** — the board is otherwise drained: **C1** is
+  subsumed by **R1** (folded into #248), and **F6** ("defer to R2") folds into *this* lane. **Owner-authorized:**
+  with R1 being landed/verified in a separate session, the Wave-5 "refactors serialize" guidance is moot here
+  because R2's domain is **disjoint** from R1's — verified R1 #248's diff touches only `src/pages/AddRecipe/**` +
+  its `src/test/*` selectors + `src/util/updateIngredients.ts`, **nothing** under `src/pages/Account/**` (R2's
+  20-file exclusive domain: `Account.tsx`/`.scss`, `components/{accountTabs,SegmentedNav,ProfileControls,LevelCard,
+  AchievementsModal}`, and the `Drafts`/`SavedRecipes`/`UserRatings`/`UserRecipes` sub-pages). **Scope (to be
+  finalized in-lane against `docs/CONVENTIONS.md` + the planning docs, and presented to the owner before heavy
+  implementation spend, per the R1 precedent):** the account-page refactor following the R0 standard, folding in
+  the deferred **F6** (Saved/Ratings SegmentedNav polish). Overlaps the *already-merged* **C2** — `accountTabs.tsx`
+  + the `ACCOUNT_*_PATH`/`activeAccountTab` route single-sourcing already landed, so R2 builds on it rather than
+  colliding. **Worktree audit (no forgotten/unmarked work):** the two live worktrees each match their board rows —
+  **I2** `[~]` (`feat+i2-uid-key-recipe-images`) is genuinely mid-implementation (uncommitted `src/api/recipes.ts`
+  + `storage.rules` + `docs/IMAGE_PIPELINE.md` edits in its worktree, its scope files — correctly claimed, left
+  untouched); **R1** `[P]` #248 (`feat+r1-addrecipe-refactor`) is CLEAN/all-6-checks-green/MERGEABLE, being landed
+  elsewhere. The four stale local branches are merged; `moderation-pr-c-ratelimiter` is the known off-board orphan.
+  `development` in sync with origin (0/0) before this append. Worktree not yet created.
