@@ -80,7 +80,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **2** | **F6 · account nav polish** | Saved/Ratings section-nav styling (`SegmentedNav.tsx`) | `[ ]` | `Account/components/SegmentedNav.tsx` | subjective; better inside **R2** |
 | **3** | **C1 · AddRecipe cluster** ⚠ lane | dropdown/`FormInput` uniformity (`recipeSelectStyles.ts`); summary-bar sticky; group-label styling; `/add-recipe` `noindex`; Cuisine/MealType selector unit tests; `updateIngredients` test + dead-code | `[ ]` | `src/pages/AddRecipe/**`, `src/test/` | ⚠ **subsumed by R1** — decide refactor-vs-smalls first |
 | **3** | **C2 · route-constant single-sourcing** | `RECIPES_PATH` const (`DesktopBar:45`,`NavMenu:20`,`Recipes.tsx:113-119`); `browseAll`→`clearFilters`; `accountTabs` as app-wide route source (`DesktopAccountMenu:74`,`footerData:43-44`,`DraftResumeBanner:47`) + `activeAccountTab` helper | `[ ]` | Navbar/* + `Recipes.tsx` + `accountTabs.tsx` + `footerData.ts` + `DraftResumeBanner.tsx` | both share DesktopBar → one lane |
-| **3** | **C3 · SingleRecipe lane** ⚠ lane | CLS controls-block reserve (`SingleRecipe.tsx:308-317`, `RecipeControls.scss`); JSON-LD `</script>` escaping (`buildRecipeJsonLd.ts:38-39`) | `[ ]` | `SingleRecipe.tsx`, `RecipeControls.scss`, `buildRecipeJsonLd.ts` | hero `srcset` deferred to **I1**; JSON-LD gates with prerender |
+| **3** | **C3 · SingleRecipe lane** ⚠ lane | CLS controls-block reserve (`SingleRecipe.tsx:308-317`, `RecipeControls.scss`); JSON-LD `</script>` escaping (`buildRecipeJsonLd.ts:38-39`) | `[~]` `worktree-feat+c3-singlerecipe-lane` 2026-07-07 | `SingleRecipe.tsx`, `RecipeControls.scss`, `buildRecipeJsonLd.ts` | hero `srcset` deferred to **I1**; JSON-LD gates with prerender |
 | **3** | **C4 · SearchRecipesInput lane** | autocomplete footer-label debounce disagreement (`:274` vs `:336`); press-`/` global focus-search feature | `[P]` [#238](https://github.com/jclind/prepify/pull/238) `worktree-feat+c4-searchinput-lane` 2026-07-07 | `SearchRecipesInput.tsx` (+ Layout for key handler) | both touch same file → one lane |
 | **3** | **C5 · focus-ring tokens** ⚠ SCSS loner | `$focus-ring-*` group in `helpers.scss` + migrate ~13 literal `0 0 0 3px` rings | `[~]` `worktree-feat+c5-focus-ring-tokens` 2026-07-07 | `helpers.scss` + ~9 component `.scss` | only one SCSS-token worktree at a time |
 | **4** | **I1 · image resize pipeline** | Storage width variants + `srcset`/`sizes` on card + hero (mobile LCP) | `[ ]` | Storage pipeline/CDN + `RecipeCard.tsx`, `SingleRecipe.tsx` hero | structural; unblocks C3 hero srcset |
@@ -575,3 +575,29 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   the pre-fix code and asserts value + handler identity survive an incidental re-render; no new `exhaustive-deps`
   disables needed. Gates green (tsc, Vitest, build, full CI incl. Cypress 3m29s). Rebased onto current
   `development` (8 behind, `AuthContext` had moved under `8680f2a`) — clean, no semantic conflict — before merge.
+- **2026-07-07** — **C3 claimed** (`worktree-feat+c3-singlerecipe-lane`). Claim recorded directly on
+  `development` (same convention as S4–S7/F1–F5/C4/C5) so concurrent sessions see the lane taken. **Third
+  Wave-3 lane, and the SingleRecipe ⚠ solo lane** — verified no other SingleRecipe worktree is in flight and
+  the lane's three files (`SingleRecipe.tsx`, `RecipeControls.scss`, `buildRecipeJsonLd.ts`) are disjoint from
+  every live lane: **C4** (`SearchRecipesInput.tsx` + `Layout`, PR [#238](https://github.com/jclind/prepify/pull/238)
+  `[P]`, local worktree), **C5** (`helpers.scss` + the `CreateUsername`/`RecipeFormTextArea`/`Recipes`/`Help`/
+  `FormStyles`/`FormInput`/Settings-`controls.scss` focus-ring set — **not** `RecipeControls.scss`, which carries
+  no `0 0 0 3px` literal, so the earlier feared C3↔C5 collision is a non-issue), and **F4** (`AccountSection.tsx`,
+  off-machine). Picked C3 over the other open `[ ]` tracks on purpose: **C1**/**F6** are owner-decision-gated
+  (rule 5), **C2** turned out murkier than the board (its `accountTabs` half is *already* partially single-sourced
+  — `accountTabs.tsx` is a "single source of truth" with an `activeAccountTabIndex` helper; consumers still
+  hardcode strings, and the cited `Recipes.tsx:113-119` path has drifted) and softly overlaps the far-off R2,
+  and Waves 4/5 are structural/owner-scoped — while C3 is a self-contained solo lane whose main deliverable is a
+  concrete CLS win. Scope, both verified still present: (1) **CLS controls-block reserve** — `RecipeControls`
+  renders behind `{currRecipe && …}` (`SingleRecipe.tsx:308`) with no reserved height, so the controls row pops
+  in after the recipe fetch resolves and shoves the hero/content down (layout shift); reserve its height in
+  `RecipeControls.scss` (min-height/skeleton) so the block occupies its final space from first paint. (2)
+  **JSON-LD `</script>` escaping** — `buildRecipeJsonLd.ts` assembles the LD+JSON object from user-controlled
+  recipe fields (title/description/instructions) with no `</script>` / `<`→`<` escaping before it's
+  serialized into the `application/ld+json` script tag; latent-harmless under today's CSR (rule 6) but a real
+  injection vector the moment SSR/prerender lands — fold the defensive escape in now since it's a harmless
+  one-liner (and one less thing the prerender PR must remember). **Hero `srcset` stays deferred to I1.** Verified
+  no forgotten/unmarked local work first: the four stale local branches (`button-hover-audit`,
+  `public-recipe-projection`, `s4`, `s6`) are all merged into `development`; `moderation-pr-c-ratelimiter` is the
+  known off-board orphan (S5 log); only `c4-searchinput-lane` is a live worktree and it matches its `[P]` board
+  row. `development` in sync with origin (0/0) before claiming. Worktree not yet created.
