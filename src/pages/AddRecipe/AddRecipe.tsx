@@ -16,8 +16,7 @@ import MealTypeSelector from 'src/pages/AddRecipe/MealTypeSelector/MealTypeSelec
 import DietSelector from 'src/pages/AddRecipe/DietSelector/DietSelector'
 import { TITLE_MAX_LENGTH, DESCRIPTION_MAX_LENGTH } from 'src/util/recipeLimits'
 import styles from 'src/_exports.module.scss'
-import AddRecipeFormError from 'src/pages/AddRecipe/AddRecipeFormError'
-import SectionHeader from 'src/pages/AddRecipe/SectionHeader'
+import FormField from 'src/pages/AddRecipe/FormField'
 import AddRecipeSummaryBar from 'src/pages/AddRecipe/AddRecipeSummaryBar'
 import { Helmet } from 'react-helmet-async'
 import DraftSaveStatus from 'src/pages/AddRecipe/DraftSaveStatus'
@@ -101,11 +100,13 @@ const AddRecipe: FC<AddRecipeProps> = ({ initialRecipe }) => {
         {!isEditMode && !draftId && <DraftResumeBanner />}
         <div className='container'>
           <div className='container-inner' ref={addRecipeFormRef}>
-            <div className='title input-field'>
-              <SectionHeader label='Title' required />
-              {errors.title && (
-                <AddRecipeFormError error={errors.title} id='error-title' />
-              )}
+            <FormField
+              className='title'
+              label='Title'
+              required
+              error={errors.title}
+              errorId='error-title'
+            >
               <FormInput
                 size='compact'
                 placeholder='Add a title to your recipe.'
@@ -115,12 +116,14 @@ const AddRecipe: FC<AddRecipeProps> = ({ initialRecipe }) => {
                 invalid={!!errors.title}
                 describedBy={errors.title ? 'error-title' : undefined}
               />
-            </div>
-            <div className='image-picker input-field'>
-              <SectionHeader label='Select Image' required />
-              {errors.image && (
-                <AddRecipeFormError error={errors.image} id='error-image' />
-              )}
+            </FormField>
+            <FormField
+              className='image-picker'
+              label='Select Image'
+              required
+              error={errors.image}
+              errorId='error-image'
+            >
               {resumedFromDraft && !recipeImage && (
                 <p className='draft-image-hint'>
                   <InfoIcon className='icon' />
@@ -133,15 +136,14 @@ const AddRecipe: FC<AddRecipeProps> = ({ initialRecipe }) => {
                 initialPreviewUrl={existingImageUrl}
                 onRemove={() => setExistingImageUrl(undefined)}
               />
-            </div>
-            <div className='description input-field'>
-              <SectionHeader label='Description' required />
-              {errors.description && (
-                <AddRecipeFormError
-                  error={errors.description}
-                  id='error-description'
-                />
-              )}
+            </FormField>
+            <FormField
+              className='description'
+              label='Description'
+              required
+              error={errors.description}
+              errorId='error-description'
+            >
               <RecipeFormTextArea
                 placeholder='Add a description to your recipe'
                 val={description}
@@ -150,85 +152,86 @@ const AddRecipe: FC<AddRecipeProps> = ({ initialRecipe }) => {
                 invalid={!!errors.description}
                 describedBy={errors.description ? 'error-description' : undefined}
               />
-            </div>
-            <div className='servings input-field'>
-              <SectionHeader label='Servings' required />
-              {errors.servings && (
-                <AddRecipeFormError error={errors.servings} id='error-servings' />
-              )}
+            </FormField>
+            <FormField
+              className='servings'
+              label='Servings'
+              required
+              error={errors.servings}
+              errorId='error-servings'
+            >
               <ServingsInput
                 servings={servings}
                 setServings={setServings}
                 invalid={!!errors.servings}
                 describedBy={errors.servings ? 'error-servings' : undefined}
               />
-            </div>
-            <div className='prep-time input-field'>
-              <SectionHeader label='Prep Time' required />
-              {errors.prepTime && (
-                <AddRecipeFormError error={errors.prepTime} id='error-prepTime' />
-              )}
+            </FormField>
+            <FormField
+              className='prep-time'
+              label='Prep Time'
+              required
+              error={errors.prepTime}
+              errorId='error-prepTime'
+            >
               <TimeInput
                 label={'How long will your recipe take to prepare?'}
                 val={prepTime}
                 setVal={setPrepTime}
               />
-            </div>
-            <div className='cook-time input-field'>
-              <SectionHeader label='Cook Time' />
+            </FormField>
+            <FormField className='cook-time' label='Cook Time'>
               <TimeInput
                 label={'How long will your recipe take to cook?'}
                 val={cookTime}
                 setVal={setCookTime}
               />
-            </div>
-            <div className='ingredients input-field'>
-              <SectionHeader label='Ingredients' required />
-              {errors.ingredients && (
-                <AddRecipeFormError
-                  error={errors.ingredients}
-                  id='error-ingredients'
-                />
-              )}
+            </FormField>
+            <FormField
+              className='ingredients'
+              label='Ingredients'
+              required
+              error={errors.ingredients}
+              errorId='error-ingredients'
+            >
               <IngredientsContainer
                 ingredients={ingredients}
                 setIngredients={setIngredients}
               />
-            </div>
-            <div className='instructions input-field'>
-              <SectionHeader label='Instructions' required />
-              {errors.instructions && (
-                <AddRecipeFormError
-                  error={errors.instructions}
-                  id='error-instructions'
-                />
-              )}
+            </FormField>
+            <FormField
+              className='instructions'
+              label='Instructions'
+              required
+              error={errors.instructions}
+              errorId='error-instructions'
+            >
               <InstructionsContainer
                 instructions={instructions}
                 setInstructions={setInstructions}
               />
-            </div>
-            <div className='cuisine input-field'>
-              <SectionHeader label='Cuisine' />
+            </FormField>
+            <FormField className='cuisine' label='Cuisine'>
               <CuisineSelector cuisine={cuisine} setCuisine={setCuisine} />
-            </div>
-            <div className='course input-field'>
-              <SectionHeader label='Course' required />
-              {errors.mealType && (
-                <AddRecipeFormError error={errors.mealType} id='error-mealType' />
-              )}
+            </FormField>
+            <FormField
+              className='course'
+              label='Course'
+              required
+              error={errors.mealType}
+              errorId='error-mealType'
+            >
               <MealTypeSelector
                 mealTypes={mealTypes}
                 setMealTypes={setMealTypes}
               />
-            </div>
-            <div className='diet input-field'>
-              <SectionHeader label='Diet' />
+            </FormField>
+            <FormField className='diet' label='Diet'>
               <DietSelector
                 nutritionLabels={nutritionLabels}
                 setNutritionLabels={setNutritionLabels}
               />
-            </div>
+            </FormField>
           </div>
         </div>
         <AddRecipeSummaryBar
