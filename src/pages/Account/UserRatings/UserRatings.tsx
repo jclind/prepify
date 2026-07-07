@@ -1,6 +1,5 @@
 import { ChevronDownIcon, CornerDownRightIcon, StarOutlineIcon } from 'src/Components/icons'
-import React, { FC, useEffect, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import React, { FC } from 'react'
 import RecipeAPI from 'src/api/recipes'
 import { OptionalReviewType } from 'types'
 import StarRating from 'src/Components/StarRating/StarRating'
@@ -10,7 +9,7 @@ import { timeElapsedSince } from 'src/util/timeElapsedSince'
 import Skeleton from 'react-loading-skeleton'
 import { skeletonBase as skeletonColor } from 'src/util/loadingStyles'
 import { useNavigate } from 'react-router-dom'
-import { useDelayedLoading } from 'src/hooks/useDelayedLoading'
+import { usePaginatedLoadMore } from 'src/pages/Account/usePaginatedLoadMore'
 
 type SingleReviewProps = {
   review?: OptionalReviewType
@@ -106,40 +105,23 @@ const SingleReview: FC<SingleReviewProps> = ({ review, loading }) => {
 // now; the query keeps this fixed order.)
 const SORT = 'newAdd'
 const Ratings: FC = () => {
-  const [reviews, setReviews] = useState<OptionalReviewType[]>([])
-  const [currPage, setCurrPage] = useState(0)
-  const [isMoreReviews, setIsMoreReviews] = useState(false)
-
-  const { data, isLoading } = useQuery({
-    queryKey: ['user-reviews', SORT, currPage],
-    queryFn: () => RecipeAPI.getSingleUserReviews(currPage, 5, SORT, true),
+  // `showList` stays true across the one-frame gap where the query has settled
+  // but the accumulator hasn't populated `reviews` yet, so the "no ratings"
+  // empty state can't flash before a genuine zero result.
+  const {
+    items: reviews,
+    isLoading,
+    showSkeleton,
+    isMore: isMoreReviews,
+    showList,
+    loadMore: handleLoadMoreReviews,
+  } = usePaginatedLoadMore<OptionalReviewType>({
+    queryKey: page => ['user-reviews', SORT, page],
+    queryFn: page =>
+      RecipeAPI.getSingleUserReviews(page, 5, SORT, true).then(
+        d => d && { items: d.reviews, totalCount: d.totalCount }
+      ),
   })
-  const showSkeleton = useDelayedLoading(isLoading)
-  // `reviews` is populated by the effect below one render AFTER react-query
-  // flips `isLoading` to false, so on a fast load there's a frame where the
-  // query has settled but `reviews` is still []. Gate the list on the resolved
-  // payload too (`data.reviews`) so that frame keeps showing the list instead
-  // of flashing the "no ratings" empty state.
-  const dataHasReviews = !!data && data.reviews.length > 0
-  const showList = reviews.length > 0 || isLoading || dataHasReviews
-
-  useEffect(() => {
-    if (data) {
-      if (currPage === 0) {
-        setReviews([...data.reviews])
-        setIsMoreReviews(Number(data.totalCount) > data.reviews.length)
-      } else {
-        const updated = [...reviews, ...data.reviews]
-        setReviews(updated)
-        setIsMoreReviews(Number(data.totalCount) > updated.length)
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data])
-
-  const handleLoadMoreReviews = () => {
-    setCurrPage(prev => prev + 1)
-  }
 
   return (
     <div className='user-ratings'>
