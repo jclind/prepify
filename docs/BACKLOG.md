@@ -204,7 +204,7 @@ The triage date stamped on items is the date they were filed here, not when they
   `EmptyState`, and a working **"Load more"** (new paginated `GET /getPublicProfileRecipes`). Saves/Made
   now come from a server-side aggregate over *all* visible recipes (not just the shown batch). Verified
   live incl. a 15-recipe load-more click-through (12→15, button clears, no dupes).
-- `[ ]` **"Change password" subhead is redundant/cluttered** — the `<h3 class='sr-subhead'>Change password</h3>`
+- `[x]` **"Change password" subhead is redundant/cluttered** *(fixed in [#246](https://github.com/jclind/prepify/pull/246), F4: removed the `<h3 class='sr-subhead'>Change password</h3>` in `AccountSection.tsx` — the subsection is self-describing via its labelled fields + "Update password" button under the governing "Account & Security" `<h2>`; kept the `.sr-subsection` divider and the "Connected accounts" subhead. Runtime-verified via a real signup→settings flow.)* — the `<h3 class='sr-subhead'>Change password</h3>`
   in `src/pages/Settings/sections/AccountSection.tsx:189` (shown only when `hasPasswordProvider`), inside the
   Settings → Account section. *(verified 2026-06-26: it's lowercase "Change password" in a Settings section,
   not a dedicated "Account & Security" page as previously worded.)*

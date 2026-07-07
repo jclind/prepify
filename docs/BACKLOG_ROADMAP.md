@@ -1023,5 +1023,5 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   visual-design decision. **Swept-in:** this same commit carries the concurrent **I3** session's truthful
   `[P]`→`[x]` #245 flip + its status-log/BACKLOG entries (I3 genuinely merged `2456a08`; rows line-distinct from
   F4's) — `development` was fast-forwarded to origin `b7f1384` (my F4 merge) with the I3 doc edits preserved before
-  this append. **Wave 2 is now fully complete (F1–F6: F6 defers to R2).** Other live lanes untouched: I1 `[P]`
-  #247, R1 claimed.
+  this append. **Wave 2's active items are all landed** (F1–F5 merged; **F6** remains `[ ]`, intentionally deferred
+  into R2). Other live lanes untouched: I1 `[P]` #247, R1 claimed.
