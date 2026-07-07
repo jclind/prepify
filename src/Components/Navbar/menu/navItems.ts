@@ -1,10 +1,11 @@
 import { HelpIcon, HomeIcon, PlusCircleIcon, RecipesMenuIcon, UserIcon } from 'src/Components/icons'
 import { NavItem, NavGroup } from './types'
+import { RECIPES_PATH } from 'src/routes'
 
 /** Browse links — always shown (logged in or out). */
 const browseItems: NavItem[] = [
   { label: 'Home', to: '/', icon: HomeIcon },
-  { label: 'Recipes', to: '/recipes', icon: RecipesMenuIcon },
+  { label: 'Recipes', to: RECIPES_PATH, icon: RecipesMenuIcon },
 ]
 
 /** Create links — logged-in only. */

@@ -6,6 +6,7 @@ import { skeletonBase as skeletonColor } from 'src/util/loadingStyles'
 import SearchRecipesInput from 'src/Components/SearchRecipesInput/SearchRecipesInput'
 import DesktopAccountMenu from './DesktopAccountMenu'
 import { DesktopNavProps } from './types'
+import { ACCOUNT_SAVED_RECIPES_PATH, RECIPES_PATH } from 'src/routes'
 
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
@@ -42,7 +43,7 @@ const DesktopBar: FC<DesktopNavProps> = data => {
   // `.dnav--no-search` pushes the links/actions cluster to the right so the bar
   // doesn't leave a gap — same treatment the Home hero uses (DesktopNav.scss).
   const { pathname } = useLocation()
-  const showSearch = pathname !== '/recipes'
+  const showSearch = pathname !== RECIPES_PATH
 
   return (
     <div className={`dnav dnav--quiet${showSearch ? '' : ' dnav--no-search'}`}>
@@ -55,7 +56,7 @@ const DesktopBar: FC<DesktopNavProps> = data => {
       <nav className='dnav__links' aria-label='Primary'>
         {/* aria-label keeps the name when the label collapses to an icon below
             1000px (the icon SVG carries no accessible name on its own). */}
-        <NavLink to='/recipes' className={linkClass} aria-label='Recipes'>
+        <NavLink to={RECIPES_PATH} className={linkClass} aria-label='Recipes'>
           <RecipesMenuIcon className='dnav__link-icon' />
           <span className='dnav__link-label'>Recipes</span>
         </NavLink>
@@ -81,7 +82,7 @@ const DesktopBar: FC<DesktopNavProps> = data => {
         ) : isLoggedIn ? (
           <>
             <NavLink
-              to='/account/saved-recipes'
+              to={ACCOUNT_SAVED_RECIPES_PATH}
               aria-label='Saved recipes'
               className={({ isActive }) =>
                 isActive ? 'dnav__icon-link is-active' : 'dnav__icon-link'

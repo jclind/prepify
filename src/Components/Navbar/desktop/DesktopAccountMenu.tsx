@@ -3,6 +3,7 @@ import React, { FC, useEffect, useId, useRef, useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { NavMenuData } from 'src/Components/Navbar/menu/types'
 import DefaultAvatar from 'src/Components/DefaultAvatar/DefaultAvatar'
+import { ACCOUNT_YOUR_RECIPES_PATH } from 'src/routes'
 
 type DesktopAccountMenuProps = Pick<
   NavMenuData,
@@ -71,7 +72,7 @@ const DesktopAccountMenu: FC<DesktopAccountMenuProps> = ({
 
   const linkItems: LinkItem[] = [
     { to: '/account', label: 'Account', Icon: UserIcon },
-    { to: '/account/your-recipes', label: 'Your recipes', Icon: RecipesMenuIcon },
+    { to: ACCOUNT_YOUR_RECIPES_PATH, label: 'Your recipes', Icon: RecipesMenuIcon },
     { to: '/settings', label: 'Settings', Icon: SettingsIcon },
     { to: '/help', label: 'Help', Icon: HelpIcon },
   ]

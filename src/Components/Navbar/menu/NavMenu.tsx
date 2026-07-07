@@ -7,6 +7,7 @@ import AccountCard from './AccountCard'
 import SearchRecipesInput from 'src/Components/SearchRecipesInput/SearchRecipesInput'
 import { getNavGroups } from './navItems'
 import { NavMenuProps } from './types'
+import { RECIPES_PATH } from 'src/routes'
 
 /**
  * Mobile navigation menu (≤725px): full-screen panel with a subtle brand
@@ -17,7 +18,7 @@ const NavMenu: FC<NavMenuProps> = ({ open, onClose, ...menu }) => {
   // The /recipes browse page has its own search, so don't duplicate it in the
   // menu there. Kept on every other route (incl. single-recipe /recipes/:id).
   const { pathname } = useLocation()
-  const showSearch = pathname !== '/recipes'
+  const showSearch = pathname !== RECIPES_PATH
 
   return (
   <MenuShell open={open} onClose={onClose}>
