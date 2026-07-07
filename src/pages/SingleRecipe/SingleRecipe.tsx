@@ -36,7 +36,7 @@ import { closestFraction } from 'src/util/formatQuantity'
 import { IngredientsType, InstructionsType, RecipeType, ReviewType } from 'types'
 import RecipeAPI from 'src/api/recipes'
 import AuthAPI from 'src/api/auth'
-import { buildRecipeJsonLd } from 'src/pages/SingleRecipe/buildRecipeJsonLd'
+import { serializeRecipeJsonLd } from 'src/pages/SingleRecipe/buildRecipeJsonLd'
 
 type LocalStorageRecipeType = { recipeId: string; numServings: number }
 
@@ -152,7 +152,9 @@ const SingleRecipe: FC = () => {
 
   const pageUrl =
     typeof window !== 'undefined' ? window.location.href : ''
-  const recipeJsonLd = currRecipe ? buildRecipeJsonLd(currRecipe, pageUrl) : null
+  // Pre-serialized (and `</script>`-escaped) so the raw string can go straight into
+  // the ld+json script tag below — see serializeRecipeJsonLd for why the escape matters.
+  const recipeJsonLd = currRecipe ? serializeRecipeJsonLd(currRecipe, pageUrl) : null
 
   // Social/meta values for this recipe. Canonical is built from the production
   // origin (not window.location, which is localhost in dev) so crawlers resolve it.
@@ -279,9 +281,7 @@ const SingleRecipe: FC = () => {
           <meta name='twitter:image' content={recipeOgImage} />
         )}
         {recipeJsonLd && (
-          <script type='application/ld+json'>
-            {JSON.stringify(recipeJsonLd)}
-          </script>
+          <script type='application/ld+json'>{recipeJsonLd}</script>
         )}
       </Helmet>
 

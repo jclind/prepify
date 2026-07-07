@@ -80,3 +80,17 @@ export const buildRecipeJsonLd = (
 
   return jsonLd
 }
+
+// Serialize the JSON-LD object for embedding in a `<script type="application/ld+json">`
+// tag. `JSON.stringify` alone leaves a literal `</script>` from a user-controlled field
+// (title/description/instructions) intact, which under SSR/prerender would close the
+// script element early and render the rest of that field as HTML. Replacing every `<`
+// with its backslash-u-003c unicode escape — still a valid JSON string, decoded back to
+// `<` by any JSON-LD parser — neutralizes that. Harmless under today's CSR (React inserts the child
+// as a text node, so `</script>` never re-parses), but escape it now rather than leave a
+// latent hole for the prerender change to trip on.
+export const serializeRecipeJsonLd = (
+  recipe: RecipeType,
+  pageUrl: string
+): string =>
+  JSON.stringify(buildRecipeJsonLd(recipe, pageUrl)).replace(/</g, '\\u003c')
