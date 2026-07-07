@@ -51,7 +51,7 @@
         }
         &:focus {
           border-color: s.$primary;
-          box-shadow: 0 0 0 3px rgba(s.$primary, 0.12);
+          @include s.focus-glow(s.$primary, 0.12);
         }
       }
       .search-recipes-btn {

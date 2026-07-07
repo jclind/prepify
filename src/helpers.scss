@@ -183,8 +183,9 @@ $max-width: 1400px;
 // Out of scope, kept bespoke (NOT on this ramp) — directional or multi-layer
 // shadows where the ramp geometry would be wrong: the two-layer add-ingredient
 // bar (index.scss), the horizontal off-canvas drawer (Recipes.scss), and the two
-// upward sticky-bar shadows (AccountStatusBanner / AddRecipeSummaryBar). Focus
-// rings (`box-shadow: 0 0 0 3px …`) are a separate concern, left for a later pass.
+// upward sticky-bar shadows (AccountStatusBanner / AddRecipeSummaryBar). The
+// coloured field-focus glows (`box-shadow: 0 0 0 3px …`) are their own concern —
+// they live in the `@mixin focus-glow()` below, not on this neutral ramp.
 $elevation-1: 0 1px 3px rgba($primary-text, 0.14); //   hairline — toggle knobs, faint insets
 $elevation-2: 0 2px 8px rgba($primary-text, 0.12); //   small — sticky nav, badges, chips
 $elevation-3: 0 6px 18px rgba($primary-text, 0.1); //   resting cards (RecipeCard, Home, panels)
@@ -275,6 +276,24 @@ $bp-nav-up: 726px;
 }
 @mixin between($min, $max) {
   @media screen and (min-width: $min) and (max-width: $max) { @content; }
+}
+
+// ── Focus affordances ────────────────────────────────────────────────────────
+// Two distinct focus signals, deliberately kept separate:
+//
+//   @mixin outline()    — the accessibility keyboard-focus ring (blue, outline-
+//                         style: auto), shown on :focus-visible. One ring on every
+//                         control; see "Focus rings" in docs/scss-conventions.md.
+//   @mixin focus-glow() — the soft coloured halo a *form field* casts while
+//                         focused (paired with a border-colour shift), typically on
+//                         :focus / :focus-within — and as the :focus-visible ring
+//                         where a field's glow doubles as its keyboard indicator
+//                         (WCAG 2.4.7). Fixed 3px spread; the tint follows the
+//                         field's accent — teal $secondary by default, or $primary
+//                         / $error-red / a success green for branded & validation
+//                         states. Documented in docs/scss-conventions.md.
+@mixin focus-glow($color: $secondary, $opacity: 0.15) {
+  box-shadow: 0 0 0 3px rgba($color, $opacity);
 }
 
 @mixin outline() {
