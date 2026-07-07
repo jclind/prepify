@@ -87,7 +87,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **4** | **I2 · uid-key recipe images** | re-key `recipeImages/{uid}/{uuid}` (`src/api/recipes.ts:188`) + tighten `storage.rules:27-32` to owner | `[~]` `worktree-feat+i2-uid-key-recipe-images` 2026-07-07 | `src/api/recipes.ts`, `storage.rules` | pairs w/ I1; migrate existing objects |
 | **4** | **I3 · autocomplete title index** | Mongo text index / Atlas Search for fuzzy fallback (`recipes.js:194-240`) | `[x]` [#245](https://github.com/jclind/prepify/pull/245) (2026-07-07) | `server/routes/recipes.js` (+ `server/db.js`) | **merged** — index-backed `$text` tier between exact + fuzzy; fuzzy scan now typo-only |
 | **5** | **R0 · Claude conventions doc** | code & architecture standard (`CONVENTIONS.md`/CLAUDE.md) | `[x]` [#244](https://github.com/jclind/prepify/pull/244) (2026-07-07) | new doc | **merged** — shipped `docs/CONVENTIONS.md` (grounded in a 4-way survey + REFACTOR.md), cross-linked from `CLAUDE.md`; **R1/R2 now have a standard to follow** |
-| **5** | **R1 · refactor create-recipe page** | the big AddRecipe refactor | `[~]` `worktree-feat+r1-addrecipe-refactor` 2026-07-07 | `src/pages/AddRecipe/**` | **subsumes C1** |
+| **5** | **R1 · refactor create-recipe page** | the big AddRecipe refactor | `[P]` [#248](https://github.com/jclind/prepify/pull/248) `worktree-feat+r1-addrecipe-refactor` 2026-07-07 | `src/pages/AddRecipe/**` | **subsumes C1** |
 | **5** | **R2 · refactor account page** | the big Account refactor | `[ ]` | `src/pages/Account/**` | **subsumes F6**; overlaps C2 |
 | **—** | **Deferred / post-1.0 / owner** | see [that section](#deferred--post-10--owner-off-the-active-board) | `[blocked]`/`[dropped]` | — | prerendering, Edamam, theming, brand-orange, DB relocation, ideas |
 
@@ -1057,3 +1057,36 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   `src/api/recipes.ts` nor `storage.rules` (verified against its branch diff); F6 deferred into R2, C1 subsumed
   by R1. Verified the bug is still present, no forgotten/unmarked worktree exists (only R1 is live, on its
   marked track), and `development` in sync with origin (0/0) before claiming. Worktree not yet created.
+- **2026-07-07** — **R1** implemented in `worktree-feat+r1-addrecipe-refactor` → PR
+  [#248](https://github.com/jclind/prepify/pull/248) opened (`[P]`). The **create-recipe refactor**, owner-scoped
+  to *moderate* (hook + section components), one lane, sequenced commits, **subsuming the live C1 cluster**.
+  **Structural (behaviour-preserving), three commits:** (1) `recipeFormValidation.ts` — pure
+  `validateRecipeForm(state) → errors` + `isRecipeFormValid`, lifted verbatim from the in-component `validate()`
+  (same messages/rules; cook time, cuisine, diet stay optional), +8 unit tests; (2) `useRecipeForm.ts` — all form
+  logic out of the 579-line god component into a hook: field state is a **typed `useReducer`** whose `SET_FIELD`
+  supports the useState updater-fn form so child setters keep their `Dispatch<SetStateAction<T>>` contract
+  (Ingredients/Instructions containers rely on functional updates), and the hook owns the draft
+  hydration/URL-sync/validation effects + draft-autosave wiring + `handleSubmit`; ancillary UI/status state stays
+  `useState`; (3) `FormField.tsx` — collapses the repeated `<div className='X input-field'>`+`SectionHeader`+inline
+  error+control scaffold into one wrapper, **byte-identical DOM** (classes/header/error/aria) so CSS+tests are
+  untouched. Net `AddRecipe.tsx` **579 → 257 lines**, purely presentational. **C1 folded in:** TimeInput
+  clear-both-fields fix (emptying both fields now propagates `null` instead of silently keeping the stale time on
+  edit — the `if (minutes||hours)` writeback never fired the all-empty case; gated behind a `hasUserEdited` ref so
+  the pre-hydration render can't be mistaken for a user clear; closes the F1-filed follow-up) +2 tests;
+  `/add-recipe` `noindex` meta (matches Account/Settings/CreateUsername); Cuisine/MealType selector unit tests
+  (+12, incl. the fixed meal-type placeholder regression); `updateIngredients` +7 tests and removal of the
+  long-dead commented `mixedToDecimal`/`decimalToFraction` block (the function is **live** — SingleRecipe servings
+  stepper, not dead). **Deferred (filed-not-fixed):** the two *subjective visual* C1 items — dropdown/FormInput
+  uniformity + group-label styling — are brand/design calls (the dropdowns' orange focus/hover was a deliberate
+  recent `recipeSelectStyles.ts` fix vs FormInputs' teal `$secondary` per C5; converging them changes
+  brand-orange→teal, owner-owned territory), left for a design pass. **Verified:** `tsc` clean, `npm run build`
+  clean, Vitest **597 pass / 2 skip** (+29 new) incl. the 25-case `AddRecipe` suite that mounts the real
+  component → `useRecipeForm` (real reducer/validation/effects) + the draft-resume flows; the authed
+  real-component `addRecipe.cy.ts` (13 tests) runs as a **required CI check** and every DOM/class hook it selects
+  (`.prep-time`/`.course`/`.cuisine`/`.instructions`/`.submit-btn` + all placeholders) is preserved by the
+  FormField refactor (statically verified) — a full local Cypress run needs the reserved 3000/4000 ports +
+  Admin token-minting, disproportionate for a behaviour-preserving refactor, so the authed E2E rides CI.
+  **`[P]` flip recorded on `development` directly** (not the lane branch), same convention as C2–C5/I1/I3 — keeps
+  backlog edits off the PR. **Anti-race:** a concurrent session claimed **I2** (`src/api/recipes.ts` +
+  `storage.rules`) mid-lane — disjoint from R1 (`src/pages/AddRecipe/**`), its claim already committed to
+  `development`; my R1 row + this entry are line-distinct. `development` was 0/0 with origin before this append.
