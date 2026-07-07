@@ -715,8 +715,11 @@ findings table.)*
   after the refactor. *(2026-06-26: the tooling exists — `server/scripts/inventory-collections.js` (the DB
   inventory utility from commit 85c0208), plus the `backfillRatingUserIds.js` / `backfillServingPrice.js`
   backfills. This remains a manual run-and-confirm task; nothing in-repo proves it's been done.)*
-- `[ ]` **Establish a code & architecture standard for Claude** — write a conventions doc so generated
-  code stays consistent (likely an addition to `CLAUDE.md` or a new `CONVENTIONS.md`).
+- `[x]` **Establish a code & architecture standard for Claude** — write a conventions doc so generated
+  code stays consistent (likely an addition to `CLAUDE.md` or a new `CONVENTIONS.md`). *(fixed in
+  [#244](https://github.com/jclind/prepify/pull/244), R0: shipped `docs/CONVENTIONS.md` — frontend/backend/
+  design/testing/env/process conventions, each anchored to a real `file:line`, cross-linked from `CLAUDE.md`
+  and pointing at `scss-conventions.md` + `design/*`. Unblocks R1/R2.)*
 - `[ ]` **Refactor the create-recipe page**.
 - `[ ]` **Refactor the account page**.
 - `[x]` **Ingredient parser: handle "not found"** — *done in PR #164 (track 3d; PR open).* A client-side

@@ -86,7 +86,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **4** | **I1 · image resize pipeline** | Storage width variants + `srcset`/`sizes` on card + hero (mobile LCP) | `[~]` `worktree-feat+i1-image-pipeline` 2026-07-07 | Storage pipeline/CDN + `RecipeCard.tsx`, `SingleRecipe.tsx` hero | structural; unblocks C3 hero srcset — owner chose the **Firebase Resize Images extension** approach |
 | **4** | **I2 · uid-key recipe images** | re-key `recipeImages/{uid}/{uuid}` (`src/api/recipes.ts:188`) + tighten `storage.rules:27-32` to owner | `[ ]` | `src/api/recipes.ts`, `storage.rules` | pairs w/ I1; migrate existing objects |
 | **4** | **I3 · autocomplete title index** | Mongo text index / Atlas Search for fuzzy fallback (`recipes.js:194-240`) | `[~]` `worktree-feat+i3-autocomplete-index` 2026-07-07 | `server/routes/recipes.js` (+ `server/db.js`) | ⚠ after **S1** (merged); index-back the *existing* in-process fuzzy scan |
-| **5** | **R0 · Claude conventions doc** | code & architecture standard (`CONVENTIONS.md`/CLAUDE.md) | `[~]` `worktree-feat+r0-conventions-doc` 2026-07-07 | new doc | do **before** R1/R2 |
+| **5** | **R0 · Claude conventions doc** | code & architecture standard (`CONVENTIONS.md`/CLAUDE.md) | `[x]` [#244](https://github.com/jclind/prepify/pull/244) (2026-07-07) | new doc | **merged** — shipped `docs/CONVENTIONS.md` (grounded in a 4-way survey + REFACTOR.md), cross-linked from `CLAUDE.md`; **R1/R2 now have a standard to follow** |
 | **5** | **R1 · refactor create-recipe page** | the big AddRecipe refactor | `[ ]` | `src/pages/AddRecipe/**` | **subsumes C1** |
 | **5** | **R2 · refactor account page** | the big Account refactor | `[ ]` | `src/pages/Account/**` | **subsumes F6**; overlaps C2 |
 | **—** | **Deferred / post-1.0 / owner** | see [that section](#deferred--post-10--owner-off-the-active-board) | `[blocked]`/`[dropped]` | — | prerendering, Edamam, theming, brand-orange, DB relocation, ideas |
@@ -854,3 +854,28 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   0 unique commits — a torn-down-pending leftover; board row already `[x]`), `feat+r0-conventions-doc` = `[~]`
   claim-only (0 ahead of `development`, no doc work yet — expected). I3/F4 are claimed on other machines (no local
   branch/worktree). `development` in sync with origin (0/0) before appending. Worktree not yet created.
+- **2026-07-07** — **R0 merged** ([#244](https://github.com/jclind/prepify/pull/244), merge `1011ca7`) → `[x]`.
+  Shipped **`docs/CONVENTIONS.md`** — the house code & architecture standard — plus a pointer at the top of
+  `CLAUDE.md`. **First Wave-5 lane; unblocks R1/R2** (they now have a documented standard to follow). Docs-only
+  (+398 lines, no source touched). Covers: **frontend** (one-way `pages → Components → hooks/util/api` layering,
+  `src/`-absolute imports, `src/types.ts` persisted-shape ownership, class+singleton API clients over one axios
+  instance w/ token interceptor, React Query v5, `useAuth`/lazy `getAuth`, the `useMemo`/`useCallback`/`React.memo`
+  render-stability rule, route-string single-sourcing); **backend** (`asyncHandler`-wraps-every-handler, middleware
+  order `verifyToken → requireActive/requireAdmin → limiter`, trust-the-token identity, per-uid `makeUserLimiter`,
+  server-authoritative `validateRecipeBounds`, atomic conditional writes, `getDB()` singleton, machine-readable
+  error `code` shapes, the Phase-5 API contract, firebase-admin v14); **design/SCSS** (colocated `.scss`,
+  tokens-not-literals, the `focus-glow` vs `outline()` split, hover dialects, the Lucide icon boundary + guard) —
+  **cross-linking `scss-conventions.md` + `design/*` rather than duplicating**; **testing** gates + mocking +
+  regression practice; env/config; and the behaviour-preserving / separate-PR / worktree process rules. **Method:**
+  grounded in a 4-way parallel codebase survey (frontend/server/design/testing) + `REFACTOR.md`'s Decision Log,
+  every rule anchored to a real `file:line`. **Two accuracy calls baked in:** (1) `src/routes.ts` didn't exist at
+  R0's fork point (**C2** [#242](https://github.com/jclind/prepify/pull/242) hadn't merged into the base), so
+  route single-sourcing is documented as it *actually* was — `accountTabs.tsx` for account sub-routes, top-level
+  strings still hardcoded — with C2 flagged as the in-flight extension (C2 has since merged; a later doc pass can
+  drop the "in-flight" caveat); (2) the `DB_NAME` gotcha (runtime hardcodes the `prepify` db; only
+  `server/scripts/` read `DB_NAME`). **Verified:** all 6 CI checks green (Backend/Frontend/Static/E2e-Cypress
+  3m30s/Fallow/GitGuardian); internal links resolve (every referenced doc/source file exists on disk) and a stray
+  Devanagari typo was caught + fixed pre-merge. Merged as a merge commit; remote branch deleted; main-checkout
+  `development` fast-forwarded (no divergence). **Follow-ups filed-not-fixed:** refresh §2.8's "in-flight" note once
+  C2's `src/routes.ts` is adopted everywhere; the `#29a155` `.has-success` token drift (§4.2) stays a separate
+  colour-token dedup. **Other live lanes untouched:** I1/I3 (`[~]`), F4 (reclaimed), C3 (#243 `[P]`).
