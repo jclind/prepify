@@ -1,17 +1,17 @@
 import { useEffect } from 'react'
 
-// An element is "typing context" if a bare `/` should be inserted as text rather
-// than treated as the search hotkey — inputs, textareas, selects, and any
-// contenteditable surface (rich-text editors, etc.).
-function isTypingContext(el: EventTarget | null): boolean {
+// The hotkey must stand down when the user's focus is somewhere a bare `/`
+// shouldn't be stolen from: a text-entry surface (insert the `/` instead) or an
+// open modal dialog (react-modal renders `role="dialog"` + `aria-modal="true"`
+// and traps focus — a document-level keydown would otherwise escape that trap
+// and yank focus to the search input behind the overlay).
+function isGuardedContext(el: EventTarget | null): boolean {
   if (!(el instanceof HTMLElement)) return false
   const tag = el.tagName
-  return (
-    tag === 'INPUT' ||
-    tag === 'TEXTAREA' ||
-    tag === 'SELECT' ||
-    el.isContentEditable
-  )
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el.isContentEditable) {
+    return true
+  }
+  return !!el.closest('[aria-modal="true"], [role="dialog"]')
 }
 
 // Whether an element can actually receive focus right now. Several
@@ -44,15 +44,18 @@ export function useSlashFocusSearch(): void {
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       // Only a bare `/`: never with a modifier held (leave browser/OS shortcuts
-      // alone), never mid-IME-composition, and never while already typing in a
-      // field (so `/` inserts normally there).
+      // alone), never mid-IME-composition, and never while focus is in a text
+      // field or an open modal dialog (check both the event target and the
+      // active element — a keydown can target `document`/`body` when focus sits
+      // on a non-interactive dialog container).
       if (
         e.key !== '/' ||
         e.ctrlKey ||
         e.metaKey ||
         e.altKey ||
         e.isComposing ||
-        isTypingContext(e.target)
+        isGuardedContext(e.target) ||
+        isGuardedContext(document.activeElement)
       ) {
         return
       }

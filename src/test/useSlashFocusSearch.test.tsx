@@ -52,6 +52,28 @@ describe('useSlashFocusSearch', () => {
     expect(notPrevented).toBe(true)
   })
 
+  it('does nothing while focus is inside an open modal dialog', () => {
+    render(
+      <Harness
+        extra={
+          <div role='dialog' aria-modal='true' aria-label='A modal'>
+            <button aria-label='dialog-btn'>ok</button>
+          </div>
+        }
+      />
+    )
+    const dialogBtn = screen.getByLabelText('dialog-btn')
+    const search = screen.getByLabelText('search')
+    dialogBtn.focus()
+
+    // Focus is trapped in the dialog -> "/" must not escape it to the search.
+    const notPrevented = fireEvent.keyDown(dialogBtn, { key: '/' })
+
+    expect(search).not.toHaveFocus()
+    expect(dialogBtn).toHaveFocus()
+    expect(notPrevented).toBe(true)
+  })
+
   it('ignores "/" pressed with a modifier held', () => {
     render(<Harness />)
     const search = screen.getByLabelText('search')
