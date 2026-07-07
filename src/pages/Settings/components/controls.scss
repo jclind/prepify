@@ -79,7 +79,7 @@
     &:focus {
       outline: none;
       border-color: s.$secondary;
-      box-shadow: 0 0 0 3px rgba(s.$secondary, 0.16);
+      @include s.focus-glow(s.$secondary, 0.16);
     }
   }
   .sr-textarea {
@@ -123,13 +123,13 @@
   &.has-error input {
     border-color: s.$error-red;
     &:focus {
-      box-shadow: 0 0 0 3px rgba(s.$error-red, 0.15);
+      @include s.focus-glow(s.$error-red, 0.15);
     }
   }
   &.has-success input {
     border-color: #29a155;
     &:focus {
-      box-shadow: 0 0 0 3px rgba(#29a155, 0.18);
+      @include s.focus-glow(#29a155, 0.18);
     }
   }
   &.is-disabled input {

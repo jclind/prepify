@@ -110,6 +110,24 @@ coloured ring (an orange 2px ring on a card is drift, not a variant). Use
 `outline-offset` when a control needs the ring inset (a row) or nudged out (a
 tile).
 
+### The field-focus glow is a separate signal — `@include focus-glow()`
+
+Text inputs, textareas, and the Settings controls also cast a soft **coloured
+halo** while focused (paired with a `border-color` shift) — the `box-shadow: 0 0
+0 3px rgba(accent, …)` you see on a focused field. That is **not** the a11y
+`outline()` ring and the two coexist: `outline()` is the keyboard-focus
+indicator (`:focus-visible`), the glow is the "this field is active" affordance
+(`:focus` / `:focus-within`, so it shows on click too). Both are legitimate.
+
+The glow comes from **`@include focus-glow($color, $opacity)`** in `helpers.scss`.
+The geometry (`0 0 0 3px`) is fixed — the mixin *is* the one definition — while
+the tint follows the field's accent: teal `$secondary` at `0.15` is the default
+(`@include s.focus-glow;`), with `$primary` (the `/recipes` search), `$error-red`
+(invalid), and a success green (valid) as the branded/validation variants. **Don't
+hand-roll `box-shadow: 0 0 0 3px …` on a focused field** — reach for the mixin so
+the spread stays single-sourced. Opacity still varies slightly per surface
+(`0.12`–`0.25`); that spread is preserved, not yet normalised.
+
 ---
 
 ## To document later
