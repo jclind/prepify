@@ -55,6 +55,18 @@ The triage date stamped on items is the date they were filed here, not when they
   edit/draft-resume rehydrates correctly. **Fix:** emit a clearing signal when both go empty — e.g. an `else setVal(null)` branch
   on that effect (`null` re-triggers the sibling effect's `!val` reset, which is harmless). **Low severity** (only bites
   edit/draft-resume + an intentional clear-to-blank), one file — belongs to the AddRecipe lane (**C1/R1**) or a small F-track.
+  *(**Fixed in [#248](https://github.com/jclind/prepify/pull/248)**, R1: writeback now emits `setVal(null)` when both fields
+  clear, gated behind a `hasUserEdited` ref so the pre-hydration render can't be mistaken for a user clear; +2 regression tests,
+  runtime-verified — filled→valid, clear-both→invalid, re-enter→valid. Tick on merge.)*
+- `[ ]` **Whitespace-only recipe title bypasses the "Title is required" guard (filed 2026-07-07, off the R1 runtime verification)** —
+  found acting as a malicious user against the running create-recipe form. `validateRecipeForm` (`src/pages/AddRecipe/recipeFormValidation.ts`)
+  tests the title with `!form.title`, so an all-spaces title (`"     "`) is truthy → **no "Title is required" error**. Fill the other
+  required fields and the form validates and publishes a recipe with a blank-looking (whitespace) title; the saved recipe then renders
+  an empty `<h1>`. **Pre-existing, not an R1 regression** — the R1 extraction lifted the `!title` check verbatim from the former
+  in-component `validate()`; the same gap existed before. **Fix:** guard on `!form.title.trim()` (and ideally trim the title in the
+  submit payload); confirm the server (`validateRecipeBounds`, `server/routes/recipes.js`) also rejects a blank/whitespace title as
+  defence-in-depth. **Low severity** (data-quality, self-inflicted — no XSS/security impact; the malicious content itself is escaped
+  safely), one-line client fix — belongs to the AddRecipe lane (**R1** follow-up) or a small F-track.
 - `[x]` **Deleting a review leaves the star rating behind** — **fixed in PR #150 (merged, track 1a)**:
   added `DELETE /removeRating` (clears just the star; keeps any review; deletes the doc when
   rating-only), and `deleteReview` now keeps the rating and deletes the doc when there's nothing left —
