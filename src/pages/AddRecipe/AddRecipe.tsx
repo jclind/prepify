@@ -86,6 +86,9 @@ const AddRecipe: FC<AddRecipeProps> = ({ initialRecipe }) => {
           name='description'
           content='Create your own healthy recipe on Prepify'
         />
+        {/* The create/edit form is an authted app page, never something to
+            index — matches the noindex on Account/Settings/CreateUsername. */}
+        <meta name='robots' content='noindex' />
       </Helmet>
       <div className='add-recipe-page page'>
         <LoadingBar
