@@ -751,10 +751,14 @@ findings table.)*
       onto `$shadow-brand`. Kept bespoke: the two-layer add-ingredient bar, the horizontal drawer, the two
       upward sticky-bar shadows. No pixel regression beyond shadows (compiled-CSS diff vs development
       byte-identical outside `box-shadow`). Documented in `docs/design/elevation.md`.
-    - **Focus-ring tokens** — surfaced 2026-07-01, deferred out of the elevation track (they're focus
-      indicators, not elevation). ~13 `box-shadow: 0 0 0 3px rgba(…)` rings across FormInput/FormStyles/Settings
-      controls/CreateUsername/Recipes/Help, in teal/error/ok-green/orange variants — a `$focus-ring-*` token
-      group would single-source them. Pairs loosely with the `$primary-hover` a11y `2-scss` track.
+    - `[x]` **Focus-ring tokens** — DONE 2026-07-07 (fixed in [#241](https://github.com/jclind/prepify/pull/241),
+      C5). Surfaced 2026-07-01, deferred out of the elevation track (they're focus indicators, not elevation). The
+      12 `box-shadow: 0 0 0 3px rgba(…)` rings across FormInput/FormStyles/Settings controls/CreateUsername/Recipes/
+      Help (teal/error/ok-green/orange variants) now route through **`@mixin focus-glow($color, $opacity)`** in
+      `helpers.scss` — a parametrised mixin rather than a `$focus-ring-*` token set, since ring colour *and* opacity
+      both vary (only the `0 0 0 3px` geometry is invariant). Pure refactor, byte-identical compiled output;
+      documented in `docs/scss-conventions.md`. **Remaining (design call):** the per-surface opacity spread
+      (`.12–.25`) is preserved, not yet normalised. Pairs loosely with the `$primary-hover` a11y `2-scss` track.
     - `[x]` **Breakpoint tokens/mixin** — DONE 2026-06-25 (PR `style/breakpoint-tokens`). Added an 8-tier
       `$bp-xs..4xl` scale + `$bp-nav`/`$bp-nav-up` and `below()`/`above()`/`between()` mixins; migrated all 69
       width queries. The recurring content breakpoints converged to tiers (7 approved small shifts ≤30px:

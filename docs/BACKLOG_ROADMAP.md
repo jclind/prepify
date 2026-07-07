@@ -82,11 +82,11 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **3** | **C2 · route-constant single-sourcing** | `RECIPES_PATH` const (`DesktopBar:45`,`NavMenu:20`,`Recipes.tsx:113-119`); `browseAll`→`clearFilters`; `accountTabs` as app-wide route source (`DesktopAccountMenu:74`,`footerData:43-44`,`DraftResumeBanner:47`) + `activeAccountTab` helper | `[P]` [#242](https://github.com/jclind/prepify/pull/242) `worktree-feat+c2-route-constants` 2026-07-07 | Navbar/* + `Recipes.tsx` + `accountTabs.tsx` + `footerData.ts` + `DraftResumeBanner.tsx` | both share DesktopBar → one lane |
 | **3** | **C3 · SingleRecipe lane** ⚠ lane | CLS controls-block reserve (`SingleRecipe.tsx:308-317`, `RecipeControls.scss`); JSON-LD `</script>` escaping (`buildRecipeJsonLd.ts:38-39`) | `[P]` [#243](https://github.com/jclind/prepify/pull/243) `worktree-feat+c3-singlerecipe-lane` 2026-07-07 | `SingleRecipe.tsx`, `RecipeControls.scss`, `buildRecipeJsonLd.ts` | hero `srcset` deferred to **I1**; JSON-LD gates with prerender; **CLS half is a no-op** — `RecipeControls` is owner-only, non-owner path already fully reserved (see status log) |
 | **3** | **C4 · SearchRecipesInput lane** | autocomplete footer-label debounce disagreement (`:274` vs `:336`); press-`/` global focus-search feature | `[x]` [#238](https://github.com/jclind/prepify/pull/238) (2026-07-07) | `SearchRecipesInput.tsx` (+ Layout for key handler) | **merged** |
-| **3** | **C5 · focus-ring tokens** ⚠ SCSS loner | `$focus-ring-*` group in `helpers.scss` + migrate ~13 literal `0 0 0 3px` rings | `[P]` [#241](https://github.com/jclind/prepify/pull/241) `worktree-feat+c5-focus-ring-tokens` 2026-07-07 | `helpers.scss` + ~9 component `.scss` | only one SCSS-token worktree at a time |
+| **3** | **C5 · focus-ring tokens** ⚠ SCSS loner | `$focus-ring-*` group in `helpers.scss` + migrate ~13 literal `0 0 0 3px` rings | `[x]` [#241](https://github.com/jclind/prepify/pull/241) 2026-07-07 | `helpers.scss` + ~9 component `.scss` | **merged** — shipped as `@mixin focus-glow()` (parametrised, not a `$focus-ring-*` token set) |
 | **4** | **I1 · image resize pipeline** | Storage width variants + `srcset`/`sizes` on card + hero (mobile LCP) | `[ ]` | Storage pipeline/CDN + `RecipeCard.tsx`, `SingleRecipe.tsx` hero | structural; unblocks C3 hero srcset |
 | **4** | **I2 · uid-key recipe images** | re-key `recipeImages/{uid}/{uuid}` (`src/api/recipes.ts:188`) + tighten `storage.rules:27-32` to owner | `[ ]` | `src/api/recipes.ts`, `storage.rules` | pairs w/ I1; migrate existing objects |
 | **4** | **I3 · autocomplete title index** | Mongo text index / Atlas Search for fuzzy fallback (`recipes.js:194-240`) | `[ ]` | `server/routes/recipes.js` | ⚠ after **S1**; low urgency/scalability |
-| **5** | **R0 · Claude conventions doc** | code & architecture standard (`CONVENTIONS.md`/CLAUDE.md) | `[ ]` | new doc | do **before** R1/R2 |
+| **5** | **R0 · Claude conventions doc** | code & architecture standard (`CONVENTIONS.md`/CLAUDE.md) | `[~]` `worktree-feat+r0-conventions-doc` 2026-07-07 | new doc | do **before** R1/R2 |
 | **5** | **R1 · refactor create-recipe page** | the big AddRecipe refactor | `[ ]` | `src/pages/AddRecipe/**` | **subsumes C1** |
 | **5** | **R2 · refactor account page** | the big Account refactor | `[ ]` | `src/pages/Account/**` | **subsumes F6**; overlaps C2 |
 | **—** | **Deferred / post-1.0 / owner** | see [that section](#deferred--post-10--owner-off-the-active-board) | `[blocked]`/`[dropped]` | — | prerendering, Edamam, theming, brand-orange, DB relocation, ideas |
@@ -713,3 +713,25 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   C2/C4/C5 — keeps backlog edits off the PR so a BACKLOG chokepoint conflict can't mark it DIRTY and suppress CI.
   (Board moved during the lane: **C4 merged** `[x]` #238 and **C2** reached `[P]` #242 — verified both against the
   tree before appending; my C3 row + this entry are line-distinct from theirs.)
+- **2026-07-07** — **C5 merged** ([#241](https://github.com/jclind/prepify/pull/241), merge `59c7d92`). The **SCSS
+  loner** landed as a **pure refactor** single-sourcing the field-focus glow. Shipped `@mixin focus-glow($color:
+  $secondary, $opacity: 0.15)` in `helpers.scss` — a **parametrised mixin, not the mooted `$focus-ring-*` token
+  set** (ring **colour and opacity both vary**: 4 accents — teal `$secondary`, `$primary`, `$error-red`, a valid
+  green `#29a155` — × 6 opacities `.12–.25`, so a fixed token group would have exploded into a dozen names; the
+  geometry `0 0 0 3px` is the one thing that's invariant, and that's what the mixin fixes). Migrated the **12
+  literal `box-shadow: 0 0 0 3px …` rings** across 7 component `.scss` (`FormInput` ×2, `RecipeFormTextArea`,
+  `CreateUsername`, `Recipes`, `Help` ×3, `FormStyles`, `controls` ×3) onto it, each preserving its **exact**
+  colour+opacity. Deliberately named `focus-glow` (not `focus-ring`) to stay distinct from the a11y `@mixin
+  outline()` keyboard ring — the two focus signals coexist and the split is now documented in
+  `docs/scss-conventions.md` (new "field-focus glow is a separate signal" subsection). **Verified zero visual
+  change** by production-build byte-equivalence: all 12 rings emit their identical pre-refactor hex+alpha
+  (`#00adb526` ×5 teal/.15, `#00adb51f/29/33/40`, `#ff57221f`, `#c5303f26`, `#29a1552e`). Local code review — 1
+  minor finding (the mixin's header comment overclaimed "`:focus` not `:focus-visible`", contradicted by the 4
+  `:focus-visible` call sites where the glow doubles as the WCAG 2.4.7 keyboard indicator); fixed in a follow-up
+  comment-only commit (`85763f5`, reworded both `helpers.scss` and the doc) before merge. Gates green (build,
+  Vitest, full CI incl. Cypress 3m33s). **`[x]` flip recorded on `development` directly** (not the lane branch),
+  same convention as C2/C3/C4. **Follow-up filed-not-fixed (out of a pure-refactor's scope, design call):** the
+  per-surface opacity spread (`.12–.25`) is *preserved not normalised* — whether to converge on one or two canonical
+  glow opacities is a separate visual-design decision, noted in `scss-conventions.md`. Also the `controls.scss`
+  `.has-success` green is a bare `#29a155` literal (≠ the `$success-green` token) for both its border and glow — a
+  colour-token dedup that's a different concern from the ring geometry this track owned.
