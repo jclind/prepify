@@ -32,6 +32,7 @@ import { formatRating } from 'src/util/formatRating'
 import { formatMonthYear } from 'src/util/formatDate'
 import { formatPrice } from 'src/util/formatPrice'
 import { closestFraction } from 'src/util/formatQuantity'
+import { recipeImageSrcSet } from 'src/util/recipeImageVariants'
 
 import { IngredientsType, InstructionsType, RecipeType, ReviewType } from 'types'
 import RecipeAPI from 'src/api/recipes'
@@ -86,9 +87,17 @@ const SingleRecipe: FC = () => {
   // instant `loading` flips and you watch the image paint in top-down over an
   // empty box. Reset when the image URL changes (navigating between recipes).
   const [heroLoaded, setHeroLoaded] = useState(false)
+  // Drop to the original if a resized hero variant 404s (legacy/un-backfilled
+  // image, or the post-upload window before the extension runs). Reset with
+  // heroLoaded when navigating to another recipe.
+  const [heroVariantFailed, setHeroVariantFailed] = useState(false)
   useEffect(() => {
     setHeroLoaded(false)
+    setHeroVariantFailed(false)
   }, [currRecipe?.recipeImage])
+  const heroSrcSet = heroVariantFailed
+    ? undefined
+    : recipeImageSrcSet(currRecipe?.recipeImage)
   const printedRef = useRef<HTMLDivElement>(null)
 
   const updateRecipeLocalStorage = (recipeId: string, numServings: number) => {
@@ -321,6 +330,8 @@ const SingleRecipe: FC = () => {
               {currRecipe?.recipeImage && (
                 <img
                   src={currRecipe.recipeImage}
+                  srcSet={heroSrcSet}
+                  sizes={heroSrcSet ? '(max-width: 820px) 100vw, 400px' : undefined}
                   alt={currRecipe.title}
                   title={currRecipe.title}
                   loading='eager'
@@ -336,6 +347,7 @@ const SingleRecipe: FC = () => {
                     }
                   }}
                   onLoad={() => setHeroLoaded(true)}
+                  onError={() => heroSrcSet && setHeroVariantFailed(true)}
                   className={heroLoaded ? 'is-loaded' : ''}
                 />
               )}
