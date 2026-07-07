@@ -75,7 +75,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **2** | **F1 · TimeInput NaN bug** | edit/draft-resume blank prep/cook time (`TimeInput.tsx:23-27`) | `[x]` [#235](https://github.com/jclind/prepify/pull/235) (2026-07-06) | `TimeInput.tsx` | **merged** — scope narrowed to `TimeInput.tsx` only (AddRecipe already passed the object shape); review filed the "clear doesn't propagate" follow-up (BACKLOG.md Bugs, low). AddRecipe lane (C1/R1) rebases onto this. |
 | **2** | **F2 · AuthContext memo** | `value` object recreated every render → wrap in `useMemo` | `[x]` [#240](https://github.com/jclind/prepify/pull/240) (2026-07-07) | `src/context/AuthContext.tsx` | **merged** — full fix, not just the `value` memo: `getAuth()`→`useMemo`, all 8 handlers `useCallback`'d, then `value` memoized (a bare `value` memo would no-op against per-render handler identities). Added a referential-stability regression test; runtime-verified the full auth lifecycle. Rebased onto current `development` before merge. |
 | **2** | **F3 · Saved-tab memo** | `refreshAfterMutation` not `useCallback`'d → defeats `React.memo(RecipeCard)` (`SavedRecipes.tsx:133-136,372`) | `[x]` [#237](https://github.com/jclind/prepify/pull/237) (2026-07-07) | `SavedRecipes.tsx` | **merged** — `useCallback(refreshAfterMutation, [queryClient, uid])` stabilizes the handler passed as `onMutated` to the memoized grid; verified live (0 vs 54 re-renders, search/unsave refresh intact). Rebased onto current `development` before merge. |
-| **2** | **F4 · change-password subhead** | redundant `<h3 class='sr-subhead'>` (`AccountSection.tsx:188`) | `[P]` [#246](https://github.com/jclind/prepify/pull/246) `worktree-feat+f4-changepw-subhead` 2026-07-07 (reclaimed; prior claim orphaned) | `Settings/sections/AccountSection.tsx` | — |
+| **2** | **F4 · change-password subhead** | redundant `<h3 class='sr-subhead'>` (`AccountSection.tsx:188`) | `[x]` [#246](https://github.com/jclind/prepify/pull/246) (2026-07-07) | `Settings/sections/AccountSection.tsx` | **merged** — reclaimed an orphaned claim first; dropped the redundant subhead (`Connected accounts` heading kept); runtime-verified via a real signup→settings flow |
 | **2** | **F5 · housekeeping one-liners** | brand-asset comment (`generate-brand-assets.mjs:6`); CLAUDE.md RecipeContext drift; rename `validateIngredientQuantityStr`→`formatQuantity` (3 imports) | `[x]` [#239](https://github.com/jclind/prepify/pull/239) (2026-07-07) | `scripts/`, `CLAUDE.md`, `src/util/` | **merged** — rename repointed 4 importers (+1 commented ref); both comment/doc fixes verified true against disk (font file is `MediumItalic`, `src/context/` has only `AuthContext.tsx`) |
 | **2** | **F6 · account nav polish** | Saved/Ratings section-nav styling (`SegmentedNav.tsx`) | `[ ]` | `Account/components/SegmentedNav.tsx` | subjective; better inside **R2** |
 | **3** | **C1 · AddRecipe cluster** ⚠ lane | dropdown/`FormInput` uniformity (`recipeSelectStyles.ts`); summary-bar sticky; group-label styling; `/add-recipe` `noindex`; Cuisine/MealType selector unit tests; `updateIngredients` test + dead-code | `[ ]` | `src/pages/AddRecipe/**`, `src/test/` | ⚠ **subsumed by R1** — decide refactor-vs-smalls first |
@@ -85,7 +85,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **3** | **C5 · focus-ring tokens** ⚠ SCSS loner | `$focus-ring-*` group in `helpers.scss` + migrate ~13 literal `0 0 0 3px` rings | `[x]` [#241](https://github.com/jclind/prepify/pull/241) 2026-07-07 | `helpers.scss` + ~9 component `.scss` | **merged** — shipped as `@mixin focus-glow()` (parametrised, not a `$focus-ring-*` token set) |
 | **4** | **I1 · image resize pipeline** | Storage width variants + `srcset`/`sizes` on card + hero (mobile LCP) | `[P]` [#247](https://github.com/jclind/prepify/pull/247) 2026-07-07 | Storage pipeline/CDN + `RecipeCard.tsx`, `SingleRecipe.tsx` hero | structural; unblocks C3 hero srcset — owner chose the **Firebase Resize Images extension** approach |
 | **4** | **I2 · uid-key recipe images** | re-key `recipeImages/{uid}/{uuid}` (`src/api/recipes.ts:188`) + tighten `storage.rules:27-32` to owner | `[ ]` | `src/api/recipes.ts`, `storage.rules` | pairs w/ I1; migrate existing objects |
-| **4** | **I3 · autocomplete title index** | Mongo text index / Atlas Search for fuzzy fallback (`recipes.js:194-240`) | `[P]` [#245](https://github.com/jclind/prepify/pull/245) `worktree-feat+i3-autocomplete-index` 2026-07-07 | `server/routes/recipes.js` (+ `server/db.js`) | ⚠ after **S1** (merged); index-back the *existing* in-process fuzzy scan |
+| **4** | **I3 · autocomplete title index** | Mongo text index / Atlas Search for fuzzy fallback (`recipes.js:194-240`) | `[x]` [#245](https://github.com/jclind/prepify/pull/245) (2026-07-07) | `server/routes/recipes.js` (+ `server/db.js`) | **merged** — index-backed `$text` tier between exact + fuzzy; fuzzy scan now typo-only |
 | **5** | **R0 · Claude conventions doc** | code & architecture standard (`CONVENTIONS.md`/CLAUDE.md) | `[x]` [#244](https://github.com/jclind/prepify/pull/244) (2026-07-07) | new doc | **merged** — shipped `docs/CONVENTIONS.md` (grounded in a 4-way survey + REFACTOR.md), cross-linked from `CLAUDE.md`; **R1/R2 now have a standard to follow** |
 | **5** | **R1 · refactor create-recipe page** | the big AddRecipe refactor | `[~]` `worktree-feat+r1-addrecipe-refactor` 2026-07-07 | `src/pages/AddRecipe/**` | **subsumes C1** |
 | **5** | **R2 · refactor account page** | the big Account refactor | `[ ]` | `src/pages/Account/**` | **subsumes F6**; overlaps C2 |
@@ -973,3 +973,55 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   with real committed work + open PRs — f4 = #246, i1 = #247, i3 = #245; all other local branches are merged/
   stale/the known off-board `moderation-pr-c-ratelimiter` orphan. `development` in sync with origin (0/0) before
   this append. Worktree not yet created.
+- **2026-07-07** — **I3 merged** ([#245](https://github.com/jclind/prepify/pull/245), merge commit `2456a08`,
+  `worktree-feat+i3-autocomplete-index` torn down). **What landed:** `/api/searchAutoCompleteRecipes` went from
+  two tiers (exact `$regex` substring → capped in-process fuzzy scan) to **three** — a new index-backed `$text`
+  word/stem tier slots between them, backed by a `{ title: 'text' }` index added to `ensureIndexes()` in
+  `server/db.js`. Correctly-spelled queries — including **out-of-order multi-word** ones the adjacent-substring
+  pass structurally can't match (`"basil salmon"` → *Grilled Salmon with Tomatoes & Basil*) and **stemmed**
+  forms (`grilling`→grill←grilled) — now serve off the index and skip the `FUZZY_CANDIDATE_CAP = 1000` scan
+  entirely; the O(n) Levenshtein fallback still runs but only when tiers 1–2 leave slots open, i.e. genuine
+  typos `$text` can't stem-match (`chikcen`→*…Chicken…*). A shared `addUnique` accumulator dedupes by `_id`
+  across all three tiers and caps at `AUTOCOMPLETE_LIMIT = 8`; `RECIPE_VISIBLE` is preserved in every tier.
+  **Safety:** user input is stripped of `$text` phrase (`"`) and per-term negation (leading `-`) operators via a
+  new `toTextSearch` sanitizer (else `salmon -grilled` would *exclude* grilled) — the exact tier keeps its
+  `escapeRegex`; and the `$text` tier is `try/catch`-guarded so a missing/deferred text index **degrades to the
+  fuzzy scan rather than 500-ing** the endpoint (logs `[autocomplete] $text search unavailable: …`). **Design
+  call:** Mongo `$text` over Atlas Search per owner (low urgency at today's catalog size); one text index per
+  collection, `title` is the only autocompleted field. **Verified:** full server Jest suite 747/747 (adds a
+  stemmed-match test that isolates tier 2 — `grilling`/`Grilled Salmon` scores 0.625 < the 0.7 fuzzy threshold,
+  so only `$text` can surface it — and an index-absent degradation test that drops/recreates the text index).
+  Runtime-verified live against the dev API: all three tiers, operator-sanitization probes, regex-injection
+  (`.*`/`.+` → `[]`, no catalog dump), the 8-cap, and graceful degradation (dropped `title_text` → `grilling`
+  returns `[]` HTTP **200**, not 500; recreated → match returns). **Filed-not-fixed (no action, by owner
+  decision):** the `{ title: 'text' }` build is `await`ed in `ensureIndexes()`, so it blocks startup readiness —
+  benign at current sub-second scale, and uniquely safe to defer because the route degrades gracefully without
+  it (unlike the browse index); the documented trigger to revisit is the whole `ensureIndexes()` set going
+  non-blocking if the collection ever grows enough to stall a cold build. **Other live lanes untouched:** I1
+  `[P]` #247, F4 `[P]` #246, R1 claimed — none touch `server/routes/recipes.js` or `server/db.js`. First Wave-4
+  **I**-track done; `development` fast-forwarded to origin (0/0), no concurrent board commits to rebase.
+- **2026-07-07** — **F4 merged** ([#246](https://github.com/jclind/prepify/pull/246), merge commit `b7f1384`) → `[x]`.
+  Dropped the redundant `<h3 class='sr-subhead'>Change password</h3>` (`AccountSection.tsx:188`): the
+  change-password subsection in **Settings → Account & Security** is already self-describing — its fields carry
+  their own labels (*Current / New / Confirm password*) and the **Update password** button names the action — so
+  under the governing `<h2>Account & Security</h2>` the extra `<h3>` just restated the button. Kept the
+  `.sr-subsection` wrapper (its `border-top` divider) so the block retains its visual grouping; **`Connected
+  accounts` keeps its subhead** (it labels a passive, display-only provider list with no self-describing control).
+  Repointed the federated-account *"hides the change-password section"* test off the removed heading text onto the
+  block-unique **New password** field label so it stays meaningful. **Reclaim provenance:** the prior F4 `[~]` was
+  an orphaned claim-only step from `45682f4` (docs commit that never created a worktree — the claiming session had
+  pivoted to F5); verified abandoned (no branch/PR/ref anywhere) before reclaiming under owner authorization.
+  **Verified:** gates — `tsc` clean, Vitest **568 passed / 2 skipped** (77 files, `AccountSection` 25/25), build
+  clean; **runtime `/verify`** — drove the real **signup → create-username → Settings → Account & Security** flow
+  in headless Chromium against dev infra to mint a genuine `password`-provider session (the Cypress test user has
+  no password provider so `cy.login()` can't reach the block), confirmed the DOM has no "Change password" subhead
+  while all password fields + **Update password** + the *Connected accounts* heading render, and probed the block's
+  validation live (empty-current → "Current password required"; mismatch → "New passwords do not match" on both
+  fields); throwaway dev account + Mongo username reservation cleaned up afterward, 0 console errors. **Follow-up
+  filed-not-fixed:** the heading asymmetry (password subsection now divider-without-heading vs *Connected
+  accounts*'s divider+heading) is inherent to the owner's "this heading is redundant" call — a separate
+  visual-design decision. **Swept-in:** this same commit carries the concurrent **I3** session's truthful
+  `[P]`→`[x]` #245 flip + its status-log/BACKLOG entries (I3 genuinely merged `2456a08`; rows line-distinct from
+  F4's) — `development` was fast-forwarded to origin `b7f1384` (my F4 merge) with the I3 doc edits preserved before
+  this append. **Wave 2 is now fully complete (F1–F6: F6 defers to R2).** Other live lanes untouched: I1 `[P]`
+  #247, R1 claimed.

@@ -638,7 +638,7 @@ findings table.)*
   [#229](https://github.com/jclind/prepify/pull/229) (merged 2026-07-05):** the recompute now runs through
   `recomputeWithRetry` (bounded retries) and surfaces non-silently rather than a bare `console.error`. A
   standing catalog-wide reconciliation job remains desirable — tracked under **S6** (rating-aggregate ops).
-- `[ ]` **Autocomplete fuzzy fallback is an O(n) scan + in-process ranking** — when exact matches <
+- `[x]` **Autocomplete fuzzy fallback is an O(n) scan + in-process ranking** *(fixed in [#245](https://github.com/jclind/prepify/pull/245), I3: added a `{ title: 'text' }` index in `server/db.js` and inserted an index-backed `$text` word/stem tier between the exact-substring and fuzzy tiers of `/api/searchAutoCompleteRecipes`. Correctly-spelled queries — including out-of-order multi-word ones the substring pass misses — now serve off the index and skip the capped scan entirely; the O(n) Levenshtein fallback still runs, but only for genuine misspellings `$text` can't stem-match. User input is stripped of `$text` phrase/negation operators (`toTextSearch`), and the `$text` tier is try/caught so a missing index degrades to the fuzzy scan instead of 500-ing. Chose Mongo `$text` over Atlas Search per owner — low urgency at today's catalog size.)* — when exact matches <
   `AUTOCOMPLETE_LIMIT = 8` (`server/routes/recipes.js:191`), the `/api/searchAutoCompleteRecipes` handler
   pulls up to `FUZZY_CANDIDATE_CAP = 1000` (`:204`) `{_id, title}` docs (only the `RECIPE_VISIBLE` filter
   narrows them — no title text index; `server/db.js` recipes indexes are `{userId, createdAt}` only) and runs
