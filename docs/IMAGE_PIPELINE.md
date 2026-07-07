@@ -89,11 +89,16 @@ live, upload a test recipe image (or re-upload one), then list the bucket:
 gsutil ls 'gs://<bucket>/recipeImages/**' | grep _400x400
 ```
 
-Confirm the generated name is **`<stem>_400x400.webp`** (extension stripped), e.g.
-`photo_400x400.webp` — **not** `photo.jpg_400x400.webp`. The helper assumes the
-stripped form. If your version keeps the original extension, that's a one-line fix
-in `recipeImageVariantUrl()` (build the stem without stripping `.jpg`); the
-`RECIPE_IMAGE_VARIANT_WIDTHS` array and everything else stay the same.
+Since I2, originals upload **without a file extension** — the object is
+`recipeImages/{uid}/{uuid}` (a bare uuid, no `.jpg`). So confirm the generated
+name is **`{uuid}_400x400.webp`**, e.g. an original
+`recipeImages/ab12…/9f3c1d2e-…` yields `9f3c1d2e-…_400x400.webp`. The helper
+splits the stem on the last `.`, so with no extension in the source name the
+whole uuid is the stem — exactly what it expects. (If your extension version
+instead names variants off the *content type* and injects an extension, e.g.
+`9f3c1d2e-….jpeg_400x400.webp`, that's a one-line fix in
+`recipeImageVariantUrl()`; the `RECIPE_IMAGE_VARIANT_WIDTHS` array and everything
+else stay the same.)
 
 ### 3. Backfill existing images
 
@@ -113,7 +118,8 @@ VITE_IMAGE_VARIANTS_ENABLED=true
 ```
 
 Then spot-check in the browser devtools **Network** tab: card/hero requests should
-now be `*_800x800.webp` (or the DPR-appropriate width), not the original `.jpg`.
+now be `*_800x800.webp` (or the DPR-appropriate width), not the extensionless
+original object.
 
 ### Rollback
 
