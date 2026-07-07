@@ -678,16 +678,18 @@ findings table.)*
   Sass deprecation warnings and all 73 `.scss` compile clean. The only remaining `@import` is the plain CSS
   `@import url('…Montserrat…')` font load in `src/index.scss` — not a Sass partial import, not deprecated.
   *(See the 2026-06-23 4-sass status-log entry in `RELEASE_GAMEPLAN.md`.)*
-- `[ ]` **Recipe images aren't keyed by uid in Storage** — uploads go to `recipeImages/{imageFile.name}`
-  (`src/api/recipes.ts:188`), keyed by the raw filename rather than the owner's uid. (`storage.rules:27-32`
-  auth-gates the path but can't scope to the owner — contrast the uid-scoped `profilePhotos/{userId}` at
-  `:15-21`; verified 2026-06-26.) Two consequences:
-  (a) two users uploading `photo.jpg` collide/overwrite, and (b) the Storage rules can't scope writes to
-  the owner, so `storage.rules` can only auth-gate that path (any signed-in user could overwrite/delete
-  any recipe image). Re-key to e.g. `recipeImages/{uid}/{uuid}` (and tighten the rule to
-  `request.auth.uid == uid`) for collision-safety + per-owner write scoping. Low severity (writes are
-  auth-gated and the server is the source of truth), but worth doing. *(surfaced 2026-06-23 writing the
-  Storage rules, PR #177.)*
+- `[x]` *(fixed in [#249](https://github.com/jclind/prepify/pull/249), I2: uploads re-keyed to
+  `recipeImages/{uid}/{uuid}` with a collision-proof uuid — fail-closed on no uid — and `storage.rules`
+  tightened to owner-scoped writes `request.auth.uid == uid`, mirroring `profilePhotos/{uid}`; the legacy
+  flat path is now read-only for un-migrated objects. **Rules-deploy + object migration are owner-gated** —
+  runbook in `docs/IMAGE_PIPELINE.md`.)* **Recipe images aren't keyed by uid in Storage** — uploads went to
+  `recipeImages/{imageFile.name}` (`src/api/recipes.ts:188`), keyed by the raw filename rather than the
+  owner's uid. (`storage.rules:27-32` auth-gated the path but couldn't scope to the owner — contrast the
+  uid-scoped `profilePhotos/{userId}` at `:15-21`; verified 2026-06-26.) Two consequences:
+  (a) two users uploading `photo.jpg` collide/overwrite, and (b) the Storage rules couldn't scope writes to
+  the owner, so `storage.rules` could only auth-gate that path (any signed-in user could overwrite/delete
+  any recipe image). Low severity (writes are auth-gated and the server is the source of truth), but worth
+  doing. *(surfaced 2026-06-23 writing the Storage rules, PR #177.)*
 - `[x]` **Point Railway at the production branch** — **done (2026-06-26, per the dev/prod env-split work):**
   Railway now runs two services — a prod service deploying the `release` branch (→ prepify-prod Mongo +
   prepify-9b974 Firebase, `FRONTEND_URLS` = the prepifymeals.com origins, CORS verified live) and a dev

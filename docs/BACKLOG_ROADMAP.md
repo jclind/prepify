@@ -84,7 +84,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **3** | **C4 · SearchRecipesInput lane** | autocomplete footer-label debounce disagreement (`:274` vs `:336`); press-`/` global focus-search feature | `[x]` [#238](https://github.com/jclind/prepify/pull/238) (2026-07-07) | `SearchRecipesInput.tsx` (+ Layout for key handler) | **merged** |
 | **3** | **C5 · focus-ring tokens** ⚠ SCSS loner | `$focus-ring-*` group in `helpers.scss` + migrate ~13 literal `0 0 0 3px` rings | `[x]` [#241](https://github.com/jclind/prepify/pull/241) 2026-07-07 | `helpers.scss` + ~9 component `.scss` | **merged** — shipped as `@mixin focus-glow()` (parametrised, not a `$focus-ring-*` token set) |
 | **4** | **I1 · image resize pipeline** | Storage width variants + `srcset`/`sizes` on card + hero (mobile LCP) | `[x]` [#247](https://github.com/jclind/prepify/pull/247) (2026-07-07) | Storage pipeline/CDN + `RecipeCard.tsx`, `SingleRecipe.tsx` hero | **merged** — frontend `srcset` + owner-gated Firebase Resize Images extension; **inert until the owner installs the extension, backfills, and flips `VITE_IMAGE_VARIANTS_ENABLED`** (two safety nets: build-flag + per-`<img>` fallback). Also carries C3's deferred hero `srcset` |
-| **4** | **I2 · uid-key recipe images** | re-key `recipeImages/{uid}/{uuid}` (`src/api/recipes.ts:188`) + tighten `storage.rules:27-32` to owner | `[P]` [#249](https://github.com/jclind/prepify/pull/249) (2026-07-07) | `src/api/recipes.ts`, `storage.rules` | pairs w/ I1; migrate existing objects |
+| **4** | **I2 · uid-key recipe images** | re-key `recipeImages/{uid}/{uuid}` (`src/api/recipes.ts:188`) + tighten `storage.rules:27-32` to owner | `[x]` [#249](https://github.com/jclind/prepify/pull/249) (2026-07-07) | `src/api/recipes.ts`, `storage.rules` | **merged** — uid-scoped uploads + owner-write rules (`request.auth.uid == uid`), fail-closed on no-uid; legacy flat path kept read-only for un-migrated objects. **Inert until the owner deploys the rules + migrates existing objects** (runbook in `docs/IMAGE_PIPELINE.md`). Also fixed I1's variant-naming doc example for the now-extensionless `{uuid}` originals |
 | **4** | **I3 · autocomplete title index** | Mongo text index / Atlas Search for fuzzy fallback (`recipes.js:194-240`) | `[x]` [#245](https://github.com/jclind/prepify/pull/245) (2026-07-07) | `server/routes/recipes.js` (+ `server/db.js`) | **merged** — index-backed `$text` tier between exact + fuzzy; fuzzy scan now typo-only |
 | **5** | **R0 · Claude conventions doc** | code & architecture standard (`CONVENTIONS.md`/CLAUDE.md) | `[x]` [#244](https://github.com/jclind/prepify/pull/244) (2026-07-07) | new doc | **merged** — shipped `docs/CONVENTIONS.md` (grounded in a 4-way survey + REFACTOR.md), cross-linked from `CLAUDE.md`; **R1/R2 now have a standard to follow** |
 | **5** | **R1 · refactor create-recipe page** | the big AddRecipe refactor | `[x]` [#248](https://github.com/jclind/prepify/pull/248) (2026-07-07) | `src/pages/AddRecipe/**` | **merged** — structural refactor: extracted `useRecipeForm` (useReducer) + pure `recipeFormValidation` + `FormField`; fixed the TimeInput clear-both bug; +38 tests. Folded in **part** of C1 (noindex, selector tests, `updateIngredients` test + dead-code); C1's visual smalls (dropdown/`FormInput` uniformity, summary-bar sticky, group-label styling) still open. See status log. |
@@ -1195,3 +1195,24 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   pass / 2 skip, tsc clean) green; whitespace-only-title guard gap left filed-not-fixed (pre-existing `!title` vs
   `.trim()`, BACKLOG.md Bugs, low). Board/doc edits committed on `development` in the main checkout, not the lane
   branch (same convention as C2–C5/I1/I3/R2).
+- **2026-07-07** — **I2 merged** ([#249](https://github.com/jclind/prepify/pull/249), merge `5bab02e`, all 6 checks
+  green) into `development`; worktree torn down. Recipe-image uploads are now keyed by owner uid at
+  `recipeImages/{uid}/{uuid}` (was `recipeImages/{filename}`, which let two users' `photo.jpg` collide and carried no
+  uid for the rules to scope on) — a random `uuid` makes the object collision-proof so the original filename is
+  dropped (uploads are now **extensionless**). `uploadRecipeImage` **fails closed** (throws before touching the SDK)
+  when there's no authenticated uid. `storage.rules` now enforces owner-scoped writes on the two-segment path
+  (`request.auth.uid == uid`, mirroring `profilePhotos/{uid}`) and **denies** writes to the legacy one-segment flat
+  path while keeping it publicly readable, so un-migrated recipes keep rendering. This completes the I1/I2 image pair:
+  the Resize Images extension keeps writing variants into the same `{uid}/` directory (config unchanged — leading-
+  segment `INCLUDE_PATH_LIST` match + empty `RESIZED_IMAGES_PATH`), covered by the two-segment read rule. **Inert on
+  the live deployment until the owner runs the rollout** — the re-keyed client 403s against the still-deployed flat
+  rules, so `storage.rules` and the client must deploy together, followed by the flat→uid object migration; both are
+  documented in the new **"Runbook — I2 uid re-key rollout"** section of `docs/IMAGE_PIPELINE.md`. Verified pre-merge
+  at two real runtime surfaces: a real-app upload captured the `recipeImages/{uid}/{uuid}` request (403 under the old
+  deployed rules, as designed) and an 11-scenario `@firebase/rules-unit-testing` emulator matrix (owner-write allow,
+  cross-uid deny, unauth deny, oversize/non-image deny, legacy read-allow/write-deny) went 11/11. Local code review
+  found no correctness issues; the PR also folded in a fix to I1's variant-naming doc example (the helper's last-dot
+  split already handled the now-extensionless `{uuid}` stem — doc/comment only, no code change). Server delete/
+  moderation path needed no change (`parseStorageUrl` decodes the whole `%2F`-encoded nested path; added a regression
+  test). Board/doc edits committed on `development` in the main checkout, not the lane branch (same convention as
+  C2–C5/I1/I3/R1/R2).
