@@ -79,7 +79,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **2** | **F5 · housekeeping one-liners** | brand-asset comment (`generate-brand-assets.mjs:6`); CLAUDE.md RecipeContext drift; rename `validateIngredientQuantityStr`→`formatQuantity` (3 imports) | `[x]` [#239](https://github.com/jclind/prepify/pull/239) (2026-07-07) | `scripts/`, `CLAUDE.md`, `src/util/` | **merged** — rename repointed 4 importers (+1 commented ref); both comment/doc fixes verified true against disk (font file is `MediumItalic`, `src/context/` has only `AuthContext.tsx`) |
 | **2** | **F6 · account nav polish** | Saved/Ratings section-nav styling (`SegmentedNav.tsx`) | `[ ]` | `Account/components/SegmentedNav.tsx` | subjective; better inside **R2** |
 | **3** | **C1 · AddRecipe cluster** ⚠ lane | dropdown/`FormInput` uniformity (`recipeSelectStyles.ts`); summary-bar sticky; group-label styling; `/add-recipe` `noindex`; Cuisine/MealType selector unit tests; `updateIngredients` test + dead-code | `[ ]` | `src/pages/AddRecipe/**`, `src/test/` | ⚠ **subsumed by R1** — decide refactor-vs-smalls first |
-| **3** | **C2 · route-constant single-sourcing** | `RECIPES_PATH` const (`DesktopBar:45`,`NavMenu:20`,`Recipes.tsx:113-119`); `browseAll`→`clearFilters`; `accountTabs` as app-wide route source (`DesktopAccountMenu:74`,`footerData:43-44`,`DraftResumeBanner:47`) + `activeAccountTab` helper | `[ ]` | Navbar/* + `Recipes.tsx` + `accountTabs.tsx` + `footerData.ts` + `DraftResumeBanner.tsx` | both share DesktopBar → one lane |
+| **3** | **C2 · route-constant single-sourcing** | `RECIPES_PATH` const (`DesktopBar:45`,`NavMenu:20`,`Recipes.tsx:113-119`); `browseAll`→`clearFilters`; `accountTabs` as app-wide route source (`DesktopAccountMenu:74`,`footerData:43-44`,`DraftResumeBanner:47`) + `activeAccountTab` helper | `[~]` `worktree-feat+c2-route-constants` 2026-07-07 | Navbar/* + `Recipes.tsx` + `accountTabs.tsx` + `footerData.ts` + `DraftResumeBanner.tsx` | both share DesktopBar → one lane |
 | **3** | **C3 · SingleRecipe lane** ⚠ lane | CLS controls-block reserve (`SingleRecipe.tsx:308-317`, `RecipeControls.scss`); JSON-LD `</script>` escaping (`buildRecipeJsonLd.ts:38-39`) | `[~]` `worktree-feat+c3-singlerecipe-lane` 2026-07-07 | `SingleRecipe.tsx`, `RecipeControls.scss`, `buildRecipeJsonLd.ts` | hero `srcset` deferred to **I1**; JSON-LD gates with prerender |
 | **3** | **C4 · SearchRecipesInput lane** | autocomplete footer-label debounce disagreement (`:274` vs `:336`); press-`/` global focus-search feature | `[P]` [#238](https://github.com/jclind/prepify/pull/238) `worktree-feat+c4-searchinput-lane` 2026-07-07 | `SearchRecipesInput.tsx` (+ Layout for key handler) | both touch same file → one lane |
 | **3** | **C5 · focus-ring tokens** ⚠ SCSS loner | `$focus-ring-*` group in `helpers.scss` + migrate ~13 literal `0 0 0 3px` rings | `[P]` [#241](https://github.com/jclind/prepify/pull/241) `worktree-feat+c5-focus-ring-tokens` 2026-07-07 | `helpers.scss` + ~9 component `.scss` | only one SCSS-token worktree at a time |
@@ -575,6 +575,23 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   the pre-fix code and asserts value + handler identity survive an incidental re-render; no new `exhaustive-deps`
   disables needed. Gates green (tsc, Vitest, build, full CI incl. Cypress 3m29s). Rebased onto current
   `development` (8 behind, `AuthContext` had moved under `8680f2a`) — clean, no semantic conflict — before merge.
+- **2026-07-07** — **C2 claimed** (`worktree-feat+c2-route-constants`). Claim recorded directly on `development`
+  (same convention as S4–S7/F1–F5/C4/C5) so concurrent sessions see the lane taken. **Third Wave-3 lane.**
+  Picked C2 as the next lane after confirming all *cleaner* tracks are gone: C4 (`[P]` #238) and C5 (`[~]`) hold the
+  two self-contained Wave-3 lanes, and every other open `[ ]` item is decision-gated — **F6** "defer to R2", **C1**
+  needs the refactor-vs-smalls call (rule 5), **C3**'s JSON-LD half gates with deferred prerender (rule 6), Waves 4/5
+  are structural/owner-scoped. C2 is the one remaining **fully-completable** track (pure route-string extraction);
+  owner confirmed to proceed on it despite the soft R2 overlap (R2 not imminent). Scope re-verified still present:
+  (1) `'/recipes'` literal hardcoded at `navItems.ts:7`, `DesktopBar.tsx:45,58`, `NavMenu.tsx:20`, `Recipes.tsx:118`,
+  `footerData.ts:29` → single-source as `RECIPES_PATH`; (2) `Recipes.tsx` still has both `browseAll` (`:113`) and
+  `clearFilters` (`:104`) → collapse `browseAll`→`clearFilters`; (3) the `accountTabs` map already exists
+  (`Account/components/accountTabs.tsx`) but only feeds the Account SegmentedNav — the app-wide consumers still
+  hardcode their `/account/...` strings (`DesktopAccountMenu.tsx:73-75,101`, `footerData.ts:43-44`,
+  `DraftResumeBanner.tsx:47`) → point them at `accountTabs` + add an `activeAccountTab` helper. Disjoint from all
+  in-flight lanes (C4 = `SearchRecipesInput`/`Layout`, C5 = `helpers.scss`+ring `.scss`, F4 = `AccountSection`) — none
+  touch Navbar/`Recipes.tsx`/`accountTabs.tsx`/`footerData.ts`/`DraftResumeBanner.tsx`. Verified the sole local
+  worktree (c4) matches its board claim with committed work — no forgotten/unmarked lane — and `development` in sync
+  with origin (0/0) before claiming. Worktree not yet created.
 - **2026-07-07** — **C3 claimed** (`worktree-feat+c3-singlerecipe-lane`). Claim recorded directly on
   `development` (same convention as S4–S7/F1–F5/C4/C5) so concurrent sessions see the lane taken. **Third
   Wave-3 lane, and the SingleRecipe ⚠ solo lane** — verified no other SingleRecipe worktree is in flight and
