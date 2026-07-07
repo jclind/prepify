@@ -27,13 +27,11 @@ import MealTypeSelector from 'src/pages/AddRecipe/MealTypeSelector/MealTypeSelec
 import DietSelector from 'src/pages/AddRecipe/DietSelector/DietSelector'
 import { hrMinToMin } from 'src/util/hrMinToMin'
 import { minToHrMin } from 'src/util/minToHrMin'
+import { TITLE_MAX_LENGTH, DESCRIPTION_MAX_LENGTH } from 'src/util/recipeLimits'
 import {
-  TITLE_MAX_LENGTH,
-  DESCRIPTION_MAX_LENGTH,
-  INSTRUCTION_MAX_LENGTH,
-  MAX_INGREDIENTS,
-  MAX_INSTRUCTIONS,
-} from 'src/util/recipeLimits'
+  validateRecipeForm,
+  isRecipeFormValid,
+} from 'src/pages/AddRecipe/recipeFormValidation'
 import RecipeAPI from 'src/api/recipes'
 import styles from 'src/_exports.module.scss'
 import AddRecipeFormError from 'src/pages/AddRecipe/AddRecipeFormError'
@@ -265,38 +263,19 @@ const AddRecipe: FC<AddRecipeProps> = ({ initialRecipe }) => {
   }, [draftId])
 
   const validate = (assignErrors: boolean = false) => {
-    let newErrors: Partial<AddRecipeErrorType> = {}
-
-    if (!title) {
-      newErrors.title = 'Title is required'
-    } else if (title.length > TITLE_MAX_LENGTH) {
-      newErrors.title = `Title cannot exceed ${TITLE_MAX_LENGTH} characters`
-    }
-
-    // In edit mode a recipe with no newly-picked file is still valid as long as
-    // it has its existing stored image.
-    if (!recipeImage && !existingImageUrl) newErrors.image = 'Image is required'
-    if (!description) {
-      newErrors.description = 'Description is required'
-    } else if (description.length > DESCRIPTION_MAX_LENGTH) {
-      newErrors.description = `Description cannot exceed ${DESCRIPTION_MAX_LENGTH} characters`
-    }
-    if (!servings) newErrors.servings = 'Servings amount is required'
-    if (!prepTime) newErrors.prepTime = 'Prep time is required'
-    if (ingredients.length <= 0) {
-      newErrors.ingredients = 'Recipe must contain ingredients'
-    } else if (ingredients.length > MAX_INGREDIENTS) {
-      newErrors.ingredients = `A recipe cannot have more than ${MAX_INGREDIENTS} ingredients`
-    }
-    if (instructions.length <= 0) {
-      newErrors.instructions = 'Instructions are required'
-    } else if (instructions.length > MAX_INSTRUCTIONS) {
-      newErrors.instructions = `A recipe cannot have more than ${MAX_INSTRUCTIONS} instructions`
-    }
-    if (mealTypes.length <= 0) newErrors.mealType = 'Meal type required'
-
+    const newErrors = validateRecipeForm({
+      title,
+      recipeImage,
+      existingImageUrl,
+      description,
+      servings,
+      prepTime,
+      ingredients,
+      instructions,
+      mealTypes,
+    })
     assignErrors && setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
+    return isRecipeFormValid(newErrors)
   }
   useEffect(() => {
     // Once the user has attempted a submit, keep the displayed errors in sync as
