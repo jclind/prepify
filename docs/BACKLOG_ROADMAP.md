@@ -83,7 +83,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **3** | **C3 · SingleRecipe lane** ⚠ lane | CLS controls-block reserve (`SingleRecipe.tsx:308-317`, `RecipeControls.scss`); JSON-LD `</script>` escaping (`buildRecipeJsonLd.ts:38-39`) | `[x]` [#243](https://github.com/jclind/prepify/pull/243) (2026-07-07) | `SingleRecipe.tsx`, `buildRecipeJsonLd.ts` | **merged** — JSON-LD `</script>` escape only; hero `srcset` deferred to **I1**; **CLS half was a no-op** (`RecipeControls` owner-only, non-owner path already fully reserved) so `RecipeControls.scss` untouched (see status log) |
 | **3** | **C4 · SearchRecipesInput lane** | autocomplete footer-label debounce disagreement (`:274` vs `:336`); press-`/` global focus-search feature | `[x]` [#238](https://github.com/jclind/prepify/pull/238) (2026-07-07) | `SearchRecipesInput.tsx` (+ Layout for key handler) | **merged** |
 | **3** | **C5 · focus-ring tokens** ⚠ SCSS loner | `$focus-ring-*` group in `helpers.scss` + migrate ~13 literal `0 0 0 3px` rings | `[x]` [#241](https://github.com/jclind/prepify/pull/241) 2026-07-07 | `helpers.scss` + ~9 component `.scss` | **merged** — shipped as `@mixin focus-glow()` (parametrised, not a `$focus-ring-*` token set) |
-| **4** | **I1 · image resize pipeline** | Storage width variants + `srcset`/`sizes` on card + hero (mobile LCP) | `[ ]` | Storage pipeline/CDN + `RecipeCard.tsx`, `SingleRecipe.tsx` hero | structural; unblocks C3 hero srcset |
+| **4** | **I1 · image resize pipeline** | Storage width variants + `srcset`/`sizes` on card + hero (mobile LCP) | `[~]` `worktree-feat+i1-image-pipeline` 2026-07-07 | Storage pipeline/CDN + `RecipeCard.tsx`, `SingleRecipe.tsx` hero | structural; unblocks C3 hero srcset — owner chose the **Firebase Resize Images extension** approach |
 | **4** | **I2 · uid-key recipe images** | re-key `recipeImages/{uid}/{uuid}` (`src/api/recipes.ts:188`) + tighten `storage.rules:27-32` to owner | `[ ]` | `src/api/recipes.ts`, `storage.rules` | pairs w/ I1; migrate existing objects |
 | **4** | **I3 · autocomplete title index** | Mongo text index / Atlas Search for fuzzy fallback (`recipes.js:194-240`) | `[~]` `worktree-feat+i3-autocomplete-index` 2026-07-07 | `server/routes/recipes.js` (+ `server/db.js`) | ⚠ after **S1** (merged); index-back the *existing* in-process fuzzy scan |
 | **5** | **R0 · Claude conventions doc** | code & architecture standard (`CONVENTIONS.md`/CLAUDE.md) | `[~]` `worktree-feat+r0-conventions-doc` 2026-07-07 | new doc | do **before** R1/R2 |
@@ -826,3 +826,31 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   duplicative (mirror the audit note; confirm the paired `Connected accounts` subhead at `:229` and the
   `.sr-subhead` rule in `sections.scss:27` before touching either). Frontend-only, one file, disjoint from the two
   live worktrees (I3 = `server/`, R0 = new doc). Worktree not yet created.
+- **2026-07-07** — **I1 claimed** (`worktree-feat+i1-image-pipeline`). Claim recorded directly on `development`
+  (same convention as S4–S7/F1–F5/C2–C5/R0/I3/F4) so concurrent sessions see the lane taken. **First Wave-4
+  lane** — opened after an owner decision prompt, since every remaining open `[ ]` track is gated: **R1/R2** are
+  blocked on **R0** landing (still in flight), **C1** is subsumed by R1 (rule 5), **F6** defers to R2, and
+  **I1/I2** are the structural Wave-4 pair needing an infra call. Owner picked **I1** (biggest remaining mobile-LCP
+  lever, and completable without waiting on R0). **Infra sub-decision — owner chose the Firebase Resize Images
+  extension** (`storage-resize-images`) over client-side canvas resize / a custom sharp Cloud Function / an
+  external CDN: idiomatic to the existing Firebase Storage stack, lowest custom-code + bug surface, backfills
+  existing objects via its own import tool; cost is Blaze (pay-as-you-go, ≈ pennies/mo at this catalog size) + the
+  owner-run `ext:install` in **both** the dev (`prepify-dev-58579`) and prod projects. Scope, two halves: **(A)
+  generate variants** — install + configure the extension (width variants e.g. 400/800/1600, WebP) in
+  `firebase.json`/`extensions/`, and resolve the download-URL/token gotcha (each resized object gets its own
+  Storage token, so a `srcset` can't reuse the original's `?token=` — switch the recipe-image path to token-less
+  public URLs `https://storage.googleapis.com/<bucket>/<path>`, which the existing "public read" `storage.rules`
+  already permit, making `srcset` pure path-templating) + an original-fallback for the async post-upload gap;
+  **(B) consume variants** — add `srcset`/`sizes` to `RecipeCard.tsx` and the `SingleRecipe.tsx` hero (mobile LCP).
+  The actual `ext:install` + Blaze enablement + existing-image backfill run stay **owner-gated** (like the S6 prod
+  ops run) — the config, URL migration, frontend consumption, and a documented runbook are the deliverable; the
+  install/backfill is a separate owner action. **Unblocks C3's deferred hero `srcset`.** Touches `firebase.json`,
+  new `extensions/` config, `storage.rules` (if the public-URL switch needs it), `src/api/recipes.ts` (upload/URL
+  shape), `RecipeCard.tsx`, `SingleRecipe.tsx` — **overlaps I2** (`src/api/recipes.ts` + `storage.rules`), so I2
+  stays serialized behind this lane (board already pairs them). **Anti-race / worktree audit:** shared
+  `development` checkout — a concurrent session appended the **F4 reclaim** entry (above) and pushed mid-claim;
+  verified F4 is disjoint (`AccountSection.tsx`) and its row truthful. Live local worktrees each match their board
+  rows with no forgotten/unmarked work: `feat+c2-route-constants` = **#242 merged** (branch fully in `development`,
+  0 unique commits — a torn-down-pending leftover; board row already `[x]`), `feat+r0-conventions-doc` = `[~]`
+  claim-only (0 ahead of `development`, no doc work yet — expected). I3/F4 are claimed on other machines (no local
+  branch/worktree). `development` in sync with origin (0/0) before appending. Worktree not yet created.
