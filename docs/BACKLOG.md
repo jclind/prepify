@@ -915,9 +915,10 @@ findings table.)*
   the remaining list rows (`RecipeReview`, and `IngredientItem` — the latter sits in a `@hello-pangea/dnd` list,
   so verify DnD still works before memoizing). The `/recipes` grid card (`RecipeCard`) was memoized in the sweep.
   *(surfaced 2026-06-26 in the Performance sweep.)*
-- `[ ]` **Perf: `RecipeCard` memo is defeated on the Saved tab** (`src/pages/Account/SavedRecipes/SavedRecipes.tsx:138`)
-  — `refreshAfterMutation` is a plain inline `() => {}` passed as `onMutated`, so its identity changes every parent
-  render and `React.memo(RecipeCard)` always re-renders every saved card. The memo lands correctly on the `/recipes`
+- `[x]` **Perf: `RecipeCard` memo is defeated on the Saved tab** (`src/pages/Account/SavedRecipes/SavedRecipes.tsx:138`)
+  — *(fixed in [#237](https://github.com/jclind/prepify/pull/237), F3: wrapped `refreshAfterMutation` in `useCallback([queryClient, uid])` so the `onMutated` handler keeps a stable identity and `React.memo(RecipeCard)` holds on the Saved tab too. Verified live — 0 saved-card re-renders with the fix vs 54 without across 9 parent renders.)*
+  `refreshAfterMutation` was a plain inline `() => {}` passed as `onMutated`, so its identity changed every parent
+  render and `React.memo(RecipeCard)` always re-rendered every saved card. The memo lands correctly on the `/recipes`
   grid (no `onMutated`, stable `recipe` identities), but to realize it on the Saved tab too, wrap
   `refreshAfterMutation` in `useCallback`. One line; pairs with the `AuthContext`/list-row memo work above. Low
   measured impact (TBT ≈ 0). *(surfaced 2026-06-27 in the Performance sweep code review.)*

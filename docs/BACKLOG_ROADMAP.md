@@ -74,7 +74,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **1** | **S7 · firebase-admin@14 bump** | 8 moderate transitive CVEs (breaking major, on `^13.8.0`) | `[x]` [#234](https://github.com/jclind/prepify/pull/234) (2026-07-06) | `server/package.json` + lockfile (+ root/`cypress.config.ts`) | **merged** — folded in the root/cypress Admin bump so audit=0 in **both** trees |
 | **2** | **F1 · TimeInput NaN bug** | edit/draft-resume blank prep/cook time (`TimeInput.tsx:23-27`) | `[x]` [#235](https://github.com/jclind/prepify/pull/235) (2026-07-06) | `TimeInput.tsx` | **merged** — scope narrowed to `TimeInput.tsx` only (AddRecipe already passed the object shape); review filed the "clear doesn't propagate" follow-up (BACKLOG.md Bugs, low). AddRecipe lane (C1/R1) rebases onto this. |
 | **2** | **F2 · AuthContext memo** | `value` object recreated every render → wrap in `useMemo` | `[~]` `worktree-feat+f2-authcontext-memo` 2026-07-06 | `src/context/AuthContext.tsx` | — |
-| **2** | **F3 · Saved-tab memo** | `refreshAfterMutation` not `useCallback`'d → defeats `React.memo(RecipeCard)` (`SavedRecipes.tsx:133-136,372`) | `[P]` [#237](https://github.com/jclind/prepify/pull/237) `worktree-feat+f3-savedtab-memo` 2026-07-06 | `SavedRecipes.tsx` | one line |
+| **2** | **F3 · Saved-tab memo** | `refreshAfterMutation` not `useCallback`'d → defeats `React.memo(RecipeCard)` (`SavedRecipes.tsx:133-136,372`) | `[x]` [#237](https://github.com/jclind/prepify/pull/237) (2026-07-07) | `SavedRecipes.tsx` | **merged** — `useCallback(refreshAfterMutation, [queryClient, uid])` stabilizes the handler passed as `onMutated` to the memoized grid; verified live (0 vs 54 re-renders, search/unsave refresh intact). Rebased onto current `development` before merge. |
 | **2** | **F4 · change-password subhead** | redundant `<h3 class='sr-subhead'>` (`AccountSection.tsx:188`) | `[~]` `worktree-feat+f4-changepw-subhead` 2026-07-06 | `Settings/sections/AccountSection.tsx` | — |
 | **2** | **F5 · housekeeping one-liners** | brand-asset comment (`generate-brand-assets.mjs:6`); CLAUDE.md RecipeContext drift; rename `validateIngredientQuantityStr`→`formatQuantity` (3 imports) | `[~]` `worktree-feat+f5-housekeeping` 2026-07-06 | `scripts/`, `CLAUDE.md`, `src/util/` | rename touches 3 call sites |
 | **2** | **F6 · account nav polish** | Saved/Ratings section-nav styling (`SegmentedNav.tsx`) | `[ ]` | `Account/components/SegmentedNav.tsx` | subjective; better inside **R2** |
@@ -488,3 +488,15 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   `SavedRecipes` [#237 `[P]`], F5 = `scripts`/`CLAUDE.md`/`src/util`; F4 = `AccountSection`, claimed on
   another machine). Verified the three live local worktrees (f2/f3/f5) all match their board claims — no
   forgotten/unmarked work — and `development` in sync with origin (0/0) before claiming. Worktree not yet created.
+- **2026-07-07** — **F3 merged** ([#237](https://github.com/jclind/prepify/pull/237), merge `0549eac`) → `[x]`.
+  `refreshAfterMutation` in `SavedRecipes.tsx` was a plain function rebuilt every render and handed as
+  `onMutated` to the memoized `RecipeCard` grid (`export default React.memo(RecipeCard)`), so its changing
+  identity defeated the memo — every saved card re-rendered on any parent render (search keystroke, sort
+  change, page bump, collection edit). Wrapped it in `useCallback` keyed on `[queryClient, uid]` (the only
+  closed-over values; `setCurrPage` is a stable setter) so the reference is stable and the memo actually
+  holds. One file, +6/−3, frontend-only. **Verified live** (not just gates): memo probe showed **0 saved-card
+  re-renders with the fix vs 54 without** across 9 parent renders, and search-filter + unsave-refresh behavior
+  was byte-identical on both builds (no functional regression). **Rebased onto current `development`** (past
+  F1/TimeInput + the C4 claim) before merge so history stays linear; force-pushed, re-ran CI green (Backend,
+  E2e/Cypress, Vitest 553✓, Static typecheck+build, Fallow advisory all pass), merged. Second Wave-2 track
+  landed (F1 #235 + F3 #237 both merged; F2/F4/F5 still in worktrees, C4 first Wave-3 lane claimed).
