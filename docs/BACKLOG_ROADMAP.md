@@ -79,7 +79,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **2** | **F5 · housekeeping one-liners** | brand-asset comment (`generate-brand-assets.mjs:6`); CLAUDE.md RecipeContext drift; rename `validateIngredientQuantityStr`→`formatQuantity` (3 imports) | `[x]` [#239](https://github.com/jclind/prepify/pull/239) (2026-07-07) | `scripts/`, `CLAUDE.md`, `src/util/` | **merged** — rename repointed 4 importers (+1 commented ref); both comment/doc fixes verified true against disk (font file is `MediumItalic`, `src/context/` has only `AuthContext.tsx`) |
 | **2** | **F6 · account nav polish** | Saved/Ratings section-nav styling (`SegmentedNav.tsx`) | `[ ]` | `Account/components/SegmentedNav.tsx` | subjective; better inside **R2** |
 | **3** | **C1 · AddRecipe cluster** ⚠ lane | dropdown/`FormInput` uniformity (`recipeSelectStyles.ts`); summary-bar sticky; group-label styling; `/add-recipe` `noindex`; Cuisine/MealType selector unit tests; `updateIngredients` test + dead-code | `[ ]` | `src/pages/AddRecipe/**`, `src/test/` | ⚠ **subsumed by R1** — decide refactor-vs-smalls first |
-| **3** | **C2 · route-constant single-sourcing** | `RECIPES_PATH` const (`DesktopBar:45`,`NavMenu:20`,`Recipes.tsx:113-119`); `browseAll`→`clearFilters`; `accountTabs` as app-wide route source (`DesktopAccountMenu:74`,`footerData:43-44`,`DraftResumeBanner:47`) + `activeAccountTab` helper | `[~]` `worktree-feat+c2-route-constants` 2026-07-07 | Navbar/* + `Recipes.tsx` + `accountTabs.tsx` + `footerData.ts` + `DraftResumeBanner.tsx` | both share DesktopBar → one lane |
+| **3** | **C2 · route-constant single-sourcing** | `RECIPES_PATH` const (`DesktopBar:45`,`NavMenu:20`,`Recipes.tsx:113-119`); `browseAll`→`clearFilters`; `accountTabs` as app-wide route source (`DesktopAccountMenu:74`,`footerData:43-44`,`DraftResumeBanner:47`) + `activeAccountTab` helper | `[P]` [#242](https://github.com/jclind/prepify/pull/242) `worktree-feat+c2-route-constants` 2026-07-07 | Navbar/* + `Recipes.tsx` + `accountTabs.tsx` + `footerData.ts` + `DraftResumeBanner.tsx` | both share DesktopBar → one lane |
 | **3** | **C3 · SingleRecipe lane** ⚠ lane | CLS controls-block reserve (`SingleRecipe.tsx:308-317`, `RecipeControls.scss`); JSON-LD `</script>` escaping (`buildRecipeJsonLd.ts:38-39`) | `[~]` `worktree-feat+c3-singlerecipe-lane` 2026-07-07 | `SingleRecipe.tsx`, `RecipeControls.scss`, `buildRecipeJsonLd.ts` | hero `srcset` deferred to **I1**; JSON-LD gates with prerender |
 | **3** | **C4 · SearchRecipesInput lane** | autocomplete footer-label debounce disagreement (`:274` vs `:336`); press-`/` global focus-search feature | `[P]` [#238](https://github.com/jclind/prepify/pull/238) `worktree-feat+c4-searchinput-lane` 2026-07-07 | `SearchRecipesInput.tsx` (+ Layout for key handler) | both touch same file → one lane |
 | **3** | **C5 · focus-ring tokens** ⚠ SCSS loner | `$focus-ring-*` group in `helpers.scss` + migrate ~13 literal `0 0 0 3px` rings | `[P]` [#241](https://github.com/jclind/prepify/pull/241) `worktree-feat+c5-focus-ring-tokens` 2026-07-07 | `helpers.scss` + ~9 component `.scss` | only one SCSS-token worktree at a time |
@@ -640,3 +640,29 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   2 skipped** (75 files); no `server/` changes → no Jest. Second Wave-3 lane PR'd. **Anti-race:** the row `[~]`
   claim reached origin earlier by being swept into a concurrent session's push; verified the live worktrees
   match their board rows (no forgotten/unmarked work) before claiming.
+- **2026-07-07** — **C2** implemented in `worktree-feat+c2-route-constants` → PR
+  [#242](https://github.com/jclind/prepify/pull/242) opened (`[P]`). Frontend-only, no `server/` changes.
+  Introduced **`src/routes.ts`** as the single source of truth for route strings duplicated across files, so a
+  rename can't silently drift copies apart (TypeScript resolves every consumer). (1) **`RECIPES_PATH`
+  (`'/recipes'`)** now backs the navbar link + both navbar search-suppression checks (`pathname === RECIPES_PATH`),
+  the footer link, and `Recipes.tsx`'s `syncUrl`/`browseAll` navigations. (2) **Four `ACCOUNT_*_PATH` consts** —
+  `accountTabs` consumes them for its tab `.to` fields and the app-wide nav links (`DesktopBar` saved,
+  `DesktopAccountMenu` your-recipes, footer my/saved, `DraftResumeBanner` drafts) point at the same constants, so
+  the account tab strip and the global nav can't drift. (3) Added **`activeAccountTab(pathname)`** alongside
+  `activeAccountTabIndex` (kept for SegmentedNav); Account's SR heading reads the cleaner helper. **Two judgment
+  calls** (BACKLOG left both open): (a) *`browseAll`→`clearFilters`* — extracted a shared **`resetFilters()`** setter
+  block both use, rather than literally calling `clearFilters()` inside `browseAll` (which would double-navigate:
+  `clearFilters`'s `syncUrl` pushes `/recipes?q=…`, then `browseAll`'s bare navigate pushes `/recipes` — an extra
+  history entry + refetch); the extract is DRY **and** behaviour-preserving. (b) *account routes* — chose the leaf
+  `routes` const both sides consume over importing `accountTabs` into `Components/*`, avoiding a
+  `Components→pages/Account` layering inversion (BACKLOG explicitly offered this option). **Scope guard:**
+  `RECIPES_PATH` migrated only within C2's collision surface — left `SingleRecipe.tsx` (**C3**),
+  `SearchRecipesInput.tsx` (**C4**), the `App.tsx` route definition, and the ~10 other page-level `/recipes` links
+  for a follow-up adopt-everywhere sweep (filed as an observation, not fixed here). **Verified:** gates — `tsc`
+  clean, Vitest **557 passed / 2 skipped** (75 files), `npm run build` clean; behaviour coverage (jsdom) —
+  `browseAll`/`clearFilters` by `Recipes.test.tsx` (incl. "Browse all → bare /recipes, refetch `query:''`/`diets:[]`"),
+  `activeAccountTab` by `Account.test.tsx` (23 tests across all four account routes), nav structure by
+  `navItems`/`DesktopNav`/`NavMenu`; dev server (client :3005 / API :4003) — no Vite resolve errors, `/recipes` +
+  `/account/saved-recipes` serve 200. Third Wave-3 lane PR'd. **`[P]` flip recorded on `development` directly** (not
+  the lane branch), same convention as C4/C5 — keeps backlog edits off the PR so a BACKLOG chokepoint conflict
+  can't mark it DIRTY and suppress its `pull_request` CI.
