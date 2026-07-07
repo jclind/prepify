@@ -84,7 +84,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **3** | **C4 · SearchRecipesInput lane** | autocomplete footer-label debounce disagreement (`:274` vs `:336`); press-`/` global focus-search feature | `[x]` [#238](https://github.com/jclind/prepify/pull/238) (2026-07-07) | `SearchRecipesInput.tsx` (+ Layout for key handler) | **merged** |
 | **3** | **C5 · focus-ring tokens** ⚠ SCSS loner | `$focus-ring-*` group in `helpers.scss` + migrate ~13 literal `0 0 0 3px` rings | `[x]` [#241](https://github.com/jclind/prepify/pull/241) 2026-07-07 | `helpers.scss` + ~9 component `.scss` | **merged** — shipped as `@mixin focus-glow()` (parametrised, not a `$focus-ring-*` token set) |
 | **4** | **I1 · image resize pipeline** | Storage width variants + `srcset`/`sizes` on card + hero (mobile LCP) | `[x]` [#247](https://github.com/jclind/prepify/pull/247) (2026-07-07) | Storage pipeline/CDN + `RecipeCard.tsx`, `SingleRecipe.tsx` hero | **merged** — frontend `srcset` + owner-gated Firebase Resize Images extension; **inert until the owner installs the extension, backfills, and flips `VITE_IMAGE_VARIANTS_ENABLED`** (two safety nets: build-flag + per-`<img>` fallback). Also carries C3's deferred hero `srcset` |
-| **4** | **I2 · uid-key recipe images** | re-key `recipeImages/{uid}/{uuid}` (`src/api/recipes.ts:188`) + tighten `storage.rules:27-32` to owner | `[ ]` | `src/api/recipes.ts`, `storage.rules` | pairs w/ I1; migrate existing objects |
+| **4** | **I2 · uid-key recipe images** | re-key `recipeImages/{uid}/{uuid}` (`src/api/recipes.ts:188`) + tighten `storage.rules:27-32` to owner | `[~]` `worktree-feat+i2-uid-key-recipe-images` 2026-07-07 | `src/api/recipes.ts`, `storage.rules` | pairs w/ I1; migrate existing objects |
 | **4** | **I3 · autocomplete title index** | Mongo text index / Atlas Search for fuzzy fallback (`recipes.js:194-240`) | `[x]` [#245](https://github.com/jclind/prepify/pull/245) (2026-07-07) | `server/routes/recipes.js` (+ `server/db.js`) | **merged** — index-backed `$text` tier between exact + fuzzy; fuzzy scan now typo-only |
 | **5** | **R0 · Claude conventions doc** | code & architecture standard (`CONVENTIONS.md`/CLAUDE.md) | `[x]` [#244](https://github.com/jclind/prepify/pull/244) (2026-07-07) | new doc | **merged** — shipped `docs/CONVENTIONS.md` (grounded in a 4-way survey + REFACTOR.md), cross-linked from `CLAUDE.md`; **R1/R2 now have a standard to follow** |
 | **5** | **R1 · refactor create-recipe page** | the big AddRecipe refactor | `[~]` `worktree-feat+r1-addrecipe-refactor` 2026-07-07 | `src/pages/AddRecipe/**` | **subsumes C1** |
@@ -1042,3 +1042,18 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   traversal, malformed `%`-encoding, 9 KB URL) all rendered inert (no XSS/throw). **Local code review:** clean,
   no blocking issues. **Other live lanes untouched:** R1 claimed. **I2** (uid-key recipe images) is the natural
   next pair — keep resized variants in the same directory as their original if I2 re-keys the path.
+- **2026-07-07** — **I2 claimed** (`worktree-feat+i2-uid-key-recipe-images`). Claim recorded directly on
+  `development` (same convention as S4–S7/F1–F5) so concurrent sessions see the lane taken. Scope: recipe-image
+  uploads land at `recipeImages/${imageFile.name}` (`src/api/recipes.ts:188`), keyed by the raw filename — so
+  (a) two users uploading `photo.jpg` collide/overwrite and (b) `storage.rules:27-32` can only auth-gate the
+  path, not scope writes to the owner (any signed-in user can overwrite/delete any recipe image). Re-key new
+  uploads to `recipeImages/${uid}/${uuidv4()}` (both `AuthAPI.getUID()` and `uuidv4` are already imported in
+  `recipes.ts`) and tighten the Storage rule to `request.auth.uid == uid` (mirroring the uid-scoped
+  `profilePhotos/{userId}` at `:15-21`). **Constraint from I1** (#247, just merged): the owner-gated Firebase
+  Resize Images extension writes variants in the *same directory* as the original, so the new `{uid}/` prefix
+  must keep original + variants co-located (no separate variants path / rules split). Migrating existing
+  filename-keyed objects is an owner-gated ops step (like I1's backfill) — the code re-key + rule tightening is
+  the deliverable. **Disjoint from the one in-flight lane:** R1 (`src/pages/AddRecipe/**`) touches neither
+  `src/api/recipes.ts` nor `storage.rules` (verified against its branch diff); F6 deferred into R2, C1 subsumed
+  by R1. Verified the bug is still present, no forgotten/unmarked worktree exists (only R1 is live, on its
+  marked track), and `development` in sync with origin (0/0) before claiming. Worktree not yet created.
