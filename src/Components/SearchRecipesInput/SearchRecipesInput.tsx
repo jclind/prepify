@@ -333,7 +333,11 @@ const SearchRecipesInput: FC<SearchRecipesInputProps> = ({
                 onClick={handleSubmit}
               >
                 <SearchIcon className='ac-footer__icon' />
-                Search for “{searchRecipeVal.trim()}”
+                {/* Quote the *debounced* query, matching the results and the
+                    empty-state above — the whole dropdown describes the query
+                    that actually ran, so during the debounce window the footer
+                    can't disagree with the "No matches for …" sibling. */}
+                Search for “{trimmedQuery}”
               </button>
             </>
           )}
