@@ -87,7 +87,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **4** | **I2 · uid-key recipe images** | re-key `recipeImages/{uid}/{uuid}` (`src/api/recipes.ts:188`) + tighten `storage.rules:27-32` to owner | `[ ]` | `src/api/recipes.ts`, `storage.rules` | pairs w/ I1; migrate existing objects |
 | **4** | **I3 · autocomplete title index** | Mongo text index / Atlas Search for fuzzy fallback (`recipes.js:194-240`) | `[P]` [#245](https://github.com/jclind/prepify/pull/245) `worktree-feat+i3-autocomplete-index` 2026-07-07 | `server/routes/recipes.js` (+ `server/db.js`) | ⚠ after **S1** (merged); index-back the *existing* in-process fuzzy scan |
 | **5** | **R0 · Claude conventions doc** | code & architecture standard (`CONVENTIONS.md`/CLAUDE.md) | `[x]` [#244](https://github.com/jclind/prepify/pull/244) (2026-07-07) | new doc | **merged** — shipped `docs/CONVENTIONS.md` (grounded in a 4-way survey + REFACTOR.md), cross-linked from `CLAUDE.md`; **R1/R2 now have a standard to follow** |
-| **5** | **R1 · refactor create-recipe page** | the big AddRecipe refactor | `[ ]` | `src/pages/AddRecipe/**` | **subsumes C1** |
+| **5** | **R1 · refactor create-recipe page** | the big AddRecipe refactor | `[~]` `worktree-feat+r1-addrecipe-refactor` 2026-07-07 | `src/pages/AddRecipe/**` | **subsumes C1** |
 | **5** | **R2 · refactor account page** | the big Account refactor | `[ ]` | `src/pages/Account/**` | **subsumes F6**; overlaps C2 |
 | **—** | **Deferred / post-1.0 / owner** | see [that section](#deferred--post-10--owner-off-the-active-board) | `[blocked]`/`[dropped]` | — | prerendering, Edamam, theming, brand-orange, DB relocation, ideas |
 
@@ -950,3 +950,26 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   C3's deferred hero `srcset`**; pairs with **I2** (runbook note). Frontend + config only; no `server/` change.
   **`[P]` flip recorded on `development` directly** (not the lane branch), same convention as C2–C5 — keeps backlog
   edits off the PR. `development` in sync with origin (0/0) before this append.
+- **2026-07-07** — **R1 claimed** (`worktree-feat+r1-addrecipe-refactor`). Claim recorded directly on
+  `development` (same convention as S4–S7/F1–F5/C2–C5/R0/I3/F4/I1) so concurrent sessions see the lane taken.
+  **Second Wave-5 lane** — opened after an owner decision prompt: with every self-contained lane resolved and
+  every other open track gated (**I2** collides with the in-flight **I1** `[P]` #247 on `src/api/recipes.ts` +
+  `storage.rules` → serialized behind it; **C1** subsumed by R1 per rule 5; **F6** "defer to R2"; **R2** softly
+  overlaps the in-flight **F4** `[P]` #246 Settings/Account surface), the owner picked **R1** over R2/C1/hold.
+  R1 is now unblocked — **R0** (`docs/CONVENTIONS.md`) merged [#244](https://github.com/jclind/prepify/pull/244)
+  specifically so R1/R2 have a documented standard to follow — and per rule 5 the refactors are now "imminent,"
+  so ship R1 (which **subsumes the whole C1 cluster**) rather than the C1/F6 smalls. **Collision surface
+  disjoint from all three live lanes:** R1 owns `src/pages/AddRecipe/**` (40 files, `AddRecipe.tsx` 579 lines);
+  F4 = `Settings/sections/AccountSection.tsx`, I1 = `RecipeCard.tsx`/`SingleRecipe.tsx`/`src/api/recipes.ts`/
+  Storage config, I3 = `server/` — none touch AddRecipe. **Scope (to be finalized in-lane against the existing
+  planning docs — `docs/ADD_RECIPE_AUDIT.md`, `ADD_RECIPE_UX_AUDIT.md`, `REFACTOR.md`, `REFACTOR_NOTES.md` — and
+  `docs/CONVENTIONS.md`):** the create-recipe page refactor, folding in the deferred **C1 cluster** (dropdown/
+  `FormInput` uniformity via `recipeSelectStyles.ts`; summary-bar sticky behaviour; group-label styling;
+  `/add-recipe` `noindex`; Cuisine/MealType selector unit tests; `updateIngredients` test + dead-code) and the
+  two filed-not-fixed TimeInput follow-ups that belong here (the clear-both-fields writeback that never fires
+  `if (minutes || hours) setVal(...)` at `TimeInput.tsx:61-64`, latent-but-reachable since F1). A concrete plan
+  will be presented to the owner before heavy implementation spend, since this is a large owner-scoped refactor.
+  **Worktree audit (no forgotten/unmarked work):** the three live worktrees each match their `[P]` board rows
+  with real committed work + open PRs — f4 = #246, i1 = #247, i3 = #245; all other local branches are merged/
+  stale/the known off-board `moderation-pr-c-ratelimiter` orphan. `development` in sync with origin (0/0) before
+  this append. Worktree not yet created.
