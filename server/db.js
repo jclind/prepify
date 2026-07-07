@@ -105,6 +105,23 @@ async function ensureIndexes() {
     console.error('Failed to create browse-popular index on recipes:', err.message)
   }
 
+  // Backs the title autocomplete (GET /searchAutoCompleteRecipes). Its
+  // correctly-spelled path runs `$text: { $search }` against this index, so that
+  // path scales to any catalog size and matches query words in any order/position
+  // instead of scanning a capped in-memory candidate set on every under-filled
+  // query. The in-process Levenshtein fuzzy fallback still handles misspellings
+  // ($text is word/stem-tokenised and can't match typos), but only runs when the
+  // exact + $text tiers don't fill the results. A collection can hold only one
+  // text index; `title` is the only autocompleted field. Lives in startup (not
+  // scripts/createModerationIndexes.js) for the same reason as the browse index
+  // above: the querying code must never hit an unindexed collection post-deploy —
+  // and the route guards a missing index by degrading to the fuzzy scan anyway.
+  try {
+    await db.collection('recipes').createIndex({ title: 'text' })
+  } catch (err) {
+    console.error('Failed to create title text index on recipes:', err.message)
+  }
+
   // Backs GET /api/getSingleUserReviews (a user's ratings) and the ratings count
   // in GET /api/getAccountCounts, both of which filter ratings by username.
   try {

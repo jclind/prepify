@@ -123,11 +123,30 @@ function fuzzyRankTitles(
     .slice(0, limit)
 }
 
+/**
+ * Build a MongoDB `$text` search string from a raw autocomplete query.
+ *
+ * `$text` gives `"…"` (phrase) and a leading `-` (term negation) operator
+ * meaning, so a user typing them would silently change the query — a leading
+ * `-apple` would EXCLUDE apple rather than search for it. Strip those operator
+ * characters and normalize to a plain space-separated OR-of-terms over the
+ * title text index. Returns '' when nothing searchable remains.
+ */
+function toTextSearch(query) {
+  return normalize(query)
+    .replace(/"/g, ' ') // no phrase mode
+    .split(' ')
+    .map((w) => w.replace(/^-+/, '')) // no per-term negation
+    .filter(Boolean)
+    .join(' ')
+}
+
 module.exports = {
   normalize,
   levenshtein,
   ratio,
   titleScore,
   fuzzyRankTitles,
+  toTextSearch,
   FUZZY_THRESHOLD,
 }
