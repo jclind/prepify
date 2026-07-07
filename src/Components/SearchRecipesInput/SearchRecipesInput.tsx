@@ -198,6 +198,14 @@ const SearchRecipesInput: FC<SearchRecipesInputProps> = ({
   const handleSubmit = (e: React.SyntheticEvent) => {
     e.preventDefault()
 
+    // Navigate with the *live* value, not the debounced `trimmedQuery` the
+    // footer label quotes. This is intentional: submit is shared with Enter and
+    // the top Search button, which must fire the freshest query — including
+    // <3-char ones that never trigger the (debounced) autocomplete at all.
+    // During the 300ms debounce window the footer can read the older query while
+    // a click searches the newer one; that skew is one-directional (a click
+    // always searches what's currently typed, never something staler) and
+    // self-corrects, so it's preferred over making Enter search a stale value.
     if (slugify(searchRecipeVal)) {
       navigate(`/recipes?q=${slugify(searchRecipeVal)}`)
     } else {
