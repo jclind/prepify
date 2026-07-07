@@ -85,7 +85,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **3** | **C5 · focus-ring tokens** ⚠ SCSS loner | `$focus-ring-*` group in `helpers.scss` + migrate ~13 literal `0 0 0 3px` rings | `[x]` [#241](https://github.com/jclind/prepify/pull/241) 2026-07-07 | `helpers.scss` + ~9 component `.scss` | **merged** — shipped as `@mixin focus-glow()` (parametrised, not a `$focus-ring-*` token set) |
 | **4** | **I1 · image resize pipeline** | Storage width variants + `srcset`/`sizes` on card + hero (mobile LCP) | `[~]` `worktree-feat+i1-image-pipeline` 2026-07-07 | Storage pipeline/CDN + `RecipeCard.tsx`, `SingleRecipe.tsx` hero | structural; unblocks C3 hero srcset — owner chose the **Firebase Resize Images extension** approach |
 | **4** | **I2 · uid-key recipe images** | re-key `recipeImages/{uid}/{uuid}` (`src/api/recipes.ts:188`) + tighten `storage.rules:27-32` to owner | `[ ]` | `src/api/recipes.ts`, `storage.rules` | pairs w/ I1; migrate existing objects |
-| **4** | **I3 · autocomplete title index** | Mongo text index / Atlas Search for fuzzy fallback (`recipes.js:194-240`) | `[~]` `worktree-feat+i3-autocomplete-index` 2026-07-07 | `server/routes/recipes.js` (+ `server/db.js`) | ⚠ after **S1** (merged); index-back the *existing* in-process fuzzy scan |
+| **4** | **I3 · autocomplete title index** | Mongo text index / Atlas Search for fuzzy fallback (`recipes.js:194-240`) | `[P]` [#245](https://github.com/jclind/prepify/pull/245) `worktree-feat+i3-autocomplete-index` 2026-07-07 | `server/routes/recipes.js` (+ `server/db.js`) | ⚠ after **S1** (merged); index-back the *existing* in-process fuzzy scan |
 | **5** | **R0 · Claude conventions doc** | code & architecture standard (`CONVENTIONS.md`/CLAUDE.md) | `[x]` [#244](https://github.com/jclind/prepify/pull/244) (2026-07-07) | new doc | **merged** — shipped `docs/CONVENTIONS.md` (grounded in a 4-way survey + REFACTOR.md), cross-linked from `CLAUDE.md`; **R1/R2 now have a standard to follow** |
 | **5** | **R1 · refactor create-recipe page** | the big AddRecipe refactor | `[ ]` | `src/pages/AddRecipe/**` | **subsumes C1** |
 | **5** | **R2 · refactor account page** | the big Account refactor | `[ ]` | `src/pages/Account/**` | **subsumes F6**; overlaps C2 |
@@ -879,3 +879,50 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   `development` fast-forwarded (no divergence). **Follow-ups filed-not-fixed:** refresh §2.8's "in-flight" note once
   C2's `src/routes.ts` is adopted everywhere; the `#29a155` `.has-success` token drift (§4.2) stays a separate
   colour-token dedup. **Other live lanes untouched:** I1/I3 (`[~]`), F4 (reclaimed), C3 (#243 `[P]`).
+- **2026-07-07** — **I3** implemented in `worktree-feat+i3-autocomplete-index` → PR
+  [#245](https://github.com/jclind/prepify/pull/245) opened (`[P]`). Server-only. **Scope had drifted from the
+  board** (claim entry has the detail): the autocomplete *fuzzy fallback already existed in-process*
+  (`fuzzyRankTitles`, #167); the open half was **scalability** — every under-filled query (exact substring < 8)
+  ran a capped **1000-doc candidate COLLSCAN** to feed the ranker, unindexed and blind to near-misses past the
+  first 1000 as the catalog grows, with **no `$text` index** on `recipes.title`. Added `{ title: 'text' }` in
+  `db.js` `ensureIndexes` and inserted an **index-backed `$text` tier** between the exact-substring pass and the
+  fuzzy fallback: (1) exact `$regex` (unchanged, precise/ordered); (2) **new** `$text` word/stem match —
+  index-backed, scales, matches query words in **any order/position** ("basil salmon" → *Grilled Salmon with
+  Tomatoes & Basil*) and **stems** ("grilling" → *Grilled …*); (3) fuzzy Levenshtein (unchanged) — now only runs
+  for actual typos (`$text` can't match misspellings), so the correctly-spelled hot path no longer hits the
+  capped scan. Owner chose Mongo `$text` over Atlas Search (low urgency). A new `toTextSearch()` strips `$text`
+  operator chars (leading `-`, quotes) so user input can't flip the query into a negation/phrase; the `$text`
+  tier is `try/catch`-guarded so a missing/late index **degrades to the fuzzy scan instead of 500-ing**;
+  `RECIPE_VISIBLE` preserved in every tier. Tests: `toTextSearch` unit cases + route tests for the stemmed
+  `$text` match (picked below the 0.7 fuzzy threshold so it isolates tier 2) and index-absent graceful
+  degradation. **Server Jest 747/747.** **Runtime-verified** against the live dev API across all three tiers +
+  sanitization (`basil salmon`/`pasta sausage` out-of-order, `grilling` stemmed, `chikcen`/`medaterranean` typo,
+  `tuscan` substring, `-salmon` sanitized), and confirmed no internal `_score` leaks into the payload. **Push
+  note:** direct pushes to `development` are policy-gated this session, so the `[~]`→`[P]` board flip is committed
+  locally and rides the next land sweep to origin (same swept-in pattern as the C2/C3 lands that carried the I3
+  `[~]` claim + its log entry up). **Hero `srcset`/I1 untouched** — disjoint lane.
+- **2026-07-07** — **F4** implemented in `worktree-feat+f4-changepw-subhead` → PR
+  [#246](https://github.com/jclind/prepify/pull/246) opened (`[P]`). Frontend-only, one-line removal. Dropped the
+  redundant `<h3 class='sr-subhead'>Change password</h3>` (`AccountSection.tsx:188`): the change-password
+  subsection in **Settings → Account & Security** is already self-describing — its fields carry their own labels
+  (*Current / New / Confirm password*) and the **Update password** button names the action — so under the
+  governing `<h2>Account & Security</h2>` (`Settings.tsx:103`) the extra `<h3>` just restated the button and added
+  clutter. Kept the `.sr-subsection` wrapper (its `border-top` divider) so the block retains its visual grouping;
+  only the redundant label is gone. **`Connected accounts` keeps its subhead on purpose** — it labels a passive,
+  display-only provider list with no self-describing control. Repointed the federated-account *"hides the
+  change-password section"* test off the removed heading text onto the block-unique **New password** field label
+  (the `Update password` button check unchanged) so it stays meaningful; the 7-test `describe('change password')`
+  block that renders this exact subsection for a password-provider user is unaffected. **Verified:** `tsc` clean,
+  Vitest **568 passed / 2 skipped** (77 files, `AccountSection` suites 25/25), `npm run build` clean. *No authed
+  pixel screenshot — the block is gated behind `hasPasswordProvider` and the Cypress `test-cypress-user` has no
+  `password` provider (custom-token uid, empty `providerData`), so `cy.login()` can't render it without mutating
+  shared dev-auth; a pure static-markup removal covered by the render tests + retained-divider CSS.* **Reclaim
+  provenance** (see the earlier F4-reclaimed entry): the prior `[~]` was an orphaned claim-only step from
+  `45682f4` that never created a worktree; verified abandoned (no ref/PR anywhere) before reclaiming. **Follow-up
+  filed-not-fixed:** the heading asymmetry (password subsection now divider-without-heading vs *Connected
+  accounts*'s divider+heading) is inherent to the owner's "this heading is redundant" call — left as a separate
+  visual-design decision. **Anti-race / swept-in:** this same commit carries the concurrent **I3** session's
+  truthful `[~]`→`[P]` #245 row flip + its status-log entry (that session is push-gated and expected the flip to
+  ride the next sweep — verified #245 genuinely OPEN and its rows line-distinct from mine); the F4 and I3 board
+  edits don't overlap. `development` HEAD was `74b429b` (== origin, I1 claim + R0 #244 merge already landed) before
+  this append.
