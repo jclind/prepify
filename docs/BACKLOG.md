@@ -606,7 +606,7 @@ findings table.)*
   a shared `activeAccountTabIndex(pathname)` helper; SegmentedNav and Account's `<h2>` both derive
   from it, so the heading uses the same route-matching as the nav highlight and can't drift. +4 tests
   asserting the SR heading per route.
-- `[ ]` **Make `accountTabs` the app-wide source for the four account sub-route strings** — the Wave-2
+- `[x]` **Make `accountTabs` the app-wide source for the four account sub-route strings** *(fixed in [#242](https://github.com/jclind/prepify/pull/242), C2: pulled the four paths into a shared `src/routes.ts` const — `ACCOUNT_{SAVED_RECIPES,RATINGS,YOUR_RECIPES,DRAFTS}_PATH` — that `accountTabs` and every app-wide nav link (`DesktopBar`, `DesktopAccountMenu`, `footerData`, `DraftResumeBanner`) now consume, chosen over importing `accountTabs` into `Components/*` to avoid a layering inversion; sub-item also done — added `activeAccountTab(pathname)` alongside the index helper, and Account's `<h2>` reads it.)* — the Wave-2
   `accountTabs.tsx` refactor (PR #200) centralized the route↔label map for the account-page nav + SR
   heading, but the same four route strings are still hardcoded as `<Link>`/`navigate` destinations
   elsewhere: `DesktopBar.tsx:86` (`/account/saved-recipes`), `DesktopAccountMenu.tsx:77`
@@ -648,7 +648,7 @@ findings table.)*
   the recipe count on a hot path. Revisit with a Mongo text index / Atlas Search before the catalog gets
   large. *(surfaced 2026-06-22 in the track 2d code review — shipped intentionally as the simplest
   typo-tolerant fallback.)*
-- `[ ]` **`'/recipes'` route hardcoded across nav + page** — the search-suppression check
+- `[x]` **`'/recipes'` route hardcoded across nav + page** *(fixed in [#242](https://github.com/jclind/prepify/pull/242), C2: extracted `RECIPES_PATH` in `src/routes.ts` backing both suppression checks + the navbar/footer links; `browseAll` and `clearFilters` now share an extracted `resetFilters()` setter block rather than `browseAll` calling `clearFilters` — the latter would double-navigate (`clearFilters`'s `syncUrl` pushes `/recipes?q=…`, then the bare `navigate('/recipes')` pushes again), so the shared-setter extract is DRY and behaviour-preserving. Scope-guarded to these three files; ~9 other page-level `/recipes` links left inline for an adopt-everywhere follow-up once C3/C4's overlapping files land.)* — the search-suppression check
   (`pathname !== '/recipes'`) is copy-pasted into `src/Components/Navbar/desktop/DesktopBar.tsx:47` and
   `src/Components/Navbar/menu/NavMenu.tsx:20`, and `Recipes.tsx`'s `browseAll` (`:112-118`) re-issues the
   same filter-resetting setters as `clearFilters` (`:103-107`) instead of calling it. A route rename would

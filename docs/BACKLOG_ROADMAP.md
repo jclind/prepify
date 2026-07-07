@@ -666,6 +666,18 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   `/account/saved-recipes` serve 200. Third Wave-3 lane PR'd. **`[P]` flip recorded on `development` directly** (not
   the lane branch), same convention as C4/C5 — keeps backlog edits off the PR so a BACKLOG chokepoint conflict
   can't mark it DIRTY and suppress its `pull_request` CI.
+- **2026-07-07** — **C2 merged** (PR [#242](https://github.com/jclind/prepify/pull/242), merge commit
+  `c9eea00`; board row → `[x]`). All six required checks green before merge (Backend/Supertest, Frontend/Vitest,
+  Static typecheck+build, E2e/Cypress 3m38s, Fallow advisory, GitGuardian); merged as a merge commit per
+  convention, remote branch `worktree-feat+c2-route-constants` deleted, worktree torn down. **What landed:** the
+  `src/routes.ts` extraction as described in the C2-implemented entry above, plus a **post-implementation
+  `/code-review` pass** that caught the `routes.ts` header over-claiming to be "the single source of truth for
+  route strings that appear in more than one place" while `RECIPES_PATH` migration is deliberately partial (9
+  other `/recipes` literals across Home/About/PublicProfile/SingleRecipe/SavedRecipes/UserRatings/… stay inline,
+  scope-guarded off C3/C4's files). Softened the comment to scope the claim to its actual nav/footer/browse
+  consumers and name the deferred sites, so the const doesn't imply a centralization it doesn't yet provide
+  (commit `0f9c8a0`, comment-only). **Follow-up filed-not-fixed:** the adopt-`RECIPES_PATH`-everywhere sweep once
+  C3/C4's overlapping files have landed (C3 #243 merged concurrently just ahead of this).
 - **2026-07-07** — **C4 merged** (PR [#238](https://github.com/jclind/prepify/pull/238), merge commit
   `3ac9b31`; board row → `[x]`). First Wave-3 lane to land. All six required checks green before merge
   (Backend/Supertest, Frontend/Vitest, Static typecheck+build, E2e/Cypress 3m34s, Fallow advisory, GitGuardian);
@@ -773,3 +785,28 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   live recipe's title/description and confirmed the rendered ld+json script escaped it to `</script>` with
   `JSON.parse` recovering the exact payload, no raw `</script>`, 0 console errors (no shared-DB mutation). Remote
   branch deleted, worktree torn down. (**R0** lane left running untouched.)
+- **2026-07-07** — **I3 claimed** (`worktree-feat+i3-autocomplete-index`). Claim recorded on `development`
+  (same convention as S4–S7/F1–F5/C2–C5/R0) so concurrent sessions see the lane taken. **Owner-chosen** via a
+  decision prompt: with every Wave-3 self-contained lane resolved (**C4**/**C5** `[x]`, **C2** `[P]` #242,
+  **C3** `[x]` #243) and every other open item decision-gated (**F6** "defer to R2", **C1** rule-5 refactor-vs-
+  smalls) / structural (**I1**/**I2** image pipeline) / owner-scoped (**R1**/**R2**, and blocked on R0 landing),
+  I3 is the one remaining **completable** track — server-only, Jest-backed, disjoint from every live lane (C2 =
+  frontend routes, R0 = new doc). **Scope re-verified against the tree, and it has drifted from the board:** the
+  autocomplete *fuzzy fallback already exists in-process* — `fuzzyRankTitles` (`server/util/recipeTitleMatch.js`,
+  landed #167) ranks a capped `FUZZY_CANDIDATE_CAP = 1000` candidate scan (`recipes.js:227-241`); and there is
+  **no `$text` index** on `recipes.title` in `db.js`'s `ensureIndexes()` (title reads today are unindexed — the
+  exact-substring `$regex` pass at `:219` and the fuzzy candidate pull are both COLLSCANs). So I3's remaining
+  scope is purely the **scalability** half the board named: **owner chose a Mongo `$text` index over Atlas
+  Search** (low urgency at current catalog size) — add the index in `ensureIndexes()` and back the fuzzy
+  candidate source with it instead of the 1000-doc scan, keeping the exact-substring first pass. Note `$text` is
+  word/stem-tokenised so it *won't* catch typos ("chikcen") on its own → `fuzzyRankTitles` stays as the final
+  typo-tolerant ranker; `$text` just makes the candidate pull index-backed and unbounded-safe (exact design to
+  be settled in-lane). Extend the existing `recipeTitleMatch.test.js` + a route test. Touches only
+  `server/routes/recipes.js` + `server/db.js`. **Anti-race note:** the `[~]` row flip reached origin by being
+  swept into the concurrent **C3 `/worktree-land`** session's commit `02d9946` ("flip C3 to [x]"), which ran
+  `git commit` over the whole board file while my I3 edit sat in this shared checkout's working tree (same
+  swept-in pattern documented for C5/R0) — verified both rows truthful and line-distinct (C3 genuinely `[x]`
+  #243 merged `7028520`; the I3 flip is mine) before proceeding; this entry is the missing log half. **Worktree
+  audit (no forgotten/unmarked work):** c2 = #242 `[P]` with real committed route-constant work; c3 = merged
+  (#243) / torn down; r0 = `[~]` claim-only (0/0 vs development, claim commit only — expected, just claimed).
+  `development` in sync with origin (0/0) before appending. Worktree not yet created.
