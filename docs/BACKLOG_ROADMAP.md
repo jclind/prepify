@@ -99,7 +99,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **6** | **N4 · SingleRecipe lane** ⚠ lane | author-byline + reviewer-name → `/u/:username` links; servings-pill spacing/glyph visual check (BACKLOG UX + pixel batch a) | `[x]` [#258](https://github.com/jclind/prepify/pull/258) (2026-07-08) | `src/pages/SingleRecipe/**` (incl. `Reviews/RecipeReview.tsx`) | **merged** — author-byline profile link + servings-pill (Lucide `+`/`−` glyphs, rebalanced spacing). Reviewer-name link deferred to §D (rule 8b); pill was screenshot-gated. Runtime-verified (byline click → `/u/:username`, pill rescale) |
 | **6** | **N5 · polish sweep** | skip-link overscroll fix (A11y); RecipeNotFound copy/search; /recipes search-btn offset; footer bug-btn decision (pixel batch b, c) | `[x]` [#259](https://github.com/jclind/prepify/pull/259) (2026-07-08) | `Layout.scss`, `RecipeNotFound/*`, `Footer.scss` | **merged** — skip-link + RecipeNotFound copy/search shipped as code; search-btn 6px offset & footer left-adjacency closed by-design; footer bug-btn re-aligned to the legal-strip row per owner feedback |
 | **6** | **N6 · ingredient-miss telemetry** (+ N1 outlier guard) | persist enrichment misses + admin list (BACKLOG Features, admin); **folds in N1's price-outlier flag** | `[x]` [#255](https://github.com/jclind/prepify/pull/255) (2026-07-08) | `server/routes/ingredients.js`, `server/routes/admin.js`, `src/pages/Admin/**` | **merged**: new `ingredientMisses` collection; write stays best-effort. N1's guard rides this surface as a second event type (flag, not clamp). Review folded in the missing `ingredientMisses` indexes (`{count,lastSeen}` + type-led compound) to match the auditLog pattern the route mirrors |
-| **6** | **N7 · ops: storage-bucket env** | set `FIREBASE_STORAGE_BUCKET` (prod+dev) + real empty-env skip (BACKLOG Tech debt) | `[P]` [#260](https://github.com/jclind/prepify/pull/260) (2026-07-08) | server envs (owner) + `server/util/firebaseStorage.js` | env half is owner-gated; **code half PR'd** — early-return skip when env unset |
+| **6** | **N7 · ops: storage-bucket env** | set `FIREBASE_STORAGE_BUCKET` (prod+dev) + real empty-env skip (BACKLOG Tech debt) | `[x]` [#260](https://github.com/jclind/prepify/pull/260) (2026-07-08) | server envs (owner) + `server/util/firebaseStorage.js` | **merged** — code half (early-return skip when env unset); owner confirmed the env is set on **both dev + prod**, so cleanup is live |
 | **—** | **Deferred / post-1.0 / owner** | see [that section](#deferred--post-10--owner-off-the-active-board) | `[blocked]`/`[dropped]` | — | prerendering, Edamam, theming, brand-orange, DB relocation, ideas |
 
 ---
@@ -1696,3 +1696,18 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   and the proxy is confirmed healthy (nothing is lost by closing). **Option C** (owner re-saves the one parfait
   in the UI → it self-heals under v2) stays available as a 30-second manual fix. With N1 `[x]`, only **N7**
   (owner-gated env half, code PR'd in [#260](https://github.com/jclind/prepify/pull/260)) remains on the board.
+- **2026-07-08** — **N7 merged** ([#260](https://github.com/jclind/prepify/pull/260), merge `6bc3cf2`) → `[x]`;
+  worktree torn down. `deleteProfilePhoto` (`server/util/firebaseStorage.js`) now early-returns `false` when
+  `FIREBASE_STORAGE_BUCKET` is empty/unset, **before** touching Storage — killing the throw-and-swallow of the
+  argless `getStorage().bucket()` ("Bucket name not specified", caught but logging a spurious `console.error`
+  on every account deletion + orphaning the avatar). Named-bucket path unchanged, so the env being set simply
+  turns cleanup back on. Only caller is the best-effort account-deletion cascade (`auth.js:550`, return value
+  ignored) → no behaviour change beyond the removed log noise. Tests: new `deleteProfilePhoto` block in
+  `firebaseStorage.test.js` (named-bucket delete asserting bucket + `profilePhotos/{uid}` path, skip-when-unset,
+  skip-when-empty-string, invalid/missing uid, error-swallow); `auth.test.js` D5 cascade sets the env (scoped
+  `beforeAll`/`afterAll`) to keep exercising the profile-photo path. Server Jest **780/780**, CI green
+  (Backend/Frontend/E2e/Static/Fallow/GitGuardian). **Owner half done:** Jesse confirmed
+  `FIREBASE_STORAGE_BUCKET` is set on **both dev and prod** (dev = `prepify-dev-58579.firebasestorage.app`;
+  prod value mirrors the prod frontend's `VITE_FIREBASE_STORAGE_BUCKET`) — so profile-photo cleanup is live,
+  not just skip-safe. **With N7 `[x]` and N1 closed, the entire Wave-6 board (N1–N7) is drained — nothing open
+  remains on the active board.**

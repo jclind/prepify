@@ -672,7 +672,9 @@ findings table.)*
 
 ## Tech debt / process / infra
 
-- `[ ]` **Ops: set `FIREBASE_STORAGE_BUCKET` in the server envs (+ make the empty-env skip real)** *(triaged
+- `[x]` **Ops: set `FIREBASE_STORAGE_BUCKET` in the server envs (+ make the empty-env skip real)** *(fixed in
+  [#260](https://github.com/jclind/prepify/pull/260), N7: code early-returns the skip when the env is unset;
+  owner confirmed the env is set on both dev + prod)* *(triaged
   2026-07-08, from the 6-18 "Bucket name not specified" delete-user report)* — user deletion was **never
   broken**: `deleteProfilePhoto` (`server/util/firebaseStorage.js:41-55`) is best-effort try/catch and its
   explicit-bucket branch (PR #134) predates the report. But with the env unset the fallback
