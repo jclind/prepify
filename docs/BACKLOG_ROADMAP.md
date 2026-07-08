@@ -94,7 +94,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **5** | **R1 · refactor create-recipe page** | the big AddRecipe refactor | `[x]` [#248](https://github.com/jclind/prepify/pull/248) (2026-07-07) | `src/pages/AddRecipe/**` | **merged** — structural refactor: extracted `useRecipeForm` (useReducer) + pure `recipeFormValidation` + `FormField`; fixed the TimeInput clear-both bug; +38 tests. Folded in **part** of C1 (noindex, selector tests, `updateIngredients` test + dead-code); C1's visual smalls (dropdown/`FormInput` uniformity, summary-bar sticky, group-label styling) still open. See status log. |
 | **5** | **R2 · refactor account page** | the big Account refactor; **closes F6 (stale)** | `[x]` [#250](https://github.com/jclind/prepify/pull/250) (2026-07-07) | `src/pages/Account/**` | **merged** — subsumes F6 (closed stale); overlaps merged C2 |
 | **6** | **N1 · price-data quality** | "$10 parfait" estimates + un-proven `backfillServingPrice --apply` (BACKLOG Bugs) | `[~]` investigation done — fix-lane decision pending owner (2026-07-08) | `server/scripts/`, `src/pages/AddRecipe/Ingredients/updateIngredients.ts` | **investigated**: 0 servingPrice drift on dev; parfait = bad *proxy price-estimate* on stale v1 data (`1 cup strawberries` = $25.34), NOT a parse or division bug. Fix-option (B) outlier guard now folded into **N6**; the re-enrich backfill (A) stays owner/proxy-gated. |
-| **6** | **N2 · report reason "incorrect info"** | new `ReportReason` across the 3 synced lists (BACKLOG Features) | `[~]` `worktree-feat+n2-report-reason-incorrect-info` (2026-07-08) | `src/types.ts`, `ReportControl.tsx`, `server/routes/reports.js` | additive union value in shared `types.ts` — merge-trivial, but rebase before PR |
+| **6** | **N2 · report reason "incorrect info"** | new `ReportReason` across the 3 synced lists (BACKLOG Features) | `[P]` [#256](https://github.com/jclind/prepify/pull/256) (2026-07-08) | `src/types.ts`, `ReportControl.tsx`, `server/routes/reports.js` | additive union value in shared `types.ts` — merge-trivial, but rebase before PR. **Recipe-gated** (server 400s it on review/user targets; UI hides it) |
 | **6** | **N3 · auth-page home links** | brand-mark `<div>` → `<Link to='/'>` on Login + Signup (BACKLOG UX) | `[~]` `worktree-feat+n3-auth-page-home-links` (2026-07-08) | `src/pages/Login/`, `src/pages/Signup/` | tiny |
 | **6** | **N4 · SingleRecipe lane** ⚠ lane | author-byline + reviewer-name → `/u/:username` links; servings-pill spacing/glyph visual check (BACKLOG UX + pixel batch a) | `[ ]` | `src/pages/SingleRecipe/**` (incl. `Reviews/RecipeReview.tsx`) | reviewer-name half overlaps RELEASE_PLAN §D overhaul — see rule 8; screenshot the pill before touching it |
 | **6** | **N5 · polish sweep** | skip-link overscroll fix (A11y); RecipeNotFound copy/search; /recipes search-btn offset; footer bug-btn decision (pixel batch b, c) | `[ ]` | `Layout.scss`, `RecipeNotFound/*`, `Recipes.scss`, `Footer.scss` | disjoint smalls, one worktree; RecipeNotFound wording needs the owner's voice — draft options |
@@ -1516,3 +1516,16 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   the in-flight **N2** lane (`types.ts`/`ReportControl`/`reports.js`) — different files, no collision. Verified
   the defect is still present (both marks are bare `<div>`s), no other worktree/branch/PR touches these auth
   pages, and `development` is in sync with origin before claiming. Worktree not yet created.
+- **2026-07-08** — **N2 implemented** in `worktree-feat+n2-report-reason-incorrect-info` → PR
+  [#256](https://github.com/jclind/prepify/pull/256) opened (`[P]`). Added an `incorrect_info` report reason,
+  **recipe-gated** (the owner's call — wrong quantities / bad price estimate is a recipe-content complaint, not
+  a review/user one). Touched the three synced lists plus one display surface the write-up didn't enumerate:
+  `ReportReason` (`types.ts`); `REASONS` + a new `RECIPE_ONLY_REASONS` guard in `reports.js` that **400s** the
+  reason on review/user targets (the authoritative check, with a target-specific error, not "Invalid reason");
+  `REASON_OPTIONS` in `ReportControl` gains a `recipeOnly` flag and the rendered list is filtered by
+  `target.targetType` (default/reset reason `spam` stays in every filtered set, so `reason` can't point at a
+  hidden option); and the admin queue's reason pill now spaces underscores so `incorrect_info` reads as
+  "incorrect info" (it rendered the raw value — fine for the prior single-word reasons). Tests: server 3 (accept
+  on recipe, reject on review + user via the gate), frontend 2 (option shown+submittable on recipe, hidden on
+  review/user). Gates: `tsc` clean, Vitest 14 (ReportControl + Reports), server Jest 60 (reports), `npm run
+  build` clean. Additive union member → rebase before merge if the board moved (rule 8a).
