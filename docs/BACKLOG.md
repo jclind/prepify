@@ -150,12 +150,14 @@ The triage date stamped on items is the date they were filed here, not when they
 
 ## UX / visual polish
 
-- `[ ]` **No way home from the login/signup pages** *(triaged 2026-07-08; filed 2026-06-18)* — both auth pages
+- `[x]` **No way home from the login/signup pages** *(fixed in [#257](https://github.com/jclind/prepify/pull/257),
+  N3; triaged 2026-07-08; filed 2026-06-18)* — both auth pages
   render outside `Layout` (no navbar: `src/App.tsx:405-406`) and the "P" brand mark is a plain `<div>` on both
   (`src/pages/Login/Login.tsx:39`, `src/pages/Signup/Signup.tsx:49`); the only links go to
   forgot-password/signup/terms/privacy/login — never `/`. Three redesign passes (`ca54b8c`, `27b0798`,
   `b994007`) touched these files without adding one. Fix: wrap the brand mark in `<Link to='/'>` on both
-  pages (a "Back to Prepify" text link also fine). → **N3**
+  pages (a "Back to Prepify" text link also fine). → **N3** — shipped: `<Link to='/' aria-label='Prepify home'>`
+  on both, underline stripped + flat hover/focus-glow ring on `.brand-mark`.
 - `[ ]` **Usernames aren't links to `/u/:username`** *(triaged 2026-07-08; filed 2026-06-18)* — the public
   profile route exists and admin pages already link it (`Admin/Users/Users.tsx:29`,
   `Admin/Reports/Reports.tsx:207`), but neither public-facing spot does: the recipe author byline

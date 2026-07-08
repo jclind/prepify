@@ -95,7 +95,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **5** | **R2 · refactor account page** | the big Account refactor; **closes F6 (stale)** | `[x]` [#250](https://github.com/jclind/prepify/pull/250) (2026-07-07) | `src/pages/Account/**` | **merged** — subsumes F6 (closed stale); overlaps merged C2 |
 | **6** | **N1 · price-data quality** | "$10 parfait" estimates + un-proven `backfillServingPrice --apply` (BACKLOG Bugs) | `[~]` investigation done — fix-lane decision pending owner (2026-07-08) | `server/scripts/`, `src/pages/AddRecipe/Ingredients/updateIngredients.ts` | **investigated**: 0 servingPrice drift on dev; parfait = bad *proxy price-estimate* on stale v1 data (`1 cup strawberries` = $25.34), NOT a parse or division bug. Fix-option (B) outlier guard now folded into **N6**; the re-enrich backfill (A) stays owner/proxy-gated. |
 | **6** | **N2 · report reason "incorrect info"** | new `ReportReason` across the 3 synced lists (BACKLOG Features) | `[x]` [#256](https://github.com/jclind/prepify/pull/256) (2026-07-08) | `src/types.ts`, `ReportControl.tsx`, `server/routes/reports.js` | **merged** — **Recipe-gated** (server 400s it on review/user targets; UI hides it). Also touched the admin queue reason pill (underscore→space) as a 4th display surface |
-| **6** | **N3 · auth-page home links** | brand-mark `<div>` → `<Link to='/'>` on Login + Signup (BACKLOG UX) | `[~]` `worktree-feat+n3-auth-page-home-links` (2026-07-08) | `src/pages/Login/`, `src/pages/Signup/` | tiny |
+| **6** | **N3 · auth-page home links** | brand-mark `<div>` → `<Link to='/'>` on Login + Signup (BACKLOG UX) | `[x]` [#257](https://github.com/jclind/prepify/pull/257) (2026-07-08) | `src/pages/Login/`, `src/pages/Signup/` | **merged** |
 | **6** | **N4 · SingleRecipe lane** ⚠ lane | author-byline + reviewer-name → `/u/:username` links; servings-pill spacing/glyph visual check (BACKLOG UX + pixel batch a) | `[~]` `worktree-feat+n4-singlerecipe-profile-links` (2026-07-08) | `src/pages/SingleRecipe/**` (incl. `Reviews/RecipeReview.tsx`) | reviewer-name half overlaps RELEASE_PLAN §D overhaul — see rule 8; screenshot the pill before touching it. **Scoped to author-byline link + pill check**; reviewer-name link yields to §D (rule 8b — unstarted blocker rewrites `RecipeReview.tsx` end-to-end) |
 | **6** | **N5 · polish sweep** | skip-link overscroll fix (A11y); RecipeNotFound copy/search; /recipes search-btn offset; footer bug-btn decision (pixel batch b, c) | `[ ]` | `Layout.scss`, `RecipeNotFound/*`, `Recipes.scss`, `Footer.scss` | disjoint smalls, one worktree; RecipeNotFound wording needs the owner's voice — draft options |
 | **6** | **N6 · ingredient-miss telemetry** (+ N1 outlier guard) | persist enrichment misses + admin list (BACKLOG Features, admin); **folds in N1's price-outlier flag** | `[x]` [#255](https://github.com/jclind/prepify/pull/255) (2026-07-08) | `server/routes/ingredients.js`, `server/routes/admin.js`, `src/pages/Admin/**` | **merged**: new `ingredientMisses` collection; write stays best-effort. N1's guard rides this surface as a second event type (flag, not clamp). Review folded in the missing `ingredientMisses` indexes (`{count,lastSeen}` + type-led compound) to match the auditLog pattern the route mirrors |
@@ -1555,3 +1555,15 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   `admin.js`/`email.js` are the unrelated account-status free-text reason) with no correctness/security
   findings. CI green (Backend, Frontend, E2e, Static, Fallow, GitGuardian). Rebased the concurrent **N4** claim
   (`321ba49`→`0322d8c`) onto the merge before pushing. No follow-ups.
+- **2026-07-08** — **N3 merged** ([#257](https://github.com/jclind/prepify/pull/257), merge `ad004dc`) → `[x]`.
+  The Login and Signup pages render outside `<Layout>` (no navbar), so their "P" brand mark was a dead-end
+  `<div>` with no route home; wrapped it in `<Link to='/' aria-label='Prepify home'>` on both
+  (`Login.tsx:39`, `Signup.tsx:49`), and updated the shared `.brand-mark` rule (`FormStyles.scss`) to strip the
+  anchor underline, keep the tile flat (chrome doesn't lift) with a `brightness(1.06)` hover + a `focus-glow`
+  ring on `:focus-visible`. **Verified** via `/verify` — headless Playwright drove the live pages on :3006:
+  clicking the mark on `/login` and `/signup` navigates to `/`; Tab focuses it first (accessible name "Prepify
+  home"), Enter activates → `/`, and the `:focus-visible` ring renders; hover applies `brightness(1.06)`;
+  `text-decoration-line: none` (no underline regression); tile visually unchanged. Gates green (tsc, Vitest
+  617/2-skipped, build; no server changes). CI green (Backend, Frontend, E2e, Static, Fallow, GitGuardian).
+  Merged after the concurrent **N2** land + **N4** claim advanced the board; no rebase needed (disjoint files,
+  the N3 claim commit `06ff786` had already reached origin via N2's push). No follow-ups.
