@@ -57,6 +57,20 @@
     background: linear-gradient(135deg, #2ec0c8, s.$secondary);
     box-shadow: s.$shadow-teal;
     margin-bottom: 1rem;
+
+    // Now a home link (these pages render outside <Layout>, so the mark is the
+    // only route back to home): strip the anchor underline, keep the tile flat
+    // (chrome doesn't lift) with a gentle brightness affordance, add a ring.
+    text-decoration: none;
+    transition: filter 0.15s ease;
+
+    &:hover {
+      filter: brightness(1.06);
+    }
+
+    &:focus-visible {
+      @include s.focus-glow(s.$secondary, 0.2);
+    }
   }
 
   .form {
