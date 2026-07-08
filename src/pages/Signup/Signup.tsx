@@ -46,7 +46,9 @@ const Signup: FC = () => {
       </Helmet>
       <main className='signup-page form-format'>
         <div className='form-container'>
-          <div className='brand-mark'>P</div>
+          <Link to='/' className='brand-mark' aria-label='Prepify home'>
+            P
+          </Link>
           <form onSubmit={handleEmailAndPasswordFormSubmit} className='form'>
             <h1 className='title'>Create your account</h1>
             <div aria-live='polite'>

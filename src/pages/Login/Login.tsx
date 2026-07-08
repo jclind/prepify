@@ -36,7 +36,9 @@ const Login: FC = () => {
       </Helmet>
       <main className='login-page form-format'>
         <div className='form-container'>
-          <div className='brand-mark'>P</div>
+          <Link to='/' className='brand-mark' aria-label='Prepify home'>
+            P
+          </Link>
           <form onSubmit={handleEmailAndPasswordFormSubmit} className='form'>
             <h1 className='title'>Welcome back</h1>
             <div aria-live='polite'>
