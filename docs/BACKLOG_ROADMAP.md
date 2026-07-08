@@ -99,7 +99,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **6** | **N4 · SingleRecipe lane** ⚠ lane | author-byline + reviewer-name → `/u/:username` links; servings-pill spacing/glyph visual check (BACKLOG UX + pixel batch a) | `[x]` [#258](https://github.com/jclind/prepify/pull/258) (2026-07-08) | `src/pages/SingleRecipe/**` (incl. `Reviews/RecipeReview.tsx`) | **merged** — author-byline profile link + servings-pill (Lucide `+`/`−` glyphs, rebalanced spacing). Reviewer-name link deferred to §D (rule 8b); pill was screenshot-gated. Runtime-verified (byline click → `/u/:username`, pill rescale) |
 | **6** | **N5 · polish sweep** | skip-link overscroll fix (A11y); RecipeNotFound copy/search; /recipes search-btn offset; footer bug-btn decision (pixel batch b, c) | `[x]` [#259](https://github.com/jclind/prepify/pull/259) (2026-07-08) | `Layout.scss`, `RecipeNotFound/*`, `Footer.scss` | **merged** — skip-link + RecipeNotFound copy/search shipped as code; search-btn 6px offset & footer left-adjacency closed by-design; footer bug-btn re-aligned to the legal-strip row per owner feedback |
 | **6** | **N6 · ingredient-miss telemetry** (+ N1 outlier guard) | persist enrichment misses + admin list (BACKLOG Features, admin); **folds in N1's price-outlier flag** | `[x]` [#255](https://github.com/jclind/prepify/pull/255) (2026-07-08) | `server/routes/ingredients.js`, `server/routes/admin.js`, `src/pages/Admin/**` | **merged**: new `ingredientMisses` collection; write stays best-effort. N1's guard rides this surface as a second event type (flag, not clamp). Review folded in the missing `ingredientMisses` indexes (`{count,lastSeen}` + type-led compound) to match the auditLog pattern the route mirrors |
-| **6** | **N7 · ops: storage-bucket env** | set `FIREBASE_STORAGE_BUCKET` (prod+dev) + real empty-env skip (BACKLOG Tech debt) | `[~]` `worktree-feat-n7-storage-bucket-env` (2026-07-08) | server envs (owner) + `server/util/firebaseStorage.js` | env half is owner-gated; code half is a 3-line early-return |
+| **6** | **N7 · ops: storage-bucket env** | set `FIREBASE_STORAGE_BUCKET` (prod+dev) + real empty-env skip (BACKLOG Tech debt) | `[P]` [#260](https://github.com/jclind/prepify/pull/260) (2026-07-08) | server envs (owner) + `server/util/firebaseStorage.js` | env half is owner-gated; **code half PR'd** — early-return skip when env unset |
 | **—** | **Deferred / post-1.0 / owner** | see [that section](#deferred--post-10--owner-off-the-active-board) | `[blocked]`/`[dropped]` | — | prerendering, Edamam, theming, brand-orange, DB relocation, ideas |
 
 ---
@@ -1669,3 +1669,15 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   documented contract instead of throw-and-swallow. Verified N7 is still `[ ]`/unstarted (no branch, no
   worktree), only the merged N4 worktree remained on disk, and `development` is current before claiming.
   Worktree created on free ports (client 3006 / server 4001).
+- **2026-07-08** — **N7** implemented in `worktree-feat-n7-storage-bucket-env` → PR
+  [#260](https://github.com/jclind/prepify/pull/260) opened (`[P]`). `deleteProfilePhoto` now early-returns
+  `false` when `FIREBASE_STORAGE_BUCKET` is empty/unset, **before** touching Storage — so the "leave empty to
+  skip" `.env.example` contract is real instead of the throw-and-swallow (argless `getStorage().bucket()` →
+  "Bucket name not specified", caught, but a spurious `console.error` on every account deletion + orphaned
+  avatar). Named-bucket path unchanged, so the owner setting the env (the ops half) turns cleanup back on with
+  no further code change. Only caller is the best-effort account-deletion cascade (`auth.js:550`, return value
+  ignored) → no behaviour change beyond the removed log noise. Tests: new `deleteProfilePhoto` block in
+  `firebaseStorage.test.js` (named-bucket delete asserting bucket + `profilePhotos/{uid}` path, skip-when-unset,
+  skip-when-empty-string, invalid/missing uid, error-swallow); `auth.test.js` D5 cascade sets the env
+  (scoped `beforeAll`/`afterAll`) so the profile-photo deletion path is still exercised. Server Jest
+  **780/780** green. Sixth Wave-6 track PR'd; only **N1** (owner-pending fix-lane) remains open on the board.
