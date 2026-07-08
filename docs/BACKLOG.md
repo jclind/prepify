@@ -126,11 +126,14 @@ The triage date stamped on items is the date they were filed here, not when they
 
 ## UX / visual polish
 
-- `[ ]` **Create-recipe form dropdown inputs aren't visually uniform** — now that the text inputs on
-  AddRecipe all route through the shared `FormInput` (`size='compact'`), the page's dropdown/select-style
-  inputs (cuisine, course/meal-type, diet labels, etc.) still carry their own ad-hoc styling and read
-  inconsistently next to the unified text fields. Align their height, border, radius, padding, and focus
-  treatment with the `compact` `FormInput` so the whole form looks like one design system. *(surfaced
+- `[x]` **Create-recipe form dropdown inputs aren't visually uniform** — *(fixed in the C1-tail lane,
+  2026-07-08.)* The Cuisine / Course / Diet `react-select` controls (`recipeSelectStyles.ts`) were tuned to
+  mirror the shared `FormInput` `compact` variant exactly: 1px `$tertiary-text` resting border (was a 2px
+  react-select default grey), teal `$secondary` focus border + the `@mixin focus-glow` halo (was orange
+  `$primary`, no ring), the `$border-radius` token, a 40px `min-height`, a 1rem value inset, and no orange
+  hover shift (the text fields give none). Three new tokens (`secondary` / `borderRadius` / `focusGlow`) were
+  surfaced through `_exports.module.scss` so the values stay single-sourced. Verified via an authed headless
+  pass over `/add-recipe` (resting / focused / selected all match the neighbouring text fields). *(surfaced
   2026-06-29 while consolidating `RecipeFormInput` into the shared `FormInput`.)*
 - `[x]` **Better "no results found" on the Recipes page** — *done in PR #167 (track 2d, merged ✅):*
   replaced the weak indicator with a real empty state (icon + contextual copy that names the query and/or
@@ -174,7 +177,13 @@ The triage date stamped on items is the date they were filed here, not when they
   bar is now `position: sticky` (+ `margin-top: auto`) so it releases at the page end above the footer
   instead of a fixed overlay; the footer's global top margin is also cancelled on this page (`:has`) so the
   bar sits flush above it, and the cuisine/course dropdowns were lifted above the bar (menu z-index 50→60).
-- `[ ]` **Add-recipe summary bar doesn't stay visible while scrolling the form** — the PR #164 fix uses
+- `[x]` **Add-recipe summary bar doesn't stay visible while scrolling the form** — *(Decided 2026-07-08,
+  C1-tail audit — keep the current release-at-end behavior; no code change.)* This was always framed as a
+  design decision, not a bug: the tracked footer-overlap regression is fixed, and whether the bar should be
+  permanently viewport-pinned is a product/UX call. Owner elected to keep the current `position: sticky;
+  bottom: 0` behavior (bar rests at the end of the form column, footer reachable) rather than convert it to
+  an always-visible fixed bar. Re-open only if an always-visible summary is later wanted. Original write-up
+  retained below for context. — the PR #164 fix uses
   `position: sticky; bottom: 0` + `margin-top: auto` (`AddRecipeSummaryBar.scss`), which correctly releases
   the bar above the footer at page end (the original overlap bug — fixed). But `margin-top: auto` parks the
   bar at the bottom of the form's flex column, so on a tall form it does **not** pin to the viewport bottom
@@ -186,11 +195,14 @@ The triage date stamped on items is the date they were filed here, not when they
   *(surfaced 2026-06-22 during the Phase-3 verification pass; runtime-confirmed: mid-scroll the bar sits
   off-screen below the fold, footer reachable above the bar at page end. Candidate for the create-recipe
   refactor or the Phase-4 QA sweep.)*
-- `[ ]` **Add-recipe group labels render underwhelming** — the section labels you can insert between
-  ingredients / instructions (the "Add Label" control) don't display the way they should on the create-recipe
-  page. Refine their styling/placement, and check how they carry through to the recipe view. *(noted
-  2026-06-18 after the track-3d smoke test; visual polish — fold into a future add-recipe pass, e.g. the
-  Phase-4 QA sweep or the "Refactor the create-recipe page" tech-debt item.)*
+- `[x]` **Add-recipe group labels render underwhelming** — *(Decided 2026-07-08, C1-tail audit — looks
+  intentional post-overhaul; no change.)* Re-audited against the current tree: on the **recipe view** the
+  labels (`.ing-group-label` / `.step-group-label`, `SingleRecipe.scss`) render as deliberate brand-orange
+  bold section headers with spacing; on the **create form** the inserted label row (`.label-text-container
+  .text`, `ListComponents/Item.scss`) is a clean bold `$text-md` line. After the create-recipe overhaul (R1
+  #248 + the type-scale / hover / focus-ring sweeps) both read as intentional, so the owner closed this as no
+  longer "underwhelming." Re-open if a dedicated label restyle is later wanted. *(originally noted
+  2026-06-18 after the track-3d smoke test.)*
 - `[x]` **Single-recipe "no recipe found" looks bad** — *fixed in PR #160 (track 2c)*; redesigned
   empty-state card (icon + search + "Browse all recipes" CTA), and fixed 404 routing so a missing
   recipe renders instantly instead of retrying ~7s then showing a generic error.

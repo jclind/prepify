@@ -4,6 +4,12 @@
   primary: s.$primary;
   borderColor: s.$tertiary-text;
   primaryText: s.$primary-text;
+  // Focus accent + halo for the recipe-form react-selects, mirroring the shared
+  // FormInput `compact` field (teal border + `@mixin focus-glow` ring) so the
+  // dropdowns and text inputs read as one design system.
+  secondary: s.$secondary;
+  borderRadius: s.$border-radius;
+  focusGlow: 0 0 0 3px rgba(s.$secondary, 0.15);
   // Neutral hover fill for react-select option rows (recipe form selectors).
   optionHover: s.$gray-200;
   // Loading-state tokens (docs/design/loading-states.md): one skeleton grey and

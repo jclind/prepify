@@ -2,11 +2,13 @@ import { StylesConfig } from 'react-select'
 import styles from 'src/_exports.module.scss'
 
 // Shared react-select styling for the recipe form's Cuisine / Course / Diet
-// selectors. Previously three byte-identical copies, each with the same bug:
-// the control + selected-option hover used the bare string `'primary'`, which
-// is not a valid CSS colour, so the intended orange hover never rendered. Here
-// the hover uses the real token (`styles.primary`) and the neutral option-row
-// hover is tokenised (`styles.optionHover`) instead of a hard-coded `lightgray`.
+// selectors. These sit right next to the form's text fields, every one of which
+// now routes through the shared FormInput `compact` variant — so the control is
+// tuned to match that field exactly (1px `$tertiary-text` border, teal
+// `$secondary` focus border + the `@mixin focus-glow` halo, the `$border-radius`
+// token, a 40px min-height, and a 1rem text inset) so the whole form reads as one
+// design system. The selected-option row keeps the brand-orange fill; the neutral
+// option-row hover is tokenised (`styles.optionHover`).
 export type RecipeSelectOption = { value: string; label: string }
 
 export const recipeSelectStyles: StylesConfig<RecipeSelectOption> = {
@@ -15,14 +17,23 @@ export const recipeSelectStyles: StylesConfig<RecipeSelectOption> = {
   menu: (provided: any) => ({ ...provided, zIndex: 60 }),
   control: (provided: any, state: any) => ({
     ...provided,
-    borderColor: state.isFocused ? styles.primary : provided.borderColor,
-    borderWidth: '2px',
+    minHeight: '40px',
+    // Match FormInput `compact`: teal focus border + glow, neutral resting
+    // border, no orange hover shift (the text fields give no hover feedback).
+    borderColor: state.isFocused ? styles.secondary : styles.borderColor,
+    borderWidth: '1px',
+    borderRadius: styles.borderRadius,
     backgroundColor: 'none',
     '&:hover': {
-      borderColor: styles.primary,
+      borderColor: state.isFocused ? styles.secondary : styles.borderColor,
     },
-    boxShadow: 'none',
+    boxShadow: state.isFocused ? styles.focusGlow : 'none',
     fontWeight: '500',
+  }),
+  // Align the text inset with FormInput `compact` (padding: 0 1rem).
+  valueContainer: (provided: any) => ({
+    ...provided,
+    padding: '2px 1rem',
   }),
   option: (provided: any, state: any) => ({
     ...provided,

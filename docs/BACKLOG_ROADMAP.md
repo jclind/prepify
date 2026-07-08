@@ -78,7 +78,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **2** | **F4 · change-password subhead** | redundant `<h3 class='sr-subhead'>` (`AccountSection.tsx:188`) | `[x]` [#246](https://github.com/jclind/prepify/pull/246) (2026-07-07) | `Settings/sections/AccountSection.tsx` | **merged** — reclaimed an orphaned claim first; dropped the redundant subhead (`Connected accounts` heading kept); runtime-verified via a real signup→settings flow |
 | **2** | **F5 · housekeeping one-liners** | brand-asset comment (`generate-brand-assets.mjs:6`); CLAUDE.md RecipeContext drift; rename `validateIngredientQuantityStr`→`formatQuantity` (3 imports) | `[x]` [#239](https://github.com/jclind/prepify/pull/239) (2026-07-07) | `scripts/`, `CLAUDE.md`, `src/util/` | **merged** — rename repointed 4 importers (+1 commented ref); both comment/doc fixes verified true against disk (font file is `MediumItalic`, `src/context/` has only `AuthContext.tsx`) |
 | **2** | **F6 · account nav polish** | Saved/Ratings section-nav styling (`SegmentedNav.tsx`) | `[dropped]` stale (R2, 2026-07-07) | `Account/components/SegmentedNav.tsx` | closed as stale — nav already redesigned (#136 rail) + token-normalized; no concrete defect |
-| **3** | **C1 · AddRecipe cluster** ⚠ lane | ~~`/add-recipe` `noindex`~~; ~~Cuisine/MealType selector unit tests~~; ~~`updateIngredients` test + dead-code~~ **(all done in R1 #248)** · still open: dropdown/`FormInput` uniformity (`recipeSelectStyles.ts`); summary-bar sticky; group-label styling | `[~]` | `src/pages/AddRecipe/**`, `src/test/` | **partially shipped via R1 [#248](https://github.com/jclind/prepify/pull/248)** — the tests/noindex/dead-code folded in; the three visual smalls remain (spin off as a small C1-tail lane) |
+| **3** | **C1 · AddRecipe cluster** ⚠ lane | ~~`/add-recipe` `noindex`~~; ~~Cuisine/MealType selector unit tests~~; ~~`updateIngredients` test + dead-code~~ **(R1 #248)** · ~~dropdown/`FormInput` uniformity (`recipeSelectStyles.ts`)~~ **(C1-tail)** · ~~summary-bar sticky~~ / ~~group-label styling~~ **(C1-tail audit — decided no-change)** | `[~]` `worktree-feat+c1-tail-audit` (2026-07-08) | `src/pages/AddRecipe/**`, `src/_exports.module.scss` | **C1-tail lane** finishes the cluster: R1 #248 folded in the tests/noindex/dead-code; this lane aligns the selects to `FormInput` (the one real fix) and closes the summary-bar (owner keeps release-at-end) + group-label (intentional post-overhaul) items as **decided, no code change** |
 | **3** | **C2 · route-constant single-sourcing** | `RECIPES_PATH` const (`DesktopBar:45`,`NavMenu:20`,`Recipes.tsx:113-119`); `browseAll`→`clearFilters`; `accountTabs` as app-wide route source (`DesktopAccountMenu:74`,`footerData:43-44`,`DraftResumeBanner:47`) + `activeAccountTab` helper | `[x]` [#242](https://github.com/jclind/prepify/pull/242) (2026-07-07) | Navbar/* + `Recipes.tsx` + `accountTabs.tsx` + `footerData.ts` + `DraftResumeBanner.tsx` | **merged** — RECIPES_PATH migration is partial by design (nav/footer/browse only; other `/recipes` links deferred) |
 | **3** | **C3 · SingleRecipe lane** ⚠ lane | CLS controls-block reserve (`SingleRecipe.tsx:308-317`, `RecipeControls.scss`); JSON-LD `</script>` escaping (`buildRecipeJsonLd.ts:38-39`) | `[x]` [#243](https://github.com/jclind/prepify/pull/243) (2026-07-07) | `SingleRecipe.tsx`, `buildRecipeJsonLd.ts` | **merged** — JSON-LD `</script>` escape only; hero `srcset` deferred to **I1**; **CLS half was a no-op** (`RecipeControls` owner-only, non-owner path already fully reserved) so `RecipeControls.scss` untouched (see status log) |
 | **3** | **C4 · SearchRecipesInput lane** | autocomplete footer-label debounce disagreement (`:274` vs `:336`); press-`/` global focus-search feature | `[x]` [#238](https://github.com/jclind/prepify/pull/238) (2026-07-07) | `SearchRecipesInput.tsx` (+ Layout for key handler) | **merged** |
@@ -1281,3 +1281,27 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   surface verified through the two-layer test suites driving the exact `"     "` input through the production validator + predicate
   (a live authed dev-Mongo POST would need seeding an active user + Firebase user + image — disproportionate for this low-sev
   data-quality guard). Disjoint from the in-flight C1-tail styling lane; no collision.
+- **2026-07-08** — **C1-tail lane claimed** (`worktree-feat+c1-tail-audit`) to finish the C1 AddRecipe cluster
+  (the last `[~]` track on the board). Approached as an **audit** — the owner had already done the bulk of the
+  create-recipe visual overhaul, so each of the three remaining smalls was re-checked against the current tree
+  (post-R1 #248 / #204 FormInput-converge / the type-scale + hover + focus-ring sweeps) plus the git history of
+  the exact files. Verdict: **① dropdown/`FormInput` uniformity — genuinely still live** (the selects' only
+  substantive touch, `e274b33`, just deduped the three copies + fixed the orange-hover bug; it never harmonized
+  them with the `compact` field — objective mismatch: 2px default-grey border vs 1px `$tertiary-text`, orange
+  focus w/ no ring vs teal `$secondary` + glow, default radius/height vs the token/40px). **② summary-bar
+  sticky — still true but an explicit design decision** (`position: sticky; bottom:0; margin-top:auto`
+  unchanged since #164; not a regression; owner keeps release-at-end). **③ group labels — subjective, and the
+  view-side already reads intentional** post-overhaul. Per the owner's call: **fix ① only; close ②/③ as decided,
+  no code change**, so C1 stops lingering as `[~]`.
+- **2026-07-08** — **C1-tail ① implemented** in `worktree-feat+c1-tail-audit`. `recipeSelectStyles.ts` now
+  mirrors the shared `FormInput` `compact` field: teal `$secondary` focus border + the `@mixin focus-glow` halo
+  (was orange `$primary`, no ring), 1px `$tertiary-text` resting border (was a 2px react-select default grey),
+  the `$border-radius` token (10px), a 40px `min-height`, a 1rem `valueContainer` inset, and no orange hover
+  shift (the text fields give none). Three tokens (`secondary` / `borderRadius` / `focusGlow`) surfaced through
+  `_exports.module.scss` so the values stay single-sourced with the SCSS (build output confirmed
+  `secondary:#00adb5`, `borderRadius:10px`, `focusGlow:0 0 0 3px rgba(0,173,181,0.15)`). Gates: `tsc` clean,
+  `npm run build` clean, Vitest **613 passed / 2 skipped** (83 files, unchanged). **Verified visually** via an
+  authed headless pass over `/add-recipe` (real signup → `/add-recipe`, playwright-core): resting, focused
+  (teal border + glow), and selected states all now match the neighbouring `SERVINGS`/`TITLE` text fields; no
+  console errors. Two-file diff (`recipeSelectStyles.ts` + `_exports.module.scss`). ②/③ ticked in `BACKLOG.md`
+  as **decided — no change**. C1 cluster now fully resolved.
