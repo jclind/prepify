@@ -1231,3 +1231,16 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   `recipeFields.js`), Jest-backed. Also noted (not claimed): the whitespace-only recipe-title guard (`recipeFormValidation.ts:40`,
   `!form.title` w/o `.trim()`) remains the next open follow-up; BACKLOG.md:506 (numeric/array server validation) is *partially*
   closed by S1 #228 (numeric clamps + per-element caps shipped; array-shape bounding may remain) — left un-ticked. Worktree not yet created.
+- **2026-07-08** — **`exportMyData` own-recipes/drafts admin-stamp leak** implemented → PR
+  [#251](https://github.com/jclind/prepify/pull/251) opened (`[P]`). Added a shared `RECIPE_INTERNAL_STAMPS` constant
+  (`server/util/recipeFields.js`) naming the six admin stamps once + a derived `recipeInternalStampsExclusion`
+  (`{ field: 0 }`), and applied it as the projection on both the `recipes` and `recipeDrafts` finds in `GET /exportMyData`
+  (`server/routes/auth.js`). **Exclusion, not the card whitelist** — an export stays higher-fidelity than a public card, so
+  the owner's own body is kept in full minus only the six admin-uid stamps; the saved-recipe half is untouched (still
+  `publicRecipeProjection`, since those are other users' recipes). Verified: extended the auth Jest suite with an
+  own-recipes/drafts regression (seeds all six stamps + a non-whitelist `description`, asserts stamps gone from both arrays
+  while the body incl. `description` survives — proves exclusion-not-whitelist); full server Jest **32 suites / 749 tests**
+  green; server boots (`Connected to MongoDB`) + endpoint routes (401 unauth) with the new wiring. The worktree ran on
+  ports client 3002 / server 4001 (main 3000/4000 untouched). `[P]` flip recorded on `development` in the main checkout
+  (not the lane branch), same convention as C2–C5/I1–I3/R1–R2. Closes the last unprojected account read in the #397/#446
+  leak class. **Next open follow-up remains the whitespace-only recipe-title guard** (`recipeFormValidation.ts:40`).
