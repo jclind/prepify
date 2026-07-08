@@ -445,6 +445,29 @@ export interface AuditResponse {
   totalCount: number
 }
 
+// Ingredient-enrichment telemetry (N6 + N1 outlier guard). Mirrors the
+// `ingredientMisses` docs written best-effort by POST /api/ingredients/parse
+// and listed read-only by GET /admin/ingredients.
+export type IngredientMissType = 'miss' | 'price_outlier'
+
+export interface IngredientMissItem {
+  _id: string
+  type: IngredientMissType
+  normalized: string
+  raw: string
+  count: number
+  firstSeen: string
+  lastSeen: string
+  // price_outlier only: the matched ingredient name + the offending price (cents).
+  name?: string
+  priceCents?: number
+}
+
+export interface IngredientMissesResponse {
+  items: IngredientMissItem[]
+  totalCount: number
+}
+
 // Admin analytics dashboard (P3b). Mirrors GET /admin/analytics in
 // server/routes/admin.js.
 export interface AnalyticsTotals {

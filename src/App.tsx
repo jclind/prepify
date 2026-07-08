@@ -41,6 +41,9 @@ const BugReports = lazyRoute(
   () => import('src/pages/Admin/BugReports/BugReports')
 )
 const Users = lazyRoute(() => import('src/pages/Admin/Users/Users'))
+const Ingredients = lazyRoute(
+  () => import('src/pages/Admin/Ingredients/Ingredients')
+)
 const Audit = lazyRoute(() => import('src/pages/Admin/Audit/Audit'))
 
 // Account area. PublicProfile is a direct-landing surface (shared profile
@@ -388,6 +391,14 @@ const App: FC = () => {
                   element={
                     <Lazy>
                       <Users />
+                    </Lazy>
+                  }
+                />
+                <Route
+                  path='ingredients'
+                  element={
+                    <Lazy>
+                      <Ingredients />
                     </Lazy>
                   }
                 />

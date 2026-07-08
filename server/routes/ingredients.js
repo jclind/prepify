@@ -4,8 +4,63 @@ const { verifyToken } = require('../middleware/auth')
 const { makeUserLimiter } = require('../middleware/writeLimiter')
 const { GENERIC_500_MESSAGE } = require('../util/respondServerError')
 const { asyncHandler } = require('../util/asyncHandler')
+const { getDB } = require('../db')
 
 const router = Router()
+
+// Per-ingredient price above which an *enriched* row is almost certainly a bad
+// proxy gram-estimate rather than a real cost — a single home-recipe ingredient
+// rarely exceeds this (a pound of premium meat/seafood tops out ~$12–15). Above
+// it we record a `price_outlier` telemetry event for admin review. FLAG ONLY:
+// the stored price is left untouched (clamping would mangle a legitimately
+// expensive row like a pound of saffron). Surfaced by N1's "$10 parfait"
+// investigation, where `1 cup strawberries` enriched to $25.34. Tune here.
+const PRICE_OUTLIER_CENTS = 1500
+
+// Normalize an ingredient string into a stable telemetry key: lowercase, drop a
+// trailing comma-clause ("…strawberries, fresh or frozen" → "…strawberries"),
+// collapse internal whitespace, trim, and cap length so a pathological input
+// can't mint a huge _id. Quantity/unit are kept (they drive the price, so a
+// per-quantity key is what a price_outlier wants).
+function normalizeIngredientKey(str) {
+  return String(str)
+    .toLowerCase()
+    .split(',')[0]
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 200)
+}
+
+// Best-effort enrichment-quality telemetry. Upserts a per-(type, key) counter
+// into `ingredientMisses` so admins can see which strings miss enrichment
+// (`miss`) and which enrich to implausible prices (`price_outlier`) — the N6
+// telemetry surface, with N1's price guard folded in as a second event type.
+// Wrapped so a telemetry/DB failure NEVER affects the parse response (the route
+// soft-fails on its own); the write is awaited only so it's deterministic under
+// test — errors are swallowed here, so awaiting can't reject the handler.
+async function recordIngredientTelemetry(type, ingredientString, extra = {}) {
+  try {
+    const normalized = normalizeIngredientKey(ingredientString)
+    if (!normalized) return
+    const now = new Date()
+    await getDB()
+      .collection('ingredientMisses')
+      .updateOne(
+        { _id: `${type}:${normalized}` },
+        {
+          $set: { type, normalized, raw: ingredientString, lastSeen: now, ...extra },
+          $inc: { count: 1 },
+          $setOnInsert: { firstSeen: now },
+        },
+        { upsert: true }
+      )
+  } catch (err) {
+    console.error(
+      '[ingredients/parse] telemetry write failed',
+      JSON.stringify({ type, message: err && err.message })
+    )
+  }
+}
 
 // Every call can spend paid Spoonacular quota (via the parser's proxy), so this
 // route gets its own tight per-user limit — an independent bucket from the
@@ -72,12 +127,25 @@ router.post('/parse', verifyToken, parseLimiter, asyncHandler(async (req, res) =
 
     // Soft-fail by design: a clean lookup miss (no Spoonacular match) returns 200
     // with `ingredientData: null`. Log it so we can see which strings miss in
-    // prod and decide whether to seed the proxy cache.
+    // prod and decide whether to seed the proxy cache, and persist it for the
+    // admin telemetry list (N6).
     if (!ingredientData) {
       console.warn(
         '[ingredients/parse] enrichment miss',
         JSON.stringify({ ingredientString })
       )
+      await recordIngredientTelemetry('miss', ingredientString)
+    } else if (
+      typeof ingredientData.totalPriceUSACents === 'number' &&
+      ingredientData.totalPriceUSACents >= PRICE_OUTLIER_CENTS
+    ) {
+      // Enriched, but to an implausible price — record it for admin review so a
+      // bad proxy gram-estimate (the N1 "$10 parfait" class) is visible. The
+      // price still flows through to the client unchanged; this is observability.
+      await recordIngredientTelemetry('price_outlier', ingredientString, {
+        name: ingredientData.name,
+        priceCents: ingredientData.totalPriceUSACents,
+      })
     }
     return res.json({ ingredientData })
   } catch (err) {
