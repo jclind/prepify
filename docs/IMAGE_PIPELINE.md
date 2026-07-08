@@ -169,27 +169,53 @@ firebase deploy --only storage
 Existing images live at `recipeImages/{filename}`; their download URLs are stored in
 `recipes.recipeImage`. Until migrated, the **legacy read-only rule keeps them
 rendering** (`match /recipeImages/{imageId} { allow read: if true }`), so this can run
-lazily *after* the deploy. Write a one-off script modelled on the read-first ops
-scripts in `server/scripts/` (e.g. `reconcileRatingAggregates.js` — dry-run by
-default, `--apply` to write). Per recipe whose `recipeImage` is still a flat path:
+lazily *after* the deploy. The migration ships as a read-first ops script,
+**`server/scripts/migrateRecipeImagesToUid.js`** (dry-run by default, `--apply` to
+write — same posture as `reconcileRatingAggregates.js`):
 
-1. Parse the bucket + object path from the stored URL with
-   `server/util/firebaseStorage.js` `parseStorageUrl` — it decodes the full path and
-   surfaces the bucket, which matters because the catalog is **mixed-bucket** (some
-   URLs point at `prepify-9b974`, others at the dev/prod buckets). **Copy within the
-   same bucket.**
-2. Resolve the owner **uid** from `recipes.userId` (the field `addRecipe` stamps;
-   fall back to `authorUsername` → `usernames` lookup for any legacy doc missing it).
-3. `bucket.file(oldPath).copy('recipeImages/${uid}/${uuid}')` via the Admin SDK
-   (bypasses rules), then `getDownloadURL` on the new object.
-4. Update the recipe's `recipeImage` to the new URL. **Idempotent:** skip recipes
-   whose `recipeImage` already decodes to a `recipeImages/{uid}/…` path.
-5. Once verified, optionally delete the old flat object (or leave it for a later
-   purge sweep — flat writes are denied, but the object stays public-read).
+```bash
+node server/scripts/migrateRecipeImagesToUid.js                 # DRY RUN — report only
+node server/scripts/migrateRecipeImagesToUid.js --apply         # copy + repoint
+node server/scripts/migrateRecipeImagesToUid.js --apply --delete-old   # + purge the old flat object
+node server/scripts/migrateRecipeImagesToUid.js --id=<recipeId> # target one recipe (cautious first run)
+node server/scripts/migrateRecipeImagesToUid.js --limit=25      # cap the batch
+```
+
+It reads `MONGO_URI` + `FIREBASE_SERVICE_ACCOUNT` from `server/.env` (`DB_NAME`
+defaults to `"prepify"`). Per recipe whose `recipeImage` still decodes to a flat
+`recipeImages/{filename}` path, it:
+
+1. Parses the bucket + object path from the stored URL (`util/firebaseStorage.js`
+   `parseStorageUrl`) — the catalog is **mixed-bucket** (some URLs point at
+   `prepify-9b974`, others at the dev/prod buckets), so it **copies within the
+   object's own bucket**. A recipe in a bucket the running service account can't
+   write (e.g. dev SA vs the legacy prod bucket) is reported as a per-object failure
+   and skipped — the run continues and exits non-zero so leftover work is visible.
+2. Resolves the owner **uid** from `recipes.userId` (the field `addRecipe` stamps),
+   falling back to `authorUsername` → `usernames` (keyed by `_id: uid`) for any
+   legacy doc missing it. No resolvable uid → skipped (can't owner-scope it).
+3. Copies to `recipeImages/{uid}/{uuid}` (fresh extensionless uuid) via the Admin
+   SDK (bypasses rules), ensures the new object carries a Firebase download token,
+   and builds the tokened download URL.
+4. Repoints the recipe's `recipeImage` at the new URL. **Idempotent:** recipes
+   whose `recipeImage` already decodes to `recipeImages/{uid}/…` are skipped, so a
+   second `--apply` is a no-op.
+5. **Non-destructive by default** — the old flat object is left in place (still
+   public-read, so anything not yet repointed keeps rendering). Pass `--delete-old`
+   to purge it in the same pass, or leave it for a later sweep.
 
 Then re-run the **I1 backfill** (§ "Backfill existing images") so the moved originals
 get their `{uid}/`-directory variants (any variants generated at the old flat path
 are now orphaned — regenerating at the new path is simplest).
+
+> Verified against **dev** (`prepify-dev-58579.firebasestorage.app`) with a controlled
+> inject → `--apply` → assert → cleanup loop: copy + repoint, token-URL public
+> readability (`200`), old-object retention, `--delete-old`, idempotent re-run, and
+> dry-run-writes-nothing all pass; the pure path-classification + URL-encoding logic
+> is pinned by `server/__tests__/migrateRecipeImagesToUid.test.js`. Note dev's own
+> catalog points at the legacy `prepify-9b974` bucket, so a real dev `--apply` over it
+> will report per-object failures (foreign bucket) — expected; the actual object moves
+> happen when run wherever the service account owns the target bucket.
 
 ### 3. Verify + finish
 
