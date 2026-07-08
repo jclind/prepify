@@ -830,6 +830,17 @@ describe('POST /deleteAccount', () => {
   describe('cascade (D2/D4/D5/D6)', () => {
     const KEEPER_UID = 'keeper-uid'
 
+    // deleteProfilePhoto now skips when FIREBASE_STORAGE_BUCKET is unset (N7), so
+    // set it here to exercise the D5 profile-photo deletion path; restore after.
+    const ORIGINAL_BUCKET = process.env.FIREBASE_STORAGE_BUCKET
+    beforeAll(() => {
+      process.env.FIREBASE_STORAGE_BUCKET = 'test-bucket'
+    })
+    afterAll(() => {
+      if (ORIGINAL_BUCKET === undefined) delete process.env.FIREBASE_STORAGE_BUCKET
+      else process.env.FIREBASE_STORAGE_BUCKET = ORIGINAL_BUCKET
+    })
+
     const seedCascade = async () => {
       const db = getDB()
       await seedUser(TEST_UID, 'goner')
