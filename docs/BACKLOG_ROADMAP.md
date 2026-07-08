@@ -93,7 +93,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **5** | **R0 · Claude conventions doc** | code & architecture standard (`CONVENTIONS.md`/CLAUDE.md) | `[x]` [#244](https://github.com/jclind/prepify/pull/244) (2026-07-07) | new doc | **merged** — shipped `docs/CONVENTIONS.md` (grounded in a 4-way survey + REFACTOR.md), cross-linked from `CLAUDE.md`; **R1/R2 now have a standard to follow** |
 | **5** | **R1 · refactor create-recipe page** | the big AddRecipe refactor | `[x]` [#248](https://github.com/jclind/prepify/pull/248) (2026-07-07) | `src/pages/AddRecipe/**` | **merged** — structural refactor: extracted `useRecipeForm` (useReducer) + pure `recipeFormValidation` + `FormField`; fixed the TimeInput clear-both bug; +38 tests. Folded in **part** of C1 (noindex, selector tests, `updateIngredients` test + dead-code); C1's visual smalls (dropdown/`FormInput` uniformity, summary-bar sticky, group-label styling) still open. See status log. |
 | **5** | **R2 · refactor account page** | the big Account refactor; **closes F6 (stale)** | `[x]` [#250](https://github.com/jclind/prepify/pull/250) (2026-07-07) | `src/pages/Account/**` | **merged** — subsumes F6 (closed stale); overlaps merged C2 |
-| **6** | **N1 · price-data quality** | "$10 parfait" estimates + un-proven `backfillServingPrice --apply` (BACKLOG Bugs) | `[~]` investigation done — fix-lane decision pending owner (2026-07-08) | `server/scripts/`, `src/pages/AddRecipe/Ingredients/updateIngredients.ts` | **investigated**: 0 servingPrice drift on dev; parfait = bad *proxy price-estimate* on stale v1 data (`1 cup strawberries` = $25.34), NOT a parse or division bug. Fix-option (B) outlier guard now folded into **N6**; the re-enrich backfill (A) stays owner/proxy-gated. |
+| **6** | **N1 · price-data quality** | "$10 parfait" estimates + un-proven `backfillServingPrice --apply` (BACKLOG Bugs) | `[x]` closed — resolved via N6; re-enrich backfill re-filable (2026-07-08) | `server/scripts/`, `src/pages/AddRecipe/Ingredients/updateIngredients.ts` | **closed as resolved**: root cause was a stale v1 gram-estimate on **one** dev recipe (`1 cup strawberries` = $25.34), not a parse/division bug (0 servingPrice drift on dev). Durable defensive fix (option B, price-outlier flag) shipped in **N6** [#255]. The re-enrich backfill (option A) is **not built** — proxy-gated + prod-ops-gated + speculative (unknown if prod is dirty); **re-filable as a fresh owner ops task** if prod proves dirty and the v2 proxy is healthy. Option C (owner re-saves the parfait → self-heals under v2) is a manual 30-sec fix. |
 | **6** | **N2 · report reason "incorrect info"** | new `ReportReason` across the 3 synced lists (BACKLOG Features) | `[x]` [#256](https://github.com/jclind/prepify/pull/256) (2026-07-08) | `src/types.ts`, `ReportControl.tsx`, `server/routes/reports.js` | **merged** — **Recipe-gated** (server 400s it on review/user targets; UI hides it). Also touched the admin queue reason pill (underscore→space) as a 4th display surface |
 | **6** | **N3 · auth-page home links** | brand-mark `<div>` → `<Link to='/'>` on Login + Signup (BACKLOG UX) | `[x]` [#257](https://github.com/jclind/prepify/pull/257) (2026-07-08) | `src/pages/Login/`, `src/pages/Signup/` | **merged** |
 | **6** | **N4 · SingleRecipe lane** ⚠ lane | author-byline + reviewer-name → `/u/:username` links; servings-pill spacing/glyph visual check (BACKLOG UX + pixel batch a) | `[x]` [#258](https://github.com/jclind/prepify/pull/258) (2026-07-08) | `src/pages/SingleRecipe/**` (incl. `Reviews/RecipeReview.tsx`) | **merged** — author-byline profile link + servings-pill (Lucide `+`/`−` glyphs, rebalanced spacing). Reviewer-name link deferred to §D (rule 8b); pill was screenshot-gated. Runtime-verified (byline click → `/u/:username`, pill rescale) |
@@ -189,8 +189,9 @@ Bigger, deferred-until-needed work.
 ### Wave 6 — 2026-07-08 note triage (N-tracks; all lanes disjoint)
 The survivors of Jesse's Obsidian-note triage (item write-ups in `BACKLOG.md`, tagged *(triaged 2026-07-08)*).
 Deliberately cut so every lane owns a disjoint file surface — see rule 8 for the two seams.
-- **N1** price-data quality — the "$10 parfait": run `backfillServingPrice --apply` + spot-check the parfait's
-  per-ingredient `totalPriceUSACents` to attribute parse-bug vs proxy-estimate, **then** decide the fix lane.
+- **N1** price-data quality — the "$10 parfait". ✅ **Closed as resolved** — root cause was a stale v1
+  gram-estimate on one dev recipe (not a parse/division bug); the defensive fix shipped in N6 [#255]. The
+  re-enrich backfill (option A) is proxy/prod-ops-gated and re-filable as a fresh owner task. See status log.
 - **N2** the `incorrect_info` report reason — one additive value across `types.ts` / `ReportControl` /
   `reports.js`, ideally gated to recipe targets.
 - **N3** auth-page home links — `<Link to='/'>` around the brand mark on Login + Signup.
@@ -1681,3 +1682,17 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   skip-when-empty-string, invalid/missing uid, error-swallow); `auth.test.js` D5 cascade sets the env
   (scoped `beforeAll`/`afterAll`) so the profile-photo deletion path is still exercised. Server Jest
   **780/780** green. Sixth Wave-6 track PR'd; only **N1** (owner-pending fix-lane) remains open on the board.
+- **2026-07-08** — **N1 closed as resolved** → `[x]` (owner's call; no worktree — a doc close, no code). The
+  investigation had already attributed the "$10 parfait" decisively: a **bad v2 gram-estimated proxy price on
+  one stale v1-era dev recipe** (`1 cup strawberries` = $25.34), **not** a parse or division bug (0
+  `servingPrice` drift across all 13 dev recipes on the `backfillServingPrice.js` dry-run). The durable
+  defensive win — **option B**, the write-time price-outlier flag — already shipped in **N6**
+  [#255](https://github.com/jclind/prepify/pull/255) ($15/row ceiling → `price_outlier` telemetry, flag-not-clamp,
+  surfaced in Admin › Ingredients), so future bad estimates are caught going forward. What remained on N1 was
+  only **option A** (a catalog-wide re-enrich backfill), which is **speculative** (unknown whether prod carries
+  dirty pre-#152 / v1-era docs — dev has just the one), **proxy-gated** (the v2 hosted proxy was erroring at
+  investigation time), and a **prod ops decision**, not a backlog code lane. Rather than leave N1 dangling at
+  `[~]`, closing it — **option A is re-filable as a fresh owner-driven ops task** if/when prod is proven dirty
+  and the proxy is confirmed healthy (nothing is lost by closing). **Option C** (owner re-saves the one parfait
+  in the UI → it self-heals under v2) stays available as a 30-second manual fix. With N1 `[x]`, only **N7**
+  (owner-gated env half, code PR'd in [#260](https://github.com/jclind/prepify/pull/260)) remains on the board.
