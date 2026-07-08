@@ -93,7 +93,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **5** | **R0 · Claude conventions doc** | code & architecture standard (`CONVENTIONS.md`/CLAUDE.md) | `[x]` [#244](https://github.com/jclind/prepify/pull/244) (2026-07-07) | new doc | **merged** — shipped `docs/CONVENTIONS.md` (grounded in a 4-way survey + REFACTOR.md), cross-linked from `CLAUDE.md`; **R1/R2 now have a standard to follow** |
 | **5** | **R1 · refactor create-recipe page** | the big AddRecipe refactor | `[x]` [#248](https://github.com/jclind/prepify/pull/248) (2026-07-07) | `src/pages/AddRecipe/**` | **merged** — structural refactor: extracted `useRecipeForm` (useReducer) + pure `recipeFormValidation` + `FormField`; fixed the TimeInput clear-both bug; +38 tests. Folded in **part** of C1 (noindex, selector tests, `updateIngredients` test + dead-code); C1's visual smalls (dropdown/`FormInput` uniformity, summary-bar sticky, group-label styling) still open. See status log. |
 | **5** | **R2 · refactor account page** | the big Account refactor; **closes F6 (stale)** | `[x]` [#250](https://github.com/jclind/prepify/pull/250) (2026-07-07) | `src/pages/Account/**` | **merged** — subsumes F6 (closed stale); overlaps merged C2 |
-| **6** | **N1 · price-data quality** | "$10 parfait" estimates + un-proven `backfillServingPrice --apply` (BACKLOG Bugs) | `[ ]` | `server/scripts/`, `src/pages/AddRecipe/Ingredients/updateIngredients.ts` | **investigate-first**: run backfill, attribute parse-bug vs proxy-estimate before fixing; ops-paired (owner DB run for prod) |
+| **6** | **N1 · price-data quality** | "$10 parfait" estimates + un-proven `backfillServingPrice --apply` (BACKLOG Bugs) | `[~]` main-checkout investigation (2026-07-08) | `server/scripts/`, `src/pages/AddRecipe/Ingredients/updateIngredients.ts` | **investigate-first**: run backfill, attribute parse-bug vs proxy-estimate before fixing; ops-paired (owner DB run for prod) |
 | **6** | **N2 · report reason "incorrect info"** | new `ReportReason` across the 3 synced lists (BACKLOG Features) | `[ ]` | `src/types.ts`, `ReportControl.tsx`, `server/routes/reports.js` | additive union value in shared `types.ts` — merge-trivial, but rebase before PR |
 | **6** | **N3 · auth-page home links** | brand-mark `<div>` → `<Link to='/'>` on Login + Signup (BACKLOG UX) | `[ ]` | `src/pages/Login/`, `src/pages/Signup/` | tiny |
 | **6** | **N4 · SingleRecipe lane** ⚠ lane | author-byline + reviewer-name → `/u/:username` links; servings-pill spacing/glyph visual check (BACKLOG UX + pixel batch a) | `[ ]` | `src/pages/SingleRecipe/**` (incl. `Reviews/RecipeReview.tsx`) | reviewer-name half overlaps RELEASE_PLAN §D overhaul — see rule 8; screenshot the pill before touching it |
@@ -1407,3 +1407,14 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   customizer → `FEATURE_IDEAS.md`. **Survivors boarded as N1–N7** (+ the reviewer-avatar fold-in to
   RELEASE_PLAN §D); item write-ups added to `BACKLOG.md` tagged *(triaged 2026-07-08)*. Also flipped the
   stale "Press `/` to focus search" Features line to `[x]` (shipped in C4 #238). No tracks started yet.
+- **2026-07-08** — **N1 claimed** (main-checkout investigation, no worktree). Claim recorded directly on
+  `development` (same convention as the Wave-1 S-tracks) so concurrent sessions see the lane taken. Verified
+  first that Wave 6 was fully open (no N-track claim anywhere in the log, only the main checkout in
+  `git worktree list`, the lingering `worktree-feat+*` branches are stale refs from torn-down Wave 1–5 lanes,
+  `development` in sync with origin 0/0). N1 is **investigate-first** per rule 8 / the kickoff note — a dev-DB
+  script run + data spot-check, *not* a code lane yet, so it runs solo in the main checkout rather than a
+  worktree. Scope of the investigation: (1) run `server/scripts/backfillServingPrice.js` (dry-run) against the
+  **dev** DB to measure stored-`servingPrice` drift and prove whether an `--apply` has ever landed; (2) pull
+  the "$10 parfait" recipe's per-ingredient `totalPriceUSACents` and attribute the absurd total to a mis-parsed
+  quantity/unit (`updateIngredients.ts`) vs a bad proxy gram-estimate vs stale v1-era stored prices — **then**
+  decide the actual fix lane. No code changed under this claim yet.
