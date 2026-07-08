@@ -96,10 +96,10 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **6** | **N1 · price-data quality** | "$10 parfait" estimates + un-proven `backfillServingPrice --apply` (BACKLOG Bugs) | `[~]` investigation done — fix-lane decision pending owner (2026-07-08) | `server/scripts/`, `src/pages/AddRecipe/Ingredients/updateIngredients.ts` | **investigated**: 0 servingPrice drift on dev; parfait = bad *proxy price-estimate* on stale v1 data (`1 cup strawberries` = $25.34), NOT a parse or division bug. Fix-option (B) outlier guard now folded into **N6**; the re-enrich backfill (A) stays owner/proxy-gated. |
 | **6** | **N2 · report reason "incorrect info"** | new `ReportReason` across the 3 synced lists (BACKLOG Features) | `[x]` [#256](https://github.com/jclind/prepify/pull/256) (2026-07-08) | `src/types.ts`, `ReportControl.tsx`, `server/routes/reports.js` | **merged** — **Recipe-gated** (server 400s it on review/user targets; UI hides it). Also touched the admin queue reason pill (underscore→space) as a 4th display surface |
 | **6** | **N3 · auth-page home links** | brand-mark `<div>` → `<Link to='/'>` on Login + Signup (BACKLOG UX) | `[x]` [#257](https://github.com/jclind/prepify/pull/257) (2026-07-08) | `src/pages/Login/`, `src/pages/Signup/` | **merged** |
-| **6** | **N4 · SingleRecipe lane** ⚠ lane | author-byline + reviewer-name → `/u/:username` links; servings-pill spacing/glyph visual check (BACKLOG UX + pixel batch a) | `[P]` [#258](https://github.com/jclind/prepify/pull/258) (2026-07-08) | `src/pages/SingleRecipe/**` (incl. `Reviews/RecipeReview.tsx`) | reviewer-name half overlaps RELEASE_PLAN §D overhaul — see rule 8; screenshot the pill before touching it. **Scoped to author-byline link + pill check**; reviewer-name link yields to §D (rule 8b — unstarted blocker rewrites `RecipeReview.tsx` end-to-end) |
+| **6** | **N4 · SingleRecipe lane** ⚠ lane | author-byline + reviewer-name → `/u/:username` links; servings-pill spacing/glyph visual check (BACKLOG UX + pixel batch a) | `[x]` [#258](https://github.com/jclind/prepify/pull/258) (2026-07-08) | `src/pages/SingleRecipe/**` (incl. `Reviews/RecipeReview.tsx`) | **merged** — author-byline profile link + servings-pill (Lucide `+`/`−` glyphs, rebalanced spacing). Reviewer-name link deferred to §D (rule 8b); pill was screenshot-gated. Runtime-verified (byline click → `/u/:username`, pill rescale) |
 | **6** | **N5 · polish sweep** | skip-link overscroll fix (A11y); RecipeNotFound copy/search; /recipes search-btn offset; footer bug-btn decision (pixel batch b, c) | `[x]` [#259](https://github.com/jclind/prepify/pull/259) (2026-07-08) | `Layout.scss`, `RecipeNotFound/*`, `Footer.scss` | **merged** — skip-link + RecipeNotFound copy/search shipped as code; search-btn 6px offset & footer left-adjacency closed by-design; footer bug-btn re-aligned to the legal-strip row per owner feedback |
 | **6** | **N6 · ingredient-miss telemetry** (+ N1 outlier guard) | persist enrichment misses + admin list (BACKLOG Features, admin); **folds in N1's price-outlier flag** | `[x]` [#255](https://github.com/jclind/prepify/pull/255) (2026-07-08) | `server/routes/ingredients.js`, `server/routes/admin.js`, `src/pages/Admin/**` | **merged**: new `ingredientMisses` collection; write stays best-effort. N1's guard rides this surface as a second event type (flag, not clamp). Review folded in the missing `ingredientMisses` indexes (`{count,lastSeen}` + type-led compound) to match the auditLog pattern the route mirrors |
-| **6** | **N7 · ops: storage-bucket env** | set `FIREBASE_STORAGE_BUCKET` (prod+dev) + real empty-env skip (BACKLOG Tech debt) | `[ ]` | server envs (owner) + `server/util/firebaseStorage.js` | env half is owner-gated; code half is a 3-line early-return |
+| **6** | **N7 · ops: storage-bucket env** | set `FIREBASE_STORAGE_BUCKET` (prod+dev) + real empty-env skip (BACKLOG Tech debt) | `[~]` `worktree-feat-n7-storage-bucket-env` (2026-07-08) | server envs (owner) + `server/util/firebaseStorage.js` | env half is owner-gated; code half is a 3-line early-return |
 | **—** | **Deferred / post-1.0 / owner** | see [that section](#deferred--post-10--owner-off-the-active-board) | `[blocked]`/`[dropped]` | — | prerendering, Edamam, theming, brand-orange, DB relocation, ideas |
 
 ---
@@ -1637,3 +1637,35 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   reveal is now instant (dropped the `top` transition, which no longer applies) and RecipeNotFound's `0.14s`
   transition is a raw value mirroring the `/recipes` field rather than a motion token. **Wave 6 code lanes are
   now drained** — only **N7** (owner-gated) and **N1** (owner-pending) remain.
+- **2026-07-08** — **N4 merged** ([#258](https://github.com/jclind/prepify/pull/258), merge `aa26478`) → `[x]`.
+  Shipped the two §D-disjoint halves of the SingleRecipe lane. **(1) Author byline → profile link:** the byline
+  was a plain `<div>` with a bare `<strong>@{authorUsername}</strong>` while the admin pages already linked
+  handles; the **whole author-row** (avatar + `@handle` + date) is now one `<Link to={'/u/' + authorUsername}>`
+  — reuses the existing `.author-row` class on the anchor (`inline-flex` + `align-self:flex-start` so the hit
+  area hugs the byline, link resets, underline-on-hover/focus **on the handle only**, `@mixin outline()` focus
+  ring), with an `aria-label` for the icon-only avatar. **(2) Servings-pill (pixel batch a):** screenshot-gated
+  first — the pill read fine after the same-day a11y resize (`51fb2ac`), so the residual nit was the raw
+  `−`/`+` **text glyphs** riding font optical metrics for centering; swapped for house-family Lucide
+  `MinusIcon`/`PlusIcon` (new `LuMinus` export in the icons barrel), which flex-center crisply in the 32px
+  buttons. Then rebalanced the pill spacing on owner feedback (narrowed `.serv-input` 28→25px + a small input
+  left-margin and larger `serv` right-margin) so the number↔"serv" gap is a comfortable middle and the buttons
+  keep their breathing room — verified 8/24/88 counts don't collide. Buttons keep their `aria-label`s + icons
+  are `aria-hidden` → labels/increment behaviour unchanged. **Yielded to §D (rule 8b):** the reviewer-name link
+  (`Reviews/RecipeReview.tsx`) — the unstarted Ratings & Reviews overhaul rewrites that file end-to-end.
+  Verified: `tsc` clean, Vitest **620 passed / 2 skipped** (incl. the icon single-source guard), `npm run
+  build` clean, and a `/verify` runtime pass driving the live app with Playwright (byline **click →
+  `/u/aaa`** renders the full public profile, 0 console errors; pill `+`/`−` rescale servings 8→9→8 and
+  ingredients `3 cup → 3 3/8 cup`; byline keyboard-focusable; bogus recipe id → "Recipe not found", no crash).
+  +1 regression test (byline links to `/u/:username`). No follow-ups filed. Fifth Wave-6 track done (N4 with
+  N2/N3/N5/N6 all `[x]`); only **N1** (owner-pending) and **N7** (owner-gated env) remain open on the board.
+- **2026-07-08** — **N7 claimed** (`worktree-feat-n7-storage-bucket-env`). Claim recorded directly on
+  `development` (same convention as the Wave-1/6 lanes) so concurrent sessions see the lane taken. Scope: the
+  **code half only** (the env half — set `FIREBASE_STORAGE_BUCKET` in prod+dev server envs — stays owner-gated).
+  `deleteProfilePhoto` (`server/util/firebaseStorage.js:41-55`) falls back to `getStorage().bucket()` when the
+  env is unset, but Admin init passes no default `storageBucket` (`middleware/auth.js:10-12`), so that fallback
+  **throws** and gets swallowed — logging an error on every account deletion and silently orphaning the avatar.
+  The `.env.example:19-24` comment promises "leave empty to skip profile-photo cleanup" — so the fix is an
+  early-return (`return false`) when `FIREBASE_STORAGE_BUCKET` is empty/unset, making behaviour match the
+  documented contract instead of throw-and-swallow. Verified N7 is still `[ ]`/unstarted (no branch, no
+  worktree), only the merged N4 worktree remained on disk, and `development` is current before claiming.
+  Worktree created on free ports (client 3006 / server 4001).
