@@ -481,7 +481,20 @@ The triage date stamped on items is the date they were filed here, not when they
   `$primary-hover` to an AA-passing shade (e.g. `≤ #c5421a`, white-on-it 5.04 — or reuse `$primary-accessible
   #bf360c`). NB the a11y brand pass already side-stepped this on the recipe Save button (`SingleRecipe.scss`
   uses a literal `#a52f0a` hover with a comment, *not* `$primary-hover`). *(surfaced 2026-06-25 while merging
-  the brand-contrast PR #184 over the design-tokens track.)*
+  the brand-contrast PR #184 over the design-tokens track.)* After the recolor, re-check that `$hover-brighten`
+  (brightness 1.06) doesn't push the new orange fill below WCAG AA contrast (per
+  [`design/button-hover-audit.md`](./design/button-hover-audit.md)).
+- `[ ]` **Add-recipe form controls need `aria-describedby` wiring** *(a11y follow-up, source
+  [`ADD_RECIPE_UX_AUDIT.md`](./ADD_RECIPE_UX_AUDIT.md))* — the custom inputs on `/add-recipe` don't associate
+  their help/error text with the control: wire `aria-describedby` on `TimeInput`, the Cuisine/Course/Diet
+  react-select pickers, `ImagePicker`, and the ingredient/instruction list containers so screen readers
+  announce the hint/validation copy with the field. Low.
+- `[ ]` **Add-recipe `SectionHeader` label isn't tied to its inputs (`aria-labelledby`)** *(a11y follow-up,
+  source [`ADD_RECIPE_UX_AUDIT.md`](./ADD_RECIPE_UX_AUDIT.md))* — `SectionHeader`
+  (`src/pages/AddRecipe/SectionHeader.tsx`) renders its label as a bare `<span className='text'>` inside the
+  `<h2>`, with no programmatic link to the fields it governs. Give the label an `id` and point each section's
+  inputs (or their group) at it via `aria-labelledby` so the grouping is exposed to assistive tech, not just
+  visual. Low.
 
 ## Security
 
@@ -580,13 +593,18 @@ findings table.)*
   more likely strip just the six admin stamps (a small shared `RECIPE_INTERNAL_STAMPS` exclusion) while
   keeping the full user-authored body. Pre-existing; not a regression. Low (PII = internal admin uids, and the
   owner already authored everything else in the doc). *(caught 2026-07-03 in local review of S2.)*
-- `[ ]` **Recipe numeric/array fields aren't range- or type-validated server-side** —
+- `[x]` **Recipe numeric/array fields aren't range- or type-validated server-side** *(fixed in [#228](https://github.com/jclind/prepify/pull/228), S1: `validateRecipeBounds` now runs a per-field numeric type+range spec — `NUMERIC_RECIPE_FIELDS` in `server/util/recipeLimits.js`, checking finite/integer/min-max on `prepTime`/`cookTime`/`totalTime`/`servings`/`fridgeLife`/`freezerLife`/`servingPrice` — plus a per-element ingredient-length cap. The `nutritionData`/`cuisine`/`mealTypes`/`nutritionLabels` shape/size checks stay unbounded beyond the global body-size limit.)* —
   `validateRecipeBounds` (`server/util/recipeLimits.js`, used by add/editRecipe) bounds title/description
   length, ingredient/instruction counts, and instruction-content length, but NOT the numeric fields
   (`servings`/`prepTime`/`cookTime`/`totalTime`/`servingPrice` accept negative/huge/non-numeric), per-element
   ingredient size, or the shape/size of `nutritionData`/`cuisine`/`mealTypes`/`nutritionLabels` (copied
   through, bounded only by the global JSON body-size limit). Add numeric type+range clamps and per-element
   caps. Low. *(surfaced 2026-06-26 in the security sweep.)*
+- `[ ]` **`createdAt` is client-stamped and whitelisted on create** — the create path stamps the timestamp
+  in the browser (`src/api/recipes.ts:284`, `createdAt: new Date().getTime().toString()`) and the server
+  accepts it verbatim because `createdAt` sits in `CREATABLE_RECIPE_FIELDS` (`server/util/recipeFields.js:41`),
+  so a hand-crafted request can back-date or forward-date a recipe (skewing `createdAt`-ordered sorts/feeds).
+  Stamp it server-side on insert and drop it from the create whitelist so clients can't set it. Low.
 - `[x]` **Admin review takedown matches on the stale denormalized `username`** — *(fixed in [#231](https://github.com/jclind/prepify/pull/231), S3: resolves `username → userId` and matches `{ userId, recipeId }`; audit `targetId` + notification now use the stable uid and current canonical handle.)*
   `PATCH /admin/reviews/moderation` (`server/routes/reviews.js:318-353`) matches `{ username, recipeId }`,
   but ratings are keyed by the stable `userId` (username is a set-once display field). If an author renames
@@ -607,7 +625,7 @@ findings table.)*
   security sweep.)* **Done:** the `updatePrivacy` limiter merged in S2/PR
   [#229](https://github.com/jclind/prepify/pull/229) (2026-07-05); the `acknowledgeAchievements` half landed in
   S4/PR [#230](https://github.com/jclind/prepify/pull/230) (2026-07-06) with `profileWriteLimiter`.
-- `[ ]` **`POST /recipes/:id/save` counter update is read-then-write (TOCTOU)** —
+- `[x]` **`POST /recipes/:id/save` counter update is read-then-write (TOCTOU)** *(fixed in [#228](https://github.com/jclind/prepify/pull/228), S1: replaced the read-then-`$push`/`$inc` with one atomic conditional write — a `{ _id: uid, 'savedRecipes.recipeId': { $ne: recipeId } }`-gated `$push` at `server/routes/recipes.js:856`, bumping `numTimesSaved` only when the push actually landed (MongoDB re-checks the array-absent filter under the doc write lock), so a racing double-save now 409s instead of double-counting.)* —
   `server/routes/recipes.js:760-773` reads `alreadySaved` then `$push`+`$inc`, so two concurrent saves from
   one user can both pass the guard and double-count `numTimesSaved`. Single-user, low impact. (The sibling
   `madeRecipe` counter-inflation — same shape but exploitable by *intentional* repeat POSTs — was fixed in
@@ -683,7 +701,12 @@ findings table.)*
   **(ops, owner)** set `FIREBASE_STORAGE_BUCKET` in the prod + dev server envs; **(code, optional)** early-return
   when the env is empty so behavior matches the `.env.example:19-24` comment ("leave empty to skip") instead of
   throw-and-swallow. → **N7**
-- `[ ]` **CI actions pinned to deprecated Node 20 runtime** — `.github/workflows/test.yml` uses
+- `[ ]` **CI actions pinned to deprecated Node 20 runtime** — **narrowed 2026-07-08 (still open):** every job in
+  `.github/workflows/test.yml` already pins `node-version: 24` (verified 2026-07-03), so the *test steps* run on
+  Node 24 — but that does NOT clear this item. The deprecation is about the **actions' own bundled runtime**
+  (`actions/checkout@v4`/`actions/setup-node@v4` run on the Node 20 actions runtime), which the `node-version`
+  input doesn't affect. The real fix — bumping both actions to `@v5` — is unchanged and still to do. Original find:
+  `.github/workflows/test.yml` uses
   `actions/checkout@v4` and `actions/setup-node@v4`, which target the Node 20 actions runtime. GitHub is
   sunsetting Node 20 on the runners and currently force-runs these on Node 24, emitting a deprecation
   annotation on every CI run (seen on PR #204). Bump both to the next major (`@v5`, or whatever is current
@@ -757,6 +780,11 @@ findings table.)*
   dry-run/`--apply`, idempotent, heals through the canonical `recomputeRecipeRating`; the pure read half was
   split into `computeRecipeRating` so the dry-run diffs without writing. Shipped alongside
   `checkMigrationState.js` (post-6-phase DB check). The prod `--apply` run stays owner-gated for the cutover.)*
+- `[ ]` **`setUsername` must keep propagating renames across the username-keyed review collections**
+  *(deferred display-only residual, source [`DATA_INTEGRITY_AUDIT.md`](./DATA_INTEGRITY_AUDIT.md))* — admin
+  moderation/queue lookups still key reviews by the denormalized `(username, recipeId)` / `reportedUsername`,
+  so `setUsername` must keep propagating renames across those collections or a renamed author's reviews go
+  stale in the queue. Display-only; revisit if reviews are re-keyed to the stable uid. Low.
 - `[x]` **Harden `deleteAccount`'s rating recompute** — was: the per-recipe recompute after an account delete
   is best-effort/post-commit and only `console.error`s on failure (`server/routes/auth.js:454-461`),
   so a silent failure can re-introduce aggregate drift. The set of recipes is correct
@@ -789,7 +817,7 @@ findings table.)*
   (created 2026-06-17), so the open box was stale, not pending work. Verified: `npm run build` emits **zero**
   Sass deprecation warnings and all 73 `.scss` compile clean. The only remaining `@import` is the plain CSS
   `@import url('…Montserrat…')` font load in `src/index.scss` — not a Sass partial import, not deprecated.
-  *(See the 2026-06-23 4-sass status-log entry in `RELEASE_GAMEPLAN.md`.)*
+  *(See the 2026-06-23 4-sass status-log entry in `archive/RELEASE_GAMEPLAN.md`.)*
 - `[x]` *(fixed in [#249](https://github.com/jclind/prepify/pull/249), I2: uploads re-keyed to
   `recipeImages/{uid}/{uuid}` with a collision-proof uuid — fail-closed on no uid — and `storage.rules`
   tightened to owner-scoped writes `request.auth.uid == uid`, mirroring `profilePhotos/{uid}`; the legacy
@@ -802,11 +830,17 @@ findings table.)*
   the owner, so `storage.rules` could only auth-gate that path (any signed-in user could overwrite/delete
   any recipe image). Low severity (writes are auth-gated and the server is the source of truth), but worth
   doing. *(surfaced 2026-06-23 writing the Storage rules, PR #177.)*
+- `[ ]` **Orphaned recipe image on a failed create** — `addRecipe` (`src/api/recipes.ts`) uploads the image
+  to Firebase Storage (`uploadRecipeImage`, ~`:259`) BEFORE the `POST /addRecipe` (~`:291`), with no
+  compensating `deleteObject` if the POST fails (server moderation block, 4xx/5xx, network drop). So every
+  failed create leaks a storage object that no recipe doc references. Untracked until now. Fix: delete the
+  just-uploaded object in the `addRecipe` catch (best-effort), or defer the upload until the POST succeeds.
+  Low. *(surfaced 2026-07-08 in the docs-folder audit.)*
 - `[x]` **Point Railway at the production branch** — **done (2026-06-26, per the dev/prod env-split work):**
   Railway now runs two services — a prod service deploying the `release` branch (→ prepify-prod Mongo +
   prepify-9b974 Firebase, `FRONTEND_URLS` = the prepifymeals.com origins, CORS verified live) and a dev
   service deploying `development` (→ prepify-dev infra). *(Branch selection is a Railway-dashboard setting, so
-  not visible in-repo; `docs/RELEASE_GAMEPLAN.md` still lists it as open and should be reconciled too.)*
+  not visible in-repo; `docs/archive/RELEASE_GAMEPLAN.md` still lists it as open and should be reconciled too.)*
 - `[x]` **Rotate the exposed `Cluster0` Mongo `jesse` password** — **done (Jesse, 2026-06-26).** The old
   shared `Cluster0` cluster (which still holds the `@jclind/ingredient-parser` data and serves as the
   prepify-prod/dev restore fallback) had its previously-exposed `jesse` SCRAM password rotated. *(Distinct
@@ -840,10 +874,18 @@ findings table.)*
   on disk; only `hero.webp` remains and `HomeHero.tsx:10` references it. So this item is now just the one-line
   comment fix.)** *(surfaced 2026-06-23 in the Wave 4 Part 1 verification.)* *(fixed in
   [#239](https://github.com/jclind/prepify/pull/239), F5: comment now names `Montserrat-MediumItalic.ttf`.)*
+- `[ ]` **`ReleaseNotes` imports `package.json` directly for the version string** — `ReleaseNotes.tsx:6`
+  still does `import packageJSON from '../../../package.json'` (used as `packageJSON.version` at `:9`) rather
+  than reading a build-time define. Replace with a `VITE_APP_VERSION` define (wired in `vite.config.ts` off
+  `package.json`) so the component doesn't reach up into the repo root and the version is injected at build.
+  Nit; deferred from the R-refactor. *(surfaced 2026-07-08 in the docs-folder audit.)*
 - `[ ]` **Post-6-phase-refactor DB check** — confirm no existing database records need updating/migrating
   after the refactor. *(2026-06-26: the tooling exists — `server/scripts/inventory-collections.js` (the DB
   inventory utility from commit 85c0208), plus the `backfillRatingUserIds.js` / `backfillServingPrice.js`
   backfills. This remains a manual run-and-confirm task; nothing in-repo proves it's been done.)*
+  - Was the Spoonacular-CDN `imagePath` Mongo migration (the `updateMany` snippet under "Spoonacular CDN URL
+    Migration" in [`REFACTOR_NOTES.md`](./archive/REFACTOR_NOTES.md), now under `docs/archive/`) ever run
+    against the DB? Unknown — confirm.
 - `[x]` **Establish a code & architecture standard for Claude** — write a conventions doc so generated
   code stays consistent (likely an addition to `CLAUDE.md` or a new `CONVENTIONS.md`). *(fixed in
   [#244](https://github.com/jclind/prepify/pull/244), R0: shipped `docs/CONVENTIONS.md` — frontend/backend/
@@ -857,7 +899,7 @@ findings table.)*
   inline-edit paths.
 - `[~]` **Promote the remaining hardcoded design values into `helpers.scss` tokens** — the
   design-consistency sweep (2026-06-25) applied the two pixel-identical cheap wins from the
-  [2026-06-13 audit](./DESIGN_CONSISTENCY_AUDIT_2026-06-13.md): `$primary-hover` (`#e74e1d`, was hardcoded
+  [2026-06-13 audit](./archive/DESIGN_CONSISTENCY_AUDIT_2026-06-13.md): `$primary-hover` (`#e74e1d`, was hardcoded
   in 5 spots + a Footer local var) and `$surface-warm-border` (`#ece2d6`, 11 spots across 8 files). The
   remaining systemic scales need design sign-off because they touch many files / pixels:
     - `[x]` **Type scale** — DONE 2026-07-01 (PR #216). Ten-step modular `$text-*` scale in `helpers.scss`
