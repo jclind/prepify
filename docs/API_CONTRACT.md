@@ -7,8 +7,12 @@ The contract between the Express server (`server/`) and the React client (`src/a
 a client-only static analysis with "the backend must decide…" notes); every route below is now the
 implemented behavior, not a proposal.
 
-> Regenerate with the three-way reconciliation prompt in
-> [`HIGH_VALUE_PROMPTS.md`](HIGH_VALUE_PROMPTS.md) when routes drift.
+> **Regenerate when routes drift** with a three-way reconciliation pass: reconcile this file against the
+> actual `server/routes/` handlers and the `src/api/` client modules, finding drift in params, response
+> shapes, status/error codes, and auth requirements across all three; the server code is the source of
+> truth. Fix the clear client mismatches and file the rest to [`BACKLOG.md`](BACKLOG.md). (This file was
+> last regenerated that way in PR #262; the standing prompt was retired from `HIGH_VALUE_PROMPTS.md` once
+> it shipped.)
 
 ## Route overview
 

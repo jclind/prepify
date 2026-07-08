@@ -147,6 +147,21 @@ The triage date stamped on items is the date they were filed here, not when they
   **Fixed in S2/PR [#229](https://github.com/jclind/prepify/pull/229) (merged 2026-07-05):** each saved entry is
   now hydrated with its recipe body (through `publicRecipeProjection`, since saved recipes are other users'),
   keeping the ref with `recipe: null` for deleted/hidden ones.
+- `[?]` **`checkMadeRecipe` response-shape mismatch — the "made once an hour" throttle silently resets on
+  reload** *(surfaced 2026-07-08 in the API-contract regeneration ([#262](https://github.com/jclind/prepify/pull/262),
+  see [`API_CONTRACT.md`](./API_CONTRACT.md) DRIFT — recipes))* — `GET /checkMadeRecipe` returns
+  `{ made: boolean }` (`server/routes/recipes.js:967`) and stores made entries as `{ recipeId }` with **no
+  date**, but `src/pages/SingleRecipe/Buttons/MadeRecipeBtn.tsx:20,33-37` casts the result to
+  `{ datesMade?: string[] }` and derives `numTimesMade`/`lastDateMade` from it. `datesMade` is always
+  `undefined` from the server, so the cooldown (`canMakeAgain`, `MadeRecipeBtn.tsx:10-13`) only ever sees the
+  component's **optimistic in-session cache write** (`:48`, `String(new Date().getTime())`) — on refetch/reload
+  the derived count/last-date reset to zero and the once-an-hour re-make guard is effectively gone until the
+  next in-session mark. **Needs a decision** (`[?]`): either **(A)** persist make timestamps server-side (store
+  a `datesMade`/`madeAt` array on each `madeRecipes` entry and return it) so the throttle survives reloads, or
+  **(B)** drop the date-based throttle entirely and rework `MadeRecipeBtn` around the boolean the server
+  actually returns. Low user impact (the button is a personal marker, not gated writes), but the current code
+  reads as if a durable throttle exists when it doesn't. One-file client change for (B); a small server +
+  client change for (A).
 
 ## UX / visual polish
 
@@ -712,6 +727,40 @@ findings table.)*
   annotation on every CI run (seen on PR #204). Bump both to the next major (`@v5`, or whatever is current
   when picked up) to clear the warning before the forced fallback is removed. Low-risk maintenance; not a
   1.0 blocker. *(surfaced 2026-06-29 in CI logs during the `RecipeFormInput`→`FormInput` track.)*
+- `[ ]` **Client recipe-list response types over-promise (full `RecipeType` vs the server's lean card
+  projection)** *(surfaced 2026-07-08 in the API-contract regeneration ([#262](https://github.com/jclind/prepify/pull/262),
+  see [`API_CONTRACT.md`](./API_CONTRACT.md) DRIFT — recipes / auth-users-profile))* — several list/read
+  endpoints are typed `RecipeType[]`/`RecipeType` in the client but the server ships a narrow card projection,
+  so fields like `ingredients`, `instructions`, `nutritionData`, `description`, `views`, `userId`, `createdAt`,
+  `authorUsername` are **absent at runtime** and the compiler wouldn't catch a component reaching for one:
+  `getAllRecipes().recipeList`, `getTrendingRecipes()`, `getForYouRecipes()`, `getRandomRecipe()`
+  (`src/api/recipes.ts:61,100,106,114` — server projects `publicRecipeCardProjection`), `getSavedRecipes()` /
+  `getCreatedRecipes()` (`src/api/recipes.ts:535,553` — `SAVED_CARD_PROJECTION`/`CREATED_CARD_PROJECTION`,
+  `server/routes/users.js:18-46`), and `PublicProfileAPI.getPublicProfileRecipes()`
+  (`src/api/publicProfile.ts:29`, plus `PublicProfile.recipes` in `src/types.ts`). Also `RecipeDBResponseType`
+  (`src/types.ts:194`) declares `page`/`filters`/`entries_per_page` that `GET /api/recipes` never returns
+  (server returns only `{ recipeList, total_results }`, `server/routes/recipes.js:154`). **Fix:** introduce a
+  narrow `RecipeCardType` (the projected card fields) and type these methods against it, so a component reading
+  a non-card field fails to compile. Typing-only cleanup — no runtime behaviour changes (consumers already
+  render only card fields today). Low risk, touches types + a handful of API signatures.
+- `[ ]` **Server API contract asymmetries between sibling routes** *(surfaced 2026-07-08 in the API-contract
+  regeneration ([#262](https://github.com/jclind/prepify/pull/262), see [`API_CONTRACT.md`](./API_CONTRACT.md)
+  DRIFT — reviews / reports-bug-reports))* — three inconsistencies between routes that ought to match. None is
+  a live client bug (the shipped client sends well-formed input and doesn't branch on these), but each is a
+  contract wart worth normalizing:
+  - **403 vs 404 on the two delete routes.** `DELETE /deleteReview` returns `403`
+    (`server/routes/reviews.js:167`) while `DELETE /removeRating` returns `404`
+    (`server/routes/reviews.js:203`) for the identical "you have no doc for this recipe" case. Pick one status
+    for "nothing of yours to delete here" and apply it to both.
+  - **`GET /api/reports` pagination is unclamped (can 500) while its bug-reports twin clamps.** Non-numeric
+    `page`/`perPage` pass through `parseInt` to NaN skip/limit and 500 from the Mongo cursor
+    (`server/routes/reports.js:186-187`), whereas `GET /api/admin/bug-reports` clamps both
+    (`server/routes/bugReports.js:104-105`). Clamp `/api/reports` the same way. (Reachable only via a direct
+    API call with a non-numeric param; the admin UI always sends numbers.)
+  - **`POST /api/bug-reports` 429s with a non-JSON body.** Its `submitLimiter` uses express-rate-limit's
+    default plain-text 429 (`server/routes/bugReports.js:33-39`, no custom `message`/`handler`) instead of the
+    house `{ error, code: 'RATE_LIMITED' }` JSON shape the `makeUserLimiter` routes use. Give it a matching
+    JSON handler so 429s are uniform across the API.
 - `[ ]` **Phase 5-D: convert the 8 legacy string-`_id` recipes to native `ObjectId`** — `checkMigrationState.js`
   reports **8 recipes** on prod (identical count on dev — dev is a prod clone) whose `_id` is still a plain
   string rather than a BSON `ObjectId`, left over from before the Phase-5 refactor. **Not a correctness bug:**
