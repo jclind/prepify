@@ -9,6 +9,11 @@ a11y, tech debt, testing, and ideas. The beta→1.0 launch checklist lives separ
 > NaN bug and the now-orphaned `RecipeThumbnail`), and a few items were closed (`/recipes` navbar
 > search, Railway prod branch). New findings are folded inline and marked **(verified 2026-06-26)**.
 
+> **Note triage 2026-07-08:** Jesse's Obsidian dump (21 new items, filed 2026-06-17→07-02) was verified
+> item-by-item against the tree (7 parallel agents). 7 came back already fixed by the late-June/July sweeps,
+> 4 were tracked/deferred elsewhere, and the survivors are filed below tagged *(triaged 2026-07-08)* and
+> boarded as **Wave 6 (N1–N7)** in [`BACKLOG_ROADMAP.md`](./BACKLOG_ROADMAP.md).
+
 Legend: `[ ]` todo · `[~]` partial · `[x]` done · `[?]` needs a decision.
 
 ## Idea capture & triage workflow
@@ -29,6 +34,17 @@ The triage date stamped on items is the date they were filed here, not when they
 
 ## Bugs
 
+- `[ ]` **Per-ingredient price estimates can be wildly off (the "$10/serving parfait") — the remaining half
+  of the serving-price saga** *(triaged 2026-07-08; filed 2026-06-17)* — PR #152 fixed only the division math,
+  and that bug's signature was a flat **~$1.00**/serving (see `server/scripts/backfillServingPrice.js:6-10`) —
+  so a $10 parfait was never that bug. Two open halves: **(1) ops** — the backfill script recomputes stored
+  `servingPrice` from the *already-stored* `totalPriceUSACents` (dry-run by default, `:36`) and nothing in-repo
+  proves an `--apply` run ever happened (cross-ref the Tech-debt backfill item at ~L757); **(2) estimate
+  quality** — nothing addresses garbage-in: a mis-parsed quantity/unit (`updateIngredients.ts`, ~80 genuinely
+  untested lines per the Testing section) or a bad proxy gram-estimate still yields absurd totals, and pre-v2
+  recipes keep their v1-era stored per-ingredient prices (see the parser-data item ~L620). Lane: run the
+  backfill, then pull the parfait's per-ingredient `totalPriceUSACents` to attribute parse-bug vs
+  proxy-estimate before writing any fix. → **N1**
 - `[x]` **`Received NaN for the \`value\` attribute` warning on Edit Recipe — root-caused; it's a real
   hydration bug, not cosmetic (verified 2026-06-26)** — *(fixed in [#235](https://github.com/jclind/prepify/pull/235), F1:
   hydrate `TimeInput` from `val.hours`/`val.minutes` — the `Number(val)` arithmetic that produced `NaN` on an object `val` is
@@ -133,6 +149,37 @@ The triage date stamped on items is the date they were filed here, not when they
 
 ## UX / visual polish
 
+- `[ ]` **No way home from the login/signup pages** *(triaged 2026-07-08; filed 2026-06-18)* — both auth pages
+  render outside `Layout` (no navbar: `src/App.tsx:405-406`) and the "P" brand mark is a plain `<div>` on both
+  (`src/pages/Login/Login.tsx:39`, `src/pages/Signup/Signup.tsx:49`); the only links go to
+  forgot-password/signup/terms/privacy/login — never `/`. Three redesign passes (`ca54b8c`, `27b0798`,
+  `b994007`) touched these files without adding one. Fix: wrap the brand mark in `<Link to='/'>` on both
+  pages (a "Back to Prepify" text link also fine). → **N3**
+- `[ ]` **Usernames aren't links to `/u/:username`** *(triaged 2026-07-08; filed 2026-06-18)* — the public
+  profile route exists and admin pages already link it (`Admin/Users/Users.tsx:29`,
+  `Admin/Reports/Reports.tsx:207`), but neither public-facing spot does: the recipe author byline
+  (`SingleRecipe.tsx:410-411`, plain `<strong>@{authorUsername}</strong>` inside `.author-row`) and the
+  reviewer name on each review (`Reviews/RecipeReview.tsx:77`, plain `<div class='name'>`). Wrap both in
+  `<Link to={'/u/' + username}>` — for the byline ideally the whole `author-row` incl. avatar. **Note:** the
+  reviewer-name half sits inside the RELEASE_PLAN §D Ratings & Reviews overhaul's file surface — see the N4
+  dep note on the roadmap. → **N4**
+- `[ ]` **RecipeNotFound page: search emphasis + de-AI the copy** *(triaged 2026-07-08; filed 2026-06-25 —
+  content untouched since `236a126`, 2026-06-18)* — current body copy is *"We couldn't find the recipe you're
+  looking for — it may have been removed, or the link might be incorrect."*; the search field is the bare
+  shared `SearchRecipesInput` under an uppercase eyebrow label with no container emphasis
+  (`RecipeNotFound.scss:56-71`). Wanted: a human rewrite of the copy (needs Jesse's voice — draft options,
+  don't invent) + a clearer search treatment. → **N5**
+- `[ ]` **Pixel-nit batch — needs a screenshot pass before touching** *(triaged 2026-07-08; filed
+  2026-06-27→07-01)* — three nits survived triage but each needs visual confirmation first:
+  **(a) servings-pill spacing** on the recipe page (`SingleRecipe.scss:286-330`) — the same-day a11y resize
+  (`51fb2ac`, 26→32px `step-btn`s) reflowed the pill, so it may read fine now; the `−`/`+` are text glyphs
+  already flex-centered (`:303-305`), so any residual offset is font optical metrics and the only real fix is
+  swapping to the icon-system Lucide plus/minus (confirm wanted). → **N4**
+  **(b) /recipes search-button asymmetry** — the embedded button sits `right: 6px` while the left icon gutter
+  is ~17.6px (`Recipes.scss:26-67`); a one-line nudge if confirmed. → **N5**
+  **(c) footer "Report a bug" centering** — it's *deliberately* left-adjacent in the copy·bug·version row
+  (`Footer.scss:121-137`, version pushed right via `margin-left:auto`); decide centered-vs-by-design, then
+  either relayout `.footer-legal` or close. → **N5**
 - `[x]` **Create-recipe form dropdown inputs aren't visually uniform** — *(fixed in the C1-tail lane,
   [#252](https://github.com/jclind/prepify/pull/252), 2026-07-08.)* The Cuisine / Course / Diet `react-select` controls (`recipeSelectStyles.ts`) were tuned to
   mirror the shared `FormInput` `compact` variant exactly: 1px `$tertiary-text` resting border (was a 2px
@@ -320,6 +367,14 @@ The triage date stamped on items is the date they were filed here, not when they
 
 ## Accessibility
 
+- `[ ]` **Mobile overscroll reveals the "Skip to content" link** *(triaged 2026-07-08; filed 2026-07-02 —
+  confirmed real, not intended)* — the link hides via the negative-offset pattern (`position: absolute;
+  top: -3rem`, reveal `top: 0.5rem` on `:focus` — `src/Components/Layout/Layout.scss:25-43`), and since
+  `.app-shell` sets no `position`, it resolves against the document and scrolls with the page — so iOS/Android
+  rubber-band overscroll exposes the painted geometry parked above `top: 0`. Fix: switch to a clip-based
+  visually-hidden pattern (`clip-path: inset(50%)` / 1px box, full size only on `:focus`) so there is no
+  off-viewport geometry to reveal. Introduced by the a11y sweep `27b0798` (2026-06-25); the keyboard-Tab
+  reveal must survive the change. → **N5**
 - `[x]` **Stop focus outline on mouse button clicks** — **done (track 3a, merged in PR #163 ✅):** the
   global `button`/`a` outline rule (`src/index.scss`) and every component-local `@include s.outline()`
   ring were switched from `:focus` to `:focus-visible`, so the ring shows for keyboard nav only.
@@ -570,7 +625,31 @@ findings table.)*
 
 ## Features
 
-- `[ ]` **Press `/` to focus search** — global keyboard shortcut to bring up search. No handler exists today.
+- `[ ]` **Report reason: "incorrect info / price"** *(triaged 2026-07-08; filed 2026-06-18 — doesn't exist)*
+  — today's reasons are exactly `spam | inappropriate | offensive | copyright | dangerous | other`, synced in
+  three places that must stay aligned: `src/types.ts:247-253` (`ReportReason`),
+  `ReportControl.tsx:29-36` (`REASON_OPTIONS`), `server/routes/reports.js:55` (`REASONS`, validated `:99`).
+  Add an `incorrect_info` value to all three; nuance: `REASON_OPTIONS` renders unfiltered for all target types
+  (recipe/review/user), so either gate the new reason to `targetType === 'recipe'` or accept it appearing on
+  review/user reports. Small (3 files + tests). → **N2**
+- `[ ]` **Ingredient-miss telemetry + admin list** *(admin)* *(triaged 2026-07-08; filed 2026-06-24 —
+  unbuilt)* — enrichment misses are only `console.warn`'d (`server/routes/ingredients.js:76-81`, route has no
+  DB handle); no persistence, no admin surface (the resolved 3d "not found" item below was the unrelated
+  client 12s timeout). Minimal build (~half a day): best-effort upsert into a new `ingredientMisses`
+  collection (`{ _id: normalized(ingredientString), raw, count: $inc, lastSeen }`) in `/parse`, a read-only
+  admin route, and a `src/pages/Admin/Ingredients` list sorted by count desc (mirror the Users/Reports list
+  pattern). Keep the write try/catch'd so a telemetry failure never affects the parse response. → **N6**
+- `[ ]` **Reviewer avatars on review cards** *(triaged 2026-07-08; filed 2026-06-23 — not implemented; ships
+  inside the §D overhaul, not as a one-off)* — review cards render only `@username`/stars/date
+  (`Reviews/RecipeReview.tsx:74-86`); `/getReviews` returns raw ratings docs with no avatar field and no
+  `$lookup` (`server/routes/reviews.js`); `ReviewType` (`src/types.ts:226-236`) has no photo field. Avatars
+  live in Firebase Auth `photoURL` and ratings docs already carry the stable uid, so the join is a batched,
+  deduped `getAuth().getUsers()` (tolerate failures like `publicProfile.js:34-47`) + the existing
+  `DefaultAvatar` fallback. **Folded into the RELEASE_PLAN §D Ratings & Reviews overhaul** (blocker), whose
+  scope already names `RecipeReview` + `reviews.js`. → RELEASE_PLAN §D
+- `[x]` **Press `/` to focus search** — *shipped in [#238](https://github.com/jclind/prepify/pull/238) (C4,
+  merged 2026-07-07):* global `/` shortcut focuses the search input (key handler in Layout). *(Line was stale
+  — caught in the 2026-07-08 triage pass.)*
 - `[x]` **Report a *user* from their profile page** *(admin)* — *done in PR #166 (track 3c, merged ✅):*
   `ReportTargetType` now includes `'user'`; the server accepts/validates/stores the target (no `recipeId`,
   carries `reportedUsername` + a `reportedUid` rename-stable snapshot), PublicProfile exposes a "Report user"
@@ -590,6 +669,15 @@ findings table.)*
 
 ## Tech debt / process / infra
 
+- `[ ]` **Ops: set `FIREBASE_STORAGE_BUCKET` in the server envs (+ make the empty-env skip real)** *(triaged
+  2026-07-08, from the 6-18 "Bucket name not specified" delete-user report)* — user deletion was **never
+  broken**: `deleteProfilePhoto` (`server/util/firebaseStorage.js:41-55`) is best-effort try/catch and its
+  explicit-bucket branch (PR #134) predates the report. But with the env unset the fallback
+  `getStorage().bucket()` throws — Admin init passes no `storageBucket` (`server/middleware/auth.js:10-12`) —
+  so deleted users' profile photos are **silently orphaned** and the error logs on every deletion. Two parts:
+  **(ops, owner)** set `FIREBASE_STORAGE_BUCKET` in the prod + dev server envs; **(code, optional)** early-return
+  when the env is empty so behavior matches the `.env.example:19-24` comment ("leave empty to skip") instead of
+  throw-and-swallow. → **N7**
 - `[ ]` **CI actions pinned to deprecated Node 20 runtime** — `.github/workflows/test.yml` uses
   `actions/checkout@v4` and `actions/setup-node@v4`, which target the Node 20 actions runtime. GitHub is
   sunsetting Node 20 on the runners and currently force-runs these on Node 24, emitting a deprecation

@@ -12,6 +12,10 @@ to the *sweep program*); this file applies it to the **general backlog**. Compan
 > tree before being placed on a wave. Three came back **STALE** and are pulled off the board (see
 > [Stale reconciliations](#stale-reconciliations--update-backlogmd)); a couple had line/detail drift noted inline.
 
+> **Note-triage pass 2026-07-08.** Waves 1–5 fully drained, then Jesse's Obsidian dump (21 new items) was
+> verified item-by-item (7 parallel agents; 7 already fixed, 4 tracked/deferred elsewhere). The survivors are
+> boarded as **Wave 6 (N1–N7)** below — mutually disjoint lanes, built for parallel worktrees.
+
 ---
 
 ## How to use this doc (the continue-protocol)
@@ -89,6 +93,13 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **5** | **R0 · Claude conventions doc** | code & architecture standard (`CONVENTIONS.md`/CLAUDE.md) | `[x]` [#244](https://github.com/jclind/prepify/pull/244) (2026-07-07) | new doc | **merged** — shipped `docs/CONVENTIONS.md` (grounded in a 4-way survey + REFACTOR.md), cross-linked from `CLAUDE.md`; **R1/R2 now have a standard to follow** |
 | **5** | **R1 · refactor create-recipe page** | the big AddRecipe refactor | `[x]` [#248](https://github.com/jclind/prepify/pull/248) (2026-07-07) | `src/pages/AddRecipe/**` | **merged** — structural refactor: extracted `useRecipeForm` (useReducer) + pure `recipeFormValidation` + `FormField`; fixed the TimeInput clear-both bug; +38 tests. Folded in **part** of C1 (noindex, selector tests, `updateIngredients` test + dead-code); C1's visual smalls (dropdown/`FormInput` uniformity, summary-bar sticky, group-label styling) still open. See status log. |
 | **5** | **R2 · refactor account page** | the big Account refactor; **closes F6 (stale)** | `[x]` [#250](https://github.com/jclind/prepify/pull/250) (2026-07-07) | `src/pages/Account/**` | **merged** — subsumes F6 (closed stale); overlaps merged C2 |
+| **6** | **N1 · price-data quality** | "$10 parfait" estimates + un-proven `backfillServingPrice --apply` (BACKLOG Bugs) | `[ ]` | `server/scripts/`, `src/pages/AddRecipe/Ingredients/updateIngredients.ts` | **investigate-first**: run backfill, attribute parse-bug vs proxy-estimate before fixing; ops-paired (owner DB run for prod) |
+| **6** | **N2 · report reason "incorrect info"** | new `ReportReason` across the 3 synced lists (BACKLOG Features) | `[ ]` | `src/types.ts`, `ReportControl.tsx`, `server/routes/reports.js` | additive union value in shared `types.ts` — merge-trivial, but rebase before PR |
+| **6** | **N3 · auth-page home links** | brand-mark `<div>` → `<Link to='/'>` on Login + Signup (BACKLOG UX) | `[ ]` | `src/pages/Login/`, `src/pages/Signup/` | tiny |
+| **6** | **N4 · SingleRecipe lane** ⚠ lane | author-byline + reviewer-name → `/u/:username` links; servings-pill spacing/glyph visual check (BACKLOG UX + pixel batch a) | `[ ]` | `src/pages/SingleRecipe/**` (incl. `Reviews/RecipeReview.tsx`) | reviewer-name half overlaps RELEASE_PLAN §D overhaul — see rule 8; screenshot the pill before touching it |
+| **6** | **N5 · polish sweep** | skip-link overscroll fix (A11y); RecipeNotFound copy/search; /recipes search-btn offset; footer bug-btn decision (pixel batch b, c) | `[ ]` | `Layout.scss`, `RecipeNotFound/*`, `Recipes.scss`, `Footer.scss` | disjoint smalls, one worktree; RecipeNotFound wording needs the owner's voice — draft options |
+| **6** | **N6 · ingredient-miss telemetry** | persist enrichment misses + admin list (BACKLOG Features, admin) | `[ ]` | `server/routes/ingredients.js`, `server/routes/admin.js`, `src/pages/Admin/**` | new `ingredientMisses` collection; write stays best-effort |
+| **6** | **N7 · ops: storage-bucket env** | set `FIREBASE_STORAGE_BUCKET` (prod+dev) + real empty-env skip (BACKLOG Tech debt) | `[ ]` | server envs (owner) + `server/util/firebaseStorage.js` | env half is owner-gated; code half is a 3-line early-return |
 | **—** | **Deferred / post-1.0 / owner** | see [that section](#deferred--post-10--owner-off-the-active-board) | `[blocked]`/`[dropped]` | — | prerendering, Edamam, theming, brand-orange, DB relocation, ideas |
 
 ---
@@ -116,10 +127,19 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
    prerendering gets scheduled, escaping is no longer optional — pull it into that PR.
 7. **Concurrency budget ≈ 2–4 worktrees** for one reviewer. A clean kickoff today: **S1 + S2 + S3** (three
    disjoint server files) or **F2 + F3 + F4 + F5** (four disjoint isolated frontend files).
+8. **Wave 6 N-tracks are mutually disjoint — any subset parallelizes.** Two seams to respect: **(a)** N2's
+   `src/types.ts` is app-shared, but the change is an additive union member (merge-trivial; still rebase
+   before PR); **(b)** N4's reviewer-name link lives in `RecipeReview.tsx`, which the **RELEASE_PLAN §D
+   Ratings & Reviews overhaul** will rewrite — if that dedicated session is imminent, N4 ships only the
+   author-byline link + pill check and §D absorbs the reviewer link (and the reviewer-avatar fold-in). N1 is
+   investigate-first (no code until the backfill run + parfait spot-check attribute the bad data); N7's env
+   half is owner-only.
 
-**A clean parallel kickoff today:** the three server correctness/security lanes **S1 + S2 + S3** in three
-worktrees — disjoint route files, all small hardening, all backed by Jest. Add **S5** (trivial) or an isolated
-**F2/F3/F4** if you have a fourth window.
+**A clean parallel kickoff today (Wave 6):** **N3 + N4 + N5 + N6** in four worktrees — fully disjoint
+domains (auth pages / SingleRecipe / polish smalls / server+admin). **N2** slots in as a fifth if wanted
+(rebase-friendly). Run **N1**'s investigation solo in the main checkout (it's a dev-DB script run + data
+spot-check, not a code lane yet), and hand **N7**'s env change to the owner. *(The original Wave 1–5 kickoff
+note is retired — that board is drained.)*
 
 ---
 
@@ -166,6 +186,21 @@ Bigger, deferred-until-needed work.
 - **R0** write the Claude code/architecture standard **first**, so **R1** (create-recipe) and **R2** (account)
   refactors follow it. R1 absorbs C1; R2 absorbs F6 and overlaps C2.
 
+### Wave 6 — 2026-07-08 note triage (N-tracks; all lanes disjoint)
+The survivors of Jesse's Obsidian-note triage (item write-ups in `BACKLOG.md`, tagged *(triaged 2026-07-08)*).
+Deliberately cut so every lane owns a disjoint file surface — see rule 8 for the two seams.
+- **N1** price-data quality — the "$10 parfait": run `backfillServingPrice --apply` + spot-check the parfait's
+  per-ingredient `totalPriceUSACents` to attribute parse-bug vs proxy-estimate, **then** decide the fix lane.
+- **N2** the `incorrect_info` report reason — one additive value across `types.ts` / `ReportControl` /
+  `reports.js`, ideally gated to recipe targets.
+- **N3** auth-page home links — `<Link to='/'>` around the brand mark on Login + Signup.
+- **N4** SingleRecipe lane ⚠ — username→profile links (byline + reviewer name) + the servings-pill
+  spacing/glyph screenshot check. Reviewer-name half yields to §D if that session is imminent (rule 8b).
+- **N5** polish sweep — the skip-link overscroll fix (the one confirmed bug here), RecipeNotFound
+  copy/search emphasis (owner voice), /recipes search-button offset, footer bug-button decision.
+- **N6** ingredient-miss telemetry — persist enrichment misses + a read-only admin list.
+- **N7** ops — `FIREBASE_STORAGE_BUCKET` in prod+dev envs (owner) + the empty-env early-return.
+
 ---
 
 ## Deferred / post-1.0 / owner (off the active board)
@@ -181,6 +216,12 @@ Verified-present but intentionally not scheduled — decisions, post-1.0, or own
   `$primary-accessible` to vivid `#ff5722`). *Note: the shade literals this item wanted to dedupe are now
   **STALE in source** — see below.*
 - **Ideas needing a decision** — friend system · AI-search paid membership · fridge/freezer-life fields — all post-1.0.
+- **Reviewer avatars on review cards** — *(2026-07-08 triage)* deliberately **not** an N-track: it folds into
+  the **RELEASE_PLAN §D Ratings & Reviews overhaul** (blocker), whose scope already owns `RecipeReview.tsx` +
+  `reviews.js`. Write-up in BACKLOG Features.
+- **Avatar customizer on the profile page** — *(2026-07-08 triage)* post-1.0 personalization idea, captured in
+  `FEATURE_IDEAS.md` (builds on the existing upload flow + `DefaultAvatar`; a preset/color or XP-frame picker
+  persisting a style descriptor).
 - **`numTimesSaved` counter ↔ save-list cross-collection atomicity** — *filed while reviewing S1.* Save/unsave/made
   each write the user's list (`userRecipeData`) and the recipe's tally (`recipes.numTimesSaved`/`numTimesMade`) as
   **two separate `updateOne`s with no transaction**, so a crash/failure between them drifts the counter (list says
@@ -1355,3 +1396,14 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   over them reports per-object failures (expected) — the real object moves happen at the **owner-run prod
   cutover** wherever the service account owns the target bucket. Not a new board track — this is owner tooling
   for the already-merged I2; the board stays drained.
+- **2026-07-08** — **Wave 6 filed (Obsidian-note triage).** Jesse's running note (21 new items, filed
+  2026-06-17→07-02) verified item-by-item with 7 parallel read-only agents. **7 already fixed** by the
+  late-June/July work, several the same day they were filed: review kebab/report menus (#166), drafts
+  action-row squish (`5d91e7a`), load-more unification (`2d99d3a`), Home "see all" (`d430ec1`), navbar
+  Recipes hover (`b6305fc`), settings save-bar flash (`ready` gate in `ProfileSection`), and the delete-user
+  "bucket" error (never a crash — best-effort catch + explicit-bucket branch predate the report; only the env
+  remained → N7). **4 tracked/deferred elsewhere:** parser overhaul superseded by the v2 migration (#190);
+  drop-Edamam already open (Deferred); Home orange-hover split is the owner's brand-orange recolor; avatar
+  customizer → `FEATURE_IDEAS.md`. **Survivors boarded as N1–N7** (+ the reviewer-avatar fold-in to
+  RELEASE_PLAN §D); item write-ups added to `BACKLOG.md` tagged *(triaged 2026-07-08)*. Also flipped the
+  stale "Press `/` to focus search" Features line to `[x]` (shipped in C4 #238). No tracks started yet.

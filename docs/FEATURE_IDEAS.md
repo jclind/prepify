@@ -52,6 +52,7 @@ Adjacent systems that also landed and reshape the roadmap: **drafts**, **admin m
 - **Search-history dropdown** — `SearchRecipesInput` still shows nothing on focus until you type. Surfacing the last ~5 searches from localStorage on focus is essentially one component change.
 - **Substitute-ingredient suggestions** — on hover/tap of an ingredient, show 1–3 common swaps ("no buttermilk → milk + lemon"). Could lean on Spoonacular via the existing `/api/ingredients/parse` infra.
 - **Time-based cooking streaks** — gamification today is count-based achievements. Adding "cooked 4 recipes this week" / "3 new cuisines this month" streaks (from the `datesMade` data the server already keeps) gives a recurring reason to come back, distinct from the one-shot badges.
+- **Avatar customizer on the profile page** — upload/remove + the deterministic food-icon `DefaultAvatar` fallback already exist (`Settings/sections/ProfileSection.tsx`, `src/util/defaultAvatar.ts`); a customizer adds a preset-icon/color (or XP-frame) picker persisting a small style descriptor instead of an uploaded image. Post-1.0 personalization. *(Filed 2026-06-23; triaged 2026-07-08.)*
 
 ---
 

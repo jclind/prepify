@@ -339,6 +339,10 @@ Chunky design efforts that are bigger than a single checkbox. Tag each as **(blo
   - **Touches:** `src/pages/SingleRecipe/DataSections/RatingsAndReviews/*` (+ `.scss` — `RatingsAndReviews`,
     `Ratings`, `Reviews/` incl. `AddReview`, `RecipeReview`, `ReviewsList`, `EditingReviewOptions`,
     `ConfirmDeleteReviewModal`), and likely `server/routes/reviews.js` if the data shape changes.
+  - **Fold-ins (2026-07-08 note triage):** reviewer **avatars** on review cards — `/getReviews` carries no
+    photo today; batch-resolve the deduped reviewer uids via `getAuth().getUsers()` (tolerate failures like
+    `publicProfile.js`) + `DefaultAvatar` fallback (write-up in BACKLOG Features). Also absorb the
+    reviewer-name → `/u/:username` link if roadmap track **N4** hasn't shipped it first (rule 8b there).
   - **Why a blocker:** owner wants this looking right before dropping beta (filed 2026-06-29).
 
 - `[x]` **Homepage redesign** — **(design shipped)**
