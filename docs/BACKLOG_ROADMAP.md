@@ -94,7 +94,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **5** | **R1 · refactor create-recipe page** | the big AddRecipe refactor | `[x]` [#248](https://github.com/jclind/prepify/pull/248) (2026-07-07) | `src/pages/AddRecipe/**` | **merged** — structural refactor: extracted `useRecipeForm` (useReducer) + pure `recipeFormValidation` + `FormField`; fixed the TimeInput clear-both bug; +38 tests. Folded in **part** of C1 (noindex, selector tests, `updateIngredients` test + dead-code); C1's visual smalls (dropdown/`FormInput` uniformity, summary-bar sticky, group-label styling) still open. See status log. |
 | **5** | **R2 · refactor account page** | the big Account refactor; **closes F6 (stale)** | `[x]` [#250](https://github.com/jclind/prepify/pull/250) (2026-07-07) | `src/pages/Account/**` | **merged** — subsumes F6 (closed stale); overlaps merged C2 |
 | **6** | **N1 · price-data quality** | "$10 parfait" estimates + un-proven `backfillServingPrice --apply` (BACKLOG Bugs) | `[~]` investigation done — fix-lane decision pending owner (2026-07-08) | `server/scripts/`, `src/pages/AddRecipe/Ingredients/updateIngredients.ts` | **investigated**: 0 servingPrice drift on dev; parfait = bad *proxy price-estimate* on stale v1 data (`1 cup strawberries` = $25.34), NOT a parse or division bug. Fix-option (B) outlier guard now folded into **N6**; the re-enrich backfill (A) stays owner/proxy-gated. |
-| **6** | **N2 · report reason "incorrect info"** | new `ReportReason` across the 3 synced lists (BACKLOG Features) | `[ ]` | `src/types.ts`, `ReportControl.tsx`, `server/routes/reports.js` | additive union value in shared `types.ts` — merge-trivial, but rebase before PR |
+| **6** | **N2 · report reason "incorrect info"** | new `ReportReason` across the 3 synced lists (BACKLOG Features) | `[~]` `worktree-feat+n2-report-reason-incorrect-info` (2026-07-08) | `src/types.ts`, `ReportControl.tsx`, `server/routes/reports.js` | additive union value in shared `types.ts` — merge-trivial, but rebase before PR |
 | **6** | **N3 · auth-page home links** | brand-mark `<div>` → `<Link to='/'>` on Login + Signup (BACKLOG UX) | `[ ]` | `src/pages/Login/`, `src/pages/Signup/` | tiny |
 | **6** | **N4 · SingleRecipe lane** ⚠ lane | author-byline + reviewer-name → `/u/:username` links; servings-pill spacing/glyph visual check (BACKLOG UX + pixel batch a) | `[ ]` | `src/pages/SingleRecipe/**` (incl. `Reviews/RecipeReview.tsx`) | reviewer-name half overlaps RELEASE_PLAN §D overhaul — see rule 8; screenshot the pill before touching it |
 | **6** | **N5 · polish sweep** | skip-link overscroll fix (A11y); RecipeNotFound copy/search; /recipes search-btn offset; footer bug-btn decision (pixel batch b, c) | `[ ]` | `Layout.scss`, `RecipeNotFound/*`, `Recipes.scss`, `Footer.scss` | disjoint smalls, one worktree; RecipeNotFound wording needs the owner's voice — draft options |
@@ -1497,3 +1497,14 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   filtered tabs). Follow-ups filed-not-fixed (review Low notes): `miss` keys are quantity-fragmented (weakens
   the count ranking used for cache-seeding) and the collection is unbounded (no TTL/cap). **N1 stays `[~]`** —
   its re-enrich backfill (option A) is still owner/proxy-gated.
+- **2026-07-08** — **N2 claimed** (`worktree-feat+n2-report-reason-incorrect-info`). Claim recorded directly on
+  `development` (same convention as the S/N tracks) so concurrent sessions see the lane taken. Scope: add an
+  `incorrect_info` report reason across the three lists that must stay aligned — `ReportReason` (`src/types.ts:247`),
+  `REASON_OPTIONS` (`src/Components/ReportControl/ReportControl.tsx:29`), and `REASONS`
+  (`server/routes/reports.js:55`, validated `:99`). Open design nuance to resolve in-lane: `REASON_OPTIONS`
+  renders unfiltered for all target types (recipe/review/user), so either gate the new reason to
+  `targetType === 'recipe'` (it's really about recipe content/price) or accept it on review/user reports —
+  leaning toward recipe-gating since "incorrect info / price" is recipe-specific. Verified all three sync points
+  still match the write-up and `development` is in sync with origin (0/0) before claiming; confirmed no other
+  worktree/branch/PR is in flight on these files (board is the only checkout, no open PRs). Additive union member
+  in shared `types.ts` → merge-trivial, but rebase before PR (rule 8a). Worktree not yet created.
