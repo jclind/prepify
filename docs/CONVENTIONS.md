@@ -1,13 +1,13 @@
 # CONVENTIONS.md — Prepify code & architecture standard
 
 The house style for Prepify. It codifies the conventions already latent in the tree so new
-work — and especially the upcoming create-recipe (**R1**) and account-page (**R2**) refactors —
+work — and especially the create-recipe (**R1**) and account-page (**R2**) refactors, now merged (#248/#250) —
 follows one standard instead of re-deriving it.
 
 **Scope.** This is the *code & architecture* standard. It complements, and does not duplicate:
 
 - [`CLAUDE.md`](../CLAUDE.md) — the project overview, architecture map, env vars, and "important notes."
-- [`REFACTOR.md`](./REFACTOR.md) — the 6-phase refactor's Decision Log and the API-contract decisions
+- [`REFACTOR.md`](./archive/REFACTOR.md) — the 6-phase refactor's Decision Log and the API-contract decisions
   it locked in (server-generated `_id`, trust-the-token, `/api` prefix, REST verbs). Those decisions are
   restated here as standing rules.
 - [`scss-conventions.md`](./scss-conventions.md) + [`design/`](./design/) — the design-system canon
@@ -30,7 +30,7 @@ Two services, one repo (see [`CLAUDE.md`](../CLAUDE.md) for the full map):
 - **Main API** — Express + MongoDB (native driver) in `server/`, port 4000, Firebase Admin for token
   verification.
 
-**Server and frontend changes ship in separate PRs** ([`REFACTOR.md:21`](./REFACTOR.md)). A single task
+**Server and frontend changes ship in separate PRs** ([`REFACTOR.md:21`](./archive/REFACTOR.md)). A single task
 that spans both is two PRs, not one.
 
 ---
@@ -57,7 +57,7 @@ from `pages/` (grep confirms zero such imports today). A page may import its own
 
 ### 2.2 Import style — `src/`-absolute
 
-Absolute `src/`-rooted imports across all frontend files ([`REFACTOR.md:35`](./REFACTOR.md), enforced in
+Absolute `src/`-rooted imports across all frontend files ([`REFACTOR.md:35`](./archive/REFACTOR.md), enforced in
 Phase 2-C). Aliases are defined once in [`vite.config.ts`](../vite.config.ts) (`src` → `./src`, `types` →
 `./src/types`) and mirrored in [`tsconfig.json`](../tsconfig.json) `paths`.
 
@@ -106,7 +106,7 @@ export default RecipeAPI            // src/api/recipes.ts (same shape in auth.ts
 ### 2.5 Data fetching — TanStack Query v5
 
 Server state is fetched with `@tanstack/react-query` v5 (all 10 legacy `useEffect`+`useState` fetchers were
-migrated in [`REFACTOR.md` Phase 3](./REFACTOR.md)). New data reads use `useQuery`/`useMutation` with a
+migrated in [`REFACTOR.md` Phase 3](./archive/REFACTOR.md)). New data reads use `useQuery`/`useMutation` with a
 `queryFn` that calls the relevant API singleton — not ad-hoc effects.
 
 ### 2.6 Auth — Firebase client SDK + `useAuth`
@@ -141,12 +141,12 @@ Repeated route strings should live in one place so a rename can't drift copies a
   `SegmentedNav` and `Account` both derive from it.
 - **Top-level route strings (`/recipes`, `/login`, …) are still hardcoded inline** across `App.tsx`, the
   navbar, footer, cards, and pages — a *not-yet-complete* migration. The **C2** lane (PR
-  [#242](https://github.com/jclind/prepify/pull/242), in flight at this doc's writing) introduces
-  `src/routes.ts` (`RECIPES_PATH`, `ACCOUNT_*_PATH`, `activeAccountTab`) to extend the pattern to top-level
-  paths.
+  [#242](https://github.com/jclind/prepify/pull/242)) landed in #242 (migrate-as-you-touch still applies) and
+  introduced `src/routes.ts` (`RECIPES_PATH`, `ACCOUNT_*_PATH`, `activeAccountTab`) to extend the pattern to
+  top-level paths.
 
-**Convention for new work: reference the route constant, don't retype the literal.** Once `src/routes.ts`
-lands, adopt it for any new route reference; the R1/R2 refactors should migrate the pages they touch.
+**Convention for new work: reference the route constant, don't retype the literal.** Now that `src/routes.ts`
+has landed, adopt it for any new route reference; the R1/R2 refactors should migrate the pages they touch.
 
 ---
 
@@ -184,7 +184,7 @@ The rate limiter is keyed by `req.uid`, so it always comes *after* `verifyToken`
 ### 3.3 Identity — trust the token only
 
 **`req.uid` (from the verified token) is the sole source of identity.** Never trust a client-supplied
-`userId`/`username` for identity or ownership ([`REFACTOR.md:34`](./REFACTOR.md), Phase 5-C). Creation routes
+`userId`/`username` for identity or ownership ([`REFACTOR.md:34`](./archive/REFACTOR.md), Phase 5-C). Creation routes
 stamp `userId: req.uid` server-side; ownership-mutating routes (delete/edit) check ownership against
 `req.uid`.
 
@@ -241,7 +241,7 @@ handler (`getDB()` throws if uninitialized; `getClient()` for transactions).
 
 ### 3.9 API-contract standards (locked in Phase 5)
 
-From [`REFACTOR.md`](./REFACTOR.md) / [`API_CONTRACT.md`](./API_CONTRACT.md):
+From [`REFACTOR.md`](./archive/REFACTOR.md) / [`API_CONTRACT.md`](./API_CONTRACT.md):
 
 - **Every route is under the `/api` prefix.**
 - **The server generates the recipe `_id`** (`new ObjectId()`) and returns `{ _id }` with 201; the client
@@ -378,8 +378,8 @@ re-renders"). Gates green + a failing-then-passing test + a runtime observation 
 ## 7. Process conventions
 
 - **Refactors are behavior-preserving** — behavior identical before/after each commit; no feature work mixed
-  into a refactor ([`REFACTOR.md:20`](./REFACTOR.md)).
-- **One focused PR per task; server and frontend in separate PRs** ([`REFACTOR.md:21`](./REFACTOR.md)).
+  into a refactor ([`REFACTOR.md:20`](./archive/REFACTOR.md)).
+- **One focused PR per task; server and frontend in separate PRs** ([`REFACTOR.md:21`](./archive/REFACTOR.md)).
 - **Parallel work follows the worktree protocol** in [`BACKLOG_ROADMAP.md`](./BACKLOG_ROADMAP.md): one
   worktree per track on a free port (never 3000/4000), claim the lane on `development` *before* starting so
   concurrent sessions see it taken, keep the gates green, and flip the board `[~]`→`[P]`→`[x]` as the PR

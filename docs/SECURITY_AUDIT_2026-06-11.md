@@ -3,14 +3,14 @@
 Full-codebase pass over the Express server (`server/`): per-route auth middleware
 coverage, ownership checks, CORS, rate limiting, input validation on the
 recipe/review endpoints, and Firebase token handling on both sides. Cross-checked
-against the older `docs/server-audit.md` for regressions. Branch: `development`.
+against the older `docs/archive/server-audit.md` for regressions. Branch: `development`.
 
 Regression tests for everything fixed here live in
 `server/__tests__/security.test.js`.
 
 ---
 
-## 1. Cross-check vs. docs/server-audit.md — no regressions
+## 1. Cross-check vs. docs/archive/server-audit.md — no regressions
 
 Every **high** item in the old audit is resolved in the current code:
 
@@ -29,7 +29,7 @@ Still present from the old audit (carried forward below): `getReviews`
 `isCurrentUser` spoofing (§4.3) and the `newReview` upsert creating a
 rating-less doc (§4.8).
 
-`docs/server-audit.md` should now be treated as historical.
+`docs/archive/server-audit.md` should now be treated as historical.
 
 ---
 

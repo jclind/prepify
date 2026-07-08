@@ -134,6 +134,18 @@ the spread stays single-sourced. Opacity still varies slightly per surface
 
 ---
 
+## Class scoping: prefix by page
+
+Page and feature stylesheets **prefix their classnames with a short page tag** —
+`acct-`, `pp-`, `sr-`, `home-` — so a class belongs unambiguously to one surface
+and can't leak into another. Pair this with scoping off a role attribute rather
+than a bare element where the element is global (e.g. `div[role="navigation"]`
+instead of an unscoped `nav {}`), which avoids styling every future nav by
+accident. The design-consistency audit (F7) flagged this as an established
+positive — keep it: a new page's classes should carry its prefix.
+
+---
+
 ## To document later
 
 - Colour tokens (`$primary` vs `$primary-accessible`, the teal pair) and the

@@ -9,6 +9,11 @@
 > lever), desktop Home 94 / recipe 92; CLS Home 0 (the #213 skeletons hold), recipes 0.105 = the two filed
 > #213 follow-ups (footer FOUT + grid pop-in). *(See the [run log](README.md#run-log).)*
 
+> **Code-splitting SHIPPED:** `src/App.tsx` now uses a `lazyRoute` helper for route-level splitting — only
+> the direct-landing pages (Home, Recipes, SingleRecipe, Login, Signup, 404) stay eager; everything else is a
+> lazy chunk. Main payload dropped 393→274 kB gz. Other perf follow-ups (Mongo indexes, `/recipes/facets`
+> scans, CLS pop-in, `AuthContext` memo, image `srcset`, Saved-tab card memo) closed via #237/#240/#243/#247.
+
 Full-coverage performance audit of the Prepify client + API: Lighthouse on the key pages, bundle
 weight and code-splitting, image delivery, data-fetching waterfalls, and render cost. Knock out the
 cheap wins; file the structural ones (code-splitting, indexes) to the backlog.
@@ -33,8 +38,9 @@ Open a PR into development with before/after Lighthouse scores and a bundle-size
    server** — `npm run build` then `npx vite preview --port <p> --outDir build`; dev bundles are unminified
    and score misleadingly low. Capture perf / a11y / best-practices / SEO for each. Use `--preset=desktop`
    and a mobile run. (`npx -y lighthouse@12 <url> --preset=desktop --only-categories=performance,...`.)
-2. **Bundle size & code-splitting.** `npm run build` warns that the main chunk is >500 kB
-   (`build/assets/index-*.js` ≈ 1.2 MB raw / ~390 kB gzip) — the whole app ships in one chunk with no
+2. **Bundle size & code-splitting.** *(Historical — resolved: route-level splitting shipped via the
+   `lazyRoute` helper in `src/App.tsx`; see the banner above.)* `npm run build` warns that the main chunk
+   is >500 kB (`build/assets/index-*.js` ≈ 1.2 MB raw / ~390 kB gzip) — the whole app ships in one chunk with no
    route-level splitting. Investigate: route-level `React.lazy()` + `Suspense` for the heavy/rare routes
    (Admin/* , AddRecipe, EditRecipe, the chart/analytics views); audit heavy deps (firebase, the full
    `react-icons` sets, any chart lib). Visualize with `rollup-plugin-visualizer` or `source-map-explorer`.

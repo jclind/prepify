@@ -1,8 +1,10 @@
 # Prepify — Data Integrity Audit
 
+> **Status: CLOSED** — all items fixed in PR #134 (`04264cb`, 2026-06-13); the D5 env-separation residual was closed by PR #260 (2026-07-08). One deferred display-only residual remains (admin moderation/queue lookups still key reviews by denormalized handles) and is now tracked in [BACKLOG.md](./BACKLOG.md).
+
 > **Scope:** data-model / referential-integrity issues, distinct from the security audit
 > (`docs/SECURITY_AUDIT_2026-06-11.md`) and the historical error-handling audit
-> (`docs/server-audit.md`). These are correctness problems in how documents reference each
+> (`docs/archive/server-audit.md`). These are correctness problems in how documents reference each
 > other across collections — orphaned rows, denormalized fields that drift, and multi-collection
 > writes that aren't atomic.
 >
@@ -85,7 +87,7 @@ the delete-account cascade which removes the user's `recipes`) does **not** remo
 ratings/reviews of those recipes. Those rows survive pointing at a `recipeId` that no longer exists.
 
 **Impact:** orphaned `ratings` accumulate; `getSingleUserReviews?returnRecipeData=true` already has
-to null-guard missing recipes (noted in `docs/server-audit.md`); aggregate counts (rating averages,
+to null-guard missing recipes (noted in `docs/archive/server-audit.md`); aggregate counts (rating averages,
 review totals) can reference dead recipes.
 
 **Fix:** when a recipe is deleted, cascade-delete its `ratings` by `recipeId` (in both the
