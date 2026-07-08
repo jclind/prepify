@@ -626,7 +626,7 @@ findings table.)*
 
 ## Features
 
-- `[ ]` **Report reason: "incorrect info / price"** *(triaged 2026-07-08; filed 2026-06-18 — doesn't exist)*
+- `[x]` **Report reason: "incorrect info / price"** *(fixed in [#256](https://github.com/jclind/prepify/pull/256), N2: added `incorrect_info` across the `ReportReason` union, client `REASON_OPTIONS`, and server `REASONS`; **recipe-gated** — a new `RECIPE_ONLY_REASONS` server gate 400s it on review/user targets and a `recipeOnly` client flag hides it there; also spaced the admin queue reason pill as a 4th display surface)* *(triaged 2026-07-08; filed 2026-06-18 — doesn't exist)*
   — today's reasons are exactly `spam | inappropriate | offensive | copyright | dangerous | other`, synced in
   three places that must stay aligned: `src/types.ts:247-253` (`ReportReason`),
   `ReportControl.tsx:29-36` (`REASON_OPTIONS`), `server/routes/reports.js:55` (`REASONS`, validated `:99`).
