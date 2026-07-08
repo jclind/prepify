@@ -160,7 +160,7 @@ a feature flag. Do these together:
   (test data cleaned up). Production domain confirmed in Firebase Auth → Authorized domains. Firestore is
   unused (data in MongoDB), so its rules are intentionally not configured. **(blocker → done)**
 - `[x]` **Server input validation & ownership on write routes** — re-verified 2026-06-09 against
-  `server/routes/*`. The high-severity holes from `server-audit.md` are **closed**: `addRecipe` stamps
+  `server/routes/*`. The high-severity holes from `archive/server-audit.md` are **closed**: `addRecipe` stamps
   `userId`/`_id` server-side and discards client values (`recipes.js:150-152`); `editRecipe` /
   `deleteRecipe` enforce `recipe.userId === req.uid` → 403 (`recipes.js:181,227`); ratings/reviews
   derive `username` from the verified token, not query params (`reviews.js:13,116`); `rating` is
@@ -370,7 +370,7 @@ Chunky design efforts that are bigger than a single checkbox. Tag each as **(blo
   - **Touches:** `src/pages/Help/Help.tsx` (+ `Help.scss`), `src/Components/Footer/footerData.ts`
     (link un-gate). `App.tsx` not touched — route was already public.
 
-- `[ ]` **Data-integrity pass** — **(post-1.0)**
+- `[x]` **Data-integrity pass** — done in PR #134 (04264cb, 2026-06-13)
   - **Now:** several collections reference each other by mutable/denormalized fields rather than the
     stable `uid` — chiefly `ratings`/`reports` keyed by `username`, recipe deletes that orphan other
     users' ratings, and multi-collection writes (delete-account cascade, username rename) that aren't
@@ -414,7 +414,7 @@ the actual flip. Deploy is **Netlify** frontend + Railway backend (Firebase is A
 Four-pass audit: reconciled the dated audit docs, read the server security surface, and drove the live
 app (desktop + mobile) via the run-prepify skill.
 
-- **Security — big win.** Nearly every high-severity finding in `server-audit.md` (May) is now
+- **Security — big win.** Nearly every high-severity finding in `archive/server-audit.md` (May) is now
   **closed**: ownership checks on recipe edit/delete, token-derived usernames on ratings/reviews,
   regex escaping, save/unsave guards, and removal of the unprotected `addRecipeTag` route. Section B's
   "input validation & ownership" item flipped to `[x]`. Only three low-severity, non-blocking API
@@ -429,7 +429,7 @@ app (desktop + mobile) via the run-prepify skill.
 - **Not a bug (verified):** mobile single-recipe initially looked blank in a full-page screenshot but
   all sections render correctly on-screen — a capture artifact. Mobile nav works.
 - **Data note (not code):** a recipe titled "Egg Friend Rice" looks like a typo in user content.
-- Scope was release-blocking only; pure code-quality stays in `REFACTOR.md` / `PATTERN_AUDIT.md`.
+- Scope was release-blocking only; pure code-quality stays in `archive/REFACTOR.md`.
 
 ### 2026-06-17 — audit run
 - Blockers remaining: 12 (beta tag still live in 3 places; About rewrite; analytics disclosure; prod

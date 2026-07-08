@@ -173,9 +173,10 @@ report = {
 
 ## Progress tracker *(update as we build)*
 
-**Current status (2026-06-11): P0 + P1 + P2 built + smoke-tested on
-`worktree-feat+admin-service` (off origin/development). Tests green — server 220,
-frontend 215, tsc clean. Pushed (no PR), not merged. P3 still to do.**
+**Status: P0–P3 all merged to `development` (June 2026); this doc now serves as
+the admin-system reference / decision record.** Later additions exist outside this
+doc's original P0–P3 scope: an admin **bug-reports** tab and an admin
+**ingredients** tab.
 
 P2 smoke test PASS (2026-06-11). Fixes applied during it: account-status banner
 (pulled forward from P3 — persistent upfront notice for suspended/banned users),
@@ -211,6 +212,11 @@ flag on the `ratings` doc for reviews (original text preserved, reversible).
   P2 should add an owner-facing "your content was moderated" surface.
 - `getSavedRecipes` `totalCount` still counts a saved-but-hidden recipe even though
   it's filtered from the returned page (minor pagination drift).
+- A taken-down review's star rating is **EXCLUDED** from the recipe's average
+  rating — the average is recomputed both on takedown **and** on restore
+  (`server/routes/reviews.js:404`).
+- The review's author still sees their own taken-down review on the recipe page
+  (the "Your Review" exception), even though it's hidden from everyone else.
 
 ### P2 — Extended moderation ✅
 Built on `worktree-feat+admin-service`. Decisions: central status lives in a new
