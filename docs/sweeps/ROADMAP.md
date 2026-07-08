@@ -1,9 +1,11 @@
 # Sweeps — Roadmap & "where are we?"
 
+> Board fully closed 2026-07-02 (PR #222); the live board is [../BACKLOG_ROADMAP.md](../BACKLOG_ROADMAP.md).
+
 A parallelism-aware plan for running the five [assurance sweeps](README.md) to completion, designed so
 the inevitable **deferred tail** of each sweep (fix-small / file-large) becomes the next wave of work
 instead of getting lost in the backlog. Companion to [`README.md`](README.md) (the playbooks + run-log
-ledger) and modelled on [`../RELEASE_GAMEPLAN.md`](../RELEASE_GAMEPLAN.md) (the same board/waves/log
+ledger) and modelled on [`../archive/RELEASE_GAMEPLAN.md`](../archive/RELEASE_GAMEPLAN.md) (the same board/waves/log
 pattern, applied to the release).
 
 **Point Claude Code here to pick up where the last session left off** — the [continue-protocol](#how-to-use-this-doc-the-continue-protocol)

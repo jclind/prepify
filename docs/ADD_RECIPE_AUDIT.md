@@ -4,6 +4,8 @@ Generated: 2026-05-13
 Auditor: Claude Code
 Files examined: 28
 
+> **Status (2026-07-08):** most findings resolved; remaining open items are now tracked in BACKLOG.md. Inline markers below: ✅ FIXED / ⏳ OPEN / 🗑 OBSOLETE.
+
 ---
 
 ## Summary
@@ -28,7 +30,7 @@ The Add Recipe flow has been substantially de-risked by Phases 5-C, 5-D, and 5-F
 - **`uploadRecipeImage` non-unique filenames** (REFACTOR.md Phase 6 — Deferred) — **Confirmed still applicable.** `src/api/recipes.ts:92` writes `recipeImages/${imageFile.name}` with no UUID/hash prefix. Re-flagged in Cat 4 as the deferred follow-up is still outstanding.
 - **Phase 2-C DnD barrel re-exports** (REFACTOR_NOTES.md Phase 2-C) — **Confirmed wired correctly.** `src/pages/AddRecipe/Dnd/index.ts` re-exports `DndContext`, `Drop`, `Drag`; reorder reaches submission via shared parent state (see Cat 7).
 - **Phase 2-D — `addRecipe` typing** (REFACTOR.md Phase 2-D Deferred) — **Resolved.** `http.post<{ _id: string }>` is now generic-typed; return is `Promise<string | null>`. No `any` in this method.
-- **EnrichmentResult `source` hardcoded `'spoonacular'`** (API_CONTRACT.md Flags — Low) — **Confirmed.** `src/api/ingredientParserApi.ts:18-20` always sets `'spoonacular'`. Field is unused in the frontend; cosmetic.
+- 🗑 OBSOLETE — **EnrichmentResult `source` hardcoded `'spoonacular'`** (API_CONTRACT.md Flags — Low) — **Confirmed.** `src/api/ingredientParserApi.ts:18-20` always sets `'spoonacular'`. Field is unused in the frontend; cosmetic. _(No longer applies: `EnrichmentResult` now only exposes `{ data }` — the `source` field is gone.)_
 
 ---
 
@@ -36,7 +38,8 @@ The Add Recipe flow has been substantially de-risked by Phases 5-C, 5-D, and 5-F
 
 ### Category 1: Creation Contract — _id ownership & navigation
 
-#### [CRITICAL] No navigation or success feedback after successful create
+#### [CRITICAL] No navigation or success feedback after successful create ✅ FIXED
+- _Resolved in commit `519c9df` — submit outcomes now route through a toast and `useNavigate`._
 - **File:** `src/pages/AddRecipe/AddRecipe.tsx:122-128`
 - **Description:** `RecipeAPI.addRecipe` now returns the server-generated `_id` (string) on success, or `null` on failure. The handler treats `result` as a boolean — on truthy it calls `clearForm()`; on falsy it sets a generic error. The returned ID is discarded. After a successful submission the user is left on `/add-recipe` with a blank form, no toast, no inline success message, and no navigation to the new `/recipes/<id>` page. With the form cleared identically to a load state, the user has no way to tell whether the submit succeeded, failed silently, or never fired.
 - **Suggested fix direction:** Capture `const newId = await RecipeAPI.addRecipe(...)`; on truthy, navigate via `useNavigate()` to the single-recipe route (or fire a toast and redirect). On falsy keep the existing error path. This is the load-bearing reason the server contract was changed in Phase 5-D — the navigation half of that change wasn't wired up.
@@ -50,12 +53,14 @@ The Add Recipe flow has been substantially de-risked by Phases 5-C, 5-D, and 5-F
 
 ### Category 2: Form Validation
 
-#### [HIGH] Submit button has no `disabled` attribute and no in-flight guard
+#### [HIGH] Submit button has no `disabled` attribute and no in-flight guard ✅ FIXED
+- _The submit button now receives `isValid`/`loading` state; the intentionally-stays-clickable choice is a **deliberate deviation** documented in `docs/archive/REFACTOR_NOTES.md` (~line 1240)._
 - **File:** `src/pages/AddRecipe/AddRecipe.tsx:249-263`, `:104-133`
 - **Description:** The submit button only toggles a `valid`/`invalid` className — it remains clickable during `addRecipeLoading`. The `handleAddRecipe` body has no early return on `addRecipeLoading`. A user double-clicking, or clicking while the multi-second upload+nutrition+POST chain runs, will fire the entire pipeline twice. Each retry uploads the image again (image filename collision applies — see Cat 4), calls Edamam again, and POSTs another recipe. The result is duplicate recipes plus orphaned images.
 - **Suggested fix direction:** Add `disabled={addRecipeLoading || !isFormValid}` and a guard `if (addRecipeLoading) return` at the top of the handler.
 
-#### [MEDIUM] No max-length validation on description, ingredients, or instructions
+#### [MEDIUM] No max-length validation on description, ingredients, or instructions ✅ FIXED
+- _Input length caps now live in `src/util/recipeLimits.ts` (DESCRIPTION/INSTRUCTION/INGREDIENT max + MAX_INGREDIENTS/MAX_INSTRUCTIONS) and are mirrored server-side in `server/util/recipeLimits.js`._
 - **File:** `src/pages/AddRecipe/AddRecipe.tsx:53-74`
 - **Description:** Title is capped at 50 chars (input cap + validation). No analogous cap on description, ingredient count, instruction count, or instruction `content` length. A pasted novel-length description or 200-instruction recipe will submit, hit MongoDB, and render badly downstream. Server has no max bounds either (`server/routes/recipes.js:138-149`).
 - **Suggested fix direction:** Add reasonable bounds in `validate()` (e.g., description ≤ 500, ingredients/instructions ≤ ~50 entries each, instruction content ≤ 500). Mirror the bounds server-side as a defence-in-depth check.
@@ -65,7 +70,8 @@ The Add Recipe flow has been substantially de-risked by Phases 5-C, 5-D, and 5-F
 - **Description:** The `useEffect` runs `validate()` without `assignErrors`, so it computes `isFormValid` for the button class but never displays errors. Inline errors only appear after the user clicks submit (`validate(true)` on `:105`). A user filling out a long form gets no progressive feedback about what's missing.
 - **Suggested fix direction:** Either run `validate(true)` in the effect (after the user has interacted at least once — track with a `hasInteracted` flag to avoid first-paint errors), or surface a per-field "this is required" badge on blur.
 
-#### [LOW] `RecipeFormInput`'s generic `T` is bypassed at runtime
+#### [LOW] `RecipeFormInput`'s generic `T` is bypassed at runtime 🗑 OBSOLETE
+- _No longer applies: `src/pages/AddRecipe/RecipeFormInput.tsx` no longer exists (the component was removed/replaced)._
 - **File:** `src/pages/AddRecipe/RecipeFormInput.tsx:29-36`, used by `ServingsInput.tsx:30`, `TimeInput.tsx:71-78`
 - **Description:** `RecipeFormInput<T extends string | number | undefined>` casts `e.target.value` (always a string from the DOM) with `as T`. Numeric callers like `ServingsInput.handleChange` then do `inputVal === ''`, `!isNaN(inputVal)`, `inputVal % 1 === 0` — all of which work only because of JS coercion. Type safety is illusory here. Switching to a string-typed setter and parsing once at the boundary would make the contract honest.
 - **Suggested fix direction:** Drop the generic and have callers parse the string explicitly (`Number(val)`), or split into `RecipeTextInput` / `RecipeNumberInput`.
@@ -78,7 +84,8 @@ The Add Recipe flow has been substantially de-risked by Phases 5-C, 5-D, and 5-F
 - **File:** `server/routes/ingredients.js:7`
 - **Description:** `router.post('/parse', verifyToken, ...)` is in place. The Phase 5-F resolution holds. No new finding.
 
-#### [LOW] `EnrichmentResult.source` always `'spoonacular'`
+#### [LOW] `EnrichmentResult.source` always `'spoonacular'` 🗑 OBSOLETE
+- _No longer applies: `EnrichmentResult` is now `{ data: IngredientData | null }` — the `source` union was removed._
 - **File:** `src/api/ingredientParserApi.ts:18-20`
 - **Description:** Type advertises `'cache' | 'spoonacular'`; both branches return `'spoonacular'`. Field is unused by callers, so the only impact is a stale contract — already noted in API_CONTRACT.md Low. Re-flagged here because the parser route is in scope.
 - **Suggested fix direction:** Either teach the server to report cache hits (a header or response field) and propagate, or drop the union to `'spoonacular'` until cache reporting exists.
@@ -92,12 +99,14 @@ The Add Recipe flow has been substantially de-risked by Phases 5-C, 5-D, and 5-F
 
 ### Category 4: Image Upload
 
-#### [HIGH] Orphaned images on partial failure
+#### [HIGH] Orphaned images on partial failure ⏳ OPEN
+- _Still open — the `addRecipe` catch logs/maps the error but does not delete the already-uploaded image. Tracked in BACKLOG.md._
 - **File:** `src/api/recipes.ts:104-161`
 - **Description:** `uploadRecipeImage` runs first (`:112-115`), then `getRecipeNutrition` (`:122-124`), then `http.post('api/addRecipe', ...)` (`:156`). If nutrition fetching throws (Edamam down/401, network error), or the POST fails (server 500, expired token), the catch block on `:158` returns `null` and the image stays in Firebase Storage forever. There is no compensating delete in the catch.
 - **Suggested fix direction:** Either (a) defer image upload to *after* the recipe POST succeeds (the server stores the URL but doesn't need it to validate), or (b) keep current order but track the upload's storage ref and call `deleteObject(ref)` from the catch. Option (a) is simpler and avoids the cleanup race.
 
-#### [HIGH] Non-unique image filenames cause silent overwrite (still open)
+#### [HIGH] Non-unique image filenames cause silent overwrite (still open) ✅ FIXED
+- _Resolved (#249 / BACKLOG "I2") — images are now keyed `recipeImages/{uid}/{uuid}` in `uploadRecipeImage`, collision-proof and owner-scoped._
 - **File:** `src/api/recipes.ts:92`
 - **Description:** `recipeImages/${imageFile.name}` — two users uploading `IMG_1234.jpg` (a common iOS filename) overwrite each other's image. The first recipe's `recipeImage` URL keeps working but now points to the second user's photo. Already deferred in REFACTOR.md Phase 6 close-out; re-noting here because Add Recipe is the only writer.
 - **Suggested fix direction:** Prefix with `${uuidv4()}-` or `${userUid}/${uuidv4()}-`. UUID is already imported at `src/api/recipes.ts:20`.
@@ -116,7 +125,8 @@ The Add Recipe flow has been substantially de-risked by Phases 5-C, 5-D, and 5-F
 
 ### Category 5: Error Handling & User Feedback
 
-#### [HIGH] Submit failures swallowed with a generic message and no log
+#### [HIGH] Submit failures swallowed with a generic message and no log ✅ FIXED
+- _The catch now `console.error`s the failure, returns a typed result (`auth-error` on 401), and surfaces the server's reason (e.g. 422 moderation block) to the user._
 - **File:** `src/api/recipes.ts:158-160`, `src/pages/AddRecipe/AddRecipe.tsx:122-127`
 - **Description:** The catch in `addRecipe` does `return null` with no `console.error`, no telemetry, no error propagation. The page surfaces a generic `'Failed to create recipe. Please try again.'` regardless of whether the failure was a 401 (token expired), an Edamam outage, a Firebase Storage rejection, or a network blip. The user can't act on the message and you can't diagnose it from production logs.
 - **Suggested fix direction:** Log the error in the catch (at minimum `console.error('addRecipe failed', error)` — or push to a real telemetry sink). Map common failure shapes (401, network, Firebase, Edamam) to user-actionable messages.
@@ -162,17 +172,20 @@ The Add Recipe flow has been substantially de-risked by Phases 5-C, 5-D, and 5-F
 
 ### Category 7: Payload Shape & Data Integrity
 
-#### [HIGH] Removing an instruction does not re-index the survivors
+#### [HIGH] Removing an instruction does not re-index the survivors ✅ FIXED
+- _`removeInstruction` now walks the survivors after `filter` and rewrites `index` for content entries (skipping labels), matching the reorder path._
 - **File:** `src/pages/AddRecipe/Instructions/InstructionsContainer.tsx:26-28`, `src/pages/AddRecipe/Instructions/InstructionList/InstructionList.tsx:19-30`
 - **Description:** `removeInstruction` filters by id but doesn't recompute `index`. After removing instruction #2 from `[1, 2, 3, 4]`, the displayed list reads `1, 3, 4` (and that bad sequence is what gets POSTed). Reorder paths *do* re-index (`InstructionList.handleListChange`), but remove paths don't. The submitted payload has gaps in `instruction.index`.
 - **Suggested fix direction:** Mirror the `handleListChange` re-index logic in `removeInstruction` — after `filter`, walk the survivors and rewrite `index` for content entries (skip labels).
 
-#### [MEDIUM] Counters and rating sent in client payload despite server overrides (or absence of override)
+#### [MEDIUM] Counters and rating sent in client payload despite server overrides (or absence of override) ✅ FIXED
+- _The insert is now field-whitelisted (`pickFields(body, CREATABLE_RECIPE_FIELDS)`) and the server stamps `rating: { rateCount: 0, rateValue: 0 }` plus zeroed counters (`server/routes/recipes.js:~546-554`), so a forged client rating is ignored._
 - **File:** `src/api/recipes.ts:141-153`, `server/routes/recipes.js:148`
 - **Description:** Client sends `views: 0`, `numTimesSaved: 0`, `numTimesMade: 0`, `rating: { rateCount: 0, rateValue: 0 }`. The server explicitly stamps `numTimesSaved: 0, numTimesMade: 0, views: 0` *after* spreading body (`:148`) — so those are wasted bytes but harmless. `rating`, however, is not overridden. A modified client could submit `rating: { rateCount: 999, rateValue: 5 }` and the server would store it. Combined with `formatRating` already being a known sensitive code path (recent commit `0b83ec8`), this is a subtle trust issue.
 - **Suggested fix direction:** Server should also stamp `rating: { rateCount: 0, rateValue: 0 }` and `createdAt` server-side, and ignore client-supplied values for those fields. Drop the corresponding client-side payload keys.
 
-#### [MEDIUM] `createdAt` computed client-side as epoch-ms-as-string
+#### [MEDIUM] `createdAt` computed client-side as epoch-ms-as-string ⏳ OPEN
+- _Still open — the client still sends `new Date().getTime().toString()` (`src/api/recipes.ts:284`) and the server does not stamp `createdAt` at insert. Tracked in BACKLOG.md._
 - **File:** `src/api/recipes.ts:145`
 - **Description:** `new Date().getTime().toString()` — client clock is the source of truth for recipe creation time. A user with a wrong clock backdates their own recipe. Inconsistent with normal practice (server timestamps).
 - **Suggested fix direction:** Drop from client payload; have `server/routes/recipes.js:148` stamp `createdAt: Date.now().toString()` (or a proper ISO string) at insert time.
@@ -195,22 +208,26 @@ The Add Recipe flow has been substantially de-risked by Phases 5-C, 5-D, and 5-F
 
 ### Category 8: Project Convention Alignment
 
-#### [LOW] Two components use `interface` instead of `type Props`
+#### [LOW] Two components use `interface` instead of `type Props` ⏳ OPEN (partial) / 🗑 OBSOLETE (half)
+- _`RecipeFormInput.tsx` no longer exists (that half 🗑 obsolete); `ImagePicker.tsx` still declares `interface ImagePickerProps` — ⏳ open, in R1/C1 scope._
 - **File:** `src/pages/AddRecipe/RecipeFormInput.tsx:4-15`, `src/pages/AddRecipe/ImagePicker/ImagePicker.tsx:5-8`
 - **Description:** Phase 2-D standardized component signatures on `type Props =` + `FC<Props>`. These two still use `interface`. Cosmetic but inconsistent.
 - **Suggested fix direction:** Mechanical conversion to `type ...Props = { ... }`.
 
-#### [LOW] `ImagePicker` uses `React.FC` while siblings use `FC`
+#### [LOW] `ImagePicker` uses `React.FC` while siblings use `FC` ⏳ OPEN
+- _Still open — `ImagePicker.tsx:21` uses `React.FC<ImagePickerProps>`. R1/C1 scope._
 - **File:** `src/pages/AddRecipe/ImagePicker/ImagePicker.tsx:10`
 - **Description:** All other AddRecipe components import `FC` and use it bare. `ImagePicker.tsx:10` uses `React.FC<ImagePickerProps>`. Same drift as above.
 - **Suggested fix direction:** Switch to `import React, { FC } from 'react'` and use `FC<ImagePickerProps>`.
 
-#### [LOW] `Dnd/{DndContext,Drag,Drop}.tsx` end with `export {}`
+#### [LOW] `Dnd/{DndContext,Drag,Drop}.tsx` end with `export {}` ⏳ OPEN
+- _Still open — all three files retain the trailing `export {}` (`DndContext.tsx:36`, `Drag.tsx:21`, `Drop.tsx:27`)._
 - **File:** `src/pages/AddRecipe/Dnd/DndContext.tsx:36`, `Drag.tsx:21`, `Drop.tsx:27`
 - **Description:** The trailing `export {}` lines are a holdover from Phase 2-C's barrel work to force module-mode interpretation. Each file already has a real export, so the trailing line is dead.
 - **Suggested fix direction:** Delete the trailing `export {}` lines.
 
-#### [LOW] `react-select` `customStyles` use `any` for `provided`/`state`
+#### [LOW] `react-select` `customStyles` use `any` for `provided`/`state` ⏳ OPEN
+- _Still open, but relocated: the styles were extracted to `src/pages/AddRecipe/recipeSelectStyles.ts`, where `(provided: any, state: any)` remain. R1/C1 scope._
 - **File:** `src/pages/AddRecipe/CuisineSelector/CuisineSelector.tsx:21-43`, `src/pages/AddRecipe/MealTypeSelector/MealTypeSelector.tsx:16-38`
 - **Description:** `(provided: any, state: any) =>` in `StylesConfig` callbacks. `react-select` exports proper types (`ControlProps`, `OptionProps`) — these `any` casts were likely flagged by Phase 2-D and left for later.
 - **Suggested fix direction:** Type the callback args properly (`react-select` v5 has these typings) or add a project-level eslint exception with a TODO.

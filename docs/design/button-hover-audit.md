@@ -80,7 +80,9 @@ and now animates every hover property together; the surfaced variants
 shadow whose glow follows the fill — `$shadow-brand` for the orange primary,
 `$shadow-danger` for the red danger variants, and neutral `$elevation-2` for the
 colourless outline — while `--ghost` stays flat (no surface). `.load-more-btn`
-gets the outline treatment.
+gets the **branded** outline (orange border + orange text + `$shadow-brand` +
+lift; `index.scss:262–267`), not the plain grey outline — see the outline-button
+lanes in [`scss-conventions.md`](../scss-conventions.md).
 
 **Orange fills lighten (not darken) on hover.** The colour half of the language:
 every orange **fill** button applies the single `$hover-brighten` on hover instead

@@ -16,6 +16,8 @@ to the *sweep program*); this file applies it to the **general backlog**. Compan
 > verified item-by-item (7 parallel agents; 7 already fixed, 4 tracked/deferred elsewhere). The survivors are
 > boarded as **Wave 6 (N1–N7)** below — mutually disjoint lanes, built for parallel worktrees.
 
+> Board drained 2026-07-08 — the next wave appends below.
+
 ---
 
 ## How to use this doc (the continue-protocol)

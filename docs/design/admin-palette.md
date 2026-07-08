@@ -93,7 +93,8 @@ $admin-cat-amber-bg #fef3c7 · $admin-cat-amber-text #92400e  // bug .confusing
   `$admin-danger-text`, `#4338ca`→`$admin-info-text`). The shifts are
   sub-perceptible and intentional — the point of the scale.
 - **Files on this palette:** `AdminLayout`, `Analytics`, `Audit`, `BugReports`,
-  `Reports`, `Users` (admin pages); `AdminRecipeControls`, `ReportControl`,
+  `Ingredients` (`src/pages/Admin/Ingredients/Ingredients.scss`), `Reports`,
+  `Users` (admin pages); `AdminRecipeControls`, `ReportControl`,
   `BugReportModal`, `ClassifierNote`, `AccountStatusBanner`, `RecipePlaceholder`
   (admin/moderation components). `DefaultAvatar` and `AddRecipe/ListComponents/Item`
   hold no colour literals (colours set inline / pure layout), so they stay raw.

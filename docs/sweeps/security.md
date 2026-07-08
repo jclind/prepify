@@ -9,6 +9,9 @@
 > PR. The OpenAI key is **still on disk** in the local `.env` — operator action still open. *(See the
 > [run log](README.md#run-log).)*
 
+> **Closed 2026-07-03:** OpenAI API key revoked 2026-07-03 (operator action — closed). Remaining follow-ups
+> closed via the BACKLOG_ROADMAP Wave 1+ program (PRs #228–#234). *(Supersedes the "still on disk" note above.)*
+
 Full-coverage security audit of the Prepify client + API: secrets, authentication/authorization (incl.
 IDOR), input validation, rate limiting, CORS, Firebase rules, dependency CVEs, and data exposure /
 XSS. **Read-and-report first** — surface findings, fix only the clearly-safe ones, never weaken a check.

@@ -16,15 +16,19 @@ one set of tokens. This doc is the convention; the code that implements it is th
    About, Home, EmptyState, PublicProfile, Account) already started; the older
    form/settings/recipe-detail surfaces move onto it.
 3. **Color comes from a variant modifier, never inline.** Pick one of the five
-   variants below. Each variant's hover is an explicit color/border change, not
-   `filter: brightness()` or bare `opacity`. (A few KEEP-BESPOKE buttons sit on
-   the base *without* a variant — the teal auth submit, the brand-orange
-   suggestion CTA — and do use a `filter: brightness()` hover; the base `.btn`
-   transition animates `filter`, so they ease like the rest.) The danger color is
-   the single
-   `$error-red` token (see [one-danger-red-token, #208]), and the focus ring stays
-   on the global `button:focus-visible` rule in `index.scss` (the `s.outline()`
-   mixin) — variants never re-declare focus.
+   variants below. Hover follows the **Lift** language (PR #220, documented in
+   [`button-hover-audit.md`](./button-hover-audit.md)): the **surfaced/filled**
+   variants (`--primary`, `--outline`, `--danger`, `--danger-solid`) rise
+   `$hover-lift` and gain a **fill-matched shadow** (`$shadow-brand` for the orange
+   primary, `$shadow-danger` for the red danger pair, neutral `$elevation-2` for
+   the colourless outline). The orange `--primary` fill **lightens** via
+   `filter: $hover-brighten` (never darkens; `index.scss:169–174`), while
+   `--danger`/`--danger-solid` swap to their red fill/`$error-red-hover`. The
+   **`--ghost`** variant stays **flat** — no lift, no shadow, colour → ink only
+   (it has no surface to raise). The danger color is the single `$error-red` token
+   (see [one-danger-red-token, #208]), and the focus ring stays on the global
+   `button:focus-visible` rule in `index.scss` (the `s.outline()` mixin) —
+   variants never re-declare focus.
 
 ## The anatomy
 
@@ -49,11 +53,11 @@ one set of tokens. This doc is the convention; the code that implements it is th
 
 | Variant | Resting | Hover |
 |---|---|---|
-| `--primary` | `$primary` fill / white text | `$primary-hover` fill |
-| `--outline` | white / `$gray-400` border / `$primary-text` | border → `$primary-text` |
-| `--ghost` | transparent / `$secondary-text` | text → `$primary-text` |
-| `--danger` | white / `$error-red` border + text | `$error-red` fill / white text |
-| `--danger-solid` | `$error-red` fill / white text | `$error-red-hover` fill |
+| `--primary` | `$primary` fill / white text | `filter: $hover-brighten` + lift `$hover-lift` + `$shadow-brand` |
+| `--outline` | white / `$gray-400` border / `$primary-text` | border → `$primary-text` + lift + `$elevation-2` |
+| `--ghost` | transparent / `$secondary-text` | text → `$primary-text` (flat — no lift) |
+| `--danger` | white / `$error-red` border + text | `$error-red` fill / white text + lift + `$shadow-danger` |
+| `--danger-solid` | `$error-red` fill / white text | `$error-red-hover` fill + lift + `$shadow-danger` |
 
 `--icon` composes with a color variant for its hover treatment (e.g. a circular
 ghost icon button is `.btn .btn--icon .btn--ghost`).
@@ -64,9 +68,9 @@ ghost icon button is `.btn .btn--icon .btn--ghost`).
   switch are *selection state*, not actions. They keep their own classes (a future
   chip/toggle component), even though several are also pill-shaped.
 - **Admin-surface button colors** — Admin / BugReports / Reports /
-  AdminRecipeControls render on a hardcoded slate palette (`#1f2430`, `#d8dbe0`,
-  `#374151`, `#16a34a`). Those belong to the separate `$admin-*` sub-palette
-  `2-scss` track; this track does not recolor them.
+  AdminRecipeControls render on the cool slate console palette, now named as the
+  `$admin-*` token group (see [`admin-palette.md`](./admin-palette.md)). Those
+  belong to that separate sub-palette track; this track does not recolor them.
 
 ## Migration note
 

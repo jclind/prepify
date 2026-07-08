@@ -23,6 +23,7 @@ The previous list's biggest holes are now done and live:
 - **Personalized "For You" row on Home** — content-based row inferred from the user's saves/makes/ratings (`HomeForYou` + `GET /api/getForYouRecipes` + `server/util/forYou.js`), hidden until personalized, capped at 4 to match Trending. Shipped via PR #153.
 - **"What should I cook?" button** — taste-aware random pick in `HomeHero` (reuses the For You profile via `server/util/tasteContext.js`; uniform `$sample` fallback) revealed in a spotlight modal with a "Try another" re-roll (`HomeCookSuggestion` + `GET /api/recipes/random`). Shipped via PR #154.
 - **Recipe collections / folders for saved recipes** — saved recipes can be grouped into named collections ("Weeknight dinners," etc.) over the saved list, turning it into a cookbook. Collection CRUD API + saves carry `collectionIds`. Shipped via PR #137.
+- **Recipe structured data (JSON-LD)** — `SingleRecipe` emits a `Recipe` schema.org block (`src/pages/SingleRecipe/buildRecipeJsonLd.ts`) so Google can surface ratings/time/calories in rich results, serialized from the existing `RecipeType` fields. Shipped via PR #160; output escaping later hardened via convention C3 (PR #243).
 
 Adjacent systems that also landed and reshape the roadmap: **drafts**, **admin moderation + audit log + analytics**, **report content**, **bug reporting**, a URL-routed **Settings** area (Profile / Account & Security / Privacy / Danger), and transactional **email** (currently moderation outcomes only).
 
@@ -33,14 +34,13 @@ Adjacent systems that also landed and reshape the roadmap: **drafts**, **admin m
 - **Share recipe button on the recipe page** — `SingleRecipe.tsx` has Save / Rate / Made / Print actions but still no Share. (Public *profiles* got a share affordance during the profile work; the recipe page itself didn't.) A `navigator.share` (mobile) + `navigator.clipboard.writeText` fallback slots directly into the existing actions row.
 - **Display `fridgeLife` / `freezerLife`** — both are still collected in `AddRecipe.tsx` (and carried through drafts and the API payload) but a grep across `src/pages/SingleRecipe/` finds zero readers. Users enter "5 days in fridge / 30 in freezer" and viewers never see it. One `RecipeDataElement`/stat row each.
 - **Shopping list / grocery export** — ingredient checkboxes are still local component state that doesn't persist or aggregate. No "add to list," no clipboard copy, no cross-recipe combine for a weekly shop. Table-stakes vs. AllRecipes / NYT Cooking.
-- **Recipe structured data (JSON-LD)** — `grep` finds no `application/ld+json` / `schema.org` anywhere. A recipe site lives and dies on Google's Recipe rich results (ratings, time, calories in search). Emitting a `Recipe` schema block on `SingleRecipe` is high-SEO-leverage and the data (name, image, ingredients, instructions, nutrition, aggregateRating, times) already exists on `RecipeType`.
 
 ---
 
 ## 🟡 Sparse or Half-Built
 
 - **Step-by-step cook mode (interactive instructions)** — `SingleRecipe.tsx` still renders each step as static `<li className='step'>`. No per-step checked state, no "keep screen awake," no big-text cooking view. Classic recipe-app feature, still scaffolding-only.
-- **Hardcoded release notes** — `ReleaseNotes.tsx` still has `RELEASE_DATE = '3/31/2023'` and hand-edited `additions` literals. It's been partially touched but is fundamentally a stale, manually-maintained modal. Drive it from a small static JSON (or a `releases` collection), or retire the modal.
+- **Hardcoded release notes** — `ReleaseNotes.tsx` still has `RELEASE_DATE = '6/23/2026'` and hand-edited `additions` literals. It's been partially touched but is fundamentally a stale, manually-maintained modal. Drive it from a small static JSON (or a `releases` collection), or retire the modal.
 - **Review reactions / "helpful" votes** — the old like/dislike UI was removed wholesale, so there's now *no* reaction signal on reviews at all. A single "Helpful (n)" vote is the lighter, less-flamewar-prone version and gives the review sort something meaningful to rank by. `[needs API]` (`POST /reviews/:id/helpful`)
 - **Quick-time filter ("Under 15 / 30 / 60 min")** — `/recipes` has a "Quickest" *sort* but no time *filter*. A `maxTime` query param + a chip row is far more useful for "I have 20 minutes, feed me." `[reuses RecipeFilters + getAllRecipes query]`
 - **Error + retry states** — empty states landed, but a *failed* fetch on Trending / Saved / UserRatings still falls back to skeletons-or-empty with no "Something went wrong — Try again." A shared `<ErrorState onRetry>` would close the loop the empty-state work started.
@@ -72,8 +72,7 @@ Lowest-friction first:
 1. **Display `fridgeLife` / `freezerLife`** on the recipe page — data already stored, one stat row each.
 2. **Share button** on `SingleRecipe` — `navigator.share` + clipboard fallback into the existing actions row.
 3. **Search-history dropdown** — localStorage + the existing focus handler.
-4. **Recipe JSON-LD** — serialize existing `RecipeType` fields into a `<script type="application/ld+json">`; outsized SEO payoff.
-5. **Quick-time (`maxTime`) filter** — mirror the existing meal-type facet plumbing.
-6. **Error + retry states** — one shared component dropped into the three fetch sites.
+4. **Quick-time (`maxTime`) filter** — mirror the existing meal-type facet plumbing.
+5. **Error + retry states** — one shared component dropped into the three fetch sites.
 
 The highest user-impact gap is **cook mode** (the one core recipe-app interaction still missing), followed by **shopping list**, which is the biggest "every competitor has this, we don't" hole.
