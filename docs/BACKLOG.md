@@ -58,7 +58,7 @@ The triage date stamped on items is the date they were filed here, not when they
   *(**Fixed in [#248](https://github.com/jclind/prepify/pull/248)**, R1: writeback now emits `setVal(null)` when both fields
   clear, gated behind a `hasUserEdited` ref so the pre-hydration render can't be mistaken for a user clear; +2 regression tests,
   runtime-verified — filled→valid, clear-both→invalid, re-enter→valid. Merged 2026-07-07.)*
-- `[ ]` **Whitespace-only recipe title bypasses the "Title is required" guard (filed 2026-07-07, off the R1 runtime verification)** —
+- `[x]` **Whitespace-only recipe title bypasses the "Title is required" guard (filed 2026-07-07, off the R1 runtime verification)** —
   found acting as a malicious user against the running create-recipe form. `validateRecipeForm` (`src/pages/AddRecipe/recipeFormValidation.ts`)
   tests the title with `!form.title`, so an all-spaces title (`"     "`) is truthy → **no "Title is required" error**. Fill the other
   required fields and the form validates and publishes a recipe with a blank-looking (whitespace) title; the saved recipe then renders
@@ -67,6 +67,13 @@ The triage date stamped on items is the date they were filed here, not when they
   submit payload); confirm the server (`validateRecipeBounds`, `server/routes/recipes.js`) also rejects a blank/whitespace title as
   defence-in-depth. **Low severity** (data-quality, self-inflicted — no XSS/security impact; the malicious content itself is escaped
   safely), one-line client fix — belongs to the AddRecipe lane (**R1** follow-up) or a small F-track.
+  *(fixed in [#253](https://github.com/jclind/prepify/pull/253), whitespace-title guard: client `validateRecipeForm` now trims
+  before the presence check (length cap on the trimmed value) and `useRecipeForm.handleSubmit` trims the submit payload
+  (create+edit); server `validateRequiredRecipeFields` treats a whitespace-only required string as missing, **and** a new shared
+  `normalizeRecipeInput` trims the title before bounds+persistence in both the create & edit routes — so a direct API call can't
+  store a padded title either (drafts untouched: `validateRecipeBounds` only). +regression tests (`recipeFormValidation.test.ts`,
+  `server/__tests__/recipeLimits.test.js`). Live-verified against the running dev API: POST `title:"  Live Probe Soup  "`
+  persisted as `"Live Probe Soup"` in dev Mongo, then cleaned up. Merged 2026-07-08.)*
 - `[x]` **Deleting a review leaves the star rating behind** — **fixed in PR #150 (merged, track 1a)**:
   added `DELETE /removeRating` (clears just the star; keeps any review; deletes the doc when
   rating-only), and `deleteReview` now keeps the rating and deletes the doc when there's nothing left —

@@ -1322,3 +1322,17 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   cluster and drains the entire parallel backlog board** — every named track across Waves 1–5 is now `[x]`,
   `[dropped]`, or (I1/I2) merged-but-owner-gated; what remains is the Deferred/post-1.0/owner section. No
   follow-ups filed.
+- **2026-07-08** — **whitespace-only recipe-title guard merged** → [#253](https://github.com/jclind/prepify/pull/253)
+  (`e7318c9`), closing the last open BACKLOG.md Bugs follow-up. Shipped the two-layer fix from the PR-open entry
+  above **plus a server-side title-trim added after review**: a code review flagged that the server *rejected* an
+  all-blank title but still *persisted* `body.title` verbatim, so a direct (non-browser) API call could store a
+  padded title like `"  Soup  "`. Added a shared `normalizeRecipeInput(body)` (`server/util/recipeLimits.js`) that
+  trims the title in place, wired into **both** the create (`POST /addRecipe`) and edit (`PUT /editRecipe`) routes
+  right after the required-field check and *before* the bounds check — so the length cap and the persisted value
+  both see the trimmed title, matching the client. `typeof`-guarded so a non-string title can't throw; drafts stay
+  untouched (`validateRecipeBounds` only). **Verified live at the real surface** (not just the test suites): drove
+  the running dev API with a real minted Firebase token — POST `title:"  Live Probe Soup  "` persisted as
+  `"Live Probe Soup"` read straight from dev Mongo (`client.db('prepify')`), then deleted via the API and removed
+  the throwaway auth user (net-zero dev data). Gates green on the pushed commit: Backend Supertest, Frontend
+  Vitest, Static (typecheck+build), E2e Cypress, Fallow, GitGuardian all pass; server Jest suite 134/134 on the
+  two recipe suites (adds 3 `normalizeRecipeInput` unit cases). Remote branch deleted, worktree torn down.
