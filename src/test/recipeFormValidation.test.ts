@@ -82,6 +82,16 @@ describe('validateRecipeForm', () => {
     expect(errors.image).toBeUndefined()
   })
 
+  it('treats a whitespace-only title as missing', () => {
+    // Regression: `!form.title` let an all-spaces title through (truthy string),
+    // publishing a recipe with a blank <h1>. The check now trims first.
+    const errors = validateRecipeForm({ ...validForm(), title: '     ' })
+    expect(errors.title).toBe('Title is required')
+    expect(isRecipeFormValid(errors)).toBe(false)
+    // Surrounding whitespace on an otherwise-valid title is fine (trimmed on submit).
+    expect(validateRecipeForm({ ...validForm(), title: '  Soup  ' }).title).toBeUndefined()
+  })
+
   it('caps the title length', () => {
     const ok = validateRecipeForm({ ...validForm(), title: 'A'.repeat(TITLE_MAX_LENGTH) })
     expect(ok.title).toBeUndefined()

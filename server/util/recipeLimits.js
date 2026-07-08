@@ -63,11 +63,34 @@ const REQUIRED_RECIPE_FIELDS = ['title', 'ingredients', 'instructions', 'mealTyp
 function validateRequiredRecipeFields(body) {
   const missing = REQUIRED_RECIPE_FIELDS.filter(f => {
     const val = body[f]
-    return val == null || val === '' || (Array.isArray(val) && val.length === 0)
+    // A whitespace-only string (e.g. an all-spaces title) is not `''`, so guard
+    // it here too — defence-in-depth behind the client's trimmed-title check, so
+    // the server can't persist a blank-looking required field on its own.
+    return (
+      val == null ||
+      (typeof val === 'string' && val.trim() === '') ||
+      (Array.isArray(val) && val.length === 0)
+    )
   })
   return missing.length > 0
     ? `Missing required fields: ${missing.join(', ')}`
     : null
+}
+
+// Normalizes user-supplied recipe input in place before persistence. Trims the
+// title so surrounding whitespace can't be stored — mirroring the client's
+// submit-time trim (useRecipeForm.handleSubmit) so a direct API call can't
+// persist a mis-aligned title the browser form would have cleaned. Run it AFTER
+// validateRequiredRecipeFields (which already rejects an all-blank title) but
+// BEFORE validateRecipeBounds, so the length cap is checked against the trimmed
+// value too — matching the client, which caps the trimmed title. Shared by the
+// create and edit routes so the two can't drift. Guards on `typeof` so a
+// non-string title (rejected elsewhere) can't throw here.
+function normalizeRecipeInput(body) {
+  if (typeof body.title === 'string') {
+    body.title = body.title.trim()
+  }
+  return body
 }
 
 // Returns an error string when `body` violates a bound, or null when it's within
@@ -129,6 +152,7 @@ function validateRecipeBounds(body) {
 
 module.exports = {
   validateRequiredRecipeFields,
+  normalizeRecipeInput,
   validateRecipeBounds,
   DESCRIPTION_MAX_LENGTH,
   INGREDIENT_MAX_LENGTH,

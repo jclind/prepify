@@ -395,7 +395,9 @@ export function useRecipeForm(initialRecipe?: RecipeType) {
     // Shared form-state → payload mapping; the two branches differ only in the
     // image field (optional on edit, required on create) and which API they call.
     const formData = {
-      title,
+      // Persist the trimmed title so surrounding whitespace can't render a
+      // blank/mis-aligned <h1> (validation already rejects an all-blank title).
+      title: title.trim(),
       prepTime: hrMinToMin(prepTime),
       cookTime: hrMinToMin(cookTime),
       servings: Number(servings),
