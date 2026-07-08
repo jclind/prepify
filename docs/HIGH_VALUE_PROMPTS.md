@@ -10,6 +10,12 @@ Listed in priority order.
 > output-escaping half shipped (convention **C3**), leaving the validation test + social-preview
 > decision. The stale mobile-nav footer note is dropped (it shipped in #108). Remaining items
 > re-ranked/renumbered 1–7.
+>
+> **Update 2026-07-08:** the "API contract three-way reconciliation" item (was #4) shipped as
+> [#262](https://github.com/jclind/prepify/pull/262) — `docs/API_CONTRACT.md` was regenerated
+> server-truth-first from all 73 routes + `/health`, and the two clear client mismatches it found were
+> fixed (`editReview` query-string encoding; `getReviews` dead `username` param). The remaining
+> non-blocking drift was filed to [`BACKLOG.md`](./BACKLOG.md). Item removed; #5–#7 renumbered to #4–#6.
 
 ## 1. Release-blocker burn-down ⭐ top pick
 
@@ -44,13 +50,7 @@ Tip: the leading "ultracode" opts into the multi-agent orchestration.
 > parsing, serving-price, review/rating CRUD, moderation) whose tests don't actually exercise the
 > failure modes. Strengthen the worst offenders and add the missing edge cases.
 
-## 4. API contract three-way reconciliation
-
-> Reconcile docs/API_CONTRACT.md against the actual server/routes/ handlers and the src/api/ client
-> modules. Find drift in params, response shapes, status/error codes, and auth requirements across
-> all three. Write a diff report to docs/ and fix the clear mismatches.
-
-## 5. End-to-end user-journey simulation
+## 4. End-to-end user-journey simulation
 
 Token-heavy because it drives the headless browser repeatedly through real flows that unit tests miss.
 
@@ -58,7 +58,7 @@ Token-heavy because it drives the headless browser repeatedly through real flows
 > create a recipe (image + nutrition) → rate → save → report → admin-moderate → delete — with the
 > API both up and down, screenshotting every step. Flag any broken/ugly state and fix what you find.
 
-## 6. SEO finish + social previews
+## 5. SEO finish + social previews
 
 JSON-LD already exists (`src/pages/SingleRecipe/buildRecipeJsonLd.ts`) and its output escaping is now
 hardened (convention **C3**, shipped) — ✅ that half is done. Two gaps remain.
@@ -68,7 +68,7 @@ hardened (convention **C3**, shipped) — ✅ that half is done. Two gaps remain
 > index.html to non-JS crawlers — RELEASE_PLAN §C): prerender vs. accept the generic card for 1.0.
 > Recommend one.
 
-## 7. Docs reconciliation
+## 6. Docs reconciliation
 
 ~6,400 lines of docs (REFACTOR_NOTES alone is 1,405). Cheap insurance against acting on stale audits.
 
