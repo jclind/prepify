@@ -1260,3 +1260,13 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   throwaway Auth user. **Closes the #397/#446 recipe-projection leak class** (last unprojected account read). No follow-ups filed.
   **Board fully drained; the next open BACKLOG.md Bugs follow-up is the whitespace-only recipe-title guard** (`recipeFormValidation.ts:40`,
   `!form.title` w/o `.trim()`).
+- **2026-07-08** — **whitespace-only recipe-title guard claimed** (`worktree-feat+whitespace-title-guard`). Claim recorded directly on
+  `development` (same convention as the S/F tracks + the #251 follow-up) so concurrent sessions see it taken. Scope (BACKLOG.md:61,
+  filed off the R1 runtime verification): an all-spaces title (`"     "`) is truthy, so the client's `!form.title` check
+  (`src/pages/AddRecipe/recipeFormValidation.ts:40`) and the server's `val === ''` emptiness test
+  (`validateRequiredRecipeFields`, `server/util/recipeLimits.js:63-71`) **both** pass it → a recipe publishes with a blank `<h1>`.
+  Fix: guard the client on `!form.title.trim()` (+ trim the submitted payload) and make the server treat a whitespace-only required
+  string as missing (defence-in-depth). **Disjoint from the in-flight C1-tail lane** (`worktree-feat+c1-tail-audit`, AddRecipe *styling*
+  — `recipeSelectStyles.ts` + `_exports.module.scss`): this touches the validation module + server bounds, not those files, so no
+  collision despite both being AddRecipe-adjacent (the item itself authorizes "a small F-track"). Verified both halves still present
+  and `development` in sync with origin (0/0) before claiming. Worktree not yet created.
