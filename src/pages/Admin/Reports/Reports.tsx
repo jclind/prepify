@@ -338,7 +338,9 @@ const Reports: FC = () => {
                   <span className={`type-pill ${report.targetType}`}>
                     {report.targetType}
                   </span>
-                  <span className='reason-pill'>{report.reason}</span>
+                  <span className='reason-pill'>
+                    {report.reason.replace(/_/g, ' ')}
+                  </span>
                   <span className={`status-pill ${report.status}`}>
                     {report.status}
                   </span>

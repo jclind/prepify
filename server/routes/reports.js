@@ -52,7 +52,12 @@ const reportLimiter = makeUserLimiter({
 // report carries `reportedUsername` alongside `recipeId`. A 'user' report
 // targets a profile directly: it carries `reportedUsername` and has no recipeId.
 const TARGET_TYPES = ['recipe', 'review', 'user']
-const REASONS = ['spam', 'inappropriate', 'offensive', 'copyright', 'dangerous', 'other']
+const REASONS = ['spam', 'inappropriate', 'offensive', 'copyright', 'dangerous', 'incorrect_info', 'other']
+// Reasons that only make sense for recipe content (wrong quantities, a bad price
+// estimate, etc.) — rejected on review/user targets so the queue can trust that
+// an `incorrect_info` report is always about a recipe. Kept in sync with the
+// client's `recipeOnly` option flag (src/Components/ReportControl).
+const RECIPE_ONLY_REASONS = ['incorrect_info']
 const RESOLUTIONS = ['resolved', 'dismissed']
 const MAX_DETAILS_LEN = 1000
 
@@ -98,6 +103,9 @@ router.post('/reports', verifyToken, requireActive, reportLimiter, asyncHandler(
   }
   if (!REASONS.includes(reason)) {
     return res.status(400).json({ error: 'Invalid reason' })
+  }
+  if (RECIPE_ONLY_REASONS.includes(reason) && targetType !== 'recipe') {
+    return res.status(400).json({ error: 'That reason only applies to recipe reports' })
   }
   if (details != null && (typeof details !== 'string' || details.length > MAX_DETAILS_LEN)) {
     return res.status(400).json({ error: `details must be a string under ${MAX_DETAILS_LEN} chars` })

@@ -64,6 +64,46 @@ describe('ReportControl', () => {
     )
   })
 
+  it('offers the recipe-only "incorrect_info" reason on a recipe report and submits it (N2)', async () => {
+    mockedUseAuth.mockReturnValue({ user: { uid: 'u1' } })
+    render(<ReportControl target={{ targetType: 'recipe', recipeId: 'r1' }} />)
+
+    fireEvent.click(screen.getByRole('button', { name: /report this recipe/i }))
+
+    // The recipe-only option is present and selectable.
+    const option = screen.getByRole('option', { name: /incorrect information or price/i })
+    expect(option).toBeInTheDocument()
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'incorrect_info' } })
+    fireEvent.click(screen.getByRole('button', { name: /submit report/i }))
+
+    await waitFor(() => expect(mockedCreate).toHaveBeenCalledTimes(1))
+    expect(mockedCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ targetType: 'recipe', reason: 'incorrect_info' })
+    )
+  })
+
+  it('hides the recipe-only "incorrect_info" reason on review and user reports (N2)', () => {
+    mockedUseAuth.mockReturnValue({ user: { uid: 'u1' } })
+    const { unmount } = render(
+      <ReportControl
+        target={{ targetType: 'review', recipeId: 'r1', reportedUsername: 'baduser' }}
+      />
+    )
+    fireEvent.click(screen.getByRole('button', { name: /report this review/i }))
+    expect(
+      screen.queryByRole('option', { name: /incorrect information or price/i })
+    ).not.toBeInTheDocument()
+    // A universal reason is still there.
+    expect(screen.getByRole('option', { name: /spam or advertising/i })).toBeInTheDocument()
+    unmount()
+
+    render(<ReportControl target={{ targetType: 'user', reportedUsername: 'baduser' }} />)
+    fireEvent.click(screen.getByRole('button', { name: /report this user/i }))
+    expect(
+      screen.queryByRole('option', { name: /incorrect information or price/i })
+    ).not.toBeInTheDocument()
+  })
+
   it('passes reportedUsername through for a review report', async () => {
     mockedUseAuth.mockReturnValue({ user: { uid: 'u1' } })
     render(

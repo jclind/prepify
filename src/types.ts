@@ -250,6 +250,9 @@ export type ReportReason =
   | 'offensive'
   | 'copyright'
   | 'dangerous'
+  // Recipe-only: wrong ingredient amounts, bad price estimate, etc. The server
+  // rejects it on review/user targets; the UI only offers it for recipes.
+  | 'incorrect_info'
   | 'other'
 export type ReportStatus = 'open' | 'resolved' | 'dismissed'
 

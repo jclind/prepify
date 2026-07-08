@@ -232,6 +232,40 @@ describe('POST /api/reports', () => {
     expect(res.status).toBe(400)
   })
 
+  it('accepts incorrect_info on a recipe report (N2)', async () => {
+    const res = await request(app)
+      .post('/api/reports')
+      .set(AUTH_HEADER)
+      .send({ ...validRecipeReport, reason: 'incorrect_info' })
+    expect(res.status).toBe(201)
+    expect(res.body.reason).toBe('incorrect_info')
+  })
+
+  it('rejects incorrect_info on a review report — recipe-only reason (N2)', async () => {
+    const res = await request(app)
+      .post('/api/reports')
+      .set(AUTH_HEADER)
+      .send({
+        targetType: 'review',
+        recipeId: 'recipe-001',
+        reportedUsername: 'baduser',
+        reason: 'incorrect_info',
+      })
+    expect(res.status).toBe(400)
+    // The reason is otherwise valid — it's the target that's wrong — so the
+    // error names the gating, not "Invalid reason".
+    expect(res.body.error).toMatch(/only applies to recipe/i)
+  })
+
+  it('rejects incorrect_info on a user report — recipe-only reason (N2)', async () => {
+    const res = await request(app)
+      .post('/api/reports')
+      .set(AUTH_HEADER)
+      .send({ targetType: 'user', reportedUsername: 'baduser', reason: 'incorrect_info' })
+    expect(res.status).toBe(400)
+    expect(res.body.error).toMatch(/only applies to recipe/i)
+  })
+
   it('rejects over-long details', async () => {
     const res = await request(app)
       .post('/api/reports')
