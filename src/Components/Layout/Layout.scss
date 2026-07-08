@@ -22,22 +22,36 @@
   }
 }
 
-// Skip-to-content: off-screen until it receives keyboard focus, then pinned to
-// the top-left above the nav so the first Tab on any page jumps past the header.
+// Skip-to-content: visually hidden until it receives keyboard focus, then pinned
+// to the top-left above the nav so the first Tab on any page jumps past the header.
+// Hidden via a clipped 1px box (not an off-viewport `top: -3rem` park): the old
+// negative-offset pattern left painted geometry above the fold that iOS/Android
+// rubber-band overscroll would reveal (`.app-shell` has no `position`, so it
+// resolved against the document and scrolled with the page). A clip-based box has
+// no off-viewport geometry to expose while the keyboard-Tab reveal still works.
 .skip-to-content {
   position: absolute;
   left: 0.5rem;
-  top: -3rem;
+  top: 0.5rem;
   z-index: 1000;
-  padding: 0.6rem 1rem;
+  clip-path: inset(50%);
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  white-space: nowrap;
   background: s.$white;
   color: s.$primary;
   font-weight: 600;
   border-radius: s.$border-radius;
   box-shadow: s.$elevation-2;
-  transition: top 0.15s ease-in-out;
 
   &:focus {
-    top: 0.5rem;
+    clip-path: none;
+    width: auto;
+    height: auto;
+    padding: 0.6rem 1rem;
+    overflow: visible;
+    white-space: normal;
   }
 }

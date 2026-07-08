@@ -13,8 +13,8 @@ const RecipeNotFound = () => {
         </span>
         <h1>Recipe not found</h1>
         <p className='text'>
-          We couldn't find the recipe you're looking for — it may have been
-          removed, or the link might be incorrect.
+          That recipe's off the menu. It may have been removed, or the link
+          might be broken. Try a search below.
         </p>
 
         <div className='rnf-search'>
