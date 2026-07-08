@@ -689,6 +689,19 @@ findings table.)*
   annotation on every CI run (seen on PR #204). Bump both to the next major (`@v5`, or whatever is current
   when picked up) to clear the warning before the forced fallback is removed. Low-risk maintenance; not a
   1.0 blocker. *(surfaced 2026-06-29 in CI logs during the `RecipeFormInput`→`FormInput` track.)*
+- `[ ]` **Phase 5-D: convert the 8 legacy string-`_id` recipes to native `ObjectId`** — `checkMigrationState.js`
+  reports **8 recipes** on prod (identical count on dev — dev is a prod clone) whose `_id` is still a plain
+  string rather than a BSON `ObjectId`, left over from before the Phase-5 refactor. **Not a correctness bug:**
+  `server/util/recipeIdQuery.js` is a deliberate compatibility shim that matches both `_id` shapes (`$or`
+  string/ObjectId), so every read/write already works — its own comment calls the legacy form "harmless to
+  leave in place." The one-time backfill that would retire the shim was **never written**. Building it is
+  non-trivial: `_id` is immutable in Mongo, so the migration must **insert a new doc under the ObjectId +
+  delete the old string doc + repoint every foreign reference** to that recipe — `ratings.recipeId`,
+  `reports.recipeId`, and users' saved/made lists in `userRecipeData` (all stored as the string id) — ideally
+  in a transaction. Needs a read-first `--apply` ops script (same posture as `reconcileRatingAggregates.js`)
+  **with tests** before any prod run. Low urgency (shim covers it indefinitely; only 8 docs); do it if/when
+  the string/ObjectId duality is retired. *(surfaced 2026-07-08 during the Track-1 owner-ops prod run — the S6
+  `checkMigrationState` DB check flagged it; all other checks came back clean.)* **(not a 1.0 blocker)**
 - `[ ]` **Colour tokens → CSS custom properties when theming lands** — Jesse wants user-selectable
   themes (dark mode + other palettes) **post-1.0**. That's a *colour* concern: themes swap colours, not
   sizes — so the design tokens that need to become runtime-swappable are the colour groups (`$primary*`,

@@ -130,6 +130,20 @@ serving originals. The extension + variants can stay in place (harmless, unused)
 
 ## Runbook — I2 uid re-key rollout (owner)
 
+> **⚠ STATE CHECK (2026-07-08) — do NOT deploy these rules to prod standalone.**
+> Prod serves the **`release`** branch, which as of this note is at **PR #102
+> (2026-06-03), ~633 commits behind `development`** — i.e. the **pre-I2, flat-path**
+> frontend (`ref(storage, `recipeImages/${imageFile.name}`)`). Deploying the I2
+> `storage.rules` to prod now would **deny every prod image upload** (403 — the new
+> rules `allow write: if false` on the flat path the live frontend still writes to).
+> Prod today is old-rules + old-frontend, which **works** — leave it alone.
+> **The whole I1/I2/I3 prod rollout is gated on the prod release cutover** (advancing
+> `release` to the I2 frontend); deploy the rules + object migration + variant flag as
+> part of *that*, not piecemeal. **Dev is already aligned** — `firebase deploy --only
+> storage` against `prepify-dev-58579` reports "already up to date" (the I2 rules were
+> deployed to dev during I2 verification), and dev's local frontend already writes the
+> uid path. So the only outstanding I2/I1 work is prod, and it waits for the cutover.
+
 I2 changed two coupled things that must go live **together**: the frontend now
 uploads to `recipeImages/{uid}/{uuid}` (was `recipeImages/{filename}`), and
 `storage.rules` now (a) allows owner-scoped writes to that uid path and (b) **denies**

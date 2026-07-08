@@ -1711,3 +1711,18 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   prod value mirrors the prod frontend's `VITE_FIREBASE_STORAGE_BUCKET`) — so profile-photo cleanup is live,
   not just skip-safe. **With N7 `[x]` and N1 closed, the entire Wave-6 board (N1–N7) is drained — nothing open
   remains on the active board.**
+- **2026-07-08** — **S6 owner-gated prod ops run executed** (the `--apply`-against-prod-Mongo run the S6 rows
+  left owner-gated for cutover — see the 2026-07-06 S6 entries). Ran the two read-first S6 scripts against the
+  **prod** cluster (`prepify-prod`, `MONGO_URI` temporarily swapped in, restored to dev after): (1)
+  `checkMigrationState.js` (read-only) surfaced `8` legacy string-`_id` recipes + `1` rating missing `userId`;
+  aggregate-field + `reportedUid` checks clean. (2) `reconcileRatingAggregates.js` dry-run found **1** drifted
+  aggregate (`6a2057…`: stored `rateCount 2` vs 1 visible rating) → `--apply` healed it, idempotent re-run 0.
+  (3) The `1` missing-`userId` rating was an **unresolvable orphan** — QA account `settings_test_edit` with no
+  `usernames` doc, so the backfill couldn't fill it (`--apply` = 0 rows); deleted the orphan rating doc
+  directly (owner-authorized). That rating (5★ on live recipe `6408d2…`) had been counted in that recipe's
+  aggregate, so the direct delete (bypassing the app's recompute) left a fresh drift → re-ran
+  `reconcileRatingAggregates.js --apply` to heal `6408d2…` (`9 ratings/3.89` → `8/3.75`), idempotent re-run 0.
+  **Final prod state: 12/12 recipe aggregates in sync; `userId`/`reportedUid`/aggregate-field checks all 0.**
+  Only the **8 legacy string-`_id` recipes** remain flagged — shim-handled (`util/recipeIdQuery.js`), no
+  migration script exists, filed as a fresh **Tech-debt** dev task in `BACKLOG.md` (insert-new + repoint
+  foreign refs; not a 1.0 blocker). This closes the S6 "prod run stays owner-gated" loop.
