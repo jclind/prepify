@@ -77,6 +77,22 @@ function validateRequiredRecipeFields(body) {
     : null
 }
 
+// Normalizes user-supplied recipe input in place before persistence. Trims the
+// title so surrounding whitespace can't be stored — mirroring the client's
+// submit-time trim (useRecipeForm.handleSubmit) so a direct API call can't
+// persist a mis-aligned title the browser form would have cleaned. Run it AFTER
+// validateRequiredRecipeFields (which already rejects an all-blank title) but
+// BEFORE validateRecipeBounds, so the length cap is checked against the trimmed
+// value too — matching the client, which caps the trimmed title. Shared by the
+// create and edit routes so the two can't drift. Guards on `typeof` so a
+// non-string title (rejected elsewhere) can't throw here.
+function normalizeRecipeInput(body) {
+  if (typeof body.title === 'string') {
+    body.title = body.title.trim()
+  }
+  return body
+}
+
 // Returns an error string when `body` violates a bound, or null when it's within
 // limits. Only checks fields that are present — required-field presence is
 // validated separately by the route.
@@ -136,6 +152,7 @@ function validateRecipeBounds(body) {
 
 module.exports = {
   validateRequiredRecipeFields,
+  normalizeRecipeInput,
   validateRecipeBounds,
   DESCRIPTION_MAX_LENGTH,
   INGREDIENT_MAX_LENGTH,

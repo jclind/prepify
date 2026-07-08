@@ -11,7 +11,7 @@ const { RECIPE_VISIBLE, RECIPE_OWNER_VISIBLE } = require('../util/moderation')
 const { fuzzyRankTitles, toTextSearch } = require('../util/recipeTitleMatch')
 const { recordAudit } = require('../util/auditLog')
 const { notifyInBackground, notifyRecipeHidden } = require('../util/email')
-const { validateRequiredRecipeFields, validateRecipeBounds } = require('../util/recipeLimits')
+const { validateRequiredRecipeFields, normalizeRecipeInput, validateRecipeBounds } = require('../util/recipeLimits')
 const { upsertWithDupRetry } = require('../util/upsertWithDupRetry')
 const { moderateText } = require('../util/textModeration')
 const { moderateImage } = require('../util/imageModeration')
@@ -509,6 +509,10 @@ router.post('/addRecipe', verifyToken, requireActive, recipeWriteLimiter, asyncH
   if (requiredError) {
     return res.status(400).json({ error: requiredError })
   }
+  // Trim the title before bounds + persistence so surrounding whitespace is never
+  // stored (matches the client's submit-time trim) and the length cap sees the
+  // trimmed value.
+  normalizeRecipeInput(body)
   const boundsError = validateRecipeBounds(body)
   if (boundsError) {
     return res.status(400).json({ error: boundsError })
@@ -590,6 +594,9 @@ router.put('/editRecipe', verifyToken, requireActive, recipeWriteLimiter, asyncH
   if (requiredError) {
     return res.status(400).json({ error: requiredError })
   }
+  // Trim the title before bounds + persistence (see addRecipe) so an edit can't
+  // reintroduce surrounding whitespace the create path already strips.
+  normalizeRecipeInput(body)
   const boundsError = validateRecipeBounds(body)
   if (boundsError) {
     return res.status(400).json({ error: boundsError })

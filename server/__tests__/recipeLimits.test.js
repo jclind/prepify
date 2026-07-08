@@ -8,7 +8,10 @@
  * The route-level "Missing required fields" 400s in recipes.test.js exercise
  * the wiring; these lock the predicate at the util level.
  */
-const { validateRequiredRecipeFields } = require('../util/recipeLimits')
+const {
+  validateRequiredRecipeFields,
+  normalizeRecipeInput,
+} = require('../util/recipeLimits')
 
 const validBody = () => ({
   title: 'My Great Recipe',
@@ -45,5 +48,27 @@ describe('validateRequiredRecipeFields', () => {
     for (const f of ['title', 'ingredients', 'instructions', 'mealTypes']) {
       expect(err).toContain(f)
     }
+  })
+})
+
+describe('normalizeRecipeInput', () => {
+  it('trims surrounding whitespace off the title in place', () => {
+    const body = { ...validBody(), title: '  Soup  ' }
+    const returned = normalizeRecipeInput(body)
+    expect(body.title).toBe('Soup')
+    // Mutates and returns the same object for convenient chaining.
+    expect(returned).toBe(body)
+  })
+
+  it('leaves an already-clean title untouched', () => {
+    const body = { ...validBody(), title: 'Soup' }
+    normalizeRecipeInput(body)
+    expect(body.title).toBe('Soup')
+  })
+
+  it('does not throw on a non-string title', () => {
+    const body = { ...validBody(), title: 123 }
+    expect(() => normalizeRecipeInput(body)).not.toThrow()
+    expect(body.title).toBe(123)
   })
 })
