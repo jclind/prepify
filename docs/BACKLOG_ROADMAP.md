@@ -97,7 +97,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **6** | **N2 · report reason "incorrect info"** | new `ReportReason` across the 3 synced lists (BACKLOG Features) | `[x]` [#256](https://github.com/jclind/prepify/pull/256) (2026-07-08) | `src/types.ts`, `ReportControl.tsx`, `server/routes/reports.js` | **merged** — **Recipe-gated** (server 400s it on review/user targets; UI hides it). Also touched the admin queue reason pill (underscore→space) as a 4th display surface |
 | **6** | **N3 · auth-page home links** | brand-mark `<div>` → `<Link to='/'>` on Login + Signup (BACKLOG UX) | `[x]` [#257](https://github.com/jclind/prepify/pull/257) (2026-07-08) | `src/pages/Login/`, `src/pages/Signup/` | **merged** |
 | **6** | **N4 · SingleRecipe lane** ⚠ lane | author-byline + reviewer-name → `/u/:username` links; servings-pill spacing/glyph visual check (BACKLOG UX + pixel batch a) | `[~]` `worktree-feat+n4-singlerecipe-profile-links` (2026-07-08) | `src/pages/SingleRecipe/**` (incl. `Reviews/RecipeReview.tsx`) | reviewer-name half overlaps RELEASE_PLAN §D overhaul — see rule 8; screenshot the pill before touching it. **Scoped to author-byline link + pill check**; reviewer-name link yields to §D (rule 8b — unstarted blocker rewrites `RecipeReview.tsx` end-to-end) |
-| **6** | **N5 · polish sweep** | skip-link overscroll fix (A11y); RecipeNotFound copy/search; /recipes search-btn offset; footer bug-btn decision (pixel batch b, c) | `[ ]` | `Layout.scss`, `RecipeNotFound/*`, `Recipes.scss`, `Footer.scss` | disjoint smalls, one worktree; RecipeNotFound wording needs the owner's voice — draft options |
+| **6** | **N5 · polish sweep** | skip-link overscroll fix (A11y); RecipeNotFound copy/search; /recipes search-btn offset; footer bug-btn decision (pixel batch b, c) | `[~]` `worktree-feat+n5-polish-sweep` (2026-07-08) | `Layout.scss`, `RecipeNotFound/*`, `Recipes.scss`, `Footer.scss` | disjoint smalls, one worktree; RecipeNotFound wording needs the owner's voice — draft options |
 | **6** | **N6 · ingredient-miss telemetry** (+ N1 outlier guard) | persist enrichment misses + admin list (BACKLOG Features, admin); **folds in N1's price-outlier flag** | `[x]` [#255](https://github.com/jclind/prepify/pull/255) (2026-07-08) | `server/routes/ingredients.js`, `server/routes/admin.js`, `src/pages/Admin/**` | **merged**: new `ingredientMisses` collection; write stays best-effort. N1's guard rides this surface as a second event type (flag, not clamp). Review folded in the missing `ingredientMisses` indexes (`{count,lastSeen}` + type-led compound) to match the auditLog pattern the route mirrors |
 | **6** | **N7 · ops: storage-bucket env** | set `FIREBASE_STORAGE_BUCKET` (prod+dev) + real empty-env skip (BACKLOG Tech debt) | `[ ]` | server envs (owner) + `server/util/firebaseStorage.js` | env half is owner-gated; code half is a 3-line early-return |
 | **—** | **Deferred / post-1.0 / owner** | see [that section](#deferred--post-10--owner-off-the-active-board) | `[blocked]`/`[dropped]` | — | prerendering, Edamam, theming, brand-orange, DB relocation, ideas |
@@ -1567,3 +1567,18 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   617/2-skipped, build; no server changes). CI green (Backend, Frontend, E2e, Static, Fallow, GitGuardian).
   Merged after the concurrent **N2** land + **N4** claim advanced the board; no rebase needed (disjoint files,
   the N3 claim commit `06ff786` had already reached origin via N2's push). No follow-ups.
+- **2026-07-08** — **N5 claimed** (`worktree-feat+n5-polish-sweep`). Claim recorded directly on `development`
+  (same convention as the S/N tracks) so concurrent sessions see the lane taken. Verified the only other
+  in-flight worktree is **N4** (`worktree-feat+n4-singlerecipe-profile-links`, still `[~]` — its PR not yet
+  opened) with no forgotten/unmarked work, no `n5`/`n7` branch exists anywhere (local or remote), and
+  `development` is in sync with origin before claiming. **Scope — the four disjoint polish smalls, each in its
+  own file:** (1) the **skip-link overscroll** bug (`Layout/Layout.scss:25-43`) — the one confirmed defect:
+  the negative-`top` hide pattern parks painted geometry above the viewport that iOS/Android rubber-band
+  overscroll reveals, so switch to a clip-based visually-hidden pattern (`clip-path`/1px box, full size only on
+  `:focus`) — the keyboard-Tab reveal must survive; (2) **RecipeNotFound copy + search emphasis**
+  (`RecipeNotFound/*`) — de-AI the body copy (needs Jesse's voice → **draft options, don't invent**) + a
+  clearer search treatment; (3) **/recipes search-button asymmetry** (`Recipes.scss:26-67`) — screenshot-gated
+  one-line `right`-offset nudge if confirmed; (4) **footer "Report a bug" centering** (`Footer.scss:121-137`) —
+  screenshot + owner decision (centered vs. by-design), then relayout or close. N5 is the next actionable Wave-6
+  track — **N7**'s substance is owner-gated env vars (only a 3-line early-return in code), **N1** is
+  investigate-done/owner-pending. Worktree not yet created.
