@@ -14,7 +14,10 @@ const { deleteRecipeImage, deleteProfilePhoto } = require('../util/firebaseStora
 const recipeRating = require('../util/recipeRating')
 const { recipeIdInQuery } = require('../util/recipeIdQuery')
 const { RECIPE_VISIBLE } = require('../util/moderation')
-const { publicRecipeProjection } = require('../util/recipeFields')
+const {
+  publicRecipeProjection,
+  recipeInternalStampsExclusion,
+} = require('../util/recipeFields')
 const { moderateText } = require('../util/textModeration')
 const { moderateImage } = require('../util/imageModeration')
 const { respondBlocked } = require('../util/automod')
@@ -340,11 +343,24 @@ router.get('/exportMyData', verifyToken, asyncHandler(async (req, res) => {
   const usernameDoc = await db.collection('usernames').findOne({ _id: uid })
   const username = usernameDoc?.username || null
 
+  // The user's OWN recipes/drafts are exported as full high-fidelity bodies —
+  // but strip the internal admin moderation stamps (RECIPE_INTERNAL_STAMPS) that
+  // any admin action left on them, so the downloaded JSON never carries admin
+  // Firebase uids. An exclusion projection (drop only those 6 keys) rather than
+  // the public card whitelist: this is the author's own content, so keep
+  // everything else. (Saved recipes below go through publicRecipeProjection —
+  // those are OTHER users' recipes, read as a non-owner would.)
   const [profile, userRecipeData, recipes, drafts, ratings] = await Promise.all([
     db.collection('userProfiles').findOne({ _id: uid }),
     db.collection('userRecipeData').findOne({ _id: uid }),
-    db.collection('recipes').find({ userId: uid }).toArray(),
-    db.collection('recipeDrafts').find({ userId: uid }).toArray(),
+    db
+      .collection('recipes')
+      .find({ userId: uid }, { projection: recipeInternalStampsExclusion })
+      .toArray(),
+    db
+      .collection('recipeDrafts')
+      .find({ userId: uid }, { projection: recipeInternalStampsExclusion })
+      .toArray(),
     db.collection('ratings').find({ userId: uid }).toArray(),
   ])
 
