@@ -147,8 +147,15 @@ The triage date stamped on items is the date they were filed here, not when they
   **Fixed in S2/PR [#229](https://github.com/jclind/prepify/pull/229) (merged 2026-07-05):** each saved entry is
   now hydrated with its recipe body (through `publicRecipeProjection`, since saved recipes are other users'),
   keeping the ref with `recipe: null` for deleted/hidden ones.
-- `[?]` **`checkMadeRecipe` response-shape mismatch — the "made once an hour" throttle silently resets on
-  reload** *(surfaced 2026-07-08 in the API-contract regeneration ([#262](https://github.com/jclind/prepify/pull/262),
+- `[x]` **`checkMadeRecipe` response-shape mismatch — the "made once an hour" throttle silently resets on
+  reload** *(fixed in [#264](https://github.com/jclind/prepify/pull/264) via **option B**: dropped the phantom
+  client-side date/throttle logic and aligned `MadeRecipeBtn` to the server's binary `{ made: boolean }` — once
+  marked, the button shows "Made it ✓" and disables (made is one-way per user; re-marks are already idempotent
+  server-side, so nothing needed throttling). `checkMadeRecipe` is now typed `{ made: boolean }`; +5 regression
+  tests. Option A — a durable per-user cooking log with timestamps — was **not** taken (it would reverse the
+  server's deliberate inflation guard) and is instead filed as a feature in
+  [`FEATURE_IDEAS.md`](./FEATURE_IDEAS.md) → "Personal cooking log".)* *(surfaced 2026-07-08 in the API-contract
+  regeneration ([#262](https://github.com/jclind/prepify/pull/262),
   see [`API_CONTRACT.md`](./API_CONTRACT.md) DRIFT — recipes))* — `GET /checkMadeRecipe` returns
   `{ made: boolean }` (`server/routes/recipes.js:967`) and stores made entries as `{ recipeId }` with **no
   date**, but `src/pages/SingleRecipe/Buttons/MadeRecipeBtn.tsx:20,33-37` casts the result to
