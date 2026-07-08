@@ -161,7 +161,9 @@ class RecipeAPIClass {
     const result = await http.post(`api/madeRecipe?recipeId=${recipeId}`)
     return result.data
   }
-  async checkMadeRecipe(recipeId: string) {
+  async checkMadeRecipe(
+    recipeId: string
+  ): Promise<{ made: boolean } | undefined> {
     if (!AuthAPI.getUID()) return
 
     const result = await http.get(`api/checkMadeRecipe?recipeId=${recipeId}`)
