@@ -97,7 +97,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **6** | **N2 · report reason "incorrect info"** | new `ReportReason` across the 3 synced lists (BACKLOG Features) | `[x]` [#256](https://github.com/jclind/prepify/pull/256) (2026-07-08) | `src/types.ts`, `ReportControl.tsx`, `server/routes/reports.js` | **merged** — **Recipe-gated** (server 400s it on review/user targets; UI hides it). Also touched the admin queue reason pill (underscore→space) as a 4th display surface |
 | **6** | **N3 · auth-page home links** | brand-mark `<div>` → `<Link to='/'>` on Login + Signup (BACKLOG UX) | `[x]` [#257](https://github.com/jclind/prepify/pull/257) (2026-07-08) | `src/pages/Login/`, `src/pages/Signup/` | **merged** |
 | **6** | **N4 · SingleRecipe lane** ⚠ lane | author-byline + reviewer-name → `/u/:username` links; servings-pill spacing/glyph visual check (BACKLOG UX + pixel batch a) | `[P]` [#258](https://github.com/jclind/prepify/pull/258) (2026-07-08) | `src/pages/SingleRecipe/**` (incl. `Reviews/RecipeReview.tsx`) | reviewer-name half overlaps RELEASE_PLAN §D overhaul — see rule 8; screenshot the pill before touching it. **Scoped to author-byline link + pill check**; reviewer-name link yields to §D (rule 8b — unstarted blocker rewrites `RecipeReview.tsx` end-to-end) |
-| **6** | **N5 · polish sweep** | skip-link overscroll fix (A11y); RecipeNotFound copy/search; /recipes search-btn offset; footer bug-btn decision (pixel batch b, c) | `[P]` [#259](https://github.com/jclind/prepify/pull/259) (2026-07-08) | `Layout.scss`, `RecipeNotFound/*`, `Recipes.scss`, `Footer.scss` | disjoint smalls, one worktree; RecipeNotFound wording needs the owner's voice — draft options |
+| **6** | **N5 · polish sweep** | skip-link overscroll fix (A11y); RecipeNotFound copy/search; /recipes search-btn offset; footer bug-btn decision (pixel batch b, c) | `[x]` [#259](https://github.com/jclind/prepify/pull/259) (2026-07-08) | `Layout.scss`, `RecipeNotFound/*`, `Footer.scss` | **merged** — skip-link + RecipeNotFound copy/search shipped as code; search-btn 6px offset & footer left-adjacency closed by-design; footer bug-btn re-aligned to the legal-strip row per owner feedback |
 | **6** | **N6 · ingredient-miss telemetry** (+ N1 outlier guard) | persist enrichment misses + admin list (BACKLOG Features, admin); **folds in N1's price-outlier flag** | `[x]` [#255](https://github.com/jclind/prepify/pull/255) (2026-07-08) | `server/routes/ingredients.js`, `server/routes/admin.js`, `src/pages/Admin/**` | **merged**: new `ingredientMisses` collection; write stays best-effort. N1's guard rides this surface as a second event type (flag, not clamp). Review folded in the missing `ingredientMisses` indexes (`{count,lastSeen}` + type-led compound) to match the auditLog pattern the route mirrors |
 | **6** | **N7 · ops: storage-bucket env** | set `FIREBASE_STORAGE_BUCKET` (prod+dev) + real empty-env skip (BACKLOG Tech debt) | `[ ]` | server envs (owner) + `server/util/firebaseStorage.js` | env half is owner-gated; code half is a 3-line early-return |
 | **—** | **Deferred / post-1.0 / owner** | see [that section](#deferred--post-10--owner-off-the-active-board) | `[blocked]`/`[dropped]` | — | prerendering, Edamam, theming, brand-orange, DB relocation, ideas |
@@ -1623,3 +1623,17 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   feature branch doesn't touch this roadmap, so the board flip lives here on `development`. **N5 is the last
   actionable Wave-6 code lane** — only **N7** (owner-gated env + 3-line early-return) and **N1**
   (owner-pending) remain open on the board.
+- **2026-07-08** — **N5 merged** ([#259](https://github.com/jclind/prepify/pull/259), merge `a775e60`) → `[x]`.
+  All CI green incl. **E2e (Cypress)**. Landed: the skip-link overscroll fix (clip-based visually-hidden) and
+  the RecipeNotFound copy + bordered-pill search. Also **folded in a follow-up** not in the original scope: after
+  the by-design call on the footer "Report a bug" placement, the owner flagged it read a size *smaller* than the
+  © / version spans on the legal row (root cause: the shared `.bug-report-trigger.btn` compact `$text-fine`
+  style). Fixed with a `.footer-legal`-scoped `font-size/weight/line-height: inherit/inherit/normal` override
+  (specificity 0,3,0 > the component's 0,2,0), landing all three on the shared `align-items:center` baseline;
+  the trigger keeps its compact style everywhere else. Verified at runtime (headless): all three items
+  13.6px / fw600 / vertically centered on desktop; on narrow viewports the version tag wraps to line 2 by the
+  strip's pre-existing `flex-wrap` + `margin-left:auto` (not a regression). Local code review before landing:
+  clean, CSS/copy-only, selectors target real markup, tokens respected; two non-blocking notes — the skip-link
+  reveal is now instant (dropped the `top` transition, which no longer applies) and RecipeNotFound's `0.14s`
+  transition is a raw value mirroring the `/recipes` field rather than a motion token. **Wave 6 code lanes are
+  now drained** — only **N7** (owner-gated) and **N1** (owner-pending) remain.

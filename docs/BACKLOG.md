@@ -166,7 +166,7 @@ The triage date stamped on items is the date they were filed here, not when they
   `<Link to={'/u/' + username}>` — for the byline ideally the whole `author-row` incl. avatar. **Note:** the
   reviewer-name half sits inside the RELEASE_PLAN §D Ratings & Reviews overhaul's file surface — see the N4
   dep note on the roadmap. → **N4**
-- `[ ]` **RecipeNotFound page: search emphasis + de-AI the copy** *(triaged 2026-07-08; filed 2026-06-25 —
+- `[x]` **RecipeNotFound page: search emphasis + de-AI the copy** — *(fixed in [#259](https://github.com/jclind/prepify/pull/259), N5: copy rewritten into the owner's voice — "That recipe's off the menu…" (picked from drafted options, no em dash); the bare `SearchRecipesInput` given a bordered pill treatment — `$gray-400` border, `$primary-background` fill, `focus-glow($primary)` — mirroring the `/recipes` toolbar so the search reads as the primary next action.)* *(triaged 2026-07-08; filed 2026-06-25 —
   content untouched since `236a126`, 2026-06-18)* — current body copy is *"We couldn't find the recipe you're
   looking for — it may have been removed, or the link might be incorrect."*; the search field is the bare
   shared `SearchRecipesInput` under an uppercase eyebrow label with no container emphasis
@@ -179,10 +179,10 @@ The triage date stamped on items is the date they were filed here, not when they
   already flex-centered (`:303-305`), so any residual offset is font optical metrics and the only real fix is
   swapping to the icon-system Lucide plus/minus (confirm wanted). → **N4**
   **(b) /recipes search-button asymmetry** — the embedded button sits `right: 6px` while the left icon gutter
-  is ~17.6px (`Recipes.scss:26-67`); a one-line nudge if confirmed. → **N5**
+  is ~17.6px (`Recipes.scss:26-67`); a one-line nudge if confirmed. → **N5** — *closed by-design in [#259](https://github.com/jclind/prepify/pull/259): the 6px inset is a consistent nested-control gap (≈4px vertical inset), not meant to mirror the decorative text gutter; measured both.*
   **(c) footer "Report a bug" centering** — it's *deliberately* left-adjacent in the copy·bug·version row
   (`Footer.scss:121-137`, version pushed right via `margin-left:auto`); decide centered-vs-by-design, then
-  either relayout `.footer-legal` or close. → **N5**
+  either relayout `.footer-legal` or close. → **N5** — *resolved in [#259](https://github.com/jclind/prepify/pull/259): left-adjacency kept (owner call), but the trigger was re-aligned — it read a size smaller than the ©/version spans (shared `.bug-report-trigger.btn` compact `$text-fine`); a `.footer-legal`-scoped inherit override lands all three on the row baseline.*
 - `[x]` **Create-recipe form dropdown inputs aren't visually uniform** — *(fixed in the C1-tail lane,
   [#252](https://github.com/jclind/prepify/pull/252), 2026-07-08.)* The Cuisine / Course / Diet `react-select` controls (`recipeSelectStyles.ts`) were tuned to
   mirror the shared `FormInput` `compact` variant exactly: 1px `$tertiary-text` resting border (was a 2px
@@ -370,7 +370,7 @@ The triage date stamped on items is the date they were filed here, not when they
 
 ## Accessibility
 
-- `[ ]` **Mobile overscroll reveals the "Skip to content" link** *(triaged 2026-07-08; filed 2026-07-02 —
+- `[x]` **Mobile overscroll reveals the "Skip to content" link** — *(fixed in [#259](https://github.com/jclind/prepify/pull/259), N5: swapped the negative-offset park for a clip-based visually-hidden box — `top:0.5rem; clip-path:inset(50%); 1px; overflow:hidden`, full size on `:focus` — so there's no off-viewport geometry for overscroll to reveal; the keyboard-Tab reveal survives. Runtime-verified headless at 390px.)* *(triaged 2026-07-08; filed 2026-07-02 —
   confirmed real, not intended)* — the link hides via the negative-offset pattern (`position: absolute;
   top: -3rem`, reveal `top: 0.5rem` on `:focus` — `src/Components/Layout/Layout.scss:25-43`), and since
   `.app-shell` sets no `position`, it resolves against the document and scrolls with the page — so iOS/Android
