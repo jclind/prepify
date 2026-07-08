@@ -455,7 +455,8 @@ class RecipeAPIClass {
   }
   async editReview(recipeId: string, text: string): Promise<AxiosResponse | null> {
     if (!AuthAPI.getUID()) return null
-    return await http.post(`api/editReview?recipeId=${recipeId}&text=${text}`)
+    // params (not string interpolation) so `&`/`#`/`%` in the review text survive the query string
+    return await http.post('api/editReview', null, { params: { recipeId, text } })
   }
   async deleteReview(recipeId: string): Promise<AxiosResponse | null> {
     if (!AuthAPI.getUID()) return null
@@ -472,9 +473,8 @@ class RecipeAPIClass {
     page: number,
     reviewsPerPage = 5
   ) {
-    const username = await AuthAPI.getUsername()
     const result = await http.get(
-      `api/getReviews?username=${username}&recipeId=${recipeId}&page=${page}&reviewsPerPage=${reviewsPerPage}&filter=${filter}`
+      `api/getReviews?recipeId=${recipeId}&page=${page}&reviewsPerPage=${reviewsPerPage}&filter=${filter}`
     )
     return result.data
   }
