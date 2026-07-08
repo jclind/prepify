@@ -127,7 +127,7 @@ a feature flag. Do these together:
   rotate them** — Prepify intends to migrate off Edamam entirely (see BACKLOG → Tech debt), so rotating
   a soon-to-be-retired key isn't worth it. The old `VITE_OPEN_AI_API_KEY` was never wired to a live
   call (removed in PR #151). Firebase web key is public-by-design + referrer-locked. **(blocker → waived)**
-- `[ ]` **Revoke the live OpenAI `sk-` key still on disk in the local `.env`** — **reopened by the Security
+- `[x]` **Revoke the live OpenAI `sk-` key still on disk in the local `.env`** — **reopened by the Security
   sweep (2026-06-26).** PR #151 removed `VITE_OPEN_AI_API_KEY` from the committed `.env.example` (the two
   `[x]` items above), but the **actual gitignored `.env` still carries a live, full-access
   `VITE_OPEN_AI_API_KEY = sk-…`** (`.env:9`). It is **dead** (zero `src/` callers → Vite does not bundle it)
@@ -137,7 +137,11 @@ a feature flag. Do these together:
   `SPOONACULAR_API_KEY` from `server/.env` (the v2 parser is key-free). Operator action on local files — no
   PR. See BACKLOG → Security. *(Re-checked 2026-07-02, Wave-3 re-sweep: both keys are **still on disk** —
   `VITE_OPEN_AI_API_KEY` in `.env`, `SPOONACULAR_API_KEY` in `server/.env`. Still open, still Jesse's
-  operator action.)* **(launch-gating hygiene)**
+  operator action.)* *(**Resolved 2026-07-08 audit:** both keys are now **gone from disk** — `grep` finds
+  no `VITE_OPEN_AI_API_KEY` in `.env` (which still holds the 6 real dev Firebase keys, so it's a populated
+  file, not an empty one) and no `SPOONACULAR_API_KEY` in `server/.env`. The plaintext-on-disk exposure is
+  cleared; provider-side key revocation is an operator step not verifiable from the repo.)* **(launch-gating
+  hygiene → on-disk exposure cleared)**
 - `[x]` **Lock down Edamam / Firebase usage server-side** — **done (2026-06-25).** Firebase **web API key
   is HTTP-referrer-restricted** — verified live that `prepifymeals.com`, `www.prepifymeals.com`, and
   `localhost:3000` are allowed while an empty referer is blocked (so prod + local dev work; a lifted key
@@ -172,14 +176,18 @@ a feature flag. Do these together:
   service's `FRONTEND_URLS` to the real origins only (`https://prepifymeals.com,https://www.prepifymeals.com`)
   and verified live that those origins are allowed while `localhost` / an arbitrary origin are denied.
   **(blocker → done)**
-- `[~]` **Dependency audit** — run `npm audit` for both root and `server/`, and the `dep-audit` skill
+- `[x]` **Dependency audit** — run `npm audit` for both root and `server/`, and the `dep-audit` skill
   for an upgrade triage. Resolve high/critical advisories. **All high advisories resolved via PR #151**
   (2026-06-17, non-breaking lockfile-only bumps: vite, launch-editor, @grpc/grpc-js, form-data,
   protobufjs, tmp) — high/critical blocker cleared. Residual moderates (re-audited 2026-06-25: root prod 0, server prod 8 moderate) require
   **major** bumps (firebase-admin 13→14, jest major) and are deferred to a dedicated upgrade pass.
   *(Re-audited 2026-07-02, Wave-3 re-sweep: **root prod 0, server prod 8 moderate — unchanged**; one new
   dev-only high — `undici` ≤7.27.2 via `jsdom`, test env only — fixed in-range lockfile-only in the
-  Wave-3 PR, Vitest re-run green.)* **(blocker for high/critical — cleared)**
+  Wave-3 PR, Vitest re-run green.)* *(**Re-audited 2026-07-08:** the residual server moderates are now
+  **0** too — the **firebase-admin 13→14** major bump (PR #234 / S7) cleared the transitive chain in both
+  trees; `npm audit --omit=dev` reports **0 vulnerabilities at root AND in `server/`**. A temporary `uuid`
+  override in both `package.json`s is the last dep-hygiene TODO — remove it once `@google-cloud/storage`
+  ships a patched-uuid release.)* **(blocker for high/critical — cleared; all prod advisories now 0)**
 - `[ ]` **Residual low-severity API issues** — surfaced by the audit, not release-blocking: (a)
   `getReviews` derives `isCurrentUser` from the `username` *query param* rather than the token
   (`reviews.js:165,183`) — cosmetic, since edit/delete are token-scoped; (b) `newReview` upserts with
@@ -547,5 +555,31 @@ Full verification pass over the ~20 merged Wave-1/2 sweep PRs plus fresh baselin
   disk** — operator action; dependency re-audit).
 - **Still owner-gated:** the brand-orange recolor (and the post-recolor a11y re-run) + the deliberate
   beta-flip cutover steps.
+
+### 2026-07-08 — readiness audit run (post backlog burn-down)
+- **Blockers remaining: unchanged in count, but two security items closed.** The only true release
+  blockers are still the deliberately-held **beta-flip** (3 edits: `LegalBar.tsx:16` `v{version}-beta`,
+  `ReleaseNotes.tsx:14` `isBeta = true`, `:80` suffix — all confirmed still live, held for cutover) +
+  the release-date/version finalize, and the **§D Ratings & Reviews overhaul** (owner design blocker,
+  untouched by the backlog sweep). All are owner-gated.
+- **Changes since 2026-07-02 (two flips to `[x]`):**
+  - **§B Dependency audit `[~]`→`[x]`:** server prod advisories **8 moderate → 0** via the firebase-admin
+    13→14 bump (PR #234 / S7). Both trees now `npm audit --omit=dev` = **0**. (Standing dep TODO: remove the
+    temporary `uuid` override in both `package.json`s once `@google-cloud/storage` ships a patched release.)
+  - **§B OpenAI-key-on-disk `[ ]`→`[x]`:** the live `VITE_OPEN_AI_API_KEY` (`.env`) and dead
+    `SPOONACULAR_API_KEY` (`server/.env`) are **no longer on disk** (grep-confirmed; `.env` still holds the
+    real dev Firebase keys, so it's populated, not wiped). Plaintext-on-disk exposure cleared; provider-side
+    revocation is an unverifiable-from-repo operator step.
+- **Reconfirmed unchanged:** beta tag live in the 3 expected files; `RELEASE_DATE = '6/23/2026'` (not stale);
+  ReactQueryDevtools gated behind `NODE_ENV !== 'production'` (`src/index.tsx:30`); no dead `VITE_*` vars in
+  `.env.example`/`src`; `public/robots.txt` + `public/sitemap.xml` present.
+- **Context:** the full parallel backlog board (S1–S7 / F / C / I / R tracks) drained since the last audit —
+  S1–S5 hardened the server write/validation surface (reinforcing the already-`[x]` input-validation + rate-
+  limiting items), S7 cleared the dep advisories above. The C1-tail select-uniformity fix and the I2
+  recipe-image migration script (owner tooling) also landed; none touched a release blocker.
+- **Manual/owner items still open (unchanged, not automatable):** empty/error-state sweep (`[~]`, loading
+  half done), social-crawler prerendering (`[ ]`, nice-to-have), brand-orange a11y contrast (`[~]`, owner
+  brand decision), Ratings & Reviews overhaul (`[ ]`, blocker), Search-autocomplete redesign (`[ ]`,
+  nice-to-have), data-integrity pass (`[ ]`, post-1.0).
 
 _`/release-readiness` appends dated run summaries here._
