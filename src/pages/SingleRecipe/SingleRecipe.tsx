@@ -1,4 +1,4 @@
-import { ArrowLeftIcon, CheckCircleIcon, ClockIcon, GroupAddIcon, ShoppingBasketIcon, StarFilledIcon, StarOutlineIcon, TagIcon } from 'src/Components/icons'
+import { ArrowLeftIcon, CheckCircleIcon, ClockIcon, GroupAddIcon, MinusIcon, PlusIcon, ShoppingBasketIcon, StarFilledIcon, StarOutlineIcon, TagIcon } from 'src/Components/icons'
 import React, { FC, useState, useEffect, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useParams, Link } from 'react-router-dom'
@@ -401,7 +401,11 @@ const SingleRecipe: FC = () => {
                 <p className='description'>{currRecipe?.description}</p>
               )}
               {currRecipe && (
-                <div className='author-row'>
+                <Link
+                  to={`/u/${currRecipe.authorUsername}`}
+                  className='author-row'
+                  aria-label={`View @${currRecipe.authorUsername}'s profile`}
+                >
                   <DefaultAvatar
                     seed={currRecipe.authorUsername}
                     className='avatar'
@@ -413,7 +417,7 @@ const SingleRecipe: FC = () => {
                       <> · {formatMonthYear(currRecipe.createdAt)}</>
                     )}
                   </span>
-                </div>
+                </Link>
               )}
             </div>
           </header>
@@ -527,7 +531,7 @@ const SingleRecipe: FC = () => {
                       aria-label='Decrease servings'
                       onClick={() => changeServings((servingSize || 1) - 1)}
                     >
-                      −
+                      <MinusIcon aria-hidden />
                     </button>
                     <input
                       type='tel'
@@ -551,7 +555,7 @@ const SingleRecipe: FC = () => {
                       aria-label='Increase servings'
                       onClick={() => changeServings((servingSize || 0) + 1)}
                     >
-                      +
+                      <PlusIcon aria-hidden />
                     </button>
                   </div>
                 )}

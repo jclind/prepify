@@ -117,12 +117,24 @@ $soft-radius: 16px;
     }
     .author-row {
       margin-top: auto;
-      display: flex;
+      // Inline-flex + align-self so the link's hit area hugs the byline
+      // (avatar + text) rather than stretching the full column width.
+      display: inline-flex;
+      align-self: flex-start;
       align-items: center;
       gap: 0.5rem;
       font-size: s.$text-sm;
       color: s.$tertiary-text;
+      text-decoration: none;
       strong { color: s.$primary-text; font-weight: 700; }
+      // Underline only the handle on hover/focus — the profile affordance,
+      // without lifting or recolouring the whole chrome row.
+      &:hover strong,
+      &:focus-visible strong { text-decoration: underline; }
+      &:focus-visible {
+        @include s.outline();
+        border-radius: s.$radius-sm;
+      }
       .avatar {
         width: 28px;
         height: 28px;
@@ -310,7 +322,7 @@ $soft-radius: 16px;
         &:hover { background: s.$primary; color: s.$white; }
       }
       .serv-input {
-        width: 28px;
+        width: 25px;
         height: 32px;
         box-sizing: border-box;
         border: none;
@@ -319,6 +331,11 @@ $soft-radius: 16px;
         font-weight: 700;
         font-size: s.$text-base;
         color: s.$primary-text;
+        // A hair narrower than the original 28px tightens the "N serv"
+        // pairing (the centred digit no longer floats mid-box), while the
+        // left margin keeps the − button off the number — the padding the
+        // wider box used to give for free.
+        margin-left: 0.15rem;
         padding: 0;
         // Was outline:none with no replacement — restore a visible keyboard
         // focus ring (matches the +/- step buttons beside it). WCAG 2.4.7.
@@ -326,7 +343,8 @@ $soft-radius: 16px;
           @include s.outline();
         }
       }
-      .serv-unit { font-size: s.$text-sm; color: s.$secondary-text; margin: 0 0.35rem 0 0.05rem; }
+      // Right margin gives the + button the same breathing room as the − side.
+      .serv-unit { font-size: s.$text-sm; color: s.$secondary-text; margin: 0 0.4rem 0 0; }
     }
     .ing-list {
       list-style: none;

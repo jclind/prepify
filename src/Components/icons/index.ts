@@ -83,6 +83,7 @@ export {
   LuLock as LockIcon,
   LuLogOut as LogOutIcon,
   LuMapPin as MapPinIcon,
+  LuMinus as MinusIcon,
   LuEllipsis as MoreIcon,
   LuChartPie as PieChartIcon,
   LuPizza as PizzaIcon,
