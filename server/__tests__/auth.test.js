@@ -694,6 +694,52 @@ describe('GET /exportMyData', () => {
       expect(recipe).not.toHaveProperty(field)
     }
   })
+
+  it("strips admin moderation stamps from the user's OWN recipes and drafts", async () => {
+    await seedUser(TEST_UID, 'exporter')
+    const db = getDB()
+    const STAMPS = {
+      moderatedBy: 'admin-uid-1',
+      moderatedAt: '2026-01-01',
+      featuredBy: 'admin-uid-2',
+      featuredAt: '2026-01-02',
+      publishUpdatedBy: 'admin-uid-3',
+      publishUpdatedAt: '2026-01-03',
+    }
+    // The user authored these, and an admin later moderated/featured them, so the
+    // raw docs carry admin Firebase uids. `description` is a user-authored field
+    // that is NOT in publicRecipeProjection — it must survive, proving the export
+    // uses an exclusion projection (full body minus stamps), not the card whitelist.
+    await db.collection('recipes').insertOne({
+      _id: 'own-1',
+      userId: TEST_UID,
+      title: 'My Stew',
+      description: 'a private note the whitelist would drop',
+      ...STAMPS,
+    })
+    await db.collection('recipeDrafts').insertOne({
+      _id: 'draft-1',
+      userId: TEST_UID,
+      title: 'My Draft',
+      description: 'draft note',
+      ...STAMPS,
+    })
+
+    const res = await request(app).get('/api/exportMyData').set(AUTH_HEADER)
+
+    expect(res.status).toBe(200)
+    const [ownRecipe] = res.body.recipes
+    const [ownDraft] = res.body.drafts
+    // Full authored body is preserved (including non-whitelist fields)...
+    expect(ownRecipe.title).toBe('My Stew')
+    expect(ownRecipe.description).toBe('a private note the whitelist would drop')
+    expect(ownDraft.title).toBe('My Draft')
+    // ...but none of the six admin-uid stamps ride along on either.
+    for (const field of Object.keys(STAMPS)) {
+      expect(ownRecipe).not.toHaveProperty(field)
+      expect(ownDraft).not.toHaveProperty(field)
+    }
+  })
 })
 
 // ─── POST /deleteAccount ─────────────────────────────────────────────────────

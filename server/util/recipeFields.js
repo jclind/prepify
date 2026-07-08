@@ -42,13 +42,27 @@ const CREATABLE_RECIPE_FIELDS = [
   'editedAt',
 ]
 
+// The internal moderation/curation stamps an admin action writes onto a recipe.
+// They carry admin Firebase uids + curation metadata that no client reads, so
+// they must never reach a non-admin caller. Named here as the single source of
+// truth for both the public whitelist below (which structurally excludes them)
+// and the owner-export exclusion (which keeps the full authored body but strips
+// exactly these) — so the two can't drift.
+const RECIPE_INTERNAL_STAMPS = [
+  'moderatedBy',
+  'moderatedAt',
+  'featuredBy',
+  'featuredAt',
+  'publishUpdatedBy',
+  'publishUpdatedAt',
+]
+
 // The recipe fields safe to return on PUBLIC (unauthenticated / non-admin)
 // responses. This is exactly the shape the client's `RecipeType` consumes; the
-// internal moderation/curation stamps are deliberately excluded because no
-// client reads them and they carry admin Firebase uids + curation metadata:
-//   moderatedBy, moderatedAt, featuredBy, featuredAt, publishUpdatedBy, publishUpdatedAt
-// A whitelist (not a blacklist of those six) so a future internal stamp added to
-// the doc can't silently leak — it stays out of public responses until added
+// internal moderation/curation stamps (RECIPE_INTERNAL_STAMPS) are deliberately
+// excluded because no client reads them and they carry admin Firebase uids.
+// A whitelist (not a blacklist of those stamps) so a future internal stamp added
+// to the doc can't silently leak — it stays out of public responses until added
 // here on purpose. Built on CREATABLE_RECIPE_FIELDS so new user-content fields
 // propagate automatically, matching the drafts/edit whitelists above.
 const PUBLIC_RECIPE_FIELDS = [
@@ -98,6 +112,14 @@ const toProjection = (fields) => Object.fromEntries(fields.map((f) => [f, 1]))
 const publicRecipeProjection = toProjection(PUBLIC_RECIPE_FIELDS)
 const publicRecipeCardProjection = toProjection(PUBLIC_RECIPE_CARD_FIELDS)
 
+// An EXCLUSION projection ({ field: 0 }) that drops only the internal admin
+// stamps, leaving every other (user-authored) field intact. Used for the
+// owner's export of their OWN recipes/drafts, where — unlike a public read — the
+// full high-fidelity body is wanted, just not the admin-uid moderation metadata.
+const recipeInternalStampsExclusion = Object.fromEntries(
+  RECIPE_INTERNAL_STAMPS.map((f) => [f, 0])
+)
+
 // Copy only the whitelisted keys that are present in `body`. Absent keys are
 // left out (callers merge via $set), so a field the client doesn't send is
 // untouched rather than overwritten.
@@ -115,7 +137,9 @@ module.exports = {
   CREATABLE_RECIPE_FIELDS,
   PUBLIC_RECIPE_FIELDS,
   PUBLIC_RECIPE_CARD_FIELDS,
+  RECIPE_INTERNAL_STAMPS,
   publicRecipeProjection,
   publicRecipeCardProjection,
+  recipeInternalStampsExclusion,
   pickFields,
 }
