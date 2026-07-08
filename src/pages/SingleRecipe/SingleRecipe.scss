@@ -499,6 +499,19 @@ $soft-radius: 16px;
       color: s.$secondary-accessible;
       border: 1.5px solid rgba(s.$secondary, 0.4);
       &:hover { background: rgba(s.$secondary, 0.2); color: s.$secondary-accessible; }
+      // Completed state: made is one-way per user, so the button disables once
+      // marked. Read it as "done" (solid teal, full opacity), not unavailable
+      // (the `.btn:disabled` 0.6 fade) — with the leading check aligned.
+      &.is-made {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        &:disabled {
+          opacity: 1;
+          cursor: default;
+          background: rgba(s.$secondary, 0.2);
+        }
+      }
     }
   }
 
