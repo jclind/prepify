@@ -68,6 +68,45 @@
       color: s.$tertiary-text;
       svg { width: 16px; height: 16px; }
     }
+
+    // The shared SearchRecipesInput defaults to a white, borderless input, which
+    // vanishes on this white card (no container emphasis). Give it a bordered
+    // pill field so the search reads as the primary next action — mirrors the
+    // /recipes toolbar treatment (pill border + $primary focus glow).
+    .search-recipes-form {
+      width: 100%;
+      max-width: none;
+      margin: 0;
+
+      .search-recipes-input-label {
+        .icon {
+          left: 1rem;
+          height: 20px;
+          width: 20px;
+          color: s.$tertiary-text;
+        }
+        input {
+          box-sizing: border-box;
+          height: 48px;
+          border: 1.5px solid s.$gray-400;
+          border-radius: s.$radius-pill;
+          background: s.$primary-background;
+          font-size: s.$text-base;
+          // Reserve the right gutter for the "Search" button, which mounts once
+          // the user types (matches the /recipes field).
+          padding: 0.1rem 6.5rem 0.1rem 2.85rem;
+          transition: border-color 0.14s ease, box-shadow 0.14s ease;
+          &:focus {
+            border-color: s.$primary;
+            @include s.focus-glow(s.$primary, 0.12);
+          }
+        }
+        .search-recipes-btn {
+          right: 6px;
+          height: 36px;
+        }
+      }
+    }
   }
 
   .rnf-actions {

@@ -134,4 +134,18 @@ $inner-max: s.$max-width;
     margin-left: auto;
     color: s.$tertiary-text;
   }
+
+  // The "Report a bug" trigger is a <button> carrying the shared
+  // `.bug-report-trigger.btn` compact style (a smaller $text-fine font + its own
+  // padding), so in this legal strip its text read a size smaller than the ©
+  // and version spans and looked misaligned on the row. Match their size / weight
+  // / line-height here so `align-items: center` lands all three on a shared
+  // baseline. Scoped to `.footer-legal` so the trigger keeps its compact style
+  // everywhere else. `.footer-legal .bug-report-trigger.btn` (0,3,0) outranks the
+  // component's `.bug-report-trigger.btn` (0,2,0).
+  .bug-report-trigger.btn {
+    font-size: inherit;
+    font-weight: inherit;
+    line-height: normal;
+  }
 }
