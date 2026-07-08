@@ -26,12 +26,20 @@ type ReportControlProps = {
   variant?: 'link' | 'button' | 'menu'
 }
 
-const REASON_OPTIONS: { value: ReportReason; label: string }[] = [
+// `recipeOnly` reasons (wrong quantities / price) are offered only when the
+// target is a recipe; the server rejects them on review/user targets, so the two
+// lists must agree (server/routes/reports.js: RECIPE_ONLY_REASONS).
+const REASON_OPTIONS: {
+  value: ReportReason
+  label: string
+  recipeOnly?: boolean
+}[] = [
   { value: 'spam', label: 'Spam or advertising' },
   { value: 'inappropriate', label: 'Inappropriate content' },
   { value: 'offensive', label: 'Offensive or abusive' },
   { value: 'copyright', label: 'Copyright violation' },
   { value: 'dangerous', label: 'Dangerous or unsafe' },
+  { value: 'incorrect_info', label: 'Incorrect information or price', recipeOnly: true },
   { value: 'other', label: 'Something else' },
 ]
 
@@ -50,6 +58,13 @@ const ReportControl: FC<ReportControlProps> = ({ target, variant = 'link' }) => 
     user: 'user',
   }
   const noun = NOUNS[target.targetType]
+
+  // Recipe-only reasons appear solely on recipe reports; everything else is
+  // universal. The default/reset reason ('spam') is always in this list, so the
+  // filtered set can never leave `reason` pointing at a hidden option.
+  const reasonOptions = REASON_OPTIONS.filter(
+    opt => !opt.recipeOnly || target.targetType === 'recipe'
+  )
 
   // Close the kebab dropdown on an outside click or Escape (matches the
   // SortDropdown pattern). Only wired while the menu is actually open.
@@ -132,7 +147,7 @@ const ReportControl: FC<ReportControlProps> = ({ target, variant = 'link' }) => 
           value={reason}
           onChange={e => setReason(e.target.value as ReportReason)}
         >
-          {REASON_OPTIONS.map(opt => (
+          {reasonOptions.map(opt => (
             <option key={opt.value} value={opt.value}>
               {opt.label}
             </option>
