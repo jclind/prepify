@@ -1270,3 +1270,14 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   — `recipeSelectStyles.ts` + `_exports.module.scss`): this touches the validation module + server bounds, not those files, so no
   collision despite both being AddRecipe-adjacent (the item itself authorizes "a small F-track"). Verified both halves still present
   and `development` in sync with origin (0/0) before claiming. Worktree not yet created.
+- **2026-07-08** — **whitespace-only recipe-title guard** implemented in `worktree-feat+whitespace-title-guard` → PR
+  [#253](https://github.com/jclind/prepify/pull/253) opened (`[P]`). Fixed at **both** layers: client `validateRecipeForm` now
+  trims before the presence check (`!form.title.trim()`, length cap on the trimmed value) and `useRecipeForm.handleSubmit` trims
+  the title in the `formData` payload (covers create + edit); server `validateRequiredRecipeFields` treats a whitespace-only
+  required string as missing (defence-in-depth — drafts untouched, they use `validateRecipeBounds` only). +regression tests
+  (`recipeFormValidation.test.ts` whitespace case; new `server/__tests__/recipeLimits.test.js` pinning the predicate). Gates:
+  `tsc` clean, Vitest **614 pass / 2 skip**, `build` clean, server Jest **753/753** (incl. the `recipes.test.js` route-level
+  `POST /addRecipe` "Missing required fields" 400 that exercises the server predicate through the real Express app). Runtime
+  surface verified through the two-layer test suites driving the exact `"     "` input through the production validator + predicate
+  (a live authed dev-Mongo POST would need seeding an active user + Firebase user + image — disproportionate for this low-sev
+  data-quality guard). Disjoint from the in-flight C1-tail styling lane; no collision.
