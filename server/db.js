@@ -187,6 +187,19 @@ async function ensureIndexes() {
   } catch (err) {
     console.error('Failed to create indexes on auditLog:', err.message)
   }
+
+  // Ingredient-enrichment telemetry (N6). GET /admin/ingredients sorts by count
+  // desc (tie-broken by lastSeen) and optionally filters by `type`. The bare
+  // {count,lastSeen} index serves the default "All" tab; the type-led compound
+  // serves the filtered tabs filter-then-sort by one index rather than an
+  // in-memory sort (mirrors the auditLog bare + compound split above).
+  try {
+    const ingredientMisses = db.collection('ingredientMisses')
+    await ingredientMisses.createIndex({ count: -1, lastSeen: -1 })
+    await ingredientMisses.createIndex({ type: 1, count: -1, lastSeen: -1 })
+  } catch (err) {
+    console.error('Failed to create indexes on ingredientMisses:', err.message)
+  }
 }
 
 async function closeDB() {
