@@ -37,9 +37,14 @@ export function validateRecipeForm(
 ): RecipeFormErrors {
   const errors: RecipeFormErrors = {}
 
-  if (!form.title) {
+  // Trim before the presence check so an all-whitespace title (`"   "`) counts as
+  // missing rather than passing a truthiness test and publishing a blank <h1>.
+  // The length check runs on the trimmed value too, since the payload is trimmed
+  // on submit (see useRecipeForm.handleSubmit).
+  const trimmedTitle = form.title.trim()
+  if (!trimmedTitle) {
     errors.title = 'Title is required'
-  } else if (form.title.length > TITLE_MAX_LENGTH) {
+  } else if (trimmedTitle.length > TITLE_MAX_LENGTH) {
     errors.title = `Title cannot exceed ${TITLE_MAX_LENGTH} characters`
   }
 

@@ -63,7 +63,14 @@ const REQUIRED_RECIPE_FIELDS = ['title', 'ingredients', 'instructions', 'mealTyp
 function validateRequiredRecipeFields(body) {
   const missing = REQUIRED_RECIPE_FIELDS.filter(f => {
     const val = body[f]
-    return val == null || val === '' || (Array.isArray(val) && val.length === 0)
+    // A whitespace-only string (e.g. an all-spaces title) is not `''`, so guard
+    // it here too — defence-in-depth behind the client's trimmed-title check, so
+    // the server can't persist a blank-looking required field on its own.
+    return (
+      val == null ||
+      (typeof val === 'string' && val.trim() === '') ||
+      (Array.isArray(val) && val.length === 0)
+    )
   })
   return missing.length > 0
     ? `Missing required fields: ${missing.join(', ')}`
