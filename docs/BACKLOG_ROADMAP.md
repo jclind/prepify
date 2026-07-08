@@ -93,7 +93,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **5** | **R0 · Claude conventions doc** | code & architecture standard (`CONVENTIONS.md`/CLAUDE.md) | `[x]` [#244](https://github.com/jclind/prepify/pull/244) (2026-07-07) | new doc | **merged** — shipped `docs/CONVENTIONS.md` (grounded in a 4-way survey + REFACTOR.md), cross-linked from `CLAUDE.md`; **R1/R2 now have a standard to follow** |
 | **5** | **R1 · refactor create-recipe page** | the big AddRecipe refactor | `[x]` [#248](https://github.com/jclind/prepify/pull/248) (2026-07-07) | `src/pages/AddRecipe/**` | **merged** — structural refactor: extracted `useRecipeForm` (useReducer) + pure `recipeFormValidation` + `FormField`; fixed the TimeInput clear-both bug; +38 tests. Folded in **part** of C1 (noindex, selector tests, `updateIngredients` test + dead-code); C1's visual smalls (dropdown/`FormInput` uniformity, summary-bar sticky, group-label styling) still open. See status log. |
 | **5** | **R2 · refactor account page** | the big Account refactor; **closes F6 (stale)** | `[x]` [#250](https://github.com/jclind/prepify/pull/250) (2026-07-07) | `src/pages/Account/**` | **merged** — subsumes F6 (closed stale); overlaps merged C2 |
-| **6** | **N1 · price-data quality** | "$10 parfait" estimates + un-proven `backfillServingPrice --apply` (BACKLOG Bugs) | `[~]` main-checkout investigation (2026-07-08) | `server/scripts/`, `src/pages/AddRecipe/Ingredients/updateIngredients.ts` | **investigate-first**: run backfill, attribute parse-bug vs proxy-estimate before fixing; ops-paired (owner DB run for prod) |
+| **6** | **N1 · price-data quality** | "$10 parfait" estimates + un-proven `backfillServingPrice --apply` (BACKLOG Bugs) | `[~]` investigation done — fix-lane decision pending owner (2026-07-08) | `server/scripts/`, `src/pages/AddRecipe/Ingredients/updateIngredients.ts` | **investigated**: 0 servingPrice drift on dev; parfait = bad *proxy price-estimate* on stale v1 data (`1 cup strawberries` = $25.34), NOT a parse or division bug. See status log for the fix-lane options. |
 | **6** | **N2 · report reason "incorrect info"** | new `ReportReason` across the 3 synced lists (BACKLOG Features) | `[ ]` | `src/types.ts`, `ReportControl.tsx`, `server/routes/reports.js` | additive union value in shared `types.ts` — merge-trivial, but rebase before PR |
 | **6** | **N3 · auth-page home links** | brand-mark `<div>` → `<Link to='/'>` on Login + Signup (BACKLOG UX) | `[ ]` | `src/pages/Login/`, `src/pages/Signup/` | tiny |
 | **6** | **N4 · SingleRecipe lane** ⚠ lane | author-byline + reviewer-name → `/u/:username` links; servings-pill spacing/glyph visual check (BACKLOG UX + pixel batch a) | `[ ]` | `src/pages/SingleRecipe/**` (incl. `Reviews/RecipeReview.tsx`) | reviewer-name half overlaps RELEASE_PLAN §D overhaul — see rule 8; screenshot the pill before touching it |
@@ -1418,3 +1418,40 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   the "$10 parfait" recipe's per-ingredient `totalPriceUSACents` and attribute the absurd total to a mis-parsed
   quantity/unit (`updateIngredients.ts`) vs a bad proxy gram-estimate vs stale v1-era stored prices — **then**
   decide the actual fix lane. No code changed under this claim yet.
+- **2026-07-08** — **N1 investigation complete** (read-only, dev DB; all probes torn down, tree clean). Three
+  findings, attributing the "$10 parfait" decisively:
+  **(1) Zero `servingPrice` drift on dev.** `backfillServingPrice.js` dry-run over all **13** dev recipes:
+  `would update: 0`, `unchanged: 13`, `skipped: 0`. So the stored `servingPrice` already equals the recompute
+  from stored per-ingredient prices everywhere — the **PR #152 division bug (flat ~$1.00) does not manifest on
+  dev**, and the *ops half* (the un-proven `--apply`) is a **no-op on dev**. (Prod may still carry pre-#152
+  docs, but that bug's signature is a flat ~$1.00, not a $10 parfait — a separate thing.)
+  **(2) The "$10 parfait" is real and is a bad price ESTIMATE, not a parse or division bug.** Recipe *"Yogurt
+  and Fruit Parfaits"* (`63fe34ad3d057633b6e2970e`), `servingPrice` **$10.85** (= sum $43.41 / 4, so the
+  math is internally correct). Its per-ingredient `parsedIngredient` quantities/units **all parsed correctly**
+  (`1 cup` strawberries, `3 cup` yogurt, `1 pint` blackberries, `1 cup` granola) — so **not** a
+  quantity/unit parse bug. The total is dominated by one line: **`1 cup strawberries` = `totalPriceUSACents`
+  2533.86 → $25.34**, ~15–25× a sane price (1 cup ≈ 150 g ≈ $1–1.65). Yogurt ($8.09) and blackberries
+  ($8.38) are also 2–3× high. Root cause = the enrichment's **gram-estimated proxy price** (the route comment
+  in `ingredients.js` names it: *"v2 prices are gram-estimated floats"*), and the parfait's stored
+  `ingredientData` is **v1-era** (`dateAdded` 1677013118622 = 2023-02-21, carries the legacy
+  `names`/`dateAdded`/`originalName` shape) — stale enrichment that **won't self-heal** unless the recipe is
+  re-saved/re-enriched under v2.
+  **(3) It's the lone real offender on dev.** Of 13 recipes only 2 tripped the outlier flags; the second
+  (*"Testing Title"*, `2 pound chicken breast` = $8.07) is a sane price on a throwaway test doc. Every other
+  recipe's per-ingredient prices look plausible.
+  **Side note:** a live re-enrich probe of the four parfait strings through the current v2 hosted proxy
+  **threw `Ingredient proxy request failed` on all four** — the proxy was erroring at investigation time, so
+  no fresh comparison number was obtained (and any re-enrich backfill is **proxy-availability-gated**).
+  **Fix-lane options (owner's call — the mandate was investigate-then-decide, and this is 1 dev recipe +
+  proxy-paired + prod-ops-gated, so no code was written):**
+  **(A) Re-enrich backfill** — a `server/scripts/` script (sibling to `backfillServingPrice.js`) that re-runs
+  v2 enrichment per ingredient, rewrites `totalPriceUSACents`, and recomputes `servingPrice`. Heals stale v1
+  prices catalog-wide; **depends on the proxy** (down right now), spends Spoonacular quota, and inherits
+  whatever imprecision the v2 gram-estimate still has. Owner-gated prod run, same as the other backfills.
+  **(B) Write-time outlier guard / telemetry** — cap or flag per-ingredient prices above a sane per-unit
+  ceiling at enrichment/`updateIngredients` time so a future $25 cup of strawberries is caught before it's
+  stored. Defensive regardless of proxy; **folds naturally into N6** (ingredient-miss telemetry — same
+  best-effort write surface). **(C) Minimal** — owner re-saves the one parfait (new/edited recipes already
+  re-enrich under v2); fixes the symptom, not the systemic garbage-in. **Recommendation:** don't rush a code
+  lane — (B)'s guard is the durable win and should ride N6's telemetry surface; (A) is an owner ops decision
+  once the proxy is healthy. N1 stays `[~]` pending that call.
