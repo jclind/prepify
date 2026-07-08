@@ -158,7 +158,7 @@ The triage date stamped on items is the date they were filed here, not when they
   `b994007`) touched these files without adding one. Fix: wrap the brand mark in `<Link to='/'>` on both
   pages (a "Back to Prepify" text link also fine). → **N3** — shipped: `<Link to='/' aria-label='Prepify home'>`
   on both, underline stripped + flat hover/focus-glow ring on `.brand-mark`.
-- `[ ]` **Usernames aren't links to `/u/:username`** *(triaged 2026-07-08; filed 2026-06-18)* — the public
+- `[x]` **Usernames aren't links to `/u/:username`** — *(byline half fixed in [#258](https://github.com/jclind/prepify/pull/258), N4: the whole `.author-row` — avatar + `@handle` + date — is now one `<Link to={'/u/' + authorUsername}>`, matching the admin pages; underline-on-handle hover/focus + `@mixin outline()` ring + aria-label. The **reviewer-name half was reassigned to the §D Ratings & Reviews overhaul** (rule 8b — it rewrites `RecipeReview.tsx` end-to-end), so it's tracked there, not here.)* *(triaged 2026-07-08; filed 2026-06-18)* — the public
   profile route exists and admin pages already link it (`Admin/Users/Users.tsx:29`,
   `Admin/Reports/Reports.tsx:207`), but neither public-facing spot does: the recipe author byline
   (`SingleRecipe.tsx:410-411`, plain `<strong>@{authorUsername}</strong>` inside `.author-row`) and the
@@ -172,12 +172,12 @@ The triage date stamped on items is the date they were filed here, not when they
   shared `SearchRecipesInput` under an uppercase eyebrow label with no container emphasis
   (`RecipeNotFound.scss:56-71`). Wanted: a human rewrite of the copy (needs Jesse's voice — draft options,
   don't invent) + a clearer search treatment. → **N5**
-- `[ ]` **Pixel-nit batch — needs a screenshot pass before touching** *(triaged 2026-07-08; filed
+- `[x]` **Pixel-nit batch — needs a screenshot pass before touching** *(triaged 2026-07-08; filed
   2026-06-27→07-01)* — three nits survived triage but each needs visual confirmation first:
   **(a) servings-pill spacing** on the recipe page (`SingleRecipe.scss:286-330`) — the same-day a11y resize
   (`51fb2ac`, 26→32px `step-btn`s) reflowed the pill, so it may read fine now; the `−`/`+` are text glyphs
   already flex-centered (`:303-305`), so any residual offset is font optical metrics and the only real fix is
-  swapping to the icon-system Lucide plus/minus (confirm wanted). → **N4**
+  swapping to the icon-system Lucide plus/minus (confirm wanted). → **N4** — *fixed in [#258](https://github.com/jclind/prepify/pull/258): screenshot-confirmed the pill read fine post-resize, so swapped the `−`/`+` text glyphs to house-family Lucide `MinusIcon`/`PlusIcon` (crisp flex-centering) and rebalanced the number↔"serv" gap + button breathing room (`.serv-input` 28→25px + margins) on owner feedback.*
   **(b) /recipes search-button asymmetry** — the embedded button sits `right: 6px` while the left icon gutter
   is ~17.6px (`Recipes.scss:26-67`); a one-line nudge if confirmed. → **N5** — *closed by-design in [#259](https://github.com/jclind/prepify/pull/259): the 6px inset is a consistent nested-control gap (≈4px vertical inset), not meant to mirror the decorative text gutter; measured both.*
   **(c) footer "Report a bug" centering** — it's *deliberately* left-adjacent in the copy·bug·version row
