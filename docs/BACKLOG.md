@@ -45,6 +45,7 @@ The triage date stamped on items is the date they were filed here, not when they
   recipes keep their v1-era stored per-ingredient prices (see the parser-data item ~L620). Lane: run the
   backfill, then pull the parfait's per-ingredient `totalPriceUSACents` to attribute parse-bug vs
   proxy-estimate before writing any fix. → **N1**
+  - *(2026-07-08 update, N6 [#255](https://github.com/jclind/prepify/pull/255))* — **investigated + guarded, not closed**: a dev dry-run showed **0 servingPrice drift** (so half (1)'s `--apply` is a no-op on current data) and attributed the parfait to a **bad proxy gram-estimate** (`1 cup strawberries` = $25.34 on stale v1 data), not a parse or division bug. Fix-option (B) — a **`price_outlier` flag** on enriched rows ≥ $15 — shipped on N6's telemetry surface (**flag, not clamp**). Still open: **(A)** the owner/proxy-gated re-enrich backfill for stale v1 prices, and half (2)'s parse-quality hardening in `updateIngredients.ts`.
 - `[x]` **`Received NaN for the \`value\` attribute` warning on Edit Recipe — root-caused; it's a real
   hydration bug, not cosmetic (verified 2026-06-26)** — *(fixed in [#235](https://github.com/jclind/prepify/pull/235), F1:
   hydrate `TimeInput` from `val.hours`/`val.minutes` — the `Number(val)` arithmetic that produced `NaN` on an object `val` is
@@ -632,7 +633,7 @@ findings table.)*
   Add an `incorrect_info` value to all three; nuance: `REASON_OPTIONS` renders unfiltered for all target types
   (recipe/review/user), so either gate the new reason to `targetType === 'recipe'` or accept it appearing on
   review/user reports. Small (3 files + tests). → **N2**
-- `[ ]` **Ingredient-miss telemetry + admin list** *(admin)* *(triaged 2026-07-08; filed 2026-06-24 —
+- `[x]` **Ingredient-miss telemetry + admin list** *(fixed in [#255](https://github.com/jclind/prepify/pull/255), N6: best-effort `ingredientMisses` upsert in `/parse` — `miss` + N1's `price_outlier` — a read-only `GET /admin/ingredients`, an Admin › Ingredients list, and the sort-serving indexes in `db.js`)* *(admin)* *(triaged 2026-07-08; filed 2026-06-24 —
   unbuilt)* — enrichment misses are only `console.warn`'d (`server/routes/ingredients.js:76-81`, route has no
   DB handle); no persistence, no admin surface (the resolved 3d "not found" item below was the unrelated
   client 12s timeout). Minimal build (~half a day): best-effort upsert into a new `ingredientMisses`

@@ -98,7 +98,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **6** | **N3 · auth-page home links** | brand-mark `<div>` → `<Link to='/'>` on Login + Signup (BACKLOG UX) | `[ ]` | `src/pages/Login/`, `src/pages/Signup/` | tiny |
 | **6** | **N4 · SingleRecipe lane** ⚠ lane | author-byline + reviewer-name → `/u/:username` links; servings-pill spacing/glyph visual check (BACKLOG UX + pixel batch a) | `[ ]` | `src/pages/SingleRecipe/**` (incl. `Reviews/RecipeReview.tsx`) | reviewer-name half overlaps RELEASE_PLAN §D overhaul — see rule 8; screenshot the pill before touching it |
 | **6** | **N5 · polish sweep** | skip-link overscroll fix (A11y); RecipeNotFound copy/search; /recipes search-btn offset; footer bug-btn decision (pixel batch b, c) | `[ ]` | `Layout.scss`, `RecipeNotFound/*`, `Recipes.scss`, `Footer.scss` | disjoint smalls, one worktree; RecipeNotFound wording needs the owner's voice — draft options |
-| **6** | **N6 · ingredient-miss telemetry** (+ N1 outlier guard) | persist enrichment misses + admin list (BACKLOG Features, admin); **folds in N1's price-outlier flag** | `[P]` [#255](https://github.com/jclind/prepify/pull/255) (2026-07-08) | `server/routes/ingredients.js`, `server/routes/admin.js`, `src/pages/Admin/**` | new `ingredientMisses` collection; write stays best-effort. N1's guard rides this surface as a second event type (flag, not clamp) |
+| **6** | **N6 · ingredient-miss telemetry** (+ N1 outlier guard) | persist enrichment misses + admin list (BACKLOG Features, admin); **folds in N1's price-outlier flag** | `[x]` [#255](https://github.com/jclind/prepify/pull/255) (2026-07-08) | `server/routes/ingredients.js`, `server/routes/admin.js`, `src/pages/Admin/**` | **merged**: new `ingredientMisses` collection; write stays best-effort. N1's guard rides this surface as a second event type (flag, not clamp). Review folded in the missing `ingredientMisses` indexes (`{count,lastSeen}` + type-led compound) to match the auditLog pattern the route mirrors |
 | **6** | **N7 · ops: storage-bucket env** | set `FIREBASE_STORAGE_BUCKET` (prod+dev) + real empty-env skip (BACKLOG Tech debt) | `[ ]` | server envs (owner) + `server/util/firebaseStorage.js` | env half is owner-gated; code half is a 3-line early-return |
 | **—** | **Deferred / post-1.0 / owner** | see [that section](#deferred--post-10--owner-off-the-active-board) | `[blocked]`/`[dropped]` | — | prerendering, Edamam, theming, brand-orange, DB relocation, ideas |
 
@@ -1485,3 +1485,15 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   Vitest 617, Jest 772, `npm run build` clean; live dev server route-mount confirmed (401 parity with
   `/admin/audit`), nodemon reloaded cleanly. **N1's re-enrich backfill (option A) stays owner/proxy-gated** —
   out of this PR's scope (the hosted v2 proxy was erroring during the N1 investigation).
+- **2026-07-08** — **N6 merged** ([#255](https://github.com/jclind/prepify/pull/255), merge `c7ae1fc`) → `[x]`.
+  Runtime-verified before merge by driving the live server end-to-end (minted admin Firebase token + a stub
+  proxy via `INGREDIENT_PARSER_PROXY_URL` on an isolated instance, since the hosted v2 proxy was still down):
+  all three write branches fired against real dev Mongo (`miss`, `price_outlier` @ $45.36 returned to client
+  unchanged = flag-not-clamp, normal row wrote nothing), the repeat probe incremented a single doc's counter
+  (×3, not 3 docs), and `GET /admin/ingredients` sorted count-desc + honored the `type` filter behind the
+  admin gate (401 without a token). A local code review then caught that the route mirrors `/admin/audit` but
+  **`ingredientMisses` had no index** while `auditLog` carries its sort-key + compounds — folded the fix into
+  the PR (`server/db.js`: `{count:-1,lastSeen:-1}` for the "All" tab + `{type:1,count:-1,lastSeen:-1}` for the
+  filtered tabs). Follow-ups filed-not-fixed (review Low notes): `miss` keys are quantity-fragmented (weakens
+  the count ranking used for cache-seeding) and the collection is unbounded (no TTL/cap). **N1 stays `[~]`** —
+  its re-enrich backfill (option A) is still owner/proxy-gated.
