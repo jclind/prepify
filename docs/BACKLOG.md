@@ -490,7 +490,7 @@ findings table.)*
   Verified against the live DEV endpoint with a minted token + seeded stamped recipe (response carried only the
   10 card fields). *(caught 2026-07-02 in the same code review that found the list-endpoint leak; see the #397
   item above. Fixed 2026-07-03.)*
-- `[ ]` **`exportMyData` returns the author's own `recipes`/`drafts` as full Mongo docs** — same leak class
+- `[~]` **`exportMyData` returns the author's own `recipes`/`drafts` as full Mongo docs** *(claimed 2026-07-08, `worktree-feat+export-own-recipes-projection`)* — same leak class
   as #397/#446, on the last unprojected account read. `GET /exportMyData` (`server/routes/auth.js:344`) builds
   its `recipes`/`drafts` arrays with `db.collection('recipes').find({ userId: uid }).toArray()` (and the
   `recipeDrafts` equivalent) — **no projection** — so any of the user's own recipes that an admin ever

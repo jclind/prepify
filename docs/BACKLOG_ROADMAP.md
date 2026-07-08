@@ -1216,3 +1216,18 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   moderation path needed no change (`parseStorageUrl` decodes the whole `%2F`-encoded nested path; added a regression
   test). Board/doc edits committed on `development` in the main checkout, not the lane branch (same convention as
   C2–C5/I1/I3/R1/R2).
+- **2026-07-08** — **`exportMyData` own-recipes/drafts admin-stamp leak claimed** (`worktree-feat+export-own-recipes-projection`).
+  Claim recorded directly on `development` (same convention as S4–S7/F1–F5/C2–C5/R0–R2/I1–I3) so concurrent sessions see the
+  lane taken. **The Wave-1–5 board is fully drained** (all tracks `[x]`/`[dropped]`; C1's remaining tail is owner-owned
+  brand/design calls) — this is a `BACKLOG.md` **Bugs**-section follow-up filed 2026-07-03 in the S2 review, the *last*
+  unprojected account read in the #397/#446 recipe-projection leak class. Scope: `GET /exportMyData` (`server/routes/auth.js:346-347`)
+  returns the owner's own `recipes`/`drafts` via `find({ userId: uid }).toArray()` with **no projection**, so the six internal
+  admin stamps (`moderatedBy`/`moderatedAt`/`featuredBy`/`featuredAt`/`publishUpdatedBy`/`publishUpdatedAt`) on any recipe an admin
+  ever moderated/featured leak into the JSON the non-admin owner downloads. Fix per the item's recommendation: strip **just** those
+  six stamps (a shared `RECIPE_INTERNAL_STAMPS` exclusion in `server/util/recipeFields.js`, which already names them) while keeping
+  the full user-authored body — an export should stay higher-fidelity than a public card, so *not* the `publicRecipeProjection`
+  card whitelist the saved-recipe half (`:371`) uses. Verified still present against the tree + `development` in sync with origin
+  (0/0) before claiming; no live worktree/branch matches (nothing silently in flight). Disjoint server-only lane (`auth.js` +
+  `recipeFields.js`), Jest-backed. Also noted (not claimed): the whitespace-only recipe-title guard (`recipeFormValidation.ts:40`,
+  `!form.title` w/o `.trim()`) remains the next open follow-up; BACKLOG.md:506 (numeric/array server validation) is *partially*
+  closed by S1 #228 (numeric clamps + per-element caps shipped; array-shape bounding may remain) — left un-ticked. Worktree not yet created.
