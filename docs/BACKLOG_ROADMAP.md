@@ -98,7 +98,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **6** | **N3 · auth-page home links** | brand-mark `<div>` → `<Link to='/'>` on Login + Signup (BACKLOG UX) | `[ ]` | `src/pages/Login/`, `src/pages/Signup/` | tiny |
 | **6** | **N4 · SingleRecipe lane** ⚠ lane | author-byline + reviewer-name → `/u/:username` links; servings-pill spacing/glyph visual check (BACKLOG UX + pixel batch a) | `[ ]` | `src/pages/SingleRecipe/**` (incl. `Reviews/RecipeReview.tsx`) | reviewer-name half overlaps RELEASE_PLAN §D overhaul — see rule 8; screenshot the pill before touching it |
 | **6** | **N5 · polish sweep** | skip-link overscroll fix (A11y); RecipeNotFound copy/search; /recipes search-btn offset; footer bug-btn decision (pixel batch b, c) | `[ ]` | `Layout.scss`, `RecipeNotFound/*`, `Recipes.scss`, `Footer.scss` | disjoint smalls, one worktree; RecipeNotFound wording needs the owner's voice — draft options |
-| **6** | **N6 · ingredient-miss telemetry** (+ N1 outlier guard) | persist enrichment misses + admin list (BACKLOG Features, admin); **folds in N1's price-outlier flag** | `[~]` `worktree-feat+n6-ingredient-telemetry` (2026-07-08) | `server/routes/ingredients.js`, `server/routes/admin.js`, `src/pages/Admin/**` | new `ingredientMisses` collection; write stays best-effort. N1's guard rides this surface as a second event type (flag, not clamp) |
+| **6** | **N6 · ingredient-miss telemetry** (+ N1 outlier guard) | persist enrichment misses + admin list (BACKLOG Features, admin); **folds in N1's price-outlier flag** | `[P]` [#255](https://github.com/jclind/prepify/pull/255) (2026-07-08) | `server/routes/ingredients.js`, `server/routes/admin.js`, `src/pages/Admin/**` | new `ingredientMisses` collection; write stays best-effort. N1's guard rides this surface as a second event type (flag, not clamp) |
 | **6** | **N7 · ops: storage-bucket env** | set `FIREBASE_STORAGE_BUCKET` (prod+dev) + real empty-env skip (BACKLOG Tech debt) | `[ ]` | server envs (owner) + `server/util/firebaseStorage.js` | env half is owner-gated; code half is a 3-line early-return |
 | **—** | **Deferred / post-1.0 / owner** | see [that section](#deferred--post-10--owner-off-the-active-board) | `[blocked]`/`[dropped]` | — | prerendering, Edamam, theming, brand-orange, DB relocation, ideas |
 
@@ -1469,3 +1469,19 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   updated: option-B is now this lane; the re-enrich backfill (option A) stays owner/proxy-gated. Disjoint from
   every other N-lane (owns `ingredients.js`/`admin.js`/`src/pages/Admin`). Verified `development` in sync with
   origin before claiming and no in-flight worktree on these files.
+- **2026-07-08** — **N6 implemented** in `worktree-feat+n6-ingredient-telemetry` → PR
+  [#255](https://github.com/jclind/prepify/pull/255) opened (`[P]`). `POST /api/ingredients/parse` now writes
+  best-effort telemetry into a new **`ingredientMisses`** collection — `miss` (a clean Spoonacular miss, which
+  was `console.warn`-only) and, folding in **N1**'s guard, `price_outlier` (an enriched row whose
+  `totalPriceUSACents` clears a **$15/row ceiling** — the "$10 parfait" class, e.g. `1 cup strawberries` =
+  $25.34 on dev). Upsert keyed `${type}:${normalized}` with a `$inc` counter + `firstSeen`/`lastSeen`; the
+  write is `try/catch`'d so a telemetry/DB failure never affects the parse response, and the route finally
+  gets the `getDB()` handle it lacked. **Flag, not clamp** — the returned/stored price is untouched (clamping
+  would mangle legitimately expensive rows like a pound of saffron); the guard is pure observability. Surfaced
+  read-only via `GET /admin/ingredients` (admin-gated, count-desc, `type` filter) + a new **Admin › Ingredients**
+  page mirroring the Audit list (type tabs, pagination). Tests: server integration (real app + real Mongo) 9
+  cases — parse writes `miss`/`price_outlier`/nothing + increments; admin auth/list/filter — and frontend
+  component 3 cases (render both types + formatted $25.34, filter refetch, empty state). Gates: `tsc` clean,
+  Vitest 617, Jest 772, `npm run build` clean; live dev server route-mount confirmed (401 parity with
+  `/admin/audit`), nodemon reloaded cleanly. **N1's re-enrich backfill (option A) stays owner/proxy-gated** —
+  out of this PR's scope (the hosted v2 proxy was erroring during the N1 investigation).
