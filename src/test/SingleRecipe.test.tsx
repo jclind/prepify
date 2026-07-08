@@ -129,6 +129,16 @@ describe('SingleRecipe page', () => {
     await screen.findByText('Chicken Tacos')
   })
 
+  it('links the author byline to the author profile at /u/:username', async () => {
+    mockGetRecipe.mockResolvedValue(baseRecipe)
+    renderSingleRecipe()
+    await screen.findByText('Chicken Tacos')
+    const authorLink = screen.getByRole('link', { name: "View @chef's profile" })
+    expect(authorLink).toHaveAttribute('href', '/u/chef')
+    // the handle + avatar live inside the single clickable byline
+    expect(authorLink).toHaveTextContent('@chef')
+  })
+
   it('shows RecipeNotFound when API response has no title', async () => {
     mockGetRecipe.mockResolvedValue({ _id: 'recipe-1' })
     renderSingleRecipe()

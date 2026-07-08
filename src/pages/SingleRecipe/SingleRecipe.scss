@@ -117,12 +117,24 @@ $soft-radius: 16px;
     }
     .author-row {
       margin-top: auto;
-      display: flex;
+      // Inline-flex + align-self so the link's hit area hugs the byline
+      // (avatar + text) rather than stretching the full column width.
+      display: inline-flex;
+      align-self: flex-start;
       align-items: center;
       gap: 0.5rem;
       font-size: s.$text-sm;
       color: s.$tertiary-text;
+      text-decoration: none;
       strong { color: s.$primary-text; font-weight: 700; }
+      // Underline only the handle on hover/focus — the profile affordance,
+      // without lifting or recolouring the whole chrome row.
+      &:hover strong,
+      &:focus-visible strong { text-decoration: underline; }
+      &:focus-visible {
+        @include s.outline();
+        border-radius: s.$radius-sm;
+      }
       .avatar {
         width: 28px;
         height: 28px;

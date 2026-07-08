@@ -401,7 +401,11 @@ const SingleRecipe: FC = () => {
                 <p className='description'>{currRecipe?.description}</p>
               )}
               {currRecipe && (
-                <div className='author-row'>
+                <Link
+                  to={`/u/${currRecipe.authorUsername}`}
+                  className='author-row'
+                  aria-label={`View @${currRecipe.authorUsername}'s profile`}
+                >
                   <DefaultAvatar
                     seed={currRecipe.authorUsername}
                     className='avatar'
@@ -413,7 +417,7 @@ const SingleRecipe: FC = () => {
                       <> · {formatMonthYear(currRecipe.createdAt)}</>
                     )}
                   </span>
-                </div>
+                </Link>
               )}
             </div>
           </header>
