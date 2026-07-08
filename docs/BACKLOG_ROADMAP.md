@@ -97,7 +97,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **6** | **N2 · report reason "incorrect info"** | new `ReportReason` across the 3 synced lists (BACKLOG Features) | `[x]` [#256](https://github.com/jclind/prepify/pull/256) (2026-07-08) | `src/types.ts`, `ReportControl.tsx`, `server/routes/reports.js` | **merged** — **Recipe-gated** (server 400s it on review/user targets; UI hides it). Also touched the admin queue reason pill (underscore→space) as a 4th display surface |
 | **6** | **N3 · auth-page home links** | brand-mark `<div>` → `<Link to='/'>` on Login + Signup (BACKLOG UX) | `[x]` [#257](https://github.com/jclind/prepify/pull/257) (2026-07-08) | `src/pages/Login/`, `src/pages/Signup/` | **merged** |
 | **6** | **N4 · SingleRecipe lane** ⚠ lane | author-byline + reviewer-name → `/u/:username` links; servings-pill spacing/glyph visual check (BACKLOG UX + pixel batch a) | `[P]` [#258](https://github.com/jclind/prepify/pull/258) (2026-07-08) | `src/pages/SingleRecipe/**` (incl. `Reviews/RecipeReview.tsx`) | reviewer-name half overlaps RELEASE_PLAN §D overhaul — see rule 8; screenshot the pill before touching it. **Scoped to author-byline link + pill check**; reviewer-name link yields to §D (rule 8b — unstarted blocker rewrites `RecipeReview.tsx` end-to-end) |
-| **6** | **N5 · polish sweep** | skip-link overscroll fix (A11y); RecipeNotFound copy/search; /recipes search-btn offset; footer bug-btn decision (pixel batch b, c) | `[~]` `worktree-feat+n5-polish-sweep` (2026-07-08) | `Layout.scss`, `RecipeNotFound/*`, `Recipes.scss`, `Footer.scss` | disjoint smalls, one worktree; RecipeNotFound wording needs the owner's voice — draft options |
+| **6** | **N5 · polish sweep** | skip-link overscroll fix (A11y); RecipeNotFound copy/search; /recipes search-btn offset; footer bug-btn decision (pixel batch b, c) | `[P]` [#259](https://github.com/jclind/prepify/pull/259) (2026-07-08) | `Layout.scss`, `RecipeNotFound/*`, `Recipes.scss`, `Footer.scss` | disjoint smalls, one worktree; RecipeNotFound wording needs the owner's voice — draft options |
 | **6** | **N6 · ingredient-miss telemetry** (+ N1 outlier guard) | persist enrichment misses + admin list (BACKLOG Features, admin); **folds in N1's price-outlier flag** | `[x]` [#255](https://github.com/jclind/prepify/pull/255) (2026-07-08) | `server/routes/ingredients.js`, `server/routes/admin.js`, `src/pages/Admin/**` | **merged**: new `ingredientMisses` collection; write stays best-effort. N1's guard rides this surface as a second event type (flag, not clamp). Review folded in the missing `ingredientMisses` indexes (`{count,lastSeen}` + type-led compound) to match the auditLog pattern the route mirrors |
 | **6** | **N7 · ops: storage-bucket env** | set `FIREBASE_STORAGE_BUCKET` (prod+dev) + real empty-env skip (BACKLOG Tech debt) | `[ ]` | server envs (owner) + `server/util/firebaseStorage.js` | env half is owner-gated; code half is a 3-line early-return |
 | **—** | **Deferred / post-1.0 / owner** | see [that section](#deferred--post-10--owner-off-the-active-board) | `[blocked]`/`[dropped]` | — | prerendering, Edamam, theming, brand-orange, DB relocation, ideas |
@@ -1601,3 +1601,25 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   before/after screenshots). +1 regression test (byline links to `/u/:username`). Rebased onto `development`
   (N3 #257 merge + N5 claim) before the PR; the feature branch deliberately doesn't touch this roadmap, so
   the board flip lives here on `development`.
+- **2026-07-08** — **N5 implemented** in `worktree-feat+n5-polish-sweep` → PR
+  [#259](https://github.com/jclind/prepify/pull/259) opened (`[P]`). Of the four polish smalls, **two shipped
+  as code, two closed by-design** (owner-confirmed via clarifying questions). **(1) Skip-link overscroll (the
+  one confirmed bug):** `.skip-to-content` hid via `position:absolute; top:-3rem`, and since `.app-shell` sets
+  no `position` the offset resolved against the document and scrolled with the page, so iOS/Android rubber-band
+  overscroll exposed the parked link. Switched to a **clip-based visually-hidden box** (`top:0.5rem;
+  clip-path:inset(50%); 1px; overflow:hidden`) so there's no off-viewport geometry to reveal; the keyboard-Tab
+  reveal survives (full size on `:focus`). Runtime-verified headless (390px): hidden = 1px box at `top:8`;
+  after one Tab = `activeElement`, 170×38, "Skip to content" with the focus ring. **(2) RecipeNotFound copy:**
+  de-AI'd into the owner's voice — owner picked *"That recipe's off the menu. It may have been removed, or the
+  link might be broken. Try a search below."* from drafted options (constraint: no em dash). **(3)
+  RecipeNotFound search emphasis:** the shared `SearchRecipesInput` renders a white borderless input that
+  vanished on the white card; gave it a bordered pill (`$gray-400` border, `$primary-background` fill,
+  `@mixin focus-glow($primary)`), mirroring the `/recipes` toolbar, right gutter reserved for the "Search"
+  button that mounts on typing. **Closed by-design (no code):** the `/recipes` search-button 6px inset is a
+  consistent nested-control gap (≈4px vertical inset), not meant to mirror the 17.6px decorative *text* gutter
+  (measured both); and the footer "Report a bug" left-adjacency (owner kept it — a lone centered link in the
+  legal strip reads oddly). Gates: `tsc` clean, Vitest **619 passed / 2 skipped**, `npm run build` clean; no
+  server changes. Files: `Layout.scss`, `RecipeNotFound.{tsx,scss}` — disjoint from the in-flight N4 lane; the
+  feature branch doesn't touch this roadmap, so the board flip lives here on `development`. **N5 is the last
+  actionable Wave-6 code lane** — only **N7** (owner-gated env + 3-line early-return) and **N1**
+  (owner-pending) remain open on the board.
