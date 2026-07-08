@@ -11,6 +11,7 @@ const ADMIN_NAV = [
   { to: '/admin/reports', label: 'Reports' },
   { to: '/admin/bug-reports', label: 'Bug reports' },
   { to: '/admin/users', label: 'Users' },
+  { to: '/admin/ingredients', label: 'Ingredients' },
   { to: '/admin/audit', label: 'Audit log' },
 ]
 

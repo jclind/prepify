@@ -6,6 +6,8 @@ import {
   AuditAction,
   AuditTargetType,
   AnalyticsResponse,
+  IngredientMissType,
+  IngredientMissesResponse,
 } from 'types'
 import { http } from 'src/api/http-common'
 
@@ -78,6 +80,21 @@ class AdminAPIClass {
     perPage?: number
   }): Promise<AuditResponse> {
     const result = await http.get<AuditResponse>('api/admin/audit', { params })
+    return result.data
+  }
+
+  // Read-only ingredient-enrichment telemetry (N6): strings that missed
+  // enrichment or enriched to an implausible price. `type` filters to one event
+  // kind; omitted lists both. Sorted server-side by count desc.
+  async listIngredientMisses(params?: {
+    type?: IngredientMissType
+    page?: number
+    perPage?: number
+  }): Promise<IngredientMissesResponse> {
+    const result = await http.get<IngredientMissesResponse>(
+      'api/admin/ingredients',
+      { params }
+    )
     return result.data
   }
 

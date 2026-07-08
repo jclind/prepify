@@ -458,4 +458,34 @@ router.get('/admin/analytics', verifyToken, requireAdmin, asyncHandler(async (re
   })
 }))
 
+// GET /admin/ingredients?type=&page=&perPage= — read-only ingredient-enrichment
+// telemetry (N6). Lists the `ingredientMisses` docs written best-effort by
+// POST /api/ingredients/parse: `miss` (no Spoonacular match) and `price_outlier`
+// (enriched to an implausible per-row price — the N1 "$10 parfait" class).
+// Sorted by count desc so the most-frequent problems surface first. `type`
+// filters to one event kind; omitted lists both.
+const INGREDIENT_MISS_TYPES = ['miss', 'price_outlier']
+router.get('/admin/ingredients', verifyToken, requireAdmin, asyncHandler(async (req, res) => {
+  const db = getDB()
+  const { type } = req.query
+  const page = Math.max(parseInt(req.query.page) || 1, 1)
+  const perPage = Math.min(parseInt(req.query.perPage) || DEFAULT_PER_PAGE, MAX_PER_PAGE)
+
+  const filter = {}
+  if (typeof type === 'string' && INGREDIENT_MISS_TYPES.includes(type)) filter.type = type
+
+  const [items, totalCount] = await Promise.all([
+    db
+      .collection('ingredientMisses')
+      .find(filter)
+      .sort({ count: -1, lastSeen: -1 })
+      .skip((page - 1) * perPage)
+      .limit(perPage)
+      .toArray(),
+    db.collection('ingredientMisses').countDocuments(filter),
+  ])
+
+  res.json({ items, totalCount })
+}))
+
 module.exports = router
