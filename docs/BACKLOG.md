@@ -127,7 +127,7 @@ The triage date stamped on items is the date they were filed here, not when they
 ## UX / visual polish
 
 - `[x]` **Create-recipe form dropdown inputs aren't visually uniform** — *(fixed in the C1-tail lane,
-  2026-07-08.)* The Cuisine / Course / Diet `react-select` controls (`recipeSelectStyles.ts`) were tuned to
+  [#252](https://github.com/jclind/prepify/pull/252), 2026-07-08.)* The Cuisine / Course / Diet `react-select` controls (`recipeSelectStyles.ts`) were tuned to
   mirror the shared `FormInput` `compact` variant exactly: 1px `$tertiary-text` resting border (was a 2px
   react-select default grey), teal `$secondary` focus border + the `@mixin focus-glow` halo (was orange
   `$primary`, no ring), the `$border-radius` token, a 40px `min-height`, a 1rem value inset, and no orange
