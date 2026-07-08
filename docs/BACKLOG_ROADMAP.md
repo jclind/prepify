@@ -93,12 +93,12 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **5** | **R0 · Claude conventions doc** | code & architecture standard (`CONVENTIONS.md`/CLAUDE.md) | `[x]` [#244](https://github.com/jclind/prepify/pull/244) (2026-07-07) | new doc | **merged** — shipped `docs/CONVENTIONS.md` (grounded in a 4-way survey + REFACTOR.md), cross-linked from `CLAUDE.md`; **R1/R2 now have a standard to follow** |
 | **5** | **R1 · refactor create-recipe page** | the big AddRecipe refactor | `[x]` [#248](https://github.com/jclind/prepify/pull/248) (2026-07-07) | `src/pages/AddRecipe/**` | **merged** — structural refactor: extracted `useRecipeForm` (useReducer) + pure `recipeFormValidation` + `FormField`; fixed the TimeInput clear-both bug; +38 tests. Folded in **part** of C1 (noindex, selector tests, `updateIngredients` test + dead-code); C1's visual smalls (dropdown/`FormInput` uniformity, summary-bar sticky, group-label styling) still open. See status log. |
 | **5** | **R2 · refactor account page** | the big Account refactor; **closes F6 (stale)** | `[x]` [#250](https://github.com/jclind/prepify/pull/250) (2026-07-07) | `src/pages/Account/**` | **merged** — subsumes F6 (closed stale); overlaps merged C2 |
-| **6** | **N1 · price-data quality** | "$10 parfait" estimates + un-proven `backfillServingPrice --apply` (BACKLOG Bugs) | `[~]` investigation done — fix-lane decision pending owner (2026-07-08) | `server/scripts/`, `src/pages/AddRecipe/Ingredients/updateIngredients.ts` | **investigated**: 0 servingPrice drift on dev; parfait = bad *proxy price-estimate* on stale v1 data (`1 cup strawberries` = $25.34), NOT a parse or division bug. See status log for the fix-lane options. |
+| **6** | **N1 · price-data quality** | "$10 parfait" estimates + un-proven `backfillServingPrice --apply` (BACKLOG Bugs) | `[~]` investigation done — fix-lane decision pending owner (2026-07-08) | `server/scripts/`, `src/pages/AddRecipe/Ingredients/updateIngredients.ts` | **investigated**: 0 servingPrice drift on dev; parfait = bad *proxy price-estimate* on stale v1 data (`1 cup strawberries` = $25.34), NOT a parse or division bug. Fix-option (B) outlier guard now folded into **N6**; the re-enrich backfill (A) stays owner/proxy-gated. |
 | **6** | **N2 · report reason "incorrect info"** | new `ReportReason` across the 3 synced lists (BACKLOG Features) | `[ ]` | `src/types.ts`, `ReportControl.tsx`, `server/routes/reports.js` | additive union value in shared `types.ts` — merge-trivial, but rebase before PR |
 | **6** | **N3 · auth-page home links** | brand-mark `<div>` → `<Link to='/'>` on Login + Signup (BACKLOG UX) | `[ ]` | `src/pages/Login/`, `src/pages/Signup/` | tiny |
 | **6** | **N4 · SingleRecipe lane** ⚠ lane | author-byline + reviewer-name → `/u/:username` links; servings-pill spacing/glyph visual check (BACKLOG UX + pixel batch a) | `[ ]` | `src/pages/SingleRecipe/**` (incl. `Reviews/RecipeReview.tsx`) | reviewer-name half overlaps RELEASE_PLAN §D overhaul — see rule 8; screenshot the pill before touching it |
 | **6** | **N5 · polish sweep** | skip-link overscroll fix (A11y); RecipeNotFound copy/search; /recipes search-btn offset; footer bug-btn decision (pixel batch b, c) | `[ ]` | `Layout.scss`, `RecipeNotFound/*`, `Recipes.scss`, `Footer.scss` | disjoint smalls, one worktree; RecipeNotFound wording needs the owner's voice — draft options |
-| **6** | **N6 · ingredient-miss telemetry** | persist enrichment misses + admin list (BACKLOG Features, admin) | `[ ]` | `server/routes/ingredients.js`, `server/routes/admin.js`, `src/pages/Admin/**` | new `ingredientMisses` collection; write stays best-effort |
+| **6** | **N6 · ingredient-miss telemetry** (+ N1 outlier guard) | persist enrichment misses + admin list (BACKLOG Features, admin); **folds in N1's price-outlier flag** | `[~]` `worktree-feat+n6-ingredient-telemetry` (2026-07-08) | `server/routes/ingredients.js`, `server/routes/admin.js`, `src/pages/Admin/**` | new `ingredientMisses` collection; write stays best-effort. N1's guard rides this surface as a second event type (flag, not clamp) |
 | **6** | **N7 · ops: storage-bucket env** | set `FIREBASE_STORAGE_BUCKET` (prod+dev) + real empty-env skip (BACKLOG Tech debt) | `[ ]` | server envs (owner) + `server/util/firebaseStorage.js` | env half is owner-gated; code half is a 3-line early-return |
 | **—** | **Deferred / post-1.0 / owner** | see [that section](#deferred--post-10--owner-off-the-active-board) | `[blocked]`/`[dropped]` | — | prerendering, Edamam, theming, brand-orange, DB relocation, ideas |
 
@@ -1455,3 +1455,17 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   re-enrich under v2); fixes the symptom, not the systemic garbage-in. **Recommendation:** don't rush a code
   lane — (B)'s guard is the durable win and should ride N6's telemetry surface; (A) is an owner ops decision
   once the proxy is healthy. N1 stays `[~]` pending that call.
+- **2026-07-08** — **N6 claimed** (`worktree-feat+n6-ingredient-telemetry`), **folding in N1's outlier guard**
+  (fix-option B) per the owner's call. Claim recorded directly on `development` (same convention as the Wave-1
+  S-tracks) so concurrent sessions see the lane taken. Scope: (1) the N6 build proper — a best-effort upsert
+  into a new `ingredientMisses` collection from `POST /parse` on an enrichment miss (`{ _id: normalized(str),
+  raw, count: $inc, lastSeen, type }`), a read-only admin route, and a `src/pages/Admin/Ingredients` list
+  sorted by count desc (mirrors the Users/Reports pattern); the write stays try/catch'd so telemetry never
+  affects the parse response, and the route gets the `getDB()` handle it currently lacks. (2) N1's guard as a
+  **second event `type` on the same surface** — when `/parse` enriches a row whose `totalPriceUSACents`
+  exceeds a high per-row ceiling (the $25-strawberries class), record a `price_outlier` telemetry event so
+  admins can spot bad proxy estimates. **Flag, not clamp** — the stored price is untouched (clamping would
+  mangle legitimately expensive rows like a pound of saffron); the guard is pure observability. N1's row
+  updated: option-B is now this lane; the re-enrich backfill (option A) stays owner/proxy-gated. Disjoint from
+  every other N-lane (owns `ingredients.js`/`admin.js`/`src/pages/Admin`). Verified `development` in sync with
+  origin before claiming and no in-flight worktree on these files.
