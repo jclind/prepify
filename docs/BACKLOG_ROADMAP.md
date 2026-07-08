@@ -1244,3 +1244,19 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   ports client 3002 / server 4001 (main 3000/4000 untouched). `[P]` flip recorded on `development` in the main checkout
   (not the lane branch), same convention as C2–C5/I1–I3/R1–R2. Closes the last unprojected account read in the #397/#446
   leak class. **Next open follow-up remains the whitespace-only recipe-title guard** (`recipeFormValidation.ts:40`).
+- **2026-07-08** — **`exportMyData` own-recipes/drafts admin-stamp leak merged** ([#251](https://github.com/jclind/prepify/pull/251),
+  merge `4dbbf82`, all 6 checks green) into `development`; worktree torn down. `GET /exportMyData` returned the owner's own
+  `recipes`/`drafts` as raw Mongo docs, so any recipe an admin ever moderated/featured leaked the six internal admin stamps
+  (`moderatedBy`/`moderatedAt`, `featuredBy`/`featuredAt`, `publishUpdatedBy`/`publishUpdatedAt` — admin Firebase uids) into the
+  JSON the non-admin owner downloads. Fixed with a shared `RECIPE_INTERNAL_STAMPS` constant (`server/util/recipeFields.js`,
+  single source of truth for what the public whitelist also excludes) + a derived `recipeInternalStampsExclusion` (`{ field: 0 }`)
+  applied as the projection on both owner finds — an **exclusion, not the card whitelist**, so an export stays higher-fidelity
+  (full authored body) minus only the admin PII. Saved-recipe half untouched (still `publicRecipeProjection` — other users' recipes).
+  **Verified two ways:** extended the auth Jest suite with an own-recipes/drafts regression (seeds all six stamps + a non-whitelist
+  `description`, asserts stamps gone from both arrays while the body incl. `description` survives — proves exclusion-not-whitelist);
+  full server Jest **32 suites / 749 tests** green; **plus a live `/verify` run** — minted a real Firebase ID token through the
+  actual `verifyToken` middleware, seeded a stamped own-recipe+draft in dev Mongo, hit the running endpoint (200) and confirmed
+  `LEAKED stamps = (none)` on both while `title`/`description`/`ingredients`/`status` were retained, then cleaned up docs + the
+  throwaway Auth user. **Closes the #397/#446 recipe-projection leak class** (last unprojected account read). No follow-ups filed.
+  **Board fully drained; the next open BACKLOG.md Bugs follow-up is the whitespace-only recipe-title guard** (`recipeFormValidation.ts:40`,
+  `!form.title` w/o `.trim()`).
