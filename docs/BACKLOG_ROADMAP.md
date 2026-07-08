@@ -96,7 +96,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **6** | **N1 · price-data quality** | "$10 parfait" estimates + un-proven `backfillServingPrice --apply` (BACKLOG Bugs) | `[~]` investigation done — fix-lane decision pending owner (2026-07-08) | `server/scripts/`, `src/pages/AddRecipe/Ingredients/updateIngredients.ts` | **investigated**: 0 servingPrice drift on dev; parfait = bad *proxy price-estimate* on stale v1 data (`1 cup strawberries` = $25.34), NOT a parse or division bug. Fix-option (B) outlier guard now folded into **N6**; the re-enrich backfill (A) stays owner/proxy-gated. |
 | **6** | **N2 · report reason "incorrect info"** | new `ReportReason` across the 3 synced lists (BACKLOG Features) | `[P]` [#256](https://github.com/jclind/prepify/pull/256) (2026-07-08) | `src/types.ts`, `ReportControl.tsx`, `server/routes/reports.js` | additive union value in shared `types.ts` — merge-trivial, but rebase before PR. **Recipe-gated** (server 400s it on review/user targets; UI hides it) |
 | **6** | **N3 · auth-page home links** | brand-mark `<div>` → `<Link to='/'>` on Login + Signup (BACKLOG UX) | `[~]` `worktree-feat+n3-auth-page-home-links` (2026-07-08) | `src/pages/Login/`, `src/pages/Signup/` | tiny |
-| **6** | **N4 · SingleRecipe lane** ⚠ lane | author-byline + reviewer-name → `/u/:username` links; servings-pill spacing/glyph visual check (BACKLOG UX + pixel batch a) | `[ ]` | `src/pages/SingleRecipe/**` (incl. `Reviews/RecipeReview.tsx`) | reviewer-name half overlaps RELEASE_PLAN §D overhaul — see rule 8; screenshot the pill before touching it |
+| **6** | **N4 · SingleRecipe lane** ⚠ lane | author-byline + reviewer-name → `/u/:username` links; servings-pill spacing/glyph visual check (BACKLOG UX + pixel batch a) | `[~]` `worktree-feat+n4-singlerecipe-profile-links` (2026-07-08) | `src/pages/SingleRecipe/**` (incl. `Reviews/RecipeReview.tsx`) | reviewer-name half overlaps RELEASE_PLAN §D overhaul — see rule 8; screenshot the pill before touching it. **Scoped to author-byline link + pill check**; reviewer-name link yields to §D (rule 8b — unstarted blocker rewrites `RecipeReview.tsx` end-to-end) |
 | **6** | **N5 · polish sweep** | skip-link overscroll fix (A11y); RecipeNotFound copy/search; /recipes search-btn offset; footer bug-btn decision (pixel batch b, c) | `[ ]` | `Layout.scss`, `RecipeNotFound/*`, `Recipes.scss`, `Footer.scss` | disjoint smalls, one worktree; RecipeNotFound wording needs the owner's voice — draft options |
 | **6** | **N6 · ingredient-miss telemetry** (+ N1 outlier guard) | persist enrichment misses + admin list (BACKLOG Features, admin); **folds in N1's price-outlier flag** | `[x]` [#255](https://github.com/jclind/prepify/pull/255) (2026-07-08) | `server/routes/ingredients.js`, `server/routes/admin.js`, `src/pages/Admin/**` | **merged**: new `ingredientMisses` collection; write stays best-effort. N1's guard rides this surface as a second event type (flag, not clamp). Review folded in the missing `ingredientMisses` indexes (`{count,lastSeen}` + type-led compound) to match the auditLog pattern the route mirrors |
 | **6** | **N7 · ops: storage-bucket env** | set `FIREBASE_STORAGE_BUCKET` (prod+dev) + real empty-env skip (BACKLOG Tech debt) | `[ ]` | server envs (owner) + `server/util/firebaseStorage.js` | env half is owner-gated; code half is a 3-line early-return |
@@ -1529,3 +1529,16 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   on recipe, reject on review + user via the gate), frontend 2 (option shown+submittable on recipe, hidden on
   review/user). Gates: `tsc` clean, Vitest 14 (ReportControl + Reports), server Jest 60 (reports), `npm run
   build` clean. Additive union member → rebase before merge if the board moved (rule 8a).
+- **2026-07-08** — **N4 claimed** (`worktree-feat+n4-singlerecipe-profile-links`). Claim recorded directly on
+  `development` (same convention as the S/N tracks) so concurrent sessions see the lane taken. Verified the
+  two live worktrees are on their marked tracks with no forgotten/unmarked work (**N2** = PR #256 open; **N3**
+  = PR #257 open, so its board row is stale at `[~]` — left for the N3 lane to flip, not this lane's row) and
+  `development` is in sync with origin (0/0) before claiming. **Scope — deliberately narrowed to the two
+  §D-disjoint halves:** (1) the recipe **author byline** (`SingleRecipe.tsx:410-411`, a bare
+  `<strong>@{authorUsername}</strong>` inside `.author-row`) → wrap in `<Link to={'/u/' + username}>`
+  (ideally the whole author-row incl. avatar), matching what the admin pages already do; (2) the
+  **servings-pill** visual check (pixel batch a, `SingleRecipe.scss:286-330`) — screenshot first, likely a
+  no-op after the same-day a11y resize (`51fb2ac`) or a confirm-wanted Lucide `+`/`−` swap. **Yielded to §D:**
+  the **reviewer-name** link (`Reviews/RecipeReview.tsx:77`) sits inside the RELEASE_PLAN §D Ratings & Reviews
+  overhaul's file surface (rule 8b) — §D is an unstarted blocker that redesigns that file end-to-end, so a
+  link added here now would just be rewritten; §D absorbs it. Worktree not yet created.
