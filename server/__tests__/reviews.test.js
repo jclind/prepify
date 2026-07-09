@@ -5,14 +5,13 @@
  * a jest.fn() whose default implementation returns { verifyIdToken } resolving
  * to { uid: 'test-uid' }.
  *
- * For tests that need a DIFFERENT uid (non-author 403 cases), we call:
- *
- *   getAuth.mockReturnValueOnce({
- *     verifyIdToken: jest.fn().mockResolvedValueOnce({ uid: OTHER_UID }),
- *   })
- *
- * mockReturnValueOnce is consumed by the very next getAuth() call inside
- * verifyToken middleware, then the default implementation resumes.
+ * Tests that need a DIFFERENT uid (non-author 403 cases) call asUser(uid),
+ * which swaps the implementation for the REST OF THE TEST; the shared
+ * beforeEach restores the TEST_UID default before the next test. Deliberately
+ * NOT mockReturnValueOnce: a one-shot override is consumed by whichever
+ * getAuth() call happens to come next, so a stray async call (e.g. leaked
+ * fire-and-forget audit/email work from an earlier test) could eat it and
+ * shift the identity onto the wrong request — a real, load-dependent flake.
  *
  * Why beforeEach instead of beforeAll for seeding:
  * setupFilesAfterEnv registers setup.js's connectDB as a top-level beforeAll.
@@ -37,6 +36,14 @@ const OTHER_UID = 'other-uid'
 const OTHER_USERNAME = 'otheruser'
 const RECIPE_ID = 'recipe-rev-001'
 const AUTH_HEADER = { Authorization: 'Bearer fake-test-token' }
+
+// Authenticate as `uid` for the rest of the current test (see header comment).
+const asUser = uid => {
+  getAuth.mockImplementation(() => ({
+    verifyIdToken: jest.fn().mockResolvedValue({ uid }),
+    getUsers: admin.__getUsers,
+  }))
+}
 
 // ─── Shared setup/teardown ────────────────────────────────────────────────────
 // Seed shared fixtures and reset auth mock before every test.
@@ -191,11 +198,9 @@ describe('POST /editReview', () => {
   })
 
   it('rejects request from non-author (403)', async () => {
-    // Next getAuth() call in verifyToken returns other-uid →
-    // route looks up 'otheruser' → no ratings doc matches → matchedCount 0 → 403
-    getAuth.mockReturnValueOnce({
-      verifyIdToken: jest.fn().mockResolvedValueOnce({ uid: OTHER_UID }),
-    })
+    // verifyToken resolves other-uid → route looks up 'otheruser' → no ratings
+    // doc matches → matchedCount 0 → 403
+    asUser(OTHER_UID)
 
     const res = await request(app)
       .post(`/api/editReview?recipeId=${RECIPE_ID}&text=Modified`)
@@ -282,9 +287,7 @@ describe('DELETE /deleteReview', () => {
   })
 
   it('rejects request from non-author (403)', async () => {
-    getAuth.mockReturnValueOnce({
-      verifyIdToken: jest.fn().mockResolvedValueOnce({ uid: OTHER_UID }),
-    })
+    asUser(OTHER_UID)
 
     const res = await request(app)
       .delete(`/api/deleteReview?recipeId=${RECIPE_ID}`)
@@ -491,9 +494,7 @@ describe('POST /newReview', () => {
   })
 
   it('returns 400 if the user has no username set', async () => {
-    getAuth.mockReturnValueOnce({
-      verifyIdToken: jest.fn().mockResolvedValueOnce({ uid: 'no-username-uid' }),
-    })
+    asUser('no-username-uid')
 
     const res = await request(app)
       .post('/api/newReview')
