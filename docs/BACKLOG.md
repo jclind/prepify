@@ -506,12 +506,12 @@ The triage date stamped on items is the date they were filed here, not when they
   the brand-contrast PR #184 over the design-tokens track.)* After the recolor, re-check that `$hover-brighten`
   (brightness 1.06) doesn't push the new orange fill below WCAG AA contrast (per
   [`design/button-hover-audit.md`](./design/button-hover-audit.md)).
-- `[ ]` **Add-recipe form controls need `aria-describedby` wiring** *(a11y follow-up, source
+- `[x]` **Add-recipe form controls need `aria-describedby` wiring** — *(fixed in [#269](https://github.com/jclind/prepify/pull/269), W2: `TimeInput` and `ImagePicker`'s empty-state dropzone take `describedBy`/`invalid` gated on the section's `errors.*`; the Course react-select uses the gated `aria-invalid`/`aria-errormessage` pair (react-select has no `aria-describedby` prop); the ingredient/instruction list containers are covered by the FormField group's `aria-describedby` to the alert. Cuisine/Diet carry no validation/hint copy — group labelling covers them.)* *(a11y follow-up, source
   [`ADD_RECIPE_UX_AUDIT.md`](./ADD_RECIPE_UX_AUDIT.md))* — the custom inputs on `/add-recipe` don't associate
   their help/error text with the control: wire `aria-describedby` on `TimeInput`, the Cuisine/Course/Diet
   react-select pickers, `ImagePicker`, and the ingredient/instruction list containers so screen readers
   announce the hint/validation copy with the field. Low.
-- `[ ]` **Add-recipe `SectionHeader` label isn't tied to its inputs (`aria-labelledby`)** *(a11y follow-up,
+- `[x]` **Add-recipe `SectionHeader` label isn't tied to its inputs (`aria-labelledby`)** — *(fixed in [#269](https://github.com/jclind/prepify/pull/269), W2: `SectionHeader` takes a stable `id` (`section-<row-className>`) and `FormField`'s wrapper is now `role='group' aria-labelledby={headerId}`, so every row's label governs its control(s) programmatically for the whole form at once.)* *(a11y follow-up,
   source [`ADD_RECIPE_UX_AUDIT.md`](./ADD_RECIPE_UX_AUDIT.md))* — `SectionHeader`
   (`src/pages/AddRecipe/SectionHeader.tsx`) renders its label as a bare `<span className='text'>` inside the
   `<h2>`, with no programmatic link to the fields it governs. Give the label an `id` and point each section's
@@ -723,7 +723,7 @@ findings table.)*
   **(ops, owner)** set `FIREBASE_STORAGE_BUCKET` in the prod + dev server envs; **(code, optional)** early-return
   when the env is empty so behavior matches the `.env.example:19-24` comment ("leave empty to skip") instead of
   throw-and-swallow. → **N7**
-- `[ ]` **CI actions pinned to deprecated Node 20 runtime** — **narrowed 2026-07-08 (still open):** every job in
+- `[x]` **CI actions pinned to deprecated Node 20 runtime** — *(fixed in [#270](https://github.com/jclind/prepify/pull/270), W3: `actions/checkout` + `actions/setup-node` bumped `@v4`→`@v5` on all uses, and the now-no-op `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24` env removed; the PR's own CI run validated the bump.)* — **narrowed 2026-07-08 (still open):** every job in
   `.github/workflows/test.yml` already pins `node-version: 24` (verified 2026-07-03), so the *test steps* run on
   Node 24 — but that does NOT clear this item. The deprecation is about the **actions' own bundled runtime**
   (`actions/checkout@v4`/`actions/setup-node@v4` run on the Node 20 actions runtime), which the `node-version`
@@ -768,7 +768,7 @@ findings table.)*
     default plain-text 429 (`server/routes/bugReports.js:33-39`, no custom `message`/`handler`) instead of the
     house `{ error, code: 'RATE_LIMITED' }` JSON shape the `makeUserLimiter` routes use. Give it a matching
     JSON handler so 429s are uniform across the API.
-- `[ ]` **Phase 5-D: convert the 8 legacy string-`_id` recipes to native `ObjectId`** — `checkMigrationState.js`
+- `[~]` **Phase 5-D: convert the 8 legacy string-`_id` recipes to native `ObjectId`** — *(script shipped in [#270 → #268](https://github.com/jclind/prepify/pull/268), W1: `server/scripts/migrateLegacyRecipeIds.js` + Jest suite — dry-run default, `--apply`/`--id=` targeting, exit-2-on-pending. Design refined against real data: all 8 legacy ids are 24-char hex, so it's a **hex-preserving convert** (re-insert under `ObjectId(sameHex)` + delete string doc in one txn), which keeps `String(_id)` byte-identical so the string foreign refs never need repointing. **The prod `--apply` run remains owner-gated and has NOT been run** — the 8 legacy docs still exist; tick to `[x]` after the prod run + `checkMigrationState.js` reads 0.)* — `checkMigrationState.js`
   reports **8 recipes** on prod (identical count on dev — dev is a prod clone) whose `_id` is still a plain
   string rather than a BSON `ObjectId`, left over from before the Phase-5 refactor. **Not a correctness bug:**
   `server/util/recipeIdQuery.js` is a deliberate compatibility shim that matches both `_id` shapes (`$or`
@@ -943,7 +943,7 @@ findings table.)*
   on disk; only `hero.webp` remains and `HomeHero.tsx:10` references it. So this item is now just the one-line
   comment fix.)** *(surfaced 2026-06-23 in the Wave 4 Part 1 verification.)* *(fixed in
   [#239](https://github.com/jclind/prepify/pull/239), F5: comment now names `Montserrat-MediumItalic.ttf`.)*
-- `[ ]` **`ReleaseNotes` imports `package.json` directly for the version string** — `ReleaseNotes.tsx:6`
+- `[x]` **`ReleaseNotes` imports `package.json` directly for the version string** — *(fixed in [#270](https://github.com/jclind/prepify/pull/270), W3: added a `VITE_APP_VERSION` define in `vite.config.ts` (fs-read of `package.json`, typed in `vite-env.d.ts`) and switched `ReleaseNotes.tsx` **and** `footerData.ts` — a second in-src importer found in-pass — to `import.meta.env.VITE_APP_VERSION`; the footer chunk no longer bundles the manifest.)* — `ReleaseNotes.tsx:6`
   still does `import packageJSON from '../../../package.json'` (used as `packageJSON.version` at `:9`) rather
   than reading a build-time define. Replace with a `VITE_APP_VERSION` define (wired in `vite.config.ts` off
   `package.json`) so the component doesn't reach up into the repo root and the version is injected at build.
