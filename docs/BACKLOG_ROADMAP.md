@@ -20,6 +20,11 @@ to the *sweep program*); this file applies it to the **general backlog**. Compan
 > from the in-flight RELEASE_PLAN §D reviews-overhaul PR stack, which owns `server/routes/{reviews,recipes}.js`,
 > the server test files/mocks, `src/types.ts`, `src/api/recipes.ts`, and `Reviews/**` — see
 > [`REVIEWS_OVERHAUL_SCOPE.md`](./REVIEWS_OVERHAUL_SCOPE.md)).
+> **§D stack fully landed 2026-07-09** ([#266](https://github.com/jclind/prepify/pull/266) →
+> [#267](https://github.com/jclind/prepify/pull/267) → [#271](https://github.com/jclind/prepify/pull/271)) —
+> that file ownership is released, and the **Wave-8 candidates** (the §D-collision skips: `createdAt`
+> server-stamp, `RecipeCardType` typing, orphaned-image-on-failed-create, server-Jest flakiness) are clear
+> to board.
 
 ---
 
@@ -1815,3 +1820,12 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   `VITE_APP_VERSION` define is confirmed injected in the built bundle. **Wave-8 candidates** (the §D-collision
   skips — `createdAt` server-stamp, `RecipeCardType` typing, orphaned-image-on-failed-create, server-Jest
   flakiness) remain ready to board once §D fully lands.
+- **2026-07-09** — **§D reviews-overhaul stack landed** (not a board track — logged here because its file
+  ownership gated lane-cutting): [#266](https://github.com/jclind/prepify/pull/266) server →
+  [#267](https://github.com/jclind/prepify/pull/267) frontend plumbing →
+  [#271](https://github.com/jclind/prepify/pull/271) V3 redesign, merged in order (merge commits `e19ef95`,
+  `ce260e5`, `2a6efc0`), all six checks green each, remote branches deleted. Ownership of
+  `server/routes/{reviews,recipes}.js`, `src/types.ts`, `src/api/recipes.ts`, `Reviews/**` is **released**;
+  Wave-8 candidates are clear to board. Details + release-day prod-backfill note live on the RELEASE_PLAN
+  §D item / 2026-07-09 audit-log entry; two new §D-surfaced BACKLOG lines filed (legacy rating-type
+  migration → Bugs; `UserRatings` dead `newAdd` sort → Tech debt).

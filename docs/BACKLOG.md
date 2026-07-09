@@ -34,6 +34,16 @@ The triage date stamped on items is the date they were filed here, not when they
 
 ## Bugs
 
+- `[ ]` **Legacy rating docs are mistyped — "Top" review sort interleaves wrong** *(filed 2026-07-09, out of
+  the §D overhaul)* — old `ratings` docs store `rating` as **stringified numbers** (`"5"`) and
+  `reviewCreatedAt` as stringified epoch-ms, while post-#266 writes store floats; review-only docs are
+  `null`. The client normalizes at the API boundary (`coerceRating`, `src/api/recipes.ts`) so *rendering* is
+  correct, but the server's Top sort is a raw `{ rating: -1 }` (`server/routes/reviews.js:277,322`) over the
+  mixed-type field, and Mongo sorts by **BSON type order** — string ratings interleave above/below numeric
+  ones instead of by value. User-visible since #271 exposed Top as a sort pill. Fix: a one-off migration
+  normalizing `rating` → double and `reviewCreatedAt` → numeric date on all ratings docs (same ops-script
+  shape as `reconcileRatingAggregates.js`; dry-run default, owner-gated `--apply` on prod), after which the
+  client-side coercion can eventually be retired. Low-med.
 - `[ ]` **Per-ingredient price estimates can be wildly off (the "$10/serving parfait") — the remaining half
   of the serving-price saga** *(triaged 2026-07-08; filed 2026-06-17)* — PR #152 fixed only the division math,
   and that bug's signature was a flat **~$1.00**/serving (see `server/scripts/backfillServingPrice.js:6-10`) —
@@ -180,7 +190,7 @@ The triage date stamped on items is the date they were filed here, not when they
   `b994007`) touched these files without adding one. Fix: wrap the brand mark in `<Link to='/'>` on both
   pages (a "Back to Prepify" text link also fine). → **N3** — shipped: `<Link to='/' aria-label='Prepify home'>`
   on both, underline stripped + flat hover/focus-glow ring on `.brand-mark`.
-- `[x]` **Usernames aren't links to `/u/:username`** — *(byline half fixed in [#258](https://github.com/jclind/prepify/pull/258), N4: the whole `.author-row` — avatar + `@handle` + date — is now one `<Link to={'/u/' + authorUsername}>`, matching the admin pages; underline-on-handle hover/focus + `@mixin outline()` ring + aria-label. The **reviewer-name half was reassigned to the §D Ratings & Reviews overhaul** (rule 8b — it rewrites `RecipeReview.tsx` end-to-end), so it's tracked there, not here.)* *(triaged 2026-07-08; filed 2026-06-18)* — the public
+- `[x]` **Usernames aren't links to `/u/:username`** — *(byline half fixed in [#258](https://github.com/jclind/prepify/pull/258), N4: the whole `.author-row` — avatar + `@handle` + date — is now one `<Link to={'/u/' + authorUsername}>`, matching the admin pages; underline-on-handle hover/focus + `@mixin outline()` ring + aria-label. The **reviewer-name half was reassigned to the §D Ratings & Reviews overhaul** (rule 8b — it rewrites `RecipeReview.tsx` end-to-end) and **shipped there in [#271](https://github.com/jclind/prepify/pull/271)** — the rewritten review card links displayName/`@handle` to `/u/:username`.)* *(triaged 2026-07-08; filed 2026-06-18)* — the public
   profile route exists and admin pages already link it (`Admin/Users/Users.tsx:29`,
   `Admin/Reports/Reports.tsx:207`), but neither public-facing spot does: the recipe author byline
   (`SingleRecipe.tsx:410-411`, plain `<strong>@{authorUsername}</strong>` inside `.author-row`) and the
@@ -682,7 +692,12 @@ findings table.)*
   collection (`{ _id: normalized(ingredientString), raw, count: $inc, lastSeen }`) in `/parse`, a read-only
   admin route, and a `src/pages/Admin/Ingredients` list sorted by count desc (mirror the Users/Reports list
   pattern). Keep the write try/catch'd so a telemetry failure never affects the parse response. → **N6**
-- `[ ]` **Reviewer avatars on review cards** *(triaged 2026-07-08; filed 2026-06-23 — not implemented; ships
+- `[x]` **Reviewer avatars on review cards** — *(fixed in the §D stack: server enrichment in
+  [#266](https://github.com/jclind/prepify/pull/266) — batched deduped `getAuth().getUsers()` join exactly as
+  sketched below, `photoURL` + `displayName` on `/getReviews`; rendered in
+  [#267](https://github.com/jclind/prepify/pull/267)/[#271](https://github.com/jclind/prepify/pull/271) via the
+  new shared `UserAvatar` component with `DefaultAvatar` fallback, incl. 28px facepile in the summary strip.)*
+  *(triaged 2026-07-08; filed 2026-06-23 — not implemented; ships
   inside the §D overhaul, not as a one-off)* — review cards render only `@username`/stars/date
   (`Reviews/RecipeReview.tsx:74-86`); `/getReviews` returns raw ratings docs with no avatar field and no
   `$lookup` (`server/routes/reviews.js`); `ReviewType` (`src/types.ts:226-236`) has no photo field. Avatars
@@ -712,6 +727,13 @@ findings table.)*
 
 ## Tech debt / process / infra
 
+- `[ ]` **`UserRatings` passes a sort the server doesn't understand** *(filed 2026-07-09, out of the §D
+  overhaul)* — `src/pages/Account/UserRatings/UserRatings.tsx:106` sends `SORT = 'newAdd'` to
+  `getSingleUserReviews`, but the endpoint only recognizes `new`/`top` (`server/routes/reviews.js:321-322`),
+  so `newAdd` silently falls through to `sort = {}` — **no sort at all** (natural order). The account
+  Ratings list is therefore paginating an *unspecified* order: usually insertion order in practice, but
+  Mongo guarantees nothing, so Load-More pages can theoretically skip/duplicate rows. Fix: send `'new'`
+  from the client (one line) — or add a `newAdd` alias server-side — plus a test pinning the sort. Low-med.
 - `[x]` **Ops: set `FIREBASE_STORAGE_BUCKET` in the server envs (+ make the empty-env skip real)** *(fixed in
   [#260](https://github.com/jclind/prepify/pull/260), N7: code early-returns the skip when the env is unset;
   owner confirmed the env is set on both dev + prod)* *(triaged

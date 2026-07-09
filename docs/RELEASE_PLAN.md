@@ -328,22 +328,22 @@ Chunky design efforts that are bigger than a single checkbox. Tag each as **(blo
     usages (Home hero, `src/Components/Navbar/menu/`).
   - Gates nothing for 1.0 — tracked here so it isn't lost.
 
-- `[ ]` **Ratings & Reviews area overhaul** — **(blocker)**
-  - **Now:** the ratings/reviews experience on the single-recipe page is functional but rough
-    ("scuffed") — the rating summary/breakdown, the "your review" vs the public list, and the
-    add/edit/delete review affordances need a visual + interaction pass to match the current design
-    vocabulary. (The pill `.btn` sweep, 2026-06-29, restyled the buttons in this area onto the shared
-    system but did **not** touch the layout/UX — that's this item.)
-  - **Goal:** _(dedicated session)_ redesign the ratings + reviews UI end-to-end — summary/breakdown,
-    your-review card, add/edit/delete flow, and empty/loading states.
-  - **Touches:** `src/pages/SingleRecipe/DataSections/RatingsAndReviews/*` (+ `.scss` — `RatingsAndReviews`,
-    `Ratings`, `Reviews/` incl. `AddReview`, `RecipeReview`, `ReviewsList`, `EditingReviewOptions`,
-    `ConfirmDeleteReviewModal`), and likely `server/routes/reviews.js` if the data shape changes.
-  - **Fold-ins (2026-07-08 note triage):** reviewer **avatars** on review cards — `/getReviews` carries no
-    photo today; batch-resolve the deduped reviewer uids via `getAuth().getUsers()` (tolerate failures like
-    `publicProfile.js`) + `DefaultAvatar` fallback (write-up in BACKLOG Features). Also absorb the
-    reviewer-name → `/u/:username` link if roadmap track **N4** hasn't shipped it first (rule 8b there).
-  - **Why a blocker:** owner wants this looking right before dropping beta (filed 2026-06-29).
+- `[x]` **Ratings & Reviews area overhaul** — **(was a blocker; shipped 2026-07-09)**
+  - **Shipped** as the three-PR §D stack (scope: [`REVIEWS_OVERHAUL_SCOPE.md`](./REVIEWS_OVERHAUL_SCOPE.md)):
+    [#266](https://github.com/jclind/prepify/pull/266) server (reviewer avatar/displayName enrichment on
+    `/getReviews`, per-star `breakdown` on the rating aggregate, `editReview` JSON body),
+    [#267](https://github.com/jclind/prepify/pull/267) frontend plumbing (types, API client, StarRating
+    WAI-ARIA radiogroup a11y), [#271](https://github.com/jclind/prepify/pull/271) the redesign proper —
+    owner-picked **V3 "Invitation first"**: warm invitation composer (review-only allowed, live counter,
+    inline moderation errors), summary strip (avg + per-star mini-histogram + reviewer facepile),
+    3-zone own-review card with in-place stars/edit/delete, displayName + `@handle` → `/u/:username` on
+    public cards, New/Top sort pills, empty/skeleton/owner states. Old `Ratings`/`AddReview`/
+    `ReviewOptions`/`EditingReviewOptions`/`ReviewsContainer`/`ReviewsList` components deleted.
+  - **Fold-ins landed with it:** reviewer avatars (BACKLOG Features item) and the reviewer-name →
+    `/u/:username` link half deferred from roadmap track N4 (rule 8b).
+  - **Release-day note:** prod needs the one-time breakdown backfill after deploy —
+    `MONGO_URI=<prod> node server/scripts/reconcileRatingAggregates.js --apply` (idempotent; dev done
+    2026-07-09). Until run, prod hides the histogram and self-heals per-recipe on rating writes.
 
 - `[x]` **Homepage redesign** — **(design shipped)**
   - **Shipped:** the redesign landed earlier (`e1539c3`) — Home is now `HomeHero → Trending → Browse by
@@ -585,5 +585,21 @@ Full verification pass over the ~20 merged Wave-1/2 sweep PRs plus fresh baselin
   half done), social-crawler prerendering (`[ ]`, nice-to-have), brand-orange a11y contrast (`[~]`, owner
   brand decision), Ratings & Reviews overhaul (`[ ]`, blocker), Search-autocomplete redesign (`[ ]`,
   nice-to-have), data-integrity pass (`[ ]`, post-1.0).
+
+### 2026-07-09 — §D Ratings & Reviews overhaul shipped (stack #266 → #267 → #271)
+- **The last design blocker is closed.** The three-PR stack merged in order today: #266 (server:
+  avatar/displayName enrichment, `breakdown` aggregate + backfill script, `editReview` body), #267
+  (frontend plumbing: types, API client, StarRating radiogroup a11y), #271 (the V3 "Invitation first"
+  redesign of `RatingsAndReviews/**`). All six required checks green on each; Cypress e2e validated the
+  rewritten DOM + new fixture on #271.
+- **Verified beyond CI:** full signed-in lifecycle exercised on dev via throwaway accounts (rate → post →
+  own-card swap → edit → delete-keeps-rating → remove rating), 0px mobile overflow, zero console errors;
+  637 Vitest + rewritten 52-test reviews suites; dev DB breakdown backfill applied (11 recipes corrected).
+- **Still open from this work:** the one-time **prod** breakdown backfill (release-day note on the §D item
+  above); legacy `rating` docs store stringified numbers, so the new Top sort interleaves wrong on old data
+  (filed in BACKLOG Bugs with the type-normalization migration); `UserRatings` dead `newAdd` sort param
+  (BACKLOG Tech debt).
+- **Remaining blockers:** only the deliberately-held beta-flip trio + release-date/version finalize — all
+  owner-gated cutover steps.
 
 _`/release-readiness` appends dated run summaries here._
