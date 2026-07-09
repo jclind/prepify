@@ -547,7 +547,7 @@ router.post('/addRecipe', verifyToken, requireActive, recipeWriteLimiter, asyncH
     ...pickFields(body, CREATABLE_RECIPE_FIELDS),
     _id: newId,
     userId: uid,
-    rating: { rateCount: 0, rateValue: 0 },
+    rating: { rateCount: 0, rateValue: 0, breakdown: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } },
     numTimesSaved: 0,
     numTimesMade: 0,
     views: 0,

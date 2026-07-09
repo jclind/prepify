@@ -508,7 +508,11 @@ describe('POST /addRecipe', () => {
     const stored = await getDB().collection('recipes').findOne({ _id: new ObjectId(res.body._id) })
     expect(stored.status).toBeUndefined()
     expect(stored.featured).toBeUndefined()
-    expect(stored.rating).toEqual({ rateCount: 0, rateValue: 0 })
+    expect(stored.rating).toEqual({
+      rateCount: 0,
+      rateValue: 0,
+      breakdown: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+    })
   })
 
   describe('input bounds (defense-in-depth)', () => {

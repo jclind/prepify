@@ -29,7 +29,17 @@ async function computeRecipeRating(db, recipeId) {
   const rateValue = rateCount
     ? ratings.reduce((sum, r) => sum + parseFloat(r.rating), 0) / rateCount
     : 0
-  return { rateCount, rateValue }
+  // Per-star histogram for the reviews-summary UI (§D). Bucket each rating by its
+  // nearest whole star — clamped to 1–5 so a fractional/out-of-range legacy value
+  // can't land outside the five buckets — and always return all five keys, so the
+  // client renders empty bars without null-guarding each one. The buckets sum to
+  // rateCount by construction.
+  const breakdown = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
+  for (const r of ratings) {
+    const star = Math.min(5, Math.max(1, Math.round(parseFloat(r.rating))))
+    breakdown[star] += 1
+  }
+  return { rateCount, rateValue, breakdown }
 }
 
 // Recompute and persist a recipe's aggregate rating from its ratings docs,

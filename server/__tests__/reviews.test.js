@@ -25,6 +25,10 @@ const request = require('supertest')
 const app = require('../app')
 const { getDB } = require('../db')
 const { getAuth } = require('firebase-admin/auth')
+// The shared mock (server/__mocks__/firebase-admin.js) exposes the batched
+// getUsers() handle + the users-registry setters used by the /getReviews
+// avatar-enrichment tests below.
+const admin = require('firebase-admin')
 const { seedRating } = require('./helpers/seed')
 
 const TEST_UID = 'test-uid'
@@ -50,10 +54,14 @@ beforeEach(async () => {
     recipeImage: 'https://example.com/review-test.jpg',
     rating: { rateCount: 0, rateValue: 0 },
   })
-  // Reset to default: verifyToken resolves req.uid = TEST_UID
+  // Reset to default: verifyToken resolves req.uid = TEST_UID. getUsers delegates
+  // to the shared registry mock so /getReviews avatar enrichment works (the local
+  // stub would otherwise omit it, since this beforeEach replaces the whole auth
+  // instance getAuth() returns).
   getAuth.mockReset()
   getAuth.mockImplementation(() => ({
     verifyIdToken: jest.fn().mockResolvedValue({ uid: TEST_UID }),
+    getUsers: admin.__getUsers,
   }))
 })
 
@@ -209,6 +217,37 @@ describe('POST /editReview', () => {
       .collection('ratings')
       .findOne({ username: TEST_USERNAME, recipeId: RECIPE_ID })
     expect(doc.reviewText).toBe('Updated review')
+  })
+
+  it('accepts the params in a JSON body (the new client transport)', async () => {
+    // The body form avoids the query-string corruption of &, #, %, + in review
+    // text; verify a body with such characters round-trips intact.
+    const tricky = 'Loved it — 100% & then #2 too + more'
+    const res = await request(app)
+      .post('/api/editReview')
+      .set(AUTH_HEADER)
+      .send({ recipeId: RECIPE_ID, text: tricky })
+
+    expect(res.status).toBe(200)
+    expect(res.body).toEqual({ edited: true })
+
+    const doc = await getDB()
+      .collection('ratings')
+      .findOne({ userId: TEST_UID, recipeId: RECIPE_ID })
+    expect(doc.reviewText).toBe(tricky)
+  })
+
+  it('prefers the body over the query string when both are present', async () => {
+    const res = await request(app)
+      .post(`/api/editReview?recipeId=${RECIPE_ID}&text=from-query`)
+      .set(AUTH_HEADER)
+      .send({ recipeId: RECIPE_ID, text: 'from-body' })
+
+    expect(res.status).toBe(200)
+    const doc = await getDB()
+      .collection('ratings')
+      .findOne({ userId: TEST_UID, recipeId: RECIPE_ID })
+    expect(doc.reviewText).toBe('from-body')
   })
 
   // Audit §4 item 4: edited review text must be bounded too.
@@ -731,6 +770,96 @@ describe('GET /getReviews', () => {
     expect(res.status).toBe(200)
     expect(res.body.reviews).toHaveLength(2)
     expect(res.body.totalCount).toBe(3)
+  })
+
+  // ── avatar + display-name enrichment (§D) ──────────────────────────────────
+  describe('reviewer identity enrichment', () => {
+    // __setUsers mutates shared mock state; restore the default registry after
+    // each so it can't leak into sibling tests.
+    afterEach(() => admin.__resetUsers())
+
+    it('enriches each review with the author’s photoURL and displayName', async () => {
+      admin.__setUsers([
+        { uid: 'rev-uid-1', photoURL: 'https://cdn/avatar-1.jpg', displayName: 'Reviewer One' },
+      ])
+      await seedRating({
+        userId: 'rev-uid-1',
+        username: 'reviewerone',
+        recipeId: RECIPE_ID,
+        rating: 5,
+        reviewText: 'Great recipe',
+        reviewCreatedAt: '1000',
+      })
+
+      const res = await request(app).get(`/api/getReviews?recipeId=${RECIPE_ID}`)
+      expect(res.status).toBe(200)
+      expect(res.body.reviews[0].photoURL).toBe('https://cdn/avatar-1.jpg')
+      expect(res.body.reviews[0].displayName).toBe('Reviewer One')
+    })
+
+    it('returns null photoURL/displayName when the reviewer has no Auth record', async () => {
+      // Deleted / never-existed Auth user: getUsers finds nobody for the uid.
+      admin.__setUsers([])
+      await seedRating({
+        userId: 'ghost-uid',
+        username: 'ghost',
+        recipeId: RECIPE_ID,
+        rating: 4,
+        reviewText: 'Left before deleting account',
+        reviewCreatedAt: '1000',
+      })
+
+      const res = await request(app).get(`/api/getReviews?recipeId=${RECIPE_ID}`)
+      expect(res.status).toBe(200)
+      expect(res.body.reviews[0].photoURL).toBeNull()
+      expect(res.body.reviews[0].displayName).toBeNull()
+    })
+
+    it('still returns the reviews (null identity) when the Auth batch lookup throws', async () => {
+      admin.__getUsers.mockRejectedValueOnce(new Error('admin sdk unavailable'))
+      await seedRating({
+        userId: 'rev-uid-1',
+        username: 'reviewerone',
+        recipeId: RECIPE_ID,
+        rating: 5,
+        reviewText: 'Great recipe',
+        reviewCreatedAt: '1000',
+      })
+
+      const res = await request(app).get(`/api/getReviews?recipeId=${RECIPE_ID}`)
+      expect(res.status).toBe(200)
+      expect(res.body.reviews).toHaveLength(1)
+      expect(res.body.reviews[0].photoURL).toBeNull()
+      expect(res.body.reviews[0].displayName).toBeNull()
+    })
+
+    it('resolves the whole page in a single deduped getUsers call', async () => {
+      admin.__setUsers([
+        { uid: 'u1', photoURL: 'p1', displayName: 'D1' },
+        { uid: 'u2', photoURL: 'p2', displayName: 'D2' },
+      ])
+      await seedRating({ userId: 'u1', username: 'u1name', recipeId: RECIPE_ID, rating: 5, reviewText: 'A', reviewCreatedAt: '1000' })
+      await seedRating({ userId: 'u2', username: 'u2name', recipeId: RECIPE_ID, rating: 4, reviewText: 'B', reviewCreatedAt: '2000' })
+      admin.__getUsers.mockClear()
+
+      const res = await request(app).get(`/api/getReviews?recipeId=${RECIPE_ID}`)
+      expect(res.status).toBe(200)
+      expect(admin.__getUsers).toHaveBeenCalledTimes(1)
+      const identifiers = admin.__getUsers.mock.calls[0][0]
+      expect(identifiers).toHaveLength(2)
+      expect(identifiers.map((i) => i.uid).sort()).toEqual(['u1', 'u2'])
+    })
+
+    it('does not call getUsers when no review on the page carries a uid', async () => {
+      // Legacy docs written before the uid backfill have only a username.
+      await seedRating({ username: 'legacy', recipeId: RECIPE_ID, rating: 3, reviewText: 'Old review', reviewCreatedAt: '1000' })
+      admin.__getUsers.mockClear()
+
+      const res = await request(app).get(`/api/getReviews?recipeId=${RECIPE_ID}`)
+      expect(res.status).toBe(200)
+      expect(res.body.reviews[0].photoURL).toBeNull()
+      expect(admin.__getUsers).not.toHaveBeenCalled()
+    })
   })
 })
 

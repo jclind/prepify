@@ -1,10 +1,12 @@
 /**
  * S6 — one-off catalog-wide rating-aggregate reconciliation.
  *
- * Each recipe carries a denormalized `rating: { rateCount, rateValue }` that the
- * server recomputes (util/recipeRating.js `recomputeRecipeRating`) on every
- * rating add/edit/delete and on every moderation hide/restore. The denormalized
- * value can nonetheless DRIFT from the source-of-truth `ratings` docs:
+ * Each recipe carries a denormalized `rating: { rateCount, rateValue, breakdown }`
+ * that the server recomputes (util/recipeRating.js `recomputeRecipeRating`) on
+ * every rating add/edit/delete and on every moderation hide/restore. The
+ * denormalized value can nonetheless DRIFT from the source-of-truth `ratings` docs:
+ *   - recipes rated before the per-star `breakdown` field shipped (§D) — running
+ *     this with --apply is the one-off backfill that populates it everywhere,
  *   - legacy / pre-recompute data written before the recompute-on-every-change
  *     rule shipped (PR #150),
  *   - a past silent best-effort recompute failure (the deleteAccount path was
@@ -53,14 +55,32 @@ const EPS = 1e-9
 // the summary counts are always exact and the cap is announced (no silent trim).
 const MAX_LISTED = 100
 
+// The per-star histogram (§D) is part of the aggregate, so a recipe whose stored
+// rateCount/rateValue are correct but which predates `breakdown` (or has a drifted
+// one) must still be flagged and healed — this doubles as the breakdown backfill.
+// A missing stored breakdown compares unequal to the recomputed five-bucket object,
+// so it's correctly caught. Buckets are integers: exact comparison.
+function breakdownEqual(a, b) {
+  if (!a || !b) return false
+  for (let s = 1; s <= 5; s++) {
+    if ((Number(a[s]) || 0) !== (Number(b[s]) || 0)) return false
+  }
+  return true
+}
+
 function ratingsEqual(a, b) {
-  return a.rateCount === b.rateCount && Math.abs(a.rateValue - b.rateValue) < EPS
+  return (
+    a.rateCount === b.rateCount &&
+    Math.abs(a.rateValue - b.rateValue) < EPS &&
+    breakdownEqual(a.breakdown, b.breakdown)
+  )
 }
 
 // The stored aggregate can be absent (legacy recipes predating the field),
 // partial, or string-typed. Normalize to numbers so the comparison and the
 // printout are well-defined; a missing/!finite field reads as NaN and will not
-// equal any real recomputed value, so it is correctly flagged.
+// equal any real recomputed value, so it is correctly flagged. `breakdown` is
+// passed through as-is for breakdownEqual (which tolerates absent/partial).
 function readStored(rating) {
   const rateCount = Number(rating && rating.rateCount)
   const rateValue = Number(rating && rating.rateValue)
@@ -68,14 +88,20 @@ function readStored(rating) {
     present: !!rating && rating.rateCount != null && rating.rateValue != null,
     rateCount,
     rateValue,
+    breakdown: rating && rating.breakdown,
   }
+}
+
+function fmtBreakdown(breakdown) {
+  if (!breakdown) return 'breakdown (absent)'
+  return `breakdown [${[1, 2, 3, 4, 5].map((s) => Number(breakdown[s]) || 0).join('/')}]`
 }
 
 function fmt(agg) {
   if (agg.present === false) return '(absent)'
   const c = Number.isFinite(agg.rateCount) ? agg.rateCount : '?'
   const v = Number.isFinite(agg.rateValue) ? Number(agg.rateValue.toFixed(4)) : '?'
-  return `{ rateCount: ${c}, rateValue: ${v} }`
+  return `{ rateCount: ${c}, rateValue: ${v}, ${fmtBreakdown(agg.breakdown)} }`
 }
 
 async function main() {
