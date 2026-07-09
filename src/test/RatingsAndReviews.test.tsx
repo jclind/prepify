@@ -1,6 +1,6 @@
 import React from 'react'
 import { vi } from 'vitest'
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { render, screen, waitFor, within, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -460,5 +460,43 @@ describe('RecipeReview', () => {
 
     await waitFor(() => expect(mockDeleteReview).toHaveBeenCalledWith('recipe-1'))
     await waitFor(() => expect(setCurrUserReview).toHaveBeenCalledWith(null))
+  })
+
+  // ─── Reviewer avatar (photoURL vs. DefaultAvatar fallback) ─────────────────
+
+  it('renders an <img> avatar when the review has a photoURL', () => {
+    const review = {
+      ...baseReview,
+      photoURL: 'https://example.com/a.jpg',
+      displayName: 'Photo User',
+    }
+    const { container } = renderRecipeReview({ review })
+    const img = container.querySelector('img.avatar')
+    expect(img).not.toBeNull()
+    expect(img).toHaveAttribute('src', 'https://example.com/a.jpg')
+    expect(container.querySelector('.default-avatar')).toBeNull()
+  })
+
+  it('falls back to DefaultAvatar when the <img> avatar fails to load', () => {
+    const review = {
+      ...baseReview,
+      photoURL: 'https://example.com/broken.jpg',
+      displayName: 'Photo User',
+    }
+    const { container } = renderRecipeReview({ review })
+    const img = container.querySelector('img.avatar') as HTMLImageElement
+    expect(img).not.toBeNull()
+
+    fireEvent.error(img)
+
+    expect(container.querySelector('img.avatar')).toBeNull()
+    expect(container.querySelector('.default-avatar')).not.toBeNull()
+  })
+
+  it('renders DefaultAvatar (no <img> avatar) when photoURL is null', () => {
+    const review = { ...baseReview, photoURL: null, displayName: null }
+    const { container } = renderRecipeReview({ review })
+    expect(container.querySelector('img.avatar')).toBeNull()
+    expect(container.querySelector('.default-avatar')).not.toBeNull()
   })
 })
