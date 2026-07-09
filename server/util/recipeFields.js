@@ -30,16 +30,16 @@ const EDITABLE_RECIPE_FIELDS = [
   'totalTime',
 ]
 
-// Creating a recipe additionally accepts the author snapshot and timestamps the
-// client supplies. The server still stamps _id/userId, zeroes the social
-// counters, and seeds the rating itself — so curation/moderation flags
-// (`status`, `featured`) and any other unlisted key the client sends are
+// Creating a recipe additionally accepts the author snapshot. The server stamps
+// _id/userId, the createdAt/editedAt timestamps, zeroes the social counters, and
+// seeds the rating itself — so the client can't dictate a recipe's creation time
+// (createdAt drives the "Newest"/"Oldest" browse sort, so a forged/skewed client
+// clock could otherwise pin a recipe to the top of Newest). Curation/moderation
+// flags (`status`, `featured`) and any other unlisted key the client sends are
 // ignored on create, exactly as the edit whitelist ignores them on update.
 const CREATABLE_RECIPE_FIELDS = [
   ...EDITABLE_RECIPE_FIELDS,
   'authorUsername',
-  'createdAt',
-  'editedAt',
 ]
 
 // The internal moderation/curation stamps an admin action writes onto a recipe.
@@ -68,6 +68,10 @@ const RECIPE_INTERNAL_STAMPS = [
 const PUBLIC_RECIPE_FIELDS = [
   '_id',
   ...CREATABLE_RECIPE_FIELDS,
+  // Server-stamped timestamps the client renders (formerly client-supplied, now
+  // authoritative on the server — see CREATABLE_RECIPE_FIELDS).
+  'createdAt',
+  'editedAt',
   // Server-maintained stats/social counters + the curation flag the client renders.
   'rating',
   'views',

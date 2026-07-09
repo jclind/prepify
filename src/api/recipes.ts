@@ -282,7 +282,23 @@ class RecipeAPIClass {
       // Diet labels now come from the form (recipeData.nutritionLabels); Edamam
       // only supplies the numeric nutrition facts.
       const nutritionData = await this.getRecipeNutrition(recipeData.ingredients)
-      const returnRecipeData: Omit<RecipeType, '_id'> = {
+      // The create body carries only what the server actually reads on create
+      // (CREATABLE_RECIPE_FIELDS = editable content + authorUsername). Everything
+      // else on a recipe is server-authoritative and stamped server-side, so we
+      // don't send it: _id, the createdAt/editedAt timestamps (a client clock
+      // must not dictate the "Newest"-sort position), the zeroed rating, and the
+      // view/save/made counters. The server ignores any of these it receives —
+      // omitting them keeps the payload honest about what's authoritative.
+      const returnRecipeData: Omit<
+        RecipeType,
+        | '_id'
+        | 'createdAt'
+        | 'editedAt'
+        | 'rating'
+        | 'views'
+        | 'numTimesSaved'
+        | 'numTimesMade'
+      > = {
         ...this.buildEditableRecipeFields(recipeData, {
           recipeImage,
           nutritionData,
@@ -290,15 +306,6 @@ class RecipeAPIClass {
           totalTime,
         }),
         authorUsername,
-        rating: {
-          rateCount: 0,
-          rateValue: 0,
-        },
-        createdAt: new Date().getTime().toString(),
-        editedAt: null,
-        views: 0,
-        numTimesSaved: 0,
-        numTimesMade: 0,
       }
       setProgress(90)
       const result = await http.post<{ _id: string; pendingReview?: boolean }>(
