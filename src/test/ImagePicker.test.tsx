@@ -82,3 +82,31 @@ describe('ImagePicker — accessibility', () => {
     expect(click).toHaveBeenCalledTimes(2)
   })
 })
+
+// W2 a11y wiring: the empty-state dropzone is the picker control, so the
+// section's error/hint text ids are announced with it via aria-describedby.
+describe('ImagePicker — a11y wiring', () => {
+  it('carries describedBy on the empty dropzone control', () => {
+    const { container } = render(
+      <ImagePicker
+        image={undefined}
+        setImage={vi.fn()}
+        describedBy='error-image draft-image-hint'
+      />
+    )
+    const dropzone = container.querySelector('.image-picker-box') as HTMLElement
+    expect(dropzone).toHaveAttribute('role', 'button')
+    expect(dropzone).toHaveAttribute(
+      'aria-describedby',
+      'error-image draft-image-hint'
+    )
+  })
+
+  it('omits aria-describedby when none is provided', () => {
+    const { container } = render(
+      <ImagePicker image={undefined} setImage={vi.fn()} />
+    )
+    const dropzone = container.querySelector('.image-picker-box') as HTMLElement
+    expect(dropzone).not.toHaveAttribute('aria-describedby')
+  })
+})
