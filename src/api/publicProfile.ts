@@ -1,6 +1,6 @@
 import axios from 'axios'
 import { http } from 'src/api/http-common'
-import { PublicProfile, RecipeType } from 'types'
+import { PublicProfile, RecipeCardType } from 'types'
 
 class PublicProfileAPIClass {
   // Public endpoint — no auth required. A missing username is an expected
@@ -26,7 +26,7 @@ class PublicProfileAPIClass {
     username: string,
     page: number,
     recipesPerPage: number
-  ): Promise<{ recipes: RecipeType[]; totalCount: number }> {
+  ): Promise<{ recipes: RecipeCardType[]; totalCount: number }> {
     const result = await http.get(
       `api/getPublicProfileRecipes?username=${encodeURIComponent(
         username

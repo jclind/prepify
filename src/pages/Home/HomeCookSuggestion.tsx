@@ -5,7 +5,7 @@ import Modal from 'react-modal'
 import { Link } from 'react-router-dom'
 import Skeleton from 'react-loading-skeleton'
 import RecipeAPI from 'src/api/recipes'
-import { RecipeType } from 'types'
+import { RecipeCardType } from 'types'
 import { fmtPrice, ratingLabel, skeletonColor } from './homeFormat'
 import { bareModalStyles } from 'src/util/modalStyles'
 import './HomeCookSuggestion.scss'
@@ -38,9 +38,9 @@ const HomeCookSuggestion: FC = () => {
   // The currently displayed pick is held in state (not read off the mutation)
   // so a re-roll keeps the previous card on screen — stable size, no squish —
   // until the next pick arrives. undefined = nothing fetched yet, null = 404.
-  const [pick, setPick] = useState<RecipeType | null | undefined>(undefined)
+  const [pick, setPick] = useState<RecipeCardType | null | undefined>(undefined)
 
-  const { mutate, isPending, isError, reset } = useMutation<RecipeType | null, unknown, string | undefined>({
+  const { mutate, isPending, isError, reset } = useMutation<RecipeCardType | null, unknown, string | undefined>({
     mutationFn: (excludeId) => RecipeAPI.getRandomRecipe(excludeId),
     onSuccess: (r) => setPick(r),
   })

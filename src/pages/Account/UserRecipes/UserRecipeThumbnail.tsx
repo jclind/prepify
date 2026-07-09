@@ -6,7 +6,7 @@ import { skeletonBase as skeletonColor } from 'src/util/loadingStyles'
 import 'react-loading-skeleton/dist/skeleton.css'
 
 import './UserRecipeThumbnail.scss'
-import { RecipeType } from 'types'
+import { CreatedRecipeCardType } from 'types'
 import { formatRating } from 'src/util/formatRating'
 import { formatCompactCount } from 'src/util/formatCompactCount'
 import { formatPrice } from 'src/util/formatPrice'
@@ -23,7 +23,7 @@ const formatDate = (createdAt: string) => {
 }
 
 type UserRecipeThumbnailType = {
-  recipe: RecipeType | null
+  recipe: CreatedRecipeCardType | null
   loading?: boolean
 }
 

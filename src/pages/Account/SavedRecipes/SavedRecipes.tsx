@@ -10,7 +10,7 @@ import './SavedRecipes.scss'
 import RecipeAPI from 'src/api/recipes'
 import CollectionsAPI from 'src/api/collections'
 import AuthAPI from 'src/api/auth'
-import { RecipeType } from 'types'
+import { SavedRecipeCardType } from 'types'
 import { useDelayedLoading } from 'src/hooks/useDelayedLoading'
 import { COLLECTION_CREATE_ERROR } from 'src/util/toastMessages'
 import { useDebounce } from 'src/hooks/useDebounce'
@@ -63,7 +63,7 @@ const SavedRecipes: FC = () => {
     isMore: isMoreRecipes,
     loadMore: handleLoadMoreRecipes,
     reset: resetToFirstPage,
-  } = usePaginatedLoadMore<RecipeType>({
+  } = usePaginatedLoadMore<SavedRecipeCardType>({
     queryKey: page => [
       'saved-recipes',
       sort.value,

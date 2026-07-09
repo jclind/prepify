@@ -1,12 +1,12 @@
 import React, { FC } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import RecipeAPI from 'src/api/recipes'
-import { RecipeType } from 'types'
+import { RecipeCardType } from 'types'
 import { useDelayedLoading } from 'src/hooks/useDelayedLoading'
 import { HomeRecipeCard, HomeRecipeCardSkeleton } from './HomeRecipeCard'
 
 const HomeTrending: FC = () => {
-  const { data, isLoading, isError } = useQuery<RecipeType[]>({
+  const { data, isLoading, isError } = useQuery<RecipeCardType[]>({
     queryKey: ['trending-recipes'],
     queryFn: () => RecipeAPI.getTrendingRecipes(4),
     // Trending shifts slowly; match the For-You / by-meal rows (5 min) so a

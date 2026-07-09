@@ -3,13 +3,13 @@ import React, { FC, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Skeleton from 'react-loading-skeleton'
 import 'react-loading-skeleton/dist/skeleton.css'
-import { RecipeType } from 'types'
+import { RecipeCardType } from 'types'
 import { skeletonColor, fmtPrice, ratingLabel } from './homeFormat'
 
 // Shared recipe card for the Home rows (Trending, For You). A lightweight
 // thumbnail+meta link — intentionally simpler than the full RecipeCard (no save
 // control) to keep the rows fast and uncluttered.
-export const HomeRecipeCard: FC<{ recipe: RecipeType }> = ({ recipe }) => {
+export const HomeRecipeCard: FC<{ recipe: RecipeCardType }> = ({ recipe }) => {
   // Hold a skeleton over the thumb until the image decodes (onLoad), then fade it
   // in — otherwise the image paints in top-down over an empty box on a slow load.
   const [imgLoaded, setImgLoaded] = useState(false)

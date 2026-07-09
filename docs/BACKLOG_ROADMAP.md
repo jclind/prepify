@@ -114,7 +114,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **7** | **W2 · AddRecipe a11y wiring** | `aria-describedby` on TimeInput / Cuisine-Course-Diet selects / ImagePicker / list containers; `SectionHeader` label `id` + section `aria-labelledby` (BACKLOG A11y follow-ups) | `[x]` [#269](https://github.com/jclind/prepify/pull/269) (2026-07-09) | `src/pages/AddRecipe/**` | **merged** |
 | **7** | **W3 · housekeeping smalls** | CI `actions/checkout`+`setup-node` v4→v5 (Node-20-runtime deprecation); `VITE_APP_VERSION` build define replacing `ReleaseNotes.tsx`'s `package.json` import (BACKLOG Tech debt ×2) | `[x]` [#270](https://github.com/jclind/prepify/pull/270) (2026-07-09) | `.github/workflows/test.yml`, `vite.config.ts`, `ReleaseNotes.tsx` + `footerData.ts` | **merged** |
 | **8** | **X1 · `createdAt` server-stamp** | drop `createdAt`/`editedAt` from `CREATABLE_RECIPE_FIELDS`, stamp both in the `addRecipe` handler (13-digit ms-epoch matching the edit path), re-add to `PUBLIC_RECIPE_FIELDS` for reads (BACKLOG Tech debt) | `[x]` [#272](https://github.com/jclind/prepify/pull/272) (2026-07-09) | `server/routes/recipes.js`, `server/util/recipeFields.js`, `src/api/recipes.ts` + `recipes.test.js` | **merged** — folded in the client-payload cleanup (stop sending server-seeded rating/counters). Runtime-verified + local review |
-| **8** | **X2 · `RecipeCardType` typing cleanup** | tighten the card-shape typing across `src/types.ts` + `src/api/recipes.ts` (BACKLOG Tech debt) | `[ ]` | `src/types.ts`, `src/api/recipes.ts` | ready — §D file ownership released |
+| **8** | **X2 · `RecipeCardType` typing cleanup** | tighten the card-shape typing across `src/types.ts` + `src/api/recipes.ts` (BACKLOG Tech debt) | `[P]` [#273](https://github.com/jclind/prepify/pull/273) | `src/types.ts`, `src/api/recipes.ts` | PR open — three card types mirror the three server projections |
 | **8** | **X3 · orphaned-image-on-failed-create** | delete the uploaded Storage object when `POST /addRecipe` fails after the image upload (`src/api/recipes.ts`) | `[ ]` | `src/api/recipes.ts` | ready — overlaps X2 file surface (serialize or one lane) |
 | **8** | **X4 · server-Jest flakiness structural fix** | the intermittent server-suite failures (test files/mocks/setup) (BACKLOG Tech debt) | `[ ]` | `server/__tests__/**` + Jest setup | ready — disjoint from X1–X3 |
 | **—** | **Deferred / post-1.0 / owner** | see [that section](#deferred--post-10--owner-off-the-active-board) | `[blocked]`/`[dropped]` | — | prerendering, Edamam, theming, brand-orange, DB relocation, ideas |
@@ -1867,3 +1867,23 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   value is dropped, a 13-digit server value returned, and the omitted-value case still stamped. All six checks
   green; remote branch deleted. **Still open in Wave 8:** X2 (`RecipeCardType` typing), X3
   (orphaned-image-on-failed-create — overlaps X2's `src/api/recipes.ts`), X4 (server-Jest flakiness).
+- **2026-07-09** — **X2** implemented in `feat/x2-recipecard-typing` → PR
+  [#273](https://github.com/jclind/prepify/pull/273) opened (`[P]`). The recipe list/read endpoints ship a lean
+  card **projection**, not the full doc, but the client typed them `RecipeType[]`/`RecipeType` — so a component
+  reaching for an unprojected detail field (`ingredients`/`instructions`/`nutritionData`/`description`/`userId`/
+  `createdAt`/…) compiled while the field was `undefined` at runtime. Root cause: the three server projections
+  (`PUBLIC_RECIPE_CARD_FIELDS` in `recipeFields.js`; `SAVED_CARD_PROJECTION`/`CREATED_CARD_PROJECTION` in
+  `users.js`) genuinely **differ**, so there's no single "card shape" — introduced **three** card types mirroring
+  them exactly (shared `RecipeCardBase` of the 6 common fields): `RecipeCardType` (public — browse/trending/
+  For-You/random/profile tiles, 10 fields), `SavedRecipeCardType` (saved grid, base+cuisine), and
+  `CreatedRecipeCardType` (My-Recipes grid, base + createdAt/views/saves/made). Typed the six list methods +
+  `getPublicProfileRecipes` + `PublicProfile.recipes` against them; `getRecipe` stays `RecipeType` (detail
+  endpoint = full projection). Also dropped the phantom `page`/`filters`/`entries_per_page` from
+  `RecipeDBResponseType` (server returns only `{ recipeList, total_results }`). Consumer prop/annotation updates
+  (RecipeCard's prop = `RecipeCardType | SavedRecipeCardType`, HomeRecipeCard, MealRow, UserRecipeThumbnail,
+  HomeCookSuggestion, the `usePaginatedLoadMore`/`useQuery` generics, PublicProfile `extraPages`) fell out of the
+  narrowing — **tsc drove every one and confirmed no consumer currently over-reads** (matches the backlog
+  FE-read check → typing-only, no runtime behaviour change). Gates: `tsc --noEmit` clean, Vitest **645 passed**,
+  `npm run build` succeeds; live dev `GET /api/recipes` returned exactly `{ recipeList, total_results }` with the
+  10-field card shape. **X3** (orphaned-image cleanup) still overlaps X2's `src/api/recipes.ts` — serialize onto
+  this once it lands.

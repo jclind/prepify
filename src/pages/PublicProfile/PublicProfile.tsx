@@ -21,7 +21,7 @@ import {
   PROFILE_LINK_COPY_ERROR,
 } from 'src/util/toastMessages'
 import { SITE_URL, DEFAULT_OG_IMAGE } from 'src/util/seo'
-import { RecipeType } from 'types'
+import { RecipeCardType } from 'types'
 
 // Page size for "load more". Matches the server's initial-batch limit so the
 // first extra page (page 1) picks up exactly where the profile payload ended.
@@ -131,7 +131,7 @@ const PublicProfile: FC = () => {
   // accumulation idempotent: a re-fetch of a page overwrites its slot instead of
   // duplicating recipes. `extraPage` is the next page to request (0 = none yet;
   // the profile payload is effectively page 0).
-  const [extraPages, setExtraPages] = useState<Record<number, RecipeType[]>>({})
+  const [extraPages, setExtraPages] = useState<Record<number, RecipeCardType[]>>({})
   const [extraPage, setExtraPage] = useState(0)
 
   // The viewer's own handle, so we can hide the "report" control on their own

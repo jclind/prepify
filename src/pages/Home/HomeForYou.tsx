@@ -2,7 +2,7 @@ import React, { FC } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import RecipeAPI from 'src/api/recipes'
 import { useAuth } from 'src/context/AuthContext'
-import { RecipeType } from 'types'
+import { RecipeCardType } from 'types'
 import { HomeRecipeCard } from './HomeRecipeCard'
 
 // Personalized "For You" row. "Hide until personalized": only renders for a
@@ -18,7 +18,7 @@ import { HomeRecipeCard } from './HomeRecipeCard'
 const HomeForYou: FC = () => {
   const user = useAuth()?.user ?? null
 
-  const { data, isLoading, isError } = useQuery<RecipeType[]>({
+  const { data, isLoading, isError } = useQuery<RecipeCardType[]>({
     queryKey: ['for-you-recipes', user?.uid],
     // Match the Trending row's count (4) so the desktop grid stays even.
     queryFn: () => RecipeAPI.getForYouRecipes(4),
