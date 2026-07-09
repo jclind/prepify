@@ -899,7 +899,11 @@ describe('POST /deleteAccount', () => {
       // goner's review of 'kept' is gone; only keeper(4) remains.
       expect(await db.collection('ratings').countDocuments({ recipeId: 'kept' })).toBe(1)
       const kept = await db.collection('recipes').findOne({ _id: 'kept' })
-      expect(kept.rating).toEqual({ rateCount: 1, rateValue: 4 })
+      expect(kept.rating).toEqual({
+        rateCount: 1,
+        rateValue: 4,
+        breakdown: { 1: 0, 2: 0, 3: 0, 4: 1, 5: 0 },
+      })
     })
 
     it('deletes the departing user\'s recipe images and profile photo from Storage (D5)', async () => {

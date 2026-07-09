@@ -25,6 +25,8 @@ function toFbUser(u) {
     uid: u.uid,
     email: u.email || null,
     customClaims: u.admin ? { admin: true } : u.customClaims || null,
+    photoURL: u.photoURL || null,
+    displayName: u.displayName || null,
   }
 }
 function notFound() {
@@ -54,13 +56,25 @@ const getUserByEmail = jest.fn().mockImplementation(async email => {
   if (!u) throw notFound()
   return toFbUser(u)
 })
+// Batched lookup used by GET /getReviews to resolve reviewer avatar/displayName.
+// Mirrors the Admin SDK shape: takes [{ uid }], returns { users, notFound }.
+const getUsers = jest.fn().mockImplementation(async identifiers => {
+  const found = []
+  const notFoundList = []
+  for (const id of identifiers) {
+    const u = users.find(x => x.uid === id.uid)
+    if (u) found.push(toFbUser(u))
+    else notFoundList.push(id)
+  }
+  return { users: found, notFound: notFoundList }
+})
 // Used by POST /deleteAccount. Resolves by default; tests assert the uid it was
 // called with via admin.__deleteUser.
 const deleteUser = jest.fn().mockResolvedValue(undefined)
 // Used by POST /updatePhoto to set the moderated photoURL. Resolves by default;
 // tests assert the (uid, props) it was called with via admin.__updateUser.
 const updateUser = jest.fn().mockResolvedValue(undefined)
-const authInstance = { verifyIdToken, getUser, getUserByEmail, deleteUser, updateUser }
+const authInstance = { verifyIdToken, getUser, getUsers, getUserByEmail, deleteUser, updateUser }
 
 // Storage chain used by util/firebaseStorage. deleteFile is exported so tests
 // can assert (or override) image-deletion behavior.
@@ -76,6 +90,7 @@ const admin = {
   __deleteFile: deleteFile,
   __verifyIdToken: verifyIdToken,
   __getUser: getUser,
+  __getUsers: getUsers,
   __deleteUser: deleteUser,
   __updateUser: updateUser,
   __setClaims: claims => {

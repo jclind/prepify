@@ -321,7 +321,7 @@ All routes live in `server/routes/reviews.js`, mounted at `/api` (server/app.js)
   - `400 {error:'Rating must be between 1 and 5'}`
 - **Response:** `200 {rated: true}`. Plus `401` (verifyToken), `403 {error, code, reason}` (requireActive), `429 {error, code:'RATE_LIMITED'}`.
 - **Client:** `src/api/recipes.ts:435` → `RecipeAPI.addRating(recipeId, rating)` — used by `src/pages/SingleRecipe/DataSections/RatingsAndReviews/Ratings/Ratings.tsx:44`. Returns `null` without calling if not signed in.
-- **Notes:** Upsert via `upsertWithDupRetry` on the unique `{userId, recipeId}` index (concurrent double-submit → E11000 retried as plain update). On insert, review fields are defaulted to `''`. Recomputes and persists the recipe's aggregate `rating: {rateCount, rateValue}` via `recomputeRecipeRating` (server/util/recipeRating.js), which excludes moderation-hidden docs and non-numeric ratings.
+- **Notes:** Upsert via `upsertWithDupRetry` on the unique `{userId, recipeId}` index (concurrent double-submit → E11000 retried as plain update). On insert, review fields are defaulted to `''`. Recomputes and persists the recipe's aggregate `rating: {rateCount, rateValue, breakdown}` via `recomputeRecipeRating` (server/util/recipeRating.js), which excludes moderation-hidden docs and non-numeric ratings. `breakdown` (added §D PR-A) is a `{1..5: number}` per-star histogram of the counted ratings (each bucketed by nearest whole star, buckets sum to `rateCount`); new recipes seed it all-zero, and the one-off backfill is `server/scripts/reconcileRatingAggregates.js --apply`.
 
 ### POST /api/newReview
 - **Handler:** `server/routes/reviews.js:66`
@@ -346,14 +346,14 @@ All routes live in `server/routes/reviews.js`, mounted at `/api` (server/app.js)
 ### POST /api/editReview
 - **Handler:** `server/routes/reviews.js:127`
 - **Middleware:** `verifyToken` → `requireActive` → `reviewWriteLimiter`
-- **Request:** query `recipeId` (string, required), `text` (string, required; empty string allowed — only `null`/non-string rejected). No body.
+- **Request:** JSON body `{recipeId: string, text: string}` (both required; empty `text` allowed — only `null`/non-string rejected). The pre-§D query form (`?recipeId=&text=`) is still accepted as a **backward-compat fallback**; the body wins when both are present. The query form corrupts text containing `&`/`#`/`%`/`+` and is slated for removal one release after the frontend switches to the body (PR-B).
   - `400 {error:'recipeId and text are required'}`
   - `400 {error:'Review cannot exceed 2000 characters'}`
   - `422 {error, code:'CONTENT_BLOCKED'}` — same `moderateText` gate as /newReview
   - `403 {error:'Review not found or not authorized'}` — update matched 0 docs (non-author can never match, since the filter is `{userId: req.uid, recipeId}`)
 - **Response:** `200 {edited: true}`. Plus `401/403/429`.
 - **Client:** `src/api/recipes.ts:456` → `RecipeAPI.editReview(recipeId, text)` — used by `src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/RecipeReview.tsx:59`.
-- **Notes:** Updates `reviewText` + `reviewLastUpdated` only. Asymmetric with /newReview: create takes JSON body `reviewText`, edit takes query param `text`.
+- **Notes:** Updates `reviewText` + `reviewLastUpdated` only. As of §D PR-A both create and edit accept a JSON body (`newReview`→`reviewText`, `editReview`→`text`); the field-name difference remains but the transport is now aligned.
 
 ### DELETE /api/deleteReview
 - **Handler:** `server/routes/reviews.js:156`
@@ -375,9 +375,9 @@ All routes live in `server/routes/reviews.js`, mounted at `/api` (server/app.js)
 - **Handler:** `server/routes/reviews.js:229`
 - **Middleware:** `optionalAuth` (anonymous-friendly)
 - **Request:** query `recipeId` (string, required — `400 {error:'recipeId is required'}`), `page` (int, default 0), `reviewsPerPage` (int, default 5, capped at `MAX_PER_PAGE` = 50, reviews.js:18), `filter` (`'new'` → sort `reviewCreatedAt` desc, `'top'` → sort `rating` desc, anything else → natural order).
-- **Response:** `200 {reviews: [...], totalCount: number}` — each review is the raw ratings doc (only docs with non-empty `reviewText` and not `moderationHidden` via `REVIEW_VISIBLE`, server/util/moderation.js:33) plus a derived `isCurrentUser: boolean`.
+- **Response:** `200 {reviews: [...], totalCount: number}` — each review is the raw ratings doc (only docs with non-empty `reviewText` and not `moderationHidden` via `REVIEW_VISIBLE`, server/util/moderation.js:33) plus a derived `isCurrentUser: boolean` and, added in §D PR-A, the author's `photoURL: string | null` and `displayName: string | null`.
 - **Client:** `src/api/recipes.ts:470` → `RecipeAPI.getReviews(recipeId, filter, page, reviewsPerPage)` — used by `src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/ReviewsContainer.tsx:40` (react-query).
-- **Notes:** `isCurrentUser` is derived from the *verified* token uid (`req.uid`) matching the doc's `userId` — never from any client-supplied identity. Raw docs are spread as-is, so authors' `userId` (Firebase uid) and denormalized `username` are visible to anonymous callers.
+- **Notes:** `isCurrentUser` is derived from the *verified* token uid (`req.uid`) matching the doc's `userId` — never from any client-supplied identity. `photoURL`/`displayName` are resolved from Firebase Auth via a single deduped, batched `getAuth().getUsers()` keyed on the docs' stable `userId` (the rating doc stores neither); the lookup is failure-tolerant (a transient Admin-SDK error or a deleted/not-found reviewer yields `null` for both fields and never fails the list) — same degrade-gracefully pattern as `getPublicProfile`. Legacy docs lacking a `userId` skip the lookup entirely. Raw docs are spread as-is, so authors' `userId` (Firebase uid) and denormalized `username` are visible to anonymous callers.
 
 ### GET /api/getSingleUserReviews
 - **Handler:** `server/routes/reviews.js:257`
@@ -403,7 +403,7 @@ All routes live in `server/routes/reviews.js`, mounted at `/api` (server/app.js)
 
 - ~~**`getReviews` client sends a `username` query param the server never reads**~~ **[fixed with this regeneration]** — the client awaited `AuthAPI.getUsername()` and appended `username=...` (literally `username=null` when signed out), but the handler destructures only `recipeId, page, reviewsPerPage, filter` (reviews.js:231) and derives `isCurrentUser` from the verified token uid. The dead param and its extra username round-trip are removed from `RecipeAPI.getReviews`.
 - ~~**`editReview` interpolates raw review text into the URL query string without encoding**~~ **[fixed with this regeneration]** — the client built `` `api/editReview?recipeId=${recipeId}&text=${text}` `` with no encoding, so any `&`, `#`, `%`, or `+` in the edited text truncated or corrupted what the server received. `RecipeAPI.editReview` now passes both values via axios `params`, which URL-encodes them. (The remaining asymmetry — create sends body `reviewText`, edit sends query `text` — stands, below.)
-- **Create/edit contract asymmetry** — same field travels as body `reviewText` on create (reviews.js:68) but query `text` on edit (reviews.js:128).
+- **Create/edit field-name asymmetry** — the review text is body `reviewText` on create (reviews.js:68) but body `text` on edit (reviews.js:128). As of §D PR-A both accept a JSON body (edit also still honors the legacy `?text=` query form as a fallback), so the transport is aligned; only the field name differs.
 - **Missing-doc status inconsistency between the two delete routes** — `/deleteReview` returns `403` (reviews.js:167) while `/removeRating` returns `404` (reviews.js:203) for the identical "you have no doc for this recipe" case. Both client methods ignore the body, so nothing breaks, but the contract is inconsistent.
 - **`getSingleUserReviews` is a public any-username endpoint whose only client caller queries the caller's own handle** — the route takes arbitrary `username` with no auth, but `src/api/recipes.ts:487` hardwires `AuthAPI.getUsername()`. The public-profile surface does not use this endpoint (no other call sites in `src/`), so the arbitrary-username capability is currently reachable only by direct request.
 - **Raw ratings docs leak internal fields to anonymous callers** — `/getReviews` (reviews.js:248-251) and `/getSingleUserReviews` spread the stored doc verbatim, exposing each author's Firebase `userId`, Mongo `_id`, and (on moderated-then-restored docs) `moderatedBy`/`moderatedAt`. Nothing secret-critical, but there is no projection layer.
