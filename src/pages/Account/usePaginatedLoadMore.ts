@@ -40,6 +40,14 @@ export type UsePaginatedLoadMoreResult<T> = {
   // Skeleton visibility, flash-guarded via useDelayedLoading — reserve the
   // list's height on this, not raw isLoading.
   showSkeleton: boolean
+  // The current page's fetch failed (after react-query's retries). Callers must
+  // branch on this BEFORE their empty state — an error rendered as "nothing
+  // here yet" tells a user with data that they have none. See
+  // docs/design/loading-states.md ("Error is not empty").
+  isError: boolean
+  // Refetch the failed/current page — wire this to the error state's
+  // "Try again" action.
+  refetch: () => void
   isMore: boolean
   // Total across all pages, from the most recent resolved page (0 until the
   // first page lands). Lets callers render an "N items" count without a second
@@ -66,7 +74,7 @@ export function usePaginatedLoadMore<T>({
   const [isMore, setIsMore] = useState(false)
   const [totalCount, setTotalCount] = useState(0)
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: queryKey(page),
     queryFn: () => queryFn(page),
   })
@@ -96,6 +104,8 @@ export function usePaginatedLoadMore<T>({
     items,
     isLoading,
     showSkeleton,
+    isError,
+    refetch,
     isMore,
     totalCount,
     hasResolvedItems,

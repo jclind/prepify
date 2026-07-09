@@ -49,6 +49,7 @@ const RatingsAndReviews: FC<RatingsAndReviewsProps> = ({
     items: reviews,
     isLoading,
     showSkeleton,
+    isError,
     isMore,
     totalCount,
     showList,
@@ -148,6 +149,12 @@ const RatingsAndReviews: FC<RatingsAndReviewsProps> = ({
               <ReviewCardSkeleton count={2} />
             )}
           </>
+        ) : isError ? (
+          // Error is not empty: a failed fetch must not read as "no reviews".
+          // Same lightweight treatment as the Home sections' inline error copy.
+          <div className='rr-empty'>
+            <p>Couldn’t load reviews. Please try again later.</p>
+          </div>
         ) : (
           <div className='rr-empty'>
             {uid && !isOwner ? (

@@ -1,4 +1,4 @@
-import { ChevronDownIcon, CornerDownRightIcon, StarOutlineIcon } from 'src/Components/icons'
+import { AlertCircleIcon, ChevronDownIcon, CornerDownRightIcon, StarOutlineIcon } from 'src/Components/icons'
 import React, { FC } from 'react'
 import RecipeAPI from 'src/api/recipes'
 import { OptionalReviewType } from 'types'
@@ -112,6 +112,8 @@ const Ratings: FC = () => {
     items: reviews,
     isLoading,
     showSkeleton,
+    isError,
+    refetch,
     isMore: isMoreReviews,
     showList,
     loadMore: handleLoadMoreReviews,
@@ -161,6 +163,15 @@ const Ratings: FC = () => {
             </button>
           ) : null}
         </>
+      ) : isError ? (
+        // Error is not empty: a failed fetch must never read as "no ratings" to
+        // a user who has them. See docs/design/loading-states.md.
+        <EmptyState
+          icon={<AlertCircleIcon />}
+          title='Couldn’t load your ratings'
+          description='Something went wrong. Please try again.'
+          action={{ label: 'Try again', onClick: () => refetch() }}
+        />
       ) : (
         <EmptyState
           icon={<StarOutlineIcon />}

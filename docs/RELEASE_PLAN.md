@@ -55,12 +55,20 @@ a feature flag. Do these together:
 
 - `[ ]` **Beta tag fully removed** — see blockers above. **(blocker)**
 - `[ ]` **Release notes refreshed** — see blockers above. **(blocker)**
-- `[~]` **Empty / error / loading states sweep** — **loading states done (PR #213, 2026-06-30):** one
+- `[x]` **Empty / error / loading states sweep** — **loading states done (PR #213, 2026-06-30):** one
   codified pattern (`loadingStyles` tokens, `useDelayedLoading` flash-guard, self-mirroring skeletons,
   `docs/design/loading-states.md`) swept across the app; measured CLS Home 0.21→0.0002, SingleRecipe
-  0.27→0.02; PublicProfile converted off its whole-view spinner. **Still open:** the empty-state and
-  error-state halves — spot-check every fetching page (Recipes, SingleRecipe, Account, Home) with the
-  API down. **(nice-to-have, but high-impact)**
+  0.27→0.02; PublicProfile converted off its whole-view spinner. **Empty + error halves spot-checked
+  2026-07-09** (headless client against a dead API port, logged-out and logged-in as the cypress test
+  user): **error states** — Home (per-section "Couldn't load …" copy), `/recipes` ("Failed to load
+  recipes."), and SingleRecipe ("Failed to load recipe.", after its documented ~7s retry budget) are all
+  good; **empty states** — committed no-results search on `/recipes`, Saved/Ratings/Your Recipes/Drafts,
+  and the bad-recipe-id RecipeNotFound page all render designed empty states with CTAs. **One real gap
+  found and fixed same day** (see BACKLOG → Bugs, error/empty conflation): the account tabs + the recipe
+  page's reviews list rendered their *empty* states when the fetch *errored*; `usePaginatedLoadMore` now
+  surfaces `isError`/`refetch`, all five consumers show "Couldn't load …" + Try-again instead, and the
+  loading-states.md example that codified the conflation is corrected ("Error is not empty"). Re-verified
+  against a dead API: every fetching page now settles on real error copy. **(done)**
 - `[x]` **Broken-link & dead-route check** — **done (track 4-qa, PR #174 ✅):** crawled every nav/footer/
   in-page link across 24 internal routes — **0 dead routes, 404s, or `#` placeholders** — and confirmed
   logged-out vs logged-in link visibility is correct. The earlier **2026-06-09** fix (the 404's "contact

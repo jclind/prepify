@@ -1,4 +1,4 @@
-import { BookOpenIcon, ChevronDownIcon } from 'src/Components/icons'
+import { AlertCircleIcon, BookOpenIcon, ChevronDownIcon } from 'src/Components/icons'
 import React, { FC } from 'react'
 
 import './UserRecipes.scss'
@@ -20,6 +20,8 @@ const UserRecipes: FC = () => {
     items: recipes,
     isLoading,
     showSkeleton,
+    isError,
+    refetch,
     isMore,
     showList: showGrid,
     loadMore,
@@ -61,6 +63,15 @@ const UserRecipes: FC = () => {
             </button>
           ) : null}
         </>
+      ) : isError ? (
+        // Error is not empty: a failed fetch must never read as "no recipes" to
+        // a user who has them. See docs/design/loading-states.md.
+        <EmptyState
+          icon={<AlertCircleIcon />}
+          title='Couldn’t load your recipes'
+          description='Something went wrong. Please try again.'
+          action={{ label: 'Try again', onClick: () => refetch() }}
+        />
       ) : (
         <EmptyState
           icon={<BookOpenIcon />}

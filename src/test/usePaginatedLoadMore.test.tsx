@@ -116,3 +116,38 @@ it('a resolved-but-empty page keeps showList false (genuine empty state)', async
   expect(result.current.isMore).toBe(false)
   expect(result.current.showList).toBe(false)
 })
+
+it('surfaces isError on a failed fetch so callers can branch before their empty state', async () => {
+  const queryFn = vi.fn(async () => {
+    throw new Error('network down')
+  })
+  const { result } = renderLoadMore<string>(queryFn)
+
+  await waitFor(() => expect(result.current.isError).toBe(true))
+  expect(result.current.isLoading).toBe(false)
+  expect(result.current.items).toHaveLength(0)
+  // showList is false — without an isError branch this would fall through to
+  // the empty state, telling a user with data that they have none.
+  expect(result.current.showList).toBe(false)
+})
+
+it('refetch() recovers from a failed fetch into content', async () => {
+  const queryFn = vi
+    .fn(async (): Promise<LoadMorePage<string> | null> => ({
+      items: ['a'],
+      totalCount: 1,
+    }))
+    .mockRejectedValueOnce(new Error('network down'))
+  const { result } = renderLoadMore<string>(queryFn)
+
+  await waitFor(() => expect(result.current.isError).toBe(true))
+  // Async act: the refetch settles in a microtask; the act flush drains it and
+  // runs the accumulate effect before we assert.
+  await act(async () => {
+    result.current.refetch()
+  })
+
+  await waitFor(() => expect(result.current.items).toEqual(['a']))
+  expect(result.current.isError).toBe(false)
+  expect(result.current.showList).toBe(true)
+})

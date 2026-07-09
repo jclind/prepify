@@ -19,9 +19,22 @@ const { emptyStateTitles, skeletonMounts } = vi.hoisted(() => ({
 }))
 
 vi.mock('src/Components/EmptyState/EmptyState', () => ({
-  default: ({ title }: { title: string }) => {
+  default: ({
+    title,
+    action,
+  }: {
+    title: string
+    action?: { label: string; onClick?: () => void }
+  }) => {
     emptyStateTitles.push(title)
-    return <div data-testid='empty-state'>{title}</div>
+    return (
+      <div data-testid='empty-state'>
+        {title}
+        {action?.onClick ? (
+          <button onClick={action.onClick}>{action.label}</button>
+        ) : null}
+      </div>
+    )
   },
 }))
 
@@ -208,6 +221,54 @@ describe('UserRecipes — empty-state flash (Bug B)', () => {
     // The grid must not blank to the empty state during the page-2 fetch
     // (when `data` is briefly undefined for the new query key).
     expect(emptyStateTitles).toHaveLength(0)
+  })
+})
+
+describe('Account tabs — error is not empty', () => {
+  // A failed fetch must render the error state, never the "nothing here yet"
+  // empty state — a user with data on a flaky connection must not be told they
+  // have none. See docs/design/loading-states.md ("Error is not empty").
+  it('UserRecipes shows the error state (not "No Recipes Created Yet") when the fetch fails', async () => {
+    mockedAPI.getCreatedRecipes.mockRejectedValue(new Error('network down'))
+
+    renderWithProviders(<UserRecipes />)
+
+    expect(
+      await screen.findByText('Couldn’t load your recipes')
+    ).toBeInTheDocument()
+    expect(emptyStateTitles).not.toContain('No Recipes Created Yet')
+  })
+
+  it('UserRatings shows the error state (not "No Ratings Yet") when the fetch fails', async () => {
+    mockedAPI.getSingleUserReviews.mockRejectedValue(new Error('network down'))
+
+    renderWithProviders(<UserRatings />)
+
+    expect(
+      await screen.findByText('Couldn’t load your ratings')
+    ).toBeInTheDocument()
+    expect(emptyStateTitles).not.toContain('No Ratings Yet')
+  })
+
+  it('the error state\'s "Try again" refetches and recovers into content', async () => {
+    mockedAPI.getCreatedRecipes
+      .mockRejectedValueOnce(new Error('network down'))
+      .mockResolvedValue({
+        recipes: [makeRecipe({ _id: 'r1', title: 'Pancakes' })],
+        totalCount: 1,
+      })
+
+    renderWithProviders(<UserRecipes />)
+
+    expect(
+      await screen.findByText('Couldn’t load your recipes')
+    ).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }))
+
+    expect(await screen.findByText('Pancakes')).toBeInTheDocument()
+    expect(
+      screen.queryByText('Couldn’t load your recipes')
+    ).not.toBeInTheDocument()
   })
 })
 
