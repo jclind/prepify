@@ -41,7 +41,9 @@ async function resolveReviewerIdentities(reviews) {
     }
   } catch (err) {
     // Transient Admin SDK failure — return what we have (empty); callers default
-    // the fields to null so the reviews still render.
+    // the fields to null so the reviews still render. Log it so a real outage
+    // (avatars silently vanishing page-wide) surfaces instead of being invisible.
+    console.warn('resolveReviewerIdentities: getUsers batch failed, reviews will render without avatars:', err?.message || err)
   }
   return byUid
 }
