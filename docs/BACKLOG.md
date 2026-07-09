@@ -776,7 +776,7 @@ findings table.)*
   annotation on every CI run (seen on PR #204). Bump both to the next major (`@v5`, or whatever is current
   when picked up) to clear the warning before the forced fallback is removed. Low-risk maintenance; not a
   1.0 blocker. *(surfaced 2026-06-29 in CI logs during the `RecipeFormInput`→`FormInput` track.)*
-- `[ ]` **Client recipe-list response types over-promise (full `RecipeType` vs the server's lean card
+- `[x]` *(fixed in [#273](https://github.com/jclind/prepify/pull/273), X2: three card types — `RecipeCardType`/`SavedRecipeCardType`/`CreatedRecipeCardType` — mirror the three server projections; list/read methods + `PublicProfile.recipes` retyped, phantom `page`/`filters`/`entries_per_page` dropped from `RecipeDBResponseType`; `getRecipe` stays `RecipeType`. Typing-only, tsc-verified no consumer over-reads.)* **Client recipe-list response types over-promise (full `RecipeType` vs the server's lean card
   projection)** *(surfaced 2026-07-08 in the API-contract regeneration ([#262](https://github.com/jclind/prepify/pull/262),
   see [`API_CONTRACT.md`](./API_CONTRACT.md) DRIFT — recipes / auth-users-profile))* — several list/read
   endpoints are typed `RecipeType[]`/`RecipeType` in the client but the server ships a narrow card projection,

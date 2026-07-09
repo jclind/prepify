@@ -5,14 +5,14 @@ import { useQueries } from '@tanstack/react-query'
 import Skeleton from 'react-loading-skeleton'
 import 'react-loading-skeleton/dist/skeleton.css'
 import RecipeAPI from 'src/api/recipes'
-import { RecipeType } from 'types'
+import { RecipeCardType } from 'types'
 import { useDelayedLoading } from 'src/hooks/useDelayedLoading'
 import { skeletonColor, fmtPrice, ratingLabel } from './homeFormat'
 
 const MEALS = ['Breakfast', 'Lunch', 'Dinner'] as const
 const PER_COL = 4
 
-const MealRow: FC<{ recipe: RecipeType }> = ({ recipe }) => (
+const MealRow: FC<{ recipe: RecipeCardType }> = ({ recipe }) => (
   <li>
     <Link to={`/recipes/${recipe._id}`}>
       <img
@@ -71,7 +71,7 @@ const HomeBrowseByMeal: FC = () => {
   // a distinct set rather than repeating the same trending recipes.
   const claimed = new Set<string>()
   const columns = MEALS.map((meal, i) => {
-    const picks: RecipeType[] = []
+    const picks: RecipeCardType[] = []
     for (const r of results[i].data?.recipeList ?? []) {
       if (picks.length >= PER_COL) break
       if (claimed.has(r._id)) continue

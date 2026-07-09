@@ -4,7 +4,7 @@ import React, { FC } from 'react'
 import './UserRecipes.scss'
 import EmptyState from 'src/Components/EmptyState/EmptyState'
 import RecipeAPI from 'src/api/recipes'
-import { RecipeType } from 'types'
+import { CreatedRecipeCardType } from 'types'
 import { usePaginatedLoadMore } from 'src/pages/Account/usePaginatedLoadMore'
 import UserRecipeThumbnail from './UserRecipeThumbnail'
 
@@ -25,7 +25,7 @@ const UserRecipes: FC = () => {
     isMore,
     showList: showGrid,
     loadMore,
-  } = usePaginatedLoadMore<RecipeType>({
+  } = usePaginatedLoadMore<CreatedRecipeCardType>({
     queryKey: page => ['created-recipes', SORT, page],
     queryFn: page =>
       RecipeAPI.getCreatedRecipes(page, 6, SORT).then(

@@ -7,14 +7,17 @@ import {
   IngredientsType,
   NewReviewType,
   NutritionDataType,
+  CreatedRecipeCardType,
   OptionalReviewType,
   OwnReviewStatus,
+  RecipeCardType,
   RecipeDBResponseType,
   RecipeEditFormType,
   RecipeFormType,
   RecipeSearchResponseType,
   RecipeType,
   ReviewType,
+  SavedRecipeCardType,
 } from 'types'
 import AuthAPI from 'src/api/auth'
 import { fetchIngredientEnrichment } from 'src/api/ingredientParserApi'
@@ -108,13 +111,13 @@ class RecipeAPIClass {
     )
     return result.data
   }
-  async getTrendingRecipes(limit = 4): Promise<RecipeType[]> {
+  async getTrendingRecipes(limit = 4): Promise<RecipeCardType[]> {
     const result = await http.get(`api/getTrendingRecipes?limit=${limit}`)
     return result.data
   }
   // Personalized home row. Requires auth (token attached by the http
   // interceptor); returns [] when the user has too little signal to personalize.
-  async getForYouRecipes(limit = 8): Promise<RecipeType[]> {
+  async getForYouRecipes(limit = 8): Promise<RecipeCardType[]> {
     const result = await http.get(`api/getForYouRecipes?limit=${limit}`)
     return result.data
   }
@@ -122,7 +125,7 @@ class RecipeAPIClass {
   // signed in (token attached by the interceptor); a uniform random pick
   // otherwise. `excludeId` re-rolls without repeating the current pick. Resolves
   // null when the catalog is empty (404) so the caller can show a soft message.
-  async getRandomRecipe(excludeId?: string): Promise<RecipeType | null> {
+  async getRandomRecipe(excludeId?: string): Promise<RecipeCardType | null> {
     const params = excludeId ? `?exclude=${encodeURIComponent(excludeId)}` : ''
     try {
       const result = await http.get(`api/recipes/random${params}`)
@@ -579,7 +582,7 @@ class RecipeAPIClass {
     order: string,
     collectionId?: string,
     q?: string
-  ): Promise<{ recipes: RecipeType[]; totalCount: number } | null> {
+  ): Promise<{ recipes: SavedRecipeCardType[]; totalCount: number } | null> {
     if (!AuthAPI.getUID()) return null
     const params = new URLSearchParams({
       page: String(page),
@@ -595,7 +598,7 @@ class RecipeAPIClass {
     page: number,
     recipesPerPage: number,
     order: string
-  ): Promise<{ recipes: RecipeType[]; totalCount: number } | null> {
+  ): Promise<{ recipes: CreatedRecipeCardType[]; totalCount: number } | null> {
     if (!AuthAPI.getUID()) return null
     const result = await http.get(
       `api/getCreatedRecipes?page=${page}&recipesPerPage=${recipesPerPage}&order=${order}`
