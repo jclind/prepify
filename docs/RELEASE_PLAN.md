@@ -615,4 +615,28 @@ Full verification pass over the ~20 merged Wave-1/2 sweep PRs plus fresh baselin
 - **Remaining blockers:** only the deliberately-held beta-flip trio + release-date/version finalize — all
   owner-gated cutover steps.
 
+### 2026-07-09 — readiness audit run (post §D overhaul)
+- **Blockers remaining: only the deliberately-held beta-flip cutover steps.** With the §D Ratings &
+  Reviews overhaul merged earlier today (stack #266→#267→#271), every product/security/legal/design
+  blocker is `[x]`. What's left is the intentional cutover trio + finalize, all owner-gated:
+  the 3 beta edits (`LegalBar.tsx:16` `v{version}-beta`, `ReleaseNotes.tsx:15` `isBeta = true`,
+  `:81` suffix — all re-confirmed live) and the release-date/version finalize (`RELEASE_DATE` +
+  `package.json` 1.0.0 bump).
+- **Changes since the earlier 2026-07-09 run: none flipped** — this pass re-verified the whole
+  checklist against the repo; every automatable check still matches its recorded status.
+- **Re-verified this run:** beta tag live in exactly the 3 expected files; `RELEASE_DATE = '6/23/2026'`
+  (not stale); ReactQueryDevtools gated behind `NODE_ENV !== 'production'` (`src/index.tsx:30`); no dead
+  `VITE_*` vars in `.env.example`/`src`; `VITE_OPEN_AI_API_KEY`/`SPOONACULAR_API_KEY` still absent from
+  on-disk `.env`/`server/.env`; `path='*'` → designed 404 (`App.tsx:140`); `/privacy` + `/terms` routed;
+  `public/robots.txt` + `public/sitemap.xml` present; README placeholder gone; prod CORS from
+  `FRONTEND_URLS` (localhost fallback never applied when `NODE_ENV=production`, `app.js:36`).
+- **Dependency posture — best it's been:** `npm audit --omit=dev` reports **0 vulnerabilities at root
+  AND in `server/`**. (Standing non-blocking dep TODO: remove the temporary `uuid` override in both
+  `package.json`s once `@google-cloud/storage` ships a patched-uuid release.)
+- **Release-day carry-overs (not blockers, flagged on their items):** the one-time **prod** breakdown
+  backfill (`reconcileRatingAggregates.js --apply`) after the §D deploy; legacy stringified `rating`
+  docs mis-sort under the new Top sort until the type-normalization migration (BACKLOG). Manual/owner
+  nice-to-haves still open: social-crawler prerendering, brand-orange a11y contrast, search-autocomplete
+  redesign, data-integrity pass (post-1.0).
+
 _`/release-readiness` appends dated run summaries here._
