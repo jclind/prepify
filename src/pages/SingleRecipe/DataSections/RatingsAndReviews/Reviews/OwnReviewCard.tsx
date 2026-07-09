@@ -99,7 +99,10 @@ const OwnReviewCard: FC<OwnReviewCardProps> = ({ recipeId, review }) => {
 
   return (
     <div className='rr-invite rr-own'>
-      <p className='rr-eyebrow'>Your review</p>
+      <div className='rr-own-head'>
+        <p className='rr-eyebrow'>Your review</p>
+        {date && <span className='rr-dt'>{date}</span>}
+      </div>
       <div className='rr-irow'>
         <UserAvatar
           photoURL={authRes?.user?.photoURL}
@@ -109,11 +112,7 @@ const OwnReviewCard: FC<OwnReviewCardProps> = ({ recipeId, review }) => {
         />
         <div className='rr-who'>
           <div className='rr-nm'>{displayName || `@${handle}`}</div>
-          <div className='rr-sub'>
-            {displayName ? `@${handle}` : ''}
-            {displayName && date ? ' · ' : ''}
-            {date}
-          </div>
+          {displayName && <div className='rr-sub'>@{handle}</div>}
         </div>
       </div>
       <div className='rr-own-stars'>

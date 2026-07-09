@@ -114,17 +114,31 @@
   }
 
   // After posting, the invitation slot compacts into "Your review".
+  // Three zones: a full-width header row (eyebrow + date anchor the card's
+  // corners), the content block on an even rhythm, and a hairline-divided
+  // footer so the right-aligned actions have something to hang from.
   .rr-own {
     padding: 1.25rem 1.5rem;
 
+    .rr-own-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 0.8rem;
+
+      .rr-eyebrow {
+        margin: 0;
+      }
+    }
     .rr-irow {
-      margin-bottom: 0.55rem;
+      margin-bottom: 0.65rem;
     }
     .rr-own-stars {
       display: flex;
       align-items: center;
       gap: 0.75rem;
-      margin-bottom: 0.55rem;
+      margin-bottom: 0.65rem;
     }
     .rr-own-text {
       color: s.$secondary-text;
@@ -134,12 +148,18 @@
     .rr-own-actions {
       display: flex;
       justify-content: flex-end;
-      gap: 1.1rem;
-      padding-top: 0.65rem;
+      gap: 1rem;
+      margin-top: 0.9rem;
+      padding-top: 0.7rem;
+      border-top: 1px solid rgba(s.$primary-deep, 0.14);
+      // trim the last ghost button's padding so "Delete" optically aligns
+      // with the card's text edge
+      margin-right: -0.55rem;
 
       .btn--ghost {
         font-size: s.$text-sm;
         text-decoration: underline;
+        padding: 0.25rem 0.55rem;
       }
       .rr-danger:hover:not(:disabled) {
         color: s.$error-red;
@@ -438,6 +458,13 @@
     }
     .rr-own {
       padding: 1.25rem;
+
+      // Editing adds a third control (Cancel + Save + counter) to the
+      // composer footer; at phone widths give the counter its own line so
+      // the buttons never wrap apart from each other.
+      .rr-cfoot .rr-count {
+        flex-basis: 100%;
+      }
     }
   }
 }
