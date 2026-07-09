@@ -22,6 +22,7 @@ import { ReviewType } from 'types'
 import RecipeAPI from 'src/api/recipes'
 import ReviewOptions from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/ReviewOptions'
 import { formatDate } from 'src/util/formatDate'
+import DefaultAvatar from 'src/Components/DefaultAvatar/DefaultAvatar'
 
 type RecipeReviewProps = {
   review: ReviewType
@@ -37,6 +38,7 @@ const RecipeReview: FC<RecipeReviewProps> = ({
   const [rating, setRating] = useState(0)
   const [date, setDate] = useState('')
   const [username, setUsername] = useState('')
+  const [imgFailed, setImgFailed] = useState(false)
 
   const [reviewText, setReviewText] = useState(review.reviewText)
 
@@ -73,6 +75,16 @@ const RecipeReview: FC<RecipeReviewProps> = ({
 
   const renderReviewHeader = () => (
     <div className='head'>
+      {review.photoURL && !imgFailed ? (
+        <img
+          className='avatar'
+          src={review.photoURL}
+          alt=''
+          onError={() => setImgFailed(true)}
+        />
+      ) : (
+        <DefaultAvatar className='avatar' seed={username} ariaHidden />
+      )}
       <div className='name-content'>
         <div className='name'>{username ? `@${username}` : ''}</div>
         <div className='rating'>

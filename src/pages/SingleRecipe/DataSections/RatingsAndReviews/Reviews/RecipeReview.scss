@@ -11,6 +11,17 @@
     padding-bottom: 0;
     margin-bottom: 0.5rem;
 
+    // Small reviewer avatar in front of the name/stars. PR-C owns further
+    // restyling; this is a modest, functional size for now.
+    .avatar {
+      flex-shrink: 0;
+      height: 34px;
+      width: 34px;
+      border-radius: s.$radius-circle;
+      object-fit: cover;
+      margin-right: 0.15rem;
+    }
+
     // username + stars on the same line
     .name-content {
       display: flex;

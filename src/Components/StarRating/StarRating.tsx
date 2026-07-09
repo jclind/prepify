@@ -1,4 +1,4 @@
-import React, { FC, useId, useState } from 'react'
+import React, { FC, useId, useRef, useState } from 'react'
 
 type StarRatingProps = {
   rating: number
@@ -7,6 +7,7 @@ type StarRatingProps = {
   spacing?: number
   interactive?: boolean
   onChange?: (val: number) => void
+  ariaLabel?: string
 }
 
 // Renders a single star filled left-to-right by `fill` (0–1) using a
@@ -48,23 +49,61 @@ const StarRating: FC<StarRatingProps> = ({
   spacing = 2,
   interactive = false,
   onChange,
+  ariaLabel = 'Rating',
 }) => {
   const [hovered, setHovered] = useState(0)
   // useId can contain ':' which is awkward inside url(#...) fragment refs.
   const baseId = useId().replace(/:/g, '')
-  // While hovering, preview the whole-star value under the cursor; otherwise
-  // show the actual (possibly fractional) rating.
+  // While hovering/focusing, preview the whole-star value under the
+  // cursor/focus; otherwise show the actual (possibly fractional) rating.
   const displayRating = hovered || rating
+  // Refs to each star button, indexed 0-4 (star i lives at starRefs[i - 1]),
+  // used to move DOM focus when arrow-key navigation changes the selection.
+  const starRefs = useRef<Array<HTMLButtonElement | null>>([])
+
+  const moveSelection = (next: number) => {
+    onChange?.(next)
+    starRefs.current[next - 1]?.focus()
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
+    switch (e.key) {
+      case 'ArrowRight':
+      case 'ArrowUp':
+        e.preventDefault()
+        moveSelection(Math.min((rating || 0) + 1, 5))
+        break
+      case 'ArrowLeft':
+      case 'ArrowDown':
+        e.preventDefault()
+        moveSelection(Math.max((rating || 0) - 1, 1))
+        break
+      case 'Home':
+        e.preventDefault()
+        moveSelection(1)
+        break
+      case 'End':
+        e.preventDefault()
+        moveSelection(5)
+        break
+      default:
+        break
+    }
+  }
 
   return (
     // Display-only stars convey their value once via an img role on the row, so
     // the individual stars below render as plain <span>s (not <button>s). A
     // focusable <button> inside the row's `role="img"` is a nested-interactive
     // a11y failure, and the stars carry no name of their own.
+    //
+    // Interactive stars are modeled as a WAI-ARIA radiogroup: the row carries
+    // role="radiogroup" and each star is role="radio", with a roving tabindex
+    // so the group is a single tab stop and arrow keys move the selection.
     <div
       style={{ display: 'inline-flex', gap: spacing }}
-      role={interactive ? undefined : 'img'}
-      aria-label={interactive ? undefined : `Rated ${rating} out of 5`}
+      role={interactive ? 'radiogroup' : 'img'}
+      aria-label={interactive ? ariaLabel : `Rated ${rating} out of 5`}
     >
       {[1, 2, 3, 4, 5].map(i => {
         const star = (
@@ -85,10 +124,19 @@ const StarRating: FC<StarRatingProps> = ({
         return (
           <button
             key={i}
+            ref={el => {
+              starRefs.current[i - 1] = el
+            }}
             type='button'
+            role='radio'
+            aria-checked={i === rating}
+            tabIndex={i === (rating || 1) ? 0 : -1}
             onClick={() => onChange?.(i)}
+            onKeyDown={handleKeyDown}
             onMouseEnter={() => setHovered(i)}
             onMouseLeave={() => setHovered(0)}
+            onFocus={() => setHovered(i)}
+            onBlur={() => setHovered(0)}
             style={{
               background: 'none',
               border: 'none',

@@ -50,6 +50,13 @@ export interface IngredientData {
   id?: number
 }
 
+export type RatingBreakdown = { '1': number; '2': number; '3': number; '4': number; '5': number }
+export type RatingAggregate = {
+  rateCount: number
+  rateValue: number
+  breakdown?: RatingBreakdown
+}
+
 export type RecipeType = {
   _id: string
   // Firebase uid of the author. Stamped server-side and returned by GET
@@ -69,10 +76,7 @@ export type RecipeType = {
   nutritionData: NutritionDataType | null
   totalTime: number
   authorUsername: string
-  rating: {
-    rateCount: number
-    rateValue: number
-  }
+  rating: RatingAggregate
   createdAt: string
   editedAt: null | string
   servingPrice: number | null
@@ -203,10 +207,7 @@ export interface RecipeSearchResponseType {
   title: string
   recipeImage: string
   totalTime: number
-  rating: {
-    rateCount: number
-    rateValue: number
-  }
+  rating: RatingAggregate
   servingPrice: number
   nutritionLabels: string[]
   servings: number
@@ -232,6 +233,8 @@ export type ReviewType = {
   reviewCreatedAt: string
   reviewLastUpdated: string
   reviewText: string
+  photoURL: string | null
+  displayName: string | null
 }
 
 export interface NewReviewType {
