@@ -1,5 +1,5 @@
 import { StarOutlineIcon } from 'src/Components/icons'
-import React, { FC } from 'react'
+import React, { FC, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
@@ -25,6 +25,12 @@ const Ratings: FC<RatingsProps> = ({
 }) => {
   const queryClient = useQueryClient()
   const uid = AuthAPI.getUID()
+  // Monotonic id of the most recent rating change. Keyboard nav (arrow-key
+  // hold / OS key-repeat) can fire several changeRating calls before any
+  // resolves, so responses may land out of order. We only let a request touch
+  // the UI if it's still the latest — otherwise a slow earlier request's
+  // failure would revert to a stale value the user already moved past.
+  const latestReqRef = useRef(0)
 
   // After a rating change, refresh the recipe aggregate (the displayed
   // "Average Rating") and the user's own rating so both reflect the server
@@ -39,15 +45,20 @@ const Ratings: FC<RatingsProps> = ({
     // rejects (e.g. a suspended account hitting requireActive, or a network
     // failure) so the UI never shows a rating that wasn't actually saved.
     const prev = rating
+    const reqId = ++latestReqRef.current
     setRating(e)
     try {
       await RecipeAPI.addRating(recipeId, e)
     } catch (err) {
+      // Superseded by a newer change — leave that one's value in place.
+      if (latestReqRef.current !== reqId) return
       setRating(prev)
       toast.error('Could not save your rating. Please try again.')
       return
     }
-    refreshRatingViews()
+    // Only the latest change should refetch; a stale success would pull the
+    // aggregate mid-flight and fight the newer optimistic value.
+    if (latestReqRef.current === reqId) refreshRatingViews()
   }
 
   const handleRemoveRating = async () => {

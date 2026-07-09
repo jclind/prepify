@@ -13,6 +13,14 @@ const ReviewCardSkeleton: FC<{ count?: number }> = ({ count = 2 }) => (
     {Array.from({ length: count }).map((_, i) => (
       <div className='recipe-review' key={i} aria-hidden='true'>
         <div className='head'>
+          <Skeleton
+            circle
+            inline
+            baseColor={skeletonColor}
+            containerClassName='avatar'
+            height={34}
+            width={34}
+          />
           <div className='name-content'>
             <div className='name'>
               <Skeleton inline baseColor={skeletonColor} width={110} />
