@@ -399,6 +399,10 @@ Infra/deploy is intentionally out of scope for this plan, but here's the minimal
 the actual flip. Deploy is **Netlify** frontend + Railway backend (Firebase is Auth + Storage only,
 **not** Hosting; CI in `.github/workflows/test.yml` runs tests but does not deploy).
 
+> **Full runbook:** the fleshed-out, phase-by-phase cutover steps — pre-flight checks, the prod data-ops
+> migrations (with exact commands), the image-infra ops, the beta-flip PR, deploy + smoke-test, and
+> rollback notes — live in [`CUTOVER_RUNBOOK.md`](./CUTOVER_RUNBOOK.md). The checklist below is the summary.
+
 > **Infra status (2026-06-26):** the pre-cutover infra is **complete + verified** — the dev/prod split is
 > done (separate prepify-prod/dev Mongo clusters, `prepify-9b974`/`prepify-dev-58579` Firebase projects, two
 > Railway services, Netlify env contexts), **all prod env vars are set** (Railway prod service + Netlify
