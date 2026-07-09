@@ -24,7 +24,7 @@ to the *sweep program*); this file applies it to the **general backlog**. Compan
 > [#267](https://github.com/jclind/prepify/pull/267) → [#271](https://github.com/jclind/prepify/pull/271)) —
 > that file ownership is released, so the **Wave-8 candidates** (the §D-collision skips: `createdAt`
 > server-stamp, `RecipeCardType` typing, orphaned-image-on-failed-create, server-Jest flakiness) are now
-> **boarded as Wave 8 (X1–X4)** below. **X1 & X2 landed 2026-07-09** ([#272](https://github.com/jclind/prepify/pull/272), [#273](https://github.com/jclind/prepify/pull/273)); X3–X4 open.
+> **boarded as Wave 8 (X1–X4)** below. **X1, X2 & X3 landed 2026-07-09** ([#272](https://github.com/jclind/prepify/pull/272), [#273](https://github.com/jclind/prepify/pull/273), [#275](https://github.com/jclind/prepify/pull/275)); X4 open.
 
 ---
 
@@ -115,7 +115,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **7** | **W3 · housekeeping smalls** | CI `actions/checkout`+`setup-node` v4→v5 (Node-20-runtime deprecation); `VITE_APP_VERSION` build define replacing `ReleaseNotes.tsx`'s `package.json` import (BACKLOG Tech debt ×2) | `[x]` [#270](https://github.com/jclind/prepify/pull/270) (2026-07-09) | `.github/workflows/test.yml`, `vite.config.ts`, `ReleaseNotes.tsx` + `footerData.ts` | **merged** |
 | **8** | **X1 · `createdAt` server-stamp** | drop `createdAt`/`editedAt` from `CREATABLE_RECIPE_FIELDS`, stamp both in the `addRecipe` handler (13-digit ms-epoch matching the edit path), re-add to `PUBLIC_RECIPE_FIELDS` for reads (BACKLOG Tech debt) | `[x]` [#272](https://github.com/jclind/prepify/pull/272) (2026-07-09) | `server/routes/recipes.js`, `server/util/recipeFields.js`, `src/api/recipes.ts` + `recipes.test.js` | **merged** — folded in the client-payload cleanup (stop sending server-seeded rating/counters). Runtime-verified + local review |
 | **8** | **X2 · `RecipeCardType` typing cleanup** | tighten the card-shape typing across `src/types.ts` + `src/api/recipes.ts` (BACKLOG Tech debt) | `[x]` [#273](https://github.com/jclind/prepify/pull/273) (2026-07-09) | `src/types.ts`, `src/api/recipes.ts` | **merged** — three card types mirror the three server projections |
-| **8** | **X3 · orphaned-image-on-failed-create** | delete the uploaded Storage object when `POST /addRecipe` fails after the image upload (`src/api/recipes.ts`) | `[P]` [#275](https://github.com/jclind/prepify/pull/275) (2026-07-09) | `src/api/recipes.ts` | PR open — also fixes the same leak on the `editRecipe` new-image path |
+| **8** | **X3 · orphaned-image-on-failed-create** | delete the uploaded Storage object when `POST /addRecipe` fails after the image upload (`src/api/recipes.ts`) | `[x]` [#275](https://github.com/jclind/prepify/pull/275) (2026-07-09) | `src/api/recipes.ts` | **merged** — also fixes the same leak on the `editRecipe` new-image path; folded in a `storage.rules` owner-delete grant + IMAGE_PIPELINE.md cutover note |
 | **8** | **X4 · server-Jest flakiness structural fix** | the intermittent server-suite failures (test files/mocks/setup) (BACKLOG Tech debt) | `[ ]` | `server/__tests__/**` + Jest setup | ready — disjoint from X1–X3 |
 | **—** | **Deferred / post-1.0 / owner** | see [that section](#deferred--post-10--owner-off-the-active-board) | `[blocked]`/`[dropped]` | — | prerendering, Edamam, theming, brand-orange, DB relocation, ideas |
 
@@ -1911,3 +1911,25 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   tsc clean, Vitest 650 green, all six CI checks; live re-verify against a dead API showed every fetching page
   settling on real error copy (~8–15s = documented retry backoff), and real-API empty states unchanged. This
   closes the RELEASE_PLAN §A "Empty / error / loading states sweep" item (`[~]` → `[x]`, flipped in the PR).
+- **2026-07-09** — **X3 orphaned-image-on-failed-create merged** ([#275](https://github.com/jclind/prepify/pull/275),
+  merge `3398f76`) into `development`; `[P]` → `[x]`, remote + local branches deleted. When a recipe create/edit
+  failed **after** the image had already uploaded to Firebase Storage (moderation reject, validation, network),
+  the orphaned object leaked with no recipe pointing at it. Fix: a best-effort `deleteRecipeImage` in
+  `src/api/recipes.ts` removes the just-uploaded object in the `catch` of both `addRecipe` and `editRecipe`
+  (resolving the object from its download URL via `ref(getStorage(), url)`); it swallows its own errors so the
+  real submit failure still surfaces, short-circuits on the empty-URL and Cypress cases before touching the SDK,
+  and on the edit path only deletes a **newly** uploaded image (a reused existing image stays live). Verified
+  end-to-end by driving the real dev app headless (Playwright): a forced `POST /api/addRecipe` 500 after a real
+  upload showed `POST 200` (upload) → `DELETE 204` (cleanup) on the same object path. That drive surfaced a
+  **rules gap** — the delete 403'd, because on a delete `request.resource` is null so the I2 write rule's
+  size/contentType guards evaluate false; folded in a resource-free `allow delete: …uid == uid` grant on
+  `recipeImages/{uid}/{imageId}` (`storage.rules`), redeployed to dev (403 → 204), and documented in
+  `IMAGE_PIPELINE.md` (the grant rides the same file as the I2 rules, so the owner's prod cutover deploy carries
+  it — until then X3 cleanup is inert on prod, logged-and-swallowed, no user-facing regression). Tests: 5 new
+  `RecipesApi.test.ts` cases (delete-on-failure, not-on-success, cleanup-failure-still-surfaces-error, edit
+  new-image deleted, edit reused-image untouched); all 16 in-file + all six CI checks green. Local review folded
+  in a test-env-cleanup hardening and a documented known-limitation (resize-extension variants aren't cleaned up
+  — near-impossible today since variants are gated off until the I1 cutover). **Follow-ups filed-not-fixed:** a
+  *successful* editRecipe image-swap still orphans the **old** object (separate from X3's failed-submit scope);
+  the `allow delete` grant is owner-broad by necessity (rules can't tell "just-uploaded" from "in-use"). **Wave
+  8:** only X4 (server-Jest flakiness structural fix) remains open.

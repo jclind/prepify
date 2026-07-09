@@ -949,12 +949,15 @@ findings table.)*
   the owner, so `storage.rules` could only auth-gate that path (any signed-in user could overwrite/delete
   any recipe image). Low severity (writes are auth-gated and the server is the source of truth), but worth
   doing. *(surfaced 2026-06-23 writing the Storage rules, PR #177.)*
-- `[ ]` **Orphaned recipe image on a failed create** — `addRecipe` (`src/api/recipes.ts`) uploads the image
-  to Firebase Storage (`uploadRecipeImage`, ~`:259`) BEFORE the `POST /addRecipe` (~`:291`), with no
-  compensating `deleteObject` if the POST fails (server moderation block, 4xx/5xx, network drop). So every
-  failed create leaks a storage object that no recipe doc references. Untracked until now. Fix: delete the
-  just-uploaded object in the `addRecipe` catch (best-effort), or defer the upload until the POST succeeds.
-  Low. *(surfaced 2026-07-08 in the docs-folder audit.)*
+- `[x]` **Orphaned recipe image on a failed create** — *(fixed in [#275](https://github.com/jclind/prepify/pull/275),
+  Wave 8 X3: a best-effort `deleteRecipeImage` in the `addRecipe`/`editRecipe` catch removes the just-uploaded
+  object, plus a `storage.rules` owner-delete grant so the client delete isn't 403'd; edit path only deletes a
+  newly uploaded image, reused originals stay live.)* `addRecipe` (`src/api/recipes.ts`) uploaded the image
+  to Firebase Storage (`uploadRecipeImage`) BEFORE the `POST /addRecipe`, with no
+  compensating `deleteObject` if the POST failed (server moderation block, 4xx/5xx, network drop). So every
+  failed create leaked a storage object that no recipe doc referenced. Low. *(surfaced 2026-07-08 in the
+  docs-folder audit; fixed 2026-07-09. Follow-up: a **successful** editRecipe image-swap still orphans the old
+  object — separate from this failed-submit fix.)*
 - `[x]` **Point Railway at the production branch** — **done (2026-06-26, per the dev/prod env-split work):**
   Railway now runs two services — a prod service deploying the `release` branch (→ prepify-prod Mongo +
   prepify-9b974 Firebase, `FRONTEND_URLS` = the prepifymeals.com origins, CORS verified live) and a dev
