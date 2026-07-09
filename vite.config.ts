@@ -1,8 +1,20 @@
 import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import path from 'path'
+import fs from 'fs'
+
+// The app version, injected at build time (VITE_APP_VERSION) so components can
+// render it without importing package.json from inside src/ (which reaches out
+// of the source root and bundles the whole manifest shape). Read via fs rather
+// than a JSON import so the config doesn't depend on resolveJsonModule.
+const { version: appVersion } = JSON.parse(
+  fs.readFileSync(path.resolve(__dirname, 'package.json'), 'utf-8')
+)
 
 export default defineConfig(async () => ({
+  define: {
+    'import.meta.env.VITE_APP_VERSION': JSON.stringify(appVersion),
+  },
   plugins: [
     react(),
     // Opt-in bundle analysis: `ANALYZE=1 npm run build` writes reports/stats.html

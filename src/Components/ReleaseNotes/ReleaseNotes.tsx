@@ -3,10 +3,11 @@ import React, { FC, useEffect } from 'react'
 import './ReleaseNotes.scss'
 import { useLocation } from 'react-router-dom'
 import Modal from 'react-modal'
-import packageJSON from '../../../package.json'
 import { panelModalStyles } from 'src/util/modalStyles'
 
-const version = packageJSON.version
+// Injected at build time from package.json (see `define` in vite.config.ts) so
+// this component doesn't reach out of src/ for the repo manifest.
+const version = import.meta.env.VITE_APP_VERSION
 
 // NOTE: confirm/update RELEASE_DATE to the actual ship date at cutover, alongside
 // the package.json 1.0.0 bump and flipping `isBeta` to false (see RELEASE_PLAN.md).

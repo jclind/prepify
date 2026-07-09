@@ -1,4 +1,3 @@
-import pjson from '../../../package.json'
 import {
   ACCOUNT_SAVED_RECIPES_PATH,
   ACCOUNT_YOUR_RECIPES_PATH,
@@ -10,7 +9,7 @@ import {
 // socials, and version. Keeping it data-driven keeps the Footer components thin.
 // ---------------------------------------------------------------------------
 
-export const version = pjson.version
+export const version = import.meta.env.VITE_APP_VERSION
 export const contactEmail = 'JesseLindCS@gmail.com'
 export const longTagline =
   'Real recipes with the prices and nutrition baked in. Plan, shop and cook with zero guesswork.'
