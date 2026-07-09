@@ -96,6 +96,52 @@ export type RecipeType = {
   // the hold inline. null when held by a non-automod path; absent otherwise.
   automodClassifier?: ReportClassifier | null
 }
+
+// ---- Recipe CARD shapes ----
+// The recipe LIST/read endpoints don't return the full `RecipeType` doc — the
+// server projects a lean card shape (see `server/util/recipeFields.js`'s
+// PUBLIC_RECIPE_CARD_FIELDS and the SAVED/CREATED projections in
+// `server/routes/users.js`). Typing those methods as `RecipeType` over-promised:
+// detail fields (`ingredients`/`instructions`/`nutritionData`/`description`/
+// `userId`/`createdAt`/…) are absent at runtime, yet a component reaching for one
+// would still compile. These three card types mirror the three server
+// projections exactly, so a card consumer that reads a non-projected field now
+// fails to compile instead.
+
+// Fields present on every card projection (browse, saved, created, profile).
+type RecipeCardBase = {
+  _id: string
+  title: string
+  recipeImage: string
+  totalTime: number
+  servingPrice: number | null
+  rating: RatingAggregate
+}
+
+// The public card — PUBLIC_RECIPE_CARD_FIELDS. Shared by browse (`GET /recipes`),
+// the home trending / For-You / random rows, and the public-profile tiles.
+export type RecipeCardType = RecipeCardBase & {
+  cuisine: string
+  mealTypes: string[]
+  nutritionLabels: string[] | null
+  numTimesSaved: number
+}
+
+// The Saved-grid card — SAVED_CARD_PROJECTION. base + cuisine (no meal/diet tags
+// or save count: the saved grid's `RecipeCard` renders neither).
+export type SavedRecipeCardType = RecipeCardBase & {
+  cuisine: string
+}
+
+// The "My Recipes" thumbnail card — CREATED_CARD_PROJECTION. base + the created
+// date and the views/saves/made performance strip.
+export type CreatedRecipeCardType = RecipeCardBase & {
+  createdAt: string
+  views: number
+  numTimesSaved: number
+  numTimesMade: number
+}
+
 export type RecipeFormType = {
   title: string
   prepTime: number
@@ -195,11 +241,10 @@ export interface NutritionDataType {
   totalNutrientsKCal: Record<string, NutrientInfo>
 }
 
+// GET /api/recipes (browse) returns only these two keys — the earlier
+// `page`/`filters`/`entries_per_page` were never sent by the server.
 export interface RecipeDBResponseType {
-  recipeList: RecipeType[]
-  page: number
-  filters: {}
-  entries_per_page: number
+  recipeList: RecipeCardType[]
   total_results: number
 }
 export interface RecipeSearchResponseType {
@@ -611,7 +656,7 @@ export type PublicProfile = {
   xpNext: number
   pct: number
   achievements: Achievement[]
-  recipes: RecipeType[]
+  recipes: RecipeCardType[]
   recipesTotalCount: number
   // Cross-recipe sums over the user's publicly-visible recipes (not just the
   // initial `recipes` batch), used for the header Saves/Made counts.

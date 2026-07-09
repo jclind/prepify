@@ -10,7 +10,7 @@ import { formatRating } from 'src/util/formatRating'
 import { formatPrice } from 'src/util/formatPrice'
 import { minToHrMin } from 'src/util/minToHrMin'
 import { recipeImageSrcSet } from 'src/util/recipeImageVariants'
-import { RecipeType } from 'types'
+import { RecipeCardType, SavedRecipeCardType } from 'types'
 import './RecipeCard.scss'
 
 
@@ -37,7 +37,9 @@ const Rating: FC<{ value: number; count: number }> = ({ value, count }) => {
 }
 
 type RecipeCardProps = {
-  recipe: RecipeType | null
+  // Fed by both the browse grid (`RecipeCardType`) and the Saved tab
+  // (`SavedRecipeCardType`); the card renders only the fields common to both.
+  recipe: RecipeCardType | SavedRecipeCardType | null
   loading?: boolean
   // Extra refresh after a save/membership change (the Saved tab passes this so
   // unsaving/refiling resets its paged grid). Caches always refetch regardless.
