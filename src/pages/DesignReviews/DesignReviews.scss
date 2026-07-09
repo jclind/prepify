@@ -1,0 +1,949 @@
+// TEMPORARY — styles for the §D reviews-overhaul design gallery
+// (/design/reviews). Delete with src/pages/DesignReviews before PR-C merges.
+@use '../../helpers.scss' as s;
+
+.design-reviews-page {
+  padding-bottom: 4rem;
+
+  .drx-banner {
+    background: rgba(s.$secondary, 0.1);
+    border: 1.5px solid rgba(s.$secondary, 0.35);
+    border-radius: s.$radius-lg;
+    padding: 0.6rem 1rem;
+    font-size: s.$text-sm;
+    font-weight: 600;
+    color: s.$secondary-text;
+    margin-bottom: 1.25rem;
+  }
+
+  /* ---------- switcher + description ---------- */
+  .drx-switcher {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+
+    button {
+      font-weight: 700;
+      font-size: s.$text-sm;
+      color: s.$secondary-text;
+      background: s.$white;
+      border: 1.5px solid s.$gray-400;
+      border-radius: s.$radius-pill;
+      padding: 0.4rem 0.95rem;
+      cursor: pointer;
+      transition: background-color s.$hover-timing, border-color s.$hover-timing,
+        color s.$hover-timing;
+
+      &:hover {
+        border-color: s.$primary-text;
+        color: s.$primary-text;
+      }
+      &.active {
+        background: s.$primary;
+        border-color: s.$primary;
+        color: s.$white;
+      }
+    }
+
+    .drx-hint {
+      margin-left: auto;
+      font-size: s.$text-caption;
+      color: s.$gray-600;
+      font-weight: 600;
+    }
+  }
+
+  .drx-desc {
+    background: s.$gray-50;
+    border: 1px solid s.$gray-300;
+    border-radius: s.$radius-lg;
+    padding: 0.85rem 1.1rem;
+    margin-top: 0.75rem;
+
+    .drx-desc-title {
+      font-weight: 800;
+      font-size: s.$text-md;
+      color: s.$primary;
+    }
+    p {
+      font-size: s.$text-sm;
+      color: s.$secondary-text;
+      font-weight: 500;
+      margin-top: 0.2rem;
+      line-height: 1.5;
+      max-width: 90ch;
+    }
+  }
+
+  .drx-context-spacer {
+    text-align: center;
+    color: s.$gray-600;
+    font-weight: 700;
+    font-size: s.$text-fine;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 2.5rem 0;
+    border-bottom: 1px dashed s.$gray-500;
+  }
+
+  /* ---------- section frame ---------- */
+  .drx-section {
+    max-width: s.$recipe-page-max-width;
+    margin: 2.5rem auto 0;
+  }
+  .drx-title {
+    font-size: s.$text-2xl;
+    font-weight: 700;
+    margin-bottom: 1.25rem;
+    text-align: left;
+  }
+  .drx-label {
+    font-size: s.$text-fine;
+    color: s.$primary;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+  }
+
+  /* ---------- shared vocabulary ---------- */
+  .drx-big {
+    font-weight: 800;
+    line-height: 1;
+    color: s.$primary;
+  }
+  .drx-cnt {
+    font-size: s.$text-fine;
+    color: s.$tertiary-text;
+    font-weight: 600;
+  }
+
+  .drx-avatar {
+    height: 34px;
+    width: 34px;
+    border-radius: s.$radius-circle;
+    flex-shrink: 0;
+    object-fit: cover;
+  }
+  .drx-photo-sim {
+    display: inline-flex;
+    background: linear-gradient(135deg, #f6b59c, s.$primary 70%);
+    border-radius: s.$radius-circle;
+  }
+
+  .drx-who {
+    flex: 1;
+    min-width: 0;
+
+    .drx-nm {
+      font-weight: 700;
+      font-size: s.$text-base;
+      line-height: 1.3;
+
+      a {
+        color: inherit;
+        text-decoration: none;
+        &:hover {
+          text-decoration: underline;
+          color: s.$primary-hover;
+        }
+      }
+    }
+    .drx-sub {
+      font-size: s.$text-fine;
+      color: s.$tertiary-text;
+      font-weight: 600;
+      margin-top: 0.1rem;
+    }
+  }
+  .drx-dt {
+    font-size: s.$text-fine;
+    color: s.$tertiary-text;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .drx-you {
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: s.$secondary;
+    border: 1.5px solid rgba(s.$secondary, 0.4);
+    border-radius: s.$radius-pill;
+    padding: 0.14rem 0.5rem;
+    margin-left: 0.45rem;
+    vertical-align: 2px;
+    display: inline-block;
+  }
+
+  .drx-eyebrow {
+    font-size: s.$text-fine;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: s.$secondary;
+    margin: 0 0 0.55rem;
+
+    &.muted {
+      color: s.$tertiary-text;
+      margin: 0;
+    }
+    &.deep {
+      color: s.$primary-deep;
+    }
+  }
+
+  .drx-kebab {
+    border: none;
+    background: none;
+    color: s.$gray-600;
+    padding: 0.25rem;
+    border-radius: s.$radius-circle;
+    display: inline-flex;
+    cursor: pointer;
+    transition: color s.$hover-timing;
+
+    svg {
+      width: 18px;
+      height: 18px;
+    }
+    &:hover {
+      color: s.$primary-text;
+    }
+  }
+
+  .drx-mine-acts {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1.1rem;
+    padding-top: 0.65rem;
+
+    .btn--ghost {
+      font-size: s.$text-sm;
+      text-decoration: underline;
+    }
+    .drx-danger:hover {
+      color: s.$error-red;
+    }
+  }
+
+  /* composer bits */
+  textarea {
+    width: 100%;
+    min-height: 76px;
+    resize: vertical;
+    border: 1.5px solid s.$gray-300;
+    border-radius: s.$radius-lg;
+    padding: 0.65rem 0.8rem;
+    font-size: s.$text-base;
+    color: s.$primary-text;
+    line-height: 1.6;
+    background: s.$white;
+    transition: border-color s.$hover-timing, box-shadow s.$hover-timing;
+
+    &::placeholder {
+      color: s.$gray-600;
+    }
+    &:focus {
+      outline: none;
+      border-color: s.$primary;
+      @include s.focus-glow(s.$primary);
+    }
+  }
+  .drx-c-foot {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 0.7rem;
+    flex-wrap: wrap;
+
+    .drx-count {
+      margin-right: auto;
+    }
+  }
+  .drx-count {
+    font-size: s.$text-fine;
+    color: s.$tertiary-text;
+    font-weight: 600;
+
+    &.warn {
+      color: s.$alert-warning-amber-text;
+    }
+    &.over {
+      color: s.$error-red;
+      font-weight: 700;
+    }
+  }
+  .drx-c-hint {
+    font-size: s.$text-fine;
+    color: s.$tertiary-text;
+    font-weight: 700;
+  }
+  .drx-submit {
+    font-size: s.$text-sm;
+    padding: 0.5rem 1.1rem;
+  }
+
+  /* toolbar */
+  .drx-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin: 1.5rem 0 1rem;
+
+    .drx-n {
+      font-size: s.$text-sm;
+      font-weight: 700;
+      color: s.$secondary-text;
+    }
+  }
+
+  /* histogram rows (V1 + V2 share markup; V2 thins the track) */
+  .drx-bars {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    max-width: 520px;
+  }
+  .drx-hrow {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+  .drx-hlab {
+    font-size: s.$text-fine;
+    font-weight: 700;
+    color: s.$secondary-text;
+    width: 1.9rem;
+    text-align: right;
+  }
+  .drx-htrack {
+    flex: 1;
+    height: 8px;
+    background: s.$gray-200;
+    border-radius: s.$radius-pill;
+    overflow: hidden;
+  }
+  .drx-hfill {
+    height: 100%;
+    background: s.$primary;
+    border-radius: s.$radius-pill;
+  }
+  .drx-hcount {
+    font-size: s.$text-fine;
+    color: s.$tertiary-text;
+    font-weight: 600;
+    min-width: 1.2rem;
+    text-align: right;
+  }
+
+  .drx-rc-stars {
+    margin: 0.5rem 0 0.35rem;
+  }
+  .drx-rc-text {
+    color: s.$secondary-text;
+    line-height: 1.6;
+    font-size: s.$text-base;
+  }
+
+  /* ================= V1 ================= */
+  .drx-v1 {
+    .drx-sum {
+      display: flex;
+      align-items: center;
+      gap: 2.25rem;
+      background: s.$white;
+      border: 1px solid s.$gray-200;
+      border-radius: s.$radius-3xl;
+      padding: 1.5rem 1.75rem;
+    }
+    .drx-sum-score {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.4rem;
+      padding-right: 2.25rem;
+      border-right: 1px solid s.$gray-200;
+
+      .drx-big {
+        font-size: 2.6rem;
+      }
+    }
+
+    .drx-compose {
+      background: s.$white;
+      border: 1px solid s.$gray-200;
+      border-radius: s.$radius-3xl;
+      padding: 1.25rem 1.5rem;
+      margin-top: 1rem;
+    }
+    .drx-compose-top {
+      display: flex;
+      align-items: center;
+      gap: 0.9rem;
+      flex-wrap: wrap;
+      margin-bottom: 0.8rem;
+
+      .drx-c-title {
+        font-size: s.$text-base;
+        font-weight: 700;
+      }
+    }
+
+    .drx-seg {
+      display: inline-flex;
+      background: s.$gray-200;
+      border-radius: s.$radius-pill;
+      padding: 3px;
+
+      button {
+        border: none;
+        background: none;
+        padding: 0.35rem 1rem;
+        border-radius: s.$radius-pill;
+        font-weight: 700;
+        font-size: s.$text-sm;
+        color: s.$tertiary-text;
+        cursor: pointer;
+        transition: color s.$hover-timing;
+
+        &.on {
+          background: s.$white;
+          color: s.$primary-text;
+          box-shadow: s.$elevation-1;
+        }
+        &:not(.on):hover {
+          color: s.$primary-text;
+        }
+      }
+    }
+
+    .drx-rc {
+      background: s.$white;
+      border: 1px solid s.$gray-200;
+      border-radius: s.$radius-xl;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1rem;
+
+      &.mine {
+        border-color: rgba(s.$secondary, 0.45);
+        border-left: 3px solid s.$secondary;
+        background: rgba(s.$secondary, 0.04);
+      }
+    }
+    .drx-rc-head {
+      display: flex;
+      gap: 0.65rem;
+      align-items: center;
+    }
+
+    @include s.below(s.$bp-2xl) {
+      .drx-sum {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1.25rem;
+      }
+      .drx-sum-score {
+        padding-right: 0;
+        border-right: none;
+        padding-bottom: 1.1rem;
+        border-bottom: 1px solid s.$gray-200;
+      }
+      .drx-bars {
+        max-width: none;
+      }
+    }
+  }
+
+  /* ================= V2 ================= */
+  .drx-v2 {
+    .drx-band {
+      display: flex;
+      align-items: center;
+      gap: 2.5rem;
+      padding: 1.75rem 0.25rem;
+      border-top: 1px solid s.$gray-300;
+      border-bottom: 1px solid s.$gray-300;
+      flex-wrap: wrap;
+    }
+    .drx-band-score {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+
+      .drx-big {
+        font-size: 3.25rem;
+      }
+    }
+    .drx-bars {
+      max-width: 340px;
+      min-width: 220px;
+      gap: 0.4rem;
+    }
+    .drx-htrack {
+      height: 4px;
+      background: s.$gray-300;
+    }
+    .drx-band-rate {
+      margin-left: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+    .drx-write-link {
+      background: none;
+      border: none;
+      font-weight: 700;
+      font-size: s.$text-sm;
+      color: s.$secondary-text;
+      text-decoration: underline;
+      padding: 0;
+      cursor: pointer;
+      transition: color s.$hover-timing;
+
+      &:hover {
+        color: s.$primary-hover;
+      }
+    }
+
+    .drx-v2-compose {
+      padding: 1.25rem 0 0;
+    }
+    .drx-mock-note {
+      font-size: s.$text-caption;
+      font-style: italic;
+      color: s.$gray-600;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+
+    .drx-tabs {
+      display: inline-flex;
+      gap: 1.5rem;
+
+      button {
+        background: none;
+        border: none;
+        font-weight: 700;
+        font-size: s.$text-sm;
+        color: s.$tertiary-text;
+        padding: 0.3rem 0;
+        border-bottom: 2px solid transparent;
+        cursor: pointer;
+        transition: color s.$hover-timing, border-color s.$hover-timing;
+
+        &.on {
+          color: s.$primary-text;
+          border-color: s.$primary;
+        }
+        &:not(.on):hover {
+          color: s.$primary-text;
+        }
+      }
+    }
+
+    .drx-rows {
+      border-top: 1px solid s.$gray-300;
+    }
+    .drx-row {
+      padding: 1.4rem 0;
+      border-bottom: 1px solid s.$gray-300;
+    }
+    .drx-row-head {
+      display: flex;
+      gap: 0.8rem;
+      align-items: center;
+
+      .drx-mine-acts {
+        padding-top: 0;
+      }
+    }
+    .drx-avatar {
+      height: 38px;
+      width: 38px;
+    }
+    .drx-row-body {
+      margin-left: calc(38px + 0.8rem);
+      margin-top: 0.45rem;
+
+      .drx-rc-stars {
+        margin: 0 0 0.35rem;
+      }
+      .drx-rc-text {
+        line-height: 1.65;
+        max-width: 70ch;
+      }
+    }
+
+    @include s.below(s.$bp-3xl) {
+      .drx-band {
+        gap: 1.5rem;
+      }
+      .drx-band-rate {
+        margin-left: 0;
+        flex-basis: 100%;
+      }
+    }
+    @include s.below(s.$bp-sm) {
+      .drx-row-head {
+        flex-wrap: wrap;
+      }
+      .drx-row-body {
+        margin-left: 0;
+      }
+    }
+  }
+
+  /* ================= V3 ================= */
+  .drx-v3 {
+    .drx-invite {
+      background: linear-gradient(
+        135deg,
+        s.$primary-wash,
+        s.$primary-wash-deep 90%
+      );
+      border: 1.5px solid s.$surface-warm-border;
+      border-radius: s.$radius-3xl;
+      padding: 1.5rem 1.75rem;
+
+      h3 {
+        font-size: s.$text-xl;
+        font-weight: 700;
+        margin-bottom: 0.2rem;
+      }
+      .drx-isub {
+        font-size: s.$text-sm;
+        color: s.$secondary-text;
+        font-weight: 600;
+        margin-bottom: 1rem;
+      }
+      .drx-irow {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 0.9rem;
+        flex-wrap: wrap;
+      }
+
+      &.compact {
+        padding: 1.25rem 1.5rem;
+
+        .drx-irow {
+          margin-bottom: 0.4rem;
+        }
+        .drx-mine-acts {
+          padding-top: 0.5rem;
+        }
+      }
+    }
+    .drx-avatar {
+      height: 40px;
+      width: 40px;
+    }
+
+    .drx-sumstrip {
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+      background: s.$white;
+      border: 1px solid s.$surface-warm-border;
+      border-radius: s.$radius-3xl;
+      padding: 1.1rem 1.5rem;
+      margin-top: 1rem;
+      flex-wrap: wrap;
+    }
+    .drx-ss-score {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+
+      .drx-big {
+        font-size: 1.9rem;
+      }
+    }
+    .drx-mini {
+      display: flex;
+      align-items: flex-end;
+      gap: 5px;
+      height: 36px;
+    }
+    .drx-vcol {
+      width: 11px;
+      height: 100%;
+      background: s.$gray-200;
+      border-radius: s.$radius-xs;
+      display: flex;
+      align-items: flex-end;
+      overflow: hidden;
+    }
+    .drx-vfill {
+      width: 100%;
+      background: s.$primary;
+      border-radius: s.$radius-xs;
+    }
+    .drx-mini-cap {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: s.$tertiary-text;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin-top: 0.3rem;
+      text-align: center;
+    }
+    .drx-pilewrap {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+    }
+    .drx-pile {
+      display: flex;
+
+      .drx-avatar {
+        height: 28px;
+        width: 28px;
+        border: 2px solid s.$white;
+        margin-left: -9px;
+
+        &:first-child {
+          margin-left: 0;
+        }
+      }
+      .drx-more {
+        width: 28px;
+        height: 28px;
+        border-radius: s.$radius-circle;
+        border: 2px solid s.$white;
+        margin-left: -9px;
+        background: s.$primary-text;
+        color: s.$white;
+        font-size: 0.62rem;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+    }
+    .drx-pile-txt {
+      font-size: s.$text-fine;
+      font-weight: 700;
+      color: s.$secondary-text;
+    }
+
+    .drx-pills {
+      display: inline-flex;
+      gap: 0.5rem;
+
+      button {
+        border: 1.5px solid s.$gray-400;
+        background: s.$white;
+        border-radius: s.$radius-pill;
+        padding: 0.35rem 1rem;
+        font-weight: 700;
+        font-size: s.$text-sm;
+        color: s.$secondary-text;
+        cursor: pointer;
+        transition: border-color s.$hover-timing, color s.$hover-timing,
+          background-color s.$hover-timing;
+
+        &.on {
+          border-color: s.$primary;
+          color: s.$primary;
+          background: rgba(s.$primary, 0.06);
+        }
+        &:not(.on):hover {
+          border-color: s.$primary;
+          color: s.$primary;
+        }
+      }
+    }
+
+    .drx-rc {
+      background: s.$white;
+      border: 1px solid s.$surface-warm-border;
+      border-radius: s.$radius-3xl;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .drx-rc-head {
+      display: flex;
+      gap: 0.8rem;
+      align-items: center;
+    }
+
+    @include s.below(s.$bp-2xl) {
+      .drx-pilewrap {
+        margin-left: 0;
+      }
+    }
+  }
+
+  /* ---------- states + shared panels ---------- */
+  .drx-states {
+    margin-top: 2.75rem;
+
+    .drx-label {
+      display: block;
+      margin-bottom: 1rem;
+    }
+  }
+  .drx-sgrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1rem;
+  }
+  .drx-spanel {
+    background: s.$gray-50;
+    border: 1px dashed s.$gray-400;
+    border-radius: s.$radius-xl;
+    padding: 1rem;
+  }
+  .drx-slab {
+    font-size: s.$text-caption;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: s.$tertiary-text;
+    margin-bottom: 0.75rem;
+  }
+
+  .drx-skel {
+    background: s.$white;
+    border: 1px solid s.$gray-200;
+    border-radius: s.$radius-xl;
+    padding: 1rem 1.25rem;
+
+    .drx-skel-head {
+      display: flex;
+      gap: 0.65rem;
+      align-items: center;
+      margin-bottom: 0.8rem;
+    }
+    .drx-skel-lines {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+  }
+
+  .drx-empty {
+    padding: 1.5rem 0.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.9rem;
+    text-align: center;
+
+    p {
+      font-size: s.$text-base;
+      font-weight: 600;
+      color: s.$secondary-text;
+      line-height: 1.5;
+    }
+  }
+  .drx-signin {
+    font-size: s.$text-sm;
+    font-weight: 700;
+    white-space: nowrap;
+    color: s.$primary;
+    border: 1.5px solid rgba(s.$primary, 0.4);
+    border-radius: s.$radius-pill;
+    padding: 0.4rem 0.95rem;
+    text-decoration: none;
+    display: inline-block;
+    transition: background-color s.$hover-timing;
+
+    &:hover {
+      background: rgba(s.$primary, 0.08);
+    }
+  }
+  .drx-owner-note {
+    padding: 1.1rem 1.4rem;
+    background: linear-gradient(
+      135deg,
+      rgba(s.$secondary, 0.1),
+      rgba(s.$primary, 0.06)
+    );
+    border: 1.5px solid s.$gray-200;
+    border-radius: s.$radius-3xl;
+    font-size: s.$text-base;
+    font-weight: 600;
+    color: s.$secondary-text;
+    line-height: 1.5;
+  }
+
+  .drx-shared {
+    max-width: s.$recipe-page-max-width;
+    margin: 3.5rem auto 0;
+    padding-top: 2.5rem;
+    border-top: 1px dashed s.$gray-500;
+
+    .drx-label {
+      display: block;
+      margin-bottom: 0.35rem;
+    }
+    .drx-shared-sub {
+      font-size: s.$text-sm;
+      color: s.$secondary-text;
+      font-weight: 500;
+      margin-bottom: 1.25rem;
+      max-width: 80ch;
+      line-height: 1.5;
+    }
+  }
+  .drx-modal-frame {
+    background: s.$gray-300;
+    border-radius: s.$radius-xl;
+    padding: 2rem 1rem;
+    display: flex;
+    justify-content: center;
+  }
+  .drx-modal {
+    background: s.$white;
+    border-radius: s.$radius-3xl;
+    box-shadow: s.$elevation-5;
+    padding: 1.75rem 1.25rem;
+    max-width: min(380px, 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 0.6rem;
+
+    h5 {
+      font-size: s.$text-xl;
+      font-weight: 700;
+    }
+    p {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: s.$secondary-text;
+      line-height: 1.6;
+      margin-bottom: 0.9rem;
+    }
+    .drx-modal-opts {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+  }
+  textarea.drx-invalid {
+    min-height: 56px;
+    border-color: s.$error-red;
+    @include s.focus-glow(s.$error-red);
+  }
+  .drx-err-text {
+    font-size: s.$text-sm;
+    color: s.$error-red;
+    font-weight: 600;
+    line-height: 1.5;
+    margin-top: 0.5rem;
+  }
+}
