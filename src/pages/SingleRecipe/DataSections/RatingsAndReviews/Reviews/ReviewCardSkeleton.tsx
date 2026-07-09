@@ -17,7 +17,6 @@ const ReviewCardSkeleton: FC<{ count?: number }> = ({ count = 2 }) => (
             circle
             inline
             baseColor={skeletonColor}
-            className='avatar'
             containerClassName='avatar'
             height={34}
             width={34}
