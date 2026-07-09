@@ -790,7 +790,7 @@ findings table.)*
     default plain-text 429 (`server/routes/bugReports.js:33-39`, no custom `message`/`handler`) instead of the
     house `{ error, code: 'RATE_LIMITED' }` JSON shape the `makeUserLimiter` routes use. Give it a matching
     JSON handler so 429s are uniform across the API.
-- `[~]` **Phase 5-D: convert the 8 legacy string-`_id` recipes to native `ObjectId`** — *(script shipped in [#270 → #268](https://github.com/jclind/prepify/pull/268), W1: `server/scripts/migrateLegacyRecipeIds.js` + Jest suite — dry-run default, `--apply`/`--id=` targeting, exit-2-on-pending. Design refined against real data: all 8 legacy ids are 24-char hex, so it's a **hex-preserving convert** (re-insert under `ObjectId(sameHex)` + delete string doc in one txn), which keeps `String(_id)` byte-identical so the string foreign refs never need repointing. **The prod `--apply` run remains owner-gated and has NOT been run** — the 8 legacy docs still exist; tick to `[x]` after the prod run + `checkMigrationState.js` reads 0.)* — `checkMigrationState.js`
+- `[~]` **Phase 5-D: convert the 8 legacy string-`_id` recipes to native `ObjectId`** — *(script shipped in [#268](https://github.com/jclind/prepify/pull/268), W1: `server/scripts/migrateLegacyRecipeIds.js` + Jest suite — dry-run default, `--apply`/`--id=` targeting, exit-2-on-pending. Design refined against real data: all 8 legacy ids are 24-char hex, so it's a **hex-preserving convert** (re-insert under `ObjectId(sameHex)` + delete string doc in one txn), which keeps `String(_id)` byte-identical so the string foreign refs never need repointing. **The prod `--apply` run remains owner-gated and has NOT been run** — the 8 legacy docs still exist; tick to `[x]` after the prod run + `checkMigrationState.js` reads 0.)* — `checkMigrationState.js`
   reports **8 recipes** on prod (identical count on dev — dev is a prod clone) whose `_id` is still a plain
   string rather than a BSON `ObjectId`, left over from before the Phase-5 refactor. **Not a correctness bug:**
   `server/util/recipeIdQuery.js` is a deliberate compatibility shim that matches both `_id` shapes (`$or`
@@ -803,6 +803,14 @@ findings table.)*
   **with tests** before any prod run. Low urgency (shim covers it indefinitely; only 8 docs); do it if/when
   the string/ObjectId duality is retired. *(surfaced 2026-07-08 during the Track-1 owner-ops prod run — the S6
   `checkMigrationState` DB check flagged it; all other checks came back clean.)* **(not a 1.0 blocker)**
+- `[ ]` **Retire the `recipeIdQuery` string/ObjectId shim (follow-up to the 5-D migration above)** — once the
+  prod `--apply` run has converted all legacy string `_id`s and `checkMigrationState.js` reads 0, the `$or`
+  string-branch in `server/util/recipeIdQuery.js` is dead weight. Remove the shim (or collapse it to a plain
+  `{ _id: new ObjectId(id) }`) in a **separate code PR**. **Ordering is strict: this must land only AFTER the
+  prod data is converted AND dev is converted/re-cloned** — removing it while any string `_id` (or a string
+  foreign ref that still needs the string-form lookup) remains would break those reads. All recipes created
+  post-Phase-5 already use `ObjectId`, so once prod+dev are migrated no new string ids appear and removal is
+  permanently safe. Low; blocked on the owner-gated migration run. *(filed 2026-07-09 when W1 #268 landed.)*
 - `[ ]` **Colour tokens → CSS custom properties when theming lands** — Jesse wants user-selectable
   themes (dark mode + other palettes) **post-1.0**. That's a *colour* concern: themes swap colours, not
   sizes — so the design tokens that need to become runtime-swappable are the colour groups (`$primary*`,
