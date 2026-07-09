@@ -84,13 +84,6 @@ const DangerSection = lazyRoute(
   () => import('src/pages/Settings/sections/DangerSection')
 )
 
-// TEMP (§D PR-C): unlinked in-app gallery of the reviews-overhaul design
-// directions at /design/reviews — delete this route + src/pages/DesignReviews
-// before PR-C merges.
-const DesignReviews = lazyRoute(
-  () => import('src/pages/DesignReviews/DesignReviews')
-)
-
 // Company/legal + help (Help also keeps @formspree out of the entry chunk).
 const About = lazyRoute(() => import('src/pages/About/About'))
 const Privacy = lazyRoute(() => import('src/pages/Privacy/Privacy'))
@@ -187,19 +180,6 @@ const App: FC = () => {
                 <Layout darkNavLinks={true}>
                   <Lazy>
                     <PublicProfile />
-                  </Lazy>
-                </Layout>
-              }
-            />
-
-            {/* TEMP (§D PR-C): reviews-overhaul design gallery — see note on
-                the DesignReviews lazyRoute above. */}
-            <Route
-              path='/design/reviews'
-              element={
-                <Layout darkNavLinks={true}>
-                  <Lazy>
-                    <DesignReviews />
                   </Lazy>
                 </Layout>
               }
