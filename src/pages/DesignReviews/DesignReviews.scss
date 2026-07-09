@@ -229,6 +229,9 @@
 
   /* composer bits */
   textarea {
+    // the app has no global border-box reset (index.scss `*` only zeroes
+    // margin/padding), so width:100% + padding + border overflows without this
+    box-sizing: border-box;
     width: 100%;
     min-height: 76px;
     resize: vertical;
@@ -777,8 +780,29 @@
     }
 
     @include s.below(s.$bp-2xl) {
+      .drx-sumstrip {
+        gap: 1.25rem;
+      }
       .drx-pilewrap {
         margin-left: 0;
+      }
+    }
+    @include s.below(s.$bp-sm) {
+      .drx-invite {
+        padding: 1.25rem;
+      }
+      // head gets crowded at phone widths: drop the date to its own caption
+      // line under the identity, aligned with the text column (mirrors the
+      // current RecipeReview ≤450px treatment)
+      .drx-rc-head {
+        flex-wrap: wrap;
+      }
+      .drx-rc-head .drx-dt {
+        order: 5;
+        flex-basis: 100%;
+        margin-left: calc(40px + 0.8rem);
+        margin-top: 0.1rem;
+        font-size: s.$text-caption;
       }
     }
   }
