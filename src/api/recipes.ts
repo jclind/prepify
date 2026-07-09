@@ -1,6 +1,12 @@
 import { parseIngredientString } from '@jclind/ingredient-parser'
 import axios, { type AxiosResponse } from 'axios'
-import { getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage'
+import {
+  deleteObject,
+  getDownloadURL,
+  getStorage,
+  ref,
+  uploadBytes,
+} from 'firebase/storage'
 import { calculateServingPrice } from 'src/util/calculateServingPrice'
 import {
   AccountTabCounts,
@@ -229,6 +235,28 @@ class RecipeAPIClass {
     }
   }
 
+  // Best-effort cleanup for a recipe image we just uploaded to Storage but which
+  // ended up orphaned — the create/edit request to the server failed *after* the
+  // upload succeeded, so the object exists with no recipe pointing at it. Call this
+  // only with a URL for an image uploaded in the *current* submit (never an existing
+  // recipe's stored image, which the edit path may reuse unchanged).
+  private deleteRecipeImage = async (imageUrl: string): Promise<void> => {
+    if (!imageUrl) return
+    // Cypress E2E short-circuits uploadRecipeImage (no real object is written) and
+    // hands back a fake URL that isn't a valid Storage ref — nothing to delete.
+    if (import.meta.env.VITE_CYPRESS === 'true') return
+    try {
+      // ref(storage, url) resolves the object from its download URL, so we don't
+      // need to thread the original StorageReference through the submit flow.
+      await deleteObject(ref(getStorage(), imageUrl))
+    } catch (err) {
+      // The recipe submit already failed and its error is what the user needs to
+      // see; a leftover image is a minor storage leak, so swallow this rather than
+      // mask the real failure.
+      console.error('Failed to clean up orphaned recipe image:', err)
+    }
+  }
+
   // The editable subset of a recipe document, assembled from the form data plus
   // the values computed at submit time. addRecipe layers creation-only fields
   // (authorUsername, rating, counters…) on top; editRecipe sends it as-is. Single
@@ -268,6 +296,9 @@ class RecipeAPIClass {
     recipeData: RecipeFormType,
     setProgress: (val: number) => void
   ): Promise<AddRecipeResult> {
+    // Track the image uploaded in this submit so we can delete it if the server
+    // rejects the recipe after the upload (create always uploads a fresh object).
+    let uploadedImageUrl = ''
     try {
       setProgress(10)
       const authorUsername: string | null = await AuthAPI.getUsername()
@@ -276,6 +307,7 @@ class RecipeAPIClass {
         recipeData.recipeImage,
         setProgress
       )
+      uploadedImageUrl = recipeImage
       const servingPrice: number = calculateServingPrice(
         recipeData.ingredients,
         recipeData.servings
@@ -322,6 +354,9 @@ class RecipeAPIClass {
       }
     } catch (error: unknown) {
       console.error('addRecipe failed:', error)
+      // The recipe wasn't created, so any image we uploaded for it is now an
+      // orphan — remove it (best-effort; never masks the error below).
+      await this.deleteRecipeImage(uploadedImageUrl)
       if (axios.isAxiosError(error)) {
         if (error.response?.status === 401) return { status: 'auth-error' }
         // Surface the server's reason (e.g. a 422 moderation block) so the user
@@ -341,6 +376,9 @@ class RecipeAPIClass {
     originalRecipe: RecipeType,
     setProgress: (val: number) => void
   ): Promise<EditRecipeResult> {
+    // Only a *newly* uploaded image is eligible for cleanup on failure — never the
+    // recipe's existing stored image, which stays live when the edit is reused.
+    let uploadedImageUrl = ''
     try {
       setProgress(10)
       // Image: only upload when the user picked a new file. Otherwise the recipe
@@ -351,6 +389,7 @@ class RecipeAPIClass {
           recipeData.recipeImage,
           setProgress
         )
+        uploadedImageUrl = recipeImage
       }
       setProgress(80)
       // Serving price is a local calculation (no API cost), so always recompute —
@@ -401,6 +440,10 @@ class RecipeAPIClass {
       return { status: 'success', recipe: res.data }
     } catch (error: unknown) {
       console.error('editRecipe failed:', error)
+      // If the edit failed after uploading a new image, that new object is orphaned
+      // (the recipe still points at its old image) — remove it. uploadedImageUrl is
+      // empty when the edit reused the existing image, so that stays untouched.
+      await this.deleteRecipeImage(uploadedImageUrl)
       if (axios.isAxiosError(error)) {
         if (error.response?.status === 401) return { status: 'auth-error' }
         // Surface the server's reason (e.g. 403 Forbidden, 404 Not found) so a

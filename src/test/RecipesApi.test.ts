@@ -3,9 +3,10 @@ import { vi } from 'vitest'
 // Mock firebase/storage so uploadRecipeImage doesn't reach the real SDK.
 vi.mock('firebase/storage', () => ({
   getStorage: vi.fn(() => ({})),
-  ref: vi.fn(() => ({})),
+  ref: vi.fn((_storage: unknown, path: string) => ({ path })),
   uploadBytes: vi.fn().mockResolvedValue(undefined),
   getDownloadURL: vi.fn().mockResolvedValue('https://fake.cdn/image.jpg'),
+  deleteObject: vi.fn().mockResolvedValue(undefined),
 }))
 
 vi.mock('src/api/auth', () => ({
@@ -35,7 +36,7 @@ vi.mock('src/api/http-common', () => ({
 // Import after mocks are in place.
 import RecipeAPI from 'src/api/recipes'
 import AuthAPI from 'src/api/auth'
-import { ref, uploadBytes } from 'firebase/storage'
+import { deleteObject, ref, uploadBytes } from 'firebase/storage'
 import type { RecipeEditFormType, RecipeFormType, RecipeType } from 'types'
 
 const makeFormData = (): RecipeFormType => ({
@@ -106,6 +107,65 @@ describe('RecipeAPI.addRecipe — nutrition soft-fail (High #4)', () => {
 
     expect(result).toEqual({ status: 'success', id: 'srv-2', pendingReview: false })
     expect(httpPost).toHaveBeenCalledWith('api/addRecipe', expect.any(Object))
+  })
+})
+
+describe('RecipeAPI.addRecipe — orphaned-image cleanup (X3)', () => {
+  beforeEach(() => {
+    httpPost.mockReset()
+    nutritionPost.mockReset()
+    vi.mocked(deleteObject).mockClear()
+    // Exercise the real (mocked-SDK) upload + cleanup path, not the Cypress stub.
+    vi.stubEnv('VITE_CYPRESS', 'false')
+    nutritionPost.mockResolvedValue({ data: null })
+  })
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
+  it('deletes the just-uploaded image when the server rejects the recipe', async () => {
+    httpPost.mockRejectedValue(
+      Object.assign(new Error('rejected'), {
+        isAxiosError: true,
+        response: { status: 422, data: { error: 'Moderation block' } },
+      })
+    )
+
+    const result = await RecipeAPI.addRecipe(makeFormData(), () => {})
+
+    // The failure is still surfaced to the caller...
+    expect(result).toEqual({ status: 'error', message: 'Moderation block' })
+    // ...and the orphaned Storage object is removed (keyed by its download URL).
+    expect(deleteObject).toHaveBeenCalledTimes(1)
+    expect(vi.mocked(ref).mock.calls.at(-1)?.[1]).toBe('https://fake.cdn/image.jpg')
+  })
+
+  it('does NOT delete the image when creation succeeds', async () => {
+    httpPost.mockResolvedValue({ data: { _id: 'srv-ok' } })
+
+    const result = await RecipeAPI.addRecipe(makeFormData(), () => {})
+
+    expect(result.status).toBe('success')
+    expect(deleteObject).not.toHaveBeenCalled()
+  })
+
+  it('still returns the server error even if the cleanup delete fails', async () => {
+    httpPost.mockRejectedValue(
+      Object.assign(new Error('rejected'), {
+        isAxiosError: true,
+        response: { status: 500, data: {} },
+      })
+    )
+    vi.mocked(deleteObject).mockRejectedValueOnce(new Error('storage down'))
+
+    const result = await RecipeAPI.addRecipe(makeFormData(), () => {})
+
+    // A cleanup failure must not throw or mask the original create error.
+    expect(result).toEqual({
+      status: 'error',
+      message: 'Failed to create recipe. Please try again.',
+    })
+    expect(deleteObject).toHaveBeenCalledTimes(1)
   })
 })
 
@@ -315,9 +375,54 @@ describe('RecipeAPI.editRecipe', () => {
     )
     expect(result).toEqual({ status: 'error', message: 'Forbidden' })
   })
+
+  it('deletes a newly uploaded image when the edit fails (X3)', async () => {
+    vi.mocked(deleteObject).mockClear()
+    vi.stubEnv('VITE_CYPRESS', 'false')
+    httpPut.mockRejectedValue(
+      Object.assign(new Error('rejected'), {
+        isAxiosError: true,
+        response: { status: 500, data: {} },
+      })
+    )
+    const withImage = makeEditData({
+      recipeImage: new File([''], 'new.jpg', { type: 'image/jpeg' }),
+    })
+
+    await RecipeAPI.editRecipe('recipe-1', withImage, makeOriginal(), () => {})
+
+    // The just-uploaded object (its download URL) is the one removed.
+    expect(deleteObject).toHaveBeenCalledTimes(1)
+    expect(vi.mocked(ref).mock.calls.at(-1)?.[1]).toBe('https://fake.cdn/image.jpg')
+    vi.unstubAllEnvs()
+  })
+
+  it('does NOT delete the existing image when the edit reuses it and fails (X3)', async () => {
+    vi.mocked(deleteObject).mockClear()
+    vi.stubEnv('VITE_CYPRESS', 'false')
+    httpPut.mockRejectedValue(
+      Object.assign(new Error('rejected'), {
+        isAxiosError: true,
+        response: { status: 500, data: {} },
+      })
+    )
+
+    // makeEditData() defaults recipeImage to undefined → the original stored image
+    // is reused, so a failed edit must NOT delete the still-live original.
+    await RecipeAPI.editRecipe('recipe-1', makeEditData(), makeOriginal(), () => {})
+
+    expect(deleteObject).not.toHaveBeenCalled()
+    vi.unstubAllEnvs()
+  })
 })
 
 describe('RecipeAPI.uploadRecipeImage — uid-keyed Storage path (I2)', () => {
+  beforeEach(() => {
+    // Order-independence: earlier suites now also exercise the mocked upload path,
+    // so clear the shared SDK mocks before each assertion on call counts here.
+    vi.mocked(ref).mockClear()
+    vi.mocked(uploadBytes).mockClear()
+  })
   afterEach(() => {
     vi.unstubAllEnvs()
     vi.mocked(ref).mockClear()
