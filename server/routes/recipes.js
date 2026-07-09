@@ -537,16 +537,21 @@ router.post('/addRecipe', verifyToken, requireActive, recipeWriteLimiter, asyncH
   }
 
   // Whitelist the insert (mirrors the edit path): only creatable fields are
-  // copied from the client, and the server stamps _id, userId, a zeroed rating
-  // and counters. Anything else the client sends — `status`, `featured`, a
-  // forged rating/counter — is ignored, so a recipe can never be born hidden,
-  // featured, or pre-rated. The medium-hold status is NOT set here; holdRecipeForReview
+  // copied from the client, and the server stamps _id, userId, the createdAt/
+  // editedAt timestamps, a zeroed rating and counters. Anything else the client
+  // sends — `status`, `featured`, a forged rating/counter, a forged createdAt —
+  // is ignored, so a recipe can never be born hidden, featured, pre-rated, or
+  // back/post-dated. The medium-hold status is NOT set here; holdRecipeForReview
   // owns it (and only flips it once the admin-queue report is filed).
   const newId = new ObjectId()
   const docToInsert = {
     ...pickFields(body, CREATABLE_RECIPE_FIELDS),
     _id: newId,
     userId: uid,
+    // A 13-digit ms-epoch string (matches the edit path's editedAt stamp), so the
+    // "Newest"/"Oldest" browse sort's lexicographic ordering stays chronological.
+    createdAt: Date.now().toString(),
+    editedAt: null,
     rating: { rateCount: 0, rateValue: 0, breakdown: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } },
     numTimesSaved: 0,
     numTimesMade: 0,

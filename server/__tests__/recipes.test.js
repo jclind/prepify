@@ -515,6 +515,34 @@ describe('POST /addRecipe', () => {
     })
   })
 
+  it('stamps createdAt server-side and ignores a client-forged createdAt/editedAt', async () => {
+    const before = Date.now()
+    const res = await request(server)
+      .post('/api/addRecipe')
+      .set(AUTH_HEADER)
+      .send({
+        title: 'Test Recipe',
+        description: 'A test recipe',
+        ingredients: [{ id: 'i1', name: 'salt' }],
+        instructions: [{ content: 'Add salt', index: 1, id: 's1' }],
+        mealTypes: ['dinner'],
+        // A forged far-future createdAt would pin this recipe to the top of the
+        // "Newest" sort forever; a forged editedAt would fake an edit history.
+        createdAt: '9999999999999',
+        editedAt: '5000',
+      })
+
+    expect(res.status).toBe(201)
+    const { ObjectId } = require('mongodb')
+    const stored = await getDB().collection('recipes').findOne({ _id: new ObjectId(res.body._id) })
+    // Server stamped its own ms-epoch, not the forged value.
+    expect(stored.createdAt).not.toBe('9999999999999')
+    expect(Number(stored.createdAt)).toBeGreaterThanOrEqual(before)
+    expect(Number(stored.createdAt)).toBeLessThanOrEqual(Date.now())
+    // A new recipe is never pre-edited, regardless of what the client sends.
+    expect(stored.editedAt).toBeNull()
+  })
+
   describe('input bounds (defense-in-depth)', () => {
     const validBody = () => ({
       title: 'Test Recipe',
