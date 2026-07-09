@@ -194,6 +194,16 @@ in the same `storage.rules` as I2, so step 1 below applies it. Until prod gets t
 deploy, X3's cleanup is inert on prod (it logs the 403 and swallows it — no user-facing
 regression, the orphan just isn't removed).
 
+**Known limitation — resize variants aren't cleaned up.** `deleteRecipeImage` removes
+only the original object (by its download URL). If the I1 "Resize Images" extension has
+already generated its `{uuid}_{w}x{w}.webp` variants beside the original by the time the
+create/edit fails, those variants are left orphaned. In practice this is near-impossible
+today: variant emission is gated off (`VITE_IMAGE_VARIANTS_ENABLED` unset) and the
+extension isn't installed until the I1 cutover, and even once live the failure window
+between upload and the async variant generation is short. If variant orphans ever show
+up, extend `deleteRecipeImage` to also delete the derived keys (see
+`RECIPE_IMAGE_VARIANT_WIDTHS` in `src/util/recipeImageVariants.ts`).
+
 ### 1. Deploy the rules
 
 ```bash

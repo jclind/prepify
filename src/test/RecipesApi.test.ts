@@ -237,6 +237,11 @@ describe('RecipeAPI.editRecipe', () => {
     httpPut.mockReset()
     nutritionPost.mockReset()
   })
+  // Restore env after every test so a stubbed VITE_CYPRESS (set by the X3 cases
+  // below) can't leak into later tests if an assertion throws mid-test.
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
 
   it('PUTs to the edit endpoint and returns the updated recipe on success', async () => {
     httpPut.mockResolvedValue({ data: { _id: 'recipe-1', title: 'Edited Title' } })
@@ -394,7 +399,6 @@ describe('RecipeAPI.editRecipe', () => {
     // The just-uploaded object (its download URL) is the one removed.
     expect(deleteObject).toHaveBeenCalledTimes(1)
     expect(vi.mocked(ref).mock.calls.at(-1)?.[1]).toBe('https://fake.cdn/image.jpg')
-    vi.unstubAllEnvs()
   })
 
   it('does NOT delete the existing image when the edit reuses it and fails (X3)', async () => {
@@ -412,7 +416,6 @@ describe('RecipeAPI.editRecipe', () => {
     await RecipeAPI.editRecipe('recipe-1', makeEditData(), makeOriginal(), () => {})
 
     expect(deleteObject).not.toHaveBeenCalled()
-    vi.unstubAllEnvs()
   })
 })
 
