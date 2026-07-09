@@ -119,3 +119,34 @@ describe('TimeInput clear-both-fields', () => {
     expect(setVal).not.toHaveBeenCalledWith(null)
   })
 })
+
+// W2 a11y wiring: when the section is in error, both time fields carry the
+// invalid flag and point at the section's error message.
+describe('TimeInput a11y wiring', () => {
+  it('threads invalid + describedBy to both fields', () => {
+    render(
+      <TimeInput
+        label='Prep time'
+        val={null}
+        setVal={vi.fn()}
+        invalid
+        describedBy='error-prepTime'
+      />
+    )
+    const inputs = screen.getAllByPlaceholderText('0') as HTMLInputElement[]
+    expect(inputs).toHaveLength(2)
+    for (const input of inputs) {
+      expect(input).toHaveAttribute('aria-invalid', 'true')
+      expect(input).toHaveAttribute('aria-describedby', 'error-prepTime')
+    }
+  })
+
+  it('emits neither attribute when the field is valid', () => {
+    render(<TimeInput label='Prep time' val={null} setVal={vi.fn()} />)
+    const inputs = screen.getAllByPlaceholderText('0') as HTMLInputElement[]
+    for (const input of inputs) {
+      expect(input).not.toHaveAttribute('aria-invalid')
+      expect(input).not.toHaveAttribute('aria-describedby')
+    }
+  })
+})

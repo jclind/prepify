@@ -14,9 +14,19 @@ interface TimeInputProps {
       minutes: number
     } | null
   ) => void
+  // Accessibility: flag both time fields as invalid and point them at the
+  // section's error message (AddRecipe passes the FormField errorId).
+  invalid?: boolean
+  describedBy?: string
 }
 
-const TimeInput: React.FC<TimeInputProps> = ({ label, val, setVal }) => {
+const TimeInput: React.FC<TimeInputProps> = ({
+  label,
+  val,
+  setVal,
+  invalid,
+  describedBy,
+}) => {
   const [minutes, setMinutes] = useState<number | ''>('')
   const [hours, setHours] = useState<number | ''>('')
   // True once the user has typed in either field. Distinguishes a genuine
@@ -91,6 +101,8 @@ const TimeInput: React.FC<TimeInputProps> = ({ label, val, setVal }) => {
           setVal={(val: number | '') => onHoursChange(val)}
           characterLimit={3}
           inputBeginningText='Hours'
+          invalid={invalid}
+          describedBy={describedBy}
         />
         <FormInput
           size='compact'
@@ -100,6 +112,8 @@ const TimeInput: React.FC<TimeInputProps> = ({ label, val, setVal }) => {
           setVal={(val: number | '') => onMinutesChange(val)}
           characterLimit={3}
           inputBeginningText='Minutes'
+          invalid={invalid}
+          describedBy={describedBy}
         />{' '}
       </div>
     </div>

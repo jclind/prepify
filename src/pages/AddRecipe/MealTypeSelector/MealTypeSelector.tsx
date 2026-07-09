@@ -16,6 +16,12 @@ const mealTypeOptions: OptionType[] = mealTypesList.map(m => ({
 type MealTypeSelectorProps = {
   mealTypes: string[]
   setMealTypes: React.Dispatch<React.SetStateAction<string[]>>
+  // Accessibility: mark the select invalid and point it at the section's error
+  // message. react-select exposes aria-invalid/aria-errormessage (it has no
+  // aria-describedby prop), and aria-errormessage is only exposed to assistive
+  // tech while aria-invalid is set, so the two are passed as a gated pair.
+  invalid?: boolean
+  errorMessageId?: string
 }
 const getMealTypesByString = (mealTypesString: string[]): OptionType[] => {
   const matchingMealTypes = mealTypeOptions.filter(option =>
@@ -28,6 +34,8 @@ const getMealTypesByString = (mealTypesString: string[]): OptionType[] => {
 const MealTypeSelector: FC<MealTypeSelectorProps> = ({
   mealTypes,
   setMealTypes,
+  invalid,
+  errorMessageId,
 }) => {
   const handleChange = (
     newValue: MultiValue<OptionType> | null,
@@ -52,6 +60,8 @@ const MealTypeSelector: FC<MealTypeSelectorProps> = ({
         placeholder='Select meal type(s)...'
         closeMenuOnSelect={false}
         aria-label='Course'
+        aria-invalid={invalid || undefined}
+        aria-errormessage={invalid ? errorMessageId : undefined}
       />
     </div>
   )

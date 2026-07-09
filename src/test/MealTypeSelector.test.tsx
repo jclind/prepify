@@ -8,10 +8,20 @@ import MealTypeSelector from 'src/pages/AddRecipe/MealTypeSelector/MealTypeSelec
 // test exercises MealTypeSelector's own value<->option mapping rather than the
 // real widget.
 vi.mock('react-select', () => ({
-  default: ({ value, onChange, options, placeholder, 'aria-label': ariaLabel }: any) => (
+  default: ({
+    value,
+    onChange,
+    options,
+    placeholder,
+    'aria-label': ariaLabel,
+    'aria-invalid': ariaInvalid,
+    'aria-errormessage': ariaErrorMessage,
+  }: any) => (
     <div>
       <span data-testid='placeholder'>{placeholder}</span>
       <span data-testid='aria-label'>{ariaLabel}</span>
+      <span data-testid='aria-invalid'>{String(ariaInvalid)}</span>
+      <span data-testid='aria-errormessage'>{String(ariaErrorMessage)}</span>
       <span data-testid='selected'>
         {(value ?? []).map((o: any) => o.label).join(',')}
       </span>
@@ -85,5 +95,34 @@ describe('MealTypeSelector', () => {
     // The null-newValue branch of handleChange must yield [], not crash.
     await user.click(screen.getByTestId('clear'))
     expect(screen.getByTestId('meal-types')).toHaveTextContent('')
+  })
+
+  // W2 a11y wiring: react-select has no aria-describedby prop, so the invalid
+  // state rides its aria-invalid/aria-errormessage pair — and aria-errormessage
+  // is only exposed while aria-invalid is set, so the pair must be gated
+  // together.
+  it('passes the gated aria-invalid/aria-errormessage pair when in error', () => {
+    render(
+      <MealTypeSelector
+        mealTypes={[]}
+        setMealTypes={() => {}}
+        invalid
+        errorMessageId='error-mealType'
+      />
+    )
+    expect(screen.getByTestId('aria-invalid')).toHaveTextContent('true')
+    expect(screen.getByTestId('aria-errormessage')).toHaveTextContent('error-mealType')
+  })
+
+  it('emits neither aria attribute while valid — even with an id supplied', () => {
+    render(
+      <MealTypeSelector
+        mealTypes={[]}
+        setMealTypes={() => {}}
+        errorMessageId='error-mealType'
+      />
+    )
+    expect(screen.getByTestId('aria-invalid')).toHaveTextContent('undefined')
+    expect(screen.getByTestId('aria-errormessage')).toHaveTextContent('undefined')
   })
 })

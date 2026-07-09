@@ -128,7 +128,7 @@ const AddRecipe: FC<AddRecipeProps> = ({ initialRecipe }) => {
               errorId='error-image'
             >
               {resumedFromDraft && !recipeImage && (
-                <p className='draft-image-hint'>
+                <p className='draft-image-hint' id='draft-image-hint'>
                   <InfoIcon className='icon' />
                   Drafts don't save your image — add it again before publishing.
                 </p>
@@ -138,6 +138,14 @@ const AddRecipe: FC<AddRecipeProps> = ({ initialRecipe }) => {
                 setImage={setRecipeImage}
                 initialPreviewUrl={existingImageUrl}
                 onRemove={() => setExistingImageUrl(undefined)}
+                describedBy={
+                  [
+                    errors.image ? 'error-image' : null,
+                    resumedFromDraft && !recipeImage ? 'draft-image-hint' : null,
+                  ]
+                    .filter(Boolean)
+                    .join(' ') || undefined
+                }
               />
             </FormField>
             <FormField
@@ -181,6 +189,8 @@ const AddRecipe: FC<AddRecipeProps> = ({ initialRecipe }) => {
                 label={'How long will your recipe take to prepare?'}
                 val={prepTime}
                 setVal={setPrepTime}
+                invalid={!!errors.prepTime}
+                describedBy={errors.prepTime ? 'error-prepTime' : undefined}
               />
             </FormField>
             <FormField className='cook-time' label='Cook Time'>
@@ -227,6 +237,8 @@ const AddRecipe: FC<AddRecipeProps> = ({ initialRecipe }) => {
               <MealTypeSelector
                 mealTypes={mealTypes}
                 setMealTypes={setMealTypes}
+                invalid={!!errors.mealType}
+                errorMessageId='error-mealType'
               />
             </FormField>
             <FormField className='diet' label='Diet'>

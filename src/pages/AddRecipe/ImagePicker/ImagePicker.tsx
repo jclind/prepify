@@ -16,6 +16,9 @@ interface ImagePickerProps {
   // Edit mode: fires when the user clears the image, so the parent can drop the
   // existing-image URL it tracks for validation.
   onRemove?: () => void
+  // Accessibility: id(s) of the text describing the picker (the section's error
+  // message and/or the draft-image hint), announced with the dropzone control.
+  describedBy?: string
 }
 
 const ImagePicker: React.FC<ImagePickerProps> = ({
@@ -23,6 +26,7 @@ const ImagePicker: React.FC<ImagePickerProps> = ({
   setImage,
   initialPreviewUrl,
   onRemove,
+  describedBy,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [imagePreview, setImagePreview] = useState<string | undefined>(
@@ -115,6 +119,7 @@ const ImagePicker: React.FC<ImagePickerProps> = ({
         role={imagePreview ? undefined : 'button'}
         tabIndex={imagePreview ? undefined : 0}
         aria-label={imagePreview ? undefined : 'Select an image'}
+        aria-describedby={imagePreview ? undefined : describedBy}
         onKeyDown={
           imagePreview
             ? undefined
