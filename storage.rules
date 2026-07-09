@@ -32,6 +32,14 @@ service firebase.storage {
                    && request.auth.uid == uid
                    && request.resource.size < 5 * 1024 * 1024
                    && request.resource.contentType.matches('image/.*');
+      // Owner-scoped delete (X3). `allow write` nominally covers delete, but on a
+      // delete `request.resource` is null, so the size/contentType guards above
+      // evaluate false and deletes get denied. The client cleans up its own
+      // just-uploaded object when a create/edit fails after the upload
+      // (api/recipes.ts deleteRecipeImage) — without this grant that cleanup 403s
+      // and the orphan leaks. A separate `allow delete` (rules OR together) lets
+      // the owner delete under their uid prefix without a resource to inspect.
+      allow delete: if request.auth != null && request.auth.uid == uid;
     }
 
     // Legacy recipe images (pre-I2): keyed by bare filename at recipeImages/{file},
