@@ -34,6 +34,29 @@ The triage date stamped on items is the date they were filed here, not when they
 
 ## Bugs
 
+- `[x]` **Account tabs + reviews list render their *empty* states on API failure (error/empty conflation)**
+  *(filed 2026-07-09, out of the RELEASE_PLAN §A empty/error states sweep; **fixed same day, in the same
+  change set as this entry** — `usePaginatedLoadMore` now exposes `isError`/`refetch`; Saved / Ratings /
+  Your Recipes / Drafts branch on it before their empty state and render an `EmptyState`-styled error panel
+  ("Couldn’t load your …" + alert icon + a `Try again` action wired to `refetch`); the recipe page's reviews
+  list gets inline "Couldn’t load reviews." copy; `loading-states.md`'s canonical snippet corrected + a new
+  "Error is not empty" section; regression tests in `AccountSections.loading.test.tsx` (error ≠ empty +
+  retry-recovers) and `usePaginatedLoadMore.test.tsx` (isError surfaced, refetch recovers). Verified live
+  against a dead API port: all four tabs settle on the error state after the retry budget.)* — with the API unreachable, a
+  signed-in user's Saved/Ratings/Your Recipes/Drafts tabs wait out the react-query retry budget (~8s of
+  skeletons) and then land on **"No Recipes Saved Yet" / "No Ratings Yet" / etc.** — a user with data on a
+  flaky connection is told they have none. Verified live (client pointed at a dead API port, signed in as the
+  cypress test user). Two mechanisms: **(1)** `usePaginatedLoadMore`
+  (`src/pages/Account/usePaginatedLoadMore.ts:69-93`) never surfaces `isError` — on failure `isLoading` goes
+  false with `items` empty, so the tabs' `showList` gate falls through to the empty state (consumers:
+  `SavedRecipes.tsx`, `UserRatings.tsx`, `UserRecipes.tsx`, and the recipe page's reviews section
+  `RatingsAndReviews.tsx`); **(2)** `Drafts.tsx:15-27` does the same with a bare `useQuery`
+  (`showList = hasDrafts || isLoading`). The pattern is *codified* — `docs/design/loading-states.md`'s
+  canonical snippet routes `isError` into `<EmptyState />` (line ~71). Fix lane: expose `isError` from the
+  hook, render the section-level inline-error pattern Home/Recipes already use ("Couldn't load … Please try
+  again.") instead of the empty state, and correct the loading-states.md example in the same PR. For
+  contrast, Home, `/recipes`, and SingleRecipe all show real error copy with the API down (SingleRecipe only
+  after its ~7s retry budget — acceptable, documented). Med.
 - `[ ]` **Legacy rating docs are mistyped — "Top" review sort interleaves wrong** *(filed 2026-07-09, out of
   the §D overhaul)* — old `ratings` docs store `rating` as **stringified numbers** (`"5"`) and
   `reviewCreatedAt` as stringified epoch-ms, while post-#266 writes store floats; review-only docs are

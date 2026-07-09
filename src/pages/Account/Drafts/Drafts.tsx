@@ -1,4 +1,4 @@
-import { EditIcon } from 'src/Components/icons'
+import { AlertCircleIcon, EditIcon } from 'src/Components/icons'
 import React, { FC } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import 'react-loading-skeleton/dist/skeleton.css'
@@ -12,7 +12,7 @@ import { useDelayedLoading } from 'src/hooks/useDelayedLoading'
 const Drafts: FC = () => {
   const queryClient = useQueryClient()
 
-  const { data: drafts, isLoading } = useQuery({
+  const { data: drafts, isLoading, isError, refetch } = useQuery({
     queryKey: ['drafts'],
     queryFn: () => DraftAPI.listDrafts(),
   })
@@ -53,6 +53,15 @@ const Drafts: FC = () => {
             ))
           )}
         </div>
+      ) : isError ? (
+        // Error is not empty: a failed fetch must never read as "no drafts" to a
+        // user who has them. See docs/design/loading-states.md.
+        <EmptyState
+          icon={<AlertCircleIcon />}
+          title='Couldn’t load your drafts'
+          description='Something went wrong. Please try again.'
+          action={{ label: 'Try again', onClick: () => refetch() }}
+        />
       ) : (
         <EmptyState
           icon={<EditIcon />}

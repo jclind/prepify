@@ -68,13 +68,26 @@ if (isLoading) return (
     <Skeletons />
   </Grid>
 )
-if (isError || items.length === 0) return <EmptyState />
+if (isError) return <LoadError />        // error copy + retry — NOT the empty state
+if (items.length === 0) return <EmptyState />
 return <Grid>{items.map(...)}</Grid>
 
 // ❌ wrong — fast load skips the skeleton AND lands on the empty state for a frame
 if (showSkeleton) return <Skeletons />
 if (items.length === 0) return <EmptyState />
 ```
+
+### Error is not empty
+
+`isError` and "zero items" are different states and must render different copy.
+A failed fetch routed into the empty state tells a user with data that they have
+none ("No Recipes Saved Yet" on a flaky connection). Every fetch-backed section
+needs three terminal states: content, **empty** ("nothing here yet" + CTA), and
+**error** ("Couldn't load … Please try again." — reuse `EmptyState` with an
+alert icon and a `Try again` action wired to the query's `refetch`, or the
+sections' inline error copy where a full empty-state panel would be heavy, as on
+Home). `usePaginatedLoadMore` exposes `isError`/`refetch` for exactly this —
+branch on it *before* the empty state, as the account tabs do.
 
 ### Reserve the height — don't blank then grow (`sk-hold`)
 

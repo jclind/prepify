@@ -1,4 +1,4 @@
-import { BookmarkIcon, ChevronDownIcon, CloseIcon, EditIcon, FolderIcon, FolderPlusIcon, GridIcon, PlusIcon, SearchIcon, TrashIcon } from 'src/Components/icons'
+import { AlertCircleIcon, BookmarkIcon, ChevronDownIcon, CloseIcon, EditIcon, FolderIcon, FolderPlusIcon, GridIcon, PlusIcon, SearchIcon, TrashIcon } from 'src/Components/icons'
 import React, { FC, useState, useEffect, useCallback } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
@@ -60,6 +60,8 @@ const SavedRecipes: FC = () => {
     items: recipes,
     isLoading,
     showSkeleton,
+    isError,
+    refetch,
     isMore: isMoreRecipes,
     loadMore: handleLoadMoreRecipes,
     reset: resetToFirstPage,
@@ -387,6 +389,15 @@ const SavedRecipes: FC = () => {
             </button>
           ) : null}
         </>
+      ) : isError ? (
+        // Error is not empty: a failed fetch must never read as "no saves" to a
+        // user who has them. See docs/design/loading-states.md.
+        <EmptyState
+          icon={<AlertCircleIcon />}
+          title='Couldn’t load your saved recipes'
+          description='Something went wrong. Please try again.'
+          action={{ label: 'Try again', onClick: () => refetch() }}
+        />
       ) : (
         searching ? (
           <EmptyState
