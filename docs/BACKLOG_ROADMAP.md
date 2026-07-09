@@ -16,7 +16,10 @@ to the *sweep program*); this file applies it to the **general backlog**. Compan
 > verified item-by-item (7 parallel agents; 7 already fixed, 4 tracked/deferred elsewhere). The survivors are
 > boarded as **Wave 6 (N1–N7)** below — mutually disjoint lanes, built for parallel worktrees.
 
-> Board drained 2026-07-08 — the next wave appends below.
+> Board drained 2026-07-08 — **Wave 7 boarded 2026-07-09** (three lanes cut specifically to be disjoint
+> from the in-flight RELEASE_PLAN §D reviews-overhaul PR stack, which owns `server/routes/{reviews,recipes}.js`,
+> the server test files/mocks, `src/types.ts`, `src/api/recipes.ts`, and `Reviews/**` — see
+> [`REVIEWS_OVERHAUL_SCOPE.md`](./REVIEWS_OVERHAUL_SCOPE.md)).
 
 ---
 
@@ -102,6 +105,9 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **6** | **N5 · polish sweep** | skip-link overscroll fix (A11y); RecipeNotFound copy/search; /recipes search-btn offset; footer bug-btn decision (pixel batch b, c) | `[x]` [#259](https://github.com/jclind/prepify/pull/259) (2026-07-08) | `Layout.scss`, `RecipeNotFound/*`, `Footer.scss` | **merged** — skip-link + RecipeNotFound copy/search shipped as code; search-btn 6px offset & footer left-adjacency closed by-design; footer bug-btn re-aligned to the legal-strip row per owner feedback |
 | **6** | **N6 · ingredient-miss telemetry** (+ N1 outlier guard) | persist enrichment misses + admin list (BACKLOG Features, admin); **folds in N1's price-outlier flag** | `[x]` [#255](https://github.com/jclind/prepify/pull/255) (2026-07-08) | `server/routes/ingredients.js`, `server/routes/admin.js`, `src/pages/Admin/**` | **merged**: new `ingredientMisses` collection; write stays best-effort. N1's guard rides this surface as a second event type (flag, not clamp). Review folded in the missing `ingredientMisses` indexes (`{count,lastSeen}` + type-led compound) to match the auditLog pattern the route mirrors |
 | **6** | **N7 · ops: storage-bucket env** | set `FIREBASE_STORAGE_BUCKET` (prod+dev) + real empty-env skip (BACKLOG Tech debt) | `[x]` [#260](https://github.com/jclind/prepify/pull/260) (2026-07-08) | server envs (owner) + `server/util/firebaseStorage.js` | **merged** — code half (early-return skip when env unset); owner confirmed the env is set on **both dev + prod**, so cleanup is live |
+| **7** | **W1 · Phase 5-D string-`_id` migration script** | convert the 8 legacy string-`_id` recipes to `ObjectId`: insert-new + delete-old + repoint `ratings.recipeId` / `reports.recipeId` / `userRecipeData` saved+made refs, transactional, dry-run default (BACKLOG Tech debt) | `[~]` claimed 2026-07-09 | `server/scripts/migrateLegacyRecipeIds.js` (new) + new Jest test file | **new files only** → zero overlap with §D PR-A; the prod `--apply` run stays **owner-gated** (script is the deliverable) |
+| **7** | **W2 · AddRecipe a11y wiring** | `aria-describedby` on TimeInput / Cuisine-Course-Diet selects / ImagePicker / list containers; `SectionHeader` label `id` + section `aria-labelledby` (BACKLOG A11y follow-ups) | `[ ]` | `src/pages/AddRecipe/**` | post-R1 surface is free (C1/R1 both merged); disjoint from §D |
+| **7** | **W3 · housekeeping smalls** | CI `actions/checkout`+`setup-node` v4→v5 (Node-20-runtime deprecation); `VITE_APP_VERSION` build define replacing `ReleaseNotes.tsx`'s `package.json` import (BACKLOG Tech debt ×2) | `[ ]` | `.github/workflows/test.yml`, `vite.config.ts`, `ReleaseNotes.tsx` | F5-style one-liner bundle |
 | **—** | **Deferred / post-1.0 / owner** | see [that section](#deferred--post-10--owner-off-the-active-board) | `[blocked]`/`[dropped]` | — | prerendering, Edamam, theming, brand-orange, DB relocation, ideas |
 
 ---
@@ -203,6 +209,25 @@ Deliberately cut so every lane owns a disjoint file surface — see rule 8 for t
   copy/search emphasis (owner voice), /recipes search-button offset, footer bug-button decision.
 - **N6** ingredient-miss telemetry — persist enrichment misses + a read-only admin list.
 - **N7** ops — `FIREBASE_STORAGE_BUCKET` in prod+dev envs (owner) + the empty-env early-return.
+
+### Wave 7 — 2026-07-09 overnight lanes (disjoint from the §D reviews-overhaul stack)
+
+Boarded while the §D Ratings & Reviews overhaul runs in its own worktree (PRs
+[#266](https://github.com/jclind/prepify/pull/266) server + [#267](https://github.com/jclind/prepify/pull/267)
+frontend, stacked). Several otherwise-ready backlog items were **deliberately skipped** because they'd conflict
+with that stack's file surface: the `createdAt` server-stamp (`routes/recipes.js` + its tests), the
+`RecipeCardType` typing cleanup (`src/types.ts` + `src/api/recipes.ts`), the orphaned-image-on-failed-create fix
+(`src/api/recipes.ts`), and the server-Jest-flakiness structural fix (test files/mocks). They're the natural
+Wave 8 once §D lands.
+
+- **W1** Phase 5-D migration script — the one genuinely large open dev task: a read-first, transactional
+  `--apply` ops script (posture of `reconcileRatingAggregates.js`) that re-inserts each legacy string-`_id`
+  recipe under a native `ObjectId` and repoints every foreign ref (`ratings.recipeId`, `reports.recipeId`,
+  `userRecipeData` saved/made lists), with Jest coverage. Retires the `recipeIdQuery.js` shim once the owner
+  runs it against prod.
+- **W2** AddRecipe a11y wiring — the two open a11y follow-ups from `ADD_RECIPE_UX_AUDIT.md` (only
+  `RecipeFormTextArea` is wired today).
+- **W3** housekeeping smalls — the two remaining low-risk tech-debt one-liners, bundled F5-style.
 
 ---
 
@@ -1728,3 +1753,14 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   Only the **8 legacy string-`_id` recipes** remain flagged — shim-handled (`util/recipeIdQuery.js`), no
   migration script exists, filed as a fresh **Tech-debt** dev task in `BACKLOG.md` (insert-new + repoint
   foreign refs; not a 1.0 blocker). This closes the S6 "prod run stays owner-gated" loop.
+- **2026-07-09** — **Wave 7 boarded + W1 claimed** (overnight session, owner asleep — lanes picked to be
+  provably disjoint from the in-flight §D reviews-overhaul stack: checked `gh pr view 266/267 --json files`
+  before boarding; the skipped-for-collision items are listed in the Wave-7 section as the natural Wave 8).
+  **W1 scope:** `server/scripts/migrateLegacyRecipeIds.js` (new) — for each recipe whose `_id` is a plain
+  string, insert a copy under a fresh native `ObjectId`, repoint `ratings.recipeId`, `reports.recipeId`, and
+  `userRecipeData` saved/made list entries (all store the string id), delete the string doc — inside a
+  transaction (the test harness's `MongoMemoryReplSet` supports them), dry-run/report by default,
+  `--apply` to execute, `DB_NAME` honored like the S6 siblings; plus a new Jest test file (no edits to any
+  existing test — those are §D PR-A's surface). Prod run stays owner-gated. Also reconciled the stale
+  "untested utils" headline in BACKLOG.md Testing (`updateIngredients` gained a 7-case Vitest suite in R1
+  #248). Claim recorded directly on `development` per convention; worktree next.

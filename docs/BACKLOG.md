@@ -1272,10 +1272,12 @@ findings table.)*
   could be covered. Flag, don't necessarily automate the Firebase leg. *(surfaced 2026-06-27 in the
   code-quality & tests sweep E2E review.)*
 - `[ ]` **Unit coverage for remaining untested utils** — the sweep added focused tests for the highest-value
-  untested utils (`closestFraction`, `formatRating`, `nutrition` math, `hrMinToMin`/`minToHrMin`). Still
+  untested utils (`closestFraction`, `formatRating`, `nutrition` math, `hrMinToMin`/`minToHrMin`). **(reconciled
+  2026-07-09: the headline `updateIngredients` gap is closed — R1 #248 added `src/test/updateIngredients.test.ts`
+  (7 cases) and the dead-code block is gone; only the trivial formatters below remain.)** ~~Still
   untested: **`src/util/updateIngredients.ts`** (the notable one — ~80 lines of ingredient price/quantity
   merge logic with non-null assertions, on the add/edit-recipe path; also still carries a block of
-  commented-out dead code at the top that should be removed when it's touched), plus the small formatters
+  commented-out dead code at the top that should be removed when it's touched)~~, plus the small formatters
   `capitalize`, `formatPrice`, `formatDate`, `formatCompactCount`, `timeElapsedSince`, `reorder` (DnD reorder —
   already covered indirectly by `addRecipe.cy.ts`), `recipeLimits`, `invalidateSavedCaches`, `defaultAvatar`.
   Most are trivial; `updateIngredients` is the one worth a real test pass. *(surfaced 2026-06-27 in the
