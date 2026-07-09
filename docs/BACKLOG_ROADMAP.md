@@ -24,7 +24,7 @@ to the *sweep program*); this file applies it to the **general backlog**. Compan
 > [#267](https://github.com/jclind/prepify/pull/267) → [#271](https://github.com/jclind/prepify/pull/271)) —
 > that file ownership is released, so the **Wave-8 candidates** (the §D-collision skips: `createdAt`
 > server-stamp, `RecipeCardType` typing, orphaned-image-on-failed-create, server-Jest flakiness) are now
-> **boarded as Wave 8 (X1–X4)** below. **X1 landed 2026-07-09** ([#272](https://github.com/jclind/prepify/pull/272)); X2–X4 open.
+> **boarded as Wave 8 (X1–X4)** below. **X1 & X2 landed 2026-07-09** ([#272](https://github.com/jclind/prepify/pull/272), [#273](https://github.com/jclind/prepify/pull/273)); X3–X4 open.
 
 ---
 
@@ -114,7 +114,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **7** | **W2 · AddRecipe a11y wiring** | `aria-describedby` on TimeInput / Cuisine-Course-Diet selects / ImagePicker / list containers; `SectionHeader` label `id` + section `aria-labelledby` (BACKLOG A11y follow-ups) | `[x]` [#269](https://github.com/jclind/prepify/pull/269) (2026-07-09) | `src/pages/AddRecipe/**` | **merged** |
 | **7** | **W3 · housekeeping smalls** | CI `actions/checkout`+`setup-node` v4→v5 (Node-20-runtime deprecation); `VITE_APP_VERSION` build define replacing `ReleaseNotes.tsx`'s `package.json` import (BACKLOG Tech debt ×2) | `[x]` [#270](https://github.com/jclind/prepify/pull/270) (2026-07-09) | `.github/workflows/test.yml`, `vite.config.ts`, `ReleaseNotes.tsx` + `footerData.ts` | **merged** |
 | **8** | **X1 · `createdAt` server-stamp** | drop `createdAt`/`editedAt` from `CREATABLE_RECIPE_FIELDS`, stamp both in the `addRecipe` handler (13-digit ms-epoch matching the edit path), re-add to `PUBLIC_RECIPE_FIELDS` for reads (BACKLOG Tech debt) | `[x]` [#272](https://github.com/jclind/prepify/pull/272) (2026-07-09) | `server/routes/recipes.js`, `server/util/recipeFields.js`, `src/api/recipes.ts` + `recipes.test.js` | **merged** — folded in the client-payload cleanup (stop sending server-seeded rating/counters). Runtime-verified + local review |
-| **8** | **X2 · `RecipeCardType` typing cleanup** | tighten the card-shape typing across `src/types.ts` + `src/api/recipes.ts` (BACKLOG Tech debt) | `[P]` [#273](https://github.com/jclind/prepify/pull/273) | `src/types.ts`, `src/api/recipes.ts` | PR open — three card types mirror the three server projections |
+| **8** | **X2 · `RecipeCardType` typing cleanup** | tighten the card-shape typing across `src/types.ts` + `src/api/recipes.ts` (BACKLOG Tech debt) | `[x]` [#273](https://github.com/jclind/prepify/pull/273) (2026-07-09) | `src/types.ts`, `src/api/recipes.ts` | **merged** — three card types mirror the three server projections |
 | **8** | **X3 · orphaned-image-on-failed-create** | delete the uploaded Storage object when `POST /addRecipe` fails after the image upload (`src/api/recipes.ts`) | `[ ]` | `src/api/recipes.ts` | ready — overlaps X2 file surface (serialize or one lane) |
 | **8** | **X4 · server-Jest flakiness structural fix** | the intermittent server-suite failures (test files/mocks/setup) (BACKLOG Tech debt) | `[ ]` | `server/__tests__/**` + Jest setup | ready — disjoint from X1–X3 |
 | **—** | **Deferred / post-1.0 / owner** | see [that section](#deferred--post-10--owner-off-the-active-board) | `[blocked]`/`[dropped]` | — | prerendering, Edamam, theming, brand-orange, DB relocation, ideas |
@@ -1867,6 +1867,7 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   value is dropped, a 13-digit server value returned, and the omitted-value case still stamped. All six checks
   green; remote branch deleted. **Still open in Wave 8:** X2 (`RecipeCardType` typing), X3
   (orphaned-image-on-failed-create — overlaps X2's `src/api/recipes.ts`), X4 (server-Jest flakiness).
+  *(X2 has since landed — see 2026-07-09 X2 merge entry below.)*
 - **2026-07-09** — **X2** implemented in `feat/x2-recipecard-typing` → PR
   [#273](https://github.com/jclind/prepify/pull/273) opened (`[P]`). The recipe list/read endpoints ship a lean
   card **projection**, not the full doc, but the client typed them `RecipeType[]`/`RecipeType` — so a component
@@ -1887,3 +1888,11 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   `npm run build` succeeds; live dev `GET /api/recipes` returned exactly `{ recipeList, total_results }` with the
   10-field card shape. **X3** (orphaned-image cleanup) still overlaps X2's `src/api/recipes.ts` — serialize onto
   this once it lands.
+- **2026-07-09** — **X2 merged** ([#273](https://github.com/jclind/prepify/pull/273), merge `d9bc51c`) into
+  `development`; `[P]` → `[x]`, remote branch deleted. A one-line follow-up (`8a49ea9`) swapped the last
+  card-path helper (`homeFormat.ratingLabel`) off `RecipeType['rating']` to `RecipeCardType['rating']` — same
+  `RatingAggregate`, no behaviour change — so no card code reaches into the full-doc type anymore. All six CI
+  checks green (Backend/Supertest, E2e/Cypress, Frontend/Vitest, Static typecheck+build, Fallow, GitGuardian);
+  local review re-verified the three card types mirror the server projections field-for-field and `tsc --noEmit`
+  clean. Types-only — erased at build, no runtime diff. **X3** (orphaned-image-on-failed-create) is now
+  unblocked on `src/api/recipes.ts` and is the next Wave-8 lane; X4 (server-Jest flakiness) also open.
