@@ -34,7 +34,7 @@ import { formatPrice } from 'src/util/formatPrice'
 import { closestFraction } from 'src/util/formatQuantity'
 import { recipeImageSrcSet } from 'src/util/recipeImageVariants'
 
-import { IngredientsType, InstructionsType, RecipeType, ReviewType } from 'types'
+import { IngredientsType, InstructionsType, RecipeType } from 'types'
 import RecipeAPI from 'src/api/recipes'
 import AuthAPI from 'src/api/auth'
 import { serializeRecipeJsonLd } from 'src/pages/SingleRecipe/buildRecipeJsonLd'
@@ -76,7 +76,6 @@ const SingleRecipe: FC = () => {
     !isPending && fetchedRecipe && fetchedRecipe.title ? fetchedRecipe : null
 
   const [modIngredients, setModIngredients] = useState<IngredientsType[]>([])
-  const [currUserReview, setCurrUserReview] = useState<ReviewType | null>(null)
   const [servingSize, setServingSize] = useState(0)
   // Draft string for the servings input so the field can be cleared or hold an
   // in-progress value while typing; the committed numeric value is servingSize.
@@ -495,7 +494,7 @@ const SingleRecipe: FC = () => {
                       triggerClassName='save-recipe-btn btn'
                       align='left'
                     />
-                    <AddRatingBtn currUserReview={currUserReview} />
+                    <AddRatingBtn recipeId={currRecipe._id} />
                     <PrintRecipeBtn printedRef={printedRef} />
                   </>
                 )
@@ -663,42 +662,28 @@ const SingleRecipe: FC = () => {
                   }`}
                   aria-hidden='true'
                 >
-                  <div className='rr-header'>
-                    {/* Title (243×28, the fixed "Ratings & Reviews" width) + the
-                        average-rating block on the right, so the header is the
-                        same 38px tall and the title shares the loaded baseline. */}
-                    <Skeleton
-                      baseColor={skeletonColor}
-                      className='title'
-                      width={243}
-                      height={28}
-                    />
-                    <div className='rr-avg'>
-                      <Skeleton inline baseColor={skeletonColor} width={44} height={38} />
-                      <div className='rr-avg-meta'>
-                        <div>
-                          <Skeleton inline baseColor={skeletonColor} width={80} height={14} />
-                        </div>
-                        <div>
-                          <Skeleton inline baseColor={skeletonColor} width={54} height={11} />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className='ratings-reviews-container'>
-                    <div className='reviews'>
-                      <ReviewCardSkeleton count={2} />
-                    </div>
-                  </div>
+                  {/* Title (243×28, the fixed "Ratings & Reviews" width), then
+                      the invitation-card slot, then review cards — mirroring
+                      the loaded section's shape so nothing shifts on swap. */}
+                  <Skeleton
+                    baseColor={skeletonColor}
+                    className='title'
+                    width={243}
+                    height={28}
+                  />
+                  <Skeleton
+                    baseColor={skeletonColor}
+                    containerClassName='rr-invite-skeleton'
+                    height={190}
+                    borderRadius={16}
+                  />
+                  <ReviewCardSkeleton count={2} />
                 </div>
               )
             : currRecipe && (
                 <RatingsAndReviews
                   recipeId={currRecipe._id}
-                  ratingVal={currRecipe.rating && currRecipe.rating.rateValue}
-                  ratingCount={currRecipe.rating && currRecipe.rating.rateCount}
-                  currUserReview={currUserReview}
-                  setCurrUserReview={setCurrUserReview}
+                  rating={currRecipe.rating}
                   isOwner={isOwner}
                 />
               )}

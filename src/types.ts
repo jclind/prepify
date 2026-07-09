@@ -216,7 +216,9 @@ export type OptionalReviewType = {
   _id: string
   username: string
   recipeId: string
-  rating: string
+  // A ratings doc holds a star rating, a written review, or both — review-only
+  // docs carry null here (the server writes numbers, never strings).
+  rating: number | null
   ratingLastUpdated: string
   reviewCreatedAt?: string
   reviewLastUpdated?: string
@@ -226,15 +228,37 @@ export type OptionalReviewType = {
 }
 export type ReviewType = {
   _id: string
+  // Stable Firebase uid of the reviewer (D1) — identity join key, never shown.
+  // `username` is the public handle; `displayName` the optional visible name.
+  userId: string
   username: string
   recipeId: string
-  rating: string
+  rating: number | null
   ratingLastUpdated: string
   reviewCreatedAt: string
   reviewLastUpdated: string
   reviewText: string
   photoURL: string | null
   displayName: string | null
+  // Derived server-side from the verified token on GET /getReviews (absent on
+  // anonymous requests) — the rename-proof "this review is mine" signal.
+  isCurrentUser?: boolean
+}
+
+// GET /checkIfReviewed — the signed-in user's own ratings doc, raw (no
+// photoURL/displayName enrichment; the client already knows its own identity).
+// `reviewed: false` comes back with no doc fields at all.
+export type OwnReviewStatus = {
+  reviewed: boolean
+  _id?: string
+  userId?: string
+  username?: string
+  recipeId?: string
+  rating?: number | null
+  ratingLastUpdated?: string
+  reviewText?: string
+  reviewCreatedAt?: string
+  reviewLastUpdated?: string
 }
 
 export interface NewReviewType {

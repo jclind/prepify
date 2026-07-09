@@ -1,138 +1,59 @@
 @use '../../../../../helpers.scss' as s;
 
+// One public review: a warm-bordered white card. The identity vocabulary
+// (.rr-avatar/.rr-who/.rr-nm/.rr-sub/.rr-dt) is defined in
+// RatingsAndReviews.scss — every card renders inside `.recipe-ratings`.
+
 .recipe-review {
-  padding: 2rem 0;
-  border-top: 1px solid s.$gray-400;
-  // font-weight: 500;
+  background: s.$white;
+  border: 1px solid s.$surface-warm-border;
+  border-radius: s.$radius-3xl;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1rem;
+
   .head {
     display: flex;
-    gap: 0.65rem;
+    gap: 0.8rem;
     align-items: center;
-    padding-bottom: 0;
-    margin-bottom: 0.5rem;
 
-    // Small reviewer avatar in front of the name/stars. PR-C owns further
-    // restyling; this is a modest, functional size for now.
     .avatar {
-      flex-shrink: 0;
-      height: 34px;
-      width: 34px;
+      height: 40px;
+      width: 40px;
       border-radius: s.$radius-circle;
+      flex-shrink: 0;
       object-fit: cover;
-      margin-right: 0.15rem;
-    }
-
-    // username + stars on the same line
-    .name-content {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    .name {
-      font-weight: 700;
-    }
-    .date {
-      flex: 1;
-      text-align: right;
-      font-size: s.$text-fine;
-      font-weight: 500;
-      color: s.$tertiary-text;
-    }
-    @include s.below(s.$bp-sm) {
-      position: relative;
-      flex-wrap: wrap;
-      gap: 0.25rem;
-      .name-content {
-        display: flex;
-        flex-wrap: wrap;
-        max-width: 300px;
-        column-gap: 0.35rem;
-        .name {
-          font-size: s.$text-sm;
-        }
-      }
-      .rating {
-        display: flex;
-        .text {
-          display: none;
-        }
-      }
-      .date {
-        position: absolute;
-        color: s.$tertiary-text;
-        right: 0;
-        font-size: s.$text-caption;
-      }
-    }
-    @include s.below(s.$bp-xs) {
-      .name-content {
-        max-width: 200px;
-      }
     }
   }
-  .body {
-    .text {
-      font-size: s.$text-md;
-      font-weight: 500;
-      color: s.$primary-text;
-      line-height: 1.5;
-    }
-    textarea.editing-review {
-      width: 100%;
-      background: none;
-      padding: 0.5rem;
-      box-sizing: border-box;
-      height: 14ch;
-      resize: none;
-    }
-    .review-options {
-      display: flex;
-      gap: 1rem;
-      padding-top: 1rem;
-      .icon {
-        height: 18px;
-        width: 18px;
-      }
-      // Non-author view: a lone report kebab — pin it to the right edge.
-      .report-menu {
-        margin-left: auto;
-      }
-      .actions {
-        display: flex;
-        justify-content: flex-end;
-        flex: 1;
-        gap: 1.5rem;
 
-        // edit / delete / cancel are `.btn .btn--ghost` text-style links: the
-        // small underlined grey look + their hovers are local. SCOPED to
-        // `.btn--ghost` — a bare `button` selector here is (0,4,1) and would
-        // outrank `.btn--primary`'s colour (0,1,0), rendering the Submit button
-        // (edit-review) grey-on-orange. The resting colour also outranks the
-        // ghost variant's own hover, so each hover is restated locally.
-        button.btn--ghost {
-          font-size: s.$text-sm;
-          font-weight: 600;
-          text-decoration: underline;
-          color: s.$tertiary-text;
+  // The report kebab sits at the head's right edge, after the date.
+  .review-options {
+    display: flex;
+    flex-shrink: 0;
+  }
 
-          &:hover:not(:disabled) {
-            color: s.$primary-text;
-          }
-        }
-        // delete keeps its bespoke red hover (wins over the ghost hover above by
-        // equal-specificity source order).
-        button.delete-btn:hover:not(:disabled) {
-          color: s.$error-red;
-        }
-        // `.btn .btn--primary` Submit — fixed height + loader anchor + compact
-        // padding are local; the white-on-orange comes from the variant (no
-        // underline to undo now that the link look is scoped to `.btn--ghost`).
-        button.edit-review {
-          position: relative;
-          padding: 0.5rem 1rem;
-          height: 45px;
-        }
-      }
+  .stars {
+    margin: 0.5rem 0 0.35rem;
+  }
+  .text {
+    color: s.$secondary-text;
+    line-height: 1.6;
+    font-size: s.$text-base;
+  }
+
+  @include s.below(s.$bp-sm) {
+    padding: 1.1rem 1.25rem;
+
+    // head gets crowded at phone widths: drop the date to its own caption
+    // line under the identity, aligned with the text column.
+    .head {
+      flex-wrap: wrap;
+    }
+    .head .rr-dt {
+      order: 5;
+      flex-basis: 100%;
+      margin-left: calc(40px + 0.8rem);
+      margin-top: 0.1rem;
+      font-size: s.$text-caption;
     }
   }
 }
@@ -140,23 +61,25 @@
 .delete-modal {
   .heading {
     font-size: s.$text-xl;
-    font-weight: 600;
+    font-weight: 700;
     margin-bottom: 0.5rem;
   }
   .text {
     font-weight: 500;
     color: s.$secondary-text;
+    line-height: 1.6;
     margin-bottom: 2rem;
   }
   .options {
     display: flex;
-    gap: 1.5rem;
+    gap: 1rem;
     justify-content: center;
-    // cancel = `.btn .btn--outline`, delete = `.btn .btn--danger-solid`; only the
-    // larger modal-button font/padding (and the loader's positioning) are local.
+    flex-wrap: wrap;
+    // cancel = `.btn .btn--outline`, delete = `.btn .btn--danger-solid`; only
+    // the modal-button sizing (and the loader's positioning) are local.
     button {
-      font-size: s.$text-lg;
-      padding: 0.75rem 1.25rem;
+      font-size: s.$text-base;
+      padding: 0.65rem 1.25rem;
     }
     button.delete {
       position: relative;
