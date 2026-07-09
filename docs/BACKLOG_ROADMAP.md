@@ -24,7 +24,7 @@ to the *sweep program*); this file applies it to the **general backlog**. Compan
 > [#267](https://github.com/jclind/prepify/pull/267) → [#271](https://github.com/jclind/prepify/pull/271)) —
 > that file ownership is released, so the **Wave-8 candidates** (the §D-collision skips: `createdAt`
 > server-stamp, `RecipeCardType` typing, orphaned-image-on-failed-create, server-Jest flakiness) are now
-> **boarded as Wave 8 (X1–X4)** below. **X1, X2 & X3 landed 2026-07-09** ([#272](https://github.com/jclind/prepify/pull/272), [#273](https://github.com/jclind/prepify/pull/273), [#275](https://github.com/jclind/prepify/pull/275)); X4 open.
+> **boarded as Wave 8 (X1–X4)** below. **Wave 8 fully landed 2026-07-09** ([#272](https://github.com/jclind/prepify/pull/272), [#273](https://github.com/jclind/prepify/pull/273), [#275](https://github.com/jclind/prepify/pull/275), [#276](https://github.com/jclind/prepify/pull/276)).
 
 ---
 
@@ -116,7 +116,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **8** | **X1 · `createdAt` server-stamp** | drop `createdAt`/`editedAt` from `CREATABLE_RECIPE_FIELDS`, stamp both in the `addRecipe` handler (13-digit ms-epoch matching the edit path), re-add to `PUBLIC_RECIPE_FIELDS` for reads (BACKLOG Tech debt) | `[x]` [#272](https://github.com/jclind/prepify/pull/272) (2026-07-09) | `server/routes/recipes.js`, `server/util/recipeFields.js`, `src/api/recipes.ts` + `recipes.test.js` | **merged** — folded in the client-payload cleanup (stop sending server-seeded rating/counters). Runtime-verified + local review |
 | **8** | **X2 · `RecipeCardType` typing cleanup** | tighten the card-shape typing across `src/types.ts` + `src/api/recipes.ts` (BACKLOG Tech debt) | `[x]` [#273](https://github.com/jclind/prepify/pull/273) (2026-07-09) | `src/types.ts`, `src/api/recipes.ts` | **merged** — three card types mirror the three server projections |
 | **8** | **X3 · orphaned-image-on-failed-create** | delete the uploaded Storage object when `POST /addRecipe` fails after the image upload (`src/api/recipes.ts`) | `[x]` [#275](https://github.com/jclind/prepify/pull/275) (2026-07-09) | `src/api/recipes.ts` | **merged** — also fixes the same leak on the `editRecipe` new-image path; folded in a `storage.rules` owner-delete grant + IMAGE_PIPELINE.md cutover note |
-| **8** | **X4 · server-Jest flakiness structural fix** | the intermittent server-suite failures (test files/mocks/setup) (BACKLOG Tech debt) | `[ ]` | `server/__tests__/**` + Jest setup | ready — disjoint from X1–X3 |
+| **8** | **X4 · server-Jest flakiness structural fix** | the intermittent server-suite failures (test files/mocks/setup) (BACKLOG Tech debt) | `[x]` [#276](https://github.com/jclind/prepify/pull/276) (2026-07-09) | `server/__tests__/**` + Jest setup | **merged** — five vectors: one run-wide `MongoMemoryReplSet` (globalSetup/teardown + per-file DB drop, suite ~53s→~33s), sticky `asUser`/`asAdmin` replacing one-shot `getAuth` mocks, `testTimeout` 5s→30s + test-path serverSelection 30s, **`__mocks__/supertest.js` shared-server** (dominant vector: one-shot listeners → ETIMEDOUT/phantom-404s), per-worker test DBs (`JEST_WORKER_ID`). 24/24 stress runs green + local review |
 | **—** | **Deferred / post-1.0 / owner** | see [that section](#deferred--post-10--owner-off-the-active-board) | `[blocked]`/`[dropped]` | — | prerendering, Edamam, theming, brand-orange, DB relocation, ideas |
 
 ---
@@ -1933,3 +1933,26 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   *successful* editRecipe image-swap still orphans the **old** object (separate from X3's failed-submit scope);
   the `allow delete` grant is owner-broad by necessity (rules can't tell "just-uploaded" from "in-use"). **Wave
   8:** only X4 (server-Jest flakiness structural fix) remains open.
+- **2026-07-09** — **X4 server-Jest flakiness structural fix merged** ([#276](https://github.com/jclind/prepify/pull/276),
+  Wave 8, closes the "Server Jest suite is flaky under CPU contention" Tech-debt item). The boarded diagnosis named
+  two vectors; stress-testing during verification surfaced three more, including the dominant one. **All five, in
+  the order they bite:** (1) each of the ~36 suites booted and tore down its **own** `MongoMemoryReplSet` — replaced
+  with one run-wide instance (`__tests__/globalSetup.js`/`globalTeardown.js`) that every file connects to and drops
+  its own database from in `setup.js`'s `afterAll` (isolation preserved; suite ~53s→~33s). (2) One-shot
+  `getAuth.mockReturnValueOnce` auth overrides in `reviews.test.js`/`security.test.js` could be eaten by a stray
+  async `getAuth()` (leaked fire-and-forget audit/email work) and shift identity onto the wrong request — replaced
+  with sticky `asUser(uid)`/`asAdmin()` helpers the shared `beforeEach` resets. (3) Jest's default 5s `testTimeout`
+  raced a busy CPU rather than catching hangs → 30s, plus the test-only `connectDB` path keeps the driver's default
+  30s server-selection window instead of prod's 5s fail-fast. (4) **The dominant vector:** supertest binds a
+  brand-new ephemeral server per request (~800 listen/connect/close cycles/run); under socket churn a connect
+  occasionally ETIMEDOUT'd or hit a stale listener and returned a phantom 404/401 from a route that provably exists
+  (proven forensically: the repeatedly-failing port sat inside the run's own ephemeral-allocation window) — fixed
+  with a `__mocks__/supertest.js` auto-mock (same adjacent-mock mechanism as firebase-admin) that keeps one shared
+  server per app per file, zero test-file changes. (5) A regression the shared mongod introduced: an ad-hoc
+  `npx jest <pattern>` matching several files (e.g. `reports` → reports + bugReports) runs them in **parallel
+  workers** against one database and they stomp each other — fixed with per-worker DB names
+  (`prepify-test-${JEST_WORKER_ID}`, plumbed through a test-only `connectDB(uri, dbName)` param; prod unchanged).
+  Verified 24/24 stress runs green (12 sequential, 12 with two full suites concurrent; pre-fix was 8/12 and 14/16
+  under the same load, 10–30% fail per run at baseline). Local review found no correctness issues; two cosmetic
+  follow-ups noted-not-filed (an `afterAll` guard so a `beforeAll` connect failure prints cleanly; `asAdmin` could
+  add `getUsers` to future-proof enrichment routes). **Wave 8 fully landed** — the §D-collision tail is drained.

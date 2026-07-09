@@ -1289,7 +1289,7 @@ findings table.)*
     never tripped either. The guards are no-ops once the sandbox restores these globals. Surfaced during
     track 1c review, 2026-06-18.)*
 
-- `[ ]` **Server Jest suite is flaky under CPU contention (~load-dependent)** — the full server suite
+- `[x]` *(fixed in [#276](https://github.com/jclind/prepify/pull/276), X4: five vectors — one run-wide shared `MongoMemoryReplSet` via `globalSetup`/`globalTeardown` with per-file DB drop (suite ~53s→~33s), sticky `asUser`/`asAdmin` mocks replacing the one-shot overrides, `testTimeout` 5s→30s + test-path serverSelection 30s, a `__mocks__/supertest.js` shared-server auto-mock that killed the dominant vector — supertest's one-shot ephemeral listener per request causing ETIMEDOUT/phantom-404s under socket churn — and per-worker test DB names so ad-hoc parallel `npx jest <pattern>` runs don't stomp the shared DB; verified 24/24 stress runs green, merged 2026-07-09)* **Server Jest suite is flaky under CPU contention (~load-dependent)** — the full server suite
   (`cd server && npm test`, i.e. `jest --runInBand`) intermittently fails **one random test per run** while
   **every suite passes 100% in isolation**. Observed failing tests across runs were all different and all in
   DB-/auth-heavy suites: `auth setUsername (<3 chars)` → 404 (expected 400), `auth setUsername rename
