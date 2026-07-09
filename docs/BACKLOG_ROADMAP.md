@@ -106,8 +106,8 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **6** | **N6 · ingredient-miss telemetry** (+ N1 outlier guard) | persist enrichment misses + admin list (BACKLOG Features, admin); **folds in N1's price-outlier flag** | `[x]` [#255](https://github.com/jclind/prepify/pull/255) (2026-07-08) | `server/routes/ingredients.js`, `server/routes/admin.js`, `src/pages/Admin/**` | **merged**: new `ingredientMisses` collection; write stays best-effort. N1's guard rides this surface as a second event type (flag, not clamp). Review folded in the missing `ingredientMisses` indexes (`{count,lastSeen}` + type-led compound) to match the auditLog pattern the route mirrors |
 | **6** | **N7 · ops: storage-bucket env** | set `FIREBASE_STORAGE_BUCKET` (prod+dev) + real empty-env skip (BACKLOG Tech debt) | `[x]` [#260](https://github.com/jclind/prepify/pull/260) (2026-07-08) | server envs (owner) + `server/util/firebaseStorage.js` | **merged** — code half (early-return skip when env unset); owner confirmed the env is set on **both dev + prod**, so cleanup is live |
 | **7** | **W1 · Phase 5-D string-`_id` migration script** | convert the 8 legacy string-`_id` recipes to `ObjectId`: insert-new + delete-old + repoint `ratings.recipeId` / `reports.recipeId` / `userRecipeData` saved+made refs, transactional, dry-run default (BACKLOG Tech debt) | `[P]` [#268](https://github.com/jclind/prepify/pull/268) (2026-07-09) | `server/scripts/migrateLegacyRecipeIds.js` (new) + new Jest test file | **new files only** → zero overlap with §D PR-A; the prod `--apply` run stays **owner-gated** (script is the deliverable) |
-| **7** | **W2 · AddRecipe a11y wiring** | `aria-describedby` on TimeInput / Cuisine-Course-Diet selects / ImagePicker / list containers; `SectionHeader` label `id` + section `aria-labelledby` (BACKLOG A11y follow-ups) | `[~]` claimed 2026-07-09 | `src/pages/AddRecipe/**` | post-R1 surface is free (C1/R1 both merged); disjoint from §D |
-| **7** | **W3 · housekeeping smalls** | CI `actions/checkout`+`setup-node` v4→v5 (Node-20-runtime deprecation); `VITE_APP_VERSION` build define replacing `ReleaseNotes.tsx`'s `package.json` import (BACKLOG Tech debt ×2) | `[ ]` | `.github/workflows/test.yml`, `vite.config.ts`, `ReleaseNotes.tsx` | F5-style one-liner bundle |
+| **7** | **W2 · AddRecipe a11y wiring** | `aria-describedby` on TimeInput / Cuisine-Course-Diet selects / ImagePicker / list containers; `SectionHeader` label `id` + section `aria-labelledby` (BACKLOG A11y follow-ups) | `[P]` [#269](https://github.com/jclind/prepify/pull/269) (2026-07-09) | `src/pages/AddRecipe/**` | post-R1 surface is free (C1/R1 both merged); disjoint from §D |
+| **7** | **W3 · housekeeping smalls** | CI `actions/checkout`+`setup-node` v4→v5 (Node-20-runtime deprecation); `VITE_APP_VERSION` build define replacing `ReleaseNotes.tsx`'s `package.json` import (BACKLOG Tech debt ×2) | `[~]` claimed 2026-07-09 | `.github/workflows/test.yml`, `vite.config.ts`, `ReleaseNotes.tsx` | F5-style one-liner bundle |
 | **—** | **Deferred / post-1.0 / owner** | see [that section](#deferred--post-10--owner-off-the-active-board) | `[blocked]`/`[dropped]` | — | prerendering, Edamam, theming, brand-orange, DB relocation, ideas |
 
 ---
@@ -1780,3 +1780,17 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   started 2026-07-08 17:21 around the S6 prod ops run's temporary `MONGO_URI` swap and still holding that
   connection (prod-matching aggregates; dev `views` unmoved by hits). Restart it so local traffic stops
   hitting prod.
+- **2026-07-09** — **W2** implemented in `worktree-feat+w2-addrecipe-a11y` → PR
+  [#269](https://github.com/jclind/prepify/pull/269) opened (`[P]`). Both AddRecipe a11y follow-ups, attribute-only:
+  (1) `SectionHeader` takes a stable id (`section-<row-className>`) and `FormField`'s wrapper is now
+  `role='group' aria-labelledby={headerId}` — the label's governance is programmatic for every row at once,
+  and in error the group carries `aria-describedby` to the alert (this is what covers the ingredient/
+  instruction list containers, where no single input can own the message). (2) Control-level wiring:
+  `TimeInput` threads new `invalid`/`describedBy` props to both time fields (prep-time wired in AddRecipe);
+  `ImagePicker`'s empty-state dropzone announces the section error and/or the draft-image hint (hint given an
+  id); the Course react-select gets the **gated** `aria-invalid`/`aria-errormessage` pair (react-select has no
+  aria-describedby prop; aria-errormessage is AT-exposed only while aria-invalid is set). Cuisine/Diet have no
+  validation/hint copy — group labelling covers them. +8 regression tests (new FormField suite; TimeInput/
+  ImagePicker/MealTypeSelector a11y blocks, react-select double extended). tsc clean, Vitest 633/86 files,
+  build clean. **W3 claimed** in the same commit (housekeeping smalls: CI actions v4→v5 + `VITE_APP_VERSION`
+  define).
