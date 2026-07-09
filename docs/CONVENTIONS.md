@@ -320,7 +320,7 @@ which Lucide can't provide; see [`design/icon-system.md`](./design/icon-system.m
 | Layer | Tool | Location | Config |
 |---|---|---|---|
 | Frontend unit/component | **Vitest** (jsdom) | `src/test/*.test.{ts,tsx}` (flat) | `vite.config.ts` `test:` block; setup `src/test/setup.ts` |
-| Backend | **Jest** (node, `--runInBand`) | `server/__tests__/*.test.js` | `server/jest.config.js`; setup spins a `MongoMemoryReplSet` |
+| Backend | **Jest** (node, `--runInBand`) | `server/__tests__/*.test.js` | `server/jest.config.js`; one run-wide `MongoMemoryReplSet` (`globalSetup.js`), each file connects + drops its DB in `setup.js` |
 | E2E | **Cypress** | `cypress/` | `cypress.config.ts` (mints tokens via Admin v14) |
 
 `src/test/setup.ts` creates the `#root` element react-modal needs, stubs `matchMedia`, and shims Web Storage

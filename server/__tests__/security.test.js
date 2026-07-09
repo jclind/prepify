@@ -153,13 +153,17 @@ describe('recipeIdQuery non-string ids', () => {
 
 // ─── Admin surface (audit §5 step 3) ─────────────────────────────────────────
 // The default beforeEach mock resolves a NON-admin token (uid only). Admin
-// tests opt in with a one-shot mock returning { admin: true }, mirroring how
-// verifyToken sets req.isAdmin = decoded.admin === true.
+// tests opt in with asAdmin(), which resolves { admin: true } for the rest of
+// the test (beforeEach restores the non-admin default), mirroring how
+// verifyToken sets req.isAdmin = decoded.admin === true. Deliberately sticky
+// rather than mockReturnValueOnce: a one-shot override is consumed by whichever
+// getAuth() call comes next, so a stray async call (leaked fire-and-forget
+// audit/email work) could eat it and demote the intended request to 403.
 
-function asAdminOnce() {
-  getAuth.mockReturnValueOnce({
-    verifyIdToken: jest.fn().mockResolvedValueOnce({ uid: TEST_UID, admin: true }),
-  })
+function asAdmin() {
+  getAuth.mockImplementation(() => ({
+    verifyIdToken: jest.fn().mockResolvedValue({ uid: TEST_UID, admin: true }),
+  }))
 }
 
 describe('admin route auth chaining', () => {
@@ -185,7 +189,7 @@ describe('admin route auth chaining', () => {
 
 describe('admin endpoints reject injected / malformed ids', () => {
   it('PATCH /reports/bulk drops operator-shaped ids → 400 (no valid ids)', async () => {
-    asAdminOnce()
+    asAdmin()
     const res = await request(app)
       .patch('/api/reports/bulk')
       .set(AUTH_HEADER)
@@ -195,7 +199,7 @@ describe('admin endpoints reject injected / malformed ids', () => {
   })
 
   it('PATCH /reports/:id rejects a non-ObjectId id (404, no crash)', async () => {
-    asAdminOnce()
+    asAdmin()
     const res = await request(app)
       .patch('/api/reports/not-a-valid-objectid')
       .set(AUTH_HEADER)
@@ -204,7 +208,7 @@ describe('admin endpoints reject injected / malformed ids', () => {
   })
 
   it('PATCH /admin/recipes/:id/moderation rejects a non-string status (400)', async () => {
-    asAdminOnce()
+    asAdmin()
     const res = await request(app)
       .patch(`/api/admin/recipes/${RECIPE_ID}/moderation`)
       .set(AUTH_HEADER)
@@ -213,7 +217,7 @@ describe('admin endpoints reject injected / malformed ids', () => {
   })
 
   it('PATCH /admin/reviews/moderation rejects object recipeId/username (400)', async () => {
-    asAdminOnce()
+    asAdmin()
     const res = await request(app)
       .patch('/api/admin/reviews/moderation')
       .set(AUTH_HEADER)

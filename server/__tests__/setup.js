@@ -1,6 +1,5 @@
 const timers = require('node:timers')
-const { MongoMemoryReplSet } = require('mongodb-memory-server')
-const { connectDB, closeDB } = require('../db')
+const { connectDB, closeDB, getClient } = require('../db')
 const { facetsCache } = require('../util/facetsCache')
 
 // Under Node 26's jest environment the global timer functions aren't stable
@@ -32,17 +31,17 @@ beforeEach(installRealTimers)
 // into another test that seeded different recipes.
 beforeEach(() => facetsCache.invalidate())
 
-let mongod
-
-// A single-node replica set (rather than a standalone) so multi-document
-// transactions — used by DELETE /deleteRecipe — work in tests, matching the
-// replica-set topology of the production Atlas deployment.
+// Connect to the run-wide in-memory Mongo created by globalSetup.js (one
+// MongoMemoryReplSet for the whole --runInBand run, not one per file — the
+// per-file replSet churn was the main flakiness vector under CPU contention).
+// Each file still gets its own client connection and a FRESH database: afterAll
+// drops it, so nothing a suite (or its leaked fire-and-forget work) wrote can
+// leak into the next file — the same isolation the per-file replSet provided.
 beforeAll(async () => {
-  mongod = await MongoMemoryReplSet.create({ replSet: { count: 1 } })
-  await connectDB(mongod.getUri())
+  await connectDB(process.env.MONGO_TEST_URI)
 }, 60000)
 
 afterAll(async () => {
+  await getClient().db('prepify').dropDatabase()
   await closeDB()
-  await mongod.stop()
 })

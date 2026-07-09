@@ -5,8 +5,12 @@ let db
 
 async function connectDB(uri) {
   const mongoUri = uri || process.env.MONGO_URI
+  // The explicit-`uri` path is test-only (Jest's in-memory Mongo; index.js calls
+  // connectDB() bare), and a CPU-starved test run can stall the topology monitor
+  // past a tight selection window — so it keeps the driver's default 30s instead
+  // of prod's deliberate 5s fail-fast.
   const options = uri
-    ? { serverSelectionTimeoutMS: 5000 }
+    ? { serverSelectionTimeoutMS: 30000 }
     : { serverSelectionTimeoutMS: 5000, socketTimeoutMS: 45000, maxPoolSize: 10 }
 
   // Force TLS for the remote (Atlas/prod) MONGO_URI connection, but never for a
