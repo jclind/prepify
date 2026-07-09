@@ -139,10 +139,15 @@ serving originals. The extension + variants can stay in place (harmless, unused)
 > Prod today is old-rules + old-frontend, which **works** — leave it alone.
 > **The whole I1/I2/I3 prod rollout is gated on the prod release cutover** (advancing
 > `release` to the I2 frontend); deploy the rules + object migration + variant flag as
-> part of *that*, not piecemeal. **Dev is already aligned** — `firebase deploy --only
-> storage` against `prepify-dev-58579` reports "already up to date" (the I2 rules were
-> deployed to dev during I2 verification), and dev's local frontend already writes the
-> uid path. So the only outstanding I2/I1 work is prod, and it waits for the cutover.
+> part of *that*, not piecemeal. **Dev is aligned** — dev's local frontend writes the
+> uid path and the rules are deployed there (last redeployed **2026-07-09** to add the
+> X3 owner-delete grant below). So the only outstanding I2/I1/X3 rules work is the prod
+> deploy, and it waits for the cutover.
+>
+> **X3 (2026-07-09) added an owner-delete grant to these same rules** — see
+> [Owner-delete grant (X3)](#owner-delete-grant-x3) below. It ships in this one
+> `storage.rules` file, so the prod `firebase deploy --only storage` at cutover carries
+> it automatically; no separate deploy.
 
 I2 changed two coupled things that must go live **together**: the frontend now
 uploads to `recipeImages/{uid}/{uuid}` (was `recipeImages/{filename}`), and
@@ -167,6 +172,27 @@ unaffected and only the create/edit-recipe image step is touched. For
 *both* paths (keep the old flat `allow write: if request.auth != null && …` block
 beside the new uid-scoped one), cut the frontend over, then deploy this PR's final
 rules (flat writes denied) once no old clients remain.
+
+### Owner-delete grant (X3)
+
+X3 (orphaned-image cleanup, `src/api/recipes.ts` `deleteRecipeImage`) has the client
+delete its own just-uploaded object when a create/edit fails **after** the upload — so a
+server rejection (moderation, validation, network) doesn't leak the image. That delete
+needs a rule grant the I2 rules didn't provide: `allow write` nominally covers delete,
+but on a delete `request.resource` is **null**, so the size/contentType guards on the
+write rule evaluate false and the delete 403s. So the `recipeImages/{uid}/{imageId}`
+match now carries a separate, resource-free grant:
+
+```
+allow delete: if request.auth != null && request.auth.uid == uid;
+```
+
+Verified end-to-end on dev (2026-07-09): a forced 500 on `POST /api/addRecipe` after a
+real upload → the client `DELETE` on `recipeImages/{uid}/{uuid}` returned **403** under
+the old rules, **204** after this grant was deployed. **Nothing extra to deploy** — it's
+in the same `storage.rules` as I2, so step 1 below applies it. Until prod gets that
+deploy, X3's cleanup is inert on prod (it logs the 403 and swallows it — no user-facing
+regression, the orphan just isn't removed).
 
 ### 1. Deploy the rules
 
