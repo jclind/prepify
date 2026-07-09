@@ -107,7 +107,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **6** | **N7 · ops: storage-bucket env** | set `FIREBASE_STORAGE_BUCKET` (prod+dev) + real empty-env skip (BACKLOG Tech debt) | `[x]` [#260](https://github.com/jclind/prepify/pull/260) (2026-07-08) | server envs (owner) + `server/util/firebaseStorage.js` | **merged** — code half (early-return skip when env unset); owner confirmed the env is set on **both dev + prod**, so cleanup is live |
 | **7** | **W1 · Phase 5-D string-`_id` migration script** | convert the 8 legacy string-`_id` recipes to `ObjectId`: insert-new + delete-old + repoint `ratings.recipeId` / `reports.recipeId` / `userRecipeData` saved+made refs, transactional, dry-run default (BACKLOG Tech debt) | `[P]` [#268](https://github.com/jclind/prepify/pull/268) (2026-07-09) | `server/scripts/migrateLegacyRecipeIds.js` (new) + new Jest test file | **new files only** → zero overlap with §D PR-A; the prod `--apply` run stays **owner-gated** (script is the deliverable) |
 | **7** | **W2 · AddRecipe a11y wiring** | `aria-describedby` on TimeInput / Cuisine-Course-Diet selects / ImagePicker / list containers; `SectionHeader` label `id` + section `aria-labelledby` (BACKLOG A11y follow-ups) | `[P]` [#269](https://github.com/jclind/prepify/pull/269) (2026-07-09) | `src/pages/AddRecipe/**` | post-R1 surface is free (C1/R1 both merged); disjoint from §D |
-| **7** | **W3 · housekeeping smalls** | CI `actions/checkout`+`setup-node` v4→v5 (Node-20-runtime deprecation); `VITE_APP_VERSION` build define replacing `ReleaseNotes.tsx`'s `package.json` import (BACKLOG Tech debt ×2) | `[~]` claimed 2026-07-09 | `.github/workflows/test.yml`, `vite.config.ts`, `ReleaseNotes.tsx` | F5-style one-liner bundle |
+| **7** | **W3 · housekeeping smalls** | CI `actions/checkout`+`setup-node` v4→v5 (Node-20-runtime deprecation); `VITE_APP_VERSION` build define replacing `ReleaseNotes.tsx`'s `package.json` import (BACKLOG Tech debt ×2) | `[P]` [#270](https://github.com/jclind/prepify/pull/270) (2026-07-09) | `.github/workflows/test.yml`, `vite.config.ts`, `ReleaseNotes.tsx` + `footerData.ts` | F5-style one-liner bundle |
 | **—** | **Deferred / post-1.0 / owner** | see [that section](#deferred--post-10--owner-off-the-active-board) | `[blocked]`/`[dropped]` | — | prerendering, Edamam, theming, brand-orange, DB relocation, ideas |
 
 ---
@@ -1794,3 +1794,13 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   ImagePicker/MealTypeSelector a11y blocks, react-select double extended). tsc clean, Vitest 633/86 files,
   build clean. **W3 claimed** in the same commit (housekeeping smalls: CI actions v4→v5 + `VITE_APP_VERSION`
   define).
+- **2026-07-09** — **W3** implemented in `worktree-feat+w3-housekeeping` → PR
+  [#270](https://github.com/jclind/prepify/pull/270) opened (`[P]`). (1) `actions/checkout` + `actions/setup-node`
+  v4→v5 on all 10 uses (v4 targets the deprecated Node-20 actions runtime; the annotation on every CI run goes
+  with it), and the now-no-op `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24` env removed (v5 is Node-24-native) — the PR's
+  own CI run validates the bump. (2) `VITE_APP_VERSION` define (wired in `vite.config.ts` off `package.json`,
+  typed in `vite-env.d.ts`) replaces the in-src `package.json` imports in `ReleaseNotes.tsx` **and**
+  `footerData.ts` — a second, untracked importer found in-pass; the footer chunk no longer bundles the manifest
+  (verified in build output). tsc clean, Vitest 625/85 files, build clean. **All three Wave-7 lanes are now
+  `[P]`** (#268 / #269 / #270) — merge order is free (mutually disjoint); tick the matching BACKLOG.md boxes on
+  merge per the protocol.
