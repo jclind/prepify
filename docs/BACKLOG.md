@@ -632,11 +632,8 @@ findings table.)*
   ingredient size, or the shape/size of `nutritionData`/`cuisine`/`mealTypes`/`nutritionLabels` (copied
   through, bounded only by the global JSON body-size limit). Add numeric type+range clamps and per-element
   caps. Low. *(surfaced 2026-06-26 in the security sweep.)*
-- `[ ]` **`createdAt` is client-stamped and whitelisted on create** — the create path stamps the timestamp
-  in the browser (`src/api/recipes.ts:284`, `createdAt: new Date().getTime().toString()`) and the server
-  accepts it verbatim because `createdAt` sits in `CREATABLE_RECIPE_FIELDS` (`server/util/recipeFields.js:41`),
-  so a hand-crafted request can back-date or forward-date a recipe (skewing `createdAt`-ordered sorts/feeds).
-  Stamp it server-side on insert and drop it from the create whitelist so clients can't set it. Low.
+- `[x]` **`createdAt` is client-stamped and whitelisted on create** — *(fixed in [#272](https://github.com/jclind/prepify/pull/272), Wave-8 X1: `createdAt`/`editedAt` dropped from `CREATABLE_RECIPE_FIELDS` and stamped server-side in the `addRecipe` handler — `createdAt` as a 13-digit ms-epoch string matching the edit path's `editedAt`, so the lexicographic Newest/Oldest sort stays chronological with no migration; both re-added to `PUBLIC_RECIPE_FIELDS` so reads still return them. Client stops sending them and the server-seeded rating/counters too. Jest asserts a forged `createdAt`/`editedAt` is ignored; runtime-verified against the live API.)*
+  The create path used to stamp the timestamp in the browser (`src/api/recipes.ts:284`, `createdAt: new Date().getTime().toString()`) and the server accepted it verbatim because `createdAt` sat in `CREATABLE_RECIPE_FIELDS` (`server/util/recipeFields.js:41`), so a hand-crafted request could back-date or forward-date a recipe (skewing `createdAt`-ordered sorts/feeds). Low.
 - `[x]` **Admin review takedown matches on the stale denormalized `username`** — *(fixed in [#231](https://github.com/jclind/prepify/pull/231), S3: resolves `username → userId` and matches `{ userId, recipeId }`; audit `targetId` + notification now use the stable uid and current canonical handle.)*
   `PATCH /admin/reviews/moderation` (`server/routes/reviews.js:318-353`) matches `{ username, recipeId }`,
   but ratings are keyed by the stable `userId` (username is a set-once display field). If an author renames

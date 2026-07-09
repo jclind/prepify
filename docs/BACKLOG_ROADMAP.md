@@ -22,9 +22,9 @@ to the *sweep program*); this file applies it to the **general backlog**. Compan
 > [`REVIEWS_OVERHAUL_SCOPE.md`](./REVIEWS_OVERHAUL_SCOPE.md)).
 > **§D stack fully landed 2026-07-09** ([#266](https://github.com/jclind/prepify/pull/266) →
 > [#267](https://github.com/jclind/prepify/pull/267) → [#271](https://github.com/jclind/prepify/pull/271)) —
-> that file ownership is released, and the **Wave-8 candidates** (the §D-collision skips: `createdAt`
-> server-stamp, `RecipeCardType` typing, orphaned-image-on-failed-create, server-Jest flakiness) are clear
-> to board.
+> that file ownership is released, so the **Wave-8 candidates** (the §D-collision skips: `createdAt`
+> server-stamp, `RecipeCardType` typing, orphaned-image-on-failed-create, server-Jest flakiness) are now
+> **boarded as Wave 8 (X1–X4)** below. **X1 landed 2026-07-09** ([#272](https://github.com/jclind/prepify/pull/272)); X2–X4 open.
 
 ---
 
@@ -113,6 +113,10 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **7** | **W1 · Phase 5-D string-`_id` migration script** | convert the 8 legacy string-`_id` recipes to `ObjectId`: insert-new + delete-old + repoint `ratings.recipeId` / `reports.recipeId` / `userRecipeData` saved+made refs, transactional, dry-run default (BACKLOG Tech debt) | `[x]` [#268](https://github.com/jclind/prepify/pull/268) (2026-07-09) | `server/scripts/migrateLegacyRecipeIds.js` (new) + new Jest test file | **merged** — prod `--apply` run stays **owner-gated** (script is the deliverable) |
 | **7** | **W2 · AddRecipe a11y wiring** | `aria-describedby` on TimeInput / Cuisine-Course-Diet selects / ImagePicker / list containers; `SectionHeader` label `id` + section `aria-labelledby` (BACKLOG A11y follow-ups) | `[x]` [#269](https://github.com/jclind/prepify/pull/269) (2026-07-09) | `src/pages/AddRecipe/**` | **merged** |
 | **7** | **W3 · housekeeping smalls** | CI `actions/checkout`+`setup-node` v4→v5 (Node-20-runtime deprecation); `VITE_APP_VERSION` build define replacing `ReleaseNotes.tsx`'s `package.json` import (BACKLOG Tech debt ×2) | `[x]` [#270](https://github.com/jclind/prepify/pull/270) (2026-07-09) | `.github/workflows/test.yml`, `vite.config.ts`, `ReleaseNotes.tsx` + `footerData.ts` | **merged** |
+| **8** | **X1 · `createdAt` server-stamp** | drop `createdAt`/`editedAt` from `CREATABLE_RECIPE_FIELDS`, stamp both in the `addRecipe` handler (13-digit ms-epoch matching the edit path), re-add to `PUBLIC_RECIPE_FIELDS` for reads (BACKLOG Tech debt) | `[x]` [#272](https://github.com/jclind/prepify/pull/272) (2026-07-09) | `server/routes/recipes.js`, `server/util/recipeFields.js`, `src/api/recipes.ts` + `recipes.test.js` | **merged** — folded in the client-payload cleanup (stop sending server-seeded rating/counters). Runtime-verified + local review |
+| **8** | **X2 · `RecipeCardType` typing cleanup** | tighten the card-shape typing across `src/types.ts` + `src/api/recipes.ts` (BACKLOG Tech debt) | `[ ]` | `src/types.ts`, `src/api/recipes.ts` | ready — §D file ownership released |
+| **8** | **X3 · orphaned-image-on-failed-create** | delete the uploaded Storage object when `POST /addRecipe` fails after the image upload (`src/api/recipes.ts`) | `[ ]` | `src/api/recipes.ts` | ready — overlaps X2 file surface (serialize or one lane) |
+| **8** | **X4 · server-Jest flakiness structural fix** | the intermittent server-suite failures (test files/mocks/setup) (BACKLOG Tech debt) | `[ ]` | `server/__tests__/**` + Jest setup | ready — disjoint from X1–X3 |
 | **—** | **Deferred / post-1.0 / owner** | see [that section](#deferred--post-10--owner-off-the-active-board) | `[blocked]`/`[dropped]` | — | prerendering, Edamam, theming, brand-orange, DB relocation, ideas |
 
 ---
@@ -233,6 +237,23 @@ Wave 8 once §D lands.
 - **W2** AddRecipe a11y wiring — the two open a11y follow-ups from `ADD_RECIPE_UX_AUDIT.md` (only
   `RecipeFormTextArea` is wired today).
 - **W3** housekeeping smalls — the two remaining low-risk tech-debt one-liners, bundled F5-style.
+
+### Wave 8 — §D-collision tail (integrity + cleanup)
+
+The four items deliberately skipped from Wave 7 because they'd have collided with the §D reviews-overhaul
+stack's file surface (`routes/recipes.js`, the server test files, `src/types.ts`, `src/api/recipes.ts`). §D
+landed 2026-07-09, so their ownership is released and they're boarded here.
+
+- **X1** `createdAt` server-stamp — ✅ **landed** ([#272](https://github.com/jclind/prepify/pull/272)). Moved
+  `createdAt`/`editedAt` from client-supplied to server-stamped on create so a forged/skewed client clock can't
+  dictate a recipe's Newest-sort position; folded in the client-payload cleanup (stop sending the server-seeded
+  rating/counters). See status log.
+- **X2** `RecipeCardType` typing cleanup — tighten the card-shape typing (`src/types.ts` + `src/api/recipes.ts`).
+- **X3** orphaned-image-on-failed-create — when `POST /addRecipe` fails after the image upload, the uploaded
+  Storage object leaks; delete it on the failure path (`src/api/recipes.ts`). Overlaps X2's file surface —
+  serialize the two or run them in one lane.
+- **X4** server-Jest flakiness — the intermittent server-suite failures; a structural fix in the test
+  files/mocks/setup. Disjoint from X1–X3.
 
 ---
 
@@ -1829,3 +1850,20 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   Wave-8 candidates are clear to board. Details + release-day prod-backfill note live on the RELEASE_PLAN
   §D item / 2026-07-09 audit-log entry; two new §D-surfaced BACKLOG lines filed (legacy rating-type
   migration → Bugs; `UserRatings` dead `newAdd` sort → Tech debt).
+- **2026-07-09** — **Wave 8 boarded (X1–X4)** now that §D released the shared file surface, and **X1 merged**
+  ([#272](https://github.com/jclind/prepify/pull/272), merge `f97b600`) into `development`. `createdAt`/`editedAt`
+  were client-supplied and sat in `CREATABLE_RECIPE_FIELDS`, so a forged/skewed client clock could back- or
+  forward-date a recipe — and `createdAt` is the key for the Newest/Oldest browse sort, so a far-future value
+  would pin a recipe to the top of Newest indefinitely. Fix: dropped both from `CREATABLE_RECIPE_FIELDS` (so
+  `pickFields` can't copy them from the body), stamped them in the `addRecipe` handler — `createdAt` as a
+  13-digit ms-epoch string matching the edit path's `editedAt` format, so the lexicographic sort stays
+  chronological and **no migration is needed** — and re-added both to `PUBLIC_RECIPE_FIELDS` so reads still
+  return them. **Folded in** the client-payload cleanup surfaced in local review: the client `addRecipe` body
+  now sends only what the server reads on create (`CREATABLE_RECIPE_FIELDS`), dropping the server-seeded
+  `rating`/`views`/`numTimesSaved`/`numTimesMade` it used to send redundantly. **Verified two ways:** a new Jest
+  test asserts a client-forged `createdAt:'9999999999999'`/`editedAt:'5000'` is ignored and the stored
+  `createdAt` lands in `[before, now]` with `editedAt` null; and `/verify` drove `POST /addRecipe` → `GET
+  /getRecipe` → `DELETE` against a live server (dev Firebase + dev Mongo, real ID token) confirming the forged
+  value is dropped, a 13-digit server value returned, and the omitted-value case still stamped. All six checks
+  green; remote branch deleted. **Still open in Wave 8:** X2 (`RecipeCardType` typing), X3
+  (orphaned-image-on-failed-create — overlaps X2's `src/api/recipes.ts`), X4 (server-Jest flakiness).
