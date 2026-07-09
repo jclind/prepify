@@ -1896,3 +1896,18 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   local review re-verified the three card types mirror the server projections field-for-field and `tsc --noEmit`
   clean. Types-only — erased at build, no runtime diff. **X3** (orphaned-image-on-failed-create) is now
   unblocked on `src/api/recipes.ts` and is the next Wave-8 lane; X4 (server-Jest flakiness) also open.
+- **2026-07-09** — **Error/empty conflation fix merged** ([#274](https://github.com/jclind/prepify/pull/274),
+  merge `6c0cabd`) into `development`; remote + local branches deleted. Out of the RELEASE_PLAN §A empty/error
+  states sweep (run the same day, headless client against a dead API port, logged-out + logged-in as the cypress
+  test user): with the API unreachable, the four account tabs (Saved / Ratings / Your Recipes / Drafts) and the
+  recipe page's reviews list waited out the react-query retry budget and then rendered their **empty** states —
+  a user with data on a flaky connection read "No Recipes Saved Yet". Fix: `usePaginatedLoadMore` now surfaces
+  `isError`/`refetch`; the tabs branch on it before their empty state with an `EmptyState`-styled error panel
+  ("Couldn't load your …" + alert icon + `Try again` → `refetch()`), `Drafts` does the same on its bare
+  `useQuery`, and the reviews list shows inline "Couldn't load reviews." copy. The conflation was codified —
+  `loading-states.md`'s canonical snippet routed `isError` into `<EmptyState />`; corrected, with a new "Error
+  is not empty" section. Regression tests: hook (isError surfaced + `showList` stays false; refetch recovers)
+  and account sections (error ≠ empty via the transient-mount spy; Try-again refetches into content). Gates:
+  tsc clean, Vitest 650 green, all six CI checks; live re-verify against a dead API showed every fetching page
+  settling on real error copy (~8–15s = documented retry backoff), and real-API empty states unchanged. This
+  closes the RELEASE_PLAN §A "Empty / error / loading states sweep" item (`[~]` → `[x]`, flipped in the PR).

@@ -64,7 +64,8 @@ a feature flag. Do these together:
   recipes."), and SingleRecipe ("Failed to load recipe.", after its documented ~7s retry budget) are all
   good; **empty states** — committed no-results search on `/recipes`, Saved/Ratings/Your Recipes/Drafts,
   and the bad-recipe-id RecipeNotFound page all render designed empty states with CTAs. **One real gap
-  found and fixed same day** (see BACKLOG → Bugs, error/empty conflation): the account tabs + the recipe
+  found and fixed same day, PR [#274](https://github.com/jclind/prepify/pull/274)** (see BACKLOG → Bugs,
+  error/empty conflation): the account tabs + the recipe
   page's reviews list rendered their *empty* states when the fetch *errored*; `usePaginatedLoadMore` now
   surfaces `isError`/`refetch`, all five consumers show "Couldn't load …" + Try-again instead, and the
   loading-states.md example that codified the conflation is corrected ("Error is not empty"). Re-verified

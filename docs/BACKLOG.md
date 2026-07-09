@@ -35,8 +35,8 @@ The triage date stamped on items is the date they were filed here, not when they
 ## Bugs
 
 - `[x]` **Account tabs + reviews list render their *empty* states on API failure (error/empty conflation)**
-  *(filed 2026-07-09, out of the RELEASE_PLAN §A empty/error states sweep; **fixed same day, in the same
-  change set as this entry** — `usePaginatedLoadMore` now exposes `isError`/`refetch`; Saved / Ratings /
+  *(filed 2026-07-09, out of the RELEASE_PLAN §A empty/error states sweep; **fixed same day in
+  [#274](https://github.com/jclind/prepify/pull/274)** — `usePaginatedLoadMore` now exposes `isError`/`refetch`; Saved / Ratings /
   Your Recipes / Drafts branch on it before their empty state and render an `EmptyState`-styled error panel
   ("Couldn’t load your …" + alert icon + a `Try again` action wired to `refetch`); the recipe page's reviews
   list gets inline "Couldn’t load reviews." copy; `loading-states.md`'s canonical snippet corrected + a new
