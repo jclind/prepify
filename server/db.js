@@ -3,7 +3,10 @@ const { MongoClient } = require('mongodb')
 let client
 let db
 
-async function connectDB(uri) {
+// `dbName` is test-only, like the explicit `uri`: Jest workers each pass their
+// own database name so parallel workers sharing the run-wide in-memory Mongo
+// can't stomp each other's seeds. Production always uses 'prepify'.
+async function connectDB(uri, dbName = 'prepify') {
   const mongoUri = uri || process.env.MONGO_URI
   // The explicit-`uri` path is test-only (Jest's in-memory Mongo; index.js calls
   // connectDB() bare), and a CPU-starved test run can stall the topology monitor
@@ -25,7 +28,7 @@ async function connectDB(uri) {
 
   client = new MongoClient(mongoUri, options)
   await client.connect()
-  db = client.db('prepify')
+  db = client.db(dbName)
   console.log('Connected to MongoDB')
   await ensureIndexes()
 }

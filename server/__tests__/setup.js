@@ -32,16 +32,38 @@ beforeEach(installRealTimers)
 beforeEach(() => facetsCache.invalidate())
 
 // Connect to the run-wide in-memory Mongo created by globalSetup.js (one
-// MongoMemoryReplSet for the whole --runInBand run, not one per file — the
-// per-file replSet churn was the main flakiness vector under CPU contention).
-// Each file still gets its own client connection and a FRESH database: afterAll
-// drops it, so nothing a suite (or its leaked fire-and-forget work) wrote can
-// leak into the next file — the same isolation the per-file replSet provided.
+// MongoMemoryReplSet for the whole run, not one per file — the per-file replSet
+// churn was the main flakiness vector under CPU contention). Each file still
+// gets its own client connection and a FRESH database: afterAll drops it, so
+// nothing a suite (or its leaked fire-and-forget work) wrote can leak into the
+// next file — the same isolation the per-file replSet provided.
+//
+// The database name is per-WORKER: `npm test` is --runInBand (always worker 1),
+// but an ad-hoc `npx jest <pattern>` that matches several files runs them in
+// parallel workers, and with a single shared database their seeds/cleanup would
+// stomp each other (e.g. `npx jest reports` matches reports + bugReports).
+const TEST_DB = `prepify-test-${process.env.JEST_WORKER_ID || '1'}`
+
 beforeAll(async () => {
-  await connectDB(process.env.MONGO_TEST_URI)
+  await connectDB(process.env.MONGO_TEST_URI, TEST_DB)
 }, 60000)
 
 afterAll(async () => {
-  await getClient().db('prepify').dropDatabase()
+  // Close the file's shared supertest server(s) (see __mocks__/supertest.js) so
+  // the process doesn't hold listeners open at the end of the run.
+  const servers = globalThis.__SUPERTEST_SERVERS__
+  if (servers) {
+    await Promise.all(
+      [...servers.values()].map(
+        server =>
+          new Promise(resolve => {
+            if (server.closeAllConnections) server.closeAllConnections()
+            server.close(resolve)
+          })
+      )
+    )
+    servers.clear()
+  }
+  await getClient().db(TEST_DB).dropDatabase()
   await closeDB()
 })
