@@ -41,6 +41,10 @@ export type UsePaginatedLoadMoreResult<T> = {
   // list's height on this, not raw isLoading.
   showSkeleton: boolean
   isMore: boolean
+  // Total across all pages, from the most recent resolved page (0 until the
+  // first page lands). Lets callers render an "N items" count without a second
+  // request.
+  totalCount: number
   // The current page's payload has resolved with at least one item. Bridges the
   // one-frame gap between the query settling and the accumulate effect
   // populating `items`, so the empty state doesn't flash on a fast load.
@@ -60,6 +64,7 @@ export function usePaginatedLoadMore<T>({
   const [items, setItems] = useState<T[]>([])
   const [page, setPage] = useState(0)
   const [isMore, setIsMore] = useState(false)
+  const [totalCount, setTotalCount] = useState(0)
 
   const { data, isLoading } = useQuery({
     queryKey: queryKey(page),
@@ -77,6 +82,7 @@ export function usePaginatedLoadMore<T>({
       setItems(updated)
       setIsMore(data.totalCount > updated.length)
     }
+    setTotalCount(data.totalCount)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data])
 
@@ -91,6 +97,7 @@ export function usePaginatedLoadMore<T>({
     isLoading,
     showSkeleton,
     isMore,
+    totalCount,
     hasResolvedItems,
     showList,
     loadMore,

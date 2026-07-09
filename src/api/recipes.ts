@@ -8,6 +8,7 @@ import {
   NewReviewType,
   NutritionDataType,
   OptionalReviewType,
+  OwnReviewStatus,
   RecipeDBResponseType,
   RecipeEditFormType,
   RecipeFormType,
@@ -21,6 +22,16 @@ import { http } from 'src/api/http-common'
 import { v4 as uuidv4 } from 'uuid'
 
 export const ADD_RECIPE_AUTH_ERROR = 'AUTH_ERROR'
+
+// Legacy ratings docs (pre-D1) store `rating` as a stringified number; new
+// writes are floats and review-only docs are null. Normalize at the API
+// boundary so the typed contract (`rating: number | null`) holds regardless
+// of doc age.
+const coerceRating = (r: unknown): number | null => {
+  if (r == null || r === '') return null
+  const n = Number(r)
+  return Number.isNaN(n) ? null : n
+}
 
 type EditRecipeResult =
   | { status: 'success'; recipe: RecipeType }
@@ -449,11 +460,12 @@ class RecipeAPIClass {
     const result = await http.post(`api/newReview`, data)
     return result.data
   }
-  async checkIfReviewed(recipeId: string) {
+  async checkIfReviewed(recipeId: string): Promise<OwnReviewStatus | null> {
     if (!AuthAPI.getUID()) return null
 
     const result = await http.get(`api/checkIfReviewed?recipeId=${recipeId}`)
-    return result.data
+    const data = result.data
+    return data ? { ...data, rating: coerceRating(data.rating) } : data
   }
   async editReview(recipeId: string, text: string): Promise<AxiosResponse | null> {
     if (!AuthAPI.getUID()) return null
@@ -480,7 +492,16 @@ class RecipeAPIClass {
     const result = await http.get(
       `api/getReviews?recipeId=${recipeId}&page=${page}&reviewsPerPage=${reviewsPerPage}&filter=${filter}`
     )
-    return result.data
+    const data = result.data
+    return data
+      ? {
+          ...data,
+          reviews: (data.reviews ?? []).map((r: ReviewType) => ({
+            ...r,
+            rating: coerceRating(r.rating),
+          })),
+        }
+      : data
   }
   async getSingleUserReviews(
     page = 0,
@@ -493,7 +514,16 @@ class RecipeAPIClass {
     const reviewResult = await http.get(
       `api/getSingleUserReviews?username=${username}&page=${page}&reviewsPerPage=${reviewsPerPage}&filter=${filter}&returnRecipeData=${returnRecipeData}`
     )
-    return reviewResult.data
+    const data = reviewResult.data
+    return data
+      ? {
+          ...data,
+          reviews: (data.reviews ?? []).map((r: OptionalReviewType) => ({
+            ...r,
+            rating: coerceRating(r.rating),
+          })),
+        }
+      : data
   }
 
   // Ingredients

@@ -50,6 +50,7 @@ it('loads page 0 and flags more when totalCount exceeds the page', async () => {
   await waitFor(() => expect(result.current.items).toHaveLength(3))
   expect(result.current.items).toEqual(['a', 'b', 'c'])
   expect(result.current.isMore).toBe(true)
+  expect(result.current.totalCount).toBe(5)
   expect(result.current.showList).toBe(true)
   expect(queryFn).toHaveBeenCalledWith(0)
 })

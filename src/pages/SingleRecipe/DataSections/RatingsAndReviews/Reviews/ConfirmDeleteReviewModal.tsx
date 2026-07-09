@@ -33,10 +33,13 @@ const ConfirmDeleteReviewModal: FC<ConfirmDeleteReviewModalProps> = ({
       })}
       className='delete-modal'
     >
-      <div className='heading'>
-        Are you sure you want to delete your review?
-      </div>
-      <p className='text'>This action is permanent and cannot be undone.</p>
+      <div className='heading'>Delete your review?</div>
+      {/* deleteReview only clears the written text — the star rating survives
+          until removed on its own — so the copy must not claim otherwise. */}
+      <p className='text'>
+        Your written review will be permanently removed. Your star rating stays
+        until you remove it.
+      </p>
       <div className='options'>
         <button className='cancel btn btn--outline' onClick={closeModal}>
           Cancel
@@ -48,14 +51,14 @@ const ConfirmDeleteReviewModal: FC<ConfirmDeleteReviewModalProps> = ({
             handleDeleteReview().catch(() => {
               // Surface the failure to the user (and keep the modal open to
               // retry) instead of failing silently — matches the rating
-              // controls' toast pattern in Ratings.tsx.
+              // controls' toast pattern in useOwnRating.
               setDeleteLoading(false)
               toast.error('Could not delete your review. Please try again.')
             })
           }}
           disabled={deleteLoading}
         >
-          Delete
+          Delete review
           {deleteLoading && (
             <div className='btn-overlay'>
               <TailSpin

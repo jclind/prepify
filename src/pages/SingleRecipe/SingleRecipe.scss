@@ -576,182 +576,22 @@ $soft-radius: 16px;
   // ── stats (subtle footer line) ──────────────────────────────────────────────
   .recipe-stats-foot { margin-top: 0; }
 
-  // ── ratings & reviews (reused subsystem, restyled) ──────────────────────────
+  // ── ratings & reviews ────────────────────────────────────────────────────────
+  // The §D redesign moved the section's styling into the component files
+  // (RatingsAndReviews.scss / RecipeReview.scss) — only the page-load skeleton
+  // shims live here, mirroring the loaded section's shape.
   .recipe-ratings {
-    margin-top: 3rem;
-    padding-top: 2.5rem;
-    border-top: 1px solid s.$gray-300;
-
-    // header: title left, average block right
-    .rr-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1.5rem;
-      flex-wrap: wrap;
-      margin-bottom: 1.5rem;
-      .title { width: auto; text-align: left; font-size: s.$text-2xl; font-weight: 700; margin: 0; }
-      .rr-avg {
-        display: flex;
-        align-items: center;
-        gap: 0.85rem;
-        .big { font-size: s.$text-4xl; font-weight: 800; line-height: 1; color: s.$primary; }
-        .stars { display: flex; align-items: center; }
-        .count { font-size: s.$text-fine; color: s.$tertiary-text; font-weight: 600; }
-      }
-    }
-
-    // Skeleton average block: collapse the stacked bars' line boxes so they stay
-    // under the 38px big-number height, and pin the header to the loaded 38px so
-    // the title shares the exact baseline (no couple-px nudge on swap).
-    // `&.rr-skeleton` (not `.rr-skeleton`): the skeleton root carries BOTH
-    // `recipe-ratings` and `rr-skeleton` on the same element, so it must combine,
-    // not descend.
-    &.rr-skeleton .rr-header { height: 38px; }
-    &.rr-skeleton .rr-avg-meta {
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-      line-height: 0;
-    }
-
-    .ratings-reviews-container { gap: 0.5rem; }
-
-    // overview → "rate this recipe" card (the average now lives in the header).
-    // Selector nested under .ratings-reviews-container to outrank the component's
-    // own .overview rules.
-    .ratings-reviews-container .overview {
-      justify-content: flex-start;
-      align-items: center;
-      gap: 2rem;
-      padding: 1.25rem 1.5rem;
-      background: s.$gray-50;
-      border: 1.5px dashed s.$gray-400;
-      border-radius: $soft-radius;
-      box-shadow: none;
-      flex-wrap: wrap;
-      .average-rating-container { display: none; }
-      .user-rating.rate-card {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.55rem;
-        height: auto;
-        // The shared RatingsAndReviews.scss clamps .user-rating to width:170px at
-        // ≤450px (old layout). That squeezes the star row + pill on phones, so
-        // reset it here for the redesigned card.
-        width: auto;
-        max-width: none;
-        .user-rate-container { width: auto; height: auto !important; }
-        .rate-heading { font-size: s.$text-base; font-weight: 700; color: s.$primary-text; }
-        .rate-active {
-          display: flex;
-          align-items: center;
-          flex-wrap: wrap;
-          gap: 0.4rem 0.6rem;
-          .rate-hint { font-size: s.$text-fine; color: s.$tertiary-text; font-weight: 700; }
-        }
-        .signin-rate {
-          display: inline-flex;
-          align-items: center;
-          flex-wrap: wrap;
-          gap: 0.4rem 0.6rem;
-          text-decoration: none;
-          .signin-label {
-            font-size: s.$text-sm;
-            font-weight: 700;
-            // keep the pill on one line; flex-wrap drops it below the stars when
-            // space is tight rather than collapsing it into a circle
-            white-space: nowrap;
-            text-transform: none;
-            letter-spacing: 0;
-            color: s.$primary;
-            border: 1.5px solid rgba(s.$primary, 0.4);
-            border-radius: s.$radius-pill;
-            padding: 0.4rem 0.95rem;
-            transition: background 0.12s ease;
-          }
-          &:hover .signin-label { background: rgba(s.$primary, 0.08); }
-        }
-      }
-    }
-
-    // owner can't review their own recipe
-    .owner-review-note {
-      padding: 1.1rem 1.4rem;
-      background: linear-gradient(135deg, rgba(s.$secondary, 0.1), rgba(s.$primary, 0.06));
-      border: 1.5px solid $soft-border;
-      border-radius: $soft-radius;
-      font-size: s.$text-base;
-      font-weight: 600;
-      color: s.$secondary-text;
-    }
-    // nested under .ratings-reviews-container to outrank the component's own
-    // .reviews rule (full-width review column, no sort dropdown)
-    .ratings-reviews-container .reviews {
-      max-width: none;
-      margin: 0;
-      gap: 0.85rem;
-    }
-    .recipe-review {
-      border-top: none;
-      padding: 1rem 1.25rem;
-      background: s.$white;
-      border: 1px solid $soft-border;
-      border-radius: s.$radius-xl;
-      margin-bottom: 1rem;
-      .body .text { color: s.$secondary-text; line-height: 1.6; font-size: s.$text-base; }
-      // hide the empty options bar on others' reviews (the beta like/dislike was
-      // removed); owners still get their edit/delete row
-      .review-options:empty { display: none; }
-    }
-    // the signed-in user's own review — mark it as "yours" with a soft teal
-    // accent + tint so it reads as distinct from the public review list
-    .curr-user-review .recipe-review {
-      margin-bottom: 0;
-      border-color: rgba(s.$secondary, 0.45);
-      border-left: 3px solid s.$secondary;
-      background: rgba(s.$secondary, 0.04);
-    }
-
-    // write-a-review — appears in-flow after a signed-in user taps a star
-    .leave-review-input-container {
+    &.rr-skeleton .title {
       display: block;
-      margin-bottom: 0.85rem;
-      &:empty { display: none; }
+      margin-bottom: 1.25rem;
+      line-height: 1;
     }
-    .write-review {
-      padding: 1.25rem 1.5rem;
-      background: s.$white;
-      border: 1px solid $soft-border;
-      border-radius: $soft-radius;
-      .write-review-title {
-        font-size: s.$text-base;
-        font-weight: 700;
-        color: s.$primary-text;
-        margin-bottom: 0.6rem;
-        span { color: s.$tertiary-text; font-weight: 600; }
-      }
-      .error { color: s.$error-red; font-size: s.$text-sm; margin-bottom: 0.6rem; }
-      .review-text-area {
-        width: 100%;
-        min-height: 72px;
-        resize: vertical;
-        border: 1.5px solid s.$gray-300;
-        border-radius: s.$radius-lg;
-        padding: 0.65rem 0.8rem;
-        font-family: inherit;
-        font-size: s.$text-base;
-        color: s.$primary-text;
-        box-sizing: border-box;
-        &:focus { outline: none; border-color: s.$primary; }
-      }
-      // `.btn .btn--primary`; only the review-form spacing + weight are local.
-      .submit-review-btn {
-        margin-top: 0.85rem;
-        font-weight: 700;
-        font-size: s.$text-base;
-      }
+    // react-loading-skeleton wraps in a span whose line-box would add a few px;
+    // block + explicit spacing matches the real invitation card's 1rem gap.
+    &.rr-skeleton .rr-invite-skeleton {
+      display: block;
+      margin-bottom: 1rem;
+      line-height: 1;
     }
   }
 
