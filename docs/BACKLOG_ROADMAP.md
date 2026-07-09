@@ -105,7 +105,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **6** | **N5 · polish sweep** | skip-link overscroll fix (A11y); RecipeNotFound copy/search; /recipes search-btn offset; footer bug-btn decision (pixel batch b, c) | `[x]` [#259](https://github.com/jclind/prepify/pull/259) (2026-07-08) | `Layout.scss`, `RecipeNotFound/*`, `Footer.scss` | **merged** — skip-link + RecipeNotFound copy/search shipped as code; search-btn 6px offset & footer left-adjacency closed by-design; footer bug-btn re-aligned to the legal-strip row per owner feedback |
 | **6** | **N6 · ingredient-miss telemetry** (+ N1 outlier guard) | persist enrichment misses + admin list (BACKLOG Features, admin); **folds in N1's price-outlier flag** | `[x]` [#255](https://github.com/jclind/prepify/pull/255) (2026-07-08) | `server/routes/ingredients.js`, `server/routes/admin.js`, `src/pages/Admin/**` | **merged**: new `ingredientMisses` collection; write stays best-effort. N1's guard rides this surface as a second event type (flag, not clamp). Review folded in the missing `ingredientMisses` indexes (`{count,lastSeen}` + type-led compound) to match the auditLog pattern the route mirrors |
 | **6** | **N7 · ops: storage-bucket env** | set `FIREBASE_STORAGE_BUCKET` (prod+dev) + real empty-env skip (BACKLOG Tech debt) | `[x]` [#260](https://github.com/jclind/prepify/pull/260) (2026-07-08) | server envs (owner) + `server/util/firebaseStorage.js` | **merged** — code half (early-return skip when env unset); owner confirmed the env is set on **both dev + prod**, so cleanup is live |
-| **7** | **W1 · Phase 5-D string-`_id` migration script** | convert the 8 legacy string-`_id` recipes to `ObjectId`: insert-new + delete-old + repoint `ratings.recipeId` / `reports.recipeId` / `userRecipeData` saved+made refs, transactional, dry-run default (BACKLOG Tech debt) | `[~]` claimed 2026-07-09 | `server/scripts/migrateLegacyRecipeIds.js` (new) + new Jest test file | **new files only** → zero overlap with §D PR-A; the prod `--apply` run stays **owner-gated** (script is the deliverable) |
+| **7** | **W1 · Phase 5-D string-`_id` migration script** | convert the 8 legacy string-`_id` recipes to `ObjectId`: insert-new + delete-old + repoint `ratings.recipeId` / `reports.recipeId` / `userRecipeData` saved+made refs, transactional, dry-run default (BACKLOG Tech debt) | `[P]` [#268](https://github.com/jclind/prepify/pull/268) (2026-07-09) | `server/scripts/migrateLegacyRecipeIds.js` (new) + new Jest test file | **new files only** → zero overlap with §D PR-A; the prod `--apply` run stays **owner-gated** (script is the deliverable) |
 | **7** | **W2 · AddRecipe a11y wiring** | `aria-describedby` on TimeInput / Cuisine-Course-Diet selects / ImagePicker / list containers; `SectionHeader` label `id` + section `aria-labelledby` (BACKLOG A11y follow-ups) | `[ ]` | `src/pages/AddRecipe/**` | post-R1 surface is free (C1/R1 both merged); disjoint from §D |
 | **7** | **W3 · housekeeping smalls** | CI `actions/checkout`+`setup-node` v4→v5 (Node-20-runtime deprecation); `VITE_APP_VERSION` build define replacing `ReleaseNotes.tsx`'s `package.json` import (BACKLOG Tech debt ×2) | `[ ]` | `.github/workflows/test.yml`, `vite.config.ts`, `ReleaseNotes.tsx` | F5-style one-liner bundle |
 | **—** | **Deferred / post-1.0 / owner** | see [that section](#deferred--post-10--owner-off-the-active-board) | `[blocked]`/`[dropped]` | — | prerendering, Edamam, theming, brand-orange, DB relocation, ideas |
@@ -1764,3 +1764,19 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   existing test — those are §D PR-A's surface). Prod run stays owner-gated. Also reconciled the stale
   "untested utils" headline in BACKLOG.md Testing (`updateIngredients` gained a 7-case Vitest suite in R1
   #248). Claim recorded directly on `development` per convention; worktree next.
+- **2026-07-09** — **W1** implemented in `worktree-feat+w1-legacy-id-migration` → PR
+  [#268](https://github.com/jclind/prepify/pull/268) opened (`[P]`). **Design pivot off the real data:** the
+  BACKLOG sketch (fresh ObjectId + repoint `ratings`/`reports`/`userRecipeData` refs) proved unnecessary —
+  inspection showed **all 8 legacy `_id`s (prod+dev) are genuine 24-char hex, collision-free**, so the script
+  re-inserts each doc under `ObjectId(sameHex)` + deletes the string doc in one transaction; `String(_id)` is
+  byte-identical and every ref site stores the *string* id (verified: ratings 20/20, reports 15/15-with-recipeId,
+  userRecipeData lists) → refs resolve untouched, **zero writes outside `recipes`**. Non-hex/collision docs
+  (none exist) are reported + skipped; exit 2 gates a cutover like `checkMigrationState.js`. Dry-run default,
+  `--apply`, `--id=` targeted first-run, `DB_NAME` honored. Verified: new 9-case Jest suite drives the real
+  transaction on the in-memory replica set; full server Jest **789/789**; live dev pass — dry run listed exactly
+  the 8 real docs, a synthetic legacy probe was served by `GET /getRecipe` + counted by `/getReviews` before AND
+  after `--apply --id=<probe>` on the same URLs, dev restored to baseline. **Prod `--apply` stays owner-gated.**
+  **⚠ Ops finding for the owner (surfaced in the PR):** the local :4000 server is connected to **prod** Mongo —
+  started 2026-07-08 17:21 around the S6 prod ops run's temporary `MONGO_URI` swap and still holding that
+  connection (prod-matching aggregates; dev `views` unmoved by hits). Restart it so local traffic stops
+  hitting prod.
