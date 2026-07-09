@@ -117,6 +117,33 @@ only the `.beta-tag` SCSS class (decide keep-or-rename — cosmetic).
 - `[ ]` Re-run gates (`tsc` / Vitest / build); open the PR, get CI green, merge to `development`.
 - `[ ]` **Final grep gate:** `grep -rn -iE "beta|isBeta" src` returns only the `.beta-tag` SCSS class.
 
+### Pre-flight smoke test (dress rehearsal — NON-prod)
+
+Run against the flip PR's **Netlify deploy-preview** (or local dev via the run-prepify skill) **before**
+merging to `development` — this is the last cheap chance to catch the flip itself + a core-flow regression
+on a build that isn't yet public. Non-prod, so use the Cypress test user / throwaway accounts freely.
+Do a logged-out pass and a logged-in pass.
+
+- `[ ]` **Flip is correct:** no `Beta` button in the navbar; footer version reads `v1.0.0` (no `-beta`);
+  open the Release Notes modal → header shows `1.0.0` with no `-beta` suffix and the right `RELEASE_DATE`.
+- `[ ]` **Home:** hero, Trending, "For You" (logged-in), Browse-by-meal, and View-all-recipes all render;
+  "What should I cook?" opens; zero console errors.
+- `[ ]` **Browse `/recipes`:** grid loads, filters + sort work, load-more paginates, no-results empty state.
+- `[ ]` **Search autocomplete:** typing yields result cards (home hero + mobile menu); no-results state shows.
+- `[ ]` **Single recipe:** renders with nutrition card, ingredient checkboxes, price/cost, save↔unsave toggles.
+- `[ ]` **Auth:** log in as the test user, log out, `/signup` reachable, `/forgot-password` renders.
+- `[ ]` **Create/edit/delete recipe:** add a recipe **with an image upload** → it saves and shows in Your
+  Recipes; edit it; save a draft; delete it. Confirms image upload + the ownership-scoped write routes.
+- `[ ]` **Ratings & reviews (§D flow):** post a review + rating → own-review card appears; edit it in place;
+  delete the rating and confirm the review survives; the summary strip histogram + facepile update; the
+  New/Top sort pills reorder; reviewer name links to `/u/:username`.
+- `[ ]` **Account + Settings:** all four Account tabs (Saved / Ratings / Your Recipes / Drafts) and all four
+  Settings sections load; a public profile `/u/:username` renders.
+- `[ ]` **Static/legal/support:** `/help` contact form loads **logged-out**, an unknown route shows the
+  designed 404, `/privacy` + `/terms` render, footer links resolve.
+- `[ ]` **Mobile 390px:** home, single recipe, hamburger menu, and Add-Recipe — **no horizontal overflow,
+  no console errors**, tap targets ok.
+
 ---
 
 ## Phase 4 — Deploy + verify
@@ -125,10 +152,38 @@ only the `.beta-tag` SCSS class (decide keep-or-rename — cosmetic).
 - `[ ]` **Deploy:** merge `development` → `release` (triggers prod Netlify build + prod Railway service).
 - `[ ]` **Confirm build env:** Netlify **Production** context has `VITE_SENTRY_DSN` set (and
   `VITE_IMAGE_VARIANTS_ENABLED` only if Phase 2b is done) *before* the build runs.
-- `[ ]` **Smoke-test production** (`prepifymeals.com`): load home, view a recipe, sign in, create a
-  recipe (confirms image upload + save), leave a review + rating (confirms the §D flow + histogram now
-  shows post-backfill). Zero console errors; no `-beta` anywhere; version reads `1.0.0`.
-- `[ ]` **Watch logs / Sentry** for the first hours.
+#### Comprehensive production smoke test (`prepifymeals.com`)
+
+Run this the moment the `release` build is live, **before** announcing — it's the first time the flip,
+the `1.0.0` bump, prod env vars, and the migrated prod data all meet on the real domain. You're writing
+to **prod**, so use a throwaway account, keep test content minimal and clearly labelled, and delete it at
+the end (last item). Ideally start this when you can babysit the aftermath (see "Watch logs" below), not
+late at night.
+
+- `[ ]` **Transport:** `https://prepifymeals.com` loads with a valid cert; `www` → apex 301; prod API
+  `/health` returns 200 over SSL.
+- `[ ]` **Flip is live:** no `Beta` button; footer reads `v1.0.0` (no `-beta`); Release Notes header shows
+  `1.0.0` + the actual ship `RELEASE_DATE`; **zero console errors** on load.
+- `[ ]` **Read paths:** Home (all rows), Browse `/recipes` (filter/sort/load-more), Search autocomplete,
+  and a Single recipe with its **nutrition card** (confirms the Edamam server proxy is live in prod).
+- `[ ]` **Auth (prod Firebase):** sign in; confirm session persists across a reload; log out.
+- `[ ]` **Create recipe with image** (throwaway): saves and appears in Your Recipes — confirms prod
+  **Storage rules**, image upload, **and image moderation** (Google Vision key) in one flow. Edit + delete it.
+- `[ ]` **Ratings & reviews (§D):** leave a review + rating on a recipe; confirm the **per-star histogram
+  renders** (validates the Phase 1b breakdown backfill actually ran — if it's hidden, the backfill was
+  skipped); edit then remove your review to clean up.
+- `[ ]` **Text moderation** (optional): submit an obviously-disallowed review string → it's blocked inline
+  (confirms `OPENAI_API_KEY` + `MODERATION_ENABLED=true` on prod).
+- `[ ]` **Support path:** submit the `/help` contact form and the footer "Report a bug" form → confirm the
+  admin queue receives it + the `ADMIN_NOTIFY_EMAIL` alert lands (Resend).
+- `[ ]` **Error tracking:** confirm a Sentry event lands for the prod release (check the dashboard for the
+  `1.0.0` release, or trigger a benign handled error).
+- `[ ]` **Social preview (known limitation, not a failure):** pasting a recipe URL into Slack/iMessage
+  shows the **generic** site card — expected for the SPA until prerendering ships (RELEASE_PLAN §C).
+- `[ ]` **Mobile (real device):** home, single recipe, hamburger menu — no overflow, no console errors.
+- `[ ]` **Cleanup:** delete every throwaway account, recipe, image, and review created above.
+- `[ ]` **Watch logs / Sentry** for the first hours; keep the rollback path (revert the `development`→`release`
+  merge) at hand.
 
 ---
 
