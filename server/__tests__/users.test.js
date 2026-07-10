@@ -408,6 +408,11 @@ describe('GET /getAccountCounts', () => {
     await seedRecipes([
       { _id: 'c1', userId: TEST_UID },
       { _id: 'c2', userId: TEST_UID },
+      // The saved badge counts saved recipes that are actually visible (matching
+      // the Saved tab list), so the saved ids must resolve to visible recipes.
+      { _id: 'r1', userId: 'other' },
+      { _id: 'r2', userId: 'other' },
+      { _id: 'r3', userId: 'other' },
     ])
     await getDB()
       .collection('recipeDrafts')
@@ -451,5 +456,26 @@ describe('GET /getAccountCounts', () => {
     const res = await request(app).get('/api/getAccountCounts').set(AUTH_HEADER)
     expect(res.status).toBe(200)
     expect(res.body).toEqual({ saved: 0, ratings: 0, recipes: 1, drafts: 0 })
+  })
+
+  it('excludes soft-hidden saved recipes from the saved badge (matches the Saved tab)', async () => {
+    // A moderation-hidden saved recipe drops from the Saved tab list, so the
+    // badge must not count it either — otherwise the tile reads higher than the
+    // grid it labels and can never be reconciled from the UI.
+    await seedUser(TEST_UID, 'testuser')
+    await seedRecipes([
+      { _id: 'vis', userId: 'other' },
+      { _id: 'hid', userId: 'other', status: 'hidden' },
+    ])
+    await seedUserRecipeData(TEST_UID, {
+      savedRecipes: [
+        { recipeId: 'vis', dateSaved: '1' },
+        { recipeId: 'hid', dateSaved: '2' },
+      ],
+    })
+
+    const res = await request(app).get('/api/getAccountCounts').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(res.body.saved).toBe(1)
   })
 })

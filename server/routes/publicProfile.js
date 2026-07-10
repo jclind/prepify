@@ -3,7 +3,7 @@ const { asyncHandler } = require('../util/asyncHandler')
 const router = express.Router()
 const { getAuth } = require('firebase-admin/auth')
 const { getDB } = require('../db')
-const { getAccountCountsFor } = require('../util/accountCounts')
+const { getGamificationCountsFor } = require('../util/accountCounts')
 const { computeGamification } = require('../util/gamification')
 const { RECIPE_VISIBLE } = require('../util/moderation')
 const { publicRecipeCardProjection } = require('../util/recipeFields')
@@ -48,12 +48,14 @@ router.get('/getPublicProfile', asyncHandler(async (req, res) => {
 
   const [profile, counts, recipeStats, recipes, authRecord] = await Promise.all([
     db.collection('userProfiles').findOne({ _id: uid }),
-    getAccountCountsFor(db, uid),
+    // Gamification counts are visibility-filtered (published recipes / real
+    // visible reviews / visible saves), so the public level/rank/achievements
+    // can't leak or overstate the existence of a held/hidden recipe.
+    getGamificationCountsFor(db, uid),
     // One aggregate over the publicly-visible recipes drives the header stats:
     // the total count plus cross-recipe sums of saves/made. Counting only
     // visible recipes keeps the totals honest and avoids leaking the existence
-    // of held/hidden recipes (getAccountCountsFor is unfiltered — correct for
-    // the owner's own account page, but it would inflate these public totals).
+    // of held/hidden recipes.
     db
       .collection('recipes')
       .aggregate([

@@ -4,7 +4,7 @@ const router = express.Router()
 const { getDB } = require('../db')
 const { verifyToken } = require('../middleware/auth')
 const { profileWriteLimiter } = require('../middleware/writeLimiter')
-const { getAccountCountsFor } = require('../util/accountCounts')
+const { getGamificationCountsFor } = require('../util/accountCounts')
 const { computeGamification, ACHIEVEMENTS } = require('../util/gamification')
 
 const VALID_ACHIEVEMENT_IDS = new Set(ACHIEVEMENTS.map(a => a.id))
@@ -18,7 +18,7 @@ const VALID_ACHIEVEMENT_IDS = new Set(ACHIEVEMENTS.map(a => a.id))
 router.get('/getGamification', verifyToken, asyncHandler(async (req, res) => {
   const db = getDB()
   const [counts, profile] = await Promise.all([
-    getAccountCountsFor(db, req.uid),
+    getGamificationCountsFor(db, req.uid),
     db.collection('userProfiles').findOne({ _id: req.uid }),
   ])
   const seen = profile?.seenAchievements ?? []
