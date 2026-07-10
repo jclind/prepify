@@ -639,4 +639,16 @@ Full verification pass over the ~20 merged Wave-1/2 sweep PRs plus fresh baselin
   nice-to-haves still open: social-crawler prerendering, brand-orange a11y contrast, search-autocomplete
   redesign, data-integrity pass (post-1.0).
 
+### 2026-07-10 — cutover runbook: smoke-test checklists added (docs, PR #277)
+- **Doc-only follow-up to the readiness audit** — no code or status-marker changes. Added two functional
+  smoke-test checklists to [`CUTOVER_RUNBOOK.md`](./CUTOVER_RUNBOOK.md): a **pre-flight** (non-prod) dress
+  rehearsal in Phase 3 (run on the beta-flip PR's Netlify deploy-preview before merge — verifies the flip
+  itself + core flows), and a **comprehensive production** checklist in Phase 4 (transport/HTTPS, the flip,
+  read paths, auth, image upload + moderation, the §D reviews/histogram flow, Sentry, support paths, and
+  test-content cleanup). Fills the gap where Phase 4 previously had only a one-line "smoke-test production."
+- **Landed** via PR [#277](https://github.com/jclind/prepify/pull/277) → `development` (merge `2b650fd`),
+  all six required checks green. This same audit-log entry shipped alongside.
+- **No blocker movement:** the release gate is unchanged — only the deliberately-held beta-flip cutover
+  steps remain, all owner-gated.
+
 _`/release-readiness` appends dated run summaries here._
