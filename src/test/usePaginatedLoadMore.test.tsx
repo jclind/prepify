@@ -131,6 +131,38 @@ it('surfaces isError on a failed fetch so callers can branch before their empty 
   expect(result.current.showList).toBe(false)
 })
 
+it('a refetch of the current page replaces its slice instead of re-appending it', async () => {
+  // Simulates react-query's refetchOnWindowFocus refiring page 1 with a
+  // structurally-changed payload (e.g. a rating changed) while page 0 stays put.
+  let page1Calls = 0
+  const queryFn = vi.fn(async (page: number): Promise<LoadMorePage<string> | null> => {
+    if (page === 0) return { items: ['a', 'b', 'c'], totalCount: 5 }
+    page1Calls += 1
+    return page1Calls === 1
+      ? { items: ['d', 'e'], totalCount: 5 }
+      : { items: ['d', 'e-updated'], totalCount: 5 }
+  })
+  const { result } = renderLoadMore(queryFn)
+
+  await waitFor(() => expect(result.current.items).toHaveLength(3))
+  act(() => result.current.loadMore())
+  await waitFor(() => expect(result.current.items).toHaveLength(5))
+  expect(result.current.items).toEqual(['a', 'b', 'c', 'd', 'e'])
+
+  // A background refetch of the still-current page (page 1) resolves with a
+  // new `data` reference for the same page.
+  await act(async () => {
+    result.current.refetch()
+  })
+
+  await waitFor(() =>
+    expect(result.current.items).toEqual(['a', 'b', 'c', 'd', 'e-updated'])
+  )
+  // Length must stay at 5 — a re-append bug would grow this to 7.
+  expect(result.current.items).toHaveLength(5)
+  expect(result.current.isMore).toBe(false)
+})
+
 it('refetch() recovers from a failed fetch into content', async () => {
   const queryFn = vi
     .fn(async (): Promise<LoadMorePage<string> | null> => ({
