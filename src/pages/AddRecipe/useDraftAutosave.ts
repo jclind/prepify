@@ -10,6 +10,31 @@ export type DraftStatus = 'idle' | 'saving' | 'saved' | 'error'
 // lost if the tab is closed soon after.
 const AUTOSAVE_DELAY = 1500
 
+// Per-field "does this hold real content?" predicates. The mapped type over
+// Required<RecipeDraftContent> makes the enumeration exhaustive at compile
+// time: adding a field to RecipeDraftContent breaks the build here until the
+// field is classified, so new form fields can't be silently excluded from the
+// draft-creation gate (which would resurrect the lost-pre-title-work bug for
+// that field).
+const isDraftableField: {
+  [K in keyof Required<RecipeDraftContent>]: (
+    value: RecipeDraftContent[K]
+  ) => boolean
+} = {
+  title: v => !!v?.trim(),
+  description: v => !!v?.trim(),
+  servings: v => v != null,
+  prepTime: v => v != null,
+  cookTime: v => v != null,
+  fridgeLife: v => !!v,
+  freezerLife: v => !!v,
+  ingredients: v => !!v?.length,
+  instructions: v => !!v?.length,
+  cuisine: v => !!v,
+  mealTypes: v => !!v?.length,
+  nutritionLabels: v => !!v?.length,
+}
+
 // Whether the form holds anything worth persisting as a brand-new draft: any
 // content field differing from its fresh-form default. Used as the autosave
 // `canCreate` gate — an all-default form never creates a draft (no throwaway
@@ -19,19 +44,12 @@ const AUTOSAVE_DELAY = 1500
 // autosaved); the Drafts UI already renders title-less drafts as
 // "Untitled draft".
 export function hasDraftableContent(content: RecipeDraftContent): boolean {
-  return !!(
-    content.title?.trim() ||
-    content.description?.trim() ||
-    content.servings != null ||
-    content.prepTime != null ||
-    content.cookTime != null ||
-    content.fridgeLife ||
-    content.freezerLife ||
-    content.ingredients?.length ||
-    content.instructions?.length ||
-    content.cuisine ||
-    content.mealTypes?.length ||
-    content.nutritionLabels?.length
+  return (
+    Object.keys(isDraftableField) as (keyof RecipeDraftContent)[]
+  ).some(key =>
+    (isDraftableField[key] as (v: RecipeDraftContent[typeof key]) => boolean)(
+      content[key]
+    )
   )
 }
 
@@ -54,9 +72,10 @@ type Params = {
   // doesn't immediately fire a redundant save).
   enabled: boolean
   // Whether a brand-new draft may be created for the current content. Gated on
-  // the form having a title, so a stray keystroke doesn't spawn a throwaway
-  // draft. Only governs creation — an existing draft (draftId set) is always
-  // updated, so clearing fields still persists.
+  // the form holding any real content (see hasDraftableContent), so an
+  // all-default form doesn't spawn a throwaway draft. Only governs creation —
+  // an existing draft (draftId set) is always updated, so clearing fields
+  // still persists.
   canCreate: boolean
   // The current draft's id, or null until the first save creates one.
   draftId: string | null
@@ -127,8 +146,9 @@ export function useDraftAutosave({
     const snapshot = JSON.stringify(contentRef.current)
     if (snapshot === lastSavedRef.current) return
     const id = draftIdRef.current
-    // Creating a new draft requires a title (canCreate) and that we're not
-    // already at the cap. Updates to an existing draft are always allowed.
+    // Creating a new draft requires draftable content (canCreate) and that
+    // we're not already at the cap. Updates to an existing draft are always
+    // allowed.
     if (!id && (!canCreateRef.current || capReachedRef.current)) return
     inFlightRef.current = true
     try {

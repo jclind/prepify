@@ -10,6 +10,12 @@ export type TimeVal = { hours: number; minutes: number } | null
 
 export type RecipeFormErrors = Partial<AddRecipeErrorType>
 
+// Single source for the pending-enrichment copy: rendered as the ingredients
+// field error here, and matched by useRecipeForm to decide whether a blocked
+// submit warrants the "just wait" toast (only when this is the sole blocker).
+export const INGREDIENTS_PENDING_MESSAGE =
+  'Ingredient details are still loading — one moment before publishing'
+
 // The slice of the recipe-form state the validator reads. A structural subset of
 // the full form state (see useRecipeForm) so this module carries no dependency on
 // the hook — the hook's state is assignable to this shape.
@@ -78,8 +84,7 @@ export function validateRecipeForm(
     // timeout), so this error clears reactively without user action. Rows that
     // already settled as errored don't block — the user was told and may
     // publish without the price data.
-    errors.ingredients =
-      'Ingredient details are still loading — one moment before publishing'
+    errors.ingredients = INGREDIENTS_PENDING_MESSAGE
   }
 
   if (form.instructions.length <= 0) {

@@ -8,7 +8,7 @@ import { MemoryRouter } from 'react-router-dom'
 import AddRecipe from 'src/pages/AddRecipe/AddRecipe'
 import RecipeAPI from 'src/api/recipes'
 
-const { navigateFn, toastSuccess, toastError, toastBase, draftCreate } =
+const { navigateFn, toastSuccess, toastError, toastBase, draftCreate, draftGet } =
   vi.hoisted(() => ({
     navigateFn: vi.fn(),
     toastSuccess: vi.fn(),
@@ -17,6 +17,7 @@ const { navigateFn, toastSuccess, toastError, toastBase, draftCreate } =
     // "ingredients still loading" notices.
     toastBase: vi.fn(),
     draftCreate: vi.fn(),
+    draftGet: vi.fn(),
   }))
 
 vi.mock('react-router-dom', async () => {
@@ -48,7 +49,7 @@ vi.mock('src/api/drafts', () => ({
     createDraft: draftCreate,
     updateDraft: vi.fn().mockResolvedValue(null),
     deleteDraft: vi.fn().mockResolvedValue(undefined),
-    getDraft: vi.fn().mockResolvedValue(null),
+    getDraft: draftGet,
     listDrafts: vi.fn().mockResolvedValue([]),
   },
   DRAFT_LIMIT_CODE: 'DRAFT_LIMIT',
@@ -94,8 +95,11 @@ vi.mock('src/pages/AddRecipe/CuisineSelector/CuisineSelector', () => ({
 }))
 
 vi.mock('src/pages/AddRecipe/Ingredients/IngredientsContainer/IngredientsContainer', () => ({
-  default: ({ setIngredients, setItemStatus }: any) => (
+  default: ({ setIngredients, statusById, setItemStatus }: any) => (
     <>
+      {/* Expose the lifted status map so hydration-seeding tests can assert
+          on it without reimplementing the row UI. */}
+      <span data-testid='status-map'>{JSON.stringify(statusById)}</span>
       <button
         data-testid='add-ingredient'
         onClick={() =>
@@ -169,13 +173,15 @@ vi.mock('src/pages/AddRecipe/TimeInput/TimeInput', () => ({
 
 const mockAddRecipe = RecipeAPI.addRecipe as ReturnType<typeof vi.fn>
 
-const renderAddRecipe = () => {
+const renderAddRecipe = (
+  options: { initialEntries?: string[]; initialRecipe?: any } = {}
+) => {
   const queryClient = new QueryClient()
   return render(
     <QueryClientProvider client={queryClient}>
       <HelmetProvider>
-        <MemoryRouter>
-          <AddRecipe />
+        <MemoryRouter initialEntries={options.initialEntries ?? ['/']}>
+          <AddRecipe initialRecipe={options.initialRecipe} />
         </MemoryRouter>
       </HelmetProvider>
     </QueryClientProvider>
@@ -213,6 +219,8 @@ describe('AddRecipe form', () => {
     toastBase.mockReset()
     draftCreate.mockReset()
     draftCreate.mockResolvedValue(null)
+    draftGet.mockReset()
+    draftGet.mockResolvedValue(null)
   })
 
   it('submit button has the "invalid" CSS class on initial empty render', () => {
@@ -650,6 +658,23 @@ describe('AddRecipe form', () => {
       await waitFor(() => expect(mockAddRecipe).toHaveBeenCalledTimes(1))
     })
 
+    it('suppresses the wait toast when other fields are also invalid (waiting would not unblock)', async () => {
+      const user = userEvent.setup()
+      renderAddRecipe()
+      await fillAllFields(user)
+      await user.clear(screen.getByPlaceholderText('Add a title to your recipe.'))
+      await user.click(screen.getByTestId('ingredient-loading'))
+      await user.click(screen.getByText('Create Recipe'))
+      expect(mockAddRecipe).not.toHaveBeenCalled()
+      // Both blockers render as field errors; no "just wait" toast, since
+      // waiting alone would not make the submit succeed.
+      expect(screen.getByText('Title is required')).toBeInTheDocument()
+      expect(
+        screen.getByText(/ingredient details are still loading/i)
+      ).toBeInTheDocument()
+      expect(toastBase).not.toHaveBeenCalled()
+    })
+
     it('keeps the submit button invalid-styled while a lookup is in flight', async () => {
       const user = userEvent.setup()
       renderAddRecipe()
@@ -693,6 +718,80 @@ describe('AddRecipe form', () => {
       const { unmount } = renderAddRecipe()
       unmount()
       expect(draftCreate).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('unenriched persisted rows surface as errored (review fix)', () => {
+    const parsed = (original: string) => ({
+      ingredient: 'flour',
+      quantity: 2,
+      unit: 'cups',
+      comment: null,
+      originalIngredientString: original,
+    })
+
+    it('marks ingredientData:null rows errored when a draft is resumed', async () => {
+      // A draft autosaved while a lookup was in flight: one unenriched row,
+      // one enriched row, one label (no data by design).
+      draftGet.mockResolvedValue({
+        _id: 'd1',
+        userId: 'u1',
+        createdAt: '1',
+        updatedAt: '1',
+        title: 'Resumed soup',
+        ingredients: [
+          { id: 'row-null', parsedIngredient: parsed('2 cups flour'), ingredientData: null },
+          {
+            id: 'row-ok',
+            parsedIngredient: parsed('1 cup milk'),
+            ingredientData: { totalPriceUSACents: 120, imagePath: '' },
+          },
+          { id: 'label-1', label: 'For the sauce' },
+        ],
+      })
+      renderAddRecipe({ initialEntries: ['/add-recipe?draftId=d1'] })
+      // Hydration must seed the unenriched row as errored (retryable), and
+      // leave settled/label rows alone — otherwise the row renders as settled
+      // and the recipe publishes with ingredientData:null (the M3 bug back
+      // through the draft path).
+      await waitFor(() =>
+        expect(screen.getByTestId('status-map')).toHaveTextContent(
+          '"row-null":"error"'
+        )
+      )
+      expect(screen.getByTestId('status-map')).not.toHaveTextContent('row-ok')
+      expect(screen.getByTestId('status-map')).not.toHaveTextContent('label-1')
+    })
+
+    it('marks stored ingredientData:null rows errored in edit mode', () => {
+      const initialRecipe = {
+        _id: 'r1',
+        title: 'Stored recipe',
+        recipeImage: 'https://img.test/r1.png',
+        description: 'Persisted before the submit gate existed',
+        servings: 4,
+        prepTime: 30,
+        cookTime: 0,
+        fridgeLife: 0,
+        freezerLife: 0,
+        ingredients: [
+          { id: 'row-null', parsedIngredient: parsed('2 cups flour'), ingredientData: null },
+          {
+            id: 'row-ok',
+            parsedIngredient: parsed('1 cup milk'),
+            ingredientData: { totalPriceUSACents: 120, imagePath: '' },
+          },
+        ],
+        instructions: [{ id: 's1', content: 'Mix', index: 1 }],
+        cuisine: '',
+        mealTypes: ['dinner'],
+        nutritionLabels: [],
+      }
+      renderAddRecipe({ initialRecipe })
+      expect(screen.getByTestId('status-map')).toHaveTextContent(
+        '"row-null":"error"'
+      )
+      expect(screen.getByTestId('status-map')).not.toHaveTextContent('row-ok')
     })
   })
 })

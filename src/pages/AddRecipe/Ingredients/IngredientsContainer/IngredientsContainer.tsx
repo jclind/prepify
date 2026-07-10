@@ -1,4 +1,4 @@
-import React, { FC, useCallback } from 'react'
+import React, { FC, useCallback, useRef } from 'react'
 import { parseIngredientString } from '@jclind/ingredient-parser'
 import { v4 as uuidv4 } from 'uuid'
 import { toast } from 'react-hot-toast'
@@ -30,6 +30,12 @@ const IngredientsContainer: FC<IngredientsContainerProps> = ({
   statusById,
   setItemStatus,
 }) => {
+  // Current list mirrored into a ref so the async settle paths below can check
+  // whether their row still exists without going stale (enrichInPlace's
+  // callback identity mustn't churn per keystroke).
+  const ingredientsRef = useRef(ingredients)
+  ingredientsRef.current = ingredients
+
   // Enrich a parsed ingredient already in the list (by id) and reconcile it in
   // place. Shared by the optimistic add path and the per-row retry. The id is
   // preserved across reconciliation so the row's React/DnD key — and its
@@ -37,8 +43,14 @@ const IngredientsContainer: FC<IngredientsContainerProps> = ({
   const enrichInPlace = useCallback(
     async (id: string, rawValue: string, displayName: string) => {
       setItemStatus(id, 'loading')
+      // The user may remove the row while its lookup is in flight
+      // (removeIngredient settles its status); a late result for a gone row
+      // must not resurrect the status entry or toast about it.
+      const rowRemoved = () =>
+        !ingredientsRef.current.some(ingr => ingr.id === id)
       try {
         const enriched = await withTimeout(RecipeAPI.getIngredientData(rawValue))
+        if (rowRemoved()) return
         setIngredients(prev =>
           prev.map(ingr => (ingr.id === id ? { ...enriched, id } : ingr))
         )
@@ -54,6 +66,7 @@ const IngredientsContainer: FC<IngredientsContainerProps> = ({
         // The only rejection here is our own timeout (getIngredientData itself
         // never rejects). The request is abandoned; keep the parsed-only row so
         // the user doesn't lose their entry, mark it errored, and let them retry.
+        if (rowRemoved()) return
         const timedOut = err instanceof IngredientEnrichTimeoutError
         setItemStatus(id, 'error')
         toast.error(

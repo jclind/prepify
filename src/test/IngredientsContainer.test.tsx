@@ -188,6 +188,35 @@ describe('IngredientsContainer — optimistic add', () => {
   })
 })
 
+describe('IngredientsContainer — row removed while its lookup is in flight', () => {
+  it('a late failure for a removed row neither toasts nor resurrects its status', async () => {
+    const user = userEvent.setup()
+    mockGetIngredientData.mockReturnValue(new Promise(() => {}))
+    // A timeout we trigger manually, after the row is gone.
+    let rejectEnrichment!: (err: unknown) => void
+    mockWithTimeout.mockReturnValueOnce(
+      new Promise((_, reject) => {
+        rejectEnrichment = reject
+      })
+    )
+
+    render(<Wrapper />)
+    await addIngredient(user, '2 cups flour')
+    expect(screen.getByText('flour')).toBeInTheDocument()
+
+    await user.click(screen.getByLabelText('Remove ingredient'))
+    expect(screen.queryByText('flour')).toBeNull()
+
+    // The abandoned lookup now fails — for a row that no longer exists. It
+    // must not toast about it or write an error status for the gone id.
+    await act(async () => {
+      rejectEnrichment(new IngredientEnrichTimeoutError(12000))
+    })
+    expect(mockToastError).not.toHaveBeenCalled()
+    expect(screen.queryByLabelText('Retry ingredient lookup')).toBeNull()
+  })
+})
+
 describe('IngredientsContainer — enrichment timeout', () => {
   it('errors the row and toasts when the request times out', async () => {
     const user = userEvent.setup()

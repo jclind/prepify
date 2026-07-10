@@ -1,4 +1,5 @@
 import React, {
+  useCallback,
   useEffect,
   useMemo,
   useReducer,
@@ -30,11 +31,13 @@ import {
 } from 'src/pages/AddRecipe/useDraftAutosave'
 import {
   IngredientStatus,
+  missingDataStatuses,
   withIngredientStatus,
 } from 'src/pages/AddRecipe/Ingredients/ingredientEnrichment'
 import {
   validateRecipeForm,
   isRecipeFormValid,
+  INGREDIENTS_PENDING_MESSAGE,
   TimeVal,
 } from 'src/pages/AddRecipe/recipeFormValidation'
 
@@ -206,12 +209,14 @@ export function useRecipeForm(initialRecipe?: RecipeType) {
   // IngredientsContainer) so submission can be gated while any row's
   // nutrition/price lookup is still in flight — a submit inside that window
   // would persist the ingredient as ingredientData:null forever and understate
-  // the stored serving price.
+  // the stored serving price. Edit mode seeds rows already stored without data
+  // (persisted before this gate existed) as errored, so they surface the retry
+  // affordance instead of rendering settled.
   const [ingredientStatusById, setIngredientStatusById] = useState<
     Record<string, IngredientStatus>
-  >({})
-  const setIngredientStatus = useMemo(
-    () => (id: string, status: IngredientStatus | null) =>
+  >(() => missingDataStatuses(state.ingredients))
+  const setIngredientStatus = useCallback(
+    (id: string, status: IngredientStatus | null) =>
       setIngredientStatusById(prev => withIngredientStatus(prev, id, status)),
     []
   )
@@ -276,6 +281,14 @@ export function useRecipeForm(initialRecipe?: RecipeType) {
               nutritionLabels: draft.nutritionLabels ?? [],
             },
           })
+          // A draft autosaved while a row's lookup was still in flight persists
+          // that row as ingredientData:null. Nothing re-enriches on resume, so
+          // without a status the row would render settled and the submit gate
+          // would never see it — mark such rows errored (retryable) instead.
+          setIngredientStatusById(prev => ({
+            ...missingDataStatuses(draft.ingredients ?? []),
+            ...prev,
+          }))
           setResumedFromDraft(true)
         }
         setHydrated(true)
@@ -389,14 +402,14 @@ export function useRecipeForm(initialRecipe?: RecipeType) {
       ingredientsPending: enrichmentPending,
     })
     assignErrors && setErrors(newErrors)
-    return isRecipeFormValid(newErrors)
+    return newErrors
   }
   useEffect(() => {
     // Once the user has attempted a submit, keep the displayed errors in sync as
     // fields are fixed (assignErrors=true) so a corrected field clears its message
     // immediately instead of lingering until the next submit click. Before the
     // first attempt we only compute validity, never surface errors.
-    if (validate(hasAttemptedSubmit)) setIsFormValid(true)
+    if (isRecipeFormValid(validate(hasAttemptedSubmit))) setIsFormValid(true)
     else setIsFormValid(false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
@@ -416,14 +429,18 @@ export function useRecipeForm(initialRecipe?: RecipeType) {
   const handleSubmit = async () => {
     if (addRecipeLoading) return
     setHasAttemptedSubmit(true)
-    if (!validate(true)) {
-      // The pending-enrichment block self-resolves (bounded by the enrichment
-      // timeout), so tell the user to wait rather than leaving them hunting for
-      // a field to fix. The field error still renders for context.
-      if (enrichmentPending) {
-        toast('Ingredient details are still loading — one moment.', {
-          icon: '⏳',
-        })
+    const submitErrors = validate(true)
+    if (!isRecipeFormValid(submitErrors)) {
+      // When in-flight enrichment is the ONLY blocker, waiting genuinely
+      // resolves it (bounded by the enrichment timeout) — say so instead of
+      // leaving the user hunting for a field to fix. With other errors present
+      // the toast would misdirect ("just wait" won't unblock), so those get
+      // the standard field-error treatment alone.
+      const onlyPendingBlocks =
+        Object.keys(submitErrors).length === 1 &&
+        submitErrors.ingredients === INGREDIENTS_PENDING_MESSAGE
+      if (onlyPendingBlocks) {
+        toast(INGREDIENTS_PENDING_MESSAGE, { icon: '⏳' })
       }
       addRecipeFormRef?.current && addRecipeFormRef.current.scrollTo(0, 0)
       return
