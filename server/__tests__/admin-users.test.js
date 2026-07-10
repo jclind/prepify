@@ -75,6 +75,19 @@ describe('GET /api/admin/users', () => {
     expect(res.body.users[0].counts.openReports).toBe(1)
   })
 
+  it("counts an open 'user'-target report against a user with no recipes", async () => {
+    // A profile report (targetType 'user') has no recipeId; the tally used to
+    // route it through the recipe branch and silently drop it, so a reported
+    // account showed openReports: 0 on the admin list.
+    admin.__setClaims({ admin: true })
+    await seedUser('u1', 'spammer')
+    await getDB().collection('reports').insertOne({
+      targetType: 'user', reportedUsername: 'spammer', reportedUid: 'u1', status: 'open',
+    })
+    const res = await request(app).get('/api/admin/users?query=spammer').set(AUTH_HEADER)
+    expect(res.body.users[0].counts.openReports).toBe(1)
+  })
+
   it('resolves an email query through Firebase Auth', async () => {
     admin.__setClaims({ admin: true })
     admin.__setUsers([

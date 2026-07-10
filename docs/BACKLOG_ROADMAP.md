@@ -25,6 +25,10 @@ to the *sweep program*); this file applies it to the **general backlog**. Compan
 > that file ownership is released, so the **Wave-8 candidates** (the §D-collision skips: `createdAt`
 > server-stamp, `RecipeCardType` typing, orphaned-image-on-failed-create, server-Jest flakiness) are now
 > **boarded as Wave 8 (X1–X4)** below. **Wave 8 fully landed 2026-07-09** ([#272](https://github.com/jclind/prepify/pull/272), [#273](https://github.com/jclind/prepify/pull/273), [#275](https://github.com/jclind/prepify/pull/275), [#276](https://github.com/jclind/prepify/pull/276)).
+>
+> **Wave 9 boarded 2026-07-10** — the un-fixed tail of the [2026-07-09 bug hunt](./sweeps/BUG_HUNT_2026-07-09.md)
+> (6 lanes B1–B6; the clear-cut fixes + gamification/count-drift cluster already shipped in
+> [#279](https://github.com/jclind/prepify/pull/279); documented won't-fix findings are not boarded).
 
 ---
 
@@ -117,6 +121,12 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **8** | **X2 · `RecipeCardType` typing cleanup** | tighten the card-shape typing across `src/types.ts` + `src/api/recipes.ts` (BACKLOG Tech debt) | `[x]` [#273](https://github.com/jclind/prepify/pull/273) (2026-07-09) | `src/types.ts`, `src/api/recipes.ts` | **merged** — three card types mirror the three server projections |
 | **8** | **X3 · orphaned-image-on-failed-create** | delete the uploaded Storage object when `POST /addRecipe` fails after the image upload (`src/api/recipes.ts`) | `[x]` [#275](https://github.com/jclind/prepify/pull/275) (2026-07-09) | `src/api/recipes.ts` | **merged** — also fixes the same leak on the `editRecipe` new-image path; folded in a `storage.rules` owner-delete grant + IMAGE_PIPELINE.md cutover note |
 | **8** | **X4 · server-Jest flakiness structural fix** | the intermittent server-suite failures (test files/mocks/setup) (BACKLOG Tech debt) | `[x]` [#276](https://github.com/jclind/prepify/pull/276) (2026-07-09) | `server/__tests__/**` + Jest setup | **merged** — five vectors: one run-wide `MongoMemoryReplSet` (globalSetup/teardown + per-file DB drop, suite ~53s→~33s), sticky `asUser`/`asAdmin` replacing one-shot `getAuth` mocks, `testTimeout` 5s→30s + test-path serverSelection 30s, **`__mocks__/supertest.js` shared-server** (dominant vector: one-shot listeners → ETIMEDOUT/phantom-404s), per-worker test DBs (`JEST_WORKER_ID`). 24/24 stress runs green + local review |
+| **9** | **B1 · AddRecipe enrichment/draft safety** ⚠ lane | M3 (submit-mid-enrichment persists `ingredientData:null` + understated price) + D3 (pre-title content never autosaved) (BACKLOG Bugs + UX) | `[ ]` | `src/pages/AddRecipe/**` (`useRecipeForm.ts`, `useDraftAutosave.ts`, `IngredientsContainer`) | **dep:** rebase onto [#279](https://github.com/jclind/prepify/pull/279) (touched `useRecipeForm.ts`). Both items share the same files → one lane |
+| **9** | **B2 · pagination re-append dedup** | M8 (`usePaginatedLoadMore` re-appends a page on refetch → duplicate cards) (BACKLOG Bugs) | `[ ]` | `src/pages/Account/usePaginatedLoadMore.ts` | isolated; distinct from the #274 error/empty fix |
+| **9** | **B3 · ingredient parse limiter + FE `RATE_LIMITED`** | I1 (30/min limiter < 50-ingredient cap; FE ignores the 429 code → understated price) (BACKLOG Bugs) | `[ ]` | `server/routes/ingredients.js`, `src/api/recipes.ts` | disjoint from other lanes |
+| **9** | **B4 · quantity display (fractions + ranges)** | I2 (`closestFraction` never rounds up past 7/8) + I3 (ranges flattened to low end) (BACKLOG UX) | `[ ]` | `src/util/formatQuantity.ts`, `SingleRecipe.tsx`, `PrintableRecipe.tsx`, `IngredientItemText.tsx`, `updateIngredients.ts` | one quantity-rendering lane; SingleRecipe.tsx overlaps nothing else this wave |
+| **9** | **B5 · draft PUT concurrency guard** | D2 (full-`$set` PUT, no version precondition → two-tab clobber) (BACKLOG Bugs) | `[ ]` | `server/routes/drafts.js` | isolated |
+| **9** | **B6 · account-counts badge parity** | recipes/ratings tab badges use raw counts vs their filtered lists (BACKLOG Tech debt) | `[ ]` | `server/util/accountCounts.js` | **dep:** land after [#279](https://github.com/jclind/prepify/pull/279) (rewrites this file; adds the `saved` filter B6 mirrors) |
 | **—** | **Deferred / post-1.0 / owner** | see [that section](#deferred--post-10--owner-off-the-active-board) | `[blocked]`/`[dropped]` | — | prerendering, Edamam, theming, brand-orange, DB relocation, ideas |
 
 ---
@@ -254,6 +264,34 @@ landed 2026-07-09, so their ownership is released and they're boarded here.
   serialize the two or run them in one lane.
 - **X4** server-Jest flakiness — the intermittent server-suite failures; a structural fix in the test
   files/mocks/setup. Disjoint from X1–X3.
+
+---
+
+### Wave 9 — 2026-07-09 bug-hunt tail (boarded 2026-07-10)
+
+The un-fixed survivors of the [2026-07-09 multi-agent bug hunt](./sweeps/BUG_HUNT_2026-07-09.md). The
+clear-cut findings and the gamification/count-drift cluster shipped in
+[#279](https://github.com/jclind/prepify/pull/279); the items below are the ones left as follow-ups
+(bigger than a clear-cut fix, or a small drift noted while fixing L8/L9). The documented **won't-fix**
+findings (L1, L5, L6, A1, L2 — known DRIFT / accepted design per `API_CONTRACT.md` +
+`DATA_INTEGRITY_AUDIT.md`) are **not** boarded. Lanes are mostly disjoint; two carry a `#279` dependency.
+
+- **B1** AddRecipe enrichment/draft safety ⚠ lane — **M3** (a submit while a row's enrichment is in
+  flight persists `ingredientData:null` + an understated `servingPrice` forever) and **D3** (content
+  entered before a title is never autosaved). Both live in `useRecipeForm.ts` / `useDraftAutosave.ts`,
+  so serialize into one lane; rebase onto #279 (which touched `useRecipeForm.ts`).
+- **B2** pagination re-append dedup — **M8** (`usePaginatedLoadMore` re-appends the observed page on a
+  focus refetch → duplicate cards + inflated `isMore`). Isolated file; distinct from the #274 error/empty fix.
+- **B3** ingredient parse limiter + FE `RATE_LIMITED` — **I1** (the 30/min limiter is below the
+  50-ingredient cap and the client never branches on the 429 code, so large-recipe entry silently drops
+  price/image and understates the stored price).
+- **B4** quantity display — **I2** (`closestFraction` never rounds up past 7/8, distorting amounts) +
+  **I3** (ingredient ranges like "2-3 cups" are flattened to the low end everywhere). One rendering lane.
+- **B5** draft PUT concurrency guard — **D2** (full-document `$set` with no version precondition →
+  two-tab edits silently clobber). Isolated.
+- **B6** account-counts badge parity — the recipes/ratings account-tab badges still use raw counts and
+  can read higher than their filtered tab lists (same class as the L8/L9 saved-badge drift). Small;
+  **land after #279**, which rewrites `accountCounts.js` and adds the `saved` filter this mirrors.
 
 ---
 
@@ -1956,3 +1994,14 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   under the same load, 10–30% fail per run at baseline). Local review found no correctness issues; two cosmetic
   follow-ups noted-not-filed (an `afterAll` guard so a `beforeAll` connect failure prints cleanly; `asAdmin` could
   add `getUsers` to future-proof enrichment routes). **Wave 8 fully landed** — the §D-collision tail is drained.
+- **2026-07-10** — **Wave 9 boarded (B1–B6)** from the [2026-07-09 multi-agent bug hunt](./sweeps/BUG_HUNT_2026-07-09.md).
+  The hunt confirmed ~30 findings across all 8 subsystems (three runs — the first two hit session limits; the
+  resume finished clean, 71 agents / 0 errors). The clear-cut fixes (H1, M2, M4, M5, M6, M9, L4, L7, D1) and the
+  gamification/count-drift cluster (G1, G2, M7, L8, L9 — split `getGamificationCountsFor` off the tab-badge
+  counts so XP/achievements derive from visibility-filtered counts, closing the public-profile leak; `saved`
+  badge now matches the Saved-tab total) shipped in [#279](https://github.com/jclind/prepify/pull/279) with
+  tests (frontend 659, backend 809 green). The un-fixed survivors are boarded here as **B1–B6** (all filed into
+  BACKLOG.md under Bugs / UX / Tech debt, tagged with their finding ids). Lanes are mostly disjoint; **B1** and
+  **B6** carry a #279 rebase/merge dependency (shared `useRecipeForm.ts` / `accountCounts.js`). The documented
+  **won't-fix** findings (L1, L5, L6 — L6 was already a BACKLOG Bugs item — plus A1, L2) are intentionally not
+  boarded: known DRIFT / accepted design per `API_CONTRACT.md` + `DATA_INTEGRITY_AUDIT.md`.

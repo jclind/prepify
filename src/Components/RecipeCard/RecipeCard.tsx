@@ -85,8 +85,13 @@ const RecipeCard: FC<RecipeCardProps> = ({ recipe, loading, onMutated }) => {
     )
   }
 
+  // `> 0`, not `!= null`: calculateServingPrice returns 0 both for "free" and for
+  // "no price data" (every ingredient's enrichment missed), and the detail page
+  // treats 0 as unknown and hides it. Gating on `!= null` here would render a
+  // misleading "$0.00/serving" for unpriced recipes and pin them atop the
+  // cheapest sort — so mirror the detail page and hide the 0 sentinel.
   const price =
-    recipe.servingPrice != null
+    recipe.servingPrice != null && recipe.servingPrice > 0
       ? `${formatPrice(recipe.servingPrice)}/serving`
       : null
   // Responsive variants for the thumb (no-op until VITE_IMAGE_VARIANTS_ENABLED);

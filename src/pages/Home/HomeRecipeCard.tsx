@@ -33,7 +33,7 @@ export const HomeRecipeCard: FC<{ recipe: RecipeCardType }> = ({ recipe }) => {
           onLoad={() => setImgLoaded(true)}
         />
         {!imgLoaded && <Skeleton baseColor={skeletonColor} />}
-        {recipe.servingPrice != null && (
+        {recipe.servingPrice != null && recipe.servingPrice > 0 && (
           <span className='price-chip'>{fmtPrice(recipe.servingPrice)}/serv</span>
         )}
       </div>

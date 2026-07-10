@@ -228,15 +228,20 @@ router.delete('/collections/:id', verifyToken, requireActive, asyncHandler(async
   if (!(userData?.collections ?? []).some((c) => c.id === id)) {
     return res.status(404).json({ error: 'Collection not found' })
   }
+  // Always remove the folder itself.
+  await db
+    .collection('userRecipeData')
+    .updateOne({ _id: req.uid }, { $pull: { collections: { id } } })
+  // Drop the membership tag from every saved entry that referenced it. The
+  // all-positional `$[]` operator requires the `savedRecipes` path to EXIST on
+  // the document — a user whose first-ever write created a collection (or a
+  // made-recipe) has no `savedRecipes` field yet, and including this pull in the
+  // update above would make Mongo reject the whole thing, leaving the collection
+  // undeletable. Scope it to docs that actually have the array so the missing
+  // case is a clean no-op.
   await db.collection('userRecipeData').updateOne(
-    { _id: req.uid },
-    {
-      $pull: {
-        collections: { id },
-        // Drop the membership tag from every saved entry that referenced it.
-        'savedRecipes.$[].collectionIds': id,
-      },
-    }
+    { _id: req.uid, savedRecipes: { $exists: true } },
+    { $pull: { 'savedRecipes.$[].collectionIds': id } }
   )
   res.json({ deleted: true })
 }))

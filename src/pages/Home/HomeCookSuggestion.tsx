@@ -79,7 +79,7 @@ const HomeCookSuggestion: FC = () => {
             <>
               <div className='thumb'>
                 <img src={pick.recipeImage} alt={pick.title} />
-                {pick.servingPrice != null && (
+                {pick.servingPrice != null && pick.servingPrice > 0 && (
                   <span className='price-chip'>{fmtPrice(pick.servingPrice)}/serv</span>
                 )}
                 {isPending && (

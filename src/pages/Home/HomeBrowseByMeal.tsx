@@ -27,7 +27,7 @@ const MealRow: FC<{ recipe: RecipeCardType }> = ({ recipe }) => (
           <ClockIcon /> {recipe.totalTime}m
           {' · '}
           <StarOutlineIcon /> {ratingLabel(recipe.rating)}
-          {recipe.servingPrice != null && <> {' · '} {fmtPrice(recipe.servingPrice)}</>}
+          {recipe.servingPrice != null && recipe.servingPrice > 0 && <> {' · '} {fmtPrice(recipe.servingPrice)}</>}
         </span>
       </div>
     </Link>

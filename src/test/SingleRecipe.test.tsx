@@ -202,6 +202,23 @@ describe('SingleRecipe page', () => {
     })
   })
 
+  it('renders the recipe when recipeServings localStorage holds invalid JSON (no crash)', async () => {
+    // An unguarded JSON.parse in the servings effect used to throw and unwind to
+    // the app-wide error boundary, blanking the whole recipe page.
+    localStorage.setItem('recipeServings', '{ not-valid-json')
+    mockGetRecipe.mockResolvedValue(baseRecipe)
+    renderSingleRecipe()
+    expect(await screen.findByText('Chicken Tacos')).toBeInTheDocument()
+  })
+
+  it('renders the recipe when recipeServings is valid JSON but not an array (no crash)', async () => {
+    // A non-array value made `.find`/`.findIndex` throw a TypeError.
+    localStorage.setItem('recipeServings', '{}')
+    mockGetRecipe.mockResolvedValue(baseRecipe)
+    renderSingleRecipe()
+    expect(await screen.findByText('Chicken Tacos')).toBeInTheDocument()
+  })
+
   it('renders the nutrition facts table when the recipe has nutritionData', async () => {
     mockGetRecipe.mockResolvedValue({
       ...baseRecipe,

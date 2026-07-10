@@ -121,6 +121,19 @@ describe('POST /api/reports', () => {
     expect(stored.reportedUid).toBe('bad-uid')
   })
 
+  it('stores the CANONICAL username casing, not the caller-supplied casing', async () => {
+    // Rename propagation and the admin openReports tally match reportedUsername
+    // case-sensitively, so a mis-cased report would detach from its target.
+    await seedUser('bad-uid', 'BadUser')
+    const res = await request(app)
+      .post('/api/reports')
+      .set(AUTH_HEADER)
+      .send({ targetType: 'user', reportedUsername: 'bADuSeR', reason: 'offensive' })
+    expect(res.status).toBe(201)
+    const stored = await getDB().collection('reports').findOne({ reporterUid: TEST_UID })
+    expect(stored.reportedUsername).toBe('BadUser')
+  })
+
   it('requires reportedUsername for a user report', async () => {
     const res = await request(app)
       .post('/api/reports')
@@ -440,6 +453,30 @@ describe('PATCH /api/reports/:id', () => {
     expect(entries[0].action).toBe('report.dismiss')
     expect(entries[0].actorUid).toBe(TEST_UID)
     expect(entries[0].targetType).toBe('report')
+  })
+
+  it('409s when re-closing an already-resolved report and leaves it untouched', async () => {
+    admin.__setClaims({ admin: true })
+    const resolvedAt = new Date('2020-01-01T00:00:00Z')
+    const report = await seedReport({
+      status: 'resolved',
+      resolvedBy: 'first-admin',
+      resolvedAt,
+    })
+    const res = await request(app)
+      .patch(`/api/reports/${report._id}`)
+      .set(AUTH_HEADER)
+      .send({ status: 'dismissed' })
+    expect(res.status).toBe(409)
+
+    // Original attribution/status must be preserved (no flip, no overwrite).
+    const stored = await getDB().collection('reports').findOne({ _id: report._id })
+    expect(stored.status).toBe('resolved')
+    expect(stored.resolvedBy).toBe('first-admin')
+    expect(stored.resolvedAt).toEqual(resolvedAt)
+    // No duplicate audit row written for the rejected re-close.
+    const entries = await getDB().collection('auditLog').find({}).toArray()
+    expect(entries).toHaveLength(0)
   })
 })
 

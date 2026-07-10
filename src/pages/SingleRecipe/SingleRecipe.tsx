@@ -99,14 +99,30 @@ const SingleRecipe: FC = () => {
     : recipeImageSrcSet(currRecipe?.recipeImage)
   const printedRef = useRef<HTMLDivElement>(null)
 
+  // Reads must be defensive: window.localStorage throws SecurityError when the
+  // browser blocks site data ("Block all cookies", some embedded webviews), and
+  // JSON.parse throws on a corrupt/non-array value. An unguarded throw here would
+  // unwind to the app-wide error boundary and blank the whole recipe page, so we
+  // degrade to "no stored servings" instead. (Mirrors src/util/savedFilters.ts.)
+  const readServingsLS = (): LocalStorageRecipeType[] => {
+    try {
+      const parsed = JSON.parse(localStorage.getItem('recipeServings') || '[]')
+      return Array.isArray(parsed) ? parsed : []
+    } catch {
+      return []
+    }
+  }
+
   const updateRecipeLocalStorage = (recipeId: string, numServings: number) => {
-    const arr: LocalStorageRecipeType[] = JSON.parse(
-      localStorage.getItem('recipeServings') || '[]'
-    )
+    const arr = readServingsLS()
     const idx = arr.findIndex(item => item.recipeId === recipeId)
     if (idx !== -1) arr[idx].numServings = numServings
     else arr.push({ recipeId, numServings })
-    localStorage.setItem('recipeServings', JSON.stringify(arr))
+    try {
+      localStorage.setItem('recipeServings', JSON.stringify(arr))
+    } catch {
+      /* storage blocked or full — servings persistence is best-effort */
+    }
   }
 
   useEffect(() => {
@@ -121,9 +137,7 @@ const SingleRecipe: FC = () => {
 
   useEffect(() => {
     if (fetchedRecipe && fetchedRecipe.title) {
-      const ls: LocalStorageRecipeType[] = JSON.parse(
-        localStorage.getItem('recipeServings') || '[]'
-      )
+      const ls = readServingsLS()
       const obj = ls.find(item => item.recipeId === fetchedRecipe._id)
       setServingSize(obj ? obj.numServings : fetchedRecipe.servings)
     }

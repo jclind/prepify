@@ -42,7 +42,7 @@ const seedProfile = async () => {
   await seedUserRecipeData(PUB_UID, {
     savedRecipes: [{ recipeId: 'c1', dateSaved: '1' }],
   })
-  await seedRating({ userId: PUB_UID, username: 'CoolUser', recipeId: 'c1', rating: 5 })
+  await seedRating({ userId: PUB_UID, username: 'CoolUser', recipeId: 'c1', rating: 5, reviewText: 'Delicious' })
 }
 
 describe('GET /getPublicProfile', () => {
@@ -101,6 +101,21 @@ describe('GET /getPublicProfile', () => {
     expect(res.body.recipes.map(r => r._id)).toEqual(['v1', 'v2'])
     // …and the reported total agrees with it (no leak of held/hidden existence).
     expect(res.body.recipesTotalCount).toBe(2)
+  })
+
+  it('does not leak a held/hidden recipe through gamification level or achievements', async () => {
+    // A user whose only recipe is withheld shows 0 recipes; the public level and
+    // achievements must not betray that a recipe exists (they derive from
+    // visibility-filtered counts, so first_recipe stays unearned).
+    await seedUser(PUB_UID, 'CoolUser')
+    await seedRecipes([{ _id: 'held', userId: PUB_UID, status: 'pending_review' }])
+
+    const res = await request(app).get('/api/getPublicProfile?username=CoolUser')
+    expect(res.status).toBe(200)
+    expect(res.body.recipesTotalCount).toBe(0)
+    expect(res.body.recipes).toEqual([])
+    expect(res.body.achievements.map(a => a.id)).not.toContain('first_recipe')
+    expect(res.body.level).toBe(1)
   })
 
   it('caps recipes at 12 but reports the full total', async () => {
@@ -306,6 +321,14 @@ describe('GET /getPublicProfileRecipes', () => {
     )
     expect(res.status).toBe(200)
     expect(res.body.recipes).toHaveLength(12)
+  })
+
+  it('treats a negative recipesPerPage as a clean request (no negative skip / 500)', async () => {
+    await seedManyRecipes(3)
+    const res = await request(app).get(
+      '/api/getPublicProfileRecipes?username=CoolUser&page=1&recipesPerPage=-5'
+    )
+    expect(res.status).toBe(200)
   })
 
   it('excludes held / hidden recipes from both the page and the total', async () => {

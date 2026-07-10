@@ -140,7 +140,7 @@ describe('GET /getGamification', () => {
     await seedUserRecipeData(TEST_UID, {
       savedRecipes: [{ recipeId: 'c1', dateSaved: '1' }],
     })
-    await seedRating({ userId: TEST_UID, username: 'testuser', recipeId: 'c1', rating: 5 })
+    await seedRating({ userId: TEST_UID, username: 'testuser', recipeId: 'c1', rating: 5, reviewText: 'Tasty!' })
 
     const res = await request(app).get('/api/getGamification').set(AUTH_HEADER)
     expect(res.status).toBe(200)
@@ -151,6 +151,60 @@ describe('GET /getGamification', () => {
       ['first_recipe', 'first_review', 'first_save'].sort()
     )
     expect(res.body.newlyUnlocked.sort()).toEqual(res.body.earned.sort())
+  })
+
+  it('does not count hidden/unpublished/pending recipes toward XP or achievements', async () => {
+    // Only publicly-published recipes are "Published". A hidden/unpublished/held
+    // recipe must neither grant recipe XP nor earn first_recipe/prolific.
+    await seedUser(TEST_UID, 'testuser')
+    await seedRecipes([
+      { _id: 'v1', userId: TEST_UID }, // legacy/no status → visible
+      { _id: 'h1', userId: TEST_UID, status: 'hidden' },
+      { _id: 'u1', userId: TEST_UID, status: 'unpublished' },
+      { _id: 'p1', userId: TEST_UID, status: 'pending_review' },
+    ])
+
+    const res = await request(app).get('/api/getGamification').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    // Only v1 counts: 1*100 XP.
+    expect(res.body.totalXp).toBe(100)
+    expect(res.body.earned).toContain('first_recipe')
+  })
+
+  it('does not count star-only ratings or moderation-hidden reviews toward review achievements', async () => {
+    await seedUser(TEST_UID, 'testuser')
+    await seedRecipes([{ _id: 'c1', userId: TEST_UID }])
+    // A star-only rating (no reviewText) is not a review.
+    await seedRating({ userId: TEST_UID, username: 'testuser', recipeId: 'c1', rating: 5, reviewText: '' })
+    // A written but admin-taken-down review is not a public review either.
+    await seedRating({ userId: TEST_UID, username: 'testuser', recipeId: 'c2', rating: 4, reviewText: 'hi', moderationHidden: true })
+
+    const res = await request(app).get('/api/getGamification').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    // Neither rating counts as a review → no review XP, no first_review.
+    expect(res.body.earned).not.toContain('first_review')
+    // 1 recipe (100) + 0 reviews + 0 saves.
+    expect(res.body.totalXp).toBe(100)
+  })
+
+  it('counts only still-visible saved recipes toward saved XP/achievements', async () => {
+    await seedUser(TEST_UID, 'testuser')
+    await seedRecipes([
+      { _id: 's1', userId: 'other' },
+      { _id: 's2', userId: 'other', status: 'hidden' },
+    ])
+    await seedUserRecipeData(TEST_UID, {
+      savedRecipes: [
+        { recipeId: 's1', dateSaved: '1' },
+        { recipeId: 's2', dateSaved: '2' }, // hidden → must not count
+      ],
+    })
+
+    const res = await request(app).get('/api/getGamification').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    // Only s1 is visible: 1*5 saved XP, no recipes/reviews.
+    expect(res.body.totalXp).toBe(5)
+    expect(res.body.earned).toContain('first_save')
   })
 
   it('omits already-acknowledged achievements from newlyUnlocked', async () => {

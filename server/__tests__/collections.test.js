@@ -256,6 +256,20 @@ describe('DELETE /collections/:id', () => {
     const res = await request(app).delete('/api/collections/nope').set(AUTH_HEADER)
     expect(res.status).toBe(404)
   })
+
+  it('deletes when the doc has no savedRecipes field (first-write-was-a-collection)', async () => {
+    // A user whose first-ever userRecipeData write created a collection (or a
+    // made-recipe) has no `savedRecipes` field. The all-positional `$[]` membership
+    // pull errors on such a doc, which used to make the collection undeletable (500).
+    await seedUserRecipeData(TEST_UID, {
+      collections: [{ id: 'c1', name: 'Weeknight', createdAt: '1' }],
+    })
+    const res = await request(app).delete('/api/collections/c1').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+
+    const data = await getUserData()
+    expect(data.collections).toHaveLength(0)
+  })
 })
 
 // ─── PATCH /recipes/:recipeId/collections (membership) ────────────────────────

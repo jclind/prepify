@@ -446,8 +446,12 @@ export function useRecipeForm(initialRecipe?: RecipeType) {
         toast.error(SESSION_EXPIRED)
       } else if (result.status === 'success') {
         // Recipe is saved — remove the now-redundant draft (and stop autosave
-        // from recreating it on unmount) before navigating away.
-        await clearDraft()
+        // from recreating it on unmount) before navigating away. Only when the
+        // form is hydrated: if a resumed draft failed to load (transient error),
+        // draftId still points at that draft but its real content was never on
+        // screen, so clearing it would silently delete an untouched draft that is
+        // unrelated to what we just published.
+        if (hydrated) await clearDraft()
         queryClient.invalidateQueries({ queryKey: ['drafts'] })
         if (result.pendingReview) {
           notifyPendingReview()

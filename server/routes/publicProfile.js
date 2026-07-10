@@ -3,7 +3,7 @@ const { asyncHandler } = require('../util/asyncHandler')
 const router = express.Router()
 const { getAuth } = require('firebase-admin/auth')
 const { getDB } = require('../db')
-const { getAccountCountsFor } = require('../util/accountCounts')
+const { getGamificationCountsFor } = require('../util/accountCounts')
 const { computeGamification } = require('../util/gamification')
 const { RECIPE_VISIBLE } = require('../util/moderation')
 const { publicRecipeCardProjection } = require('../util/recipeFields')
@@ -48,12 +48,14 @@ router.get('/getPublicProfile', asyncHandler(async (req, res) => {
 
   const [profile, counts, recipeStats, recipes, authRecord] = await Promise.all([
     db.collection('userProfiles').findOne({ _id: uid }),
-    getAccountCountsFor(db, uid),
+    // Gamification counts are visibility-filtered (published recipes / real
+    // visible reviews / visible saves), so the public level/rank/achievements
+    // can't leak or overstate the existence of a held/hidden recipe.
+    getGamificationCountsFor(db, uid),
     // One aggregate over the publicly-visible recipes drives the header stats:
     // the total count plus cross-recipe sums of saves/made. Counting only
     // visible recipes keeps the totals honest and avoids leaking the existence
-    // of held/hidden recipes (getAccountCountsFor is unfiltered — correct for
-    // the owner's own account page, but it would inflate these public totals).
+    // of held/hidden recipes.
     db
       .collection('recipes')
       .aggregate([
@@ -148,10 +150,12 @@ router.get('/getPublicProfileRecipes', asyncHandler(async (req, res) => {
   // Floor at 0 so a negative ?page never produces a negative .skip() (which
   // MongoDB rejects, surfacing as a 500 instead of a clean first page).
   const pageNum = Math.max(0, parseInt(req.query.page) || 0)
-  // Clamp to PROFILE_RECIPE_LIMIT so a client can't request an oversized page
-  // (and so pages stay aligned with the profile payload's initial batch).
+  // Clamp to [1, PROFILE_RECIPE_LIMIT] so a client can't request an oversized
+  // page, and — like pageNum above — so a negative recipesPerPage never yields a
+  // negative .skip() (which MongoDB rejects as a 500). The upper Math.min alone
+  // let a negative value through.
   const perPage = Math.min(
-    parseInt(req.query.recipesPerPage) || PROFILE_RECIPE_LIMIT,
+    Math.max(1, parseInt(req.query.recipesPerPage) || PROFILE_RECIPE_LIMIT),
     PROFILE_RECIPE_LIMIT
   )
 
