@@ -126,7 +126,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **9** | **B3 · ingredient parse limiter + FE `RATE_LIMITED`** | I1 (30/min limiter < 50-ingredient cap; FE ignores the 429 code → understated price) (BACKLOG Bugs) | `[x]` [#282](https://github.com/jclind/prepify/pull/282) (2026-07-10) | `server/routes/ingredients.js`, `src/api/recipes.ts` | **merged** — local review closed the edit-path test gap; one unrelated double-submit bug filed, not fixed |
 | **9** | **B4 · quantity display (fractions + ranges)** | I2 (`closestFraction` never rounds up past 7/8) + I3 (ranges flattened to low end) (BACKLOG UX) | `[x]` [#284](https://github.com/jclind/prepify/pull/284) (2026-07-10) | `src/util/formatQuantity.ts`, `SingleRecipe.tsx`, `PrintableRecipe.tsx`, `IngredientItemText.tsx`, `updateIngredients.ts` | **merged** |
 | **9** | **B5 · draft PUT concurrency guard** | D2 (full-`$set` PUT, no version precondition → two-tab clobber) (BACKLOG Bugs) | `[~]` `worktree-feat+b5-draft-put-concurrency-guard` (2026-07-10) | `server/routes/drafts.js` | isolated |
-| **9** | **B6 · account-counts badge parity** | recipes/ratings tab badges use raw counts vs their filtered lists (BACKLOG Tech debt) | `[~]` `worktree-feat+b6-account-counts-badge-parity` (2026-07-10) | `server/util/accountCounts.js` | **dep:** land after [#279](https://github.com/jclind/prepify/pull/279) (rewrites this file; adds the `saved` filter B6 mirrors) — **dep satisfied**, #279 merged |
+| **9** | **B6 · account-counts badge parity** | recipes/ratings tab badges use raw counts vs their filtered lists (BACKLOG Tech debt) | `[P]` [#285](https://github.com/jclind/prepify/pull/285) (2026-07-10) | `server/util/accountCounts.js` | **dep:** land after [#279](https://github.com/jclind/prepify/pull/279) (rewrites this file; adds the `saved` filter B6 mirrors) — **dep satisfied**, #279 merged |
 | **—** | **Deferred / post-1.0 / owner** | see [that section](#deferred--post-10--owner-off-the-active-board) | `[blocked]`/`[dropped]` | — | prerendering, Edamam, theming, brand-orange, DB relocation, ideas |
 
 ---
@@ -2164,6 +2164,18 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   to match. Dependency on [#279](https://github.com/jclind/prepify/pull/279) (rewrote this file, added the
   `saved` filter this mirrors) is satisfied — confirmed merged. Verified no existing B6 branch/worktree and
   `development` in sync with origin before claiming. Worktree not yet created.
+- **2026-07-10** — **B6** implemented in `worktree-feat+b6-account-counts-badge-parity` → PR
+  [#285](https://github.com/jclind/prepify/pull/285) opened (`[P]`). `getAccountCountsFor`'s `recipes` badge
+  now filters `RECIPE_OWNER_VISIBLE` (matches `getCreatedRecipes`); the `ratings` badge goes through a new
+  `countVisibleRatings`, excluding moderation-hidden ratings and ratings whose recipe isn't `RECIPE_VISIBLE`
+  (matches `getSingleUserReviews`'s `returnRecipeData` join). A medium-effort local code review found one
+  simplification: the first pass duplicated `reviews.js`'s correlated `$lookup`/`$expr`/`$toString` join;
+  since `ratings` carries a unique `{userId, recipeId}` index, `countVisibleRatings` was rewritten to the
+  cheaper id-list + `countDocuments` shape `countVisibleSaved` already uses in this file — no correlated
+  subquery, no duplicated join logic. Extended `server/__tests__/users.test.js` (owner `pending_review` kept,
+  hidden/unpublished excluded from the recipes badge; ratings on hidden/unpublished/pending_review recipes
+  excluded; moderation-hidden ratings excluded) — server Jest 846/846, Vitest 699/699 (2 pre-existing skips),
+  `tsc` clean, build green.
 - **2026-07-10** — **B4 merged** ([#284](https://github.com/jclind/prepify/pull/284), merge `05659be`). Both
   quantity-rendering bugs from the bug hunt shipped. **I2** — `closestFraction` now rolls a remainder over to
   the next whole number when it's at least as close to 1 as to the nearest table fraction (0.9375 ties up), so
