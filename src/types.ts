@@ -211,6 +211,12 @@ export type IngredientsType =
   | {
       error?: {
         message: string
+        // Set only for a rate-limited lookup (server 429, code RATE_LIMITED):
+        // 'code' lets the UI branch on it instead of string-matching the
+        // message, 'retryAt' (epoch ms, from the server's Retry-After header)
+        // is when a retry is likely to succeed.
+        code?: string
+        retryAt?: number
       }
       parsedIngredient: ParsedIngredient
       ingredientData: IngredientData | null

@@ -9,7 +9,10 @@ import {
   withTimeout,
 } from 'src/pages/AddRecipe/Ingredients/ingredientEnrichment'
 
-vi.mock('src/api/recipes', () => ({ default: { getIngredientData: vi.fn() } }))
+vi.mock('src/api/recipes', () => ({
+  default: { getIngredientData: vi.fn() },
+  INGREDIENT_RATE_LIMIT_CODE: 'RATE_LIMITED',
+}))
 vi.mock('src/api/auth', () => ({ default: { getUID: vi.fn().mockReturnValue(null) } }))
 vi.mock('react-hot-toast', () => ({ toast: { error: vi.fn(), success: vi.fn() } }))
 
@@ -50,6 +53,23 @@ const enriched = (original: string) => ({
     originalIngredientString: original,
   },
   ingredientData: { totalPriceUSACents: 300, imagePath: 'https://img.test/x.png' },
+  id: 'srv',
+})
+
+const rateLimited = (original: string, retryAt: number) => ({
+  error: {
+    message: 'Too many ingredient lookups — wait 30s and retry.',
+    code: 'RATE_LIMITED',
+    retryAt,
+  },
+  parsedIngredient: {
+    ingredient: 'flour',
+    quantity: 2,
+    unit: 'cups',
+    comment: null,
+    originalIngredientString: original,
+  },
+  ingredientData: null,
   id: 'srv',
 })
 
@@ -120,6 +140,23 @@ describe('IngredientItem inline edit', () => {
     expect(setItemStatus).toHaveBeenCalledWith('ing-1', 'loading')
     expect(mockToastError).toHaveBeenCalledTimes(1)
     expect(mockToastError.mock.calls[0][0]).toMatch(/too long/i)
+  })
+
+  it('toasts an honest wait message and flags the row errored when the edit hits RATE_LIMITED (B3)', async () => {
+    mockGetIngredientData.mockResolvedValue(
+      rateLimited('2 cups flour', Date.now() + 30_000)
+    )
+    const { container, setItemStatus } = renderItem()
+
+    editTo(container, '2 cups flour')
+
+    await waitFor(() => expect(setItemStatus).toHaveBeenCalledWith('ing-1', 'error'))
+    // Not toHaveBeenCalledTimes(1): handleEditSubmit's own trailing
+    // editInputRef.blur() re-fires FormInput's onBlur (wired to the same
+    // handler), double-invoking submit on every edit — a pre-existing quirk
+    // unrelated to B3, tracked separately. Assert the toast content, not the count.
+    expect(mockToastError).toHaveBeenCalled()
+    expect(mockToastError.mock.calls[0][0]).toMatch(/lookup limit/i)
   })
 
   it('does not re-enrich when the edited value is unchanged', async () => {

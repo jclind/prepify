@@ -150,6 +150,21 @@
       &:focus-visible {
         @include s.outline();
       }
+      // Rate-limited: cooling down before a retry can succeed. Dim + block the
+      // hover icon-swap so it doesn't read as an actionable retry.
+      &:disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
+        &:hover {
+          color: s.$error-red;
+          .warn {
+            opacity: 1;
+          }
+          .retry {
+            opacity: 0;
+          }
+        }
+      }
     }
 
     // Subtle tint so a failed-enrichment row reads as needs-attention without

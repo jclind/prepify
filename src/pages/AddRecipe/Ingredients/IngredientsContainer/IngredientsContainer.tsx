@@ -3,7 +3,7 @@ import { parseIngredientString } from '@jclind/ingredient-parser'
 import { v4 as uuidv4 } from 'uuid'
 import { toast } from 'react-hot-toast'
 import { IngredientsType, LabelType } from 'types'
-import RecipeAPI from 'src/api/recipes'
+import RecipeAPI, { INGREDIENT_RATE_LIMIT_CODE } from 'src/api/recipes'
 import AddLabel from 'src/pages/AddRecipe/AddLabel/AddLabel'
 import IngredientList from 'src/pages/AddRecipe/Ingredients/IngredientList/IngredientList'
 import IngredientsInput from 'src/pages/AddRecipe/Ingredients/IngredientsInput'
@@ -59,6 +59,14 @@ const IngredientsContainer: FC<IngredientsContainerProps> = ({
         // an errored-but-usable row so the user can retry, edit, or proceed.
         if ('error' in enriched && enriched.error) {
           setItemStatus(id, 'error')
+          // A rate-limited lookup is a distinct, expected condition — not a
+          // one-off miss — so it gets its own honest toast (an immediate Retry
+          // would just re-429; the retry button disables itself until retryAt).
+          if (enriched.error.code === INGREDIENT_RATE_LIMIT_CODE) {
+            toast.error(
+              `"${displayName}" hit the ingredient lookup limit — wait a moment before retrying.`
+            )
+          }
         } else {
           setItemStatus(id, null)
         }
@@ -106,6 +114,17 @@ const IngredientsContainer: FC<IngredientsContainerProps> = ({
     (id: string) => {
       const ingr = ingredients.find(i => i.id === id)
       if (!ingr || !('parsedIngredient' in ingr)) return
+      // Still cooling down from a rate-limited lookup: the button that
+      // triggers this is disabled in that state too, but guard here as well
+      // since a retry could otherwise be wired up some other way.
+      if (
+        'error' in ingr &&
+        ingr.error?.code === INGREDIENT_RATE_LIMIT_CODE &&
+        ingr.error.retryAt &&
+        ingr.error.retryAt > Date.now()
+      ) {
+        return
+      }
       const raw = ingr.parsedIngredient.originalIngredientString
       void enrichInPlace(id, raw, ingr.parsedIngredient.ingredient || raw)
     },
