@@ -463,6 +463,69 @@ describe('RecipeAPI.getAllRecipes — query-string encoding', () => {
   })
 })
 
+describe('RecipeAPI.getIngredientData — RATE_LIMITED soft-fail (B3)', () => {
+  beforeEach(() => {
+    httpPost.mockReset()
+  })
+
+  it('returns an honest RATE_LIMITED error carrying retryAt from the Retry-After header', async () => {
+    httpPost.mockRejectedValue({
+      isAxiosError: true,
+      response: {
+        status: 429,
+        data: { error: 'Too many ingredient lookups — wait a minute and try again.', code: 'RATE_LIMITED' },
+        headers: { 'retry-after': '45' },
+      },
+    })
+
+    const before = Date.now()
+    const result = await RecipeAPI.getIngredientData('2 cups flour')
+    const after = Date.now()
+
+    expect('error' in result).toBe(true)
+    if ('error' in result && result.error) {
+      expect(result.error.code).toBe('RATE_LIMITED')
+      expect(result.error.message).toMatch(/45s/)
+      expect(result.error.retryAt).toBeGreaterThanOrEqual(before + 45_000)
+      expect(result.error.retryAt).toBeLessThanOrEqual(after + 45_000)
+    }
+    expect(result.ingredientData).toBeNull()
+  })
+
+  it('falls back to a 60s wait when Retry-After is missing', async () => {
+    httpPost.mockRejectedValue({
+      isAxiosError: true,
+      response: { status: 429, data: { code: 'RATE_LIMITED' }, headers: {} },
+    })
+
+    const before = Date.now()
+    const result = await RecipeAPI.getIngredientData('2 cups flour')
+
+    if ('error' in result && result.error) {
+      expect(result.error.code).toBe('RATE_LIMITED')
+      expect(result.error.retryAt).toBeGreaterThanOrEqual(before + 60_000)
+    } else {
+      throw new Error('expected an error variant')
+    }
+  })
+
+  it('does not mistake a plain 500 for a rate limit (no code = generic error, no retryAt)', async () => {
+    httpPost.mockRejectedValue({
+      isAxiosError: true,
+      response: { status: 500, data: { error: 'proxy exploded' }, headers: {} },
+    })
+
+    const result = await RecipeAPI.getIngredientData('2 cups flour')
+
+    if ('error' in result && result.error) {
+      expect(result.error.code).toBeUndefined()
+      expect(result.error.retryAt).toBeUndefined()
+    } else {
+      throw new Error('expected an error variant')
+    }
+  })
+})
+
 describe('RecipeAPI.getReviews — legacy rating normalization (coerceRating)', () => {
   beforeEach(() => {
     httpGet.mockReset()

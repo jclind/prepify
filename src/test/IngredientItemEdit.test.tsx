@@ -9,7 +9,10 @@ import {
   withTimeout,
 } from 'src/pages/AddRecipe/Ingredients/ingredientEnrichment'
 
-vi.mock('src/api/recipes', () => ({ default: { getIngredientData: vi.fn() } }))
+vi.mock('src/api/recipes', () => ({
+  default: { getIngredientData: vi.fn() },
+  INGREDIENT_RATE_LIMIT_CODE: 'RATE_LIMITED',
+}))
 vi.mock('src/api/auth', () => ({ default: { getUID: vi.fn().mockReturnValue(null) } }))
 vi.mock('react-hot-toast', () => ({ toast: { error: vi.fn(), success: vi.fn() } }))
 

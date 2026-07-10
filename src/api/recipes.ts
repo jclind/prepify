@@ -32,6 +32,15 @@ import { v4 as uuidv4 } from 'uuid'
 
 export const ADD_RECIPE_AUTH_ERROR = 'AUTH_ERROR'
 
+// Matches the code server/middleware/writeLimiter.js's makeUserLimiter carries
+// on a 429 body ({ error, code: 'RATE_LIMITED' }) — the ingredient-parse
+// limiter (server/routes/ingredients.js) is built from that same factory.
+export const INGREDIENT_RATE_LIMIT_CODE = 'RATE_LIMITED'
+// Fallback wait when the server didn't send a usable Retry-After header
+// (shouldn't happen — express-rate-limit sets it whenever standardHeaders is
+// on — but a stale proxy/CDN could strip it).
+const DEFAULT_RATE_LIMIT_RETRY_SEC = 60
+
 // Legacy ratings docs (pre-D1) store `rating` as a stringified number; new
 // writes are floats and review-only docs are null. Normalize at the API
 // boundary so the typed contract (`rating: number | null`) holds regardless
@@ -607,6 +616,32 @@ class RecipeAPIClass {
         id: uuidv4(),
       }
     } catch (err: unknown) {
+      // A 429 from the parse limiter (server/routes/ingredients.js) is a
+      // distinct, expected failure mode — not a generic outage — so it gets
+      // its own honest message + a retryAt the caller can use to hold off the
+      // retry affordance instead of immediately re-429ing.
+      if (
+        axios.isAxiosError(err) &&
+        err.response?.status === 429 &&
+        (err.response.data as { code?: string } | undefined)?.code ===
+          INGREDIENT_RATE_LIMIT_CODE
+      ) {
+        const retryAfterHeader = Number(err.response.headers?.['retry-after'])
+        const retryAfterSec =
+          Number.isFinite(retryAfterHeader) && retryAfterHeader > 0
+            ? retryAfterHeader
+            : DEFAULT_RATE_LIMIT_RETRY_SEC
+        return {
+          error: {
+            message: `Too many ingredient lookups — wait ${retryAfterSec}s and retry.`,
+            code: INGREDIENT_RATE_LIMIT_CODE,
+            retryAt: Date.now() + retryAfterSec * 1000,
+          },
+          parsedIngredient,
+          ingredientData: null,
+          id: uuidv4(),
+        }
+      }
       const message =
         err instanceof Error ? err.message : 'Ingredient enrichment request failed'
       return {

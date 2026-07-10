@@ -1,10 +1,10 @@
 import { AlertCircleIcon, CloseIcon, DragIcon, RotateCwIcon, ShoppingBasketIcon } from 'src/Components/icons'
-import React, { FC, useState, useRef } from 'react'
+import React, { FC, useState, useRef, useEffect } from 'react'
 import { DraggableProvided, DraggableStateSnapshot } from '@hello-pangea/dnd'
 import Skeleton from 'react-loading-skeleton'
 import { skeletonBase as skeletonColor, spinnerColor } from 'src/util/loadingStyles'
 import { toast } from 'react-hot-toast'
-import RecipeAPI from 'src/api/recipes'
+import RecipeAPI, { INGREDIENT_RATE_LIMIT_CODE } from 'src/api/recipes'
 import { IngredientsType } from 'types'
 import FormInput from 'src/Components/Form/FormInput'
 import {
@@ -66,6 +66,31 @@ const IngredientItem: FC<IngredientItemProps> = ({
     return ingredient.parsedIngredient.originalIngredientString
   })
   const editInputRef = useRef<HTMLInputElement>(null)
+
+  // When enrichment last 429'd, hold retryAt (epoch ms) here so the retry
+  // button can disable itself instead of immediately re-429ing. Sourced from
+  // ingredient.error on mount/prop-change (the add path sets it via
+  // getIngredientData); the edit path below sets it directly on a fresh 429.
+  const rowRetryAt =
+    ingredient && 'error' in ingredient && ingredient.error?.code === INGREDIENT_RATE_LIMIT_CODE
+      ? ingredient.error.retryAt
+      : undefined
+  const [isRateLimited, setIsRateLimited] = useState(
+    () => !!rowRetryAt && rowRetryAt > Date.now()
+  )
+  // Re-sync when the row's error changes (e.g. a fresh 429 on retry/edit) and
+  // self-clear once retryAt passes, so the button re-enables without any
+  // outside trigger.
+  useEffect(() => {
+    if (!rowRetryAt || rowRetryAt <= Date.now()) {
+      setIsRateLimited(false)
+      return
+    }
+    setIsRateLimited(true)
+    const timer = setTimeout(() => setIsRateLimited(false), rowRetryAt - Date.now())
+    return () => clearTimeout(timer)
+  }, [rowRetryAt])
+
   const renderIngredientText = () => {
     if (typeof ingredient !== 'undefined' && 'parsedIngredient' in ingredient) {
       const {
@@ -120,12 +145,17 @@ const IngredientItem: FC<IngredientItemProps> = ({
           RecipeAPI.getIngredientData(editedVal)
         )
         editIngredient(id, { ...ingredientDataRes })
-        setItemStatus(
-          id,
-          'error' in ingredientDataRes && ingredientDataRes.error
-            ? 'error'
-            : null
-        )
+        const rowError =
+          'error' in ingredientDataRes ? ingredientDataRes.error : undefined
+        setItemStatus(id, rowError ? 'error' : null)
+        // Same honest-messaging branch as the add path: a 429 is a distinct,
+        // expected condition, not a generic miss, so it gets its own toast
+        // instead of silently landing on the row.
+        if (rowError?.code === INGREDIENT_RATE_LIMIT_CODE) {
+          toast.error(
+            `"${editedVal}" hit the ingredient lookup limit — wait a moment before retrying.`
+          )
+        }
       } catch (err: unknown) {
         const timedOut = err instanceof IngredientEnrichTimeoutError
         setItemStatus(id, 'error')
@@ -197,9 +227,15 @@ const IngredientItem: FC<IngredientItemProps> = ({
           type='button'
           className='ingr-retry'
           aria-label='Retry ingredient lookup'
-          title="Couldn't fetch nutrition data — retry"
+          title={
+            isRateLimited
+              ? 'Rate limited — please wait a moment before retrying'
+              : "Couldn't fetch nutrition data — retry"
+          }
+          disabled={isRateLimited}
           onClick={e => {
             e.stopPropagation()
+            if (isRateLimited) return
             retryIngredient(ingredient.id)
           }}
         >

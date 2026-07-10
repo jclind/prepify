@@ -5,6 +5,7 @@ const { makeUserLimiter } = require('../middleware/writeLimiter')
 const { GENERIC_500_MESSAGE } = require('../util/respondServerError')
 const { asyncHandler } = require('../util/asyncHandler')
 const { getDB } = require('../db')
+const { MAX_INGREDIENTS } = require('../util/recipeLimits')
 
 const router = Router()
 
@@ -62,13 +63,22 @@ async function recordIngredientTelemetry(type, ingredientString, extra = {}) {
   }
 }
 
+// Must clear MAX_INGREDIENTS with headroom: the add-recipe flow fires one parse
+// per ingredient, so filling a max-size recipe alone burns MAX_INGREDIENTS
+// requests, before counting per-row edits/retries in the same minute. The
+// factory default (30) sat *below* the 50-ingredient cap — every recipe past 30
+// ingredients silently 429'd on the tail rows. +40 headroom on top of the cap
+// covers a realistic edit/retry burst without materially loosening the abuse
+// backstop (a scraping bot still can't run more than ~90 paid lookups/min/uid).
+const PARSE_LIMIT = MAX_INGREDIENTS + 40
+
 // Every call can spend paid Spoonacular quota (via the parser's proxy), so this
 // route gets its own tight per-user limit — an independent bucket from the
 // content-write limiters (see middleware/writeLimiter), keyed by req.uid (set by
-// verifyToken, which runs first), not IP, so shared NATs don't collide. 30/min
-// comfortably covers the add-recipe flow — one parse per ingredient added, max
-// 50 per recipe. Skipped under Jest along with the global limiter (see app.js).
+// verifyToken, which runs first), not IP, so shared NATs don't collide. Skipped
+// under Jest along with the global limiter (see app.js).
 const parseLimiter = makeUserLimiter({
+  limit: PARSE_LIMIT,
   message: 'Too many ingredient lookups — wait a minute and try again.',
 })
 
@@ -159,5 +169,12 @@ router.post('/parse', verifyToken, parseLimiter, asyncHandler(async (req, res) =
     return res.status(500).json({ error: GENERIC_500_MESSAGE })
   }
 }))
+
+// Exposed on the router (a function, so this is just an extra property) so the
+// test suite can assert the limit clears MAX_INGREDIENTS without duplicating
+// the arithmetic, and exercise the real limiter instance directly (it's
+// skipped when mounted on the shared app under NODE_ENV=test).
+router.PARSE_LIMIT = PARSE_LIMIT
+router.parseLimiter = parseLimiter
 
 module.exports = router

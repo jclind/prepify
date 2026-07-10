@@ -14,6 +14,7 @@ import {
 
 vi.mock('src/api/recipes', () => ({
   default: { getIngredientData: vi.fn() },
+  INGREDIENT_RATE_LIMIT_CODE: 'RATE_LIMITED',
 }))
 
 vi.mock('src/api/auth', () => ({
@@ -214,6 +215,70 @@ describe('IngredientsContainer — row removed while its lookup is in flight', (
     })
     expect(mockToastError).not.toHaveBeenCalled()
     expect(screen.queryByLabelText('Retry ingredient lookup')).toBeNull()
+  })
+})
+
+describe('IngredientsContainer — rate limited (B3)', () => {
+  const rateLimitedVariant = (original: string, retryAt: number) => ({
+    error: {
+      message: 'Too many ingredient lookups — wait 30s and retry.',
+      code: 'RATE_LIMITED',
+      retryAt,
+    },
+    parsedIngredient: {
+      ingredient: 'flour',
+      quantity: 2,
+      unit: 'cups',
+      comment: null,
+      originalIngredientString: original,
+    },
+    ingredientData: null,
+    id: 'server-id',
+  })
+
+  it('toasts an honest wait message and disables retry while cooling down', async () => {
+    const user = userEvent.setup()
+    mockGetIngredientData.mockResolvedValue(
+      rateLimitedVariant('2 cups flour', Date.now() + 30_000)
+    )
+
+    render(<Wrapper />)
+    await addIngredient(user, '2 cups flour')
+
+    await waitFor(() => expect(mockToastError).toHaveBeenCalledTimes(1))
+    expect(mockToastError.mock.calls[0][0]).toMatch(/lookup limit/i)
+
+    const retry = await screen.findByLabelText('Retry ingredient lookup')
+    expect(retry).toBeDisabled()
+  })
+
+  it('ignores a click on the disabled retry — no re-call while still cooling down', async () => {
+    const user = userEvent.setup()
+    mockGetIngredientData.mockResolvedValue(
+      rateLimitedVariant('2 cups flour', Date.now() + 30_000)
+    )
+
+    render(<Wrapper />)
+    await addIngredient(user, '2 cups flour')
+
+    const retry = await screen.findByLabelText('Retry ingredient lookup')
+    await user.click(retry)
+
+    expect(mockGetIngredientData).toHaveBeenCalledTimes(1)
+  })
+
+  it('re-enables retry once retryAt has already passed', async () => {
+    const user = userEvent.setup()
+    // retryAt already in the past — the cooldown effect should not disable it.
+    mockGetIngredientData.mockResolvedValue(
+      rateLimitedVariant('2 cups flour', Date.now() - 1000)
+    )
+
+    render(<Wrapper />)
+    await addIngredient(user, '2 cups flour')
+
+    const retry = await screen.findByLabelText('Retry ingredient lookup')
+    expect(retry).not.toBeDisabled()
   })
 })
 
