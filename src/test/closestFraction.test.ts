@@ -66,6 +66,13 @@ describe('formatIngredientQuantity', () => {
     expect(formatIngredientQuantity(1.5, 1.5, 2.5)).toBe('1 1/2–2 1/2')
   })
 
+  it('collapses a range whose bounds round to the same fraction', () => {
+    // 0.96 and 0.99 both round to "1" — render "1", not "1–1".
+    expect(formatIngredientQuantity(0.96, 0.96, 0.99)).toBe('1')
+    // Bounds inside the same fraction bucket (both snap to 1/2) collapse too.
+    expect(formatIngredientQuantity(1.51, 1.51, 1.52)).toBe('1 1/2')
+  })
+
   it('renders a single quantity when there is no distinct upper bound', () => {
     // Non-range parses come back with quantity == minQty == maxQty.
     expect(formatIngredientQuantity(1.5, 1.5, 1.5)).toBe('1 1/2')

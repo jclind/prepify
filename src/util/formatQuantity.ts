@@ -62,7 +62,12 @@ export const formatIngredientQuantity = (
   maxQty?: number | null
 ): string => {
   if (minQty != null && maxQty != null && maxQty > minQty) {
-    return `${closestFraction(minQty)}–${closestFraction(maxQty)}`
+    const low = closestFraction(minQty)
+    const high = closestFraction(maxQty)
+    // A narrow range whose bounds round to the same display fraction (e.g.
+    // 0.96–0.99 → "1", or float noise from servings scaling nudging maxQty
+    // barely past minQty) would read as "1–1". Collapse it to the single value.
+    return low === high ? low : `${low}–${high}`
   }
   // Falsy quantity (null or 0) means "no numeric amount" — e.g. the parser
   // returns 0 for "salt, to taste". Matches the truthiness guard every renderer
