@@ -16,6 +16,18 @@ Listed in priority order.
 > server-truth-first from all 73 routes + `/health`, and the two clear client mismatches it found were
 > fixed (`editReview` query-string encoding; `getReviews` dead `username` param). The remaining
 > non-blocking drift was filed to [`BACKLOG.md`](./BACKLOG.md). Item removed; #5–#7 renumbered to #4–#6.
+>
+> **Update 2026-07-10:** the "Test-suite *quality* audit" item (was #3) shipped as
+> [#280](https://github.com/jclind/prepify/pull/280) — a six-slice audit of all 122 unit/integration
+> suites + 7 Cypress specs. Verdict: the suite is genuinely strong (mocking confined to real
+> boundaries, side effects asserted), so the PR shipped the targeted gaps — two real bugs the missing
+> tests hid (negative `?page` 500 on the public reviews/recipes lists; whitespace-only description
+> passing validation — both fixed test-first) plus ~48 strengthened/new tests (rejected-token 401,
+> `requireActive` wiring on every write surface, editReview moderation gate, moderation
+> kill-switch/threshold boundaries, the untested `RecipesApi` read side, `App.test.tsx`'s zero
+> assertions, a batch of error-path pins). Remainder filed to [`BACKLOG.md`](./BACKLOG.md) (Bugs +
+> a Testing follow-ups entry — headline: no server test runs the *real* ingredient parser). Item
+> removed; #4–#6 renumbered to #3–#5.
 
 ## 1. Release-blocker burn-down ⭐ top pick
 
@@ -41,16 +53,7 @@ plausible-but-wrong findings that make broad bug hunts noisy.
 
 Tip: the leading "ultracode" opts into the multi-agent orchestration.
 
-## 3. Test-suite *quality* audit (not coverage)
-
-~130 test files already exist; the gap is meaningfulness, not count.
-
-> Audit the existing Vitest/Jest/Cypress suites for quality, not coverage: find tests that pass
-> trivially or assert nothing meaningful, flaky tests, and high-risk paths (auth, ingredient
-> parsing, serving-price, review/rating CRUD, moderation) whose tests don't actually exercise the
-> failure modes. Strengthen the worst offenders and add the missing edge cases.
-
-## 4. End-to-end user-journey simulation
+## 3. End-to-end user-journey simulation
 
 Token-heavy because it drives the headless browser repeatedly through real flows that unit tests miss.
 
@@ -58,7 +61,7 @@ Token-heavy because it drives the headless browser repeatedly through real flows
 > create a recipe (image + nutrition) → rate → save → report → admin-moderate → delete — with the
 > API both up and down, screenshotting every step. Flag any broken/ugly state and fix what you find.
 
-## 5. SEO finish + social previews
+## 4. SEO finish + social previews
 
 JSON-LD already exists (`src/pages/SingleRecipe/buildRecipeJsonLd.ts`) and its output escaping is now
 hardened (convention **C3**, shipped) — ✅ that half is done. Two gaps remain.
@@ -68,7 +71,7 @@ hardened (convention **C3**, shipped) — ✅ that half is done. Two gaps remain
 > index.html to non-JS crawlers — RELEASE_PLAN §C): prerender vs. accept the generic card for 1.0.
 > Recommend one.
 
-## 6. Docs reconciliation
+## 5. Docs reconciliation
 
 ~6,400 lines of docs (REFACTOR_NOTES alone is 1,405). Cheap insurance against acting on stale audits.
 
