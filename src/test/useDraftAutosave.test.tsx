@@ -14,6 +14,7 @@ vi.mock('src/api/drafts', () => ({
     deleteDraft: vi.fn(),
   },
   DRAFT_LIMIT_CODE: 'DRAFT_LIMIT',
+  DRAFT_CONFLICT_CODE: 'DRAFT_CONFLICT',
 }))
 
 const mockedDraftAPI = DraftAPI as unknown as {
@@ -123,6 +124,7 @@ describe('useDraftAutosave — publish during in-flight create (finding #2)', ()
           enabled: true,
           canCreate: true,
           draftId: null,
+          draftUpdatedAt: null,
           onDraftCreated,
         }),
       { initialProps: { content: { title: '' } as Record<string, unknown> } }
@@ -173,6 +175,7 @@ describe('useDraftAutosave — draft cap (finding #4)', () => {
           enabled: true,
           canCreate: true,
           draftId: null,
+          draftUpdatedAt: null,
           onDraftCreated: vi.fn(),
           onLimitReached,
         }),
@@ -197,5 +200,99 @@ describe('useDraftAutosave — draft cap (finding #4)', () => {
     })
     expect(mockedDraftAPI.createDraft).toHaveBeenCalledTimes(1)
     expect(onLimitReached).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('useDraftAutosave — updatedAt concurrency guard (B5)', () => {
+  it("sends the known base updatedAt and bumps it from each response, so the next save's precondition is current", async () => {
+    mockedDraftAPI.updateDraft
+      .mockResolvedValueOnce({ ...createdDraft, updatedAt: '2000' })
+      .mockResolvedValueOnce({ ...createdDraft, updatedAt: '3000' })
+
+    const { rerender } = renderHook(
+      ({ content }) =>
+        useDraftAutosave({
+          content,
+          enabled: true,
+          canCreate: true,
+          draftId: 'existing-draft',
+          draftUpdatedAt: '1000',
+          onDraftCreated: vi.fn(),
+        }),
+      { initialProps: { content: { title: '' } as Record<string, unknown> } }
+    )
+
+    rerender({ content: { title: 'Soup' } })
+    await act(async () => {
+      vi.advanceTimersByTime(1500)
+      await Promise.resolve()
+    })
+    expect(mockedDraftAPI.updateDraft).toHaveBeenNthCalledWith(
+      1,
+      'existing-draft',
+      { title: 'Soup' },
+      '1000'
+    )
+
+    rerender({ content: { title: 'Soup, again' } })
+    await act(async () => {
+      vi.advanceTimersByTime(1500)
+      await Promise.resolve()
+    })
+    // The precondition is the '2000' the first save's response returned, not
+    // the '1000' the hook was originally handed — proves the bump, not a
+    // resend of the stale prop.
+    expect(mockedDraftAPI.updateDraft).toHaveBeenNthCalledWith(
+      2,
+      'existing-draft',
+      { title: 'Soup, again' },
+      '2000'
+    )
+  })
+
+  it('surfaces a conflict and stops autosaving once the server 409s a stale base version', async () => {
+    mockedDraftAPI.updateDraft.mockRejectedValue({
+      isAxiosError: true,
+      response: {
+        status: 409,
+        data: {
+          code: 'DRAFT_CONFLICT',
+          error: 'This draft was updated elsewhere.',
+        },
+      },
+    })
+    const onConflict = vi.fn()
+
+    const { rerender } = renderHook(
+      ({ content }) =>
+        useDraftAutosave({
+          content,
+          enabled: true,
+          canCreate: true,
+          draftId: 'existing-draft',
+          draftUpdatedAt: '1000',
+          onDraftCreated: vi.fn(),
+          onConflict,
+        }),
+      { initialProps: { content: { title: '' } as Record<string, unknown> } }
+    )
+
+    rerender({ content: { title: 'Soup' } })
+    await act(async () => {
+      vi.advanceTimersByTime(1500)
+      await Promise.resolve()
+    })
+    expect(mockedDraftAPI.updateDraft).toHaveBeenCalledTimes(1)
+    expect(onConflict).toHaveBeenCalledWith('This draft was updated elsewhere.')
+
+    // Further edits must NOT retry against the same (now-known-stale) draft —
+    // no repeated 409s, and no silent clobber attempt.
+    rerender({ content: { title: 'Soup, one more edit' } })
+    await act(async () => {
+      vi.advanceTimersByTime(1500)
+      await Promise.resolve()
+    })
+    expect(mockedDraftAPI.updateDraft).toHaveBeenCalledTimes(1)
+    expect(onConflict).toHaveBeenCalledTimes(1)
   })
 })

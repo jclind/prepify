@@ -7,6 +7,12 @@ import { http } from 'src/api/http-common'
 // can distinguish "at limit" from a generic save failure.
 export const DRAFT_LIMIT_CODE = 'DRAFT_LIMIT'
 
+// Server-set `code` on the 409 returned when updateDraft's `baseUpdatedAt`
+// no longer matches the stored draft — another tab/session saved on top of it
+// since the caller last fetched (server/routes/drafts.js). The response body
+// also carries the server's current `draft` so the caller can reconcile.
+export const DRAFT_CONFLICT_CODE = 'DRAFT_CONFLICT'
+
 // Client for the recipe-draft endpoints (server/routes/drafts.js). Drafts are
 // the autosaved, in-progress state of the create-recipe flow. The image is not
 // part of a draft — see RecipeDraftContent / AddRecipe autosave.
@@ -17,12 +23,19 @@ class DraftAPIClass {
     return result.data
   }
 
+  // `baseUpdatedAt` is the `updatedAt` of the version being edited from — the
+  // server conditions the write on the stored draft still carrying that value
+  // and 409s (DRAFT_CONFLICT_CODE) if another save has moved it since.
   async updateDraft(
     id: string,
-    content: RecipeDraftContent
+    content: RecipeDraftContent,
+    baseUpdatedAt: string
   ): Promise<RecipeDraftType | null> {
     if (!AuthAPI.getUID()) return null
-    const result = await http.put<RecipeDraftType>(`api/drafts/${id}`, content)
+    const result = await http.put<RecipeDraftType>(`api/drafts/${id}`, {
+      ...content,
+      updatedAt: baseUpdatedAt,
+    })
     return result.data
   }
 

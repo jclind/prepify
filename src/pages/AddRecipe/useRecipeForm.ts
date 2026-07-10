@@ -237,6 +237,11 @@ export function useRecipeForm(initialRecipe?: RecipeType) {
   const [searchParams, setSearchParams] = useSearchParams()
   const urlDraftId = isEditMode ? null : searchParams.get('draftId')
   const [draftId, setDraftId] = useState<string | null>(urlDraftId)
+  // The `updatedAt` of the draft version currently on screen — set alongside
+  // `draftId` (on resume-load below, and from the create response) so
+  // useDraftAutosave has a base version to condition its first update on. See
+  // useDraftAutosave's own tracking of subsequent saves.
+  const [draftUpdatedAt, setDraftUpdatedAt] = useState<string | null>(null)
   // "Hydrated" gates autosave: true for a fresh create, briefly false while a
   // resumed draft loads into the fields.
   const [hydrated, setHydrated] = useState(!urlDraftId)
@@ -264,6 +269,7 @@ export function useRecipeForm(initialRecipe?: RecipeType) {
         ownedDraftsRef.current.add(urlDraftId)
         if (draft) {
           setDraftId(urlDraftId)
+          setDraftUpdatedAt(draft.updatedAt)
           dispatch({
             type: 'HYDRATE',
             values: {
@@ -367,14 +373,17 @@ export function useRecipeForm(initialRecipe?: RecipeType) {
     enabled: !isEditMode && hydrated,
     canCreate: canCreateDraft,
     draftId,
+    draftUpdatedAt,
     onDraftCreated: (draft: RecipeDraftType) => {
       // Mark as owned before the URL sync below points the URL at it, so the
       // hydration effect doesn't reload the draft we just created.
       ownedDraftsRef.current.add(draft._id)
       setDraftId(draft._id)
+      setDraftUpdatedAt(draft.updatedAt)
       queryClient.invalidateQueries({ queryKey: ['drafts'] })
     },
     onLimitReached: (message: string) => toast.error(message),
+    onConflict: (message: string) => toast.error(message),
   })
 
   // Reflect the active draft id in the URL (replace) so a refresh resumes the

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import axios from 'axios'
 import { RecipeDraftContent, RecipeDraftType } from 'types'
-import DraftAPI, { DRAFT_LIMIT_CODE } from 'src/api/drafts'
+import DraftAPI, { DRAFT_CONFLICT_CODE, DRAFT_LIMIT_CODE } from 'src/api/drafts'
 
 export type DraftStatus = 'idle' | 'saving' | 'saved' | 'error'
 
@@ -63,6 +63,17 @@ function isDraftLimitError(err: unknown): boolean {
   )
 }
 
+// The server rejects an update whose base `updatedAt` no longer matches the
+// stored draft (another tab/session saved on top of it) with a 409 + this code.
+function isDraftConflictError(err: unknown): boolean {
+  return (
+    axios.isAxiosError(err) &&
+    err.response?.status === 409 &&
+    (err.response.data as { code?: string } | undefined)?.code ===
+      DRAFT_CONFLICT_CODE
+  )
+}
+
 type Params = {
   // Serializable draft content derived from the form state (no image).
   content: RecipeDraftContent
@@ -79,12 +90,23 @@ type Params = {
   canCreate: boolean
   // The current draft's id, or null until the first save creates one.
   draftId: string | null
+  // The `updatedAt` of the draft version currently on screen — set alongside
+  // `draftId` by the caller (on resume-load, or from the create response).
+  // Sent as the update precondition; only re-synced when `draftId` itself
+  // changes; a save response bumps the hook's own internal copy in between; see
+  // the effect below.
+  draftUpdatedAt: string | null
   // Called once with the created draft after the first successful save so the
   // caller can adopt the new id (and reflect it in the URL).
   onDraftCreated: (draft: RecipeDraftType) => void
   // Called when creation is rejected because the user is at their draft cap,
   // with the server's message. The caller surfaces it (e.g. a toast).
   onLimitReached?: (message: string) => void
+  // Called when an update is rejected because another tab/session saved newer
+  // content first (the stored `updatedAt` moved since this draft was loaded).
+  // Autosave stops retrying for the rest of the session; the caller should
+  // tell the user to reload the page to see the latest version.
+  onConflict?: (message: string) => void
 }
 
 type DraftAutosave = {
@@ -100,8 +122,10 @@ export function useDraftAutosave({
   enabled,
   canCreate,
   draftId,
+  draftUpdatedAt,
   onDraftCreated,
   onLimitReached,
+  onConflict,
 }: Params): DraftAutosave {
   const [status, setStatus] = useState<DraftStatus>('idle')
 
@@ -115,6 +139,20 @@ export function useDraftAutosave({
   canCreateRef.current = canCreate
   draftIdRef.current = draftId
   enabledRef.current = enabled
+
+  // The `updatedAt` this hook will send as the next update's precondition.
+  // Unlike the refs above, this is deliberately NOT mirrored from the
+  // `draftUpdatedAt` prop on every render — a successful update bumps it
+  // in-place (see saveNow) from the server's response, and re-mirroring the
+  // prop on every keystroke-driven render would clobber that with the stale
+  // value the caller last knew about. It's only re-synced (below) when
+  // `draftId` itself changes, i.e. exactly when the caller hands the hook a
+  // "new" draft (a resume-load, or the create response).
+  const updatedAtRef = useRef(draftUpdatedAt)
+  useEffect(() => {
+    updatedAtRef.current = draftUpdatedAt
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftId])
 
   // Serialized snapshot of the content we last persisted, so a save is skipped
   // when nothing actually changed.
@@ -133,10 +171,17 @@ export function useDraftAutosave({
   // Set once the server rejects creation at the draft cap. Stops further create
   // attempts this session so we don't fire a failing POST on every keystroke.
   const capReachedRef = useRef(false)
+  // Set once an update 409s as a conflict (another tab/session saved newer
+  // content). Stops further autosave attempts against this draft — retrying
+  // would just 409 again on the same stale `updatedAtRef` — until the page is
+  // reloaded to pick up the latest version.
+  const conflictRef = useRef(false)
   const onDraftCreatedRef = useRef(onDraftCreated)
   const onLimitReachedRef = useRef(onLimitReached)
+  const onConflictRef = useRef(onConflict)
   onDraftCreatedRef.current = onDraftCreated
   onLimitReachedRef.current = onLimitReached
+  onConflictRef.current = onConflict
 
   const saveNow = async () => {
     // `enabled` is false in edit mode (and before a resume finishes hydrating);
@@ -148,15 +193,23 @@ export function useDraftAutosave({
     const id = draftIdRef.current
     // Creating a new draft requires draftable content (canCreate) and that
     // we're not already at the cap. Updates to an existing draft are always
-    // allowed.
+    // allowed, unless a prior update already hit a version conflict.
     if (!id && (!canCreateRef.current || capReachedRef.current)) return
+    if (id && conflictRef.current) return
     inFlightRef.current = true
     try {
       setStatus('saving')
       let persisted = false
       if (id) {
-        const updated = await DraftAPI.updateDraft(id, contentRef.current)
+        const updated = await DraftAPI.updateDraft(
+          id,
+          contentRef.current,
+          updatedAtRef.current ?? ''
+        )
         persisted = !!updated
+        if (updated) {
+          updatedAtRef.current = updated.updatedAt
+        }
       } else {
         const created = await DraftAPI.createDraft(contentRef.current)
         if (created) {
@@ -170,9 +223,11 @@ export function useDraftAutosave({
             )
             return
           }
-          // Adopt the id immediately so a save that fires before the parent
-          // re-renders updates this draft instead of creating a second one.
+          // Adopt the id (and its version) immediately so a save that fires
+          // before the parent re-renders updates this draft instead of
+          // creating a second one.
           draftIdRef.current = created._id
+          updatedAtRef.current = created.updatedAt
           onDraftCreatedRef.current(created)
           persisted = true
         }
@@ -196,6 +251,16 @@ export function useDraftAutosave({
             (err.response?.data as { error?: string } | undefined)?.error) ||
           'You have too many saved drafts. Delete some to start a new one.'
         onLimitReachedRef.current?.(message)
+      } else if (isDraftConflictError(err)) {
+        // Another tab/session saved on top of this draft since it was loaded.
+        // Stop autosaving so we don't keep clobbering (or 409ing against) it;
+        // the caller tells the user to reload for the latest version.
+        conflictRef.current = true
+        const message =
+          (axios.isAxiosError(err) &&
+            (err.response?.data as { error?: string } | undefined)?.error) ||
+          'This draft was updated elsewhere. Reload the page to see the latest version.'
+        onConflictRef.current?.(message)
       } else {
         console.error('Draft autosave failed:', err)
       }

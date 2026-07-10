@@ -85,6 +85,11 @@ router.get('/:id', verifyToken, asyncHandler(async (req, res) => {
 
 // PUT /drafts/:id — overwrite a draft's content (autosave). Owner-only. Only
 // whitelisted content fields are written; userId/createdAt/_id are immutable.
+//
+// The client must echo back the `updatedAt` of the version it's editing from;
+// the update is conditioned on the stored draft still carrying that value, so
+// a tab that's saved on top of a since-changed draft gets a 409 instead of
+// blindly clobbering it with a full `$set` of its (now-stale) content.
 router.put('/:id', verifyToken, requireActive, asyncHandler(async (req, res) => {
   const db = getDB()
   if (!ObjectId.isValid(req.params.id)) {
@@ -105,13 +110,35 @@ router.put('/:id', verifyToken, requireActive, asyncHandler(async (req, res) => 
   if (boundsError) {
     return res.status(400).json({ error: boundsError })
   }
+  const { updatedAt: baseUpdatedAt } = req.body
+  if (typeof baseUpdatedAt !== 'string') {
+    return res.status(400).json({ error: 'Missing updatedAt precondition' })
+  }
   const update = {
     ...pickFields(req.body, RECIPE_CONTENT_FIELDS),
     updatedAt: Date.now().toString(),
   }
   const updated = await db
     .collection('recipeDrafts')
-    .findOneAndUpdate({ _id }, { $set: update }, { returnDocument: 'after' })
+    .findOneAndUpdate(
+      { _id, updatedAt: baseUpdatedAt },
+      { $set: update },
+      { returnDocument: 'after' }
+    )
+  if (!updated) {
+    // Either someone else's save moved `updatedAt` out from under this
+    // request, or the draft was deleted in the interim — distinguish so the
+    // caller doesn't render a conflict banner for a draft that's simply gone.
+    const latest = await db.collection('recipeDrafts').findOne({ _id })
+    if (!latest) {
+      return res.status(404).json({ error: 'Draft not found' })
+    }
+    return res.status(409).json({
+      code: 'DRAFT_CONFLICT',
+      error: 'This draft was updated elsewhere. Reload it to see the latest version.',
+      draft: latest,
+    })
+  }
   res.json(updated)
 }))
 
