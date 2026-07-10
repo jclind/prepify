@@ -2119,3 +2119,16 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   full add-recipe browser UI: the real ingredient-enrichment proxy isn't reachable from this sandbox's
   network, so every non-429 lookup hangs; the API-layer burst test plus the component test suite cover the
   same behavior without that dependency.)
+- **2026-07-10** — **B3 follow-up: live UI verification + local review.** Ran a headless-Chromium `/verify`
+  pass against the running dev server (signed in via the app's own `window.__cy_signIn__` Cypress-style
+  bootstrap): pre-exhausted a uid's parse-limiter bucket via a direct HTTP burst, then drove the real
+  add-recipe ingredients UI — confirmed the honest "hit the ingredient lookup limit" toast, a disabled Retry
+  button (🔍 clicking it fired zero new `/api/ingredients/parse` requests), and the button self-clearing
+  ~60s later via the `useEffect` timer alone, no reload — superseding the "couldn't runtime-verify the full
+  add-recipe browser UI" caveat two entries up. Verdict: PASS. A local code review then flagged one real gap
+  — the edit-path (`IngredientItem.tsx`'s `handleEditSubmit`) `RATE_LIMITED` toast/branch had no test coverage,
+  only the add path did — closed by a new test in `src/test/IngredientItemEdit.test.tsx` (Vitest 683/683).
+  That same review surfaced an unrelated pre-existing bug worth tracking separately: submitting an edit via
+  Enter re-fires `handleEditSubmit` a second time, because its own trailing `editInputRef.current.blur()`
+  call re-triggers `FormInput`'s `onBlur` (wired to the same handler) — double network calls/toasts on every
+  edit-submit. Not part of B3's scope; not fixed here.

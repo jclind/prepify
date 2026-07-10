@@ -103,6 +103,21 @@ The triage date stamped on items is the date they were filed here, not when they
   the audit PR; decide the servings contract and pin it); **(3)** `src/util/formatRating.ts:5-6` renders the
   literal string `"NaN"` if `rateValue` arrives NaN (no guard → should fall back to the "No Ratings" branch).
   All three are one-liners plus a test each. Low.
+- `[ ]` **Editing an ingredient inline double-submits on Enter — double network call, double toast** *(filed
+  2026-07-10, surfaced by a local code review of B3/[#282](https://github.com/jclind/prepify/pull/282))* —
+  `IngredientItem.tsx`'s `handleEditSubmit` (fired by `FormInput`'s `onEnter`) ends with `setIsEditing(false)`
+  + `editInputRef.current.blur()`, but that `blur()` call synchronously re-fires the *same* `FormInput`'s
+  `onBlur`, which is wired to `handleEditSubmit` too — so every edit-submit-via-Enter invokes the handler a
+  second time against the same (stale, closed-over) `editedVal`/`ingredient`. Confirmed with a Vitest
+  assertion (`toHaveBeenCalledTimes`) against `RecipeAPI.getIngredientData`/`toast.error` in
+  `src/test/IngredientItemEdit.test.tsx` — the existing "successful edit" test double-calls
+  `getIngredientData` once that assertion is added. Harmless-looking today only because the second call
+  re-submits the identical value (same enrichment result lands twice) and `toast.error` just fires twice —
+  but it's a real double side-effect (double paid Spoonacular lookup via the parse proxy) on every inline
+  edit. **Fix:** don't call `handleEditSubmit` from both `onEnter` and the trailing `blur()` — e.g. skip the
+  blur-triggered resubmission with a ref-guard, or blur without triggering `onBlur` (`blur()` after clearing
+  the `onBlur` prop, or restructure so Enter itself blurs and only `onBlur` submits). Low severity (masked by
+  idempotent-looking resubmission today) but burns real proxy quota — worth closing without a dedicated lane.
 - `[ ]` **Legacy rating docs are mistyped — "Top" review sort interleaves wrong** *(filed 2026-07-09, out of
   the §D overhaul)* — old `ratings` docs store `rating` as **stringified numbers** (`"5"`) and
   `reviewCreatedAt` as stringified epoch-ms, while post-#266 writes store floats; review-only docs are
