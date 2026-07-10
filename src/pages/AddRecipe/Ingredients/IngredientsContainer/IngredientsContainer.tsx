@@ -1,4 +1,4 @@
-import React, { FC, useCallback, useState } from 'react'
+import React, { FC, useCallback } from 'react'
 import { parseIngredientString } from '@jclind/ingredient-parser'
 import { v4 as uuidv4 } from 'uuid'
 import { toast } from 'react-hot-toast'
@@ -9,6 +9,7 @@ import IngredientList from 'src/pages/AddRecipe/Ingredients/IngredientList/Ingre
 import IngredientsInput from 'src/pages/AddRecipe/Ingredients/IngredientsInput'
 import {
   IngredientEnrichTimeoutError,
+  IngredientStatus,
   withTimeout,
 } from 'src/pages/AddRecipe/Ingredients/ingredientEnrichment'
 import './IngredientsContainer.scss'
@@ -16,38 +17,19 @@ import './IngredientsContainer.scss'
 type IngredientsContainerProps = {
   ingredients: IngredientsType[]
   setIngredients: React.Dispatch<React.SetStateAction<IngredientsType[]>>
+  // Per-row enrichment state, owned by useRecipeForm (see IngredientStatus in
+  // ingredientEnrichment.ts) so the form can gate submission while any row's
+  // lookup is still in flight.
+  statusById: Record<string, IngredientStatus>
+  setItemStatus: (id: string, status: IngredientStatus | null) => void
 }
-
-// Per-row enrichment state, keyed by ingredient id (not list index, so it
-// survives reorders and concurrent adds): 'loading' while the nutrition/price
-// lookup is in flight, 'error' when it failed or timed out. Rows absent from the
-// map are settled. A short label string keeps the row's display name available
-// for the failure toast even after the input has been cleared.
-export type IngredientStatus = 'loading' | 'error'
 
 const IngredientsContainer: FC<IngredientsContainerProps> = ({
   ingredients,
   setIngredients,
+  statusById,
+  setItemStatus,
 }) => {
-  const [statusById, setStatusById] = useState<Record<string, IngredientStatus>>(
-    {}
-  )
-
-  const setItemStatus = useCallback(
-    (id: string, status: IngredientStatus | null) => {
-      setStatusById(prev => {
-        if (status === null) {
-          if (!(id in prev)) return prev
-          const next = { ...prev }
-          delete next[id]
-          return next
-        }
-        return { ...prev, [id]: status }
-      })
-    },
-    []
-  )
-
   // Enrich a parsed ingredient already in the list (by id) and reconcile it in
   // place. Shared by the optimistic add path and the per-row retry. The id is
   // preserved across reconciliation so the row's React/DnD key — and its

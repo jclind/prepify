@@ -7,6 +7,8 @@ import RecipeAPI from 'src/api/recipes'
 import { toast } from 'react-hot-toast'
 import {
   IngredientEnrichTimeoutError,
+  IngredientStatus,
+  withIngredientStatus,
   withTimeout,
 } from 'src/pages/AddRecipe/Ingredients/ingredientEnrichment'
 
@@ -91,12 +93,21 @@ const errorVariant = (original: string) => ({
   id: 'server-id',
 })
 
+// Mirrors the real wiring: the enrichment-status map is owned by useRecipeForm
+// and passed down, so the wrapper hosts it the same way.
 const Wrapper = () => {
   const [ingredients, setIngredients] = useState<any[]>([])
+  const [statusById, setStatusById] = useState<Record<string, IngredientStatus>>(
+    {}
+  )
   return (
     <IngredientsContainer
       ingredients={ingredients}
       setIngredients={setIngredients}
+      statusById={statusById}
+      setItemStatus={(id, status) =>
+        setStatusById(prev => withIngredientStatus(prev, id, status))
+      }
     />
   )
 }

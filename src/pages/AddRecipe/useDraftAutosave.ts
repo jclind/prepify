@@ -10,6 +10,31 @@ export type DraftStatus = 'idle' | 'saving' | 'saved' | 'error'
 // lost if the tab is closed soon after.
 const AUTOSAVE_DELAY = 1500
 
+// Whether the form holds anything worth persisting as a brand-new draft: any
+// content field differing from its fresh-form default. Used as the autosave
+// `canCreate` gate — an all-default form never creates a draft (no throwaway
+// drafts from landing on the page), but any real entry does, title or not.
+// Previously the gate was title-only, which silently lost pre-title work
+// (ingredients/description/etc. entered before naming the recipe were never
+// autosaved); the Drafts UI already renders title-less drafts as
+// "Untitled draft".
+export function hasDraftableContent(content: RecipeDraftContent): boolean {
+  return !!(
+    content.title?.trim() ||
+    content.description?.trim() ||
+    content.servings != null ||
+    content.prepTime != null ||
+    content.cookTime != null ||
+    content.fridgeLife ||
+    content.freezerLife ||
+    content.ingredients?.length ||
+    content.instructions?.length ||
+    content.cuisine ||
+    content.mealTypes?.length ||
+    content.nutritionLabels?.length
+  )
+}
+
 // The server rejects a new draft past the per-user cap with a 409 + this code.
 function isDraftLimitError(err: unknown): boolean {
   return (

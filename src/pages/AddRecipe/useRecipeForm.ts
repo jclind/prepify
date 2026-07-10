@@ -23,7 +23,15 @@ import { hrMinToMin } from 'src/util/hrMinToMin'
 import { minToHrMin } from 'src/util/minToHrMin'
 import RecipeAPI from 'src/api/recipes'
 import DraftAPI from 'src/api/drafts'
-import { useDraftAutosave, DraftStatus } from 'src/pages/AddRecipe/useDraftAutosave'
+import {
+  useDraftAutosave,
+  hasDraftableContent,
+  DraftStatus,
+} from 'src/pages/AddRecipe/useDraftAutosave'
+import {
+  IngredientStatus,
+  withIngredientStatus,
+} from 'src/pages/AddRecipe/Ingredients/ingredientEnrichment'
 import {
   validateRecipeForm,
   isRecipeFormValid,
@@ -194,6 +202,25 @@ export function useRecipeForm(initialRecipe?: RecipeType) {
   const [isFormValid, setIsFormValid] = useState(false)
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false)
 
+  // Per-row ingredient enrichment status, lifted here (rather than living in
+  // IngredientsContainer) so submission can be gated while any row's
+  // nutrition/price lookup is still in flight — a submit inside that window
+  // would persist the ingredient as ingredientData:null forever and understate
+  // the stored serving price.
+  const [ingredientStatusById, setIngredientStatusById] = useState<
+    Record<string, IngredientStatus>
+  >({})
+  const setIngredientStatus = useMemo(
+    () => (id: string, status: IngredientStatus | null) =>
+      setIngredientStatusById(prev => withIngredientStatus(prev, id, status)),
+    []
+  )
+  // Only rows still in the list count — a stale map entry for a removed row
+  // must not wedge the form.
+  const enrichmentPending = ingredients.some(
+    ingr => ingredientStatusById[ingr.id] === 'loading'
+  )
+
   const navigate = useNavigate()
   const queryClient = useQueryClient()
 
@@ -316,10 +343,11 @@ export function useRecipeForm(initialRecipe?: RecipeType) {
     ]
   )
 
-  // A brand-new draft is only created once the recipe has a title. This gates
-  // out throwaway drafts from a stray keystroke (keeping the Drafts list and the
-  // per-user draft count clean); updating an existing draft is unaffected.
-  const canCreateDraft = !!title.trim()
+  // A brand-new draft is created once the form holds any real content, not just
+  // a title (see hasDraftableContent). An all-default form still never creates
+  // one, keeping the Drafts list and the per-user draft count clean; updating
+  // an existing draft is unaffected.
+  const canCreateDraft = hasDraftableContent(draftContent)
 
   const { status: draftStatus, clearDraft } = useDraftAutosave({
     content: draftContent,
@@ -358,6 +386,7 @@ export function useRecipeForm(initialRecipe?: RecipeType) {
       ingredients,
       instructions,
       mealTypes,
+      ingredientsPending: enrichmentPending,
     })
     assignErrors && setErrors(newErrors)
     return isRecipeFormValid(newErrors)
@@ -381,12 +410,21 @@ export function useRecipeForm(initialRecipe?: RecipeType) {
     instructions,
     mealTypes,
     hasAttemptedSubmit,
+    enrichmentPending,
   ])
 
   const handleSubmit = async () => {
     if (addRecipeLoading) return
     setHasAttemptedSubmit(true)
     if (!validate(true)) {
+      // The pending-enrichment block self-resolves (bounded by the enrichment
+      // timeout), so tell the user to wait rather than leaving them hunting for
+      // a field to fix. The field error still renders for context.
+      if (enrichmentPending) {
+        toast('Ingredient details are still loading — one moment.', {
+          icon: '⏳',
+        })
+      }
       addRecipeFormRef?.current && addRecipeFormRef.current.scrollTo(0, 0)
       return
     }
@@ -489,6 +527,8 @@ export function useRecipeForm(initialRecipe?: RecipeType) {
     // status / derived
     errors,
     isFormValid,
+    ingredientStatusById,
+    setIngredientStatus,
     addRecipeLoading,
     loadingProgress,
     setLoadingProgress,

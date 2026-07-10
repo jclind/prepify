@@ -8,13 +8,16 @@ import { MemoryRouter } from 'react-router-dom'
 import AddRecipe from 'src/pages/AddRecipe/AddRecipe'
 import RecipeAPI from 'src/api/recipes'
 
-const { navigateFn, toastSuccess, toastError, toastBase } = vi.hoisted(() => ({
-  navigateFn: vi.fn(),
-  toastSuccess: vi.fn(),
-  toastError: vi.fn(),
-  // The base callable toast() — used for the neutral "pending review" notice.
-  toastBase: vi.fn(),
-}))
+const { navigateFn, toastSuccess, toastError, toastBase, draftCreate } =
+  vi.hoisted(() => ({
+    navigateFn: vi.fn(),
+    toastSuccess: vi.fn(),
+    toastError: vi.fn(),
+    // The base callable toast() — used for the neutral "pending review" and
+    // "ingredients still loading" notices.
+    toastBase: vi.fn(),
+    draftCreate: vi.fn(),
+  }))
 
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual<typeof import('react-router-dom')>(
@@ -35,6 +38,20 @@ vi.mock('src/api/recipes', () => ({
 
 vi.mock('src/api/auth', () => ({
   default: { getUID: vi.fn().mockReturnValue(null) },
+}))
+
+// Draft autosave hits this API through useDraftAutosave; mocked so the D3
+// tests can assert when a draft is (not) created. Everything resolves null,
+// matching the real client's unauthenticated no-op.
+vi.mock('src/api/drafts', () => ({
+  default: {
+    createDraft: draftCreate,
+    updateDraft: vi.fn().mockResolvedValue(null),
+    deleteDraft: vi.fn().mockResolvedValue(undefined),
+    getDraft: vi.fn().mockResolvedValue(null),
+    listDrafts: vi.fn().mockResolvedValue([]),
+  },
+  DRAFT_LIMIT_CODE: 'DRAFT_LIMIT',
 }))
 
 vi.mock('react-top-loading-bar', () => ({ default: () => null }))
@@ -77,27 +94,50 @@ vi.mock('src/pages/AddRecipe/CuisineSelector/CuisineSelector', () => ({
 }))
 
 vi.mock('src/pages/AddRecipe/Ingredients/IngredientsContainer/IngredientsContainer', () => ({
-  default: ({ setIngredients }: any) => (
-    <button
-      data-testid='add-ingredient'
-      onClick={() =>
-        setIngredients([
-          {
-            id: 'ingr-1',
-            parsedIngredient: {
-              ingredient: 'Flour',
-              quantity: 2,
-              unit: 'cups',
-              comment: null,
-              originalIngredientString: '2 cups Flour',
+  default: ({ setIngredients, setItemStatus }: any) => (
+    <>
+      <button
+        data-testid='add-ingredient'
+        onClick={() =>
+          setIngredients([
+            {
+              id: 'ingr-1',
+              parsedIngredient: {
+                ingredient: 'Flour',
+                quantity: 2,
+                unit: 'cups',
+                comment: null,
+                originalIngredientString: '2 cups Flour',
+              },
+              ingredientData: null,
             },
-            ingredientData: null,
-          },
-        ])
-      }
-    >
-      Add Ingredient
-    </button>
+          ])
+        }
+      >
+        Add Ingredient
+      </button>
+      {/* Drive the lifted enrichment-status map the way the real container
+          does: loading while a lookup is in flight, error on a settled
+          failure, null once settled clean. */}
+      <button
+        data-testid='ingredient-loading'
+        onClick={() => setItemStatus('ingr-1', 'loading')}
+      >
+        Start Lookup
+      </button>
+      <button
+        data-testid='ingredient-errored'
+        onClick={() => setItemStatus('ingr-1', 'error')}
+      >
+        Fail Lookup
+      </button>
+      <button
+        data-testid='ingredient-settled'
+        onClick={() => setItemStatus('ingr-1', null)}
+      >
+        Settle Lookup
+      </button>
+    </>
   ),
 }))
 
@@ -171,6 +211,8 @@ describe('AddRecipe form', () => {
     toastSuccess.mockReset()
     toastError.mockReset()
     toastBase.mockReset()
+    draftCreate.mockReset()
+    draftCreate.mockResolvedValue(null)
   })
 
   it('submit button has the "invalid" CSS class on initial empty render', () => {
@@ -562,6 +604,95 @@ describe('AddRecipe form', () => {
         expect(screen.getByText('Create Recipe').closest('button')).toHaveClass('valid')
       )
       expect(screen.queryByText('Prep time is required')).toBeNull()
+    })
+  })
+
+  describe('submit gate while ingredient enrichment is in flight (bug-hunt M3)', () => {
+    it('blocks submission while a row is loading, then clears and submits once settled', async () => {
+      const user = userEvent.setup()
+      mockAddRecipe.mockResolvedValue({ status: 'success', id: 'new-1', pendingReview: false })
+      renderAddRecipe()
+      await fillAllFields(user)
+      await user.click(screen.getByTestId('ingredient-loading'))
+
+      // Submitting mid-enrichment must not persist the recipe (it would store
+      // ingredientData:null and understate the serving price forever).
+      await user.click(screen.getByText('Create Recipe'))
+      expect(mockAddRecipe).not.toHaveBeenCalled()
+      expect(
+        screen.getByText(/ingredient details are still loading/i)
+      ).toBeInTheDocument()
+      // The block is transient, so the user is told to wait (neutral toast, not
+      // an error).
+      expect(toastBase).toHaveBeenCalledTimes(1)
+      expect(toastBase.mock.calls[0][0]).toMatch(/still loading/i)
+
+      // Enrichment settles → the field error clears reactively, no resubmit.
+      await user.click(screen.getByTestId('ingredient-settled'))
+      await waitFor(() =>
+        expect(
+          screen.queryByText(/ingredient details are still loading/i)
+        ).toBeNull()
+      )
+      await user.click(screen.getByText('Create Recipe'))
+      await waitFor(() => expect(mockAddRecipe).toHaveBeenCalledTimes(1))
+    })
+
+    it('does not block on a row that settled as errored (informed degradation)', async () => {
+      const user = userEvent.setup()
+      mockAddRecipe.mockResolvedValue({ status: 'success', id: 'new-1', pendingReview: false })
+      renderAddRecipe()
+      await fillAllFields(user)
+      // The row failed enrichment: the user has been told (row error + retry
+      // affordance) and may still publish without price data.
+      await user.click(screen.getByTestId('ingredient-errored'))
+      await user.click(screen.getByText('Create Recipe'))
+      await waitFor(() => expect(mockAddRecipe).toHaveBeenCalledTimes(1))
+    })
+
+    it('keeps the submit button invalid-styled while a lookup is in flight', async () => {
+      const user = userEvent.setup()
+      renderAddRecipe()
+      await fillAllFields(user)
+      const submitBtn = screen.getByText('Create Recipe').closest('button')!
+      await waitFor(() => expect(submitBtn).toHaveClass('valid'))
+      await user.click(screen.getByTestId('ingredient-loading'))
+      await waitFor(() => expect(submitBtn).toHaveClass('invalid'))
+      await user.click(screen.getByTestId('ingredient-settled'))
+      await waitFor(() => expect(submitBtn).toHaveClass('valid'))
+    })
+  })
+
+  describe('draft autosave gate (bug-hunt D3)', () => {
+    it('creates a draft for pre-title content when leaving the page', async () => {
+      const user = userEvent.setup()
+      const { unmount } = renderAddRecipe()
+      // Substantial content, no title — previously never autosaved (the create
+      // gate was title-only), so a refresh/navigation lost all of it.
+      await user.type(
+        screen.getByPlaceholderText('Add a description to your recipe'),
+        'Slow-simmered tomato base'
+      )
+      await user.click(screen.getByTestId('add-ingredient'))
+      // Navigating away fires the unmount flush, which must now persist it.
+      // (Asserted via lastCall, not a count — on a slow run the 1.5s debounce
+      // can legitimately fire once before the unmount flush does.)
+      unmount()
+      expect(draftCreate).toHaveBeenCalled()
+      const saved = draftCreate.mock.lastCall![0]
+      expect(saved).toEqual(
+        expect.objectContaining({
+          title: '',
+          description: 'Slow-simmered tomato base',
+        })
+      )
+      expect(saved.ingredients).toHaveLength(1)
+    })
+
+    it('never creates a draft from an untouched form', async () => {
+      const { unmount } = renderAddRecipe()
+      unmount()
+      expect(draftCreate).not.toHaveBeenCalled()
     })
   })
 })

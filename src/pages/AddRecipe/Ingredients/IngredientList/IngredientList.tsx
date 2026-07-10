@@ -2,7 +2,7 @@ import React, { Dispatch, FC, SetStateAction } from 'react'
 import { IngredientsType } from 'types'
 import { DndContext, Drag } from 'src/pages/AddRecipe/Dnd'
 import IngredientItem from 'src/pages/AddRecipe/Ingredients/IngredientItem'
-import { IngredientStatus } from 'src/pages/AddRecipe/Ingredients/IngredientsContainer/IngredientsContainer'
+import { IngredientStatus } from 'src/pages/AddRecipe/Ingredients/ingredientEnrichment'
 import './IngredientList.scss'
 
 type IngredientListProps = {

@@ -25,6 +25,11 @@ export type ValidatableRecipeForm = {
   ingredients: IngredientsType[]
   instructions: InstructionsType[]
   mealTypes: string[]
+  // True while any ingredient row's nutrition/price lookup is still in flight.
+  // Not a form value — it gates submission so a recipe can't be persisted with
+  // ingredientData:null and an understated serving price. Optional so callers
+  // validating pure form values (tests, future consumers) can omit it.
+  ingredientsPending?: boolean
 }
 
 // Pure validation: derive the field-error map from the current form values.
@@ -68,6 +73,13 @@ export function validateRecipeForm(
     errors.ingredients = 'Recipe must contain ingredients'
   } else if (form.ingredients.length > MAX_INGREDIENTS) {
     errors.ingredients = `A recipe cannot have more than ${MAX_INGREDIENTS} ingredients`
+  } else if (form.ingredientsPending) {
+    // In-flight lookups settle on their own (bounded by the enrichment
+    // timeout), so this error clears reactively without user action. Rows that
+    // already settled as errored don't block — the user was told and may
+    // publish without the price data.
+    errors.ingredients =
+      'Ingredient details are still loading — one moment before publishing'
   }
 
   if (form.instructions.length <= 0) {
