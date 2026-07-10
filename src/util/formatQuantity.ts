@@ -64,7 +64,10 @@ export const formatIngredientQuantity = (
   if (minQty != null && maxQty != null && maxQty > minQty) {
     return `${closestFraction(minQty)}–${closestFraction(maxQty)}`
   }
-  if (quantity != null) {
+  // Falsy quantity (null or 0) means "no numeric amount" — e.g. the parser
+  // returns 0 for "salt, to taste". Matches the truthiness guard every renderer
+  // used before this helper, so those rows show just the name, not "0".
+  if (quantity) {
     return closestFraction(quantity)
   }
   return ''

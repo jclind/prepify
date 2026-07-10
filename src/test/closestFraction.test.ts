@@ -77,5 +77,8 @@ describe('formatIngredientQuantity', () => {
   it('returns an empty string when there is no numeric amount', () => {
     expect(formatIngredientQuantity(null, null, null)).toBe('')
     expect(formatIngredientQuantity(null)).toBe('')
+    // The parser returns 0 for "salt, to taste" — render just the name, not "0".
+    expect(formatIngredientQuantity(0, 0, 0)).toBe('')
+    expect(formatIngredientQuantity(0)).toBe('')
   })
 })
