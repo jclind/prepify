@@ -308,6 +308,14 @@ describe('GET /getPublicProfileRecipes', () => {
     expect(res.body.recipes).toHaveLength(12)
   })
 
+  it('treats a negative recipesPerPage as a clean request (no negative skip / 500)', async () => {
+    await seedManyRecipes(3)
+    const res = await request(app).get(
+      '/api/getPublicProfileRecipes?username=CoolUser&page=1&recipesPerPage=-5'
+    )
+    expect(res.status).toBe(200)
+  })
+
   it('excludes held / hidden recipes from both the page and the total', async () => {
     await seedUser(PUB_UID, 'CoolUser')
     await seedRecipes([

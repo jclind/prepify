@@ -37,7 +37,7 @@ const UserRecipeThumbnail: FC<UserRecipeThumbnailType> = ({
   const isLoading = loading || !recipe
   const createdDate = recipe ? formatDate(recipe.createdAt) : null
   const price =
-    recipe && recipe.servingPrice != null
+    recipe && recipe.servingPrice != null && recipe.servingPrice > 0
       ? formatPrice(recipe.servingPrice)
       : null
 

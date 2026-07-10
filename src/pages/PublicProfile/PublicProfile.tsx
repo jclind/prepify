@@ -365,7 +365,7 @@ const PublicProfile: FC = () => {
               {shownRecipes.map(recipe => {
                 const rated = recipe.rating.rateCount > 0
                 const cost =
-                  recipe.servingPrice != null
+                  recipe.servingPrice != null && recipe.servingPrice > 0
                     ? formatPrice(recipe.servingPrice)
                     : null
                 return (

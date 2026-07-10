@@ -127,6 +127,9 @@ async function enrichUsers(db, usernameDocs) {
       status: 'open',
       $or: [
         { reportedUsername: { $in: usernames } },
+        // Snapshotted target uid (D1) catches 'user' and 'review' reports even if
+        // the stored handle is stale/mis-cased after a rename.
+        { reportedUid: { $in: uids } },
         { recipeId: { $in: recipeIds } },
       ],
     })
@@ -134,10 +137,14 @@ async function enrichUsers(db, usernameDocs) {
   const openReportsByUid = {}
   const uidByUsername = Object.fromEntries(usernameDocs.map((d) => [d.username, d._id]))
   openReportDocs.forEach((rep) => {
+    // recipe reports resolve the reported user via the recipe owner; 'user' and
+    // 'review' reports name a user directly — prefer the snapshotted reportedUid
+    // (D1), falling back to the handle for pre-D1 rows. The old code sent 'user'
+    // reports (which have no recipeId) down the recipe branch, dropping them.
     const uid =
-      rep.targetType === 'review'
-        ? uidByUsername[rep.reportedUsername]
-        : ownerByRecipeId[String(rep.recipeId)]
+      rep.targetType === 'recipe'
+        ? ownerByRecipeId[String(rep.recipeId)]
+        : rep.reportedUid || uidByUsername[rep.reportedUsername]
     if (uid) openReportsByUid[uid] = (openReportsByUid[uid] || 0) + 1
   })
 

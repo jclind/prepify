@@ -148,10 +148,12 @@ router.get('/getPublicProfileRecipes', asyncHandler(async (req, res) => {
   // Floor at 0 so a negative ?page never produces a negative .skip() (which
   // MongoDB rejects, surfacing as a 500 instead of a clean first page).
   const pageNum = Math.max(0, parseInt(req.query.page) || 0)
-  // Clamp to PROFILE_RECIPE_LIMIT so a client can't request an oversized page
-  // (and so pages stay aligned with the profile payload's initial batch).
+  // Clamp to [1, PROFILE_RECIPE_LIMIT] so a client can't request an oversized
+  // page, and — like pageNum above — so a negative recipesPerPage never yields a
+  // negative .skip() (which MongoDB rejects as a 500). The upper Math.min alone
+  // let a negative value through.
   const perPage = Math.min(
-    parseInt(req.query.recipesPerPage) || PROFILE_RECIPE_LIMIT,
+    Math.max(1, parseInt(req.query.recipesPerPage) || PROFILE_RECIPE_LIMIT),
     PROFILE_RECIPE_LIMIT
   )
 

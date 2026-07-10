@@ -27,15 +27,24 @@ const AddToCollectionPopover: FC<Props> = ({
 }) => {
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
   const [newName, setNewName] = useState('')
   const [busy, setBusy] = useState(false)
 
-  // Load the recipe's current membership so the right boxes start checked.
+  // Load the recipe's current membership so the right boxes start checked. If
+  // this fails we MUST NOT fall through to an empty baseline with interactive
+  // boxes: persist() sends the full membership set, so the first toggle from an
+  // empty Set would silently wipe every collection the recipe is actually in.
+  // Surface the error and block toggling instead.
   useEffect(() => {
     let active = true
+    setLoadError(false)
     RecipeAPI.getSavedRecipe(recipeId)
       .then(entry => {
         if (active) setSelected(new Set(entry?.collectionIds ?? []))
+      })
+      .catch(() => {
+        if (active) setLoadError(true)
       })
       .finally(() => {
         if (active) setLoading(false)
@@ -121,6 +130,10 @@ const AddToCollectionPopover: FC<Props> = ({
       <div className='collection-options'>
         {loading ? (
           <div className='popover-empty'>Loading…</div>
+        ) : loadError ? (
+          <div className='popover-empty'>
+            Couldn’t load this recipe’s collections. Close and reopen to try again.
+          </div>
         ) : collections.length === 0 ? (
           <div className='popover-empty'>No collections yet — create one below.</div>
         ) : (

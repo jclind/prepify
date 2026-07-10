@@ -116,6 +116,12 @@ router.post('/reports', verifyToken, requireActive, reportLimiter, asyncHandler(
   // self-reports, and snapshot the stable uid (D1) so the report survives a
   // rename. The handle is still stored for display in the queue.
   let reportedUid = null
+  // Store the CANONICAL handle, not the caller's raw casing. The lookup below is
+  // case-insensitive, but rename propagation (auth.js) and the admin openReports
+  // tally match reportedUsername case-sensitively, so persisting a mis-cased
+  // handle would detach the report from both. Fall back to the raw input only
+  // when no account matched (review reports tolerate a null lookup).
+  let reportedCanonicalUsername = reportedUsername
   if (namesUser(targetType)) {
     const reportedDoc = await db
       .collection('usernames')
@@ -127,6 +133,7 @@ router.post('/reports', verifyToken, requireActive, reportLimiter, asyncHandler(
       return res.status(404).json({ error: 'No user with that username exists.' })
     }
     reportedUid = reportedDoc?._id || null
+    if (reportedDoc?.username) reportedCanonicalUsername = reportedDoc.username
     if (reportedUid && reportedUid === req.uid) {
       return res.status(400).json({
         error:
@@ -155,7 +162,9 @@ router.post('/reports', verifyToken, requireActive, reportLimiter, asyncHandler(
     targetType,
     // user reports have no recipe; recipe/review reports always do.
     ...(targetType === 'user' ? {} : { recipeId }),
-    ...(namesUser(targetType) ? { reportedUsername, reportedUid } : {}),
+    ...(namesUser(targetType)
+      ? { reportedUsername: reportedCanonicalUsername, reportedUid }
+      : {}),
     reporterUid: req.uid,
     reason,
     details: details || '',
@@ -311,12 +320,27 @@ router.patch('/reports/:id', verifyToken, requireAdmin, asyncHandler(async (req,
   if (!RESOLUTIONS.includes(status)) {
     return res.status(400).json({ error: "status must be 'resolved' or 'dismissed'" })
   }
+  // Only an OPEN report may be closed. Without this guard a stale admin tab (or a
+  // second admin) could re-close an already-resolved report, overwriting the
+  // original resolvedBy/resolvedAt, writing a duplicate audit row, re-emailing the
+  // reporter, and re-running the automod strand guard (which can republish a
+  // recipe that was re-held after the first close). Matches the bulk + bugReport
+  // routes.
   const updated = await db.collection('reports').findOneAndUpdate(
-    { _id: new ObjectId(req.params.id) },
+    { _id: new ObjectId(req.params.id), status: 'open' },
     { $set: { status, resolvedBy: req.uid, resolvedAt: new Date() } },
     { returnDocument: 'after' }
   )
-  if (!updated) return res.status(404).json({ error: 'Report not found' })
+  if (!updated) {
+    // Distinguish "already closed" (409) from "no such report" (404) so a stale
+    // view gets an actionable conflict rather than a misleading not-found.
+    const exists = await db
+      .collection('reports')
+      .findOne({ _id: new ObjectId(req.params.id) }, { projection: { _id: 1 } })
+    return exists
+      ? res.status(409).json({ code: 'ALREADY_RESOLVED', error: 'Report is already resolved.' })
+      : res.status(404).json({ error: 'Report not found' })
+  }
   await recordAudit(db, {
     action: status === 'resolved' ? 'report.resolve' : 'report.dismiss',
     actorUid: req.uid,
