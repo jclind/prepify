@@ -124,7 +124,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **9** | **B1 · AddRecipe enrichment/draft safety** ⚠ lane | M3 (submit-mid-enrichment persists `ingredientData:null` + understated price) + D3 (pre-title content never autosaved) (BACKLOG Bugs + UX) | `[x]` [#281](https://github.com/jclind/prepify/pull/281) (2026-07-10) | `src/pages/AddRecipe/**` (`useRecipeForm.ts`, `useDraftAutosave.ts`, `IngredientsContainer`) | **merged** — submit gated on in-flight enrichment (reactive clear + ⏳ toast); pre-title content now autosaves; local review closed a draft/edit gate-bypass; three follow-ups filed |
 | **9** | **B2 · pagination re-append dedup** | M8 (`usePaginatedLoadMore` re-appends a page on refetch → duplicate cards) (BACKLOG Bugs) | `[x]` [#283](https://github.com/jclind/prepify/pull/283) (2026-07-10) | `src/pages/Account/usePaginatedLoadMore.ts` | **merged** — isolated; distinct from the #274 error/empty fix |
 | **9** | **B3 · ingredient parse limiter + FE `RATE_LIMITED`** | I1 (30/min limiter < 50-ingredient cap; FE ignores the 429 code → understated price) (BACKLOG Bugs) | `[x]` [#282](https://github.com/jclind/prepify/pull/282) (2026-07-10) | `server/routes/ingredients.js`, `src/api/recipes.ts` | **merged** — local review closed the edit-path test gap; one unrelated double-submit bug filed, not fixed |
-| **9** | **B4 · quantity display (fractions + ranges)** | I2 (`closestFraction` never rounds up past 7/8) + I3 (ranges flattened to low end) (BACKLOG UX) | `[P]` [#284](https://github.com/jclind/prepify/pull/284) (2026-07-10) | `src/util/formatQuantity.ts`, `SingleRecipe.tsx`, `PrintableRecipe.tsx`, `IngredientItemText.tsx`, `updateIngredients.ts` | one quantity-rendering lane; SingleRecipe.tsx overlaps nothing else this wave |
+| **9** | **B4 · quantity display (fractions + ranges)** | I2 (`closestFraction` never rounds up past 7/8) + I3 (ranges flattened to low end) (BACKLOG UX) | `[x]` [#284](https://github.com/jclind/prepify/pull/284) (2026-07-10) | `src/util/formatQuantity.ts`, `SingleRecipe.tsx`, `PrintableRecipe.tsx`, `IngredientItemText.tsx`, `updateIngredients.ts` | **merged** |
 | **9** | **B5 · draft PUT concurrency guard** | D2 (full-`$set` PUT, no version precondition → two-tab clobber) (BACKLOG Bugs) | `[~]` `worktree-feat+b5-draft-put-concurrency-guard` (2026-07-10) | `server/routes/drafts.js` | isolated |
 | **9** | **B6 · account-counts badge parity** | recipes/ratings tab badges use raw counts vs their filtered lists (BACKLOG Tech debt) | `[~]` `worktree-feat+b6-account-counts-badge-parity` (2026-07-10) | `server/util/accountCounts.js` | **dep:** land after [#279](https://github.com/jclind/prepify/pull/279) (rewrites this file; adds the `saved` filter B6 mirrors) — **dep satisfied**, #279 merged |
 | **—** | **Deferred / post-1.0 / owner** | see [that section](#deferred--post-10--owner-off-the-active-board) | `[blocked]`/`[dropped]` | — | prerendering, Edamam, theming, brand-orange, DB relocation, ideas |
@@ -2164,3 +2164,18 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   to match. Dependency on [#279](https://github.com/jclind/prepify/pull/279) (rewrote this file, added the
   `saved` filter this mirrors) is satisfied — confirmed merged. Verified no existing B6 branch/worktree and
   `development` in sync with origin before claiming. Worktree not yet created.
+- **2026-07-10** — **B4 merged** ([#284](https://github.com/jclind/prepify/pull/284), merge `05659be`). Both
+  quantity-rendering bugs from the bug hunt shipped. **I2** — `closestFraction` now rolls a remainder over to
+  the next whole number when it's at least as close to 1 as to the nearest table fraction (0.9375 ties up), so
+  `0.95`→"1", `1.96`→"2" instead of snapping to "7/8"; sub-threshold `1.9`→"1 7/8" unchanged. **I3** — added
+  `formatIngredientQuantity()` as the single display entry point (renders `min–max` when a distinct upper
+  bound was captured, else the single quantity, else '') and routed SingleRecipe, PrintableRecipe, and the
+  add-recipe row through it; `updateIngredients` scales `minQty`/`maxQty` alongside `quantity` so a range
+  rescales with servings (2–3 → 4–6). Folded in during review: (a) `formatIngredientQuantity` renders '' for a
+  falsy (0/null) quantity, matching the prior truthiness guards — caught by /verify as a "0 salt" regression
+  before merge; (b) a narrow range whose bounds round to the same fraction collapses to the single value
+  instead of reading "1–1". Verified: gates green (`tsc`, Vitest, build) + runtime-verified headless against
+  the dev client+API (ranges, rollover boundary both sides, servings rescale, zero-quantity rows). Left two
+  labeled dev test recipes (consistent with the existing add-recipe smoke tool). No follow-ups filed;
+  `closestFraction` snapping tiny above-whole decimals up to 1/8 (`2.03`→"2 1/8") is pre-existing and out of
+  scope.
