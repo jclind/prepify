@@ -126,7 +126,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **9** | **B3 · ingredient parse limiter + FE `RATE_LIMITED`** | I1 (30/min limiter < 50-ingredient cap; FE ignores the 429 code → understated price) (BACKLOG Bugs) | `[x]` [#282](https://github.com/jclind/prepify/pull/282) (2026-07-10) | `server/routes/ingredients.js`, `src/api/recipes.ts` | **merged** — local review closed the edit-path test gap; one unrelated double-submit bug filed, not fixed |
 | **9** | **B4 · quantity display (fractions + ranges)** | I2 (`closestFraction` never rounds up past 7/8) + I3 (ranges flattened to low end) (BACKLOG UX) | `[P]` [#284](https://github.com/jclind/prepify/pull/284) (2026-07-10) | `src/util/formatQuantity.ts`, `SingleRecipe.tsx`, `PrintableRecipe.tsx`, `IngredientItemText.tsx`, `updateIngredients.ts` | one quantity-rendering lane; SingleRecipe.tsx overlaps nothing else this wave |
 | **9** | **B5 · draft PUT concurrency guard** | D2 (full-`$set` PUT, no version precondition → two-tab clobber) (BACKLOG Bugs) | `[~]` `worktree-feat+b5-draft-put-concurrency-guard` (2026-07-10) | `server/routes/drafts.js` | isolated |
-| **9** | **B6 · account-counts badge parity** | recipes/ratings tab badges use raw counts vs their filtered lists (BACKLOG Tech debt) | `[ ]` | `server/util/accountCounts.js` | **dep:** land after [#279](https://github.com/jclind/prepify/pull/279) (rewrites this file; adds the `saved` filter B6 mirrors) |
+| **9** | **B6 · account-counts badge parity** | recipes/ratings tab badges use raw counts vs their filtered lists (BACKLOG Tech debt) | `[~]` `worktree-feat+b6-account-counts-badge-parity` (2026-07-10) | `server/util/accountCounts.js` | **dep:** land after [#279](https://github.com/jclind/prepify/pull/279) (rewrites this file; adds the `saved` filter B6 mirrors) — **dep satisfied**, #279 merged |
 | **—** | **Deferred / post-1.0 / owner** | see [that section](#deferred--post-10--owner-off-the-active-board) | `[blocked]`/`[dropped]` | — | prerendering, Edamam, theming, brand-orange, DB relocation, ideas |
 
 ---
@@ -2154,3 +2154,13 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   clobber (tab B's stale full body silently erases tab A's ingredient additions) — add a version/timestamp
   guard on the update and surface a conflict response instead of silently overwriting. Verified no existing
   B5 branch/worktree and `development` in sync with origin before claiming. Worktree not yet created.
+- **2026-07-10** — **B6 claimed** (`worktree-feat+b6-account-counts-badge-parity`). Claim recorded directly
+  on `development` (same convention as prior lanes) so concurrent sessions see the lane taken. Scope:
+  `getAccountCountsFor` (`server/util/accountCounts.js`) returns raw `countDocuments` for `recipes` and
+  `ratings`, but their tabs filter the list they sit on — `getCreatedRecipes` (`users.js:80`) applies
+  `RECIPE_OWNER_VISIBLE`, and `getSingleUserReviews` (`reviews.js:321`, `returnRecipeData=true` path) applies
+  `REVIEW_VISIBLE` *and* drops any rating whose recipe isn't `RECIPE_VISIBLE` — so a badge can read higher
+  than its list for a user with hidden/unpublished recipes or hidden-recipe ratings. Fix: filter each count
+  to match. Dependency on [#279](https://github.com/jclind/prepify/pull/279) (rewrote this file, added the
+  `saved` filter this mirrors) is satisfied — confirmed merged. Verified no existing B6 branch/worktree and
+  `development` in sync with origin before claiming. Worktree not yet created.
