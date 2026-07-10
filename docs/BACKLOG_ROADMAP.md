@@ -122,7 +122,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **8** | **X3 · orphaned-image-on-failed-create** | delete the uploaded Storage object when `POST /addRecipe` fails after the image upload (`src/api/recipes.ts`) | `[x]` [#275](https://github.com/jclind/prepify/pull/275) (2026-07-09) | `src/api/recipes.ts` | **merged** — also fixes the same leak on the `editRecipe` new-image path; folded in a `storage.rules` owner-delete grant + IMAGE_PIPELINE.md cutover note |
 | **8** | **X4 · server-Jest flakiness structural fix** | the intermittent server-suite failures (test files/mocks/setup) (BACKLOG Tech debt) | `[x]` [#276](https://github.com/jclind/prepify/pull/276) (2026-07-09) | `server/__tests__/**` + Jest setup | **merged** — five vectors: one run-wide `MongoMemoryReplSet` (globalSetup/teardown + per-file DB drop, suite ~53s→~33s), sticky `asUser`/`asAdmin` replacing one-shot `getAuth` mocks, `testTimeout` 5s→30s + test-path serverSelection 30s, **`__mocks__/supertest.js` shared-server** (dominant vector: one-shot listeners → ETIMEDOUT/phantom-404s), per-worker test DBs (`JEST_WORKER_ID`). 24/24 stress runs green + local review |
 | **9** | **B1 · AddRecipe enrichment/draft safety** ⚠ lane | M3 (submit-mid-enrichment persists `ingredientData:null` + understated price) + D3 (pre-title content never autosaved) (BACKLOG Bugs + UX) | `[~]` `feat/b1-addrecipe-enrichment-draft-safety` (2026-07-10) | `src/pages/AddRecipe/**` (`useRecipeForm.ts`, `useDraftAutosave.ts`, `IngredientsContainer`) | **dep:** rebase onto [#279](https://github.com/jclind/prepify/pull/279) (touched `useRecipeForm.ts`). Both items share the same files → one lane |
-| **9** | **B2 · pagination re-append dedup** | M8 (`usePaginatedLoadMore` re-appends a page on refetch → duplicate cards) (BACKLOG Bugs) | `[~]` `feat/b2-pagination-reappend-dedup` (2026-07-10) | `src/pages/Account/usePaginatedLoadMore.ts` | isolated; distinct from the #274 error/empty fix |
+| **9** | **B2 · pagination re-append dedup** | M8 (`usePaginatedLoadMore` re-appends a page on refetch → duplicate cards) (BACKLOG Bugs) | `[x]` [#283](https://github.com/jclind/prepify/pull/283) (2026-07-10) | `src/pages/Account/usePaginatedLoadMore.ts` | **merged** — isolated; distinct from the #274 error/empty fix |
 | **9** | **B3 · ingredient parse limiter + FE `RATE_LIMITED`** | I1 (30/min limiter < 50-ingredient cap; FE ignores the 429 code → understated price) (BACKLOG Bugs) | `[ ]` | `server/routes/ingredients.js`, `src/api/recipes.ts` | disjoint from other lanes |
 | **9** | **B4 · quantity display (fractions + ranges)** | I2 (`closestFraction` never rounds up past 7/8) + I3 (ranges flattened to low end) (BACKLOG UX) | `[ ]` | `src/util/formatQuantity.ts`, `SingleRecipe.tsx`, `PrintableRecipe.tsx`, `IngredientItemText.tsx`, `updateIngredients.ts` | one quantity-rendering lane; SingleRecipe.tsx overlaps nothing else this wave |
 | **9** | **B5 · draft PUT concurrency guard** | D2 (full-`$set` PUT, no version precondition → two-tab clobber) (BACKLOG Bugs) | `[ ]` | `server/routes/drafts.js` | isolated |
@@ -2015,3 +2015,15 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   #279 (which rewrote `useRecipeForm.ts`) is already merged, so the branch forks from current `development` —
   no rebase pending. Verified `development` in sync with origin (0/0) and no Wave-9 lane in flight before
   claiming. Worktree not yet created.
+- **2026-07-10** — **B2 merged** ([#283](https://github.com/jclind/prepify/pull/283), CI green — Backend/Frontend/
+  E2e/Fallow/Static/GitGuardian all pass) into `development`; worktree torn down. Root cause: the accumulate
+  effect in `usePaginatedLoadMore` keyed purely on the `data` object reference, so a background refetch of the
+  already-loaded page (e.g. react-query's default `refetchOnWindowFocus` firing after a rating changes on a
+  saved recipe) produced a new `data` reference for the same page and got appended again instead of replacing
+  it — duplicate cards, duplicate React keys, inflated `isMore`. Fix tracks the last-merged page + a snapshot of
+  `items` from before it (`mergedPageRef`/`baseItemsRef`); a same-page refetch now replaces that page's slice.
+  Verified beyond the gates (`tsc`, full Vitest 677 green, build): live-reproduced the exact bug against the real
+  dev DB/Firebase auth in a headless browser (loaded page 1, mutated a page-1 recipe's rating, dispatched the
+  `visibilitychange` event react-query's focus manager listens for → 8→10 cards + React duplicate-key warning on
+  the pre-fix hook), then confirmed the identical repro holds clean on the fixed hook (stays at 8, no dupes, no
+  warnings). Test fixtures cleaned up after. First Wave-9 track done.
