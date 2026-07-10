@@ -373,8 +373,8 @@ describe('GET /getCreatedRecipes', () => {
 describe('getAccountCountsFor', () => {
   it("counts a user's ratings by their stable userId (D1)", async () => {
     await seedUser(TEST_UID, 'testuser')
-    await seedRating({ userId: TEST_UID, username: 'testuser', recipeId: 'x', rating: 5 })
     await seedRecipes([{ _id: 'c1', userId: TEST_UID }])
+    await seedRating({ userId: TEST_UID, username: 'testuser', recipeId: 'c1', rating: 5 })
 
     const counts = await getAccountCountsFor(getDB(), TEST_UID)
     expect(counts.ratings).toBe(1)
@@ -477,5 +477,57 @@ describe('GET /getAccountCounts', () => {
     const res = await request(app).get('/api/getAccountCounts').set(AUTH_HEADER)
     expect(res.status).toBe(200)
     expect(res.body.saved).toBe(1)
+  })
+
+  it('excludes hidden/unpublished (but keeps pending_review) recipes from the recipes badge (matches getCreatedRecipes)', async () => {
+    // getCreatedRecipes (the Your-Recipes tab list) filters RECIPE_OWNER_VISIBLE:
+    // takedowns/de-publishes drop, but the owner still sees their own
+    // pending_review recipes — the badge must match exactly.
+    await seedUser(TEST_UID, 'testuser')
+    await seedRecipes([
+      { _id: 'published', userId: TEST_UID },
+      { _id: 'pending', userId: TEST_UID, status: 'pending_review' },
+      { _id: 'hidden', userId: TEST_UID, status: 'hidden' },
+      { _id: 'unpublished', userId: TEST_UID, status: 'unpublished' },
+    ])
+
+    const res = await request(app).get('/api/getAccountCounts').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(res.body.recipes).toBe(2)
+  })
+
+  it('excludes ratings on hidden/unpublished/pending_review recipes from the ratings badge (matches the Ratings tab)', async () => {
+    // getSingleUserReviews's returnRecipeData join drops any rating whose
+    // recipe isn't RECIPE_VISIBLE — the badge must match.
+    await seedUser(TEST_UID, 'testuser')
+    await seedRecipes([
+      { _id: 'vis', userId: 'other' },
+      { _id: 'pending', userId: 'other', status: 'pending_review' },
+      { _id: 'hid', userId: 'other', status: 'hidden' },
+    ])
+    await seedRating({ userId: TEST_UID, username: 'testuser', recipeId: 'vis', rating: 5 })
+    await seedRating({ userId: TEST_UID, username: 'testuser', recipeId: 'pending', rating: 4 })
+    await seedRating({ userId: TEST_UID, username: 'testuser', recipeId: 'hid', rating: 3 })
+
+    const res = await request(app).get('/api/getAccountCounts').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(res.body.ratings).toBe(1)
+  })
+
+  it('excludes moderation-hidden ratings from the ratings badge', async () => {
+    await seedUser(TEST_UID, 'testuser')
+    await seedRecipes([{ _id: 'c1', userId: 'other' }])
+    await seedRating({ userId: TEST_UID, username: 'testuser', recipeId: 'c1', rating: 5 })
+    await seedRating({
+      userId: TEST_UID,
+      username: 'testuser',
+      recipeId: 'c1',
+      rating: 1,
+      moderationHidden: true,
+    })
+
+    const res = await request(app).get('/api/getAccountCounts').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(res.body.ratings).toBe(1)
   })
 })
