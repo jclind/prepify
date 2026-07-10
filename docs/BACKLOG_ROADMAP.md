@@ -121,7 +121,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **8** | **X2 · `RecipeCardType` typing cleanup** | tighten the card-shape typing across `src/types.ts` + `src/api/recipes.ts` (BACKLOG Tech debt) | `[x]` [#273](https://github.com/jclind/prepify/pull/273) (2026-07-09) | `src/types.ts`, `src/api/recipes.ts` | **merged** — three card types mirror the three server projections |
 | **8** | **X3 · orphaned-image-on-failed-create** | delete the uploaded Storage object when `POST /addRecipe` fails after the image upload (`src/api/recipes.ts`) | `[x]` [#275](https://github.com/jclind/prepify/pull/275) (2026-07-09) | `src/api/recipes.ts` | **merged** — also fixes the same leak on the `editRecipe` new-image path; folded in a `storage.rules` owner-delete grant + IMAGE_PIPELINE.md cutover note |
 | **8** | **X4 · server-Jest flakiness structural fix** | the intermittent server-suite failures (test files/mocks/setup) (BACKLOG Tech debt) | `[x]` [#276](https://github.com/jclind/prepify/pull/276) (2026-07-09) | `server/__tests__/**` + Jest setup | **merged** — five vectors: one run-wide `MongoMemoryReplSet` (globalSetup/teardown + per-file DB drop, suite ~53s→~33s), sticky `asUser`/`asAdmin` replacing one-shot `getAuth` mocks, `testTimeout` 5s→30s + test-path serverSelection 30s, **`__mocks__/supertest.js` shared-server** (dominant vector: one-shot listeners → ETIMEDOUT/phantom-404s), per-worker test DBs (`JEST_WORKER_ID`). 24/24 stress runs green + local review |
-| **9** | **B1 · AddRecipe enrichment/draft safety** ⚠ lane | M3 (submit-mid-enrichment persists `ingredientData:null` + understated price) + D3 (pre-title content never autosaved) (BACKLOG Bugs + UX) | `[P]` [#281](https://github.com/jclind/prepify/pull/281) (2026-07-10) | `src/pages/AddRecipe/**` (`useRecipeForm.ts`, `useDraftAutosave.ts`, `IngredientsContainer`) | **dep:** rebase onto [#279](https://github.com/jclind/prepify/pull/279) (touched `useRecipeForm.ts`). Both items share the same files → one lane |
+| **9** | **B1 · AddRecipe enrichment/draft safety** ⚠ lane | M3 (submit-mid-enrichment persists `ingredientData:null` + understated price) + D3 (pre-title content never autosaved) (BACKLOG Bugs + UX) | `[x]` [#281](https://github.com/jclind/prepify/pull/281) (2026-07-10) | `src/pages/AddRecipe/**` (`useRecipeForm.ts`, `useDraftAutosave.ts`, `IngredientsContainer`) | **merged** — submit gated on in-flight enrichment (reactive clear + ⏳ toast); pre-title content now autosaves; local review closed a draft/edit gate-bypass; three follow-ups filed |
 | **9** | **B2 · pagination re-append dedup** | M8 (`usePaginatedLoadMore` re-appends a page on refetch → duplicate cards) (BACKLOG Bugs) | `[x]` [#283](https://github.com/jclind/prepify/pull/283) (2026-07-10) | `src/pages/Account/usePaginatedLoadMore.ts` | **merged** — isolated; distinct from the #274 error/empty fix |
 | **9** | **B3 · ingredient parse limiter + FE `RATE_LIMITED`** | I1 (30/min limiter < 50-ingredient cap; FE ignores the 429 code → understated price) (BACKLOG Bugs) | `[ ]` | `server/routes/ingredients.js`, `src/api/recipes.ts` | disjoint from other lanes |
 | **9** | **B4 · quantity display (fractions + ranges)** | I2 (`closestFraction` never rounds up past 7/8) + I3 (ranges flattened to low end) (BACKLOG UX) | `[~]` `feat/b4-quantity-display-fractions-ranges` (2026-07-10) | `src/util/formatQuantity.ts`, `SingleRecipe.tsx`, `PrintableRecipe.tsx`, `IngredientItemText.tsx`, `updateIngredients.ts` | one quantity-rendering lane; SingleRecipe.tsx overlaps nothing else this wave |
@@ -2065,3 +2065,24 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   `updateIngredients.ts` scales only `quantity`). Both are one quantity-rendering surface → one lane; `SingleRecipe.tsx`
   overlaps nothing else this wave, and the lane is disjoint from the in-flight B1 (AddRecipe hooks/container).
   Verified `development` in sync with origin (0/0) before claiming. Worktree not yet created.
+- **2026-07-10** — **B1 merged** ([#281](https://github.com/jclind/prepify/pull/281), merge commit `a6fa8ef`; CI
+  green — Backend/Frontend/E2e/Fallow/Static/GitGuardian all pass) into `development`; worktree torn down.
+  Rebased onto the B2-merged base first (only the `BACKLOG_ROADMAP.md` board/log chokepoint conflicted — both
+  sides kept — no code conflict, since B2 was pagination-only). **M3:** the per-row enrichment status map, once
+  container-local, is now lifted into `useRecipeForm` and gated through the validator — a submit while any row's
+  lookup is in flight is blocked (`errors.ingredients` + invalid-styled button + a ⏳ toast **only** when pending
+  is the sole blocker), and the block clears **reactively** when enrichment settles (bounded by the 12s timeout);
+  rows that settled *errored* stay publishable (informed-degradation unchanged), so a recipe can no longer persist
+  `ingredientData:null` + an understated `servingPrice`. Edit mode inherits the gate. **D3:** draft creation
+  swapped from title-only (`!!title.trim()`) to `hasDraftableContent()` (a mapped type over
+  `Required<RecipeDraftContent>`, so a future field can't silently fall out of the gate) — any real content now
+  autosaves as an "Untitled draft"; a pristine form still creates nothing. **Local review** (8-angle fan-out)
+  caught + fixed in-lane the draft/edit gate-bypass (resumed/edited rows with null data rendered settled → seed
+  them `error`/retryable on hydration + edit-init, which also heals pre-gate recipes). Verified beyond the gates
+  (tsc, Vitest 691 green, build) with a full runtime drive on the live dev stack (real signup; enrichment held
+  open 8s → submit blocked → self-clear → publish with the enriched row; untitled description-only draft lands
+  in the Drafts tab; mid-enrichment draft resumes with the retry badge, retry heals; sole-blocker toast
+  suppression confirmed as a probe); all test data cleaned up. **Three follow-ups filed to BACKLOG.md, not
+  fixed:** server-side `servingPrice` recompute (out of lane surface, pairs with B3), a `beforeunload`/`pagehide`
+  draft flush (a hard refresh inside the 1.5s debounce still loses edits), and auth-aware copy for the signed-out
+  draft-error badge.
