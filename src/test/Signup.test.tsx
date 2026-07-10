@@ -83,4 +83,26 @@ describe('Signup confirm-password validation', () => {
       expect.any(Function)
     )
   })
+
+  it('renders the friendly error the auth layer reports in the live banner', () => {
+    signUpMock.mockImplementation((_e, _p, _setLoading, setError) =>
+      setError('An account with this email already exists.')
+    )
+    renderSignup()
+    fireEvent.change(screen.getByLabelText('Email'), {
+      target: { value: 'a@b.com' },
+    })
+    fireEvent.change(screen.getByLabelText('Password'), {
+      target: { value: 'abc123' },
+    })
+    fireEvent.change(screen.getByLabelText('Confirm password'), {
+      target: { value: 'abc123' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /create account/i }))
+
+    const error = screen.getByText('An account with this email already exists.')
+    expect(error).toBeInTheDocument()
+    // Announced to assistive tech: the banner sits in the aria-live region.
+    expect(error.closest('[aria-live="polite"]')).not.toBeNull()
+  })
 })

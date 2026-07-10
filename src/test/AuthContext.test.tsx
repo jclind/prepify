@@ -15,6 +15,11 @@ import {
   updateProfile,
   signOut,
   EmailAuthProvider,
+  setPersistence,
+  browserLocalPersistence,
+  browserSessionPersistence,
+  signInWithEmailAndPassword,
+  sendPasswordResetEmail,
 } from 'firebase/auth'
 import { uploadBytes, getDownloadURL } from 'firebase/storage'
 import AuthAPI from 'src/api/auth'
@@ -37,7 +42,11 @@ vi.mock('firebase/auth', () => ({
   signInWithPopup: vi.fn(),
   signInWithEmailAndPassword: vi.fn(),
   createUserWithEmailAndPassword: vi.fn(),
-  sendPasswordResetEmail: vi.fn(),
+  sendPasswordResetEmail: vi.fn().mockResolvedValue(undefined),
+  setPersistence: vi.fn().mockResolvedValue(undefined),
+  // Sentinel values — the provider only passes these through to setPersistence.
+  browserLocalPersistence: { type: 'LOCAL' },
+  browserSessionPersistence: { type: 'SESSION' },
   updateProfile: vi.fn().mockResolvedValue(undefined),
   verifyBeforeUpdateEmail: vi.fn().mockResolvedValue(undefined),
   reauthenticateWithCredential: vi.fn().mockResolvedValue(undefined),
@@ -287,6 +296,91 @@ describe('AuthContext — updateProfileData', () => {
     })
 
     expect(verifyBeforeUpdateEmail).not.toHaveBeenCalled()
+  })
+})
+
+// ─── signInDefault ────────────────────────────────────────────────────────────
+
+describe('AuthContext — signInDefault persistence', () => {
+  beforeEach(() => {
+    ;(signInWithEmailAndPassword as ReturnType<typeof vi.fn>).mockResolvedValue({
+      user: makeUser(),
+    })
+  })
+
+  it('uses session persistence when "remember me" is unchecked', async () => {
+    const result = await mountAuth(makeUser())
+
+    await act(async () => {
+      result.current!.signInDefault(
+        'john@example.com',
+        'hunter2',
+        false,
+        vi.fn(),
+        vi.fn()
+      )
+    })
+
+    // Session persistence: the login is dropped when the tab/window closes.
+    expect(setPersistence).toHaveBeenCalledWith(
+      expect.anything(),
+      browserSessionPersistence
+    )
+    expect(signInWithEmailAndPassword).toHaveBeenCalledWith(
+      expect.anything(),
+      'john@example.com',
+      'hunter2'
+    )
+  })
+
+  it('uses local persistence when "remember me" is checked', async () => {
+    const result = await mountAuth(makeUser())
+
+    await act(async () => {
+      result.current!.signInDefault(
+        'john@example.com',
+        'hunter2',
+        true,
+        vi.fn(),
+        vi.fn()
+      )
+    })
+
+    expect(setPersistence).toHaveBeenCalledWith(
+      expect.anything(),
+      browserLocalPersistence
+    )
+  })
+})
+
+// ─── forgotPassword ───────────────────────────────────────────────────────────
+
+describe('AuthContext — forgotPassword', () => {
+  it('reports success even for an unregistered email (no account enumeration)', async () => {
+    ;(sendPasswordResetEmail as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+      Object.assign(new Error('no user'), { code: 'auth/user-not-found' })
+    )
+    const result = await mountAuth(makeUser())
+    const setLoading = vi.fn()
+    const setSuccess = vi.fn()
+    const setError = vi.fn()
+
+    await act(async () => {
+      result.current!.forgotPassword(
+        'ghost@example.com',
+        setLoading,
+        setSuccess,
+        setError
+      )
+    })
+
+    // A missing account shows the same confirmation as a real one — the error
+    // callback must never fire for auth/user-not-found.
+    expect(setSuccess).toHaveBeenCalledWith(
+      'Email sent! Check your inbox for instructions.'
+    )
+    expect(setError).not.toHaveBeenCalled()
+    expect(setLoading).toHaveBeenLastCalledWith(false)
   })
 })
 

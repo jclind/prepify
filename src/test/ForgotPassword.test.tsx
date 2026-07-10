@@ -54,4 +54,36 @@ describe('ForgotPassword', () => {
       screen.getByText('Email sent! Check your inbox for instructions.')
     ).toBeInTheDocument()
   })
+
+  it('renders the error message the auth layer reports', () => {
+    renderForgot()
+    fireEvent.change(screen.getByLabelText('Email'), {
+      target: { value: 'a@b.com' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /send reset link/i }))
+
+    // 4th arg is the page's setError — drive it the way a failed send would.
+    const setError = forgotPasswordMock.mock.calls[0][3]
+    act(() => setError('Too many attempts. Please try again later.'))
+    const error = screen.getByText('Too many attempts. Please try again later.')
+    expect(error).toBeInTheDocument()
+    expect(error).toHaveClass('error')
+  })
+
+  it('disables the submit button while the request is loading', () => {
+    renderForgot()
+    fireEvent.change(screen.getByLabelText('Email'), {
+      target: { value: 'a@b.com' },
+    })
+    const button = screen.getByRole('button', { name: /send reset link/i })
+    fireEvent.click(button)
+    expect(button).toBeEnabled()
+
+    // 2nd arg is the page's setLoading — while true, re-submits are blocked.
+    const setLoading = forgotPasswordMock.mock.calls[0][1]
+    act(() => setLoading(true))
+    expect(button).toBeDisabled()
+    act(() => setLoading(false))
+    expect(button).toBeEnabled()
+  })
 })

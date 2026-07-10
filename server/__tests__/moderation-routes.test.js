@@ -231,6 +231,24 @@ describe('reviews — high|medium both block', () => {
     expect(res.status).toBe(200)
     expect(await getDB().collection('ratings').countDocuments({ userId: TEST_UID, recipeId: 'r-1' })).toBe(1)
   })
+
+  it('medium edit → 422 and the stored review text is unchanged', async () => {
+    await getDB().collection('ratings').insertOne({
+      userId: TEST_UID,
+      username: 'chef_test',
+      recipeId: 'r-1',
+      rating: 4,
+      reviewText: 'original text',
+      reviewCreatedAt: '1000',
+      reviewLastUpdated: '1000',
+    })
+    moderateText.mockResolvedValue(MEDIUM)
+    const res = await request(app).post('/api/editReview').set(AUTH).send({ recipeId: 'r-1', text: 'borderline edit' })
+    expect(res.status).toBe(422)
+    expect(res.body.code).toBe('CONTENT_BLOCKED')
+    const stored = await getDB().collection('ratings').findOne({ userId: TEST_UID, recipeId: 'r-1' })
+    expect(stored.reviewText).toBe('original text')
+  })
 })
 
 describe('username + profile blocking', () => {

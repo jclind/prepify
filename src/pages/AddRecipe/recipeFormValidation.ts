@@ -52,7 +52,10 @@ export function validateRecipeForm(
     errors.image = 'Image is required'
   }
 
-  if (!form.description) {
+  // Trim before the presence check, same as title: an all-whitespace
+  // description must count as missing, not pass a truthiness test.
+  const trimmedDescription = form.description.trim()
+  if (!trimmedDescription) {
     errors.description = 'Description is required'
   } else if (form.description.length > DESCRIPTION_MAX_LENGTH) {
     errors.description = `Description cannot exceed ${DESCRIPTION_MAX_LENGTH} characters`

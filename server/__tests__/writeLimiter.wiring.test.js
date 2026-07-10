@@ -25,6 +25,8 @@ const authRouter = require('../routes/auth')
 const ingredientsRouter = require('../routes/ingredients')
 const gamificationRouter = require('../routes/gamification')
 const reportsRouter = require('../routes/reports')
+const collectionsRouter = require('../routes/collections')
+const draftsRouter = require('../routes/drafts')
 
 // Ordered handler chain for a single route on a router, or throws if missing.
 const routeHandlers = (router, method, path) => {
@@ -93,4 +95,32 @@ describe('per-surface write limiters are wired onto every moderated write route'
     expect(handlers[1]).toBe(requireActive)
     expect(handlers).toHaveLength(4) // verifyToken, requireActive, reportLimiter, handler
   })
+})
+
+// Same reference-identity pattern for the suspended/banned gate: the 403 behavior
+// is exercised end-to-end on a few surfaces (user-status-enforcement.test.js);
+// this pins that the remaining blocked-user write surfaces actually mount
+// requireActive, after verifyToken (it reads req.uid).
+describe('requireActive is wired onto every blocked-user write surface', () => {
+  const cases = [
+    ['collections', collectionsRouter, 'post', '/collections'],
+    ['collections', collectionsRouter, 'patch', '/collections/:id'],
+    ['collections', collectionsRouter, 'delete', '/collections/:id'],
+    ['collections', collectionsRouter, 'patch', '/recipes/:recipeId/collections'],
+    ['drafts', draftsRouter, 'post', '/'],
+    ['drafts', draftsRouter, 'put', '/:id'],
+    ['recipes', recipesRouter, 'post', '/recipes/:id/save'],
+    ['recipes', recipesRouter, 'delete', '/recipes/:id/save'],
+    ['recipes', recipesRouter, 'post', '/madeRecipe'],
+  ]
+
+  it.each(cases)(
+    '%s %s %s mounts requireActive after verifyToken',
+    (_group, router, method, path) => {
+      const handlers = routeHandlers(router, method, path)
+      expect(handlers).toContain(verifyToken)
+      expect(handlers).toContain(requireActive)
+      expect(handlers.indexOf(verifyToken)).toBeLessThan(handlers.indexOf(requireActive))
+    }
+  )
 })

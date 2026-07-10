@@ -16,6 +16,8 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import MadeRecipeBtn from 'src/pages/SingleRecipe/Buttons/MadeRecipeBtn'
 import RecipeAPI from 'src/api/recipes'
+import toast from 'react-hot-toast'
+import { GENERIC_ERROR } from 'src/util/toastMessages'
 
 vi.mock('src/api/recipes', () => ({
   __esModule: true,
@@ -102,14 +104,37 @@ it('marks the recipe made on click, then disables the button', async () => {
   expect(btn.className).toContain('is-made')
 })
 
-it('does not re-POST when already made (idempotent, no throttle needed)', async () => {
-  mockedCheck.mockResolvedValue({ made: true })
+it('POSTs only once when clicked again while the first call is in-flight', async () => {
+  mockedCheck.mockResolvedValue({ made: false })
+  // Deferred promise: hold the POST open so the second click lands mid-flight.
+  let resolveMade!: () => void
+  mockedMade.mockImplementation(
+    () => new Promise<void>(resolve => (resolveMade = resolve))
+  )
   renderBtn()
   const btn = await screen.findByRole('button', { name: /made it/i })
+  await waitFor(() => expect(btn).not.toBeDisabled())
+
+  fireEvent.click(btn)
+  fireEvent.click(btn)
+  expect(mockedMade).toHaveBeenCalledTimes(1)
+
+  resolveMade()
   await waitFor(() => expect(btn).toBeDisabled())
+  expect(mockedMade).toHaveBeenCalledTimes(1)
+})
+
+it('surfaces a toast and re-enables the button (still unmade) when the POST fails', async () => {
+  mockedCheck.mockResolvedValue({ made: false })
+  mockedMade.mockRejectedValue(new Error('server down'))
+  renderBtn()
+  const btn = await screen.findByRole('button', { name: /made it/i })
+  await waitFor(() => expect(btn).not.toBeDisabled())
 
   fireEvent.click(btn)
-  fireEvent.click(btn)
 
-  expect(mockedMade).not.toHaveBeenCalled()
+  await waitFor(() => expect(toast.error).toHaveBeenCalledWith(GENERIC_ERROR))
+  // The failed mark doesn't stick: the button is actionable again, not made.
+  await waitFor(() => expect(btn).not.toBeDisabled())
+  expect(btn.className).not.toContain('is-made')
 })

@@ -268,7 +268,9 @@ router.get('/getReviews', optionalAuth, asyncHandler(async (req, res) => {
   if (!recipeId || typeof recipeId !== 'string') return res.status(400).json({ error: 'recipeId is required' })
 
   const limit = Math.min(parseInt(reviewsPerPage) || 5, MAX_PER_PAGE)
-  const skip = (parseInt(page) || 0) * limit
+  // Floor at 0 so a negative ?page never produces a negative .skip() (which
+  // MongoDB rejects, surfacing as a 500 instead of a clean first page).
+  const skip = Math.max(0, parseInt(page) || 0) * limit
   // Exclude admin-taken-down reviews from the public list.
   const query = { recipeId, reviewText: { $exists: true, $ne: '' }, ...REVIEW_VISIBLE }
 
@@ -313,7 +315,8 @@ router.get('/getSingleUserReviews', asyncHandler(async (req, res) => {
   if (!ownerDoc) return res.json({ reviews: [], totalCount: 0 })
 
   const limit = Math.min(parseInt(reviewsPerPage) || 5, MAX_PER_PAGE)
-  const skip = (parseInt(page) || 0) * limit
+  // Floor at 0 — see getReviews: negative skip is a MongoDB error (500).
+  const skip = Math.max(0, parseInt(page) || 0) * limit
   // Suppress admin-taken-down reviews from a user's public review list too.
   const query = { userId: ownerDoc._id, ...REVIEW_VISIBLE }
 

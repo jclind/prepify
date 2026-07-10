@@ -99,6 +99,15 @@ describe('Help', () => {
     })
     fireEvent.click(screen.getByRole('button', { name: /send message/i }))
     expect(formspree.submit).toHaveBeenCalled()
+
+    // Formspree reads the named fields off the submitted <form>: the typed
+    // email/message plus the hidden category carrying the chosen topic.
+    const submittedForm = formspree.submit.mock.calls[0][0]
+      .target as HTMLFormElement
+    const data = new FormData(submittedForm)
+    expect(data.get('email')).toBe('visitor@example.com')
+    expect(data.get('description')).toBe('It would be great if…')
+    expect(data.get('category')).toBe('Suggest an idea')
   })
 
   it('pre-fills the email for a signed-in user, but stays empty when logged out', () => {

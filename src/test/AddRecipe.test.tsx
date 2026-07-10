@@ -280,16 +280,37 @@ describe('AddRecipe form', () => {
     await waitFor(() => expect(submitBtn).toHaveClass('valid'))
   })
 
-  it('clicking "Create Recipe" when valid calls RecipeAPI.addRecipe', async () => {
+  it('clicking "Create Recipe" when valid calls RecipeAPI.addRecipe with the mapped payload', async () => {
     const user = userEvent.setup()
     mockAddRecipe.mockResolvedValue({ status: 'success', id: 'new-1', pendingReview: false })
     renderAddRecipe()
     await fillAllFields(user)
+    // Trailing whitespace on the title must be trimmed out of the payload.
+    await user.type(
+      screen.getByPlaceholderText('Add a title to your recipe.'),
+      '   '
+    )
     await waitFor(() =>
       expect(screen.getByText('Create Recipe').closest('button')).toHaveClass('valid')
     )
     await user.click(screen.getByText('Create Recipe'))
     await waitFor(() => expect(mockAddRecipe).toHaveBeenCalledTimes(1))
+
+    // The submit maps form state → API payload (see useRecipeForm.handleSubmit):
+    // trimmed title, numeric servings, prep time flattened to minutes.
+    const payload = mockAddRecipe.mock.calls[0][0]
+    expect(payload).toEqual(
+      expect.objectContaining({
+        title: 'My Great Recipe',
+        description: 'A delicious recipe',
+        servings: 4,
+        prepTime: 30,
+        mealTypes: ['dinner'],
+      })
+    )
+    expect(payload.recipeImage).toBeInstanceOf(File)
+    expect(payload.ingredients).toHaveLength(1)
+    expect(payload.instructions).toHaveLength(1)
   })
 
   it('navigates to the new recipe page after a successful submission', async () => {

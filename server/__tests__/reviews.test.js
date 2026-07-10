@@ -150,6 +150,52 @@ describe('POST /addRating', () => {
     expect(Number.isNaN(recipe.rating.rateValue)).toBe(false)
   })
 
+  // Same-user re-rate is an upsert on the unique (userId, recipeId) key: the
+  // second rating replaces the first — one doc, and the aggregate counts the
+  // user once at the new value. Pins routes/reviews.js:74-91 + util/recipeRating.
+  it('re-rating replaces the previous rating (one doc, aggregate counts the user once)', async () => {
+    const first = await request(app)
+      .post(`/api/addRating?recipeId=${RECIPE_ID}&rating=4`)
+      .set(AUTH_HEADER)
+    expect(first.status).toBe(200)
+    const second = await request(app)
+      .post(`/api/addRating?recipeId=${RECIPE_ID}&rating=5`)
+      .set(AUTH_HEADER)
+    expect(second.status).toBe(200)
+
+    const db = getDB()
+    const docs = await db
+      .collection('ratings')
+      .find({ userId: TEST_UID, recipeId: RECIPE_ID })
+      .toArray()
+    expect(docs).toHaveLength(1)
+    expect(docs[0].rating).toBe(5)
+
+    const recipe = await db.collection('recipes').findOne({ _id: RECIPE_ID })
+    expect(recipe.rating.rateCount).toBe(1)
+    expect(recipe.rating.rateValue).toBe(5)
+    expect(recipe.rating.breakdown[4]).toBe(0)
+    expect(recipe.rating.breakdown[5]).toBe(1)
+  })
+
+  // Mirror of newReview's review-first $setOnInsert test (rating defaulted to
+  // null): a rating-first insert must default the review fields so every ratings
+  // doc has the consistent shape getReviews expects.
+  it('defaults the review fields on a rating-first upsert ($setOnInsert)', async () => {
+    const res = await request(app)
+      .post(`/api/addRating?recipeId=${RECIPE_ID}&rating=4`)
+      .set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+
+    const stored = await getDB()
+      .collection('ratings')
+      .findOne({ userId: TEST_UID, recipeId: RECIPE_ID })
+    expect(stored).toHaveProperty('reviewText', '')
+    expect(stored).toHaveProperty('reviewCreatedAt', '')
+    expect(stored).toHaveProperty('reviewLastUpdated', '')
+    expect(stored.username).toBe(TEST_USERNAME)
+  })
+
   // Bug 2 regression: adding a 5-star can never LOWER a correctly-stored
   // average. Seed an existing 4-star from another user, then add a 5 → the
   // aggregate must rise to 4.5 (count 2), proving the recompute math is sound.
@@ -773,6 +819,49 @@ describe('GET /getReviews', () => {
     expect(res.body.totalCount).toBe(3)
   })
 
+  it('treats a negative page as page 0 (no negative skip / 500)', async () => {
+    await seedRating({
+      username: TEST_USERNAME,
+      recipeId: RECIPE_ID,
+      rating: 5,
+      reviewText: 'First review',
+      reviewCreatedAt: '1000',
+    })
+    await seedRating({
+      username: OTHER_USERNAME,
+      recipeId: RECIPE_ID,
+      rating: 4,
+      reviewText: 'Second review',
+      reviewCreatedAt: '2000',
+    })
+
+    const res = await request(app).get(`/api/getReviews?recipeId=${RECIPE_ID}&page=-1`)
+    expect(res.status).toBe(200)
+    expect(res.body.totalCount).toBe(2)
+    expect(res.body.reviews).toHaveLength(2)
+  })
+
+  it('caps reviewsPerPage at 50 even when a larger page is requested', async () => {
+    const db = getDB()
+    await db.collection('ratings').insertMany(
+      Array.from({ length: 55 }, (_, i) => ({
+        userId: `cap-uid-${i}`,
+        username: `capuser${i}`,
+        recipeId: RECIPE_ID,
+        rating: 3,
+        reviewText: `Review ${i}`,
+        reviewCreatedAt: `${i}`,
+      }))
+    )
+
+    const res = await request(app).get(
+      `/api/getReviews?recipeId=${RECIPE_ID}&page=0&reviewsPerPage=500`
+    )
+    expect(res.status).toBe(200)
+    expect(res.body.reviews).toHaveLength(50)
+    expect(res.body.totalCount).toBe(55)
+  })
+
   // ── avatar + display-name enrichment (§D) ──────────────────────────────────
   describe('reviewer identity enrichment', () => {
     // __setUsers mutates shared mock state; restore the default registry after
@@ -1079,6 +1168,32 @@ describe('GET /getSingleUserReviews', () => {
     expect(res.status).toBe(200)
     expect(res.body.reviews).toHaveLength(2)
     expect(res.body.totalCount).toBe(4)
+  })
+
+  it('treats a negative page as page 0 (no negative skip / 500)', async () => {
+    await seedRating({
+      userId: TEST_UID,
+      username: TEST_USERNAME,
+      recipeId: RECIPE_ID,
+      rating: 5,
+      reviewText: 'A',
+      reviewCreatedAt: '1000',
+    })
+    await seedRating({
+      userId: TEST_UID,
+      username: TEST_USERNAME,
+      recipeId: 'recipe-x',
+      rating: 4,
+      reviewText: 'B',
+      reviewCreatedAt: '2000',
+    })
+
+    const res = await request(app).get(
+      `/api/getSingleUserReviews?username=${TEST_USERNAME}&page=-1`
+    )
+    expect(res.status).toBe(200)
+    expect(res.body.totalCount).toBe(2)
+    expect(res.body.reviews).toHaveLength(2)
   })
 })
 
