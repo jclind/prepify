@@ -125,7 +125,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **9** | **B2 · pagination re-append dedup** | M8 (`usePaginatedLoadMore` re-appends a page on refetch → duplicate cards) (BACKLOG Bugs) | `[x]` [#283](https://github.com/jclind/prepify/pull/283) (2026-07-10) | `src/pages/Account/usePaginatedLoadMore.ts` | **merged** — isolated; distinct from the #274 error/empty fix |
 | **9** | **B3 · ingredient parse limiter + FE `RATE_LIMITED`** | I1 (30/min limiter < 50-ingredient cap; FE ignores the 429 code → understated price) (BACKLOG Bugs) | `[x]` [#282](https://github.com/jclind/prepify/pull/282) (2026-07-10) | `server/routes/ingredients.js`, `src/api/recipes.ts` | **merged** — local review closed the edit-path test gap; one unrelated double-submit bug filed, not fixed |
 | **9** | **B4 · quantity display (fractions + ranges)** | I2 (`closestFraction` never rounds up past 7/8) + I3 (ranges flattened to low end) (BACKLOG UX) | `[x]` [#284](https://github.com/jclind/prepify/pull/284) (2026-07-10) | `src/util/formatQuantity.ts`, `SingleRecipe.tsx`, `PrintableRecipe.tsx`, `IngredientItemText.tsx`, `updateIngredients.ts` | **merged** |
-| **9** | **B5 · draft PUT concurrency guard** | D2 (full-`$set` PUT, no version precondition → two-tab clobber) (BACKLOG Bugs) | `[~]` `worktree-feat+b5-draft-put-concurrency-guard` (2026-07-10) | `server/routes/drafts.js` | isolated |
+| **9** | **B5 · draft PUT concurrency guard** | D2 (full-`$set` PUT, no version precondition → two-tab clobber) (BACKLOG Bugs) | `[x]` [#286](https://github.com/jclind/prepify/pull/286) (2026-07-10) | `server/routes/drafts.js` | **merged** — client sends the base `updatedAt`, server 409s `DRAFT_CONFLICT` on mismatch instead of overwriting |
 | **9** | **B6 · account-counts badge parity** | recipes/ratings tab badges use raw counts vs their filtered lists (BACKLOG Tech debt) | `[P]` [#285](https://github.com/jclind/prepify/pull/285) (2026-07-10) | `server/util/accountCounts.js` | **dep:** land after [#279](https://github.com/jclind/prepify/pull/279) (rewrites this file; adds the `saved` filter B6 mirrors) — **dep satisfied**, #279 merged |
 | **—** | **Deferred / post-1.0 / owner** | see [that section](#deferred--post-10--owner-off-the-active-board) | `[blocked]`/`[dropped]` | — | prerendering, Edamam, theming, brand-orange, DB relocation, ideas |
 
@@ -2191,3 +2191,18 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   labeled dev test recipes (consistent with the existing add-recipe smoke tool). No follow-ups filed;
   `closestFraction` snapping tiny above-whole decimals up to 1/8 (`2.03`→"2 1/8") is pre-existing and out of
   scope.
+- **2026-07-10** — **B5 merged** ([#286](https://github.com/jclind/prepify/pull/286), merge `abb890b`). Closed
+  **D2**: `PUT /drafts/:id` did a full-document `$set` with no version precondition, so two tabs autosaving the
+  same draft would silently clobber each other (last write wins). The client now sends the `updatedAt` of the
+  draft version it's editing from; the server conditions the `findOneAndUpdate` on the stored draft still
+  carrying that value and 409s `{code: 'DRAFT_CONFLICT', draft: <latest>}` on mismatch (distinguished from a
+  genuine 404 if the draft was deleted in the interim) instead of overwriting. `useDraftAutosave` tracks the
+  known version internally (bumped from each successful save's response, re-seeded only when `draftId` itself
+  changes so a stale parent re-render can't clobber it), surfaces the conflict via a toast, and stops retrying
+  against that draft until reload. Gates green (`tsc`, Vitest 701/701, Jest 845/845, build); verified twice at
+  runtime — a direct two-tab HTTP simulation against the dev API, then a full real-browser two-tab session
+  (Firebase sign-in via the Cypress bridge, `test-cypress-user` fixture, three pages sharing one browser
+  context) confirming the conflict toast/status surface in the stale tab and the other tab's content survives.
+  Folded in a "driving a signed-in flow" recipe into `.claude/skills/run-prepify/SKILL.md` (auth via
+  `window.__cy_signIn__` + a minted custom token, the `test-cypress-user` fixture gotcha, multi-tab-via-shared-
+  context pattern) for future verify passes. No follow-ups filed.
