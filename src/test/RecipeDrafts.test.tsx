@@ -43,6 +43,7 @@ vi.mock('src/api/drafts', () => ({
     deleteDraft: vi.fn(),
   },
   DRAFT_LIMIT_CODE: 'DRAFT_LIMIT',
+  DRAFT_CONFLICT_CODE: 'DRAFT_CONFLICT',
 }))
 
 vi.mock('react-top-loading-bar', () => ({ default: () => null }))

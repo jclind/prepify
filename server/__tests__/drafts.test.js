@@ -119,7 +119,7 @@ describe('POST /api/drafts', () => {
     const res = await request(app)
       .put(`/api/drafts/${mine[0]._id}`)
       .set(AUTH_HEADER)
-      .send({ title: 'edited at cap' })
+      .send({ title: 'edited at cap', updatedAt: now })
     expect(res.status).toBe(200)
     expect(res.body.title).toBe('edited at cap')
   })
@@ -179,7 +179,7 @@ describe('PUT /api/drafts/:id', () => {
     const res = await request(app)
       .put(`/api/drafts/${draft._id}`)
       .set(AUTH_HEADER)
-      .send({ title: 'after', servings: 4 })
+      .send({ title: 'after', servings: 4, updatedAt: '1000' })
     expect(res.status).toBe(200)
     expect(res.body.title).toBe('after')
     expect(res.body.servings).toBe(4)
@@ -200,10 +200,50 @@ describe('PUT /api/drafts/:id', () => {
     const res = await request(app)
       .put(`/api/drafts/${draft._id}`)
       .set(AUTH_HEADER)
-      .send({ title: 'x', userId: 'other-uid', createdAt: '999' })
+      .send({
+        title: 'x',
+        userId: 'other-uid',
+        createdAt: '999',
+        updatedAt: draft.updatedAt,
+      })
     expect(res.status).toBe(200)
     expect(res.body.userId).toBe(TEST_UID)
     expect(res.body.createdAt).toBe('500')
+  })
+
+  it('rejects a PUT with no updatedAt precondition', async () => {
+    const draft = await seedDraft()
+    const res = await request(app)
+      .put(`/api/drafts/${draft._id}`)
+      .set(AUTH_HEADER)
+      .send({ title: 'no version sent' })
+    expect(res.status).toBe(400)
+  })
+
+  it("409s with DRAFT_CONFLICT + the current draft when updatedAt doesn't match — the two-tab clobber this closes (B5/D2)", async () => {
+    const draft = await seedDraft({ title: 'original', updatedAt: '1000' })
+    // Tab A saves first, moving the stored updatedAt forward.
+    const tabA = await request(app)
+      .put(`/api/drafts/${draft._id}`)
+      .set(AUTH_HEADER)
+      .send({ title: 'from tab A', updatedAt: '1000' })
+    expect(tabA.status).toBe(200)
+
+    // Tab B still thinks the base version is '1000' (its last known state
+    // before Tab A saved) and tries to overwrite on top of it.
+    const tabB = await request(app)
+      .put(`/api/drafts/${draft._id}`)
+      .set(AUTH_HEADER)
+      .send({ title: 'from tab B', updatedAt: '1000' })
+    expect(tabB.status).toBe(409)
+    expect(tabB.body.code).toBe('DRAFT_CONFLICT')
+    expect(tabB.body.draft.title).toBe('from tab A')
+
+    // Tab A's save must survive untouched — the whole point of the guard.
+    const stored = await getDB()
+      .collection('recipeDrafts')
+      .findOne({ _id: draft._id })
+    expect(stored.title).toBe('from tab A')
   })
 
   it('rejects content that exceeds bounds', async () => {
