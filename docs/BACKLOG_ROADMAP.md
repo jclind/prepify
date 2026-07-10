@@ -124,7 +124,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **9** | **B1 · AddRecipe enrichment/draft safety** ⚠ lane | M3 (submit-mid-enrichment persists `ingredientData:null` + understated price) + D3 (pre-title content never autosaved) (BACKLOG Bugs + UX) | `[x]` [#281](https://github.com/jclind/prepify/pull/281) (2026-07-10) | `src/pages/AddRecipe/**` (`useRecipeForm.ts`, `useDraftAutosave.ts`, `IngredientsContainer`) | **merged** — submit gated on in-flight enrichment (reactive clear + ⏳ toast); pre-title content now autosaves; local review closed a draft/edit gate-bypass; three follow-ups filed |
 | **9** | **B2 · pagination re-append dedup** | M8 (`usePaginatedLoadMore` re-appends a page on refetch → duplicate cards) (BACKLOG Bugs) | `[x]` [#283](https://github.com/jclind/prepify/pull/283) (2026-07-10) | `src/pages/Account/usePaginatedLoadMore.ts` | **merged** — isolated; distinct from the #274 error/empty fix |
 | **9** | **B3 · ingredient parse limiter + FE `RATE_LIMITED`** | I1 (30/min limiter < 50-ingredient cap; FE ignores the 429 code → understated price) (BACKLOG Bugs) | `[ ]` | `server/routes/ingredients.js`, `src/api/recipes.ts` | disjoint from other lanes |
-| **9** | **B4 · quantity display (fractions + ranges)** | I2 (`closestFraction` never rounds up past 7/8) + I3 (ranges flattened to low end) (BACKLOG UX) | `[~]` `feat/b4-quantity-display-fractions-ranges` (2026-07-10) | `src/util/formatQuantity.ts`, `SingleRecipe.tsx`, `PrintableRecipe.tsx`, `IngredientItemText.tsx`, `updateIngredients.ts` | one quantity-rendering lane; SingleRecipe.tsx overlaps nothing else this wave |
+| **9** | **B4 · quantity display (fractions + ranges)** | I2 (`closestFraction` never rounds up past 7/8) + I3 (ranges flattened to low end) (BACKLOG UX) | `[P]` [#284](https://github.com/jclind/prepify/pull/284) (2026-07-10) | `src/util/formatQuantity.ts`, `SingleRecipe.tsx`, `PrintableRecipe.tsx`, `IngredientItemText.tsx`, `updateIngredients.ts` | one quantity-rendering lane; SingleRecipe.tsx overlaps nothing else this wave |
 | **9** | **B5 · draft PUT concurrency guard** | D2 (full-`$set` PUT, no version precondition → two-tab clobber) (BACKLOG Bugs) | `[ ]` | `server/routes/drafts.js` | isolated |
 | **9** | **B6 · account-counts badge parity** | recipes/ratings tab badges use raw counts vs their filtered lists (BACKLOG Tech debt) | `[ ]` | `server/util/accountCounts.js` | **dep:** land after [#279](https://github.com/jclind/prepify/pull/279) (rewrites this file; adds the `saved` filter B6 mirrors) |
 | **—** | **Deferred / post-1.0 / owner** | see [that section](#deferred--post-10--owner-off-the-active-board) | `[blocked]`/`[dropped]` | — | prerendering, Edamam, theming, brand-orange, DB relocation, ideas |
@@ -2086,3 +2086,17 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   fixed:** server-side `servingPrice` recompute (out of lane surface, pairs with B3), a `beforeunload`/`pagehide`
   draft flush (a hard refresh inside the 1.5s debounce still loses edits), and auth-aware copy for the signed-out
   draft-error badge.
+- **2026-07-10** — **B4** implemented in `worktree-feat+b4-quantity-display-fractions-ranges` → PR
+  [#284](https://github.com/jclind/prepify/pull/284) opened (`[P]`). Both quantity-rendering bugs from the bug
+  hunt: **I2** — `closestFraction` snapped every remainder to one of 9 fractions topping out at 7/8, so decimals
+  in `[0.9375, 1)` rendered "7/8" instead of rounding up (`0.95`→"7/8"); now rolls over to the next whole number
+  when the remainder is at least as close to 1 as to the nearest fraction (0.9375 ties up) → `0.95`→"1",
+  `1.96`→"2", while sub-threshold `1.9`→"1 7/8" is unchanged. **I3** — `ParsedIngredient` carried
+  `minQty`/`maxQty` but no renderer read them, so "2-3 cups" flattened to "2 cups" on the recipe page, printable
+  view, and add-recipe row; added `formatIngredientQuantity()` as the single display entry point (renders
+  `min–max` when a distinct upper bound was captured, else the single quantity) and routed all three renderers
+  through it; `updateIngredients` now scales `minQty`/`maxQty` alongside `quantity` so a range rescales with
+  servings (2–3 → 4–6). Tests: rollover cases + `formatIngredientQuantity` range/single/empty +
+  `updateIngredients` range scaling. Gates green (`tsc`, Vitest 682, build). Runtime-verified headless against
+  the dev client+API: "2-3 cups flour"→"2–3", "0.95 lb beef"→"1", servings-double→"4–6". Left one labeled dev
+  test recipe (consistent with the existing add-recipe smoke tool).
