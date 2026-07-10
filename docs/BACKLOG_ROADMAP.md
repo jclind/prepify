@@ -123,7 +123,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **8** | **X4 · server-Jest flakiness structural fix** | the intermittent server-suite failures (test files/mocks/setup) (BACKLOG Tech debt) | `[x]` [#276](https://github.com/jclind/prepify/pull/276) (2026-07-09) | `server/__tests__/**` + Jest setup | **merged** — five vectors: one run-wide `MongoMemoryReplSet` (globalSetup/teardown + per-file DB drop, suite ~53s→~33s), sticky `asUser`/`asAdmin` replacing one-shot `getAuth` mocks, `testTimeout` 5s→30s + test-path serverSelection 30s, **`__mocks__/supertest.js` shared-server** (dominant vector: one-shot listeners → ETIMEDOUT/phantom-404s), per-worker test DBs (`JEST_WORKER_ID`). 24/24 stress runs green + local review |
 | **9** | **B1 · AddRecipe enrichment/draft safety** ⚠ lane | M3 (submit-mid-enrichment persists `ingredientData:null` + understated price) + D3 (pre-title content never autosaved) (BACKLOG Bugs + UX) | `[x]` [#281](https://github.com/jclind/prepify/pull/281) (2026-07-10) | `src/pages/AddRecipe/**` (`useRecipeForm.ts`, `useDraftAutosave.ts`, `IngredientsContainer`) | **merged** — submit gated on in-flight enrichment (reactive clear + ⏳ toast); pre-title content now autosaves; local review closed a draft/edit gate-bypass; three follow-ups filed |
 | **9** | **B2 · pagination re-append dedup** | M8 (`usePaginatedLoadMore` re-appends a page on refetch → duplicate cards) (BACKLOG Bugs) | `[x]` [#283](https://github.com/jclind/prepify/pull/283) (2026-07-10) | `src/pages/Account/usePaginatedLoadMore.ts` | **merged** — isolated; distinct from the #274 error/empty fix |
-| **9** | **B3 · ingredient parse limiter + FE `RATE_LIMITED`** | I1 (30/min limiter < 50-ingredient cap; FE ignores the 429 code → understated price) (BACKLOG Bugs) | `[~]` `worktree-feat+b3-ingredient-parse-limiter-rate-limited` (2026-07-10) | `server/routes/ingredients.js`, `src/api/recipes.ts` | disjoint from other lanes |
+| **9** | **B3 · ingredient parse limiter + FE `RATE_LIMITED`** | I1 (30/min limiter < 50-ingredient cap; FE ignores the 429 code → understated price) (BACKLOG Bugs) | `[P]` [#282](https://github.com/jclind/prepify/pull/282) (2026-07-10) | `server/routes/ingredients.js`, `src/api/recipes.ts` | disjoint from other lanes |
 | **9** | **B4 · quantity display (fractions + ranges)** | I2 (`closestFraction` never rounds up past 7/8) + I3 (ranges flattened to low end) (BACKLOG UX) | `[P]` [#284](https://github.com/jclind/prepify/pull/284) (2026-07-10) | `src/util/formatQuantity.ts`, `SingleRecipe.tsx`, `PrintableRecipe.tsx`, `IngredientItemText.tsx`, `updateIngredients.ts` | one quantity-rendering lane; SingleRecipe.tsx overlaps nothing else this wave |
 | **9** | **B5 · draft PUT concurrency guard** | D2 (full-`$set` PUT, no version precondition → two-tab clobber) (BACKLOG Bugs) | `[ ]` | `server/routes/drafts.js` | isolated |
 | **9** | **B6 · account-counts badge parity** | recipes/ratings tab badges use raw counts vs their filtered lists (BACKLOG Tech debt) | `[ ]` | `server/util/accountCounts.js` | **dep:** land after [#279](https://github.com/jclind/prepify/pull/279) (rewrites this file; adds the `saved` filter B6 mirrors) |
@@ -2100,3 +2100,22 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   `updateIngredients` range scaling. Gates green (`tsc`, Vitest 682, build). Runtime-verified headless against
   the dev client+API: "2-3 cups flour"→"2–3", "0.95 lb beef"→"1", servings-double→"4–6". Left one labeled dev
   test recipe (consistent with the existing add-recipe smoke tool).
+- **2026-07-10** — **B3 claimed and implemented** (`worktree-feat+b3-ingredient-parse-limiter-rate-limited`) →
+  PR [#282](https://github.com/jclind/prepify/pull/282) opened (`[P]`). Scope: I1's two-part fix. **(1)** the
+  `parseLimiter` on `POST /api/ingredients/parse` sat at the factory default (30/min) while `MAX_INGREDIENTS`
+  is 50 and the add-recipe flow fires one parse per ingredient plus edits/retries — a max-size recipe alone
+  tripped the 429 on its tail rows; raised the limit to `MAX_INGREDIENTS + 40` (90/min) and exported
+  `MAX_INGREDIENTS` from `recipeLimits.js` so the two stay coupled. **(2)** the frontend silently ignored the
+  server's `RATE_LIMITED` code: `getIngredientData` (`src/api/recipes.ts`) now detects the 429 + code, reads
+  the `Retry-After` header, and returns an honest wait message plus a `retryAt` timestamp (added to
+  `IngredientsType`'s error variant in `types.ts`); `IngredientsContainer.tsx` and `IngredientItem.tsx` toast
+  that honest message and disable the row's retry button until the cooldown passes (a self-clearing
+  `useEffect` timer in `IngredientItem`, no polling) instead of the old "Retry" affordance that immediately
+  re-429'd. New `server/__tests__/ingredientParseLimiter.test.js` exercises the *real* limiter instance (not
+  mocked) end-to-end via supertest. Full gates green (server Jest 843/843, Vitest 682/682, `tsc --noEmit`,
+  `npm run build`). Runtime-verified against the live dev server via a minted Firebase custom token exchanged
+  for a real ID token: a concurrent burst past the new limit came back `429` with `code:'RATE_LIMITED'` and a
+  real `Retry-After: 59` header — the exact contract the client now branches on. (Couldn't runtime-verify the
+  full add-recipe browser UI: the real ingredient-enrichment proxy isn't reachable from this sandbox's
+  network, so every non-429 lookup hangs; the API-layer burst test plus the component test suite cover the
+  same behavior without that dependency.)
