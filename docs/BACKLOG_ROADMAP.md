@@ -126,7 +126,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **9** | **B3 · ingredient parse limiter + FE `RATE_LIMITED`** | I1 (30/min limiter < 50-ingredient cap; FE ignores the 429 code → understated price) (BACKLOG Bugs) | `[x]` [#282](https://github.com/jclind/prepify/pull/282) (2026-07-10) | `server/routes/ingredients.js`, `src/api/recipes.ts` | **merged** — local review closed the edit-path test gap; one unrelated double-submit bug filed, not fixed |
 | **9** | **B4 · quantity display (fractions + ranges)** | I2 (`closestFraction` never rounds up past 7/8) + I3 (ranges flattened to low end) (BACKLOG UX) | `[x]` [#284](https://github.com/jclind/prepify/pull/284) (2026-07-10) | `src/util/formatQuantity.ts`, `SingleRecipe.tsx`, `PrintableRecipe.tsx`, `IngredientItemText.tsx`, `updateIngredients.ts` | **merged** |
 | **9** | **B5 · draft PUT concurrency guard** | D2 (full-`$set` PUT, no version precondition → two-tab clobber) (BACKLOG Bugs) | `[x]` [#286](https://github.com/jclind/prepify/pull/286) (2026-07-10) | `server/routes/drafts.js` | **merged** — client sends the base `updatedAt`, server 409s `DRAFT_CONFLICT` on mismatch instead of overwriting |
-| **9** | **B6 · account-counts badge parity** | recipes/ratings tab badges use raw counts vs their filtered lists (BACKLOG Tech debt) | `[P]` [#285](https://github.com/jclind/prepify/pull/285) (2026-07-10) | `server/util/accountCounts.js` | **dep:** land after [#279](https://github.com/jclind/prepify/pull/279) (rewrites this file; adds the `saved` filter B6 mirrors) — **dep satisfied**, #279 merged |
+| **9** | **B6 · account-counts badge parity** | recipes/ratings tab badges use raw counts vs their filtered lists (BACKLOG Tech debt) | `[x]` [#285](https://github.com/jclind/prepify/pull/285) (2026-07-10) | `server/util/accountCounts.js` | **merged** — `recipes` badge now RECIPE_OWNER_VISIBLE, `ratings` badge now RECIPE_VISIBLE+REVIEW_VISIBLE, matching their tab lists |
 | **—** | **Deferred / post-1.0 / owner** | see [that section](#deferred--post-10--owner-off-the-active-board) | `[blocked]`/`[dropped]` | — | prerendering, Edamam, theming, brand-orange, DB relocation, ideas |
 
 ---
@@ -2176,6 +2176,15 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   hidden/unpublished excluded from the recipes badge; ratings on hidden/unpublished/pending_review recipes
   excluded; moderation-hidden ratings excluded) — server Jest 846/846, Vitest 699/699 (2 pre-existing skips),
   `tsc` clean, build green.
+- **2026-07-10** — **B6 merged** ([#285](https://github.com/jclind/prepify/pull/285), CI green — Backend/
+  Frontend/E2e/Static/Fallow/GitGuardian all pass) into `development`; worktree torn down. Runtime-verified
+  end-to-end against the live dev server + dev Mongo (not just Jest): minted a real Firebase ID token, seeded
+  a test account with a published/`pending_review`/`hidden`/`unpublished` recipe and ratings on a visible
+  recipe / a since-hidden recipe / a moderation-hidden review, then confirmed `GET /api/getAccountCounts`'s
+  `recipes`/`ratings` badges matched `GET /api/getCreatedRecipes` and `GET /api/getSingleUserReviews`'s list
+  lengths exactly (2 vs 2, 1 vs 1). A follow-up probe confirmed a rating with a dangling `recipeId` (hard-
+  deleted recipe) degrades to excluded, not a crash. All scratch data cleaned up and independently confirmed
+  removed from dev Mongo. Last open Wave-9 track — the board is now fully drained again.
 - **2026-07-10** — **B4 merged** ([#284](https://github.com/jclind/prepify/pull/284), merge `05659be`). Both
   quantity-rendering bugs from the bug hunt shipped. **I2** — `closestFraction` now rolls a remainder over to
   the next whole number when it's at least as close to 1 as to the nearest table fraction (0.9375 ties up), so
