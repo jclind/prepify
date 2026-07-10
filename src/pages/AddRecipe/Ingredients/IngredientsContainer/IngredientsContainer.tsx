@@ -1,4 +1,4 @@
-import React, { FC, useCallback, useState } from 'react'
+import React, { FC, useCallback, useRef } from 'react'
 import { parseIngredientString } from '@jclind/ingredient-parser'
 import { v4 as uuidv4 } from 'uuid'
 import { toast } from 'react-hot-toast'
@@ -9,6 +9,7 @@ import IngredientList from 'src/pages/AddRecipe/Ingredients/IngredientList/Ingre
 import IngredientsInput from 'src/pages/AddRecipe/Ingredients/IngredientsInput'
 import {
   IngredientEnrichTimeoutError,
+  IngredientStatus,
   withTimeout,
 } from 'src/pages/AddRecipe/Ingredients/ingredientEnrichment'
 import './IngredientsContainer.scss'
@@ -16,37 +17,24 @@ import './IngredientsContainer.scss'
 type IngredientsContainerProps = {
   ingredients: IngredientsType[]
   setIngredients: React.Dispatch<React.SetStateAction<IngredientsType[]>>
+  // Per-row enrichment state, owned by useRecipeForm (see IngredientStatus in
+  // ingredientEnrichment.ts) so the form can gate submission while any row's
+  // lookup is still in flight.
+  statusById: Record<string, IngredientStatus>
+  setItemStatus: (id: string, status: IngredientStatus | null) => void
 }
-
-// Per-row enrichment state, keyed by ingredient id (not list index, so it
-// survives reorders and concurrent adds): 'loading' while the nutrition/price
-// lookup is in flight, 'error' when it failed or timed out. Rows absent from the
-// map are settled. A short label string keeps the row's display name available
-// for the failure toast even after the input has been cleared.
-export type IngredientStatus = 'loading' | 'error'
 
 const IngredientsContainer: FC<IngredientsContainerProps> = ({
   ingredients,
   setIngredients,
+  statusById,
+  setItemStatus,
 }) => {
-  const [statusById, setStatusById] = useState<Record<string, IngredientStatus>>(
-    {}
-  )
-
-  const setItemStatus = useCallback(
-    (id: string, status: IngredientStatus | null) => {
-      setStatusById(prev => {
-        if (status === null) {
-          if (!(id in prev)) return prev
-          const next = { ...prev }
-          delete next[id]
-          return next
-        }
-        return { ...prev, [id]: status }
-      })
-    },
-    []
-  )
+  // Current list mirrored into a ref so the async settle paths below can check
+  // whether their row still exists without going stale (enrichInPlace's
+  // callback identity mustn't churn per keystroke).
+  const ingredientsRef = useRef(ingredients)
+  ingredientsRef.current = ingredients
 
   // Enrich a parsed ingredient already in the list (by id) and reconcile it in
   // place. Shared by the optimistic add path and the per-row retry. The id is
@@ -55,8 +43,14 @@ const IngredientsContainer: FC<IngredientsContainerProps> = ({
   const enrichInPlace = useCallback(
     async (id: string, rawValue: string, displayName: string) => {
       setItemStatus(id, 'loading')
+      // The user may remove the row while its lookup is in flight
+      // (removeIngredient settles its status); a late result for a gone row
+      // must not resurrect the status entry or toast about it.
+      const rowRemoved = () =>
+        !ingredientsRef.current.some(ingr => ingr.id === id)
       try {
         const enriched = await withTimeout(RecipeAPI.getIngredientData(rawValue))
+        if (rowRemoved()) return
         setIngredients(prev =>
           prev.map(ingr => (ingr.id === id ? { ...enriched, id } : ingr))
         )
@@ -72,6 +66,7 @@ const IngredientsContainer: FC<IngredientsContainerProps> = ({
         // The only rejection here is our own timeout (getIngredientData itself
         // never rejects). The request is abandoned; keep the parsed-only row so
         // the user doesn't lose their entry, mark it errored, and let them retry.
+        if (rowRemoved()) return
         const timedOut = err instanceof IngredientEnrichTimeoutError
         setItemStatus(id, 'error')
         toast.error(

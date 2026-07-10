@@ -1,4 +1,5 @@
 import React, {
+  useCallback,
   useEffect,
   useMemo,
   useReducer,
@@ -23,10 +24,20 @@ import { hrMinToMin } from 'src/util/hrMinToMin'
 import { minToHrMin } from 'src/util/minToHrMin'
 import RecipeAPI from 'src/api/recipes'
 import DraftAPI from 'src/api/drafts'
-import { useDraftAutosave, DraftStatus } from 'src/pages/AddRecipe/useDraftAutosave'
+import {
+  useDraftAutosave,
+  hasDraftableContent,
+  DraftStatus,
+} from 'src/pages/AddRecipe/useDraftAutosave'
+import {
+  IngredientStatus,
+  missingDataStatuses,
+  withIngredientStatus,
+} from 'src/pages/AddRecipe/Ingredients/ingredientEnrichment'
 import {
   validateRecipeForm,
   isRecipeFormValid,
+  INGREDIENTS_PENDING_MESSAGE,
   TimeVal,
 } from 'src/pages/AddRecipe/recipeFormValidation'
 
@@ -194,6 +205,27 @@ export function useRecipeForm(initialRecipe?: RecipeType) {
   const [isFormValid, setIsFormValid] = useState(false)
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false)
 
+  // Per-row ingredient enrichment status, lifted here (rather than living in
+  // IngredientsContainer) so submission can be gated while any row's
+  // nutrition/price lookup is still in flight — a submit inside that window
+  // would persist the ingredient as ingredientData:null forever and understate
+  // the stored serving price. Edit mode seeds rows already stored without data
+  // (persisted before this gate existed) as errored, so they surface the retry
+  // affordance instead of rendering settled.
+  const [ingredientStatusById, setIngredientStatusById] = useState<
+    Record<string, IngredientStatus>
+  >(() => missingDataStatuses(state.ingredients))
+  const setIngredientStatus = useCallback(
+    (id: string, status: IngredientStatus | null) =>
+      setIngredientStatusById(prev => withIngredientStatus(prev, id, status)),
+    []
+  )
+  // Only rows still in the list count — a stale map entry for a removed row
+  // must not wedge the form.
+  const enrichmentPending = ingredients.some(
+    ingr => ingredientStatusById[ingr.id] === 'loading'
+  )
+
   const navigate = useNavigate()
   const queryClient = useQueryClient()
 
@@ -249,6 +281,14 @@ export function useRecipeForm(initialRecipe?: RecipeType) {
               nutritionLabels: draft.nutritionLabels ?? [],
             },
           })
+          // A draft autosaved while a row's lookup was still in flight persists
+          // that row as ingredientData:null. Nothing re-enriches on resume, so
+          // without a status the row would render settled and the submit gate
+          // would never see it — mark such rows errored (retryable) instead.
+          setIngredientStatusById(prev => ({
+            ...missingDataStatuses(draft.ingredients ?? []),
+            ...prev,
+          }))
           setResumedFromDraft(true)
         }
         setHydrated(true)
@@ -316,10 +356,11 @@ export function useRecipeForm(initialRecipe?: RecipeType) {
     ]
   )
 
-  // A brand-new draft is only created once the recipe has a title. This gates
-  // out throwaway drafts from a stray keystroke (keeping the Drafts list and the
-  // per-user draft count clean); updating an existing draft is unaffected.
-  const canCreateDraft = !!title.trim()
+  // A brand-new draft is created once the form holds any real content, not just
+  // a title (see hasDraftableContent). An all-default form still never creates
+  // one, keeping the Drafts list and the per-user draft count clean; updating
+  // an existing draft is unaffected.
+  const canCreateDraft = hasDraftableContent(draftContent)
 
   const { status: draftStatus, clearDraft } = useDraftAutosave({
     content: draftContent,
@@ -358,16 +399,17 @@ export function useRecipeForm(initialRecipe?: RecipeType) {
       ingredients,
       instructions,
       mealTypes,
+      ingredientsPending: enrichmentPending,
     })
     assignErrors && setErrors(newErrors)
-    return isRecipeFormValid(newErrors)
+    return newErrors
   }
   useEffect(() => {
     // Once the user has attempted a submit, keep the displayed errors in sync as
     // fields are fixed (assignErrors=true) so a corrected field clears its message
     // immediately instead of lingering until the next submit click. Before the
     // first attempt we only compute validity, never surface errors.
-    if (validate(hasAttemptedSubmit)) setIsFormValid(true)
+    if (isRecipeFormValid(validate(hasAttemptedSubmit))) setIsFormValid(true)
     else setIsFormValid(false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
@@ -381,12 +423,25 @@ export function useRecipeForm(initialRecipe?: RecipeType) {
     instructions,
     mealTypes,
     hasAttemptedSubmit,
+    enrichmentPending,
   ])
 
   const handleSubmit = async () => {
     if (addRecipeLoading) return
     setHasAttemptedSubmit(true)
-    if (!validate(true)) {
+    const submitErrors = validate(true)
+    if (!isRecipeFormValid(submitErrors)) {
+      // When in-flight enrichment is the ONLY blocker, waiting genuinely
+      // resolves it (bounded by the enrichment timeout) — say so instead of
+      // leaving the user hunting for a field to fix. With other errors present
+      // the toast would misdirect ("just wait" won't unblock), so those get
+      // the standard field-error treatment alone.
+      const onlyPendingBlocks =
+        Object.keys(submitErrors).length === 1 &&
+        submitErrors.ingredients === INGREDIENTS_PENDING_MESSAGE
+      if (onlyPendingBlocks) {
+        toast(INGREDIENTS_PENDING_MESSAGE, { icon: '⏳' })
+      }
       addRecipeFormRef?.current && addRecipeFormRef.current.scrollTo(0, 0)
       return
     }
@@ -489,6 +544,8 @@ export function useRecipeForm(initialRecipe?: RecipeType) {
     // status / derived
     errors,
     isFormValid,
+    ingredientStatusById,
+    setIngredientStatus,
     addRecipeLoading,
     loadingProgress,
     setLoadingProgress,

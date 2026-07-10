@@ -11,7 +11,7 @@ import {
   IngredientEnrichTimeoutError,
   withTimeout,
 } from 'src/pages/AddRecipe/Ingredients/ingredientEnrichment'
-import { IngredientStatus } from 'src/pages/AddRecipe/Ingredients/IngredientsContainer/IngredientsContainer'
+import { IngredientStatus } from 'src/pages/AddRecipe/Ingredients/ingredientEnrichment'
 import '../ListComponents/Item.scss'
 import { TailSpin } from 'react-loader-spinner'
 import IngredientItemText from 'src/Components/IngredientItemText/IngredientItemText'

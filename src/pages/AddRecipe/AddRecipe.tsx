@@ -60,6 +60,8 @@ const AddRecipe: FC<AddRecipeProps> = ({ initialRecipe }) => {
     setNutritionLabels,
     errors,
     isFormValid,
+    ingredientStatusById,
+    setIngredientStatus,
     addRecipeLoading,
     loadingProgress,
     setLoadingProgress,
@@ -210,6 +212,8 @@ const AddRecipe: FC<AddRecipeProps> = ({ initialRecipe }) => {
               <IngredientsContainer
                 ingredients={ingredients}
                 setIngredients={setIngredients}
+                statusById={ingredientStatusById}
+                setItemStatus={setIngredientStatus}
               />
             </FormField>
             <FormField

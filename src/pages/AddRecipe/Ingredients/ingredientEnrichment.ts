@@ -10,7 +10,52 @@
 // Lives under src/pages/AddRecipe/* on purpose: the fix is scoped to the
 // add-recipe flow rather than changing the global API client.
 
+import { IngredientsType } from 'types'
+
 export const INGREDIENT_ENRICH_TIMEOUT_MS = 12_000
+
+// Per-row enrichment state, keyed by ingredient id (not list index, so it
+// survives reorders and concurrent adds): 'loading' while the nutrition/price
+// lookup is in flight, 'error' when it failed or timed out. Rows absent from
+// the map are settled. The map itself lives in useRecipeForm — the form owns it
+// so submission can be gated while any row is still loading (a submit in that
+// window would persist ingredientData:null and understate the serving price).
+export type IngredientStatus = 'loading' | 'error'
+
+// Pure update for the status map: `null` settles (removes) the entry, anything
+// else upserts it. Returns the same reference when nothing changed so setState
+// callers can skip a render.
+export function withIngredientStatus(
+  prev: Record<string, IngredientStatus>,
+  id: string,
+  status: IngredientStatus | null
+): Record<string, IngredientStatus> {
+  if (status === null) {
+    if (!(id in prev)) return prev
+    const next = { ...prev }
+    delete next[id]
+    return next
+  }
+  return { ...prev, [id]: status }
+}
+
+// Initial statuses for ingredient rows arriving from persistence rather than
+// the live add flow: a draft autosaved while a lookup was still in flight, or
+// an already-stored recipe being edited. A parsed row persisted without
+// ingredientData must not render as settled — mark it errored so the retry
+// affordance shows and the user is informed before publishing (labels carry no
+// data by design and are skipped).
+export function missingDataStatuses(
+  ingredients: IngredientsType[]
+): Record<string, IngredientStatus> {
+  const statuses: Record<string, IngredientStatus> = {}
+  for (const ingr of ingredients) {
+    if ('parsedIngredient' in ingr && !ingr.ingredientData) {
+      statuses[ingr.id] = 'error'
+    }
+  }
+  return statuses
+}
 
 export class IngredientEnrichTimeoutError extends Error {
   constructor(ms: number) {

@@ -154,4 +154,32 @@ describe('validateRecipeForm', () => {
       validateRecipeForm({ ...validForm(), prepTime: { hours: 0, minutes: 0 } }).prepTime
     ).toBeUndefined()
   })
+
+  it('blocks submission while ingredient enrichment is still in flight', () => {
+    const errors = validateRecipeForm({
+      ...validForm(),
+      ingredientsPending: true,
+    })
+    expect(errors.ingredients).toMatch(/still loading/i)
+    expect(isRecipeFormValid(errors)).toBe(false)
+  })
+
+  it('does not block once enrichment settled (flag false or omitted)', () => {
+    expect(
+      validateRecipeForm({ ...validForm(), ingredientsPending: false })
+        .ingredients
+    ).toBeUndefined()
+    expect(validateRecipeForm(validForm()).ingredients).toBeUndefined()
+  })
+
+  it('an empty ingredient list wins over the pending flag', () => {
+    // Pending implies an optimistic row exists, but if the list is empty the
+    // required-field message is the actionable one.
+    const errors = validateRecipeForm({
+      ...validForm(),
+      ingredients: [],
+      ingredientsPending: true,
+    })
+    expect(errors.ingredients).toBe('Recipe must contain ingredients')
+  })
 })
