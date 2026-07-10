@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { QueryKey, useQuery } from '@tanstack/react-query'
 import { useDelayedLoading } from 'src/hooks/useDelayedLoading'
 
@@ -12,10 +12,13 @@ import { useDelayedLoading } from 'src/hooks/useDelayedLoading'
 //
 // Behaviour is byte-for-byte the pre-extraction pattern: page 0 replaces (a
 // fresh sort/filter/search), later pages append; `isMore` is `totalCount >`
-// what's accumulated. The accumulate effect is keyed on `data` alone — as the
-// original tabs were — because each page increment yields a new `data` reference
-// and page 0 resets via the query key, so replace-vs-append stays correct
-// without listing `items`/`page` as deps (which would loop).
+// what's accumulated. The accumulate effect is keyed on `data` alone — because
+// each page increment yields a new `data` reference and page 0 resets via the
+// query key — but a background refetch of the *current* page (e.g. react-query's
+// default `refetchOnWindowFocus`) also yields a new `data` reference for the same
+// `page`. `mergedPageRef`/`baseItemsRef` track which page was last merged and
+// what `items` looked like before it, so a same-page refetch replaces that page's
+// slice instead of re-appending it.
 
 // One page from a paginated endpoint: the slice for the requested page plus the
 // total across all pages (used to decide whether "Load more" should show).
@@ -73,6 +76,11 @@ export function usePaginatedLoadMore<T>({
   const [page, setPage] = useState(0)
   const [isMore, setIsMore] = useState(false)
   const [totalCount, setTotalCount] = useState(0)
+  // Last page merged into `items`, and what `items` held right before it was
+  // merged — lets a same-page refetch replace that page's slice instead of
+  // appending a duplicate copy of it.
+  const mergedPageRef = useRef<number | null>(null)
+  const baseItemsRef = useRef<T[]>([])
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: queryKey(page),
@@ -85,8 +93,18 @@ export function usePaginatedLoadMore<T>({
     if (page === 0) {
       setItems([...data.items])
       setIsMore(data.totalCount > data.items.length)
-    } else {
+      mergedPageRef.current = 0
+      baseItemsRef.current = []
+    } else if (mergedPageRef.current !== page) {
+      baseItemsRef.current = items
       const updated = [...items, ...data.items]
+      setItems(updated)
+      setIsMore(data.totalCount > updated.length)
+      mergedPageRef.current = page
+    } else {
+      // A refetch of the already-merged current page (e.g. focus refetch) —
+      // replace its slice instead of re-appending it.
+      const updated = [...baseItemsRef.current, ...data.items]
       setItems(updated)
       setIsMore(data.totalCount > updated.length)
     }
