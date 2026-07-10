@@ -39,6 +39,21 @@ describe('StarRating (interactive radiogroup)', () => {
     })
   })
 
+  it('clicking a star reports its value through onChange', () => {
+    const onChange = vi.fn()
+    render(<StarRating interactive rating={0} onChange={onChange} />)
+    fireEvent.click(screen.getAllByRole('radio')[1])
+    expect(onChange).toHaveBeenCalledWith(2)
+  })
+
+  it('ArrowRight moves DOM focus onto the newly-selected star', () => {
+    render(<StarRating interactive rating={3} onChange={vi.fn()} />)
+    const radios = screen.getAllByRole('radio')
+    fireEvent.keyDown(radios[2], { key: 'ArrowRight' })
+    // Roving tabindex: the selection move must carry keyboard focus with it.
+    expect(radios[3]).toHaveFocus()
+  })
+
   it('ArrowRight moves selection forward by one', () => {
     const onChange = vi.fn()
     render(<StarRating interactive rating={3} onChange={onChange} />)

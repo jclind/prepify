@@ -23,6 +23,34 @@ afterEach(async () => {
   admin.__deleteUser.mockClear()
 })
 
+// ─── verifyToken — rejected / malformed tokens ───────────────────────────────
+// The shared mock's verifyIdToken resolves by default; override it per-test via
+// admin.__verifyIdToken to drive the middleware's catch branch (auth.js:30-32).
+
+describe('verifyToken rejects bad tokens', () => {
+  it('returns 401 with no DB side effect when verifyIdToken rejects (expired/garbage token)', async () => {
+    admin.__verifyIdToken.mockRejectedValueOnce(new Error('Firebase ID token has expired'))
+
+    const res = await request(app)
+      .post('/api/setUsername?username=newuser')
+      .set({ Authorization: 'Bearer garbage' })
+
+    expect(res.status).toBe(401)
+    expect(res.body).toEqual({ error: 'Invalid or expired token' })
+    expect(await getDB().collection('usernames').countDocuments({})).toBe(0)
+  })
+
+  it('returns 401 for a bare "Bearer" header with no token', async () => {
+    const res = await request(app)
+      .post('/api/setUsername?username=newuser')
+      .set({ Authorization: 'Bearer' })
+
+    expect(res.status).toBe(401)
+    expect(res.body).toEqual({ error: 'Missing or invalid Authorization header' })
+    expect(await getDB().collection('usernames').countDocuments({})).toBe(0)
+  })
+})
+
 // ─── GET /getUsername ─────────────────────────────────────────────────────────
 
 describe('GET /getUsername', () => {

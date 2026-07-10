@@ -57,6 +57,35 @@ The triage date stamped on items is the date they were filed here, not when they
   again.") instead of the empty state, and correct the loading-states.md example in the same PR. For
   contrast, Home, `/recipes`, and SingleRecipe all show real error copy with the API down (SingleRecipe only
   after its ~7s retry budget — acceptable, documented). Med.
+- `[ ]` **Admin `GET /api/reports` pagination is uncoerced and uncapped** *(filed 2026-07-10, test-quality
+  audit)* — `server/routes/reports.js:186-187` does `skip = parseInt(page) * parseInt(perPage)` and
+  `limit = parseInt(perPage)` with no `|| default`, no negative clamp, and no `MAX_PER_PAGE`-style cap, so
+  `?perPage=abc` → `limit(NaN)` throws (500), `?page=-1` → negative skip (500), and a huge `perPage` dumps the
+  collection. Admin-only surface (gated behind `requireAdmin`), so low blast radius — but it should get the
+  same coercion + cap the public list routes now all have (reviews/recipes/publicProfile) plus a pagination
+  test (the suite currently only tests admin-gate/enrichment/status-filter). Low-med.
+- `[ ]` **Draft cap is a read-then-insert race (TOCTOU)** *(filed 2026-07-10, test-quality audit)* —
+  `server/routes/drafts.js:36-44` enforces the 25-draft cap with `countDocuments({ userId })` followed by
+  `insertOne`; concurrent POSTs at 24 drafts can all pass the count and exceed the cap. Every neighboring
+  surface pins its races concurrently (collections create/rename, recipes save), so this is the documented
+  odd one out — the existing cap test is sequential only. Fix lane: post-insert recount + delete-overflow, or
+  an atomic guard; add the 5-concurrent-POSTs-at-24 test with it. Low.
+- `[ ]` **Moderation blocklist misses unicode homoglyph / fullwidth evasion** *(filed 2026-07-10, test-quality
+  audit)* — `normalizeToken` (`server/util/moderationBlocklist.js:31-37`) does no NFKC/confusables fold and
+  ends with `.replace(/[^a-z0-9]/g, '')`, so a Cyrillic-с `fuсk` normalizes to `fuk` and fullwidth `ｓｈｉｔ`
+  to `''` — no blocklist hit; the text silently defers to the OpenAI layer, which is env-gated and can be off.
+  Leet (`f4ggot`) and letter-spacing are covered; unicode is the gap. Fix lane: NFKC-normalize (+ a small
+  confusables map for the common Cyrillic/Greek lookalikes) before the existing folds, with bypass tests
+  pinning both examples. Low-med (defense-in-depth; the OpenAI layer catches these when enabled).
+- `[ ]` **Small client contract nits from the test-quality audit** *(filed 2026-07-10)* — three tiny,
+  related "the code accepts what it shouldn't / renders what it shouldn't" gaps, none release-gating:
+  **(1)** `src/api/recipes.ts:546,568` interpolate `filter`/`username` into query strings unencoded
+  (inconsistent with the `URLSearchParams` convention used at `:96-107`; breaks on reserved chars — current
+  inputs are safe, it's drift waiting to bite); **(2)** `recipeFormValidation.ts:61` accepts negative or
+  fractional `servings` (`!form.servings` truthiness only — the whitespace-description sibling was fixed in
+  the audit PR; decide the servings contract and pin it); **(3)** `src/util/formatRating.ts:5-6` renders the
+  literal string `"NaN"` if `rateValue` arrives NaN (no guard → should fall back to the "No Ratings" branch).
+  All three are one-liners plus a test each. Low.
 - `[ ]` **Legacy rating docs are mistyped — "Top" review sort interleaves wrong** *(filed 2026-07-09, out of
   the §D overhaul)* — old `ratings` docs store `rating` as **stringified numbers** (`"5"`) and
   `reviewCreatedAt` as stringified epoch-ms, while post-#266 writes store floats; review-only docs are
@@ -1335,6 +1364,24 @@ findings table.)*
   already covered indirectly by `addRecipe.cy.ts`), `recipeLimits`, `invalidateSavedCaches`, `defaultAvatar`.
   Most are trivial; `updateIngredients` is the one worth a real test pass. *(surfaced 2026-06-27 in the
   code-quality & tests sweep coverage audit.)*
+- `[ ]` **Test-quality audit follow-ups (2026-07-10)** — the six-slice suite-quality audit (see the
+  test-quality PR of the same date for what already shipped) left these filed rather than fixed:
+  - **Real ingredient-parser contract test (the headline gap).** `server/__tests__/ingredients.test.js:26`
+    mocks `@jclind/ingredient-parser` wholesale, so **no server test anywhere exercises real parsing** — a
+    v2 package regression on fractions (`1 1/2`), unicode (`½`), ranges (`2-3`), unknown units, or
+    parenthetical comments is invisible. Add a fixture-table contract test that runs the real parser (network
+    enrichment stubbed, parse layer real) and pins `quantity/min/max/unit/ingredient/comment` per shape. Med.
+  - **Flake-hardening nits:** `cypress/e2e/addRecipe.cy.ts:162-168` keyboard-DnD helper uses fixed
+    `cy.wait(300/500)` sleeps (replace by polling the dnd aria-live announcement); the
+    `writeLimiter.test.js` window-reset test sleeps a real 1.2 s (wall-clock race under load);
+    `reviews.test.js:820`'s `__getUsers.mockRejectedValueOnce` can leak a queued rejection into a later test
+    if the request short-circuits (clear queued one-shots in `afterEach`).
+  - **Coverage gaps (component/e2e):** SavedRecipes fetch-error path (its 3 sibling tabs have error tests,
+    it doesn't); AdminUsers failure toast on rejected `setUserStatus`; browse filter-drawer e2e (filters →
+    URL → `recipes` request is never driven end-to-end); named-collection add via the recipe-page popover
+    e2e; `getReviews` `filter=new`/`filter=top` ordering tests (blocked on the legacy stringified-rating
+    migration filed under Bugs — write them with it); auth.test.js storage-cleanup asserting the two exact
+    deleted object paths instead of `toHaveBeenCalledTimes(2)` (needs a small `__deleteFile` mock extension).
 
 ## Ideas / needs a decision
 

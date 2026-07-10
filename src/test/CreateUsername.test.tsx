@@ -123,6 +123,40 @@ describe('CreateUsername (onboarding)', () => {
     await waitFor(() => expect(navigateMock).toHaveBeenCalledWith('/'))
   })
 
+  it('keeps Continue disabled when the username is taken', async () => {
+    checkAvailMock.mockResolvedValue(false)
+    renderOnboarding()
+    await screen.findByText('Finish your profile')
+    fireEvent.change(screen.getByLabelText('Username'), {
+      target: { value: 'takenname' },
+    })
+    await waitFor(() => expect(checkAvailMock).toHaveBeenCalled(), {
+      timeout: 2500,
+    })
+    expect(screen.getByRole('button', { name: /continue/i })).toBeDisabled()
+    expect(setUsernameMock).not.toHaveBeenCalled()
+  })
+
+  it('surfaces the server reason inline and re-enables Continue when the save is rejected', async () => {
+    // Axios-shaped 422 — e.g. the server's moderation block on the username.
+    setUsernameMock.mockRejectedValue(
+      Object.assign(new Error('Request failed with status code 422'), {
+        isAxiosError: true,
+        response: { status: 422, data: { error: 'Username was blocked' } },
+      })
+    )
+    renderOnboarding()
+    await screen.findByText('Finish your profile')
+    const cont = await pickAvailableUsername()
+    fireEvent.click(cont)
+
+    // getApiErrorMessage prefers the server's reason over the generic axios text.
+    await screen.findByText('Username was blocked')
+    expect(screen.getByRole('button', { name: /continue/i })).toBeEnabled()
+    expect(navigateMock).not.toHaveBeenCalledWith('/')
+    expect(toastSuccessMock).not.toHaveBeenCalled()
+  })
+
   // Escape hatch: a signed-in user without a username must be able to get out
   // rather than getting stuck on this page (the auth signout is the way out).
   it('logs the user out via the cancel/escape hatch', async () => {

@@ -32,6 +32,11 @@ beforeEach(() => {
 afterEach(() => {
   global.fetch = realFetch
   jest.restoreAllMocks()
+  // Restore per-test env tweaks here too (not just in beforeEach) so the LAST
+  // test in the file can't leak them into later suites under --runInBand.
+  delete process.env.MODERATION_ENABLED
+  delete process.env.MODERATION_HIGH_THRESHOLD
+  delete process.env.MODERATION_MEDIUM_THRESHOLD
 })
 
 // process.env is shared across files under --runInBand; don't leak an enabled
@@ -119,6 +124,22 @@ describe('moderateText — gating', () => {
     expect(await moderateText('   ', 'bio')).toMatchObject({ allowed: true, severity: 'clean' })
     expect(global.fetch).not.toHaveBeenCalled()
   })
+
+  it('kill switch: MODERATION_ENABLED=false disables the API even with a key set', async () => {
+    process.env.MODERATION_ENABLED = 'false' // OPENAI_API_KEY is set in beforeEach
+    global.fetch = jest.fn()
+    const v = await moderateText('a perfectly normal sentence', 'review')
+    expect(v).toMatchObject({ allowed: true, severity: 'clean', source: 'disabled' })
+    expect(global.fetch).not.toHaveBeenCalled()
+  })
+
+  it('kill switch leaves the blocklist active — a listed term still blocks', async () => {
+    process.env.MODERATION_ENABLED = 'false'
+    global.fetch = jest.fn()
+    const v = await moderateText('total bitch move', 'review')
+    expect(v).toMatchObject({ allowed: false, severity: 'high', source: 'blocklist' })
+    expect(global.fetch).not.toHaveBeenCalled()
+  })
 })
 
 describe('moderateText — OpenAI grading', () => {
@@ -151,6 +172,33 @@ describe('moderateText — OpenAI grading', () => {
     mockModeration({ flagged: true, category_scores: { hate: 0.55 } })
     const v = await moderateText('borderline content', 'review')
     expect(v.severity).toBe('high')
+  })
+
+  it('respects an env-tuned MODERATION_MEDIUM_THRESHOLD', async () => {
+    process.env.MODERATION_MEDIUM_THRESHOLD = '0.3'
+    // 0.35 would be clean at the default 0.5 floor; the override makes it medium.
+    mockModeration({ flagged: false, category_scores: { harassment: 0.35 } })
+    const v = await moderateText('borderline content', 'review')
+    expect(v.severity).toBe('medium')
+  })
+
+  // Threshold boundaries — grade() uses >= on both cutoffs (textModeration.js).
+  it('grades a score exactly at the 0.85 high cutoff as high', async () => {
+    mockModeration({ flagged: true, category_scores: { hate: 0.85 } })
+    const v = await moderateText('borderline content', 'review')
+    expect(v.severity).toBe('high')
+  })
+
+  it('grades a score exactly at the 0.5 medium cutoff as medium (even unflagged)', async () => {
+    mockModeration({ flagged: false, category_scores: { harassment: 0.5 } })
+    const v = await moderateText('borderline content', 'review')
+    expect(v.severity).toBe('medium')
+  })
+
+  it('grades an unflagged score just under the medium cutoff as clean', async () => {
+    mockModeration({ flagged: false, category_scores: { harassment: 0.4999 } })
+    const v = await moderateText('borderline content', 'review')
+    expect(v).toMatchObject({ allowed: true, severity: 'clean' })
   })
 
   it('flagged with no usable category scores → medium with a non-null reason', async () => {

@@ -82,15 +82,29 @@ describe('POST /api/nutrition/details', () => {
   // ── Misconfiguration ─────────────────────────────────────────────────────────
 
   it('returns 503 (not 500/200) when the Edamam keys are not configured', async () => {
-    // Keys are undefined at test time (dotenv not loaded). Assert the graceful
-    // degrade path runs before any network call.
+    // Don't rely on the ambient env being empty (dotenv isn't loaded, but a
+    // shell/CI env could still carry the keys) — explicitly unset and restore,
+    // mirroring the save/restore in the configured block below.
+    const ORIGINAL = {
+      id: process.env.EDAMAM_APP_ID,
+      key: process.env.EDAMAM_APP_KEY,
+    }
+    delete process.env.EDAMAM_APP_ID
+    delete process.env.EDAMAM_APP_KEY
     global.fetch = jest.fn()
-    const res = await request(app)
-      .post('/api/nutrition/details')
-      .set(AUTH_HEADER)
-      .send({ ingr: ['2 cups flour'] })
-    expect(res.status).toBe(503)
-    expect(global.fetch).not.toHaveBeenCalled()
+    try {
+      const res = await request(app)
+        .post('/api/nutrition/details')
+        .set(AUTH_HEADER)
+        .send({ ingr: ['2 cups flour'] })
+      expect(res.status).toBe(503)
+      expect(global.fetch).not.toHaveBeenCalled()
+    } finally {
+      if (ORIGINAL.id === undefined) delete process.env.EDAMAM_APP_ID
+      else process.env.EDAMAM_APP_ID = ORIGINAL.id
+      if (ORIGINAL.key === undefined) delete process.env.EDAMAM_APP_KEY
+      else process.env.EDAMAM_APP_KEY = ORIGINAL.key
+    }
   })
 
   // ── With keys configured ───────────────────────────────────────────────────────
@@ -171,23 +185,28 @@ describe('POST /api/nutrition/details', () => {
       expect(res.body).toHaveProperty('error', 'Internal server error')
     })
 
-    it('soft-fails to 200/null when Edamam responds non-2xx (e.g. 404 "no nutrition")', async () => {
-      global.fetch = jest.fn().mockResolvedValue({
-        ok: false,
-        status: 404,
-        json: async () => ({}),
-      })
+    // Any upstream non-2xx — "no nutrition" (404/555), rate limit (429), or a
+    // genuine Edamam 500 — soft-fails the same way (pins nutrition.js:69-72).
+    it.each([404, 429, 500, 555])(
+      'soft-fails to 200/null when Edamam responds %i',
+      async (status) => {
+        global.fetch = jest.fn().mockResolvedValue({
+          ok: false,
+          status,
+          json: async () => ({}),
+        })
 
-      const res = await request(app)
-        .post('/api/nutrition/details')
-        .set(AUTH_HEADER)
-        .send({ ingr: ['asdf'] })
+        const res = await request(app)
+          .post('/api/nutrition/details')
+          .set(AUTH_HEADER)
+          .send({ ingr: ['asdf'] })
 
-      // 200 + null keeps the client's null-guard happy and avoids a false 5xx
-      // Sentry alert for a routine "couldn't compute" answer.
-      expect(res.status).toBe(200)
-      expect(res.body).toBeNull()
-    })
+        // 200 + null keeps the client's null-guard happy and avoids a false 5xx
+        // Sentry alert for a routine "couldn't compute" answer.
+        expect(res.status).toBe(200)
+        expect(res.body).toBeNull()
+      }
+    )
 
     it('returns a generic 500 (not the raw error) when the fetch throws', async () => {
       global.fetch = jest.fn().mockRejectedValue(new Error('network exploded'))

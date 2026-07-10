@@ -106,13 +106,17 @@ describe('makeUserLimiter — per-user content-write cap', () => {
 
   it('is bypassed entirely under NODE_ENV=test', async () => {
     process.env.NODE_ENV = 'test'
-    const server = start({ '/write': makeUserLimiter({ limit: 5 }) })
-    // Far more than the limit, all allowed because skip() short-circuits.
-    for (let i = 0; i < 40; i++) {
-      const res = await request(server).post('/write').set('x-test-uid', 'user-d')
-      expect(res.status).toBe(200)
+    try {
+      const server = start({ '/write': makeUserLimiter({ limit: 5 }) })
+      // Far more than the limit, all allowed because skip() short-circuits.
+      for (let i = 0; i < 40; i++) {
+        const res = await request(server).post('/write').set('x-test-uid', 'user-d')
+        expect(res.status).toBe(200)
+      }
+    } finally {
+      // finally, so a failed assertion can't leak NODE_ENV=test into later tests.
+      process.env.NODE_ENV = 'development'
     }
-    process.env.NODE_ENV = 'development' // restore for any later tests in this file
   })
 })
 

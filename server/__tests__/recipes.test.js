@@ -132,6 +132,30 @@ describe('GET /recipes', () => {
     expect(res.body.recipeList).toHaveLength(1)
     expect(res.body.total_results).toBe(3)
   })
+
+  it('treats a negative page as page 0 (no negative skip / 500)', async () => {
+    const res = await request(server).get('/api/recipes?page=-1')
+    expect(res.status).toBe(200)
+    expect(res.body.recipeList).toHaveLength(3)
+    expect(res.body.total_results).toBe(3)
+  })
+
+  it('caps recipesPerPage at 50 even when a larger page is requested', async () => {
+    const db = getDB()
+    // 3 seeded in beforeEach + 52 more = 55 total, so a capped page shows exactly 50.
+    await db.collection('recipes').insertMany(
+      Array.from({ length: 52 }, (_, i) => ({
+        ...BASE_RECIPE,
+        _id: `cap-recipe-${i}`,
+        title: `Cap Recipe ${i}`,
+      }))
+    )
+
+    const res = await request(server).get('/api/recipes?page=0&recipesPerPage=500')
+    expect(res.status).toBe(200)
+    expect(res.body.recipeList).toHaveLength(50)
+    expect(res.body.total_results).toBe(55)
+  })
 })
 
 // ─── GET /recipes — sorting & meal filter ─────────────────────────────────────
@@ -1062,6 +1086,34 @@ describe('GET /getRecipe', () => {
     expect(res.status).toBe(200)
     expect(res.body._id).toBe(RECIPE_ID)
     expect(res.body.views).toBe(6)
+  })
+
+  // optionalAuth's catch-and-continue (middleware/auth.js): a Bearer header whose
+  // token fails verification must be treated as anonymous — req.uid/req.isAdmin
+  // never set from the bad token — so a hidden recipe stays 404, not leaked.
+  it('treats a rejected token as anonymous (hidden recipe stays 404)', async () => {
+    await seedRecipe({ ...BASE_RECIPE, _id: 'hidden-opt', userId: TEST_UID, status: 'hidden' })
+    admin.__verifyIdToken.mockRejectedValueOnce(new Error('Firebase ID token has expired'))
+
+    const res = await request(server)
+      .get('/api/getRecipe?id=hidden-opt')
+      .set(AUTH_HEADER)
+
+    expect(res.status).toBe(404)
+    expect(res.body).toEqual({ error: 'Not found' })
+  })
+
+  // Discriminating variant: the OWNER of a pending_review recipe would get 200,
+  // so a 404 here proves the bad token never populated req.uid.
+  it('does not set req.uid from a rejected token (owner pending_review preview denied)', async () => {
+    await seedRecipe({ ...BASE_RECIPE, _id: 'pending-opt', userId: TEST_UID, status: 'pending_review' })
+    admin.__verifyIdToken.mockRejectedValueOnce(new Error('invalid signature'))
+
+    const res = await request(server)
+      .get('/api/getRecipe?id=pending-opt')
+      .set(AUTH_HEADER)
+
+    expect(res.status).toBe(404)
   })
 })
 

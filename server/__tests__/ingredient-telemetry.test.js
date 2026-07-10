@@ -116,6 +116,35 @@ describe('POST /api/ingredients/parse — telemetry writes', () => {
     expect(count).toBe(0)
   })
 
+  it('never breaks the parse response when the telemetry write fails', async () => {
+    ingredientParser.mockResolvedValue(miss())
+    const db = getDB()
+    // db.collection() mints a new Collection instance per call, so intercept the
+    // factory and reject updateOne only on the telemetry collection — the route's
+    // own handle then hits the recordIngredientTelemetry catch (ingredients.js).
+    const realCollection = db.collection.bind(db)
+    const collectionSpy = jest.spyOn(db, 'collection').mockImplementation((name) => {
+      const coll = realCollection(name)
+      if (name === 'ingredientMisses') {
+        jest.spyOn(coll, 'updateOne').mockRejectedValue(new Error('telemetry db down'))
+      }
+      return coll
+    })
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+
+    try {
+      const res = await request(app)
+        .post('/api/ingredients/parse')
+        .set(AUTH_HEADER)
+        .send({ ingredientString: '1 cup zzqxnonexistent' })
+      expect(res.status).toBe(200)
+      expect(res.body).toEqual({ ingredientData: null })
+    } finally {
+      collectionSpy.mockRestore()
+      errorSpy.mockRestore()
+    }
+  })
+
   it('increments the counter (not a new doc) on a repeat of the same string', async () => {
     ingredientParser.mockResolvedValue(miss())
     for (let i = 0; i < 3; i++) {

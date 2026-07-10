@@ -94,10 +94,6 @@ describe('Home page', () => {
     mockUseAuth.mockReturnValue({ user: null })
   })
 
-  it('renders without crashing', () => {
-    renderHome()
-  })
-
   it('renders the hero heading text', () => {
     renderHome()
     expect(

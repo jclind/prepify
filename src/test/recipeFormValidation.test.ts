@@ -92,6 +92,13 @@ describe('validateRecipeForm', () => {
     expect(validateRecipeForm({ ...validForm(), title: '  Soup  ' }).title).toBeUndefined()
   })
 
+  it('treats a whitespace-only description as missing', () => {
+    // Mirrors the whitespace-title rule: `!form.description` let '   ' through.
+    const errors = validateRecipeForm({ ...validForm(), description: '   ' })
+    expect(errors.description).toBe('Description is required')
+    expect(isRecipeFormValid(errors)).toBe(false)
+  })
+
   it('caps the title length', () => {
     const ok = validateRecipeForm({ ...validForm(), title: 'A'.repeat(TITLE_MAX_LENGTH) })
     expect(ok.title).toBeUndefined()

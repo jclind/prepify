@@ -300,6 +300,13 @@ describe('RatingsAndReviews integration', () => {
       await screen.findByText('No reviews yet.')
       expect(screen.queryByText(/be the first/)).toBeNull()
     })
+
+    it('a failed fetch renders the error copy, never the empty state', async () => {
+      mockGetReviews.mockRejectedValue(new Error('network down'))
+      renderSection()
+      await screen.findByText(/Couldn’t load reviews\. Please try again later\./)
+      expect(screen.queryByText('No reviews yet.')).toBeNull()
+    })
   })
 
   describe('submit → own card flow', () => {

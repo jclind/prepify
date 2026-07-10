@@ -18,6 +18,7 @@ vi.mock('src/api/auth', () => ({
 
 const httpPost = vi.fn()
 const httpPut = vi.fn()
+const httpGet = vi.fn()
 // Nutrition now goes through the server proxy (POST api/nutrition/details) on the
 // shared `http` instance rather than a separate Edamam axios client. Keep the two
 // concerns split in tests by routing that one URL to its own mock, so existing
@@ -30,14 +31,21 @@ vi.mock('src/api/http-common', () => ({
         ? nutritionPost(url, ...rest)
         : httpPost(url, ...rest),
     put: (...args: unknown[]) => httpPut(...args),
+    get: (...args: unknown[]) => httpGet(...args),
   },
 }))
 
 // Import after mocks are in place.
 import RecipeAPI from 'src/api/recipes'
 import AuthAPI from 'src/api/auth'
+import type { ParsedIngredient } from '@jclind/ingredient-parser'
 import { deleteObject, ref, uploadBytes } from 'firebase/storage'
-import type { RecipeEditFormType, RecipeFormType, RecipeType } from 'types'
+import type {
+  IngredientsType,
+  RecipeEditFormType,
+  RecipeFormType,
+  RecipeType,
+} from 'types'
 
 const makeFormData = (): RecipeFormType => ({
   title: 'Soft-fail Test Recipe',
@@ -106,7 +114,9 @@ describe('RecipeAPI.addRecipe — nutrition soft-fail (High #4)', () => {
     const result = await RecipeAPI.addRecipe(makeFormData(), () => {})
 
     expect(result).toEqual({ status: 'success', id: 'srv-2', pendingReview: false })
-    expect(httpPost).toHaveBeenCalledWith('api/addRecipe', expect.any(Object))
+    expect(httpPost.mock.calls[0][0]).toBe('api/addRecipe')
+    // Empty nutrition data degrades to an explicit null in the posted body.
+    expect(httpPost.mock.calls[0][1].nutritionData).toBeNull()
   })
 })
 
@@ -295,6 +305,11 @@ describe('RecipeAPI.editRecipe', () => {
     await RecipeAPI.editRecipe('recipe-1', changed, makeOriginal(), () => {})
 
     expect(nutritionPost).toHaveBeenCalledTimes(1)
+    // The lookup is fed the exact 'quantity unit name' strings for the NEW set.
+    expect(nutritionPost).toHaveBeenCalledWith('api/nutrition/details', {
+      title: 'recipe 1',
+      ingr: ['1 cup Sugar'],
+    })
     const payload = httpPut.mock.calls[0][1]
     expect(payload.nutritionData).toEqual({
       uri: 'new',
@@ -342,6 +357,10 @@ describe('RecipeAPI.editRecipe', () => {
     await RecipeAPI.editRecipe('recipe-1', changed, makeOriginal(), () => {})
 
     expect(nutritionPost).toHaveBeenCalledTimes(1)
+    expect(nutritionPost).toHaveBeenCalledWith('api/nutrition/details', {
+      title: 'recipe 1',
+      ingr: ['1 cup Sugar'],
+    })
     const payload = httpPut.mock.calls[0][1]
     // The soft-fail must NOT erase the recipe's stored numeric nutrition; diet
     // labels are form-driven and pass through regardless.
@@ -416,6 +435,111 @@ describe('RecipeAPI.editRecipe', () => {
     await RecipeAPI.editRecipe('recipe-1', makeEditData(), makeOriginal(), () => {})
 
     expect(deleteObject).not.toHaveBeenCalled()
+  })
+})
+
+describe('RecipeAPI.getAllRecipes — query-string encoding', () => {
+  beforeEach(() => {
+    httpGet.mockReset()
+    httpGet.mockResolvedValue({ data: { recipes: [], totalCount: 0 } })
+  })
+
+  it('URL-encodes a multi-word cuisine', async () => {
+    await RecipeAPI.getAllRecipes({ cuisine: 'Middle Eastern' })
+    expect(httpGet.mock.calls[0][0]).toBe(
+      'api/recipes?q=&page=0&recipesPerPage=5&order=new&cuisine=Middle+Eastern'
+    )
+  })
+
+  it('URL-encodes an &-containing search term so it survives the round-trip', async () => {
+    await RecipeAPI.getAllRecipes({ query: 'mac & cheese' })
+    const url: string = httpGet.mock.calls[0][0]
+    expect(url).toBe(
+      'api/recipes?q=mac+%26+cheese&page=0&recipesPerPage=5&order=new&cuisine='
+    )
+    // The server-side parse recovers the raw term intact.
+    const parsed = new URLSearchParams(url.split('?')[1])
+    expect(parsed.get('q')).toBe('mac & cheese')
+  })
+})
+
+describe('RecipeAPI.getReviews — legacy rating normalization (coerceRating)', () => {
+  beforeEach(() => {
+    httpGet.mockReset()
+  })
+
+  it("coerces '4.5'→4.5 and ''/'abc'→null at the API boundary", async () => {
+    httpGet.mockResolvedValue({
+      data: {
+        totalCount: 3,
+        reviews: [
+          { reviewText: 'stringified float', rating: '4.5' },
+          { reviewText: 'rating-less legacy doc', rating: '' },
+          { reviewText: 'corrupt value', rating: 'abc' },
+        ],
+      },
+    })
+
+    const result = await RecipeAPI.getReviews('recipe-1', 'new', 0)
+
+    expect(result.reviews.map(r => r.rating)).toEqual([4.5, null, null])
+  })
+})
+
+describe('RecipeAPI.getRecipeNutrition — ingr payload rules', () => {
+  const parsed = (overrides: Partial<ParsedIngredient> = {}): ParsedIngredient => ({
+    ingredient: 'Flour',
+    quantity: 2,
+    unit: 'cups',
+    unitPlural: 'cups',
+    symbol: null,
+    minQty: 2,
+    maxQty: 2,
+    originalIngredientString: '2 cups flour',
+    comment: '',
+    ...overrides,
+  })
+
+  beforeEach(() => {
+    nutritionPost.mockReset()
+    nutritionPost.mockResolvedValue({ data: null })
+  })
+
+  it('sends "quantity unit name" rows, dropping labels and quantity-less rows', async () => {
+    const ingredients: IngredientsType[] = [
+      { id: 'i1', parsedIngredient: parsed(), ingredientData: null },
+      // Section label — no parsedIngredient, must not reach Edamam.
+      { id: 'lbl', label: 'For the sauce' },
+      // No quantity — unparseable by the lookup, dropped.
+      {
+        id: 'i2',
+        parsedIngredient: parsed({
+          ingredient: 'Salt',
+          quantity: null,
+          unit: null,
+          originalIngredientString: 'Salt to taste',
+        }),
+        ingredientData: null,
+      },
+      // No unit — padded with '' (double space preserved by the template).
+      {
+        id: 'i3',
+        parsedIngredient: parsed({
+          ingredient: 'Eggs',
+          quantity: 3,
+          unit: null,
+          originalIngredientString: '3 eggs',
+        }),
+        ingredientData: null,
+      },
+    ]
+
+    await RecipeAPI.getRecipeNutrition(ingredients)
+
+    expect(nutritionPost).toHaveBeenCalledWith('api/nutrition/details', {
+      title: 'recipe 1',
+      ingr: ['2 cups Flour', '3  Eggs'],
+    })
   })
 })
 

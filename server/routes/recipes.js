@@ -58,7 +58,9 @@ router.get('/recipes', asyncHandler(async (req, res) => {
   // a string or string[] — never a `{$ne:…}` operator object — so the helpers
   // below only have to coerce those two shapes.
   const limit = Math.min(parseInt(recipesPerPage) || 5, MAX_PER_PAGE)
-  const skip = (parseInt(page) || 0) * limit
+  // Floor at 0 so a negative ?page never produces a negative .skip() (which
+  // MongoDB rejects, surfacing as a 500 instead of a clean first page).
+  const skip = Math.max(0, parseInt(page) || 0) * limit
 
   // Soft-hidden recipes never surface in public browse.
   const filter = { ...RECIPE_VISIBLE }
