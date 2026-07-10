@@ -121,7 +121,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **8** | **X2 · `RecipeCardType` typing cleanup** | tighten the card-shape typing across `src/types.ts` + `src/api/recipes.ts` (BACKLOG Tech debt) | `[x]` [#273](https://github.com/jclind/prepify/pull/273) (2026-07-09) | `src/types.ts`, `src/api/recipes.ts` | **merged** — three card types mirror the three server projections |
 | **8** | **X3 · orphaned-image-on-failed-create** | delete the uploaded Storage object when `POST /addRecipe` fails after the image upload (`src/api/recipes.ts`) | `[x]` [#275](https://github.com/jclind/prepify/pull/275) (2026-07-09) | `src/api/recipes.ts` | **merged** — also fixes the same leak on the `editRecipe` new-image path; folded in a `storage.rules` owner-delete grant + IMAGE_PIPELINE.md cutover note |
 | **8** | **X4 · server-Jest flakiness structural fix** | the intermittent server-suite failures (test files/mocks/setup) (BACKLOG Tech debt) | `[x]` [#276](https://github.com/jclind/prepify/pull/276) (2026-07-09) | `server/__tests__/**` + Jest setup | **merged** — five vectors: one run-wide `MongoMemoryReplSet` (globalSetup/teardown + per-file DB drop, suite ~53s→~33s), sticky `asUser`/`asAdmin` replacing one-shot `getAuth` mocks, `testTimeout` 5s→30s + test-path serverSelection 30s, **`__mocks__/supertest.js` shared-server** (dominant vector: one-shot listeners → ETIMEDOUT/phantom-404s), per-worker test DBs (`JEST_WORKER_ID`). 24/24 stress runs green + local review |
-| **9** | **B1 · AddRecipe enrichment/draft safety** ⚠ lane | M3 (submit-mid-enrichment persists `ingredientData:null` + understated price) + D3 (pre-title content never autosaved) (BACKLOG Bugs + UX) | `[~]` `feat/b1-addrecipe-enrichment-draft-safety` (2026-07-10) | `src/pages/AddRecipe/**` (`useRecipeForm.ts`, `useDraftAutosave.ts`, `IngredientsContainer`) | **dep:** rebase onto [#279](https://github.com/jclind/prepify/pull/279) (touched `useRecipeForm.ts`). Both items share the same files → one lane |
+| **9** | **B1 · AddRecipe enrichment/draft safety** ⚠ lane | M3 (submit-mid-enrichment persists `ingredientData:null` + understated price) + D3 (pre-title content never autosaved) (BACKLOG Bugs + UX) | `[P]` [#281](https://github.com/jclind/prepify/pull/281) (2026-07-10) | `src/pages/AddRecipe/**` (`useRecipeForm.ts`, `useDraftAutosave.ts`, `IngredientsContainer`) | **dep:** rebase onto [#279](https://github.com/jclind/prepify/pull/279) (touched `useRecipeForm.ts`). Both items share the same files → one lane |
 | **9** | **B2 · pagination re-append dedup** | M8 (`usePaginatedLoadMore` re-appends a page on refetch → duplicate cards) (BACKLOG Bugs) | `[x]` [#283](https://github.com/jclind/prepify/pull/283) (2026-07-10) | `src/pages/Account/usePaginatedLoadMore.ts` | **merged** — isolated; distinct from the #274 error/empty fix |
 | **9** | **B3 · ingredient parse limiter + FE `RATE_LIMITED`** | I1 (30/min limiter < 50-ingredient cap; FE ignores the 429 code → understated price) (BACKLOG Bugs) | `[ ]` | `server/routes/ingredients.js`, `src/api/recipes.ts` | disjoint from other lanes |
 | **9** | **B4 · quantity display (fractions + ranges)** | I2 (`closestFraction` never rounds up past 7/8) + I3 (ranges flattened to low end) (BACKLOG UX) | `[ ]` | `src/util/formatQuantity.ts`, `SingleRecipe.tsx`, `PrintableRecipe.tsx`, `IngredientItemText.tsx`, `updateIngredients.ts` | one quantity-rendering lane; SingleRecipe.tsx overlaps nothing else this wave |
@@ -2015,6 +2015,22 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   #279 (which rewrote `useRecipeForm.ts`) is already merged, so the branch forks from current `development` —
   no rebase pending. Verified `development` in sync with origin (0/0) and no Wave-9 lane in flight before
   claiming. Worktree not yet created.
+- **2026-07-10** — **B1** implemented in `worktree feat+b1-addrecipe-enrichment-draft-safety` → PR
+  [#281](https://github.com/jclind/prepify/pull/281) opened (`[P]`). **M3:** the per-row enrichment status map
+  was container-local, so `handleSubmit` couldn't see in-flight lookups — lifted it into `useRecipeForm`
+  (`IngredientStatus`/`withIngredientStatus` moved to the `ingredientEnrichment.ts` leaf module) and gated
+  submission through the validator: pending rows → `errors.ingredients` + invalid-styled button + a neutral ⏳
+  toast on a blocked click; the error clears **reactively** when enrichment settles (bounded by the 12s
+  timeout), and rows settled as *errored* stay submittable (informed-degradation design unchanged). Edit mode
+  gets the same gate for free. **D3:** `canCreateDraft` swapped from title-only to `hasDraftableContent()` —
+  any non-default content field creates the draft (untitled drafts already fully supported server-side + in
+  the Drafts UI); an all-default form still never creates one, preserving the no-throwaway-drafts intent.
+  Tests: +12 across the validator / AddRecipe integration (blocked-while-loading, errored-doesn't-block,
+  reactive clear, unmount flush persists pre-title content, pristine form creates nothing) /
+  `hasDraftableContent` units. Gates: tsc clean, Vitest 687/87 files, build OK (no `server/` change).
+  Runtime-verified end-to-end on the live dev stack (real signup; enrichment request held open 8s → submit
+  blocked → self-clear → publish; untitled description-only draft appears in the Drafts tab; artifacts
+  cleaned up).
 - **2026-07-10** — **B2 merged** ([#283](https://github.com/jclind/prepify/pull/283), CI green — Backend/Frontend/
   E2e/Fallow/Static/GitGuardian all pass) into `development`; worktree torn down. Root cause: the accumulate
   effect in `usePaginatedLoadMore` keyed purely on the `data` object reference, so a background refetch of the
