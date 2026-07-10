@@ -123,7 +123,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **8** | **X4 · server-Jest flakiness structural fix** | the intermittent server-suite failures (test files/mocks/setup) (BACKLOG Tech debt) | `[x]` [#276](https://github.com/jclind/prepify/pull/276) (2026-07-09) | `server/__tests__/**` + Jest setup | **merged** — five vectors: one run-wide `MongoMemoryReplSet` (globalSetup/teardown + per-file DB drop, suite ~53s→~33s), sticky `asUser`/`asAdmin` replacing one-shot `getAuth` mocks, `testTimeout` 5s→30s + test-path serverSelection 30s, **`__mocks__/supertest.js` shared-server** (dominant vector: one-shot listeners → ETIMEDOUT/phantom-404s), per-worker test DBs (`JEST_WORKER_ID`). 24/24 stress runs green + local review |
 | **9** | **B1 · AddRecipe enrichment/draft safety** ⚠ lane | M3 (submit-mid-enrichment persists `ingredientData:null` + understated price) + D3 (pre-title content never autosaved) (BACKLOG Bugs + UX) | `[x]` [#281](https://github.com/jclind/prepify/pull/281) (2026-07-10) | `src/pages/AddRecipe/**` (`useRecipeForm.ts`, `useDraftAutosave.ts`, `IngredientsContainer`) | **merged** — submit gated on in-flight enrichment (reactive clear + ⏳ toast); pre-title content now autosaves; local review closed a draft/edit gate-bypass; three follow-ups filed |
 | **9** | **B2 · pagination re-append dedup** | M8 (`usePaginatedLoadMore` re-appends a page on refetch → duplicate cards) (BACKLOG Bugs) | `[x]` [#283](https://github.com/jclind/prepify/pull/283) (2026-07-10) | `src/pages/Account/usePaginatedLoadMore.ts` | **merged** — isolated; distinct from the #274 error/empty fix |
-| **9** | **B3 · ingredient parse limiter + FE `RATE_LIMITED`** | I1 (30/min limiter < 50-ingredient cap; FE ignores the 429 code → understated price) (BACKLOG Bugs) | `[P]` [#282](https://github.com/jclind/prepify/pull/282) (2026-07-10) | `server/routes/ingredients.js`, `src/api/recipes.ts` | disjoint from other lanes |
+| **9** | **B3 · ingredient parse limiter + FE `RATE_LIMITED`** | I1 (30/min limiter < 50-ingredient cap; FE ignores the 429 code → understated price) (BACKLOG Bugs) | `[x]` [#282](https://github.com/jclind/prepify/pull/282) (2026-07-10) | `server/routes/ingredients.js`, `src/api/recipes.ts` | **merged** — local review closed the edit-path test gap; one unrelated double-submit bug filed, not fixed |
 | **9** | **B4 · quantity display (fractions + ranges)** | I2 (`closestFraction` never rounds up past 7/8) + I3 (ranges flattened to low end) (BACKLOG UX) | `[P]` [#284](https://github.com/jclind/prepify/pull/284) (2026-07-10) | `src/util/formatQuantity.ts`, `SingleRecipe.tsx`, `PrintableRecipe.tsx`, `IngredientItemText.tsx`, `updateIngredients.ts` | one quantity-rendering lane; SingleRecipe.tsx overlaps nothing else this wave |
 | **9** | **B5 · draft PUT concurrency guard** | D2 (full-`$set` PUT, no version precondition → two-tab clobber) (BACKLOG Bugs) | `[ ]` | `server/routes/drafts.js` | isolated |
 | **9** | **B6 · account-counts badge parity** | recipes/ratings tab badges use raw counts vs their filtered lists (BACKLOG Tech debt) | `[ ]` | `server/util/accountCounts.js` | **dep:** land after [#279](https://github.com/jclind/prepify/pull/279) (rewrites this file; adds the `saved` filter B6 mirrors) |
@@ -2132,3 +2132,18 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   Enter re-fires `handleEditSubmit` a second time, because its own trailing `editInputRef.current.blur()`
   call re-triggers `FormInput`'s `onBlur` (wired to the same handler) — double network calls/toasts on every
   edit-submit. Not part of B3's scope; not fixed here.
+- **2026-07-10** — **B3 merged** ([#282](https://github.com/jclind/prepify/pull/282), merge commit `310dee1`;
+  CI green — Backend/Frontend/E2e/Fallow/Static/GitGuardian all pass) into `development`; worktree torn down.
+  Rebase note: the branch had gone `DIRTY`/`CONFLICTING` against `development` (B1 and B2 both merged in the
+  interim, both touching the `BACKLOG_ROADMAP.md` board/log chokepoint) — which silently suppressed the
+  `pull_request` CI trigger entirely (no error, just zero workflow runs, even after a retrigger push and a
+  close/reopen). Root-caused via this doc's own landing gotcha note, rebased onto current `development`
+  (board/log conflicts resolved keeping both sides; one real code conflict in
+  `src/test/IngredientsContainer.test.tsx` where B1's new "row removed mid-flight" test and B3's new
+  "rate limited" tests landed at the same anchor — kept both blocks), full gates re-verified post-rebase
+  (Vitest 699/699, Jest 843/843, `tsc` clean), then CI ran for real and passed. Scope recap: raised the
+  ingredient-parse limiter from the factory default (30/min, below `MAX_INGREDIENTS`=50) to
+  `MAX_INGREDIENTS + 40` (90/min); the client now detects a `RATE_LIMITED` 429, reads `Retry-After`, and
+  shows an honest wait toast + a self-clearing disabled retry button instead of silently understating price.
+  A local code review (post-open) closed an edit-path test gap and filed one unrelated pre-existing bug
+  (edit-submit-via-Enter double-fires via its own `blur()` call) to `BACKLOG.md`, not fixed in this PR.
