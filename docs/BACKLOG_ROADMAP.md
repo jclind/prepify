@@ -125,7 +125,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **9** | **B2 · pagination re-append dedup** | M8 (`usePaginatedLoadMore` re-appends a page on refetch → duplicate cards) (BACKLOG Bugs) | `[x]` [#283](https://github.com/jclind/prepify/pull/283) (2026-07-10) | `src/pages/Account/usePaginatedLoadMore.ts` | **merged** — isolated; distinct from the #274 error/empty fix |
 | **9** | **B3 · ingredient parse limiter + FE `RATE_LIMITED`** | I1 (30/min limiter < 50-ingredient cap; FE ignores the 429 code → understated price) (BACKLOG Bugs) | `[x]` [#282](https://github.com/jclind/prepify/pull/282) (2026-07-10) | `server/routes/ingredients.js`, `src/api/recipes.ts` | **merged** — local review closed the edit-path test gap; one unrelated double-submit bug filed, not fixed |
 | **9** | **B4 · quantity display (fractions + ranges)** | I2 (`closestFraction` never rounds up past 7/8) + I3 (ranges flattened to low end) (BACKLOG UX) | `[P]` [#284](https://github.com/jclind/prepify/pull/284) (2026-07-10) | `src/util/formatQuantity.ts`, `SingleRecipe.tsx`, `PrintableRecipe.tsx`, `IngredientItemText.tsx`, `updateIngredients.ts` | one quantity-rendering lane; SingleRecipe.tsx overlaps nothing else this wave |
-| **9** | **B5 · draft PUT concurrency guard** | D2 (full-`$set` PUT, no version precondition → two-tab clobber) (BACKLOG Bugs) | `[ ]` | `server/routes/drafts.js` | isolated |
+| **9** | **B5 · draft PUT concurrency guard** | D2 (full-`$set` PUT, no version precondition → two-tab clobber) (BACKLOG Bugs) | `[~]` `worktree-feat+b5-draft-put-concurrency-guard` (2026-07-10) | `server/routes/drafts.js` | isolated |
 | **9** | **B6 · account-counts badge parity** | recipes/ratings tab badges use raw counts vs their filtered lists (BACKLOG Tech debt) | `[ ]` | `server/util/accountCounts.js` | **dep:** land after [#279](https://github.com/jclind/prepify/pull/279) (rewrites this file; adds the `saved` filter B6 mirrors) |
 | **—** | **Deferred / post-1.0 / owner** | see [that section](#deferred--post-10--owner-off-the-active-board) | `[blocked]`/`[dropped]` | — | prerendering, Edamam, theming, brand-orange, DB relocation, ideas |
 
@@ -2147,3 +2147,10 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   shows an honest wait toast + a self-clearing disabled retry button instead of silently understating price.
   A local code review (post-open) closed an edit-path test gap and filed one unrelated pre-existing bug
   (edit-submit-via-Enter double-fires via its own `blur()` call) to `BACKLOG.md`, not fixed in this PR.
+- **2026-07-10** — **B5 claimed** (`worktree-feat+b5-draft-put-concurrency-guard`). Claim recorded directly on
+  `development` (same convention as prior lanes) so concurrent sessions see the lane taken. Scope: `PUT
+  /drafts/:id` (`server/routes/drafts.js:112`) does a full-document `$set` of the client's whole
+  `draftContent` with no `updatedAt`/version precondition, so two tabs editing the same draft last-write-wins
+  clobber (tab B's stale full body silently erases tab A's ingredient additions) — add a version/timestamp
+  guard on the update and surface a conflict response instead of silently overwriting. Verified no existing
+  B5 branch/worktree and `development` in sync with origin before claiming. Worktree not yet created.
