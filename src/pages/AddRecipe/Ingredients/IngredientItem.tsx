@@ -95,6 +95,8 @@ const IngredientItem: FC<IngredientItemProps> = ({
     if (typeof ingredient !== 'undefined' && 'parsedIngredient' in ingredient) {
       const {
         quantity,
+        minQty,
+        maxQty,
         unit,
         ingredient: ingredientName,
         comment,
@@ -102,6 +104,8 @@ const IngredientItem: FC<IngredientItemProps> = ({
       return (
         <IngredientItemText
           quantity={quantity}
+          minQty={minQty}
+          maxQty={maxQty}
           unit={unit}
           ingredientName={ingredientName}
           comment={comment}

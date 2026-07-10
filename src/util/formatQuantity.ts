@@ -31,6 +31,15 @@ export const closestFraction = (num: number): string => {
       : prev
   })
 
+  // Roll over to the next whole number when the remainder is at least as close
+  // to 1 as it is to the nearest table fraction (which tops out at 7/8). Without
+  // this, decimals in [0.9375, 1) snapped down to "7/8" instead of rounding up
+  // — e.g. 0.95 → "1", 1.96 → "2". The 0.9375 midpoint ties toward rounding up.
+  const closestDistance = Math.abs(closest.num / closest.den - decimal)
+  if (1 - decimal <= closestDistance) {
+    return (wholeNum + 1).toString()
+  }
+
   const numerator = closest.num
   const denominator = closest.den
   const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b))
@@ -39,4 +48,32 @@ export const closestFraction = (num: number): string => {
   return `${wholeNum ? wholeNum + ' ' : ''}${numerator / divisor}/${
     denominator / divisor
   }`
+}
+
+// Renders an ingredient amount for display, honouring a captured quantity range
+// (e.g. "2-3 cups") when the parser recorded a distinct upper bound. A range is
+// present when `maxQty` exceeds `minQty`; otherwise the single `quantity` is
+// shown. Returns '' when there is no numeric amount (e.g. "salt, to taste").
+// This is the one place ranges get rendered — SingleRecipe, the printable view,
+// and the add-recipe row all route through it so a "2-3" never collapses to "2".
+export const formatIngredientQuantity = (
+  quantity: number | null,
+  minQty?: number | null,
+  maxQty?: number | null
+): string => {
+  if (minQty != null && maxQty != null && maxQty > minQty) {
+    const low = closestFraction(minQty)
+    const high = closestFraction(maxQty)
+    // A narrow range whose bounds round to the same display fraction (e.g.
+    // 0.96–0.99 → "1", or float noise from servings scaling nudging maxQty
+    // barely past minQty) would read as "1–1". Collapse it to the single value.
+    return low === high ? low : `${low}–${high}`
+  }
+  // Falsy quantity (null or 0) means "no numeric amount" — e.g. the parser
+  // returns 0 for "salt, to taste". Matches the truthiness guard every renderer
+  // used before this helper, so those rows show just the name, not "0".
+  if (quantity) {
+    return closestFraction(quantity)
+  }
+  return ''
 }

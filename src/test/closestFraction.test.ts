@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { closestFraction } from 'src/util/formatQuantity'
+import {
+  closestFraction,
+  formatIngredientQuantity,
+} from 'src/util/formatQuantity'
 
 // closestFraction renders a decimal ingredient quantity as the nearest "nice"
 // cooking fraction for display (the recipe page + printable view + ingredient
@@ -39,5 +42,50 @@ describe('closestFraction', () => {
     expect(closestFraction(0.4)).toBe('3/8')
     // Just under 1/8 still snaps to 1/8 (it's the smallest entry).
     expect(closestFraction(0.1)).toBe('1/8')
+  })
+
+  it('rounds up to the next whole number past 7/8 instead of snapping down', () => {
+    // Regression (BUG_HUNT I2): decimals in [0.9375, 1) used to render "7/8".
+    expect(closestFraction(0.95)).toBe('1')
+    expect(closestFraction(0.99)).toBe('1')
+    expect(closestFraction(1.96)).toBe('2')
+    // The 0.9375 midpoint between 7/8 and 1 ties toward rounding up.
+    expect(closestFraction(0.9375)).toBe('1')
+    // Just below the midpoint still snaps to 7/8 (closer to 0.875 than to 1).
+    expect(closestFraction(0.9)).toBe('7/8')
+    expect(closestFraction(0.875)).toBe('7/8')
+  })
+})
+
+// formatIngredientQuantity is the single display entry point: it renders a
+// "min–max" range when the parser captured a distinct upper bound, and falls
+// back to the single quantity (via closestFraction) otherwise.
+describe('formatIngredientQuantity', () => {
+  it('renders a range with an en dash when maxQty exceeds minQty', () => {
+    expect(formatIngredientQuantity(2, 2, 3)).toBe('2–3')
+    expect(formatIngredientQuantity(1.5, 1.5, 2.5)).toBe('1 1/2–2 1/2')
+  })
+
+  it('collapses a range whose bounds round to the same fraction', () => {
+    // 0.96 and 0.99 both round to "1" — render "1", not "1–1".
+    expect(formatIngredientQuantity(0.96, 0.96, 0.99)).toBe('1')
+    // Bounds inside the same fraction bucket (both snap to 1/2) collapse too.
+    expect(formatIngredientQuantity(1.51, 1.51, 1.52)).toBe('1 1/2')
+  })
+
+  it('renders a single quantity when there is no distinct upper bound', () => {
+    // Non-range parses come back with quantity == minQty == maxQty.
+    expect(formatIngredientQuantity(1.5, 1.5, 1.5)).toBe('1 1/2')
+    // Legacy documents predating range capture carry null bounds.
+    expect(formatIngredientQuantity(0.5, null, null)).toBe('1/2')
+    expect(formatIngredientQuantity(2)).toBe('2')
+  })
+
+  it('returns an empty string when there is no numeric amount', () => {
+    expect(formatIngredientQuantity(null, null, null)).toBe('')
+    expect(formatIngredientQuantity(null)).toBe('')
+    // The parser returns 0 for "salt, to taste" — render just the name, not "0".
+    expect(formatIngredientQuantity(0, 0, 0)).toBe('')
+    expect(formatIngredientQuantity(0)).toBe('')
   })
 })

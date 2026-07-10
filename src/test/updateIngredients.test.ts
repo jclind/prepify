@@ -90,4 +90,17 @@ describe('updateIngredients', () => {
     const scaled = asItem(out)
     expect(scaled.ingredientData?.totalPriceUSACents).toBeCloseTo(33.33, 2)
   })
+
+  it('scales both range bounds so a "2-3" range does not lose its upper end', () => {
+    const ranged: IngredientsType = {
+      id: 'r1',
+      parsedIngredient: { ...parsed(2), minQty: 2, maxQty: 3 },
+      ingredientData: null,
+    }
+    const [out] = updateIngredients([ranged], 2, 4)
+    const scaled = asItem(out)
+    expect(scaled.parsedIngredient.quantity).toBe(4)
+    expect(scaled.parsedIngredient.minQty).toBe(4)
+    expect(scaled.parsedIngredient.maxQty).toBe(6)
+  })
 })
