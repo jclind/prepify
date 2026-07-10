@@ -124,7 +124,7 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **9** | **B1 · AddRecipe enrichment/draft safety** ⚠ lane | M3 (submit-mid-enrichment persists `ingredientData:null` + understated price) + D3 (pre-title content never autosaved) (BACKLOG Bugs + UX) | `[~]` `feat/b1-addrecipe-enrichment-draft-safety` (2026-07-10) | `src/pages/AddRecipe/**` (`useRecipeForm.ts`, `useDraftAutosave.ts`, `IngredientsContainer`) | **dep:** rebase onto [#279](https://github.com/jclind/prepify/pull/279) (touched `useRecipeForm.ts`). Both items share the same files → one lane |
 | **9** | **B2 · pagination re-append dedup** | M8 (`usePaginatedLoadMore` re-appends a page on refetch → duplicate cards) (BACKLOG Bugs) | `[x]` [#283](https://github.com/jclind/prepify/pull/283) (2026-07-10) | `src/pages/Account/usePaginatedLoadMore.ts` | **merged** — isolated; distinct from the #274 error/empty fix |
 | **9** | **B3 · ingredient parse limiter + FE `RATE_LIMITED`** | I1 (30/min limiter < 50-ingredient cap; FE ignores the 429 code → understated price) (BACKLOG Bugs) | `[ ]` | `server/routes/ingredients.js`, `src/api/recipes.ts` | disjoint from other lanes |
-| **9** | **B4 · quantity display (fractions + ranges)** | I2 (`closestFraction` never rounds up past 7/8) + I3 (ranges flattened to low end) (BACKLOG UX) | `[ ]` | `src/util/formatQuantity.ts`, `SingleRecipe.tsx`, `PrintableRecipe.tsx`, `IngredientItemText.tsx`, `updateIngredients.ts` | one quantity-rendering lane; SingleRecipe.tsx overlaps nothing else this wave |
+| **9** | **B4 · quantity display (fractions + ranges)** | I2 (`closestFraction` never rounds up past 7/8) + I3 (ranges flattened to low end) (BACKLOG UX) | `[~]` `feat/b4-quantity-display-fractions-ranges` (2026-07-10) | `src/util/formatQuantity.ts`, `SingleRecipe.tsx`, `PrintableRecipe.tsx`, `IngredientItemText.tsx`, `updateIngredients.ts` | one quantity-rendering lane; SingleRecipe.tsx overlaps nothing else this wave |
 | **9** | **B5 · draft PUT concurrency guard** | D2 (full-`$set` PUT, no version precondition → two-tab clobber) (BACKLOG Bugs) | `[ ]` | `server/routes/drafts.js` | isolated |
 | **9** | **B6 · account-counts badge parity** | recipes/ratings tab badges use raw counts vs their filtered lists (BACKLOG Tech debt) | `[ ]` | `server/util/accountCounts.js` | **dep:** land after [#279](https://github.com/jclind/prepify/pull/279) (rewrites this file; adds the `saved` filter B6 mirrors) |
 | **—** | **Deferred / post-1.0 / owner** | see [that section](#deferred--post-10--owner-off-the-active-board) | `[blocked]`/`[dropped]` | — | prerendering, Edamam, theming, brand-orange, DB relocation, ideas |
@@ -2027,3 +2027,13 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   `visibilitychange` event react-query's focus manager listens for → 8→10 cards + React duplicate-key warning on
   the pre-fix hook), then confirmed the identical repro holds clean on the fixed hook (stays at 8, no dupes, no
   warnings). Test fixtures cleaned up after. First Wave-9 track done.
+- **2026-07-10** — **B4 claimed** (`feat/b4-quantity-display-fractions-ranges`). Claim recorded directly on
+  `development` (same convention as S4–S7/B1) so concurrent sessions see the lane taken. Scope: the Wave-9
+  quantity-rendering lane — **I2** (`closestFraction` in `src/util/formatQuantity.ts:22` snaps every non-integer
+  to one of 9 fractions and never rounds up past 7/8, so `[0.9375, 1.0)` renders "7/8" instead of the next whole
+  number, and every non-"nice" amount carries up to ~1/16 error) and **I3** (ingredient ranges like "2-3 cups"
+  are flattened to the low end everywhere — `ParsedIngredient` carries `minQty`/`maxQty` but no renderer reads
+  them: `SingleRecipe.tsx`, `PrintableRecipe.tsx`, `IngredientItemText.tsx` show only `quantity`, and
+  `updateIngredients.ts` scales only `quantity`). Both are one quantity-rendering surface → one lane; `SingleRecipe.tsx`
+  overlaps nothing else this wave, and the lane is disjoint from the in-flight B1 (AddRecipe hooks/container).
+  Verified `development` in sync with origin (0/0) before claiming. Worktree not yet created.
