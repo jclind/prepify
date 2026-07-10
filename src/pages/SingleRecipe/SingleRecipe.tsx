@@ -31,7 +31,7 @@ import { capitalize } from 'src/util/capitalize'
 import { formatRating } from 'src/util/formatRating'
 import { formatMonthYear } from 'src/util/formatDate'
 import { formatPrice } from 'src/util/formatPrice'
-import { closestFraction } from 'src/util/formatQuantity'
+import { formatIngredientQuantity } from 'src/util/formatQuantity'
 import { recipeImageSrcSet } from 'src/util/recipeImageVariants'
 
 import { IngredientsType, InstructionsType, RecipeType } from 'types'
@@ -193,7 +193,8 @@ const SingleRecipe: FC = () => {
 
   const renderIngredient = (ingr: IngredientsType) => {
     if ('parsedIngredient' in ingr) {
-      const { quantity, unit, ingredient, comment } = ingr.parsedIngredient
+      const { quantity, minQty, maxQty, unit, ingredient, comment } =
+        ingr.parsedIngredient
       const isChecked = checked.has(ingr.id)
       const image = ingr.ingredientData?.imagePath
       return (
@@ -225,7 +226,7 @@ const SingleRecipe: FC = () => {
             </span>
             <span className='ing-text'>
               <span className='qty'>
-                {quantity ? closestFraction(quantity) : ''}
+                {formatIngredientQuantity(quantity, minQty, maxQty)}
                 {unit ? ` ${unit}` : ''}
               </span>{' '}
               <span className='name'>

@@ -3,7 +3,7 @@ import React, { FC } from 'react'
 import './PrintableRecipe.scss'
 
 import { capitalize } from 'src/util/capitalize'
-import { closestFraction } from 'src/util/formatQuantity'
+import { formatIngredientQuantity } from 'src/util/formatQuantity'
 import { formatRating } from 'src/util/formatRating'
 import { formatMonthYear } from 'src/util/formatDate'
 import { formatPrice } from 'src/util/formatPrice'
@@ -100,9 +100,11 @@ const PrintableRecipe: FC<PrintableRecipeProps> = ({
               'parsedIngredient' in ingr ? (
                 <li key={ingr.id} className='pr-ing'>
                   <span className='pr-qty'>
-                    {ingr.parsedIngredient.quantity
-                      ? closestFraction(ingr.parsedIngredient.quantity)
-                      : ''}
+                    {formatIngredientQuantity(
+                      ingr.parsedIngredient.quantity,
+                      ingr.parsedIngredient.minQty,
+                      ingr.parsedIngredient.maxQty
+                    )}
                     {ingr.parsedIngredient.unit
                       ? ` ${ingr.parsedIngredient.unit}`
                       : ''}
