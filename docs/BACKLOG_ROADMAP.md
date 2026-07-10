@@ -2031,6 +2031,18 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   Runtime-verified end-to-end on the live dev stack (real signup; enrichment request held open 8s → submit
   blocked → self-clear → publish; untitled description-only draft appears in the Drafts tab; artifacts
   cleaned up).
+- **2026-07-10** — **B1 local review** (8-angle finder fan-out on [#281](https://github.com/jclind/prepify/pull/281))
+  surfaced one real gap, fixed in-lane (`11c7d50`): **the draft/edit path bypassed the new enrichment gate** —
+  a draft autosaved mid-lookup persists `ingredientData:null` and resumed with an empty status map, so the row
+  rendered settled and publish went through with null data (M3 back via the draft path D3 makes common). Fixed
+  by seeding `missingDataStatuses()` as `error` (retryable) on draft hydration + edit-mode init (also heals
+  pre-gate recipes stored with null rows); runtime-verified (resume → retry badge → retry heals). Polish folded
+  in: removed-row late-settle no longer toasts/resurrects status; blocked-submit toast only when pending is the
+  sole blocker (copy single-sourced); `hasDraftableContent` rebuilt on a mapped type over
+  `Required<RecipeDraftContent>` (a new form field breaks the build until classified — kills the silent-exclusion
+  D3-recurrence risk); `useCallback` per CONVENTIONS §2.7; stale title-gate comments corrected. **Three
+  follow-ups filed to BACKLOG.md, not fixed:** server-side `servingPrice` recompute (out of lane surface, pairs
+  with B3), `beforeunload`/`pagehide` draft flush, signed-out draft-error badge copy. Vitest 691 green (+4).
 - **2026-07-10** — **B2 merged** ([#283](https://github.com/jclind/prepify/pull/283), CI green — Backend/Frontend/
   E2e/Fallow/Static/GitGuardian all pass) into `development`; worktree torn down. Root cause: the accumulate
   effect in `usePaginatedLoadMore` keyed purely on the `data` object reference, so a background refetch of the
