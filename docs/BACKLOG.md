@@ -879,14 +879,33 @@ findings table.)*
   Ratings list is therefore paginating an *unspecified* order: usually insertion order in practice, but
   Mongo guarantees nothing, so Load-More pages can theoretically skip/duplicate rows. Fix: send `'new'`
   from the client (one line) — or add a `newAdd` alias server-side — plus a test pinning the sort. Low-med.
-- `[ ]` **`FormInput`'s generic `setVal` passes raw DOM strings through an unchecked cast** *(filed 2026-07-10,
-  off the V7 [#290](https://github.com/jclind/prepify/pull/290) lane)* — `FormInput.tsx`'s `setVal(next as T)`
+- `[x]` **`FormInput`'s generic `setVal` passes raw DOM strings through an unchecked cast** *(filed 2026-07-10,
+  off the V7 [#290](https://github.com/jclind/prepify/pull/290) lane; boarded Wave 11 · T3; **fixed in
+  [#298](https://github.com/jclind/prepify/pull/298), merged 2026-07-10**: honest-string surface — the generic
+  and the `as T` cast are deleted (`val: string`, `setVal: (value: string) => void`), the numeric consumers
+  (`ServingsInput`, `TimeInput`) coerce at their own boundaries, and `RecipeFormState.servings` is honestly
+  `string` with `String()` at the edit-init/draft-resume hydration points. Zero runtime change verified across
+  boundaries (draft payloads already `Number()`-coerced pre-PR, submit pinned by a `typeof === 'number'`
+  assertion); future numeric misuse is a compile error, self-verified by `@ts-expect-error` type-tests in
+  `src/test-d/`)* — `FormInput.tsx`'s `setVal(next as T)`
   hands the raw input string to the caller regardless of `T`, so numeric fields like `ServingsInput` carry a
   type that's a lie at runtime: `form.servings: number | ''` is sometimes a numeric *string* until the
   submit-time `Number()` coercion in `useRecipeForm.ts`. Not a bug today (`ServingsInput`'s own gate + the
   submit coercion keep it safe, and V7's validator now coerces defensively), but every new numeric consumer
   has to rediscover this. Worth a small type-safety pass (parse at the boundary, or type the prop `string`).
   Low.
+- `[ ]` **`src/test` is excluded from `tsconfig`, so the Vitest suite is never typechecked** *(filed
+  2026-07-10, noticed on the Wave 11 · T3 [#298](https://github.com/jclind/prepify/pull/298) lane)* — type
+  errors (and `@ts-expect-error` assertions) in `src/test/**` are invisible to the `npx tsc --noEmit` gate;
+  T3's type-tests had to live in a separate `src/test-d/` directory to be enforced. Tests drift from the real
+  types silently (e.g. `recipeFormValidation.test.ts` passes numeric literals to a now-`string`-typed input
+  and nothing complains). Fix: include `src/test` in the typecheck (or a second `tsconfig.tests.json` wired
+  into CI's Static job) and clean up whatever surfaces. Low-med, typing-only. Low.
+- `[ ]` **Sweep for TimeInput's child-feeds-numeric-object shape** *(filed 2026-07-10, off the T3
+  [#298](https://github.com/jclind/prepify/pull/298) lane)* — TimeInput held raw field strings in
+  `useState<number | ''>` and flowed them into the parent's `{ hours: number, minutes: number }` object; #298
+  fixed it at that boundary, but other compound inputs that aggregate DOM strings into typed objects may hide
+  the same lie. One-pass audit of components that own `useState` around `FormInput`-style children. Low.
 - `[x]` **Ops: set `FIREBASE_STORAGE_BUCKET` in the server envs (+ make the empty-env skip real)** *(fixed in
   [#260](https://github.com/jclind/prepify/pull/260), N7: code early-returns the skip when the env is unset;
   owner confirmed the env is set on both dev + prod)* *(triaged
