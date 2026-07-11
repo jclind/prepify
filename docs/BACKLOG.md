@@ -162,6 +162,20 @@ The triage date stamped on items is the date they were filed here, not when they
   mount `makeUserLimiter`-based limiters, collection creation has only the global `/api` backstop. Low
   urgency (the 50-cap bounds the damage per user), but it's an asymmetry with its sibling write surfaces —
   same one-line fix as the other `makeUserLimiter` mounts. Low.
+- `[ ]` **`drafts.js` has no per-uid rate limiter at all (POST or PUT)** *(filed 2026-07-10, noticed on the
+  Wave 12 · U1 [#299](https://github.com/jclind/prepify/pull/299) lane — this also corrects the item above's
+  premise that the drafts routes mount limiters; verified against disk: zero `makeUserLimiter` references in
+  `server/routes/drafts.js`)* — ⚠ **not a copy-paste fix**: `PUT /drafts/:id` is the 1.5s-debounce autosave
+  path, so a stock 30/min per-uid cap would throttle legitimate continuous typing (~40 writes/min). Either
+  limit only `POST /drafts` (create; already capped at 25 docs by V3's trim) or pick a PUT rate that clears
+  the autosave cadence with margin (and make sure the keepalive unload flush from #294 can't be the request
+  that eats a 429). Low.
+- `[ ]` **Collection names are never run through `moderateText`** *(filed 2026-07-10, noticed on the Wave 12 ·
+  U1 [#299](https://github.com/jclind/prepify/pull/299) lane)* — `auth.js` moderates username/profile/display-name
+  writes, but `POST /collections` / `PATCH /collections/:id` accept a user-supplied `name` with only
+  `boundedName` bounds-checking. Mitigating: collections appear to be private to their owner (served only via
+  the authed `GET /collections`), so decide visibility first — if names never render to other users, this may
+  be a documented won't-fix rather than a gap. Low.
 - `[ ]` **`addReview` still writes string `reviewCreatedAt` — must flip to numeric AT the V5 migration cutover, not before or long after** *(filed 2026-07-10, off the V5 [#293](https://github.com/jclind/prepify/pull/293) lane)* —
   `POST /addReview` (`server/routes/reviews.js:120,128`) writes `reviewCreatedAt: Date.now().toString()` (a
   *string*) on every new review. Today the "New" sort `{ reviewCreatedAt: -1 }` works *because* the field is
