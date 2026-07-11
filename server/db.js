@@ -129,15 +129,16 @@ async function ensureIndexes() {
     console.error('Failed to create title text index on recipes:', err.message)
   }
 
-  // Backs the username-rename cascade in POST /setUsername (routes/auth.js), which
-  // `updateMany({ username: prevUsername }, …)` over ratings to carry a handle
-  // change across a user's denormalized review rows. NOTE: this index's ORIGINAL
+  // DEAD INDEX — no live query uses it. It used to back the username-rename
+  // cascade in POST /setUsername (routes/auth.js), which `updateMany`'d ratings
+  // by `{ username: prevUsername }`. That cascade now filters by the stable
+  // `userId` (PR #310, the D1 direction), and the index's original read
   // consumers — GET /api/getSingleUserReviews and the ratings tally in GET
-  // /api/getAccountCounts — both migrated to the stable `userId` in D1, so it now
-  // serves ONLY that (rare) rename write; it's kept because that updateMany would
-  // otherwise COLLSCAN the whole ratings collection. If the rename cascade is ever
-  // moved off `username` (the D1 direction), this index becomes fully dead and can
-  // be dropped.
+  // /api/getAccountCounts — had already migrated to `userId` in D1. So nothing
+  // queries `ratings.username` anymore. The `createIndex` call is kept here
+  // ONLY transitionally so it isn't silently orphaned: the actual removal is a
+  // guarded `dropIndex` follow-up (deliberately NOT done in #310). Drop this
+  // block when that follow-up lands.
   try {
     await db.collection('ratings').createIndex({ username: 1 })
   } catch (err) {

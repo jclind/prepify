@@ -183,15 +183,21 @@ router.post('/setUsername', verifyToken, requireActive, profileWriteLimiter, asy
     throw err
   }
 
-  // Ratings (which carry the reviews) and review reports denormalize the
-  // username — their documents are keyed by it, not by uid — so a rename has to
-  // be carried across or a user's existing reviews keep the old handle and
-  // detach from their profile + the moderation queue. New name is guaranteed
-  // free (checked above), so there's no collision with another user's rows.
+  // Ratings (which carry the reviews) denormalize the username, so a rename has
+  // to be carried across or a user's existing reviews keep the old handle and
+  // detach from their profile + the moderation queue. Filtered by userId (the
+  // D1 canonical key) rather than the old username, so the match can't collide
+  // with a same-handle stranger and survives future handle reuse. NOTE: a
+  // legacy rating row missing userId (pre-D1 residue) is intentionally NOT
+  // updated by this — userId is now the source of truth for "this user's rows".
+  // Review reports separately denormalize the username via their own
+  // reportedUsername field and still need that propagated too. New name is
+  // guaranteed free (checked above), so there's no collision with another
+  // user's rows.
   if (prevUsername && prevUsername !== username) {
     await db
       .collection('ratings')
-      .updateMany({ username: prevUsername }, { $set: { username } })
+      .updateMany({ userId: uid }, { $set: { username } })
     await db
       .collection('reports')
       .updateMany(
