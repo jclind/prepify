@@ -25,6 +25,16 @@ describe('DraftSaveStatus', () => {
     expect(screen.getByText("Couldn't save draft")).toBeTruthy()
   })
 
+  it('shows a distinct reload prompt on a cross-tab conflict (not the generic error)', () => {
+    const { container } = render(<DraftSaveStatus status='conflict' />)
+    expect(screen.getByText('Reload to see the latest')).toBeTruthy()
+    const el = container.querySelector('.draft-save-status')
+    expect(el?.className).toContain('conflict')
+    // A conflict is not a save failure — it must never read as the error badge.
+    expect(el?.className).not.toContain('error')
+    expect(screen.queryByText("Couldn't save draft")).toBeNull()
+  })
+
   it('reflects the saving and saved states', () => {
     const { rerender } = render(<DraftSaveStatus status='saving' />)
     expect(screen.getByText('Saving draft…')).toBeTruthy()

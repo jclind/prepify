@@ -1,6 +1,6 @@
 import React from 'react'
 import { vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { HelmetProvider } from 'react-helmet-async'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -732,6 +732,50 @@ describe('AddRecipe form', () => {
       const { unmount } = renderAddRecipe()
       unmount()
       expect(draftCreate).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('resume hydration vs in-flight keystrokes (W15 bug 3)', () => {
+    it('does not clobber a field the user edits while the draft is still loading', async () => {
+      const user = userEvent.setup()
+      // Control the draft GET so we can type during the sub-second load window.
+      let resolveDraft!: (d: any) => void
+      draftGet.mockReturnValue(
+        new Promise(res => {
+          resolveDraft = res
+        })
+      )
+      renderAddRecipe({ initialEntries: ['/add-recipe?draftId=d1'] })
+
+      // The user starts typing a title before the draft comes back.
+      await user.type(
+        screen.getByPlaceholderText('Add a title to your recipe.'),
+        'My own title'
+      )
+
+      // The draft now lands with its OWN title plus an untouched field.
+      await act(async () => {
+        resolveDraft({
+          _id: 'd1',
+          userId: 'u1',
+          createdAt: '1',
+          updatedAt: '1',
+          title: 'Draft title',
+          description: 'Draft description',
+        })
+      })
+
+      // Pre-fix HYDRATE spread the draft over the form and overwrote the title
+      // the user was typing. The user's in-progress edit must survive, while the
+      // untouched description still hydrates from the draft.
+      await waitFor(() =>
+        expect(
+          screen.getByPlaceholderText('Add a description to your recipe')
+        ).toHaveValue('Draft description')
+      )
+      expect(
+        screen.getByPlaceholderText('Add a title to your recipe.')
+      ).toHaveValue('My own title')
     })
   })
 

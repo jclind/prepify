@@ -8,6 +8,13 @@ export type DraftStatus =
   | 'saving'
   | 'saved'
   | 'error'
+  // Another tab/session saved newer content on top of this draft (the server
+  // 409'd DRAFT_CONFLICT). Distinct from a generic 'error': nothing is wrong
+  // with the connection — the user just needs to reload to pick up the latest
+  // version, so we show a distinct "reload" prompt rather than the alarming
+  // "couldn't save" error. Autosave stops until the page reloads. See
+  // DraftSaveStatus.
+  | 'conflict'
   // No signed-in user: autosave can't run (drafts are per-user), so instead of
   // firing a doomed save that surfaces as an alarming "Couldn't save draft"
   // error, we show calm "sign in to save" guidance. See DraftSaveStatus.
@@ -311,7 +318,10 @@ export function useDraftAutosave({
             (err.response?.data as { error?: string } | undefined)?.error) ||
           'This draft was updated elsewhere. Reload the page to see the latest version.'
         onConflictRef.current?.(message)
-        setStatus('error')
+        // Distinct from a generic save failure: the badge shows a calm "reload
+        // to see the latest" prompt, not the alarming "couldn't save" error, so
+        // a cross-tab edit doesn't read as a broken connection.
+        setStatus('conflict')
       } else if (isDraftDeletedError(err)) {
         // The draft we were updating is gone (deleted elsewhere, or evicted by
         // the per-user cap trim). Drop the dead id + version so the flush/unmount
@@ -362,14 +372,18 @@ export function useDraftAutosave({
       lastSavedRef.current = JSON.stringify(content)
       return
     }
-    if (JSON.stringify(content) === lastSavedRef.current) return
-    // No signed-in user: a save can't happen. Once the user has typed anything
-    // worth saving (draftable content, or an existing draft), show calm
-    // "sign in to save" guidance rather than scheduling a save that would fail.
+    // No signed-in user: a save can't happen. Once the user has anything worth
+    // saving (draftable content, or an existing draft), show calm "sign in to
+    // save" guidance rather than scheduling a save that would fail. This check
+    // sits BEFORE the unchanged-content early-return below: on a *passive*
+    // sign-out (token expiry, or signing out in another tab) the content hasn't
+    // changed, so a content-first return would leave a stale 'saved'/'idle'
+    // badge until the next keystroke — the guidance must correct immediately.
     if (!isSignedIn) {
       if (draftId || canCreate) setStatus('signed-out')
       return
     }
+    if (JSON.stringify(content) === lastSavedRef.current) return
     if (!draftId && (!canCreate || capReachedRef.current)) return
     // Warm the cached ID token so the unload flush can authenticate its
     // keepalive fetch even if this debounced save never fires (tab closed first).

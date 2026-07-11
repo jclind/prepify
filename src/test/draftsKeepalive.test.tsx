@@ -71,4 +71,86 @@ describe('DraftAPI.flushDraftKeepalive', () => {
     expect(fired).toBe(false)
     expect(fetch).not.toHaveBeenCalled()
   })
+
+  // Wait a macrotask so the fetch `.then`/`.json()` chain (and any retry) runs.
+  const flushMicrotasks = () => new Promise(res => setTimeout(res, 0))
+
+  it('retries the PUT once against the server’s latest version on a 409, so the newest edits win the unload race (W15 bug 1)', async () => {
+    // Models bug 1: this keepalive PUT and a normal autosave that was still in
+    // flight both carried the same base updatedAt ('1000'). The older in-flight
+    // save landed first, bumping the stored version to '2000', so this PUT 409s.
+    // Pre-fix it was dropped and the newest edits were silently lost; post-fix it
+    // retries once against '2000' and supersedes the older write.
+    const conflict = new Response(
+      JSON.stringify({ code: 'DRAFT_CONFLICT', draft: { updatedAt: '2000' } }),
+      { status: 409, headers: { 'Content-Type': 'application/json' } }
+    )
+    const ok = new Response(null, { status: 200 })
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(conflict)
+      .mockResolvedValueOnce(ok)
+    vi.stubGlobal('fetch', fetchMock)
+
+    const fired = DraftAPI.flushDraftKeepalive('draft-1', content, '1000')
+    expect(fired).toBe(true)
+    await flushMicrotasks()
+
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    // The retry carries the SAME (newest) content but the server's fresh version.
+    const retryBody = JSON.parse(fetchMock.mock.calls[1][1].body)
+    expect(retryBody).toEqual({ ...content, updatedAt: '2000' })
+    expect(fetchMock.mock.calls[1][1].method).toBe('PUT')
+    expect(fetchMock.mock.calls[1][1].keepalive).toBe(true)
+  })
+
+  it('does not retry when the 409 body carries no fresher version', async () => {
+    const conflict = new Response(
+      JSON.stringify({ code: 'DRAFT_CONFLICT' }),
+      { status: 409, headers: { 'Content-Type': 'application/json' } }
+    )
+    const fetchMock = vi.fn().mockResolvedValue(conflict)
+    vi.stubGlobal('fetch', fetchMock)
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    DraftAPI.flushDraftKeepalive('draft-1', content, '1000')
+    await flushMicrotasks()
+
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(errSpy).toHaveBeenCalled()
+    errSpy.mockRestore()
+  })
+
+  it('does not treat a 429 POST as a success — reports the failed create (W15 bug 2)', async () => {
+    // Bug 2: a 429 is a *resolved* fetch, so the pre-fix `.catch`-only handler
+    // never saw it and the flush behaved as if the draft was created. Check
+    // res.ok so a resolved-but-non-2xx create surfaces as a failure.
+    const tooMany = new Response(JSON.stringify({ code: 'RATE_LIMITED' }), {
+      status: 429,
+    })
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(tooMany))
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    // id null → POST /api/drafts (create).
+    const fired = DraftAPI.flushDraftKeepalive(null, content, '')
+    expect(fired).toBe(true)
+    await flushMicrotasks()
+
+    expect(errSpy).toHaveBeenCalled()
+    errSpy.mockRestore()
+  })
+
+  it('does not report a failure on a 2xx create', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.resolve(new Response(null, { status: 201 })))
+    )
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    DraftAPI.flushDraftKeepalive(null, content, '')
+    await flushMicrotasks()
+
+    expect(errSpy).not.toHaveBeenCalled()
+    errSpy.mockRestore()
+  })
 })
