@@ -118,7 +118,14 @@ The triage date stamped on items is the date they were filed here, not when they
   blur-triggered resubmission with a ref-guard, or blur without triggering `onBlur` (`blur()` after clearing
   the `onBlur` prop, or restructure so Enter itself blurs and only `onBlur` submits). Low severity (masked by
   idempotent-looking resubmission today) but burns real proxy quota — worth closing without a dedicated lane.
-- `[ ]` **Legacy rating docs are mistyped — "Top" review sort interleaves wrong** *(filed 2026-07-09, out of
+  *(Boarded Wave 10 · V6; fix in [#287](https://github.com/jclind/prepify/pull/287), PR open.)*
+- `[ ]` **`InstructionItem` inline edit has the same Enter double-submit shape as V6** *(filed 2026-07-10, off
+  the V6 [#287](https://github.com/jclind/prepify/pull/287) lane)* —
+  `src/pages/AddRecipe/Instructions/InstructionItem/InstructionItem.tsx` wires `handleEditSubmit` (`:41-56`) to
+  both `onBlur` and `onEnter` (`:108-109`) and ends with a manual `blur()`, so Enter-submit invokes the handler
+  twice — the identical pattern V6 fixed in `IngredientItem.tsx`. No network call on this path (just a duplicate,
+  idempotent `setInstructions`), so it's cosmetic today, but it's the same latent double-side-effect and the
+  same one-line ref-guard fixes it. Low. *(filed 2026-07-09, out of
   the §D overhaul)* — old `ratings` docs store `rating` as **stringified numbers** (`"5"`) and
   `reviewCreatedAt` as stringified epoch-ms, while post-#266 writes store floats; review-only docs are
   `null`. The client normalizes at the API boundary (`coerceRating`, `src/api/recipes.ts`) so *rendering* is
