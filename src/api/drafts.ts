@@ -1,6 +1,11 @@
 import { RecipeDraftContent, RecipeDraftType } from 'types'
 import AuthAPI from 'src/api/auth'
-import { http } from 'src/api/http-common'
+import {
+  API_BASE_URL,
+  getCachedIdToken,
+  http,
+  warmIdToken,
+} from 'src/api/http-common'
 
 // Server-set `code` on the 409 returned when a user is at their draft cap
 // (server/routes/drafts.js). createDraft lets this error propagate so callers
@@ -54,6 +59,50 @@ class DraftAPIClass {
   async deleteDraft(id: string): Promise<void> {
     if (!AuthAPI.getUID()) return
     await http.delete(`api/drafts/${id}`)
+  }
+
+  // Warm the cached ID token so a later unload flush can authenticate even if no
+  // autosave request has gone out yet. Best-effort; safe to call repeatedly.
+  warmAuth(): void {
+    if (!AuthAPI.getUID()) return
+    void warmIdToken()
+  }
+
+  // Synchronous, fire-and-forget draft save for page unload (beforeunload /
+  // pagehide). An async axios request won't reliably complete while the page is
+  // being torn down, so this uses `fetch(..., { keepalive: true })`, which the
+  // browser guarantees to run to completion in the background. It mirrors the
+  // normal autosave contract: PUT /drafts/:id (echoing the `baseUpdatedAt`
+  // concurrency precondition the server requires) for an existing draft, or
+  // POST /drafts to create one. The Bearer token is read synchronously from the
+  // cache the axios interceptor maintains (see http-common). Returns false
+  // without firing when no token is available (signed out, or no request has
+  // ever warmed the cache).
+  flushDraftKeepalive(
+    id: string | null,
+    content: RecipeDraftContent,
+    baseUpdatedAt: string
+  ): boolean {
+    if (!AuthAPI.getUID()) return false
+    const token = getCachedIdToken()
+    if (!token) return false
+    const url = id
+      ? `${API_BASE_URL}/api/drafts/${id}`
+      : `${API_BASE_URL}/api/drafts`
+    const body = id ? { ...content, updatedAt: baseUpdatedAt } : content
+    fetch(url, {
+      method: id ? 'PUT' : 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(body),
+      keepalive: true,
+    }).catch(() => {
+      // The page is unloading; there's nothing to recover to and no UI left to
+      // surface an error on.
+    })
+    return true
   }
 }
 

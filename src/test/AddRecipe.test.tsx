@@ -41,6 +41,13 @@ vi.mock('src/api/auth', () => ({
   default: { getUID: vi.fn().mockReturnValue(null) },
 }))
 
+// Signed-in via AuthContext: the D3 tests exercise the *content* gate (does
+// entered content produce a draft?), which the V8 signed-in gate sits in front
+// of — so a signed-in user is what keeps those assertions about autosave valid.
+vi.mock('src/context/AuthContext', () => ({
+  useAuth: () => ({ user: { uid: 'test-uid' } }),
+}))
+
 // Draft autosave hits this API through useDraftAutosave; mocked so the D3
 // tests can assert when a draft is (not) created. Everything resolves null,
 // matching the real client's unauthenticated no-op.
@@ -51,6 +58,8 @@ vi.mock('src/api/drafts', () => ({
     deleteDraft: vi.fn().mockResolvedValue(undefined),
     getDraft: draftGet,
     listDrafts: vi.fn().mockResolvedValue([]),
+    warmAuth: vi.fn(),
+    flushDraftKeepalive: vi.fn(() => true),
   },
   DRAFT_LIMIT_CODE: 'DRAFT_LIMIT',
 }))

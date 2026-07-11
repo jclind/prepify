@@ -12,6 +12,10 @@ vi.mock('src/api/drafts', () => ({
     createDraft: vi.fn(),
     updateDraft: vi.fn(),
     deleteDraft: vi.fn(),
+    warmAuth: vi.fn(),
+    // Return true by default so the unload flush marks itself as having fired
+    // (mirrors a real flush that found a cached token).
+    flushDraftKeepalive: vi.fn(() => true),
   },
   DRAFT_LIMIT_CODE: 'DRAFT_LIMIT',
   DRAFT_CONFLICT_CODE: 'DRAFT_CONFLICT',
@@ -21,6 +25,8 @@ const mockedDraftAPI = DraftAPI as unknown as {
   createDraft: ReturnType<typeof vi.fn>
   updateDraft: ReturnType<typeof vi.fn>
   deleteDraft: ReturnType<typeof vi.fn>
+  warmAuth: ReturnType<typeof vi.fn>
+  flushDraftKeepalive: ReturnType<typeof vi.fn>
 }
 
 // A promise whose resolution we control, to model an in-flight network request.
@@ -122,6 +128,7 @@ describe('useDraftAutosave — publish during in-flight create (finding #2)', ()
         useDraftAutosave({
           content,
           enabled: true,
+          isSignedIn: true,
           canCreate: true,
           draftId: null,
           draftUpdatedAt: null,
@@ -173,6 +180,7 @@ describe('useDraftAutosave — draft cap (finding #4)', () => {
         useDraftAutosave({
           content,
           enabled: true,
+          isSignedIn: true,
           canCreate: true,
           draftId: null,
           draftUpdatedAt: null,
@@ -214,6 +222,7 @@ describe('useDraftAutosave — updatedAt concurrency guard (B5)', () => {
         useDraftAutosave({
           content,
           enabled: true,
+          isSignedIn: true,
           canCreate: true,
           draftId: 'existing-draft',
           draftUpdatedAt: '1000',
@@ -268,6 +277,7 @@ describe('useDraftAutosave — updatedAt concurrency guard (B5)', () => {
         useDraftAutosave({
           content,
           enabled: true,
+          isSignedIn: true,
           canCreate: true,
           draftId: 'existing-draft',
           draftUpdatedAt: '1000',
@@ -294,5 +304,155 @@ describe('useDraftAutosave — updatedAt concurrency guard (B5)', () => {
     })
     expect(mockedDraftAPI.updateDraft).toHaveBeenCalledTimes(1)
     expect(onConflict).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('useDraftAutosave — unload flush (V8 item 1)', () => {
+  // jsdom dispatches beforeunload/pagehide as ordinary events, so we can assert
+  // the handler fires the keepalive save with the right payload. What jsdom
+  // CANNOT model — and must be verified live — is that fetch({keepalive:true})
+  // actually completes after the document is torn down, and that a real Firebase
+  // token was cached; here DraftAPI.flushDraftKeepalive is mocked.
+  const renderCreate = (props?: {
+    canCreate?: boolean
+    isSignedIn?: boolean
+  }) =>
+    renderHook(
+      ({ content }) =>
+        useDraftAutosave({
+          content,
+          enabled: true,
+          isSignedIn: props?.isSignedIn ?? true,
+          canCreate: props?.canCreate ?? true,
+          draftId: null,
+          draftUpdatedAt: null,
+          onDraftCreated: vi.fn(),
+        }),
+      { initialProps: { content: { title: '' } as Record<string, unknown> } }
+    )
+
+  it('flushes an unsaved new draft on beforeunload, before the debounce fires', () => {
+    const { rerender } = renderCreate()
+    // Edit, but do NOT advance to the 1500ms autosave — the change is still
+    // sitting in the debounce window, exactly the work a hard refresh would lose.
+    rerender({ content: { title: 'Soup' } })
+    expect(mockedDraftAPI.createDraft).not.toHaveBeenCalled()
+
+    act(() => {
+      window.dispatchEvent(new Event('beforeunload'))
+    })
+    expect(mockedDraftAPI.flushDraftKeepalive).toHaveBeenCalledTimes(1)
+    expect(mockedDraftAPI.flushDraftKeepalive).toHaveBeenCalledWith(
+      null,
+      { title: 'Soup' },
+      ''
+    )
+  })
+
+  it('carries the current B5 updatedAt precondition when flushing an existing draft', () => {
+    const { rerender } = renderHook(
+      ({ content }) =>
+        useDraftAutosave({
+          content,
+          enabled: true,
+          isSignedIn: true,
+          canCreate: true,
+          draftId: 'existing-draft',
+          draftUpdatedAt: '1000',
+          onDraftCreated: vi.fn(),
+        }),
+      { initialProps: { content: { title: '' } as Record<string, unknown> } }
+    )
+    rerender({ content: { title: 'Soup' } })
+
+    act(() => {
+      window.dispatchEvent(new Event('pagehide'))
+    })
+    // The flush must send the same `updatedAt` the normal PUT path sends, or the
+    // server's concurrency precondition would 409 every flushed save.
+    expect(mockedDraftAPI.flushDraftKeepalive).toHaveBeenCalledWith(
+      'existing-draft',
+      { title: 'Soup' },
+      '1000'
+    )
+  })
+
+  it('no-ops when nothing changed since the last save', () => {
+    renderCreate()
+    // No edits at all — baseline equals current content.
+    act(() => {
+      window.dispatchEvent(new Event('beforeunload'))
+    })
+    expect(mockedDraftAPI.flushDraftKeepalive).not.toHaveBeenCalled()
+  })
+
+  it('does not flush twice when both beforeunload and pagehide fire', () => {
+    const { rerender } = renderCreate()
+    rerender({ content: { title: 'Soup' } })
+
+    act(() => {
+      window.dispatchEvent(new Event('beforeunload'))
+      window.dispatchEvent(new Event('pagehide'))
+    })
+    expect(mockedDraftAPI.flushDraftKeepalive).toHaveBeenCalledTimes(1)
+  })
+
+  it('never flushes for a signed-out visitor', () => {
+    const { rerender } = renderCreate({ isSignedIn: false })
+    rerender({ content: { title: 'Soup' } })
+
+    act(() => {
+      window.dispatchEvent(new Event('beforeunload'))
+    })
+    expect(mockedDraftAPI.flushDraftKeepalive).not.toHaveBeenCalled()
+  })
+})
+
+describe('useDraftAutosave — signed-out (V8 item 2)', () => {
+  it('shows calm sign-in guidance and attempts no save when signed out', async () => {
+    const { result, rerender } = renderHook(
+      ({ content }) =>
+        useDraftAutosave({
+          content,
+          enabled: true,
+          isSignedIn: false,
+          canCreate: true,
+          draftId: null,
+          draftUpdatedAt: null,
+          onDraftCreated: vi.fn(),
+        }),
+      { initialProps: { content: { title: '' } as Record<string, unknown> } }
+    )
+
+    rerender({ content: { title: 'Soup' } })
+    await act(async () => {
+      vi.advanceTimersByTime(1500)
+      await Promise.resolve()
+    })
+
+    // Calm 'signed-out' status (never 'error'), and no doomed save attempt.
+    expect(result.current.status).toBe('signed-out')
+    expect(mockedDraftAPI.createDraft).not.toHaveBeenCalled()
+    expect(mockedDraftAPI.updateDraft).not.toHaveBeenCalled()
+    expect(mockedDraftAPI.warmAuth).not.toHaveBeenCalled()
+  })
+
+  it('stays idle for a signed-out visitor who has typed nothing', async () => {
+    const { result } = renderHook(() =>
+      useDraftAutosave({
+        content: { title: '' },
+        enabled: true,
+        isSignedIn: false,
+        canCreate: false,
+        draftId: null,
+        draftUpdatedAt: null,
+        onDraftCreated: vi.fn(),
+      })
+    )
+    await act(async () => {
+      vi.advanceTimersByTime(1500)
+      await Promise.resolve()
+    })
+    expect(result.current.status).toBe('idle')
   })
 })

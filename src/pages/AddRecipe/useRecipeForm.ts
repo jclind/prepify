@@ -24,6 +24,7 @@ import { hrMinToMin } from 'src/util/hrMinToMin'
 import { minToHrMin } from 'src/util/minToHrMin'
 import RecipeAPI from 'src/api/recipes'
 import DraftAPI from 'src/api/drafts'
+import { useAuth } from 'src/context/AuthContext'
 import {
   useDraftAutosave,
   hasDraftableContent,
@@ -228,6 +229,10 @@ export function useRecipeForm(initialRecipe?: RecipeType) {
 
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  // Drafts are per-user; a signed-out visitor can still open /add-recipe (it's
+  // not auth-guarded), so autosave must know when there's nobody to save for —
+  // it then shows calm "sign in to save" copy instead of erroring.
+  const isSignedIn = !!useAuth()?.user
 
   // ─── Draft autosave (create flow only) ────────────────────────────────────
   // Edit mode never touches drafts. In create mode the form is autosaved to a
@@ -371,6 +376,7 @@ export function useRecipeForm(initialRecipe?: RecipeType) {
   const { status: draftStatus, clearDraft } = useDraftAutosave({
     content: draftContent,
     enabled: !isEditMode && hydrated,
+    isSignedIn,
     canCreate: canCreateDraft,
     draftId,
     draftUpdatedAt,
