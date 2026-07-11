@@ -3,7 +3,15 @@ import axios from 'axios'
 import { RecipeDraftContent, RecipeDraftType } from 'types'
 import DraftAPI, { DRAFT_CONFLICT_CODE, DRAFT_LIMIT_CODE } from 'src/api/drafts'
 
-export type DraftStatus = 'idle' | 'saving' | 'saved' | 'error'
+export type DraftStatus =
+  | 'idle'
+  | 'saving'
+  | 'saved'
+  | 'error'
+  // No signed-in user: autosave can't run (drafts are per-user), so instead of
+  // firing a doomed save that surfaces as an alarming "Couldn't save draft"
+  // error, we show calm "sign in to save" guidance. See DraftSaveStatus.
+  | 'signed-out'
 
 // How long after the last edit we wait before autosaving. Long enough that
 // typing doesn't fire a request per keystroke, short enough that work isn't
@@ -82,6 +90,10 @@ type Params = {
   // the saved baseline (so resuming a draft, or landing on an empty form,
   // doesn't immediately fire a redundant save).
   enabled: boolean
+  // Whether a user is currently signed in. Drafts are per-user and the API
+  // no-ops without a UID, so when this is false we never attempt a save and
+  // surface calm "sign in to save drafts" copy instead of a scary error badge.
+  isSignedIn: boolean
   // Whether a brand-new draft may be created for the current content. Gated on
   // the form holding any real content (see hasDraftableContent), so an
   // all-default form doesn't spawn a throwaway draft. Only governs creation —
@@ -120,6 +132,7 @@ type DraftAutosave = {
 export function useDraftAutosave({
   content,
   enabled,
+  isSignedIn,
   canCreate,
   draftId,
   draftUpdatedAt,
@@ -129,30 +142,39 @@ export function useDraftAutosave({
 }: Params): DraftAutosave {
   const [status, setStatus] = useState<DraftStatus>('idle')
 
-  // Latest values mirrored into refs so the debounce timer and unmount flush
-  // read current data without being part of their dependency lists.
+  // Latest values mirrored into refs so the debounce timer, unmount flush and
+  // unload flush read current data without being part of their dependency lists.
   const contentRef = useRef(content)
   const canCreateRef = useRef(canCreate)
   const draftIdRef = useRef(draftId)
   const enabledRef = useRef(enabled)
+  const isSignedInRef = useRef(isSignedIn)
   contentRef.current = content
   canCreateRef.current = canCreate
   draftIdRef.current = draftId
   enabledRef.current = enabled
+  isSignedInRef.current = isSignedIn
 
   // The `updatedAt` this hook will send as the next update's precondition.
   // Unlike the refs above, this is deliberately NOT mirrored from the
   // `draftUpdatedAt` prop on every render — a successful update bumps it
   // in-place (see saveNow) from the server's response, and re-mirroring the
   // prop on every keystroke-driven render would clobber that with the stale
-  // value the caller last knew about. It's only re-synced (below) when
-  // `draftId` itself changes, i.e. exactly when the caller hands the hook a
-  // "new" draft (a resume-load, or the create response).
+  // value the caller last knew about. It re-syncs only when the prop itself
+  // changes (or the draft does): the caller sets `draftUpdatedAt` exactly when
+  // it adopts a fresh server-returned version (resume-hydration, or the create
+  // response), so a prop *change* is always authoritative — while keystroke
+  // renders leave the prop identity untouched and so never re-fire this
+  // effect. `draftUpdatedAt` must be in the deps: when the page mounts with
+  // `?draftId` already in the URL (resuming from the drafts list, or
+  // refreshing a resumed draft), `draftId` never changes after mount — the
+  // hydrated `updatedAt` arrives via this prop alone, and syncing only on
+  // `draftId` left the ref stuck at null, so every autosave sent an empty
+  // precondition and 409'd (found in V8's live verification).
   const updatedAtRef = useRef(draftUpdatedAt)
   useEffect(() => {
     updatedAtRef.current = draftUpdatedAt
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [draftId])
+  }, [draftId, draftUpdatedAt])
 
   // Serialized snapshot of the content we last persisted, so a save is skipped
   // when nothing actually changed.
@@ -186,8 +208,16 @@ export function useDraftAutosave({
   const saveNow = async () => {
     // `enabled` is false in edit mode (and before a resume finishes hydrating);
     // never persist a draft then — most importantly, the unmount flush must not
-    // create a draft out of a recipe the user was only editing.
-    if (!enabledRef.current || disabledRef.current || inFlightRef.current) return
+    // create a draft out of a recipe the user was only editing. `isSignedIn`
+    // guards the same flushes from firing a doomed (UID-less) save that the API
+    // would no-op into a false 'error'.
+    if (
+      !enabledRef.current ||
+      disabledRef.current ||
+      inFlightRef.current ||
+      !isSignedInRef.current
+    )
+      return
     const snapshot = JSON.stringify(contentRef.current)
     if (snapshot === lastSavedRef.current) return
     const id = draftIdRef.current
@@ -295,17 +325,77 @@ export function useDraftAutosave({
       return
     }
     if (JSON.stringify(content) === lastSavedRef.current) return
+    // No signed-in user: a save can't happen. Once the user has typed anything
+    // worth saving (draftable content, or an existing draft), show calm
+    // "sign in to save" guidance rather than scheduling a save that would fail.
+    if (!isSignedIn) {
+      if (draftId || canCreate) setStatus('signed-out')
+      return
+    }
     if (!draftId && (!canCreate || capReachedRef.current)) return
+    // Warm the cached ID token so the unload flush can authenticate its
+    // keepalive fetch even if this debounced save never fires (tab closed first).
+    DraftAPI.warmAuth()
     const timer = setTimeout(saveNow, AUTOSAVE_DELAY)
     return () => clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [content, enabled, draftId, canCreate])
+  }, [content, enabled, draftId, canCreate, isSignedIn])
 
   // Flush pending (debounced) changes when leaving the page mid-edit. saveNow
   // no-ops when autosave isn't enabled, so this is safe in edit mode.
   useEffect(() => {
     return () => {
       void saveNow()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Flush unsaved work on a *hard* leave — refresh, tab/window close, or
+  // navigating away entirely. The unmount flush above only covers in-app (SPA)
+  // navigation; a hard unload tears the component down without running React
+  // cleanup, and even if it did, an async axios save wouldn't complete before
+  // the page dies. So this fires a synchronous keepalive save instead (see
+  // DraftAPI.flushDraftKeepalive). Registered as both `beforeunload` (desktop
+  // refresh/close) and `pagehide` (the reliable mobile/bfcache signal); a guard
+  // prevents the two firing a duplicate flush for the same unload.
+  useEffect(() => {
+    let flushed = false
+    const flush = () => {
+      if (flushed) return
+      // Nothing to do without a live create-mode form and a signed-in user.
+      if (!enabledRef.current || disabledRef.current || !isSignedInRef.current)
+        return
+      if (conflictRef.current) return
+      const id = draftIdRef.current
+      const dirty = JSON.stringify(contentRef.current) !== lastSavedRef.current
+      // No-op when there's nothing pending: no unsaved edits and no save
+      // currently in flight (an in-flight axios save may not survive the unload,
+      // so we still flush to guarantee it lands).
+      if (!dirty && !inFlightRef.current) return
+      if (!id) {
+        // Creating a new draft: needs draftable content and headroom under the
+        // cap. Skip if a create is already in flight — letting the keepalive
+        // create fire too would risk a duplicate draft.
+        if (!canCreateRef.current || capReachedRef.current || inFlightRef.current)
+          return
+      }
+      flushed = DraftAPI.flushDraftKeepalive(
+        id,
+        contentRef.current,
+        updatedAtRef.current ?? ''
+      )
+    }
+    // A bfcache restore reuses the same page; allow a later unload to flush again.
+    const reset = () => {
+      flushed = false
+    }
+    window.addEventListener('beforeunload', flush)
+    window.addEventListener('pagehide', flush)
+    window.addEventListener('pageshow', reset)
+    return () => {
+      window.removeEventListener('beforeunload', flush)
+      window.removeEventListener('pagehide', flush)
+      window.removeEventListener('pageshow', reset)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
