@@ -516,12 +516,19 @@ describe('GET /getAccountCounts', () => {
 
   it('excludes moderation-hidden ratings from the ratings badge', async () => {
     await seedUser(TEST_UID, 'testuser')
-    await seedRecipes([{ _id: 'c1', userId: 'other' }])
+    await seedRecipes([
+      { _id: 'c1', userId: 'other' },
+      { _id: 'c2', userId: 'other' },
+    ])
+    // One visible rating (counts) plus a moderation-hidden one that must NOT count.
+    // The two ratings are on DIFFERENT recipes because a user has at most one
+    // rating per recipe — the D1 unique { userId, recipeId } index (provisioned at
+    // boot in db.js) rejects two rating docs for the same (user, recipe).
     await seedRating({ userId: TEST_UID, username: 'testuser', recipeId: 'c1', rating: 5 })
     await seedRating({
       userId: TEST_UID,
       username: 'testuser',
-      recipeId: 'c1',
+      recipeId: 'c2',
       rating: 1,
       moderationHidden: true,
     })

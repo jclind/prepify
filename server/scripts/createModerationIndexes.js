@@ -46,6 +46,13 @@ const INDEXES = [
   // write AND the userId-prefix scans (getSingleUserReviews, account counts,
   // exportMyData, the delete-account cascade).
   //
+  // Also provisioned at server boot (db.js ensureIndexes) with an IDENTICAL spec —
+  // same key, name, and options — so a fresh deploy's write path never runs
+  // against an unindexed ratings collection before this script does. This copy is
+  // kept because it's idempotent and the release runbook §2e runs it against prod
+  // as an explicit gate; the two identical createIndex calls are a no-op for each
+  // other (a same-name-but-different-options call would throw, hence "identical").
+  //
   // UNIQUE — enforces the "one rating per (user, recipe)" invariant the upserts
   // rely on. Without it, a legacy doc missing `userId` (pre-backfill) or a
   // concurrent double-submit would slip a SECOND row past the upsert filter and

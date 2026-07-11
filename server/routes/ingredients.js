@@ -1,6 +1,6 @@
 const { Router } = require('express')
 const { ingredientParser } = require('@jclind/ingredient-parser')
-const { verifyToken } = require('../middleware/auth')
+const { verifyToken, requireActive } = require('../middleware/auth')
 const { makeUserLimiter } = require('../middleware/writeLimiter')
 const { GENERIC_500_MESSAGE } = require('../util/respondServerError')
 const { asyncHandler } = require('../util/asyncHandler')
@@ -115,7 +115,10 @@ function mapIngredientData(data) {
   return out
 }
 
-router.post('/parse', verifyToken, parseLimiter, asyncHandler(async (req, res) => {
+// requireActive sits between verifyToken and the limiter (the house write-surface
+// order) so a just-suspended/banned account — whose ID token stays valid for up to
+// ~1h — can't keep burning paid Spoonacular quota through the enrichment proxy.
+router.post('/parse', verifyToken, requireActive, parseLimiter, asyncHandler(async (req, res) => {
   const { ingredientString } = req.body
   if (!ingredientString || typeof ingredientString !== 'string') {
     return res.status(400).json({ error: 'ingredientString must be a non-empty string' })

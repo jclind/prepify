@@ -129,12 +129,51 @@ async function ensureIndexes() {
     console.error('Failed to create title text index on recipes:', err.message)
   }
 
-  // Backs GET /api/getSingleUserReviews (a user's ratings) and the ratings count
-  // in GET /api/getAccountCounts, both of which filter ratings by username.
+  // Backs the username-rename cascade in POST /setUsername (routes/auth.js), which
+  // `updateMany({ username: prevUsername }, …)` over ratings to carry a handle
+  // change across a user's denormalized review rows. NOTE: this index's ORIGINAL
+  // consumers — GET /api/getSingleUserReviews and the ratings tally in GET
+  // /api/getAccountCounts — both migrated to the stable `userId` in D1, so it now
+  // serves ONLY that (rare) rename write; it's kept because that updateMany would
+  // otherwise COLLSCAN the whole ratings collection. If the rename cascade is ever
+  // moved off `username` (the D1 direction), this index becomes fully dead and can
+  // be dropped.
   try {
     await db.collection('ratings').createIndex({ username: 1 })
   } catch (err) {
     console.error('Failed to create index on ratings.username:', err.message)
+  }
+
+  // D1 ratings identity index — the "one rating per (user, recipe)" invariant every
+  // review upsert relies on. Provisioned at boot (in addition to the deliberate
+  // scripts/createModerationIndexes.js run) so the window between a fresh deploy's
+  // write path going live and someone running the script can't slip a duplicate
+  // past the upsert filter. Definition mirrors that script's entry EXACTLY — same
+  // key, same name, same options (unique + partialFilterExpression) — because a
+  // same-name-but-different-options createIndex throws; identical specs make the
+  // two calls a no-op for each other. UNIQUE enforces the invariant; PARTIAL on
+  // `userId: { $exists: true }` so it ignores not-yet-backfilled legacy docs (and
+  // still serves every read, which always predicates on an existing userId). Also
+  // backs the userId-prefix scans (getSingleUserReviews, account counts,
+  // exportMyData, delete-account cascade).
+  try {
+    await db.collection('ratings').createIndex(
+      { userId: 1, recipeId: 1 },
+      {
+        name: 'userId_1_recipeId_1',
+        unique: true,
+        partialFilterExpression: { userId: { $exists: true } },
+      }
+    )
+  } catch (err) {
+    // A unique index can fail to build over legacy data holding pre-backfill
+    // duplicates (cf. the username_lower guard above). Log rather than crash
+    // startup — the duplicates need manual cleanup + the backfill re-run, but the
+    // rest of the server should still come up.
+    console.error(
+      'Failed to create D1 unique index on ratings.userId_recipeId:',
+      err.message
+    )
   }
 
   // Backs GET /getReviews, the per-recipe review list on every recipe-detail page.
