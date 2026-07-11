@@ -76,6 +76,18 @@ const IngredientItem: FC<IngredientItemProps> = ({
   // only a genuine user blur (click-away while editing) reaches
   // handleEditSubmit a second time.
   const suppressNextBlurSubmitRef = useRef(false)
+  // Guards handleEditSubmit's async path (the getIngredientData enrichment
+  // await) against re-entry. Set synchronously at the top of handleEditSubmit
+  // — before the first await — and cleared in a finally, so it's already true
+  // for the whole pending window. Without it: (a) a genuine blur-away while
+  // the row is still awaiting enrichment slips past suppressNextBlurSubmitRef
+  // (that flag only guards the submit's own trailing self-blur, not a real
+  // user blur) and fires a second, fully duplicate submit against the same
+  // stale editedVal; (b) a rapid double-Enter does the same via onEnter. Both
+  // mean a duplicate network call, a duplicate 429 toast, and doubled
+  // rate-limit consumption. A ref (not state) because it's read/written
+  // synchronously inside event handlers and never needs to trigger a render.
+  const isSubmittingRef = useRef(false)
 
   // When enrichment last 429'd, hold retryAt (epoch ms) here so the retry
   // button can disable itself instead of immediately re-429ing. Sourced from
@@ -142,64 +154,79 @@ const IngredientItem: FC<IngredientItemProps> = ({
     )
   }
   const handleEditSubmit = async () => {
-    if (!editedVal || !ingredient) {
-      setIsEditing(false)
-      return
-    }
+    // Re-entry guard: a second call (rapid double-Enter, or a genuine
+    // blur-away that races the pending enrichment await below) while a
+    // submit is already in flight is dropped. Set before any await so it's
+    // already true for the entire pending window — see isSubmittingRef above.
+    if (isSubmittingRef.current) return
+    isSubmittingRef.current = true
+    try {
+      if (!editedVal || !ingredient) {
+        setIsEditing(false)
+        return
+      }
 
-    const isLabel = 'label' in ingredient
+      const isLabel = 'label' in ingredient
 
-    if (isLabel && ingredient.label !== editedVal) {
-      editIngredient(ingredient.id, { label: editedVal, id: ingredient.id })
-    } else if (
-      !isLabel &&
-      ingredient.parsedIngredient.originalIngredientString !== editedVal
-    ) {
-      const id = ingredient.id
-      setItemStatus(id, 'loading')
-      try {
-        // Same timeout/exit guard as the add path: getIngredientData soft-fails
-        // but can't protect against a request that never settles, so race it
-        // against a wall clock.
-        const ingredientDataRes = await withTimeout(
-          RecipeAPI.getIngredientData(editedVal)
-        )
-        editIngredient(id, { ...ingredientDataRes })
-        const rowError =
-          'error' in ingredientDataRes ? ingredientDataRes.error : undefined
-        setItemStatus(id, rowError ? 'error' : null)
-        // Same honest-messaging branch as the add path: a 429 is a distinct,
-        // expected condition, not a generic miss, so it gets its own toast
-        // instead of silently landing on the row.
-        if (rowError?.code === INGREDIENT_RATE_LIMIT_CODE) {
+      if (isLabel && ingredient.label !== editedVal) {
+        editIngredient(ingredient.id, { label: editedVal, id: ingredient.id })
+      } else if (
+        !isLabel &&
+        ingredient.parsedIngredient.originalIngredientString !== editedVal
+      ) {
+        const id = ingredient.id
+        setItemStatus(id, 'loading')
+        try {
+          // Same timeout/exit guard as the add path: getIngredientData soft-fails
+          // but can't protect against a request that never settles, so race it
+          // against a wall clock.
+          const ingredientDataRes = await withTimeout(
+            RecipeAPI.getIngredientData(editedVal)
+          )
+          editIngredient(id, { ...ingredientDataRes })
+          const rowError =
+            'error' in ingredientDataRes ? ingredientDataRes.error : undefined
+          setItemStatus(id, rowError ? 'error' : null)
+          // Same honest-messaging branch as the add path: a 429 is a distinct,
+          // expected condition, not a generic miss, so it gets its own toast
+          // instead of silently landing on the row.
+          if (rowError?.code === INGREDIENT_RATE_LIMIT_CODE) {
+            toast.error(
+              `"${editedVal}" hit the ingredient lookup limit — wait a moment before retrying.`
+            )
+          }
+        } catch (err: unknown) {
+          const timedOut = err instanceof IngredientEnrichTimeoutError
+          setItemStatus(id, 'error')
           toast.error(
-            `"${editedVal}" hit the ingredient lookup limit — wait a moment before retrying.`
+            timedOut
+              ? `"${editedVal}" is taking too long to look up — kept without nutrition data. Retry or edit it.`
+              : `Couldn't fetch data for "${editedVal}" — kept without it. Retry or edit it.`
           )
         }
-      } catch (err: unknown) {
-        const timedOut = err instanceof IngredientEnrichTimeoutError
-        setItemStatus(id, 'error')
-        toast.error(
-          timedOut
-            ? `"${editedVal}" is taking too long to look up — kept without nutrition data. Retry or edit it.`
-            : `Couldn't fetch data for "${editedVal}" — kept without it. Retry or edit it.`
-        )
       }
-    }
 
-    setIsEditing(false)
-    suppressNextBlurSubmitRef.current = true
-    editInputRef?.current?.blur()
+      setIsEditing(false)
+      suppressNextBlurSubmitRef.current = true
+      editInputRef?.current?.blur()
+    } finally {
+      isSubmittingRef.current = false
+    }
   }
 
   // Wired to FormInput's onBlur. Genuine blur-away (clicking elsewhere while
   // editing) should still submit; the blur() handleEditSubmit triggers on
-  // itself should not resubmit — see suppressNextBlurSubmitRef above.
+  // itself should not resubmit — see suppressNextBlurSubmitRef above. A blur
+  // that lands while a submit is already pending (isSubmittingRef) is also
+  // dropped rather than firing a second submit; the in-flight submit's own
+  // post-await tail (setIsEditing(false), etc.) is what exits edit mode, so
+  // dropping this blur doesn't leave the row stuck open.
   const handleBlur = () => {
     if (suppressNextBlurSubmitRef.current) {
       suppressNextBlurSubmitRef.current = false
       return
     }
+    if (isSubmittingRef.current) return
     handleEditSubmit()
   }
 

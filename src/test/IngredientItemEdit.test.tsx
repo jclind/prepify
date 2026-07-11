@@ -222,4 +222,75 @@ describe('IngredientItem inline edit', () => {
     expect(mockGetIngredientData).not.toHaveBeenCalled()
     expect(setItemStatus).not.toHaveBeenCalled()
   })
+
+  // In-flight re-entry guard (isSubmittingRef): the enrichment await in
+  // handleEditSubmit leaves the input visible+focused for the whole pending
+  // window (setIsEditing(false) only runs after the await settles). Without
+  // a guard, a genuine blur-away or a rapid double-Enter during that window
+  // fires a second full submit against the same stale editedVal — a real
+  // duplicate paid lookup and duplicate 429 toast. These tests hold the
+  // enrichment promise open with a deferred so they can assert the *pending*
+  // window's behavior, not just the settled outcome.
+  describe('in-flight submit re-entry guard', () => {
+    const deferred = <T,>() => {
+      let resolve!: (v: T) => void
+      const promise = new Promise<T>(res => {
+        resolve = res
+      })
+      return { promise, resolve }
+    }
+
+    it('blur-away while enrichment is still pending does not trigger a second submit', async () => {
+      const { promise, resolve } = deferred<ReturnType<typeof enriched>>()
+      mockGetIngredientData.mockReturnValue(promise)
+      const { container } = renderItem()
+      const removeBtn = container.querySelector('.ingr-remove') as HTMLButtonElement
+
+      fireEvent.click(container.querySelector('.item-btn') as HTMLElement)
+      const input = container.querySelector('input') as HTMLInputElement
+      fireEvent.change(input, { target: { value: '2 cups flour' } })
+      fireEvent.keyDown(input, { key: 'Enter' }) // starts the pending submit
+
+      await waitFor(() => expect(mockGetIngredientData).toHaveBeenCalledTimes(1))
+
+      // Real blur-away while the first submit is still awaiting enrichment —
+      // the input is still rendered+focused at this point (setIsEditing(false)
+      // hasn't run yet), so this exercises the exact race.
+      act(() => removeBtn.focus())
+
+      // Let the pending submit resolve.
+      await act(async () => {
+        resolve(enriched('2 cups flour'))
+      })
+
+      await waitFor(() => expect(mockGetIngredientData).toHaveBeenCalledTimes(1))
+      // The in-flight submit's own post-await tail is what exits edit mode —
+      // confirm the blur-away didn't leave the row wedged open.
+      expect(container.querySelector('.edit-input')).toBeNull()
+    })
+
+    it('a rapid double-Enter while enrichment is still pending only submits once', async () => {
+      const { promise, resolve } = deferred<ReturnType<typeof enriched>>()
+      mockGetIngredientData.mockReturnValue(promise)
+      const { container } = renderItem()
+
+      fireEvent.click(container.querySelector('.item-btn') as HTMLElement)
+      const input = container.querySelector('input') as HTMLInputElement
+      fireEvent.change(input, { target: { value: '2 cups flour' } })
+      fireEvent.keyDown(input, { key: 'Enter' })
+      // Second Enter fires while the first submit is still awaiting.
+      fireEvent.keyDown(input, { key: 'Enter' })
+
+      await waitFor(() => expect(mockGetIngredientData).toHaveBeenCalledTimes(1))
+
+      await act(async () => {
+        resolve(enriched('2 cups flour'))
+      })
+
+      await waitFor(() =>
+        expect(container.querySelector('.edit-input')).toBeNull()
+      )
+      expect(mockGetIngredientData).toHaveBeenCalledTimes(1)
+    })
+  })
 })
