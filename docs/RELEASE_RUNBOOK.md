@@ -248,6 +248,11 @@ One PR off `development` (all anchors re-verified 2026-07-11):
   run the smoke list from CUTOVER_RUNBOOK.md "Pre-flight smoke test" — flip correctness, home,
   browse, search, single recipe, auth, create/edit/delete with image, §D reviews flow, account +
   settings, legal/support, mobile 390px.
+- `[ ]` **Draft-autosave live pass** (first real-browser check of #315's supersede flush — its
+  unit coverage is complete but jsdom can't exercise `fetch(keepalive)` past teardown; #294's
+  mechanism was live-verified, the supersede flag was not): type in Add-Recipe, hard-reload
+  mid-debounce → draft persisted with the newest text; then a two-tab conflict → the conflict
+  badge shows; then unload the stale tab → its flush wins (expected last-write-wins semantics).
 
 ---
 
