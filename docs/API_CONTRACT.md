@@ -588,37 +588,37 @@ All routes live in `server/routes/reviews.js`, mounted at `/api` (server/app.js)
 ## Recipe Drafts
 
 ### POST /api/drafts
-- **Handler:** `server/routes/drafts.js:28`
-- **Middleware:** `verifyToken`, `requireActive`
+- **Handler:** `server/routes/drafts.js:29`
+- **Middleware:** `verifyToken`, `requireActive`, `draftWriteLimiter` (a `makeUserLimiter` instance at the default 30 req/min per uid → `429 { error, code: 'RATE_LIMITED' }`; skipped when `NODE_ENV=test`; added in [#302](https://github.com/jclind/prepify/pull/302)). **POST-only by design** — the autosave `PUT` below is deliberately unlimited (see its Notes)
 - **Request:** body — any subset of `RECIPE_CONTENT_FIELDS` (`server/util/recipeFields.js:5`): `title, prepTime, cookTime, servings, fridgeLife, freezerLife, description, ingredients, instructions, cuisine, mealTypes, nutritionLabels`. Every field optional (no required-field presence check — drafts are intentionally incomplete); only bounds are validated via `validateRecipeBounds` (`server/util/recipeLimits.js:99`): title ≤ 50 chars, description ≤ 2000, ≤ 50 ingredients (each raw line ≤ 200 chars), ≤ 50 instructions (each ≤ 1000 chars), numeric type/range clamps (times 0–20160 min int, servings 1–1000 int, fridge/freezer life 0–365 int, servingPrice 0–1,000,000 non-int OK). Violation → `400 { error: <message> }`. Unlisted keys are silently dropped (whitelist via `pickFields`), so the client can't spoof `userId`/timestamps.
-- **Response:** `201` — the full stored draft doc `{ _id, userId, ...content, createdAt, updatedAt }` (timestamps are ms-epoch strings). `409 { code: 'DRAFT_LIMIT', error: "You've reached the maximum of 25 saved drafts. ..." }` at the 25-drafts-per-user cap (creation only; drafts.js:14,39). `401`/`403` per middleware.
+- **Response:** `201` — the full stored draft doc `{ _id, userId, ...content, createdAt, updatedAt }` (timestamps are ms-epoch strings). `409 { code: 'DRAFT_LIMIT', error: "You've reached the maximum of 25 saved drafts. ..." }` at the 25-drafts-per-user cap (creation only; post-insert trim, drafts.js:15,67-79). `429` (`RATE_LIMITED`). `401`/`403` per middleware.
 - **Client:** `src/api/drafts.ts` → `createDraft(content)` — used by `src/pages/AddRecipe/useDraftAutosave.ts:116`. Client exports `DRAFT_LIMIT_CODE = 'DRAFT_LIMIT'` so autosave can distinguish "at limit" and stop retrying.
 - **Notes:** First autosave creates; the returned `_id` switches the client to PUT-on-autosave thereafter. The recipe image is not part of a draft. `useDraftAutosave.ts:123` deletes a just-created draft if the create raced a concurrent one.
 
 ### GET /api/drafts
-- **Handler:** `server/routes/drafts.js:58`
+- **Handler:** `server/routes/drafts.js:86`
 - **Middleware:** `verifyToken`
 - **Request:** none.
 - **Response:** `200` — array of the caller's full draft docs, sorted `updatedAt` descending. `401` per middleware.
 - **Client:** `src/api/drafts.ts` → `listDrafts()` — used by `src/pages/AddRecipe/DraftResumeBanner.tsx:19`, `src/pages/Account/Drafts/Drafts.tsx:17`.
 
 ### GET /api/drafts/:id
-- **Handler:** `server/routes/drafts.js:69`
+- **Handler:** `server/routes/drafts.js:97`
 - **Middleware:** `verifyToken`
 - **Request:** param `id` (Mongo ObjectId). Invalid ObjectId → `404` (not 400).
 - **Response:** `200` — the draft doc. `404 { error: 'Draft not found' }` (invalid id or no doc); `403 { error: 'Forbidden' }` when the draft belongs to another user; `401` per middleware.
 - **Client:** `src/api/drafts.ts` → `getDraft(id)` — used by `src/pages/AddRecipe/useRecipeForm.ts:229` (resume flow, `?draft=<id>`).
 
 ### PUT /api/drafts/:id
-- **Handler:** `server/routes/drafts.js:88`
+- **Handler:** `server/routes/drafts.js:131`
 - **Middleware:** `verifyToken`, `requireActive`
-- **Request:** param `id`; body — same whitelisted content fields and bounds as POST. Ownership/existence checked *before* bounds validation so callers can't probe bounds-validity of drafts they don't own (drafts.js:94-107).
-- **Response:** `200` — the updated draft doc (`findOneAndUpdate` returnDocument: 'after'; mongodb driver v6, so the body is the doc itself). `404` invalid-ObjectId or missing; `403 { error: 'Forbidden' }` not-owner; `400 { error: <bounds message> }`; `401`/`403` per middleware.
+- **Request:** param `id`; body — same whitelisted content fields and bounds as POST, **plus a required `updatedAt` string**: the version stamp of the draft the client is editing from, used as an optimistic-concurrency precondition (since [#286](https://github.com/jclind/prepify/pull/286)); missing/non-string → `400 { error: 'Missing updatedAt precondition' }`. Ownership/existence checked *before* bounds validation so callers can't probe bounds-validity of drafts they don't own (drafts.js:137-146), then bounds, then the precondition.
+- **Response:** `200` — the updated draft doc (`findOneAndUpdate` returnDocument: 'after'; mongodb driver v6, so the body is the doc itself). `409 { code: 'DRAFT_CONFLICT', error: 'This draft was updated elsewhere. ...', draft: <current doc> }` when the stored `updatedAt` no longer matches the sent one (another tab saved in between — the current doc rides along so the client can offer a reload). `404` invalid-ObjectId or missing — including a draft deleted between the ownership check and the update (the route re-checks on a failed conditional update and distinguishes deleted → 404 from moved → 409, drafts.js:166-179). `403 { error: 'Forbidden' }` not-owner; `400 { error: <bounds message> }`; `401`/`403` per middleware.
 - **Client:** `src/api/drafts.ts` → `updateDraft(id, content)` — used by `src/pages/AddRecipe/useDraftAutosave.ts:113`.
-- **Notes:** Autosave overwrite. Only fields *present* in the body are `$set`; the client therefore sends explicit `null` (not omission) to clear a numeric field, or the stale value would resurrect on resume (`src/types.ts:126-131`). No per-user write limiter on draft POST/PUT (autosave cadence), only the global per-IP backstop. Edge case: if the draft is deleted between the ownership check and the update, the route returns `200` with body `null` (drafts.js:112-115).
+- **Notes:** Autosave overwrite. Only fields *present* in the body are `$set`; the client therefore sends explicit `null` (not omission) to clear a numeric field, or the stale value would resurrect on resume (`src/types.ts:126-131`). **Deliberately NO per-user write limiter on this route** (unlike POST since [#302](https://github.com/jclind/prepify/pull/302)): it's the 1.5s-debounce autosave path (~40 legitimate writes/min while typing) and [#294](https://github.com/jclind/prepify/pull/294)'s keepalive unload flush must never be the request that eats a 429 — only the global per-IP backstop applies; PUT spam is bounded by ownership + the 25-doc cap instead (rationale comment at the route mount, drafts.js:122-130).
 
 ### DELETE /api/drafts/:id
-- **Handler:** `server/routes/drafts.js:120`
+- **Handler:** `server/routes/drafts.js:185`
 - **Middleware:** `verifyToken`
 - **Request:** param `id`.
 - **Response:** `200 { deleted: true }`. `404` invalid-ObjectId or missing; `403 { error: 'Forbidden' }` not-owner; `401` per middleware.
@@ -644,7 +644,7 @@ All routes live in `server/routes/reviews.js`, mounted at `/api` (server/app.js)
 - **Notes:** Idempotent — `$addToSet` into `userProfiles.seenAchievements`, upserting the profile doc if absent.
 
 #### DRIFT — collections/drafts/gamification
-None found. Client paths, methods, request bodies, and typed response shapes (`RecipeCollection` at `src/types.ts:541`, `RecipeDraftContent`/`RecipeDraftType` at `src/types.ts:132/147`, `Gamification` at `src/types.ts:561`) all match the server handlers field-for-field, including the null-to-clear draft-field convention and the `DRAFT_LIMIT` 409 code. Two server-side edge behaviors worth knowing (not client mismatches): PUT /api/drafts/:id can return `200 null` on a delete race (drafts.js:112-115), and PATCH /api/recipes/:recipeId/collections never validates that the recipe exists (collections.js:263-298).
+None found. Client paths, methods, request bodies, and typed response shapes (`RecipeCollection` at `src/types.ts:541`, `RecipeDraftContent`/`RecipeDraftType` at `src/types.ts:132/147`, `Gamification` at `src/types.ts:561`) all match the server handlers field-for-field, including the null-to-clear draft-field convention and the `DRAFT_LIMIT` 409 code. One server-side edge behavior worth knowing (not a client mismatch): PATCH /api/recipes/:recipeId/collections never validates that the recipe exists (collections.js:263-298). (An earlier note here about PUT /api/drafts/:id returning `200 null` on a delete race described pre-[#286](https://github.com/jclind/prepify/pull/286) behavior — the route now re-checks on a failed conditional update and returns 404 for a deleted draft; see the endpoint entry.)
 ## Ingredient Enrichment
 
 ### POST /api/ingredients/parse

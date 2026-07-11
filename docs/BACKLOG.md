@@ -168,10 +168,17 @@ The triage date stamped on items is the date they were filed here, not when they
   mount `makeUserLimiter`-based limiters, collection creation has only the global `/api` backstop. Low
   urgency (the 50-cap bounds the damage per user), but it's an asymmetry with its sibling write surfaces —
   same one-line fix as the other `makeUserLimiter` mounts. Low.
-- `[ ]` **`drafts.js` has no per-uid rate limiter at all (POST or PUT)** *(filed 2026-07-10, noticed on the
+- `[x]` **`drafts.js` has no per-uid rate limiter at all (POST or PUT)** *(filed 2026-07-10, noticed on the
   Wave 12 · U1 [#299](https://github.com/jclind/prepify/pull/299) lane — this also corrects the item above's
   premise that the drafts routes mount limiters; verified against disk: zero `makeUserLimiter` references in
-  `server/routes/drafts.js`)* — ⚠ **not a copy-paste fix**: `PUT /drafts/:id` is the 1.5s-debounce autosave
+  `server/routes/drafts.js`; boarded Wave 13 · F1; **fixed in [#302](https://github.com/jclind/prepify/pull/302),
+  merged 2026-07-11**: `draftWriteLimiter` (30/min default — no per-write paid cost) mounted on `POST /drafts`
+  ONLY, after `verifyToken → requireActive`; `PUT /drafts/:id` deliberately left unlimited with an in-code
+  rationale comment (autosave cadence + the #294 keepalive flush must never eat a 429; PUT damage bounded by
+  ownership + the 25-doc cap), pinned by a wiring test asserting NO limiter instance on the PUT chain plus a
+  >30-PUTs-all-pass limiter test; the 30-cap 429 test correctly accounts for the 25-doc `DRAFT_LIMIT` 409s
+  interleaving before the rate cap. Jest 41 suites / 883 tests green.)* — ⚠ **not a copy-paste fix**:
+  `PUT /drafts/:id` is the 1.5s-debounce autosave
   path, so a stock 30/min per-uid cap would throttle legitimate continuous typing (~40 writes/min). Either
   limit only `POST /drafts` (create; already capped at 25 docs by V3's trim) or pick a PUT rate that clears
   the autosave cadence with margin (and make sure the keepalive unload flush from #294 can't be the request
@@ -916,8 +923,14 @@ findings table.)*
   submit coercion keep it safe, and V7's validator now coerces defensively), but every new numeric consumer
   has to rediscover this. Worth a small type-safety pass (parse at the boundary, or type the prop `string`).
   Low.
-- `[ ]` **Modernize `recipeFormValidation.test.ts`'s numeric-0 servings case** *(filed 2026-07-10, off the
-  Wave 12 · U2 [#300](https://github.com/jclind/prepify/pull/300) lane)* — the test passes `servings: 0`
+- `[x]` **Modernize `recipeFormValidation.test.ts`'s numeric-0 servings case** *(filed 2026-07-10, off the
+  Wave 12 · U2 [#300](https://github.com/jclind/prepify/pull/300) lane; boarded Wave 13 · F2; **fixed in
+  [#301](https://github.com/jclind/prepify/pull/301), merged 2026-07-11**: the case now asserts the two
+  reachable string inputs — `''` → `'Servings amount is required'`, `'0'` → `'Servings must be a whole
+  number of at least 1'` (exact strings from `recipeFormValidation.ts:84,88`) — and the commented
+  `@ts-expect-error` is gone; rewritten in place as one case with two assertions matching the sibling
+  negative/fractional case's structure, so Vitest totals stayed at the 735/2 baseline; both tsc programs 0.)*
+  — the test passes `servings: 0`
   (a number) and expects `'Servings amount is required'`, but under the post-#298 string contract numeric 0
   is unreachable from the UI and the string `'0'` takes the whole-number branch instead. #300 kept the
   assertion byte-identical behind a commented `@ts-expect-error` to stay typing-only; the follow-up is to
