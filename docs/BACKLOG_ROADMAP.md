@@ -43,6 +43,12 @@ to the *sweep program*); this file applies it to the **general backlog**. Compan
 > lane reviews (3 lanes U1–U3; see the
 > [Wave 12 section](#wave-12--wave-11-follow-up-tail-boarded-2026-07-10)). The `addReview` numeric
 > flip stays held for the owner's V5 cutover.
+>
+> **Wave 13 boarded 2026-07-11** (Wave 12 fully drained 2026-07-10; Waves 10–12 independently audited
+> CLEAN 2026-07-11) — the final two code seeds filed off Wave 12's lanes (F1–F2; see the
+> [Wave 13 section](#wave-13--wave-12-follow-up-tail-boarded-2026-07-11)). The collection-name
+> moderation seed closed won't-fix (owner decision, owner-private visibility). The `addReview`
+> numeric flip stays held for the owner's V5 cutover.
 
 ---
 
@@ -156,6 +162,8 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **12** | **U1 · collections per-uid rate limiter** | `POST /collections` has only the global `/api` backstop — unlike the sibling drafts/recipes write routes' `makeUserLimiter` mounts (BACKLOG Tech debt, off the T2 [#296](https://github.com/jclind/prepify/pull/296) lane) | `[x]` [#299](https://github.com/jclind/prepify/pull/299) (2026-07-10) | `server/routes/collections.js`, `server/middleware/writeLimiter.js` (+ limiter tests) | **merged** — `collectionWriteLimiter` (30/min default, matching review/profile — no per-write paid cost) mounted after `verifyToken → requireActive` on create AND rename (one shared bucket, mirroring how editRecipe/editReview share their surface's limiter); delete + membership-toggle left unlimited matching siblings, with comments. `NODE_ENV`-flip test drives the real 30-cap across mixed create+rename + wiring tests. Jest 879 green. Filed: `drafts.js` has NO limiter at all (autosave-cadence caveat) + collection-name moderation gap |
 | **12** | **U2 · typecheck the tests** | `src/test` is tsconfig-excluded, so the Vitest suite is never typechecked — type errors and `@ts-expect-error` assertions are invisible to the Static gate (BACKLOG Tech debt, off the T3 [#298](https://github.com/jclind/prepify/pull/298) lane) | `[x]` [#300](https://github.com/jclind/prepify/pull/300) (2026-07-10) | `tsconfig.tests.json` (new), CI Static job, `src/test/**`, `src/api/recipes.ts` (type-level only) | **merged** — scope gate worked as designed: agent paused at 12 errors with 3 judgment calls; orchestrator ruled (type-level `getIngredientData` narrowing authorized; `@ts-expect-error` over rewriting the unreachable numeric-0 assertion; declared `toHaveBeenCalledTimes(1)` swap). `tsconfig.tests.json` (main-include dead: Cypress configs inject global Chai `expect` → 1274 false errors) + second tsc step in Static; vestigial `@types/jest` removed (suite was typed against Jest's matchers). Suite totals byte-identical (735/2); diff verified typing-only. Filed: modernize the numeric-0 servings test |
 | **12** | **U3 · compound-input sweep** | one-pass audit of components that aggregate DOM strings from `FormInput`-style children into typed objects — hunting TimeInput's pre-#298 child-feeds-numeric-object shape (BACKLOG Tech debt, off the T3 [#298](https://github.com/jclind/prepify/pull/298) lane) | `[x]` closed clean, no code change (2026-07-10) | `src/**` compound inputs (read-only audit) | **audit found zero live instances** — all `FormInput` consumers, raw `<input>`s, and aggregation points honest-string or correctly coerced (9 sweep angles); watch items noted on the BACKLOG tick (inert `fridgeLife`/`freezerLife` numeric fields; `Analytics.days`) |
+| **13** | **F1 · drafts.js per-uid rate limiter (POST-only)** | `drafts.js` has NO `makeUserLimiter` mount at all — but ⚠ not copy-paste: `PUT /drafts/:id` is the 1.5s-debounce autosave path (~40 legit writes/min) and #294's keepalive unload flush must never eat a 429 (BACKLOG Tech debt, off the U1 [#299](https://github.com/jclind/prepify/pull/299) lane) | `[~]` feat/f1-drafts-post-ratelimiter (2026-07-11) | `server/routes/drafts.js`, `server/middleware/writeLimiter.js` (+ limiter tests) | **Pre-made design call:** limit ONLY `POST /drafts` (create; 30/min default — resource-creating write, mirrors #299's philosophy); leave PUT unlimited with an in-code comment (autosave cadence + #294 flush; damage bounded to the user's own docs under V3's 25-doc cap). Test mirrors `collectionsLimiter.test.js`; wiring distinct-instance count 4→5 |
+| **13** | **F2 · modernize numeric-0 servings test** | `recipeFormValidation.test.ts` passes `servings: 0` (a number) — unreachable under the post-#298 string contract; #300 kept it byte-identical behind a commented `@ts-expect-error` to stay typing-only (BACKLOG Tests, off the U2 [#300](https://github.com/jclind/prepify/pull/300) lane) | `[~]` feat/f2-servings-test-modernization (2026-07-11) | `src/test/recipeFormValidation.test.ts` | **Deliberate assertion modernization** (the filed follow-up to #300's typing-only gate): rewrite against reachable inputs (`''` → required, `'0'` → whole-number message), drop the suppression. Gates: both tsc programs 0; Vitest totals may shift only by this test's own assertions |
 | **—** | **Deferred / post-1.0 / owner** | see [that section](#deferred--post-10--owner-off-the-active-board) | `[blocked]`/`[dropped]` | — | prerendering, Edamam, theming, brand-orange, DB relocation, ideas |
 
 ---
@@ -381,6 +389,37 @@ findings are reviewed, so the second to merge simply rebases:
 
 Not boarded: unchanged from Wave 11 (the `addReview` numeric flip stays coupled to the owner's V5
 prod cutover; W1/I1/I2 ops runs stay owner-gated).
+
+---
+
+### Wave 13 — Wave-12 follow-up tail (boarded 2026-07-11)
+
+The final two code seeds filed off Wave 12's lanes (the third seed, collection-name moderation,
+closed won't-fix by owner decision 2026-07-11 — owner-private visibility). Same orchestrated
+pattern (one subagent per lane in its own worktree, agents stop at PR-open, orchestrator-only
+merges/flips/ticks); the lanes are fully disjoint (server route+middleware vs one frontend test
+file), so both dispatch at boarding:
+
+- **F1** `drafts.js` per-uid rate limiter — **POST-only by pre-made design call**: a new
+  `makeUserLimiter()` instance (30/min default) on `POST /drafts` after `verifyToken →
+  requireActive`, mirroring [#299](https://github.com/jclind/prepify/pull/299)'s
+  limit-resource-creating-writes philosophy. `PUT /drafts/:id` stays UNLIMITED with an in-code
+  comment: it's the 1.5s-debounce autosave path (~40 legitimate writes/min while typing) and
+  [#294](https://github.com/jclind/prepify/pull/294)'s keepalive unload flush must never be the
+  request that eats a 429; PUT damage is bounded to rewriting the user's own docs under V3's
+  25-doc cap. Test mirrors `collectionsLimiter.test.js` (`NODE_ENV` flip, `finally` restore);
+  `writeLimiter.wiring` distinct-instance count goes 4→5. API_CONTRACT.md updated by the
+  orchestrator at merge close-out (flag-don't-edit).
+- **F2** modernize the numeric-0 servings case in `recipeFormValidation.test.ts` — rewrite
+  against reachable string inputs (`''` → `'Servings amount is required'`, `'0'` → the
+  whole-number message) and drop the commented `@ts-expect-error` (an unused suppression errors
+  under `tsconfig.tests.json`, so tsc forces this). A deliberate assertion modernization — the
+  filed follow-up [#300](https://github.com/jclind/prepify/pull/300)'s typing-only gate
+  explicitly deferred. Vitest totals may shift only by this test's own assertions.
+
+Not boarded: unchanged (the `addReview` numeric flip stays coupled to the owner's V5 prod
+cutover; W1/I1/I2 ops runs stay owner-gated; branches
+`worktree-feat+moderation-pr-c-ratelimiter` and `feat/legal-pages` await owner disposition).
 
 ---
 
@@ -2454,3 +2493,11 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   (`feat/legal-pages` and the unmerged `worktree-feat+moderation-pr-c-ratelimiter` untouched).
   Not-verifiable items (unchanged, by design): V5 prod `--apply`, #294's live-browser unload flush
   (code + regression tests confirmed; browser pass was done at merge time).
+- **2026-07-11** — **Wave 13 boarded + both lanes claimed/dispatched** (F1 drafts.js POST-only
+  per-uid rate limiter · F2 numeric-0 servings test modernization — the final two code seeds off
+  Wave 12; the third seed, collection-name moderation, closed won't-fix by owner decision the same
+  day). Same orchestrated pattern: subagent-per-lane in worktrees (both Sonnet — mechanical,
+  pattern-mirroring lanes), agents stop at PR-open, merges/flips/ticks serialized in the
+  orchestrator. F1 carries a pre-made design call (limit POST only; PUT is the autosave path —
+  see the Wave 13 section); F2's merge gate allows Vitest-total drift only from its own rewritten
+  assertions. Merge approval to be re-confirmed via one AskUserQuestion at merge time.
