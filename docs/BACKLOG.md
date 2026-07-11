@@ -901,7 +901,12 @@ findings table.)*
   types silently (e.g. `recipeFormValidation.test.ts` passes numeric literals to a now-`string`-typed input
   and nothing complains). Fix: include `src/test` in the typecheck (or a second `tsconfig.tests.json` wired
   into CI's Static job) and clean up whatever surfaces. Low-med, typing-only. Low.
-- `[ ]` **Sweep for TimeInput's child-feeds-numeric-object shape** *(filed 2026-07-10, off the T3
+- `[x]` **Sweep for TimeInput's child-feeds-numeric-object shape** — *(closed 2026-07-10, Wave 12 · U3
+  audit: **zero live instances** — every `FormInput` consumer, raw `<input>`, and compound aggregation
+  point verified honest-string-or-correctly-coerced across a 9-angle sweep; no code change. Watch items
+  noted, not filed: `RecipeFormState.fridgeLife`/`freezerLife` are `number`-typed but have no UI control
+  (inert — whoever wires one up must follow the `ServingsInput` coerce-at-the-gate pattern), and
+  `Analytics.tsx`'s `days` is button-driven-only today.)* *(filed 2026-07-10, off the T3
   [#298](https://github.com/jclind/prepify/pull/298) lane)* — TimeInput held raw field strings in
   `useState<number | ''>` and flowed them into the parent's `{ hours: number, minutes: number }` object; #298
   fixed it at that boundary, but other compound inputs that aggregate DOM strings into typed objects may hide
