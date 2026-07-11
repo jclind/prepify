@@ -914,6 +914,13 @@ findings table.)*
   submit coercion keep it safe, and V7's validator now coerces defensively), but every new numeric consumer
   has to rediscover this. Worth a small type-safety pass (parse at the boundary, or type the prop `string`).
   Low.
+- `[ ]` **Modernize `recipeFormValidation.test.ts`'s numeric-0 servings case** *(filed 2026-07-10, off the
+  Wave 12 · U2 [#300](https://github.com/jclind/prepify/pull/300) lane)* — the test passes `servings: 0`
+  (a number) and expects `'Servings amount is required'`, but under the post-#298 string contract numeric 0
+  is unreachable from the UI and the string `'0'` takes the whole-number branch instead. #300 kept the
+  assertion byte-identical behind a commented `@ts-expect-error` to stay typing-only; the follow-up is to
+  rewrite the case against reachable inputs (`''` → required, `'0'` → whole-number message) and drop the
+  suppression. Tiny. Low.
 - `[ ]` **`src/test` is excluded from `tsconfig`, so the Vitest suite is never typechecked** *(filed
   2026-07-10, noticed on the Wave 11 · T3 [#298](https://github.com/jclind/prepify/pull/298) lane)* — type
   errors (and `@ts-expect-error` assertions) in `src/test/**` are invisible to the `npx tsc --noEmit` gate;
