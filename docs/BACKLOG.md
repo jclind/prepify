@@ -44,8 +44,13 @@ hygiene, and the U3 watch items all verified sound — details in the session tr
 
 **P1 — none found.**
 
-> **Wave 14 (2026-07-11 overnight, owner authorized fixes) — ALL FIVE LANES LANDED AS PRs,
-> orchestrator-diff-reviewed, MERGES HELD for owner review:**
+> **Wave 14 (2026-07-11 overnight, owner authorized fixes) — ALL FIVE PRs MERGED 2026-07-11**
+> (owner approved via the per-wave confirmation; merges: #304 `0642768` · #307 `0bcd854` ·
+> #306 `421f239` · #305 `e2adec9` · #308 `ce301b3`. Day-session diff review verified #308's
+> deviation against disk (auth.js:191-194 really does `updateMany({ username })` over ratings)
+> and #305's CI-invisible shutdown path (`closeDB` is exported); cross-PR composition checked
+> (#306's userId-less rating seeds are ignored by #308's partial unique index) and proven by
+> full local gates on the merged HEAD: both tsc 0, Vitest 739/2, server Jest 43/902.):**
 > **A** drafts 404-wedge → **#307** (404 recovery: refs cleared + caller nulls id/URL param +
 > toast; re-creates on next edit; flush can't resurrect) ·
 > **B** ratings-index code half + `requireActive` on parse + structural PUT-pin → **#308**
@@ -58,7 +63,7 @@ hygiene, and the U3 watch items all verified sound — details in the session tr
 > **E** prod hardening → **#305** (/health Mongo ping 200/503, SIGTERM graceful shutdown,
 > unhandledRejection→Sentry+exit, quiet CORS 403, /api JSON 404, FRONTEND_URLS prod warning, CI
 > `release` push trigger).
-> CI: #304–#307 all green; #308 pending at last check.
+> CI: all five green on their merged heads.
 > NEW follow-up seed from B's deviation: **migrate the setUsername rename cascade off
 > `ratings.username` onto `userId`** (rows already carry it) — after which the `username_1` index
 > is fully dead and a follow-up can add the guarded `dropIndex`.
@@ -68,7 +73,7 @@ hygiene, and the U3 watch items all verified sound — details in the session tr
 
 ### P2
 
-- `[ ]` **Drafts editor wedges permanently when its draft is deleted elsewhere (404 unhandled)** —
+- `[x]` **Drafts editor wedges permanently when its draft is deleted elsewhere (404 unhandled)** *(fixed in [#307](https://github.com/jclind/prepify/pull/307), Wave 14 · A, merged 2026-07-11: dedicated 404 branch drops the dead `draftId`/`updatedAtRef`, the caller nulls its mirrored id + `?draftId` URL param and toasts, the next edit re-creates via `createDraft`, the badge resets to a calm idle, and the unload flush can no longer resurrect the dead PUT — recovery and flush paths both regression-tested)* —
   `src/pages/AddRecipe/useDraftAutosave.ts:284-297` handles only `409 DRAFT_LIMIT`/`DRAFT_CONFLICT`;
   the deliberate `404` from `PUT /drafts/:id` (`server/routes/drafts.js:171-174`, delete-race) hits the
   generic `else` → `setStatus('error')` with `draftId` still set, so every keystroke retries the dead
@@ -77,7 +82,7 @@ hygiene, and the U3 watch items all verified sound — details in the session tr
   That tab can never persist again (generic "Couldn't save draft" forever, no recovery guidance). Fix
   shape: on 404, clear `draftId`/`updatedAtRef` so the next save re-creates, or surface a "draft was
   deleted — keep editing to save a new copy" state.
-- `[ ]` **Cutover gate: ratings `{userId,recipeId}` index is manual-script-only** — `server/db.js`
+- `[x]` **Cutover gate: ratings `{userId,recipeId}` index is manual-script-only** *(code half fixed in [#308](https://github.com/jclind/prepify/pull/308), Wave 14 · B, merged 2026-07-11: `ensureIndexes` now boot-provisions the D1 unique+partial index with a spec byte-identical to the script's (same-name-different-options would throw) and a log-don't-crash failure path; `username_1` was KEPT — the drop half of this item was wrong, see the Wave-14 correction note. The RELEASE_RUNBOOK §2e script run stays as the explicit prod gate/belt-and-braces)* — `server/db.js`
   `ensureIndexes` self-provisions every other hot index at boot, but the D1 ratings index lives only in
   `server/scripts/createModerationIndexes.js:58-66`. Post-cutover, `getSingleUserReviews`,
   `getAccountCounts`, and every rating/review upsert COLLSCAN prod until that script is run — P1 if the
@@ -87,7 +92,7 @@ hygiene, and the U3 watch items all verified sound — details in the session tr
   username one. *(Wave 14 correction: the drop half was WRONG — the setUsername rename cascade still
   filters ratings by `username`; #308 moved the D1 index into boot and kept `username_1` with honest
   comments. See the claim block above for the cascade-migration follow-up seed.)*
-- `[ ]` **CORS hard-fails silent if `FRONTEND_URLS` is unset/typo'd on prod Railway** —
+- `[x]` **CORS hard-fails silent if `FRONTEND_URLS` is unset/typo'd on prod Railway** *(closed 2026-07-11: the optional hardening shipped in [#305](https://github.com/jclind/prepify/pull/305) — a loud startup warning when `NODE_ENV=production` and `FRONTEND_URLS` is unset — and the actual Railway-value verification is a RELEASE_RUNBOOK.md gate; the remaining work is operational, at cutover)* —
   `server/app.js:28` falls back to `localhost:3000` only; no prod-domain fallback, and `/health` stays
   green while every browser call is CORS-rejected. Operational, not code: verify the Railway value
   (`https://prepifymeals.com,https://www.prepifymeals.com`) at cutover (now in `RELEASE_RUNBOOK.md`).
@@ -95,7 +100,7 @@ hygiene, and the U3 watch items all verified sound — details in the session tr
 
 ### P3
 
-- `[ ]` **Negative `perPage` reaches `.limit()`/`.skip()` repo-wide → 500** — only `bugReports.js:110`
+- `[x]` **Negative `perPage` reaches `.limit()`/`.skip()` repo-wide → 500** *(fixed in [#306](https://github.com/jclind/prepify/pull/306), Wave 14 · C, merged 2026-07-11: house `Math.min(Math.max(parseInt(x) || default, 1), MAX_PER_PAGE)` floor on all listed routes incl. the public `GET /api/recipes`, + regression tests incl. the reports.test.js negative-perPage gap)* — only `bugReports.js:110`
   and `publicProfile.js:157-160` floor `perPage` at 1. Missing everywhere else, most notably the
   **public unauthenticated** `GET /api/recipes` (`server/routes/recipes.js:61-64`:
   `?page=1&recipesPerPage=-5` → negative skip → 500; closest to P2), plus `reviews.js:275-278,322-324`,
@@ -103,14 +108,14 @@ hygiene, and the U3 watch items all verified sound — details in the session tr
   perPage; test gap: `reports.test.js` never tries negative perPage), and `admin.js:177,329,478`.
   Huge/NaN `perPage` are handled correctly everywhere. Fix shape: house `Math.max(1, …)` floor, one
   sweep PR + tests.
-- `[ ]` **`users.js` paginated routes floor neither `page` nor `perPage`** — `getCreatedRecipes`
+- `[x]` **`users.js` paginated routes floor neither `page` nor `perPage`** *(fixed in [#306](https://github.com/jclind/prepify/pull/306), Wave 14 · C, merged 2026-07-11: both routes floor `page` at 0 and `perPage` at 1, incl. the in-memory-slice variant; 4 regression tests)* — `getCreatedRecipes`
   (`server/routes/users.js:73`, real `.skip()` → 500 on `?page=-1`) and `getSavedRecipes` (`:123`,
   in-memory slice → silently returns `[]`). Fold into the pagination-floor sweep above.
-- `[ ]` **`POST /api/ingredients/parse` lacks `requireActive`** — `server/routes/ingredients.js:118`
+- `[x]` **`POST /api/ingredients/parse` lacks `requireActive`** *(fixed in [#308](https://github.com/jclind/prepify/pull/308), Wave 14 · B, merged 2026-07-11: `requireActive` mounted between `verifyToken` and `parseLimiter` (house write-surface order); the wiring pin updated to the 4-handler chain and the route added to the requireActive suite)* — `server/routes/ingredients.js:118`
   mounts `verifyToken → parseLimiter` only, so a just-suspended/banned account (Firebase token valid up
   to ~1h) can still burn paid Spoonacular quota, bounded by the ~90/min per-uid limiter. The wiring test
   (`writeLimiter.wiring.test.js:109-115`) pins the current chain, so this is a design gap, not drift.
-- `[ ]` **`IngredientItem` edit-submit has no in-flight guard across the enrichment await** —
+- `[x]` **`IngredientItem` edit-submit has no in-flight guard across the enrichment await** *(fixed in [#304](https://github.com/jclind/prepify/pull/304), Wave 14 · D, merged 2026-07-11: `isSubmittingRef` set before the first await and cleared in a finally; handleBlur drops in-flight blurs — the pending submit's own tail exits edit mode, so no wedge; pending-window tests via a deferred promise + real focus movement)* —
   `src/pages/AddRecipe/Ingredients/IngredientItem.tsx:144-193`: blur-away or a second Enter during the
   pending `getIngredientData` await fires a full second enrichment (duplicate request + duplicate 429
   toast + extra rate-limit consumption; no corruption — writes are id-keyed and the #295 stuck-flag
@@ -131,18 +136,18 @@ hygiene, and the U3 watch items all verified sound — details in the session tr
   `useDraftAutosave.ts:327-334` early-returns on unchanged content before the `isSignedIn` check, so the
   badge corrects only on the next keystroke; a cross-tab conflict's "reload to see latest" guidance is
   toast-only (`DraftSaveStatus.tsx:13-23` shows generic "Couldn't save draft").
-- `[ ]` **`/health` is a static 200** — `server/app.js:66` never checks Mongo, so a runtime Mongo drop
+- `[x]` **`/health` is a static 200** *(fixed in [#305](https://github.com/jclind/prepify/pull/305), Wave 14 · E, merged 2026-07-11: live `{ping:1}` on the getDB() singleton raced against a 2s timeout — 200 ok / 503 degraded, can never throw)* — `server/app.js:66` never checks Mongo, so a runtime Mongo drop
   leaves Railway serving a green health check on a wedged instance (boot-time failure exits correctly).
-- `[ ]` **No `SIGTERM`/`unhandledRejection` handlers, no graceful shutdown** — `server/index.js`:
+- `[x]` **No `SIGTERM`/`unhandledRejection` handlers, no graceful shutdown** *(fixed in [#305](https://github.com/jclind/prepify/pull/305), Wave 14 · E, merged 2026-07-11: SIGTERM/SIGINT drain + closeDB + 10s force-exit; unhandledRejection/uncaughtException → Sentry capture + flush + exit 1; lives in index.js so untestable by the suite — reviewed by hand incl. the closeDB export)* — `server/index.js`:
   Railway deploys drop in-flight requests; an unhandled rejection crashes without a Sentry capture.
-- `[ ]` **Rejected CORS origins throw → 500 + Sentry capture per bot probe** — `server/app.js:50,106-117`:
+- `[x]` **Rejected CORS origins throw → 500 + Sentry capture per bot probe** *(fixed in [#305](https://github.com/jclind/prepify/pull/305), Wave 14 · E, merged 2026-07-11: the rejection error is tagged `status = 403`, so the backstop renders a quiet JSON 403 and skips the Sentry capture (it only captures ≥500); regression-tested)* — `server/app.js:50,106-117`:
   scanner traffic from random origins generates Sentry quota noise. Fix shape: respond 403 quietly.
-- `[ ]` **Unmatched `/api/*` paths return Express's default HTML "Cannot GET"** — no JSON 404 catch-all
+- `[x]` **Unmatched `/api/*` paths return Express's default HTML "Cannot GET"** *(fixed in [#305](https://github.com/jclind/prepify/pull/305), Wave 14 · E, merged 2026-07-11: `/api`-scoped JSON 404 catch-all mounted after every router, before the error backstop)* — no JSON 404 catch-all
   before the error middleware; breaks the house JSON-error contract (no leak).
-- `[ ]` **CI doesn't run on direct pushes to `release`** — `.github/workflows/test.yml:19` triggers on
+- `[x]` **CI doesn't run on direct pushes to `release`** *(fixed in [#305](https://github.com/jclind/prepify/pull/305), Wave 14 · E, merged 2026-07-11: `release` added to the workflow's push branches. The branch-protection required-checks confirmation on `release` remains an owner/settings check — not visible in-repo)* — `.github/workflows/test.yml:19` triggers on
   `push: [main, development]` only; a development→release **PR** runs everything, a direct push/merge runs
   nothing. Confirm branch protection marks the jobs required on `release` (settings not visible in-repo).
-- `[ ]` **PUT-drafts no-limiter pin only checks the 5 exported limiter instances** —
+- `[x]` **PUT-drafts no-limiter pin only checks the 5 exported limiter instances** *(fixed in [#308](https://github.com/jclind/prepify/pull/308), Wave 14 · B, merged 2026-07-11: structural `isRateLimiter` check — express-rate-limit middleware carries `getKey`/`resetKey` — asserts NO handler in the PUT chain is a limiter at all, exported or not)* —
   `writeLimiter.wiring.test.js:84-97`: a brand-new limiter instance added to the PUT chain wouldn't fail
   the pin. Residual test-gap note from the limiter lane's cleared-list.
 - `[ ]` **`ratingLastUpdated` is the next mixed-type field brewing** — written as BSON `Date`
@@ -151,6 +156,13 @@ hygiene, and the U3 watch items all verified sound — details in the session tr
 - `[ ]` **`formatDate`'s `Number.isNaN(d)` guard is dead code for strings** — `src/util/formatDate.ts:17`:
   `Number.isNaN('abc')` is always false (no coercion), so every string takes `new Date(Number(d))` — an
   ISO string input would render Invalid Date. Harmless for epoch-ms inputs; the ternary lies about intent.
+- `[ ]` **Migrate the `setUsername` rename cascade off `ratings.username` onto `userId`** *(filed
+  2026-07-11, off the Wave 14 · B [#308](https://github.com/jclind/prepify/pull/308) deviation)* —
+  `auth.js:191-194` still `updateMany({ username: prevUsername })`s ratings to carry a handle change;
+  rating rows already carry `userId` (D1), so the cascade can filter on that instead and simply `$set`
+  the new username. After that lands, the boot-created `ratings.username_1` index (kept by #308 for
+  exactly this query) is fully dead: a follow-up can add the guarded `dropIndex` to `ensureIndexes`
+  and remove it from `createModerationIndexes.js`. Low.
 - `[ ]` **API_CONTRACT.md handler line anchors have drifted** — e.g. `/newReview` says `reviews.js:66`
   (actual ~97). Doc-only sweep to re-anchor or drop line numbers.
 

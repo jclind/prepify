@@ -49,6 +49,14 @@ to the *sweep program*); this file applies it to the **general backlog**. Compan
 > [Wave 13 section](#wave-13--wave-12-follow-up-tail-boarded-2026-07-11)). The collection-name
 > moderation seed closed won't-fix (owner decision, owner-private visibility). The `addReview`
 > numeric flip stays held for the owner's V5 cutover.
+>
+> **Wave 14 boarded AND drained 2026-07-11** — unlike earlier waves it lives on the
+> [BACKLOG.md 2026-07-11 sweep board](./BACKLOG.md#adversarial-sweep--2026-07-11-post-281302-merges--prod-readiness),
+> not this table: the overnight cutover-readiness session (see `docs/RELEASE_RUNBOOK.md` +
+> `docs/evidence/CUTOVER_REHEARSAL_2026-07-11.md`) re-seeded the board with a fresh sweep
+> (0 P1 / 3 P2 / 13 P3) and ran five fix lanes A–E as PRs #304–#308; the day session
+> diff-reviewed and merged all five (2026-07-11). PR #303 (`[DO NOT MERGE]` V5 flip half)
+> stays parked for the owner's cutover.
 
 ---
 
@@ -2517,3 +2525,22 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   verbatim, with F1's agent independently handling the DRAFT_LIMIT-409-below-the-rate-cap test
   interaction correctly. Remaining board: owner-gated ops only (V5 sequencing-critical cutover,
   W1, I1/I2) + two branches awaiting owner disposition.
+- **2026-07-11** — **Wave 14 merged (five overnight-authored PRs) — the sweep's fix lanes are
+  drained.** The overnight cutover-readiness session had left lanes A–E open with merges held;
+  this session diff-reviewed all five and merged after all-green CI on each head: #304 `0642768`
+  (IngredientItem in-flight guard, deferred-promise + real-focus tests) · #307 `0bcd854` (drafts
+  404-wedge recovery: hook refs + caller id/URL cleared, re-create on next edit, flush pinned) ·
+  #306 `421f239` (pagination floors on 9 routes + 11 tests) · #305 `e2adec9` (prod hardening:
+  live /health ping 200/503, graceful shutdown, fatal-error Sentry+exit, quiet CORS 403, /api
+  JSON 404, FRONTEND_URLS warning, CI `release` trigger) · #308 `ce301b3` (D1 ratings index
+  boot-provisioned with script-identical spec, `requireActive` on /parse, structural
+  no-limiter-on-PUT pin; its DEVIATION — keeping `username_1` because the setUsername rename
+  cascade still queries ratings by username — verified against auth.js:191-194 before merge).
+  Review also hand-verified what CI can't see: #305's index.js shutdown path (`closeDB` export)
+  and the #306↔#308 cross-PR seed/unique-index composition; full local gates re-run on the
+  merged HEAD: tsc 0 ×2, Vitest 739/2, server Jest 43/902. Close-out: BACKLOG sweep items
+  ticked (3 P2 + 10 P3 fixed; 7 P3 remain deliberately unclaimed + 1 new seed filed: migrate
+  the setUsername cascade onto userId, then drop `username_1`); API_CONTRACT.md updated
+  (/health semantics, CORS-403/JSON-404/lifecycle notes, /parse requireActive + 403, pagination
+  floors on all affected endpoints incl. striking getCreatedRecipes' stale "not floored" text);
+  lane branches deleted local+remote. PR #303 stays parked `[DO NOT MERGE]` for the V5 cutover.

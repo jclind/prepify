@@ -90,11 +90,26 @@ Full lists live in each section's `#### DRIFT` subsection. The load-bearing ones
   `{ error: 'Bad request' }` with the thrower's 4xx, or `{ error: <generic 500 message> }` for
   anything else; 5xx are captured to Sentry. Handlers themselves respond via
   `respondServerError` (generic body, real error logged) — **no route ever echoes a stack trace**.
+- **CORS rejection:** a disallowed `Origin` is tagged `status = 403` and renders as a quiet
+  `403 { error: 'Bad request' }` via the backstop — an expected client condition, NOT Sentry-captured
+  (since [#305](https://github.com/jclind/prepify/pull/305); previously threw → 500 + a Sentry event
+  per bot probe).
+- **Unmatched `/api/*` path:** JSON `404 { error: 'Not found' }` from an `/api`-scoped catch-all
+  mounted after every router (since [#305](https://github.com/jclind/prepify/pull/305); previously
+  Express's default HTML "Cannot GET" page).
+- **Process lifecycle (`server/index.js`, since [#305](https://github.com/jclind/prepify/pull/305)):**
+  SIGTERM/SIGINT drain in-flight connections, close the Mongo client, exit 0 (10s force-exit
+  backstop); `unhandledRejection`/`uncaughtException` are Sentry-captured, flushed, and exit 1 so the
+  platform restarts the process.
 
 ### GET /health
 
-- **Handler:** `server/app.js:66` — above the global limiter so monitors can't be throttled into a
-  false "down". No auth. Returns `200 { status: 'ok' }`.
+- **Handler:** `server/app.js` — above the global limiter so monitors can't be throttled into a
+  false "down". No auth. Since [#305](https://github.com/jclind/prepify/pull/305) (Wave 14 · E) it is a
+  **live DB health check**, not a static 200: a `{ ping: 1 }` on the `getDB()` singleton raced against a
+  2s timeout — `200 { status: 'ok' }` when the ping succeeds, `503 { status: 'degraded' }` on a failed
+  ping, timeout, or not-yet-connected DB (never throws), so the platform restarts a wedged instance
+  instead of keeping a green check on a dropped Mongo connection.
 
 ## Auth middleware glossary
 
@@ -136,7 +151,7 @@ All routes live in `server/routes/recipes.js`, mounted at `/api` (server/app.js)
 ### GET /api/recipes
 - **Handler:** `server/routes/recipes.js:44`
 - **Middleware:** none (public)
-- **Request:** query — `q` (string, case-insensitive escaped-regex title substring), `page` (int, default 0), `recipesPerPage` (int, default 5, capped at 50), `order` (one of `popular` (default) | `new` | `old` | `cheapest` | `expensive` | `shortest` | `longest` | `top` | `trending`; unknown values fall back to `popular`; own-property lookup blocks `__proto__`/`constructor`), `cuisine` (exact case-insensitive match), `tags` (comma list or repeated param; OR match over `mealTypes ∪ nutritionLabels`), `mealTypes` (comma list, `$in`), `diets` (comma list, conjunctive `$all` — recipe must carry every label). Nothing is rejected; malformed values coerce to defaults.
+- **Request:** query — `q` (string, case-insensitive escaped-regex title substring), `page` (int, default 0), `recipesPerPage` (int, default 5, floored at 1 — a negative value used to reach `.skip()`/`.limit()` as negative and 500, fixed in [#306](https://github.com/jclind/prepify/pull/306) — and capped at 50), `order` (one of `popular` (default) | `new` | `old` | `cheapest` | `expensive` | `shortest` | `longest` | `top` | `trending`; unknown values fall back to `popular`; own-property lookup blocks `__proto__`/`constructor`), `cuisine` (exact case-insensitive match), `tags` (comma list or repeated param; OR match over `mealTypes ∪ nutritionLabels`), `mealTypes` (comma list, `$in`), `diets` (comma list, conjunctive `$all` — recipe must carry every label). Nothing is rejected; malformed values coerce to defaults.
 - **Response:** `200` `{ recipeList: Card[], total_results: number }`
 - **Client:** `src/api/recipes.ts` → `RecipeAPI.getAllRecipes()` — used by `src/pages/Recipes/Recipes.tsx`, `src/pages/Home/HomeBrowseByMeal.tsx`
 - **Notes:** `_id` tiebreak on every sort keeps pagination stable; card projection means no `userId`/moderation stamps in list responses.
@@ -374,7 +389,7 @@ All routes live in `server/routes/reviews.js`, mounted at `/api` (server/app.js)
 ### GET /api/getReviews
 - **Handler:** `server/routes/reviews.js:229`
 - **Middleware:** `optionalAuth` (anonymous-friendly)
-- **Request:** query `recipeId` (string, required — `400 {error:'recipeId is required'}`), `page` (int, default 0), `reviewsPerPage` (int, default 5, capped at `MAX_PER_PAGE` = 50, reviews.js:18), `filter` (`'new'` → sort `reviewCreatedAt` desc, `'top'` → sort `rating` desc, anything else → natural order).
+- **Request:** query `recipeId` (string, required — `400 {error:'recipeId is required'}`), `page` (int, default 0), `reviewsPerPage` (int, default 5, floored at 1 since [#306](https://github.com/jclind/prepify/pull/306) — negative values 500'd via negative skip/limit — and capped at `MAX_PER_PAGE` = 50, reviews.js:18), `filter` (`'new'` → sort `reviewCreatedAt` desc, `'top'` → sort `rating` desc, anything else → natural order).
 - **Response:** `200 {reviews: [...], totalCount: number}` — each review is the raw ratings doc (only docs with non-empty `reviewText` and not `moderationHidden` via `REVIEW_VISIBLE`, server/util/moderation.js:33) plus a derived `isCurrentUser: boolean` and, added in §D PR-A, the author's `photoURL: string | null` and `displayName: string | null`.
 - **Client:** `src/api/recipes.ts:470` → `RecipeAPI.getReviews(recipeId, filter, page, reviewsPerPage)` — used by `src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/ReviewsContainer.tsx:40` (react-query).
 - **Notes:** `isCurrentUser` is derived from the *verified* token uid (`req.uid`) matching the doc's `userId` — never from any client-supplied identity. `photoURL`/`displayName` are resolved from Firebase Auth via a single deduped, batched `getAuth().getUsers()` keyed on the docs' stable `userId` (the rating doc stores neither); the lookup is failure-tolerant (a transient Admin-SDK error or a deleted/not-found reviewer yields `null` for both fields and never fails the list) — same degrade-gracefully pattern as `getPublicProfile`. Legacy docs lacking a `userId` skip the lookup entirely. Raw docs are spread as-is, so authors' `userId` (Firebase uid) and denormalized `username` are visible to anonymous callers.
@@ -382,7 +397,7 @@ All routes live in `server/routes/reviews.js`, mounted at `/api` (server/app.js)
 ### GET /api/getSingleUserReviews
 - **Handler:** `server/routes/reviews.js:257`
 - **Middleware:** none (public)
-- **Request:** query `username` (required — `400 {error:'username is required'}`; only truthiness checked, no type check), `page` (int, default 0), `reviewsPerPage` (int, default 5, capped at 50), `filter` (`'new'`/`'top'` as above), `returnRecipeData` (string; recipe join only when exactly `'true'`).
+- **Request:** query `username` (required — `400 {error:'username is required'}`; only truthiness checked, no type check), `page` (int, default 0), `reviewsPerPage` (int, default 5, floored at 1 since [#306](https://github.com/jclind/prepify/pull/306), capped at 50), `filter` (`'new'`/`'top'` as above), `returnRecipeData` (string; recipe join only when exactly `'true'`).
 - **Response:** `200 {reviews: [...], totalCount: number}`.
   - Unknown handle → `200 {reviews: [], totalCount: 0}` (not a 404).
   - With `returnRecipeData=true`, each review gains `recipeImage`, `recipeTitle`, and full `recipeData`, and ratings whose recipe is soft-hidden (`RECIPE_VISIBLE` statuses `hidden`/`unpublished`/`pending_review`) are filtered INSIDE the aggregation before paging, so `totalCount` counts only rows the list can actually show (the Load-More fix, reviews.js:282-290). The `$lookup` normalizes recipe `_id` via `$toString` to span native-ObjectId and legacy-string ids.
@@ -499,7 +514,7 @@ All routes live in `server/routes/reviews.js`, mounted at `/api` (server/app.js)
 ### GET /api/getCreatedRecipes
 - **Handler:** `server/routes/users.js:66`
 - **Middleware:** `verifyToken`
-- **Request:** query `page` (int, default 0), `recipesPerPage` (int, default 6, hard-capped at 50), `order` (`'old'` = oldest-first by `createdAt`; anything else = newest-first). No validation rejections; non-numeric params fall back to defaults. A negative `page` is not floored (unlike getPublicProfileRecipes) — it would reach Mongo `.skip()` as negative and 500
+- **Request:** query `page` (int, default 0, floored at 0), `recipesPerPage` (int, default 6, floored at 1, hard-capped at 50), `order` (`'old'` = oldest-first by `createdAt`; anything else = newest-first). No validation rejections; non-numeric params fall back to defaults. Both floors added in [#306](https://github.com/jclind/prepify/pull/306) (Wave 14 · C) — a negative `page` or `recipesPerPage` used to reach Mongo `.skip()`/`.limit()` as negative and 500
 - **Response:** `200 {recipes: CreatedCard[], totalCount: number}` — recipes projected to `CREATED_CARD_PROJECTION` (`title, recipeImage, servingPrice, createdAt, views, numTimesSaved, numTimesMade, totalTime, rating` + `_id`); `401`
 - **Client:** `src/api/recipes.ts` → `getCreatedRecipes(page, recipesPerPage, order)` (returns `null` when signed out) — used by `src/pages/Account/UserRecipes/UserRecipes.tsx:29` (always `order='new'`, per-page 6)
 - **Notes:** Filter is `RECIPE_OWNER_VISIBLE`: excludes takedowns/de-publishes but includes the author's own `pending_review` recipes, so a held recipe doesn't silently vanish from their account (users.js:77–80). Whitelist projection structurally keeps admin-uid moderation stamps out of the response.
@@ -507,7 +522,7 @@ All routes live in `server/routes/reviews.js`, mounted at `/api` (server/app.js)
 ### GET /api/getSavedRecipes
 - **Handler:** `server/routes/users.js:96`
 - **Middleware:** `verifyToken`
-- **Request:** query `page` (int, default 0), `recipesPerPage` (int, default 5, capped 50), `order` — save-time spellings `'newAdd'`/`'oldAdd'` plus legacy `'new'`/`'old'` (default newest-saved-first), or field sorts `'alpha'|'rating'|'timeShort'|'timeLong'`; `collectionId` (optional — filters to saved entries whose `collectionIds` include it; repeated param collapsed to first value), `q` (optional case-insensitive title substring; repeated param collapsed to first value). No 400s
+- **Request:** query `page` (int, default 0, floored at 0), `recipesPerPage` (int, default 5, floored at 1, capped 50 — floors added in [#306](https://github.com/jclind/prepify/pull/306); this route slices in memory, so negatives silently returned `[]` rather than 500ing), `order` — save-time spellings `'newAdd'`/`'oldAdd'` plus legacy `'new'`/`'old'` (default newest-saved-first), or field sorts `'alpha'|'rating'|'timeShort'|'timeLong'`; `collectionId` (optional — filters to saved entries whose `collectionIds` include it; repeated param collapsed to first value), `q` (optional case-insensitive title substring; repeated param collapsed to first value). No 400s
 - **Response:** `200 {recipes: SavedCard[], totalCount: number}` — projected to `SAVED_CARD_PROJECTION` (`title, recipeImage, servingPrice, totalTime, cuisine, rating` + `_id`); `401`
 - **Client:** `src/api/recipes.ts` → `getSavedRecipes(page, recipesPerPage, order, collectionId?, q?)` (null when signed out) — used by `src/pages/Account/SavedRecipes/SavedRecipes.tsx:75` (per-page 6, sort values `newAdd/oldAdd/alpha/rating/timeShort/timeLong`, debounced search)
 - **Notes:** Two paths: a search or field sort materializes the whole visible saved set, filters/sorts docs, then pages; otherwise a cheaper sort-entries-then-fetch-page path runs. Both apply `RECIPE_VISIBLE`, and `totalCount` counts only visible recipes (users.js:195–206) so soft-hidden saves can't leave the client's Load More button permanently live. Response preserves save-time order by re-keying find() results (string-compared ids to bridge legacy string `_id`s).
@@ -649,12 +664,13 @@ None found. Client paths, methods, request bodies, and typed response shapes (`R
 
 ### POST /api/ingredients/parse
 - **Handler:** `server/routes/ingredients.js:108`
-- **Middleware:** `verifyToken` → `parseLimiter` (per-user `makeUserLimiter` instance, package defaults: **30 req / 60s per `req.uid`**, custom message `'Too many ingredient lookups — wait a minute and try again.'`, 429 body `{error, code: 'RATE_LIMITED'}`; in-memory per-process bucket, skipped when `NODE_ENV === 'test'`) → `asyncHandler`
+- **Middleware:** `verifyToken` → `requireActive` (added in [#308](https://github.com/jclind/prepify/pull/308), Wave 14 · B — a just-suspended/banned account with a still-valid ID token can no longer burn paid Spoonacular quota) → `parseLimiter` (per-user `makeUserLimiter` instance, package defaults: **30 req / 60s per `req.uid`**, custom message `'Too many ingredient lookups — wait a minute and try again.'`, 429 body `{error, code: 'RATE_LIMITED'}`; in-memory per-process bucket, skipped when `NODE_ENV === 'test'`) → `asyncHandler`
 - **Request:** JSON body `{ ingredientString: string }` — must be a non-empty string. Rejection: `400 {error: 'ingredientString must be a non-empty string'}` (falsy or non-string).
 - **Response:**
   - `200 { ingredientData: IngredientData | null }` — `null` is a *clean lookup miss* (no Spoonacular match), returned deliberately as 200 so the client renders its soft-fail row state. When non-null: `{ name: string, imagePath?: string, totalPriceUSACents?: number (integer), possibleUnits?: string[], category?: string }` — price/image keys are **omitted** (not null) when absent.
   - `400 {error}` — validation, above.
   - `401` — `verifyToken` (missing/invalid Bearer).
+  - `403 { error, code: 'ACCOUNT_SUSPENDED' | 'ACCOUNT_BANNED', reason }` — requireActive.
   - `429 {error, code: 'RATE_LIMITED'}` — parseLimiter.
   - `500 {error: GENERIC_500_MESSAGE}` — enrichment threw (proxy/network `EnrichError`), distinct from a clean miss.
 - **Client:** `src/api/ingredientParserApi.ts` → `fetchIngredientEnrichment(parsedIngredient)` (posts `parsedIngredient.originalIngredientString`) — used only via `RecipeAPI.getIngredientData` (`src/api/recipes.ts:496`), called from `src/pages/AddRecipe/Ingredients/IngredientsContainer/IngredientsContainer.tsx:59` (add row) and `src/pages/AddRecipe/Ingredients/IngredientItem.tsx:120` (edit row). `getIngredientData` first parses locally/synchronously with `parseIngredientString`, then enriches; it degrades any rejection (5xx, timeout, server down) to an `{error, parsedIngredient, ingredientData: null}` variant so the row shows a Retry affordance instead of hanging.
@@ -712,7 +728,7 @@ None found. Client paths, methods, request bodies, and typed response shapes (`R
 ### GET /api/reports
 - **Handler:** `server/routes/reports.js:190`
 - **Middleware:** `verifyToken` → `requireAdmin` → `asyncHandler`
-- **Request:** query: `status` (`'open' | 'resolved' | 'dismissed'`; invalid values silently ignored = unfiltered), `targetType` (`'recipe' | 'review' | 'user'`; invalid ignored), `page` (default `0`), `perPage` (default `20`). Coerced and clamped like the bug-reports twin (since [#289](https://github.com/jclind/prepify/pull/289), Wave 10 · V2): `perPage` → `parseInt || 20`, capped at `MAX_PER_PAGE` (50); `page` → `parseInt || 0`, floored at 0 so non-numeric/negative values yield a clean first page instead of a NaN/negative-skip 500 (reports.js:198-201).
+- **Request:** query: `status` (`'open' | 'resolved' | 'dismissed'`; invalid values silently ignored = unfiltered), `targetType` (`'recipe' | 'review' | 'user'`; invalid ignored), `page` (default `0`), `perPage` (default `20`). Coerced and clamped like the bug-reports twin (since [#289](https://github.com/jclind/prepify/pull/289), Wave 10 · V2): `perPage` → `parseInt || 20`, floored at 1 (added in [#306](https://github.com/jclind/prepify/pull/306) — a negative `perPage` made `limit` negative, re-deriving a negative skip past the page floor) and capped at `MAX_PER_PAGE` (50); `page` → `parseInt || 0`, floored at 0 so non-numeric/negative values yield a clean first page instead of a NaN/negative-skip 500 (reports.js:198-205).
 - **Response:** `200 {reports, totalCount, openCount}` — `reports` sorted `createdAt` desc, each enriched with `target: {recipe, review}`: `recipe` = `{title, recipeImage, status, userId}` projection when the report has a `recipeId` (null for user reports), `review` = `{reviewText, rating, moderationHidden}` for review targets, matched by snapshotted `reportedUid` (fallback to stored handle for legacy reports, reports.js:214-216). `totalCount` counts the filtered set; `openCount` always counts `status:'open'` regardless of filter. Other statuses: `401`, `403`.
 - **Client:** `src/api/reports.ts` → `listReports()` — used by `src/pages/Admin/Reports/Reports.tsx:40` (admin moderation queue; passes `status` + `perPage: 50`, never `targetType` or `page`).
 
@@ -789,7 +805,7 @@ The six routes below (`server/routes/admin.js`) are the admin console's user-mod
 - **Request:** Query params, all optional:
   - `query` (string, trimmed, default `''`) — if it contains `@`, treated as an email and resolved via Firebase `getUserByEmail`; otherwise matched as a case-insensitive username **prefix** (regex-escaped, against `username_lower`) OR an exact uid (`_id`). Empty query lists all users.
   - `page` (int, default 1, floored to 1)
-  - `perPage` (int, default 25, capped at 50; no lower bound is enforced)
+  - `perPage` (int, default 25, floored at 1 since [#306](https://github.com/jclind/prepify/pull/306), capped at 50)
 - **Response:**
   - `200` `{ users: AdminUserType[], totalCount: number }`. Each user: `{ uid, username: string|null, status: 'active'|'suspended'|'banned' (default 'active'), statusReason: string|null, statusUpdatedAt: Date|null, statusUpdatedBy: string|null, counts: { recipes, reviews, openReports } }`. `reviews` counts only written reviews (non-empty `reviewText`), not bare star ratings (line 99–104). `openReports` tallies open reports targeting the user's reviews (by username) plus reports on recipes they authored (line 123–142). The email branch additionally returns `email` on the single user and hard-codes `totalCount: 1`, ignoring pagination (line 185).
   - Email branch: any Firebase lookup failure (including "no such email") returns `200 {users: [], totalCount: 0}` — never an error status (line 186–188).
@@ -828,7 +844,7 @@ The six routes below (`server/routes/admin.js`) are the admin console's user-mod
   - `action` — kept only if it's in `AUDIT_ACTIONS` (server/util/auditLog.js; 19 values, e.g. `recipe.hide`, `user.ban`, `recipe.autohold`, `content.blocked`); unknown values are silently ignored (no error), yielding an unfiltered list.
   - `targetType` — kept only if in `AUDIT_TARGET_TYPES` (`recipe|review|user|report|bugReport`); likewise silently ignored otherwise.
   - `actorUid` (any non-empty string, exact match)
-  - `page` (default 1, floored to 1), `perPage` (default 25, capped 50)
+  - `page` (default 1, floored to 1), `perPage` (default 25, floored at 1 since [#306](https://github.com/jclind/prepify/pull/306), capped 50)
 - **Response:**
   - `200` `{ entries: AuditEntryType[], totalCount }`, sorted `createdAt` desc. Each entry is the raw `auditLog` doc plus `actorUsername`: batch-resolved from the live `usernames` collection, falling back to the username captured on the row at action time (survives self-service account deletion), else `null` (server/routes/admin.js:34–44).
   - `401` / `403` from middleware.
@@ -865,7 +881,7 @@ The six routes below (`server/routes/admin.js`) are the admin console's user-mod
 - **Middleware:** `verifyToken` → `requireAdmin` → `asyncHandler`
 - **Request:** Query params, all optional:
   - `type` — kept only if `'miss'` or `'price_outlier'`; anything else silently ignored (lists both kinds).
-  - `page` (default 1, floored to 1), `perPage` (default 25, capped 50)
+  - `page` (default 1, floored to 1), `perPage` (default 25, floored at 1 since [#306](https://github.com/jclind/prepify/pull/306), capped 50)
 - **Response:**
   - `200` `{ items, totalCount }` — raw `ingredientMisses` docs sorted `count` desc, then `lastSeen` desc. Read-only telemetry written best-effort by `POST /api/ingredients/parse`: `miss` = no Spoonacular match, `price_outlier` = implausible enriched per-row price.
   - `401` / `403` from middleware.
