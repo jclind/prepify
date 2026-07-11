@@ -1,6 +1,6 @@
 import React from 'react'
 import { vi } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import IngredientItem from 'src/pages/AddRecipe/Ingredients/IngredientItem'
 import RecipeAPI from 'src/api/recipes'
 import { toast } from 'react-hot-toast'
@@ -147,6 +147,40 @@ describe('IngredientItem inline edit', () => {
     )
     await waitFor(() => expect(setItemStatus).toHaveBeenCalledWith('ing-1', null))
     expect(mockGetIngredientData).toHaveBeenCalledTimes(1)
+  })
+
+  // Stale-suppression regression: on a GENUINE blur-away, real focus has
+  // already left the input by the time handleEditSubmit runs, so its trailing
+  // self-blur() no-ops (per spec, blur() on a non-focused element fires no
+  // event — jsdom conforms) and never consumes the suppress flag. Without the
+  // edit-entry reset in handleIngrClick, the flag stays stuck true and the
+  // NEXT edit session's genuine blur-away is swallowed (no submit, edit mode
+  // stays open). This test moves REAL focus (element.focus() on another
+  // control) instead of fireEvent.blur, so the browser-faithful ordering —
+  // blur event first, self-blur() a no-op — is what actually runs.
+  it('a second edit session still submits on blur-away after a prior blur-away submit', async () => {
+    mockGetIngredientData.mockImplementation(async (s: string) => enriched(s))
+    const { container } = renderItem()
+    const removeBtn = container.querySelector('.ingr-remove') as HTMLButtonElement
+
+    const blurAwaySession = (value: string) => {
+      fireEvent.click(container.querySelector('.item-btn') as HTMLElement)
+      const input = container.querySelector('input') as HTMLInputElement
+      expect(document.activeElement).toBe(input) // real focus from click-to-edit
+      fireEvent.change(input, { target: { value } })
+      // Genuine blur-away: move real DOM focus to another control. jsdom
+      // fires the real blur on the input; the handler's trailing blur() then
+      // targets an already-unfocused element and fires nothing.
+      act(() => removeBtn.focus())
+    }
+
+    blurAwaySession('2 cups flour')
+    await waitFor(() => expect(mockGetIngredientData).toHaveBeenCalledTimes(1))
+
+    blurAwaySession('3 cups sugar')
+    // Pre-fix: the stale flag from session 1 swallows this submit (stays 1).
+    await waitFor(() => expect(mockGetIngredientData).toHaveBeenCalledTimes(2))
+    expect(mockGetIngredientData).toHaveBeenLastCalledWith('3 cups sugar')
   })
 
   it('flags the row errored and toasts when the edit enrichment times out', async () => {

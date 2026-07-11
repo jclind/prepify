@@ -1,6 +1,6 @@
 import React from 'react'
 import { vi } from 'vitest'
-import { render, fireEvent, waitFor } from '@testing-library/react'
+import { render, fireEvent, waitFor, act } from '@testing-library/react'
 import InstructionItem from 'src/pages/AddRecipe/Instructions/InstructionItem/InstructionItem'
 
 const contentInstruction = (id: string, content: string, index = 1) => ({
@@ -64,5 +64,37 @@ describe('InstructionItem inline edit', () => {
     const { container, setInstructions } = renderItem()
     editTo(container, '')
     expect(setInstructions).not.toHaveBeenCalled()
+  })
+
+  // Stale-suppression regression: on a GENUINE blur-away, real focus has
+  // already left the textarea by the time handleEditSubmit runs, so its
+  // trailing self-blur() no-ops (per spec, blur() on a non-focused element
+  // fires no event — jsdom conforms) and never consumes the suppress flag.
+  // Without the edit-entry reset, the flag stays stuck true and the NEXT edit
+  // session's genuine blur-away is swallowed (no submit, edit mode stays
+  // open). This test moves REAL focus (element.focus() on another control)
+  // instead of fireEvent.blur, so the browser-faithful ordering — blur event
+  // first, self-blur() a no-op — is what actually runs.
+  it('a second edit session still submits on blur-away after a prior blur-away submit', async () => {
+    const { container, setInstructions } = renderItem()
+    const removeBtn = container.querySelector('.instr-remove') as HTMLButtonElement
+
+    const blurAwaySession = (value: string) => {
+      fireEvent.click(container.querySelector('.item-btn') as HTMLElement)
+      const textarea = container.querySelector('textarea') as HTMLTextAreaElement
+      expect(document.activeElement).toBe(textarea) // real focus from click-to-edit
+      fireEvent.change(textarea, { target: { value } })
+      // Genuine blur-away: move real DOM focus to another control. jsdom
+      // fires the real blur on the textarea; the handler's trailing blur()
+      // then targets an already-unfocused element and fires nothing.
+      act(() => removeBtn.focus())
+    }
+
+    blurAwaySession('Preheat the oven to 350F')
+    await waitFor(() => expect(setInstructions).toHaveBeenCalledTimes(1))
+
+    blurAwaySession('Preheat the oven to 375F')
+    // Pre-fix: the stale flag from session 1 swallows this submit (stays 1).
+    await waitFor(() => expect(setInstructions).toHaveBeenCalledTimes(2))
   })
 })

@@ -126,6 +126,12 @@ const IngredientItem: FC<IngredientItemProps> = ({
   }
   const handleIngrClick = () => {
     if (editInputRef?.current) {
+      // A genuine blur-away submit leaves the suppress flag set: focus has
+      // already left the input by the time handleEditSubmit runs, so its
+      // trailing self-blur() no-ops on the already-blurred element (no event)
+      // and never consumes the flag. Reset on edit-entry so stale suppression
+      // can't swallow the next session's genuine blur-away.
+      suppressNextBlurSubmitRef.current = false
       setIsEditing(true)
       editInputRef.current.focus()
     }
