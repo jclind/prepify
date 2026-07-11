@@ -434,6 +434,26 @@ describe('GET /api/reports', () => {
     expect(res.body.reports.length).toBe(1)
   })
 
+  it('floors a negative perPage instead of 500ing (negative limit/skip)', async () => {
+    admin.__setClaims({ admin: true })
+    const docs = Array.from({ length: 3 }, () => ({
+      _id: new ObjectId(),
+      targetType: 'recipe',
+      recipeId: `r-${Math.random()}`,
+      reporterUid: 'u1',
+      reason: 'spam',
+      status: 'open',
+      createdAt: new Date(),
+    }))
+    await getDB().collection('reports').insertMany(docs)
+
+    // A negative perPage floors to 1, so page=1 (skip=1) returns 1 report.
+    const res = await request(app).get('/api/reports?page=1&perPage=-5').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(res.body.reports.length).toBe(1)
+    expect(res.body.totalCount).toBe(3)
+  })
+
   it('caps perPage at MAX_PER_PAGE (50)', async () => {
     admin.__setClaims({ admin: true })
     // Create 60 reports

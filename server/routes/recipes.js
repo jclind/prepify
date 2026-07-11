@@ -58,7 +58,10 @@ router.get('/recipes', asyncHandler(async (req, res) => {
   // collection. The 'simple' query parser (app.js) guarantees every value is
   // a string or string[] — never a `{$ne:…}` operator object — so the helpers
   // below only have to coerce those two shapes.
-  const limit = Math.min(parseInt(recipesPerPage) || 5, MAX_PER_PAGE)
+  // Floor at 1 so a negative ?recipesPerPage can't sneak past the Math.min
+  // cap above and make `limit` negative — that in turn made `skip` negative
+  // for page > 0 (MongoDB rejects a negative skip/limit as a 500).
+  const limit = Math.min(Math.max(parseInt(recipesPerPage) || 5, 1), MAX_PER_PAGE)
   // Floor at 0 so a negative ?page never produces a negative .skip() (which
   // MongoDB rejects, surfacing as a 500 instead of a clean first page).
   const skip = Math.max(0, parseInt(page) || 0) * limit

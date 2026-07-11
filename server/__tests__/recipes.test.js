@@ -140,6 +140,14 @@ describe('GET /recipes', () => {
     expect(res.body.total_results).toBe(3)
   })
 
+  it('floors a negative recipesPerPage instead of 500ing (negative limit/skip)', async () => {
+    const res = await request(server).get('/api/recipes?page=1&recipesPerPage=-5')
+    expect(res.status).toBe(200)
+    // A negative recipesPerPage floors to 1, so page=1 (skip=1) returns 1 recipe.
+    expect(res.body.recipeList).toHaveLength(1)
+    expect(res.body.total_results).toBe(3)
+  })
+
   it('caps recipesPerPage at 50 even when a larger page is requested', async () => {
     const db = getDB()
     // 3 seeded in beforeEach + 52 more = 55 total, so a capped page shows exactly 50.
