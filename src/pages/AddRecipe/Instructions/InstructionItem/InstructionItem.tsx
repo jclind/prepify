@@ -28,8 +28,25 @@ const InstructionItem: FC<InstructionItemProps> = ({
     if ('label' in instruction) return instruction.label
     return instruction.content
   })
+  // handleEditSubmit ends by programmatically blur()-ing the textarea (so a
+  // keyboard Enter-submit also exits edit mode visually). That blur()
+  // synchronously re-fires the same RecipeFormTextArea's onBlur, which is
+  // also wired to submit — without a guard, every Enter-submit double-invokes
+  // handleEditSubmit against the same stale closed-over editedVal/instruction
+  // (duplicate, idempotent setInstructions call). This ref is flipped
+  // immediately before the self-triggered blur() and consumed by handleBlur
+  // below, so only a genuine user blur (click-away while editing) reaches
+  // handleEditSubmit a second time. Mirrors the identical fix in
+  // IngredientItem.tsx (V6, #287).
+  const suppressNextBlurSubmitRef = useRef(false)
 
   const handleInstrClick = () => {
+    // A genuine blur-away submit leaves the suppress flag set: focus has
+    // already left the textarea by the time handleEditSubmit runs, so its
+    // trailing self-blur() no-ops on the already-blurred element (no event)
+    // and never consumes the flag. Reset on edit-entry so stale suppression
+    // can't swallow the next session's genuine blur-away.
+    suppressNextBlurSubmitRef.current = false
     setIsEditing(true)
     textAreaRef?.current && textAreaRef.current.focus()
   }
@@ -51,8 +68,21 @@ const InstructionItem: FC<InstructionItemProps> = ({
 
       editInstruction(instruction.id, updatedInstruction)
     }
+    suppressNextBlurSubmitRef.current = true
     blur()
     setIsEditing(false)
+  }
+
+  // Wired to RecipeFormTextArea's onBlur. Genuine blur-away (clicking
+  // elsewhere while editing) should still submit; the blur() handleEditSubmit
+  // triggers on itself should not resubmit — see suppressNextBlurSubmitRef
+  // above.
+  const handleBlur = () => {
+    if (suppressNextBlurSubmitRef.current) {
+      suppressNextBlurSubmitRef.current = false
+      return
+    }
+    handleEditSubmit()
   }
 
   const isContent = 'content' in instruction
@@ -105,7 +135,7 @@ const InstructionItem: FC<InstructionItemProps> = ({
             val={editedVal}
             setVal={setEditedVal}
             textAreaRef={textAreaRef}
-            onBlur={handleEditSubmit}
+            onBlur={handleBlur}
             onEnter={handleEditSubmit}
             smallTextArea={true}
             characterLimit={INSTRUCTION_MAX_LENGTH}
