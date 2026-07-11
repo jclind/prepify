@@ -84,6 +84,54 @@ describe('POST /collections', () => {
     const data = await getUserData()
     expect(data.collections).toHaveLength(1)
   })
+
+  it('rejects creation past the 50-collection cap with 409', async () => {
+    const mine = Array.from({ length: 50 }, (_, i) => ({
+      id: `c${i}`,
+      name: `Collection ${i}`,
+      createdAt: '1',
+    }))
+    await seedUserRecipeData(TEST_UID, { collections: mine })
+
+    const res = await request(app)
+      .post('/api/collections')
+      .set(AUTH_HEADER)
+      .send({ name: 'One too many' })
+    expect(res.status).toBe(409)
+    expect(res.body.error).toMatch(/at most 50 collections/)
+
+    const data = await getUserData()
+    expect(data.collections).toHaveLength(50)
+  })
+
+  it('holds the 50-collection cap under concurrent POSTs (TOCTOU regression): 5 concurrent creates at 49 existing land exactly 1, reject 4 with 409', async () => {
+    const mine = Array.from({ length: 49 }, (_, i) => ({
+      id: `c${i}`,
+      name: `Collection ${i}`,
+      createdAt: '1',
+    }))
+    await seedUserRecipeData(TEST_UID, { collections: mine })
+
+    const responses = await Promise.all(
+      Array.from({ length: 5 }, (_, i) =>
+        request(app)
+          .post('/api/collections')
+          .set(AUTH_HEADER)
+          .send({ name: `Concurrent ${i}` })
+      )
+    )
+
+    const succeeded = responses.filter((res) => res.status === 201)
+    const rejected = responses.filter((res) => res.status === 409)
+    expect(succeeded).toHaveLength(1)
+    expect(rejected).toHaveLength(4)
+    rejected.forEach((res) =>
+      expect(res.body.error).toMatch(/at most 50 collections/)
+    )
+
+    const data = await getUserData()
+    expect(data.collections).toHaveLength(50)
+  })
 })
 
 // ─── GET /collections ─────────────────────────────────────────────────────────
