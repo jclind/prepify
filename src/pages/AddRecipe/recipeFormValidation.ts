@@ -26,7 +26,9 @@ export type ValidatableRecipeForm = {
   // existing stored image.
   existingImageUrl: string | undefined
   description: string
-  servings: number | ''
+  // The raw servings field string (see RecipeFormState.servings). Coerced with
+  // Number() below rather than trusted as a real number.
+  servings: string
   prepTime: TimeVal
   ingredients: IngredientsType[]
   instructions: InstructionsType[]
@@ -73,10 +75,11 @@ export function validateRecipeForm(
   }
 
   // Servings must be a positive whole number — a truthiness check alone let
-  // negative and fractional values (e.g. -2, 1.5) through. Coerce with Number()
-  // rather than assuming a real `number`: FormInput's generic setVal passes the
-  // raw input string straight through (untyped cast), so `form.servings` is
-  // sometimes a numeric string at runtime despite the `number | ''` type.
+  // negative and fractional values (e.g. -2, 1.5) through. `form.servings` is the
+  // raw field string (FormInput now hands back a DOM string honestly), so coerce
+  // with Number() before the range check. Defence-in-depth: this coercion stays
+  // even though the type is now `string`, since the value's numeric-ness is still
+  // only guaranteed at this boundary.
   if (!form.servings) {
     errors.servings = 'Servings amount is required'
   } else {

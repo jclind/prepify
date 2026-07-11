@@ -68,7 +68,11 @@ export type RecipeFormState = {
   // pick a new file. Cleared if they remove the image (forcing a new pick).
   existingImageUrl: string | undefined
   description: string
-  servings: number | ''
+  // The raw servings field string ('' until typed). ServingsInput stores what was
+  // typed; the numeric coercion lives at submit time (`Number(servings)` below)
+  // and in the validator — so the type is honestly `string`, not a `number` that
+  // a DOM string only pretends to be.
+  servings: string
   prepTime: TimeVal
   cookTime: TimeVal
   fridgeLife: number
@@ -126,7 +130,7 @@ function initFormState(initialRecipe?: RecipeType): RecipeFormState {
     recipeImage: undefined,
     existingImageUrl: initialRecipe?.recipeImage,
     description: initialRecipe?.description ?? '',
-    servings: initialRecipe?.servings ?? '',
+    servings: String(initialRecipe?.servings ?? ''),
     prepTime: initialRecipe ? minToHrMin(initialRecipe.prepTime) : null,
     cookTime: initialRecipe ? minToHrMin(initialRecipe.cookTime) : null,
     fridgeLife: initialRecipe?.fridgeLife ?? 0,
@@ -280,7 +284,7 @@ export function useRecipeForm(initialRecipe?: RecipeType) {
             values: {
               title: draft.title ?? '',
               description: draft.description ?? '',
-              servings: draft.servings ?? '',
+              servings: String(draft.servings ?? ''),
               prepTime: draft.prepTime != null ? minToHrMin(draft.prepTime) : null,
               cookTime: draft.cookTime != null ? minToHrMin(draft.cookTime) : null,
               fridgeLife: draft.fridgeLife ?? 0,

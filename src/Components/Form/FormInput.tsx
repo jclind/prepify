@@ -2,7 +2,7 @@ import { EyeIcon, EyeOffIcon } from 'src/Components/icons'
 import React, { ChangeEvent, ReactElement, useState } from 'react'
 import './FormInput.scss'
 
-interface FormInputProps<T extends string | number | undefined> {
+interface FormInputProps {
   /** Visual density. `md` (default) = the auth/profile field (48px, focus ring);
    *  `compact` = the denser AddRecipe field (40px, no focus ring). */
   size?: 'md' | 'compact'
@@ -11,8 +11,14 @@ interface FormInputProps<T extends string | number | undefined> {
   type?: string
   placeholder?: string
   name?: string
-  val: T
-  setVal: (value: T) => void
+  val: string
+  /**
+   * Receives the field's raw DOM string on every change — `<input>` values are
+   * always strings, so this is the honest type. A numeric field (e.g.
+   * ServingsInput) must accept the string and parse/coerce it itself rather than
+   * relying on a cast that would let a numeric *string* masquerade as a `number`.
+   */
+  setVal: (value: string) => void
   /** Visible label above the field. Defaults to a capitalized `name`; omitted when neither is set. */
   label?: string
   /** Small helper / validation line below the field. */
@@ -35,7 +41,7 @@ interface FormInputProps<T extends string | number | undefined> {
   describedBy?: string
 }
 
-const FormInput = <T extends string | number | undefined>({
+const FormInput = ({
   size = 'md',
   icon,
   type = 'text',
@@ -56,7 +62,7 @@ const FormInput = <T extends string | number | undefined>({
   onBlur,
   invalid,
   describedBy,
-}: FormInputProps<T>) => {
+}: FormInputProps) => {
   // Password fields render a show/hide toggle and swap their input type.
   const [show, setShow] = useState(false)
   const isPassword = type === 'password'
@@ -69,7 +75,7 @@ const FormInput = <T extends string | number | undefined>({
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const next = e.target.value
     if (characterLimit && next.length > characterLimit) return
-    setVal(next as T)
+    setVal(next)
   }
 
   return (

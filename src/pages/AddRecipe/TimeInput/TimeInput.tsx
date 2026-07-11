@@ -27,8 +27,11 @@ const TimeInput: React.FC<TimeInputProps> = ({
   invalid,
   describedBy,
 }) => {
-  const [minutes, setMinutes] = useState<number | ''>('')
-  const [hours, setHours] = useState<number | ''>('')
+  // Held as the raw field strings (FormInput hands back a DOM string). The
+  // aggregate effect below coerces to numbers when it builds the { hours,
+  // minutes } object the parent stores.
+  const [minutes, setMinutes] = useState<string>('')
+  const [hours, setHours] = useState<string>('')
   // True once the user has typed in either field. Distinguishes a genuine
   // clear-both-fields (which must propagate null to the parent) from the initial
   // pre-hydration render — where both fields are also empty, but the parent still
@@ -40,8 +43,8 @@ const TimeInput: React.FC<TimeInputProps> = ({
     // `val` is an object, so the old `Number(val)` produced NaN and blanked the
     // fields — read the members directly instead.
     if (val && !minutes && !hours) {
-      setMinutes(val.minutes || '')
-      setHours(val.hours || '')
+      setMinutes(val.minutes ? String(val.minutes) : '')
+      setHours(val.hours ? String(val.hours) : '')
     }
     if (!val) {
       setMinutes('')
@@ -50,34 +53,32 @@ const TimeInput: React.FC<TimeInputProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [val])
 
-  const onHoursChange = (inputVal: number | '') => {
+  const onHoursChange = (raw: string) => {
+    const num = Number(raw)
     if (
-      inputVal === '' ||
-      (!isNaN(inputVal) &&
-        inputVal % 1 === 0 &&
-        inputVal >= 0 &&
-        inputVal <= 99)
+      raw === '' ||
+      (!isNaN(num) && num % 1 === 0 && num >= 0 && num <= 99)
     ) {
       hasUserEdited.current = true
-      setHours(inputVal)
+      setHours(raw)
     }
   }
-  const onMinutesChange = (inputVal: number | '') => {
+  const onMinutesChange = (raw: string) => {
+    const num = Number(raw)
     if (
-      inputVal === '' ||
-      (!isNaN(inputVal) &&
-        inputVal % 1 === 0 &&
-        inputVal >= 0 &&
-        inputVal <= 59)
+      raw === '' ||
+      (!isNaN(num) && num % 1 === 0 && num >= 0 && num <= 59)
     ) {
       hasUserEdited.current = true
-      setMinutes(inputVal)
+      setMinutes(raw)
     }
   }
 
   useEffect(() => {
     if (minutes || hours) {
-      setVal({ hours: hours || 0, minutes: minutes || 0 })
+      // Coerce the raw field strings to the numeric { hours, minutes } the parent
+      // persists — an empty field becomes 0.
+      setVal({ hours: Number(hours) || 0, minutes: Number(minutes) || 0 })
     } else if (hasUserEdited.current) {
       // Both fields cleared by the user: propagate the cleared state so the
       // parent drops the stale pre-clear time instead of silently keeping it
@@ -98,7 +99,7 @@ const TimeInput: React.FC<TimeInputProps> = ({
           type='number'
           placeholder='0'
           val={hours}
-          setVal={(val: number | '') => onHoursChange(val)}
+          setVal={onHoursChange}
           characterLimit={3}
           inputBeginningText='Hours'
           invalid={invalid}
@@ -109,7 +110,7 @@ const TimeInput: React.FC<TimeInputProps> = ({
           type='number'
           placeholder='0'
           val={minutes}
-          setVal={(val: number | '') => onMinutesChange(val)}
+          setVal={onMinutesChange}
           characterLimit={3}
           inputBeginningText='Minutes'
           invalid={invalid}
