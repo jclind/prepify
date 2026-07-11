@@ -200,10 +200,14 @@ hygiene, and the U3 watch items all verified sound — details in the session tr
 > drafts-autosave-cluster lane — durable unload-flush supersede via an explicit `supersede:true` keepalive
 > body flag the server honors by dropping the `updatedAt` precondition, settable only by the flush path; +
 > transient resume-hydration retry-on-next-edit falling through to #307's recovery) · **B**
-> `feat/w16-drop-username-index` (Sonnet; guarded `dropIndex` for the now-dead `ratings.username_1` —
-> verified on disk that the cascade filters by `userId` only and nothing queries ratings by `username`;
-> remove the create from db.js/`createModerationIndexes.js`, flip #308's `ensureIndexes.test.js` EXISTS
-> assertion to absence) · **C** `feat/w16-formatdate-dedup` (Sonnet, tiny; dedup `UserRecipeThumbnail.tsx`'s
+> `feat/w16-drop-username-index` **— PARKED 2026-07-11, seed premise FALSE**: the lane's mandatory pre-cut
+> verification found the `username_1` index is NOT dead. `admin.js:103` (`$match: { username: {$in} }` in the
+> admin-users review tally) and `admin.js:250` (`.find({ username })` in admin-user-detail recentReviews) are
+> live admin-dashboard reads of `ratings` by bare `username` (plus the `reports.js:236` legacy fallback);
+> `createModerationIndexes.js` even documents the index as "admin user list review tally". #310 migrated only
+> the setUsername *cascade* to `userId`, so the "DEAD INDEX" comment it added to `db.js:132` is itself WRONG.
+> No changes made, no PR. Re-filed as a corrected, properly-scoped seed below (migrate the admin/reports reads
+> to `userId` FIRST, then the drop + comment-fix can land). · **C** `feat/w16-formatdate-dedup` (Sonnet, tiny; dedup `UserRecipeThumbnail.tsx`'s
 > local `formatDate` onto `src/util/formatDate` — verified byte-identical for valid epoch-ms inputs, the
 > local null/0 guard MUST be preserved) · **D** `feat/w16-api-contract-prose` (Sonnet, doc-only; fix the 5
 > prose-drift API_CONTRACT.md entries — all 5 premises verified stale on disk at HEAD). NOT boarded:
@@ -222,11 +226,25 @@ hygiene, and the U3 watch items all verified sound — details in the session tr
   in `useRecipeForm`, a 5xx/network failure of the `?draftId` `getDraft` leaves `hydrated` false forever
   with only a "refresh to try again" toast — no auto-retry affordance, unlike the 404/403 recovery path
   (#307). Candidate for a small lane: retry/re-enable hydration on a recoverable error. Low-medium.
-- `[ ]` **Guarded `dropIndex` for the now-dead `ratings.username_1` index** *(UNBLOCKED by [#310](https://github.com/jclind/prepify/pull/310), Wave 15 · B)* —
-  the setUsername cascade no longer queries ratings by `username` (it filters by `userId`), so
-  `ratings.username_1` (boot-created in `server/db.js`, kept transitionally with a "dead — kept until this
-  follow-up" comment) backs no live query. Add a guarded `dropIndex` to `ensureIndexes` and remove the
-  create from `createModerationIndexes.js`. Low; purely operational cleanup, safe post-#310.
+- `[~]` **`ratings.username_1` is NOT droppable yet — admin/reports still read ratings by `username`**
+  *(re-scoped 2026-07-11 after Wave 16 · B's pre-cut verification proved the original "now-dead" premise
+  FALSE; supersedes the earlier "guarded dropIndex, safe post-#310" framing)* — #310 migrated ONLY the
+  setUsername rename cascade (`auth.js`) to filter ratings by the stable `userId`; it did NOT touch the admin
+  dashboard's username-keyed reads, so the boot-created `ratings.username_1` index still backs live queries:
+  **(a)** `server/routes/admin.js:103` — the admin-users review tally aggregates `{ $match: { username:
+  { $in: usernames } } }` (every admin-users page load); **(b)** `server/routes/admin.js:250` — admin-user
+  detail does `ratings.find({ username: usernameDoc.username }).limit(5)` ("recentReviews"); **(c)**
+  `server/routes/reports.js:236` — a legacy-report fallback `findOne({ username: reportedUsername, recipeId })`
+  when a report lacks `reportedUid`. `createModerationIndexes.js:42` documents the index accordingly ("admin
+  user list review tally (still keyed by reportedUsername)"). ALSO: the "DEAD INDEX — no live query uses it"
+  comment #310 added at `server/db.js:132` is factually WRONG and should be corrected. Proper fix, in order:
+  (1) migrate `admin.js:103`/`admin.js:250` (and decide the `reports.js:236` legacy fallback) from `username`
+  to `userId`-keyed reads — same shape as #310's cascade migration, with the same legacy-row tradeoff
+  (rows missing `userId` drop out of the tally); (2) THEN the guarded `dropIndex('username_1')` + remove the
+  standalone create from `db.js`/`createModerationIndexes.js` + fix the db.js comment + flip #308's
+  `ensureIndexes.test.js` EXISTS assertion to absence. Low-medium (was mis-sized as a trivial cleanup). NOTE:
+  do NOT touch the SEPARATE compound `recipeId_1_username_1` index — it backs `getReviews`/recompute by
+  `recipeId` and is out of scope.
 - `[ ]` **`UserRecipeThumbnail.tsx` has a local `formatDate` duplicate** *(off the [#309](https://github.com/jclind/prepify/pull/309) C review)* —
   `src/pages/Account/UserRecipes/UserRecipeThumbnail.tsx` defines its own (already-correct `Number(createdAt)`)
   `formatDate` instead of importing the shared `src/util/formatDate`. Dedup onto the shared util. Nit.
