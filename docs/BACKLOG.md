@@ -44,6 +44,15 @@ hygiene, and the U3 watch items all verified sound — details in the session tr
 
 **P1 — none found.**
 
+> **Wave 14 claim (2026-07-11 overnight, owner authorized fixes):** lanes dispatched — **A** drafts
+> 404-wedge (P2 #1) · **B** ratings-index code half (P2 #2) + `requireActive` on parse + PUT-pin
+> strengthening · **C** pagination floors (both items) · **D** IngredientItem in-flight guard ·
+> **E** `/health` ping + signal handlers + quiet CORS 403 + JSON 404 + `FRONTEND_URLS` warning + CI
+> `release` trigger. **Merges held for owner review.** NOT claimed (conflict with parked PR #303's
+> files or deliberate deferral): flush-vs-in-flight race, keepalive 429, hydration clobber,
+> signed-out badge, `ratingLastUpdated` drift, `formatDate` guard, API_CONTRACT anchors,
+> FRONTEND_URLS ops check (runbook step, not code).
+
 ### P2
 
 - `[ ]` **Drafts editor wedges permanently when its draft is deleted elsewhere (404 unhandled)** —
