@@ -38,6 +38,11 @@ to the *sweep program*); this file applies it to the **general backlog**. Compan
 > Wave 10's lane reviews (4 lanes T1–T4; see the
 > [Wave 11 section](#wave-11--wave-10-follow-up-tail-boarded-2026-07-10)). The `addReview` numeric
 > write-path flip is deliberately NOT boarded — it's coupled to the owner's V5 prod cutover.
+>
+> **Wave 12 boarded 2026-07-10** (Wave 11 fully drained same day) — the three seeds filed off Wave 11's
+> lane reviews (3 lanes U1–U3; see the
+> [Wave 12 section](#wave-12--wave-11-follow-up-tail-boarded-2026-07-10)). The `addReview` numeric
+> flip stays held for the owner's V5 cutover.
 
 ---
 
@@ -148,6 +153,9 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **11** | **T2 · collections cap TOCTOU** | `POST /collections` enforces `MAX_COLLECTIONS = 50` with a read-then-insert count check; concurrent creates at 49 all pass — V3's shape (BACKLOG Bugs, off the V3 #291 lane) | `[x]` [#296](https://github.com/jclind/prepify/pull/296) (2026-07-10) | `server/routes/collections.js` | **merged** — post-insert trim adapted to the array-on-one-doc shape (`$push` position = commit order → keep oldest 50, `$pull` overflow, loser 409s with the unchanged body); name-uniqueness `$expr` untouched; concurrency test failing-pre-fix + 5x flake-free, Jest 873 green. Filed: `POST /collections` lacks a per-uid rate limiter |
 | **11** | **T3 · FormInput `setVal` type-safety** | generic `setVal(next as T)` hands the raw DOM string to callers regardless of `T` — numeric consumers carry a type that lies at runtime (BACKLOG Tech debt, off the V7 #290 lane) | `[x]` [#298](https://github.com/jclind/prepify/pull/298) (2026-07-10) | `src/Components/Form/FormInput.tsx`, `ServingsInput`, `TimeInput`, `useRecipeForm.ts`, `recipeFormValidation.ts`, `AddRecipeSummaryBar.tsx` (+ `src/test-d/`) | **merged** — honest-string surface (generic + cast deleted); numeric consumers coerce at their own boundaries; zero-runtime-change verified incl. draft payloads (already `Number()`-coerced pre-PR); misuse now a compile error via self-verifying `@ts-expect-error` type-tests in `src/test-d/` (must live there — `src/test` is tsconfig-excluded, gap filed). Vitest 735 green. Filed: typecheck-the-tests gap + compound-input sweep |
 | **11** | **T4 · API delete-status + 429-shape normalization** | `DELETE /deleteReview` 403 vs `DELETE /removeRating` 404 for the identical "no doc of yours" case; `POST /api/bug-reports` 429s plain-text instead of the house `{ error, code: 'RATE_LIMITED' }` JSON (BACKLOG Tech debt, API-contract DRIFT) | `[x]` [#297](https://github.com/jclind/prepify/pull/297) (2026-07-10) | `server/routes/reviews.js`, `server/routes/bugReports.js`, `docs/API_CONTRACT.md` | **merged** — 404 standardized per the pre-made `drafts.js`-convention call, incl. folding in `editReview`'s identical `matchedCount===0` case (client verified status-agnostic); `submitLimiter` 429 now house JSON, pinned by a one-file `NODE_ENV` un-skip test; contract doc's three resolved DRIFT bullets struck (incl. the pagination one V2 [#289](https://github.com/jclind/prepify/pull/289) had already fixed). Jest 873 green |
+| **12** | **U1 · collections per-uid rate limiter** | `POST /collections` has only the global `/api` backstop — unlike the sibling drafts/recipes write routes' `makeUserLimiter` mounts (BACKLOG Tech debt, off the T2 [#296](https://github.com/jclind/prepify/pull/296) lane) | `[~]` `feat/u1-collections-rate-limiter` (2026-07-10) | `server/routes/collections.js` (+ limiter test) | one-line mount mirroring the sibling write routes + `NODE_ENV`-flip limiter test (the #297 `bugReportsLimiter.test.js` pattern) |
+| **12** | **U2 · typecheck the tests** | `src/test` is tsconfig-excluded, so the Vitest suite is never typechecked — type errors and `@ts-expect-error` assertions are invisible to the Static gate (BACKLOG Tech debt, off the T3 [#298](https://github.com/jclind/prepify/pull/298) lane) | `[~]` `chore/u2-typecheck-tests` (2026-07-10) | `tsconfig*.json`, CI Static job, `src/test/**` (typing-only) | ⚠ **scope-gated**: agent reports the tsc error count BEFORE fixing; >~25 errors or any non-typing fix → pause for an orchestrator scope call (fix-forward vs suppress-and-file). Merge gate: diff stays typing-only |
+| **12** | **U3 · compound-input sweep** | one-pass audit of components that aggregate DOM strings from `FormInput`-style children into typed objects — hunting TimeInput's pre-#298 child-feeds-numeric-object shape (BACKLOG Tech debt, off the T3 [#298](https://github.com/jclind/prepify/pull/298) lane) | `[~]` `chore/u3-compound-input-sweep` (2026-07-10) | `src/pages/**` / `src/Components/**` compound inputs (audit-first, read-only until go) | audit-first: findings report to the orchestrator BEFORE any fix; fix phase gated on an explicit go |
 | **—** | **Deferred / post-1.0 / owner** | see [that section](#deferred--post-10--owner-off-the-active-board) | `[blocked]`/`[dropped]` | — | prerendering, Edamam, theming, brand-orange, DB relocation, ideas |
 
 ---
@@ -352,6 +360,27 @@ Not boarded: the `addReview` numeric `reviewCreatedAt` write-path flip — **del
 must ship together with the owner's prod `normalizeRatingTypes.js --apply` as one cutover step (see
 the V5 row's sequencing warning); and the admin API-contract projection asymmetries beyond the two
 T4 normalizations (nothing else filed).
+
+### Wave 12 — Wave-11 follow-up tail (boarded 2026-07-10)
+
+The three seeds filed off Wave 11's lane reviews. Same orchestrated pattern (one subagent per lane
+in its own worktree, orchestrator-only merges); all three dispatched at boarding — U1 is
+server-only, and while U2/U3 could brush the same frontend test files, U3 is read-only until its
+findings are reviewed, so the second to merge simply rebases:
+
+- **U1** `POST /collections` per-uid rate limiter — mechanical mirror of the sibling write-route
+  `makeUserLimiter` mounts, plus a `NODE_ENV`-flip limiter test.
+- **U2** typecheck the tests — include `src/test` in the typecheck (or a `tsconfig.tests.json`
+  wired into CI's Static job) and clean up what surfaces. **Scope-gated:** the tsc error count is
+  unknown until it runs, so the agent reports the count before fixing and pauses for an
+  orchestrator scope call (fix-forward vs suppress-and-file per file) past ~25 errors or anything
+  that isn't a typing-only change. **Merge gate: the diff must stay typing-only** — no runtime
+  behavior changes hidden in test rewrites.
+- **U3** compound-input sweep — one-pass audit for other components hiding TimeInput's pre-#298
+  child-feeds-numeric-object shape; findings come back to the orchestrator before any fix.
+
+Not boarded: unchanged from Wave 11 (the `addReview` numeric flip stays coupled to the owner's V5
+prod cutover; W1/I1/I2 ops runs stay owner-gated).
 
 ---
 
@@ -2372,3 +2401,9 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   (the hard preamble held again), three follow-ups + one rate-limiter gap filed. Worktrees/branches torn
   down; 14 stale merged `worktree-*` placeholder branches from earlier waves pruned
   (`worktree-feat+moderation-pr-c-ratelimiter` kept — it holds unmerged commits, owner to disposition).
+- **2026-07-10** — **Wave 12 boarded + all three lanes claimed/dispatched** (U1 collections per-uid
+  rate limiter [Sonnet] · U2 typecheck-the-tests [Opus, **scope-gated**: tsc error count reported
+  before fixing, pause for an orchestrator scope call past ~25 errors or any non-typing fix; merge
+  gated on a typing-only diff] · U3 compound-input sweep [Sonnet, **audit-first**: findings before
+  fixes, fix phase gated on an explicit go]). Seeds are the three filed off Wave 11's lane reviews;
+  the `addReview` numeric flip stays held for the owner's V5 cutover.
