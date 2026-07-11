@@ -9,10 +9,14 @@
  * recipes already recompute with the corrected formula; this script fixes the
  * docs that haven't been touched since.
  *
- * The recompute below MIRRORS src/util/calculateServingPrice.ts exactly:
+ * The recompute uses server/util/calculateServingPrice.js — itself a hand-kept
+ * mirror of src/util/calculateServingPrice.ts (the server can't import client
+ * TS). That shared helper is also what V1 (server/routes/recipes.js) uses to
+ * recompute `servingPrice` server-side on every create/edit, so this script and
+ * the live routes can't drift apart:
  *   servingPrice = round( sum(ingredient.ingredientData.totalPriceUSACents) / servings )
  * counting only real ingredient rows (those with a `parsedIngredient`) and
- * skipping NaN prices. Keep the two in sync if the util changes.
+ * skipping NaN prices.
  *
  * SAFE BY DEFAULT: this is a DRY RUN unless you pass --apply. The dry run reads
  * only — it counts what would change and prints a sample of before/after values
@@ -32,22 +36,10 @@
 const path = require('path')
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') })
 const { MongoClient } = require('mongodb')
+const { calculateServingPrice } = require('../util/calculateServingPrice')
 
 const APPLY = process.argv.includes('--apply')
 const SAMPLE_LIMIT = 25 // how many before/after rows to print
-
-// Mirror of src/util/calculateServingPrice.ts. Returns whole cents.
-function calculateServingPrice(ingredientsList, numServings) {
-  if (!Array.isArray(ingredientsList) || numServings <= 0) return 0
-  let totalRecipeCents = 0
-  for (const ingr of ingredientsList) {
-    if (ingr && 'parsedIngredient' in ingr && ingr.ingredientData) {
-      const ingrPrice = Number(ingr.ingredientData.totalPriceUSACents)
-      if (!Number.isNaN(ingrPrice)) totalRecipeCents += ingrPrice
-    }
-  }
-  return Math.round(totalRecipeCents / numServings)
-}
 
 const fmt = (cents) =>
   cents == null || Number.isNaN(Number(cents))
