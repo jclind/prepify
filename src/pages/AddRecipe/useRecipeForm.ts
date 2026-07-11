@@ -394,6 +394,19 @@ export function useRecipeForm(initialRecipe?: RecipeType) {
     },
     onLimitReached: (message: string) => toast.error(message),
     onConflict: (message: string) => toast.error(message),
+    onDeletedElsewhere: (message: string) => {
+      // The draft we were autosaving into was deleted elsewhere (another tab's
+      // Drafts list, or the per-user cap trim evicting the oldest). Drop the dead
+      // id + URL param — mirroring the hydration-404 recovery above — so the next
+      // edit re-creates a fresh draft instead of retrying a doomed PUT. Current
+      // work isn't lost: it re-creates on the next change.
+      setDraftId(null)
+      setDraftUpdatedAt(null)
+      const next = new URLSearchParams(searchParams)
+      next.delete('draftId')
+      setSearchParams(next, { replace: true })
+      toast.error(message)
+    },
   })
 
   // Reflect the active draft id in the URL (replace) so a refresh resumes the

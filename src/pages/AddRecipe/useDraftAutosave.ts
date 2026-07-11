@@ -82,6 +82,16 @@ function isDraftConflictError(err: unknown): boolean {
   )
 }
 
+// The server returns 404 from PUT /drafts/:id when the draft the autosave is
+// updating no longer exists — it was deleted elsewhere (another tab's Drafts
+// list, or the POST 25-cap trim evicting the oldest draft) while this tab held
+// it open. Distinct from a 409 conflict: the draft is *gone*, not merely newer,
+// so the recovery is to re-create a fresh draft on the next edit rather than to
+// reload. Only ever seen on the update (id) path; a create never 404s.
+function isDraftDeletedError(err: unknown): boolean {
+  return axios.isAxiosError(err) && err.response?.status === 404
+}
+
 type Params = {
   // Serializable draft content derived from the form state (no image).
   content: RecipeDraftContent
@@ -119,6 +129,12 @@ type Params = {
   // Autosave stops retrying for the rest of the session; the caller should
   // tell the user to reload the page to see the latest version.
   onConflict?: (message: string) => void
+  // Called when an update 404s because the draft was deleted elsewhere while
+  // open here (another tab's Drafts list, or the per-user cap trim). The caller
+  // must drop the now-dead `draftId`/`draftUpdatedAt` it owns (and any URL
+  // param) so the next edit re-creates a fresh draft instead of retrying the
+  // doomed PUT; it should also surface the message. See the 404 branch below.
+  onDeletedElsewhere?: (message: string) => void
 }
 
 type DraftAutosave = {
@@ -139,6 +155,7 @@ export function useDraftAutosave({
   onDraftCreated,
   onLimitReached,
   onConflict,
+  onDeletedElsewhere,
 }: Params): DraftAutosave {
   const [status, setStatus] = useState<DraftStatus>('idle')
 
@@ -201,9 +218,11 @@ export function useDraftAutosave({
   const onDraftCreatedRef = useRef(onDraftCreated)
   const onLimitReachedRef = useRef(onLimitReached)
   const onConflictRef = useRef(onConflict)
+  const onDeletedElsewhereRef = useRef(onDeletedElsewhere)
   onDraftCreatedRef.current = onDraftCreated
   onLimitReachedRef.current = onLimitReached
   onConflictRef.current = onConflict
+  onDeletedElsewhereRef.current = onDeletedElsewhere
 
   const saveNow = async () => {
     // `enabled` is false in edit mode (and before a resume finishes hydrating);
@@ -281,6 +300,7 @@ export function useDraftAutosave({
             (err.response?.data as { error?: string } | undefined)?.error) ||
           'You have too many saved drafts. Delete some to start a new one.'
         onLimitReachedRef.current?.(message)
+        setStatus('error')
       } else if (isDraftConflictError(err)) {
         // Another tab/session saved on top of this draft since it was loaded.
         // Stop autosaving so we don't keep clobbering (or 409ing against) it;
@@ -291,10 +311,28 @@ export function useDraftAutosave({
             (err.response?.data as { error?: string } | undefined)?.error) ||
           'This draft was updated elsewhere. Reload the page to see the latest version.'
         onConflictRef.current?.(message)
+        setStatus('error')
+      } else if (isDraftDeletedError(err)) {
+        // The draft we were updating is gone (deleted elsewhere, or evicted by
+        // the per-user cap trim). Drop the dead id + version so the flush/unmount
+        // paths (which read these refs) can't keep resurrecting the doomed PUT,
+        // and so the NEXT edit re-creates a fresh draft via the createDraft path
+        // — autosave's prime directive is never to lose active work. The caller
+        // owns the real `draftId` (prop-mirrored into draftIdRef every render),
+        // so it must null its copy too or the mirror would restore the dead id;
+        // onDeletedElsewhere hands it that job (and surfaces the message). We do
+        // NOT re-create now — that happens naturally on the next edit/debounce
+        // tick — and reset to a calm 'idle' badge rather than a stuck 'error'.
+        draftIdRef.current = null
+        updatedAtRef.current = null
+        onDeletedElsewhereRef.current?.(
+          'This draft was deleted elsewhere — your edits here will be saved as a new draft.'
+        )
+        setStatus('idle')
       } else {
         console.error('Draft autosave failed:', err)
+        setStatus('error')
       }
-      setStatus('error')
     } finally {
       inFlightRef.current = false
       // Re-run only if new edits arrived while this save was in flight. Compare
