@@ -3,9 +3,12 @@
 The single ordered checklist for the owner-driven **beta → 1.0** cutover session. This supersedes
 [`CUTOVER_RUNBOOK.md`](./CUTOVER_RUNBOOK.md) (kept for history): it folds in Waves 9–13, the **V5
 rating-type cutover** (which the old runbook mis-filed as a casual post-cutover follow-up — it is
-**sequencing-critical**, see step 2d), and is grounded step-by-step in the **2026-07-11 dev
-rehearsal**, where every script below was run dry → `--apply` → dry against dev and its convergence
-proven: [`evidence/CUTOVER_REHEARSAL_2026-07-11.md`](./evidence/CUTOVER_REHEARSAL_2026-07-11.md).
+**sequencing-critical**, see step 2d), and is grounded in the **2026-07-11 dev rehearsal**:
+[`evidence/CUTOVER_REHEARSAL_2026-07-11.md`](./evidence/CUTOVER_REHEARSAL_2026-07-11.md). That
+rehearsal covered **2a / 2c / 2d / 3a**; **2b** (`reconcileRatingAggregates`) was run on dev in a
+separate earlier session (2026-07-09), and **2e's unique-index build has NOT been rehearsed
+end-to-end** (dev's backfill had 0 updatable rows, so the unique index never built over real
+backfilled data) — treat its prod run as a first run with its own gate (see 2e).
 
 Companion docs: [`RELEASE_PLAN.md`](./RELEASE_PLAN.md) (launch gate + audit log),
 [`IMAGE_PIPELINE.md`](./IMAGE_PIPELINE.md) (image-ops detail), [`BACKLOG.md`](./BACKLOG.md).
@@ -47,6 +50,20 @@ Legend: `[ ]` todo · `[x]` done (dev-rehearsed state noted inline). Work throug
   before its exit code can reach 0; dev had none) and **unresolved handles** from
   `backfillRatingUserIds` (dev has exactly one, a deleted test user's rating — prod orphans need a
   disposition: they cannot be backfilled, so delete the row or accept a permanently non-green check).
+  Note: `checkMigrationState` does **NOT** cover V5 string-typed ratings — a green board here does
+  not mean 2d is done; the V5 gate is 2d-(vi)'s count query.
+- `[ ]` **Duplicate-ratings pre-check for 2e's unique index** (audit finding 2026-07-11; must
+  return no rows — prod never had a uniqueness constraint, so historical double-submits or rename
+  artifacts are plausible, and a duplicate `(userId, recipeId)` pair after 2c's backfill makes 2e's
+  unique-index build throw E11000):
+  ```js
+  db.ratings.aggregate([
+    { $group: { _id: { u: { $ifNull: ['$userId', { $toLower: '$username' }] }, r: '$recipeId' },
+                n: { $sum: 1 } } },
+    { $match: { n: { $gt: 1 } } },
+  ])
+  ```
+  Any hits: dedup the rows (keep the newest, per the upsert semantics) **before** running 2c/2e.
 - `[ ]` **Note the Atlas snapshot timestamp** for `prepify-prod` (or take a manual backup) before any
   `--apply` below. This is the data-rollback point for the whole session.
 
@@ -54,8 +71,13 @@ Legend: `[ ]` todo · `[x]` done (dev-rehearsed state noted inline). Work throug
 
 ## 2 — Prod data ops (idempotent, dry-run-first)
 
-Every script: DRY RUN by default, writes only with `--apply`, second `--apply` is a no-op, exit 0
-only when nothing is left pending (so each doubles as its own gate). Steps 2a–2c are safe **before**
+Every script: DRY RUN by default, writes only with `--apply`, second `--apply` is a no-op. Exit-code
+gating (exit 2 = pending, so `$?` doubles as the gate) holds for `normalizeRatingTypes`,
+`migrateLegacyRecipeIds`, and `checkMigrationState` ONLY — **`reconcileRatingAggregates` and
+`backfillRatingUserIds` always exit 0 on a successful run even with drift/orphans remaining**
+(audit finding 2026-07-11): gate those two on `checkMigrationState`'s board, never on `$?`. Both
+also hardcode `client.db('prepify')` (they ignore `DB_NAME`) — fine iff the prod database is named
+`prepify`; confirm that in the §1 snapshot before relying on them. Steps 2a–2c are safe **before**
 the code deploy — verified this week that the *live* `release` code already uses the
 `recipeIdQuery` shim on every recipe read/write, so converted ids keep resolving. Step 2d is the
 one that must be **coupled to the deploy**.
@@ -92,6 +114,8 @@ Until run, prod hides the per-star histogram and self-heals per-recipe on rating
 - `[ ]` Decide the disposition of any **unresolved handles** it reports (see pre-flight): a
   username with no `usernames` doc belongs to a deleted account — the row is unreachable by any
   user; deleting it is the clean option. Record the decision.
+- `[ ]` **Gate:** re-run `checkMigrationState.js` → `ratings missing userId` is 0 (or only the
+  accepted orphans remain). The backfill script itself always exits 0 — its `$?` is NOT this gate.
 
 ### 2d — V5: rating-type cutover — **TWO HALVES, ONE STEP** ⚠️
 
@@ -141,17 +165,25 @@ window with an idempotent re-apply:
 
 ### 2e — Prod index provisioning (sweep finding, 2026-07-11) ⚠️
 
-`server/db.js` `ensureIndexes` self-provisions most hot indexes at boot, but the D1 ratings index
-`{ userId: 1, recipeId: 1 }` (unique, partial) exists **only** in the manual script — without it,
-post-deploy `getSingleUserReviews` / account counts / every rating-review upsert COLLSCANs prod.
-`createIndex` is idempotent, so just run it:
+The D1 ratings index `{ userId: 1, recipeId: 1 }` (unique, partial) is provisioned two ways since
+Wave 14 **#308** (merged 2026-07-11): `server/db.js` `ensureIndexes` at boot AND the manual script.
+**But boot SWALLOWS a failed build** (logs and continues — deliberate, so a bad index can't stop
+the server coming up), so #308 is NOT a safety net for the duplicate-rows case: if prod holds any
+duplicate `(userId, recipeId)` pair after 2c, both paths fail the unique build with E11000 and the
+server runs WITHOUT the invariant — `getSingleUserReviews` / account counts / every rating upsert
+COLLSCANs prod and double-ratings become possible. This step is therefore a **HARD GATE before
+step 5's deploy**, and the §1 duplicate pre-check is its input:
 
-- `[ ]` `MONGO_URI='<PROD>' node server/scripts/createModerationIndexes.js`
-- `[ ]` Verify: `db.ratings.getIndexes()` includes `userId_1_recipeId_1`.
-- Note: Wave 14 **PR #308** (open, review-ready) moves the D1 index into `ensureIndexes` so boot
-  self-provisions it — once merged, this step becomes belt-and-braces. The `username_1` index is
-  NOT stale (an earlier sweep claim, corrected): the `setUsername` rename cascade still updates
-  ratings by `username`, so it stays until that cascade migrates to `userId` (BACKLOG seed).
+- `[ ]` `MONGO_URI='<PROD>' node server/scripts/createModerationIndexes.js` → **must exit 0**
+  (the script, unlike boot, exits 1 when any index fails). An E11000 here = dedup the reported
+  duplicate rows, re-run `backfillRatingUserIds.js --apply`, then re-run this script. Do NOT
+  proceed to step 5 on a failed build.
+- `[ ]` Verify: `db.ratings.getIndexes()` includes `userId_1_recipeId_1` (unique, partial).
+- Note: the `username_1` index stays. Corrected twice now (audit 2026-07-11): #310 moved the
+  *rename cascade* to `userId`, but three live queries still filter ratings by bare `username` —
+  the admin user-list review tally (`admin.js:103`), admin user-detail `recentReviews`
+  (`admin.js:~250`), and the reports legacy fallback (`reports.js:232-238`). The dropIndex seed
+  stays parked until those migrate.
 
 ---
 
@@ -167,6 +199,11 @@ upload. So if doing these at 1.0: deploy rules in the same window as step 5's me
 
 - `[ ]` `firebase use <prod-project>` (`prepify-9b974`) && `firebase deploy --only storage`
   — **in the same window as the step-5 deploy** (carries the X3 owner-delete grant automatically).
+- `[ ]` **Acquire the prod service-account JSON first** (audit gap 2026-07-11): Firebase console →
+  project `prepify-9b974` → Project settings → Service accounts → *Generate new private key*. This
+  is a **different credential** from the `firebase use`/`firebase deploy` CLI login above — the CLI
+  auth deploys the rules; the SA JSON is what the node script below authenticates with. Keep it out
+  of the repo; pass it inline on the command line only.
 - `[ ]` Object migration — **must run with the PROD service account.** The 2026-07-11 dev
   rehearsal proved this the hard way: **every flat object (12/12 on dev, and by construction all
   of prod's) lives in the `prepify-9b974.appspot.com` bucket, and the dev SA gets
@@ -222,10 +259,20 @@ One PR off `development` (all anchors re-verified 2026-07-11):
 - `[ ]` Confirm prod Railway `FRONTEND_URLS` = `https://prepifymeals.com,https://www.prepifymeals.com`
   **exactly** (sweep finding 2026-07-11: an unset/typo'd value silently CORS-blocks the entire prod
   frontend while `/health` stays green — the server falls back to localhost-only).
+- `[ ]` **2e gate check:** the prod index build (2e) exited 0 and `userId_1_recipeId_1` is on
+  `db.ratings.getIndexes()` — do not deploy on a swallowed boot-build being the first real attempt.
 - `[ ]` **Merge `development` → `release`** (triggers prod Netlify + Railway). If doing step 3a,
   deploy the storage rules in this same window.
-- `[ ]` **V5 step 2d-(v)/(vi):** re-run prod `normalizeRatingTypes.js --apply`; run the verification
-  query; post/edit/delete a throwaway review to confirm.
+- `[ ]` **Verify CORS functionally after the deploy** (not just by eyeballing the dashboard):
+  ```bash
+  curl -si -H 'Origin: https://prepifymeals.com' \
+    https://prepify-production-63a6.up.railway.app/health | grep -i access-control-allow-origin
+  ```
+  Must echo the prod origin; no header = `FRONTEND_URLS` misconfigured — fix before the smoke test.
+- `[ ]` **V5 step 2d-(v)/(vi):** first confirm the Railway deploy is FULLY live and the old
+  instance drained (a lingering old instance keeps writing string timestamps); then re-run prod
+  `normalizeRatingTypes.js --apply`, run the verification query until it is *stably* 0, and
+  post/edit/delete a throwaway review to confirm.
 - `[ ]` **Production smoke test on `prepifymeals.com`** — run CUTOVER_RUNBOOK.md "Comprehensive
   production smoke test" verbatim (transport/cert, flip live, read paths + nutrition proxy, prod
   auth, create-with-image → confirms Storage rules + Vision moderation, §D histogram renders —

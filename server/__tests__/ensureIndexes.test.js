@@ -30,9 +30,12 @@ describe('ensureIndexes provisions the ratings indexes at boot', () => {
     expect(ix.partialFilterExpression).toEqual({ userId: { $exists: true } })
   })
 
-  it('still builds the { username } index that backs the rename cascade', async () => {
-    // Kept (not dropped): the POST /setUsername rename cascade updateMany's ratings
-    // by bare `username`, so this index avoids a COLLSCAN on every handle change.
+  it('still builds the { username } index that backs the remaining ratings-by-username reads', async () => {
+    // Kept (not dropped): the rename cascade migrated to userId in #310, but three
+    // live queries still filter ratings by bare `username` — the admin user-list
+    // review tally, admin user-detail recentReviews, and the reports legacy
+    // fallback (see the db.js comment at this index's createIndex call). The
+    // index stays until all three migrate.
     const ix = await indexByName('ratings', 'username_1')
     expect(ix).toBeDefined()
     expect(ix.key).toEqual({ username: 1 })

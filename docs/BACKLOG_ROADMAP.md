@@ -2551,3 +2551,26 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   (/health semantics, CORS-403/JSON-404/lifecycle notes, /parse requireActive + 403, pagination
   floors on all affected endpoints incl. striking getCreatedRecipes' stale "not floored" text);
   lane branches deleted local+remote. PR #303 stays parked `[DO NOT MERGE]` for the V5 cutover.
+- **2026-07-11** — **Independent audit of Waves 13–15: FINDINGS (1 live, low-sev), everything
+  substantive VERIFIED.** A read-only session verified all 11 PRs (#301–#312) at their merge
+  commits and tracked survival to HEAD; all gates reconciled exactly (incl. arithmetically
+  across Wave 16's landings). Three findings were historical and already corrected by Wave 16;
+  the one live finding is fixed in this commit: **db.js's "DEAD INDEX" comment on
+  `ratings.username_1` was false** — three queries still filter ratings by bare username
+  (admin.js user-list tally :103, user-detail recentReviews :~250, reports.js legacy fallback
+  :232-238); the comment (and ensureIndexes.test.js's twin) now name the three real consumers
+  and the drop condition. Wave 16 had already parked the dropIndex lane on the same evidence.
+- **2026-07-11** — **Adversarial runbook audit: GO-WITH-FIXES — all fixes applied to
+  RELEASE_RUNBOOK.md this commit.** Verified against the scripts on disk before applying:
+  (1) **2e is the cutover's riskiest moment** — the unique `{userId,recipeId}` build can E11000
+  on historical duplicate ratings, the script exits 1 (gateable) but the db.js boot path SWALLOWS
+  the same failure, so #308 is not a safety net → 2e is now a HARD exit-0 gate before §5's
+  deploy, fed by a new §1 duplicate-ratings pre-check aggregation; (2) §2's "every script exits
+  0 only when nothing is pending" was false — `reconcileRatingAggregates` and
+  `backfillRatingUserIds` always exit 0 (gate them on checkMigrationState, never `$?`; both also
+  hardcode `db('prepify')`); 2c gained an explicit checkMigrationState re-run gate; (3) §1 now
+  notes checkMigrationState has NO V5 coverage; (4) 3a gained the prod-SA acquisition step (the
+  SA JSON is a different credential from the firebase-CLI login); (5) §5 gained a functional
+  post-deploy CORS curl check and the rolling-deploy drain caveat before 2d-(v)/(vi); (6) the
+  rehearsal-coverage claim was tightened (2b ran 2026-07-09 separately; 2e never rehearsed
+  end-to-end — dev had 0 updatable rows). Stale #308-still-open and username_1 notes refreshed.

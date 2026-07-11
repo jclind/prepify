@@ -129,16 +129,16 @@ async function ensureIndexes() {
     console.error('Failed to create title text index on recipes:', err.message)
   }
 
-  // DEAD INDEX — no live query uses it. It used to back the username-rename
-  // cascade in POST /setUsername (routes/auth.js), which `updateMany`'d ratings
-  // by `{ username: prevUsername }`. That cascade now filters by the stable
-  // `userId` (PR #310, the D1 direction), and the index's original read
-  // consumers — GET /api/getSingleUserReviews and the ratings tally in GET
-  // /api/getAccountCounts — had already migrated to `userId` in D1. So nothing
-  // queries `ratings.username` anymore. The `createIndex` call is kept here
-  // ONLY transitionally so it isn't silently orphaned: the actual removal is a
-  // guarded `dropIndex` follow-up (deliberately NOT done in #310). Drop this
-  // block when that follow-up lands.
+  // LIVE INDEX — an earlier comment here declared it dead after #310 moved the
+  // setUsername rename cascade to `userId`; that was wrong (2026-07-11 audit).
+  // Three queries still filter ratings by bare `username`: the admin user-list
+  // review tally (routes/admin.js — $match { username: { $in } } aggregate),
+  // the admin user-detail recentReviews lookup (routes/admin.js — find by
+  // username), and the reports legacy fallback for rows that never captured a
+  // reportedUid (routes/reports.js). The index stays until ALL THREE migrate
+  // to `userId`; only then does the guarded-dropIndex follow-up (BACKLOG seed,
+  // parked by Wave 16) become safe. Do not drop on the strength of the rename
+  // cascade alone.
   try {
     await db.collection('ratings').createIndex({ username: 1 })
   } catch (err) {
