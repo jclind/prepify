@@ -370,6 +370,11 @@ describe('AddRecipe form', () => {
     expect(payload.recipeImage).toBeInstanceOf(File)
     expect(payload.ingredients).toHaveLength(1)
     expect(payload.instructions).toHaveLength(1)
+    // Servings is a raw string in form state (FormInput's honest setVal); the
+    // submit boundary coerces it to a real number — the payload carries 4, not
+    // '4'. (The toEqual above already distinguishes them; assert the type too so
+    // the coercion boundary is explicit.)
+    expect(typeof payload.servings).toBe('number')
   })
 
   it('navigates to the new recipe page after a successful submission', async () => {
