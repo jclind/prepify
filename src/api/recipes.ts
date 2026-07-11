@@ -11,6 +11,7 @@ import { calculateServingPrice } from 'src/util/calculateServingPrice'
 import {
   AccountTabCounts,
   IngredientsType,
+  LabelType,
   NewReviewType,
   NutritionDataType,
   CreatedRecipeCardType,
@@ -602,7 +603,12 @@ class RecipeAPIClass {
   }
 
   // Ingredients
-  async getIngredientData(val: string): Promise<IngredientsType> {
+  // Return type excludes LabelType: this always produces a parsed-ingredient
+  // shape (enriched or error-degraded), never a group label — so callers can
+  // read `ingredientData`/`error` without first narrowing away the label arm.
+  async getIngredientData(
+    val: string
+  ): Promise<Exclude<IngredientsType, LabelType>> {
     const parsedIngredient = parseIngredientString(val)
     // Phase A: enrichment is soft-fail. A thrown network error (server down, timeout,
     // 5xx surfaced as axios rejection) must not bubble up — callers stick on the

@@ -18,6 +18,10 @@ const parsed = (id: string) => ({
     ingredient: 'flour',
     quantity: 1,
     unit: 'cup',
+    unitPlural: null,
+    symbol: null,
+    minQty: null,
+    maxQty: null,
     comment: null,
     originalIngredientString: '1 cup flour',
   },
@@ -26,7 +30,8 @@ const parsed = (id: string) => ({
 const label = (id: string) => ({ id, label: 'Section' })
 
 const baseProps = {
-  servings: 4 as number | '',
+  // Raw servings field string, matching AddRecipeSummaryBarProps.servings.
+  servings: '4',
   prepTime: { hours: 1, minutes: 30 },
   cookTime: { hours: 0, minutes: 15 },
   ingredients: [parsed('1'), parsed('2')],

@@ -1,0 +1,22 @@
+{
+  // Typecheck config for the Vitest suite. `src/test/**` is excluded from the
+  // base tsconfig.json (its `exclude`), so `npm run typecheck` never sees test
+  // files — type drift in tests (and their fixtures) goes unnoticed. This config
+  // adds them to a dedicated `tsc --noEmit -p tsconfig.tests.json` pass (wired
+  // into CI's Static job) without disturbing the app build.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    // The suite runs on Node 24 / modern jsdom, so ES2022 runtime APIs like
+    // Array.prototype.at() are available. The base app targets ES2020 for the
+    // browser bundle; widen the lib here (typecheck-only, no emit) so test code
+    // using those APIs typechecks. DOM libs must be listed explicitly because
+    // setting `lib` replaces (not extends) the target's defaults.
+    "lib": ["ES2022", "DOM", "DOM.Iterable"]
+  },
+  // Drop src/test from the base exclude so tests are typechecked. Keep excluding
+  // the Cypress config files: importing 'cypress' pulls Cypress's global Chai
+  // `expect` into the program, which shadows Vitest's global `expect` and breaks
+  // every matcher assertion in the suite.
+  "exclude": ["node_modules", "cypress", "cypress.config.ts", "cypress.visual.config.ts"]
+}

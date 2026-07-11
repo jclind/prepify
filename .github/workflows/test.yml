@@ -72,6 +72,12 @@ jobs:
       # (per-file esbuild/rolldown transpile) does NOT check.
       - name: Typecheck (tsc --noEmit)
         run: npm run typecheck
+      # The Vitest suite lives in src/test/**, which the base tsconfig excludes
+      # (the Cypress config files would otherwise poison the program with
+      # Cypress's global Chai `expect`). tsconfig.tests.json re-includes it so
+      # test files can't silently drift from the real types.
+      - name: Typecheck tests (tsc --noEmit -p tsconfig.tests.json)
+        run: npx tsc --noEmit -p tsconfig.tests.json
       # Verify the production bundle actually builds (Netlify parity).
       - name: Production build (vite build)
         run: npm run build
