@@ -3,6 +3,7 @@ const { asyncHandler } = require('../util/asyncHandler')
 const { ObjectId } = require('mongodb')
 const { getDB } = require('../db')
 const { verifyToken, requireActive } = require('../middleware/auth')
+const { draftWriteLimiter } = require('../middleware/writeLimiter')
 const { validateRecipeBounds } = require('../util/recipeLimits')
 const { RECIPE_CONTENT_FIELDS, pickFields } = require('../util/recipeFields')
 
@@ -25,7 +26,7 @@ const MAX_DRAFTS_PER_USER = 25
 
 // POST /drafts — create a new draft for the current user. Returns the new _id
 // so the client can switch to update-on-autosave from then on.
-router.post('/', verifyToken, requireActive, asyncHandler(async (req, res) => {
+router.post('/', verifyToken, requireActive, draftWriteLimiter, asyncHandler(async (req, res) => {
   const db = getDB()
   const boundsError = validateRecipeBounds(req.body)
   if (boundsError) {
@@ -117,6 +118,16 @@ router.get('/:id', verifyToken, asyncHandler(async (req, res) => {
 // the update is conditioned on the stored draft still carrying that value, so
 // a tab that's saved on top of a since-changed draft gets a 409 instead of
 // blindly clobbering it with a full `$set` of its (now-stale) content.
+//
+// Deliberately NO draftWriteLimiter here (unlike POST above). This is the
+// 1.5s-debounce autosave path — continuous typing alone can produce ~40
+// legitimate writes/min, well over a stock 30/min per-uid cap, so reusing the
+// POST limiter here would throttle normal editing, not abuse. It also must
+// never be the request that eats a 429 for #294's keepalive flush on tab
+// unload. Damage from PUT spam is bounded another way: it can only rewrite
+// the caller's OWN drafts (ownership-checked above), and the draft set itself
+// is capped at MAX_DRAFTS_PER_USER by POST's post-insert trim, so there's no
+// unbounded resource growth to protect against here.
 router.put('/:id', verifyToken, requireActive, asyncHandler(async (req, res) => {
   const db = getDB()
   if (!ObjectId.isValid(req.params.id)) {
