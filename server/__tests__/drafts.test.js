@@ -105,6 +105,38 @@ describe('POST /api/drafts', () => {
     expect(res.body.code).toBe('DRAFT_LIMIT')
   })
 
+  it('holds the cap under concurrent POSTs (TOCTOU regression): 5 concurrent creates at 24 existing drafts land exactly 1, reject 4 with 409 DRAFT_LIMIT', async () => {
+    const now = Date.now().toString()
+    const mine = Array.from({ length: 24 }, (_, i) => ({
+      _id: new ObjectId(),
+      userId: TEST_UID,
+      title: `draft ${i}`,
+      createdAt: now,
+      updatedAt: now,
+    }))
+    await getDB().collection('recipeDrafts').insertMany(mine)
+
+    const responses = await Promise.all(
+      Array.from({ length: 5 }, (_, i) =>
+        request(app)
+          .post('/api/drafts')
+          .set(AUTH_HEADER)
+          .send({ title: `concurrent ${i}` })
+      )
+    )
+
+    const succeeded = responses.filter((res) => res.status === 201)
+    const rejected = responses.filter((res) => res.status === 409)
+    expect(succeeded).toHaveLength(1)
+    expect(rejected).toHaveLength(4)
+    rejected.forEach((res) => expect(res.body.code).toBe('DRAFT_LIMIT'))
+
+    const finalCount = await getDB()
+      .collection('recipeDrafts')
+      .countDocuments({ userId: TEST_UID })
+    expect(finalCount).toBe(25)
+  })
+
   it('still allows editing an existing draft when at the cap', async () => {
     const now = Date.now().toString()
     const mine = Array.from({ length: 25 }, (_, i) => ({

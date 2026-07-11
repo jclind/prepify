@@ -31,17 +31,6 @@ router.post('/', verifyToken, requireActive, asyncHandler(async (req, res) => {
   if (boundsError) {
     return res.status(400).json({ error: boundsError })
   }
-  // Cap the number of drafts per user. 409 + a machine-readable code so the
-  // client can show a specific "delete some drafts" message and stop retrying.
-  const draftCount = await db
-    .collection('recipeDrafts')
-    .countDocuments({ userId: req.uid })
-  if (draftCount >= MAX_DRAFTS_PER_USER) {
-    return res.status(409).json({
-      code: 'DRAFT_LIMIT',
-      error: `You've reached the maximum of ${MAX_DRAFTS_PER_USER} saved drafts. Delete some from your Drafts to start a new one.`,
-    })
-  }
   const now = Date.now().toString()
   const doc = {
     _id: new ObjectId(),
@@ -51,6 +40,44 @@ router.post('/', verifyToken, requireActive, asyncHandler(async (req, res) => {
     updatedAt: now,
   }
   await db.collection('recipeDrafts').insertOne(doc)
+
+  // Cap the number of drafts per user. A plain read-then-insert (count, then
+  // insert if under the cap) is a TOCTOU: concurrent POSTs can all pass the
+  // count before any of them lands, overshooting the cap. Unlike the
+  // save/unsave conditional-filter pattern in recipes.js, there's no single
+  // document to condition an atomic write on here — each draft is its own
+  // document, so a per-request conditional filter can't see sibling requests'
+  // not-yet-committed inserts either.
+  //
+  // Instead, enforce the cap post-insert: insert unconditionally, then
+  // recompute the caller's *current* drafts sorted oldest-first (by _id) and
+  // delete anything beyond the cap. This converges under arbitrary
+  // concurrent interleaving because every pass reads live state and targets
+  // the same well-defined "newest beyond the cap" set — redundant or
+  // out-of-order trims from racing requests agree and are idempotent
+  // (deleting an already-deleted id is a no-op). Whichever requests' docs
+  // land outside the surviving oldest-N find themselves deleted and reply
+  // 409; concurrent POSTs at the cap admit only as many as there's room for.
+  const ids = await db
+    .collection('recipeDrafts')
+    .find({ userId: req.uid }, { projection: { _id: 1 } })
+    .sort({ _id: 1 })
+    .toArray()
+  const overflow = ids.slice(MAX_DRAFTS_PER_USER)
+  if (overflow.length > 0) {
+    await db
+      .collection('recipeDrafts')
+      .deleteMany({ _id: { $in: overflow.map((d) => d._id) } })
+  }
+  const survived = ids
+    .slice(0, MAX_DRAFTS_PER_USER)
+    .some((d) => d._id.equals(doc._id))
+  if (!survived) {
+    return res.status(409).json({
+      code: 'DRAFT_LIMIT',
+      error: `You've reached the maximum of ${MAX_DRAFTS_PER_USER} saved drafts. Delete some from your Drafts to start a new one.`,
+    })
+  }
   res.status(201).json(doc)
 }))
 
