@@ -124,6 +124,29 @@ describe('IngredientItem inline edit', () => {
     // Reconciled the row in place.
     expect(setIngredients).toHaveBeenCalled()
     expect(mockToastError).not.toHaveBeenCalled()
+    // Pin: Enter-submit must invoke the network call exactly once. Before the
+    // blur-guard fix, handleEditSubmit's own trailing editInputRef.blur()
+    // synchronously re-fired FormInput's onBlur (also wired to submit),
+    // double-calling getIngredientData against the same stale closed-over
+    // editedVal/ingredient — a real duplicate paid lookup.
+    expect(mockGetIngredientData).toHaveBeenCalledTimes(1)
+  })
+
+  it('submits exactly once on genuine blur-away (no Enter)', async () => {
+    mockGetIngredientData.mockResolvedValue(enriched('2 cups flour'))
+    const { container, setItemStatus } = renderItem()
+
+    fireEvent.click(container.querySelector('.item-btn') as HTMLElement)
+    const input = container.querySelector('input') as HTMLInputElement
+    fireEvent.change(input, { target: { value: '2 cups flour' } })
+    // Click away without pressing Enter first — a genuine blur.
+    fireEvent.blur(input)
+
+    await waitFor(() =>
+      expect(mockGetIngredientData).toHaveBeenCalledWith('2 cups flour')
+    )
+    await waitFor(() => expect(setItemStatus).toHaveBeenCalledWith('ing-1', null))
+    expect(mockGetIngredientData).toHaveBeenCalledTimes(1)
   })
 
   it('flags the row errored and toasts when the edit enrichment times out', async () => {
@@ -151,11 +174,10 @@ describe('IngredientItem inline edit', () => {
     editTo(container, '2 cups flour')
 
     await waitFor(() => expect(setItemStatus).toHaveBeenCalledWith('ing-1', 'error'))
-    // Not toHaveBeenCalledTimes(1): handleEditSubmit's own trailing
-    // editInputRef.blur() re-fires FormInput's onBlur (wired to the same
-    // handler), double-invoking submit on every edit — a pre-existing quirk
-    // unrelated to B3, tracked separately. Assert the toast content, not the count.
-    expect(mockToastError).toHaveBeenCalled()
+    // The blur-guard (V6) makes this a single submit again: handleEditSubmit's
+    // trailing editInputRef.blur() no longer re-fires FormInput's onBlur into
+    // a second submit.
+    expect(mockToastError).toHaveBeenCalledTimes(1)
     expect(mockToastError.mock.calls[0][0]).toMatch(/lookup limit/i)
   })
 
