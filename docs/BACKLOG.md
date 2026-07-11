@@ -71,6 +71,22 @@ hygiene, and the U3 watch items all verified sound — details in the session tr
 > race, keepalive 429, hydration clobber, signed-out badge, `ratingLastUpdated` drift,
 > `formatDate` guard, API_CONTRACT anchors, FRONTEND_URLS ops check (runbook step, not code).
 
+> **Wave 15 CLAIMED 2026-07-11 (four disjoint lanes; MERGES HELD — owner away, run to
+> PR-open + diff-review + CI-green, no merge on silence):**
+> **A** (Opus, one serialized lane — all four share the drafts-autosave cluster): flush-vs-in-flight
+> 409 race (`useDraftAutosave.ts`) + keepalive `POST /drafts` 429-as-success (`src/api/drafts.ts`) +
+> `?draftId` hydration clobbers keystrokes (`useRecipeForm.ts`) + signed-out badge stale on passive
+> sign-out & generic 409 badge (`useDraftAutosave.ts` + `DraftSaveStatus.tsx`). Must read #286/#294/#307
+> tests first; every fix gets a failing-before regression test; may defer an item back to the board (with
+> a written reason) if it conflicts with another's fix ·
+> **B** (Sonnet): migrate the `setUsername` rename cascade off `ratings.username` onto `userId`
+> (`auth.js:191-194`) — `username_1` index STAYS (filed follow-up; dies only after this lands) ·
+> **C** (Sonnet): fix `formatDate`'s dead `Number.isNaN(d)` string guard (`src/util/formatDate.ts:17`) ·
+> **D** (Sonnet, doc-only): re-anchor drifted `file.js:NN` line anchors in `API_CONTRACT.md`
+> (numbers only, no prose; skip today's drafts/reports prose entries).
+> NOT boarded (unchanged): `ratingLastUpdated` watch item, all V5/W1/I1/I2 cutover ops, parked #303,
+> the two owner-disposition branches.
+
 ### P2
 
 - `[x]` **Drafts editor wedges permanently when its draft is deleted elsewhere (404 unhandled)** *(fixed in [#307](https://github.com/jclind/prepify/pull/307), Wave 14 · A, merged 2026-07-11: dedicated 404 branch drops the dead `draftId`/`updatedAtRef`, the caller nulls its mirrored id + `?draftId` URL param and toasts, the next edit re-creates via `createDraft`, the badge resets to a calm idle, and the unload flush can no longer resurrect the dead PUT — recovery and flush paths both regression-tested)* —
