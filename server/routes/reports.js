@@ -42,12 +42,12 @@ const MAX_PER_PAGE = 50
 // SAME target, but nothing caps the breadth: one account could open a report
 // against a distinct recipe/user/review every few seconds and bloat the
 // moderation queue, with only the coarse global per-IP backstop applying. 10/min
-// is far above any human’s manual report cadence (read → pick a reason → submit)
+// is far above any human's manual report cadence (read → pick a reason → submit)
 // yet bounds a scripted breadth-spam run hard. Mounted after verifyToken so
 // req.uid is set; skipped under Jest like every makeUserLimiter instance.
 const reportLimiter = makeUserLimiter({
   limit: 10,
-  message: "You’re filing reports too quickly - wait a minute and try again.",
+  message: 'You’re filing reports too quickly — wait a minute and try again.',
 })
 
 // A report targets a recipe, a single review, or a whole user. Reviews have no
