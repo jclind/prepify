@@ -125,7 +125,14 @@ The triage date stamped on items is the date they were filed here, not when they
   both `onBlur` and `onEnter` (`:108-109`) and ends with a manual `blur()`, so Enter-submit invokes the handler
   twice — the identical pattern V6 fixed in `IngredientItem.tsx`. No network call on this path (just a duplicate,
   idempotent `setInstructions`), so it's cosmetic today, but it's the same latent double-side-effect and the
-  same one-line ref-guard fixes it. Low. *(filed 2026-07-09, out of
+  same one-line ref-guard fixes it. Low.
+- `[ ]` **Collections cap has the same read-then-insert TOCTOU as the draft cap (V3)** *(filed 2026-07-10, off
+  the V3 [#291](https://github.com/jclind/prepify/pull/291) lane)* — `POST /collections`
+  (`server/routes/collections.js:113`) enforces `MAX_COLLECTIONS = 50` with a read-then-write count check
+  (`existing.length >= MAX_COLLECTIONS`), so concurrent creates at 49 can all pass — the same shape V3 fixed
+  for drafts. Notably the *name-uniqueness* check right below it is already correctly pinned via a guarded
+  `$expr` update; only the count check races. Same fix lane as V3 (post-insert trim or guarded write). Low.
+- `[ ]` **Legacy rating docs are mistyped — "Top" review sort interleaves wrong** *(filed 2026-07-09, out of
   the §D overhaul)* — old `ratings` docs store `rating` as **stringified numbers** (`"5"`) and
   `reviewCreatedAt` as stringified epoch-ms, while post-#266 writes store floats; review-only docs are
   `null`. The client normalizes at the API boundary (`coerceRating`, `src/api/recipes.ts`) so *rendering* is
@@ -828,6 +835,15 @@ findings table.)*
   Ratings list is therefore paginating an *unspecified* order: usually insertion order in practice, but
   Mongo guarantees nothing, so Load-More pages can theoretically skip/duplicate rows. Fix: send `'new'`
   from the client (one line) — or add a `newAdd` alias server-side — plus a test pinning the sort. Low-med.
+  *(Folded into Wave 10 · V7; fix in [#290](https://github.com/jclind/prepify/pull/290), PR open.)*
+- `[ ]` **`FormInput`'s generic `setVal` passes raw DOM strings through an unchecked cast** *(filed 2026-07-10,
+  off the V7 [#290](https://github.com/jclind/prepify/pull/290) lane)* — `FormInput.tsx`'s `setVal(next as T)`
+  hands the raw input string to the caller regardless of `T`, so numeric fields like `ServingsInput` carry a
+  type that's a lie at runtime: `form.servings: number | ''` is sometimes a numeric *string* until the
+  submit-time `Number()` coercion in `useRecipeForm.ts`. Not a bug today (`ServingsInput`'s own gate + the
+  submit coercion keep it safe, and V7's validator now coerces defensively), but every new numeric consumer
+  has to rediscover this. Worth a small type-safety pass (parse at the boundary, or type the prop `string`).
+  Low.
 - `[x]` **Ops: set `FIREBASE_STORAGE_BUCKET` in the server envs (+ make the empty-env skip real)** *(fixed in
   [#260](https://github.com/jclind/prepify/pull/260), N7: code early-returns the skip when the env is unset;
   owner confirmed the env is set on both dev + prod)* *(triaged
