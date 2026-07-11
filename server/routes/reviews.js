@@ -174,13 +174,15 @@ router.post('/editReview', verifyToken, requireActive, reviewWriteLimiter, async
     return respondBlocked(res, { db, uid: req.uid, surface: 'review', verdict })
   }
   // Keyed by the stable uid (D1): only the author (req.uid) can match their own
-  // doc, so a non-author falls through to matchedCount 0 → 403 below.
+  // doc, so a non-author can never match either — a miss is purely "no such
+  // doc for this uid", i.e. not-found, not a permissions failure. House
+  // convention (drafts.js): 404 = no such doc, 403 = exists but not yours.
   const editResult = await db.collection('ratings').updateOne(
     { userId: req.uid, recipeId },
     { $set: { reviewText: text, reviewLastUpdated: Date.now().toString() } }
   )
   if (editResult.matchedCount === 0) {
-    return res.status(403).json({ error: 'Review not found or not authorized' })
+    return res.status(404).json({ error: 'Review not found' })
   }
   res.json({ edited: true })
 }))
@@ -197,10 +199,13 @@ router.delete('/deleteReview', verifyToken, asyncHandler(async (req, res) => {
     return res.status(400).json({ error: 'recipeId is required' })
   }
 
-  // Keyed by the stable uid (D1) — only the author's own doc can match.
+  // Keyed by the stable uid (D1) — only the author's own doc can match, so a
+  // miss is purely "no such doc for this uid" — not-found, not a permissions
+  // failure. House convention (drafts.js): 404 = no such doc, 403 = exists but
+  // not yours. Mirrors /removeRating's identical no-doc case below.
   const doc = await db.collection('ratings').findOne({ userId, recipeId })
   if (!doc) {
-    return res.status(403).json({ error: 'Review not found or not authorized' })
+    return res.status(404).json({ error: 'Review not found' })
   }
 
   if (hasNumericRating(doc.rating)) {

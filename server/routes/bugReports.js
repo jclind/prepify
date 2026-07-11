@@ -30,12 +30,18 @@ function boundedString(val, max) {
 // Tighter per-IP limit than the global /api backstop: a submit form is the kind
 // of public, unauthenticated endpoint a script would hammer. Skipped under Jest
 // (supertest fires many requests from one IP); the global limiter does the same.
+// The 429 body matches the house `{ error, code: 'RATE_LIMITED' }` JSON shape
+// (writeLimiter.js's makeUserLimiter) instead of express-rate-limit's default
+// plain-text message, so every API surface's 429 is uniform — this is a plain
+// `rateLimit()` (not a makeUserLimiter instance, since it's keyed by IP, not
+// req.uid) so the shape has to be set here explicitly.
 const submitLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 15,
   standardHeaders: true,
   legacyHeaders: false,
   skip: () => process.env.NODE_ENV === 'test',
+  message: { error: 'You’re doing that too quickly — wait a moment and try again.', code: 'RATE_LIMITED' },
 })
 
 // POST /bug-reports — anyone (logged-in or not) files a bug report. optionalAuth
