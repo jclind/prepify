@@ -132,8 +132,20 @@ The triage date stamped on items is the date they were filed here, not when they
   (`existing.length >= MAX_COLLECTIONS`), so concurrent creates at 49 can all pass — the same shape V3 fixed
   for drafts. Notably the *name-uniqueness* check right below it is already correctly pinned via a guarded
   `$expr` update; only the count check races. Same fix lane as V3 (post-insert trim or guarded write). Low.
+- `[ ]` **`addReview` still writes string `reviewCreatedAt` — must flip to numeric AT the V5 migration cutover, not before or long after** *(filed 2026-07-10, off the V5 [#293](https://github.com/jclind/prepify/pull/293) lane)* —
+  `POST /addReview` (`server/routes/reviews.js:120,128`) writes `reviewCreatedAt: Date.now().toString()` (a
+  *string*) on every new review. Today the "New" sort `{ reviewCreatedAt: -1 }` works *because* the field is
+  uniformly string-typed (13-digit epoch strings sort lexicographically == numerically). That makes the
+  sequencing load-bearing in both directions: flip the write path to numeric **before** the migration runs and
+  the New sort starts interleaving immediately; run the migration **without** flipping the write path and new
+  reviews re-introduce string values, un-doing the normalization over time. The write-path flip
+  (`Date.now().toString()` → `Date.now()`) must deploy together with the owner's prod `--apply` of
+  `normalizeRatingTypes.js` — treat them as one cutover step, then the client's `coerceRating` becomes
+  retirable. Low-med, but sequencing-critical.
 - `[ ]` **Legacy rating docs are mistyped — "Top" review sort interleaves wrong** *(filed 2026-07-09, out of
-  the §D overhaul)* — old `ratings` docs store `rating` as **stringified numbers** (`"5"`) and
+  the §D overhaul; **script shipped in [#293](https://github.com/jclind/prepify/pull/293)** (Wave 10 · V5, PR
+  open) — `server/scripts/normalizeRatingTypes.js`, dry-run default, owner-gated `--apply`, exit-2-on-pending;
+  the prod run is NOT done and must land with the write-path flip filed above)* — old `ratings` docs store `rating` as **stringified numbers** (`"5"`) and
   `reviewCreatedAt` as stringified epoch-ms, while post-#266 writes store floats; review-only docs are
   `null`. The client normalizes at the API boundary (`coerceRating`, `src/api/recipes.ts`) so *rendering* is
   correct, but the server's Top sort is a raw `{ rating: -1 }` (`server/routes/reviews.js:277,322`) over the
