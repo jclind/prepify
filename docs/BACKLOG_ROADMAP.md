@@ -29,6 +29,10 @@ to the *sweep program*); this file applies it to the **general backlog**. Compan
 > **Wave 9 boarded 2026-07-10** — the un-fixed tail of the [2026-07-09 bug hunt](./sweeps/BUG_HUNT_2026-07-09.md)
 > (6 lanes B1–B6; the clear-cut fixes + gamification/count-drift cluster already shipped in
 > [#279](https://github.com/jclind/prepify/pull/279); documented won't-fix findings are not boarded).
+>
+> **Wave 10 boarded 2026-07-10** (Wave 9 fully drained same day) — the follow-ups filed off the B1/B3
+> local reviews + the open test-quality-audit findings (8 lanes V1–V8, two dispatch batches; see the
+> [Wave 10 section](#wave-10--wave-9-review-tail--test-quality-audit-boarded-2026-07-10)).
 
 ---
 
@@ -127,6 +131,14 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **9** | **B4 · quantity display (fractions + ranges)** | I2 (`closestFraction` never rounds up past 7/8) + I3 (ranges flattened to low end) (BACKLOG UX) | `[x]` [#284](https://github.com/jclind/prepify/pull/284) (2026-07-10) | `src/util/formatQuantity.ts`, `SingleRecipe.tsx`, `PrintableRecipe.tsx`, `IngredientItemText.tsx`, `updateIngredients.ts` | **merged** |
 | **9** | **B5 · draft PUT concurrency guard** | D2 (full-`$set` PUT, no version precondition → two-tab clobber) (BACKLOG Bugs) | `[x]` [#286](https://github.com/jclind/prepify/pull/286) (2026-07-10) | `server/routes/drafts.js` | **merged** — client sends the base `updatedAt`, server 409s `DRAFT_CONFLICT` on mismatch instead of overwriting |
 | **9** | **B6 · account-counts badge parity** | recipes/ratings tab badges use raw counts vs their filtered lists (BACKLOG Tech debt) | `[x]` [#285](https://github.com/jclind/prepify/pull/285) (2026-07-10) | `server/util/accountCounts.js` | **merged** — `recipes` badge now RECIPE_OWNER_VISIBLE, `ratings` badge now RECIPE_VISIBLE+REVIEW_VISIBLE, matching their tab lists |
+| **10** | **V1 · server `servingPrice` recompute** | server trusts client `servingPrice` + accepts `ingredientData:null` rows unchecked — B1's gate is client-only (BACKLOG Bugs, off the B1 #281 review) | `[ ]` | `server/routes/recipes.js` (addRecipe/editRecipe) | recompute price server-side from submitted rows (null rows stay publishable by design); batch two |
+| **10** | **V2 · admin reports pagination guard** | uncoerced/uncapped `page`/`perPage` → `limit(NaN)` 500s, negative skip, collection dump (BACKLOG Bugs, test-quality audit) | `[~]` `feat/v2-reports-pagination-guard` (2026-07-10) | `server/routes/reports.js` | mirror the public list routes' coercion + cap; add the missing pagination test |
+| **10** | **V3 · draft-cap TOCTOU** | 25-draft cap is `countDocuments`-then-`insertOne`; concurrent POSTs at 24 exceed it (BACKLOG Bugs, test-quality audit) | `[~]` `feat/v3-draft-cap-toctou` (2026-07-10) | `server/routes/drafts.js` | atomic guard or post-insert recount+delete-overflow; add the 5-concurrent-POSTs-at-24 test |
+| **10** | **V4 · moderation blocklist unicode fold** | homoglyph/fullwidth evasion (Cyrillic-с `fuсk`→`fuk`, fullwidth `ｓｈｉｔ`→``) bypasses `normalizeToken` (BACKLOG Bugs, test-quality audit) | `[~]` `feat/v4-blocklist-unicode-fold` (2026-07-10) | `server/util/moderationBlocklist.js` | NFKC + small confusables map before the existing folds; bypass tests pinning both examples |
+| **10** | **V5 · legacy rating-type migration script** | string `rating`/`reviewCreatedAt` docs interleave wrong under the Top sort (Mongo BSON type order) (BACKLOG Bugs, out of §D) | `[ ]` | `server/scripts/` (new) + Jest test | same ops-script shape as `reconcileRatingAggregates.js`; dry-run default, owner-gated `--apply`; batch two |
+| **10** | **V6 · ingredient inline-edit double-submit** | Enter fires `handleEditSubmit` then `blur()` synchronously re-fires it via `onBlur` → double parse call (real proxy quota) + double toast (BACKLOG Bugs, off the B3 #282 review) | `[~]` `feat/v6-ingredient-edit-double-submit` (2026-07-10) | `src/pages/AddRecipe/Ingredients/IngredientItem.tsx` | ref-guard or blur-without-resubmit; flip the pinned double-call test to single-call |
+| **10** | **V7 · client contract nits** | unencoded `filter`/`username` query interpolation (`recipes.ts:546,568`); negative/fractional `servings` accepted (`recipeFormValidation.ts:61`); `formatRating` renders literal `"NaN"`; + fold-in: `UserRatings` passes a sort the server ignores (BACKLOG Bugs + Tech debt) | `[~]` `feat/v7-client-contract-nits` (2026-07-10) | `src/api/recipes.ts`, `src/pages/AddRecipe/recipeFormValidation.ts`, `src/util/formatRating.ts`, `src/pages/Account/UserRatings/` | one-liners + a test each |
+| **10** | **V8 · draft autosave unload flush + signed-out badge** ⚠ lane | no `beforeunload`/`pagehide` flush (hard refresh in the 1.5s debounce window loses edits); signed-out `/add-recipe` shows a persistent "Couldn't save draft" error (BACKLOG UX, off the B1 #281 review) | `[ ]` | `src/pages/AddRecipe/useDraftAutosave.ts`, `DraftSaveStatus.tsx` | needs `sendBeacon`/fetch-keepalive for unload; auth-aware copy; batch two |
 | **—** | **Deferred / post-1.0 / owner** | see [that section](#deferred--post-10--owner-off-the-active-board) | `[blocked]`/`[dropped]` | — | prerendering, Edamam, theming, brand-orange, DB relocation, ideas |
 
 ---
@@ -292,6 +304,22 @@ findings (L1, L5, L6, A1, L2 — known DRIFT / accepted design per `API_CONTRACT
 - **B6** account-counts badge parity — the recipes/ratings account-tab badges still use raw counts and
   can read higher than their filtered tab lists (same class as the L8/L9 saved-badge drift). Small;
   **land after #279**, which rewrites `accountCounts.js` and adds the `saved` filter this mirrors.
+
+### Wave 10 — Wave-9 review tail + test-quality audit (boarded 2026-07-10)
+
+The follow-ups filed during Wave 9's local reviews (off #281/#282) plus the open test-quality-audit
+findings. All eight lanes are file-disjoint (V6/V7/V8 all live under `src/pages/AddRecipe/**` but touch
+distinct files — fine in parallel, but rebase before merge). Dispatched in two batches from an
+orchestrating session running one subagent per lane in its own worktree:
+
+- **Batch one** (small/mechanical, dispatched at boarding): **V2** reports pagination guard ·
+  **V3** draft-cap TOCTOU · **V4** blocklist unicode fold · **V6** ingredient edit double-submit ·
+  **V7** client contract nits.
+- **Batch two** (dispatched after batch one's quality read): **V1** server `servingPrice` recompute ·
+  **V5** legacy rating-type migration script · **V8** draft autosave unload flush + signed-out badge.
+
+Not boarded: the "$10 parfait" ops half (owner/prod-gated), the W1 prod `--apply` run (owner-gated),
+and the API-contract-asymmetries item (needs a design pass first).
 
 ---
 
@@ -2215,3 +2243,13 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   Folded in a "driving a signed-in flow" recipe into `.claude/skills/run-prepify/SKILL.md` (auth via
   `window.__cy_signIn__` + a minted custom token, the `test-cypress-user` fixture gotcha, multi-tab-via-shared-
   context pattern) for future verify passes. No follow-ups filed.
+- **2026-07-10** — **Wave 10 boarded + batch one claimed** (V2/V3/V4/V6/V7). Wave 9 drained fully today
+  (B1–B6 all merged), so the wave-9 review tail (filed off #281/#282) + the open test-quality-audit
+  findings were boarded as 8 file-disjoint lanes V1–V8. **Orchestrated run:** a single session is
+  dispatching one subagent per lane in its own worktree (model-matched per lane: Haiku on V2, Sonnet on
+  V3/V4/V6/V7; Opus reserved for V5/V8 in batch two), each stopping at PR-open — merges + board flips stay
+  serialized in the orchestrator to avoid the B1-style docs-rebase conflicts. Batch two (V1/V5/V8) goes
+  out after a quality read on batch one. Verified before claiming: `development` 0/0 with origin, no live
+  worktrees (B1/B3's torn down post-merge), no unmerged claims anywhere. Branches:
+  `feat/v2-reports-pagination-guard`, `feat/v3-draft-cap-toctou`, `feat/v4-blocklist-unicode-fold`,
+  `feat/v6-ingredient-edit-double-submit`, `feat/v7-client-contract-nits`.
