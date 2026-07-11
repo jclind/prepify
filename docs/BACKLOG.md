@@ -138,12 +138,21 @@ The triage date stamped on items is the date they were filed here, not when they
   twice — the identical pattern V6 fixed in `IngredientItem.tsx`. No network call on this path (just a duplicate,
   idempotent `setInstructions`), so it's cosmetic today, but it's the same latent double-side-effect and the
   same one-line ref-guard fixes it. Low.
-- `[ ]` **Collections cap has the same read-then-insert TOCTOU as the draft cap (V3)** *(filed 2026-07-10, off
-  the V3 [#291](https://github.com/jclind/prepify/pull/291) lane)* — `POST /collections`
+- `[x]` **Collections cap has the same read-then-insert TOCTOU as the draft cap (V3)** *(filed 2026-07-10, off
+  the V3 [#291](https://github.com/jclind/prepify/pull/291) lane; boarded Wave 11 · T2; **fixed in
+  [#296](https://github.com/jclind/prepify/pull/296), merged 2026-07-10**: post-insert trim adapted to the
+  array-on-one-doc shape — a `$push`'s array position IS commit order, so keep the oldest 50 and `$pull` the
+  overflow; the losing request 409s with the same body the route already used; concurrency test — 5 concurrent
+  POSTs at 49 land exactly 1 — proven failing pre-fix, 5x flake-free)* — `POST /collections`
   (`server/routes/collections.js:113`) enforces `MAX_COLLECTIONS = 50` with a read-then-write count check
   (`existing.length >= MAX_COLLECTIONS`), so concurrent creates at 49 can all pass — the same shape V3 fixed
   for drafts. Notably the *name-uniqueness* check right below it is already correctly pinned via a guarded
   `$expr` update; only the count check races. Same fix lane as V3 (post-insert trim or guarded write). Low.
+- `[ ]` **`POST /collections` has no per-uid rate limiter** *(filed 2026-07-10, noticed on the Wave 11 · T2
+  [#296](https://github.com/jclind/prepify/pull/296) lane)* — unlike the drafts/recipes write routes, which
+  mount `makeUserLimiter`-based limiters, collection creation has only the global `/api` backstop. Low
+  urgency (the 50-cap bounds the damage per user), but it's an asymmetry with its sibling write surfaces —
+  same one-line fix as the other `makeUserLimiter` mounts. Low.
 - `[ ]` **`addReview` still writes string `reviewCreatedAt` — must flip to numeric AT the V5 migration cutover, not before or long after** *(filed 2026-07-10, off the V5 [#293](https://github.com/jclind/prepify/pull/293) lane)* —
   `POST /addReview` (`server/routes/reviews.js:120,128`) writes `reviewCreatedAt: Date.now().toString()` (a
   *string*) on every new review. Today the "New" sort `{ reviewCreatedAt: -1 }` works *because* the field is
