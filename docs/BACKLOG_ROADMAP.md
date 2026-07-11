@@ -2574,3 +2574,17 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   post-deploy CORS curl check and the rolling-deploy drain caveat before 2d-(v)/(vi); (6) the
   rehearsal-coverage claim was tightened (2b ran 2026-07-09 separately; 2e never rehearsed
   end-to-end — dev had 0 updatable rows). Stale #308-still-open and username_1 notes refreshed.
+- **2026-07-11** — **Security & abuse audit landed ([#316](https://github.com/jclind/prepify/pull/316)
+  `2e030b8`) — [`docs/SECURITY_AUDIT_2026-07-11.md`](./SECURITY_AUDIT_2026-07-11.md).** Exhaustive
+  static + live-exploit pass across 9 dimensions against the dev stack; every finding reproduced on a
+  running `:4000` with minted user/second-user/admin Firebase tokens. **32 confirmed** (1 high, 12
+  medium, 17 low, 2 info), **3 refuted**. Perimeter verified solid — no NoSQL injection, no
+  mass-assignment privilege escalation (`CREATABLE_RECIPE_FIELDS` allowlist holds), IDOR on edit/delete
+  enforced by `req.uid`, admin routes gated by `requireAdmin`. Confirmed themes are info-leak +
+  business-logic abuse: **H1** paid third-party APIs have no aggregate/daily cost ceiling → Sybil quota
+  drain; **M1** public review endpoints over-return reviewer + admin Firebase UIDs and recipe internal
+  stamps; **M2** ratings/reviews never load the target recipe → self-rating, ghost targets, XP farming;
+  plus author impersonation (`authorUsername`), `servingPrice` bounds bypass, ranking-counter inflation,
+  username integrity, moderation-queue flooding, and two write routes missing `requireActive`. Doc-only
+  landing — **no fixes yet**; remediation is queued as follow-up work (suggested order + per-finding
+  evidence/repro in the doc), to be picked up verify-first in a fresh session.
