@@ -3,6 +3,7 @@ const crypto = require('crypto')
 const { asyncHandler } = require('../util/asyncHandler')
 const { getDB } = require('../db')
 const { verifyToken, requireActive } = require('../middleware/auth')
+const { collectionWriteLimiter } = require('../middleware/writeLimiter')
 const { recipeIdQuery, recipeIdInQuery } = require('../util/recipeIdQuery')
 const { RECIPE_VISIBLE } = require('../util/moderation')
 
@@ -99,8 +100,12 @@ router.get('/collections', verifyToken, asyncHandler(async (req, res) => {
   res.json(collections.map((c) => withStats(c, saved, imageById)))
 }))
 
-// POST /collections — create a new (empty) collection.
-router.post('/collections', verifyToken, requireActive, asyncHandler(async (req, res) => {
+// POST /collections — create a new (empty) collection. Rate-limited like the
+// sibling content-write surfaces (recipes.js addRecipe/editRecipe, reviews.js
+// addRating/newReview/editReview) — the 50-cap on collections bounds worst-case
+// damage but doesn't stop a scripted create-loop from burning cycles/DB writes
+// before it ever hits the cap.
+router.post('/collections', verifyToken, requireActive, collectionWriteLimiter, asyncHandler(async (req, res) => {
   const db = getDB()
   const name = boundedName(req.body?.name)
   if (!name) {
@@ -202,8 +207,12 @@ router.post('/collections', verifyToken, requireActive, asyncHandler(async (req,
   res.status(201).json(withStats(collection, []))
 }))
 
-// PATCH /collections/:id — rename a collection.
-router.patch('/collections/:id', verifyToken, requireActive, asyncHandler(async (req, res) => {
+// PATCH /collections/:id — rename a collection. Shares the create limiter's
+// bucket instance: like editRecipe/editReview sharing their surface's limiter
+// with the create route, a rename is the same class of write as a create (a
+// user-supplied name, same validation/bounds) so it draws from the same budget
+// rather than getting its own.
+router.patch('/collections/:id', verifyToken, requireActive, collectionWriteLimiter, asyncHandler(async (req, res) => {
   const db = getDB()
   const { id } = req.params
   const name = boundedName(req.body?.name)
@@ -260,6 +269,10 @@ router.patch('/collections/:id', verifyToken, requireActive, asyncHandler(async 
 
 // DELETE /collections/:id — remove a collection. The recipes it held stay in
 // the master saved list; only the folder and its membership tags go away.
+// Intentionally unlimited, mirroring the sibling surfaces: deleteRecipe,
+// deleteReview, and removeRating carry no makeUserLimiter either — deletes
+// shrink state rather than growing it, so they're not the abuse vector the
+// content-write limiters guard against.
 router.delete('/collections/:id', verifyToken, requireActive, asyncHandler(async (req, res) => {
   const db = getDB()
   const { id } = req.params
@@ -290,6 +303,11 @@ router.delete('/collections/:id', verifyToken, requireActive, asyncHandler(async
 // PATCH /recipes/:recipeId/collections — set which collections a saved recipe
 // belongs to, in one call (drives the add-to-collection checkbox popover).
 // Filing a not-yet-saved recipe auto-saves it to the master list first.
+// Intentionally unlimited: this is a membership toggle over an already-capped
+// set of collections (<= MAX_COLLECTIONS), the same class of write as
+// recipes.js's save/unsave (POST/DELETE /recipes/:id/save), which likewise
+// carries no makeUserLimiter — it doesn't create new named resources the way
+// POST/PATCH /collections does.
 router.patch(
   '/recipes/:recipeId/collections',
   verifyToken,

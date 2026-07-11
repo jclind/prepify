@@ -65,9 +65,15 @@ const recipeWriteLimiter = makeUserLimiter({ limit: 12 })
 const reviewWriteLimiter = makeUserLimiter()
 const profileWriteLimiter = makeUserLimiter()
 
+// Collections (server/routes/collections.js) carry no per-write paid cost — no
+// Cloud Vision scan, no OpenAI moderation call — same as review/profile writes,
+// so they share the 30/min default rather than the recipe surface's tighter cap.
+const collectionWriteLimiter = makeUserLimiter()
+
 module.exports = {
   makeUserLimiter,
   recipeWriteLimiter,
   reviewWriteLimiter,
   profileWriteLimiter,
+  collectionWriteLimiter,
 }
