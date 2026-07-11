@@ -44,14 +44,27 @@ hygiene, and the U3 watch items all verified sound — details in the session tr
 
 **P1 — none found.**
 
-> **Wave 14 claim (2026-07-11 overnight, owner authorized fixes):** lanes dispatched — **A** drafts
-> 404-wedge (P2 #1) · **B** ratings-index code half (P2 #2) + `requireActive` on parse + PUT-pin
-> strengthening · **C** pagination floors (both items) · **D** IngredientItem in-flight guard ·
-> **E** `/health` ping + signal handlers + quiet CORS 403 + JSON 404 + `FRONTEND_URLS` warning + CI
-> `release` trigger. **Merges held for owner review.** NOT claimed (conflict with parked PR #303's
-> files or deliberate deferral): flush-vs-in-flight race, keepalive 429, hydration clobber,
-> signed-out badge, `ratingLastUpdated` drift, `formatDate` guard, API_CONTRACT anchors,
-> FRONTEND_URLS ops check (runbook step, not code).
+> **Wave 14 (2026-07-11 overnight, owner authorized fixes) — ALL FIVE LANES LANDED AS PRs,
+> orchestrator-diff-reviewed, MERGES HELD for owner review:**
+> **A** drafts 404-wedge → **#307** (404 recovery: refs cleared + caller nulls id/URL param +
+> toast; re-creates on next edit; flush can't resurrect) ·
+> **B** ratings-index code half + `requireActive` on parse + structural PUT-pin → **#308**
+> (⚠️ DEVIATION: the "stale username index" claim below was WRONG — the `POST /setUsername`
+> rename cascade (`auth.js:191-194`) still `updateMany`s ratings by `username`, so the index was
+> KEPT with corrected comments; boot now provisions the D1 unique+partial index with a caught
+> failure path) ·
+> **C** pagination floors → **#306** (9 routes + 11 regression tests, 894 server tests green) ·
+> **D** IngredientItem in-flight guard → **#304** ·
+> **E** prod hardening → **#305** (/health Mongo ping 200/503, SIGTERM graceful shutdown,
+> unhandledRejection→Sentry+exit, quiet CORS 403, /api JSON 404, FRONTEND_URLS prod warning, CI
+> `release` push trigger).
+> CI: #304–#307 all green; #308 pending at last check.
+> NEW follow-up seed from B's deviation: **migrate the setUsername rename cascade off
+> `ratings.username` onto `userId`** (rows already carry it) — after which the `username_1` index
+> is fully dead and a follow-up can add the guarded `dropIndex`.
+> NOT claimed (conflict with parked PR #303's files or deliberate deferral): flush-vs-in-flight
+> race, keepalive 429, hydration clobber, signed-out badge, `ratingLastUpdated` drift,
+> `formatDate` guard, API_CONTRACT anchors, FRONTEND_URLS ops check (runbook step, not code).
 
 ### P2
 
@@ -71,7 +84,9 @@ hygiene, and the U3 watch items all verified sound — details in the session tr
   runbook step is skipped (now gated in `RELEASE_RUNBOOK.md` pre-flight). Also: the boot-created
   `ratings.{username:1}` index (`server/db.js:135`) is stale — no route queries ratings by username
   anymore. Fix shape: move the `{userId,recipeId}` unique partial index into `ensureIndexes`, drop the
-  username one.
+  username one. *(Wave 14 correction: the drop half was WRONG — the setUsername rename cascade still
+  filters ratings by `username`; #308 moved the D1 index into boot and kept `username_1` with honest
+  comments. See the claim block above for the cascade-migration follow-up seed.)*
 - `[ ]` **CORS hard-fails silent if `FRONTEND_URLS` is unset/typo'd on prod Railway** —
   `server/app.js:28` falls back to `localhost:3000` only; no prod-domain fallback, and `/health` stays
   green while every browser call is CORS-rejected. Operational, not code: verify the Railway value

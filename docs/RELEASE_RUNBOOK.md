@@ -148,9 +148,10 @@ post-deploy `getSingleUserReviews` / account counts / every rating-review upsert
 
 - `[ ]` `MONGO_URI='<PROD>' node server/scripts/createModerationIndexes.js`
 - `[ ]` Verify: `db.ratings.getIndexes()` includes `userId_1_recipeId_1`.
-- Note (filed in BACKLOG sweep 2026-07-11): the boot-created `ratings.{username:1}` index is stale
-  (nothing queries ratings by username anymore) — a post-cutover PR should move the userId index
-  into `ensureIndexes` and drop the username one.
+- Note: Wave 14 **PR #308** (open, review-ready) moves the D1 index into `ensureIndexes` so boot
+  self-provisions it — once merged, this step becomes belt-and-braces. The `username_1` index is
+  NOT stale (an earlier sweep claim, corrected): the `setUsername` rename cascade still updates
+  ratings by `username`, so it stays until that cascade migrates to `userId` (BACKLOG seed).
 
 ---
 
