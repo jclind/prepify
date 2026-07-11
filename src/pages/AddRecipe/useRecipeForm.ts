@@ -146,6 +146,13 @@ function initFormState(initialRecipe?: RecipeType): RecipeFormState {
   }
 }
 
+// Fresh create-form defaults, used to detect which fields the user has already
+// touched when a resumed draft lands mid-load. A field whose live value still
+// equals its default here is "untouched" and safe to hydrate; one that differs
+// was typed into during the async draft GET and must NOT be clobbered. See the
+// merge guard in the resume-hydration effect.
+const PRISTINE_FORM = initFormState()
+
 // When `initialRecipe` is supplied the form runs in edit mode: every field is
 // pre-populated from the existing recipe and submitting updates it (preserving
 // ratings/saves) instead of creating a new one.
@@ -173,6 +180,14 @@ export function useRecipeForm(initialRecipe?: RecipeType) {
     mealTypes,
     nutritionLabels,
   } = state
+
+  // Live mirror of the reducer state. The resume-hydration effect below runs its
+  // HYDRATE dispatch inside an async `.then`, long after its closure captured the
+  // state at effect time; it reads this ref to see whether the user typed into a
+  // field during the sub-second draft load (the reducer state only changes on an
+  // edit) and, if so, skips clobbering that field.
+  const stateRef = useRef(state)
+  stateRef.current = state
 
   // Stable per-field setters that preserve the useState dispatch contract, so
   // child components (and their React.memo boundaries) see an unchanging setter
@@ -279,23 +294,35 @@ export function useRecipeForm(initialRecipe?: RecipeType) {
         if (draft) {
           setDraftId(urlDraftId)
           setDraftUpdatedAt(draft.updatedAt)
-          dispatch({
-            type: 'HYDRATE',
-            values: {
-              title: draft.title ?? '',
-              description: draft.description ?? '',
-              servings: String(draft.servings ?? ''),
-              prepTime: draft.prepTime != null ? minToHrMin(draft.prepTime) : null,
-              cookTime: draft.cookTime != null ? minToHrMin(draft.cookTime) : null,
-              fridgeLife: draft.fridgeLife ?? 0,
-              freezerLife: draft.freezerLife ?? 0,
-              ingredients: draft.ingredients ?? [],
-              instructions: draft.instructions ?? [],
-              cuisine: draft.cuisine ?? '',
-              mealTypes: draft.mealTypes ?? [],
-              nutritionLabels: draft.nutritionLabels ?? [],
-            },
-          })
+          const hydrateValues: Partial<RecipeFormState> = {
+            title: draft.title ?? '',
+            description: draft.description ?? '',
+            servings: String(draft.servings ?? ''),
+            prepTime: draft.prepTime != null ? minToHrMin(draft.prepTime) : null,
+            cookTime: draft.cookTime != null ? minToHrMin(draft.cookTime) : null,
+            fridgeLife: draft.fridgeLife ?? 0,
+            freezerLife: draft.freezerLife ?? 0,
+            ingredients: draft.ingredients ?? [],
+            instructions: draft.instructions ?? [],
+            cuisine: draft.cuisine ?? '',
+            mealTypes: draft.mealTypes ?? [],
+            nutritionLabels: draft.nutritionLabels ?? [],
+          }
+          // The draft GET is async: a keystroke typed into a field during the
+          // sub-second load would be silently overwritten by this HYDRATE (it
+          // spreads over the current form). Merge instead of clobber — keep any
+          // field the user already edited (live value differs from the fresh-form
+          // default) and hydrate only the untouched rest, so the resumed content
+          // still lands without eating in-flight keystrokes.
+          const live = stateRef.current
+          const mergedValues = Object.fromEntries(
+            Object.entries(hydrateValues).filter(
+              ([key]) =>
+                JSON.stringify(live[key as keyof RecipeFormState]) ===
+                JSON.stringify(PRISTINE_FORM[key as keyof RecipeFormState])
+            )
+          ) as Partial<RecipeFormState>
+          dispatch({ type: 'HYDRATE', values: mergedValues })
           // A draft autosaved while a row's lookup was still in flight persists
           // that row as ingredientData:null. Nothing re-enriches on resume, so
           // without a status the row would render settled and the submit gate

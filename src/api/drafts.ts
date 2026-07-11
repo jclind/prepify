@@ -86,22 +86,74 @@ class DraftAPIClass {
     if (!AuthAPI.getUID()) return false
     const token = getCachedIdToken()
     if (!token) return false
-    const url = id
-      ? `${API_BASE_URL}/api/drafts/${id}`
-      : `${API_BASE_URL}/api/drafts`
-    const body = id ? { ...content, updatedAt: baseUpdatedAt } : content
-    fetch(url, {
-      method: id ? 'PUT' : 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(body),
-      keepalive: true,
-    }).catch(() => {
-      // The page is unloading; there's nothing to recover to and no UI left to
-      // surface an error on.
-    })
+    const headers = {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    }
+    const send = (method: 'PUT' | 'POST', url: string, payload: unknown) =>
+      fetch(url, {
+        method,
+        headers,
+        body: JSON.stringify(payload),
+        keepalive: true,
+      })
+
+    if (id) {
+      const url = `${API_BASE_URL}/api/drafts/${id}`
+      send('PUT', url, { ...content, updatedAt: baseUpdatedAt })
+        .then(res => {
+          if (res.ok) return
+          if (res.status === 409) {
+            // This keepalive PUT lost the unload race against a normal autosave
+            // that was still in flight: both carried the same base `updatedAt`,
+            // and the older in-flight save landed first, so ours 409s. Without a
+            // retry the *newest* edits (this flush) would be silently dropped.
+            // Retry once against the server's now-current version so the newest
+            // content supersedes the older write — autosave's prime directive is
+            // never to lose active work.
+            return res
+              .json()
+              .then((data: { draft?: { updatedAt?: string } }) => {
+                const latest = data?.draft?.updatedAt
+                if (latest && latest !== baseUpdatedAt) {
+                  return send('PUT', url, { ...content, updatedAt: latest }).then(
+                    retry => {
+                      if (!retry.ok) {
+                        console.error(
+                          'Keepalive draft flush retry did not persist:',
+                          retry.status
+                        )
+                      }
+                    }
+                  )
+                }
+                console.error('Keepalive draft flush conflict unresolved')
+              })
+              .catch(() => {})
+          }
+          // Any other resolved-but-non-2xx (a 429 rate-limit, a 5xx, …) means the
+          // flush did NOT persist. Surface it rather than letting a resolved
+          // failure masquerade as a successful save (see the POST branch below).
+          console.error('Keepalive draft flush did not persist:', res.status)
+        })
+        .catch(() => {
+          // Network teardown during unload — nothing to recover to and no UI
+          // left to surface an error on.
+        })
+    } else {
+      send('POST', `${API_BASE_URL}/api/drafts`, content)
+        .then(res => {
+          // A `fetch` that resolves is NOT necessarily a success: a 429 (at the
+          // per-user create rate limit) or a 5xx resolves normally yet never
+          // created the draft. Check `res.ok` so a resolved failure doesn't read
+          // as a saved draft — the pre-fix code only caught network *rejections*
+          // and silently treated a 429 as success.
+          if (!res.ok) {
+            console.error('Keepalive draft create did not persist:', res.status)
+          }
+        })
+        .catch(() => {})
+    }
     return true
   }
 }

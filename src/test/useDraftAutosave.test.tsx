@@ -655,3 +655,89 @@ describe('useDraftAutosave — signed-out (V8 item 2)', () => {
     expect(result.current.status).toBe('idle')
   })
 })
+
+describe('useDraftAutosave — passive sign-out badge (W15 bug 4a)', () => {
+  it('flips to signed-out immediately on a passive sign-out, without a further edit', async () => {
+    // Regression: the unchanged-content early-return sat BEFORE the isSignedIn
+    // check in the debounced effect. On a *passive* sign-out (token expiry, or
+    // signing out in another tab) the content hasn't changed, so the effect
+    // returned early and the badge kept showing 'saved' until the next
+    // keystroke. The signed-out guidance must correct immediately.
+    mockedDraftAPI.updateDraft.mockResolvedValue({
+      ...createdDraft,
+      updatedAt: '2000',
+    })
+
+    const { result, rerender } = renderHook(
+      ({ content, isSignedIn }) =>
+        useDraftAutosave({
+          content,
+          enabled: true,
+          isSignedIn,
+          canCreate: true,
+          draftId: 'existing-draft',
+          draftUpdatedAt: '1000',
+          onDraftCreated: vi.fn(),
+        }),
+      {
+        initialProps: {
+          content: { title: 'Soup' } as Record<string, unknown>,
+          isSignedIn: true,
+        },
+      }
+    )
+
+    // An edit saves, so lastSaved === current content (the no-op-return trap).
+    rerender({ content: { title: 'Soup, saved' }, isSignedIn: true })
+    await act(async () => {
+      vi.advanceTimersByTime(1500)
+      await Promise.resolve()
+    })
+    expect(result.current.status).toBe('saved')
+
+    // The user signs out elsewhere; no new keystroke, content is byte-identical.
+    // Pre-fix the badge stayed 'saved'; post-fix it corrects to 'signed-out'.
+    rerender({ content: { title: 'Soup, saved' }, isSignedIn: false })
+    expect(result.current.status).toBe('signed-out')
+  })
+})
+
+describe('useDraftAutosave — distinct conflict badge (W15 bug 4b)', () => {
+  it('sets a dedicated conflict status (not generic error) when the server 409s DRAFT_CONFLICT', async () => {
+    mockedDraftAPI.updateDraft.mockRejectedValue({
+      isAxiosError: true,
+      response: {
+        status: 409,
+        data: {
+          code: 'DRAFT_CONFLICT',
+          error: 'This draft was updated elsewhere.',
+        },
+      },
+    })
+
+    const { result, rerender } = renderHook(
+      ({ content }) =>
+        useDraftAutosave({
+          content,
+          enabled: true,
+          isSignedIn: true,
+          canCreate: true,
+          draftId: 'existing-draft',
+          draftUpdatedAt: '1000',
+          onDraftCreated: vi.fn(),
+          onConflict: vi.fn(),
+        }),
+      { initialProps: { content: { title: '' } as Record<string, unknown> } }
+    )
+
+    rerender({ content: { title: 'Soup' } })
+    await act(async () => {
+      vi.advanceTimersByTime(1500)
+      await Promise.resolve()
+    })
+
+    // A cross-tab conflict is NOT a broken-connection failure; the badge must be
+    // the distinct 'conflict' state (→ "reload to see the latest"), not 'error'.
+    expect(result.current.status).toBe('conflict')
+  })
+})
