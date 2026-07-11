@@ -141,16 +141,13 @@ describe('validateRecipeForm', () => {
     )
   })
 
-  it('treats servings of 0 / "" as missing', () => {
+  it('treats an empty servings string as missing, and "0" as an invalid whole number', () => {
     expect(validateRecipeForm({ ...validForm(), servings: '' }).servings).toBe(
       'Servings amount is required'
     )
-    expect(
-      // @ts-expect-error — deliberately passes numeric 0, unreachable now that
-      // the servings contract is `string` ('0' would hit the whole-number branch
-      // instead); kept as-is to preserve the falsy-guard coverage unchanged.
-      validateRecipeForm({ ...validForm(), servings: 0 }).servings
-    ).toBe('Servings amount is required')
+    expect(validateRecipeForm({ ...validForm(), servings: '0' }).servings).toBe(
+      'Servings must be a whole number of at least 1'
+    )
   })
 
   it('rejects negative or fractional servings', () => {
