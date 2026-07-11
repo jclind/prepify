@@ -17,6 +17,7 @@ const {
   recipeWriteLimiter,
   reviewWriteLimiter,
   profileWriteLimiter,
+  collectionWriteLimiter,
 } = require('../middleware/writeLimiter')
 
 const recipesRouter = require('../routes/recipes')
@@ -48,6 +49,8 @@ describe('per-surface write limiters are wired onto every moderated write route'
     ['auth', authRouter, 'post', '/updatePhoto', profileWriteLimiter],
     ['auth', authRouter, 'post', '/updateDisplayName', profileWriteLimiter],
     ['auth', authRouter, 'post', '/updatePrivacy', profileWriteLimiter],
+    ['collections', collectionsRouter, 'post', '/collections', collectionWriteLimiter],
+    ['collections', collectionsRouter, 'patch', '/collections/:id', collectionWriteLimiter],
   ]
 
   it.each(cases)(
@@ -63,11 +66,26 @@ describe('per-surface write limiters are wired onto every moderated write route'
     }
   )
 
-  it('recipe / review / profile each use a DISTINCT limiter instance', () => {
+  it('recipe / review / profile / collection each use a DISTINCT limiter instance', () => {
     // Independent instances ⇒ independent buckets (the #3 fix). If two surfaces
     // ever collapsed back onto one shared limiter this would catch it.
-    const limiters = new Set([recipeWriteLimiter, reviewWriteLimiter, profileWriteLimiter])
-    expect(limiters.size).toBe(3)
+    const limiters = new Set([
+      recipeWriteLimiter,
+      reviewWriteLimiter,
+      profileWriteLimiter,
+      collectionWriteLimiter,
+    ])
+    expect(limiters.size).toBe(4)
+  })
+
+  it('collections POST /collections and PATCH /collections/:id SHARE one limiter instance', () => {
+    // Unlike the recipe/review/profile surfaces (one bucket per surface), create
+    // and rename intentionally draw from the SAME collectionWriteLimiter bucket —
+    // they're the same class of write (a user-supplied name, same validation).
+    const createHandlers = routeHandlers(collectionsRouter, 'post', '/collections')
+    const renameHandlers = routeHandlers(collectionsRouter, 'patch', '/collections/:id')
+    expect(createHandlers).toContain(collectionWriteLimiter)
+    expect(renameHandlers).toContain(collectionWriteLimiter)
   })
 
   it('ingredients POST /parse mounts a user limiter right after verifyToken', () => {
