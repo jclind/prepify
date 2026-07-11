@@ -158,6 +158,47 @@ router.post('/collections', verifyToken, requireActive, asyncHandler(async (req,
   if (pushed.matchedCount === 0) {
     return res.status(409).json({ error: 'A collection with that name already exists' })
   }
+
+  // The early `existing.length >= MAX_COLLECTIONS` check above is a read-then-write
+  // TOCTOU (same shape V3 closed for drafts, #291): concurrent creates that all read
+  // under the cap can all pass it and all land, overshooting MAX_COLLECTIONS. Unlike
+  // the name check, this can't be folded into the guarded push's $expr — the push
+  // above is already committed by the time we'd know the resulting size, and adding a
+  // pre-push $expr size guard would just move the same race onto the *set* of racing
+  // requests (they'd all read the pre-push size and could still all pass).
+  //
+  // So, mirroring V3: enforce the cap post-insert. Collections are array elements on
+  // a single per-user document (unlike drafts' separate documents), so a $push's
+  // position in the array IS the commit order — no separate _id/createdAt sort is
+  // needed the way V3 needed one across sibling documents. Re-read the live array,
+  // keep the oldest MAX_COLLECTIONS (array order = insertion order), and $pull
+  // anything beyond that. This converges under arbitrary interleaving: every pass
+  // reads live state and targets the same well-defined "newest beyond the cap" set,
+  // so redundant/out-of-order trims from racing requests agree and are idempotent
+  // (pulling an already-pulled id is a no-op). Whichever request's collection lands
+  // outside the surviving oldest-N finds itself pulled and replies 409 — concurrent
+  // creates at the cap admit only as many as there's room for.
+  const userDataAfter = await db
+    .collection('userRecipeData')
+    .findOne({ _id: req.uid }, { projection: { collections: 1 } })
+  const allCollections = userDataAfter?.collections ?? []
+  const overflow = allCollections.slice(MAX_COLLECTIONS)
+  if (overflow.length > 0) {
+    await db
+      .collection('userRecipeData')
+      .updateOne(
+        { _id: req.uid },
+        { $pull: { collections: { id: { $in: overflow.map((c) => c.id) } } } }
+      )
+  }
+  const survived = allCollections
+    .slice(0, MAX_COLLECTIONS)
+    .some((c) => c.id === collection.id)
+  if (!survived) {
+    return res
+      .status(409)
+      .json({ error: `You can have at most ${MAX_COLLECTIONS} collections` })
+  }
   res.status(201).json(withStats(collection, []))
 }))
 
