@@ -921,8 +921,19 @@ findings table.)*
   assertion byte-identical behind a commented `@ts-expect-error` to stay typing-only; the follow-up is to
   rewrite the case against reachable inputs (`''` → required, `'0'` → whole-number message) and drop the
   suppression. Tiny. Low.
-- `[ ]` **`src/test` is excluded from `tsconfig`, so the Vitest suite is never typechecked** *(filed
-  2026-07-10, noticed on the Wave 11 · T3 [#298](https://github.com/jclind/prepify/pull/298) lane)* — type
+- `[x]` **`src/test` is excluded from `tsconfig`, so the Vitest suite is never typechecked** — *(fixed in
+  [#300](https://github.com/jclind/prepify/pull/300), Wave 12 · U2: new `tsconfig.tests.json` (extends base,
+  re-includes `src/test`, ES2022 lib) + a second `tsc --noEmit -p tsconfig.tests.json` step in CI's Static
+  job. Main-include was NOT viable — the base program compiles `cypress.config.ts`/`cypress.visual.config.ts`,
+  whose `import 'cypress'` injects Cypress's global Chai `expect`, shadowing Vitest's and producing 1274
+  false matcher errors; the tests config keeps just those two files excluded. Honest drift was 17 errors → 12
+  after the lib bump → 0 fixed, typing-only (one declared matcher-call swap; one type-level `getIngredientData`
+  return narrowing in `src/api/recipes.ts` that also fixed a prod-type modeling gap). Also removed the
+  vestigial pre-Vitest `@types/jest`, which had the whole suite typed against Jest's matcher shapes, replaced
+  by `src/test/test-globals.d.ts` (vitest/globals + jest-dom augmentations). Suite totals byte-identical,
+  735 passed / 2 skipped. The numeric-0 servings test kept behind a commented `@ts-expect-error` — follow-up
+  filed below.)* *(filed 2026-07-10, noticed on the Wave 11 · T3
+  [#298](https://github.com/jclind/prepify/pull/298) lane)* — type
   errors (and `@ts-expect-error` assertions) in `src/test/**` are invisible to the `npx tsc --noEmit` gate;
   T3's type-tests had to live in a separate `src/test-d/` directory to be enforced. Tests drift from the real
   types silently (e.g. `recipeFormValidation.test.ts` passes numeric literals to a now-`string`-typed input
