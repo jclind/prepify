@@ -33,6 +33,11 @@ to the *sweep program*); this file applies it to the **general backlog**. Compan
 > **Wave 10 boarded 2026-07-10** (Wave 9 fully drained same day) — the follow-ups filed off the B1/B3
 > local reviews + the open test-quality-audit findings (8 lanes V1–V8, two dispatch batches; see the
 > [Wave 10 section](#wave-10--wave-9-review-tail--test-quality-audit-boarded-2026-07-10)).
+>
+> **Wave 11 boarded 2026-07-10** (Wave 10 fully drained same day) — the small follow-up tail filed off
+> Wave 10's lane reviews (4 lanes T1–T4; see the
+> [Wave 11 section](#wave-11--wave-10-follow-up-tail-boarded-2026-07-10)). The `addReview` numeric
+> write-path flip is deliberately NOT boarded — it's coupled to the owner's V5 prod cutover.
 
 ---
 
@@ -139,6 +144,10 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 | **10** | **V6 · ingredient inline-edit double-submit** | Enter fires `handleEditSubmit` then `blur()` synchronously re-fires it via `onBlur` → double parse call (real proxy quota) + double toast (BACKLOG Bugs, off the B3 #282 review) | `[x]` [#287](https://github.com/jclind/prepify/pull/287) (2026-07-10) | `src/pages/AddRecipe/Ingredients/IngredientItem.tsx` | **merged** — ref-guard skipping the self-triggered blur; pin verified by stash-out (2-calls without the fix); Vitest 708 green. Filed: `InstructionItem.tsx` carries the identical pattern (no network cost) |
 | **10** | **V7 · client contract nits** | unencoded `filter`/`username` query interpolation (`recipes.ts:546,568`); negative/fractional `servings` accepted (`recipeFormValidation.ts:61`); `formatRating` renders literal `"NaN"`; + fold-in: `UserRatings` passes a sort the server ignores (BACKLOG Bugs + Tech debt) | `[x]` [#290](https://github.com/jclind/prepify/pull/290) (2026-07-10) | `src/api/recipes.ts`, `src/pages/AddRecipe/recipeFormValidation.ts`, `src/util/formatRating.ts`, `src/pages/Account/UserRatings/` | **merged** — all 4 items fixed incl. `UserRatings` `'newAdd'`→`'new'` (server silently no-sorted unknown values); Vitest 712 green. Filed: `FormInput`'s generic `setVal` unchecked-cast type-safety follow-up |
 | **10** | **V8 · draft autosave unload flush + signed-out badge** ⚠ lane | no `beforeunload`/`pagehide` flush (hard refresh in the 1.5s debounce window loses edits); signed-out `/add-recipe` shows a persistent "Couldn't save draft" error (BACKLOG UX, off the B1 #281 review) | `[x]` [#294](https://github.com/jclind/prepify/pull/294) (2026-07-10) | `src/pages/AddRecipe/useDraftAutosave.ts`, `DraftSaveStatus.tsx` (+ `http-common.ts` token cache, `drafts.ts` keepalive) | **merged** — `fetch` keepalive flush on `beforeunload`/`pagehide` (carries B5's `updatedAt`, bfcache-guarded, sync token cache + `warmAuth`); signed-out badge ships as defense-in-depth (**stale premise:** `/add-recipe` is already `PrivateRoute`-guarded). **Live-verified in a real browser** (type→hard-reload at 200ms → draft persisted; flushed PUT matched the B5 version, no 409; one write per unload). **Folded in a pre-existing B5 bug fix:** resume-by-`?draftId`-mount left `updatedAtRef` null → every autosave 409'd into the conflict latch; regression test proven on pre-fix deps. Vitest 723 green |
+| **11** | **T1 · InstructionItem edit double-submit** | Enter fires `handleEditSubmit`, then the trailing manual `blur()` synchronously re-fires it via `onBlur` — the identical shape V6 fixed in `IngredientItem.tsx` (BACKLOG Bugs, off the V6 #287 lane) | `[~]` claimed 2026-07-10 (`feat/t1-instructionitem-double-submit`) | `src/pages/AddRecipe/Instructions/InstructionItem/InstructionItem.tsx` | ref-guard mirror of [#287](https://github.com/jclind/prepify/pull/287); no network on this path (duplicate `setInstructions` is idempotent today) |
+| **11** | **T2 · collections cap TOCTOU** | `POST /collections` enforces `MAX_COLLECTIONS = 50` with a read-then-insert count check; concurrent creates at 49 all pass — V3's shape (BACKLOG Bugs, off the V3 #291 lane) | `[~]` claimed 2026-07-10 (`feat/t2-collections-cap-toctou`) | `server/routes/collections.js` | post-insert-trim mirror of [#291](https://github.com/jclind/prepify/pull/291); the adjacent name-uniqueness check is already race-safe (guarded `$expr`) — don't touch it |
+| **11** | **T3 · FormInput `setVal` type-safety** | generic `setVal(next as T)` hands the raw DOM string to callers regardless of `T` — numeric consumers carry a type that lies at runtime (BACKLOG Tech debt, off the V7 #290 lane) | `[ ]` batch two | `src/Components/Form/FormInput.tsx` + numeric call sites | dispatched after T1 merges (T1's file is a `FormInput` consumer) |
+| **11** | **T4 · API delete-status + 429-shape normalization** | `DELETE /deleteReview` 403 vs `DELETE /removeRating` 404 for the identical "no doc of yours" case; `POST /api/bug-reports` 429s plain-text instead of the house `{ error, code: 'RATE_LIMITED' }` JSON (BACKLOG Tech debt, API-contract DRIFT) | `[~]` claimed 2026-07-10 (`feat/t4-api-contract-normalization`) | `server/routes/reviews.js`, `server/routes/bugReports.js`, `docs/API_CONTRACT.md` | design decision pre-made: standardize on **404** (`drafts.js` convention — 404 = no such doc, 403 = exists but not yours); the filed item's pagination bullet was already fixed by V2 [#289](https://github.com/jclind/prepify/pull/289) |
 | **—** | **Deferred / post-1.0 / owner** | see [that section](#deferred--post-10--owner-off-the-active-board) | `[blocked]`/`[dropped]` | — | prerendering, Edamam, theming, brand-orange, DB relocation, ideas |
 
 ---
@@ -319,7 +328,30 @@ orchestrating session running one subagent per lane in its own worktree:
   **V5** legacy rating-type migration script · **V8** draft autosave unload flush + signed-out badge.
 
 Not boarded: the "$10 parfait" ops half (owner/prod-gated), the W1 prod `--apply` run (owner-gated),
-and the API-contract-asymmetries item (needs a design pass first).
+and the API-contract-asymmetries item (needs a design pass first — since boarded as **Wave 11 T4**:
+the design pass resolved trivially to house convention, see that lane's Notes).
+
+---
+
+### Wave 11 — Wave-10 follow-up tail (boarded 2026-07-10)
+
+The small siblings and type-safety follow-ups filed during Wave 10's lane reviews, plus the
+API-contract-asymmetries item whose "design pass" blocker dissolved on inspection: the only real
+decision (403 vs 404 for "nothing of yours to delete") is already answered by the `drafts.js`
+convention (404 = no such doc; 403 reserved for exists-but-not-yours), and the item's second bullet
+(`GET /api/reports` unclamped pagination) was independently fixed by V2 [#289](https://github.com/jclind/prepify/pull/289)
+before this wave boarded. Same orchestrated pattern as Wave 10 (one subagent per lane in its own
+worktree, orchestrator-only merges):
+
+- **Batch one** (disjoint, dispatched at boarding): **T1** InstructionItem double-submit ·
+  **T2** collections cap TOCTOU · **T4** API delete-status + 429-shape normalization.
+- **Batch two** (after T1 merges — T3 touches `FormInput`, whose consumers include T1's file):
+  **T3** `FormInput` `setVal` type-safety pass.
+
+Not boarded: the `addReview` numeric `reviewCreatedAt` write-path flip — **deliberately held**, it
+must ship together with the owner's prod `normalizeRatingTypes.js --apply` as one cutover step (see
+the V5 row's sequencing warning); and the admin API-contract projection asymmetries beyond the two
+T4 normalizations (nothing else filed).
 
 ---
 
@@ -2292,3 +2324,17 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   hazard filed; the InstructionItem/collections.js/FormInput siblings + the rating-cutover pair are the
   natural seeds of a small Wave 11. Orphaned dev servers from pre-wave worktrees (ports 3001/3003/3004)
   killed during cleanup. All worktrees/branches torn down; board clean.
+- **2026-07-10** — **Wave 11 boarded + batch one claimed** (T1/T2/T4; T3 held for batch two). The
+  Wave-10 review-tail seeds: **T1** `InstructionItem` Enter double-submit (V6's shape, ref-guard
+  mirror of [#287]) · **T2** `collections.js` 50-cap TOCTOU (V3's shape, post-insert-trim mirror of
+  [#291]) · **T4** API contract normalization — `deleteReview` 403 → 404 to match `removeRating`
+  (design decision pre-made from the `drafts.js` convention: 404 = no such doc, 403 = exists but not
+  yours) + `bug-reports` `submitLimiter` plain-text 429 → house `{ error, code: 'RATE_LIMITED' }`
+  JSON, with `docs/API_CONTRACT.md` updated to match. Boarding verification: the filed
+  API-contract item's `GET /api/reports` unclamped-pagination bullet is **already fixed** (V2 [#289]
+  landed the coerce/clamp/cap — confirmed on disk at `reports.js:198-201`), so T4 shrinks to the two
+  normalizations. **T3** (`FormInput` `setVal(next as T)` type-safety) is claimed-at-dispatch in
+  batch two because `FormInput`'s consumers include T1's file. The `addReview` numeric write-path
+  flip stays **un-boarded** (owner-cutover-coupled, see the V5 warning). Same orchestration pattern
+  as Wave 10: subagent-per-lane in worktrees (Sonnet on T1/T2/T4, Opus on T3), agents stop at
+  PR-open, merges/board-flips serialized here under the owner's green-wave merge policy.
