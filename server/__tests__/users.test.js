@@ -110,6 +110,53 @@ describe('GET /getSavedRecipes', () => {
     expect(res.body.totalCount).toBe(3)
   })
 
+  it('treats a negative page as page 0 instead of an empty slice', async () => {
+    await seedRecipes([
+      { _id: 'r1', title: 'Recipe One' },
+      { _id: 'r2', title: 'Recipe Two' },
+      { _id: 'r3', title: 'Recipe Three' },
+    ])
+    await seedUserRecipeData(TEST_UID, {
+      savedRecipes: [
+        { recipeId: 'r1', dateSaved: '1000' },
+        { recipeId: 'r2', dateSaved: '2000' },
+        { recipeId: 'r3', dateSaved: '3000' },
+      ],
+    })
+
+    const res = await request(app)
+      .get('/api/getSavedRecipes?page=-1')
+      .set(AUTH_HEADER)
+
+    expect(res.status).toBe(200)
+    expect(res.body.recipes).toHaveLength(3)
+    expect(res.body.totalCount).toBe(3)
+  })
+
+  it('floors a negative recipesPerPage instead of a degenerate slice', async () => {
+    await seedRecipes([
+      { _id: 'r1', title: 'Recipe One' },
+      { _id: 'r2', title: 'Recipe Two' },
+      { _id: 'r3', title: 'Recipe Three' },
+    ])
+    await seedUserRecipeData(TEST_UID, {
+      savedRecipes: [
+        { recipeId: 'r1', dateSaved: '1000' },
+        { recipeId: 'r2', dateSaved: '2000' },
+        { recipeId: 'r3', dateSaved: '3000' },
+      ],
+    })
+
+    // A negative recipesPerPage floors to 1, so page=1 (offset 1) returns 1 recipe.
+    const res = await request(app)
+      .get('/api/getSavedRecipes?page=1&recipesPerPage=-5')
+      .set(AUTH_HEADER)
+
+    expect(res.status).toBe(200)
+    expect(res.body.recipes).toHaveLength(1)
+    expect(res.body.totalCount).toBe(3)
+  })
+
   it('order=new returns the newest-saved recipe first (page=0, recipesPerPage=1)', async () => {
     await seedRecipes([
       { _id: 'r1', title: 'Old Recipe' },
@@ -269,6 +316,39 @@ describe('GET /getCreatedRecipes', () => {
 
     expect(res.status).toBe(200)
     expect(res.body.recipes).toHaveLength(2)
+    expect(res.body.totalCount).toBe(3)
+  })
+
+  it('treats a negative page as page 0 instead of 500ing (negative skip)', async () => {
+    await seedRecipes([
+      { _id: 'r1', title: 'One', userId: TEST_UID, createdAt: '1000' },
+      { _id: 'r2', title: 'Two', userId: TEST_UID, createdAt: '2000' },
+      { _id: 'r3', title: 'Three', userId: TEST_UID, createdAt: '3000' },
+    ])
+
+    const res = await request(app)
+      .get('/api/getCreatedRecipes?page=-1')
+      .set(AUTH_HEADER)
+
+    expect(res.status).toBe(200)
+    expect(res.body.recipes).toHaveLength(3)
+    expect(res.body.totalCount).toBe(3)
+  })
+
+  it('floors a negative recipesPerPage instead of 500ing (negative limit/skip)', async () => {
+    await seedRecipes([
+      { _id: 'r1', title: 'One', userId: TEST_UID, createdAt: '1000' },
+      { _id: 'r2', title: 'Two', userId: TEST_UID, createdAt: '2000' },
+      { _id: 'r3', title: 'Three', userId: TEST_UID, createdAt: '3000' },
+    ])
+
+    // A negative recipesPerPage floors to 1, so page=1 (skip=1) returns 1 recipe.
+    const res = await request(app)
+      .get('/api/getCreatedRecipes?page=1&recipesPerPage=-5')
+      .set(AUTH_HEADER)
+
+    expect(res.status).toBe(200)
+    expect(res.body.recipes).toHaveLength(1)
     expect(res.body.totalCount).toBe(3)
   })
 

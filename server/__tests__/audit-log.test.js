@@ -132,6 +132,22 @@ describe('GET /api/admin/audit', () => {
     const page2 = await request(app).get('/api/admin/audit?page=2&perPage=25').set(AUTH_HEADER)
     expect(page2.body.entries).toHaveLength(5)
   })
+
+  it('floors a negative perPage instead of 500ing (negative skip)', async () => {
+    admin.__setClaims({ admin: true })
+    await seedAudit([
+      { action: 'recipe.hide', targetId: 'r1', createdAt: new Date('2026-01-01') },
+      { action: 'recipe.hide', targetId: 'r2', createdAt: new Date('2026-02-01') },
+      { action: 'recipe.hide', targetId: 'r3', createdAt: new Date('2026-03-01') },
+    ])
+
+    // A negative perPage floors to 1, so page=2 (skip=1) returns the 2nd-newest entry.
+    const res = await request(app).get('/api/admin/audit?page=2&perPage=-5').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(res.body.entries).toHaveLength(1)
+    expect(res.body.entries[0].targetId).toBe('r2')
+    expect(res.body.totalCount).toBe(3)
+  })
 })
 
 describe('admin mutations write audit entries', () => {

@@ -202,4 +202,18 @@ describe('GET /api/admin/ingredients', () => {
       .set(AUTH_HEADER)
     expect(res.body.totalCount).toBe(3)
   })
+
+  it('floors a negative perPage instead of 500ing (negative skip)', async () => {
+    admin.__setClaims({ admin: true })
+    await seedTelemetry()
+    // A negative perPage floors to 1, so page=2 (skip=1) returns the
+    // 2nd-highest-count item (count desc: 9, 5, 1 → the count:5 doc).
+    const res = await request(app)
+      .get('/api/admin/ingredients?page=2&perPage=-5')
+      .set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(res.body.items).toHaveLength(1)
+    expect(res.body.items[0].count).toBe(5)
+    expect(res.body.totalCount).toBe(3)
+  })
 })

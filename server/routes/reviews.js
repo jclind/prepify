@@ -272,7 +272,10 @@ router.get('/getReviews', optionalAuth, asyncHandler(async (req, res) => {
   const { recipeId, page = 0, reviewsPerPage = 5, filter } = req.query
   if (!recipeId || typeof recipeId !== 'string') return res.status(400).json({ error: 'recipeId is required' })
 
-  const limit = Math.min(parseInt(reviewsPerPage) || 5, MAX_PER_PAGE)
+  // Floor at 1 so a negative ?reviewsPerPage can't sneak past the Math.min
+  // cap above and make `limit` negative — that in turn made `skip` negative
+  // for page > 0 (MongoDB rejects a negative skip/limit as a 500).
+  const limit = Math.min(Math.max(parseInt(reviewsPerPage) || 5, 1), MAX_PER_PAGE)
   // Floor at 0 so a negative ?page never produces a negative .skip() (which
   // MongoDB rejects, surfacing as a 500 instead of a clean first page).
   const skip = Math.max(0, parseInt(page) || 0) * limit
@@ -319,7 +322,9 @@ router.get('/getSingleUserReviews', asyncHandler(async (req, res) => {
     .findOne({ username_lower: String(username).toLowerCase() })
   if (!ownerDoc) return res.json({ reviews: [], totalCount: 0 })
 
-  const limit = Math.min(parseInt(reviewsPerPage) || 5, MAX_PER_PAGE)
+  // Floor at 1 — see getReviews: a negative reviewsPerPage defeats the page
+  // floor below by making `limit` negative, so `skip` goes negative again.
+  const limit = Math.min(Math.max(parseInt(reviewsPerPage) || 5, 1), MAX_PER_PAGE)
   // Floor at 0 — see getReviews: negative skip is a MongoDB error (500).
   const skip = Math.max(0, parseInt(page) || 0) * limit
   // Suppress admin-taken-down reviews from a user's public review list too.

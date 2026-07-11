@@ -70,8 +70,13 @@ router.get('/getCreatedRecipes', verifyToken, asyncHandler(async (req, res) => {
 
   const sort = order === 'old' ? { createdAt: 1 } : { createdAt: -1 }
 
-  const pageNum = parseInt(page) || 0
-  const perPage = Math.min(parseInt(recipesPerPage) || 6, MAX_PER_PAGE)
+  // Floor at 0 so a negative ?page never produces a negative .skip() (which
+  // MongoDB rejects, surfacing as a 500 instead of a clean first page).
+  const pageNum = Math.max(0, parseInt(page) || 0)
+  // Floor at 1 so a negative ?recipesPerPage can't sneak past the Math.min
+  // cap and produce a negative .skip() downstream (MongoDB rejects that as a
+  // 500).
+  const perPage = Math.min(Math.max(parseInt(recipesPerPage) || 6, 1), MAX_PER_PAGE)
 
   const collection = db.collection('recipes')
   // The author's own created list: exclude takedowns/de-publishes, but DO show
@@ -120,8 +125,13 @@ router.get('/getSavedRecipes', verifyToken, asyncHandler(async (req, res) => {
     )
   }
 
-  const pageNum = parseInt(page) || 0
-  const perPage = Math.min(parseInt(recipesPerPage) || 5, MAX_PER_PAGE)
+  // Floor at 0 so a negative ?page never produces a negative slice offset
+  // (getCreatedRecipes' .skip() would 500 on this; this route slices an
+  // in-memory array instead, so a negative offset would silently yield []).
+  const pageNum = Math.max(0, parseInt(page) || 0)
+  // Floor at 1 so a negative ?recipesPerPage can't sneak past the Math.min
+  // cap and produce a degenerate/negative slice window below.
+  const perPage = Math.min(Math.max(parseInt(recipesPerPage) || 5, 1), MAX_PER_PAGE)
 
   // A title search or a field sort (title/rating/cook time) both order/filter by
   // the recipe docs themselves, so materialize the whole saved set (visible

@@ -859,6 +859,26 @@ describe('GET /getReviews', () => {
     expect(res.body.reviews).toHaveLength(2)
   })
 
+  it('floors a negative reviewsPerPage instead of 500ing (negative limit/skip)', async () => {
+    for (let i = 0; i < 3; i++) {
+      await seedRating({
+        username: `negperpageuser${i}`,
+        recipeId: RECIPE_ID,
+        rating: 3,
+        reviewText: `Review ${i}`,
+        reviewCreatedAt: `${i}000`,
+      })
+    }
+
+    const res = await request(app).get(
+      `/api/getReviews?recipeId=${RECIPE_ID}&page=1&reviewsPerPage=-5`
+    )
+    expect(res.status).toBe(200)
+    // A negative reviewsPerPage floors to 1, so page=1 (skip=1) returns 1 review.
+    expect(res.body.reviews).toHaveLength(1)
+    expect(res.body.totalCount).toBe(3)
+  })
+
   it('caps reviewsPerPage at 50 even when a larger page is requested', async () => {
     const db = getDB()
     await db.collection('ratings').insertMany(
@@ -1212,6 +1232,27 @@ describe('GET /getSingleUserReviews', () => {
     expect(res.status).toBe(200)
     expect(res.body.totalCount).toBe(2)
     expect(res.body.reviews).toHaveLength(2)
+  })
+
+  it('floors a negative reviewsPerPage instead of 500ing (negative limit/skip)', async () => {
+    for (let i = 0; i < 3; i++) {
+      await seedRating({
+        userId: TEST_UID,
+        username: TEST_USERNAME,
+        recipeId: `negperpage-recipe-${i}`,
+        rating: 3,
+        reviewText: `Review ${i}`,
+        reviewCreatedAt: `${i}000`,
+      })
+    }
+
+    const res = await request(app).get(
+      `/api/getSingleUserReviews?username=${TEST_USERNAME}&page=1&reviewsPerPage=-5`
+    )
+    expect(res.status).toBe(200)
+    // A negative reviewsPerPage floors to 1, so page=1 (skip=1) returns 1 review.
+    expect(res.body.reviews).toHaveLength(1)
+    expect(res.body.totalCount).toBe(3)
   })
 })
 
