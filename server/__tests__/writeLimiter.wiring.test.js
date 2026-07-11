@@ -18,6 +18,7 @@ const {
   reviewWriteLimiter,
   profileWriteLimiter,
   collectionWriteLimiter,
+  draftWriteLimiter,
 } = require('../middleware/writeLimiter')
 
 const recipesRouter = require('../routes/recipes')
@@ -51,6 +52,7 @@ describe('per-surface write limiters are wired onto every moderated write route'
     ['auth', authRouter, 'post', '/updatePrivacy', profileWriteLimiter],
     ['collections', collectionsRouter, 'post', '/collections', collectionWriteLimiter],
     ['collections', collectionsRouter, 'patch', '/collections/:id', collectionWriteLimiter],
+    ['drafts', draftsRouter, 'post', '/', draftWriteLimiter],
   ]
 
   it.each(cases)(
@@ -66,7 +68,7 @@ describe('per-surface write limiters are wired onto every moderated write route'
     }
   )
 
-  it('recipe / review / profile / collection each use a DISTINCT limiter instance', () => {
+  it('recipe / review / profile / collection / draft each use a DISTINCT limiter instance', () => {
     // Independent instances ⇒ independent buckets (the #3 fix). If two surfaces
     // ever collapsed back onto one shared limiter this would catch it.
     const limiters = new Set([
@@ -74,8 +76,24 @@ describe('per-surface write limiters are wired onto every moderated write route'
       reviewWriteLimiter,
       profileWriteLimiter,
       collectionWriteLimiter,
+      draftWriteLimiter,
     ])
-    expect(limiters.size).toBe(4)
+    expect(limiters.size).toBe(5)
+  })
+
+  it('PUT /drafts/:id (autosave) is NOT wired to draftWriteLimiter or any other limiter', () => {
+    // The autosave path is deliberately unlimited (see the comment at that
+    // route's mount point in drafts.js) — assert none of the per-surface
+    // limiter instances appear in its handler chain.
+    const handlers = routeHandlers(draftsRouter, 'put', '/:id')
+    const allLimiters = [
+      recipeWriteLimiter,
+      reviewWriteLimiter,
+      profileWriteLimiter,
+      collectionWriteLimiter,
+      draftWriteLimiter,
+    ]
+    allLimiters.forEach((limiter) => expect(handlers).not.toContain(limiter))
   })
 
   it('collections POST /collections and PATCH /collections/:id SHARE one limiter instance', () => {

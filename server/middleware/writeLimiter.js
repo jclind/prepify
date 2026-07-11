@@ -70,10 +70,18 @@ const profileWriteLimiter = makeUserLimiter()
 // so they share the 30/min default rather than the recipe surface's tighter cap.
 const collectionWriteLimiter = makeUserLimiter()
 
+// Drafts (server/routes/drafts.js) also carry no per-write paid cost — no Cloud
+// Vision scan, no moderation call — so this shares the 30/min default too. It is
+// mounted ONLY on POST /drafts (create), which is already bounded by V3's
+// 25-draft-per-user cap. PUT /drafts/:id (autosave) deliberately does NOT use
+// this limiter — see the comment at that route's mount point for why.
+const draftWriteLimiter = makeUserLimiter()
+
 module.exports = {
   makeUserLimiter,
   recipeWriteLimiter,
   reviewWriteLimiter,
   profileWriteLimiter,
   collectionWriteLimiter,
+  draftWriteLimiter,
 }
