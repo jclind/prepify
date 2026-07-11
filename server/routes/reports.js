@@ -33,18 +33,21 @@ const isAutomodRecipeReport = (r) => r && r.source === 'automod' && r.targetType
 
 const router = Router()
 
+// Hard ceiling on client-requested page sizes (audit §4.5); mirrors recipes.js.
+const MAX_PER_PAGE = 50
+
 // Per-user breadth limiter for filing reports, keyed by req.uid (an independent
 // bucket from the content-write limiters — see middleware/writeLimiter). The
 // one-open-report-per-(reporter,target) rule below already stops re-filing the
 // SAME target, but nothing caps the breadth: one account could open a report
 // against a distinct recipe/user/review every few seconds and bloat the
 // moderation queue, with only the coarse global per-IP backstop applying. 10/min
-// is far above any human's manual report cadence (read → pick a reason → submit)
+// is far above any human’s manual report cadence (read → pick a reason → submit)
 // yet bounds a scripted breadth-spam run hard. Mounted after verifyToken so
 // req.uid is set; skipped under Jest like every makeUserLimiter instance.
 const reportLimiter = makeUserLimiter({
   limit: 10,
-  message: 'You’re filing reports too quickly — wait a minute and try again.',
+  message: "You’re filing reports too quickly - wait a minute and try again.",
 })
 
 // A report targets a recipe, a single review, or a whole user. Reviews have no
@@ -192,8 +195,10 @@ router.get('/reports', verifyToken, requireAdmin, asyncHandler(async (req, res) 
   if (status && ['open', ...RESOLUTIONS].includes(status)) filter.status = status
   if (targetType && TARGET_TYPES.includes(targetType)) filter.targetType = targetType
 
-  const skip = parseInt(page) * parseInt(perPage)
-  const limit = parseInt(perPage)
+  const limit = Math.min(parseInt(perPage) || 20, MAX_PER_PAGE)
+  // Floor at 0 so a negative ?page never produces a negative .skip() (which
+  // MongoDB rejects, surfacing as a 500 instead of a clean first page).
+  const skip = Math.max(0, parseInt(page) || 0) * limit
 
   const [reports, totalCount, openCount] = await Promise.all([
     db.collection('reports').find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).toArray(),
