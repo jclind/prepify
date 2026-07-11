@@ -66,6 +66,16 @@ const IngredientItem: FC<IngredientItemProps> = ({
     return ingredient.parsedIngredient.originalIngredientString
   })
   const editInputRef = useRef<HTMLInputElement>(null)
+  // handleEditSubmit ends by programmatically blur()-ing the input (so a
+  // keyboard Enter-submit also exits edit mode visually). That blur()
+  // synchronously re-fires the same FormInput's onBlur, which is also wired
+  // to submit — without a guard, every Enter-submit double-invokes
+  // handleEditSubmit against the same stale closed-over editedVal/ingredient
+  // (double network call, double toast). This ref is flipped immediately
+  // before the self-triggered blur() and consumed by handleBlur below, so
+  // only a genuine user blur (click-away while editing) reaches
+  // handleEditSubmit a second time.
+  const suppressNextBlurSubmitRef = useRef(false)
 
   // When enrichment last 429'd, hold retryAt (epoch ms) here so the retry
   // button can disable itself instead of immediately re-429ing. Sourced from
@@ -172,7 +182,19 @@ const IngredientItem: FC<IngredientItemProps> = ({
     }
 
     setIsEditing(false)
+    suppressNextBlurSubmitRef.current = true
     editInputRef?.current?.blur()
+  }
+
+  // Wired to FormInput's onBlur. Genuine blur-away (clicking elsewhere while
+  // editing) should still submit; the blur() handleEditSubmit triggers on
+  // itself should not resubmit — see suppressNextBlurSubmitRef above.
+  const handleBlur = () => {
+    if (suppressNextBlurSubmitRef.current) {
+      suppressNextBlurSubmitRef.current = false
+      return
+    }
+    handleEditSubmit()
   }
 
   if (!ingredient) return null
@@ -272,7 +294,7 @@ const IngredientItem: FC<IngredientItemProps> = ({
             val={editedVal}
             setVal={setEditedVal}
             inputRef={editInputRef}
-            onBlur={handleEditSubmit}
+            onBlur={handleBlur}
             onEnter={handleEditSubmit}
           />
           {loading && (
