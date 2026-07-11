@@ -160,14 +160,21 @@ export function useDraftAutosave({
   // `draftUpdatedAt` prop on every render — a successful update bumps it
   // in-place (see saveNow) from the server's response, and re-mirroring the
   // prop on every keystroke-driven render would clobber that with the stale
-  // value the caller last knew about. It's only re-synced (below) when
-  // `draftId` itself changes, i.e. exactly when the caller hands the hook a
-  // "new" draft (a resume-load, or the create response).
+  // value the caller last knew about. It re-syncs only when the prop itself
+  // changes (or the draft does): the caller sets `draftUpdatedAt` exactly when
+  // it adopts a fresh server-returned version (resume-hydration, or the create
+  // response), so a prop *change* is always authoritative — while keystroke
+  // renders leave the prop identity untouched and so never re-fire this
+  // effect. `draftUpdatedAt` must be in the deps: when the page mounts with
+  // `?draftId` already in the URL (resuming from the drafts list, or
+  // refreshing a resumed draft), `draftId` never changes after mount — the
+  // hydrated `updatedAt` arrives via this prop alone, and syncing only on
+  // `draftId` left the ref stuck at null, so every autosave sent an empty
+  // precondition and 409'd (found in V8's live verification).
   const updatedAtRef = useRef(draftUpdatedAt)
   useEffect(() => {
     updatedAtRef.current = draftUpdatedAt
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [draftId])
+  }, [draftId, draftUpdatedAt])
 
   // Serialized snapshot of the content we last persisted, so a save is skipped
   // when nothing actually changed.

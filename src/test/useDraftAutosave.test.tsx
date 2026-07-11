@@ -259,6 +259,65 @@ describe('useDraftAutosave — updatedAt concurrency guard (B5)', () => {
     )
   })
 
+  it('adopts the updatedAt that arrives AFTER mount (page opened with ?draftId), so the first autosave does not 409', async () => {
+    // Regression (found in V8 live verification): when AddRecipe mounts with
+    // ?draftId already in the URL — the normal resume flow from the drafts
+    // list, or refreshing a resumed draft — `draftId` never changes after
+    // mount. The hydrated `updatedAt` arrives via the prop alone, later. The
+    // pre-fix hook synced updatedAtRef only on draftId changes, so it stayed
+    // null and every autosave sent an empty precondition → guaranteed
+    // DRAFT_CONFLICT 409 → autosave dead for the session.
+    mockedDraftAPI.updateDraft.mockResolvedValue({
+      ...createdDraft,
+      updatedAt: '2000',
+    })
+
+    const { rerender } = renderHook(
+      ({ content, enabled, draftUpdatedAt }) =>
+        useDraftAutosave({
+          content,
+          enabled,
+          isSignedIn: true,
+          canCreate: true,
+          draftId: 'existing-draft', // fixed from the first render, like a URL param
+          draftUpdatedAt,
+          onDraftCreated: vi.fn(),
+        }),
+      {
+        initialProps: {
+          // While hydration is loading: autosave disabled, no version yet.
+          content: { title: '' } as Record<string, unknown>,
+          enabled: false,
+          draftUpdatedAt: null as string | null,
+        },
+      }
+    )
+
+    // Hydration completes: content + version land, autosave enables. draftId
+    // itself never changes.
+    rerender({
+      content: { title: 'Resumed Soup' },
+      enabled: true,
+      draftUpdatedAt: '1000',
+    })
+    // User edits.
+    rerender({
+      content: { title: 'Resumed Soup, tweaked' },
+      enabled: true,
+      draftUpdatedAt: '1000',
+    })
+    await act(async () => {
+      vi.advanceTimersByTime(1500)
+      await Promise.resolve()
+    })
+
+    expect(mockedDraftAPI.updateDraft).toHaveBeenCalledWith(
+      'existing-draft',
+      { title: 'Resumed Soup, tweaked' },
+      '1000' // pre-fix this was '' (the null the hook saw at mount)
+    )
+  })
+
   it('surfaces a conflict and stops autosaving once the server 409s a stale base version', async () => {
     mockedDraftAPI.updateDraft.mockRejectedValue({
       isAxiosError: true,
