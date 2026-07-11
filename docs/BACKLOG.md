@@ -32,6 +32,106 @@ The triage date stamped on items is the date they were filed here, not when they
 
 ---
 
+## Adversarial sweep — 2026-07-11 (post-#281–#302 merges + prod-readiness)
+
+Four read-only audit lanes over everything merged since the 2026-07-09 bug hunt (Waves 9–13, PRs
+#281–#302) plus a cutover-focused prod-readiness pass. Findings only — zero fixes applied
+(audit-first protocol). Severity: **P1** = release blocker · **P2** = real user-facing bug / fix
+before-or-at cutover · **P3** = latent/edge/nit. Each lane also produced an explicit cleared-list
+(the #295 blur-guard hardening, #294 `updatedAtRef` seeding, both TOCTOU trims, all 8 limiter
+mounts + the PUT-drafts no-limiter pin, storage.rules, asyncHandler coverage, client-bundle secret
+hygiene, and the U3 watch items all verified sound — details in the session transcripts).
+
+**P1 — none found.**
+
+### P2
+
+- `[ ]` **Drafts editor wedges permanently when its draft is deleted elsewhere (404 unhandled)** —
+  `src/pages/AddRecipe/useDraftAutosave.ts:284-297` handles only `409 DRAFT_LIMIT`/`DRAFT_CONFLICT`;
+  the deliberate `404` from `PUT /drafts/:id` (`server/routes/drafts.js:171-174`, delete-race) hits the
+  generic `else` → `setStatus('error')` with `draftId` still set, so every keystroke retries the dead
+  PUT and `saveNow` never falls back to `createDraft`. Trigger: delete the open draft in another tab's
+  Drafts list, or the `POST /drafts` 25-cap trim deleting the oldest draft *while it's open in a tab*.
+  That tab can never persist again (generic "Couldn't save draft" forever, no recovery guidance). Fix
+  shape: on 404, clear `draftId`/`updatedAtRef` so the next save re-creates, or surface a "draft was
+  deleted — keep editing to save a new copy" state.
+- `[ ]` **Cutover gate: ratings `{userId,recipeId}` index is manual-script-only** — `server/db.js`
+  `ensureIndexes` self-provisions every other hot index at boot, but the D1 ratings index lives only in
+  `server/scripts/createModerationIndexes.js:58-66`. Post-cutover, `getSingleUserReviews`,
+  `getAccountCounts`, and every rating/review upsert COLLSCAN prod until that script is run — P1 if the
+  runbook step is skipped (now gated in `RELEASE_RUNBOOK.md` pre-flight). Also: the boot-created
+  `ratings.{username:1}` index (`server/db.js:135`) is stale — no route queries ratings by username
+  anymore. Fix shape: move the `{userId,recipeId}` unique partial index into `ensureIndexes`, drop the
+  username one.
+- `[ ]` **CORS hard-fails silent if `FRONTEND_URLS` is unset/typo'd on prod Railway** —
+  `server/app.js:28` falls back to `localhost:3000` only; no prod-domain fallback, and `/health` stays
+  green while every browser call is CORS-rejected. Operational, not code: verify the Railway value
+  (`https://prepifymeals.com,https://www.prepifymeals.com`) at cutover (now in `RELEASE_RUNBOOK.md`).
+  Optional hardening: log a startup warning when `NODE_ENV=production` and `FRONTEND_URLS` is unset.
+
+### P3
+
+- `[ ]` **Negative `perPage` reaches `.limit()`/`.skip()` repo-wide → 500** — only `bugReports.js:110`
+  and `publicProfile.js:157-160` floor `perPage` at 1. Missing everywhere else, most notably the
+  **public unauthenticated** `GET /api/recipes` (`server/routes/recipes.js:61-64`:
+  `?page=1&recipesPerPage=-5` → negative skip → 500; closest to P2), plus `reviews.js:275-278,322-324`,
+  `reports.js:198-201` (its #289 comment claims the guard defeats negative skip — defeated by negative
+  perPage; test gap: `reports.test.js` never tries negative perPage), and `admin.js:177,329,478`.
+  Huge/NaN `perPage` are handled correctly everywhere. Fix shape: house `Math.max(1, …)` floor, one
+  sweep PR + tests.
+- `[ ]` **`users.js` paginated routes floor neither `page` nor `perPage`** — `getCreatedRecipes`
+  (`server/routes/users.js:73`, real `.skip()` → 500 on `?page=-1`) and `getSavedRecipes` (`:123`,
+  in-memory slice → silently returns `[]`). Fold into the pagination-floor sweep above.
+- `[ ]` **`POST /api/ingredients/parse` lacks `requireActive`** — `server/routes/ingredients.js:118`
+  mounts `verifyToken → parseLimiter` only, so a just-suspended/banned account (Firebase token valid up
+  to ~1h) can still burn paid Spoonacular quota, bounded by the ~90/min per-uid limiter. The wiring test
+  (`writeLimiter.wiring.test.js:109-115`) pins the current chain, so this is a design gap, not drift.
+- `[ ]` **`IngredientItem` edit-submit has no in-flight guard across the enrichment await** —
+  `src/pages/AddRecipe/Ingredients/IngredientItem.tsx:144-193`: blur-away or a second Enter during the
+  pending `getIngredientData` await fires a full second enrichment (duplicate request + duplicate 429
+  toast + extra rate-limit consumption; no corruption — writes are id-keyed and the #295 stuck-flag
+  hardening holds). `InstructionItem` unaffected (synchronous submit). Fix shape: an `isSubmittingRef`
+  in-flight guard.
+- `[ ]` **Unload flush can race an in-flight autosave and silently drop the newest edits** —
+  `useDraftAutosave.ts:361-387`: flush proceeds while `inFlightRef` is true, so both PUTs carry the same
+  base `updatedAt`; if the older in-flight save lands first, the keepalive (newer content) 409s during
+  unload — invisible. Narrow window; fix shape: have flush await/supersede the in-flight save or retry
+  once with the bumped `updatedAt`.
+- `[ ]` **Keepalive `POST /drafts` 429 is treated as success** — `src/api/drafts.ts:93-105`: a 429 is a
+  resolved fetch, so the flush reports true and the new draft is never created. Abuse-only reachability
+  (30 creates/min; the 25-draft cap trips first).
+- `[ ]` **`?draftId` resume hydration clobbers keystrokes typed during the load** —
+  `src/pages/AddRecipe/useRecipeForm.ts:282-298`: fields aren't disabled during `getDraft`; the HYDRATE
+  dispatch spreads over anything typed in the sub-second window.
+- `[ ]` **Signed-out badge stale on passive sign-out; 409 conflict badge is generic** —
+  `useDraftAutosave.ts:327-334` early-returns on unchanged content before the `isSignedIn` check, so the
+  badge corrects only on the next keystroke; a cross-tab conflict's "reload to see latest" guidance is
+  toast-only (`DraftSaveStatus.tsx:13-23` shows generic "Couldn't save draft").
+- `[ ]` **`/health` is a static 200** — `server/app.js:66` never checks Mongo, so a runtime Mongo drop
+  leaves Railway serving a green health check on a wedged instance (boot-time failure exits correctly).
+- `[ ]` **No `SIGTERM`/`unhandledRejection` handlers, no graceful shutdown** — `server/index.js`:
+  Railway deploys drop in-flight requests; an unhandled rejection crashes without a Sentry capture.
+- `[ ]` **Rejected CORS origins throw → 500 + Sentry capture per bot probe** — `server/app.js:50,106-117`:
+  scanner traffic from random origins generates Sentry quota noise. Fix shape: respond 403 quietly.
+- `[ ]` **Unmatched `/api/*` paths return Express's default HTML "Cannot GET"** — no JSON 404 catch-all
+  before the error middleware; breaks the house JSON-error contract (no leak).
+- `[ ]` **CI doesn't run on direct pushes to `release`** — `.github/workflows/test.yml:19` triggers on
+  `push: [main, development]` only; a development→release **PR** runs everything, a direct push/merge runs
+  nothing. Confirm branch protection marks the jobs required on `release` (settings not visible in-repo).
+- `[ ]` **PUT-drafts no-limiter pin only checks the 5 exported limiter instances** —
+  `writeLimiter.wiring.test.js:84-97`: a brand-new limiter instance added to the PUT chain wouldn't fail
+  the pin. Residual test-gap note from the limiter lane's cleared-list.
+- `[ ]` **`ratingLastUpdated` is the next mixed-type field brewing** — written as BSON `Date`
+  (`reviews.js:78`) but `''` on `$setOnInsert`/`removeRating`, typed `string` in `src/types.ts`. Nothing
+  sorts on it today (V5 PR #303 lane noticed). Watch item; normalize only if something starts reading it.
+- `[ ]` **`formatDate`'s `Number.isNaN(d)` guard is dead code for strings** — `src/util/formatDate.ts:17`:
+  `Number.isNaN('abc')` is always false (no coercion), so every string takes `new Date(Number(d))` — an
+  ISO string input would render Invalid Date. Harmless for epoch-ms inputs; the ternary lies about intent.
+- `[ ]` **API_CONTRACT.md handler line anchors have drifted** — e.g. `/newReview` says `reviews.js:66`
+  (actual ~97). Doc-only sweep to re-anchor or drop line numbers.
+
+---
+
 ## Bugs
 
 - `[x]` *(fixed in [#281](https://github.com/jclind/prepify/pull/281), B1: per-row enrichment status lifted into `useRecipeForm` and gated through the validator — submit blocks while any row is in flight, clears reactively when it settles, so a create can no longer persist `ingredientData:null`; errored rows stay publishable by design.)* **Publishing/saving mid-enrichment persists `ingredientData:null` and an understated `servingPrice`** *(from `sweeps/BUG_HUNT_2026-07-09.md` M3, filed 2026-07-10; boarded Wave 9 · B1)* — the add flow inserts ingredients optimistically with `ingredientData:null` and fills price/image when async enrichment resolves (up to 12s later). `handleSubmit`'s create path isn't gated on rows still loading (only `validateRecipeForm`'s count check + the `addRecipeLoading` button-disable), so a submit inside that window persists the ingredient as `ingredientData:null` **forever**, and `calculateServingPrice` (which sums only non-null rows) silently understates the stored price shown on cards + the recipe page. `src/pages/AddRecipe/useRecipeForm.ts:389`, `IngredientsContainer.tsx:97-102`. **Fix:** lift per-row enrichment status to the form and gate submit while any row is in flight.

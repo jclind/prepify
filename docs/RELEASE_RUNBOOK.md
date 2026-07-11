@@ -139,6 +139,19 @@ window with an idempotent re-apply:
   script doesn't touch that field) and nothing sorts by it; post-flip writes make new ones numeric.
   Fold a `reviewLastUpdated` pass into the script later only if something starts reading it.
 
+### 2e — Prod index provisioning (sweep finding, 2026-07-11) ⚠️
+
+`server/db.js` `ensureIndexes` self-provisions most hot indexes at boot, but the D1 ratings index
+`{ userId: 1, recipeId: 1 }` (unique, partial) exists **only** in the manual script — without it,
+post-deploy `getSingleUserReviews` / account counts / every rating-review upsert COLLSCANs prod.
+`createIndex` is idempotent, so just run it:
+
+- `[ ]` `MONGO_URI='<PROD>' node server/scripts/createModerationIndexes.js`
+- `[ ]` Verify: `db.ratings.getIndexes()` includes `userId_1_recipeId_1`.
+- Note (filed in BACKLOG sweep 2026-07-11): the boot-created `ratings.{username:1}` index is stale
+  (nothing queries ratings by username anymore) — a post-cutover PR should move the userId index
+  into `ensureIndexes` and drop the username one.
+
 ---
 
 ## 3 — Image infra ops — OPTIONAL for 1.0 (can be a 1.0.x)
@@ -205,6 +218,9 @@ One PR off `development` (all anchors re-verified 2026-07-11):
 - `[ ]` Tag the GitHub Release `1.0.0`.
 - `[ ]` Confirm Netlify **Production** context: `VITE_SENTRY_DSN` set; `VITE_IMAGE_VARIANTS_ENABLED`
   only if 3b ran.
+- `[ ]` Confirm prod Railway `FRONTEND_URLS` = `https://prepifymeals.com,https://www.prepifymeals.com`
+  **exactly** (sweep finding 2026-07-11: an unset/typo'd value silently CORS-blocks the entire prod
+  frontend while `/health` stays green — the server falls back to localhost-only).
 - `[ ]` **Merge `development` → `release`** (triggers prod Netlify + Railway). If doing step 3a,
   deploy the storage rules in this same window.
 - `[ ]` **V5 step 2d-(v)/(vi):** re-run prod `normalizeRatingTypes.js --apply`; run the verification
