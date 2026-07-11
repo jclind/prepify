@@ -107,7 +107,7 @@ const makeReview = (
   _id: 'review-1',
   username: 'chef',
   recipeId: 'recipe-1',
-  rating: '5',
+  rating: 5,
   ratingLastUpdated: '1000',
   reviewText: 'Loved it',
   recipeTitle: 'Test Recipe',

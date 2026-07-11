@@ -18,6 +18,10 @@ const ingredient = (id: string): IngredientsType => ({
     ingredient: 'Flour',
     quantity: 1,
     unit: 'cup',
+    unitPlural: null,
+    symbol: null,
+    minQty: null,
+    maxQty: null,
     comment: null,
     originalIngredientString: '1 cup Flour',
   },
@@ -36,7 +40,7 @@ const validForm = (): ValidatableRecipeForm => ({
   recipeImage: new File([''], 'photo.jpg', { type: 'image/jpeg' }),
   existingImageUrl: undefined,
   description: 'A delicious recipe',
-  servings: 4,
+  servings: '4',
   prepTime: { hours: 0, minutes: 30 },
   ingredients: [ingredient('i1')],
   instructions: [instruction('s1', 1)],
@@ -141,9 +145,12 @@ describe('validateRecipeForm', () => {
     expect(validateRecipeForm({ ...validForm(), servings: '' }).servings).toBe(
       'Servings amount is required'
     )
-    expect(validateRecipeForm({ ...validForm(), servings: 0 }).servings).toBe(
-      'Servings amount is required'
-    )
+    expect(
+      // @ts-expect-error — deliberately passes numeric 0, unreachable now that
+      // the servings contract is `string` ('0' would hit the whole-number branch
+      // instead); kept as-is to preserve the falsy-guard coverage unchanged.
+      validateRecipeForm({ ...validForm(), servings: 0 }).servings
+    ).toBe('Servings amount is required')
   })
 
   it('rejects negative or fractional servings', () => {
@@ -151,13 +158,13 @@ describe('validateRecipeForm', () => {
     // and fractional servings (e.g. -2, 1.5) through as "valid". Contract:
     // servings must be a positive integer (>= 1).
     expect(
-      validateRecipeForm({ ...validForm(), servings: -2 }).servings
+      validateRecipeForm({ ...validForm(), servings: '-2' }).servings
     ).toBe('Servings must be a whole number of at least 1')
     expect(
-      validateRecipeForm({ ...validForm(), servings: 1.5 }).servings
+      validateRecipeForm({ ...validForm(), servings: '1.5' }).servings
     ).toBe('Servings must be a whole number of at least 1')
     expect(
-      validateRecipeForm({ ...validForm(), servings: 1 }).servings
+      validateRecipeForm({ ...validForm(), servings: '1' }).servings
     ).toBeUndefined()
   })
 

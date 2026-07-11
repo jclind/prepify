@@ -662,7 +662,9 @@ describe('RecipeAPI.uploadRecipeImage — uid-keyed Storage path (I2)', () => {
       /^recipeImages\/test-uid\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
     )
     expect(objectPath).not.toContain('photo.jpg')
-    expect(uploadBytes).toHaveBeenCalledOnce()
+    // toHaveBeenCalledTimes(1) over toHaveBeenCalledOnce: semantically identical,
+    // but the latter doesn't resolve on `expect(fn)`'s type under tsc 6.0.3.
+    expect(uploadBytes).toHaveBeenCalledTimes(1)
   })
 
   it('fails closed (throws, no upload) when there is no authenticated uid', async () => {
