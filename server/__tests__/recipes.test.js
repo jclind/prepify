@@ -672,6 +672,77 @@ describe('POST /addRecipe', () => {
       expect(res.status).toBe(201)
     })
   })
+
+  // V1: the server no longer trusts the client-sent `servingPrice` — it
+  // recomputes it from the submitted ingredients/servings (server/util/
+  // calculateServingPrice.js, a mirror of src/util/calculateServingPrice.ts).
+  describe('server-recomputed servingPrice (V1)', () => {
+    // A fully-priced, real ingredient row (has both `parsedIngredient` and a
+    // non-null `ingredientData` carrying a price) — the only row shape the
+    // recompute counts.
+    const priced = (id, cents) => ({
+      id,
+      parsedIngredient: { originalIngredientString: `${id} ingredient` },
+      ingredientData: { name: id, totalPriceUSACents: cents },
+    })
+    // An errored/unenriched row — still a real parsed ingredient, but the
+    // lookup never resolved. Per the backlog note, these rows are legitimately
+    // publishable by design; the recompute must skip them (contribute $0)
+    // rather than reject the request.
+    const nullRow = (id) => ({
+      id,
+      parsedIngredient: { originalIngredientString: `${id} ingredient` },
+      ingredientData: null,
+      error: { message: 'lookup failed' },
+    })
+
+    it('ignores a lowball client-sent servingPrice and null ingredientData rows, storing the server recompute instead', async () => {
+      const res = await request(server)
+        .post('/api/addRecipe')
+        .set(AUTH_HEADER)
+        .send({
+          title: 'Test Recipe',
+          description: 'A test recipe',
+          // 1000 cents total from the one priced row; the null row must NOT
+          // error the request and must NOT count toward the total.
+          ingredients: [priced('i1', 1000), nullRow('i2')],
+          instructions: [{ content: 'Cook it', index: 1, id: 's1' }],
+          mealTypes: ['dinner'],
+          servings: 4,
+          // A stale-tab / raced-submit / direct-API-caller lowball price that
+          // understates the true cost — the server must not trust this.
+          servingPrice: 1,
+        })
+
+      expect(res.status).toBe(201)
+      const { ObjectId } = require('mongodb')
+      const stored = await getDB().collection('recipes').findOne({ _id: new ObjectId(res.body._id) })
+      // 1000 cents / 4 servings = 250, matching src/util/calculateServingPrice.ts.
+      expect(stored.servingPrice).toBe(250)
+      expect(stored.servingPrice).not.toBe(1)
+    })
+
+    it('matches the client util\'s calculation for an all-enriched ingredient list', async () => {
+      const res = await request(server)
+        .post('/api/addRecipe')
+        .set(AUTH_HEADER)
+        .send({
+          title: 'Test Recipe',
+          description: 'A test recipe',
+          // 600 + 400 = 1000 cents over 4 servings = 250 cents/serving — the
+          // same fixture as src/test/calculateServingPrice.test.ts's first case.
+          ingredients: [priced('i1', 600), priced('i2', 400)],
+          instructions: [{ content: 'Cook it', index: 1, id: 's1' }],
+          mealTypes: ['dinner'],
+          servings: 4,
+        })
+
+      expect(res.status).toBe(201)
+      const { ObjectId } = require('mongodb')
+      const stored = await getDB().collection('recipes').findOne({ _id: new ObjectId(res.body._id) })
+      expect(stored.servingPrice).toBe(250)
+    })
+  })
 })
 
 // ─── PUT /editRecipe ──────────────────────────────────────────────────────────
@@ -813,6 +884,61 @@ describe('PUT /editRecipe', () => {
     expect(stored.userId).toBe(TEST_UID)
     expect(stored._id).toBe(RECIPE_ID)
     expect(stored.createdAt).toBe(OWNED_RECIPE.createdAt)
+  })
+
+  // V1: the edit path recomputes servingPrice too — same helper, same rules.
+  describe('server-recomputed servingPrice (V1)', () => {
+    const priced = (id, cents) => ({
+      id,
+      parsedIngredient: { originalIngredientString: `${id} ingredient` },
+      ingredientData: { name: id, totalPriceUSACents: cents },
+    })
+    const nullRow = (id) => ({
+      id,
+      parsedIngredient: { originalIngredientString: `${id} ingredient` },
+      ingredientData: null,
+      error: { message: 'lookup failed' },
+    })
+
+    it('ignores a lowball client-sent servingPrice and null ingredientData rows on edit', async () => {
+      const res = await request(server)
+        .put(`/api/editRecipe?recipeId=${RECIPE_ID}`)
+        .set(AUTH_HEADER)
+        .send({
+          ...validEdit(),
+          ingredients: [priced('i1', 1000), nullRow('i2')],
+          servings: 4,
+          servingPrice: 1, // stale/forged lowball — must be ignored
+        })
+
+      expect(res.status).toBe(200)
+      const db = getDB()
+      const stored = await db.collection('recipes').findOne({ _id: RECIPE_ID })
+      expect(stored.servingPrice).toBe(250)
+      expect(stored.servingPrice).not.toBe(1)
+    })
+
+    it('falls back to the recipe\'s existing stored servings when the edit payload omits it', async () => {
+      // OWNED_RECIPE (seeded in beforeEach) carries no `servings` field of its
+      // own; seed one directly so the fallback path has a real value to read.
+      const db = getDB()
+      await db.collection('recipes').updateOne({ _id: RECIPE_ID }, { $set: { servings: 5 } })
+
+      const res = await request(server)
+        .put(`/api/editRecipe?recipeId=${RECIPE_ID}`)
+        .set(AUTH_HEADER)
+        .send({
+          ...validEdit(), // omits `servings` entirely
+          ingredients: [priced('i1', 1000)],
+        })
+
+      expect(res.status).toBe(200)
+      const stored = await db.collection('recipes').findOne({ _id: RECIPE_ID })
+      // 1000 cents / the pre-existing 5 servings = 200, not divided by
+      // something undefined (which would be 0 under the server's guard).
+      expect(stored.servingPrice).toBe(200)
+      expect(stored.servings).toBe(5)
+    })
   })
 })
 

@@ -17,6 +17,7 @@ const { moderateText } = require('../util/textModeration')
 const { moderateImage } = require('../util/imageModeration')
 const { gatherRecipeText, holdRecipeForReview, respondBlocked, worstVerdict, openAutomodReportQuery, restoreHeldRecipe } = require('../util/automod')
 const { EDITABLE_RECIPE_FIELDS, CREATABLE_RECIPE_FIELDS, pickFields, publicRecipeProjection, publicRecipeCardProjection } = require('../util/recipeFields')
+const { calculateServingPrice } = require('../util/calculateServingPrice')
 const { deleteRecipeImage } = require('../util/firebaseStorage')
 const { teardownRecipeDocs } = require('../util/teardownRecipe')
 const { facetsCache } = require('../util/facetsCache')
@@ -558,6 +559,15 @@ router.post('/addRecipe', verifyToken, requireActive, recipeWriteLimiter, asyncH
     numTimesSaved: 0,
     numTimesMade: 0,
     views: 0,
+    // Server-recomputed from the submitted ingredients/servings, overriding
+    // whatever pickFields just copied from the client body above — the client's
+    // servingPrice is UI-preview-only now (see util/calculateServingPrice, a
+    // mirror of src/util/calculateServingPrice.ts). A stale tab, raced submit,
+    // or a direct API caller can otherwise persist a price inconsistent with
+    // the stored rows (e.g. understated when a lowball price rides along with
+    // unenriched/null ingredientData rows, which are still legitimately
+    // publishable by design).
+    servingPrice: calculateServingPrice(body.ingredients, body.servings),
   }
   await db.collection('recipes').insertOne(docToInsert)
   // A new recipe can introduce a cuisine/diet/mealType the browse filter UI has
@@ -631,9 +641,19 @@ router.put('/editRecipe', verifyToken, requireActive, recipeWriteLimiter, asyncH
   // else the client sends (rating, numTimesSaved, views, userId, _id, …) is
   // ignored. The hold status is NOT set here — holdRecipeForReview owns it, so
   // the recipe is only hidden once its admin-queue report exists.
+  //
+  // servingPrice is server-recomputed, not trusted from the client (see
+  // addRecipe / util/calculateServingPrice). `servings` is optional at this
+  // layer (not in REQUIRED_RECIPE_FIELDS), so an edit that doesn't touch it
+  // won't include it in `body` — fall back to the recipe's current stored
+  // servings so the recompute divides by what will actually be persisted,
+  // not `undefined`. `ingredients` IS required, so body.ingredients is always
+  // present here.
+  const effectiveServings = 'servings' in body ? body.servings : recipe.servings
   const update = {
     ...pickFields(body, EDITABLE_RECIPE_FIELDS),
     editedAt: Date.now().toString(),
+    servingPrice: calculateServingPrice(body.ingredients, effectiveServings),
   }
   // Medium → re-hold as 'pending_review', BUT never downgrade an admin takedown:
   // if the recipe is already 'hidden'/'unpublished', an owner edit must not lift
