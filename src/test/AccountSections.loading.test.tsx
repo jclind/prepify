@@ -291,6 +291,26 @@ describe('UserRatings — image rendering (Bug A) + empty-state flash', () => {
     expect(screen.getByText('Granola')).toBeInTheDocument()
   })
 
+  it('sends a sort literal the server recognizes ("new", not "newAdd")', async () => {
+    // Regression: the server's getSingleUserReviews only matches on 'new'/'top'
+    // (server/routes/reviews.js) — any other value silently falls through to no
+    // sort at all (natural/insertion order), which Mongo doesn't guarantee.
+    mockedAPI.getSingleUserReviews.mockResolvedValue({
+      reviews: [makeReview({ recipeTitle: 'Granola' })],
+      totalCount: 1,
+    })
+
+    renderWithProviders(<UserRatings />)
+
+    await screen.findByText('Granola')
+    expect(mockedAPI.getSingleUserReviews).toHaveBeenCalledWith(
+      0,
+      5,
+      'new',
+      true
+    )
+  })
+
   it('never flashes the empty state while a load that returns ratings settles', async () => {
     mockedAPI.getSingleUserReviews.mockResolvedValue({
       reviews: [makeReview({ recipeTitle: 'Granola' })],
