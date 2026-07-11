@@ -2441,3 +2441,16 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   clean-audit close; one scope-gate pause resolved by directed rulings (no rework rounds); zero
   worktree-discipline violations; 3 follow-ups filed (drafts.js limiter w/ autosave caveat,
   collection-name moderation decision, numeric-0 test modernization) + 2 watch items noted.
+- **2026-07-11** — **Independent audit of Waves 10–12: CLEAN.** A separate read-only Opus session
+  adversarially verified all 15 lanes against disk/git/fresh test runs (all gates green at the
+  yesterday baselines: tsc 0, tests-tsc 0, Vitest 90/735/2, build, Jest 40/879; every behavioral
+  claim confirmed pinned, incl. both TOCTOU concurrency tests, both real-focus double-submit
+  guards, and #300's typing-only diff). Two findings, both fixed same-day by the orchestrator:
+  **(1) doc-drift** — API_CONTRACT.md's `GET /api/reports` inline Request text still described the
+  pre-#289 unclamped pagination (T4/#297 struck the DRIFT bullet but missed the endpoint's own
+  prose; now rewritten with correct reports.js:190/:198-201 refs); **(2) branch residue** — Wave
+  10's 8 merged `origin/feat/v*` branches + merged `origin/worktree-feat+button-hover-audit` +
+  local merged `feat/b1`/`feat/b2` deleted after re-verifying 0 unmerged commits each
+  (`feat/legal-pages` and the unmerged `worktree-feat+moderation-pr-c-ratelimiter` untouched).
+  Not-verifiable items (unchanged, by design): V5 prod `--apply`, #294's live-browser unload flush
+  (code + regression tests confirmed; browser pass was done at merge time).
