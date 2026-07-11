@@ -117,7 +117,11 @@ The triage date stamped on items is the date they were filed here, not when they
   2026-07-10, surfaced by a local code review of B3/[#282](https://github.com/jclind/prepify/pull/282);
   boarded Wave 10 · V6; **fixed in [#287](https://github.com/jclind/prepify/pull/287), merged 2026-07-10**:
   ref-guard skips the self-triggered blur resubmission, Enter and genuine click-away both submit exactly once;
-  pinned by `toHaveBeenCalledTimes(1)` assertions verified failing pre-fix)* —
+  pinned by `toHaveBeenCalledTimes(1)` assertions verified failing pre-fix; **hardened in
+  [#295](https://github.com/jclind/prepify/pull/295)** (Wave 11 · T1): #287's flag stuck `true` after a
+  genuine click-away — the self-`blur()` no-ops on an already-blurred input, so the next session's
+  click-away submit was swallowed; reset-on-edit-entry + a real-focus-movement two-session regression test,
+  jsdom-masked so proven via `element.focus()` not `fireEvent.blur`)* —
   `IngredientItem.tsx`'s `handleEditSubmit` (fired by `FormInput`'s `onEnter`) ends with `setIsEditing(false)`
   + `editInputRef.current.blur()`, but that `blur()` call synchronously re-fires the *same* `FormInput`'s
   `onBlur`, which is wired to `handleEditSubmit` too — so every edit-submit-via-Enter invokes the handler a
@@ -131,8 +135,13 @@ The triage date stamped on items is the date they were filed here, not when they
   blur-triggered resubmission with a ref-guard, or blur without triggering `onBlur` (`blur()` after clearing
   the `onBlur` prop, or restructure so Enter itself blurs and only `onBlur` submits). Low severity (masked by
   idempotent-looking resubmission today) but burns real proxy quota — worth closing without a dedicated lane.
-- `[ ]` **`InstructionItem` inline edit has the same Enter double-submit shape as V6** *(filed 2026-07-10, off
-  the V6 [#287](https://github.com/jclind/prepify/pull/287) lane)* —
+- `[x]` **`InstructionItem` inline edit has the same Enter double-submit shape as V6** *(filed 2026-07-10, off
+  the V6 [#287](https://github.com/jclind/prepify/pull/287) lane; boarded Wave 11 · T1; **fixed in
+  [#295](https://github.com/jclind/prepify/pull/295), merged 2026-07-10**: ref-guard mirror of #287 with
+  fails-before `toHaveBeenCalledTimes` pins; the lane also found and fixed a latent stuck-flag edge in the
+  #287 pattern itself — in a real browser a genuine click-away leaves the suppress flag set (the self-`blur()`
+  no-ops), swallowing the NEXT edit session's click-away submit — hardened in BOTH components with
+  reset-on-edit-entry + browser-faithful real-focus regression tests)* —
   `src/pages/AddRecipe/Instructions/InstructionItem/InstructionItem.tsx` wires `handleEditSubmit` (`:41-56`) to
   both `onBlur` and `onEnter` (`:108-109`) and ends with a manual `blur()`, so Enter-submit invokes the handler
   twice — the identical pattern V6 fixed in `IngredientItem.tsx`. No network call on this path (just a duplicate,
@@ -916,9 +925,16 @@ findings table.)*
   narrow `RecipeCardType` (the projected card fields) and type these methods against it, so a component reading
   a non-card field fails to compile. Typing-only cleanup — no runtime behaviour changes (consumers already
   render only card fields today). Low risk, touches types + a handful of API signatures.
-- `[ ]` **Server API contract asymmetries between sibling routes** *(surfaced 2026-07-08 in the API-contract
+- `[x]` **Server API contract asymmetries between sibling routes** *(surfaced 2026-07-08 in the API-contract
   regeneration ([#262](https://github.com/jclind/prepify/pull/262), see [`API_CONTRACT.md`](./API_CONTRACT.md)
-  DRIFT — reviews / reports-bug-reports))* — three inconsistencies between routes that ought to match. None is
+  DRIFT — reviews / reports-bug-reports); boarded Wave 11 · T4; **fixed in
+  [#297](https://github.com/jclind/prepify/pull/297), merged 2026-07-10**: standardized on **404** per the
+  `drafts.js` convention (404 = no such doc, 403 = exists but not yours — both routes key on `req.uid`, so a
+  miss is purely not-found), and `POST /editReview`'s identical `matchedCount === 0` case was folded in after
+  verifying no client branches on its status; `submitLimiter` got an explicit house-JSON `message`, pinned by
+  a real-limiter test that un-skips `NODE_ENV` for one file; the middle bullet below was already fixed by V2
+  [#289](https://github.com/jclind/prepify/pull/289) before this wave boarded; `API_CONTRACT.md` DRIFT entries
+  struck through)* — three inconsistencies between routes that ought to match. None is
   a live client bug (the shipped client sends well-formed input and doesn't branch on these), but each is a
   contract wart worth normalizing:
   - **403 vs 404 on the two delete routes.** `DELETE /deleteReview` returns `403`
