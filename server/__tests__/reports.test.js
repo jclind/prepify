@@ -395,6 +395,93 @@ describe('GET /api/reports', () => {
     expect(res.body.totalCount).toBe(1)
     expect(res.body.reports[0].status).toBe('open')
   })
+
+  it('coerces non-numeric perPage to default (20)', async () => {
+    admin.__setClaims({ admin: true })
+    // Create 30 reports
+    const docs = Array.from({ length: 30 }, () => ({
+      _id: new ObjectId(),
+      targetType: 'recipe',
+      recipeId: `r-${Math.random()}`,
+      reporterUid: 'u1',
+      reason: 'spam',
+      status: 'open',
+      createdAt: new Date(),
+    }))
+    await getDB().collection('reports').insertMany(docs)
+
+    // With perPage=abc, should default to 20
+    const res = await request(app).get('/api/reports?perPage=abc').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(res.body.reports.length).toBe(20)
+  })
+
+  it('clamps negative page to 0 (first page)', async () => {
+    admin.__setClaims({ admin: true })
+    await getDB().collection('reports').insertOne({
+      _id: new ObjectId(),
+      targetType: 'recipe',
+      recipeId: 'r1',
+      reporterUid: 'u1',
+      reason: 'spam',
+      status: 'open',
+      createdAt: new Date(),
+    })
+
+    // With page=-1, should return first page (page=0)
+    const res = await request(app).get('/api/reports?page=-1').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(res.body.reports.length).toBe(1)
+  })
+
+  it('caps perPage at MAX_PER_PAGE (50)', async () => {
+    admin.__setClaims({ admin: true })
+    // Create 60 reports
+    const docs = Array.from({ length: 60 }, () => ({
+      _id: new ObjectId(),
+      targetType: 'recipe',
+      recipeId: `r-${Math.random()}`,
+      reporterUid: 'u1',
+      reason: 'spam',
+      status: 'open',
+      createdAt: new Date(),
+    }))
+    await getDB().collection('reports').insertMany(docs)
+
+    // With perPage=1000, should cap at 50
+    const res = await request(app).get('/api/reports?perPage=1000').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(res.body.reports.length).toBe(50)
+  })
+
+  it('handles page-2 request correctly', async () => {
+    admin.__setClaims({ admin: true })
+    // Create 25 reports, sorted by createdAt (newest first)
+    const now = new Date()
+    const docs = Array.from({ length: 25 }, (_, i) => ({
+      _id: new ObjectId(),
+      targetType: 'recipe',
+      recipeId: `r-${i}`,
+      reporterUid: 'u1',
+      reason: 'spam',
+      status: 'open',
+      createdAt: new Date(now.getTime() + i * 1000),
+    }))
+    await getDB().collection('reports').insertMany(docs)
+
+    // First page with perPage=10
+    const res1 = await request(app).get('/api/reports?page=0&perPage=10').set(AUTH_HEADER)
+    expect(res1.status).toBe(200)
+    expect(res1.body.reports.length).toBe(10)
+
+    // Second page with perPage=10
+    const res2 = await request(app).get('/api/reports?page=1&perPage=10').set(AUTH_HEADER)
+    expect(res2.status).toBe(200)
+    expect(res2.body.reports.length).toBe(10)
+
+    // Reports should be different
+    expect(res2.body.reports[0]._id).not.toBe(res1.body.reports[0]._id)
+  })
 })
 
 describe('PATCH /api/reports/:id', () => {
