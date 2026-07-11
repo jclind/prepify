@@ -779,6 +779,78 @@ describe('AddRecipe form', () => {
     })
   })
 
+  describe('transient resume-hydration failure recovers (W16 seed 2)', () => {
+    it('retries the hydration on the next edit instead of wedging autosave forever', async () => {
+      const user = userEvent.setup()
+      // The first `?draftId` GET fails transiently (5xx) — the draft still
+      // exists. Pre-W16 this was terminal: autosave stayed disabled for the
+      // session and the ONLY signal (an edit) never re-attempted the load, so
+      // the resumed content never arrived and nothing ever autosaved again. The
+      // retry lands the draft on the next edit.
+      draftGet
+        .mockRejectedValueOnce({ isAxiosError: true, response: { status: 503 } })
+        .mockResolvedValueOnce({
+          _id: 'd1',
+          userId: 'u1',
+          createdAt: '1',
+          updatedAt: '1',
+          title: 'Recovered draft',
+          description: 'from the server',
+        })
+      renderAddRecipe({ initialEntries: ['/add-recipe?draftId=d1'] })
+
+      // First attempt fires and fails; wait for the transient-failure toast so
+      // the retry is armed before we type.
+      await waitFor(() => expect(draftGet).toHaveBeenCalledTimes(1))
+      await waitFor(() => expect(toastError).toHaveBeenCalled())
+
+      // The user keeps working — a single edit must re-attempt the hydration
+      // (pre-fix draftGet is only ever called once).
+      await user.type(
+        screen.getByPlaceholderText('Add a title to your recipe.'),
+        'X'
+      )
+      await waitFor(() => expect(draftGet).toHaveBeenCalledTimes(2))
+
+      // The retry succeeds: the untouched description hydrates from the draft,
+      // while the title the user was typing is preserved (merge guard).
+      await waitFor(() =>
+        expect(
+          screen.getByPlaceholderText('Add a description to your recipe')
+        ).toHaveValue('from the server')
+      )
+      expect(
+        screen.getByPlaceholderText('Add a title to your recipe.')
+      ).toHaveValue('X')
+    })
+
+    it('a retry that 404s falls through to a fresh start (draft truly gone)', async () => {
+      const user = userEvent.setup()
+      // Transient failure first, then the draft turns out to be gone on retry.
+      draftGet
+        .mockRejectedValueOnce({ isAxiosError: true, response: { status: 503 } })
+        .mockRejectedValueOnce({
+          isAxiosError: true,
+          response: { status: 404, data: { error: 'Draft not found' } },
+        })
+      renderAddRecipe({ initialEntries: ['/add-recipe?draftId=d1'] })
+      await waitFor(() => expect(draftGet).toHaveBeenCalledTimes(1))
+      await waitFor(() => expect(toastError).toHaveBeenCalled())
+
+      // The edit retries; the 404 routes to the "start a new one" recovery.
+      await user.type(
+        screen.getByPlaceholderText('Add a title to your recipe.'),
+        'Fresh'
+      )
+      await waitFor(() => expect(draftGet).toHaveBeenCalledTimes(2))
+      await waitFor(() =>
+        expect(toastError).toHaveBeenCalledWith(
+          "Couldn't load that draft — starting a new one."
+        )
+      )
+    })
+  })
+
   describe('unenriched persisted rows surface as errored (review fix)', () => {
     const parsed = (original: string) => ({
       ingredient: 'flour',

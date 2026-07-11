@@ -279,6 +279,26 @@ export function useRecipeForm(initialRecipe?: RecipeType) {
   // drafts created in the current session (the user never had an image to lose).
   const [resumedFromDraft, setResumedFromDraft] = useState(false)
 
+  // ─── Resume-hydration retry (transient-failure recovery) ──────────────────
+  // A transient (network/5xx) failure of the `?draftId` GET below used to be
+  // terminal for the session: autosave stayed disabled (hydrated=false) with no
+  // recovery but a manual refresh, so a one-off blip permanently wedged the
+  // editor. We now re-attempt the GET on the user's next edit (autosave is off
+  // while un-hydrated, so an edit is the only signal the user is still working
+  // and the network may have recovered). Bumping this counter re-runs the
+  // hydration effect; the retry is bounded so a persistently-down server doesn't
+  // fire a GET per keystroke forever — after MAX_HYDRATION_ATTEMPTS we fall back
+  // to the manual-refresh prompt. A 404/403 on any attempt still routes to the
+  // "draft is gone → start fresh" recovery below (autosave re-creates on the
+  // next edit), never to this retry path.
+  const [hydrationRetry, setHydrationRetry] = useState(0)
+  // Armed by a transient hydration failure; the next edit consumes it to fire a
+  // retry. A ref so the edit-watcher effect reads it without re-subscribing.
+  const hydrationPendingRetryRef = useRef(false)
+  // Count of hydration GETs that have failed transiently, to bound the retries.
+  const hydrationFailuresRef = useRef(0)
+  const MAX_HYDRATION_ATTEMPTS = 4
+
   // Load the draft named in the URL whenever it points at one we haven't loaded
   // yet. Runs on mount for `?draftId=…`, and again when the resume banner
   // navigates to a draft while this page is already mounted — same route, so no
@@ -352,15 +372,25 @@ export function useRecipeForm(initialRecipe?: RecipeType) {
           // Transient failure (network/5xx) on a draft that likely still
           // exists. Leave autosave disabled (hydrated stays false) so we don't
           // create a duplicate or overwrite the unloaded draft with a partial
-          // form; ask the user to retry.
-          toast.error('Could not load your draft. Refresh to try again.')
+          // form. Rather than wedge the session until a manual refresh, arm a
+          // bounded retry: the user's next edit re-runs this GET (see the
+          // edit-watcher effect below), so a blip that clears recovers on its
+          // own. Only give up (and ask for a refresh) once the retries are
+          // exhausted, so a persistently-failing server isn't hit per keystroke.
+          hydrationFailuresRef.current += 1
+          if (hydrationFailuresRef.current < MAX_HYDRATION_ATTEMPTS) {
+            hydrationPendingRetryRef.current = true
+            toast.error("Couldn't load your draft — we'll retry as you keep editing.")
+          } else {
+            toast.error('Could not load your draft. Refresh to try again.')
+          }
         }
       })
     return () => {
       cancelled = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [urlDraftId])
+  }, [urlDraftId, hydrationRetry])
 
   // Serializable draft content mirrored from form state. Times are stored as
   // minutes (matching the recipe shape); empty values are omitted.
@@ -397,6 +427,20 @@ export function useRecipeForm(initialRecipe?: RecipeType) {
       nutritionLabels,
     ]
   )
+
+  // Fire a hydration retry on the user's first edit after a transient failure.
+  // While un-hydrated, autosave is disabled and no draft GET is otherwise in
+  // flight, so an edit (draftContent identity change) is the trigger to try
+  // again. The ref is consumed here so exactly one retry is armed per failure —
+  // a re-armed retry only follows the *next* transient failure, not every
+  // keystroke. Placed after `draftContent` so its identity is defined when this
+  // effect subscribes.
+  useEffect(() => {
+    if (hydrated || !hydrationPendingRetryRef.current) return
+    hydrationPendingRetryRef.current = false
+    setHydrationRetry(n => n + 1)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftContent])
 
   // A brand-new draft is created once the form holds any real content, not just
   // a title (see hasDraftableContent). An all-default form still never creates
