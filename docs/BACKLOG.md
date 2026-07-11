@@ -74,27 +74,37 @@ The triage date stamped on items is the date they were filed here, not when they
   again.") instead of the empty state, and correct the loading-states.md example in the same PR. For
   contrast, Home, `/recipes`, and SingleRecipe all show real error copy with the API down (SingleRecipe only
   after its ~7s retry budget — acceptable, documented). Med.
-- `[ ]` **Admin `GET /api/reports` pagination is uncoerced and uncapped** *(filed 2026-07-10, test-quality
-  audit)* — `server/routes/reports.js:186-187` does `skip = parseInt(page) * parseInt(perPage)` and
+- `[x]` **Admin `GET /api/reports` pagination is uncoerced and uncapped** *(filed 2026-07-10, test-quality
+  audit; boarded Wave 10 · V2; **fixed in [#289](https://github.com/jclind/prepify/pull/289), merged
+  2026-07-10**: coercion + negative clamp + `MAX_PER_PAGE = 50` cap mirroring reviews.js, + 4 pagination tests)* — `server/routes/reports.js:186-187` does `skip = parseInt(page) * parseInt(perPage)` and
   `limit = parseInt(perPage)` with no `|| default`, no negative clamp, and no `MAX_PER_PAGE`-style cap, so
   `?perPage=abc` → `limit(NaN)` throws (500), `?page=-1` → negative skip (500), and a huge `perPage` dumps the
   collection. Admin-only surface (gated behind `requireAdmin`), so low blast radius — but it should get the
   same coercion + cap the public list routes now all have (reviews/recipes/publicProfile) plus a pagination
   test (the suite currently only tests admin-gate/enrichment/status-filter). Low-med.
-- `[ ]` **Draft cap is a read-then-insert race (TOCTOU)** *(filed 2026-07-10, test-quality audit)* —
+- `[x]` **Draft cap is a read-then-insert race (TOCTOU)** *(filed 2026-07-10, test-quality audit; boarded
+  Wave 10 · V3; **fixed in [#291](https://github.com/jclind/prepify/pull/291), merged 2026-07-10**: post-insert
+  recount + newest-beyond-cap trim, 409 `DRAFT_LIMIT` when the insert doesn't survive; 5-concurrent-POSTs-at-24
+  regression test, verified failing pre-fix. The same cap TOCTOU exists in `collections.js` — filed below)* —
   `server/routes/drafts.js:36-44` enforces the 25-draft cap with `countDocuments({ userId })` followed by
   `insertOne`; concurrent POSTs at 24 drafts can all pass the count and exceed the cap. Every neighboring
   surface pins its races concurrently (collections create/rename, recipes save), so this is the documented
   odd one out — the existing cap test is sequential only. Fix lane: post-insert recount + delete-overflow, or
   an atomic guard; add the 5-concurrent-POSTs-at-24 test with it. Low.
-- `[ ]` **Moderation blocklist misses unicode homoglyph / fullwidth evasion** *(filed 2026-07-10, test-quality
-  audit)* — `normalizeToken` (`server/util/moderationBlocklist.js:31-37`) does no NFKC/confusables fold and
+- `[x]` **Moderation blocklist misses unicode homoglyph / fullwidth evasion** *(filed 2026-07-10, test-quality
+  audit; boarded Wave 10 · V4; **fixed in [#288](https://github.com/jclind/prepify/pull/288), merged
+  2026-07-10**: NFKC + curated Cyrillic/Greek confusables fold, applied both in `normalizeToken` and on the raw
+  text before `tokenize()` — an un-folded homoglyph acted as a word separator, splitting `fuсk` into `fu`+`k`;
+  bypass tests pin both filed examples + a clean-Cyrillic negative)* — `normalizeToken` (`server/util/moderationBlocklist.js:31-37`) does no NFKC/confusables fold and
   ends with `.replace(/[^a-z0-9]/g, '')`, so a Cyrillic-с `fuсk` normalizes to `fuk` and fullwidth `ｓｈｉｔ`
   to `''` — no blocklist hit; the text silently defers to the OpenAI layer, which is env-gated and can be off.
   Leet (`f4ggot`) and letter-spacing are covered; unicode is the gap. Fix lane: NFKC-normalize (+ a small
   confusables map for the common Cyrillic/Greek lookalikes) before the existing folds, with bypass tests
   pinning both examples. Low-med (defense-in-depth; the OpenAI layer catches these when enabled).
-- `[ ]` **Small client contract nits from the test-quality audit** *(filed 2026-07-10)* — three tiny,
+- `[x]` **Small client contract nits from the test-quality audit** *(filed 2026-07-10; boarded Wave 10 · V7;
+  **fixed in [#290](https://github.com/jclind/prepify/pull/290), merged 2026-07-10**: all three + the
+  `UserRatings` sort fold-in, a test each; servings pinned as positive integer ≥ 1 with a defensive `Number()`
+  coercion — `FormInput` can hand the validator a numeric *string* at runtime, filed under Tech debt)* — three tiny,
   related "the code accepts what it shouldn't / renders what it shouldn't" gaps, none release-gating:
   **(1)** `src/api/recipes.ts:546,568` interpolate `filter`/`username` into query strings unencoded
   (inconsistent with the `URLSearchParams` convention used at `:96-107`; breaks on reserved chars — current
@@ -103,8 +113,11 @@ The triage date stamped on items is the date they were filed here, not when they
   the audit PR; decide the servings contract and pin it); **(3)** `src/util/formatRating.ts:5-6` renders the
   literal string `"NaN"` if `rateValue` arrives NaN (no guard → should fall back to the "No Ratings" branch).
   All three are one-liners plus a test each. Low.
-- `[ ]` **Editing an ingredient inline double-submits on Enter — double network call, double toast** *(filed
-  2026-07-10, surfaced by a local code review of B3/[#282](https://github.com/jclind/prepify/pull/282))* —
+- `[x]` **Editing an ingredient inline double-submits on Enter — double network call, double toast** *(filed
+  2026-07-10, surfaced by a local code review of B3/[#282](https://github.com/jclind/prepify/pull/282);
+  boarded Wave 10 · V6; **fixed in [#287](https://github.com/jclind/prepify/pull/287), merged 2026-07-10**:
+  ref-guard skips the self-triggered blur resubmission, Enter and genuine click-away both submit exactly once;
+  pinned by `toHaveBeenCalledTimes(1)` assertions verified failing pre-fix)* —
   `IngredientItem.tsx`'s `handleEditSubmit` (fired by `FormInput`'s `onEnter`) ends with `setIsEditing(false)`
   + `editInputRef.current.blur()`, but that `blur()` call synchronously re-fires the *same* `FormInput`'s
   `onBlur`, which is wired to `handleEditSubmit` too — so every edit-submit-via-Enter invokes the handler a
@@ -118,7 +131,6 @@ The triage date stamped on items is the date they were filed here, not when they
   blur-triggered resubmission with a ref-guard, or blur without triggering `onBlur` (`blur()` after clearing
   the `onBlur` prop, or restructure so Enter itself blurs and only `onBlur` submits). Low severity (masked by
   idempotent-looking resubmission today) but burns real proxy quota — worth closing without a dedicated lane.
-  *(Boarded Wave 10 · V6; fix in [#287](https://github.com/jclind/prepify/pull/287), PR open.)*
 - `[ ]` **`InstructionItem` inline edit has the same Enter double-submit shape as V6** *(filed 2026-07-10, off
   the V6 [#287](https://github.com/jclind/prepify/pull/287) lane)* —
   `src/pages/AddRecipe/Instructions/InstructionItem/InstructionItem.tsx` wires `handleEditSubmit` (`:41-56`) to
@@ -840,14 +852,14 @@ findings table.)*
 ## Tech debt / process / infra
 
 - `[x]` **Account `recipes`/`ratings` tab badges use raw counts that can drift from their tab lists** *(from `sweeps/BUG_HUNT_2026-07-09.md` — follow-up to the L8/L9 saved-badge fix in [#279](https://github.com/jclind/prepify/pull/279), filed 2026-07-10; boarded Wave 9 · B6; **fixed in [#285](https://github.com/jclind/prepify/pull/285), merged 2026-07-10**: `recipes` badge now filters `RECIPE_OWNER_VISIBLE` (matches `getCreatedRecipes`); `ratings` badge goes through a new `countVisibleRatings` excluding moderation-hidden ratings and ratings whose recipe isn't `RECIPE_VISIBLE` (matches `getSingleUserReviews`'s `returnRecipeData` join) — same cheap id-list + `countDocuments` shape as the existing `countVisibleSaved`, no correlated `$lookup`. Runtime-verified end-to-end against the live dev server + dev Mongo with a real Firebase ID token.)* — `getAccountCountsFor` returns raw `countDocuments` for `recipes` and `ratings`, but the Your-Recipes tab filters `RECIPE_OWNER_VISIBLE` and the Ratings tab filters `REVIEW_VISIBLE` + recipe-visible, so a user with hidden/unpublished recipes (or hidden-recipe ratings) sees a badge reading higher than the list under it. Same class as the saved-badge drift already fixed in #279 (the `saved` badge now filters). `server/util/accountCounts.js`. **Fix:** filter each badge count to match its tab's list. **Dep:** land after #279 (which rewrites this file). — *(not surfaced directly by the hunt; noted while fixing L8/L9.)*
-- `[ ]` **`UserRatings` passes a sort the server doesn't understand** *(filed 2026-07-09, out of the §D
-  overhaul)* — `src/pages/Account/UserRatings/UserRatings.tsx:106` sends `SORT = 'newAdd'` to
+- `[x]` **`UserRatings` passes a sort the server doesn't understand** *(filed 2026-07-09, out of the §D
+  overhaul; folded into Wave 10 · V7; **fixed in [#290](https://github.com/jclind/prepify/pull/290), merged
+  2026-07-10**: `SORT = 'new'` + a regression test pinning the API call)* — `src/pages/Account/UserRatings/UserRatings.tsx:106` sends `SORT = 'newAdd'` to
   `getSingleUserReviews`, but the endpoint only recognizes `new`/`top` (`server/routes/reviews.js:321-322`),
   so `newAdd` silently falls through to `sort = {}` — **no sort at all** (natural order). The account
   Ratings list is therefore paginating an *unspecified* order: usually insertion order in practice, but
   Mongo guarantees nothing, so Load-More pages can theoretically skip/duplicate rows. Fix: send `'new'`
   from the client (one line) — or add a `newAdd` alias server-side — plus a test pinning the sort. Low-med.
-  *(Folded into Wave 10 · V7; fix in [#290](https://github.com/jclind/prepify/pull/290), PR open.)*
 - `[ ]` **`FormInput`'s generic `setVal` passes raw DOM strings through an unchecked cast** *(filed 2026-07-10,
   off the V7 [#290](https://github.com/jclind/prepify/pull/290) lane)* — `FormInput.tsx`'s `setVal(next as T)`
   hands the raw input string to the caller regardless of `T`, so numeric fields like `ServingsInput` carry a
