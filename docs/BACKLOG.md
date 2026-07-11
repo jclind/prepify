@@ -213,16 +213,30 @@ hygiene, and the U3 watch items all verified sound — details in the session tr
 > prose-drift API_CONTRACT.md entries — all 5 premises verified stale on disk at HEAD). NOT boarded:
 > `ratingLastUpdated` watch item, all V5/W1/I1/I2 cutover ops, parked #303, the two owner-disposition
 > branches.
+>
+> **Wave 16 MERGED 2026-07-11** (owner-approved after diff review + 6/6 CI-green on each head SHA; dev at
+> `89c6316`): **A** drafts durable-supersede + hydration-retry → **[#315](https://github.com/jclind/prepify/pull/315)**
+> (one serialized Opus PR: `PUT /drafts/:id` now takes an optional `supersede:true` that drops the `updatedAt`
+> precondition on a `{_id}`-only match — flush-path-only, never persisted, still ownership-checked, can 404 but
+> never 409; #311's client 409-retry dance REMOVED as structurally dead; + a bounded (4-attempt) resume-hydration
+> retry armed on the user's next edit that falls through to #307's 404/403 recovery; +11 tests, Vitest 752→755,
+> Jest 903→908) · **C** formatDate dedup → **[#313](https://github.com/jclind/prepify/pull/313)** (delegates
+> valid-date formatting to `src/util/formatDate` short-form — verified byte-identical for epoch-ms inputs — while
+> KEEPING the local null/0 guard so garbage `createdAt` still hides the date; +2 tests) · **D** API_CONTRACT
+> prose-drift → **[#314](https://github.com/jclind/prepify/pull/314)** (all 5 entries corrected against disk;
+> entry 4's open-guard turned out to EXIST at reports.js:339 so 3 tied spots were fixed for internal consistency;
+> doc-only). **B** PARKED (see below) — its pre-cut verification proved the `username_1` index is NOT dead.
+> Orchestrator close-out: added the `supersede` flag to the API_CONTRACT PUT /drafts/:id entry; full gates on the
+> merged HEAD (tsc 0, Vitest 757/2, Jest 908/43); worktrees + local/remote lane branches + placeholders removed.
 
-
-- `[ ]` **Durable draft unload-flush — server-side supersede/force-write** *(off the [#311](https://github.com/jclind/prepify/pull/311) A/Bug1 trade-off)* — the keepalive
+- `[x]` **Durable draft unload-flush — server-side supersede/force-write** *(DONE in [#315](https://github.com/jclind/prepify/pull/315), Wave 16 · A, merged 2026-07-11: the keepalive flush now PUTs `supersede:true`; the server applies it without the `updatedAt` precondition (matched on `{_id}` alone, still ownership-checked, never 409s), so the newest content wins the unload race deterministically instead of via #311's client-side 409-retry — which is removed. Residual limit, unchanged: it still only lands if the JS context survives unload (`fetch(keepalive:true)`); a hard process-kill can still drop it, and a genuine cross-tab conflict now resolves last-write-wins by design. The GENUINE-conflict-supersedes trade-off from #311 is now explicit and server-enforced.)* — the keepalive
   409-retry (`flushDraftKeepalive`, `src/api/drafts.ts`) only lands if the JS context survives the unload
   (pagehide→bfcache, mobile background/freeze); a hard tab-close/process-kill drops both the original save
   and the retry. And on a GENUINE cross-tab conflict the retry supersedes the other tab's newer write. A
   durable fix needs a server-side "force/supersede" draft-write path so the newest content wins
   deterministically without client-side racing. Low; the #311 fix is already strictly better than the
   prior silent-drop.
-- `[ ]` **Transient resume-hydration failure permanently disables autosave** *(off the [#311](https://github.com/jclind/prepify/pull/311) A review)* —
+- `[x]` **Transient resume-hydration failure permanently disables autosave** *(DONE in [#315](https://github.com/jclind/prepify/pull/315), Wave 16 · A, merged 2026-07-11: a transient (network/5xx) `getDraft` failure now arms a bounded retry (`MAX_HYDRATION_ATTEMPTS = 4`) fired on the user's next edit — an edit is the only signal the user is still working while autosave is disabled — so a one-off blip recovers on its own instead of wedging the session; only after exhausting retries does it fall back to the "refresh to try again" prompt. A retry that 404/403s routes into #307's "draft gone → re-create on next edit" recovery. Failing-before test proved the prior wedge.)* —
   in `useRecipeForm`, a 5xx/network failure of the `?draftId` `getDraft` leaves `hydrated` false forever
   with only a "refresh to try again" toast — no auto-retry affordance, unlike the 404/403 recovery path
   (#307). Candidate for a small lane: retry/re-enable hydration on a recoverable error. Low-medium.
@@ -245,10 +259,10 @@ hygiene, and the U3 watch items all verified sound — details in the session tr
   `ensureIndexes.test.js` EXISTS assertion to absence. Low-medium (was mis-sized as a trivial cleanup). NOTE:
   do NOT touch the SEPARATE compound `recipeId_1_username_1` index — it backs `getReviews`/recompute by
   `recipeId` and is out of scope.
-- `[ ]` **`UserRecipeThumbnail.tsx` has a local `formatDate` duplicate** *(off the [#309](https://github.com/jclind/prepify/pull/309) C review)* —
+- `[x]` **`UserRecipeThumbnail.tsx` has a local `formatDate` duplicate** *(DONE in [#313](https://github.com/jclind/prepify/pull/313), Wave 16 · C, merged 2026-07-11: the hand-rolled `toLocaleDateString` body is removed and delegates to the shared `formatDate(createdAt, true)` — verified byte-identical output for valid epoch-ms inputs across every month/day/year — while a local wrapper (`formatCreated`) KEEPS the null/0 guard so a missing/garbage `createdAt` still hides the date instead of rendering the shared util's un-guarded epoch-zero fallback; +2 tests pin the rendered date and the null-hide.)* —
   `src/pages/Account/UserRecipes/UserRecipeThumbnail.tsx` defines its own (already-correct `Number(createdAt)`)
   `formatDate` instead of importing the shared `src/util/formatDate`. Dedup onto the shared util. Nit.
-- `[ ]` **API_CONTRACT.md prose-drift (5 entries) — content stale, not line numbers** *(flagged by the [#312](https://github.com/jclind/prepify/pull/312) D anchor sweep, deliberately left out of that number-only lane)* —
+- `[x]` **API_CONTRACT.md prose-drift (5 entries) — content stale, not line numbers** *(DONE in [#314](https://github.com/jclind/prepify/pull/314), Wave 16 · D, merged 2026-07-11: all 5 corrected against disk at HEAD — (1) addRecipe now typed `Omit<RecipeType,…>` so it omits the four dead fields; (2) `getIngredientData` reframed as "partially used" — it now branches on the 429/`RATE_LIMITED` code with `Retry-After`, only `getRecipeNutrition` still swallows; (3) `getCreatedRecipes` now floors negative page at users.js:75; (4) the `PATCH /reports/:id` open-guard turned out to EXIST at reports.js:339 (`409 ALREADY_RESOLVED`), so the entry + its Notes + the bug-reports cross-reference were all corrected for internal consistency; (5) `getUsername` count fixed to the 2 real sites. Doc-only.)* —
   (1) `src/api/recipes.ts` addRecipe no longer posts `rating`/`views`/`numTimesSaved`/`numTimesMade` (now
   explicitly `Omit`ted); (2) `getIngredientData` now has dedicated 429 handling, contradicting the doc's
   "surfaces the generic axios err.message"; (3) `getCreatedRecipes` now floors a negative `page` (#306),

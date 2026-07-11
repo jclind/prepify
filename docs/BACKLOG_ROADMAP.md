@@ -57,6 +57,13 @@ to the *sweep program*); this file applies it to the **general backlog**. Compan
 > (0 P1 / 3 P2 / 13 P3) and ran five fix lanes A–E as PRs #304–#308; the day session
 > diff-reviewed and merged all five (2026-07-11). PR #303 (`[DO NOT MERGE]` V5 flip half)
 > stays parked for the owner's cutover.
+>
+> **Waves 15 & 16 boarded AND drained 2026-07-11** — also on the BACKLOG.md sweep board, not this table.
+> Wave 15 (#309–#312) drained the unclaimed P3 sweep tail; Wave 16 drained its own follow-up seeds as
+> **#313** (formatDate dedup) · **#314** (API_CONTRACT prose-drift) · **#315** (drafts durable-supersede +
+> resume-hydration retry). Wave 16 · B (drop the `ratings.username_1` index) was **PARKED**: its mandatory
+> pre-cut verification proved the index is NOT dead (admin.js/reports.js still read `ratings` by `username`);
+> re-scoped as a "migrate the admin/reports reads to `userId` first" seed. dev at `89c6316`.
 
 ---
 
