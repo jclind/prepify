@@ -10,16 +10,17 @@ import { CreatedRecipeCardType } from 'types'
 import { formatRating } from 'src/util/formatRating'
 import { formatCompactCount } from 'src/util/formatCompactCount'
 import { formatPrice } from 'src/util/formatPrice'
+import { formatDate } from 'src/util/formatDate'
 
 
-const formatDate = (createdAt: string) => {
+// Delegates valid-date formatting to the shared util (byte-identical short-form
+// output for epoch-ms strings), but keeps a local null guard for falsy/garbage
+// createdAt (e.g. "0", "", non-numeric) so the date is hidden instead of
+// rendering the shared util's un-guarded "Dec 31, 1969" fallback.
+const formatCreated = (createdAt: string) => {
   const ms = Number(createdAt)
   if (!ms || Number.isNaN(ms)) return null
-  return new Date(ms).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  })
+  return formatDate(createdAt, true)
 }
 
 type UserRecipeThumbnailType = {
@@ -35,7 +36,7 @@ const UserRecipeThumbnail: FC<UserRecipeThumbnailType> = ({
   loading,
 }) => {
   const isLoading = loading || !recipe
-  const createdDate = recipe ? formatDate(recipe.createdAt) : null
+  const createdDate = recipe ? formatCreated(recipe.createdAt) : null
   const price =
     recipe && recipe.servingPrice != null && recipe.servingPrice > 0
       ? formatPrice(recipe.servingPrice)
