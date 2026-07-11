@@ -119,6 +119,17 @@ router.get('/:id', verifyToken, asyncHandler(async (req, res) => {
 // a tab that's saved on top of a since-changed draft gets a 409 instead of
 // blindly clobbering it with a full `$set` of its (now-stale) content.
 //
+// EXCEPTION — the unload keepalive flush (src/api/drafts.ts:flushDraftKeepalive)
+// sends `supersede: true`. That flush carries the freshest edits the user made
+// right before leaving the page, so it must land unconditionally: it drops the
+// `updatedAt` precondition and matches on `{_id}` alone (still ownership-checked
+// above), so it can never 409 against a normal autosave that raced ahead of it —
+// the newest content always wins the unload race. It is deliberately the ONLY
+// path that sets the flag; regular debounced autosave (updateDraft) never does,
+// so a routine save still 409s on a real cross-tab conflict. A supersede write
+// can still 404 if the draft was deleted in the interim — see the no-match
+// branch below — so a keepalive flush never resurrects a deleted draft (#307).
+//
 // Deliberately NO draftWriteLimiter here (unlike POST above). This is the
 // 1.5s-debounce autosave path — continuous typing alone can produce ~40
 // legitimate writes/min, well over a stock 30/min per-uid cap, so reusing the
@@ -148,21 +159,26 @@ router.put('/:id', verifyToken, requireActive, asyncHandler(async (req, res) => 
   if (boundsError) {
     return res.status(400).json({ error: boundsError })
   }
-  const { updatedAt: baseUpdatedAt } = req.body
-  if (typeof baseUpdatedAt !== 'string') {
+  const { updatedAt: baseUpdatedAt, supersede } = req.body
+  // The unload flush sets `supersede: true` to write unconditionally (see the
+  // route comment). Only a normal autosave requires — and is conditioned on —
+  // the `updatedAt` precondition.
+  const isSupersede = supersede === true
+  if (!isSupersede && typeof baseUpdatedAt !== 'string') {
     return res.status(400).json({ error: 'Missing updatedAt precondition' })
   }
   const update = {
     ...pickFields(req.body, RECIPE_CONTENT_FIELDS),
     updatedAt: Date.now().toString(),
   }
+  // A supersede flush matches on `{_id}` alone so a stale base version still
+  // lands; a normal save conditions on the base `updatedAt` and 409s on a
+  // mismatch. `supersede` is not a RECIPE_CONTENT_FIELD, so pickFields never
+  // persists it onto the draft document.
+  const filter = isSupersede ? { _id } : { _id, updatedAt: baseUpdatedAt }
   const updated = await db
     .collection('recipeDrafts')
-    .findOneAndUpdate(
-      { _id, updatedAt: baseUpdatedAt },
-      { $set: update },
-      { returnDocument: 'after' }
-    )
+    .findOneAndUpdate(filter, { $set: update }, { returnDocument: 'after' })
   if (!updated) {
     // Either someone else's save moved `updatedAt` out from under this
     // request, or the draft was deleted in the interim — distinguish so the

@@ -71,10 +71,12 @@ class DraftAPIClass {
   // Synchronous, fire-and-forget draft save for page unload (beforeunload /
   // pagehide). An async axios request won't reliably complete while the page is
   // being torn down, so this uses `fetch(..., { keepalive: true })`, which the
-  // browser guarantees to run to completion in the background. It mirrors the
-  // normal autosave contract: PUT /drafts/:id (echoing the `baseUpdatedAt`
-  // concurrency precondition the server requires) for an existing draft, or
-  // POST /drafts to create one. The Bearer token is read synchronously from the
+  // browser guarantees to run to completion in the background. For an existing
+  // draft it PUTs with `supersede: true`, so the server applies the write
+  // WITHOUT the `updatedAt` precondition — this flush carries the user's last
+  // edits and must win the unload race against any autosave still in flight,
+  // never 409. For a brand-new draft it POSTs /drafts to create one. The Bearer
+  // token is read synchronously from the
   // cache the axios interceptor maintains (see http-common). Returns false
   // without firing when no token is available (signed out, or no request has
   // ever warmed the cache).
@@ -100,40 +102,26 @@ class DraftAPIClass {
 
     if (id) {
       const url = `${API_BASE_URL}/api/drafts/${id}`
-      send('PUT', url, { ...content, updatedAt: baseUpdatedAt })
+      // `supersede: true` makes this the authoritative "newest edits win" write:
+      // the server (server/routes/drafts.js) applies it WITHOUT the `updatedAt`
+      // precondition, so it can never 409 against a normal autosave that was
+      // still in flight when the page unloaded — the flush's freshest content
+      // always lands. That's why there's no 409-retry dance here anymore (it was
+      // #311's workaround for a flush that *could* conflict; a supersede write
+      // can't). We still send `updatedAt` for parity/observability; the server
+      // ignores it on the supersede path. The flush is deliberately the only
+      // caller that sets this flag — normal debounced autosave (updateDraft)
+      // never does, so a real cross-tab conflict still 409s there.
+      send('PUT', url, { ...content, updatedAt: baseUpdatedAt, supersede: true })
         .then(res => {
           if (res.ok) return
-          if (res.status === 409) {
-            // This keepalive PUT lost the unload race against a normal autosave
-            // that was still in flight: both carried the same base `updatedAt`,
-            // and the older in-flight save landed first, so ours 409s. Without a
-            // retry the *newest* edits (this flush) would be silently dropped.
-            // Retry once against the server's now-current version so the newest
-            // content supersedes the older write — autosave's prime directive is
-            // never to lose active work.
-            return res
-              .json()
-              .then((data: { draft?: { updatedAt?: string } }) => {
-                const latest = data?.draft?.updatedAt
-                if (latest && latest !== baseUpdatedAt) {
-                  return send('PUT', url, { ...content, updatedAt: latest }).then(
-                    retry => {
-                      if (!retry.ok) {
-                        console.error(
-                          'Keepalive draft flush retry did not persist:',
-                          retry.status
-                        )
-                      }
-                    }
-                  )
-                }
-                console.error('Keepalive draft flush conflict unresolved')
-              })
-              .catch(() => {})
-          }
-          // Any other resolved-but-non-2xx (a 429 rate-limit, a 5xx, …) means the
-          // flush did NOT persist. Surface it rather than letting a resolved
-          // failure masquerade as a successful save (see the POST branch below).
+          // A supersede PUT can't 409, but it can still 404 if the draft was
+          // deleted elsewhere while this tab held it open — in which case we
+          // give up rather than recreate it (a keepalive flush must never
+          // resurrect a deleted draft, #307). Any other resolved-but-non-2xx (a
+          // 429 rate-limit, a 5xx, …) also means the flush did NOT persist.
+          // Surface it rather than letting a resolved failure masquerade as a
+          // successful save (see the POST branch below).
           console.error('Keepalive draft flush did not persist:', res.status)
         })
         .catch(() => {
