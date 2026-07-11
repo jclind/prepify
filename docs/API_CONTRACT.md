@@ -331,9 +331,9 @@ All routes live in `server/routes/reviews.js`, mounted at `/api` (server/app.js)
   - `400 {error:'Review cannot exceed 2000 characters'}` — `DESCRIPTION_MAX_LENGTH` = 2000 (server/util/recipeLimits.js:7)
   - `422 {error: <friendly message>, code:'CONTENT_BLOCKED'}` — `moderateText(reviewText, 'review')` verdict not clean; both high and medium confidence block inline via `respondBlocked` (server/util/automod.js:99), which also fires a best-effort `content.blocked` audit row
   - `400 {error:'Username not found for this user'}` — no `usernames` doc
-- **Response:** `200` = the full updated `ratings` document (re-fetched after upsert: `_id, userId, recipeId, username, rating, ratingLastUpdated, reviewText, reviewCreatedAt, reviewLastUpdated`, timestamps as `Date.now().toString()`). Plus `401/403/429` as above.
+- **Response:** `200` = the full updated `ratings` document (re-fetched after upsert: `_id, userId, recipeId, username, rating, ratingLastUpdated, reviewText, reviewCreatedAt, reviewLastUpdated`, timestamps as **numeric epoch-ms** (`Date.now()`); `''` remains the "no review yet" sentinel on rating-only docs). Plus `401/403/429` as above.
 - **Client:** `src/api/recipes.ts:440` → `RecipeAPI.newReview(recipeId, text)` — used by `src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/AddReview.tsx:37`.
-- **Notes:** Upsert on `{userId, recipeId}`; on insert `rating: null` is defaulted so a review-before-rating doc never poisons the aggregate. No rating recompute (text doesn't affect the score).
+- **Notes:** Upsert on `{userId, recipeId}`; on insert `rating: null` is defaulted so a review-before-rating doc never poisons the aggregate. No rating recompute (text doesn't affect the score). **V5 cutover:** timestamps flipped from `Date.now().toString()` strings to numeric epoch-ms; pre-migration prod docs remain strings until the coupled `normalizeRatingTypes.js --apply` run (the two must ship together — the New/Top sorts compare BSON type first).
 
 ### GET /api/checkIfReviewed
 - **Handler:** `server/routes/reviews.js:110`
@@ -353,7 +353,7 @@ All routes live in `server/routes/reviews.js`, mounted at `/api` (server/app.js)
   - `404 {error:'Review not found'}` — update matched 0 docs (non-author can never match, since the filter is `{userId: req.uid, recipeId}`, so a miss is purely "no such doc" — not-found, not a permissions failure; normalized from `403` alongside the delete routes below, house convention per `drafts.js`)
 - **Response:** `200 {edited: true}`. Plus `401/429`.
 - **Client:** `src/api/recipes.ts:456` → `RecipeAPI.editReview(recipeId, text)` — used by `src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/RecipeReview.tsx:59`.
-- **Notes:** Updates `reviewText` + `reviewLastUpdated` only. As of §D PR-A both create and edit accept a JSON body (`newReview`→`reviewText`, `editReview`→`text`); the field-name difference remains but the transport is now aligned.
+- **Notes:** Updates `reviewText` + `reviewLastUpdated` only (`reviewLastUpdated` is now numeric epoch-ms `Date.now()`, per the V5 cutover — see /newReview). As of §D PR-A both create and edit accept a JSON body (`newReview`→`reviewText`, `editReview`→`text`); the field-name difference remains but the transport is now aligned.
 
 ### DELETE /api/deleteReview
 - **Handler:** `server/routes/reviews.js:156`

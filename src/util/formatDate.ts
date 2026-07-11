@@ -13,7 +13,7 @@ const monthNames = [
   'December',
 ]
 
-export const formatDate = (d: string, short: boolean): string => {
+export const formatDate = (d: string | number, short: boolean): string => {
   const date = Number.isNaN(d) ? new Date(d) : new Date(Number(d))
   let day = date.getDate()
   let month = monthNames[date.getMonth()]
