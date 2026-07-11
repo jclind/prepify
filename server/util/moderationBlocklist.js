@@ -23,13 +23,46 @@
 //
 // Extend the lists in place; the matching logic below should not need to change.
 
-// Normalize a single token for slur matching: lowercase, fold common leetspeak,
-// collapse 3+ repeated chars to one, and drop anything non-alphanumeric. This
-// makes "F.U.C.K", "fuuuck", and "f4ck" all normalize to the same stem.
+// Curated confusables map: unicode lookalikes commonly used to dodge the
+// blocklist, keyed by the lookalike character and mapped to the ASCII Latin
+// letter it visually mimics. Deliberately NOT a full confusables library (that
+// would be large, easy to get subtly wrong, and risks over-transliterating
+// legitimate non-Latin text) — just the common Cyrillic/Greek lookalikes seen
+// in evasion attempts (e.g. Cyrillic "с" in "fuсk"). Keep it tight and obvious;
+// extend only with confirmed evasion characters, not whole alphabets.
+const CONFUSABLES_MAP = {
+  // Cyrillic lowercase
+  а: 'a', е: 'e', о: 'o', р: 'p', с: 'c', у: 'y', х: 'x', і: 'i', ј: 'j', ѕ: 's', м: 'm', н: 'h',
+  // Cyrillic uppercase
+  А: 'a', В: 'b', Е: 'e', К: 'k', М: 'm', Н: 'h', О: 'o', Р: 'p', С: 'c', Т: 't', У: 'y', Х: 'x',
+  // Greek lowercase
+  α: 'a', β: 'b', ο: 'o', ρ: 'p', υ: 'u', κ: 'k', ν: 'v', ε: 'e',
+  // Greek uppercase
+  Α: 'a', Β: 'b', Ε: 'e', Ζ: 'z', Η: 'h', Ι: 'i', Κ: 'k', Μ: 'm', Ν: 'n', Ο: 'o', Ρ: 'p', Τ: 't', Υ: 'y', Χ: 'x',
+}
+
+// NFKC-normalize (folds compatibility/fullwidth forms — e.g. fullwidth
+// "ｓｈｉｔ" — down to their canonical ASCII form) and swap curated confusable
+// characters for the Latin letter they mimic. Applied to the RAW text/token
+// before any other fold, and in particular before tokenize() below: a
+// homoglyph like Cyrillic "с" is otherwise treated as a non-alphanumeric
+// separator, silently splitting "fuсk" into the harmless tokens "fu" + "k"
+// rather than normalizing it to "fuck".
+function foldUnicode(str) {
+  const nfkc = String(str).normalize('NFKC')
+  let out = ''
+  for (const ch of nfkc) out += CONFUSABLES_MAP[ch] || ch
+  return out
+}
+
+// Normalize a single token for slur matching: unicode-fold (see foldUnicode),
+// lowercase, fold common leetspeak, collapse 3+ repeated chars to one, and drop
+// anything non-alphanumeric. This makes "F.U.C.K", "fuuuck", "f4ck", and the
+// Cyrillic-с "fuсk" all normalize to the same stem.
 const LEET_MAP = { '0': 'o', '1': 'i', '3': 'e', '4': 'a', '5': 's', '7': 't', '@': 'a', $: 's' }
 
 function normalizeToken(token) {
-  return String(token)
+  return foldUnicode(token)
     .toLowerCase()
     .replace(/[01345 7@$]/g, (c) => LEET_MAP[c] || c)
     .replace(/(.)\1{2,}/g, '$1')
@@ -156,7 +189,11 @@ function checkBlocklist(text, context = '') {
   if (!text || typeof text !== 'string') return null
 
   const isIdentity = IDENTITY_CONTEXTS.has(context)
-  const tokens = tokenize(text)
+  // Unicode-fold BEFORE tokenizing (not just inside normalizeToken): tokenize()
+  // splits on any non-ASCII-alphanumeric character, so an un-folded homoglyph
+  // would fragment the word (e.g. Cyrillic-с "fuсk" -> "fu" + "k") before
+  // normalizeToken ever saw it as one token.
+  const tokens = tokenize(foldUnicode(text))
 
   // Per-token pass: exact on every surface, substring per the tier rules above.
   for (const token of tokens) {
@@ -181,6 +218,7 @@ function checkBlocklist(text, context = '') {
 module.exports = {
   checkBlocklist,
   normalizeToken,
+  foldUnicode,
   SLUR_TERMS,
   SUBSTRING_SLURS,
   BENIGN_ALLOWLIST,

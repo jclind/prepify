@@ -101,6 +101,33 @@ describe('moderationBlocklist.checkBlocklist', () => {
     expect(normalizeToken('Fuuuck')).toBe('fuck')
     expect(normalizeToken('SH!T')).toBe('sht')
   })
+
+  it('defeats Cyrillic homoglyph evasion (confusables fold)', () => {
+    // "fuсk" — the middle character is Cyrillic "с" (U+0441), not Latin "c".
+    // Before the unicode fold this bypassed the blocklist entirely: tokenize()
+    // treated the homoglyph as a non-alphanumeric separator, splitting the word
+    // into the harmless tokens "fu" + "k".
+    expect(checkBlocklist('fuсk you', 'review')).toMatchObject({ kind: 'slur' })
+    expect(normalizeToken('fuсk')).toBe('fuck')
+  })
+
+  it('defeats fullwidth evasion (NFKC fold)', () => {
+    // Fullwidth Unicode forms (U+FF00 block) — "ｓｈｉｔ" reads
+    // as "shit" but every char is a distinct fullwidth code point. Before the
+    // NFKC fold this normalized to the empty string (all chars fell outside
+    // `[a-z0-9]`), so the blocklist never saw it.
+    expect(checkBlocklist('ｓｈｉｔ happens', 'review')).toMatchObject({ kind: 'slur' })
+    expect(normalizeToken('ｓｈｉｔ')).toBe('shit')
+  })
+
+  it('does not false-positive on clean non-Latin text', () => {
+    // Legitimate Cyrillic prose (a borscht recipe title, and a review greeting)
+    // must not start tripping the blocklist just because the unicode fold now
+    // runs — the confusables map only swaps a curated handful of lookalike
+    // characters, it does not transliterate whole scripts.
+    expect(checkBlocklist('Классический рецепт борща', 'recipe.title')).toBeNull()
+    expect(checkBlocklist('Привет, это отличный рецепт', 'review')).toBeNull()
+  })
 })
 
 describe('moderateText — gating', () => {
