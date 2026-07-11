@@ -287,6 +287,83 @@ describe('PUT /api/drafts/:id', () => {
     expect(res.status).toBe(400)
   })
 
+  // ─── supersede flag (W16: durable unload-flush) ───────────────────────────
+  // The unload keepalive flush (src/api/drafts.ts) sets `supersede: true` so its
+  // freshest edits land unconditionally — it must never 409 against a normal
+  // autosave that raced ahead of it. Only the flush sets the flag; regular
+  // autosave still carries (and is conditioned on) the base updatedAt.
+  it('with supersede:true writes unconditionally, bypassing the updatedAt precondition (a stale base still lands)', async () => {
+    const draft = await seedDraft({ title: 'original', updatedAt: '1000' })
+    // Another save moves the stored version forward first.
+    const ahead = await request(app)
+      .put(`/api/drafts/${draft._id}`)
+      .set(AUTH_HEADER)
+      .send({ title: 'raced ahead', updatedAt: '1000' })
+    expect(ahead.status).toBe(200)
+
+    // The flush carries a STALE base ('1000') but supersede:true — a normal PUT
+    // would 409 here; the flush must win instead.
+    const flush = await request(app)
+      .put(`/api/drafts/${draft._id}`)
+      .set(AUTH_HEADER)
+      .send({ title: 'flush wins', updatedAt: '1000', supersede: true })
+    expect(flush.status).toBe(200)
+    expect(flush.body.title).toBe('flush wins')
+
+    const stored = await getDB()
+      .collection('recipeDrafts')
+      .findOne({ _id: draft._id })
+    expect(stored.title).toBe('flush wins')
+    // The transient flag is never persisted onto the document.
+    expect(stored.supersede).toBeUndefined()
+  })
+
+  it('with supersede:true does not require an updatedAt precondition (no 400 when omitted)', async () => {
+    const draft = await seedDraft({ title: 'before', updatedAt: '1000' })
+    const res = await request(app)
+      .put(`/api/drafts/${draft._id}`)
+      .set(AUTH_HEADER)
+      .send({ title: 'no version, superseding', supersede: true })
+    expect(res.status).toBe(200)
+    expect(res.body.title).toBe('no version, superseding')
+  })
+
+  it('without the flag still 409s DRAFT_CONFLICT when the base updatedAt has moved', async () => {
+    const draft = await seedDraft({ title: 'original', updatedAt: '1000' })
+    const ahead = await request(app)
+      .put(`/api/drafts/${draft._id}`)
+      .set(AUTH_HEADER)
+      .send({ title: 'raced ahead', updatedAt: '1000' })
+    expect(ahead.status).toBe(200)
+
+    // Same stale base, but NO supersede flag → the precondition still guards it.
+    const stale = await request(app)
+      .put(`/api/drafts/${draft._id}`)
+      .set(AUTH_HEADER)
+      .send({ title: 'stale normal save', updatedAt: '1000' })
+    expect(stale.status).toBe(409)
+    expect(stale.body.code).toBe('DRAFT_CONFLICT')
+  })
+
+  it('with supersede:true still 404s when the draft was deleted (a flush never resurrects it)', async () => {
+    // No draft exists at this id — models the draft being deleted elsewhere
+    // between the tab loading it and the unload flush firing.
+    const res = await request(app)
+      .put(`/api/drafts/${new ObjectId()}`)
+      .set(AUTH_HEADER)
+      .send({ title: 'flush after delete', updatedAt: '1000', supersede: true })
+    expect(res.status).toBe(404)
+  })
+
+  it("with supersede:true still can't touch another user's draft (403)", async () => {
+    const draft = await seedDraft({ userId: 'other-uid' })
+    const res = await request(app)
+      .put(`/api/drafts/${draft._id}`)
+      .set(AUTH_HEADER)
+      .send({ title: 'hijacked', updatedAt: '1000', supersede: true })
+    expect(res.status).toBe(403)
+  })
+
   it("checks ownership before bounds (403, not 400, for another user's draft)", async () => {
     const draft = await seedDraft({ userId: 'other-uid' })
     const res = await request(app)
