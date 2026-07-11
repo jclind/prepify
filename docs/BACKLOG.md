@@ -194,6 +194,23 @@ hygiene, and the U3 watch items all verified sound — details in the session tr
 
 ### Wave 15 follow-up seeds (filed 2026-07-11, off the #309–#312 lane reports; none cutover-gated)
 
+> **Wave 16 CLAIMED 2026-07-11** — the five seeds below run as four disjoint lanes, subagent-per-lane in
+> worktrees, MERGES-HELD policy (run to PR-open + diff-review + CI-green, single owner confirmation; no merge
+> on silence). Lanes: **A** `feat/w16-drafts-durable-supersede` (Opus; seeds 1+2 FUSED into one serialized
+> drafts-autosave-cluster lane — durable unload-flush supersede via an explicit `supersede:true` keepalive
+> body flag the server honors by dropping the `updatedAt` precondition, settable only by the flush path; +
+> transient resume-hydration retry-on-next-edit falling through to #307's recovery) · **B**
+> `feat/w16-drop-username-index` (Sonnet; guarded `dropIndex` for the now-dead `ratings.username_1` —
+> verified on disk that the cascade filters by `userId` only and nothing queries ratings by `username`;
+> remove the create from db.js/`createModerationIndexes.js`, flip #308's `ensureIndexes.test.js` EXISTS
+> assertion to absence) · **C** `feat/w16-formatdate-dedup` (Sonnet, tiny; dedup `UserRecipeThumbnail.tsx`'s
+> local `formatDate` onto `src/util/formatDate` — verified byte-identical for valid epoch-ms inputs, the
+> local null/0 guard MUST be preserved) · **D** `feat/w16-api-contract-prose` (Sonnet, doc-only; fix the 5
+> prose-drift API_CONTRACT.md entries — all 5 premises verified stale on disk at HEAD). NOT boarded:
+> `ratingLastUpdated` watch item, all V5/W1/I1/I2 cutover ops, parked #303, the two owner-disposition
+> branches.
+
+
 - `[ ]` **Durable draft unload-flush — server-side supersede/force-write** *(off the [#311](https://github.com/jclind/prepify/pull/311) A/Bug1 trade-off)* — the keepalive
   409-retry (`flushDraftKeepalive`, `src/api/drafts.ts`) only lands if the JS context survives the unload
   (pagehide→bfcache, mobile background/freeze); a hard tab-close/process-kill drops both the original save
