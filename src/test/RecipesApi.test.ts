@@ -463,6 +463,31 @@ describe('RecipeAPI.getAllRecipes — query-string encoding', () => {
   })
 })
 
+describe('RecipeAPI.getReviews / getSingleUserReviews — query-string encoding', () => {
+  beforeEach(() => {
+    httpGet.mockReset()
+    httpGet.mockResolvedValue({ data: { reviews: [], totalCount: 0 } })
+  })
+
+  it('getReviews URL-encodes a filter value with reserved characters', async () => {
+    // Aligns with the URLSearchParams convention used by getAllRecipes — a raw
+    // template-string interpolation would let a reserved char in `filter`
+    // corrupt the query string.
+    await RecipeAPI.getReviews('recipe-1', 'new & top', 0, 5)
+    expect(httpGet.mock.calls[0][0]).toBe(
+      'api/getReviews?recipeId=recipe-1&page=0&reviewsPerPage=5&filter=new+%26+top'
+    )
+  })
+
+  it('getSingleUserReviews URL-encodes a username with reserved characters', async () => {
+    vi.mocked(AuthAPI.getUsername).mockResolvedValueOnce('chef & co')
+    await RecipeAPI.getSingleUserReviews(0, 5, 'new', true)
+    expect(httpGet.mock.calls[0][0]).toBe(
+      'api/getSingleUserReviews?username=chef+%26+co&page=0&reviewsPerPage=5&filter=new&returnRecipeData=true'
+    )
+  })
+})
+
 describe('RecipeAPI.getIngredientData — RATE_LIMITED soft-fail (B3)', () => {
   beforeEach(() => {
     httpPost.mockReset()

@@ -146,6 +146,21 @@ describe('validateRecipeForm', () => {
     )
   })
 
+  it('rejects negative or fractional servings', () => {
+    // Regression: `!form.servings` only caught falsy values, letting negative
+    // and fractional servings (e.g. -2, 1.5) through as "valid". Contract:
+    // servings must be a positive integer (>= 1).
+    expect(
+      validateRecipeForm({ ...validForm(), servings: -2 }).servings
+    ).toBe('Servings must be a whole number of at least 1')
+    expect(
+      validateRecipeForm({ ...validForm(), servings: 1.5 }).servings
+    ).toBe('Servings must be a whole number of at least 1')
+    expect(
+      validateRecipeForm({ ...validForm(), servings: 1 }).servings
+    ).toBeUndefined()
+  })
+
   it('requires prep time, but a truthy {0,0} object (zero total) passes', () => {
     expect(validateRecipeForm({ ...validForm(), prepTime: null }).prepTime).toBe(
       'Prep time is required'

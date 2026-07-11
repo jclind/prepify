@@ -551,9 +551,15 @@ class RecipeAPIClass {
     page: number,
     reviewsPerPage = 5
   ): Promise<{ reviews: ReviewType[]; totalCount: number }> {
-    const result = await http.get(
-      `api/getReviews?recipeId=${recipeId}&page=${page}&reviewsPerPage=${reviewsPerPage}&filter=${filter}`
-    )
+    // Build via URLSearchParams (matches getAllRecipes) so a reserved char in
+    // `filter` can't corrupt the query string.
+    const params = new URLSearchParams({
+      recipeId,
+      page: String(page),
+      reviewsPerPage: String(reviewsPerPage),
+      filter,
+    })
+    const result = await http.get(`api/getReviews?${params.toString()}`)
     const data = result.data
     return data
       ? {
@@ -573,9 +579,16 @@ class RecipeAPIClass {
   ): Promise<{ reviews: OptionalReviewType[]; totalCount: number } | null> {
     const username = await AuthAPI.getUsername()
     if (!username) return null
-    const reviewResult = await http.get(
-      `api/getSingleUserReviews?username=${username}&page=${page}&reviewsPerPage=${reviewsPerPage}&filter=${filter}&returnRecipeData=${returnRecipeData}`
-    )
+    // Build via URLSearchParams (matches getAllRecipes) so a reserved char in
+    // `username`/`filter` can't corrupt the query string.
+    const params = new URLSearchParams({
+      username,
+      page: String(page),
+      reviewsPerPage: String(reviewsPerPage),
+      filter,
+      returnRecipeData: String(returnRecipeData),
+    })
+    const reviewResult = await http.get(`api/getSingleUserReviews?${params.toString()}`)
     const data = reviewResult.data
     return data
       ? {

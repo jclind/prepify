@@ -103,7 +103,10 @@ const SingleReview: FC<SingleReviewProps> = ({ review, loading }) => {
 
 // Default order: most recently rated first. (The sort control was removed for
 // now; the query keeps this fixed order.)
-const SORT = 'newAdd'
+// NOTE: the server (`getSingleUserReviews`) only recognizes 'new'/'top' — an
+// unrecognized value silently falls through to no sort at all (natural/
+// insertion order), so this must stay one of those two literals.
+const SORT = 'new'
 const Ratings: FC = () => {
   // `showList` stays true across the one-frame gap where the query has settled
   // but the accumulator hasn't populated `reviews` yet, so the "no ratings"

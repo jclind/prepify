@@ -11,6 +11,12 @@ describe('formatRating', () => {
     expect(formatRating(0, 0)).toBe('No Ratings')
   })
 
+  it('falls back to "No Ratings" instead of rendering "NaN" when avg is NaN', () => {
+    // Regression: a NaN average (e.g. a corrupt/legacy rating doc) previously
+    // reached Math.round/.toFixed and rendered the literal string "NaN".
+    expect(formatRating(NaN, 5)).toBe('No Ratings')
+  })
+
   it('rounds to one decimal place', () => {
     expect(formatRating(4.27, 3)).toBe('4.3')
     expect(formatRating(4.24, 3)).toBe('4.2')

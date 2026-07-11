@@ -72,7 +72,19 @@ export function validateRecipeForm(
     errors.description = `Description cannot exceed ${DESCRIPTION_MAX_LENGTH} characters`
   }
 
-  if (!form.servings) errors.servings = 'Servings amount is required'
+  // Servings must be a positive whole number — a truthiness check alone let
+  // negative and fractional values (e.g. -2, 1.5) through. Coerce with Number()
+  // rather than assuming a real `number`: FormInput's generic setVal passes the
+  // raw input string straight through (untyped cast), so `form.servings` is
+  // sometimes a numeric string at runtime despite the `number | ''` type.
+  if (!form.servings) {
+    errors.servings = 'Servings amount is required'
+  } else {
+    const numServings = Number(form.servings)
+    if (!Number.isInteger(numServings) || numServings < 1) {
+      errors.servings = 'Servings must be a whole number of at least 1'
+    }
+  }
   if (!form.prepTime) errors.prepTime = 'Prep time is required'
 
   if (form.ingredients.length <= 0) {
