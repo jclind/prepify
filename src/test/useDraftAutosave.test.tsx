@@ -366,6 +366,146 @@ describe('useDraftAutosave — updatedAt concurrency guard (B5)', () => {
   })
 })
 
+describe('useDraftAutosave — open draft deleted elsewhere (W14 404 recovery)', () => {
+  it('drops the dead id, notifies once, and re-creates a new draft on the next edit', async () => {
+    // The draft this tab is autosaving into was deleted elsewhere (another tab's
+    // Drafts list, or the POST 25-cap trim evicting the oldest). The server
+    // answers the autosave PUT with a bare 404 (no DRAFT_CONFLICT code). Pre-fix
+    // the hook fell into the generic `else`, set 'error' with draftId still set,
+    // and every keystroke retried the doomed PUT forever — the editor wedged.
+    mockedDraftAPI.updateDraft.mockRejectedValue({
+      isAxiosError: true,
+      response: { status: 404, data: { error: 'Draft not found' } },
+    })
+    mockedDraftAPI.createDraft.mockResolvedValue({
+      ...createdDraft,
+      _id: 'recreated-draft',
+      updatedAt: '5000',
+    })
+    const onDeletedElsewhere = vi.fn()
+    const onDraftCreated = vi.fn()
+
+    const { result, rerender } = renderHook(
+      ({ content, draftId, draftUpdatedAt }) =>
+        useDraftAutosave({
+          content,
+          enabled: true,
+          isSignedIn: true,
+          canCreate: true,
+          draftId,
+          draftUpdatedAt,
+          onDraftCreated,
+          onDeletedElsewhere,
+        }),
+      {
+        initialProps: {
+          content: { title: '' } as Record<string, unknown>,
+          draftId: 'existing-draft' as string | null,
+          draftUpdatedAt: '1000' as string | null,
+        },
+      }
+    )
+
+    // Edit → the autosave PUT fires and 404s.
+    rerender({
+      content: { title: 'Soup' },
+      draftId: 'existing-draft',
+      draftUpdatedAt: '1000',
+    })
+    await act(async () => {
+      vi.advanceTimersByTime(1500)
+      await Promise.resolve()
+    })
+    expect(mockedDraftAPI.updateDraft).toHaveBeenCalledTimes(1)
+    // Notified exactly once, calm 'idle' badge (never the stuck 'error'), and
+    // NO immediate re-create — that's deferred to the next edit by design.
+    expect(onDeletedElsewhere).toHaveBeenCalledTimes(1)
+    expect(onDeletedElsewhere).toHaveBeenCalledWith(
+      'This draft was deleted elsewhere — your edits here will be saved as a new draft.'
+    )
+    expect(result.current.status).toBe('idle')
+    expect(mockedDraftAPI.createDraft).not.toHaveBeenCalled()
+
+    // The caller reacts to onDeletedElsewhere by nulling the draftId it owns
+    // (useRecipeForm does exactly this). The next edit must now POST a brand-new
+    // draft — not retry the dead PUT — and adopt the freshly created id/version.
+    rerender({
+      content: { title: 'Soup revived' },
+      draftId: null,
+      draftUpdatedAt: null,
+    })
+    await act(async () => {
+      vi.advanceTimersByTime(1500)
+      await Promise.resolve()
+    })
+    expect(mockedDraftAPI.createDraft).toHaveBeenCalledTimes(1)
+    expect(mockedDraftAPI.createDraft).toHaveBeenCalledWith({
+      title: 'Soup revived',
+    })
+    // The dead draft is never PUT to again after the 404.
+    expect(mockedDraftAPI.updateDraft).toHaveBeenCalledTimes(1)
+    expect(onDraftCreated).toHaveBeenCalledWith(
+      expect.objectContaining({ _id: 'recreated-draft', updatedAt: '5000' })
+    )
+    expect(result.current.status).toBe('saved')
+  })
+
+  it('does not resurrect the dead draft via the unload flush after a 404', async () => {
+    mockedDraftAPI.updateDraft.mockRejectedValue({
+      isAxiosError: true,
+      response: { status: 404, data: { error: 'Draft not found' } },
+    })
+
+    const { rerender } = renderHook(
+      ({ content, draftId, draftUpdatedAt }) =>
+        useDraftAutosave({
+          content,
+          enabled: true,
+          isSignedIn: true,
+          canCreate: true,
+          draftId,
+          draftUpdatedAt,
+          onDraftCreated: vi.fn(),
+          onDeletedElsewhere: vi.fn(),
+        }),
+      {
+        initialProps: {
+          content: { title: '' } as Record<string, unknown>,
+          draftId: 'existing-draft' as string | null,
+          draftUpdatedAt: '1000' as string | null,
+        },
+      }
+    )
+
+    rerender({
+      content: { title: 'Soup' },
+      draftId: 'existing-draft',
+      draftUpdatedAt: '1000',
+    })
+    await act(async () => {
+      vi.advanceTimersByTime(1500)
+      await Promise.resolve()
+    })
+
+    // Caller nulls the id in response to the 404; the user then edits and a hard
+    // unload fires before the debounce. The flush must POST a NEW draft (id null),
+    // never PUT the dead 'existing-draft' with a stale precondition.
+    rerender({
+      content: { title: 'Soup revived' },
+      draftId: null,
+      draftUpdatedAt: null,
+    })
+    act(() => {
+      window.dispatchEvent(new Event('beforeunload'))
+    })
+    expect(mockedDraftAPI.flushDraftKeepalive).toHaveBeenCalledWith(
+      null,
+      { title: 'Soup revived' },
+      ''
+    )
+  })
+})
+
 describe('useDraftAutosave — unload flush (V8 item 1)', () => {
   // jsdom dispatches beforeunload/pagehide as ordinary events, so we can assert
   // the handler fires the keepalive save with the right payload. What jsdom
