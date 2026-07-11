@@ -243,16 +243,19 @@ describe('POST /editReview', () => {
     expect(res.status).toBe(401)
   })
 
-  it('rejects request from non-author (403)', async () => {
-    // verifyToken resolves other-uid → route looks up 'otheruser' → no ratings
-    // doc matches → matchedCount 0 → 403
+  it('returns 404 for a non-author (no doc for their uid, not a 403)', async () => {
+    // verifyToken resolves other-uid → filter is {userId: req.uid, recipeId} →
+    // a non-author can never match → matchedCount 0. That's purely "no such
+    // doc for this uid" — not-found, not a permissions failure — so it's a 404
+    // like /removeRating's identical case, not a 403.
     asUser(OTHER_UID)
 
     const res = await request(app)
       .post(`/api/editReview?recipeId=${RECIPE_ID}&text=Modified`)
       .set(AUTH_HEADER)
 
-    expect(res.status).toBe(403)
+    expect(res.status).toBe(404)
+    expect(res.body).toEqual({ error: 'Review not found' })
   })
 
   it('allows the author to edit their own review', async () => {
@@ -332,14 +335,29 @@ describe('DELETE /deleteReview', () => {
     expect(res.status).toBe(401)
   })
 
-  it('rejects request from non-author (403)', async () => {
+  it('returns 404 for a non-author (no doc for their uid, not a 403)', async () => {
+    // Keyed by req.uid: a non-author has no doc to match, which is purely
+    // "not found" — not a permissions failure — so it's a 404 like
+    // /removeRating's identical no-doc case, not a 403.
     asUser(OTHER_UID)
 
     const res = await request(app)
       .delete(`/api/deleteReview?recipeId=${RECIPE_ID}`)
       .set(AUTH_HEADER)
 
-    expect(res.status).toBe(403)
+    expect(res.status).toBe(404)
+    expect(res.body).toEqual({ error: 'Review not found' })
+  })
+
+  it('returns 404 when the user has no rating doc at all for the recipe', async () => {
+    await getDB().collection('ratings').deleteMany({ userId: TEST_UID, recipeId: RECIPE_ID })
+
+    const res = await request(app)
+      .delete(`/api/deleteReview?recipeId=${RECIPE_ID}`)
+      .set(AUTH_HEADER)
+
+    expect(res.status).toBe(404)
+    expect(res.body).toEqual({ error: 'Review not found' })
   })
 
   it('allows the author to delete their own review but KEEPS the star rating', async () => {
