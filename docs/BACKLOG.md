@@ -176,12 +176,14 @@ The triage date stamped on items is the date they were filed here, not when they
   limit only `POST /drafts` (create; already capped at 25 docs by V3's trim) or pick a PUT rate that clears
   the autosave cadence with margin (and make sure the keepalive unload flush from #294 can't be the request
   that eats a 429). Low.
-- `[ ]` **Collection names are never run through `moderateText`** *(filed 2026-07-10, noticed on the Wave 12 ·
-  U1 [#299](https://github.com/jclind/prepify/pull/299) lane)* — `auth.js` moderates username/profile/display-name
-  writes, but `POST /collections` / `PATCH /collections/:id` accept a user-supplied `name` with only
-  `boundedName` bounds-checking. Mitigating: collections appear to be private to their owner (served only via
-  the authed `GET /collections`), so decide visibility first — if names never render to other users, this may
-  be a documented won't-fix rather than a gap. Low.
+- `[x]` **Collection names are never run through `moderateText`** — *(closed **won't-fix by owner decision
+  2026-07-11**: collections are visible only to the user who created them (owner-private, served only via the
+  authed `GET /collections`), so their names are self-directed text with no exposure surface — moderation adds
+  cost and false-positive friction for zero protective value. Re-open ONLY if collections ever become shareable
+  or publicly visible; that feature must add the `moderateText` call as part of its own scope.)* *(filed
+  2026-07-10, noticed on the Wave 12 · U1 [#299](https://github.com/jclind/prepify/pull/299) lane)* — `auth.js`
+  moderates username/profile/display-name writes, but `POST /collections` / `PATCH /collections/:id` accept a
+  user-supplied `name` with only `boundedName` bounds-checking. Low.
 - `[ ]` **`addReview` still writes string `reviewCreatedAt` — must flip to numeric AT the V5 migration cutover, not before or long after** *(filed 2026-07-10, off the V5 [#293](https://github.com/jclind/prepify/pull/293) lane)* —
   `POST /addReview` (`server/routes/reviews.js:120,128`) writes `reviewCreatedAt: Date.now().toString()` (a
   *string*) on every new review. Today the "New" sort `{ reviewCreatedAt: -1 }` works *because* the field is

@@ -560,7 +560,7 @@ All routes live in `server/routes/reviews.js`, mounted at `/api` (server/app.js)
 - **Request:** body `{ name: string }`. Name is trimmed and hard-capped at 50 chars (`boundedName`, collections.js:23); non-string/empty-after-trim → `400 { error: 'name is required' }`.
 - **Response:** `201` — the new collection in the list shape with `count: 0, coverRecipeId: null, coverImage: null`. `409 { error: 'You can have at most 50 collections' }` at the 50-collection cap; `409 { error: 'A collection with that name already exists' }` on case-insensitive duplicate (checked twice: friendly pre-read, then an atomic `$expr`-guarded push whose lost race also returns this 409, collections.js:139-160). `400`/`401`/`403`/`429` per above.
 - **Client:** `src/api/collections.ts` → `create(name)` — used by `src/Components/AddToCollection/AddToCollectionPopover.tsx:76`, `src/pages/Account/SavedRecipes/SavedRecipes.tsx:148`.
-- **Notes:** Collection names are *not* run through the content-moderation classifier — only trim + length cap (unlike recipe/review text).
+- **Notes:** Collection names are *not* run through the content-moderation classifier — only trim + length cap (unlike recipe/review text). **By design (owner decision, 2026-07-11):** collections are owner-private (rendered only to their creator via the authed `GET /collections`), so the name has no exposure surface; if collections ever become shareable, the sharing feature must add the `moderateText` call.
 
 ### PATCH /api/collections/:id
 - **Handler:** `server/routes/collections.js:165`
