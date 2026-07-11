@@ -157,7 +157,13 @@ The triage date stamped on items is the date they were filed here, not when they
   (`existing.length >= MAX_COLLECTIONS`), so concurrent creates at 49 can all pass — the same shape V3 fixed
   for drafts. Notably the *name-uniqueness* check right below it is already correctly pinned via a guarded
   `$expr` update; only the count check races. Same fix lane as V3 (post-insert trim or guarded write). Low.
-- `[ ]` **`POST /collections` has no per-uid rate limiter** *(filed 2026-07-10, noticed on the Wave 11 · T2
+- `[x]` **`POST /collections` has no per-uid rate limiter** — *(fixed in
+  [#299](https://github.com/jclind/prepify/pull/299), Wave 12 · U1: `collectionWriteLimiter` at the 30/min
+  default — matching review/profile, not the recipe surface's tighter 12/min, since collection writes carry
+  no paid per-write cost — mounted on create AND rename with one shared bucket, mirroring how
+  editRecipe/editReview share their surface's limiter; delete + membership-toggle intentionally unlimited
+  matching siblings. Note: this item's "unlike the drafts... write routes" premise was wrong — drafts has no
+  limiter at all, filed below.)* *(filed 2026-07-10, noticed on the Wave 11 · T2
   [#296](https://github.com/jclind/prepify/pull/296) lane)* — unlike the drafts/recipes write routes, which
   mount `makeUserLimiter`-based limiters, collection creation has only the global `/api` backstop. Low
   urgency (the 50-cap bounds the damage per user), but it's an asymmetry with its sibling write surfaces —

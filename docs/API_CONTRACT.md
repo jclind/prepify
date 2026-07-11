@@ -556,17 +556,17 @@ All routes live in `server/routes/reviews.js`, mounted at `/api` (server/app.js)
 
 ### POST /api/collections
 - **Handler:** `server/routes/collections.js:103`
-- **Middleware:** `verifyToken`, `requireActive`
+- **Middleware:** `verifyToken`, `requireActive`, `collectionWriteLimiter` (a `makeUserLimiter` instance at the default 30 req/min per uid, **shared bucket with the rename route** → `429 { error, code: 'RATE_LIMITED' }`; skipped when `NODE_ENV=test`; added in [#299](https://github.com/jclind/prepify/pull/299))
 - **Request:** body `{ name: string }`. Name is trimmed and hard-capped at 50 chars (`boundedName`, collections.js:23); non-string/empty-after-trim → `400 { error: 'name is required' }`.
-- **Response:** `201` — the new collection in the list shape with `count: 0, coverRecipeId: null, coverImage: null`. `409 { error: 'You can have at most 50 collections' }` at the 50-collection cap; `409 { error: 'A collection with that name already exists' }` on case-insensitive duplicate (checked twice: friendly pre-read, then an atomic `$expr`-guarded push whose lost race also returns this 409, collections.js:139-160). `400`/`401`/`403` per above.
+- **Response:** `201` — the new collection in the list shape with `count: 0, coverRecipeId: null, coverImage: null`. `409 { error: 'You can have at most 50 collections' }` at the 50-collection cap; `409 { error: 'A collection with that name already exists' }` on case-insensitive duplicate (checked twice: friendly pre-read, then an atomic `$expr`-guarded push whose lost race also returns this 409, collections.js:139-160). `400`/`401`/`403`/`429` per above.
 - **Client:** `src/api/collections.ts` → `create(name)` — used by `src/Components/AddToCollection/AddToCollectionPopover.tsx:76`, `src/pages/Account/SavedRecipes/SavedRecipes.tsx:148`.
 - **Notes:** Collection names are *not* run through the content-moderation classifier — only trim + length cap (unlike recipe/review text).
 
 ### PATCH /api/collections/:id
 - **Handler:** `server/routes/collections.js:165`
-- **Middleware:** `verifyToken`, `requireActive`
+- **Middleware:** `verifyToken`, `requireActive`, `collectionWriteLimiter` (same instance/bucket as the create route — create + rename draw one 30/min budget; added in [#299](https://github.com/jclind/prepify/pull/299))
 - **Request:** param `id` (collection uuid); body `{ name: string }`, same `boundedName` rules → `400 { error: 'name is required' }` when missing/blank.
-- **Response:** `200 { id, name }`. `404 { error: 'Collection not found' }` if no owned collection has that id; `409 { error: 'A collection with that name already exists' }` on case-insensitive clash with a *different* collection (pre-check plus atomic guarded `$set`; a lost rename race also 409s, collections.js:189-216). `401`/`403` per middleware.
+- **Response:** `200 { id, name }`. `404 { error: 'Collection not found' }` if no owned collection has that id; `409 { error: 'A collection with that name already exists' }` on case-insensitive clash with a *different* collection (pre-check plus atomic guarded `$set`; a lost rename race also 409s, collections.js:189-216). `401`/`403`/`429` per middleware.
 - **Client:** `src/api/collections.ts` → `rename(id, name)` — used by `src/pages/Account/SavedRecipes/SavedRecipes.tsx:164`.
 
 ### DELETE /api/collections/:id
