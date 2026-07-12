@@ -39,6 +39,10 @@
   - Canary `--apply --id=652ec5f57f529103dab7e4a3` ("Pad Thai", 0 refs): 1 converted, 7 remaining. Mechanism confirmed on prod.
   - Full `--apply`: **7 converted** (incl. Tuscan Chicken Skillet 8r/3rep/6lists), `string _ids remaining: 0`, refs untouched.
   - Gate — verification dry-run: `legacy string-_id docs: 0`, **exit=0**. Idempotency proven. ✅
+- **2b — §D rating-aggregate `breakdown` backfill — ✅ DONE.**
+  - Dry-run: 12 scanned, **12 would correct** — all `breakdown (absent)`, purely additive (rateCount/rateValue unchanged; histograms reconcile to stored averages, spot-checked Tuscan 3.75 / Granola 4.5 / Egg-Fried-Rice 2.5). Explains §1's "0 aggregates pending" = presence check, not breakdown.
+  - `--apply`: **12 corrected**.
+  - Gate — convergence dry-run: `12 already in sync, 0 would correct`. ✅ (No rating averages/counts moved.)
 
 ---
 
