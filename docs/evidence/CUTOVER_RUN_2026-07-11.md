@@ -54,7 +54,9 @@
   - Gates green (tsc×2 / Vitest 757/2 / build); grep gate = only dead `.beta-tag` SCSS remains. CI fully green on head `4d75f9b` (incl. E2e).
   - **Dress rehearsal:** Netlify builds no preview for feature→development PRs → ran **locally** (runbook-sanctioned) on `feat/1.0.0-flip` vs dev infra. Owner ran all **12 items incl. #315 draft-flush + V5 interleave — ALL PASS ✅**. Local stack torn down.
   - Merged (merge commit `35596e5`); merge tree byte-identical to CI-green `4d75f9b`. Owner-approved. `development`==`origin`, version 1.0.0, footer de-beta confirmed, 0 open PRs.
-- **Pre-deploy state:** `development`@`35596e5` ready to deploy. `release`@`e7d1828` (~633 behind). Remaining before deploy: **2e index gate** + **2d-(ii) normalize `--apply`**, then §5 deploy (owner explicit confirm), then 2d-(v) re-apply + 2d-(vi) verify + prod smoke.
+- **2e — prod index gate — ✅ PASSED (HARD GATE).** `createModerationIndexes.js` **exit=0**, 6 indexes built; `getIndexes()` confirms `userId_1_recipeId_1 | unique=true | partial={"userId":{"$exists":true}}`. No E11000 (0-dup pre-check held). Double-rating invariant live.
+- **2d-(ii) — normalizeRatingTypes `--apply` on prod — ✅ DONE (opens coupled window).** 13 rewritten (8 rating→double, 11 reviewCreatedAt→num), `string-typed remaining: 0`, exit=0; confirming dry-run `17 in sync, 0 rewrite, exit=0`. **⚠️ Window OPEN: live release code writes strings until deploy — closed by 2d-(v) re-apply.**
+- **Pre-deploy state:** `development`@`35596e5` (CI-green tree, v1.0.0) ready. `release`@`e7d1828` (~633 behind). ALL prod data prep done (2a/2b/2c/2e/2d-ii). Remaining: pre-deploy env confirms (Netlify SENTRY_DSN, Railway FRONTEND_URLS) → **§5 deploy (owner explicit "ship it")** → 2d-(v) re-apply → 2d-(vi) verify → prod smoke → tag 1.0.0.
 
 ---
 
