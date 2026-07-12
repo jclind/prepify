@@ -1,3 +1,5 @@
+@use '../../../helpers.scss' as s;
+
 .item {
   position: relative;
   justify-content: center;
@@ -5,25 +7,25 @@
   width: 100%;
   padding: 0.25rem 0;
   margin: 0;
-  button: {
-    outline: none;
-    border: none;
-    background: none;
-    cursor: pointer;
-  }
   .display-flex {
     display: flex;
   }
   .item-btn {
     display: flex;
     justify-content: flex-start;
-    outline: none;
     border: none;
     width: 100%;
     padding: 0;
     margin: 0;
     background: none;
     gap: 0.5rem;
+    // This click-to-edit row is a real <button>. `.item .item-btn` (0,2,0)
+    // out-specifies the global `button:focus-visible` ring (0,1,1), so the
+    // resting `outline:none` silently killed the keyboard focus indicator here.
+    // Drop it and re-assert the shared ring at matching specificity (WCAG 2.4.7).
+    &:focus-visible {
+      @include s.outline();
+    }
   }
   .hidden {
     position: absolute;
@@ -43,15 +45,19 @@
     align-items: center;
     width: 100%;
     min-height: 40px;
-    outline: none;
     border: none;
     background: none;
     padding-right: 2rem;
+    // Same focus-ring restore as .item-btn above: this label row is also a
+    // focusable <button> whose resting outline:none out-specified the global ring.
+    &:focus-visible {
+      @include s.outline();
+    }
     .text {
-      font-size: 1rem;
+      font-size: s.$text-md;
       font-weight: 700;
       text-align: start;
-      transition: all 0.1s linear;
+      transition: color s.$hover-timing;
     }
   }
 }

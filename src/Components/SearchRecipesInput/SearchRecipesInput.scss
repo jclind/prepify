@@ -25,186 +25,262 @@
       border-radius: s.$border-radius;
       height: 50px;
       width: 100%;
-      font-size: 1.1rem;
+      font-size: s.$text-lg;
       padding: 0.1rem 2.75rem;
       padding-right: 7.25rem;
       color: s.$primary-text;
       font-weight: 500;
       background: s.$white;
     }
+    // `.btn .btn--primary` ($primary fill/hover from the variant); only its
+    // in-input placement, larger type, inset height + padding are local.
     .search-recipes-btn {
       position: absolute;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-weight: 600;
-      color: s.$white;
       right: 5px;
-      font-size: 1.1rem;
-      background: s.$primary;
+      font-size: s.$text-lg;
       height: 80%;
       padding: 0 1.25rem;
-      border-radius: s.$border-radius;
     }
-    @media screen and (max-width: 500px) {
+    @include s.below(500px) {
       input {
         padding-right: 6.25rem;
       }
       .search-recipes-btn {
-        font-size: 1rem;
+        font-size: s.$text-md;
         padding: 0 1rem;
       }
     }
   }
 
+  // ---- Autocomplete dropdown ------------------------------------------------
+  // An elevated, rounded results card that floats just under the input. It also
+  // hosts the loading (skeleton), empty ("no matches"), and fuzzy-corrected
+  // ("showing similar recipes") states — not just the result list.
   .auto-complete-results {
     position: absolute;
     z-index: 10;
-    top: 85%;
-    display: flex;
-    flex-direction: column;
-    background: s.$white;
-    padding-top: 0.25rem;
+    top: calc(100% + 0.4rem);
+    left: 0;
     width: 100%;
-    border-bottom-left-radius: s.$border-radius;
-    border-bottom-right-radius: s.$border-radius;
+    background: s.$white;
+    border: 1px solid s.$gray-300;
+    border-radius: s.$border-radius;
+    box-shadow: s.$elevation-4;
+    overflow: hidden;
 
-    .recipes-container {
+    .ac-list {
+      list-style: none;
+      margin: 0;
+      padding: 0.3rem;
       display: flex;
       flex-direction: column;
-      width: 90%;
-      margin: 0 auto;
-      margin-top: 0.25rem;
-      border-top: 1px solid s.$gray-400;
+      gap: 0.15rem;
+      max-height: 26rem;
+      overflow-y: auto;
+      // Explicit so it can't compute to `auto` (a `visible` axis paired with a
+      // non-`visible` one resolves to `auto`), which would let scrollIntoView
+      // scroll the list sideways and surface a horizontal scrollbar.
+      overflow-x: hidden;
+    }
 
-      .recipe {
-        display: flex;
-        align-items: center;
-        gap: 1.5rem;
-        height: 150px;
-        background: s.$white;
-        border-bottom: 1px solid s.$gray-200;
-        outline: none;
-        border: none;
-        cursor: pointer;
-        width: 100%;
-        transition: 0.1s all linear;
+    // Each result is a borderless row; the whole row is the hit target.
+    .ac-item {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      width: 100%;
+      // border-box: the app's global reset doesn't set box-sizing, so without
+      // this `width: 100%` + `padding` would overflow by 1rem (content-box),
+      // forcing a horizontal scrollbar and clipping the tags on the right.
+      box-sizing: border-box;
+      padding: 0.5rem;
+      border: none;
+      outline: none;
+      background: transparent;
+      border-radius: s.$radius-md;
+      cursor: pointer;
+      text-align: start;
+      transition: background 0.1s ease;
 
-        &:hover {
-          background: s.$primary-background;
-          cursor: pointer;
+      // `.is-active` is the navigation highlight (driven by aria-activedescendant
+      // and set by both arrow keys and mouse hover, so it can never disagree with
+      // `:hover`). `:hover` is kept for instant feedback before the state update
+      // paints `.is-active` onto the same row.
+      &:hover,
+      &:focus-visible,
+      &.is-active {
+        background: s.$primary-background;
+      }
+
+      &__thumb {
+        position: relative;
+        flex-shrink: 0;
+        width: 56px;
+        height: 56px;
+        border-radius: s.$radius-md;
+        overflow: hidden;
+        background: s.$gray-200;
+        &-skeleton {
+          position: absolute;
+          inset: 0;
+          height: 100%;
+          width: 100%;
         }
-
-        .img-container {
-          position: relative;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          max-width: 125px;
-          max-height: 125px;
+        // Fill the box absolutely (not in normal flow): react-loading-skeleton
+        // wraps its span in an `<span aria-live><br></span>`, and that injected
+        // `<br>` would otherwise push an in-flow img down a line so it renders
+        // offset and clipped on top of the skeleton.
+        img {
+          position: absolute;
+          inset: 0;
+          z-index: 1;
           width: 100%;
           height: 100%;
-          overflow: hidden;
-          flex-shrink: 0;
-          .img-loading {
-            position: absolute;
-            top: 0;
-            height: 100%;
-            width: 100%;
-          }
-          img {
-            z-index: 5;
-            object-fit: cover;
-            width: 100%;
-            height: 100%;
-          }
+          object-fit: cover;
         }
+      }
 
-        .info-content {
-          display: flex;
-          flex-direction: column;
-          flex: 1;
-          gap: 1.5rem;
-          // height: 100px;
-
-          .title {
-            font-size: 1.2rem;
-            text-transform: capitalize;
-            font-weight: 600;
-            color: s.$primary-text;
-            text-align: start;
-          }
-          .data {
-            display: flex;
-            width: fit-content;
-            gap: 1.5rem;
-            .item {
-              display: flex;
-              align-items: center;
-              gap: 0.25rem;
-              font-weight: 500;
-              font-size: 1rem;
-              white-space: nowrap;
-              color: s.$primary-text;
-
-              .icon {
-                height: 20px;
-                width: 20px;
-                // stroke-width: 10;
-              }
-            }
-          }
+      &__body {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        flex: 1;
+        min-width: 0;
+      }
+      &__title {
+        font-size: s.$text-md;
+        font-weight: 600;
+        text-transform: capitalize;
+        color: s.$primary-text;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      &__meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.85rem;
+      }
+      &__stat {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        font-size: s.$text-sm;
+        font-weight: 500;
+        white-space: nowrap;
+        color: s.$secondary-text;
+        svg {
+          height: 15px;
+          width: 15px;
         }
-        .tags {
-          display: flex;
-          justify-content: flex-end;
-          flex-wrap: wrap;
-          gap: 0.25rem;
-          width: 200px;
-          .tag {
-            padding-right: 0.5rem;
-            font-size: 0.7rem;
-            font-weight: 700;
-          }
-          @media screen and (max-width: 725px) {
-            display: none;
-          }
-        }
+      }
 
-        @media screen and (max-width: 725px) {
-          gap: 0.75rem;
-          .img-container {
-            max-width: 100px;
-            max-height: 100px;
-          }
-          .info-content {
-            .title {
-              font-size: 1rem;
-            }
-            .data {
-              gap: 1rem;
-              .item {
-                display: flex;
-                align-items: center;
-                gap: 0.25rem;
-                font-weight: 500;
-                font-size: 0.75rem;
+      &__tags {
+        display: flex;
+        flex-shrink: 0;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 0.3rem;
+        max-width: 9rem;
+      }
+      &__tag {
+        font-size: s.$text-caption;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+        color: s.$secondary-text;
+        background: s.$primary-background;
+        padding: 0.15rem 0.45rem;
+        border-radius: s.$radius-pill;
+        white-space: nowrap;
+      }
 
-                .icon {
-                  height: 16px;
-                  width: 16px;
-                }
-              }
-            }
-          }
+      @include s.below(s.$bp-lg) {
+        &__tags {
+          display: none;
         }
-        @media screen and (max-width: 956px) {
-          .info-content {
-            .title {
-              font-size: 1.125rem;
-            }
-          }
-        }
+      }
+    }
+
+    // Loading placeholder row. Mirrors `.ac-item`'s layout so the dropdown
+    // doesn't shift when results arrive, but is a separate class so it shares
+    // none of the interactive row's selectors (no hit-target, no hover).
+    .ac-skeleton {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      width: 100%;
+      box-sizing: border-box;
+      padding: 0.5rem;
+      cursor: default;
+
+      &__thumb {
+        flex-shrink: 0;
+        width: 56px;
+        height: 56px;
+        border-radius: s.$radius-md;
+      }
+      &__body {
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+        flex: 1;
+        min-width: 0;
+      }
+    }
+
+    // Fuzzy "did you mean" banner above the list.
+    .ac-corrected {
+      margin: 0;
+      padding: 0.55rem 0.85rem;
+      font-size: s.$text-fine;
+      font-weight: 600;
+      color: s.$secondary-text;
+      background: s.$primary-background;
+      border-bottom: 1px solid s.$gray-200;
+    }
+
+    // No-results state inside the dropdown.
+    .ac-empty {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      padding: 1.1rem 1rem;
+      text-align: center;
+      &__title {
+        font-weight: 600;
+        color: s.$primary-text;
+      }
+      &__hint {
+        font-size: s.$text-sm;
+        color: s.$tertiary-text;
+      }
+    }
+
+    // Sticky footer action: run the full search for the typed term.
+    .ac-footer {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.45rem;
+      width: 100%;
+      box-sizing: border-box;
+      padding: 0.7rem 1rem;
+      border: none;
+      border-top: 1px solid s.$gray-200;
+      background: s.$white;
+      color: s.$primary;
+      font-size: s.$text-base;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.1s ease;
+      &:hover,
+      &:focus-visible {
+        background: s.$primary-background;
+      }
+      &__icon {
+        height: 17px;
+        width: 17px;
       }
     }
   }

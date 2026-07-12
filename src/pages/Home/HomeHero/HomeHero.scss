@@ -41,7 +41,37 @@
     text-align: center;
     margin-top: calc(#{s.$nav-height} / 4);
     margin-bottom: 2.5rem;
-    font-size: 1.55rem;
+    font-size: s.$text-2xl;
     font-weight: 500;
+  }
+}
+
+// "What should I cook?" trigger button, living in the hero overlay under the
+// search input. Clicking opens a spotlight modal (HomeCookSuggestion.scss); the
+// button itself never moves, so nothing on the page shifts.
+.home-cook-suggestion {
+  margin-top: 1.25rem;
+  display: flex;
+  justify-content: center;
+
+  // Bespoke AA brand-orange CTA on the `.btn` base — keep its accessible fill,
+  // larger padding/size, and resting drop shadow; the hover is the shared Lift
+  // (rise + brand glow + $hover-brighten lighten), eased by the base `.btn`
+  // transition — no local one.
+  .cook-suggestion-btn {
+    padding: 0.7rem 1.4rem;
+    background: s.$primary-accessible;
+    color: s.$white;
+    font-size: s.$text-md;
+    box-shadow: s.$elevation-2;
+
+    svg {
+      font-size: s.$text-xl;
+    }
+    &:hover {
+      filter: s.$hover-brighten;
+      transform: translateY(s.$hover-lift);
+      box-shadow: s.$shadow-brand;
+    }
   }
 }

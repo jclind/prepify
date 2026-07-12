@@ -1,0 +1,165 @@
+@use '../../helpers.scss' as s;
+
+// Spotlight modal card for "What should I cook?". The price chip + thumb match
+// the standard home recipe thumbnails (see Home.scss .home-recipe-card .thumb).
+.cook-modal-card {
+  position: relative;
+  width: min(360px, 90vw);
+  background: #fff;
+  border-radius: s.$radius-3xl;
+  overflow: hidden;
+  text-align: left;
+  box-shadow: s.$elevation-6;
+  animation: cook-modal-pop 0.18s ease;
+
+  // `.btn .btn--icon` — square/circular icon button. Local: its absolute
+  // placement, the smaller 30px size, and the translucent-white chip look.
+  .cook-modal-close {
+    position: absolute;
+    top: 0.55rem;
+    right: 0.55rem;
+    z-index: 2;
+    width: 30px;
+    height: 30px;
+    background: rgba(255, 255, 255, 0.92);
+    color: s.$primary-text;
+    font-size: s.$text-lg;
+    box-shadow: s.$elevation-2;
+    // Solid white + a stronger shadow on hover so the over-image chip reads as
+    // interactive (was a near-imperceptible 92%→100% white swap). Shadow eases
+    // via the `.btn` base transition.
+    &:hover { background: #fff; box-shadow: s.$elevation-3; }
+  }
+
+  .thumb {
+    position: relative;
+    // The container reserves the height (4:3) so it's constant even before the
+    // next image loads — picks never change the image box size.
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    background: #eceef0;
+    img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    // Same chip as the standard recipe thumbnails.
+    .price-chip {
+      position: absolute;
+      bottom: 0.6rem;
+      right: 0.6rem;
+      background: rgba(255, 255, 255, 0.95);
+      color: s.$primary;
+      font-weight: 800;
+      font-size: s.$text-fine;
+      padding: 0.28rem 0.6rem;
+      border-radius: s.$radius-pill;
+      box-shadow: s.$elevation-2;
+    }
+    .reroll-veil {
+      position: absolute;
+      inset: 0;
+      background: rgba(255, 255, 255, 0.55);
+      display: grid;
+      place-items: center;
+      .spinner {
+        width: 30px;
+        height: 30px;
+        border-radius: s.$radius-circle;
+        border: 3px solid rgba(0, 0, 0, 0.15);
+        border-top-color: s.$primary;
+        animation: cook-spin 0.7s linear infinite;
+      }
+    }
+  }
+
+  .body { padding: 0.9rem 1rem 1rem; }
+  h3 {
+    font-size: s.$text-lg;
+    font-weight: 600;
+    line-height: 1.3;
+    text-transform: capitalize;
+    margin: 0 0 0.5rem;
+    color: s.$primary-text;
+    // Always reserve two lines and clamp longer titles, so a 1-line and a
+    // 2-line title occupy the same height (no vertical jump between picks).
+    min-height: 2.6em;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .meta {
+    display: flex;
+    flex-wrap: nowrap; // keep meta on one line so its height is constant
+    align-items: center;
+    gap: 0.7rem;
+    color: #6b7480;
+    font-size: s.$text-sm;
+    margin-bottom: 0.95rem;
+    overflow: hidden;
+    span { display: inline-flex; align-items: center; gap: 0.25rem; white-space: nowrap; }
+    .cuisine { color: s.$primary-accessible; font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
+  }
+  .actions { display: flex; gap: 0.6rem; }
+  // skeleton stand-ins for the two action buttons
+  .actions .sk-btn { flex: 1; line-height: 1; }
+  // The primary action composes the shared `.btn.btn--primary` (fill + Lift
+  // hover come from the system); `.cook-secondary` is a local soft-grey neutral.
+  // It's deliberately NOT called `.ghost` — the system `.btn--ghost` is a
+  // transparent/flat button, and a grey fill sharing that name shadowed it.
+  // Both flex to equal widths in the .actions row and keep the compact sizing.
+  .btn--primary,
+  .cook-secondary {
+    flex: 1;
+    font-size: s.$text-base;
+    padding: 0.6rem 1rem;
+    text-decoration: none;
+    transition: background s.$hover-timing, filter s.$hover-timing,
+      transform s.$hover-timing, box-shadow s.$hover-timing;
+    svg { font-size: s.$text-lg; }
+  }
+  .cook-secondary {
+    // Greys ride the shared $gray ramp ($gray-200 → $gray-300 on hover); it
+    // lifts like every other content button — one hover language, not two.
+    background: s.$gray-200;
+    color: s.$primary-text;
+    font-weight: 500;
+    &:hover {
+      background: s.$gray-300;
+      transform: translateY(s.$hover-lift);
+      box-shadow: s.$elevation-2;
+    }
+    &:disabled { opacity: 0.7; cursor: default; }
+  }
+}
+
+// Loading / empty / error states reuse the card frame.
+.cook-modal-state {
+  width: min(360px, 90vw);
+  background: #fff;
+  border-radius: s.$radius-3xl;
+  overflow: hidden;
+  .body { padding: 0.9rem 1rem 1rem; }
+  &.cook-modal-msg {
+    padding: 1.6rem 1.4rem;
+    text-align: center;
+    color: s.$primary-text;
+    p { margin: 0 0 0.9rem; }
+    // The "Try again" button here is the same `.cook-secondary` as the card
+    // actions and inherits that one treatment (grey fill, single lift hover) —
+    // no local override, so the two secondaries can't drift apart again.
+  }
+}
+
+@keyframes cook-modal-pop {
+  from { opacity: 0; transform: scale(0.95) translateY(6px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes cook-spin {
+  to { transform: rotate(360deg); }
+}

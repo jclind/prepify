@@ -1,0 +1,105 @@
+@use '../../helpers.scss' as s;
+
+.admin-recipe-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin: 1rem 0;
+  padding: 0.6rem 0.8rem;
+  border: 1px dashed s.$admin-automod-border;
+  border-radius: s.$radius-md;
+  background: s.$admin-automod-bg;
+
+  .arc-label {
+    font-size: s.$text-caption;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: s.$admin-automod-text;
+    background: s.$admin-automod-label-bg;
+    padding: 0.15rem 0.45rem;
+    border-radius: s.$radius-xs;
+  }
+
+  .arc-pill {
+    font-size: s.$text-caption;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 0.15rem 0.45rem;
+    border-radius: s.$radius-xs;
+
+    &.hidden {
+      background: s.$admin-danger-bg;
+      color: s.$admin-danger-text;
+    }
+
+    &.unpublished {
+      background: s.$admin-slate-200;
+      color: s.$admin-slate-700;
+    }
+
+    &.featured {
+      background: s.$admin-warn-bg;
+      color: s.$admin-warn-text;
+    }
+
+    &.pending {
+      background: s.$admin-info-bg;
+      color: s.$admin-info-text;
+    }
+  }
+
+  // Auto-hold explanation; wraps to its own line under the strip. Shared visual
+  // treatment lives on .classifier-note (ClassifierNote.scss); only the
+  // full-width wrap is overridden here.
+  .arc-automod-note {
+    flex-basis: 100%;
+  }
+
+  .arc-btn {
+    cursor: pointer;
+    border-radius: s.$radius-sm;
+    padding: 0.4rem 0.85rem;
+    font-size: s.$text-sm;
+    font-weight: 600;
+    border: 1px solid s.$admin-slate-300;
+    background: s.$white;
+    color: s.$admin-slate-700;
+    transition: color s.$hover-timing, background-color s.$hover-timing,
+      border-color s.$hover-timing;
+
+    &:hover:not(:disabled) {
+      border-color: s.$admin-slate-400;
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+
+    &.feature {
+      border-color: s.$admin-warn-fill;
+      color: s.$admin-warn-text;
+    }
+
+    &.takedown {
+      border-color: s.$error-red;
+      color: s.$admin-danger-text;
+    }
+
+    // Primary action for an auto-held recipe — filled green so it reads as the
+    // recommended way out of pending_review.
+    &.approve {
+      border-color: s.$admin-ok-fill-hover;
+      background: s.$admin-ok-fill;
+      color: s.$white;
+
+      &:hover:not(:disabled) {
+        background: s.$admin-ok-fill-hover;
+        border-color: s.$admin-ok-text;
+      }
+    }
+  }
+}

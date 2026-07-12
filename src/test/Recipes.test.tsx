@@ -12,32 +12,19 @@ vi.mock('src/api/recipes', () => ({
   default: {
     getAllRecipes: vi.fn(),
     searchAutoCompleteRecipes: vi.fn().mockResolvedValue([]),
+    // RecipeCard's save button queries this; it stays disabled in tests (no
+    // signed-in uid), but provide it so the mocked module is complete.
+    getSavedRecipeIds: vi.fn().mockResolvedValue([]),
+    // The filter drawer queries this to hide cuisines with no recipes.
+    getRecipeFacets: vi
+      .fn()
+      .mockResolvedValue({ cuisines: [], diets: [], mealTypes: [] }),
   },
 }))
 
-// RecipeFilters controls filtersLoading AND selectFilterVal. The Recipes useEffect
-// that calls getRecipes depends on [selectFilterVal, ...], so the mock must update
-// selectFilterVal on mount to trigger the initial fetch.
-vi.mock('src/Components/RecipeFilters/RecipeFilters', async () => {
-  const { useEffect } = await import('react')
-  return {
-    default: ({ setFiltersLoading, setSelectVal }: any) => {
-      useEffect(() => {
-        setFiltersLoading(false)
-        setSelectVal('new') // changes selectFilterVal → triggers getRecipes effect
-      }, [])
-      return (
-        <button
-          data-testid='change-filter'
-          onClick={() => setSelectVal('popular')}
-        >
-          Change Filter
-        </button>
-      )
-    },
-  }
-})
-
+// The page reads its filters from the URL on mount and clears filtersLoading
+// itself, so the initial fetch fires without any filter component. Stub the
+// search input (autocomplete makes its own request).
 vi.mock('src/Components/SearchRecipesInput/SearchRecipesInput', () => ({
   default: () => null,
 }))
@@ -90,11 +77,14 @@ describe('Recipes (Browse) page', () => {
     mockGetAllRecipes.mockReset()
   })
 
-  it('shows 4 loading skeleton cards before the API resolves', () => {
+  it('shows loading skeleton cards before the API resolves', async () => {
     mockGetAllRecipes.mockReturnValue(new Promise(() => {}))
     const { container } = renderRecipes()
-    // 4 RecipeThumbnail buttons rendered while data is pending
-    expect(container.querySelectorAll('.recipe-thumbnail')).toHaveLength(4)
+    // Skeleton RecipeCards are delay-gated (useDelayedLoading) so a cache hit
+    // can't flash them; on a pending load they appear once the delay elapses.
+    await waitFor(() =>
+      expect(container.querySelectorAll('.recipe-card--loading')).toHaveLength(8)
+    )
     expect(screen.queryByRole('img')).toBeNull()
   })
 
@@ -102,9 +92,6 @@ describe('Recipes (Browse) page', () => {
     mockGetAllRecipes.mockResolvedValue({
       recipeList: [makeRecipe('1'), makeRecipe('2'), makeRecipe('3')],
       total_results: 3,
-      page: 0,
-      entries_per_page: 9,
-      filters: {},
     })
     renderRecipes()
     await screen.findByText('Recipe 1')
@@ -112,41 +99,72 @@ describe('Recipes (Browse) page', () => {
     expect(screen.getByText('Recipe 3')).toBeInTheDocument()
   })
 
-  it('shows "No Results Found" when the API returns total_results: 0', async () => {
+  it('shows an empty state when the API returns total_results: 0', async () => {
     mockGetAllRecipes.mockResolvedValue({
       recipeList: [],
       total_results: 0,
-      page: 0,
-      entries_per_page: 9,
-      filters: {},
     })
     renderRecipes()
-    await screen.findByText('No Results Found')
+    await screen.findByText('No recipes found')
+  })
+
+  it('empty state for a search query offers "Browse all recipes" and names the query', async () => {
+    mockGetAllRecipes.mockResolvedValue({ recipeList: [], total_results: 0 })
+    renderRecipes('/recipes?q=zzz-nope')
+    await screen.findByText('No recipes found')
+    expect(screen.getByText(/zzz nope/i)).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /browse all recipes/i })
+    ).toBeInTheDocument()
+    // No active filters → no "Clear filters" affordance.
+    expect(
+      screen.queryByRole('button', { name: /clear filters/i })
+    ).toBeNull()
+  })
+
+  it('empty state with active filters offers "Clear filters"', async () => {
+    mockGetAllRecipes.mockResolvedValue({ recipeList: [], total_results: 0 })
+    renderRecipes('/recipes?dietTags=vegan')
+    await screen.findByText('No recipes found')
+    expect(
+      screen.getByRole('button', { name: /clear filters/i })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /browse all recipes/i })
+    ).toBeInTheDocument()
+  })
+
+  it('"Browse all recipes" navigates to a bare /recipes and refetches unfiltered', async () => {
+    mockGetAllRecipes.mockResolvedValue({ recipeList: [], total_results: 0 })
+    renderRecipes('/recipes?q=zzz-nope&dietTags=vegan')
+    await screen.findByText('No recipes found')
+    mockGetAllRecipes.mockClear()
+    await userEvent.click(
+      screen.getByRole('button', { name: /browse all recipes/i })
+    )
+    await waitFor(() => expect(mockGetAllRecipes).toHaveBeenCalled())
+    const arg = mockGetAllRecipes.mock.calls.at(-1)?.[0]
+    expect(arg.query).toBe('')
+    expect(arg.diets).toEqual([])
   })
 
   it('"Load More" button is visible when total_results > loaded count', async () => {
     mockGetAllRecipes.mockResolvedValue({
       recipeList: [makeRecipe('1'), makeRecipe('2'), makeRecipe('3')],
       total_results: 6,
-      page: 0,
-      entries_per_page: 9,
-      filters: {},
     })
     renderRecipes()
-    await screen.findByText('Load More Recipes')
+    await screen.findByText('Load more recipes')
   })
 
   it('"Load More" button is absent when all results are already loaded', async () => {
     mockGetAllRecipes.mockResolvedValue({
       recipeList: [makeRecipe('1'), makeRecipe('2')],
       total_results: 2,
-      page: 0,
-      entries_per_page: 9,
-      filters: {},
     })
     renderRecipes()
     await screen.findByText('Recipe 1')
-    expect(screen.queryByText('Load More Recipes')).toBeNull()
+    expect(screen.queryByText('Load more recipes')).toBeNull()
   })
 
   it('"Load More" is disabled while a fetch is in flight', async () => {
@@ -154,9 +172,6 @@ describe('Recipes (Browse) page', () => {
     mockGetAllRecipes.mockResolvedValueOnce({
       recipeList: [makeRecipe('1')],
       total_results: 6,
-      page: 0,
-      entries_per_page: 9,
-      filters: {},
     })
 
     let resolveNext: (v: any) => void
@@ -167,9 +182,9 @@ describe('Recipes (Browse) page', () => {
     )
 
     const { container } = renderRecipes()
-    await screen.findByText('Load More Recipes')
+    await screen.findByText('Load more recipes')
 
-    await user.click(screen.getByText('Load More Recipes'))
+    await user.click(screen.getByText('Load more recipes'))
 
     const btn = container.querySelector('.load-more-btn') as HTMLButtonElement
     expect(btn).toBeDisabled()
@@ -177,9 +192,6 @@ describe('Recipes (Browse) page', () => {
     resolveNext!({
       recipeList: [makeRecipe('2')],
       total_results: 6,
-      page: 1,
-      entries_per_page: 9,
-      filters: {},
     })
     await waitFor(() => expect(btn).not.toBeDisabled())
   })
@@ -190,24 +202,20 @@ describe('Recipes (Browse) page', () => {
       .mockResolvedValueOnce({
         recipeList: [makeRecipe('1')],
         total_results: 6,
-        page: 0,
-        entries_per_page: 9,
-        filters: {},
       })
       .mockResolvedValueOnce({
         recipeList: [makeRecipe('2')],
         total_results: 6,
-        page: 1,
-        entries_per_page: 9,
-        filters: {},
       })
 
     renderRecipes()
-    await screen.findByText('Load More Recipes')
-    await user.click(screen.getByText('Load More Recipes'))
+    await screen.findByText('Load more recipes')
+    await user.click(screen.getByText('Load more recipes'))
 
     await waitFor(() =>
-      expect(mockGetAllRecipes).toHaveBeenCalledWith(1, expect.anything(), expect.anything(), expect.anything(), expect.anything(), expect.anything())
+      expect(mockGetAllRecipes).toHaveBeenCalledWith(
+        expect.objectContaining({ page: 1 })
+      )
     )
   })
 
@@ -217,21 +225,15 @@ describe('Recipes (Browse) page', () => {
       .mockResolvedValueOnce({
         recipeList: [makeRecipe('1')],
         total_results: 6,
-        page: 0,
-        entries_per_page: 9,
-        filters: {},
       })
       .mockResolvedValueOnce({
         recipeList: [makeRecipe('2')],
         total_results: 6,
-        page: 1,
-        entries_per_page: 9,
-        filters: {},
       })
 
     renderRecipes()
-    await screen.findByText('Load More Recipes')
-    await user.click(screen.getByText('Load More Recipes'))
+    await screen.findByText('Load more recipes')
+    await user.click(screen.getByText('Load more recipes'))
 
     await screen.findByText('Recipe 2')
     expect(screen.getByText('Recipe 1')).toBeInTheDocument()
@@ -242,9 +244,6 @@ describe('Recipes (Browse) page', () => {
     mockGetAllRecipes.mockResolvedValue({
       recipeList: [makeRecipe('1')],
       total_results: 1,
-      page: 0,
-      entries_per_page: 9,
-      filters: {},
     })
 
     renderRecipes()
@@ -254,15 +253,16 @@ describe('Recipes (Browse) page', () => {
     mockGetAllRecipes.mockResolvedValue({
       recipeList: [makeRecipe('A')],
       total_results: 1,
-      page: 0,
-      entries_per_page: 9,
-      filters: {},
     })
 
-    await user.click(screen.getByTestId('change-filter'))
+    // Open the Sort menu and pick a different option.
+    await user.click(screen.getByRole('button', { name: /Sort:/ }))
+    await user.click(screen.getByRole('button', { name: 'Newest' }))
 
     await waitFor(() =>
-      expect(mockGetAllRecipes).toHaveBeenCalledWith(0, expect.anything(), expect.anything(), expect.anything(), expect.anything(), expect.anything())
+      expect(mockGetAllRecipes).toHaveBeenCalledWith(
+        expect.objectContaining({ page: 0, order: 'new' })
+      )
     )
     await screen.findByText('Recipe A')
     expect(screen.queryByText('Recipe 1')).toBeNull()
@@ -272,19 +272,11 @@ describe('Recipes (Browse) page', () => {
     mockGetAllRecipes.mockResolvedValue({
       recipeList: [],
       total_results: 0,
-      page: 0,
-      entries_per_page: 9,
-      filters: {},
     })
     renderRecipes('/?q=taco-tuesday')
     await waitFor(() =>
       expect(mockGetAllRecipes).toHaveBeenCalledWith(
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        'taco tuesday'
+        expect.objectContaining({ query: 'taco tuesday' })
       )
     )
   })

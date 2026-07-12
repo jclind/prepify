@@ -7,17 +7,21 @@
   justify-content: space-between;
   gap: 1rem;
   margin-bottom: 2rem;
-  padding: 0.7rem 1.25rem;
+  padding: 0.9rem 1.4rem;
   width: 100%;
-  background: s.$gray-50;
-  border: 1px solid s.$gray-400;
-  border-radius: s.$border-radius;
+  // there's no global border-box reset, so without this the padding + border
+  // push the 100%-wide banner past its parent (clipped by #root overflow:hidden)
+  box-sizing: border-box;
+  background: linear-gradient(135deg, rgba(s.$secondary, 0.13), rgba(s.$primary, 0.09));
+  border: 1.5px solid rgba(s.$primary, 0.22);
+  border-radius: s.$radius-3xl;
+  box-shadow: s.$elevation-3;
   .who {
     display: flex;
     align-items: center;
     gap: 0.6rem;
-    font-size: 0.9rem;
-    font-weight: 600;
+    font-size: s.$text-base;
+    font-weight: 700;
     color: s.$secondary-text;
     .icon {
       height: 20px;
@@ -33,49 +37,121 @@
     display: flex;
     gap: 0.6rem;
   }
-  button {
+  .owner-stats {
+    flex-basis: 100%;
     display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    border: 1px solid s.$gray-500;
-    padding: 0.4rem 0.8rem;
-    border-radius: s.$border-radius;
-    cursor: pointer;
-    font-size: 0.9rem;
-    font-weight: 600;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.5rem;
+    padding-top: 0.85rem;
+    margin-top: 0.15rem;
+    border-top: 1px solid rgba(s.$primary, 0.15);
+    .stat {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: s.$text-sm;
+      font-weight: 600;
+      color: s.$secondary-text;
+      .icon { height: 17px; width: 17px; color: s.$secondary; }
+      b { color: s.$primary-text; font-weight: 800; }
+    }
+  }
+  // edit/delete are a bespoke "outline that fills on hover" pair on the `.btn`
+  // base (pill + reset); only the compact sizing, 1.5px border, and invert
+  // hovers are local.
+  button {
+    border: 1.5px solid s.$gray-300;
+    padding: 0.5rem 0.95rem;
+    font-size: s.$text-base;
+    font-weight: 700;
     color: s.$primary-text;
-    background: transparent;
+    background: s.$white;
     .icon {
       height: 17px;
       width: 17px;
     }
-    &:focus {
-      @include s.outline();
-    }
   }
   button.edit-btn {
     background: none;
-    transition: all 0.1s linear;
+    transition: color s.$hover-timing, background-color s.$hover-timing,
+      border-color s.$hover-timing, transform s.$hover-timing,
+      box-shadow s.$hover-timing;
+    // Orange outline hover (border + text) + a lift, matching its Delete sibling
+    // (which lifts) and the app's other standalone outline buttons — was a
+    // one-off charcoal fill, the only dark-fill hover around.
     &:hover {
-      color: s.$primary-background;
-      background: s.$primary-text;
+      color: s.$primary;
+      border-color: s.$primary;
+      transform: translateY(s.$hover-lift);
+      box-shadow: s.$elevation-2;
     }
     &:disabled {
       opacity: 0.5;
       cursor: not-allowed;
+      // Disabled stays flat — no lift echo of the enabled hover.
       &:hover {
         color: s.$primary-text;
+        border-color: s.$gray-300;
         background: none;
+        transform: none;
+        box-shadow: none;
       }
     }
   }
+  // Destructive: red outline at rest so it telegraphs danger (was neutral grey,
+  // indistinguishable from Edit), deepening to a red fill + lift + glow on hover
+  // — the same language as its confirm modal's `.btn--danger-solid`. Matched
+  // explicitly here because the shared `button` base out-specifies `.btn--danger`.
   button.delete-btn {
     background: none;
-    transition: all 0.1s linear;
+    border-color: s.$error-red;
+    color: s.$error-red;
+    transition: color s.$hover-timing, background-color s.$hover-timing,
+      border-color s.$hover-timing, transform s.$hover-timing,
+      box-shadow s.$hover-timing;
     &:hover {
-      color: s.$primary-background;
+      color: s.$white;
       background: s.$error-red;
       border-color: s.$error-red;
+      transform: translateY(s.$hover-lift);
+      box-shadow: s.$shadow-danger;
+    }
+  }
+
+  // ── mobile: stack into a tidy card — heading, equal Edit/Delete row, evenly
+  // spaced stats ──────────────────────────────────────────────────────────────
+  @include s.below(s.$bp-lg) {
+    gap: 0.85rem;
+    padding: 1rem 1.1rem;
+    .who {
+      flex-basis: 100%;
+      font-size: s.$text-sm;
+    }
+    .btns-container {
+      width: 100%;
+      gap: 0.6rem;
+      button {
+        flex: 1;
+        justify-content: center;
+        padding: 0.55rem 0.5rem;
+      }
+    }
+    // Equal-width stat strip with hairline dividers — replaces the old
+    // space-between layout, which scattered the three stats (and wrapped
+    // awkwardly on narrow phones) instead of reading as one tidy row.
+    .owner-stats {
+      flex-wrap: nowrap;
+      gap: 0;
+      padding-top: 0.8rem;
+      .stat {
+        flex: 1;
+        min-width: 0;
+        justify-content: center;
+        font-size: s.$text-fine;
+        white-space: nowrap;
+        .icon { height: 15px; width: 15px; }
+        & + .stat { border-left: 1px solid rgba(s.$primary, 0.15); }
+      }
     }
   }
 }
@@ -85,9 +161,18 @@
     position: absolute;
     top: 1rem;
     right: 1rem;
+    // Grey ghost hover on the `.btn .btn--icon` circle, matching the
+    // Settings/Account modal closes (the `--icon` variant carries no colour of
+    // its own, and the bare `.btn` gave this zero hover + oversized md padding).
+    background: s.$gray-200;
+    color: s.$secondary-text;
+    &:hover {
+      background: s.$gray-300;
+      color: s.$primary-text;
+    }
     .icon {
-      height: 30px;
-      width: 30px;
+      height: 18px;
+      width: 18px;
     }
   }
   .content {
@@ -97,7 +182,7 @@
     align-items: center;
     h4 {
       font-weight: 700;
-      font-size: 1.2rem;
+      font-size: s.$text-xl;
       padding-bottom: 1rem;
     }
     p {
@@ -113,30 +198,12 @@
       gap: 2rem;
       padding-top: 2rem;
 
-      button {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        font-size: 1rem;
-        font-weight: 600;
-        border-radius: s.$border-radius;
-        border: none;
+      // cancel = .btn--outline, confirm = .btn--danger-solid; only the fixed
+      // modal-button footprint is local.
+      .btn {
         width: 180px;
         height: 45px;
-        cursor: pointer;
-      }
-      button.cancel {
-        background: s.$secondary-background;
-        &:hover {
-          background: s.$tertiary-background;
-        }
-      }
-      button.confirm {
-        background: s.$error-red;
-        color: s.$primary-background;
-        &:hover {
-          opacity: 0.9;
-        }
+        font-size: s.$text-md;
       }
     }
   }

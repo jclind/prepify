@@ -1,10 +1,73 @@
 const express = require('express')
+const { getAuth } = require('firebase-admin/auth')
+const Sentry = require('@sentry/node')
+const { asyncHandler } = require('../util/asyncHandler')
 const router = express.Router()
-const { getDB } = require('../db')
-const { verifyToken } = require('../middleware/auth')
+const { getDB, getClient } = require('../db')
+const { verifyToken, requireActive } = require('../middleware/auth')
+const { profileWriteLimiter } = require('../middleware/writeLimiter')
+const { recordAudit } = require('../util/auditLog')
+const { deleteRecipeImage, deleteProfilePhoto } = require('../util/firebaseStorage')
+// Imported as a namespace (not a destructured binding) so tests can spy on the
+// recompute — deleteAccount's post-commit reconciliation must survive a failing
+// recompute without going silent.
+const recipeRating = require('../util/recipeRating')
+const { recipeIdInQuery } = require('../util/recipeIdQuery')
+const { RECIPE_VISIBLE } = require('../util/moderation')
+const {
+  publicRecipeProjection,
+  recipeInternalStampsExclusion,
+} = require('../util/recipeFields')
+const { moderateText } = require('../util/textModeration')
+const { moderateImage } = require('../util/imageModeration')
+const { respondBlocked } = require('../util/automod')
 
 const USERNAME_MIN_LENGTH = 3
 const USERNAME_MAX_LENGTH = 30
+// A handle lands in the public profile URL (/u/:username), so keep it to a safe,
+// URL-clean character set: letters, digits, and a small set of separators
+// (. _ -). Everything else (spaces, @, /, emoji, punctuation) is rejected.
+const USERNAME_ALLOWED = /^[a-zA-Z0-9._-]+$/
+const DISPLAY_NAME_MAX_LENGTH = 50
+
+const BIO_MAX_LENGTH = 300
+const LOCATION_MAX_LENGTH = 80
+
+// Validates the optional profile fields. bio/location are both optional and may
+// be empty (an empty string clears the field). Length is checked against the
+// trimmed value so trailing whitespace can't be used to exceed the limit.
+// Returns an error string, or null when valid.
+function validateProfile(bio, location) {
+  if (bio != null && typeof bio !== 'string') {
+    return 'bio must be a string'
+  }
+  if (location != null && typeof location !== 'string') {
+    return 'location must be a string'
+  }
+  if (typeof bio === 'string' && bio.trim().length > BIO_MAX_LENGTH) {
+    return `bio must be at most ${BIO_MAX_LENGTH} characters`
+  }
+  if (
+    typeof location === 'string' &&
+    location.trim().length > LOCATION_MAX_LENGTH
+  ) {
+    return `location must be at most ${LOCATION_MAX_LENGTH} characters`
+  }
+  return null
+}
+
+// Validates the two privacy toggles. Both are required booleans — the client
+// always sends the current state of each switch. Returns an error string, or
+// null when valid.
+function validatePrivacy(isPublic, hideLocation) {
+  if (typeof isPublic !== 'boolean') {
+    return 'isPublic must be a boolean'
+  }
+  if (typeof hideLocation !== 'boolean') {
+    return 'hideLocation must be a boolean'
+  }
+  return null
+}
 
 // Mirrors the client-side rules in src/Components/Form/UsernameInput.tsx so the
 // API can't be bypassed by calling it directly. Returns an error string, or
@@ -22,6 +85,9 @@ function validateUsername(username) {
   if (username.length > USERNAME_MAX_LENGTH) {
     return `Username must be at most ${USERNAME_MAX_LENGTH} characters`
   }
+  if (!USERNAME_ALLOWED.test(username)) {
+    return 'Username can only contain letters, numbers, and . _ -'
+  }
   return null
 }
 
@@ -29,73 +95,487 @@ function validateUsername(username) {
 // Returns the authenticated user's own username, or null if not set yet.
 // Scoped to req.uid so a user can't enumerate other users' usernames by id;
 // other users' usernames are surfaced through the reviews endpoints instead.
-router.get('/getUsername', verifyToken, async (req, res) => {
-  try {
-    const db = getDB()
-    const doc = await db.collection('usernames').findOne({ _id: req.uid })
-    if (!doc) return res.json(null)
-    res.json(doc.username)
-  } catch (err) {
-    res.status(500).json({ error: err.message })
-  }
-})
+router.get('/getUsername', verifyToken, asyncHandler(async (req, res) => {
+  const db = getDB()
+  const doc = await db.collection('usernames').findOne({ _id: req.uid })
+  if (!doc) return res.json(null)
+  res.json(doc.username)
+}))
 
 // GET /checkUsernameAvailability?username=...
 // Returns true if username is available, false if taken
-router.get('/checkUsernameAvailability', async (req, res) => {
-  try {
-    const { username } = req.query
-    if (!username) return res.status(400).json({ error: 'username is required' })
-    const db = getDB()
-    const existing = await db
-      .collection('usernames')
-      .findOne({ username_lower: username.toLowerCase() })
-    res.json(existing === null)
-  } catch (err) {
-    res.status(500).json({ error: err.message })
+router.get('/checkUsernameAvailability', asyncHandler(async (req, res) => {
+  const { username } = req.query
+  if (!username || typeof username !== 'string') {
+    return res.status(400).json({ error: 'username is required' })
   }
-})
+  const db = getDB()
+  const existing = await db
+    .collection('usernames')
+    .findOne({ username_lower: username.toLowerCase() })
+  res.json(existing === null)
+}))
+
+// GET /getMyStatus — the authenticated user's own moderation status, so the
+// client can show a persistent "account suspended/banned" banner up front
+// instead of only failing on a write. NOT behind requireActive: a suspended
+// user must be able to read their own status.
+router.get('/getMyStatus', verifyToken, asyncHandler(async (req, res) => {
+  const db = getDB()
+  const doc = await db.collection('users').findOne({ _id: req.uid })
+  res.json({
+    status: doc?.status || 'active',
+    statusReason: doc?.statusReason || null,
+  })
+}))
 
 // POST /setUsername?username=...
 // Creates or updates the username for the authenticated user
-router.post('/setUsername', verifyToken, async (req, res) => {
-  try {
-    const { username } = req.query
-    const validationError = validateUsername(username)
-    if (validationError) {
-      return res.status(400).json({ error: validationError })
-    }
-    const usernameLower = username.toLowerCase()
-    const uid = req.uid
-    const db = getDB()
+router.post('/setUsername', verifyToken, requireActive, profileWriteLimiter, asyncHandler(async (req, res) => {
+  const { username } = req.query
+  const validationError = validateUsername(username)
+  if (validationError) {
+    return res.status(400).json({ error: validationError })
+  }
+  // A username is high-visibility (it lands in the URL), so both high and medium
+  // confidence block at signup AND on every rename. The 'username' context also
+  // applies the identity-only spam rules (no URLs/domains in a handle).
+  const db = getDB()
+  const usernameVerdict = await moderateText(username, 'username')
+  if (!usernameVerdict.allowed) {
+    return respondBlocked(res, { db, uid: req.uid, surface: 'username', verdict: usernameVerdict })
+  }
+  const usernameLower = username.toLowerCase()
+  const uid = req.uid
 
-    // Check the name isn't already taken by someone else (case-insensitive).
-    const existing = await db
-      .collection('usernames')
-      .findOne({ username_lower: usernameLower })
-    if (existing && existing._id !== uid) {
+  // Check the name isn't already taken by someone else (case-insensitive).
+  const existing = await db
+    .collection('usernames')
+    .findOne({ username_lower: usernameLower })
+  if (existing && existing._id !== uid) {
+    return res.status(409).json({ error: 'Username already taken' })
+  }
+
+  // The user's current handle, captured before the write so we can propagate a
+  // rename to the places that denormalize the username (see below).
+  const prevDoc = await db.collection('usernames').findOne({ _id: uid })
+  const prevUsername = prevDoc?.username || null
+
+  try {
+    await db.collection('usernames').updateOne(
+      { _id: uid },
+      {
+        $set: { username, username_lower: usernameLower },
+        // Stamp the account's first-seen time once, so admin analytics can
+        // chart signups over time. Legacy docs created before this won't have
+        // it (and are excluded from the signup series) — see GET /admin/analytics.
+        $setOnInsert: { createdAt: new Date() },
+      },
+      { upsert: true }
+    )
+  } catch (err) {
+    // The unique index on username_lower is the source of truth: it closes
+    // the race between the check above and this write, where two concurrent
+    // requests could both pass the findOne.
+    if (err.code === 11000) {
       return res.status(409).json({ error: 'Username already taken' })
     }
-
-    try {
-      await db.collection('usernames').updateOne(
-        { _id: uid },
-        { $set: { username, username_lower: usernameLower } },
-        { upsert: true }
-      )
-    } catch (err) {
-      // The unique index on username_lower is the source of truth: it closes
-      // the race between the check above and this write, where two concurrent
-      // requests could both pass the findOne.
-      if (err.code === 11000) {
-        return res.status(409).json({ error: 'Username already taken' })
-      }
-      throw err
-    }
-    res.json({ success: true })
-  } catch (err) {
-    res.status(500).json({ error: err.message })
+    throw err
   }
-})
+
+  // Ratings (which carry the reviews) denormalize the username, so a rename has
+  // to be carried across or a user's existing reviews keep the old handle and
+  // detach from their profile + the moderation queue. Filtered by userId (the
+  // D1 canonical key) rather than the old username, so the match can't collide
+  // with a same-handle stranger and survives future handle reuse. NOTE: a
+  // legacy rating row missing userId (pre-D1 residue) is intentionally NOT
+  // updated by this — userId is now the source of truth for "this user's rows".
+  // Review reports separately denormalize the username via their own
+  // reportedUsername field and still need that propagated too. New name is
+  // guaranteed free (checked above), so there's no collision with another
+  // user's rows.
+  if (prevUsername && prevUsername !== username) {
+    await db
+      .collection('ratings')
+      .updateMany({ userId: uid }, { $set: { username } })
+    await db
+      .collection('reports')
+      .updateMany(
+        { reportedUsername: prevUsername },
+        { $set: { reportedUsername: username } }
+      )
+  }
+
+  res.json({ success: true })
+}))
+
+// GET /getProfile
+// Returns the authenticated user's own profile fields (bio + location), or
+// empty strings when nothing has been saved yet. Scoped to req.uid like
+// /getUsername so a user only ever reads their own profile.
+router.get('/getProfile', verifyToken, asyncHandler(async (req, res) => {
+  const db = getDB()
+  const doc = await db.collection('userProfiles').findOne({ _id: req.uid })
+  res.json({
+    bio: doc?.bio ?? '',
+    location: doc?.location ?? '',
+    // Privacy toggles default to "public, location shown" when the fields are
+    // absent, so every pre-existing profile stays visible exactly as before.
+    isPublic: doc?.isPublic ?? true,
+    hideLocation: doc?.hideLocation ?? false,
+  })
+}))
+
+// POST /updateProfile
+// Upserts the authenticated user's bio + location. Empty strings are allowed
+// and clear the field. Values are trimmed before storage.
+router.post('/updateProfile', verifyToken, requireActive, profileWriteLimiter, asyncHandler(async (req, res) => {
+  const { bio, location } = req.body || {}
+  const validationError = validateProfile(bio, location)
+  if (validationError) {
+    return res.status(400).json({ error: validationError })
+  }
+  // Profile text is short and only the author benefits from it, so (like reviews)
+  // both high and medium confidence block inline rather than holding for review.
+  const profileText = [bio, location].filter((s) => typeof s === 'string' && s.trim()).join('\n')
+  const db = getDB()
+  const profileVerdict = await moderateText(profileText, 'profile')
+  if (!profileVerdict.allowed) {
+    return respondBlocked(res, { db, uid: req.uid, surface: 'profile', verdict: profileVerdict })
+  }
+  await db.collection('userProfiles').updateOne(
+    { _id: req.uid },
+    {
+      $set: {
+        bio: typeof bio === 'string' ? bio.trim() : '',
+        location: typeof location === 'string' ? location.trim() : '',
+        updatedAt: new Date(),
+      },
+    },
+    { upsert: true }
+  )
+  res.json({ success: true })
+}))
+
+// POST /updatePhoto
+// Sets (or clears) the authenticated user's Firebase Auth photoURL, AFTER
+// screening the image. Profile photos are uploaded client-side straight to
+// Storage and the photoURL is otherwise written client-side directly to Firebase
+// Auth — there is no server upload path to intercept — so this server-owned
+// endpoint is the moderation hook: the client uploads the file, then POSTs the
+// resulting download URL here and the SERVER applies it only if it passes.
+//
+// Like a review/bio (and unlike a recipe), a photo has no owner-only "pending"
+// state to fall back to, so BOTH high and medium confidence block (422); the
+// image fails CLOSED, so a scan outage also rejects rather than applying an
+// unscanned photo. Clearing the photo (empty URL) needs no scan.
+router.post('/updatePhoto', verifyToken, requireActive, profileWriteLimiter, asyncHandler(async (req, res) => {
+  const db = getDB()
+  const { photoURL } = req.body || {}
+  if (photoURL != null && typeof photoURL !== 'string') {
+    return res.status(400).json({ error: 'photoURL must be a string' })
+  }
+  const url = typeof photoURL === 'string' ? photoURL.trim() : ''
+
+  if (url) {
+    const verdict = await moderateImage(url, 'profile.photo')
+    if (!verdict.allowed) {
+      return respondBlocked(res, { db, uid: req.uid, surface: 'profile.photo', verdict })
+    }
+  }
+
+  // Admin SDK clears the avatar with null (an empty string is rejected).
+  await getAuth().updateUser(req.uid, { photoURL: url || null })
+  res.json({ success: true, photoURL: url })
+}))
+
+// POST /updateDisplayName
+// Sets the authenticated user's Firebase Auth displayName, AFTER moderation.
+// A displayName is otherwise written client-side straight to Firebase Auth
+// (updateProfile in AuthContext) — there's no server path to intercept — so,
+// exactly like updatePhoto for photoURL, this server-owned endpoint is the
+// moderation hook: the client POSTs the desired name and the SERVER applies it
+// only if it passes. Like a username (and unlike a recipe) a name has no
+// owner-only "pending" state, so BOTH high and medium confidence block (422).
+// The 'displayName' context also applies the identity-only spam rules (no
+// URLs/domains in a name).
+router.post('/updateDisplayName', verifyToken, requireActive, profileWriteLimiter, asyncHandler(async (req, res) => {
+  const db = getDB()
+  const { displayName } = req.body || {}
+  if (typeof displayName !== 'string' || !displayName.trim()) {
+    return res.status(400).json({ error: 'displayName is required' })
+  }
+  const name = displayName.trim()
+  if (name.length > DISPLAY_NAME_MAX_LENGTH) {
+    return res.status(400).json({ error: `Display name must be at most ${DISPLAY_NAME_MAX_LENGTH} characters` })
+  }
+
+  const verdict = await moderateText(name, 'displayName')
+  if (!verdict.allowed) {
+    return respondBlocked(res, { db, uid: req.uid, surface: 'displayName', verdict })
+  }
+
+  await getAuth().updateUser(req.uid, { displayName: name })
+  res.json({ success: true, displayName: name })
+}))
+
+// POST /updatePrivacy
+// Upserts the authenticated user's privacy toggles (public-profile +
+// hide-location). These gate the public /u/:username view served by
+// GET /getPublicProfile.
+router.post('/updatePrivacy', verifyToken, requireActive, profileWriteLimiter, asyncHandler(async (req, res) => {
+  const { isPublic, hideLocation } = req.body || {}
+  const validationError = validatePrivacy(isPublic, hideLocation)
+  if (validationError) {
+    return res.status(400).json({ error: validationError })
+  }
+  const db = getDB()
+  await db.collection('userProfiles').updateOne(
+    { _id: req.uid },
+    { $set: { isPublic, hideLocation, updatedAt: new Date() } },
+    { upsert: true }
+  )
+  res.json({ success: true })
+}))
+
+// GET /exportMyData
+// Assembles a JSON copy of everything stored for the authenticated user and
+// returns it as a file download. Read-only. Everything keys on the stable uid
+// (ratings carry `userId` since D1); the username is still surfaced as a
+// top-level display field.
+router.get('/exportMyData', verifyToken, asyncHandler(async (req, res) => {
+  const uid = req.uid
+  const db = getDB()
+  const usernameDoc = await db.collection('usernames').findOne({ _id: uid })
+  const username = usernameDoc?.username || null
+
+  // The user's OWN recipes/drafts are exported as full high-fidelity bodies —
+  // but strip the internal admin moderation stamps (RECIPE_INTERNAL_STAMPS) that
+  // any admin action left on them, so the downloaded JSON never carries admin
+  // Firebase uids. An exclusion projection (drop only those 6 keys) rather than
+  // the public card whitelist: this is the author's own content, so keep
+  // everything else. (Saved recipes below go through publicRecipeProjection —
+  // those are OTHER users' recipes, read as a non-owner would.)
+  const [profile, userRecipeData, recipes, drafts, ratings] = await Promise.all([
+    db.collection('userProfiles').findOne({ _id: uid }),
+    db.collection('userRecipeData').findOne({ _id: uid }),
+    db
+      .collection('recipes')
+      .find({ userId: uid }, { projection: recipeInternalStampsExclusion })
+      .toArray(),
+    db
+      .collection('recipeDrafts')
+      .find({ userId: uid }, { projection: recipeInternalStampsExclusion })
+      .toArray(),
+    db.collection('ratings').find({ userId: uid }).toArray(),
+  ])
+
+  // Hydrate the saved-recipe references into the actual recipe bodies so the
+  // export is a self-contained, portable archive rather than a list of opaque
+  // ids. Each element keeps its original save metadata (dateSaved, collectionIds)
+  // and gains a `recipe` field. A saved recipe that's since been deleted — or
+  // hidden by moderation (RECIPE_VISIBLE, matching what GET /getSavedRecipes will
+  // serve) — is preserved as its bare reference with `recipe: null`, so the user
+  // never loses the record of what they saved and we never leak a hidden body.
+  //
+  // Saved recipes are, by definition, OTHER users' recipes, so hydrate through
+  // publicRecipeProjection — the same non-owner whitelist the public reads use.
+  // Without it the export would ship the internal admin-uid moderation stamps
+  // (moderatedBy/moderatedAt, featuredBy/featuredAt, publishUpdatedBy/At) of
+  // another user's recipe to this user, re-leaking exactly what #226/#227 sealed.
+  const savedRefs = userRecipeData?.savedRecipes ?? []
+  const savedIds = savedRefs.map((e) => e.recipeId).filter(Boolean)
+  const savedBodies = savedIds.length
+    ? await db
+        .collection('recipes')
+        .find(
+          { ...recipeIdInQuery(savedIds), ...RECIPE_VISIBLE },
+          { projection: publicRecipeProjection }
+        )
+        .toArray()
+    : []
+  const savedById = new Map(savedBodies.map((r) => [String(r._id), r]))
+  const savedRecipes = savedRefs.map((entry) => ({
+    ...entry,
+    recipe: savedById.get(String(entry.recipeId)) ?? null,
+  }))
+
+  const data = {
+    exportedAt: new Date().toISOString(),
+    username,
+    profile: profile
+      ? {
+          bio: profile.bio ?? '',
+          location: profile.location ?? '',
+          isPublic: profile.isPublic ?? true,
+          hideLocation: profile.hideLocation ?? false,
+        }
+      : null,
+    savedRecipes,
+    recipes,
+    drafts,
+    ratings,
+  }
+
+  res.setHeader(
+    'Content-Disposition',
+    'attachment; filename="prepify-data.json"'
+  )
+  res.setHeader('Content-Type', 'application/json')
+  res.send(JSON.stringify(data, null, 2))
+}))
+
+// Retry a recipe-rating recompute a few times before giving up. The recompute
+// is a single read + single write, so a failure is almost always a transient
+// Mongo blip — one more attempt usually clears it rather than leaving a stale
+// aggregate. Throws the last error if every attempt fails, so the caller can
+// escalate instead of swallowing.
+const RECOMPUTE_ATTEMPTS = 3
+async function recomputeWithRetry(db, recipeId) {
+  let lastErr
+  for (let attempt = 1; attempt <= RECOMPUTE_ATTEMPTS; attempt++) {
+    try {
+      return await recipeRating.recomputeRecipeRating(db, recipeId)
+    } catch (err) {
+      lastErr = err
+    }
+  }
+  throw lastErr
+}
+
+// POST /deleteAccount
+// Permanently deletes the authenticated user and all of their data. Removes the
+// Mongo records first (across every collection that keys on the user) and the
+// Firebase Auth account last, so a partial failure leaves the auth account — and
+// therefore a way back in to retry — intact rather than orphaning data behind a
+// deleted login.
+// Intentionally NOT behind requireActive (unlike updateProfile/updatePrivacy): a
+// suspended or banned user must still be able to delete their account and export
+// their data — those are the two writes a moderated user is always allowed.
+router.post('/deleteAccount', verifyToken, asyncHandler(async (req, res) => {
+  const uid = req.uid
+  const db = getDB()
+
+  // The username is only needed for the audit label now — every collection
+  // below keys on the stable uid (ratings carry `userId` since D1).
+  const usernameDoc = await db.collection('usernames').findOne({ _id: uid })
+  const username = usernameDoc?.username || null
+
+  // Read what we need BEFORE the transaction:
+  //  - the user's recipe docs themselves (for the per-recipe teardown + their
+  //    Storage images), and
+  //  - the distinct recipes the user REVIEWED, so we can fix surviving recipes'
+  //    rating aggregates after their reviews are removed (D4).
+  const ownRecipes = await db.collection('recipes').find({ userId: uid }).toArray()
+  const ownRecipeIds = new Set(ownRecipes.map((r) => String(r._id)))
+  const reviewedRecipeIds = await db
+    .collection('ratings')
+    .distinct('recipeId', { userId: uid })
+
+  // Cascade the Mongo-side deletes atomically (D3) — a partial failure here
+  // leaves nothing half-removed. teardownRecipeDocs reuses the exact per-recipe
+  // teardown DELETE /deleteRecipe uses (D6), so the account path can't drift:
+  // other users' reviews of this user's recipes (D2) and their saved/made
+  // references to them are cleaned up too — not just the recipe rows.
+  const ownRecipeIdList = [...ownRecipeIds]
+  const session = getClient().startSession()
+  try {
+    await session.withTransaction(async () => {
+      // Per-recipe teardown, batched into O(1) collection passes (not one set of
+      // writes per recipe). A prolific owner could otherwise run hundreds of
+      // full-collection updateMany scans inside a single transaction and blow the
+      // transaction time/oplog limit, rolling back the whole delete. Same effect
+      // as calling teardownRecipeDocs for each recipe, in three writes total.
+      await db.collection('recipes').deleteMany({ userId: uid }, { session })
+      await db
+        .collection('ratings')
+        .deleteMany({ recipeId: { $in: ownRecipeIdList } }, { session })
+      await db.collection('userRecipeData').updateMany(
+        {},
+        {
+          $pull: {
+            savedRecipes: { recipeId: { $in: ownRecipeIdList } },
+            madeRecipes: { recipeId: { $in: ownRecipeIdList } },
+            userRecipes: { recipeId: { $in: ownRecipeIdList } },
+          },
+        },
+        { session }
+      )
+      // The user's own reviews of OTHER people's recipes (their reviews of their
+      // own recipes were already removed by the ratings delete above).
+      await db.collection('ratings').deleteMany({ userId: uid }, { session })
+      await db.collection('usernames').deleteOne({ _id: uid }, { session })
+      await db.collection('userProfiles').deleteOne({ _id: uid }, { session })
+      await db.collection('users').deleteOne({ _id: uid }, { session })
+      await db.collection('userRecipeData').deleteOne({ _id: uid }, { session })
+      await db.collection('recipeDrafts').deleteMany({ userId: uid }, { session })
+      // D6: reports the user FILED. Keep the moderation record (its subject —
+      // the reported content — may still be a valid open queue item) but
+      // anonymize the now-departed reporter.
+      await db
+        .collection('reports')
+        .updateMany({ reporterUid: uid }, { $set: { reporterUid: null } }, { session })
+    })
+  } finally {
+    await session.endSession()
+  }
+
+  // ── External / non-transactional side effects ──────────────────────────────
+  // All best-effort and ordered deliberately: Mongo is fully committed above and
+  // the Firebase Auth deletion is LAST, so any failure here leaves the login
+  // recoverable to retry rather than orphaning a deleted account behind data.
+
+  // D4: recompute the aggregate for recipes the user reviewed but did NOT own
+  // (the ones they owned are gone). Post-commit, so it reflects the removed
+  // reviews. Best-effort: a recompute failure must not block the account delete —
+  // but it must NOT be silent either. A surviving recipe whose recompute failed
+  // now carries a stale aggregate that still counts the just-deleted user's
+  // review, so we retry, then escalate any hold-outs to Sentry AND stamp their
+  // ids onto the audit entry below — a durable to-do the S6 reconciliation script
+  // can sweep — instead of losing them in a console line.
+  const staleRatingRecipeIds = []
+  for (const recipeId of reviewedRecipeIds) {
+    if (ownRecipeIds.has(recipeId)) continue
+    try {
+      await recomputeWithRetry(db, recipeId)
+    } catch (err) {
+      staleRatingRecipeIds.push(recipeId)
+      Sentry.captureException(err, {
+        tags: { area: 'deleteAccount.recompute' },
+        extra: { uid, recipeId },
+      })
+      console.error('deleteAccount: rating recompute failed for', recipeId, err.message)
+    }
+  }
+
+  // D5: drop the user's recipe images and profile photo from Storage. Both
+  // helpers never throw — an orphaned blob beats a failed account delete.
+  for (const recipe of ownRecipes) {
+    await deleteRecipeImage(recipe.recipeImage)
+  }
+  await deleteProfilePhoto(uid)
+
+  // Leave a trail in the audit log (best-effort) so an admin can see that the
+  // account was self-deleted rather than removed by moderation. actorType 'user'
+  // marks it as a self-service action (not an admin one), and actorUsername
+  // captures the handle here because the `usernames` doc was just deleted in the
+  // cascade above — read-time enrichment can no longer resolve it.
+  await recordAudit(db, {
+    action: 'user.delete',
+    actorUid: uid,
+    actorType: 'user',
+    actorUsername: username,
+    targetType: 'user',
+    targetId: uid,
+    targetLabel: username ? `@${username}` : null,
+    // Only present when a post-commit recompute couldn't be salvaged — leaves a
+    // durable, queryable record of which surviving recipes need reconciliation.
+    metadata: staleRatingRecipeIds.length ? { staleRatingRecipeIds } : null,
+  })
+
+  await getAuth().deleteUser(uid)
+
+  res.json({ success: true })
+}))
 
 module.exports = router

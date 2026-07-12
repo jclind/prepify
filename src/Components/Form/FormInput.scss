@@ -1,48 +1,159 @@
 @use '../../helpers.scss' as s;
 
 .form-input {
-  position: relative;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  height: 80px;
   width: 100%;
-
-  .label-title {
-    padding-bottom: 0.5rem;
-    font-weight: 600;
-    font-size: 0.875rem;
-    text-transform: capitalize;
-  }
+  text-align: left;
 
   .input-container {
+    position: relative;
     display: flex;
     align-items: center;
     width: 100%;
-    height: 55px;
 
     .icon {
+      position: absolute;
       display: flex;
       justify-content: center;
       align-items: center;
-      position: absolute;
-      height: 25px;
-      width: 25px;
-      color: s.$primary-text;
-      left: 0.75rem;
+      pointer-events: none;
     }
+
     input {
-      outline: none;
-      border: none;
-      background: none;
-      padding-left: 3rem;
-      padding-right: 1rem;
       width: 100%;
-      height: 100%;
-      font-size: 1rem;
+      font-family: inherit;
       font-weight: 500;
-      background: s.$secondary-background;
       border-radius: s.$border-radius;
+      outline: none;
     }
   }
+
+  .input-hint {
+    margin-top: 0.35rem;
+    font-size: s.$text-caption;
+
+    &--error {
+      color: s.$error-red;
+    }
+    &--ok {
+      color: s.$tertiary-text;
+    }
+  }
+
+  // ---- size: md (default — auth / profile fields) ----
+  &--md {
+    .label-title {
+      margin-bottom: 0.3rem;
+      font-weight: 600;
+      font-size: s.$text-fine;
+      color: s.$primary-text;
+      text-transform: capitalize;
+    }
+
+    .input-container {
+      .icon {
+        left: 0.85rem;
+        height: 22px;
+        width: 22px;
+        color: s.$tertiary-text;
+      }
+
+      input {
+        height: 48px;
+        box-sizing: border-box;
+        padding: 0 2.75rem;
+        font-size: s.$text-base;
+        color: s.$primary-text;
+        border: 1.5px solid s.$gray-300;
+        background: s.$white;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+        &:focus {
+          border-color: s.$secondary;
+          @include s.focus-glow;
+        }
+        &::placeholder {
+          color: s.$tertiary-text;
+          font-weight: 400;
+        }
+      }
+
+      .toggle-visibility {
+        position: absolute;
+        right: 0.6rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.25rem;
+        border: none;
+        background: transparent;
+        color: s.$tertiary-text;
+        font-size: s.$text-xl;
+        cursor: pointer;
+        transition: color 0.15s ease;
+
+        &:hover {
+          color: s.$primary-text;
+        }
+      }
+    }
+  }
+
+  // ---- size: compact (AddRecipe fields) ----
+  &--compact {
+    .label-title {
+      padding-bottom: 0.5rem;
+      font-weight: 600;
+      font-size: s.$text-sm;
+      text-transform: capitalize;
+      color: s.$primary;
+    }
+
+    .input-container {
+      height: 40px;
+
+      .icon {
+        left: 0.75rem;
+        height: 25px;
+        width: 25px;
+        color: s.$primary-text;
+      }
+
+      input {
+        height: 100%;
+        padding: 0 1rem;
+        font-size: s.$text-base;
+        border: 1px solid s.$tertiary-text;
+        background: none;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        // The base rule sets outline:none; compact fields (every AddRecipe
+        // input) previously had NO focus indicator. Restore one, matching the
+        // md variant's teal ring (WCAG 2.4.7).
+        &:focus-visible {
+          border-color: s.$secondary;
+          @include s.focus-glow;
+        }
+      }
+    }
+
+    .input-beginning-text {
+      position: absolute;
+      left: 16px;
+      font-size: s.$text-base;
+      font-weight: 600;
+      color: s.$secondary-text;
+    }
+  }
+}
+
+/* Hide number-input spinners (Chrome, Safari, Edge, Opera) */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+/* Firefox */
+input[type='number'] {
+  -moz-appearance: textfield;
 }

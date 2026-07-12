@@ -1,15 +1,14 @@
+import { PrinterIcon } from 'src/Components/icons'
 import React, { FC, useState } from 'react'
 import { useReactToPrint } from 'react-to-print'
 import { TailSpin } from 'react-loader-spinner'
-
-import { BsPrinter, BsFillPrinterFill } from 'react-icons/bs'
+import { spinnerColor } from 'src/util/loadingStyles'
 
 type PrintRecipeBtnProps = {
-  printedRef: React.RefObject<HTMLInputElement | null>
+  printedRef: React.RefObject<HTMLDivElement | null>
 }
 
 const PrintRecipeBtn: FC<PrintRecipeBtnProps> = ({ printedRef }) => {
-  const [isHovered, setIsHovered] = useState(false)
   const [loading, setLoading] = useState(false)
 
   const handlePrint = useReactToPrint({
@@ -21,24 +20,17 @@ const PrintRecipeBtn: FC<PrintRecipeBtnProps> = ({ printedRef }) => {
   return (
     <div className='print-recipe'>
       <button
-        className='print-recipe-btn btn'
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
+        className='print-recipe-btn btn btn--outline'
         disabled={loading}
         onClick={() => handlePrint()}
       >
-        {isHovered ? (
-          <BsFillPrinterFill className='icon' />
-        ) : (
-          <BsPrinter className='icon' />
-        )}{' '}
-        Print
+        <PrinterIcon className='icon' /> Print
         {loading && (
           <div className='loading'>
             <TailSpin
               height='30'
               width='30'
-              color='#303841'
+              color={spinnerColor}
               ariaLabel='loading'
             />
           </div>

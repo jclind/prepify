@@ -2,33 +2,45 @@
   "reviews": [
     {
       "_id": "6412454270e05494f84f43db",
+      "userId": "uid-aac",
       "username": "aac",
       "recipeId": "6408d2495491ab77fb7780b0",
-      "rating": "4",
+      "rating": 4,
       "ratingLastUpdated": "2023-03-15T22:22:58.613Z",
       "reviewCreatedAt": "1678925487714",
       "reviewLastUpdated": "",
-      "reviewText": "Really enjoyed!"
+      "reviewText": "Really enjoyed!",
+      "photoURL": null,
+      "displayName": "Alice Cook",
+      "isCurrentUser": false
     },
     {
       "_id": "641250470743cef57daf5d44",
+      "userId": "uid-aab",
       "username": "aab",
       "recipeId": "6408d2495491ab77fb7780b0",
-      "rating": "5",
+      "rating": 5,
       "ratingLastUpdated": "2023-03-15T23:09:59.260Z",
       "reviewCreatedAt": "1678921806736",
       "reviewLastUpdated": "",
-      "reviewText": "Great recipe!"
+      "reviewText": "Great recipe!",
+      "photoURL": null,
+      "displayName": null,
+      "isCurrentUser": false
     },
     {
       "_id": "6413689f9162972ab385cd80",
+      "userId": "uid-benleex",
       "username": "BenLeeX",
       "recipeId": "6408d2495491ab77fb7780b0",
-      "rating": "4",
-      "ratingLastUpdated": "2023-03-16T19:06:07.393Z",
-      "reviewCreatedAt": "",
+      "rating": null,
+      "ratingLastUpdated": "",
+      "reviewCreatedAt": "1678993567393",
       "reviewLastUpdated": "",
-      "reviewText": ""
+      "reviewText": "Made it for a crowd and it disappeared before I got a bite.",
+      "photoURL": null,
+      "displayName": null,
+      "isCurrentUser": false
     }
   ],
   "totalCount": 3

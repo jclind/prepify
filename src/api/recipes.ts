@@ -1,60 +1,155 @@
 import { parseIngredientString } from '@jclind/ingredient-parser'
 import axios, { type AxiosResponse } from 'axios'
-import { getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage'
-import dietLabels from 'src/recipeData/dietLabels'
+import {
+  deleteObject,
+  getDownloadURL,
+  getStorage,
+  ref,
+  uploadBytes,
+} from 'firebase/storage'
 import { calculateServingPrice } from 'src/util/calculateServingPrice'
 import {
+  AccountTabCounts,
   IngredientsType,
+  LabelType,
   NewReviewType,
   NutritionDataType,
+  CreatedRecipeCardType,
   OptionalReviewType,
+  OwnReviewStatus,
+  RecipeCardType,
   RecipeDBResponseType,
   RecipeEditFormType,
   RecipeFormType,
   RecipeSearchResponseType,
   RecipeType,
   ReviewType,
+  SavedRecipeCardType,
 } from 'types'
 import AuthAPI from 'src/api/auth'
 import { fetchIngredientEnrichment } from 'src/api/ingredientParserApi'
-import { http, nutrition } from 'src/api/http-common'
+import { http } from 'src/api/http-common'
 import { v4 as uuidv4 } from 'uuid'
 
 export const ADD_RECIPE_AUTH_ERROR = 'AUTH_ERROR'
 
-export type EditRecipeResult =
+// Matches the code server/middleware/writeLimiter.js's makeUserLimiter carries
+// on a 429 body ({ error, code: 'RATE_LIMITED' }) — the ingredient-parse
+// limiter (server/routes/ingredients.js) is built from that same factory.
+export const INGREDIENT_RATE_LIMIT_CODE = 'RATE_LIMITED'
+// Fallback wait when the server didn't send a usable Retry-After header
+// (shouldn't happen — express-rate-limit sets it whenever standardHeaders is
+// on — but a stale proxy/CDN could strip it).
+const DEFAULT_RATE_LIMIT_RETRY_SEC = 60
+
+// Legacy ratings docs (pre-D1) store `rating` as a stringified number; new
+// writes are floats and review-only docs are null. Normalize at the API
+// boundary so the typed contract (`rating: number | null`) holds regardless
+// of doc age.
+const coerceRating = (r: unknown): number | null => {
+  if (r == null || r === '') return null
+  const n = Number(r)
+  return Number.isNaN(n) ? null : n
+}
+
+type EditRecipeResult =
   | { status: 'success'; recipe: RecipeType }
   | { status: 'auth-error' }
   | { status: 'error'; message: string }
 
+// addRecipe mirrors EditRecipeResult so the create path can surface the same
+// things an edit can: a server moderation block (status: 'error', message) and a
+// medium-confidence hold (status: 'success', pendingReview: true) where the recipe
+// saved but is withheld from public reads until an admin clears it.
+export type AddRecipeResult =
+  | { status: 'success'; id: string; pendingReview: boolean }
+  | { status: 'auth-error' }
+  | { status: 'error'; message: string }
+
+type GetAllRecipesParams = {
+  page?: number
+  order?: string
+  /** OR-based tag match (mealTypes ∪ nutritionLabels) — used by Home. */
+  tags?: string[]
+  cuisine?: string
+  recipesPerPage?: number
+  query?: string
+  /** Any of the selected meal types. */
+  mealTypes?: string[]
+  /** Conjunctive (AND) diet filter — recipe must carry every label. */
+  diets?: string[]
+}
+
+/** Distinct filter values that actually exist in the catalog. */
+type RecipeFacets = {
+  cuisines: string[]
+  diets: string[]
+  mealTypes: string[]
+}
+
 class RecipeAPIClass {
-  async getAllRecipes(
+  async getAllRecipes({
     page = 0,
     order = 'new',
-    tags: string[] = [],
-    cuisine: string = '',
+    // `tags` is OR-based (used by the Home meal lookup). `diets` is the
+    // conjunctive (AND) dietary filter; `mealTypes` matches any selected meal.
+    tags = [],
+    cuisine = '',
     recipesPerPage = 5,
-    query = ''
-  ): Promise<RecipeDBResponseType> {
-    let tagsArrParam = '' // For tags that have been chosen
-    if (tags.length > 0) {
-      tagsArrParam += `&tags=${tags.join(',')}`
-    }
+    query = '',
+    mealTypes = [],
+    diets = [],
+  }: GetAllRecipesParams = {}): Promise<RecipeDBResponseType> {
+    // Build via URLSearchParams so every value is encoded — search terms and
+    // multi-word cuisines (e.g. "Middle Eastern") would otherwise corrupt the
+    // query string.
+    const params = new URLSearchParams({
+      q: query,
+      page: String(page),
+      recipesPerPage: String(recipesPerPage),
+      order,
+      cuisine,
+    })
+    if (tags.length > 0) params.set('tags', tags.join(','))
+    if (mealTypes.length > 0) params.set('mealTypes', mealTypes.join(','))
+    if (diets.length > 0) params.set('diets', diets.join(','))
 
-    const result = await http.get(
-      `api/recipes?q=${query}&page=${page}&recipesPerPage=${recipesPerPage}&order=${order}&cuisine=${cuisine}${tagsArrParam}`
-    )
+    const result = await http.get(`api/recipes?${params.toString()}`)
     return result.data
   }
   async searchAutoCompleteRecipes(
     title = ''
   ): Promise<RecipeSearchResponseType[]> {
-    const result = await http.get(`api/searchAutoCompleteRecipes?title=${title}`)
+    // Encode the term so special characters (&, %, #, +, …) survive the
+    // round-trip — mirrors getAllRecipes' URLSearchParams encoding above.
+    const result = await http.get(
+      `api/searchAutoCompleteRecipes?title=${encodeURIComponent(title)}`
+    )
     return result.data
   }
-  async getTrendingRecipes(limit = 4): Promise<RecipeType[]> {
+  async getTrendingRecipes(limit = 4): Promise<RecipeCardType[]> {
     const result = await http.get(`api/getTrendingRecipes?limit=${limit}`)
     return result.data
+  }
+  // Personalized home row. Requires auth (token attached by the http
+  // interceptor); returns [] when the user has too little signal to personalize.
+  async getForYouRecipes(limit = 8): Promise<RecipeCardType[]> {
+    const result = await http.get(`api/getForYouRecipes?limit=${limit}`)
+    return result.data
+  }
+  // One random recipe for the "What should I cook?" button. Taste-aware when
+  // signed in (token attached by the interceptor); a uniform random pick
+  // otherwise. `excludeId` re-rolls without repeating the current pick. Resolves
+  // null when the catalog is empty (404) so the caller can show a soft message.
+  async getRandomRecipe(excludeId?: string): Promise<RecipeCardType | null> {
+    const params = excludeId ? `?exclude=${encodeURIComponent(excludeId)}` : ''
+    try {
+      const result = await http.get(`api/recipes/random${params}`)
+      return result.data
+    } catch (err) {
+      if (axios.isAxiosError(err) && err.response?.status === 404) return null
+      throw err
+    }
   }
   async getRecipe(id: string): Promise<RecipeType> {
     const result = await http.get(`api/getRecipe?id=${id}`)
@@ -70,8 +165,21 @@ class RecipeAPIClass {
   }
   async getSavedRecipe(
     recipeId = ''
-  ): Promise<{ recipeId: string; dateSaved: string } | null> {
+  ): Promise<{
+    recipeId: string
+    dateSaved: string
+    collectionIds?: string[]
+  } | null> {
     const result = await http.get(`api/getSavedRecipe?recipeId=${recipeId}`)
+    return result.data
+  }
+  // The current user's saved recipe ids — one request the whole grid can share.
+  async getSavedRecipeIds(): Promise<string[]> {
+    const result = await http.get('api/getSavedRecipeIds')
+    return result.data
+  }
+  async getRecipeFacets(): Promise<RecipeFacets> {
+    const result = await http.get('api/recipes/facets')
     return result.data
   }
   async unsaveRecipe(recipeId = ''): Promise<AxiosResponse> {
@@ -83,7 +191,9 @@ class RecipeAPIClass {
     const result = await http.post(`api/madeRecipe?recipeId=${recipeId}`)
     return result.data
   }
-  async checkMadeRecipe(recipeId: string) {
+  async checkMadeRecipe(
+    recipeId: string
+  ): Promise<{ made: boolean } | undefined> {
     if (!AuthAPI.getUID()) return
 
     const result = await http.get(`api/checkMadeRecipe?recipeId=${recipeId}`)
@@ -105,9 +215,25 @@ class RecipeAPIClass {
         setProgress(70)
         return 'https://cypress.test/fake-recipe-image.jpg'
       }
+      // Key the object by owner uid + a random uuid: `recipeImages/{uid}/{uuid}`
+      // (BACKLOG I2). The old `recipeImages/{imageFile.name}` key let two users'
+      // `photo.jpg` collide and — because the path carried no uid — meant
+      // storage.rules could only auth-gate writes, not scope them to the owner.
+      // The uid prefix lets the rule enforce `request.auth.uid == uid` (mirroring
+      // profilePhotos/{uid}); the uuid makes the object collision-proof so we no
+      // longer need the original filename. No extension is needed — Firebase sets
+      // the content type from the File, and the I1 variant helper derives the
+      // srcset stem from the object path regardless of extension.
+      const uid = AuthAPI.getUID()
+      if (!uid) {
+        // Defensive: both addRecipe/editRecipe run behind auth, and the tightened
+        // storage.rules would reject a uid-less write anyway — fail closed rather
+        // than fall back to an unscoped path.
+        throw new Error('Must be signed in to upload a recipe image')
+      }
       const storage = getStorage()
 
-      const recipeImagesRef = ref(storage, `recipeImages/${imageFile.name}`)
+      const recipeImagesRef = ref(storage, `recipeImages/${uid}/${uuidv4()}`)
       setProgress(40)
       await uploadBytes(recipeImagesRef, imageFile)
       setProgress(50)
@@ -116,6 +242,28 @@ class RecipeAPIClass {
       return fileUrl
     } else {
       return ''
+    }
+  }
+
+  // Best-effort cleanup for a recipe image we just uploaded to Storage but which
+  // ended up orphaned — the create/edit request to the server failed *after* the
+  // upload succeeded, so the object exists with no recipe pointing at it. Call this
+  // only with a URL for an image uploaded in the *current* submit (never an existing
+  // recipe's stored image, which the edit path may reuse unchanged).
+  private deleteRecipeImage = async (imageUrl: string): Promise<void> => {
+    if (!imageUrl) return
+    // Cypress E2E short-circuits uploadRecipeImage (no real object is written) and
+    // hands back a fake URL that isn't a valid Storage ref — nothing to delete.
+    if (import.meta.env.VITE_CYPRESS === 'true') return
+    try {
+      // ref(storage, url) resolves the object from its download URL, so we don't
+      // need to thread the original StorageReference through the submit flow.
+      await deleteObject(ref(getStorage(), imageUrl))
+    } catch (err) {
+      // The recipe submit already failed and its error is what the user needs to
+      // see; a leftover image is a minor storage leak, so swallow this rather than
+      // mask the real failure.
+      console.error('Failed to clean up orphaned recipe image:', err)
     }
   }
 
@@ -128,7 +276,6 @@ class RecipeAPIClass {
     computed: {
       recipeImage: string
       nutritionData: NutritionDataType | null
-      nutritionLabels: string[] | null
       servingPrice: number
       totalTime: number
     }
@@ -145,9 +292,11 @@ class RecipeAPIClass {
       instructions: data.instructions,
       cuisine: data.cuisine,
       mealTypes: data.mealTypes,
+      // Author-selected diet tags. Unlike nutritionData (still computed from
+      // Edamam), these come straight from the form.
+      nutritionLabels: data.nutritionLabels,
       recipeImage: computed.recipeImage,
       nutritionData: computed.nutritionData,
-      nutritionLabels: computed.nutritionLabels,
       servingPrice: computed.servingPrice,
       totalTime: computed.totalTime,
     }
@@ -156,7 +305,10 @@ class RecipeAPIClass {
   async addRecipe(
     recipeData: RecipeFormType,
     setProgress: (val: number) => void
-  ): Promise<string | null> {
+  ): Promise<AddRecipeResult> {
+    // Track the image uploaded in this submit so we can delete it if the server
+    // rejects the recipe after the upload (create always uploads a fresh object).
+    let uploadedImageUrl = ''
     try {
       setProgress(10)
       const authorUsername: string | null = await AuthAPI.getUsername()
@@ -165,45 +317,66 @@ class RecipeAPIClass {
         recipeData.recipeImage,
         setProgress
       )
+      uploadedImageUrl = recipeImage
       const servingPrice: number = calculateServingPrice(
         recipeData.ingredients,
         recipeData.servings
       )
       setProgress(80)
       const totalTime: number = recipeData.prepTime + (recipeData.cookTime ?? 0)
-      const nutritionDataRes = await this.getRecipeNutrition(
-        recipeData.ingredients
-      )
-      const nutritionData = nutritionDataRes.nutritionData
-      const nutritionLabels = nutritionDataRes.dietLabels
-      const returnRecipeData: Omit<RecipeType, '_id'> = {
+      // Diet labels now come from the form (recipeData.nutritionLabels); Edamam
+      // only supplies the numeric nutrition facts.
+      const nutritionData = await this.getRecipeNutrition(recipeData.ingredients)
+      // The create body carries only what the server actually reads on create
+      // (CREATABLE_RECIPE_FIELDS = editable content + authorUsername). Everything
+      // else on a recipe is server-authoritative and stamped server-side, so we
+      // don't send it: _id, the createdAt/editedAt timestamps (a client clock
+      // must not dictate the "Newest"-sort position), the zeroed rating, and the
+      // view/save/made counters. The server ignores any of these it receives —
+      // omitting them keeps the payload honest about what's authoritative.
+      const returnRecipeData: Omit<
+        RecipeType,
+        | '_id'
+        | 'createdAt'
+        | 'editedAt'
+        | 'rating'
+        | 'views'
+        | 'numTimesSaved'
+        | 'numTimesMade'
+      > = {
         ...this.buildEditableRecipeFields(recipeData, {
           recipeImage,
           nutritionData,
-          nutritionLabels,
           servingPrice,
           totalTime,
         }),
         authorUsername,
-        rating: {
-          rateCount: 0,
-          rateValue: 0,
-        },
-        createdAt: new Date().getTime().toString(),
-        editedAt: null,
-        views: 0,
-        numTimesSaved: 0,
-        numTimesMade: 0,
       }
       setProgress(90)
-      const result = await http.post<{ _id: string }>('api/addRecipe', returnRecipeData)
-      return result.data._id
+      const result = await http.post<{ _id: string; pendingReview?: boolean }>(
+        'api/addRecipe',
+        returnRecipeData
+      )
+      return {
+        status: 'success',
+        id: result.data._id,
+        pendingReview: !!result.data.pendingReview,
+      }
     } catch (error: unknown) {
       console.error('addRecipe failed:', error)
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
-        return ADD_RECIPE_AUTH_ERROR
+      // The recipe wasn't created, so any image we uploaded for it is now an
+      // orphan — remove it (best-effort; never masks the error below).
+      await this.deleteRecipeImage(uploadedImageUrl)
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 401) return { status: 'auth-error' }
+        // Surface the server's reason (e.g. a 422 moderation block) so the user
+        // sees why the recipe was rejected instead of a generic "try again".
+        const message =
+          error.response?.data?.error ??
+          'Failed to create recipe. Please try again.'
+        return { status: 'error', message }
       }
-      return null
+      return { status: 'error', message: 'Failed to create recipe. Please try again.' }
     }
   }
 
@@ -213,6 +386,9 @@ class RecipeAPIClass {
     originalRecipe: RecipeType,
     setProgress: (val: number) => void
   ): Promise<EditRecipeResult> {
+    // Only a *newly* uploaded image is eligible for cleanup on failure — never the
+    // recipe's existing stored image, which stays live when the edit is reused.
+    let uploadedImageUrl = ''
     try {
       setProgress(10)
       // Image: only upload when the user picked a new file. Otherwise the recipe
@@ -223,6 +399,7 @@ class RecipeAPIClass {
           recipeData.recipeImage,
           setProgress
         )
+        uploadedImageUrl = recipeImage
       }
       setProgress(80)
       // Serving price is a local calculation (no API cost), so always recompute —
@@ -233,10 +410,11 @@ class RecipeAPIClass {
       )
       const totalTime: number = recipeData.prepTime + (recipeData.cookTime ?? 0)
 
-      // Nutrition is a paid Edamam call, so only re-run it when the ingredient set
-      // actually changed; minor edits (title, instructions, times) reuse the
-      // stored nutrition data and labels. Compare the exact strings the lookup
-      // would send, element-wise.
+      // Numeric nutrition is a paid Edamam call, so only re-run it when the
+      // ingredient set actually changed; minor edits (title, instructions, times)
+      // reuse the stored nutrition data. Diet labels are author-supplied via the
+      // form, so they're not part of this check. Compare the exact strings the
+      // lookup would send, element-wise.
       const newIngredients = this.buildNutritionIngredients(recipeData.ingredients)
       const oldIngredients = this.buildNutritionIngredients(originalRecipe.ingredients)
       const ingredientsChanged =
@@ -244,18 +422,16 @@ class RecipeAPIClass {
         newIngredients.some((ingr, i) => ingr !== oldIngredients[i])
 
       let nutritionData = originalRecipe.nutritionData
-      let nutritionLabels = originalRecipe.nutritionLabels
       if (ingredientsChanged) {
-        const nutritionDataRes = await this.getRecipeNutrition(
-          recipeData.ingredients
-        )
         // getRecipeNutrition soft-fails to null when Edamam is unreachable. Only
         // overwrite when it actually returned data — otherwise a transient lookup
         // failure during an ingredient edit would erase the recipe's existing
         // nutrition facts for all viewers.
-        if (nutritionDataRes.nutritionData) {
-          nutritionData = nutritionDataRes.nutritionData
-          nutritionLabels = nutritionDataRes.dietLabels
+        const freshNutritionData = await this.getRecipeNutrition(
+          recipeData.ingredients
+        )
+        if (freshNutritionData) {
+          nutritionData = freshNutritionData
         }
       }
       setProgress(90)
@@ -264,7 +440,6 @@ class RecipeAPIClass {
       const payload = this.buildEditableRecipeFields(recipeData, {
         recipeImage,
         nutritionData,
-        nutritionLabels,
         servingPrice,
         totalTime,
       })
@@ -275,6 +450,10 @@ class RecipeAPIClass {
       return { status: 'success', recipe: res.data }
     } catch (error: unknown) {
       console.error('editRecipe failed:', error)
+      // If the edit failed after uploading a new image, that new object is orphaned
+      // (the recipe still points at its old image) — remove it. uploadedImageUrl is
+      // empty when the edit reused the existing image, so that stays untouched.
+      await this.deleteRecipeImage(uploadedImageUrl)
       if (axios.isAxiosError(error)) {
         if (error.response?.status === 401) return { status: 'auth-error' }
         // Surface the server's reason (e.g. 403 Forbidden, 404 Not found) so a
@@ -303,38 +482,28 @@ class RecipeAPIClass {
     })
     return ingr
   }
-  async getRecipeNutrition(ingrArr: IngredientsType[]): Promise<{ nutritionData: NutritionDataType | null; dietLabels: string[] | null }> {
+  // Fetches the numeric nutrition facts (calories, macros…) for the given
+  // ingredients via the server proxy (POST /api/nutrition/details), which holds
+  // the Edamam app id/key server-side — they no longer ship in the client bundle.
+  // Diet/health labels are no longer derived here — authors set those manually on
+  // the form. Soft-fails to null so a lookup outage never blocks recipe
+  // creation/editing.
+  async getRecipeNutrition(
+    ingrArr: IngredientsType[]
+  ): Promise<NutritionDataType | null> {
     try {
       const ingrData: { title: string; ingr: string[] } = {
         title: 'recipe 1',
         ingr: this.buildNutritionIngredients(ingrArr),
       }
-      const nutritionResultRes = await nutrition.post(
-        `nutrition-details?app_id=${import.meta.env.VITE_EDAMAM_APP_ID}&app_key=${import.meta.env.VITE_EDAMAM_APP_KEY}`,
-        ingrData
-      )
+      const nutritionResultRes = await http.post('api/nutrition/details', ingrData)
 
       const nutritionResult: NutritionDataType = nutritionResultRes.data
 
-      if (!nutritionResult) return { nutritionData: null, dietLabels: null }
-
-      const currDietLabels: string[] = []
-
-      const returnedNutritionLabels = [
-        ...nutritionResult.dietLabels,
-        ...nutritionResult.healthLabels,
-      ]
-
-      dietLabels.forEach(l => {
-        if (returnedNutritionLabels.includes(l.toUpperCase())) {
-          currDietLabels.push(l)
-        }
-      })
-
-      return { nutritionData: nutritionResult, dietLabels: currDietLabels }
+      return nutritionResult ?? null
     } catch (error: unknown) {
       console.error('getRecipeNutrition failed:', error)
-      return { nutritionData: null, dietLabels: null }
+      return null
     }
   }
 
@@ -354,31 +523,54 @@ class RecipeAPIClass {
     const result = await http.post(`api/newReview`, data)
     return result.data
   }
-  async checkIfReviewed(recipeId: string) {
+  async checkIfReviewed(recipeId: string): Promise<OwnReviewStatus | null> {
     if (!AuthAPI.getUID()) return null
 
     const result = await http.get(`api/checkIfReviewed?recipeId=${recipeId}`)
-    return result.data
+    const data = result.data
+    return data ? { ...data, rating: coerceRating(data.rating) } : data
   }
   async editReview(recipeId: string, text: string): Promise<AxiosResponse | null> {
     if (!AuthAPI.getUID()) return null
-    return await http.post(`api/editReview?recipeId=${recipeId}&text=${text}`)
+    // recipeId/text go in the JSON body (the axios instance defaults
+    // Content-Type: application/json) — the server reads the body first,
+    // falling back to query params for older clients.
+    return await http.post('api/editReview', { recipeId, text })
   }
   async deleteReview(recipeId: string): Promise<AxiosResponse | null> {
     if (!AuthAPI.getUID()) return null
     return await http.delete(`api/deleteReview?recipeId=${recipeId}`)
+  }
+  // Removes only the user's star rating (keeps any written review).
+  async removeRating(recipeId: string): Promise<AxiosResponse | null> {
+    if (!AuthAPI.getUID()) return null
+    return await http.delete(`api/removeRating?recipeId=${recipeId}`)
   }
   async getReviews(
     recipeId: string,
     filter = 'new',
     page: number,
     reviewsPerPage = 5
-  ) {
-    const username = await AuthAPI.getUsername()
-    const result = await http.get(
-      `api/getReviews?username=${username}&recipeId=${recipeId}&page=${page}&reviewsPerPage=${reviewsPerPage}&filter=${filter}`
-    )
-    return result.data
+  ): Promise<{ reviews: ReviewType[]; totalCount: number }> {
+    // Build via URLSearchParams (matches getAllRecipes) so a reserved char in
+    // `filter` can't corrupt the query string.
+    const params = new URLSearchParams({
+      recipeId,
+      page: String(page),
+      reviewsPerPage: String(reviewsPerPage),
+      filter,
+    })
+    const result = await http.get(`api/getReviews?${params.toString()}`)
+    const data = result.data
+    return data
+      ? {
+          ...data,
+          reviews: (data.reviews ?? []).map((r: ReviewType) => ({
+            ...r,
+            rating: coerceRating(r.rating),
+          })),
+        }
+      : data
   }
   async getSingleUserReviews(
     page = 0,
@@ -388,14 +580,35 @@ class RecipeAPIClass {
   ): Promise<{ reviews: OptionalReviewType[]; totalCount: number } | null> {
     const username = await AuthAPI.getUsername()
     if (!username) return null
-    const reviewResult = await http.get(
-      `api/getSingleUserReviews?username=${username}&page=${page}&reviewsPerPage=${reviewsPerPage}&filter=${filter}&returnRecipeData=${returnRecipeData}`
-    )
-    return reviewResult.data
+    // Build via URLSearchParams (matches getAllRecipes) so a reserved char in
+    // `username`/`filter` can't corrupt the query string.
+    const params = new URLSearchParams({
+      username,
+      page: String(page),
+      reviewsPerPage: String(reviewsPerPage),
+      filter,
+      returnRecipeData: String(returnRecipeData),
+    })
+    const reviewResult = await http.get(`api/getSingleUserReviews?${params.toString()}`)
+    const data = reviewResult.data
+    return data
+      ? {
+          ...data,
+          reviews: (data.reviews ?? []).map((r: OptionalReviewType) => ({
+            ...r,
+            rating: coerceRating(r.rating),
+          })),
+        }
+      : data
   }
 
   // Ingredients
-  async getIngredientData(val: string): Promise<IngredientsType> {
+  // Return type excludes LabelType: this always produces a parsed-ingredient
+  // shape (enriched or error-degraded), never a group label — so callers can
+  // read `ingredientData`/`error` without first narrowing away the label arm.
+  async getIngredientData(
+    val: string
+  ): Promise<Exclude<IngredientsType, LabelType>> {
     const parsedIngredient = parseIngredientString(val)
     // Phase A: enrichment is soft-fail. A thrown network error (server down, timeout,
     // 5xx surfaced as axios rejection) must not bubble up — callers stick on the
@@ -404,9 +617,12 @@ class RecipeAPIClass {
     try {
       const enrichment = await fetchIngredientEnrichment(parsedIngredient)
 
-      if (enrichment.error || !enrichment.data) {
+      // A clean lookup miss returns `data: null` (the server soft-fails to that;
+      // a real proxy/network failure throws and is caught below). Surface it as
+      // the row's error state so the UI shows its Retry affordance.
+      if (!enrichment.data) {
         return {
-          error: enrichment.error ?? { message: 'No ingredient data returned' },
+          error: { message: 'No ingredient data returned' },
           parsedIngredient,
           ingredientData: null,
           id: uuidv4(),
@@ -419,6 +635,32 @@ class RecipeAPIClass {
         id: uuidv4(),
       }
     } catch (err: unknown) {
+      // A 429 from the parse limiter (server/routes/ingredients.js) is a
+      // distinct, expected failure mode — not a generic outage — so it gets
+      // its own honest message + a retryAt the caller can use to hold off the
+      // retry affordance instead of immediately re-429ing.
+      if (
+        axios.isAxiosError(err) &&
+        err.response?.status === 429 &&
+        (err.response.data as { code?: string } | undefined)?.code ===
+          INGREDIENT_RATE_LIMIT_CODE
+      ) {
+        const retryAfterHeader = Number(err.response.headers?.['retry-after'])
+        const retryAfterSec =
+          Number.isFinite(retryAfterHeader) && retryAfterHeader > 0
+            ? retryAfterHeader
+            : DEFAULT_RATE_LIMIT_RETRY_SEC
+        return {
+          error: {
+            message: `Too many ingredient lookups — wait ${retryAfterSec}s and retry.`,
+            code: INGREDIENT_RATE_LIMIT_CODE,
+            retryAt: Date.now() + retryAfterSec * 1000,
+          },
+          parsedIngredient,
+          ingredientData: null,
+          id: uuidv4(),
+        }
+      }
       const message =
         err instanceof Error ? err.message : 'Ingredient enrichment request failed'
       return {
@@ -434,23 +676,37 @@ class RecipeAPIClass {
   async getSavedRecipes(
     page: number,
     recipesPerPage: number,
-    order: string
-  ): Promise<{ recipes: RecipeType[]; totalCount: number } | null> {
+    order: string,
+    collectionId?: string,
+    q?: string
+  ): Promise<{ recipes: SavedRecipeCardType[]; totalCount: number } | null> {
     if (!AuthAPI.getUID()) return null
-    const result = await http.get(
-      `api/getSavedRecipes?page=${page}&recipesPerPage=${recipesPerPage}&order=${order}`
-    )
+    const params = new URLSearchParams({
+      page: String(page),
+      recipesPerPage: String(recipesPerPage),
+      order,
+    })
+    if (collectionId) params.set('collectionId', collectionId)
+    if (q && q.trim()) params.set('q', q.trim())
+    const result = await http.get(`api/getSavedRecipes?${params.toString()}`)
     return result.data
   }
   async getCreatedRecipes(
     page: number,
     recipesPerPage: number,
     order: string
-  ): Promise<{ recipes: RecipeType[]; totalCount: number } | null> {
+  ): Promise<{ recipes: CreatedRecipeCardType[]; totalCount: number } | null> {
     if (!AuthAPI.getUID()) return null
     const result = await http.get(
       `api/getCreatedRecipes?page=${page}&recipesPerPage=${recipesPerPage}&order=${order}`
     )
+    return result.data
+  }
+  // Aggregate counts for the account-page tabs in a single request. Skipped
+  // (returns null) when nobody is signed in, like the other account queries.
+  async getAccountCounts(): Promise<AccountTabCounts | null> {
+    if (!AuthAPI.getUID()) return null
+    const result = await http.get('api/getAccountCounts')
     return result.data
   }
 }

@@ -15,9 +15,67 @@
     cursor: pointer;
     text-decoration: underline;
     font-weight: 500;
-    font-size: 0.875rem;
+    font-size: s.$text-sm;
     color: s.$secondary-text;
     width: fit-content;
     align-self: center;
+    // Was a static grey link with no hover — darken to ink like every other
+    // text link so it reads as interactive.
+    transition: color s.$hover-timing;
+    &:hover {
+      color: s.$primary-text;
+    }
+  }
+
+  // Quiet separator between the required username and the optional details.
+  .optional-divider {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin: 0.15rem 0;
+    color: s.$tertiary-text;
+    font-size: s.$text-caption;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    &::before,
+    &::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: s.$gray-300;
+    }
+  }
+
+  // Multi-line bio field, styled to match the single-line inputs.
+  .form-textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.65rem 0.85rem;
+    font-family: inherit;
+    font-size: s.$text-base;
+    font-weight: 500;
+    color: s.$primary-text;
+    border: 1.5px solid s.$gray-300;
+    border-radius: s.$border-radius;
+    background: s.$white;
+    outline: none;
+    resize: vertical;
+    min-height: 70px;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+    &:focus {
+      border-color: s.$secondary;
+      @include s.focus-glow;
+    }
+    &::placeholder {
+      color: s.$tertiary-text;
+      font-weight: 400;
+    }
+  }
+
+  // Right-align the bio character counter under the textarea.
+  .form-input .input-hint {
+    align-self: flex-end;
   }
 }

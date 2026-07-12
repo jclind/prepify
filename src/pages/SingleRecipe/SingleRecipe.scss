@@ -1,418 +1,697 @@
 @use '../../helpers.scss' as s;
 
+// ── Single recipe — "Bar 2 / 2-col news" design ─────────────────────────────
+// Self-contained: the presentational sections (hero, action bar, ingredients,
+// instructions, tags) are rendered inline with this markup, so nothing competes
+// with these styles. Reused functional subsystems (Save/Rate/Print, Made-It,
+// owner controls, nutrition facts, ratings & reviews) are styled within their
+// own containers below.
+
+$soft-border: s.$gray-200;
+$soft-radius: 16px;
+
 .single-recipe-page {
-  max-width: s.$recipe-page-max-width;
+  max-width: 1080px;
+  color: s.$primary-text;
 
-  h3.title {
-    font-weight: 600;
-  }
-
-  .loading-container {
+  // ── controls / owner banner ─────────────────────────────────────────────────
+  .sr-controls {
     display: flex;
-    justify-content: center;
     align-items: center;
-    width: 100%;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+    // Reserve the row height so the page doesn't drop ~11px when the report
+    // kebab (taller than the back link) appears on load — it's absent during
+    // loading and for owners, so without this the whole page shifts down.
+    min-height: 30px;
+    .sr-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-weight: 700;
+      font-size: s.$text-base;
+      color: s.$secondary-text;
+      text-decoration: none;
+      svg { font-size: s.$text-xl; }
+      &:hover { color: s.$primary; }
+      &:focus-visible { @include s.outline(); }
+    }
   }
-  .recipe-container {
+  > .recipe-controls-container { margin-bottom: 1.5rem; }
+
+  // ── hero (bar header, author pinned to bottom) ──────────────────────────────
+  .hero {
+    display: grid;
+    grid-template-columns: 400px 1fr;
+    gap: 3.25rem;
+    align-items: stretch;
+    @include s.below(820px) {
+      grid-template-columns: 1fr;
+      gap: 1.75rem;
+    }
+  }
+  .hero-img {
+    // Own the 4/3 box on the container (align-self:start so the grid's
+    // align-items:stretch doesn't pull it to the taller text column). Both the
+    // skeleton and the image fill it absolutely, so they're pixel-identical and
+    // the swap can't shift layout.
+    align-self: start;
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    min-height: 280px;
+    img, .img-skeleton {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: $soft-radius;
+      display: block;
+    }
+    img {
+      box-shadow: s.$elevation-4;
+      // Held at 0 until the image actually decodes (onLoad), then faded in over
+      // the skeleton — no top-down paint over an empty box.
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      &.is-loaded { opacity: 1; }
+    }
+  }
+  .hero-text {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    width: 100%;
-    .header-content {
-      display: flex;
-      width: 100%;
-      justify-content: center;
-      padding-bottom: 2rem;
-      margin-bottom: 2rem;
-      border-bottom: 1px solid s.$gray-400;
-      gap: 3rem;
-
-      .actions {
-        display: flex;
-        gap: 1rem;
-
-        .action.skeleton {
-          height: 35px;
-          min-width: 100px;
-        }
-        .save-recipe .save-recipe-btn,
-        .add-rating .add-rating-btn,
-        .print-recipe .print-recipe-btn {
-          position: relative;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          gap: 0.5rem;
-          font-size: 1.125rem;
-          border: 1px solid s.$gray-400;
-          background: s.$gray-300;
-          padding: 0.35rem 0.75rem;
-          border-radius: s.$border-radius;
-          height: 35px !important;
-
-          &:focus {
-            @include s.outline();
-          }
-
-          .loading {
-            z-index: 10;
-            position: absolute;
-            top: 0;
-            left: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100%;
-            width: 100%;
-            position: absolute;
-            overflow: hidden;
-            background: rgba(255, 255, 255, 0.5);
-            .spinner {
-              height: 100%;
-              width: 100%;
-            }
-          }
-
-          .disabled-overlay {
-            z-index: 10;
-            position: absolute;
-            top: 0;
-            left: 0;
-            height: 100%;
-            width: 100%;
-            border-radius: s.$border-radius;
-            background: rgba(255, 255, 255, 0.5);
-
-            &:hover {
-              border: 0px !important;
-              cursor: default !important;
-            }
-          }
-
-          &:hover {
-            border: 1px solid s.$secondary-text;
-          }
-
-          .icon {
-            height: 20px;
-            width: 20px;
-          }
-        }
-      }
-
-      .save-recipe .save-recipe-btn.disabled,
-      .add-rating .add-rating-btn.disabled,
-      .print-recipe .print-recipe-btn.disabled {
-        &:hover {
-          border: 1px solid s.$gray-400 !important;
-        }
-      }
-
-      .recipe-image-container {
-        display: flex;
-        // justify-content: flex-start;
-        width: 400px;
-        height: 400px;
-        .img {
-          width: 400px;
-          height: 400px;
-          overflow: hidden;
-
-          object-fit: cover;
-        }
-        .img.skeleton {
-          width: 400px;
-          height: 400px;
-        }
-      }
-      .description-content {
-        display: flex;
-        flex-direction: column;
-        align-items: space-between;
-        gap: 1rem;
-        min-height: 400px;
-        width: 100%;
-        max-width: 670px;
-        // background: red;
-        .title {
-          text-transform: capitalize;
-          padding: 0;
-          margin: 0;
-        }
-        .recipe-price {
-          font-size: 0.75rem;
-          font-weight: 700;
-          color: s.$primary;
-          text-transform: uppercase;
-          letter-spacing: 1.2px;
-        }
-        .description {
-          font-size: 1rem;
-          font-weight: 500;
-          max-width: 600px;
-          flex: 1;
-          // background: red;
-        }
-        .recipe-data {
-          display: flex;
-          flex: 1;
-          width: 90%;
-          max-width: 500px;
-          justify-content: space-between;
-          align-items: center;
-          // margin-top: 2rem;
-
-          .data-element {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 0.5rem;
-
-            .skeleton {
-              min-width: 95px;
-              min-height: 85px;
-            }
-            .icon {
-              height: 30px;
-              width: 30px;
-            }
-            h2 {
-              font-size: 1rem;
-              font-weight: 700;
-            }
-            .data {
-              font-size: 1rem;
-              color: s.$secondary-text;
-            }
-          }
-        }
-        .edited-marker {
-          font-size: 0.85rem;
-          font-style: italic;
-          color: s.$secondary-text;
-        }
-      }
-
-      @media screen and (max-width: 1100px) {
-        gap: 2rem;
-        .recipe-image-container {
-          width: 350px;
-          height: 350px;
-          .img {
-            width: 350px;
-            height: 350px;
-          }
-          .img.skeleton {
-            width: 400px;
-            height: 400px;
-          }
-        }
-      }
-      @media screen and (max-width: 1000px) {
-        .actions {
-          gap: 1rem;
-          button {
-            font-size: 1rem !important;
-          }
-        }
-      }
-      @media screen and (max-width: 956px) {
-        flex-direction: column;
-        align-items: center;
-        justify-self: flex-start;
-
-        .mobile-title-content {
-          display: flex;
-          flex-direction: column;
-          align-items: space-between;
-          width: 100%;
-          max-width: 670px;
-          text-align: center;
-          .title {
-            padding-bottom: 1rem;
-            text-transform: capitalize;
-          }
-          .recipe-price {
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: s.$primary;
-            text-transform: uppercase;
-            padding-top: 0.5rem;
-            letter-spacing: 1.2px;
-          }
-          .description {
-            max-width: 700px;
-            width: 90%;
-            margin: 0 auto;
-          }
-        }
-        .description-content {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 2rem;
-          min-height: 0px;
-          width: 100%;
-          max-width: 670px;
-        }
-        .actions {
-          gap: 1rem;
-          button {
-            font-size: 1.125rem !important;
-          }
-        }
-      }
-      @media screen and (max-width: 600px) {
-        .description-content {
-          width: 90%;
-        }
-        .actions {
-          justify-content: center;
-          button {
-            font-size: 1rem !important;
-          }
-          .action.skeleton {
-            height: 35px;
-            min-width: 80px;
-          }
-        }
-      }
-      @media screen and (max-width: 450px) {
-        .description-content {
-          width: 100%;
-        }
-        .recipe-image-container {
-          width: 300px;
-          height: 300px;
-          .img {
-            width: 300px;
-            height: 300px;
-          }
-          .img.skeleton {
-            width: 300px;
-            height: 300px;
-          }
-        }
-      }
-      @media screen and (max-width: 375px) {
-        .description-content {
-          width: 100%;
-          .recipe-data {
-            .data-element {
-              h3,
-              .data {
-                font-size: 0.875rem;
-              }
-              .skeleton {
-                min-width: 82px;
-                min-height: 82px;
-              }
-            }
-          }
-        }
-        .recipe-image-container {
-          width: 275px;
-          height: 275px;
-          .img {
-            width: 275px;
-            height: 275px;
-          }
-          .img.skeleton {
-            width: 275px;
-            height: 275px;
-          }
-        }
-        .actions {
-          gap: 0.5rem;
-          button {
-            font-size: 0.875rem !important;
-          }
-        }
-      }
+    gap: 1.35rem;
+    padding: 0.5rem 0;
+    h1 {
+      font-size: s.$text-4xl;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.18;
+      text-transform: capitalize;
+      margin: 0;
+      // Reserve one title line while loading so the skeleton-to-title swap holds
+      // height (the skeleton inherits the h1 font, so it's one line tall).
+      .title-skeleton { display: block; }
     }
-    .body-content {
-      width: 100%;
-      max-width: s.$recipe-body-max-width;
-
-      .tags-container {
-        margin: 0 auto;
-        margin-top: 4rem;
-        max-width: 700px;
-        width: 90%;
-        .tag-label {
-          font-size: 1rem;
-          color: s.$primary;
-          font-weight: 700;
-        }
-        .tags {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 0.5rem;
-          margin-top: 1.5rem;
-          .tag {
-            padding-right: 0.5rem;
-            cursor: pointer;
-            text-decoration: none;
-
-            &:focus {
-              @include s.outline();
-            }
-          }
-          .tag.skeleton {
-            height: 24px;
-            width: 70px;
-            border: none;
-          }
-        }
-        @media screen and (max-width: 500px) {
-          .tags {
-            .tag {
-              font-size: 0.8rem;
-            }
-          }
-        }
-      }
+    .eyebrow {
+      font-size: s.$text-caption;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: s.$secondary-accessible;
     }
-    .made-this-recipe {
-      margin: 0 auto;
-      margin-top: 4rem;
-      max-width: 700px;
-      width: 90%;
-      .content {
-        display: flex;
-        flex-direction: column;
-        width: fit-content;
-        align-items: center;
-        gap: 0.25rem;
+    .description { color: s.$secondary-text; line-height: 1.7; font-size: s.$text-md; }
+    // Compact rating echo by the title (see SingleRecipe.tsx). Pulled snug under
+    // the heading rather than treated as its own stacked block.
+    .hero-rating {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      margin-top: -0.6rem;
+      font-size: s.$text-base;
+      color: s.$primary-text;
+      .hr-star { color: #f5a623; font-size: s.$text-md; }
+      .hr-val { font-weight: 700; }
+      .hr-count { color: s.$tertiary-text; font-weight: 500; }
+    }
+    .author-row {
+      margin-top: auto;
+      // Inline-flex + align-self so the link's hit area hugs the byline
+      // (avatar + text) rather than stretching the full column width.
+      display: inline-flex;
+      align-self: flex-start;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: s.$text-sm;
+      color: s.$tertiary-text;
+      text-decoration: none;
+      strong { color: s.$primary-text; font-weight: 700; }
+      // Underline only the handle on hover/focus — the profile affordance,
+      // without lifting or recolouring the whole chrome row.
+      &:hover strong,
+      &:focus-visible strong { text-decoration: underline; }
+      &:focus-visible {
+        @include s.outline();
+        border-radius: s.$radius-sm;
       }
-      .made-recipe {
-        display: flex;
+      .avatar {
+        width: 28px;
+        height: 28px;
+        border-radius: s.$radius-circle;
+        background: s.$secondary;
+        color: s.$white;
+        display: inline-flex;
+        align-items: center;
         justify-content: center;
-        align-items: center;
-        border: 1px solid s.$primary-text;
-        border-radius: s.$border-radius;
-        color: s.$primary-text;
-        padding: 0.5rem 1rem;
-        font-size: 1rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.1s linear;
-        width: 105px;
-        height: 40px;
+        font-size: s.$text-sm;
+        font-weight: 800;
+        flex-shrink: 0;
+      }
+    }
+  }
 
+  // ── action bar (meta + actions) ─────────────────────────────────────────────
+  .action-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.25rem 2rem;
+    flex-wrap: wrap;
+    margin-top: 1.5rem;
+    padding: 1rem 1.5rem;
+    background: s.$white;
+    border: 1.5px solid $soft-border;
+    border-radius: $soft-radius;
+    box-shadow: s.$elevation-3;
+  }
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    row-gap: 0.5rem;
+    .m-item {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 0.45rem;
+      padding: 0 1.4rem;
+      &:first-child { padding-left: 0; }
+      & + .m-item { border-left: 1px solid s.$gray-300; }
+    }
+    .m-top { display: inline-flex; align-items: baseline; gap: 0.45rem; }
+    .m-ic { align-self: center; color: s.$primary; font-size: s.$text-lg; }
+    .m-v { font-weight: 800; font-size: s.$text-lg; }
+    // cost tile: the per-serving price is a headline number, so color it brand
+    // primary to pull the eye — this is the "make pricing prominent" beat
+    .m-cost .m-v { color: s.$primary-accessible; }
+    .m-l {
+      font-size: s.$text-caption;
+      color: s.$tertiary-text;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+  }
+  .sr-actions {
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    .save-recipe, .add-rating, .print-recipe { display: inline-flex; }
+    // Loading stand-ins for the Save/Rate/Print buttons — same row, same height.
+    // The class is on the react-loading-skeleton *wrapper* (the flex item); keep
+    // its line-box collapsed so its height equals the skeleton's (43px), not 62px.
+    .action-btn-skeleton {
+      display: inline-flex;
+      line-height: 0;
+      .react-loading-skeleton { display: block; }
+    }
+    // rate/print are `.btn .btn--outline`; save is a bespoke AA-tuned toggle on
+    // the `.btn` base. Shared locally: the action bar's heavier 1.5px border,
+    // 700 weight, and 18px icons. (Layout/shape/padding come from `.btn`.)
+    .save-recipe-btn, .add-rating-btn, .print-recipe-btn {
+      position: relative;
+      font-weight: 700;
+      border-width: 1.5px;
+      height: auto !important;
+      .icon { height: 18px; width: 18px; }
+    }
+    .save-recipe-btn {
+      // Stateful save toggle. Kept off the generic `.btn--primary` because its
+      // $primary-hover (#e74e1d, white-on-it 3.81) fails AA; these fills/hovers
+      // are AA-tuned. is-saved flips to the accessible teal.
+      background: s.$primary-accessible;
+      border-color: s.$primary-accessible;
+      color: s.$white;
+      // Filled button → the shared Lift: rise + brand glow + the $hover-brighten
+      // lighten (matching the orange CTAs site-wide), instead of a darker fill.
+      &:hover {
+        filter: s.$hover-brighten;
+        transform: translateY(s.$hover-lift);
+        box-shadow: s.$shadow-brand;
+      }
+      &.is-saved {
+        background: s.$secondary-accessible;
+        border-color: s.$secondary-accessible;
+        // Same treatment on the saved (teal) state — lighten + teal glow. The
+        // lift is re-stated (not inherited from the base hover) so this is
+        // self-contained; only the glow colour differs from the base.
         &:hover {
-          background: s.$primary-text;
-          color: s.$primary-background;
+          filter: s.$hover-brighten;
+          transform: translateY(s.$hover-lift);
+          box-shadow: s.$shadow-teal;
         }
-        &:focus {
+      }
+    }
+    .print-recipe-btn .loading {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.6);
+      border-radius: s.$radius-pill;
+    }
+  }
+
+  // ── body / cards ────────────────────────────────────────────────────────────
+  .body {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    margin-top: 1.5rem;
+  }
+  .card {
+    background: s.$white;
+    border: 1.5px solid $soft-border;
+    border-radius: $soft-radius;
+    box-shadow: s.$elevation-3;
+    padding: 1.5rem 1.75rem;
+    @include s.below(s.$bp-lg) { padding: 1.25rem 1rem; }
+    > h2 { font-size: s.$text-xl; font-weight: 700; margin-bottom: 1.1rem; }
+  }
+
+  // ── ingredients (two-up grid, square thumb, left check, servings pill) ──────
+  .ingredients-card {
+    .sec-head {
+      display: flex;
+      // Wrap the (fixed-width) servings pill below the heading on very narrow
+      // screens instead of letting it spill past the section's right edge.
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.5rem 1rem;
+      margin-bottom: 1.1rem;
+      // Reserve the pill's height so the heading row doesn't grow when the real
+      // stepper replaces the skeleton (the pill is taller than the bare <h2>).
+      min-height: 38px;
+      h2 { margin-bottom: 0; }
+      // Skeleton stand-in for the servings stepper. Class is on the
+      // react-loading-skeleton wrapper; keep its line-box collapsed so the
+      // wrapper height equals the pill (38px), not 57px (the trailing-<br> trap),
+      // which would otherwise grow .sec-head and shove the <h2> down.
+      .servings-pill-skeleton {
+        display: inline-flex;
+        line-height: 0;
+        .react-loading-skeleton { display: block; }
+      }
+    }
+    .servings-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.15rem;
+      background: s.$primary-background;
+      border-radius: s.$radius-pill;
+      padding: 0.2rem;
+      font-weight: 700;
+      // All three controls are sized ≥ the 24px WCAG 2.5.8 / Lighthouse
+      // `target-size` minimum (the .serv-input was previously ~14px and failed).
+      .step-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: s.$radius-circle;
+        border: none;
+        background: s.$white;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: s.$text-md;
+        color: s.$primary-text;
+        // Ease the white→orange fill (was a hard snap — no transition).
+        transition: background-color s.$hover-timing, color s.$hover-timing;
+        &:hover { background: s.$primary; color: s.$white; }
+      }
+      .serv-input {
+        width: 25px;
+        height: 32px;
+        box-sizing: border-box;
+        border: none;
+        background: none;
+        text-align: center;
+        font-weight: 700;
+        font-size: s.$text-base;
+        color: s.$primary-text;
+        // A hair narrower than the original 28px tightens the "N serv"
+        // pairing (the centred digit no longer floats mid-box), while the
+        // left margin keeps the − button off the number — the padding the
+        // wider box used to give for free.
+        margin-left: 0.15rem;
+        padding: 0;
+        // Was outline:none with no replacement — restore a visible keyboard
+        // focus ring (matches the +/- step buttons beside it). WCAG 2.4.7.
+        &:focus-visible {
           @include s.outline();
         }
       }
-      span {
-        font-size: 0.75rem;
-        font-weight: 700;
-        color: s.$secondary-text;
+      // Right margin gives the + button the same breathing room as the − side.
+      .serv-unit { font-size: s.$text-sm; color: s.$secondary-text; margin: 0 0.4rem 0 0; }
+    }
+    .ing-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.25rem 1.75rem;
+      @include s.below(s.$bp-xl) { grid-template-columns: 1fr; }
+
+      .ing {
+        display: grid;
+        grid-template-columns: 22px 40px 1fr;
+        align-items: center;
+        gap: 0.65rem;
+        padding: 0.5rem 0.4rem;
+        border-radius: s.$radius-lg;
+        cursor: pointer;
+        font-size: s.$text-base;
+        &:hover { background: s.$primary-background; }
+        &:focus-visible { @include s.outline(); }
+        // qty + name flow as one inline text block, so a long name wraps
+        // naturally under the quantity instead of in its own cramped column
+        .ing-text { line-height: 1.45; }
+        .box {
+          width: 20px;
+          height: 20px;
+          border: 1.5px solid s.$gray-400;
+          border-radius: 5px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: transparent;
+          font-size: s.$text-xl;
+        }
+        .thumb {
+          width: 40px;
+          height: 40px;
+          border-radius: 9px;
+          border: 1px solid s.$gray-200;
+          overflow: hidden;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: s.$white;
+          // contain + slightly smaller so the product photo isn't cropped tight
+          img { width: 32px; height: 32px; object-fit: contain; }
+          .no-img { width: 22px; height: 22px; color: s.$gray-500; }
+        }
+        .qty { font-weight: 700; white-space: nowrap; }
+        .name { color: s.$secondary-text; }
+        &.checked {
+          .box { background: s.$secondary; border-color: s.$secondary; color: s.$white; }
+          .qty, .name { text-decoration: line-through; color: s.$tertiary-text; }
+        }
       }
+      .ing-group-label {
+        grid-column: 1 / -1;
+        font-weight: 700;
+        color: s.$primary;
+        margin: 0.5rem 0 0.1rem;
+      }
+      // Skeleton rows reuse the real `.ing` grid; the thumb placeholder fills the
+      // bordered 40px tile (overflow-clipped, slightly inset corners) so it reads
+      // as a loading product image and is centred by construction.
+      .ing .thumb .thumb-skeleton.react-loading-skeleton {
+        display: block;
+        width: 100%;
+        height: 100%;
+        border-radius: 8px;
+      }
+    }
+    .price-line {
+      margin-top: 1rem;
+      font-size: s.$text-sm;
+      color: s.$tertiary-text;
+      strong { color: s.$primary-accessible; }
+    }
+  }
+
+  // ── instructions (two-column newspaper flow) ────────────────────────────────
+  .instructions-card {
+    .step-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      column-count: 2;
+      column-gap: 2.75rem;
+      @include s.below(720px) { column-count: 1; }
+
+      .step {
+        display: grid;
+        grid-template-columns: 38px 1fr;
+        gap: 1rem;
+        align-items: start;
+        break-inside: avoid;
+        margin-bottom: 1.6rem;
+        .num {
+          width: 34px;
+          height: 34px;
+          border-radius: s.$radius-circle;
+          background: s.$primary;
+          color: s.$white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 800;
+        }
+        p { line-height: 1.7; }
+      }
+      .step-group-label {
+        break-inside: avoid;
+        font-weight: 700;
+        color: s.$primary;
+        margin-bottom: 0.75rem;
+      }
+    }
+  }
+
+  // ── tags ────────────────────────────────────────────────────────────────────
+  .tags-card .tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    .tag {
+      background: rgba(s.$secondary, 0.12);
+      color: s.$secondary-accessible;
+      padding: 0.35rem 0.85rem;
+      border-radius: s.$radius-pill;
+      font-size: s.$text-sm;
+      font-weight: 600;
+      text-decoration: none;
+      &:hover { background: rgba(s.$secondary, 0.2); }
+      &:focus-visible { @include s.outline(); }
+    }
+  }
+
+  // ── made-it (reused MadeRecipeBtn) ──────────────────────────────────────────
+  .made-row .made-this-recipe {
+    margin: 0;
+    width: auto;
+    max-width: none;
+    // Teal-tinted "made it" toggle on the `.btn` base (pill + reset/layout); the
+    // tint fill/border/hover + sizing are bespoke, kept off the colour variants.
+    .made-recipe {
+      width: auto;
+      height: auto;
+      padding: 0.75rem 1.5rem;
+      font-weight: 700;
+      font-size: s.$text-base;
+      background: rgba(s.$secondary, 0.12);
+      color: s.$secondary-accessible;
+      border: 1.5px solid rgba(s.$secondary, 0.4);
+      &:hover { background: rgba(s.$secondary, 0.2); color: s.$secondary-accessible; }
+      // Completed state: made is one-way per user, so the button disables once
+      // marked. Read it as "done" (solid teal, full opacity), not unavailable
+      // (the `.btn:disabled` 0.6 fade) — with the leading check aligned.
+      &.is-made {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        &:disabled {
+          opacity: 1;
+          cursor: default;
+          background: rgba(s.$secondary, 0.2);
+        }
+      }
+    }
+  }
+
+  // ── nutrition (macro bars + simple inline facts table) ──────────────────────
+  .nutrition-card .recipe-nutrition-data {
+    .nd-head {
+      display: flex;
+      align-items: baseline;
+      gap: 0.6rem;
+      margin-bottom: 1rem;
+      h3 { font-size: s.$text-xl; font-weight: 700; }
+      .nd-per {
+        font-size: s.$text-caption;
+        color: s.$tertiary-text;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+    }
+    .nd-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem 2.5rem;
+      align-items: start;
+      @include s.below(700px) { grid-template-columns: 1fr; }
+    }
+    .nd-cal {
+      font-size: s.$text-base;
+      color: s.$secondary-text;
+      margin-bottom: 1rem;
+      strong { font-size: s.$text-2xl; color: s.$primary-text; }
+      &.solo { margin-bottom: 0; strong { font-size: s.$text-3xl; } }
+    }
+    .nd-facts-only { max-width: 420px; }
+    .nd-macros { display: flex; flex-direction: column; gap: 0.65rem; }
+    .nd-macro {
+      .nd-macro-top {
+        display: flex;
+        justify-content: space-between;
+        font-size: s.$text-sm;
+        font-weight: 700;
+        margin-bottom: 0.3rem;
+        span:last-child { color: s.$secondary; }
+      }
+      .nd-track { height: 8px; background: s.$primary-background; border-radius: s.$radius-pill; overflow: hidden; }
+      .nd-fill { height: 100%; border-radius: s.$radius-pill; background: linear-gradient(90deg, s.$secondary, #2fd0d8); }
+    }
+    .nd-facts {
+      width: 100%;
+      border-collapse: collapse;
+      td {
+        padding: 0.5rem 0;
+        border-bottom: 1px solid s.$gray-200;
+        font-size: s.$text-base;
+        &:last-child { text-align: right; font-weight: 700; }
+      }
+      tr:first-child td { font-weight: 800; font-size: s.$text-base; }
+      tr:last-child td { border-bottom: none; }
+    }
+  }
+
+  // ── stats (subtle footer line) ──────────────────────────────────────────────
+  .recipe-stats-foot { margin-top: 0; }
+
+  // ── ratings & reviews ────────────────────────────────────────────────────────
+  // The §D redesign moved the section's styling into the component files
+  // (RatingsAndReviews.scss / RecipeReview.scss) — only the page-load skeleton
+  // shims live here, mirroring the loaded section's shape.
+  .recipe-ratings {
+    &.rr-skeleton .title {
+      display: block;
+      margin-bottom: 1.25rem;
+      line-height: 1;
+    }
+    // react-loading-skeleton wraps in a span whose line-box would add a few px;
+    // block + explicit spacing matches the real invitation card's 1rem gap.
+    &.rr-skeleton .rr-invite-skeleton {
+      display: block;
+      margin-bottom: 1rem;
+      line-height: 1;
+    }
+  }
+
+  // ── report footer (quiet, de-emphasized — secondary action lives here, away
+  // from the primary Save/Rate/Print CTAs at the top) ─────────────────────────
+  .sr-report-foot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    margin-top: 2.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid s.$gray-200;
+    font-size: s.$text-sm;
+    color: s.$tertiary-text;
+    .report-control-trigger { font-size: s.$text-sm; font-weight: 700; }
+  }
+
+  // ── responsive ──────────────────────────────────────────────────────────────
+  // Pull the page in toward the screen edges on phones — the global .page is
+  // 90% wide (≈19px gutter at 375px), which wastes room the cards need. Scoped
+  // to ≤640px so tablets keep a comfortable margin.
+  @include s.below(s.$bp-xl) {
+    width: calc(100% - 1.5rem); // 0.75rem (12px) gutter each side
+  }
+
+  @include s.below(s.$bp-lg) {
+    .hero-text h1 { font-size: s.$text-3xl; }
+
+    // ── action bar: stack the meta over a full-width, equal 3-up button row ──
+    .action-bar {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 1rem;
+      padding: 1rem 1.1rem;
+    }
+    // Variation A — stats as centered tiles in a soft inset panel. Each tile is
+    // a flex column: the icon + value sit on one centered row (.m-top), with the
+    // label centered beneath.
+    .meta {
+      width: 100%;
+      // no global border-box reset, so the panel's padding + border would push
+      // it ~14px past the right edge (out of line with the buttons below)
+      box-sizing: border-box;
+      flex-wrap: nowrap;
+      gap: 0;
+      background: s.$gray-50;
+      border: 1px solid s.$gray-200;
+      border-radius: s.$radius-xl;
+      padding: 0.7rem 0.35rem;
+      .m-item {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.12rem;
+        padding: 0;
+        .m-top { display: inline-flex; align-items: center; gap: 0.3rem; }
+        .m-ic { font-size: s.$text-base; }
+        .m-v { font-size: s.$text-md; white-space: nowrap; }
+        .m-l { text-align: center; font-size: s.$text-caption; }
+        & + .m-item { border-left: 1px solid s.$gray-300; }
+      }
+    }
+    .sr-actions {
+      width: 100%;
+      gap: 0.5rem;
+      .save-recipe, .add-rating, .print-recipe { flex: 1 1 0; min-width: 0; }
+      // Skeleton buttons stretch to fill the row like the real ones do here.
+      .action-btn-skeleton {
+        flex: 1 1 0;
+        min-width: 0;
+        .react-loading-skeleton { width: 100% !important; }
+      }
+      .save-recipe-btn, .add-rating-btn, .print-recipe-btn {
+        width: 100%;
+        justify-content: center;
+        padding: 0.7rem 0.5rem;
+      }
+    }
+
+    // ── ingredients: smaller checkbox + thumb, tighter gaps → more name room ──
+    .ingredients-card .ing-list .ing {
+      grid-template-columns: 18px 30px 1fr;
+      gap: 0.45rem;
+      padding: 0.45rem 0.1rem;
+      font-size: s.$text-base;
+      .box { width: 18px; height: 18px; }
+      .thumb { width: 30px; height: 30px; img { width: 24px; height: 24px; } }
+    }
+
+    // ── instructions: smaller number badge, less inset → wider text column ──
+    .instructions-card .step-list .step {
+      grid-template-columns: 26px 1fr;
+      gap: 0.7rem;
+      margin-bottom: 1.25rem;
+      .num { width: 26px; height: 26px; font-size: s.$text-fine; }
+      p { line-height: 1.6; }
     }
   }
 }

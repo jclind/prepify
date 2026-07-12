@@ -1,6 +1,7 @@
+import { CloseIcon } from 'src/Components/icons'
 import React, { useState, useRef } from 'react'
-import { AiOutlineClose } from 'react-icons/ai'
 import toast from 'react-hot-toast'
+import { IMAGE_TOO_LARGE } from 'src/util/toastMessages'
 import './ImagePicker.scss'
 
 const MAX_IMAGE_SIZE = 5000 * 1024 // 5MB
@@ -15,6 +16,9 @@ interface ImagePickerProps {
   // Edit mode: fires when the user clears the image, so the parent can drop the
   // existing-image URL it tracks for validation.
   onRemove?: () => void
+  // Accessibility: id(s) of the text describing the picker (the section's error
+  // message and/or the draft-image hint), announced with the dropzone control.
+  describedBy?: string
 }
 
 const ImagePicker: React.FC<ImagePickerProps> = ({
@@ -22,6 +26,7 @@ const ImagePicker: React.FC<ImagePickerProps> = ({
   setImage,
   initialPreviewUrl,
   onRemove,
+  describedBy,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [imagePreview, setImagePreview] = useState<string | undefined>(
@@ -45,7 +50,7 @@ const ImagePicker: React.FC<ImagePickerProps> = ({
         return
       }
       if (file.size > MAX_IMAGE_SIZE) {
-        toast.error('Image cannot be more than 5MB in size.')
+        toast.error(IMAGE_TOO_LARGE)
         resetInput()
         return
       }
@@ -107,10 +112,35 @@ const ImagePicker: React.FC<ImagePickerProps> = ({
             : 'image-picker-box'
         }
         onClick={handleClick}
+        // While empty, the dropzone IS the picker control: expose it as a
+        // keyboard-operable button (role + tab stop + Enter/Space). Once an
+        // image is picked it becomes a static preview container (the Remove
+        // button handles interaction), so we don't nest a control in a button.
+        role={imagePreview ? undefined : 'button'}
+        tabIndex={imagePreview ? undefined : 0}
+        aria-label={imagePreview ? undefined : 'Select an image'}
+        aria-describedby={imagePreview ? undefined : describedBy}
+        onKeyDown={
+          imagePreview
+            ? undefined
+            : e => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  handleClick()
+                }
+              }
+        }
       >
-        <button className='remove-btn option-btn' onClick={removeImage}>
-          <AiOutlineClose className='icon' />
-        </button>
+        {imagePreview && (
+          <button
+            type='button'
+            className='remove-btn'
+            aria-label='Remove image'
+            onClick={removeImage}
+          >
+            <CloseIcon className='icon' />
+          </button>
+        )}
         <input
           type='file'
           accept='image/*'

@@ -12,6 +12,9 @@
 /build
 /dist
 
+# local analysis output (`ANALYZE=1 npm run build` → reports/stats.html)
+/reports
+
 # misc
 .DS_Store
 .env
@@ -23,9 +26,15 @@
 cypress/videos/
 cypress/screenshots/
 cypress.env.json
+# Visual-regression artifacts — regenerated per run, never a git-tracked baseline.
+cypress-image-diff-screenshots/
+cypress-image-diff-html-report/
 
 
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-.claude/
+# Ignore local Claude Code state, but track committed skills (run-* etc.).
+# Each skill dir has its own .gitignore for node_modules/ and screenshots/.
+.claude/*
+!.claude/skills/

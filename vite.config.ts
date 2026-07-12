@@ -1,9 +1,35 @@
 import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import path from 'path'
+import fs from 'fs'
 
-export default defineConfig({
-  plugins: [react()],
+// The app version, injected at build time (VITE_APP_VERSION) so components can
+// render it without importing package.json from inside src/ (which reaches out
+// of the source root and bundles the whole manifest shape). Read via fs rather
+// than a JSON import so the config doesn't depend on resolveJsonModule.
+const { version: appVersion } = JSON.parse(
+  fs.readFileSync(path.resolve(__dirname, 'package.json'), 'utf-8')
+)
+
+export default defineConfig(async () => ({
+  define: {
+    'import.meta.env.VITE_APP_VERSION': JSON.stringify(appVersion),
+  },
+  plugins: [
+    react(),
+    // Opt-in bundle analysis: `ANALYZE=1 npm run build` writes reports/stats.html
+    // (treemap of what each chunk is made of). Kept out of build/ so an analyze
+    // run can never leak the module map into the deployed site. Dynamic import
+    // because the plugin is ESM-only and this config loads as CJS.
+    ...(process.env.ANALYZE === '1'
+      ? [
+          (await import('rollup-plugin-visualizer')).visualizer({
+            filename: 'reports/stats.html',
+            gzipSize: true,
+          }),
+        ]
+      : []),
+  ],
   resolve: {
     alias: {
       src: path.resolve(__dirname, './src'),
@@ -13,6 +39,17 @@ export default defineConfig({
   server: {
     port: 3000,
     host: '0.0.0.0',
+    // Pre-transform the biggest lazy route chunks on dev-server start. With
+    // route-splitting, the dev server otherwise transforms a lazy page's whole
+    // module graph on first navigation — a pause Cypress specs with tight
+    // timeouts (AddRecipe, Admin) would feel as flake.
+    warmup: {
+      clientFiles: [
+        './src/pages/AddRecipe/AddRecipe.tsx',
+        './src/pages/Admin/AdminLayout.tsx',
+        './src/pages/Admin/Reports/Reports.tsx',
+      ],
+    },
   },
   build: {
     outDir: 'build',
@@ -39,4 +76,4 @@ export default defineConfig({
       ),
     },
   },
-})
+}))

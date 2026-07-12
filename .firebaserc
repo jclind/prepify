@@ -1,5 +1,7 @@
 {
   "projects": {
-    "default": "prepify-9b974"
+    "default": "prepify-9b974",
+    "prod": "prepify-9b974",
+    "dev": "prepify-dev-58579"
   }
 }

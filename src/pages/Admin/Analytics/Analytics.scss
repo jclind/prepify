@@ -1,0 +1,277 @@
+@use '../../../helpers.scss' as s;
+
+.admin-analytics {
+  max-width: 960px;
+
+  .admin-analytics-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+
+    h1 {
+      margin: 0;
+      font-size: s.$text-2xl;
+    }
+  }
+
+  // Header row for the windowed trends: the "Last N days" eyebrow paired with the
+  // range toggle that actually drives it (kept out of the page header so it sits
+  // next to the only section it affects).
+  .trends-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.6rem;
+    flex-wrap: wrap;
+
+    .section-eyebrow {
+      margin: 0;
+    }
+  }
+
+  .range-toggle {
+    display: flex;
+    gap: 0.3rem;
+
+    .range {
+      border: 1px solid s.$admin-slate-300;
+      background: s.$white;
+      color: s.$admin-slate-600;
+      padding: 0.35rem 0.75rem;
+      border-radius: s.$radius-pill;
+      font-size: s.$text-sm;
+      cursor: pointer;
+      transition: color s.$hover-timing, background-color s.$hover-timing,
+        border-color s.$hover-timing;
+
+      &:hover {
+        border-color: s.$admin-slate-400;
+      }
+
+      &.active {
+        background: s.$admin-chrome;
+        border-color: s.$admin-chrome;
+        color: s.$white;
+      }
+    }
+  }
+
+  .analytics-state {
+    color: s.$admin-slate-500;
+    font-size: s.$text-base;
+
+    &.error {
+      color: s.$admin-danger-text;
+    }
+  }
+
+  .section-eyebrow {
+    margin: 0 0 0.6rem;
+    font-size: s.$text-caption;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: s.$admin-slate-400;
+  }
+
+  .stat-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.75rem;
+
+    .stat-card {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+      background: s.$white;
+      border: 1px solid s.$admin-slate-200;
+      border-radius: s.$radius-lg;
+      padding: 1rem 1.1rem;
+
+      .stat-value {
+        font-size: s.$text-3xl;
+        font-weight: 700;
+        color: s.$admin-slate-900;
+        line-height: 1.1;
+
+        &.danger {
+          color: s.$admin-danger-text;
+        }
+
+        &.warn {
+          color: s.$admin-warn-text;
+        }
+      }
+
+      .stat-label {
+        font-size: s.$text-sm;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        color: s.$admin-slate-500;
+      }
+
+      .stat-sub {
+        margin-top: 0.3rem;
+        font-size: s.$text-fine;
+        color: s.$admin-slate-400;
+      }
+    }
+  }
+
+  .trends {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.75rem;
+
+    .trend-card {
+      background: s.$white;
+      border: 1px solid s.$admin-slate-200;
+      border-radius: s.$radius-lg;
+      padding: 1rem 1.1rem;
+
+      h2 {
+        margin: 0 0 0.75rem;
+        font-size: s.$text-base;
+        font-weight: 600;
+        color: s.$admin-slate-700;
+      }
+
+      .trend-note {
+        margin: 0.6rem 0 0;
+        font-size: s.$text-caption;
+        color: s.$admin-slate-400;
+      }
+    }
+  }
+
+  .sparkbars {
+    .bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 2px;
+      height: 80px;
+    }
+
+    .bar {
+      flex: 1;
+      min-width: 1px;
+      border-radius: 2px 2px 0 0;
+      background: s.$admin-slate-400;
+      transition: opacity 0.15s;
+
+      &:hover {
+        opacity: 0.7;
+      }
+
+      &.good {
+        background: s.$admin-ok-fill;
+      }
+      &.danger {
+        background: s.$admin-danger-fill;
+      }
+      &.warn {
+        background: s.$admin-warn-fill;
+      }
+      &.neutral {
+        background: s.$admin-slate-500;
+      }
+    }
+
+    .axis {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 0.4rem;
+      font-size: s.$text-caption;
+      color: s.$admin-slate-400;
+    }
+  }
+
+  .recent-actions {
+    background: s.$white;
+    border: 1px solid s.$admin-slate-200;
+    border-radius: s.$radius-lg;
+    padding: 1rem 1.25rem;
+
+    h2 {
+      margin: 0 0 0.5rem;
+      font-size: s.$text-base;
+      font-weight: 600;
+      color: s.$admin-slate-700;
+    }
+
+    .action-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .action-row {
+      display: flex;
+      gap: 0.75rem;
+      padding: 0.7rem 0;
+      border-bottom: 1px solid s.$admin-slate-200;
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      .dot {
+        width: 9px;
+        height: 9px;
+        border-radius: s.$radius-circle;
+        margin-top: 0.35rem;
+        flex-shrink: 0;
+        background: s.$admin-slate-400;
+
+        &.good {
+          background: s.$admin-ok-fill;
+        }
+        &.warn {
+          background: s.$admin-warn-fill;
+        }
+        &.danger {
+          background: s.$admin-danger-fill;
+        }
+        &.neutral {
+          background: s.$admin-slate-400;
+        }
+      }
+
+      .action-body {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .action-line {
+        margin: 0;
+        font-size: s.$text-base;
+        color: s.$admin-slate-700;
+
+        .actor,
+        .target {
+          color: s.$admin-slate-900;
+        }
+
+        .target {
+          font-weight: 600;
+          word-break: break-word;
+        }
+      }
+
+      .action-time {
+        margin: 0.2rem 0 0;
+        font-size: s.$text-caption;
+        color: s.$admin-slate-400;
+      }
+    }
+  }
+}

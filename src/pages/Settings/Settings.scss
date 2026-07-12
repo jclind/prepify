@@ -1,27 +1,230 @@
 @use '../../helpers.scss' as s;
 
-.page.settings-page {
+.settings-page {
+  max-width: 1080px;
+  // Only override the horizontal centering — keep the `.page` margin-top that
+  // clears the fixed navbar.
+  margin-inline: auto;
   padding-bottom: 2rem;
-  h1 {
-    // margin: 0 auto;
-    text-align: center;
+
+  .settings-title {
+    font-size: s.$text-3xl;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: s.$primary-text;
+    margin: 0 0 1.4rem;
   }
-  .link-options {
+
+  .settings-shell {
+    display: grid;
+    grid-template-columns: 232px 1fr;
+    gap: 2.25rem;
+    align-items: start;
+  }
+
+  /* ── Nav: desktop sidebar (also the mobile section list, restyled below) ── */
+  .settings-nav {
     display: flex;
-    gap: 1rem;
-    margin: 1rem auto;
-    width: fit-content;
-    .selection {
-      font-size: 1.1rem;
-      padding: 0.5rem 1rem;
-      border-radius: 20px;
-      text-decoration: none;
-      font-weight: 600;
-      color: s.$secondary-text;
+    flex-direction: column;
+    gap: 2px;
+    position: sticky;
+    top: calc(#{s.$nav-height} + 1rem);
+  }
+
+  .settings-navitem {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    width: 100%;
+    box-sizing: border-box;
+    border: none;
+    background: transparent;
+    font-family: inherit;
+    font-size: s.$text-base;
+    font-weight: 600;
+    color: s.$secondary-text;
+    text-decoration: none;
+    text-align: left;
+    padding: 0.65rem 0.8rem;
+    border-radius: 11px;
+    cursor: pointer;
+    transition: background 0.12s ease, color 0.12s ease;
+
+    .settings-navicon {
+      height: 1.05rem;
+      width: 1.05rem;
+      flex-shrink: 0;
     }
-    .selection.active {
-      background: s.$secondary-background;
+    .settings-navtext {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+    .settings-navlabel {
+      white-space: nowrap;
+    }
+    // Blurb + chevron are mobile-list affordances; hidden in the desktop rail.
+    .settings-navblurb {
+      display: none;
+    }
+    .settings-navchevron {
+      display: none;
+    }
+
+    &:hover {
+      background: rgba(0, 0, 0, 0.04);
       color: s.$primary-text;
+    }
+    // Orange active tint, matching the Account segmented nav — one "you are
+    // here" colour across the app's two rails (was teal here).
+    &.active {
+      background: rgba(s.$primary, 0.1);
+      color: s.$primary-accessible;
+    }
+    &.danger {
+      color: s.$error-red;
+      &.active {
+        background: rgba(s.$error-red, 0.1);
+        color: s.$error-red;
+      }
+    }
+  }
+
+  /* ── Back link: only the mobile detail view shows it ── */
+  .settings-back {
+    display: none;
+    align-items: center;
+    gap: 0.45rem;
+    align-self: flex-start;
+    color: s.$secondary-accessible;
+    font-weight: 700;
+    font-size: s.$text-base;
+    text-decoration: none;
+    margin-bottom: 1rem;
+
+    svg {
+      height: 1.05rem;
+      width: 1.05rem;
+    }
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  /* ── Content pane ── */
+  .settings-pane {
+    background: s.$white;
+    border: 1px solid s.$surface-warm-border;
+    border-radius: 18px;
+    box-shadow: s.$elevation-3;
+    padding: 1.75rem;
+
+    .settings-panehead {
+      margin-bottom: 1.5rem;
+      h2 {
+        font-size: s.$text-xl;
+        font-weight: 800;
+        color: s.$primary-text;
+        margin: 0 0 0.25rem;
+      }
+      p {
+        font-size: s.$text-sm;
+        color: s.$tertiary-text;
+        margin: 0;
+      }
+    }
+  }
+}
+
+/* ── Mobile master-detail (≤880px) ─────────────────────────────────────────────
+   Root (/settings) shows the section list and hides the pane; a section path
+   hides the list and shows just that pane with a back link. Desktop is unaffected. */
+@include s.below(s.$bp-3xl) {
+  .settings-page {
+    .settings-shell {
+      display: block;
+    }
+    .settings-pane {
+      padding: 1.25rem;
+    }
+
+    /* Root → a tappable list of sections */
+    &.at-index {
+      .settings-pane {
+        display: none;
+      }
+
+      .settings-nav {
+        position: static;
+        gap: 0;
+        background: s.$white;
+        border: 1px solid s.$surface-warm-border;
+        border-radius: s.$radius-3xl;
+        box-shadow: s.$elevation-3;
+        overflow: hidden;
+      }
+      .settings-navitem {
+        gap: 0.85rem;
+        padding: 1rem;
+        border-radius: 0;
+        border-bottom: 1px solid #f0ebe2;
+
+        &:last-child {
+          border-bottom: none;
+        }
+        // Nothing is "current" in the list, so neutralise the rail's active tint.
+        &.active {
+          background: transparent;
+        }
+        &:active {
+          background: rgba(0, 0, 0, 0.03);
+        }
+
+        .settings-navicon {
+          height: 1.25rem;
+          width: 1.25rem;
+          color: s.$secondary-text;
+        }
+        .settings-navlabel {
+          font-size: s.$text-base;
+          font-weight: 700;
+          color: s.$primary-text;
+          white-space: normal;
+        }
+        .settings-navblurb {
+          display: block;
+          font-size: s.$text-fine;
+          font-weight: 500;
+          color: s.$tertiary-text;
+          margin-top: 0.1rem;
+        }
+        .settings-navchevron {
+          display: block;
+          margin-left: auto;
+          color: s.$tertiary-text;
+          flex-shrink: 0;
+        }
+
+        &.danger {
+          .settings-navicon,
+          .settings-navlabel {
+            color: s.$error-red;
+          }
+        }
+      }
+    }
+
+    /* Section → single detail pane with a back link, no list/title */
+    &.at-section {
+      .settings-title {
+        display: none;
+      }
+      .settings-nav {
+        display: none;
+      }
+      .settings-back {
+        display: inline-flex;
+      }
     }
   }
 }

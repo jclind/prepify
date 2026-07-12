@@ -1,0 +1,50 @@
+@use '../../helpers.scss' as s;
+
+.app-error-fallback {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background: s.$white;
+
+  .app-error-content {
+    max-width: 480px;
+    text-align: center;
+
+    h1 {
+      font-size: s.$text-3xl;
+      margin-bottom: 0.75rem;
+      color: #1f2430;
+    }
+
+    p {
+      color: #374151;
+      line-height: 1.5;
+      margin-bottom: 1.5rem;
+    }
+
+    .app-error-actions {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: center;
+      flex-wrap: wrap;
+
+      // Rides the global `.btn` base (layout/reset/pill). KEEP BESPOKE: the dark
+      // slate (#1f2430) fill + white/border `.secondary` aren't a token variant,
+      // so the colours stay local; only the radius is dropped to inherit pill.
+      .btn {
+        padding: 0.65rem 1.25rem;
+        text-decoration: none;
+        background: #1f2430;
+        color: s.$white;
+
+        &.secondary {
+          background: s.$white;
+          color: #1f2430;
+          border: 1px solid #d1d5db;
+        }
+      }
+    }
+  }
+}

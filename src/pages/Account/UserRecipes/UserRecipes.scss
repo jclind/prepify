@@ -3,64 +3,19 @@
 .user-recipes {
   padding-bottom: 2rem;
 
-  .user-recipes-filters {
-    margin-top: 1rem;
-    max-width: 250px;
-
-    @media screen and (max-width: 500px) {
-      max-width: 100%;
-      width: 100%;
-    }
-  }
-
+  // Fluid card grid filling the account-body track (matching the Saved tab). No
+  // top margin so the first row aligns with the nav rail card beside it.
   .thumbnails-container {
     display: grid;
-    justify-items: center;
-    grid-template-columns: 1fr 1fr 1fr 1fr;
-    width: fit-content;
-    margin: 2rem auto;
-    gap: 2rem;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    align-items: start;
+    margin: 0 0 2rem;
+    gap: 1.25rem;
 
-    @media screen and (max-width: 1400px) {
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 1rem;
-    }
-    @media screen and (max-width: 1200px) {
-      gap: 0.5rem;
-    }
-    @media screen and (max-width: 1100px) {
-      grid-template-columns: 1fr 1fr;
-      gap: 2rem;
-    }
-    @media screen and (max-width: 815px) {
-      gap: 1rem;
-    }
-    @media screen and (max-width: 725px) {
+    @include s.below(s.$bp-sm) {
       grid-template-columns: 1fr;
     }
   }
-
-  .load-more-btn {
-    display: block;
-    margin: 0 auto;
-  }
-
-  .no-data-saved {
-    text-align: center;
-    padding: 3rem 1rem;
-
-    h2 {
-      margin-bottom: 0.5rem;
-    }
-
-    p {
-      color: s.$secondary-text;
-      margin-bottom: 1.5rem;
-    }
-
-    .add-recipe-btn {
-      display: inline-block;
-      text-decoration: none;
-    }
-  }
+  // Load-more uses the shared global `.load-more-btn` (index.scss); it centres
+  // itself (width: fit-content + margin auto), so no local override is needed.
 }

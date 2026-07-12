@@ -1,0 +1,219 @@
+@use '../../../helpers.scss' as s;
+
+.admin-users {
+  max-width: 820px;
+
+  .admin-users-head {
+    margin-bottom: 1.25rem;
+
+    h1 {
+      margin: 0;
+      font-size: s.$text-2xl;
+    }
+  }
+
+  .user-search {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+
+    input {
+      flex: 1;
+      border: 1px solid s.$admin-slate-300;
+      border-radius: s.$radius-md;
+      padding: 0.55rem 0.8rem;
+      font-size: s.$text-base;
+    }
+
+    .clear-btn {
+      border: 1px solid s.$admin-slate-300;
+      background: s.$white;
+      color: s.$admin-slate-600;
+      border-radius: s.$radius-md;
+      padding: 0.55rem 1.1rem;
+      font-size: s.$text-base;
+      font-weight: 600;
+      cursor: pointer;
+
+      &:hover {
+        border-color: s.$admin-slate-400;
+      }
+    }
+  }
+
+  .users-meta {
+    margin: 0 0 0.75rem;
+    font-size: s.$text-sm;
+    color: s.$admin-slate-400;
+  }
+
+  .users-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1.5rem;
+
+    button {
+      border: 1px solid s.$admin-slate-300;
+      background: s.$white;
+      color: s.$admin-slate-700;
+      border-radius: s.$radius-md;
+      padding: 0.45rem 1rem;
+      font-size: s.$text-sm;
+      font-weight: 600;
+      cursor: pointer;
+
+      &:hover:not(:disabled) {
+        border-color: s.$admin-slate-400;
+      }
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
+    }
+
+    .page-indicator {
+      font-size: s.$text-sm;
+      color: s.$admin-slate-500;
+    }
+  }
+
+  .users-state {
+    color: s.$admin-slate-500;
+    font-size: s.$text-base;
+
+    &.error {
+      color: s.$admin-danger-text;
+    }
+  }
+
+  .users-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .user-card {
+    background: s.$white;
+    border: 1px solid s.$admin-slate-200;
+    border-radius: s.$radius-lg;
+    padding: 1.1rem 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    gap: 1.25rem;
+
+    .user-head {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.4rem;
+
+      .user-name {
+        font-weight: 600;
+        color: s.$admin-slate-900;
+        text-decoration: none;
+
+        &:hover {
+          text-decoration: underline;
+        }
+
+        &.no-name {
+          color: s.$admin-slate-400;
+          font-style: italic;
+        }
+      }
+    }
+
+    .status-pill {
+      font-size: s.$text-caption;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      padding: 0.15rem 0.45rem;
+      border-radius: s.$radius-xs;
+      background: s.$admin-ok-bg;
+      color: s.$admin-ok-text;
+
+      &.suspended {
+        background: s.$admin-warn-bg;
+        color: s.$admin-warn-text-dk;
+      }
+
+      &.banned {
+        background: s.$admin-danger-bg;
+        color: s.$admin-danger-text;
+      }
+    }
+
+    .user-email {
+      margin: 0 0 0.3rem;
+      font-size: s.$text-sm;
+      color: s.$admin-slate-600;
+    }
+
+    .user-counts {
+      margin: 0;
+      font-size: s.$text-sm;
+      color: s.$admin-slate-500;
+
+      .has-reports {
+        color: s.$admin-warn-text;
+        font-weight: 600;
+      }
+    }
+
+    .user-reason {
+      margin: 0.4rem 0 0;
+      font-size: s.$text-sm;
+      color: s.$admin-slate-700;
+      font-style: italic;
+    }
+
+    .user-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      flex-shrink: 0;
+      min-width: 160px;
+
+      select,
+      .reason-input {
+        border: 1px solid s.$admin-slate-300;
+        border-radius: s.$radius-sm;
+        padding: 0.35rem 0.5rem;
+        font-size: s.$text-sm;
+      }
+
+      .apply-btn {
+        cursor: pointer;
+        border-radius: s.$radius-sm;
+        padding: 0.4rem 0.8rem;
+        font-size: s.$text-sm;
+        font-weight: 600;
+        border: 1px solid s.$admin-chrome;
+        background: s.$admin-chrome;
+        color: s.$white;
+
+        &:disabled {
+          opacity: 0.5;
+          cursor: default;
+        }
+      }
+    }
+  }
+}
+
+@include s.below(s.$bp-xl) {
+  .admin-users .user-card {
+    flex-direction: column;
+
+    .user-actions {
+      min-width: 0;
+    }
+  }
+}

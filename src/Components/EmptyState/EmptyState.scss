@@ -1,0 +1,54 @@
+@use '../../helpers.scss' as s;
+
+.empty-state {
+  // Top-anchored with a fixed offset so the icon/title land at the exact same
+  // height on every page that uses it — regardless of how many lines the copy
+  // wraps to (the description/CTA just flow downward). The account sub-page
+  // wrappers all contribute 0 top padding, so this margin is the sole offset.
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: center;
+  max-width: 26rem;
+  min-height: 300px;
+  margin: 3rem auto 2rem;
+  padding: 0 1.25rem;
+
+  &__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 72px;
+    height: 72px;
+    margin-bottom: 1.25rem;
+    border-radius: s.$radius-circle;
+    background: rgba(s.$primary, 0.09);
+    color: s.$primary;
+    font-size: s.$text-3xl;
+  }
+
+  &__title {
+    margin: 0 0 0.5rem;
+    font-size: s.$text-2xl;
+    font-weight: 800;
+    color: s.$primary-text;
+  }
+
+  &__text {
+    margin: 0;
+    font-size: s.$text-base;
+    line-height: 1.55;
+    color: s.$secondary-text;
+  }
+
+  // Composes the shared primary CTA (`.btn.btn--primary`) — fill, hover
+  // (brighten + lift + brand glow), pill shape and transition all come from the
+  // system. Only the empty-state spacing + slightly larger CTA padding are local.
+  &__cta {
+    margin-top: 1.5rem;
+    padding: 0.7rem 1.5rem;
+    text-decoration: none;
+  }
+}

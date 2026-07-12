@@ -1,138 +1,145 @@
 @use '../../../helpers.scss' as s;
 
+// "Dashboard · slim tiles" recipe card: header row (thumb + title + price/date),
+// a compact three-up performance strip, and a quiet time/rating footer.
 .user-recipe-thumbnail {
-  display: block;
-  border: none;
-  box-shadow: s.$card-box-shadow;
-  border-radius: s.$border-radius;
-  padding-bottom: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  width: 100%;
+  box-sizing: border-box; // keep padding within the grid cell (no overflow)
+  padding: 1.15rem;
+  background: #fff;
+  border: 1px solid s.$surface-warm-border;
+  border-radius: 18px;
+  box-shadow: s.$elevation-3;
   text-decoration: none;
   color: s.$primary-text;
-  width: 300px;
-  max-width: 300px;
-  text-align: center;
-  cursor: pointer;
-  background: s.$white;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition: box-shadow s.$hover-timing, transform s.$hover-timing;
 
-  &:focus {
+  // Use the shared site-wide focus ring (track 3a a11y standard) rather than a
+  // bespoke one, so the outline is consistent across the app.
+  &:focus-visible {
     @include s.outline();
   }
   &:hover {
-    transform: translateY(-3px);
-  }
-
-  .img-container {
-    position: relative;
-    width: 100%;
-    overflow: hidden;
-
-    .img {
-      border-radius: s.$border-radius;
-      border-bottom-left-radius: 0;
-      border-bottom-right-radius: 0;
-      object-fit: cover;
-      width: 100%;
-      height: 200px;
-    }
-
-    .date-pill {
-      position: absolute;
-      top: 0.625rem;
-      left: 0.625rem;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.3rem;
-      padding: 0.3rem 0.6rem;
-      border-radius: 999px;
-      background: rgba(0, 0, 0, 0.65);
-      backdrop-filter: blur(2px);
-      color: s.$white;
-      font-size: 0.7rem;
-      font-weight: 600;
-      letter-spacing: 0.3px;
-      white-space: nowrap;
-
-      .icon {
-        height: 0.85rem;
-        width: 0.85rem;
-      }
+    box-shadow: s.$elevation-4;
+    transform: translateY(s.$hover-lift-card);
+    .go {
+      color: s.$secondary;
+      transform: translate(2px, -2px);
     }
   }
 
-  .title {
-    display: flex;
-    justify-content: center;
+  .head-row {
+    display: grid;
+    grid-template-columns: 64px 1fr auto;
     align-items: center;
-    margin: 0 auto;
-    margin-top: 1rem;
-    margin-bottom: 0.25rem;
-    height: 3ch;
-    text-transform: capitalize;
-    max-width: 90%;
-    font-weight: 500;
-    font-size: 1.12rem;
-  }
+    gap: 0.85rem;
 
-  .price {
-    display: flex;
-    justify-content: center;
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: s.$primary;
-    text-transform: uppercase;
-    letter-spacing: 1.2px;
-    padding-top: 0.5rem;
-    padding-bottom: 0.75rem;
-  }
-
-  .info {
-    display: flex;
-    justify-content: space-between;
-    padding: 0.5rem 1rem;
-
-    .single-info {
-      display: flex;
-      align-items: center;
-      gap: 0.313rem;
-      font-weight: 600;
-      font-size: 1rem;
-      height: 1.375rem;
-
-      .skeleton {
-        height: 1.375rem;
-      }
-      .icon {
-        height: 1.375rem;
-        width: 1.375rem;
+    .thumb {
+      width: 64px;
+      height: 64px;
+      border-radius: s.$radius-xl;
+      overflow: hidden;
+      // react-loading-skeleton fills its parent; give it a target box.
+      .img,
+      .react-loading-skeleton {
+        width: 64px;
+        height: 64px;
+        object-fit: cover;
+        display: block;
       }
     }
-  }
-
-  @media screen and (max-width: 725px) {
-    width: 400px;
-    max-width: 400px;
-
-    .img-container .img {
-      height: 250px;
+    .id {
+      min-width: 0;
     }
     .title {
-      font-weight: 600;
+      font-size: s.$text-md;
+      font-weight: 700;
+      line-height: 1.25;
+      text-transform: capitalize;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .sub {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.55rem;
+      margin-top: 0.3rem;
+      .price {
+        font-size: s.$text-caption;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: s.$primary;
+      }
+      .date {
+        font-size: s.$text-caption;
+        font-weight: 600;
+        color: s.$tertiary-text;
+      }
+    }
+    .go {
+      font-size: s.$text-xl;
+      color: s.$tertiary-text;
+      transition: color 0.18s ease, transform 0.18s ease;
     }
   }
-  @media screen and (max-width: 550px) {
-    width: 325px;
-    max-width: 325px;
 
-    .img-container .img {
-      height: 215px;
+  // Compact metric tiles — small footprint, clearly grouped.
+  .tiles {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.45rem;
+
+    .tile {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.1rem;
+      background: s.$gray-50;
+      border: 1px solid s.$gray-200;
+      border-radius: 9px;
+      padding: 0.45rem 0.4rem;
+      .ic {
+        color: s.$primary;
+        font-size: s.$text-sm;
+      }
+      b {
+        font-size: s.$text-md;
+        font-weight: 800;
+      }
+      small {
+        font-size: s.$text-caption;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: s.$tertiary-text;
+      }
     }
   }
-  @media screen and (max-width: 375px) {
-    max-width: 250px;
 
-    .img-container .img {
-      height: 175px;
+  .footer {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    border-top: 1px solid #f0e8dd;
+    padding-top: 0.8rem;
+    margin-top: 0.2rem;
+    span {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: s.$text-sm;
+      font-weight: 700;
+      color: s.$secondary-text;
+      svg {
+        color: s.$secondary;
+        font-size: s.$text-md;
+      }
     }
   }
 }

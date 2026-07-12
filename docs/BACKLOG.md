@@ -1,0 +1,1837 @@
+# Prepify — Backlog
+
+Triaged from Jesse's running notes (2026-06-17). This is the general backlog: bugs, UX polish,
+a11y, tech debt, testing, and ideas. The beta→1.0 launch checklist lives separately in
+[`RELEASE_PLAN.md`](./RELEASE_PLAN.md) — items here are **not** release blockers unless cross-referenced.
+
+> **Verification pass 2026-06-26:** every open item below was re-checked against the current tree.
+> Stale file/line citations were corrected, several claims were re-diagnosed (notably the edit-form
+> NaN bug and the now-orphaned `RecipeThumbnail`), and a few items were closed (`/recipes` navbar
+> search, Railway prod branch). New findings are folded inline and marked **(verified 2026-06-26)**.
+
+> **Note triage 2026-07-08:** Jesse's Obsidian dump (21 new items, filed 2026-06-17→07-02) was verified
+> item-by-item against the tree (7 parallel agents). 7 came back already fixed by the late-June/July sweeps,
+> 4 were tracked/deferred elsewhere, and the survivors are filed below tagged *(triaged 2026-07-08)* and
+> boarded as **Wave 6 (N1–N7)** in [`BACKLOG_ROADMAP.md`](./BACKLOG_ROADMAP.md).
+
+Legend: `[ ]` todo · `[~]` partial · `[x]` done · `[?]` needs a decision.
+
+## Idea capture & triage workflow
+
+Keep two stages separate so ideas never get lost to friction:
+
+1. **Capture (Obsidian):** jot every idea into the running Obsidian note — one idea per line,
+   dated, append-only. Don't categorize or polish; just get it out of your head. This is the
+   low-friction inbox, available on phone and off-branch.
+2. **Triage (here):** when the note builds up, hand the dump to Claude. Each item gets sorted
+   into the right section below (or `RELEASE_PLAN.md` / `FEATURE_IDEAS.md`), code-touching items
+   get verified, and you get back an annotated copy marking where each one landed
+   (`→ BACKLOG#Section · date`). Then clear the Obsidian note back to empty.
+
+The triage date stamped on items is the date they were filed here, not when they were thought of.
+
+---
+
+## Adversarial sweep — 2026-07-11 (post-#281–#302 merges + prod-readiness)
+
+Four read-only audit lanes over everything merged since the 2026-07-09 bug hunt (Waves 9–13, PRs
+#281–#302) plus a cutover-focused prod-readiness pass. Findings only — zero fixes applied
+(audit-first protocol). Severity: **P1** = release blocker · **P2** = real user-facing bug / fix
+before-or-at cutover · **P3** = latent/edge/nit. Each lane also produced an explicit cleared-list
+(the #295 blur-guard hardening, #294 `updatedAtRef` seeding, both TOCTOU trims, all 8 limiter
+mounts + the PUT-drafts no-limiter pin, storage.rules, asyncHandler coverage, client-bundle secret
+hygiene, and the U3 watch items all verified sound — details in the session transcripts).
+
+**P1 — none found.**
+
+> **Wave 14 (2026-07-11 overnight, owner authorized fixes) — ALL FIVE PRs MERGED 2026-07-11**
+> (owner approved via the per-wave confirmation; merges: #304 `0642768` · #307 `0bcd854` ·
+> #306 `421f239` · #305 `e2adec9` · #308 `ce301b3`. Day-session diff review verified #308's
+> deviation against disk (auth.js:191-194 really does `updateMany({ username })` over ratings)
+> and #305's CI-invisible shutdown path (`closeDB` is exported); cross-PR composition checked
+> (#306's userId-less rating seeds are ignored by #308's partial unique index) and proven by
+> full local gates on the merged HEAD: both tsc 0, Vitest 739/2, server Jest 43/902.):**
+> **A** drafts 404-wedge → **#307** (404 recovery: refs cleared + caller nulls id/URL param +
+> toast; re-creates on next edit; flush can't resurrect) ·
+> **B** ratings-index code half + `requireActive` on parse + structural PUT-pin → **#308**
+> (⚠️ DEVIATION: the "stale username index" claim below was WRONG — the `POST /setUsername`
+> rename cascade (`auth.js:191-194`) still `updateMany`s ratings by `username`, so the index was
+> KEPT with corrected comments; boot now provisions the D1 unique+partial index with a caught
+> failure path) ·
+> **C** pagination floors → **#306** (9 routes + 11 regression tests, 894 server tests green) ·
+> **D** IngredientItem in-flight guard → **#304** ·
+> **E** prod hardening → **#305** (/health Mongo ping 200/503, SIGTERM graceful shutdown,
+> unhandledRejection→Sentry+exit, quiet CORS 403, /api JSON 404, FRONTEND_URLS prod warning, CI
+> `release` push trigger).
+> CI: all five green on their merged heads.
+> NEW follow-up seed from B's deviation: **migrate the setUsername rename cascade off
+> `ratings.username` onto `userId`** (rows already carry it) — after which the `username_1` index
+> is fully dead and a follow-up can add the guarded `dropIndex`.
+> NOT claimed (conflict with parked PR #303's files or deliberate deferral): flush-vs-in-flight
+> race, keepalive 429, hydration clobber, signed-out badge, `ratingLastUpdated` drift,
+> `formatDate` guard, API_CONTRACT anchors, FRONTEND_URLS ops check (runbook step, not code).
+
+> **Wave 15 MERGED 2026-07-11 (four disjoint lanes, owner-approved after diff review + CI-green;
+> dev at `c0f0098`):** **A** drafts-autosave cluster → **[#311](https://github.com/jclind/prepify/pull/311)**
+> (one serialized Opus PR closing all four cluster bugs — flush-vs-in-flight 409 retry-once against the
+> server's fresh `updatedAt`, keepalive POST 429/non-2xx now reports failure via `res.ok`, HYDRATE merges
+> a `Partial` filtered to still-pristine fields so in-flight keystrokes survive, and a distinct `conflict`
+> badge + `isSignedIn`-before-no-op-return; +8 failing-before tests, Vitest 739→747; documented trade-off:
+> the keepalive 409 retry supersedes a genuine cross-tab newer write on unload — strictly better than the
+> prior silent-drop, durable server-side-supersede filed below) · **B** setUsername cascade → userId →
+> **[#310](https://github.com/jclind/prepify/pull/310)** (filter `{username}`→`{userId:uid}`, reports
+> cascade + `username_1` index KEPT, legacy userId-less rows now intentionally skipped; db.js index comment
+> reworked to "dead-pending-drop"; +1 Jest test, 902→903) · **C** formatDate honest guard →
+> **[#309](https://github.com/jclind/prepify/pull/309)** (coerce-first `Number(d)` then `isNaN`; all 3
+> callers byte-identical, +5 tests incl. the ISO failing-before) · **D** API_CONTRACT anchors →
+> **[#312](https://github.com/jclind/prepify/pull/312)** (117 of 207 anchors re-anchored, 90 already
+> correct; orchestrator independently verified digit-only via digit-strip diff + 6 on-disk spot-checks).
+> Diff-review caught B's now-false index comment (directed rework). CI: all four 6/6 green on their reviewed
+> heads. NOT boarded (unchanged): `ratingLastUpdated` watch item, all V5/W1/I1/I2 cutover ops, parked #303,
+> the two owner-disposition branches. New follow-up seeds from the wave filed at the bottom of P3 below.
+
+### P2
+
+- `[x]` **Drafts editor wedges permanently when its draft is deleted elsewhere (404 unhandled)** *(fixed in [#307](https://github.com/jclind/prepify/pull/307), Wave 14 · A, merged 2026-07-11: dedicated 404 branch drops the dead `draftId`/`updatedAtRef`, the caller nulls its mirrored id + `?draftId` URL param and toasts, the next edit re-creates via `createDraft`, the badge resets to a calm idle, and the unload flush can no longer resurrect the dead PUT — recovery and flush paths both regression-tested)* —
+  `src/pages/AddRecipe/useDraftAutosave.ts:284-297` handles only `409 DRAFT_LIMIT`/`DRAFT_CONFLICT`;
+  the deliberate `404` from `PUT /drafts/:id` (`server/routes/drafts.js:171-174`, delete-race) hits the
+  generic `else` → `setStatus('error')` with `draftId` still set, so every keystroke retries the dead
+  PUT and `saveNow` never falls back to `createDraft`. Trigger: delete the open draft in another tab's
+  Drafts list, or the `POST /drafts` 25-cap trim deleting the oldest draft *while it's open in a tab*.
+  That tab can never persist again (generic "Couldn't save draft" forever, no recovery guidance). Fix
+  shape: on 404, clear `draftId`/`updatedAtRef` so the next save re-creates, or surface a "draft was
+  deleted — keep editing to save a new copy" state.
+- `[x]` **Cutover gate: ratings `{userId,recipeId}` index is manual-script-only** *(code half fixed in [#308](https://github.com/jclind/prepify/pull/308), Wave 14 · B, merged 2026-07-11: `ensureIndexes` now boot-provisions the D1 unique+partial index with a spec byte-identical to the script's (same-name-different-options would throw) and a log-don't-crash failure path; `username_1` was KEPT — the drop half of this item was wrong, see the Wave-14 correction note. The RELEASE_RUNBOOK §2e script run stays as the explicit prod gate/belt-and-braces)* — `server/db.js`
+  `ensureIndexes` self-provisions every other hot index at boot, but the D1 ratings index lives only in
+  `server/scripts/createModerationIndexes.js:58-66`. Post-cutover, `getSingleUserReviews`,
+  `getAccountCounts`, and every rating/review upsert COLLSCAN prod until that script is run — P1 if the
+  runbook step is skipped (now gated in `RELEASE_RUNBOOK.md` pre-flight). Also: the boot-created
+  `ratings.{username:1}` index (`server/db.js:135`) is stale — no route queries ratings by username
+  anymore. Fix shape: move the `{userId,recipeId}` unique partial index into `ensureIndexes`, drop the
+  username one. *(Wave 14 correction: the drop half was WRONG — the setUsername rename cascade still
+  filters ratings by `username`; #308 moved the D1 index into boot and kept `username_1` with honest
+  comments. See the claim block above for the cascade-migration follow-up seed.)*
+- `[x]` **CORS hard-fails silent if `FRONTEND_URLS` is unset/typo'd on prod Railway** *(closed 2026-07-11: the optional hardening shipped in [#305](https://github.com/jclind/prepify/pull/305) — a loud startup warning when `NODE_ENV=production` and `FRONTEND_URLS` is unset — and the actual Railway-value verification is a RELEASE_RUNBOOK.md gate; the remaining work is operational, at cutover)* —
+  `server/app.js:28` falls back to `localhost:3000` only; no prod-domain fallback, and `/health` stays
+  green while every browser call is CORS-rejected. Operational, not code: verify the Railway value
+  (`https://prepifymeals.com,https://www.prepifymeals.com`) at cutover (now in `RELEASE_RUNBOOK.md`).
+  Optional hardening: log a startup warning when `NODE_ENV=production` and `FRONTEND_URLS` is unset.
+
+### P3
+
+- `[x]` **Negative `perPage` reaches `.limit()`/`.skip()` repo-wide → 500** *(fixed in [#306](https://github.com/jclind/prepify/pull/306), Wave 14 · C, merged 2026-07-11: house `Math.min(Math.max(parseInt(x) || default, 1), MAX_PER_PAGE)` floor on all listed routes incl. the public `GET /api/recipes`, + regression tests incl. the reports.test.js negative-perPage gap)* — only `bugReports.js:110`
+  and `publicProfile.js:157-160` floor `perPage` at 1. Missing everywhere else, most notably the
+  **public unauthenticated** `GET /api/recipes` (`server/routes/recipes.js:61-64`:
+  `?page=1&recipesPerPage=-5` → negative skip → 500; closest to P2), plus `reviews.js:275-278,322-324`,
+  `reports.js:198-201` (its #289 comment claims the guard defeats negative skip — defeated by negative
+  perPage; test gap: `reports.test.js` never tries negative perPage), and `admin.js:177,329,478`.
+  Huge/NaN `perPage` are handled correctly everywhere. Fix shape: house `Math.max(1, …)` floor, one
+  sweep PR + tests.
+- `[x]` **`users.js` paginated routes floor neither `page` nor `perPage`** *(fixed in [#306](https://github.com/jclind/prepify/pull/306), Wave 14 · C, merged 2026-07-11: both routes floor `page` at 0 and `perPage` at 1, incl. the in-memory-slice variant; 4 regression tests)* — `getCreatedRecipes`
+  (`server/routes/users.js:73`, real `.skip()` → 500 on `?page=-1`) and `getSavedRecipes` (`:123`,
+  in-memory slice → silently returns `[]`). Fold into the pagination-floor sweep above.
+- `[x]` **`POST /api/ingredients/parse` lacks `requireActive`** *(fixed in [#308](https://github.com/jclind/prepify/pull/308), Wave 14 · B, merged 2026-07-11: `requireActive` mounted between `verifyToken` and `parseLimiter` (house write-surface order); the wiring pin updated to the 4-handler chain and the route added to the requireActive suite)* — `server/routes/ingredients.js:118`
+  mounts `verifyToken → parseLimiter` only, so a just-suspended/banned account (Firebase token valid up
+  to ~1h) can still burn paid Spoonacular quota, bounded by the ~90/min per-uid limiter. The wiring test
+  (`writeLimiter.wiring.test.js:109-115`) pins the current chain, so this is a design gap, not drift.
+- `[x]` **`IngredientItem` edit-submit has no in-flight guard across the enrichment await** *(fixed in [#304](https://github.com/jclind/prepify/pull/304), Wave 14 · D, merged 2026-07-11: `isSubmittingRef` set before the first await and cleared in a finally; handleBlur drops in-flight blurs — the pending submit's own tail exits edit mode, so no wedge; pending-window tests via a deferred promise + real focus movement)* —
+  `src/pages/AddRecipe/Ingredients/IngredientItem.tsx:144-193`: blur-away or a second Enter during the
+  pending `getIngredientData` await fires a full second enrichment (duplicate request + duplicate 429
+  toast + extra rate-limit consumption; no corruption — writes are id-keyed and the #295 stuck-flag
+  hardening holds). `InstructionItem` unaffected (synchronous submit). Fix shape: an `isSubmittingRef`
+  in-flight guard.
+- `[x]` **Unload flush can race an in-flight autosave and silently drop the newest edits** *(fixed in [#311](https://github.com/jclind/prepify/pull/311), Wave 15 · A/Bug1, merged 2026-07-11: `flushDraftKeepalive` now retries the keepalive PUT once against the server's fresh `updatedAt` read from the 409 `{draft}` body, so the newest content supersedes the older in-flight write regardless of landing order; failing-before tested. Documented trade-off: on a GENUINE cross-tab conflict the retry supersedes the other tab's newer write on unload where the interactive path shows the conflict badge — strictly better than the prior silent-drop; the durable server-side-supersede fix is filed below)* —
+  `useDraftAutosave.ts:361-387`: flush proceeds while `inFlightRef` is true, so both PUTs carry the same
+  base `updatedAt`; if the older in-flight save lands first, the keepalive (newer content) 409s during
+  unload — invisible. Narrow window; fix shape: have flush await/supersede the in-flight save or retry
+  once with the bumped `updatedAt`.
+- `[x]` **Keepalive `POST /drafts` 429 is treated as success** *(fixed in [#311](https://github.com/jclind/prepify/pull/311), Wave 15 · A/Bug2, merged 2026-07-11: the keepalive create now checks `res.ok`, so a resolved-but-non-2xx (429 rate-limit, 5xx) reports the failed create instead of masquerading as a saved draft; failing-before tested)* — `src/api/drafts.ts:93-105`: a 429 is a
+  resolved fetch, so the flush reports true and the new draft is never created. Abuse-only reachability
+  (30 creates/min; the 25-draft cap trips first).
+- `[x]` **`?draftId` resume hydration clobbers keystrokes typed during the load** *(fixed in [#311](https://github.com/jclind/prepify/pull/311), Wave 15 · A/Bug3, merged 2026-07-11: HYDRATE now dispatches a `Partial` filtered to only fields still at their fresh-form (`PRISTINE_FORM`) default — a field the user typed into during the async `getDraft` differs from default and is kept; the `{...state,...values}` reducer merges the rest; normal-resume path unchanged; failing-before tested)* —
+  `src/pages/AddRecipe/useRecipeForm.ts:282-298`: fields aren't disabled during `getDraft`; the HYDRATE
+  dispatch spreads over anything typed in the sub-second window.
+- `[x]` **Signed-out badge stale on passive sign-out; 409 conflict badge is generic** *(fixed in [#311](https://github.com/jclind/prepify/pull/311), Wave 15 · A/Bug4, merged 2026-07-11: the `isSignedIn` check now sits BEFORE the unchanged-content early-return so a passive sign-out corrects the badge immediately; a distinct `conflict` `DraftStatus` → "Reload to see the latest" (`RotateCwIcon`) replaces the generic error badge on a cross-tab 409, `aria-live` intact; failing-before tested)* —
+  `useDraftAutosave.ts:327-334` early-returns on unchanged content before the `isSignedIn` check, so the
+  badge corrects only on the next keystroke; a cross-tab conflict's "reload to see latest" guidance is
+  toast-only (`DraftSaveStatus.tsx:13-23` shows generic "Couldn't save draft").
+- `[x]` **`/health` is a static 200** *(fixed in [#305](https://github.com/jclind/prepify/pull/305), Wave 14 · E, merged 2026-07-11: live `{ping:1}` on the getDB() singleton raced against a 2s timeout — 200 ok / 503 degraded, can never throw)* — `server/app.js:66` never checks Mongo, so a runtime Mongo drop
+  leaves Railway serving a green health check on a wedged instance (boot-time failure exits correctly).
+- `[x]` **No `SIGTERM`/`unhandledRejection` handlers, no graceful shutdown** *(fixed in [#305](https://github.com/jclind/prepify/pull/305), Wave 14 · E, merged 2026-07-11: SIGTERM/SIGINT drain + closeDB + 10s force-exit; unhandledRejection/uncaughtException → Sentry capture + flush + exit 1; lives in index.js so untestable by the suite — reviewed by hand incl. the closeDB export)* — `server/index.js`:
+  Railway deploys drop in-flight requests; an unhandled rejection crashes without a Sentry capture.
+- `[x]` **Rejected CORS origins throw → 500 + Sentry capture per bot probe** *(fixed in [#305](https://github.com/jclind/prepify/pull/305), Wave 14 · E, merged 2026-07-11: the rejection error is tagged `status = 403`, so the backstop renders a quiet JSON 403 and skips the Sentry capture (it only captures ≥500); regression-tested)* — `server/app.js:50,106-117`:
+  scanner traffic from random origins generates Sentry quota noise. Fix shape: respond 403 quietly.
+- `[x]` **Unmatched `/api/*` paths return Express's default HTML "Cannot GET"** *(fixed in [#305](https://github.com/jclind/prepify/pull/305), Wave 14 · E, merged 2026-07-11: `/api`-scoped JSON 404 catch-all mounted after every router, before the error backstop)* — no JSON 404 catch-all
+  before the error middleware; breaks the house JSON-error contract (no leak).
+- `[x]` **CI doesn't run on direct pushes to `release`** *(fixed in [#305](https://github.com/jclind/prepify/pull/305), Wave 14 · E, merged 2026-07-11: `release` added to the workflow's push branches. The branch-protection required-checks confirmation on `release` remains an owner/settings check — not visible in-repo)* — `.github/workflows/test.yml:19` triggers on
+  `push: [main, development]` only; a development→release **PR** runs everything, a direct push/merge runs
+  nothing. Confirm branch protection marks the jobs required on `release` (settings not visible in-repo).
+- `[x]` **PUT-drafts no-limiter pin only checks the 5 exported limiter instances** *(fixed in [#308](https://github.com/jclind/prepify/pull/308), Wave 14 · B, merged 2026-07-11: structural `isRateLimiter` check — express-rate-limit middleware carries `getKey`/`resetKey` — asserts NO handler in the PUT chain is a limiter at all, exported or not)* —
+  `writeLimiter.wiring.test.js:84-97`: a brand-new limiter instance added to the PUT chain wouldn't fail
+  the pin. Residual test-gap note from the limiter lane's cleared-list.
+- `[ ]` **`ratingLastUpdated` is the next mixed-type field brewing** — written as BSON `Date`
+  (`reviews.js:78`) but `''` on `$setOnInsert`/`removeRating`, typed `string` in `src/types.ts`. Nothing
+  sorts on it today (V5 PR #303 lane noticed). Watch item; normalize only if something starts reading it.
+- `[x]` **`formatDate`'s `Number.isNaN(d)` guard is dead code for strings** *(fixed in [#309](https://github.com/jclind/prepify/pull/309), Wave 15 · C, merged 2026-07-11: coerce-first — `const n = Number(d); Number.isNaN(n) ? new Date(d) : new Date(n)` — so a non-numeric/ISO string now parses via `new Date(d)` instead of rendering Invalid Date; all 3 grep'd callers pass epoch-ms strings so output is byte-identical; +5 tests incl. the ISO failing-before case)* — `src/util/formatDate.ts:17`:
+  `Number.isNaN('abc')` is always false (no coercion), so every string takes `new Date(Number(d))` — an
+  ISO string input would render Invalid Date. Harmless for epoch-ms inputs; the ternary lies about intent.
+- `[x]` **Migrate the `setUsername` rename cascade off `ratings.username` onto `userId`** *(filed
+  2026-07-11, off the Wave 14 · B [#308](https://github.com/jclind/prepify/pull/308) deviation; **fixed in
+  [#310](https://github.com/jclind/prepify/pull/310), Wave 15 · B, merged 2026-07-11**: the cascade now
+  `updateMany({ userId: uid }, { $set: { username } })`s — the `reports` cascade (`reportedUsername`) and
+  the `ratings.username_1` index both KEPT; the db.js index comment was reworked to "dead — kept only until
+  the guarded dropIndex follow-up lands, PR #310 is what killed it". Documented behavior change: a legacy
+  rating row missing `userId` (pre-D1 residue) is no longer rewritten by a rename. +1 Jest regression test
+  (userId-matched rename + legacy-row skip, both failing-before). **The `dropIndex` follow-up is now
+  unblocked — see the P3-tail seed below.**)* —
+  `auth.js:191-194` still `updateMany({ username: prevUsername })`s ratings to carry a handle change;
+  rating rows already carry `userId` (D1), so the cascade can filter on that instead and simply `$set`
+  the new username. After that lands, the boot-created `ratings.username_1` index (kept by #308 for
+  exactly this query) is fully dead: a follow-up can add the guarded `dropIndex` to `ensureIndexes`
+  and remove it from `createModerationIndexes.js`. Low.
+- `[x]` **API_CONTRACT.md handler line anchors have drifted** *(fixed in [#312](https://github.com/jclind/prepify/pull/312), Wave 15 · D, merged 2026-07-11: 207 `file:NN` anchors audited — 117 re-anchored against disk at HEAD, 90 already correct; orchestrator independently verified the diff is digit-only (110 removed lines byte-identical to added after stripping digits) + 6 on-disk spot-checks. 5 CONTENT-drift items — stale prose, not line numbers — were out of scope and are filed as the prose-drift seed below)* — e.g. `/newReview` says `reviews.js:66`
+  (actual ~97). Doc-only sweep to re-anchor or drop line numbers.
+
+### Wave 15 follow-up seeds (filed 2026-07-11, off the #309–#312 lane reports; none cutover-gated)
+
+> **Wave 16 CLAIMED 2026-07-11** — the five seeds below run as four disjoint lanes, subagent-per-lane in
+> worktrees, MERGES-HELD policy (run to PR-open + diff-review + CI-green, single owner confirmation; no merge
+> on silence). Lanes: **A** `feat/w16-drafts-durable-supersede` (Opus; seeds 1+2 FUSED into one serialized
+> drafts-autosave-cluster lane — durable unload-flush supersede via an explicit `supersede:true` keepalive
+> body flag the server honors by dropping the `updatedAt` precondition, settable only by the flush path; +
+> transient resume-hydration retry-on-next-edit falling through to #307's recovery) · **B**
+> `feat/w16-drop-username-index` **— PARKED 2026-07-11, seed premise FALSE**: the lane's mandatory pre-cut
+> verification found the `username_1` index is NOT dead. `admin.js:103` (`$match: { username: {$in} }` in the
+> admin-users review tally) and `admin.js:250` (`.find({ username })` in admin-user-detail recentReviews) are
+> live admin-dashboard reads of `ratings` by bare `username` (plus the `reports.js:236` legacy fallback);
+> `createModerationIndexes.js` even documents the index as "admin user list review tally". #310 migrated only
+> the setUsername *cascade* to `userId`, so the "DEAD INDEX" comment it added to `db.js:132` is itself WRONG.
+> No changes made, no PR. Re-filed as a corrected, properly-scoped seed below (migrate the admin/reports reads
+> to `userId` FIRST, then the drop + comment-fix can land). · **C** `feat/w16-formatdate-dedup` (Sonnet, tiny; dedup `UserRecipeThumbnail.tsx`'s
+> local `formatDate` onto `src/util/formatDate` — verified byte-identical for valid epoch-ms inputs, the
+> local null/0 guard MUST be preserved) · **D** `feat/w16-api-contract-prose` (Sonnet, doc-only; fix the 5
+> prose-drift API_CONTRACT.md entries — all 5 premises verified stale on disk at HEAD). NOT boarded:
+> `ratingLastUpdated` watch item, all V5/W1/I1/I2 cutover ops, parked #303, the two owner-disposition
+> branches.
+>
+> **Wave 16 MERGED 2026-07-11** (owner-approved after diff review + 6/6 CI-green on each head SHA; dev at
+> `89c6316`): **A** drafts durable-supersede + hydration-retry → **[#315](https://github.com/jclind/prepify/pull/315)**
+> (one serialized Opus PR: `PUT /drafts/:id` now takes an optional `supersede:true` that drops the `updatedAt`
+> precondition on a `{_id}`-only match — flush-path-only, never persisted, still ownership-checked, can 404 but
+> never 409; #311's client 409-retry dance REMOVED as structurally dead; + a bounded (4-attempt) resume-hydration
+> retry armed on the user's next edit that falls through to #307's 404/403 recovery; +11 tests, Vitest 752→755,
+> Jest 903→908) · **C** formatDate dedup → **[#313](https://github.com/jclind/prepify/pull/313)** (delegates
+> valid-date formatting to `src/util/formatDate` short-form — verified byte-identical for epoch-ms inputs — while
+> KEEPING the local null/0 guard so garbage `createdAt` still hides the date; +2 tests) · **D** API_CONTRACT
+> prose-drift → **[#314](https://github.com/jclind/prepify/pull/314)** (all 5 entries corrected against disk;
+> entry 4's open-guard turned out to EXIST at reports.js:339 so 3 tied spots were fixed for internal consistency;
+> doc-only). **B** PARKED (see below) — its pre-cut verification proved the `username_1` index is NOT dead.
+> Orchestrator close-out: added the `supersede` flag to the API_CONTRACT PUT /drafts/:id entry; full gates on the
+> merged HEAD (tsc 0, Vitest 757/2, Jest 908/43); worktrees + local/remote lane branches + placeholders removed.
+
+- `[x]` **Durable draft unload-flush — server-side supersede/force-write** *(DONE in [#315](https://github.com/jclind/prepify/pull/315), Wave 16 · A, merged 2026-07-11: the keepalive flush now PUTs `supersede:true`; the server applies it without the `updatedAt` precondition (matched on `{_id}` alone, still ownership-checked, never 409s), so the newest content wins the unload race deterministically instead of via #311's client-side 409-retry — which is removed. Residual limit, unchanged: it still only lands if the JS context survives unload (`fetch(keepalive:true)`); a hard process-kill can still drop it, and a genuine cross-tab conflict now resolves last-write-wins by design. The GENUINE-conflict-supersedes trade-off from #311 is now explicit and server-enforced.)* — the keepalive
+  409-retry (`flushDraftKeepalive`, `src/api/drafts.ts`) only lands if the JS context survives the unload
+  (pagehide→bfcache, mobile background/freeze); a hard tab-close/process-kill drops both the original save
+  and the retry. And on a GENUINE cross-tab conflict the retry supersedes the other tab's newer write. A
+  durable fix needs a server-side "force/supersede" draft-write path so the newest content wins
+  deterministically without client-side racing. Low; the #311 fix is already strictly better than the
+  prior silent-drop.
+- `[x]` **Transient resume-hydration failure permanently disables autosave** *(DONE in [#315](https://github.com/jclind/prepify/pull/315), Wave 16 · A, merged 2026-07-11: a transient (network/5xx) `getDraft` failure now arms a bounded retry (`MAX_HYDRATION_ATTEMPTS = 4`) fired on the user's next edit — an edit is the only signal the user is still working while autosave is disabled — so a one-off blip recovers on its own instead of wedging the session; only after exhausting retries does it fall back to the "refresh to try again" prompt. A retry that 404/403s routes into #307's "draft gone → re-create on next edit" recovery. Failing-before test proved the prior wedge.)* —
+  in `useRecipeForm`, a 5xx/network failure of the `?draftId` `getDraft` leaves `hydrated` false forever
+  with only a "refresh to try again" toast — no auto-retry affordance, unlike the 404/403 recovery path
+  (#307). Candidate for a small lane: retry/re-enable hydration on a recoverable error. Low-medium.
+- `[~]` **`ratings.username_1` is NOT droppable yet — admin/reports still read ratings by `username`**
+  *(re-scoped 2026-07-11 after Wave 16 · B's pre-cut verification proved the original "now-dead" premise
+  FALSE; supersedes the earlier "guarded dropIndex, safe post-#310" framing)* — #310 migrated ONLY the
+  setUsername rename cascade (`auth.js`) to filter ratings by the stable `userId`; it did NOT touch the admin
+  dashboard's username-keyed reads, so the boot-created `ratings.username_1` index still backs live queries:
+  **(a)** `server/routes/admin.js:103` — the admin-users review tally aggregates `{ $match: { username:
+  { $in: usernames } } }` (every admin-users page load); **(b)** `server/routes/admin.js:250` — admin-user
+  detail does `ratings.find({ username: usernameDoc.username }).limit(5)` ("recentReviews"); **(c)**
+  `server/routes/reports.js:236` — a legacy-report fallback `findOne({ username: reportedUsername, recipeId })`
+  when a report lacks `reportedUid`. `createModerationIndexes.js:42` documents the index accordingly ("admin
+  user list review tally (still keyed by reportedUsername)"). ALSO: the "DEAD INDEX — no live query uses it"
+  comment #310 added at `server/db.js:132` is factually WRONG and should be corrected. Proper fix, in order:
+  (1) migrate `admin.js:103`/`admin.js:250` (and decide the `reports.js:236` legacy fallback) from `username`
+  to `userId`-keyed reads — same shape as #310's cascade migration, with the same legacy-row tradeoff
+  (rows missing `userId` drop out of the tally); (2) THEN the guarded `dropIndex('username_1')` + remove the
+  standalone create from `db.js`/`createModerationIndexes.js` + fix the db.js comment + flip #308's
+  `ensureIndexes.test.js` EXISTS assertion to absence. Low-medium (was mis-sized as a trivial cleanup). NOTE:
+  do NOT touch the SEPARATE compound `recipeId_1_username_1` index — it backs `getReviews`/recompute by
+  `recipeId` and is out of scope.
+- `[x]` **`UserRecipeThumbnail.tsx` has a local `formatDate` duplicate** *(DONE in [#313](https://github.com/jclind/prepify/pull/313), Wave 16 · C, merged 2026-07-11: the hand-rolled `toLocaleDateString` body is removed and delegates to the shared `formatDate(createdAt, true)` — verified byte-identical output for valid epoch-ms inputs across every month/day/year — while a local wrapper (`formatCreated`) KEEPS the null/0 guard so a missing/garbage `createdAt` still hides the date instead of rendering the shared util's un-guarded epoch-zero fallback; +2 tests pin the rendered date and the null-hide.)* —
+  `src/pages/Account/UserRecipes/UserRecipeThumbnail.tsx` defines its own (already-correct `Number(createdAt)`)
+  `formatDate` instead of importing the shared `src/util/formatDate`. Dedup onto the shared util. Nit.
+- `[x]` **API_CONTRACT.md prose-drift (5 entries) — content stale, not line numbers** *(DONE in [#314](https://github.com/jclind/prepify/pull/314), Wave 16 · D, merged 2026-07-11: all 5 corrected against disk at HEAD — (1) addRecipe now typed `Omit<RecipeType,…>` so it omits the four dead fields; (2) `getIngredientData` reframed as "partially used" — it now branches on the 429/`RATE_LIMITED` code with `Retry-After`, only `getRecipeNutrition` still swallows; (3) `getCreatedRecipes` now floors negative page at users.js:75; (4) the `PATCH /reports/:id` open-guard turned out to EXIST at reports.js:339 (`409 ALREADY_RESOLVED`), so the entry + its Notes + the bug-reports cross-reference were all corrected for internal consistency; (5) `getUsername` count fixed to the 2 real sites. Doc-only.)* —
+  (1) `src/api/recipes.ts` addRecipe no longer posts `rating`/`views`/`numTimesSaved`/`numTimesMade` (now
+  explicitly `Omit`ted); (2) `getIngredientData` now has dedicated 429 handling, contradicting the doc's
+  "surfaces the generic axios err.message"; (3) `getCreatedRecipes` now floors a negative `page` (#306),
+  doc says it doesn't; (4) `PATCH /reports/:id` now has an open-only guard (`409 ALREADY_RESOLVED`), doc
+  says it lacks one; (5) the `getUsername` client-call-site count (doc cites 3 in `recipes.ts`, only 2
+  exist). Doc-prose follow-up sweep. Low.
+
+---
+
+## Bugs
+
+- `[x]` *(fixed in [#281](https://github.com/jclind/prepify/pull/281), B1: per-row enrichment status lifted into `useRecipeForm` and gated through the validator — submit blocks while any row is in flight, clears reactively when it settles, so a create can no longer persist `ingredientData:null`; errored rows stay publishable by design.)* **Publishing/saving mid-enrichment persists `ingredientData:null` and an understated `servingPrice`** *(from `sweeps/BUG_HUNT_2026-07-09.md` M3, filed 2026-07-10; boarded Wave 9 · B1)* — the add flow inserts ingredients optimistically with `ingredientData:null` and fills price/image when async enrichment resolves (up to 12s later). `handleSubmit`'s create path isn't gated on rows still loading (only `validateRecipeForm`'s count check + the `addRecipeLoading` button-disable), so a submit inside that window persists the ingredient as `ingredientData:null` **forever**, and `calculateServingPrice` (which sums only non-null rows) silently understates the stored price shown on cards + the recipe page. `src/pages/AddRecipe/useRecipeForm.ts:389`, `IngredientsContainer.tsx:97-102`. **Fix:** lift per-row enrichment status to the form and gate submit while any row is in flight.
+- `[x]` **`usePaginatedLoadMore` re-appends a page's items on refetch, duplicating saved-grid cards**
+  *(from `sweeps/BUG_HUNT_2026-07-09.md` M8, filed 2026-07-10; boarded Wave 9 · B2; **fixed in
+  [#283](https://github.com/jclind/prepify/pull/283)** — the accumulate effect was keyed on the `data` object
+  reference alone and unconditionally appended for `page>0`, so any structurally-changed refetch of the observed
+  page (default `QueryClient` → `refetchOnWindowFocus`; e.g. a rating on a page-1 recipe changes) re-appended
+  the whole page: duplicate cards, duplicate `_id` keys, an inflated length that corrupted `isMore`. Fix tracks
+  the last-merged page + a snapshot of `items` from before it (`mergedPageRef`/`baseItemsRef`), so a same-page
+  refetch replaces that page's slice instead. Regression test simulates the same-page refetch with
+  structurally-changed data; live-reproduced the exact bug pre-fix against the real dev DB/Firebase auth in a
+  headless browser (rating mutation + `visibilitychange` dispatch → 8→10 cards + React duplicate-key warning),
+  then confirmed clean on the fix. Affects Saved / Ratings / Your Recipes and the SingleRecipe reviews list.
+  `src/pages/Account/usePaginatedLoadMore.ts:89`. Distinct from the error/empty-conflation item below, fixed in
+  [#274](https://github.com/jclind/prepify/pull/274).)*
+- `[x]` **Ingredient parse limiter (30/min) is below the 50-ingredient cap and the FE ignores `RATE_LIMITED`** *(from `sweeps/BUG_HUNT_2026-07-09.md` I1, filed 2026-07-10; boarded Wave 9 · B3; **fixed in [#282](https://github.com/jclind/prepify/pull/282), merged 2026-07-10**: limiter raised to `MAX_INGREDIENTS + 40` (90/min); `getIngredientData` now detects the 429 + `RATE_LIMITED` code, reads `Retry-After`, and returns an honest wait message + `retryAt`; the ingredient row toasts that message and disables its retry button until the cooldown passes, self-clearing with no polling. Runtime-verified live (real limiter burst + real add-recipe UI).)* — `POST /api/ingredients/parse` uses `makeUserLimiter`'s default 30/60s, but `MAX_INGREDIENTS=50` and the add flow fires one parse per ingredient (plus edits/retries). The 31st+ request 429s with `code:'RATE_LIMITED'`, but nothing in `src/` branches on it — `getIngredientData` returns the generic error variant, the row shows "—" with a "Retry" toast that immediately re-429s, and `calculateServingPrice` omits those rows so the persisted `servingPrice` understates. `server/routes/ingredients.js:71`, `src/api/recipes.ts:609`. **Fix:** raise the limit above the ingredient cap (with retry headroom) and/or branch on `RATE_LIMITED` with backoff + honest messaging.
+- `[x]` **Server trusts the client-computed `servingPrice` and accepts `ingredientData:null` rows unchecked** *(filed 2026-07-10, off the B1 [#281](https://github.com/jclind/prepify/pull/281) review; boarded Wave 10 · V1; **fixed in [#292](https://github.com/jclind/prepify/pull/292), merged 2026-07-10**: `server/util/calculateServingPrice.js` mirrors the client util (one commented NaN-guard divergence), both create + edit recompute and ignore the client value, edit falls back to stored `servings` when omitted, `backfillServingPrice.js` deduped onto the shared helper; null rows stay publishable by design)* — `POST /addRecipe` whitelists `servingPrice` + `ingredients` straight from the body (`pickFields` + range bounds only), so a stale tab, raced submit, or direct API caller can still persist unenriched rows with an understated price — B1's submit gate is client-side only. The server can't outright reject null rows (errored rows are legitimately publishable by design), but it **can recompute `servingPrice` from the submitted ingredients server-side** (the summing logic exists in `src/util/calculateServingPrice.ts`) so the stored price is at least consistent with the stored rows. `server/routes/recipes.js` (addRecipe/editRecipe). Low-medium; pairs with the B3 limiter work (same understated-price class).
+- `[x]` **Draft `PUT` is a full-document `$set` with no version precondition — two tabs silently clobber each other** *(from `sweeps/BUG_HUNT_2026-07-09.md` D2, filed 2026-07-10; boarded Wave 9 · B5; **fixed in [#286](https://github.com/jclind/prepify/pull/286), merged 2026-07-10**: the client now sends the `updatedAt` of the draft version it's editing from, and the server conditions the update on the stored draft still carrying that value, 409ing `DRAFT_CONFLICT` (+ the current draft) on mismatch instead of overwriting; `useDraftAutosave` tracks the version across saves and surfaces the conflict via a toast. Verified with a direct two-tab HTTP simulation and a full real-browser two-tab session.)* — `PUT /drafts/:id` overwrites every whitelisted field with the client's full `draftContent`; with no `updatedAt`/version guard, two tabs editing the same draft last-write-wins-clobber (tab B's stale full body erases tab A's ingredient additions). `server/routes/drafts.js:112`. **Fix:** add an `updatedAt`/version precondition and surface a conflict.
+- `[x]` **Account tabs + reviews list render their *empty* states on API failure (error/empty conflation)**
+  *(filed 2026-07-09, out of the RELEASE_PLAN §A empty/error states sweep; **fixed same day in
+  [#274](https://github.com/jclind/prepify/pull/274)** — `usePaginatedLoadMore` now exposes `isError`/`refetch`; Saved / Ratings /
+  Your Recipes / Drafts branch on it before their empty state and render an `EmptyState`-styled error panel
+  ("Couldn’t load your …" + alert icon + a `Try again` action wired to `refetch`); the recipe page's reviews
+  list gets inline "Couldn’t load reviews." copy; `loading-states.md`'s canonical snippet corrected + a new
+  "Error is not empty" section; regression tests in `AccountSections.loading.test.tsx` (error ≠ empty +
+  retry-recovers) and `usePaginatedLoadMore.test.tsx` (isError surfaced, refetch recovers). Verified live
+  against a dead API port: all four tabs settle on the error state after the retry budget.)* — with the API unreachable, a
+  signed-in user's Saved/Ratings/Your Recipes/Drafts tabs wait out the react-query retry budget (~8s of
+  skeletons) and then land on **"No Recipes Saved Yet" / "No Ratings Yet" / etc.** — a user with data on a
+  flaky connection is told they have none. Verified live (client pointed at a dead API port, signed in as the
+  cypress test user). Two mechanisms: **(1)** `usePaginatedLoadMore`
+  (`src/pages/Account/usePaginatedLoadMore.ts:69-93`) never surfaces `isError` — on failure `isLoading` goes
+  false with `items` empty, so the tabs' `showList` gate falls through to the empty state (consumers:
+  `SavedRecipes.tsx`, `UserRatings.tsx`, `UserRecipes.tsx`, and the recipe page's reviews section
+  `RatingsAndReviews.tsx`); **(2)** `Drafts.tsx:15-27` does the same with a bare `useQuery`
+  (`showList = hasDrafts || isLoading`). The pattern is *codified* — `docs/design/loading-states.md`'s
+  canonical snippet routes `isError` into `<EmptyState />` (line ~71). Fix lane: expose `isError` from the
+  hook, render the section-level inline-error pattern Home/Recipes already use ("Couldn't load … Please try
+  again.") instead of the empty state, and correct the loading-states.md example in the same PR. For
+  contrast, Home, `/recipes`, and SingleRecipe all show real error copy with the API down (SingleRecipe only
+  after its ~7s retry budget — acceptable, documented). Med.
+- `[x]` **Admin `GET /api/reports` pagination is uncoerced and uncapped** *(filed 2026-07-10, test-quality
+  audit; boarded Wave 10 · V2; **fixed in [#289](https://github.com/jclind/prepify/pull/289), merged
+  2026-07-10**: coercion + negative clamp + `MAX_PER_PAGE = 50` cap mirroring reviews.js, + 4 pagination tests)* — `server/routes/reports.js:186-187` does `skip = parseInt(page) * parseInt(perPage)` and
+  `limit = parseInt(perPage)` with no `|| default`, no negative clamp, and no `MAX_PER_PAGE`-style cap, so
+  `?perPage=abc` → `limit(NaN)` throws (500), `?page=-1` → negative skip (500), and a huge `perPage` dumps the
+  collection. Admin-only surface (gated behind `requireAdmin`), so low blast radius — but it should get the
+  same coercion + cap the public list routes now all have (reviews/recipes/publicProfile) plus a pagination
+  test (the suite currently only tests admin-gate/enrichment/status-filter). Low-med.
+- `[x]` **Draft cap is a read-then-insert race (TOCTOU)** *(filed 2026-07-10, test-quality audit; boarded
+  Wave 10 · V3; **fixed in [#291](https://github.com/jclind/prepify/pull/291), merged 2026-07-10**: post-insert
+  recount + newest-beyond-cap trim, 409 `DRAFT_LIMIT` when the insert doesn't survive; 5-concurrent-POSTs-at-24
+  regression test, verified failing pre-fix. The same cap TOCTOU exists in `collections.js` — filed below)* —
+  `server/routes/drafts.js:36-44` enforces the 25-draft cap with `countDocuments({ userId })` followed by
+  `insertOne`; concurrent POSTs at 24 drafts can all pass the count and exceed the cap. Every neighboring
+  surface pins its races concurrently (collections create/rename, recipes save), so this is the documented
+  odd one out — the existing cap test is sequential only. Fix lane: post-insert recount + delete-overflow, or
+  an atomic guard; add the 5-concurrent-POSTs-at-24 test with it. Low.
+- `[x]` **Moderation blocklist misses unicode homoglyph / fullwidth evasion** *(filed 2026-07-10, test-quality
+  audit; boarded Wave 10 · V4; **fixed in [#288](https://github.com/jclind/prepify/pull/288), merged
+  2026-07-10**: NFKC + curated Cyrillic/Greek confusables fold, applied both in `normalizeToken` and on the raw
+  text before `tokenize()` — an un-folded homoglyph acted as a word separator, splitting `fuсk` into `fu`+`k`;
+  bypass tests pin both filed examples + a clean-Cyrillic negative)* — `normalizeToken` (`server/util/moderationBlocklist.js:31-37`) does no NFKC/confusables fold and
+  ends with `.replace(/[^a-z0-9]/g, '')`, so a Cyrillic-с `fuсk` normalizes to `fuk` and fullwidth `ｓｈｉｔ`
+  to `''` — no blocklist hit; the text silently defers to the OpenAI layer, which is env-gated and can be off.
+  Leet (`f4ggot`) and letter-spacing are covered; unicode is the gap. Fix lane: NFKC-normalize (+ a small
+  confusables map for the common Cyrillic/Greek lookalikes) before the existing folds, with bypass tests
+  pinning both examples. Low-med (defense-in-depth; the OpenAI layer catches these when enabled).
+- `[x]` **Small client contract nits from the test-quality audit** *(filed 2026-07-10; boarded Wave 10 · V7;
+  **fixed in [#290](https://github.com/jclind/prepify/pull/290), merged 2026-07-10**: all three + the
+  `UserRatings` sort fold-in, a test each; servings pinned as positive integer ≥ 1 with a defensive `Number()`
+  coercion — `FormInput` can hand the validator a numeric *string* at runtime, filed under Tech debt)* — three tiny,
+  related "the code accepts what it shouldn't / renders what it shouldn't" gaps, none release-gating:
+  **(1)** `src/api/recipes.ts:546,568` interpolate `filter`/`username` into query strings unencoded
+  (inconsistent with the `URLSearchParams` convention used at `:96-107`; breaks on reserved chars — current
+  inputs are safe, it's drift waiting to bite); **(2)** `recipeFormValidation.ts:61` accepts negative or
+  fractional `servings` (`!form.servings` truthiness only — the whitespace-description sibling was fixed in
+  the audit PR; decide the servings contract and pin it); **(3)** `src/util/formatRating.ts:5-6` renders the
+  literal string `"NaN"` if `rateValue` arrives NaN (no guard → should fall back to the "No Ratings" branch).
+  All three are one-liners plus a test each. Low.
+- `[x]` **Editing an ingredient inline double-submits on Enter — double network call, double toast** *(filed
+  2026-07-10, surfaced by a local code review of B3/[#282](https://github.com/jclind/prepify/pull/282);
+  boarded Wave 10 · V6; **fixed in [#287](https://github.com/jclind/prepify/pull/287), merged 2026-07-10**:
+  ref-guard skips the self-triggered blur resubmission, Enter and genuine click-away both submit exactly once;
+  pinned by `toHaveBeenCalledTimes(1)` assertions verified failing pre-fix; **hardened in
+  [#295](https://github.com/jclind/prepify/pull/295)** (Wave 11 · T1): #287's flag stuck `true` after a
+  genuine click-away — the self-`blur()` no-ops on an already-blurred input, so the next session's
+  click-away submit was swallowed; reset-on-edit-entry + a real-focus-movement two-session regression test,
+  jsdom-masked so proven via `element.focus()` not `fireEvent.blur`)* —
+  `IngredientItem.tsx`'s `handleEditSubmit` (fired by `FormInput`'s `onEnter`) ends with `setIsEditing(false)`
+  + `editInputRef.current.blur()`, but that `blur()` call synchronously re-fires the *same* `FormInput`'s
+  `onBlur`, which is wired to `handleEditSubmit` too — so every edit-submit-via-Enter invokes the handler a
+  second time against the same (stale, closed-over) `editedVal`/`ingredient`. Confirmed with a Vitest
+  assertion (`toHaveBeenCalledTimes`) against `RecipeAPI.getIngredientData`/`toast.error` in
+  `src/test/IngredientItemEdit.test.tsx` — the existing "successful edit" test double-calls
+  `getIngredientData` once that assertion is added. Harmless-looking today only because the second call
+  re-submits the identical value (same enrichment result lands twice) and `toast.error` just fires twice —
+  but it's a real double side-effect (double paid Spoonacular lookup via the parse proxy) on every inline
+  edit. **Fix:** don't call `handleEditSubmit` from both `onEnter` and the trailing `blur()` — e.g. skip the
+  blur-triggered resubmission with a ref-guard, or blur without triggering `onBlur` (`blur()` after clearing
+  the `onBlur` prop, or restructure so Enter itself blurs and only `onBlur` submits). Low severity (masked by
+  idempotent-looking resubmission today) but burns real proxy quota — worth closing without a dedicated lane.
+- `[x]` **`InstructionItem` inline edit has the same Enter double-submit shape as V6** *(filed 2026-07-10, off
+  the V6 [#287](https://github.com/jclind/prepify/pull/287) lane; boarded Wave 11 · T1; **fixed in
+  [#295](https://github.com/jclind/prepify/pull/295), merged 2026-07-10**: ref-guard mirror of #287 with
+  fails-before `toHaveBeenCalledTimes` pins; the lane also found and fixed a latent stuck-flag edge in the
+  #287 pattern itself — in a real browser a genuine click-away leaves the suppress flag set (the self-`blur()`
+  no-ops), swallowing the NEXT edit session's click-away submit — hardened in BOTH components with
+  reset-on-edit-entry + browser-faithful real-focus regression tests)* —
+  `src/pages/AddRecipe/Instructions/InstructionItem/InstructionItem.tsx` wires `handleEditSubmit` (`:41-56`) to
+  both `onBlur` and `onEnter` (`:108-109`) and ends with a manual `blur()`, so Enter-submit invokes the handler
+  twice — the identical pattern V6 fixed in `IngredientItem.tsx`. No network call on this path (just a duplicate,
+  idempotent `setInstructions`), so it's cosmetic today, but it's the same latent double-side-effect and the
+  same one-line ref-guard fixes it. Low.
+- `[x]` **Collections cap has the same read-then-insert TOCTOU as the draft cap (V3)** *(filed 2026-07-10, off
+  the V3 [#291](https://github.com/jclind/prepify/pull/291) lane; boarded Wave 11 · T2; **fixed in
+  [#296](https://github.com/jclind/prepify/pull/296), merged 2026-07-10**: post-insert trim adapted to the
+  array-on-one-doc shape — a `$push`'s array position IS commit order, so keep the oldest 50 and `$pull` the
+  overflow; the losing request 409s with the same body the route already used; concurrency test — 5 concurrent
+  POSTs at 49 land exactly 1 — proven failing pre-fix, 5x flake-free)* — `POST /collections`
+  (`server/routes/collections.js:113`) enforces `MAX_COLLECTIONS = 50` with a read-then-write count check
+  (`existing.length >= MAX_COLLECTIONS`), so concurrent creates at 49 can all pass — the same shape V3 fixed
+  for drafts. Notably the *name-uniqueness* check right below it is already correctly pinned via a guarded
+  `$expr` update; only the count check races. Same fix lane as V3 (post-insert trim or guarded write). Low.
+- `[x]` **`POST /collections` has no per-uid rate limiter** — *(fixed in
+  [#299](https://github.com/jclind/prepify/pull/299), Wave 12 · U1: `collectionWriteLimiter` at the 30/min
+  default — matching review/profile, not the recipe surface's tighter 12/min, since collection writes carry
+  no paid per-write cost — mounted on create AND rename with one shared bucket, mirroring how
+  editRecipe/editReview share their surface's limiter; delete + membership-toggle intentionally unlimited
+  matching siblings. Note: this item's "unlike the drafts... write routes" premise was wrong — drafts has no
+  limiter at all, filed below.)* *(filed 2026-07-10, noticed on the Wave 11 · T2
+  [#296](https://github.com/jclind/prepify/pull/296) lane)* — unlike the drafts/recipes write routes, which
+  mount `makeUserLimiter`-based limiters, collection creation has only the global `/api` backstop. Low
+  urgency (the 50-cap bounds the damage per user), but it's an asymmetry with its sibling write surfaces —
+  same one-line fix as the other `makeUserLimiter` mounts. Low.
+- `[x]` **`drafts.js` has no per-uid rate limiter at all (POST or PUT)** *(filed 2026-07-10, noticed on the
+  Wave 12 · U1 [#299](https://github.com/jclind/prepify/pull/299) lane — this also corrects the item above's
+  premise that the drafts routes mount limiters; verified against disk: zero `makeUserLimiter` references in
+  `server/routes/drafts.js`; boarded Wave 13 · F1; **fixed in [#302](https://github.com/jclind/prepify/pull/302),
+  merged 2026-07-11**: `draftWriteLimiter` (30/min default — no per-write paid cost) mounted on `POST /drafts`
+  ONLY, after `verifyToken → requireActive`; `PUT /drafts/:id` deliberately left unlimited with an in-code
+  rationale comment (autosave cadence + the #294 keepalive flush must never eat a 429; PUT damage bounded by
+  ownership + the 25-doc cap), pinned by a wiring test asserting NO limiter instance on the PUT chain plus a
+  >30-PUTs-all-pass limiter test; the 30-cap 429 test correctly accounts for the 25-doc `DRAFT_LIMIT` 409s
+  interleaving before the rate cap. Jest 41 suites / 883 tests green.)* — ⚠ **not a copy-paste fix**:
+  `PUT /drafts/:id` is the 1.5s-debounce autosave
+  path, so a stock 30/min per-uid cap would throttle legitimate continuous typing (~40 writes/min). Either
+  limit only `POST /drafts` (create; already capped at 25 docs by V3's trim) or pick a PUT rate that clears
+  the autosave cadence with margin (and make sure the keepalive unload flush from #294 can't be the request
+  that eats a 429). Low.
+- `[x]` **Collection names are never run through `moderateText`** — *(closed **won't-fix by owner decision
+  2026-07-11**: collections are visible only to the user who created them (owner-private, served only via the
+  authed `GET /collections`), so their names are self-directed text with no exposure surface — moderation adds
+  cost and false-positive friction for zero protective value. Re-open ONLY if collections ever become shareable
+  or publicly visible; that feature must add the `moderateText` call as part of its own scope.)* *(filed
+  2026-07-10, noticed on the Wave 12 · U1 [#299](https://github.com/jclind/prepify/pull/299) lane)* — `auth.js`
+  moderates username/profile/display-name writes, but `POST /collections` / `PATCH /collections/:id` accept a
+  user-supplied `name` with only `boundedName` bounds-checking. Low.
+- `[ ]` **`addReview` still writes string `reviewCreatedAt` — must flip to numeric AT the V5 migration cutover, not before or long after** *(filed 2026-07-10, off the V5 [#293](https://github.com/jclind/prepify/pull/293) lane)* —
+  `POST /addReview` (`server/routes/reviews.js:120,128`) writes `reviewCreatedAt: Date.now().toString()` (a
+  *string*) on every new review. Today the "New" sort `{ reviewCreatedAt: -1 }` works *because* the field is
+  uniformly string-typed (13-digit epoch strings sort lexicographically == numerically). That makes the
+  sequencing load-bearing in both directions: flip the write path to numeric **before** the migration runs and
+  the New sort starts interleaving immediately; run the migration **without** flipping the write path and new
+  reviews re-introduce string values, un-doing the normalization over time. The write-path flip
+  (`Date.now().toString()` → `Date.now()`) must deploy together with the owner's prod `--apply` of
+  `normalizeRatingTypes.js` — treat them as one cutover step, then the client's `coerceRating` becomes
+  retirable. Low-med, but sequencing-critical.
+- `[~]` **Legacy rating docs are mistyped — "Top" review sort interleaves wrong** *(filed 2026-07-09, out of
+  the §D overhaul; **script shipped in [#293](https://github.com/jclind/prepify/pull/293), merged 2026-07-10**
+  (Wave 10 · V5) — `server/scripts/normalizeRatingTypes.js`, dry-run default, owner-gated `--apply`,
+  exit-2-on-pending doubles as the cutover check; tick to `[x]` after the prod run, which must land together
+  with the `addReview` write-path flip filed above or the New sort regresses)* — old `ratings` docs store `rating` as **stringified numbers** (`"5"`) and
+  `reviewCreatedAt` as stringified epoch-ms, while post-#266 writes store floats; review-only docs are
+  `null`. The client normalizes at the API boundary (`coerceRating`, `src/api/recipes.ts`) so *rendering* is
+  correct, but the server's Top sort is a raw `{ rating: -1 }` (`server/routes/reviews.js:277,322`) over the
+  mixed-type field, and Mongo sorts by **BSON type order** — string ratings interleave above/below numeric
+  ones instead of by value. User-visible since #271 exposed Top as a sort pill. Fix: a one-off migration
+  normalizing `rating` → double and `reviewCreatedAt` → numeric date on all ratings docs (same ops-script
+  shape as `reconcileRatingAggregates.js`; dry-run default, owner-gated `--apply` on prod), after which the
+  client-side coercion can eventually be retired. Low-med.
+- `[ ]` **Per-ingredient price estimates can be wildly off (the "$10/serving parfait") — the remaining half
+  of the serving-price saga** *(triaged 2026-07-08; filed 2026-06-17)* — PR #152 fixed only the division math,
+  and that bug's signature was a flat **~$1.00**/serving (see `server/scripts/backfillServingPrice.js:6-10`) —
+  so a $10 parfait was never that bug. Two open halves: **(1) ops** — the backfill script recomputes stored
+  `servingPrice` from the *already-stored* `totalPriceUSACents` (dry-run by default, `:36`) and nothing in-repo
+  proves an `--apply` run ever happened (cross-ref the Tech-debt backfill item at ~L757); **(2) estimate
+  quality** — nothing addresses garbage-in: a mis-parsed quantity/unit (`updateIngredients.ts`, ~80 genuinely
+  untested lines per the Testing section) or a bad proxy gram-estimate still yields absurd totals, and pre-v2
+  recipes keep their v1-era stored per-ingredient prices (see the parser-data item ~L620). Lane: run the
+  backfill, then pull the parfait's per-ingredient `totalPriceUSACents` to attribute parse-bug vs
+  proxy-estimate before writing any fix. → **N1**
+  - *(2026-07-08 update, N6 [#255](https://github.com/jclind/prepify/pull/255))* — **investigated + guarded, not closed**: a dev dry-run showed **0 servingPrice drift** (so half (1)'s `--apply` is a no-op on current data) and attributed the parfait to a **bad proxy gram-estimate** (`1 cup strawberries` = $25.34 on stale v1 data), not a parse or division bug. Fix-option (B) — a **`price_outlier` flag** on enriched rows ≥ $15 — shipped on N6's telemetry surface (**flag, not clamp**). Still open: **(A)** the owner/proxy-gated re-enrich backfill for stale v1 prices, and half (2)'s parse-quality hardening in `updateIngredients.ts`.
+- `[x]` **`Received NaN for the \`value\` attribute` warning on Edit Recipe — root-caused; it's a real
+  hydration bug, not cosmetic (verified 2026-06-26)** — *(fixed in [#235](https://github.com/jclind/prepify/pull/235), F1:
+  hydrate `TimeInput` from `val.hours`/`val.minutes` — the `Number(val)` arithmetic that produced `NaN` on an object `val` is
+  gone; a `0` component renders empty per `minToHrMin`'s intent. Added a `TimeInput hydration` regression block. Runtime-verified:
+  the authed draft-resume flow repopulated prep/cook `2/15/''/45`, and the buggy counterfactual blanked all four. Scope narrowed —
+  `AddRecipe.tsx` needed no change, it already fed the object shape.)* re-diagnosed from source. The culprit is **not** the
+  servings/summary-bar math (those are guarded: `ServingsInput.tsx`, `AddRecipeSummaryBar.tsx:52-56`). It's
+  **`src/pages/AddRecipe/TimeInput/TimeInput.tsx:23-27`**: the hydration effect treats `val` as a *minute
+  number* (`Number(val) % 60`, `Math.floor(Number(val) / 60)`), but `AddRecipe.tsx:82-86` feeds it a
+  `{hours, minutes} | null` object (via `minToHrMin`). `Number({hours,minutes})` is `NaN`, so on edit-mount
+  it sets `minutes`/`hours` to `NaN` → flows into `RecipeFormInput` `value={NaN}` → the React warning.
+  **Bigger than the warning:** because the value is `NaN`, the **prep/cook time fields render blank on edit
+  (and on draft-resume, `AddRecipe.tsx:156-157`)** instead of showing the saved time — looks like data loss.
+  The save still succeeds (the writeback effect `if (minutes || hours)` is falsy for `NaN`, so the parent
+  keeps the correct object), so it's display-only, but confusing. Fix: `setHours(val.hours); setMinutes(val.minutes)`
+  (drop the `Number(val)` arithmetic entirely). Originally filed 2026-06-24 as cosmetic; upgraded after verification.
+- `[x]` *(fixed in [#248](https://github.com/jclind/prepify/pull/248), R1)* **Clearing a `TimeInput` field silently keeps the old prep/cook time on edit (filed 2026-07-06, off the F1 review)** —
+  surfaced reviewing the F1 fix ([#235](https://github.com/jclind/prepify/pull/235)). The writeback effect in
+  **`src/pages/AddRecipe/TimeInput/TimeInput.tsx:61-64`** is `if (minutes || hours) setVal(...)`, so when the user clears **both**
+  the hours and minutes fields back to empty, `setVal` never fires and the parent's `prepTime`/`cookTime` stays at the last
+  non-empty `{hours, minutes}`. On an **edit**, clearing a time and saving therefore silently re-persists the *old* time — and
+  `AddRecipe.tsx`'s `if (!prepTime)` required-field guard reads the (still-populated) parent state, so it passes too. **Latent
+  before F1** (the broken `NaN` hydration meant the field was never in a populated state to clear); **reachable now** that
+  edit/draft-resume rehydrates correctly. **Fix:** emit a clearing signal when both go empty — e.g. an `else setVal(null)` branch
+  on that effect (`null` re-triggers the sibling effect's `!val` reset, which is harmless). **Low severity** (only bites
+  edit/draft-resume + an intentional clear-to-blank), one file — belongs to the AddRecipe lane (**C1/R1**) or a small F-track.
+  *(**Fixed in [#248](https://github.com/jclind/prepify/pull/248)**, R1: writeback now emits `setVal(null)` when both fields
+  clear, gated behind a `hasUserEdited` ref so the pre-hydration render can't be mistaken for a user clear; +2 regression tests,
+  runtime-verified — filled→valid, clear-both→invalid, re-enter→valid. Merged 2026-07-07.)*
+- `[x]` **Whitespace-only recipe title bypasses the "Title is required" guard (filed 2026-07-07, off the R1 runtime verification)** —
+  found acting as a malicious user against the running create-recipe form. `validateRecipeForm` (`src/pages/AddRecipe/recipeFormValidation.ts`)
+  tests the title with `!form.title`, so an all-spaces title (`"     "`) is truthy → **no "Title is required" error**. Fill the other
+  required fields and the form validates and publishes a recipe with a blank-looking (whitespace) title; the saved recipe then renders
+  an empty `<h1>`. **Pre-existing, not an R1 regression** — the R1 extraction lifted the `!title` check verbatim from the former
+  in-component `validate()`; the same gap existed before. **Fix:** guard on `!form.title.trim()` (and ideally trim the title in the
+  submit payload); confirm the server (`validateRecipeBounds`, `server/routes/recipes.js`) also rejects a blank/whitespace title as
+  defence-in-depth. **Low severity** (data-quality, self-inflicted — no XSS/security impact; the malicious content itself is escaped
+  safely), one-line client fix — belongs to the AddRecipe lane (**R1** follow-up) or a small F-track.
+  *(fixed in [#253](https://github.com/jclind/prepify/pull/253), whitespace-title guard: client `validateRecipeForm` now trims
+  before the presence check (length cap on the trimmed value) and `useRecipeForm.handleSubmit` trims the submit payload
+  (create+edit); server `validateRequiredRecipeFields` treats a whitespace-only required string as missing, **and** a new shared
+  `normalizeRecipeInput` trims the title before bounds+persistence in both the create & edit routes — so a direct API call can't
+  store a padded title either (drafts untouched: `validateRecipeBounds` only). +regression tests (`recipeFormValidation.test.ts`,
+  `server/__tests__/recipeLimits.test.js`). Live-verified against the running dev API: POST `title:"  Live Probe Soup  "`
+  persisted as `"Live Probe Soup"` in dev Mongo, then cleaned up. Merged 2026-07-08.)*
+- `[x]` **Deleting a review leaves the star rating behind** — **fixed in PR #150 (merged, track 1a)**:
+  added `DELETE /removeRating` (clears just the star; keeps any review; deletes the doc when
+  rating-only), and `deleteReview` now keeps the rating and deletes the doc when there's nothing left —
+  no orphan with neither text nor rating. A "Remove rating" control was added to the recipe rating card.
+  *(verified; live authed smoke-test passed 2026-06-17)*
+- `[x]` **Save-recipe functionality is broken** — **fixed in PR #157 (merged, track 1b)**: root-caused to
+  `useSaveRecipe`'s hand-rolled optimistic write over the shared `['savedRecipeIds']` cache (default
+  `staleTime: 0`). A stale refetch (window-focus / sibling card / `invalidateSavedCaches`) resolving
+  mid-write overwrote the optimistic value, and with no post-write reconciliation the bookmark stayed
+  reverted even though the server save had succeeded. Rewrote the toggle as a proper React Query optimistic
+  mutation (`onMutate` cancel+snapshot, `onError` rollback, `onSettled` reconcile). Added Vitest hook
+  coverage (optimistic + rollback + reconcile-after-clobber guard) and extended server Jest with
+  `GET /getSavedRecipeIds` + a save→read→unsave→read round-trip.
+- `[x]` **Account "Ratings" list renders inaccurately** — **fixed (track 1c):** rating docs store
+  neither `recipeImage` nor `recipeTitle`, and `GET /getSingleUserReviews?returnRecipeData=true` only
+  attached the recipe as a nested `recipeData` object — but `UserRatings.tsx` reads flat
+  `review.recipeImage` / `review.recipeTitle`, so both resolved to `undefined` (blank `<img>` + empty
+  title). Server now denormalizes `recipeImage`/`recipeTitle` from the recipe doc onto each review (keeps
+  `recipeData` for admin callers). Added server + Vitest coverage.
+- `[x]` **Rating aggregate went *down* after a 5-star** — **root-caused + symptom fixed (PR #150, merged,
+  track 1a):** the
+  `recomputeRecipeRating` math is correct; the drop is a **stale STORED aggregate** being corrected on
+  the next recompute. A live smoke test found *Homemade Granola* stored `5/4.6` while only 4 rating docs
+  actually exist (true avg `4.5`). PR #150 makes every rating change recompute + the UI refresh, so a
+  recipe self-heals the moment anyone rates it, and the displayed average no longer lags. **REMAINING
+  (does not block #150):** recipes nobody re-rates stay drifted → needs the one-off reconciliation in
+  Tech debt below.
+- `[x]` **Serving price looks wrong** — **fixed in PR #152 (merged, track 1d)**; audited
+  `src/util/calculateServingPrice.ts` against real data + added regression tests.
+- `[x]` **"Your Recipes" flashes an empty state** — **reproduced + fixed (track 1c):** the existing
+  `useDelayedLoading` guard only covers the in-flight window; it does NOT cover the gap where
+  react-query flips `isLoading` to false but the `recipes` state is still `[]` (it's populated by an
+  effect one render later, to support paged accumulation). On a fast load the empty state mounted for
+  that one frame. Fixed by gating the grid on the resolved payload (`data.recipes`) as well, so the
+  empty state only renders once the query genuinely returns zero recipes. Same latent flash existed in
+  the Ratings list and got the same gate. A Vitest test (records every `EmptyState` mount) reproduces
+  the flash and guards the fix.
+- `[x]` **Account ratings "Load More" count can be off when a rating's recipe is hidden** — *(fixed in [#231](https://github.com/jclind/prepify/pull/231), S3: the `returnRecipeData=true` path now joins + filters hidden recipes inside a `$lookup`+`$facet` so page and `totalCount` run over the same visible set.)*
+  `GET /getSingleUserReviews` computes `totalCount` from `countDocuments(query)` over *all* of the
+  user's rating docs (`server/routes/reviews.js:281-284`), but with `returnRecipeData=true` the returned
+  `reviews` array is filtered to recipes that are still visible (`:294-308`, drops soft-hidden/deleted
+  recipes). So if a user rated a recipe that was later hidden, `totalCount > reviews.length`, and the
+  client trusts that count to decide pagination (`UserRatings.tsx:114`/`:118`:
+  `setIsMoreReviews(Number(data.totalCount) > …length)`). Symptom: the "Load More Reviews" button can
+  show with nothing left to load, or a later page returns fewer rows than expected. *(surfaced by
+  track 1c; pre-existing, not a regression — out of that track's scope.)* **(verified 2026-06-26: the
+  created-recipes list ("Your Recipes") is NOT affected — `server/routes/users.js:59-68` applies the same
+  filter to both `find` and `countDocuments` and does no post-fetch filtering, so its count stays
+  consistent. This bug is ratings-only.)** Fix: count post-visibility-filter, or paginate via an
+  aggregation `$lookup` that excludes hidden recipes before the count.
+- `[x]` **Data export omits saved-recipe content** — was: `exportMyData` exported full recipes, drafts,
+  ratings, and profile, but `savedRecipes` was still the raw reference array — `recipeId` + metadata
+  (`collectionIds`/`savedAt`), no recipe bodies (`server/routes/auth.js:355`; verified 2026-06-26).
+  **Fixed in S2/PR [#229](https://github.com/jclind/prepify/pull/229) (merged 2026-07-05):** each saved entry is
+  now hydrated with its recipe body (through `publicRecipeProjection`, since saved recipes are other users'),
+  keeping the ref with `recipe: null` for deleted/hidden ones.
+- `[x]` **`checkMadeRecipe` response-shape mismatch — the "made once an hour" throttle silently resets on
+  reload** *(fixed in [#264](https://github.com/jclind/prepify/pull/264) via **option B**: dropped the phantom
+  client-side date/throttle logic and aligned `MadeRecipeBtn` to the server's binary `{ made: boolean }` — once
+  marked, the button shows "Made it ✓" and disables (made is one-way per user; re-marks are already idempotent
+  server-side, so nothing needed throttling). `checkMadeRecipe` is now typed `{ made: boolean }`; +5 regression
+  tests. Option A — a durable per-user cooking log with timestamps — was **not** taken (it would reverse the
+  server's deliberate inflation guard) and is instead filed as a feature in
+  [`FEATURE_IDEAS.md`](./FEATURE_IDEAS.md) → "Personal cooking log".)* *(surfaced 2026-07-08 in the API-contract
+  regeneration ([#262](https://github.com/jclind/prepify/pull/262),
+  see [`API_CONTRACT.md`](./API_CONTRACT.md) DRIFT — recipes))* — `GET /checkMadeRecipe` returns
+  `{ made: boolean }` (`server/routes/recipes.js:967`) and stores made entries as `{ recipeId }` with **no
+  date**, but `src/pages/SingleRecipe/Buttons/MadeRecipeBtn.tsx:20,33-37` casts the result to
+  `{ datesMade?: string[] }` and derives `numTimesMade`/`lastDateMade` from it. `datesMade` is always
+  `undefined` from the server, so the cooldown (`canMakeAgain`, `MadeRecipeBtn.tsx:10-13`) only ever sees the
+  component's **optimistic in-session cache write** (`:48`, `String(new Date().getTime())`) — on refetch/reload
+  the derived count/last-date reset to zero and the once-an-hour re-make guard is effectively gone until the
+  next in-session mark. **Needs a decision** (`[?]`): either **(A)** persist make timestamps server-side (store
+  a `datesMade`/`madeAt` array on each `madeRecipes` entry and return it) so the throttle survives reloads, or
+  **(B)** drop the date-based throttle entirely and rework `MadeRecipeBtn` around the boolean the server
+  actually returns. Low user impact (the button is a personal marker, not gated writes), but the current code
+  reads as if a durable throttle exists when it doesn't. One-file client change for (B); a small server +
+  client change for (A).
+
+## UX / visual polish
+
+- `[x]` **`closestFraction` snaps every non-integer quantity to one of 9 fractions and never rounds up past 7/8** *(fixed in [#284](https://github.com/jclind/prepify/pull/284), B4: `closestFraction` now rolls the remainder over to the next whole number when it's at least as close to 1 as to the nearest table fraction — 0.9375 ties up — so `0.95`→"1", `1.96`→"2"; sub-threshold `1.9`→"1 7/8" unchanged)* — decimals in `[0.9375, 1.0)` render as "7/8" instead of rounding up to the next whole number, and every non-"nice" quantity shows up to ~1/16 error. This is the sole quantity renderer on the recipe page, printable view, and add-recipe row; `parseIngredientString` returns literal decimals (e.g. `0.95 lb`→`0.95`), so directly-entered amounts are distorted, not just scaled ones. `src/util/formatQuantity.ts:22`. **Fix:** round up when the fractional remainder exceeds the largest table entry (or widen the fraction table).
+- `[x]` **Ingredient ranges (e.g. "2-3 cups") are flattened to the low end everywhere they display** *(fixed in [#284](https://github.com/jclind/prepify/pull/284), B4: new `formatIngredientQuantity()` renders the `minQty`–`maxQty` range as the single display entry point for SingleRecipe/PrintableRecipe/add-recipe row, and `updateIngredients` scales both bounds so a range rescales with servings — 2–3 → 4–6; a narrow range whose bounds round to the same fraction collapses to that single value)* — `parseIngredientString` captures `minQty`/`maxQty` and `ParsedIngredient` carries both, but no renderer reads them (`SingleRecipe.tsx:214`, `PrintableRecipe.tsx:103-105`, `IngredientItemText.tsx:23` all show only `quantity`, the low end) and `updateIngredients` only scales `quantity`. "2-3 cups flour" renders as "2 cups flour", silently dropping the "-3" the author typed. **Fix:** render the `minQty`–`maxQty` range when present (and scale both bounds).
+- `[x]` *(fixed in [#281](https://github.com/jclind/prepify/pull/281), B1: draft creation now gates on `hasDraftableContent()` — a mapped type over `Required<RecipeDraftContent>` — instead of title alone, so any real content autosaves as an "Untitled draft"; a pristine form still creates nothing. A hard refresh inside the debounce window remains open as the follow-up below.)* **Add-recipe content entered before a title is never autosaved and is lost on refresh/close** *(from `sweeps/BUG_HUNT_2026-07-09.md` D3, filed 2026-07-10; boarded Wave 9 · B1)* — draft creation is gated on a non-blank title (`canCreateDraft = !!title.trim()`), so ingredients/instructions/description/times entered before the title are never persisted (the unmount flush also no-ops). A user who fills substantial content before naming the recipe loses all of it. `src/pages/AddRecipe/useDraftAutosave.ts:107`. **Fix:** trigger draft creation on any substantive content (not title alone), or warn on unload when untitled content exists. *(Gates out stray-keystroke throwaway drafts today — preserve that intent.)*
+- `[x]` **Draft autosave has no `beforeunload`/`pagehide` flush — a hard refresh/tab close inside the 1.5s debounce window still loses edits** *(filed 2026-07-10, off the B1 [#281](https://github.com/jclind/prepify/pull/281) review; boarded Wave 10 · V8; **fixed in [#294](https://github.com/jclind/prepify/pull/294), merged 2026-07-10**: `fetch({keepalive:true})` flush on `beforeunload`/`pagehide`, authenticated via a synchronous ID-token cache fed by the axios interceptor + a `warmAuth` on first edit, carrying B5's `updatedAt` precondition, bfcache-guarded against double-fire; live-verified in a real browser — type→hard-reload 200ms later → draft persisted, flushed PUT matched the stored version (no 409), exactly one write per unload. Also **fixed a pre-existing B5 bug** the verification exposed: resuming a draft by mounting with `?draftId` never seeded `updatedAtRef`, so every autosave 409'd and the conflict latch killed autosave for the session; the version prop is now in the sync-effect deps, with a regression test proven failing on the old deps. Known best-effort edge (flagged in-code): zero-prior-auth-request + instant close can race `warmAuth`'s async token fetch)* — the unmount flush covers SPA navigation only; a Cmd-R or tab close within `AUTOSAVE_DELAY` of the last edit (or while a save is in flight) loses up to 1.5s+ of work. Small window, but D3's headline was "lost on refresh/close". The repo already has the `beforeunload` pattern to borrow (`SettingsDirtyContext.tsx`); a `pagehide` flush would need `sendBeacon`/fetch-keepalive since an async axios PUT won't reliably complete during unload. `src/pages/AddRecipe/useDraftAutosave.ts`.
+- `[x]` **Signed-out `/add-recipe` shows a persistent "Couldn't save draft" indicator on any content entry** *(filed 2026-07-10, off the B1 [#281](https://github.com/jclind/prepify/pull/281) review; boarded Wave 10 · V8; **closed in [#294](https://github.com/jclind/prepify/pull/294), merged 2026-07-10, with a stale-premise correction**: `/add-recipe` is inside the `PrivateRoute` group (`src/App.tsx:220`), so a signed-out user is redirected to `/login` and the filed symptom is unreachable via routing in this tree — live-verified (redirect fires, zero `/api/drafts` requests). The auth-aware `'signed-out'` status + calm "Sign in to save drafts" copy shipped anyway as unit-tested defense-in-depth should the route ever be un-gated)* — `/add-recipe` isn't auth-guarded, and `DraftAPI.createDraft` no-ops to `null` without a UID, which `useDraftAutosave` (correctly) surfaces as `status: 'error'`. Pre-existing class (it fired on the first *title* keystroke before B1), but the broadened create gate now triggers it from any field. Consider auth-aware copy ("Sign in to save drafts") or gating autosave on auth instead of an alarming error badge. `src/pages/AddRecipe/DraftSaveStatus.tsx`, `useDraftAutosave.ts`.
+- `[x]` **No way home from the login/signup pages** *(fixed in [#257](https://github.com/jclind/prepify/pull/257),
+  N3; triaged 2026-07-08; filed 2026-06-18)* — both auth pages
+  render outside `Layout` (no navbar: `src/App.tsx:405-406`) and the "P" brand mark is a plain `<div>` on both
+  (`src/pages/Login/Login.tsx:39`, `src/pages/Signup/Signup.tsx:49`); the only links go to
+  forgot-password/signup/terms/privacy/login — never `/`. Three redesign passes (`ca54b8c`, `27b0798`,
+  `b994007`) touched these files without adding one. Fix: wrap the brand mark in `<Link to='/'>` on both
+  pages (a "Back to Prepify" text link also fine). → **N3** — shipped: `<Link to='/' aria-label='Prepify home'>`
+  on both, underline stripped + flat hover/focus-glow ring on `.brand-mark`.
+- `[x]` **Usernames aren't links to `/u/:username`** — *(byline half fixed in [#258](https://github.com/jclind/prepify/pull/258), N4: the whole `.author-row` — avatar + `@handle` + date — is now one `<Link to={'/u/' + authorUsername}>`, matching the admin pages; underline-on-handle hover/focus + `@mixin outline()` ring + aria-label. The **reviewer-name half was reassigned to the §D Ratings & Reviews overhaul** (rule 8b — it rewrites `RecipeReview.tsx` end-to-end) and **shipped there in [#271](https://github.com/jclind/prepify/pull/271)** — the rewritten review card links displayName/`@handle` to `/u/:username`.)* *(triaged 2026-07-08; filed 2026-06-18)* — the public
+  profile route exists and admin pages already link it (`Admin/Users/Users.tsx:29`,
+  `Admin/Reports/Reports.tsx:207`), but neither public-facing spot does: the recipe author byline
+  (`SingleRecipe.tsx:410-411`, plain `<strong>@{authorUsername}</strong>` inside `.author-row`) and the
+  reviewer name on each review (`Reviews/RecipeReview.tsx:77`, plain `<div class='name'>`). Wrap both in
+  `<Link to={'/u/' + username}>` — for the byline ideally the whole `author-row` incl. avatar. **Note:** the
+  reviewer-name half sits inside the RELEASE_PLAN §D Ratings & Reviews overhaul's file surface — see the N4
+  dep note on the roadmap. → **N4**
+- `[x]` **RecipeNotFound page: search emphasis + de-AI the copy** — *(fixed in [#259](https://github.com/jclind/prepify/pull/259), N5: copy rewritten into the owner's voice — "That recipe's off the menu…" (picked from drafted options, no em dash); the bare `SearchRecipesInput` given a bordered pill treatment — `$gray-400` border, `$primary-background` fill, `focus-glow($primary)` — mirroring the `/recipes` toolbar so the search reads as the primary next action.)* *(triaged 2026-07-08; filed 2026-06-25 —
+  content untouched since `236a126`, 2026-06-18)* — current body copy is *"We couldn't find the recipe you're
+  looking for — it may have been removed, or the link might be incorrect."*; the search field is the bare
+  shared `SearchRecipesInput` under an uppercase eyebrow label with no container emphasis
+  (`RecipeNotFound.scss:56-71`). Wanted: a human rewrite of the copy (needs Jesse's voice — draft options,
+  don't invent) + a clearer search treatment. → **N5**
+- `[x]` **Pixel-nit batch — needs a screenshot pass before touching** *(triaged 2026-07-08; filed
+  2026-06-27→07-01)* — three nits survived triage but each needs visual confirmation first:
+  **(a) servings-pill spacing** on the recipe page (`SingleRecipe.scss:286-330`) — the same-day a11y resize
+  (`51fb2ac`, 26→32px `step-btn`s) reflowed the pill, so it may read fine now; the `−`/`+` are text glyphs
+  already flex-centered (`:303-305`), so any residual offset is font optical metrics and the only real fix is
+  swapping to the icon-system Lucide plus/minus (confirm wanted). → **N4** — *fixed in [#258](https://github.com/jclind/prepify/pull/258): screenshot-confirmed the pill read fine post-resize, so swapped the `−`/`+` text glyphs to house-family Lucide `MinusIcon`/`PlusIcon` (crisp flex-centering) and rebalanced the number↔"serv" gap + button breathing room (`.serv-input` 28→25px + margins) on owner feedback.*
+  **(b) /recipes search-button asymmetry** — the embedded button sits `right: 6px` while the left icon gutter
+  is ~17.6px (`Recipes.scss:26-67`); a one-line nudge if confirmed. → **N5** — *closed by-design in [#259](https://github.com/jclind/prepify/pull/259): the 6px inset is a consistent nested-control gap (≈4px vertical inset), not meant to mirror the decorative text gutter; measured both.*
+  **(c) footer "Report a bug" centering** — it's *deliberately* left-adjacent in the copy·bug·version row
+  (`Footer.scss:121-137`, version pushed right via `margin-left:auto`); decide centered-vs-by-design, then
+  either relayout `.footer-legal` or close. → **N5** — *resolved in [#259](https://github.com/jclind/prepify/pull/259): left-adjacency kept (owner call), but the trigger was re-aligned — it read a size smaller than the ©/version spans (shared `.bug-report-trigger.btn` compact `$text-fine`); a `.footer-legal`-scoped inherit override lands all three on the row baseline.*
+- `[x]` **Create-recipe form dropdown inputs aren't visually uniform** — *(fixed in the C1-tail lane,
+  [#252](https://github.com/jclind/prepify/pull/252), 2026-07-08.)* The Cuisine / Course / Diet `react-select` controls (`recipeSelectStyles.ts`) were tuned to
+  mirror the shared `FormInput` `compact` variant exactly: 1px `$tertiary-text` resting border (was a 2px
+  react-select default grey), teal `$secondary` focus border + the `@mixin focus-glow` halo (was orange
+  `$primary`, no ring), the `$border-radius` token, a 40px `min-height`, a 1rem value inset, and no orange
+  hover shift (the text fields give none). Three new tokens (`secondary` / `borderRadius` / `focusGlow`) were
+  surfaced through `_exports.module.scss` so the values stay single-sourced. Verified via an authed headless
+  pass over `/add-recipe` (resting / focused / selected all match the neighbouring text fields). *(surfaced
+  2026-06-29 while consolidating `RecipeFormInput` into the shared `FormInput`.)*
+- `[x]` **Better "no results found" on the Recipes page** — *done in PR #167 (track 2d, merged ✅):*
+  replaced the weak indicator with a real empty state (icon + contextual copy that names the query and/or
+  filters) and Clear-filters / Browse-all affordances.
+- `[x]` **Optimistic ingredient add** — *done in PR #164 (track 3d; PR open).* Adding an ingredient now
+  parses locally and shows the row immediately, reconciling price/image when enrichment returns; a failure
+  keeps the row and flags it with a one-tap retry instead of waiting on the request.
+- `[x]` **Search autocomplete "autocorrect" is weak** — *done in PR #167 (track 2d, merged ✅):*
+  added a server-side fuzzy fallback (`server/util/recipeTitleMatch.js`) scoped to the autocomplete
+  endpoint, so typos like `chikcen` surface `…Chicken…` results, with a "showing similar recipes" banner
+  and a redesigned dropdown. *(Follow-ups on the fallback's scalability and the dropdown's a11y are filed
+  separately below.)*
+- `[x]` **Autocomplete footer label can disagree with the rows shown** — *(fixed in [#238](https://github.com/jclind/prepify/pull/238), C4: pointed the footer label at the debounced `trimmedQuery` so it matches the rows + empty-state; the submit action deliberately stays on the live value — shared with Enter / top Search, which must fire for <3-char queries — a one-directional, self-correcting skew documented on `handleSubmit`.)* The dropdown keeps the previous
+  query's results visible during the debounce + refetch (`keepPreviousData`), but the "Search for …"
+  footer read the live input (`searchRecipeVal.trim()`), so mid-type it could say *Search for "chica"*
+  while the list still shows `chic` matches (rows + empty-state read the debounced `trimmedQuery`). Cosmetic,
+  self-corrects on fetch. (`SearchRecipesInput.tsx:228` footer vs `:52-64` debounced query + `:127-128`
+  input; lines re-verified 2026-06-26.) *(surfaced 2026-06-22 in the track 2d code review.)*
+- `[x]` **Autocomplete result click "swallowed the instant the row appears"** — *root cause was misfiled
+  and is now fixed in PR #171.* The reported symptom (clicking a freshly-appeared dropdown row does
+  nothing) was **not** a `keepPreviousData` refetch/node-swap race: a production build shows the list is
+  stable once results load and an immediate click on a real row navigates fine. The actual cause is that
+  the loading **skeleton placeholders shared the `.ac-item` class** (`ac-item ac-item--skeleton`), so for
+  the first ~150ms the dropdown is full of non-interactive skeletons that *look* like rows — clicking one
+  (or a probe/test resolving `.ac-item` `.first()`) hits a skeleton, which has no navigation. Fixed by
+  giving skeletons their own `.ac-skeleton` class (sharing none of the interactive row's selectors), so
+  `.ac-item` only ever matches a real, navigable result. Also hardened the narrow genuine swap-race by
+  delegating result activation to the stable `.auto-complete-results` container via `data-recipe-id`
+  (a row that re-renders mid-interaction can no longer drop the event). Verified on a prod build: during
+  load `.ac-item` count is 0 while `.ac-skeleton` shows; after load an immediate real-row click navigates.
+  (`SearchRecipesInput.tsx` + `.scss`.) *(originally surfaced 2026-06-22; re-diagnosed and fixed 2026-06-23.)*
+  *(Code-review follow-up: the first delegation guarded with a never-resetting `navigatingRef`, which broke the
+  navbar's `SearchRecipesInput` — it lives in the persistent `<Layout>` and is reused across navigations, so
+  after one navbar nav every later autocomplete click no-op'd until reload. Replaced with a stateless `onClick`
+  handler + a "navbar autocomplete works on consecutive uses" regression test.)*
+- `[x]` **"You created this recipe" — mobile styling** — *fixed in PR #160 (track 2c)*; owner-stats
+  strip now an equal-width row with dividers instead of scattering via `space-between`.
+- `[x]` **Recipe stats styling** — *fixed in PR #160 (track 2c)*; rating dropped from the action-bar
+  row, replaced by a per-serving price tile (time / servings / price).
+- `[x]` **Add-recipe bottom bar overlaps the footer** — *done in PR #164 (track 3d; PR open).* The summary
+  bar is now `position: sticky` (+ `margin-top: auto`) so it releases at the page end above the footer
+  instead of a fixed overlay; the footer's global top margin is also cancelled on this page (`:has`) so the
+  bar sits flush above it, and the cuisine/course dropdowns were lifted above the bar (menu z-index 50→60).
+- `[x]` **Add-recipe summary bar doesn't stay visible while scrolling the form** — *(Decided 2026-07-08,
+  C1-tail audit — keep the current release-at-end behavior; no code change.)* This was always framed as a
+  design decision, not a bug: the tracked footer-overlap regression is fixed, and whether the bar should be
+  permanently viewport-pinned is a product/UX call. Owner elected to keep the current `position: sticky;
+  bottom: 0` behavior (bar rests at the end of the form column, footer reachable) rather than convert it to
+  an always-visible fixed bar. Re-open only if an always-visible summary is later wanted. Original write-up
+  retained below for context. — the PR #164 fix uses
+  `position: sticky; bottom: 0` + `margin-top: auto` (`AddRecipeSummaryBar.scss`), which correctly releases
+  the bar above the footer at page end (the original overlap bug — fixed). But `margin-top: auto` parks the
+  bar at the bottom of the form's flex column, so on a tall form it does **not** pin to the viewport bottom
+  while you scroll — the summary (totals + submit) is off-screen until you reach the very bottom. The SCSS
+  comment ("pins to the bottom of the viewport while the form scrolls") overstates the actual behavior.
+  *Decide whether an always-visible summary bar is wanted; if so it likely needs the bar outside the
+  `margin-top: auto` column (e.g. a fixed/sticky element relative to the scroll root, with bottom padding on
+  the form so the footer stays reachable). Not a regression — the tracked footer-overlap bug is fixed.*
+  *(surfaced 2026-06-22 during the Phase-3 verification pass; runtime-confirmed: mid-scroll the bar sits
+  off-screen below the fold, footer reachable above the bar at page end. Candidate for the create-recipe
+  refactor or the Phase-4 QA sweep.)*
+- `[x]` **Add-recipe group labels render underwhelming** — *(Decided 2026-07-08, C1-tail audit — looks
+  intentional post-overhaul; no change.)* Re-audited against the current tree: on the **recipe view** the
+  labels (`.ing-group-label` / `.step-group-label`, `SingleRecipe.scss`) render as deliberate brand-orange
+  bold section headers with spacing; on the **create form** the inserted label row (`.label-text-container
+  .text`, `ListComponents/Item.scss`) is a clean bold `$text-md` line. After the create-recipe overhaul (R1
+  #248 + the type-scale / hover / focus-ring sweeps) both read as intentional, so the owner closed this as no
+  longer "underwhelming." Re-open if a dedicated label restyle is later wanted. *(originally noted
+  2026-06-18 after the track-3d smoke test.)*
+- `[x]` **Single-recipe "no recipe found" looks bad** — *fixed in PR #160 (track 2c)*; redesigned
+  empty-state card (icon + search + "Browse all recipes" CTA), and fixed 404 routing so a missing
+  recipe renders instantly instead of retrying ~7s then showing a generic error.
+- `[x]` **Drop search from the topmost navbar on /recipes** — **done (verified 2026-06-26):**
+  `src/Components/Navbar/desktop/DesktopBar.tsx:47` gates the top-bar search on
+  `const showSearch = pathname !== '/recipes'` (block at `:51-54`, `dnav--no-search` modifier at `:50`), so
+  the recipes page no longer carries search in the top-most bar; it still shows everywhere else. *(noted
+  2026-06-10; the hardcoded `'/recipes'` literal here is the same one tracked under the route-const tech-debt
+  item.)*
+- `[x]` **Serving price not prominent enough** — *fixed in PR #160 (track 2c)*; per-serving cost is now
+  a brand-orange price-tag tile in the top action bar.
+- `[x]` **Review UI needs work** — *fixed in PR #160 (track 2c)*; "Your review" is now an eyebrow label
+  + a teal-accented, tinted card distinct from the public list. The "rating dropdown" was already
+  removed by track 1a (it's the "Remove rating" button now), so only the Your-Review UI applied.
+- `[x]` **Show the recipe rating up top on the single-recipe page** — *done in PR #166 (track 3c, merged ✅):*
+  a compact `.hero-rating` echo (`★ 4.5 · N ratings`) sits just under the title, shown only once the recipe
+  has ratings, so an unrated recipe isn't labelled. Not a 4th action-bar tile (would crowd mobile); the full
+  breakdown still lives in the Ratings & Reviews header.
+- `[dropped]` **Account nav sections UI** — ~~improve the Saved / Ratings / etc. section navigation styling.~~
+  **Closed stale 2026-07-07 (R2).** The account section nav was already redesigned (#136 vertical rail, 2026-06-14)
+  and token-normalized after; this line was a bulk backlog-seed added 2026-06-17 — *after* that work — with no
+  concrete defect behind it. R2 (#250) subsumes F6 by closing it, not by restyling.
+- `[x]` **`/u/:username` public profile visual polish** — **done (track 2e):** centered identity
+  (avatar, @handle + share, divided Recipes/Saves/Made counts, "location · Lv N", achievement chips),
+  image-first square recipe tiles with rating · time · cost + a bookmark save-count badge, richer
+  `EmptyState`, and a working **"Load more"** (new paginated `GET /getPublicProfileRecipes`). Saves/Made
+  now come from a server-side aggregate over *all* visible recipes (not just the shown batch). Verified
+  live incl. a 15-recipe load-more click-through (12→15, button clears, no dupes).
+- `[x]` **"Change password" subhead is redundant/cluttered** *(fixed in [#246](https://github.com/jclind/prepify/pull/246), F4: removed the `<h3 class='sr-subhead'>Change password</h3>` in `AccountSection.tsx` — the subsection is self-describing via its labelled fields + "Update password" button under the governing "Account & Security" `<h2>`; kept the `.sr-subsection` divider and the "Connected accounts" subhead. Runtime-verified via a real signup→settings flow.)* — the `<h3 class='sr-subhead'>Change password</h3>`
+  in `src/pages/Settings/sections/AccountSection.tsx:189` (shown only when `hasPasswordProvider`), inside the
+  Settings → Account section. *(verified 2026-06-26: it's lowercase "Change password" in a Settings section,
+  not a dedicated "Account & Security" page as previously worded.)*
+- `[x]` **create-username page revamp** — **done (track 3e):** the page was redesigned into the shared
+  soft-glass auth vocabulary alongside login/signup/forgot in **PR #131**, and the escape hatch (a
+  "Cancel and log out" control wired to the auth signout, plus a guard that bounces users who already
+  have a username) landed in **PR #98**. Reconciled + escape-hatch regression test added in **PR #162**.
+  Page lives at `src/pages/CreateUsername/`. Username validation tightening is tracked separately under 3c.
+- `[x]` **`RecipeThumbnail` shows the broken-image glyph on a failed image load** — track 3b (PR #170) gave
+  `RecipeCard` an `onError` fallback to the icon `RecipePlaceholder` (`imgError` state + `onError`), but
+  `RecipeThumbnail` only swaps in the placeholder when `recipeImage` is *absent* — a present-but-broken URL
+  still renders the browser's broken-image glyph there (`src/Components/RecipeThumbnail/RecipeThumbnail.tsx`,
+  no `onError` on the `<img>`). **(verified 2026-06-26: `RecipeThumbnail` is now orphaned — no app code
+  imports it; the only importer is its own test `src/test/RecipeThumbnail.test.tsx`. So the user-facing glyph
+  no longer renders anywhere, and the real fix is to DELETE `RecipeThumbnail` + its test rather than patch it
+  — see the unify item below.)** Low severity. *(surfaced 2026-06-23 in the track 3b code review.)*
+  **(closed by the delete — PR #199 removed `RecipeThumbnail` + its test entirely; marker reconciled
+  2026-07-02 in the Wave-3 re-sweep.)**
+- `[x]` **Consolidate the bespoke pill buttons into a real `.btn` system** — **done (PR #210, merged 2026-06-30):**
+  promoted `.btn` to a full pill base + 5 BEM colour variants (`--primary`/`--outline`/`--ghost`/`--danger`/
+  `--danger-solid`) + sizes + `--icon`, migrated ~70 bespoke buttons across ~35 files, documented at
+  `docs/design/button-system.md`. Two review passes fixed specificity/leak regressions (review-edit Submit
+  grey-on-orange, `load-more-btn` base leak, lost filter-hover transitions). *(original problem, for context:)*
+  `.btn` in `src/index.scss`
+  only strips defaults (no visual style), so nearly every page re-implements its own orange/ghost pill:
+  `home-btn` (`404.scss`), `pp-browse-btn` (`PublicProfile.scss`), `about-btn`/`about-btn-primary`/
+  `about-btn-ghost` (`About.scss`), `search-recipes-btn`, the Recipes toolbar pills, HomeCookSuggestion
+  `.primary`/`.ghost`, etc. — same shape, slightly different padding/weight/hover each time. Promote
+  `.btn--primary` / `.btn--ghost` / `.btn--pill` variants and migrate the bespoke buttons onto them.
+  *(surfaced 2026-06-25 in the design-consistency sweep.)*
+- `[x]` **Unify `RecipeCard` and `RecipeThumbnail` — actually: delete `RecipeThumbnail` (verified 2026-06-26)**
+  — **done (PR #199, merged 2026-06-27 — the code-quality sweep's dead-code pass deleted
+  `RecipeThumbnail.tsx` + `.scss` + its test; marker reconciled 2026-07-02 in the Wave-3 re-sweep).**
+  *(original write-up, for context:)*
+  the two are ~80% duplicate (image + price + rating/time meta; differ mostly in `<Link>` vs `<button>`,
+  `AiFillStar` vs `AiOutlineStar`, and `skeletonColor` `#e6e6e6` vs `#d6d6d6`), but verification found
+  `RecipeThumbnail` is **dead code** — only its own test imports it; the live card everywhere
+  (`Recipes.tsx`, `SavedRecipes.tsx`) is `RecipeCard`. So this isn't a merge — it's "delete
+  `RecipeThumbnail.tsx` + `src/test/RecipeThumbnail.test.tsx`" (and that closes the broken-image item above
+  for free). Confirm no lazy/string-based import first. *(surfaced 2026-06-25 in the design-consistency sweep.)*
+- `[x]` **One icon per concept (react-icons drift)** — the same concept is drawn from different icon sets:
+  star = `AiFillStar` / `AiOutlineStar` / `BsStar(Fill)` / `FiStar`; close = `AiOutlineClose` / `FiX` /
+  `IoClose`; bookmark = `Bs*` and `Bi*` outline/filled pairs; time = `CgTimer` and `AiOutlineClockCircle`.
+  Pick one icon per concept and re-export from a single `src/Components/icons` module so callers can't drift.
+  *(surfaced 2026-06-25 in the design-consistency sweep.)* **(done 2026-06-29 — Wave 2 `2-iso`: added
+  `src/Components/icons` single-source module, migrated all 58 call sites, collapsed ~25 drift concepts to one
+  glyph each; a Vitest guard `icons-single-source.test.ts` now bans direct `react-icons/*` imports.)***
+  **(follow-up done 2026-06-29, PR #206 — single house family: remapped all concepts to **Lucide** (`react-icons/lu`),
+  collapsing the remaining 10-family mix to one stroke weight; 2 documented brand exceptions (the Google marks);
+  filled variants now `fill="currentColor"` on the outline glyph. See [`design/icon-system.md`](design/icon-system.md).)***
+- `[x]` **Share one react-modal style config** — each modal repeats its own `customStyles`/overlay inline,
+  and they disagree: `BugReportModal` uses `#fff` + `8px` radius while `ConfirmDeleteReviewModal` /
+  `ReleaseNotes` use `#eeeeee` + `5px`. **(verified 2026-06-26: it's 7 inline copies, not 3 — also
+  `ReportControl`, `RecipeControls`, `AchievementsModal`, and `HomeCookSuggestion`.)** Extract a shared
+  `modalStyles` constant (content + overlay) and a thin wrapper so every dialog reads the same.
+  *(surfaced 2026-06-25 in the design-consistency sweep.)* **(done 2026-06-29, PR #203 —
+  `src/util/modalStyles.ts` (`panelModalStyles`/`bareModalStyles`/`panelModalStylesWith` + one
+  `setAppElement`), all 7 modals migrated, net −144 lines; marker reconciled 2026-07-02 in the Wave-3
+  re-sweep.)**
+- `[x]` **Codify the loading-state pattern (skeleton vs spinner)** — content grids use
+  `react-loading-skeleton`, button actions use `TailSpin`, and several async waits show nothing; the choice
+  is per-developer and `TailSpin` sizes vary (18–30px). Write down the rule (skeleton for content
+  placeholders, spinner for discrete actions/auth) and align the outliers. *(surfaced 2026-06-25 in the
+  design-consistency sweep.)* **(done 2026-06-30, PR #213 — single `loadingStyles` token module
+  (`skeletonBase`/`spinnerColor`), `useDelayedLoading` flash-guard promoted to `src/hooks/`, a `.sk-hold`
+  reserve-height utility, and a CLS / skeleton-fidelity pass: self-mirroring skeletons, `inline` to drop
+  react-loading-skeleton's trailing `<br>`, image hold-until-`onLoad` fade-in, PublicProfile spinner→skeleton.
+  Convention written at [`design/loading-states.md`](design/loading-states.md). Measured CLS Home 0.21→0.0002,
+  SingleRecipe 0.27→0.02.)***
+- `[x]` **Toast copy: consistent terminal punctuation + dedupe strings** — toasts disagree on trailing
+  punctuation (`'Could not copy link'`, `'Could not update collections'`, `'Profile link copied'` have no
+  period; most others end with `.`/`!`) and on phrasing (`'Profile link copied'` vs `'Profile link copied
+  to clipboard'`). Pick one convention (terminal punctuation everywhere is the dominant pattern) and sweep
+  the ~10 call sites; lift duplicated strings (`'Email already in use.'`, `'Password incorrect, please try
+  again.'`, `'Image cannot be more than 5MB in size.'`) into shared constants. *(surfaced 2026-06-25 in the
+  design-consistency sweep; continues the toast-punctuation fix started in track 4-qa.)* **(done 2026-06-29,
+  PR #207 — one copy convention codified + `src/util/toastMessages.ts` (12 constants + 2 helpers), ~25 of
+  ~90 call sites edited; marker reconciled 2026-07-02 in the Wave-3 re-sweep.)**
+
+## Accessibility
+
+- `[x]` **Mobile overscroll reveals the "Skip to content" link** — *(fixed in [#259](https://github.com/jclind/prepify/pull/259), N5: swapped the negative-offset park for a clip-based visually-hidden box — `top:0.5rem; clip-path:inset(50%); 1px; overflow:hidden`, full size on `:focus` — so there's no off-viewport geometry for overscroll to reveal; the keyboard-Tab reveal survives. Runtime-verified headless at 390px.)* *(triaged 2026-07-08; filed 2026-07-02 —
+  confirmed real, not intended)* — the link hides via the negative-offset pattern (`position: absolute;
+  top: -3rem`, reveal `top: 0.5rem` on `:focus` — `src/Components/Layout/Layout.scss:25-43`), and since
+  `.app-shell` sets no `position`, it resolves against the document and scrolls with the page — so iOS/Android
+  rubber-band overscroll exposes the painted geometry parked above `top: 0`. Fix: switch to a clip-based
+  visually-hidden pattern (`clip-path: inset(50%)` / 1px box, full size only on `:focus`) so there is no
+  off-viewport geometry to reveal. Introduced by the a11y sweep `27b0798` (2026-06-25); the keyboard-Tab
+  reveal must survive the change. → **N5**
+- `[x]` **Stop focus outline on mouse button clicks** — **done (track 3a, merged in PR #163 ✅):** the
+  global `button`/`a` outline rule (`src/index.scss`) and every component-local `@include s.outline()`
+  ring were switched from `:focus` to `:focus-visible`, so the ring shows for keyboard nav only.
+  Input/textarea focus affordances (border/box-shadow/background) were deliberately left on `:focus` —
+  clicking into a field should still highlight it.
+- `[x]` **Desktop navbar account chevron animation shifts the focus outline** — **done (track 3a, merged
+  in PR #163 ✅):** the caret was wrapped in a fixed-size `overflow:hidden` clip box with an inner
+  rotating `<svg>` (`DesktopAccountMenu.tsx` + `DesktopNav.scss`), so the `outline:auto` ring no longer
+  tracks the rotating icon's bounding box.
+- `[x]` **Account Ratings list nests a `<button>` inside a `<button>`** — **fixed (track 2e):** the rating
+  row is now a keyboard-operable `<div role="button">` wrapper (Enter/Space handler, `tabIndex`,
+  `aria-disabled`) instead of a `<button>`, so `StarRating`'s per-star `<button>`s are no longer nested in a
+  button. *(Pre-existing; surfaced during the Wave 2 verification live smoke test 2026-06-18 — NOT introduced
+  by track 1c. Took the non-button-wrapper route over making StarRating render `<span>`s.)*
+
+- `[x]` **Autocomplete dropdown isn't a valid ARIA listbox + has no keyboard nav** —
+  **done (Wave 2 accessibility sweep, 2026-06-27, `worktree-feat+a11y-autocomplete-listbox`):** implemented
+  the APG editable-combobox-with-list-autocomplete pattern in `SearchRecipesInput.tsx`. The input is now a
+  `role="combobox"` with `aria-expanded`/`aria-controls`/`aria-autocomplete="list"`/`aria-activedescendant`;
+  each result is a valid `<li role="option" aria-selected>` *direct child* of the `<ul role="listbox">` (the
+  intermediate `<li>` wrapper and the inner `<button>` are gone); Arrow/Home/End/Enter/Escape drive a real
+  highlight via `aria-activedescendant` (focus stays on the input), Enter on a highlighted option navigates
+  to it (falling back to a full search), and the active row scrolls into view. Mouse activation still routes
+  through the stable delegated container handler. +7 tests (combobox semantics, valid listbox markup, arrow
+  highlight + wrap, Enter-to-navigate, Enter-to-search, Escape); verified live in a headless browser. *(was:
+  `<ul role="listbox"><li><button role="option">` with a plain `<li>` between the listbox and its options,
+  an `option` on a `<button>`, no arrow-key nav, and every `aria-selected` hardcoded `'false'`. Originally
+  surfaced 2026-06-22 in the track 2d code review; re-confirmed in the 2026-06-25 accessibility sweep and
+  again 2026-06-26.)*
+
+- `[x]` **Ingredient checklist `<li role="checkbox">` is an invalid ARIA role + breaks the list** —
+  **done (accessibility sweep, 2026-06-25):** the checkbox role + keyboard handler moved onto an inner
+  `<div role="checkbox">`, leaving each `<li>` plain (`SingleRecipe.tsx` `renderIngredient`). `.ing`
+  styling stayed on the now-inner element, so the 2-column grid is visually unchanged (verified by
+  screenshot). Clears Lighthouse `aria-allowed-role` + `list`; recipe page **89 → 97**. Keyboard toggle
+  (Enter/Space → `aria-checked`) re-verified.
+- `[~]` **Contrast (WCAG AA) — grey/teal/beta/red shipped; brand ORANGE reverted to vivid (owner call)**
+  *(grey #181; brand + nav-logo + beta-tag + error-red #184; **orange reverted in the bg-lift PR**, 2026-06-25)*.
+  The muted-grey, teal, beta-tag and error-red fixes are AA and shipped. **The brand orange, however, was
+  intentionally reverted to the vivid `#ff5722` at the owner's request** (`$primary-accessible` points back at
+  `#ff5722`): the AA `#bf360c` read too "brown." This **re-fails AA on the orange logo/CTAs/accents and drops
+  Lighthouse a11y to ~96–97 on the routes that use them** (every other route stays 100) — accepted for now,
+  pending a brand-colour decision. **To restore AA:** set `$primary-accessible` back to ~`#bf360c` (or a
+  chosen on-light orange — see the shade exploration below). What's shipped vs reverted:
+  - `[x]` **Muted-grey body/meta text (#181):** `$tertiary-text` darkened `#979ba0` → `#666c75` (lightest
+    clearing 4.5:1 on white 5.29 / `#fafafa` 5.07 / `#eeeeee` 4.56); three hardcoded `#8a8f99` report-trigger
+    greys tokenised onto it.
+  - `[x]` **Brand teal (#184):** `$secondary-accessible #00787e` (5.27/4.54) on the teal eyebrow + auth
+    buttons — kept, AA.
+  - `[~]` **Brand orange — REVERTED to vivid `#ff5722` (owner call):** #184 had darkened it to
+    `$primary-accessible #bf360c` (5.60/4.83) across ~25 selectors (logo, CTAs, "See all", eyebrows, price,
+    …); that's now pointed back at `#ff5722`, which re-fails AA (2.7–3.2:1). The `#184` plumbing is intact
+    (single token, on-tint handling like `.pp-lvl` → `#fff2ed`, active Settings nav `#006065`), so restoring
+    AA is a one-line token flip. **Shade exploration (for when you revisit):**
+    - The orange can't be both vivid *and* AA: a bright orange physically can't reach 4.5:1 on a light
+      surface — to pass it has to deepen toward `#bf360c`.
+    - The **logo is large text (≥24px), so its bar is only 3:1**, not 4.5:1 — `#ff5722` already passes 3:1 on
+      *white* (3.16) and `#fafafa` (3.03); it only fails on the `#eeeeee` grey (2.73). A barely-perceptible
+      nudge (`#f4501e`, 3.0+ on grey) clears it while staying iconic — so the logo *alone* needn't go to
+      `#bf360c`.
+    - A **lighter page background lets the whole orange go lighter**: on a white page the lightest AA orange
+      is `#d83a0a` (4.64 on white), vs `#bf360c` on `#eeeeee` — but white kills card/background separation
+      (cards then need a shadow/hairline border). `#bb4b00` (burnt) on `#f5f5f5` (4.68) was the explored
+      middle. Candidates that clear 4.5:1 as small text on their bg: `#bf360c`/`#b84008`/`#a8330b` on
+      `#eeeeee`; `#c5421a` on `#f5f5f5`; `#d83a0a`/`#bb4b00` only on near-white.
+    - Decision axes: how vivid vs how deep · uniform-everywhere vs logo-as-special-case (large-text exemption)
+      · how light to push the page background (card-pop trade-off).
+  - `[x]` **Nav-logo wordmark (#184):** darkened to `$primary-accessible` on any light nav surface — the
+    desktop solid bar (`.nav--solid`, incl. Home once scrolled) and the mobile bar on non-hero pages (new
+    `.nav--dark-links` class, since `.nav--solid` is desktop-only and Lighthouse a11y emulates mobile). The
+    transparent-over-hero logo keeps vivid `#ff5722` on its dark photo.
+  - `[x]` **Beta-tag (#184):** per owner call (it's removed at the 1.0 cutover anyway), recoloured from
+    light-on-`#00adb5` (2.78:1) to white-on-`$secondary-accessible` (5.27:1). This is what **unpinned the
+    Lighthouse score** — the binary `color-contrast` audit had been failing on every page purely because of
+    the ever-present beta-tag. *(Supersedes the earlier "leave it for Phase-5" note; the Phase-5 cutover will
+    still remove the tag entirely.)*
+  - `[x]` **Danger/error red text (#184):** darkened the shared `$error-red` token `#dc3545` → `#c5303f`
+    (the lightest red clearing 4.5:1 on every surface it touches — text on white 5.43 / `#eeeeee` 4.68 /
+    danger tint 5.14, and white-on-fill 5.43). Safe across all 13 usages (text / fill / border each gain
+    contrast); alert boxes unaffected (own `$alert-error-red-text #721c24`). Took the last route —
+    Settings-danger — to 100. Danger zone + inline validation visually re-checked.
+- `[x]` **Servings stepper input is below the 24px touch-target minimum** — the `.serv-input` in the
+  Ingredients servings pill (`SingleRecipe.tsx`) trips Lighthouse `target-size`. A label was added in
+  track 4-qa (`aria-label="Servings"`), but enlarging the tap target is a layout change to the pill.
+  *(surfaced 2026-06-23, track 4-qa; re-confirmed 2026-06-25 in the accessibility sweep.)* **Fixed
+  2026-06-27 (Wave 2 `2-iso`):** all three controls in `SingleRecipe.scss` sized past the WCAG 2.5.8
+  minimum — `.step-btn` 26→32px, `.serv-input` given `width:28px`/`height:32px` (was ~14px). Rendered
+  boxes measured 32×32 / 28×32 in the running app; compact pill aesthetic preserved (desktop + 380px
+  mobile re-shot, no overflow). CSS-only; markup/aria untouched.
+- `[dropped]` **`$primary-hover` token (`#e74e1d`) fails WCAG AA on hover** — *folded into the owner's
+  brand-orange recolor (2026-07-01); off the sweep board.* This is a hover **contrast** choice on the brand
+  orange, so it belongs with the reverted-`$primary-accessible` decision above, not as an independent sweep
+  track. The sweep's remaining hover work is **button hover-*motion* normalization** (a separate, colour-neutral
+  concern — see [`design/button-hover-audit.md`](./design/button-hover-audit.md)). Original finding, kept for
+  when the owner does the recolor: the design-tokens track added
+  `$primary-hover: #e74e1d` (`helpers.scss`) and points several **white-on-fill button hovers** at it
+  (`Home.scss:175`, `SingleRecipe.scss:659`, `RecipeNotFound.scss:87`) plus a **text** hover
+  (`Footer.scss:72`). White on `#e74e1d` is only **3.81:1** and `#e74e1d` as text on white ~3.8:1 — both
+  under 4.5:1, so these controls drop below AA *while hovered* (axe/Lighthouse scan the default state, so it
+  doesn't show in the per-page scores). The base fills are fine; only the hover regresses. Fix: darken
+  `$primary-hover` to an AA-passing shade (e.g. `≤ #c5421a`, white-on-it 5.04 — or reuse `$primary-accessible
+  #bf360c`). NB the a11y brand pass already side-stepped this on the recipe Save button (`SingleRecipe.scss`
+  uses a literal `#a52f0a` hover with a comment, *not* `$primary-hover`). *(surfaced 2026-06-25 while merging
+  the brand-contrast PR #184 over the design-tokens track.)* After the recolor, re-check that `$hover-brighten`
+  (brightness 1.06) doesn't push the new orange fill below WCAG AA contrast (per
+  [`design/button-hover-audit.md`](./design/button-hover-audit.md)).
+- `[x]` **Add-recipe form controls need `aria-describedby` wiring** — *(fixed in [#269](https://github.com/jclind/prepify/pull/269), W2: `TimeInput` and `ImagePicker`'s empty-state dropzone take `describedBy`/`invalid` gated on the section's `errors.*`; the Course react-select uses the gated `aria-invalid`/`aria-errormessage` pair (react-select has no `aria-describedby` prop); the ingredient/instruction list containers are covered by the FormField group's `aria-describedby` to the alert. Cuisine/Diet carry no validation/hint copy — group labelling covers them.)* *(a11y follow-up, source
+  [`ADD_RECIPE_UX_AUDIT.md`](./ADD_RECIPE_UX_AUDIT.md))* — the custom inputs on `/add-recipe` don't associate
+  their help/error text with the control: wire `aria-describedby` on `TimeInput`, the Cuisine/Course/Diet
+  react-select pickers, `ImagePicker`, and the ingredient/instruction list containers so screen readers
+  announce the hint/validation copy with the field. Low.
+- `[x]` **Add-recipe `SectionHeader` label isn't tied to its inputs (`aria-labelledby`)** — *(fixed in [#269](https://github.com/jclind/prepify/pull/269), W2: `SectionHeader` takes a stable `id` (`section-<row-className>`) and `FormField`'s wrapper is now `role='group' aria-labelledby={headerId}`, so every row's label governs its control(s) programmatically for the whole form at once.)* *(a11y follow-up,
+  source [`ADD_RECIPE_UX_AUDIT.md`](./ADD_RECIPE_UX_AUDIT.md))* — `SectionHeader`
+  (`src/pages/AddRecipe/SectionHeader.tsx`) renders its label as a bare `<span className='text'>` inside the
+  `<h2>`, with no programmatic link to the fields it governs. Give the label an `id` and point each section's
+  inputs (or their group) at it via `aria-labelledby` so the grouping is exposed to assistive tech, not just
+  visual. Low.
+
+## Security
+
+*(Filed by the Security sweep, 2026-06-26 — Wave 1 of [`sweeps/ROADMAP.md`](sweeps/ROADMAP.md). The
+sweep's cheap, unambiguous hardening shipped in the sweep PR; these are the structural / debatable tail.
+The headline IDOR/authz, CORS, secrets-in-git, and XSS checks all came back clean — see the sweep PR's
+findings table.)*
+
+- `[x]` **[action] Revoke the live OpenAI key sitting in cleartext in the local `.env`** *(highest-priority
+  follow-up)* — `.env:9` carries a full-access `VITE_OPEN_AI_API_KEY = sk-…`. Verified **dead** (zero
+  references in `src/`, so Vite does NOT bundle it) and **never committed** (`.env` is gitignored; `git log
+  -S` for the key is clean), so it is not an active leak — but it's a live, full-access credential in
+  plaintext on disk. **Rotate/revoke it and delete the line.** OpenAI is server-side only now
+  (`OPENAI_API_KEY` in `server/.env`). While there, drop the now-dead `SPOONACULAR_API_KEY` from
+  `server/.env` (the v2 parser is key-free — the proxy holds the key). These are local gitignored files, so
+  this is an operator action, not a code change / PR. *(surfaced 2026-06-26 in the security sweep.)*
+  **(done 2026-07-03 — both keys revoked in their provider dashboards (OpenAI + Spoonacular) and the dead
+  lines deleted from local `.env` (`VITE_OPEN_AI_API_KEY`) and `server/.env` (`SPOONACULAR_API_KEY`); swept
+  the tree afterward, no other on-disk copies remain. The `.env.example` comment noting the key is unneeded
+  was left in place.)**
+- `[x]` **Public recipe reads return the full Mongo doc, leaking internal fields** — `GET /getRecipe`'s
+  public path (`server/routes/recipes.js:411-437`) returned the entire recipe document with no projection,
+  so internal curation/moderation stamps (`moderatedBy`/`moderatedAt`/`featuredBy`/`featuredAt`/
+  `publishUpdatedBy`/`publishUpdatedAt` — admin Firebase uids + moderation metadata) leaked to
+  anonymous clients on any recipe that was ever featured/unhidden. `publicProfile.js:74` & `:157` shared the
+  full-doc pattern (only `RECIPE_VISIBLE`/active recipes, so no moderation-state leak, but they still exposed
+  the author uid + other internal fields the card never reads). A follow-up code review found the same full-doc
+  leak on the two highest-traffic public LIST reads too: `GET /recipes` (browse) and `GET /getTrendingRecipes`
+  both `.toArray()`'d unprojected docs — and trending sorts `featured:-1` first, so it was the read *most*
+  likely to surface `featuredBy` (an admin uid) to anonymous callers. (The other list reads —
+  `searchAutoCompleteRecipes`, `getForYouRecipes`, `recipes/random` — already projected to a card shape.)
+  - **DONE (PR #226).** Added a shared **whitelist** (not a blacklist of the six stamps, so a future internal
+    field can't silently leak) in `server/util/recipeFields.js`: `publicRecipeProjection` = exactly the client
+    `RecipeType` shape, built on `CREATABLE_RECIPE_FIELDS` so new user-content fields propagate automatically;
+    and a lighter `publicRecipeCardProjection` — the single lean card shape (image/title/cuisine/time/price/
+    rating/saves + the tag arrays For-You scores on; drops `userId`/`status` and all the heavy detail fields)
+    now **shared by every public list surface**. This absorbed the pre-existing local `RECIPE_CARD_PROJECTION`
+    in `recipes.js` (was used by For-You/random), so there's one card projection instead of two divergent ones.
+    - `getRecipe` public (`findOneAndUpdate`) + owner-preview (`findOne`) paths project to
+      `publicRecipeProjection`; the **admin** path keeps the full doc. The list reads —
+      `GET /recipes` (browse), `getTrendingRecipes`, `getForYouRecipes`, `recipes/random`, and both
+      `publicProfile.js` endpoints — project to `publicRecipeCardProjection`. (Browse/trending sort on
+      `views`/`featured`/`createdAt`, which stay sortable even though they're not in the projected shape —
+      Mongo sorts the stored doc, then projects.)
+    - **FE-read check first** (Explore over `src/`): the client reads `userId` (owner-gating on
+      `SingleRecipe`/`EditRecipe`) and `status` (owner "held for review" notice) — both **kept** on the detail
+      response — but reads **none** of the six stamps anywhere, and the profile page reads neither `userId`
+      nor `status`. So the whitelist keeps every field the UI consumes and drops only the unread internal ones.
+    - **Evidence — live dev server, anonymous `GET /api/getRecipe` on a recipe seeded with all six stamps +
+      `featured:true`:** response keys = `_id, authorUsername, cuisine, description, featured, ingredients,
+      instructions, mealTypes, numTimesMade, numTimesSaved, nutritionLabels, rating, status, title, userId,
+      views` → **zero** moderation stamps; `userId`/`status` retained; `views` still incremented 10→11 (the
+      `$inc` coexists with the projection). Profile cards (`getPublicProfile` + paged): stamps **and**
+      `userId`/`status` absent, display fields (title/rating/totalTime/servingPrice/numTimesSaved) present.
+      **Browse + trending** (anon, recipe seeded with all six stamps + `featured:true`): both return exactly the
+      10 card keys (`_id, cuisine, mealTypes, numTimesSaved, nutritionLabels, rating, recipeImage, servingPrice,
+      title, totalTime`) — zero stamps, no `userId`/`status`, and none of the heavy detail fields; the
+      featured-first sort still surfaced the recipe, confirming sort-on-unprojected-field.
+    - **FE-read check for the card shape** (Explore over `src/`): browse (`RecipeCard`), trending/For-You
+      (`HomeRecipeCard`), and the public-profile tiles all read only the 10 card fields — none read `userId`,
+      `status`, or any detail field — so narrowing browse/trending/profile to the shared card shape drops
+      nothing the UI renders (and made the profile cards lighter, since the old `publicRecipeCardProjection`
+      still shipped the full `nutritionData`/ingredients/instructions a card never uses).
+    - Tests: `recipes.test.js` "GET /getRecipe — public projection" (anon strips stamps, keeps client fields,
+      view still increments, **admin still gets full doc**, owner-preview stripped) + "public list endpoints —
+      card projection" (browse + trending omit uid/stamps) + `publicProfile.test.js` "cards omit internal
+      fields" (both profile endpoints). Gates: server Jest **714/714**, `tsc --noEmit` clean. Low (PII =
+      internal admin uids, not user-facing). *(surfaced 2026-06-26 in the security sweep; list-endpoint leak
+      caught 2026-07-02 in code review of the fix.)*
+- `[x]` **`getCreatedRecipes` leaks the same admin moderation stamps to the (non-admin) author** — DONE.
+  `GET /getCreatedRecipes` (`server/routes/users.js`), the account "My Recipes" list, returned full recipe
+  docs with **no projection** (`.find(filter).sort(...).toArray()`, `filter = { userId: uid,
+  ...RECIPE_OWNER_VISIBLE }`). If any of the author's own recipes was ever moderated/featured, the doc carried
+  `moderatedBy`/`featuredBy`/`publishUpdatedBy` (admin Firebase uids), so the response shipped them to the
+  non-admin author — the **same leak class** as the #397 public-projection item, just on an authenticated
+  owner endpoint (narrower audience: only the recipe's own author, not anonymous). Pre-existing; not touched by
+  PR #226 (which scoped to *public* reads). **Fix:** added a lean whitelist `CREATED_CARD_PROJECTION` local to
+  `users.js` (mirrors `SAVED_CARD_PROJECTION`) covering exactly the 10 fields `UserRecipeThumbnail` renders
+  (`_id`/title/image/price/`createdAt`/views/saves/made/`totalTime`/rating) — structurally drops the six stamps
+  *and* the heavy body (ingredients/instructions/nutritionData) the list never showed. The earlier note here
+  assumed the list needed `status` for a "held for review" badge, but the thumbnail renders no such badge, so
+  the plain card shape is correct (no `status`/`userId`); a comment flags where to add them if a badge lands.
+  Verified against the live DEV endpoint with a minted token + seeded stamped recipe (response carried only the
+  10 card fields). *(caught 2026-07-02 in the same code review that found the list-endpoint leak; see the #397
+  item above. Fixed 2026-07-03.)*
+- `[x]` **`exportMyData` returns the author's own `recipes`/`drafts` as full Mongo docs** *(fixed in [#251](https://github.com/jclind/prepify/pull/251), 2026-07-08 — a shared `RECIPE_INTERNAL_STAMPS` exclusion projection strips the six admin stamps from both owner finds while keeping the full authored body; saved-recipe half untouched. Closes the #397/#446 leak class. Runtime-verified: real ID token → `GET /exportMyData` → stamps gone, non-whitelist `description` kept.)* — same leak class
+  as #397/#446, on the last unprojected account read. `GET /exportMyData` (`server/routes/auth.js:344`) builds
+  its `recipes`/`drafts` arrays with `db.collection('recipes').find({ userId: uid }).toArray()` (and the
+  `recipeDrafts` equivalent) — **no projection** — so any of the user's own recipes that an admin ever
+  moderated/featured carries `moderatedBy`/`featuredBy`/`publishUpdatedBy` (admin Firebase uids) straight into
+  the exported JSON the (non-admin) owner downloads. Narrowest audience of the three (only the recipe's own
+  author, and only via an explicit data export), which is why it wasn't bundled into the S2 fix. Note the
+  **saved-recipe** bodies on this same endpoint are NOT affected — S2/PR #229 hydrates them through
+  `publicRecipeProjection`; this is only the owner's *own* `recipes`/`drafts`. **Decision needed:** a data
+  export arguably *should* be higher-fidelity than a card, so the fix isn't necessarily the card whitelist —
+  more likely strip just the six admin stamps (a small shared `RECIPE_INTERNAL_STAMPS` exclusion) while
+  keeping the full user-authored body. Pre-existing; not a regression. Low (PII = internal admin uids, and the
+  owner already authored everything else in the doc). *(caught 2026-07-03 in local review of S2.)*
+- `[x]` **Recipe numeric/array fields aren't range- or type-validated server-side** *(fixed in [#228](https://github.com/jclind/prepify/pull/228), S1: `validateRecipeBounds` now runs a per-field numeric type+range spec — `NUMERIC_RECIPE_FIELDS` in `server/util/recipeLimits.js`, checking finite/integer/min-max on `prepTime`/`cookTime`/`totalTime`/`servings`/`fridgeLife`/`freezerLife`/`servingPrice` — plus a per-element ingredient-length cap. The `nutritionData`/`cuisine`/`mealTypes`/`nutritionLabels` shape/size checks stay unbounded beyond the global body-size limit.)* —
+  `validateRecipeBounds` (`server/util/recipeLimits.js`, used by add/editRecipe) bounds title/description
+  length, ingredient/instruction counts, and instruction-content length, but NOT the numeric fields
+  (`servings`/`prepTime`/`cookTime`/`totalTime`/`servingPrice` accept negative/huge/non-numeric), per-element
+  ingredient size, or the shape/size of `nutritionData`/`cuisine`/`mealTypes`/`nutritionLabels` (copied
+  through, bounded only by the global JSON body-size limit). Add numeric type+range clamps and per-element
+  caps. Low. *(surfaced 2026-06-26 in the security sweep.)*
+- `[x]` **`createdAt` is client-stamped and whitelisted on create** — *(fixed in [#272](https://github.com/jclind/prepify/pull/272), Wave-8 X1: `createdAt`/`editedAt` dropped from `CREATABLE_RECIPE_FIELDS` and stamped server-side in the `addRecipe` handler — `createdAt` as a 13-digit ms-epoch string matching the edit path's `editedAt`, so the lexicographic Newest/Oldest sort stays chronological with no migration; both re-added to `PUBLIC_RECIPE_FIELDS` so reads still return them. Client stops sending them and the server-seeded rating/counters too. Jest asserts a forged `createdAt`/`editedAt` is ignored; runtime-verified against the live API.)*
+  The create path used to stamp the timestamp in the browser (`src/api/recipes.ts:284`, `createdAt: new Date().getTime().toString()`) and the server accepted it verbatim because `createdAt` sat in `CREATABLE_RECIPE_FIELDS` (`server/util/recipeFields.js:41`), so a hand-crafted request could back-date or forward-date a recipe (skewing `createdAt`-ordered sorts/feeds). Low.
+- `[x]` **Admin review takedown matches on the stale denormalized `username`** — *(fixed in [#231](https://github.com/jclind/prepify/pull/231), S3: resolves `username → userId` and matches `{ userId, recipeId }`; audit `targetId` + notification now use the stable uid and current canonical handle.)*
+  `PATCH /admin/reviews/moderation` (`server/routes/reviews.js:318-353`) matches `{ username, recipeId }`,
+  but ratings are keyed by the stable `userId` (username is a set-once display field). If an author renames
+  their handle after posting, the admin match can hit the wrong doc or 404, and the audit `targetId`
+  (`${username}:${recipeId}`) inherits the ambiguity. Resolve `username → userId` (as
+  `getSingleUserReviews:267` already does) and match on `userId`. Admin-only ⇒ a moderation-reliability bug,
+  not an exploit. Low. *(surfaced 2026-06-26 in the security sweep.)*
+- `[x]` **`POST /reports` has no per-user rate limiter (report-spam breadth)** — *(fixed in [#230](https://github.com/jclind/prepify/pull/230), S4: per-uid `reportLimiter` at 10/min in an independent bucket, mounted after `verifyToken, requireActive`.)*
+  `server/routes/reports.js:69` enforces one-open-report-per-(reporter,target) but nothing caps *breadth*:
+  one account can open a report against every recipe/user and re-file after each resolve/dismiss to bloat the
+  moderation queue. Only the coarse global per-IP 1000/15min backstop applies. Add a `makeUserLimiter`-style
+  per-uid limiter (mirrors how content writes are bounded in `middleware/writeLimiter.js`). Low-med.
+  *(surfaced 2026-06-26 in the security sweep.)*
+- `[x]` **Two authed writes lack the per-user write limiter (consistency)** — `POST /updatePrivacy`
+  (`server/routes/auth.js:310`) and `POST /acknowledgeAchievements` (`server/routes/gamification.js:31`) are
+  authed writes with no `profileWriteLimiter`, unlike their sibling profile writes. Both are cheap +
+  idempotent so impact is minimal; add the limiter for consistency. Low. *(surfaced 2026-06-26 in the
+  security sweep.)* **Done:** the `updatePrivacy` limiter merged in S2/PR
+  [#229](https://github.com/jclind/prepify/pull/229) (2026-07-05); the `acknowledgeAchievements` half landed in
+  S4/PR [#230](https://github.com/jclind/prepify/pull/230) (2026-07-06) with `profileWriteLimiter`.
+- `[x]` **`POST /recipes/:id/save` counter update is read-then-write (TOCTOU)** *(fixed in [#228](https://github.com/jclind/prepify/pull/228), S1: replaced the read-then-`$push`/`$inc` with one atomic conditional write — a `{ _id: uid, 'savedRecipes.recipeId': { $ne: recipeId } }`-gated `$push` at `server/routes/recipes.js:856`, bumping `numTimesSaved` only when the push actually landed (MongoDB re-checks the array-absent filter under the doc write lock), so a racing double-save now 409s instead of double-counting.)* —
+  `server/routes/recipes.js:760-773` reads `alreadySaved` then `$push`+`$inc`, so two concurrent saves from
+  one user can both pass the guard and double-count `numTimesSaved`. Single-user, low impact. (The sibling
+  `madeRecipe` counter-inflation — same shape but exploitable by *intentional* repeat POSTs — was fixed in
+  the sweep PR by deduping off the atomic `$addToSet` result; `save` still has the narrow concurrent window.)
+  Fix: array-condition update (`$ne` filter) / unique-element write. Low. *(surfaced 2026-06-26 in the
+  security sweep.)*
+- `[x]` **`firebase-admin` pulls transitive moderate CVEs (needs a breaking major bump)** *(fixed in
+  [#234](https://github.com/jclind/prepify/pull/234), S7: bumped `firebase-admin` `^13`→`^14.1.0` in **both**
+  trees + migrated to the modular API, and a `uuid ^11.1.1` override to clear the `@google-cloud/storage`
+  chain that has no patched release yet — `npm audit` now 0 in server **and** root; remove the override once
+  storage ships a fix)* — `cd server &&
+  npm audit --omit=dev` was **8 moderate, 0 high/critical**, all transitive under `firebase-admin` →
+  `@google-cloud/{firestore,storage}` → `gaxios`/`google-gax`/`teeny-request`/`retry-request`/`uuid`. The
+  `uuid <11.1.1` advisory only triggers when the caller passes a `buf` arg, which firebase-admin doesn't —
+  no runtime exploit path here. Fix requires `firebase-admin@14.x` (**breaking major**). Schedule it; not
+  urgent. (Root/frontend `npm audit` shows 1 high = `undici`, but it's **dev-only/transitive** — `npm audit
+  --omit=dev` at root = 0; the deployed bundle is clean.) Low. *(surfaced 2026-06-26 in the security sweep.)*
+
+## Features
+
+- `[x]` **Report reason: "incorrect info / price"** *(fixed in [#256](https://github.com/jclind/prepify/pull/256), N2: added `incorrect_info` across the `ReportReason` union, client `REASON_OPTIONS`, and server `REASONS`; **recipe-gated** — a new `RECIPE_ONLY_REASONS` server gate 400s it on review/user targets and a `recipeOnly` client flag hides it there; also spaced the admin queue reason pill as a 4th display surface)* *(triaged 2026-07-08; filed 2026-06-18 — doesn't exist)*
+  — today's reasons are exactly `spam | inappropriate | offensive | copyright | dangerous | other`, synced in
+  three places that must stay aligned: `src/types.ts:247-253` (`ReportReason`),
+  `ReportControl.tsx:29-36` (`REASON_OPTIONS`), `server/routes/reports.js:55` (`REASONS`, validated `:99`).
+  Add an `incorrect_info` value to all three; nuance: `REASON_OPTIONS` renders unfiltered for all target types
+  (recipe/review/user), so either gate the new reason to `targetType === 'recipe'` or accept it appearing on
+  review/user reports. Small (3 files + tests). → **N2**
+- `[x]` **Ingredient-miss telemetry + admin list** *(fixed in [#255](https://github.com/jclind/prepify/pull/255), N6: best-effort `ingredientMisses` upsert in `/parse` — `miss` + N1's `price_outlier` — a read-only `GET /admin/ingredients`, an Admin › Ingredients list, and the sort-serving indexes in `db.js`)* *(admin)* *(triaged 2026-07-08; filed 2026-06-24 —
+  unbuilt)* — enrichment misses are only `console.warn`'d (`server/routes/ingredients.js:76-81`, route has no
+  DB handle); no persistence, no admin surface (the resolved 3d "not found" item below was the unrelated
+  client 12s timeout). Minimal build (~half a day): best-effort upsert into a new `ingredientMisses`
+  collection (`{ _id: normalized(ingredientString), raw, count: $inc, lastSeen }`) in `/parse`, a read-only
+  admin route, and a `src/pages/Admin/Ingredients` list sorted by count desc (mirror the Users/Reports list
+  pattern). Keep the write try/catch'd so a telemetry failure never affects the parse response. → **N6**
+- `[x]` **Reviewer avatars on review cards** — *(fixed in the §D stack: server enrichment in
+  [#266](https://github.com/jclind/prepify/pull/266) — batched deduped `getAuth().getUsers()` join exactly as
+  sketched below, `photoURL` + `displayName` on `/getReviews`; rendered in
+  [#267](https://github.com/jclind/prepify/pull/267)/[#271](https://github.com/jclind/prepify/pull/271) via the
+  new shared `UserAvatar` component with `DefaultAvatar` fallback, incl. 28px facepile in the summary strip.)*
+  *(triaged 2026-07-08; filed 2026-06-23 — not implemented; ships
+  inside the §D overhaul, not as a one-off)* — review cards render only `@username`/stars/date
+  (`Reviews/RecipeReview.tsx:74-86`); `/getReviews` returns raw ratings docs with no avatar field and no
+  `$lookup` (`server/routes/reviews.js`); `ReviewType` (`src/types.ts:226-236`) has no photo field. Avatars
+  live in Firebase Auth `photoURL` and ratings docs already carry the stable uid, so the join is a batched,
+  deduped `getAuth().getUsers()` (tolerate failures like `publicProfile.js:34-47`) + the existing
+  `DefaultAvatar` fallback. **Folded into the RELEASE_PLAN §D Ratings & Reviews overhaul** (blocker), whose
+  scope already names `RecipeReview` + `reviews.js`. → RELEASE_PLAN §D
+- `[x]` **Press `/` to focus search** — *shipped in [#238](https://github.com/jclind/prepify/pull/238) (C4,
+  merged 2026-07-07):* global `/` shortcut focuses the search input (key handler in Layout). *(Line was stale
+  — caught in the 2026-07-08 triage pass.)*
+- `[x]` **Report a *user* from their profile page** *(admin)* — *done in PR #166 (track 3c, merged ✅):*
+  `ReportTargetType` now includes `'user'`; the server accepts/validates/stores the target (no `recipeId`,
+  carries `reportedUsername` + a `reportedUid` rename-stable snapshot), PublicProfile exposes a "Report user"
+  control, and the admin queue renders user reports (close-only — suspend/ban lives on `/admin/users`).
+  Server guards added: 404 on a non-existent handle, 400 on self-reports, case-insensitive rate limit.
+- `[x]` **Double-check report-recipe styling in the controls element** *(admin)* — *done in PR #166 (track 3c,
+  merged ✅):* tidied `ReportControl.scss` (focus-visible rings, button hover) and reworked the affordances
+  into kebab menus (recipe / review / profile) plus a recipe top-controls kebab alongside the kept footer link.
+- `[x]` **Report controls should be visible when logged out** — *done in PR #166 (track 3c, merged ✅):*
+  `ReportControl` no longer returns `null` for logged-out users; the trigger stays visible (footer link + per-
+  review/profile kebabs) and clicking it while logged out fires a "Log in to report this …" toast instead of
+  opening the modal. One change in the shared component covers recipe + review + user.
+- `[x]` **Username validation: disallow certain characters** — *done in PR #166 (track 3c, merged ✅):*
+  server `validateUsername` now rejects anything outside `[A-Za-z0-9._-]` with a clear error, mirrored inline
+  on the create-username flow (same rule order: whitespace → length → charset) so feedback matches before the
+  availability round-trip.
+
+## Tech debt / process / infra
+
+- `[x]` **Account `recipes`/`ratings` tab badges use raw counts that can drift from their tab lists** *(from `sweeps/BUG_HUNT_2026-07-09.md` — follow-up to the L8/L9 saved-badge fix in [#279](https://github.com/jclind/prepify/pull/279), filed 2026-07-10; boarded Wave 9 · B6; **fixed in [#285](https://github.com/jclind/prepify/pull/285), merged 2026-07-10**: `recipes` badge now filters `RECIPE_OWNER_VISIBLE` (matches `getCreatedRecipes`); `ratings` badge goes through a new `countVisibleRatings` excluding moderation-hidden ratings and ratings whose recipe isn't `RECIPE_VISIBLE` (matches `getSingleUserReviews`'s `returnRecipeData` join) — same cheap id-list + `countDocuments` shape as the existing `countVisibleSaved`, no correlated `$lookup`. Runtime-verified end-to-end against the live dev server + dev Mongo with a real Firebase ID token.)* — `getAccountCountsFor` returns raw `countDocuments` for `recipes` and `ratings`, but the Your-Recipes tab filters `RECIPE_OWNER_VISIBLE` and the Ratings tab filters `REVIEW_VISIBLE` + recipe-visible, so a user with hidden/unpublished recipes (or hidden-recipe ratings) sees a badge reading higher than the list under it. Same class as the saved-badge drift already fixed in #279 (the `saved` badge now filters). `server/util/accountCounts.js`. **Fix:** filter each badge count to match its tab's list. **Dep:** land after #279 (which rewrites this file). — *(not surfaced directly by the hunt; noted while fixing L8/L9.)*
+- `[x]` **`UserRatings` passes a sort the server doesn't understand** *(filed 2026-07-09, out of the §D
+  overhaul; folded into Wave 10 · V7; **fixed in [#290](https://github.com/jclind/prepify/pull/290), merged
+  2026-07-10**: `SORT = 'new'` + a regression test pinning the API call)* — `src/pages/Account/UserRatings/UserRatings.tsx:106` sends `SORT = 'newAdd'` to
+  `getSingleUserReviews`, but the endpoint only recognizes `new`/`top` (`server/routes/reviews.js:321-322`),
+  so `newAdd` silently falls through to `sort = {}` — **no sort at all** (natural order). The account
+  Ratings list is therefore paginating an *unspecified* order: usually insertion order in practice, but
+  Mongo guarantees nothing, so Load-More pages can theoretically skip/duplicate rows. Fix: send `'new'`
+  from the client (one line) — or add a `newAdd` alias server-side — plus a test pinning the sort. Low-med.
+- `[x]` **`FormInput`'s generic `setVal` passes raw DOM strings through an unchecked cast** *(filed 2026-07-10,
+  off the V7 [#290](https://github.com/jclind/prepify/pull/290) lane; boarded Wave 11 · T3; **fixed in
+  [#298](https://github.com/jclind/prepify/pull/298), merged 2026-07-10**: honest-string surface — the generic
+  and the `as T` cast are deleted (`val: string`, `setVal: (value: string) => void`), the numeric consumers
+  (`ServingsInput`, `TimeInput`) coerce at their own boundaries, and `RecipeFormState.servings` is honestly
+  `string` with `String()` at the edit-init/draft-resume hydration points. Zero runtime change verified across
+  boundaries (draft payloads already `Number()`-coerced pre-PR, submit pinned by a `typeof === 'number'`
+  assertion); future numeric misuse is a compile error, self-verified by `@ts-expect-error` type-tests in
+  `src/test-d/`)* — `FormInput.tsx`'s `setVal(next as T)`
+  hands the raw input string to the caller regardless of `T`, so numeric fields like `ServingsInput` carry a
+  type that's a lie at runtime: `form.servings: number | ''` is sometimes a numeric *string* until the
+  submit-time `Number()` coercion in `useRecipeForm.ts`. Not a bug today (`ServingsInput`'s own gate + the
+  submit coercion keep it safe, and V7's validator now coerces defensively), but every new numeric consumer
+  has to rediscover this. Worth a small type-safety pass (parse at the boundary, or type the prop `string`).
+  Low.
+- `[x]` **Modernize `recipeFormValidation.test.ts`'s numeric-0 servings case** *(filed 2026-07-10, off the
+  Wave 12 · U2 [#300](https://github.com/jclind/prepify/pull/300) lane; boarded Wave 13 · F2; **fixed in
+  [#301](https://github.com/jclind/prepify/pull/301), merged 2026-07-11**: the case now asserts the two
+  reachable string inputs — `''` → `'Servings amount is required'`, `'0'` → `'Servings must be a whole
+  number of at least 1'` (exact strings from `recipeFormValidation.ts:84,88`) — and the commented
+  `@ts-expect-error` is gone; rewritten in place as one case with two assertions matching the sibling
+  negative/fractional case's structure, so Vitest totals stayed at the 735/2 baseline; both tsc programs 0.)*
+  — the test passes `servings: 0`
+  (a number) and expects `'Servings amount is required'`, but under the post-#298 string contract numeric 0
+  is unreachable from the UI and the string `'0'` takes the whole-number branch instead. #300 kept the
+  assertion byte-identical behind a commented `@ts-expect-error` to stay typing-only; the follow-up is to
+  rewrite the case against reachable inputs (`''` → required, `'0'` → whole-number message) and drop the
+  suppression. Tiny. Low.
+- `[x]` **`src/test` is excluded from `tsconfig`, so the Vitest suite is never typechecked** — *(fixed in
+  [#300](https://github.com/jclind/prepify/pull/300), Wave 12 · U2: new `tsconfig.tests.json` (extends base,
+  re-includes `src/test`, ES2022 lib) + a second `tsc --noEmit -p tsconfig.tests.json` step in CI's Static
+  job. Main-include was NOT viable — the base program compiles `cypress.config.ts`/`cypress.visual.config.ts`,
+  whose `import 'cypress'` injects Cypress's global Chai `expect`, shadowing Vitest's and producing 1274
+  false matcher errors; the tests config keeps just those two files excluded. Honest drift was 17 errors → 12
+  after the lib bump → 0 fixed, typing-only (one declared matcher-call swap; one type-level `getIngredientData`
+  return narrowing in `src/api/recipes.ts` that also fixed a prod-type modeling gap). Also removed the
+  vestigial pre-Vitest `@types/jest`, which had the whole suite typed against Jest's matcher shapes, replaced
+  by `src/test/test-globals.d.ts` (vitest/globals + jest-dom augmentations). Suite totals byte-identical,
+  735 passed / 2 skipped. The numeric-0 servings test kept behind a commented `@ts-expect-error` — follow-up
+  filed below.)* *(filed 2026-07-10, noticed on the Wave 11 · T3
+  [#298](https://github.com/jclind/prepify/pull/298) lane)* — type
+  errors (and `@ts-expect-error` assertions) in `src/test/**` are invisible to the `npx tsc --noEmit` gate;
+  T3's type-tests had to live in a separate `src/test-d/` directory to be enforced. Tests drift from the real
+  types silently (e.g. `recipeFormValidation.test.ts` passes numeric literals to a now-`string`-typed input
+  and nothing complains). Fix: include `src/test` in the typecheck (or a second `tsconfig.tests.json` wired
+  into CI's Static job) and clean up whatever surfaces. Low-med, typing-only. Low.
+- `[x]` **Sweep for TimeInput's child-feeds-numeric-object shape** — *(closed 2026-07-10, Wave 12 · U3
+  audit: **zero live instances** — every `FormInput` consumer, raw `<input>`, and compound aggregation
+  point verified honest-string-or-correctly-coerced across a 9-angle sweep; no code change. Watch items
+  noted, not filed: `RecipeFormState.fridgeLife`/`freezerLife` are `number`-typed but have no UI control
+  (inert — whoever wires one up must follow the `ServingsInput` coerce-at-the-gate pattern), and
+  `Analytics.tsx`'s `days` is button-driven-only today.)* *(filed 2026-07-10, off the T3
+  [#298](https://github.com/jclind/prepify/pull/298) lane)* — TimeInput held raw field strings in
+  `useState<number | ''>` and flowed them into the parent's `{ hours: number, minutes: number }` object; #298
+  fixed it at that boundary, but other compound inputs that aggregate DOM strings into typed objects may hide
+  the same lie. One-pass audit of components that own `useState` around `FormInput`-style children. Low.
+- `[x]` **Ops: set `FIREBASE_STORAGE_BUCKET` in the server envs (+ make the empty-env skip real)** *(fixed in
+  [#260](https://github.com/jclind/prepify/pull/260), N7: code early-returns the skip when the env is unset;
+  owner confirmed the env is set on both dev + prod)* *(triaged
+  2026-07-08, from the 6-18 "Bucket name not specified" delete-user report)* — user deletion was **never
+  broken**: `deleteProfilePhoto` (`server/util/firebaseStorage.js:41-55`) is best-effort try/catch and its
+  explicit-bucket branch (PR #134) predates the report. But with the env unset the fallback
+  `getStorage().bucket()` throws — Admin init passes no `storageBucket` (`server/middleware/auth.js:10-12`) —
+  so deleted users' profile photos are **silently orphaned** and the error logs on every deletion. Two parts:
+  **(ops, owner)** set `FIREBASE_STORAGE_BUCKET` in the prod + dev server envs; **(code, optional)** early-return
+  when the env is empty so behavior matches the `.env.example:19-24` comment ("leave empty to skip") instead of
+  throw-and-swallow. → **N7**
+- `[x]` **CI actions pinned to deprecated Node 20 runtime** — *(fixed in [#270](https://github.com/jclind/prepify/pull/270), W3: `actions/checkout` + `actions/setup-node` bumped `@v4`→`@v5` on all uses, and the now-no-op `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24` env removed; the PR's own CI run validated the bump.)* — **narrowed 2026-07-08 (still open):** every job in
+  `.github/workflows/test.yml` already pins `node-version: 24` (verified 2026-07-03), so the *test steps* run on
+  Node 24 — but that does NOT clear this item. The deprecation is about the **actions' own bundled runtime**
+  (`actions/checkout@v4`/`actions/setup-node@v4` run on the Node 20 actions runtime), which the `node-version`
+  input doesn't affect. The real fix — bumping both actions to `@v5` — is unchanged and still to do. Original find:
+  `.github/workflows/test.yml` uses
+  `actions/checkout@v4` and `actions/setup-node@v4`, which target the Node 20 actions runtime. GitHub is
+  sunsetting Node 20 on the runners and currently force-runs these on Node 24, emitting a deprecation
+  annotation on every CI run (seen on PR #204). Bump both to the next major (`@v5`, or whatever is current
+  when picked up) to clear the warning before the forced fallback is removed. Low-risk maintenance; not a
+  1.0 blocker. *(surfaced 2026-06-29 in CI logs during the `RecipeFormInput`→`FormInput` track.)*
+- `[x]` *(fixed in [#273](https://github.com/jclind/prepify/pull/273), X2: three card types — `RecipeCardType`/`SavedRecipeCardType`/`CreatedRecipeCardType` — mirror the three server projections; list/read methods + `PublicProfile.recipes` retyped, phantom `page`/`filters`/`entries_per_page` dropped from `RecipeDBResponseType`; `getRecipe` stays `RecipeType`. Typing-only, tsc-verified no consumer over-reads.)* **Client recipe-list response types over-promise (full `RecipeType` vs the server's lean card
+  projection)** *(surfaced 2026-07-08 in the API-contract regeneration ([#262](https://github.com/jclind/prepify/pull/262),
+  see [`API_CONTRACT.md`](./API_CONTRACT.md) DRIFT — recipes / auth-users-profile))* — several list/read
+  endpoints are typed `RecipeType[]`/`RecipeType` in the client but the server ships a narrow card projection,
+  so fields like `ingredients`, `instructions`, `nutritionData`, `description`, `views`, `userId`, `createdAt`,
+  `authorUsername` are **absent at runtime** and the compiler wouldn't catch a component reaching for one:
+  `getAllRecipes().recipeList`, `getTrendingRecipes()`, `getForYouRecipes()`, `getRandomRecipe()`
+  (`src/api/recipes.ts:61,100,106,114` — server projects `publicRecipeCardProjection`), `getSavedRecipes()` /
+  `getCreatedRecipes()` (`src/api/recipes.ts:535,553` — `SAVED_CARD_PROJECTION`/`CREATED_CARD_PROJECTION`,
+  `server/routes/users.js:18-46`), and `PublicProfileAPI.getPublicProfileRecipes()`
+  (`src/api/publicProfile.ts:29`, plus `PublicProfile.recipes` in `src/types.ts`). Also `RecipeDBResponseType`
+  (`src/types.ts:194`) declares `page`/`filters`/`entries_per_page` that `GET /api/recipes` never returns
+  (server returns only `{ recipeList, total_results }`, `server/routes/recipes.js:154`). **Fix:** introduce a
+  narrow `RecipeCardType` (the projected card fields) and type these methods against it, so a component reading
+  a non-card field fails to compile. Typing-only cleanup — no runtime behaviour changes (consumers already
+  render only card fields today). Low risk, touches types + a handful of API signatures.
+- `[x]` **Server API contract asymmetries between sibling routes** *(surfaced 2026-07-08 in the API-contract
+  regeneration ([#262](https://github.com/jclind/prepify/pull/262), see [`API_CONTRACT.md`](./API_CONTRACT.md)
+  DRIFT — reviews / reports-bug-reports); boarded Wave 11 · T4; **fixed in
+  [#297](https://github.com/jclind/prepify/pull/297), merged 2026-07-10**: standardized on **404** per the
+  `drafts.js` convention (404 = no such doc, 403 = exists but not yours — both routes key on `req.uid`, so a
+  miss is purely not-found), and `POST /editReview`'s identical `matchedCount === 0` case was folded in after
+  verifying no client branches on its status; `submitLimiter` got an explicit house-JSON `message`, pinned by
+  a real-limiter test that un-skips `NODE_ENV` for one file; the middle bullet below was already fixed by V2
+  [#289](https://github.com/jclind/prepify/pull/289) before this wave boarded; `API_CONTRACT.md` DRIFT entries
+  struck through)* — three inconsistencies between routes that ought to match. None is
+  a live client bug (the shipped client sends well-formed input and doesn't branch on these), but each is a
+  contract wart worth normalizing:
+  - **403 vs 404 on the two delete routes.** `DELETE /deleteReview` returns `403`
+    (`server/routes/reviews.js:167`) while `DELETE /removeRating` returns `404`
+    (`server/routes/reviews.js:203`) for the identical "you have no doc for this recipe" case. Pick one status
+    for "nothing of yours to delete here" and apply it to both.
+  - **`GET /api/reports` pagination is unclamped (can 500) while its bug-reports twin clamps.** Non-numeric
+    `page`/`perPage` pass through `parseInt` to NaN skip/limit and 500 from the Mongo cursor
+    (`server/routes/reports.js:186-187`), whereas `GET /api/admin/bug-reports` clamps both
+    (`server/routes/bugReports.js:104-105`). Clamp `/api/reports` the same way. (Reachable only via a direct
+    API call with a non-numeric param; the admin UI always sends numbers.)
+  - **`POST /api/bug-reports` 429s with a non-JSON body.** Its `submitLimiter` uses express-rate-limit's
+    default plain-text 429 (`server/routes/bugReports.js:33-39`, no custom `message`/`handler`) instead of the
+    house `{ error, code: 'RATE_LIMITED' }` JSON shape the `makeUserLimiter` routes use. Give it a matching
+    JSON handler so 429s are uniform across the API.
+- `[~]` **Phase 5-D: convert the 8 legacy string-`_id` recipes to native `ObjectId`** — *(script shipped in [#268](https://github.com/jclind/prepify/pull/268), W1: `server/scripts/migrateLegacyRecipeIds.js` + Jest suite — dry-run default, `--apply`/`--id=` targeting, exit-2-on-pending. Design refined against real data: all 8 legacy ids are 24-char hex, so it's a **hex-preserving convert** (re-insert under `ObjectId(sameHex)` + delete string doc in one txn), which keeps `String(_id)` byte-identical so the string foreign refs never need repointing. **The prod `--apply` run remains owner-gated and has NOT been run** — the 8 legacy docs still exist; tick to `[x]` after the prod run + `checkMigrationState.js` reads 0.)* — `checkMigrationState.js`
+  reports **8 recipes** on prod (identical count on dev — dev is a prod clone) whose `_id` is still a plain
+  string rather than a BSON `ObjectId`, left over from before the Phase-5 refactor. **Not a correctness bug:**
+  `server/util/recipeIdQuery.js` is a deliberate compatibility shim that matches both `_id` shapes (`$or`
+  string/ObjectId), so every read/write already works — its own comment calls the legacy form "harmless to
+  leave in place." The one-time backfill that would retire the shim was **never written**. Building it is
+  non-trivial: `_id` is immutable in Mongo, so the migration must **insert a new doc under the ObjectId +
+  delete the old string doc + repoint every foreign reference** to that recipe — `ratings.recipeId`,
+  `reports.recipeId`, and users' saved/made lists in `userRecipeData` (all stored as the string id) — ideally
+  in a transaction. Needs a read-first `--apply` ops script (same posture as `reconcileRatingAggregates.js`)
+  **with tests** before any prod run. Low urgency (shim covers it indefinitely; only 8 docs); do it if/when
+  the string/ObjectId duality is retired. *(surfaced 2026-07-08 during the Track-1 owner-ops prod run — the S6
+  `checkMigrationState` DB check flagged it; all other checks came back clean.)* **(not a 1.0 blocker)**
+- `[ ]` **Retire the `recipeIdQuery` string/ObjectId shim (follow-up to the 5-D migration above)** — once the
+  prod `--apply` run has converted all legacy string `_id`s and `checkMigrationState.js` reads 0, the `$or`
+  string-branch in `server/util/recipeIdQuery.js` is dead weight. Remove the shim (or collapse it to a plain
+  `{ _id: new ObjectId(id) }`) in a **separate code PR**. **Ordering is strict: this must land only AFTER the
+  prod data is converted AND dev is converted/re-cloned** — removing it while any string `_id` (or a string
+  foreign ref that still needs the string-form lookup) remains would break those reads. All recipes created
+  post-Phase-5 already use `ObjectId`, so once prod+dev are migrated no new string ids appear and removal is
+  permanently safe. Low; blocked on the owner-gated migration run. *(filed 2026-07-09 when W1 #268 landed.)*
+- `[ ]` **Colour tokens → CSS custom properties when theming lands** — Jesse wants user-selectable
+  themes (dark mode + other palettes) **post-1.0**. That's a *colour* concern: themes swap colours, not
+  sizes — so the design tokens that need to become runtime-swappable are the colour groups (`$primary*`,
+  `$gray-*`, `$secondary*`, `$alert-*`, `$admin-*`), not the type/space/radius scales. Plan: migrate the
+  colour tokens from SCSS variables to CSS custom properties in `:root` (with a `[data-theme]` /
+  `.dark` override block per theme), keeping the SCSS-var scales (`$text-*`, `$radius-*`, `$bp-*`) as-is.
+  Entangled with the **brand-orange decision** (the blocked a11y lane) — the accessible-vs-vivid orange
+  call should be made *before* baking colours into a theme system. The `rem`-based type scale already
+  covers a "large text"/density mode via the root font-size, independent of this. *(surfaced 2026-06-30
+  during the type-scale sweep, when CSS-custom-properties-vs-SCSS was weighed for `$text-*` and correctly
+  deferred to the colour layer; see `docs/design/type-scale.md` rule 4.)* **(post-1.0; not a blocker)**
+- `[ ]` **Migrate off Edamam (nutrition source)** — Jesse wants to stop using Edamam for nutrition data
+  eventually (filed 2026-06-25). Current state: nutrition is server-proxied via `POST /api/nutrition/details`
+  (`server/routes/nutrition.js`, PR #182), so swapping the provider is now an isolated, server-only change —
+  the client just gets `NutritionDataType | null` and soft-fails to null. When picking a replacement,
+  evaluate licensing/cost and whether it can also cover the macros currently stored in `nutritionData`.
+  Note: because of this planned retirement, the formerly-bundle-public Edamam keys are **intentionally not
+  being rotated** (see RELEASE_PLAN §B "Rotate any key…"). No deadline; not a 1.0 blocker.
+- `[ ]` **`@jclind/ingredient-parser` data is co-mingled in the Prepify app DB** — the parser's
+  ingredient data (from the v1 *in-process* library era, when the package wrote to whatever Mongo it was
+  handed — Prepify's own `prepify` database) lives in the **same** DB as the app's recipes/users/reviews.
+  **Confirmed by the 2026-06-25 inventory:** the two collections are `ingredients` (119 docs, 755KB — the
+  single largest thing in the DB) and `ingredient_names` (135) (plus an empty `kroger_prices`); the Prepify
+  server has **zero** `collection('ingredients'|'ingredient_names'|'kroger_prices')` references, and v2's
+  `ingredientParser` only calls the hosted proxy (it's never handed a Mongo handle —
+  `server/routes/ingredients.js`). **⚠️ NOT vestigial / do NOT delete:** `ingredients` + `ingredient_names`
+  are **live data owned by the `@jclind/ingredient-parser` server** — they just live in the wrong DB. The
+  fix is to **relocate them to the parser service's own database**, not drop them. **Folds into the dev/prod
+  Mongo split:** `mongodump --excludeCollection` these from the Prepify-app prod dump (so the new app prod
+  cluster is born clean) while **preserving** them in `Cluster0` until the parser service has its own home.
+  *(surfaced 2026-06-25 during dev/prod environment-split planning.)* **(post-1.0; not a blocker)**
+- `[x]` **Account tab heading duplicates SegmentedNav's route map** — the visually-hidden per-tab `<h2>`
+  in `Account.tsx` (added for heading-order in the a11y sweep) derives its label from an inline
+  `location.pathname.includes(...)` chain that re-encodes the four account route strings
+  (`saved-recipes`/`ratings`/`your-recipes`/`drafts`) already defined in
+  `src/pages/Account/components/SegmentedNav.tsx`. Low severity — the SR headings are intentionally
+  fuller than the short tab labels, so they can't just reuse the labels — but if a tab's route is
+  renamed in SegmentedNav, this heading silently goes stale. Fix: derive both from a single
+  route→label source. *(surfaced 2026-06-25 in the accessibility-sweep code review, PR #179; not worth
+  blocking the merge.)* **Resolved 2026-06-27 (Wave 2 `2-iso`):** extracted the tab defs into
+  `src/pages/Account/components/accountTabs.tsx` (now carrying an `srHeading` field per route) +
+  a shared `activeAccountTabIndex(pathname)` helper; SegmentedNav and Account's `<h2>` both derive
+  from it, so the heading uses the same route-matching as the nav highlight and can't drift. +4 tests
+  asserting the SR heading per route.
+- `[x]` **Make `accountTabs` the app-wide source for the four account sub-route strings** *(fixed in [#242](https://github.com/jclind/prepify/pull/242), C2: pulled the four paths into a shared `src/routes.ts` const — `ACCOUNT_{SAVED_RECIPES,RATINGS,YOUR_RECIPES,DRAFTS}_PATH` — that `accountTabs` and every app-wide nav link (`DesktopBar`, `DesktopAccountMenu`, `footerData`, `DraftResumeBanner`) now consume, chosen over importing `accountTabs` into `Components/*` to avoid a layering inversion; sub-item also done — added `activeAccountTab(pathname)` alongside the index helper, and Account's `<h2>` reads it.)* — the Wave-2
+  `accountTabs.tsx` refactor (PR #200) centralized the route↔label map for the account-page nav + SR
+  heading, but the same four route strings are still hardcoded as `<Link>`/`navigate` destinations
+  elsewhere: `DesktopBar.tsx:86` (`/account/saved-recipes`), `DesktopAccountMenu.tsx:77`
+  (`/account/your-recipes`), `footerData.ts:43-44` (`/account/your-recipes`, `/account/saved-recipes`),
+  and `DraftResumeBanner.tsx:47` (`/account/drafts`). These are app-wide nav links, not the account tab
+  strip, so wiring each to import the account-tab module is a judgment call (mild over-coupling vs. true
+  single-sourcing) — but if a route is ever renamed, these drift silently. Low priority: either point them
+  at `accountTabs[].to` or pull the four route paths into a tiny shared `routes` constant the tab list also
+  consumes. **Sub-item (ergonomics):** `activeAccountTabIndex` returns an *index*, forcing
+  `accountTabs[activeAccountTabIndex(pathname)].srHeading` at the Account call site; a sibling
+  `activeAccountTab(pathname): AccountTab` would read cleaner there (SegmentedNav still wants the index for
+  its `i === activeIndex` map, so keep both). *(surfaced 2026-06-27 in the PR #200 high-effort code review;
+  out of scope for that PR — the backlog item it closed was scoped to the nav↔heading duplication only.)*
+- `[x]` **One-off rating-aggregate reconciliation** — stored `recipes.rating` aggregates can drift from
+  the actual `ratings` docs (confirmed live: *Homemade Granola* stored `5/4.6` vs true `4/4.5`). Likely
+  legacy/pre-recompute data or a past silent best-effort failure. Write a script (alongside
+  `server/scripts/`) that loops every recipe and runs `recomputeRecipeRating(db, recipeId)`
+  (`server/util/recipeRating.js`) to reconcile the whole catalog in one pass. *(surfaced by track 1a /
+  PR #150, which only self-heals a recipe when someone next rates it.)* *(fixed in
+  [#233](https://github.com/jclind/prepify/pull/233), S6: `server/scripts/reconcileRatingAggregates.js` —
+  dry-run/`--apply`, idempotent, heals through the canonical `recomputeRecipeRating`; the pure read half was
+  split into `computeRecipeRating` so the dry-run diffs without writing. Shipped alongside
+  `checkMigrationState.js` (post-6-phase DB check). The prod `--apply` run stays owner-gated for the cutover.)*
+- `[ ]` **`setUsername` must keep propagating renames across the username-keyed review collections**
+  *(deferred display-only residual, source [`DATA_INTEGRITY_AUDIT.md`](./DATA_INTEGRITY_AUDIT.md))* — admin
+  moderation/queue lookups still key reviews by the denormalized `(username, recipeId)` / `reportedUsername`,
+  so `setUsername` must keep propagating renames across those collections or a renamed author's reviews go
+  stale in the queue. Display-only; revisit if reviews are re-keyed to the stable uid. Low.
+- `[x]` **Harden `deleteAccount`'s rating recompute** — was: the per-recipe recompute after an account delete
+  is best-effort/post-commit and only `console.error`s on failure (`server/routes/auth.js:454-461`),
+  so a silent failure can re-introduce aggregate drift. The set of recipes is correct
+  (`distinct('recipeId', { userId: uid })` at `:396` → `reviewedRecipeIds`, and the loop skips the deleted
+  user's own recipes); only the failure mode is silent. **Fixed in S2/PR
+  [#229](https://github.com/jclind/prepify/pull/229) (merged 2026-07-05):** the recompute now runs through
+  `recomputeWithRetry` (bounded retries) and surfaces non-silently rather than a bare `console.error`. A
+  standing catalog-wide reconciliation job remains desirable — tracked under **S6** (rating-aggregate ops).
+- `[x]` **Autocomplete fuzzy fallback is an O(n) scan + in-process ranking** *(fixed in [#245](https://github.com/jclind/prepify/pull/245), I3: added a `{ title: 'text' }` index in `server/db.js` and inserted an index-backed `$text` word/stem tier between the exact-substring and fuzzy tiers of `/api/searchAutoCompleteRecipes`. Correctly-spelled queries — including out-of-order multi-word ones the substring pass misses — now serve off the index and skip the capped scan entirely; the O(n) Levenshtein fallback still runs, but only for genuine misspellings `$text` can't stem-match. User input is stripped of `$text` phrase/negation operators (`toTextSearch`), and the `$text` tier is try/caught so a missing index degrades to the fuzzy scan instead of 500-ing. Chose Mongo `$text` over Atlas Search per owner — low urgency at today's catalog size.)* — when exact matches <
+  `AUTOCOMPLETE_LIMIT = 8` (`server/routes/recipes.js:191`), the `/api/searchAutoCompleteRecipes` handler
+  pulls up to `FUZZY_CANDIDATE_CAP = 1000` (`:204`) `{_id, title}` docs (only the `RECIPE_VISIBLE` filter
+  narrows them — no title text index; `server/db.js` recipes indexes are `{userId, createdAt}` only) and runs
+  `titleScore` (windowed Levenshtein) over each (`server/routes/recipes.js:223-237`,
+  `server/util/recipeTitleMatch.js`).
+  Negligible at the current catalog size and correctly skipped when exact ≥ 8, but it grows linearly with
+  the recipe count on a hot path. Revisit with a Mongo text index / Atlas Search before the catalog gets
+  large. *(surfaced 2026-06-22 in the track 2d code review — shipped intentionally as the simplest
+  typo-tolerant fallback.)*
+- `[x]` **`'/recipes'` route hardcoded across nav + page** *(fixed in [#242](https://github.com/jclind/prepify/pull/242), C2: extracted `RECIPES_PATH` in `src/routes.ts` backing both suppression checks + the navbar/footer links; `browseAll` and `clearFilters` now share an extracted `resetFilters()` setter block rather than `browseAll` calling `clearFilters` — the latter would double-navigate (`clearFilters`'s `syncUrl` pushes `/recipes?q=…`, then the bare `navigate('/recipes')` pushes again), so the shared-setter extract is DRY and behaviour-preserving. Scope-guarded to these three files; ~9 other page-level `/recipes` links left inline for an adopt-everywhere follow-up once C3/C4's overlapping files land.)* — the search-suppression check
+  (`pathname !== '/recipes'`) is copy-pasted into `src/Components/Navbar/desktop/DesktopBar.tsx:47` and
+  `src/Components/Navbar/menu/NavMenu.tsx:20`, and `Recipes.tsx`'s `browseAll` (`:112-118`) re-issues the
+  same filter-resetting setters as `clearFilters` (`:103-107`) instead of calling it. A route rename would
+  silently break suppression with no compile error. **(verified 2026-06-26: the bare `'/recipes'` literal
+  appears in 4+ spots across these three files — the two suppression checks, `browseAll`'s `navigate('/recipes')`,
+  and the `<NavLink to='/recipes'>` in DesktopBar.)** Extract a shared `RECIPES_PATH` const (or a small hook)
+  and have `browseAll` call `clearFilters`. *(surfaced 2026-06-22 in the track 2d code review.)*
+- `[x]` **Migrate Sass `@import` → `@use`** — **already done in `cb2ac81` (2026-05-09), reconciled
+  2026-06-23.** Converted all 36 component/page stylesheets from `@import 'helpers.scss'` to
+  `@use 'helpers.scss' as s` and namespaced every var/mixin under `s.`. This predates the release gameplan
+  (created 2026-06-17), so the open box was stale, not pending work. Verified: `npm run build` emits **zero**
+  Sass deprecation warnings and all 73 `.scss` compile clean. The only remaining `@import` is the plain CSS
+  `@import url('…Montserrat…')` font load in `src/index.scss` — not a Sass partial import, not deprecated.
+  *(See the 2026-06-23 4-sass status-log entry in `archive/RELEASE_GAMEPLAN.md`.)*
+- `[x]` *(fixed in [#249](https://github.com/jclind/prepify/pull/249), I2: uploads re-keyed to
+  `recipeImages/{uid}/{uuid}` with a collision-proof uuid — fail-closed on no uid — and `storage.rules`
+  tightened to owner-scoped writes `request.auth.uid == uid`, mirroring `profilePhotos/{uid}`; the legacy
+  flat path is now read-only for un-migrated objects. **Rules-deploy + object migration are owner-gated** —
+  runbook in `docs/IMAGE_PIPELINE.md`.)* **Recipe images aren't keyed by uid in Storage** — uploads went to
+  `recipeImages/{imageFile.name}` (`src/api/recipes.ts:188`), keyed by the raw filename rather than the
+  owner's uid. (`storage.rules:27-32` auth-gated the path but couldn't scope to the owner — contrast the
+  uid-scoped `profilePhotos/{userId}` at `:15-21`; verified 2026-06-26.) Two consequences:
+  (a) two users uploading `photo.jpg` collide/overwrite, and (b) the Storage rules couldn't scope writes to
+  the owner, so `storage.rules` could only auth-gate that path (any signed-in user could overwrite/delete
+  any recipe image). Low severity (writes are auth-gated and the server is the source of truth), but worth
+  doing. *(surfaced 2026-06-23 writing the Storage rules, PR #177.)*
+- `[x]` **Orphaned recipe image on a failed create** — *(fixed in [#275](https://github.com/jclind/prepify/pull/275),
+  Wave 8 X3: a best-effort `deleteRecipeImage` in the `addRecipe`/`editRecipe` catch removes the just-uploaded
+  object, plus a `storage.rules` owner-delete grant so the client delete isn't 403'd; edit path only deletes a
+  newly uploaded image, reused originals stay live.)* `addRecipe` (`src/api/recipes.ts`) uploaded the image
+  to Firebase Storage (`uploadRecipeImage`) BEFORE the `POST /addRecipe`, with no
+  compensating `deleteObject` if the POST failed (server moderation block, 4xx/5xx, network drop). So every
+  failed create leaked a storage object that no recipe doc referenced. Low. *(surfaced 2026-07-08 in the
+  docs-folder audit; fixed 2026-07-09. Follow-up: a **successful** editRecipe image-swap still orphans the old
+  object — separate from this failed-submit fix.)*
+- `[x]` **Point Railway at the production branch** — **done (2026-06-26, per the dev/prod env-split work):**
+  Railway now runs two services — a prod service deploying the `release` branch (→ prepify-prod Mongo +
+  prepify-9b974 Firebase, `FRONTEND_URLS` = the prepifymeals.com origins, CORS verified live) and a dev
+  service deploying `development` (→ prepify-dev infra). *(Branch selection is a Railway-dashboard setting, so
+  not visible in-repo; `docs/archive/RELEASE_GAMEPLAN.md` still lists it as open and should be reconciled too.)*
+- `[x]` **Rotate the exposed `Cluster0` Mongo `jesse` password** — **done (Jesse, 2026-06-26).** The old
+  shared `Cluster0` cluster (which still holds the `@jclind/ingredient-parser` data and serves as the
+  prepify-prod/dev restore fallback) had its previously-exposed `jesse` SCRAM password rotated. *(Distinct
+  from the deliberately-NOT-rotated Edamam keys — that waiver is Edamam-only.)*
+- `[ ]` **Social link previews need server-side prerendering (CSR-SPA limitation)** — track 3b (PR #170)
+  added per-route OG/Twitter tags + a branded 1200×630 card and strips the static `index.html` fallbacks on JS
+  boot (React 19 hoists meta natively, no cross-`<Helmet>` dedupe). But non-JS social crawlers (Facebook,
+  Slack, iMessage, LinkedIn) only read the served `index.html`, so **every shared link shows the generic site
+  card**, not the per-recipe/per-profile preview. Googlebot renders JS, so search indexing still gets per-route
+  titles/canonical/description — only the social preview is affected. Fix is prerendering for crawler UAs
+  (prerender.io / react-snap / Netlify or Cloudflare prerender) or consciously accepting the generic card for
+  1.0. **Release-gating copy lives in `RELEASE_PLAN.md` §C (Launch & legal)** — this is the backlog mirror.
+  *(surfaced 2026-06-23 in the track 3b verification + review.)*
+- `[ ]` **`/add-recipe` is login-gated but indexable** — track 3b (PR #170) added `noindex` to the private
+  routes (Account/Settings/CreateUsername/Admin/404) but `AddRecipe` self-canonicalizes `/add-recipe`
+  (`src/pages/AddRecipe/AddRecipe.tsx`) with no `noindex`. A create-recipe page being crawlable is a minor
+  SEO/privacy wart (crawlers just bounce off the login wall). Add `noindex` to the **create** mode (edit mode
+  already canonicalizes to the public recipe URL, which is correct). Low severity. *(surfaced 2026-06-23 in the
+  Wave 4 Part 1 verification.)*
+- `[x]` **JSON-LD recipe title/description isn't `</script>`-escaped** *(fixed in [#243](https://github.com/jclind/prepify/pull/243), C3: added `serializeRecipeJsonLd()` in `buildRecipeJsonLd.ts` — stringify then replace every `<` with its backslash-u003c escape, still valid JSON that JSON-LD parsers decode back to `<`; `SingleRecipe.tsx` renders the pre-escaped string. Shipped ahead of the prerender PR so the hole is closed before prerendering can make it live. +6 tests.)* — `SingleRecipe.tsx` interpolates
+  user-supplied recipe `title`/`description` into a `<script type="application/ld+json">{JSON.stringify(...)}</script>`
+  block, and `JSON.stringify` does not escape `<` / `</`. **Not exploitable today** — this is a CSR app, so
+  react-helmet-async sets the JSON as a text node via React (not string serialization), and `</script>` in
+  `textContent` isn't parsed as a tag. But it **becomes a real injection vector the moment any server-side
+  prerendering is added** (see the prerender item above). Escape `<`/`</` in the JSON-LD payload before/when
+  prerendering lands. *(surfaced 2026-06-23 in the track 3b code review.)*
+- `[x]` **Brand-asset script comment drift** — minor cleanup left after track 3b (PR #170): the header
+  comment in `scripts/generate-brand-assets.mjs:6` lists `Montserrat-{Bold,SemiBold,Italic}.ttf` but the code
+  actually loads `Montserrat-MediumItalic.ttf` at `:28` (code correct, comment stale on the `Italic` entry).
+  **(verified 2026-06-26: the "dead `hero.jpg` (~1.1 MB)" half is already resolved — the file no longer exists
+  on disk; only `hero.webp` remains and `HomeHero.tsx:10` references it. So this item is now just the one-line
+  comment fix.)** *(surfaced 2026-06-23 in the Wave 4 Part 1 verification.)* *(fixed in
+  [#239](https://github.com/jclind/prepify/pull/239), F5: comment now names `Montserrat-MediumItalic.ttf`.)*
+- `[x]` **`ReleaseNotes` imports `package.json` directly for the version string** — *(fixed in [#270](https://github.com/jclind/prepify/pull/270), W3: added a `VITE_APP_VERSION` define in `vite.config.ts` (fs-read of `package.json`, typed in `vite-env.d.ts`) and switched `ReleaseNotes.tsx` **and** `footerData.ts` — a second in-src importer found in-pass — to `import.meta.env.VITE_APP_VERSION`; the footer chunk no longer bundles the manifest.)* — `ReleaseNotes.tsx:6`
+  still does `import packageJSON from '../../../package.json'` (used as `packageJSON.version` at `:9`) rather
+  than reading a build-time define. Replace with a `VITE_APP_VERSION` define (wired in `vite.config.ts` off
+  `package.json`) so the component doesn't reach up into the repo root and the version is injected at build.
+  Nit; deferred from the R-refactor. *(surfaced 2026-07-08 in the docs-folder audit.)*
+- `[ ]` **Post-6-phase-refactor DB check** — confirm no existing database records need updating/migrating
+  after the refactor. *(2026-06-26: the tooling exists — `server/scripts/inventory-collections.js` (the DB
+  inventory utility from commit 85c0208), plus the `backfillRatingUserIds.js` / `backfillServingPrice.js`
+  backfills. This remains a manual run-and-confirm task; nothing in-repo proves it's been done.)*
+  - Was the Spoonacular-CDN `imagePath` Mongo migration (the `updateMany` snippet under "Spoonacular CDN URL
+    Migration" in [`REFACTOR_NOTES.md`](./archive/REFACTOR_NOTES.md), now under `docs/archive/`) ever run
+    against the DB? Unknown — confirm.
+- `[x]` **Establish a code & architecture standard for Claude** — write a conventions doc so generated
+  code stays consistent (likely an addition to `CLAUDE.md` or a new `CONVENTIONS.md`). *(fixed in
+  [#244](https://github.com/jclind/prepify/pull/244), R0: shipped `docs/CONVENTIONS.md` — frontend/backend/
+  design/testing/env/process conventions, each anchored to a real `file:line`, cross-linked from `CLAUDE.md`
+  and pointing at `scss-conventions.md` + `design/*`. Unblocks R1/R2.)*
+- `[ ]` **Refactor the create-recipe page**.
+- `[ ]` **Refactor the account page**.
+- `[x]` **Ingredient parser: handle "not found"** — *done in PR #164 (track 3d; PR open).* A client-side
+  `withTimeout` (12s) races the enrichment request so a hung/"not found" lookup no longer sticks the UI; on
+  timeout the row is kept, flagged errored with a retry, and a toast surfaces. Applied to both add and
+  inline-edit paths.
+- `[~]` **Promote the remaining hardcoded design values into `helpers.scss` tokens** — the
+  design-consistency sweep (2026-06-25) applied the two pixel-identical cheap wins from the
+  [2026-06-13 audit](./archive/DESIGN_CONSISTENCY_AUDIT_2026-06-13.md): `$primary-hover` (`#e74e1d`, was hardcoded
+  in 5 spots + a Footer local var) and `$surface-warm-border` (`#ece2d6`, 11 spots across 8 files). The
+  remaining systemic scales need design sign-off because they touch many files / pixels:
+    - `[x]` **Type scale** — DONE 2026-07-01 (PR #216). Ten-step modular `$text-*` scale in `helpers.scss`
+      (t-shirt names, not the `$fs-*` floated here); ~490 `font-size:` literals across 62 `.scss` normalized
+      onto it — 218 land exactly on a step, 273 snap to the nearest (typical ≤0.8px, max 2.8px), the deliberate
+      normalization this item called for. Out-of-scope display type left bespoke (PrintableRecipe `pt`, About
+      `clamp()`, 404/profile numerals, icon `em`). Documented at `docs/design/type-scale.md`; verified by a
+      zero-byte masked-CSS compile diff (only font-size values moved) + a two-pass Cypress pixel-diff (tooling
+      PR #215) showing clean reflow, no truncation/overflow.
+    - `[x]` **Radius scale** — DONE 2026-06-25 (PR `style/radius-scale-tokens`). `$radius-xs..4xl` +
+      `$radius-pill`/`$radius-circle` now in `helpers.scss`; `$border-radius` aliases `$radius-lg`. ~200
+      value-identical repoints across 32 `s`-importing files (compiled CSS byte-identical). **Remaining:**
+      off-scale one-offs (5/7/9/11/13/18px) need ±1px normalization (design call). *(Updated 2026-07-02,
+      Wave-3 re-sweep: the admin files are wired + tokenized now — the only remaining sub-scale admin literal
+      is the deliberate `2px` cap rounding on the Analytics chart bars (`Analytics.scss:165`), left bespoke:
+      the bars are as narrow as 1px, where a 4px scale-floor radius would distort the data-viz.)*
+    - `[x]` **Elevation/shadow scale** — DONE 2026-07-01 (PR #218, `worktree-feat+elevation-shadow-reauthor`).
+      Re-authored the interim `$shadow-soft`/`$shadow-chip`/`$card-box-shadow` stopgap into a documented 6-step
+      `$elevation-1..6` ramp + `$shadow-brand`/`-strong`/`$shadow-teal` glow tokens in `helpers.scss` (owner
+      sign-off via a temp `/elevation-audit` page). Migrated ~51 declarations across 28 files: 37 distinct old
+      values → 9 tokens (2 value-identical). Unified tint — one slate `rgba($primary-text, …)` across the ramp,
+      replacing the old black/slate/warm mix; the repeated avatar-glow `rgba(255,87,34,0.18)` (audit F5) folded
+      onto `$shadow-brand`. Kept bespoke: the two-layer add-ingredient bar, the horizontal drawer, the two
+      upward sticky-bar shadows. No pixel regression beyond shadows (compiled-CSS diff vs development
+      byte-identical outside `box-shadow`). Documented in `docs/design/elevation.md`.
+    - `[x]` **Focus-ring tokens** — DONE 2026-07-07 (fixed in [#241](https://github.com/jclind/prepify/pull/241),
+      C5). Surfaced 2026-07-01, deferred out of the elevation track (they're focus indicators, not elevation). The
+      12 `box-shadow: 0 0 0 3px rgba(…)` rings across FormInput/FormStyles/Settings controls/CreateUsername/Recipes/
+      Help (teal/error/ok-green/orange variants) now route through **`@mixin focus-glow($color, $opacity)`** in
+      `helpers.scss` — a parametrised mixin rather than a `$focus-ring-*` token set, since ring colour *and* opacity
+      both vary (only the `0 0 0 3px` geometry is invariant). Pure refactor, byte-identical compiled output;
+      documented in `docs/scss-conventions.md`. **Remaining (design call):** the per-surface opacity spread
+      (`.12–.25`) is preserved, not yet normalised. Pairs loosely with the `$primary-hover` a11y `2-scss` track.
+    - `[x]` **Breakpoint tokens/mixin** — DONE 2026-06-25 (PR `style/breakpoint-tokens`). Added an 8-tier
+      `$bp-xs..4xl` scale + `$bp-nav`/`$bp-nav-up` and `below()`/`above()`/`between()` mixins; migrated all 69
+      width queries. The recurring content breakpoints converged to tiers (7 approved small shifts ≤30px:
+      350→375, 420/460/480→450, 550→560, 650→640, 880→900); tuned one-offs (recipe page 700/720/820,
+      isolated 500/520, Home 850/851 boundary pair) and the DesktopNav 860/1000/1080/1240 cascade pass
+      literal px to the mixins and keep their exact values. **Remaining (design call):** converge those
+      deliberately-bespoke one-offs into the scale if/when their layouts are retuned.
+  *(surfaced 2026-06-25 in the design-consistency sweep; cheap wins + radius/recurring-shadow scales applied,
+  type scale done 2026-07-01 PR #216; elevation re-author done 2026-07-01.)*
+- `[~]` **Collapse near-duplicate brand shades to one value**
+    - `[x]` **Decorative tint** — DONE (PR #192): `$primary-tint: #ff8a5c` collapses the avatar/XP gradient
+      stops (`Account.scss` ×2) + the `RecipePlaceholder` icon `#ff8a65`. Purely decorative, so independent
+      of the contrast work; only compiled change was the imperceptible `#ff8a65`→`#ff8a5c`.
+    - **Remaining — owned by the brand-orange recolor:** the Drafts hover `#f4501e` and the accessible
+      hovers `#a52f0a` / `#006065` are entangled with the in-flux orange-CTA contrast story (the a11y sweep
+      reverted `$primary-accessible` back to vivid `#ff5722`). Resolve them as part of that recolor, not as a
+      blind dedupe. *(surfaced 2026-06-25 in the design-consistency sweep.)*
+- `[x]` **One danger-red token** — three reds mean the same thing: `$error-red` (the token — **now
+  `#c5303f`** after the a11y pass, plus a new `$error-red-hover #b02a37`; `helpers.scss:43-44`), local
+  `$danger #d23f31` (`SingleRecipe.scss:13`), and `#d64545` (`ReportControl.scss` ×7, `AdminRecipeControls.scss:87`,
+  `Reports.scss:307`). Consolidate onto the token. *(audit F6; surfaced 2026-06-25; `$error-red` value
+  corrected from the stale `#dc3545` on 2026-06-26.)* **(done 2026-06-29, PR #208 — repointed the local
+  `$danger` (dropped the dead var) and all 9 `#d64545` usages, incl. ReportControl's `rgba(214,69,69, …)`
+  tints → `rgba(s.$error-red, X)`, onto `s.$error-red`. No `helpers.scss` change. Verified live: shipped CSS
+  has 0× old reds; every danger surface renders `#c5303f`.)**
+- `[x]` **Name the admin/“cool” sub-palette and wire the token-less files into `helpers.scss`** — Admin +
+  moderation surfaces hardcode a Tailwind-ish slate/blue palette (`#3b82f6`/`#2563eb` action blue exists
+  nowhere in the brand) and several files `@use` nothing at all (audit F1/F2). **(done 2026-06-30, PR #214 —
+  see the `[x]` sub-items below.)**
+    - `[x]` **Import-wiring + value-identical repoints** — DONE 2026-06-25 (PR `style/admin-token-wiring`).
+      Added `@use helpers as s` to the 10 token-less files that had a value-identical win and repointed their
+      radii (radius scale) and `#fff`/`#ffffff` → `$white` (compiled CSS byte-identical). The bespoke admin
+      palette in those files was deliberately left raw.
+    - `[x]` **`$admin-*` token group + literal migration** — DONE 2026-06-30 (PR #214). Defined a documented
+      cool `$admin-*` group in `helpers.scss` (slate spine + `action`/`link` + ok/info/warn/danger/automod
+      status groups + `cat-green`/`cat-amber` classification accents) and migrated ~200 literals across 12
+      admin/moderation `.scss`; ~16 near-dupes normalized onto scale steps. Warm outliers folded to brand
+      `$primary-wash`/`-wash-deep`/`-deep`; `rgba(0,0,0,…)` shadows left raw for the elevation track. Of the 5
+      previously token-less files, 3 were wired in (`RecipePlaceholder` → warm washes, `ClassifierNote` →
+      `$admin-info-text`, `AccountStatusBanner` → warn/danger + `$primary-deep`); `DefaultAvatar` +
+      `AddRecipe/ListComponents/Item` hold no colour literals so they stayed raw. No pixel regression
+      (compiled-CSS diff: every change a documented collapse or
+      value-identical). Documented at `docs/design/admin-palette.md`. The category/type pills were decoupled from
+      status tokens (own `$admin-cat-*` group) after a code-review finding.
+  *(surfaced 2026-06-25 in the design-consistency sweep; import-wiring applied 2026-06-25, palette naming + migration done 2026-06-30 PR #214.)*
+- `[x]` **`RecipeFormInput` duplicates the shared `FormInput`** — AddRecipe ships its own ~85%-identical
+  input/textarea (`RecipeFormInput`/`RecipeFormTextArea`) instead of the shared `Components/Form/FormInput`,
+  and Settings/BugReport use raw `<input>`/`<textarea>`/`<select>`. Converge on one input primitive.
+  *(surfaced 2026-06-25 in the design-consistency sweep.)* **(done 2026-06-29, PR #204 — `RecipeFormInput`
+  deleted, `FormInput` gained `size='md'|'compact'`, 8 call sites migrated; the Settings/BugReport raw-input
+  half wasn't in #204's scope and no separate item tracks it — fold into the create-recipe dropdown
+  UX-polish item if it comes up. Marker reconciled 2026-07-02 in the Wave-3 re-sweep.)**
+- `[x]` **Perf: no route-level code-splitting — the whole app ships in one ~1.19 MB / 372 kB-gzip JS chunk**
+  — `npm run build` warns the main chunk is >500 kB; `src/App.tsx` statically imports every page (zero
+  `React.lazy`/dynamic `import()` anywhere), and `vite.config.ts` has no `manualChunks`/visualizer. This is
+  **the biggest lever for mobile**: against a prod preview, mobile Performance is 56–68 with LCP 7.8–10.7 s and
+  FCP 3.3–3.9 s while **TBT ≈ 0** — i.e. the bottleneck is downloading/parsing the one bundle, not main-thread
+  work. Desktop is fine (89–97). Fix: lazy-load the heavy/rare routes (Admin/* ≈ 5 pages, AddRecipe/EditRecipe
+  + the ingredient parser + DnD, SingleRecipe) behind `Suspense`; add `manualChunks` + `rollup-plugin-visualizer`
+  to inspect. Needs `App.tsx` route changes + a verification pass → not a blind fix. *(surfaced 2026-06-26 in the
+  Performance sweep; before/after Lighthouse in the sweep PR.)* **(done 2026-07-02 — ~22 routes lazy via
+  `src/util/lazyRoute.ts` (React.lazy + one-shot stale-deploy reload guard: offline-aware, storage-safe,
+  never auto-re-armed; post-reload failures surface as `ChunkLoadError` to the app boundary, whose
+  "Try again" hard-reloads since React.lazy caches rejections) behind per-page-keyed `Suspense` inside the
+  Layout/outlet shells (keyed because react-router's `startTransition` only shows fallbacks of newly
+  mounted boundaries — unkeyed, lazy→lazy navigation freezes on the old page). Eager kept: Home, Recipes,
+  SingleRecipe, Login, Signup, 404 — landing surfaces; PublicProfile stays lazy despite being one because
+  eager-importing it hoists ~96 kB of shared graph into entry. Initial payload 393 → 274 kB gz (−30%:
+  JS 363→257, CSS 30→17), >500 kB warning gone; heaviest splits: AddRecipe 69 kB gz (dnd + react-select),
+  Help 11 kB gz (formspree + its stripe transitive). Known tradeoff: first visit to /account, /settings or
+  /admin per session loads shell then section chunks sequentially (both tiny, flash-guarded 220 ms so fast
+  loads show no spinner at all). Same-machine Lighthouse mobile: Home 69→72 (LCP 7.1→6.6 s), /recipes
+  66→67 (LCP 10.8→9.3 s); remaining LCP is image-bound, not JS-bound. `ANALYZE=1 npm run build` writes a
+  `rollup-plugin-visualizer` treemap to `reports/stats.html` (gitignored, outside the publish dir); no
+  `manualChunks` — rolldown's default shared-chunking already dedupes cleanly.)**
+- `[x]` **Perf: hot read paths have no supporting MongoDB indexes** — `server/db.js` `ensureIndexes()` creates
+  indexes for usernames/recipeDrafts/reports/bugReports/auditLog, but `recipes` is indexed only on
+  `{ userId, createdAt }` and `ratings` only on `{ username }`. So the catalog's hottest queries fall back to
+  collection scans + in-memory sorts as the catalog grows:
+    - `GET /recipes` browse/filter/sort (`server/routes/recipes.js:56+`) — filters on `status`, `title` (regex),
+      `cuisine`, `mealTypes`, `nutritionLabels`; no compound index.
+    - `GET /getTrendingRecipes` (`recipes.js:256+`) — sort by `featured`,`views` with a `status` filter; unindexed.
+    - `GET /recipes/random` (`recipes.js:318+`) — `$sample` after a `status`/`userId` `$match`; unindexed `$match`.
+    - `GET /getReviews` (`server/routes/reviews.js:230+`) — find/sort by `recipeId` + `reviewText`/`moderationHidden`
+      + `reviewCreatedAt`/`rating`; **no `recipeId` index on `ratings`** → a scan per recipe-detail/review page.
+  Propose compound indexes alongside the existing `ensureIndexes()` block (e.g. `recipes {status:1, featured:-1,
+  views:-1}`, `{status:1, mealTypes:1, createdAt:-1}`, `{status:1, nutritionLabels:1}`; `ratings {recipeId:1,
+  reviewCreatedAt:-1}` and `{recipeId:1, rating:-1}`). Confirm each with `.explain()` before/after. Negligible at
+  today's catalog size; grows linearly. *(surfaced 2026-06-26 in the Performance sweep; pairs with the autocomplete
+  fuzzy-fallback scan item above, which is the same missing-index story for title search.)*
+  **(done 2026-07-02, PR #224 — grounded in `.explain('executionStats')` against dev, not the proposed keys.
+  Two findings reshaped the fix: (1) the proposed `status`-leading compounds are WRONG — `RECIPE_VISIBLE` is
+  `status: { $nin: [...] }`, a low-selectivity RANGE, so by equality→sort→range it must stay a FETCH residual, not
+  a leading key (leading with it fragments the index into intervals and defeats the sort). (2) A prior manual
+  migration (`server/scripts/createModerationIndexes.js`) had already added `recipes {featured:-1,views:-1}`,
+  `{createdAt:-1}`, `{userId:1}` and `ratings {recipeId:1,username:1}`, `{userId:1,recipeId:1}` to dev/prod — so
+  two of the four paths were NOT actually unindexed. Net-new gaps, both confirmed COLLSCAN/blocking-SORT→IXSCAN:
+    - **`GET /recipes` default browse** (SORTS.popular) — added `recipes {numTimesSaved:-1, views:-1, _id:-1}`
+      (key order mirrors the sort exactly). BEFORE `SORT ← COLLSCAN`, docsExamined 12, in-memory sort. AFTER
+      `FETCH ← IXSCAN`, docsExamined 5 (=limit), **no blocking sort**. Bonus: the mealTypes/diets/cuisine-filtered
+      popular listings also ride it (filters become residuals) — sort eliminated there too.
+    - **`GET /getReviews`** — added `ratings {recipeId:1, reviewCreatedAt:-1}` (filter=new) and
+      `{recipeId:1, rating:-1}` (filter=top). BEFORE `SORT ← FETCH ← IXSCAN(recipeId_1_username_1)` — the recipeId
+      MATCH was indexed but the sort was a blocking in-memory sort; docsExamined 10. AFTER `FETCH ← IXSCAN`,
+      **no blocking sort**, docsExamined 6/8.
+    - **`GET /getTrendingRecipes`** — already optimal via the migration's `featured_-1_views_-1`
+      (`IXSCAN`, no sort, docsExamined = limit). No new index; backlog's "unindexed" was stale.
+    - **`GET /recipes/random`** — left as-is by design: the `$match` is `status: $nin` (+ `userId: $ne`), both
+      low-selectivity ranges, and `$sample` after a non-first-stage `$match` can't use the random-cursor
+      optimization, so any index would examine ~all docs anyway for negligible gain.
+  Multikey note: `mealTypes`/`nutritionLabels` are arrays — deliberately NOT indexed as leading keys here (each
+  would be a separate multikey index, and they're residual filters on the popular walk). `title`/`cuisine` regex
+  can't use a normal index (separate autocomplete fuzzy-fallback item; not regressed). Deferred siblings, both the
+  same story, low-frequency so not added: the non-popular browse sorts (createdAt/servingPrice/totalTime — each
+  needs its own `{sortKey, _id}` index) and `getSingleUserReviews` (userId-keyed, still blocking-sorts on
+  `{userId:1,reviewCreatedAt:-1}`/`{userId:1,rating:-1}`). All three additions went into `ensureIndexes()` so they
+  deploy with the code; `createIndex` is idempotent and the new names don't collide with the migration's.)**
+- `[x]` **Perf: `/recipes/facets` runs 3 unfiltered `distinct()` = 3 full `recipes` scans per browse load**
+  (`server/routes/recipes.js`, `distinct('cuisine'|'nutritionLabels'|'mealTypes')`). Called on every
+  `/recipes` page load to build the filter UI. *(surfaced 2026-06-26 in the Performance sweep.)* **DONE (this PR).
+  Chose the short-TTL in-process cache over a summary doc: a `distinct` with no predicate is a COLLSCAN that no
+  index can serve, and a summary doc buys nothing here — a delete or a cuisine-edit-away can't be reasoned about
+  incrementally (you can't know a value is gone everywhere without a rescan), so it would still need a full
+  recompute on those paths, at the cost of extra invalidation surface and a persisted doc to keep consistent. The
+  cache also preserves the exact all-statuses `distinct` semantics for free. New `server/util/facetsCache.js`: a
+  5-min TTL cache with single-flight (one scan serves a burst of cold-cache requests) and a generation guard (a
+  scan invalidated mid-flight returns to its caller but doesn't poison the cache). The route reads through it; the
+  write paths that can introduce a NEW value — `addRecipe`/`editRecipe` — plus `deleteRecipe` call
+  `invalidate()`, so a new cuisine/diet/mealType surfaces on the *next* load, not after the TTL. The rare bulk
+  removers (account-delete cascade, admin status flips) ride the TTL backstop; a chip lingering for a briefly-empty
+  cuisine is harmless and already possible today (the `distinct` is unfiltered by status, so hidden/pending recipes
+  already contribute chips). Client tolerance is high regardless — the browse page already React-Query-caches this
+  response for 10 min and only uses `cuisines` (to gray out empty filter chips; diets/mealTypes render from
+  hardcoded lists).
+  **Evidence (dev Mongo, `prepify-dev`; catalog is small so the plan is the proof, not the timing):**
+    - BEFORE — `explain('executionStats')` on each `distinct` (empty query): winningPlan stage **COLLSCAN**,
+      `totalDocsExamined = 12` (= full collection), `totalKeysExamined = 0` (no index possible). Three of these ran
+      per `/recipes` load.
+    - AFTER — live server, two back-to-back `GET /api/recipes/facets`: cold **0.223 s** (runs the three scans) →
+      warm **0.0013 s** (served from cache, no DB round-trip; ~170×), identical payload.
+    - Behaviour locked by tests: `__tests__/facetsCache.test.js` (compute-once-within-TTL, TTL expiry, invalidate,
+      single-flight, mid-flight-invalidate guard) and two `recipes.test.js` cases (a warm cache hides a direct DB
+      insert until busted; `POST /addRecipe` busts the cache so the new cuisine appears on the next load).
+    - Gates: server Jest **705 pass**, root Vitest **550 pass / 2 skip** (untouched), `tsc --noEmit` clean.**
+- `[x]` **Perf: recipe-page CLS ≈ 0.10 from the conditional controls block popping in above the hero** *(resolved won't-reserve in [#243](https://github.com/jclind/prepify/pull/243), C3: `RecipeControls` renders only for the recipe **owner** (`RecipeControls.tsx:52` `if (!isUsersRecipe) return null`), so the ≈0.10 was an owner-view measurement. The SEO-relevant logged-out / non-owner path is already fully CLS-reserved (action-bar skeletons, servings placeholder, ratings skeleton, `.sr-controls` `min-height:30px`). A speculative reserve can't know ownership until the fetch resolves, so it would regress the common path to fix the rarest view — per an explicit product call ("tailor to non-owners, don't reserve for the signed-in owner") the owner-only shift is left unreserved. No code change.)* —
+  `RecipeControls` (`src/pages/SingleRecipe/SingleRecipe.tsx:296`) renders only after `currRecipe` resolves
+  (`currRecipe && …`), with no reserved space, so on load it inserts above `header.hero` and pushes the hero +
+  body + ingredient list + instructions down in one shift (measured: the dominant layout-shift source on the
+  page, prod preview). Fix structurally by reserving the block's height during load (skeleton / `min-height`),
+  **not** with image dimensions. ⚠ **Verified caveat:** the hero (`SingleRecipe.scss` `.hero-img img` is
+  `width:100%; aspect-ratio:4/3`) and the 40 px ingredient thumbs already reserve their boxes via CSS, so
+  adding HTML `width`/`height` to those `<img>`s gives **no** CLS benefit and empirically *doubled* page CLS
+  (0.10 → 0.26, reproducible) — that experiment was reverted in the sweep PR. *(surfaced 2026-06-26 in the
+  Performance sweep.)*
+- `[x]` **Perf: `AuthContext` value object is recreated every render** (`src/context/AuthContext.tsx`, the
+  `value` passed to `AuthContext.Provider`), so every `useAuth()` consumer (Navbar, SaveControl, ReportControl,
+  forms, …) re-renders on any provider re-render. Wrap in `useMemo([user, isAdmin, …])`. Low *measured* impact
+  today (TBT ≈ 0 across pages) — file as a scalability/correctness cleanup, not a hot fix. Pairs with memoizing
+  the remaining list rows (`RecipeReview`, and `IngredientItem` — the latter sits in a `@hello-pangea/dnd` list,
+  so verify DnD still works before memoizing). The `/recipes` grid card (`RecipeCard`) was memoized in the sweep.
+  *(surfaced 2026-06-26 in the Performance sweep.)*
+  — *(fixed in [#240](https://github.com/jclind/prepify/pull/240), F2: memoized `value` — but a bare `value` memo
+  would no-op, so also `getAuth()`→`useMemo` and all 8 handlers `useCallback`'d for stable deps. Added a
+  referential-stability regression test; runtime-verified the full auth lifecycle. The list-row memos
+  (`RecipeReview`, `IngredientItem`) remain open follow-ups.)*
+- `[x]` **Perf: `RecipeCard` memo is defeated on the Saved tab** (`src/pages/Account/SavedRecipes/SavedRecipes.tsx:138`)
+  — *(fixed in [#237](https://github.com/jclind/prepify/pull/237), F3: wrapped `refreshAfterMutation` in `useCallback([queryClient, uid])` so the `onMutated` handler keeps a stable identity and `React.memo(RecipeCard)` holds on the Saved tab too. Verified live — 0 saved-card re-renders with the fix vs 54 without across 9 parent renders.)*
+  `refreshAfterMutation` was a plain inline `() => {}` passed as `onMutated`, so its identity changed every parent
+  render and `React.memo(RecipeCard)` always re-rendered every saved card. The memo lands correctly on the `/recipes`
+  grid (no `onMutated`, stable `recipe` identities), but to realize it on the Saved tab too, wrap
+  `refreshAfterMutation` in `useCallback`. One line; pairs with the `AuthContext`/list-row memo work above. Low
+  measured impact (TBT ≈ 0). *(surfaced 2026-06-27 in the Performance sweep code review.)*
+- `[x]` **Perf: Firebase Storage recipe images are served single-size with no `srcset`/resize pipeline** *(fixed in
+  [#247](https://github.com/jclind/prepify/pull/247), I1: frontend emits a token-less WebP `srcset` (400/800/1600w)
+  on the card thumb + SingleRecipe hero, derived from the stored URL by `src/util/recipeImageVariants.ts`; backend
+  is the owner-gated Firebase Resize Images extension. **Ships inert** behind `VITE_IMAGE_VARIANTS_ENABLED` (default
+  off) + a per-`<img>` fallback — owner installs/backfills/flips per `docs/IMAGE_PIPELINE.md`.)* — every
+  `recipe.recipeImage` is a direct full-size Storage URL, so mobile downloads desktop-sized images (a contributor
+  to the mobile LCP above). Structural: a Storage resize pipeline (or an image CDN) emitting width variants +
+  `srcset`/`sizes` on the card/hero `<img>`s. The static Home hero is already a sized `.webp`. *(surfaced
+  2026-06-26 in the Performance sweep.)*
+- `[ ]` **Minor code-quality follow-ups from the code-quality sweep** — none are bugs; all low priority:
+  (1) **`any` escape hatches** (~23, tsc is clean) are concentrated in react-select `styles` callbacks
+  (`provided/state: any` across CuisineSelector/MealTypeSelector/DietSelector/ReviewFilters) and a handful of
+  `catch (err: any)` blocks — tightening means `StylesConfig<Option, IsMulti>` generics + `err: unknown`
+  narrowing; fiddly, deferred. (2) ~~**`asyncHandler` consistency**: `routes/ingredients.js` (`/parse`) and
+  `routes/nutrition.js` (`/details`) use a bare `async (req,res)` with a complete internal try/catch instead of
+  the `asyncHandler` wrapper every other route uses — functionally safe, just inconsistent.~~ *(fixed in
+  [#232](https://github.com/jclind/prepify/pull/232), S5: both wrapped in `asyncHandler`; internal soft-fail
+  try/catch kept — no behaviour change.)* (3) ~~**Doc drift**:
+  `CLAUDE.md` still describes `src/context/RecipeContext.tsx` as "commented out", but the file has been deleted
+  entirely — update the two references.~~ *(fixed in [#239](https://github.com/jclind/prepify/pull/239), F5: both
+  references now say "removed".)* (4) ~~**Optional rename**: `src/util/validateIngredientQuantityStr.ts` now
+  exports only `closestFraction` (a display formatter) — a rename to `formatQuantity.ts` would match its
+  contents (3 import sites).~~ *(fixed in [#239](https://github.com/jclind/prepify/pull/239), F5: renamed to
+  `formatQuantity.ts`, 4 importers repointed.)* Only part (1) (`any` escape hatches) remains open.
+  *(surfaced 2026-06-27 in the code-quality & tests sweep.)*
+
+## Testing
+
+- `[x]` **Tests for the toast/alert system** — *covered in PR #168 (track 4-tests):* `src/test/toastSystem.test.tsx`
+  mounts a real `<Toaster>` (every other suite mocks `react-hot-toast`) and locks the success/error/loading/blank
+  shapes, the `role="status"` announcement, same-`id` de-dupe/update-in-place, dismiss-by-id removal, and the
+  interactive SaveControl custom toast.
+- `[~]` **Create-recipe tests** — Cypress (E2E) + Vitest (unit). *Substantial sweep added in PR #164 (track
+  3d):* Vitest for the enrichment-timeout util, optimistic add / reconcile / soft-fail / retry / timeout,
+  inline-edit re-enrich + timeout, drag-reorder + id-keyed status survival, summary-bar rollup + submit
+  states, and servings/time validation; Cypress gained keyboard drag-reorder specs (ingredient + instruction)
+  and the soft-fail spec was updated to the new retry UX. Remaining: cuisine/meal-type selector units
+  (currently E2E-only) and broader E2E happy-path variants. **(verified 2026-06-26: `DietSelector` has a unit
+  test (`DietSelector.test.tsx`) but the structurally-similar `CuisineSelector`/`MealTypeSelector` are mocked
+  in `AddRecipe.test.tsx:67-75` with no standalone unit test — a focused, low-effort fill-in. Also note: any
+  new `TimeInput` test should cover the edit-mode hydration bug logged under Bugs.)**
+- `[x]` **Cypress: test autocomplete on the Recipes page** — *covered in PR #168 (track 4-tests):* `browse.cy.ts`
+  now types a partial query and asserts the dropdown options, types a typo and asserts results surface **with** the
+  "showing similar recipes" banner, asserts the banner is **absent** on a literal match, and clicks a result to
+  navigate. (Server-side fuzzy fallback itself is endpoint-stubbed here; exercised live during verification.)
+- `[x]` **Node 26 test-harness gaps — missing globals in the test sandbox** — **both fixed.** This dev
+  machine runs **Node 26**, whose VM/sandbox no longer keeps some globals the test stacks assume:
+  - **Server (Jest) — fixed in PR #161:** `server/__tests__/email-notifications.test.js` failed **7/22**
+    with `ReferenceError: clearTimeout is not defined` from `superagent` (via supertest) → 5000ms timeouts.
+    Root cause turned out subtler than a missing global: it's *present at setup time*, but the
+    `throttles repeat alerts` test runs `jest.useFakeTimers()`→`jest.useRealTimers()`, and on Node 26 that
+    restore leaves the global timers broken for **every subsequent test** in the file. Fixed by re-installing
+    the canonical `node:timers` implementations **before each test** in `server/__tests__/setup.js`
+    (`beforeEach`), so a prior fake-timer test can't leave them broken; a test that opts into fake timers
+    still overrides them. Verified: email-notifications 22/22, full server suite 632/632.
+  - **Client (Vitest) — fixed in PR #159:** the analogous `localStorage`/`sessionStorage`-undefined gap on
+    Node ≥ 24 (`savedFilters` / `SingleRecipe`) — an in-memory Web Storage shim in `src/test/setup.ts` that
+    probes usability and only installs when the real one is unusable.
+  - *(Both are environment-induced, not product bugs — confirmed pre-existing on base; CI's older Node
+    never tripped either. The guards are no-ops once the sandbox restores these globals. Surfaced during
+    track 1c review, 2026-06-18.)*
+
+- `[x]` *(fixed in [#276](https://github.com/jclind/prepify/pull/276), X4: five vectors — one run-wide shared `MongoMemoryReplSet` via `globalSetup`/`globalTeardown` with per-file DB drop (suite ~53s→~33s), sticky `asUser`/`asAdmin` mocks replacing the one-shot overrides, `testTimeout` 5s→30s + test-path serverSelection 30s, a `__mocks__/supertest.js` shared-server auto-mock that killed the dominant vector — supertest's one-shot ephemeral listener per request causing ETIMEDOUT/phantom-404s under socket churn — and per-worker test DB names so ad-hoc parallel `npx jest <pattern>` runs don't stomp the shared DB; verified 24/24 stress runs green, merged 2026-07-09)* **Server Jest suite is flaky under CPU contention (~load-dependent)** — the full server suite
+  (`cd server && npm test`, i.e. `jest --runInBand`) intermittently fails **one random test per run** while
+  **every suite passes 100% in isolation**. Observed failing tests across runs were all different and all in
+  DB-/auth-heavy suites: `auth setUsername (<3 chars)` → 404 (expected 400), `auth setUsername rename
+  propagation`, `moderation-routes updatePhoto fail-closed` → wrong status, `admin/analytics recent actions`
+  → 404 (expected 200), `reports queue` → 401 (expected 200). Repro rate was ~10–30% **only while the machine
+  was under load** (the worktree's dev servers + concurrent jest runs); on an unloaded machine the suite went
+  10/10 green. Diagnosis: not a product bug (zero source changes; the routes are correct) — it's **test-harness
+  isolation under timing pressure**. Two contributing vectors: (1) each of the 30 suites spins up its **own**
+  `MongoMemoryReplSet` (`server/__tests__/setup.js`), so under contention an operation can trip
+  `serverSelectionTimeoutMS: 5000`; (2) fragile one-shot auth mocks — `admin.auth.mockReturnValueOnce(...)` /
+  `verifyIdToken.mockResolvedValueOnce(...)` in `reviews.test.js`/`security.test.js` assume the *next*
+  `admin.auth()` call is the intended request; a stray/async call (leaked fire-and-forget audit/email work)
+  can consume the "once" and shift it onto the wrong request → spurious 401/wrong-uid. **CI impact is low**
+  because CI runs `--runInBand` on a dedicated runner (one replSet at a time, minimal contention), but the
+  baseline `npm test` *did* fail on a first cold run, so it can still red a PR occasionally. Recommended fix
+  (structural): share a **single** in-memory Mongo across the suite via Jest `globalSetup`/`globalTeardown`
+  with per-file collection cleanup (removes the per-file replSet churn — faster *and* far less contention), and
+  replace the `*Once` auth overrides with scoped per-request mocks (e.g. set `extraClaims`/`__setClaims`
+  deterministically, or a `withUser(uid)` helper that resets after the awaited request). *(surfaced 2026-06-26
+  in the code-quality & tests sweep; characterized over ~30 full-suite runs. NOT introduced by the sweep —
+  pre-existing on `development`.)*
+- `[ ]` **E2E gap: no test submits a rating/review** — the Cypress suite reads reviews from fixtures
+  everywhere (`recipe.cy.ts`, `smoke.cy.ts` stub `GET /api/getReviews`) but **never writes one** — there is no
+  journey that opens the rate/review control, submits, and asserts the new review appears + the hero rating
+  updates. Rating-average is a critical path (the sweep playbook calls it out: `util/recipeRating` +
+  `server/routes/reviews.js`), and the server side is well unit-tested (`__tests__/reviews.test.js`), but the
+  end-to-end write path is unverified. Add a `recipe.cy.ts` spec: logged-in user with `checkIfReviewed` → null,
+  submit a rating+text, intercept the review POST, assert the optimistic row + updated `.hero-rating`. *(surfaced
+  2026-06-27 in the code-quality & tests sweep E2E review.)*
+- `[ ]` **E2E gap: no password-reset journey** — `auth.cy.ts` covers login + logout but not the
+  forgot-password / reset flow. Lower priority (the reset email + link are Firebase-handled, so a true E2E is
+  awkward), but the "request reset email" entry point (form validation + success/error toast) is app code that
+  could be covered. Flag, don't necessarily automate the Firebase leg. *(surfaced 2026-06-27 in the
+  code-quality & tests sweep E2E review.)*
+- `[ ]` **Unit coverage for remaining untested utils** — the sweep added focused tests for the highest-value
+  untested utils (`closestFraction`, `formatRating`, `nutrition` math, `hrMinToMin`/`minToHrMin`). **(reconciled
+  2026-07-09: the headline `updateIngredients` gap is closed — R1 #248 added `src/test/updateIngredients.test.ts`
+  (7 cases) and the dead-code block is gone; only the trivial formatters below remain.)** ~~Still
+  untested: **`src/util/updateIngredients.ts`** (the notable one — ~80 lines of ingredient price/quantity
+  merge logic with non-null assertions, on the add/edit-recipe path; also still carries a block of
+  commented-out dead code at the top that should be removed when it's touched)~~, plus the small formatters
+  `capitalize`, `formatPrice`, `formatDate`, `formatCompactCount`, `timeElapsedSince`, `reorder` (DnD reorder —
+  already covered indirectly by `addRecipe.cy.ts`), `recipeLimits`, `invalidateSavedCaches`, `defaultAvatar`.
+  Most are trivial; `updateIngredients` is the one worth a real test pass. *(surfaced 2026-06-27 in the
+  code-quality & tests sweep coverage audit.)*
+- `[ ]` **Test-quality audit follow-ups (2026-07-10)** — the six-slice suite-quality audit (see the
+  test-quality PR of the same date for what already shipped) left these filed rather than fixed:
+  - **Real ingredient-parser contract test (the headline gap).** `server/__tests__/ingredients.test.js:26`
+    mocks `@jclind/ingredient-parser` wholesale, so **no server test anywhere exercises real parsing** — a
+    v2 package regression on fractions (`1 1/2`), unicode (`½`), ranges (`2-3`), unknown units, or
+    parenthetical comments is invisible. Add a fixture-table contract test that runs the real parser (network
+    enrichment stubbed, parse layer real) and pins `quantity/min/max/unit/ingredient/comment` per shape. Med.
+  - **Flake-hardening nits:** `cypress/e2e/addRecipe.cy.ts:162-168` keyboard-DnD helper uses fixed
+    `cy.wait(300/500)` sleeps (replace by polling the dnd aria-live announcement); the
+    `writeLimiter.test.js` window-reset test sleeps a real 1.2 s (wall-clock race under load);
+    `reviews.test.js:820`'s `__getUsers.mockRejectedValueOnce` can leak a queued rejection into a later test
+    if the request short-circuits (clear queued one-shots in `afterEach`).
+  - **Coverage gaps (component/e2e):** SavedRecipes fetch-error path (its 3 sibling tabs have error tests,
+    it doesn't); AdminUsers failure toast on rejected `setUserStatus`; browse filter-drawer e2e (filters →
+    URL → `recipes` request is never driven end-to-end); named-collection add via the recipe-page popover
+    e2e; `getReviews` `filter=new`/`filter=top` ordering tests (blocked on the legacy stringified-rating
+    migration filed under Bugs — write them with it); auth.test.js storage-cleanup asserting the two exact
+    deleted object paths instead of `toHaveBeenCalledTimes(2)` (needs a small `__deleteFile` mock extension).
+
+## Ideas / needs a decision
+
+- `[ ]` **Friend system** — **post-1.0** (decided 2026-06-17). Backlog only; not in the 1.0 scope.
+- `[ ]` **AI recipe search as a paid membership feature** — **post-1.0** (decided 2026-06-17). Future idea.
+- `[ ]` **Fridge & freezer life on the create-recipe form** — **post-1.0** (decided 2026-06-17). The
+  `fridgeLife`/`freezerLife` fields still exist in the data model (`src/types.ts:13-14`) but were
+  removed from the create form; revisit re-adding them after launch.
+
+---
+
+## Resolved / verified done (recorded, not active)
+
+- `[x]` **Local test suite fails on Node ≥24 (Web Storage shim)** — Node's experimental built-in
+  `localStorage` shadowed jsdom's and crashed the `savedFilters`/`SingleRecipe` tests on any Node newer
+  than CI's (pinned to 24). `src/test/setup.ts` now installs an in-memory Storage when the real one is
+  unusable. PR #159.
+- `[x]` **Sign-up button copy** — already reads "Create account" (`src/pages/Signup/Signup.tsx:110`).
+- `[x]` **Bug reporting & viewing system** — shipped: `BugReportModal` + `/admin/bug-reports` queue +
+  `bugReports` collection/route.
+- `[x]` **Monitor images & comments for harmful content** — content moderation shipped (blocklist +
+  OpenAI text + Google Vision image). See `docs/CONTENT_MODERATION.md`.
+- `[x]` **Fix failing tests** *(2026-06-14)*.
+- `[x]` **Fix the print-recipe page** *(2026-06-14)*.
+- `[x]` **Migrate React env → Vite** *(2026-05-10)*.

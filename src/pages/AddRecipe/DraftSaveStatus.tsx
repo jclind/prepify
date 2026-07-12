@@ -1,6 +1,11 @@
+import {
+  AlertCircleIcon,
+  CheckCircleIcon,
+  CloudIcon,
+  InfoIcon,
+  RotateCwIcon,
+} from 'src/Components/icons'
 import React, { FC } from 'react'
-import { AiOutlineCheckCircle, AiOutlineCloud } from 'react-icons/ai'
-import { BiErrorCircle } from 'react-icons/bi'
 import { DraftStatus } from 'src/pages/AddRecipe/useDraftAutosave'
 import './DraftSaveStatus.scss'
 
@@ -10,9 +15,16 @@ const content: Record<
   Exclude<DraftStatus, 'idle'>,
   { icon: React.ReactElement; label: string }
 > = {
-  saving: { icon: <AiOutlineCloud />, label: 'Saving draft…' },
-  saved: { icon: <AiOutlineCheckCircle />, label: 'Draft saved' },
-  error: { icon: <BiErrorCircle />, label: "Couldn't save draft" },
+  saving: { icon: <CloudIcon />, label: 'Saving draft…' },
+  saved: { icon: <CheckCircleIcon />, label: 'Draft saved' },
+  error: { icon: <AlertCircleIcon />, label: "Couldn't save draft" },
+  // Distinct from the error badge: another tab/session saved newer content, so
+  // nothing is broken — the user just needs to reload to see (and edit) the
+  // latest version. A "reload" affordance, not an alarming failure.
+  conflict: { icon: <RotateCwIcon />, label: 'Reload to see the latest' },
+  // Calm guidance, not an error: a signed-out visitor's work can't be autosaved
+  // (drafts are per-user), so point them at signing in rather than alarming them.
+  'signed-out': { icon: <InfoIcon />, label: 'Sign in to save drafts' },
 }
 
 // Small inline indicator beneath the page heading reflecting draft autosave

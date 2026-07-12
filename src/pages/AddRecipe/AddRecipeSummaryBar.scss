@@ -1,10 +1,19 @@
 @use '../../helpers.scss' as s;
 
 .add-recipe-summary-bar {
-  position: fixed;
-  left: 0;
-  right: 0;
+  // Sticky (not fixed) so the bar pins to the bottom of the viewport while the
+  // form scrolls, then releases at the end of the page — letting the footer,
+  // which lives just below this bar's containing block, become reachable
+  // instead of being permanently covered. Full width because, as a flex child
+  // of the centered page column, it would otherwise shrink to its content.
+  position: sticky;
   bottom: 0;
+  width: 100%;
+  // Push to the bottom of the page column so the bar still rests at the bottom
+  // of the viewport when the form is shorter than the screen (the auto margin
+  // absorbs the free space ahead of the page's `justify-content`); a no-op when
+  // the form overflows, where the sticky positioning takes over.
+  margin-top: auto;
   z-index: 50;
   background: s.$white;
   border-top: 1px solid s.$gray-400;
@@ -31,7 +40,7 @@
       flex-direction: column;
 
       dt {
-        font-size: 0.625rem;
+        font-size: s.$text-caption;
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.08em;
@@ -39,7 +48,7 @@
       }
       dd {
         margin: 0;
-        font-size: 1rem;
+        font-size: s.$text-md;
         font-weight: 700;
         color: s.$primary-text;
 
@@ -57,50 +66,35 @@
     gap: 0.75rem;
   }
 
+  // cancel = a quiet outline on the `.btn` base; only the fixed height + the
+  // muted transparent look are local.
   .cancel-btn {
     flex-shrink: 0;
     height: 46px;
     padding: 0 1.25rem;
-    border-radius: s.$border-radius;
-    font-size: 1rem;
+    font-size: s.$text-md;
     font-weight: 600;
-    cursor: pointer;
-    outline: none;
     background: none;
     color: s.$secondary-text;
     border: 1px solid s.$tertiary-background;
-    transition: all 0.1s linear;
 
     &:hover {
       color: s.$primary-text;
       border-color: s.$tertiary-text;
     }
-    &:focus {
-      @include s.outline();
-    }
     &:disabled {
-      opacity: 0.6;
       cursor: not-allowed;
     }
   }
 
+  // submit toggles .invalid/.valid (stateful) on the `.btn` base; the state
+  // colours are local.
   .submit-btn {
-    display: flex;
-    justify-content: center;
-    align-items: center;
     flex-shrink: 0;
     width: 170px;
     height: 46px;
-    border-radius: s.$border-radius;
-    font-size: 1rem;
+    font-size: s.$text-md;
     font-weight: 600;
-    cursor: pointer;
-    outline: none;
-    transition: all 0.1s linear;
-
-    &:focus {
-      @include s.outline();
-    }
   }
   .submit-btn.invalid {
     background: none;
@@ -114,25 +108,30 @@
   }
   .submit-btn.valid {
     background: s.$primary;
-    color: s.$primary-background;
+    // White label to match every other orange fill (.btn--primary) — was the
+    // off-pattern $primary-background (#eee).
+    color: s.$white;
     border: 1px solid s.$primary;
 
     &:hover {
-      filter: brightness(110%);
+      filter: s.$hover-brighten;
+      transform: translateY(s.$hover-lift);
+      box-shadow: s.$shadow-brand;
     }
   }
   .submit-btn:disabled {
-    opacity: 0.6;
     cursor: not-allowed;
 
     &:hover {
       filter: none;
+      transform: none;
+      box-shadow: none;
       color: inherit;
       border-color: inherit;
     }
   }
 
-  @media screen and (max-width: 600px) {
+  @include s.below(s.$bp-lg) {
     .summary-inner {
       padding: 0.7rem 1rem;
       gap: 1rem;
@@ -143,12 +142,12 @@
     .submit-btn {
       width: 132px;
       height: 42px;
-      font-size: 0.9rem;
+      font-size: s.$text-base;
     }
     .cancel-btn {
       height: 42px;
       padding: 0 0.9rem;
-      font-size: 0.9rem;
+      font-size: s.$text-base;
     }
   }
 }

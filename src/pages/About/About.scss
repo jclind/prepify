@@ -1,0 +1,498 @@
+@use '../../helpers.scss' as s;
+
+.about-page {
+  flex: 1 0 auto;
+  font-family: s.$font-family;
+  color: s.$primary-text;
+  background-color: s.$white;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  padding-top: calc(#{s.$nav-height} + 1.5rem);
+
+  // The closing CTA is a full-bleed tinted band designed to lead straight into
+  // the footer, so cancel the global $footer-margin gap (the footer keeps it on
+  // every other page). The closing section's own bottom padding is the breathing
+  // room. Kept in terms of the token so it tracks any future change.
+  margin-bottom: calc(-1 * #{s.$footer-margin});
+
+  // ---- Shared building blocks ----
+  .about-eyebrow,
+  .about-section-eyebrow,
+  .about-moment-kicker {
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    font-size: s.$text-caption;
+    font-weight: 600;
+    color: s.$primary-accessible;
+    margin: 0 0 0.65rem;
+  }
+
+  .about-section-head {
+    max-width: 760px;
+    margin: 0 auto 2.25rem;
+  }
+
+  .about-section-title {
+    font-size: clamp(1.6rem, 3.5vw, 2.1rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    margin: 0;
+    color: s.$primary-text;
+  }
+
+  .about-cta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: center;
+  }
+
+  // `.btn` base supplies layout (inline-flex/centred/gap), pill shape, weight,
+  // and the transition; only the slightly larger CTA padding/size, the lift-on-
+  // hover, and the icon nudge are local.
+  .about-btn {
+    padding: 0.65rem 1.35rem;
+    font-size: s.$text-base;
+    text-decoration: none;
+
+    svg {
+      font-size: 1.05em;
+      transition: transform s.$hover-timing;
+    }
+
+    &:hover {
+      transform: translateY(s.$hover-lift);
+    }
+  }
+
+  .about-btn-primary {
+    background-color: s.$primary-accessible;
+    color: s.$white;
+
+    // Match the shared primary CTA: no resting shadow; brand glow arrives on
+    // hover with the brighten + lift (lift comes from `.about-btn:hover`). The
+    // icon nudge stays as the one About-specific flourish.
+    &:hover {
+      filter: s.$hover-brighten;
+      box-shadow: s.$shadow-brand;
+    }
+    &:hover svg {
+      transform: translateX(3px);
+    }
+  }
+
+  .about-btn-ghost {
+    background-color: transparent;
+    color: s.$primary-text;
+    border: 1px solid s.$gray-300;
+
+    &:hover {
+      background-color: s.$gray-50;
+      border-color: s.$gray-200;
+    }
+  }
+
+  // ---- Sections (even vertical rhythm + hairline separators) ----
+  .about-section {
+    padding: clamp(3rem, 7vw, 5rem) 1.5rem;
+    text-align: center;
+    border-top: 1px solid s.$gray-200;
+  }
+
+  // One subtle tinted band reused for steps + closing.
+  .about-section-tint {
+    background-color: s.$gray-50;
+  }
+
+  // ---- Hero ----
+  .about-hero {
+    text-align: center;
+    padding: clamp(2rem, 5vw, 3.5rem) 1.5rem clamp(2.75rem, 6vw, 4rem);
+    max-width: 760px;
+    margin: 0 auto;
+  }
+
+  .about-hero-title {
+    font-size: clamp(2.25rem, 5vw, 3.1rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.07;
+    margin: 0 0 1.1rem;
+    color: s.$primary-text;
+  }
+
+  .about-hero-tagline {
+    font-size: clamp(1rem, 1.6vw, 1.1rem);
+    line-height: 1.6;
+    color: s.$secondary-text;
+    max-width: 600px;
+    margin: 0 auto 1.85rem;
+  }
+
+  // ---- Product showcase ----
+  .about-showcase-inner {
+    max-width: 760px;
+    margin: 0 auto;
+  }
+
+  .about-mock {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    justify-content: center;
+    align-items: stretch;
+  }
+
+  .about-card {
+    background-color: s.$white;
+    border-radius: s.$border-radius;
+    box-shadow: s.$elevation-4;
+    border: 1px solid s.$gray-200;
+    overflow: hidden;
+    width: 280px;
+    max-width: 100%;
+    text-align: left;
+  }
+
+  .about-card-media {
+    position: relative;
+    height: 150px;
+    background: linear-gradient(135deg, #ffd9c9 0%, #ffe9c2 100%);
+  }
+
+  // Faint glyph so the gradient reads as "a recipe photo goes here" rather than
+  // an empty block. Sits under the price pill (which keeps its own stacking).
+  .about-card-media-icon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 2.75rem;
+    height: 2.75rem;
+    color: rgba(s.$primary, 0.28);
+  }
+
+  .about-card-price {
+    position: absolute;
+    top: 0.65rem;
+    left: 0.65rem;
+    background-color: s.$primary-accessible;
+    color: s.$white;
+    font-weight: 700;
+    font-size: s.$text-fine;
+    padding: 0.3rem 0.65rem;
+    border-radius: s.$radius-pill;
+  }
+
+  .about-card-body {
+    padding: 1.1rem;
+  }
+
+  .about-card-title {
+    font-size: s.$text-md;
+    font-weight: 700;
+    margin: 0 0 0.6rem;
+    color: s.$primary-text;
+  }
+
+  .about-card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    font-size: s.$text-fine;
+    color: s.$secondary-text;
+
+    span {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.28rem;
+    }
+
+    svg {
+      color: s.$secondary;
+    }
+  }
+
+  .about-nutrition {
+    background-color: s.$white;
+    border-radius: s.$border-radius;
+    box-shadow: s.$elevation-4;
+    border: 1px solid s.$gray-200;
+    padding: 1.25rem;
+    width: 280px;
+    max-width: 100%;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .about-nutrition-label {
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: s.$text-caption;
+    font-weight: 600;
+    color: s.$tertiary-text;
+    margin: 0 0 0.45rem;
+  }
+
+  .about-nutrition-cal {
+    font-size: s.$text-3xl;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: s.$primary-text;
+    margin: 0 0 1rem;
+    line-height: 1;
+
+    span {
+      font-size: s.$text-sm;
+      font-weight: 600;
+      color: s.$tertiary-text;
+    }
+  }
+
+  .about-nutrition-macros {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.65rem;
+  }
+
+  .about-macro {
+    display: flex;
+    flex-direction: column;
+    padding: 0.5rem 0.65rem;
+    background-color: s.$gray-50;
+    border-radius: s.$radius-md;
+  }
+
+  .about-macro-value {
+    font-size: s.$text-md;
+    font-weight: 700;
+    color: s.$primary-text;
+  }
+
+  .about-macro-label {
+    font-size: s.$text-caption;
+    color: s.$secondary-text;
+  }
+
+  .about-showcase-caption {
+    font-size: s.$text-sm;
+    color: s.$secondary-text;
+    max-width: 460px;
+    margin: 1.85rem auto 0;
+    line-height: 1.6;
+  }
+
+  // ---- Moment (what Prepify is) ----
+  .about-moment {
+    max-width: 760px;
+    margin: 0 auto;
+  }
+
+  .about-moment-kicker {
+    margin-bottom: 0.85rem;
+  }
+
+  .about-moment-line {
+    font-size: clamp(1.2rem, 2.4vw, 1.55rem);
+    font-weight: 600;
+    line-height: 1.45;
+    letter-spacing: -0.01em;
+    color: s.$primary-text;
+    margin: 0;
+  }
+
+  // ---- Steps ----
+  .about-steps-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.75rem;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0;
+    list-style: none;
+  }
+
+  .about-step {
+    text-align: center;
+  }
+
+  .about-step-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: s.$radius-pill;
+    background-color: s.$white;
+    box-shadow: s.$elevation-2;
+    color: s.$primary;
+    font-weight: 800;
+    font-size: s.$text-md;
+    margin-bottom: 1rem;
+  }
+
+  .about-step-label {
+    font-size: s.$text-lg;
+    font-weight: 700;
+    margin: 0 0 0.55rem;
+    color: s.$primary-text;
+  }
+
+  .about-step-body {
+    font-size: s.$text-base;
+    line-height: 1.6;
+    color: s.$secondary-text;
+    margin: 0 auto;
+    max-width: 300px;
+  }
+
+  // ---- Features ----
+  .about-features-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.75rem 1.5rem;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0;
+    list-style: none;
+  }
+
+  .about-feature {
+    display: flex;
+    gap: 0.85rem;
+    text-align: left;
+    align-items: flex-start;
+  }
+
+  .about-feature-icon {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: s.$border-radius;
+    background-color: rgba(s.$primary, 0.08);
+    color: s.$primary;
+    font-size: s.$text-xl;
+  }
+
+  .about-feature-text {
+    min-width: 0;
+  }
+
+  .about-feature-title {
+    font-size: s.$text-md;
+    font-weight: 700;
+    margin: 0.15rem 0 0.35rem;
+    color: s.$primary-text;
+  }
+
+  .about-feature-body {
+    font-size: s.$text-sm;
+    line-height: 1.55;
+    color: s.$secondary-text;
+    margin: 0;
+  }
+
+  // ---- Story ----
+  .about-story-body {
+    max-width: 680px;
+    margin: 0 auto;
+    text-align: left;
+
+    p {
+      font-size: s.$text-md;
+      line-height: 1.7;
+      color: s.$secondary-text;
+      margin: 0 0 1.25rem;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+  }
+
+  // ---- Closing ----
+  .about-closing-title {
+    font-size: clamp(1.7rem, 4vw, 2.35rem);
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    line-height: 1.12;
+    margin: 0 0 0.85rem;
+    color: s.$primary-text;
+  }
+
+  .about-closing-line {
+    font-size: clamp(1rem, 1.6vw, 1.15rem);
+    color: s.$secondary-text;
+    margin: 0 auto 1.85rem;
+    max-width: 520px;
+    line-height: 1.6;
+  }
+
+  .about-closing-icons {
+    display: flex;
+    justify-content: center;
+    gap: 1.75rem;
+    margin-top: 2.5rem;
+    color: s.$gray-300;
+    font-size: s.$text-2xl;
+  }
+
+  // ---- Responsive ----
+  @include s.below(s.$bp-2xl) {
+    .about-steps-grid {
+      grid-template-columns: 1fr;
+      gap: 2.25rem;
+      max-width: 400px;
+    }
+
+    .about-features-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.75rem 1.25rem;
+      max-width: 640px;
+    }
+  }
+
+  @include s.below(s.$bp-sm) {
+    padding-top: calc(#{s.$nav-height} + 1rem);
+
+    .about-features-grid {
+      grid-template-columns: 1fr;
+      max-width: 360px;
+    }
+
+    .about-btn {
+      width: 100%;
+    }
+
+    .about-cta {
+      width: 100%;
+    }
+
+    .about-closing-icons {
+      gap: 1.4rem;
+    }
+  }
+
+  // Respect users who ask for less motion: no lift, no icon slide.
+  @media (prefers-reduced-motion: reduce) {
+    .about-btn,
+    .about-btn svg {
+      transition: none;
+    }
+
+    .about-btn:hover {
+      transform: none;
+    }
+
+    .about-btn-primary:hover svg {
+      transform: none;
+    }
+  }
+}

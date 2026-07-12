@@ -1,37 +1,20 @@
-import React, { FC, useState } from 'react'
+import React from 'react'
 import { vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
-import { HelmetProvider } from 'react-helmet-async'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import RatingsAndReviews from 'src/pages/SingleRecipe/DataSections/RatingsAndReviews/RatingsAndReviews'
 import RecipeAPI from 'src/api/recipes'
 import AuthAPI from 'src/api/auth'
-import { ReviewType } from 'types'
-
-// ReviewFilters sets reviewListSort on mount — that's the gateway for data fetching
-// inside ReviewsContainer. Mock it to call through immediately.
-vi.mock(
-  'src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/ReviewFilters',
-  async () => {
-    const { useEffect } = await import('react')
-    return {
-      default: ({ setReviewListSort }: any) => {
-        useEffect(() => {
-          setReviewListSort('new')
-        }, [])
-        return null
-      },
-    }
-  }
-)
+import { OwnReviewStatus, RatingAggregate, ReviewType } from 'types'
 
 vi.mock('src/api/recipes', () => ({
   default: {
     checkIfReviewed: vi.fn().mockResolvedValue(null),
     getReviews: vi.fn().mockResolvedValue({ reviews: [], totalCount: 0 }),
     addRating: vi.fn(),
+    removeRating: vi.fn(),
     newReview: vi.fn(),
     editReview: vi.fn(),
     deleteReview: vi.fn(),
@@ -45,10 +28,22 @@ vi.mock('src/api/auth', () => ({
   },
 }))
 
+const mockAuthUser = vi.hoisted(() => ({
+  current: { photoURL: null, displayName: null } as {
+    photoURL: string | null
+    displayName: string | null
+  } | null,
+}))
+vi.mock('src/context/AuthContext', () => ({
+  useAuth: () => ({ user: mockAuthUser.current }),
+}))
+
+// The interactive star widget (the user's own rating) and the read-only
+// summary stars both render StarRating; distinguish them by testid.
 vi.mock('src/Components/StarRating/StarRating', () => ({
   default: ({ rating, onChange, interactive }: any) => (
     <div
-      data-testid='star-ratings-rating'
+      data-testid={interactive ? 'star-ratings-rating' : 'star-ratings-display'}
       onClick={() => interactive && onChange?.(4)}
       aria-label={`${rating} stars`}
     >
@@ -74,46 +69,57 @@ const mockGetUsername = AuthAPI.getUsername as ReturnType<typeof vi.fn>
 const createTestQueryClient = () =>
   new QueryClient({ defaultOptions: { queries: { retry: false } } })
 
-const baseReview: ReviewType = {
+const aggregate: RatingAggregate = {
+  rateCount: 10,
+  rateValue: 4,
+  breakdown: { '1': 0, '2': 1, '3': 1, '4': 4, '5': 4 },
+}
+
+const publicReview: ReviewType = {
   _id: 'rev-1',
+  userId: 'uid-1',
   username: 'testuser',
   recipeId: 'recipe-1',
-  rating: '4',
+  rating: 4,
   ratingLastUpdated: '1704067200000',
   reviewCreatedAt: '1704067200000',
   reviewLastUpdated: '1704067200000',
   reviewText: 'Really great recipe!',
+  photoURL: null,
+  displayName: null,
+  isCurrentUser: false,
 }
 
-// Wrapper owns currUserReview state so the full RatingsAndReviews → ReviewsContainer
-// prop chain can react to changes (submit, delete) just as SingleRecipe does.
-const IntegrationWrapper: FC<{ initialReview?: ReviewType | null }> = ({
-  initialReview = null,
-}) => {
-  const [currUserReview, setCurrUserReview] = useState<ReviewType | null>(
-    initialReview ?? null
-  )
-  return (
+const ownReviewDoc: OwnReviewStatus = {
+  reviewed: true,
+  _id: 'own-1',
+  userId: 'me-uid',
+  username: 'me',
+  recipeId: 'recipe-1',
+  rating: 5,
+  ratingLastUpdated: '1704067200000',
+  reviewText: 'My own review text',
+  reviewCreatedAt: '1704067200000',
+  reviewLastUpdated: '1704067200000',
+}
+
+const renderSection = (props: { isOwner?: boolean } = {}) =>
+  render(
     <QueryClientProvider client={createTestQueryClient()}>
       <MemoryRouter>
-        <HelmetProvider>
-          <RatingsAndReviews
-            recipeId='recipe-1'
-            ratingVal={4}
-            ratingCount={10}
-            currUserReview={currUserReview}
-            setCurrUserReview={setCurrUserReview}
-          />
-        </HelmetProvider>
+        <RatingsAndReviews
+          recipeId='recipe-1'
+          rating={aggregate}
+          isOwner={props.isOwner}
+        />
       </MemoryRouter>
     </QueryClientProvider>
   )
-}
 
 describe('RatingsAndReviews integration', () => {
   beforeEach(() => {
     mockCheckIfReviewed.mockReset()
-    mockCheckIfReviewed.mockResolvedValue(null)
+    mockCheckIfReviewed.mockResolvedValue({ reviewed: false })
     mockGetReviews.mockReset()
     mockGetReviews.mockResolvedValue({ reviews: [], totalCount: 0 })
     mockAddRating.mockReset()
@@ -122,133 +128,311 @@ describe('RatingsAndReviews integration', () => {
     mockDeleteReview.mockReset()
     mockGetUID.mockReturnValue(null)
     mockGetUsername.mockResolvedValue(null)
+    mockAuthUser.current = { photoURL: null, displayName: null }
     mockToast.mockClear()
+    mockToast.error.mockClear()
   })
 
-  describe('initial load with existing user data', () => {
-    it('calls checkIfReviewed on mount when uid is set', async () => {
-      mockGetUID.mockReturnValue('user-1')
-      render(<IntegrationWrapper />)
+  describe('initial load', () => {
+    it('calls checkIfReviewed on mount when signed in', async () => {
+      mockGetUID.mockReturnValue('me-uid')
+      renderSection()
       await waitFor(() =>
         expect(mockCheckIfReviewed).toHaveBeenCalledWith('recipe-1')
       )
     })
 
-    it('does not call checkIfReviewed when uid is null', async () => {
-      mockGetUID.mockReturnValue(null)
-      render(<IntegrationWrapper />)
-      // Wait for getReviews (ReviewFilters mock fires on mount) as evidence
-      // that useEffects have run, then confirm checkIfReviewed was skipped.
+    it('skips checkIfReviewed when signed out', async () => {
+      renderSection()
       await waitFor(() => expect(mockGetReviews).toHaveBeenCalled())
       expect(mockCheckIfReviewed).not.toHaveBeenCalled()
     })
 
-    it('pre-fills rating from checkIfReviewed response', async () => {
-      mockGetUID.mockReturnValue('user-1')
-      mockCheckIfReviewed.mockResolvedValue({ rating: '4', reviewText: null })
-      render(<IntegrationWrapper />)
-      // StarRating mock renders "{rating} stars"; initial is "0 stars", becomes "4 stars"
-      await screen.findByText('4 stars')
+    it('fetches the first page of reviews newest-first', async () => {
+      renderSection()
+      await waitFor(() =>
+        expect(mockGetReviews).toHaveBeenCalledWith('recipe-1', 'new', 0, 5)
+      )
     })
 
-    it('shows RecipeReview (not AddReview) when checkIfReviewed returns a review with text', async () => {
-      mockGetUID.mockReturnValue('user-1')
-      mockCheckIfReviewed.mockResolvedValue(baseReview)
-      render(<IntegrationWrapper />)
-      await screen.findByText('Your Review:')
-      expect(screen.queryByText('Add Review')).toBeNull()
+    it('pre-fills the composer stars from checkIfReviewed', async () => {
+      mockGetUID.mockReturnValue('me-uid')
+      mockCheckIfReviewed.mockResolvedValue({ reviewed: true, rating: 4 })
+      renderSection()
+      await waitFor(() =>
+        expect(screen.getByTestId('star-ratings-rating')).toHaveTextContent(
+          '4 stars'
+        )
+      )
     })
   })
 
-  describe('submit review flow', () => {
-    it('submitting a review calls newReview with the correct recipeId and review text, then shows the review in the UI', async () => {
+  describe('the invitation slot', () => {
+    it('shows the composer for a signed-in user with no review', async () => {
+      mockGetUID.mockReturnValue('me-uid')
+      renderSection()
+      await screen.findByText('How did it turn out?')
+      expect(screen.getByRole('textbox')).toBeInTheDocument()
+      expect(screen.queryByText('Your review')).toBeNull()
+    })
+
+    it('shows the own-review card instead once a review exists', async () => {
+      mockGetUID.mockReturnValue('me-uid')
+      mockGetUsername.mockResolvedValue('me')
+      mockCheckIfReviewed.mockResolvedValue(ownReviewDoc)
+      renderSection()
+      await screen.findByText('Your review')
+      expect(screen.getByText('My own review text')).toBeInTheDocument()
+      expect(screen.queryByText('How did it turn out?')).toBeNull()
+    })
+
+    it('signed out: invites to sign in instead of composing', async () => {
+      renderSection()
+      const signin = await screen.findByText('Sign in to rate')
+      expect(signin).toHaveAttribute('href', '/login')
+      expect(screen.queryByRole('textbox')).toBeNull()
+    })
+
+    it('recipe owner: shows the owner note, no composer', async () => {
+      mockGetUID.mockReturnValue('me-uid')
+      renderSection({ isOwner: true })
+      await screen.findByText(/This is your recipe/)
+      expect(screen.queryByRole('textbox')).toBeNull()
+      expect(mockCheckIfReviewed).toHaveBeenCalled() // rating state still loads
+    })
+  })
+
+  describe('summary strip', () => {
+    it('renders average, count, and facepile from the aggregate', async () => {
+      mockGetReviews.mockResolvedValue({
+        reviews: [publicReview],
+        totalCount: 1,
+      })
+      renderSection()
+      await screen.findByText('4.0')
+      expect(screen.getByText('10 ratings')).toBeInTheDocument()
+      expect(screen.getByText('Rated by 10 cooks')).toBeInTheDocument()
+    })
+  })
+
+  describe('review list', () => {
+    it('renders fetched reviews as cards', async () => {
+      mockGetReviews.mockResolvedValue({
+        reviews: [publicReview],
+        totalCount: 1,
+      })
+      renderSection()
+      await screen.findByText('Really great recipe!')
+      expect(document.querySelectorAll('.recipe-review')).toHaveLength(1)
+    })
+
+    it("filters the signed-in user's own review out of the list (it lives in the slot above)", async () => {
+      mockGetUID.mockReturnValue('me-uid')
+      mockGetUsername.mockResolvedValue('me')
+      mockCheckIfReviewed.mockResolvedValue(ownReviewDoc)
+      mockGetReviews.mockResolvedValue({
+        reviews: [
+          {
+            ...publicReview,
+            _id: 'own-1',
+            userId: 'me-uid',
+            username: 'me',
+            reviewText: 'My own review text',
+            isCurrentUser: true,
+          },
+          publicReview,
+        ],
+        totalCount: 2,
+      })
+      renderSection()
+      await screen.findByText('Really great recipe!')
+      // own text renders once — in the own-review card, not as a list card
+      expect(screen.getAllByText('My own review text')).toHaveLength(1)
+      expect(document.querySelectorAll('.recipe-review')).toHaveLength(1)
+    })
+
+    it('shows the toolbar count and sort pills once reviews exist', async () => {
+      mockGetReviews.mockResolvedValue({
+        reviews: [publicReview],
+        totalCount: 7,
+      })
+      renderSection()
+      await screen.findByText('7 reviews')
+      expect(screen.getByRole('group', { name: 'Sort reviews' })).toBeInTheDocument()
+    })
+
+    it('switching to Top refetches page 0 with the top sort', async () => {
       const user = userEvent.setup()
-      mockGetUID.mockReturnValue('user-1')
-      // checkIfReviewed sets rating=4 in RatingsAndReviews, which AddReview requires
-      // to pass its "Please add a rating" validation guard before calling newReview.
-      mockCheckIfReviewed.mockResolvedValue({ rating: '4', reviewText: null })
-      mockNewReview.mockResolvedValue(baseReview)
+      mockGetReviews.mockResolvedValue({
+        reviews: [publicReview],
+        totalCount: 7,
+      })
+      renderSection()
+      await screen.findByText('7 reviews')
+      await user.click(screen.getByRole('button', { name: 'Top' }))
+      await waitFor(() =>
+        expect(mockGetReviews).toHaveBeenCalledWith('recipe-1', 'top', 0, 5)
+      )
+    })
 
-      render(<IntegrationWrapper />)
-      // Confirm rating=4 has propagated through the component tree before interacting
-      await screen.findByText('4 stars')
+    it('"Load more reviews" pages forward while more remain', async () => {
+      const user = userEvent.setup()
+      mockGetReviews.mockResolvedValue({
+        reviews: [publicReview],
+        totalCount: 10,
+      })
+      renderSection()
+      await screen.findByText('Load more reviews')
+      await user.click(screen.getByText('Load more reviews'))
+      await waitFor(() =>
+        expect(mockGetReviews).toHaveBeenCalledWith('recipe-1', 'new', 1, 5)
+      )
+    })
 
-      await user.click(screen.getByText('Add Review'))
-      await user.type(screen.getByRole('textbox'), 'Really great recipe!')
-      await user.click(screen.getByText('Submit Review'))
+    it('empty, signed in: nudges to be the first', async () => {
+      mockGetUID.mockReturnValue('me-uid')
+      renderSection()
+      await screen.findByText(/be the first to share/)
+    })
+
+    it('empty, signed out: plain empty note (the sign-in CTA is in the invite)', async () => {
+      renderSection()
+      await screen.findByText('No reviews yet.')
+      expect(screen.queryByText(/be the first/)).toBeNull()
+    })
+
+    it('a failed fetch renders the error copy, never the empty state', async () => {
+      mockGetReviews.mockRejectedValue(new Error('network down'))
+      renderSection()
+      await screen.findByText(/Couldn’t load reviews\. Please try again later\./)
+      expect(screen.queryByText('No reviews yet.')).toBeNull()
+    })
+  })
+
+  describe('submit → own card flow', () => {
+    it('posting a review flips the invitation slot to the own-review card', async () => {
+      const user = userEvent.setup()
+      mockGetUID.mockReturnValue('me-uid')
+      mockGetUsername.mockResolvedValue('me')
+      // Stateful mock: not reviewed until the post lands, then the refetch
+      // (triggered by the composer's invalidate) sees the new doc. Stateful
+      // rather than mockResolvedValueOnce because extra observers mounting the
+      // ['check-made'] query refetch it at unpredictable times.
+      let ownDoc: OwnReviewStatus = { reviewed: false }
+      mockCheckIfReviewed.mockImplementation(async () => ownDoc)
+      mockNewReview.mockImplementation(async () => {
+        ownDoc = ownReviewDoc
+        return publicReview
+      })
+
+      renderSection()
+      await screen.findByText('How did it turn out?')
+      await user.type(screen.getByRole('textbox'), 'My own review text')
+      await user.click(screen.getByText('Share your review'))
 
       await waitFor(() =>
-        expect(mockNewReview).toHaveBeenCalledWith('recipe-1', 'Really great recipe!')
+        expect(mockNewReview).toHaveBeenCalledWith(
+          'recipe-1',
+          'My own review text'
+        )
       )
-      // After a successful submit, setCurrUserReview(baseReview) causes ReviewsContainer
-      // to switch from AddReview to the curr-user-review section containing RecipeReview.
-      await screen.findByText('Your Review:')
-      expect(screen.getByText('Really great recipe!')).toBeInTheDocument()
+      await screen.findByText('Your review')
+      expect(screen.getByText('My own review text')).toBeInTheDocument()
     })
   })
 
-  describe('edit review flow', () => {
-    it('editing a review calls editReview with the new text and updates the displayed content', async () => {
+  describe('edit flow', () => {
+    it('saving an edit calls editReview and shows the refetched text', async () => {
       const user = userEvent.setup()
-      // ReviewOptions shows Edit/Delete only when currUsername === reviewAuthorUsername
-      mockGetUID.mockReturnValue('author-uid')
-      mockGetUsername.mockResolvedValue('testuser') // matches baseReview.username
-      // checkIfReviewed fires in RatingsAndReviews.useEffect (uid is non-null) and calls
-      // setCurrUserReview — return baseReview so it doesn't wipe the initialReview state.
-      mockCheckIfReviewed.mockResolvedValue(baseReview)
-      mockEditReview.mockResolvedValue(undefined)
+      mockGetUID.mockReturnValue('me-uid')
+      mockGetUsername.mockResolvedValue('me')
+      // Stateful: the refetch only sees the updated text once the edit lands.
+      let ownDoc: OwnReviewStatus = ownReviewDoc
+      mockCheckIfReviewed.mockImplementation(async () => ownDoc)
+      mockEditReview.mockImplementation(async (_id: string, text: string) => {
+        ownDoc = { ...ownReviewDoc, reviewText: text }
+        return undefined
+      })
 
-      render(<IntegrationWrapper initialReview={baseReview} />)
-
+      renderSection()
       await screen.findByText('Edit')
       await user.click(screen.getByText('Edit'))
 
       const textarea = screen.getByRole('textbox') as HTMLTextAreaElement
       await user.clear(textarea)
       await user.type(textarea, 'Updated recipe review')
-
-      await user.click(screen.getByText('Submit'))
+      await user.click(screen.getByText('Save changes'))
 
       await waitFor(() =>
-        expect(mockEditReview).toHaveBeenCalledWith('recipe-1', 'Updated recipe review')
+        expect(mockEditReview).toHaveBeenCalledWith(
+          'recipe-1',
+          'Updated recipe review'
+        )
       )
       await screen.findByText('Updated recipe review')
+      expect(screen.queryByRole('textbox')).toBeNull()
     })
   })
 
-  describe('delete review flow', () => {
-    it('confirming deletion calls deleteReview and removes the review from the UI', async () => {
+  describe('delete flow', () => {
+    it('confirming deletion flips the slot back to the composer (rating kept)', async () => {
       const user = userEvent.setup()
-      mockGetUID.mockReturnValue('author-uid')
-      mockGetUsername.mockResolvedValue('testuser')
-      // Same as edit: checkIfReviewed must return baseReview to avoid wiping initialReview.
-      mockCheckIfReviewed.mockResolvedValue(baseReview)
-      mockDeleteReview.mockResolvedValue(undefined)
+      mockGetUID.mockReturnValue('me-uid')
+      mockGetUsername.mockResolvedValue('me')
+      // Stateful: after the delete lands, the refetch shows the rating-only doc.
+      let ownDoc: OwnReviewStatus = ownReviewDoc
+      mockCheckIfReviewed.mockImplementation(async () => ownDoc)
+      mockDeleteReview.mockImplementation(async () => {
+        ownDoc = { reviewed: true, rating: 5, reviewText: '' }
+        return undefined
+      })
 
-      render(<IntegrationWrapper initialReview={baseReview} />)
-
-      await screen.findByText(/^Delete$/)
-      await user.click(screen.getByText(/^Delete$/))
-      await screen.findByText('Are you sure you want to delete your review?')
-
-      // Two "Delete" texts exist: the trigger button and the modal confirm button
-      const deleteButtons = screen.getAllByText(/^Delete$/)
-      await user.click(deleteButtons[deleteButtons.length - 1])
+      renderSection()
+      await screen.findByText('Delete')
+      await user.click(screen.getByText('Delete'))
+      await screen.findByText('Delete your review?')
+      await user.click(screen.getByText('Delete review'))
 
       await waitFor(() =>
         expect(mockDeleteReview).toHaveBeenCalledWith('recipe-1')
       )
-      // setCurrUserReview(null) causes ReviewsContainer to switch back to AddReview
-      await screen.findByText('Add Review')
-      expect(screen.queryByText('Your Review:')).toBeNull()
+      // back to the invitation, with the kept rating seeded into the stars
+      await screen.findByText('How did it turn out?')
+      expect(screen.queryByText('Your review')).toBeNull()
+      await waitFor(() =>
+        expect(screen.getByTestId('star-ratings-rating')).toHaveTextContent(
+          '5 stars'
+        )
+      )
+    })
+
+    it('surfaces a toast and keeps the review when deleteReview fails', async () => {
+      const user = userEvent.setup()
+      mockGetUID.mockReturnValue('me-uid')
+      mockGetUsername.mockResolvedValue('me')
+      mockCheckIfReviewed.mockResolvedValue(ownReviewDoc)
+      mockDeleteReview.mockRejectedValue(new Error('network down'))
+
+      renderSection()
+      await screen.findByText('Delete')
+      await user.click(screen.getByText('Delete'))
+      await screen.findByText('Delete your review?')
+      await user.click(screen.getByText('Delete review'))
+
+      await waitFor(() =>
+        expect(mockToast.error).toHaveBeenCalledWith(
+          'Could not delete your review. Please try again.'
+        )
+      )
+      expect(screen.getByText('My own review text')).toBeInTheDocument()
     })
   })
 
   describe('rating interaction', () => {
-    it('clicking a star calls addRating with the correct recipeId and star value', async () => {
+    it('tapping a composer star calls addRating with the star value', async () => {
       const user = userEvent.setup()
-      mockGetUID.mockReturnValue('user-1')
-      render(<IntegrationWrapper />)
+      mockGetUID.mockReturnValue('me-uid')
+      renderSection()
       await screen.findByTestId('star-ratings-rating')
       await user.click(screen.getByTestId('star-ratings-rating'))
       await waitFor(() =>

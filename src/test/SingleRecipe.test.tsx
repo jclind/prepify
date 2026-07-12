@@ -47,19 +47,6 @@ vi.mock('src/Components/StarRating/StarRating', () => ({
   default: ({ rating }: any) => <div data-testid='star-rating'>{rating}</div>,
 }))
 
-// RecipeHeaderContent renders title, image, and action buttons
-vi.mock('src/pages/SingleRecipe/RecipeHeaderContent/RecipeHeaderContent', () => ({
-  default: ({ currRecipe, loading }: any) => (
-    <div data-testid='recipe-header'>
-      {loading ? (
-        <span data-testid='header-loading'>Loading header...</span>
-      ) : (
-        <h1>{currRecipe?.title}</h1>
-      )}
-    </div>
-  ),
-}))
-
 const mockGetRecipe = RecipeAPI.getRecipe as ReturnType<typeof vi.fn>
 
 const baseRecipe = {
@@ -89,6 +76,24 @@ const baseRecipe = {
   numTimesMade: 5,
 }
 
+// Minimal Edamam-shaped nutrition payload covering every nutrient the
+// NutritionData table reads, so the component renders without throwing.
+const nutrientKeys = [
+  'FAT', 'FASAT', 'FATRN', 'CHOLE', 'NA', 'CHOCDF',
+  'FIBTG', 'SUGAR', 'PROCNT', 'VITD', 'CA', 'FE', 'K',
+]
+const buildNutrientMap = () =>
+  Object.fromEntries(
+    nutrientKeys.map(k => [k, { label: k, quantity: 40, unit: 'g' }])
+  )
+const nutritionDataFixture = {
+  calories: 800,
+  totalNutrients: buildNutrientMap(),
+  totalDaily: buildNutrientMap(),
+  dietLabels: [],
+  healthLabels: [],
+}
+
 const createTestQueryClient = () =>
   new QueryClient({ defaultOptions: { queries: { retry: false } } })
 
@@ -109,10 +114,12 @@ describe('SingleRecipe page', () => {
     localStorage.clear()
   })
 
-  it('shows loading state in header while API call is pending', () => {
+  it('shows loading state in header while API call is pending', async () => {
     mockGetRecipe.mockReturnValue(new Promise(() => {}))
     renderSingleRecipe()
-    expect(screen.getByTestId('header-loading')).toBeInTheDocument()
+    // The body skeletons are delay-gated (useDelayedLoading); on a pending load
+    // the header skeleton appears once the delay elapses.
+    expect(await screen.findByTestId('header-loading')).toBeInTheDocument()
     expect(screen.queryByTestId('ratings-section')).toBeNull()
   })
 
@@ -120,6 +127,16 @@ describe('SingleRecipe page', () => {
     mockGetRecipe.mockResolvedValue(baseRecipe)
     renderSingleRecipe()
     await screen.findByText('Chicken Tacos')
+  })
+
+  it('links the author byline to the author profile at /u/:username', async () => {
+    mockGetRecipe.mockResolvedValue(baseRecipe)
+    renderSingleRecipe()
+    await screen.findByText('Chicken Tacos')
+    const authorLink = screen.getByRole('link', { name: "View @chef's profile" })
+    expect(authorLink).toHaveAttribute('href', '/u/chef')
+    // the handle + avatar live inside the single clickable byline
+    expect(authorLink).toHaveTextContent('@chef')
   })
 
   it('shows RecipeNotFound when API response has no title', async () => {
@@ -171,8 +188,8 @@ describe('SingleRecipe page', () => {
     // Wait for initial load
     await screen.findByText('Chicken Tacos')
 
-    // The Ingredients component has + button to increment
-    const incButton = screen.getByRole('button', { name: '+' })
+    // The Ingredients component has a + button to increment
+    const incButton = screen.getByRole('button', { name: 'Increase servings' })
     await user.click(incButton)
 
     await waitFor(() => {
@@ -183,6 +200,61 @@ describe('SingleRecipe page', () => {
         ])
       )
     })
+  })
+
+  it('renders the recipe when recipeServings localStorage holds invalid JSON (no crash)', async () => {
+    // An unguarded JSON.parse in the servings effect used to throw and unwind to
+    // the app-wide error boundary, blanking the whole recipe page.
+    localStorage.setItem('recipeServings', '{ not-valid-json')
+    mockGetRecipe.mockResolvedValue(baseRecipe)
+    renderSingleRecipe()
+    expect(await screen.findByText('Chicken Tacos')).toBeInTheDocument()
+  })
+
+  it('renders the recipe when recipeServings is valid JSON but not an array (no crash)', async () => {
+    // A non-array value made `.find`/`.findIndex` throw a TypeError.
+    localStorage.setItem('recipeServings', '{}')
+    mockGetRecipe.mockResolvedValue(baseRecipe)
+    renderSingleRecipe()
+    expect(await screen.findByText('Chicken Tacos')).toBeInTheDocument()
+  })
+
+  it('renders the nutrition facts table when the recipe has nutritionData', async () => {
+    mockGetRecipe.mockResolvedValue({
+      ...baseRecipe,
+      nutritionData: nutritionDataFixture,
+    })
+    renderSingleRecipe()
+    await screen.findByText('Chicken Tacos')
+    // The inline facts table renders its rows.
+    expect(screen.getByText('Total Fat')).toBeInTheDocument()
+    // calories per serving = round(800 / 4 servings) = 200; shown in both the
+    // macro summary and the facts table.
+    expect(screen.getAllByText('200').length).toBeGreaterThan(0)
+  })
+
+  it('shows a calories-only nutrition view when only calories are present', async () => {
+    // Stored recipes can have a `nutritionData` object with just a calorie
+    // count (no `totalNutrients`); it renders the calories-only view, not an
+    // empty facts table, and must not throw.
+    mockGetRecipe.mockResolvedValue({
+      ...baseRecipe,
+      nutritionData: { calories: 800 },
+    })
+    renderSingleRecipe()
+    await screen.findByText('Chicken Tacos')
+    expect(screen.getByText('Nutrition')).toBeInTheDocument()
+    // 800 / 4 servings = 200 calories per serving
+    expect(screen.getByText('200')).toBeInTheDocument()
+    // no detailed facts table without nutrient maps
+    expect(screen.queryByText('Total Fat')).toBeNull()
+  })
+
+  it('omits the nutrition section when nutritionData is null', async () => {
+    mockGetRecipe.mockResolvedValue(baseRecipe)
+    renderSingleRecipe()
+    await screen.findByText('Chicken Tacos')
+    expect(screen.queryByText('Total Fat')).toBeNull()
   })
 
   it('shows error message and does not crash when getRecipe throws', async () => {

@@ -9,6 +9,10 @@ Nothing below is implemented yet — this file is purely the plan.
 
 ## RecipeThumbnail
 
+> **Retired (2026-07-02):** `RecipeThumbnail` and its test were deleted as dead code in PR #199
+> (the code-quality sweep) — `RecipeCard` is the live card everywhere. This section is kept for
+> the historical plan only; the equivalent coverage lives on `RecipeCard`.
+
 The thumbnail is the most-rendered component in the app and has two very different
 modes (loading skeleton vs populated card). Getting those branches right matters.
 
@@ -45,9 +49,9 @@ interplay between URL state, filter state, API calls, and the results list.
   The skeleton path (`!recipeList[0]`) must render while `filtersLoading` is true
   and no data has arrived yet.
 
-- **Renders recipe thumbnails once the API resolves with results**
-  Happy-path check: the recipeList maps to the correct number of RecipeThumbnail
-  components.
+- **Renders recipe cards once the API resolves with results**
+  Happy-path check: the recipeList maps to the correct number of `RecipeCard`
+  components. *(Originally written against `RecipeThumbnail`, deleted in PR #199.)*
 
 - **Shows "No Results Found" when the API returns `total_results: 0`**
   The component only shows this message for the explicit zero case. An empty list
@@ -170,7 +174,7 @@ independently.
 
 - **On a successful submission, navigates to the new recipe and confirms with a toast**
   `navigate('/recipes/<newId>')` must run after a successful API call, and a
-  `toast.success('Recipe published!')` must fire (it persists across the route change).
+  `toast.success('Recipe published.')` must fire (it persists across the route change).
 
 - **On API failure (`addRecipe` returns `null`), fires `toast.error('Failed to create recipe. Please try again.')`**
   Flow-level outcomes route through `react-hot-toast`, not inline state. This is the
@@ -261,10 +265,10 @@ Tested in isolation from the full form since the list logic is independent.
   The user's own review is shown in the container above, so the "No Reviews" copy
   would be inaccurate.
 
-- **"More Reviews" button is visible when `isMoreReviews=true`**
+- **"Load more reviews" button is visible when `isMoreReviews=true`**
   ReviewsList renders the button only when there are additional pages.
 
-- **Clicking "More Reviews" calls `getReviews` with the next page and appends results**
+- **Clicking "Load more reviews" calls `getReviews` with the next page and appends results**
   Same append-vs-replace concern as the browse page. `recipesPage !== 0` must
   concatenate, not overwrite.
 

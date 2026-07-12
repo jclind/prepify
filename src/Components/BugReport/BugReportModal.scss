@@ -1,0 +1,117 @@
+@use '../../helpers.scss' as s;
+
+// Adopts the `.btn` base for layout/reset/pill, but keeps its bespoke tertiary
+// text + brand-orange (s.$primary) hover — this sits in the consumer footer, so
+// the hover matches the footer links (was the admin-palette blue $admin-link).
+// No `--ghost` colour variant is applied (base only). Selector is
+// `.bug-report-trigger.btn` (0,2,0) so its compact padding reliably outranks the
+// base `.btn` (0,1,0) regardless of stylesheet order (the element always carries
+// both classes — `bug-report-trigger btn ${variant}`).
+.bug-report-trigger.btn {
+  color: s.$tertiary-text;
+  font-size: s.$text-fine;
+  padding: 0.15rem 0.35rem;
+
+  &:hover {
+    color: s.$primary;
+    background: rgba(s.$primary, 0.08);
+  }
+
+  &.button {
+    border: 1px solid s.$admin-slate-300;
+    padding: 0.4rem 0.75rem;
+    font-size: s.$text-sm;
+  }
+}
+
+.bug-report-modal {
+  outline: none;
+
+  .bug-report-modal-title {
+    margin: 0 0 0.35rem;
+    font-size: s.$text-xl;
+  }
+
+  .bug-report-modal-sub {
+    margin: 0 0 1.25rem;
+    color: s.$admin-slate-500;
+    font-size: s.$text-base;
+  }
+
+  .bug-report-identity {
+    margin: -0.75rem 0 1.25rem;
+    padding: 0.5rem 0.7rem;
+    background: s.$admin-slate-100;
+    border-radius: s.$radius-sm;
+    color: s.$admin-slate-700;
+    font-size: s.$text-sm;
+
+    strong {
+      font-weight: 600;
+    }
+  }
+
+  .bug-report-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin-bottom: 1rem;
+    font-size: s.$text-sm;
+    font-weight: 600;
+    color: s.$admin-slate-700;
+
+    select,
+    textarea,
+    input {
+      font-weight: 400;
+      font-size: s.$text-base;
+      padding: 0.55rem 0.65rem;
+      border: 1px solid s.$admin-slate-300;
+      border-radius: s.$radius-sm;
+      font-family: inherit;
+      resize: vertical;
+
+      &:focus {
+        outline: none;
+        border-color: s.$admin-action;
+      }
+    }
+  }
+
+  .bug-report-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.6rem;
+    margin-top: 0.5rem;
+
+    // Both buttons ride the `.btn` base; only the modal's tighter padding /
+    // font-size and the spinner anchor are local.
+    button {
+      padding: 0.55rem 1rem;
+      font-size: s.$text-base;
+      position: relative;
+    }
+
+    // Bespoke grey secondary (not the white `--outline` palette) — base only.
+    .bug-report-cancel-btn {
+      background: s.$admin-slate-100;
+      border: 1px solid s.$admin-slate-300;
+      color: s.$admin-slate-700;
+    }
+
+    // KEEP BESPOKE: non-token green fill on the `.btn` base, no colour variant.
+    .bug-report-submit-btn {
+      background: s.$admin-ok-fill;
+      border: 1px solid s.$admin-ok-fill;
+      color: s.$white;
+
+      &:disabled {
+        opacity: 0.7;
+      }
+    }
+
+    .bug-report-btn-spinner {
+      display: inline-flex;
+    }
+  }
+}

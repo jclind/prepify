@@ -8,7 +8,9 @@ import './AddRecipeSummaryBar.scss'
 type TimeVal = { hours: number; minutes: number } | null
 
 interface AddRecipeSummaryBarProps {
-  servings: number | ''
+  // Raw servings field string (see RecipeFormState.servings); coerced with
+  // Number() for the price calc below.
+  servings: string
   prepTime: TimeVal
   cookTime: TimeVal
   ingredients: IngredientsType[]
@@ -84,7 +86,7 @@ const AddRecipeSummaryBar: FC<AddRecipeSummaryBarProps> = ({
           {onCancel && (
             <button
               type='button'
-              className='cancel-btn'
+              className='cancel-btn btn'
               disabled={loading}
               onClick={onCancel}
             >
@@ -92,7 +94,7 @@ const AddRecipeSummaryBar: FC<AddRecipeSummaryBarProps> = ({
             </button>
           )}
           <button
-            className={`submit-btn ${isValid ? 'valid' : 'invalid'}`}
+            className={`submit-btn btn ${isValid ? 'valid' : 'invalid'}`}
             disabled={loading}
             aria-busy={loading}
             onClick={onSubmit}

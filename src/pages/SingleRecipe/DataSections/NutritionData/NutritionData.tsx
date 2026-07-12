@@ -1,15 +1,6 @@
-import React, { FC, useState } from 'react'
-import { Collapse } from 'react-collapse'
-import { MdKeyboardArrowUp, MdKeyboardArrowDown } from 'react-icons/md'
+import React, { FC } from 'react'
 import { NutritionDataType } from 'types'
-import './NutritionData.scss'
-
-const getQuantity = (num: number, servings: number) => {
-  if (!num) {
-    return null
-  }
-  return Math.round(num / servings)
-}
+import { getQuantity, safeNutrientMap } from 'src/util/nutrition'
 
 type NutritionDataProps = {
   data: NutritionDataType
@@ -17,164 +8,112 @@ type NutritionDataProps = {
 }
 
 const NutritionData: FC<NutritionDataProps> = ({ data, servings }) => {
-  const [isOpen, setIsOpen] = useState(false)
-  const tNutr = data.totalNutrients
-  const tDay = data.totalDaily
-  return (
-    <div className='recipe-nutrition-data'>
-      <button
-        className='open-collapse-btn btn'
-        onClick={() => setIsOpen(!isOpen)}
-      >
-        <div className='text'>Nutrition Data</div>
-        {isOpen ? (
-          <MdKeyboardArrowUp className='icon' />
-        ) : (
-          <MdKeyboardArrowDown className='icon' />
-        )}
-      </button>
-      <Collapse isOpened={isOpen}>
-        <section className='nutrition-label'>
-          <header className='nutrition-header border-b-lg'>
-            <h1 className='nutrition-facts border-b'>Nutrition Facts</h1>
-          </header>
-          <div className='nutrition-row border-b-md'>
-            <div className='nutrition-column text-bold'>
-              <div className='text-sm'>Amount per serving</div>
-              <div className='calories'>Calories</div>
-            </div>
-            <div className='nutrition-column calories amount align-bottom text-right'>
-              {getQuantity(data.calories, servings)}
-            </div>
-          </div>
-          <div className='nutrition-row border-b'>
-            <div className='nutrition-column text-right text-bold text-sm'>
-              % Daily Value *
-            </div>
-          </div>
-          <div className='nutrition-row border-b'>
-            <div className='nutrition-column'>
-              <span className='text-bold'>Total Fat</span>{' '}
-              {getQuantity(tNutr.FAT.quantity, servings)}g
-            </div>
-            <div className='nutrition-column text-bold text-right'>
-              {getQuantity(tDay.FAT.quantity, servings)}%
-            </div>
-          </div>
-          <div className='nutrition-row border-b'>
-            <div className='nutrition-column'>
-              <span className='text-indent'>
-                Saturated Fat {getQuantity(tNutr.FASAT.quantity, servings)}g
-              </span>
-            </div>
-            <div className='nutrition-column text-bold text-right'>
-              {getQuantity(tDay.FASAT.quantity, servings)}%
-            </div>
-          </div>
-          <div className='nutrition-row border-b'>
-            <div className='nutrition-column'>
-              <span className='text-indent'>
-                <i>Trans</i> Fat{' '}
-                {tNutr.FATRN && getQuantity(tNutr.FATRN.quantity, servings)}g
-              </span>
-            </div>
-            <div className='nutrition-column text-bold text-right'></div>
-          </div>
-          <div className='nutrition-row border-b'>
-            <div className='nutrition-column'>
-              <span className='text-bold'>Cholesterol</span>{' '}
-              {getQuantity(tNutr.CHOLE.quantity, servings)}mg
-            </div>
-            <div className='nutrition-column text-bold text-right'>
-              {getQuantity(tDay.CHOLE.quantity, servings)}%
-            </div>
-          </div>
-          <div className='nutrition-row border-b'>
-            <div className='nutrition-column'>
-              <span className='text-bold'>Sodium</span>{' '}
-              {getQuantity(tNutr.NA.quantity, servings)}mg
-            </div>
-            <div className='nutrition-column text-bold text-right'>
-              {getQuantity(tDay.NA.quantity, servings)}%
-            </div>
-          </div>
-          <div className='nutrition-row border-b'>
-            <div className='nutrition-column'>
-              <span className='text-bold'>Total Carbohydrate</span>{' '}
-              {getQuantity(tNutr.CHOCDF.quantity, servings)}g
-            </div>
-            <div className='nutrition-column text-bold text-right'>
-              {getQuantity(tDay.CHOCDF.quantity, servings)}%
-            </div>
-          </div>
-          <div className='nutrition-row border-b'>
-            <div className='nutrition-column'>
-              <span className='text-indent'>
-                Dietary Fiber {getQuantity(tNutr.FIBTG.quantity, servings)}g
-              </span>
-            </div>
-            <div className='nutrition-column text-bold text-right'>
-              {getQuantity(tDay.FIBTG.quantity, servings)}%
-            </div>
-          </div>
-          <div className='nutrition-row'>
-            <div className='nutrition-column'>
-              <span className='text-indent'>
-                Total Sugars {getQuantity(tNutr.SUGAR.quantity, servings)}g
-              </span>
-            </div>
-            <div className='nutrition-column text-bold text-right'></div>
-          </div>
-          <div className='nutrition-row border-t-sm border-b-lg'>
-            <div className='nutrition-column'>
-              <span className='text-bold'>Protein</span>{' '}
-              {getQuantity(tNutr.PROCNT.quantity, servings)}g
-            </div>
-            <div className='nutrition-column text-bold text-right'></div>
-          </div>
-          <div className='nutrition-row border-b'>
-            <div className='nutrition-column'>
-              Vitamin D {getQuantity(tNutr.VITD.quantity, servings)}mcg
-            </div>
-            <div className='nutrition-column text-right'>
-              {getQuantity(tDay.VITD.quantity, servings)}%
-            </div>
-          </div>
-          <div className='nutrition-row border-b'>
-            <div className='nutrition-column'>
-              Calcium {getQuantity(tNutr.CA.quantity, servings)}mg
-            </div>
-            <div className='nutrition-column text-right'>
-              {getQuantity(tDay.CA.quantity, servings)}%
-            </div>
-          </div>
-          <div className='nutrition-row border-b'>
-            <div className='nutrition-column'>
-              Iron {getQuantity(tNutr.FE.quantity, servings)}mg
-            </div>
-            <div className='nutrition-column text-right'>
-              {getQuantity(tDay.FE.quantity, servings)}%
-            </div>
-          </div>
-          <div className='nutrition-row border-b-md'>
-            <div className='nutrition-column'>
-              Potassium {getQuantity(tNutr.K.quantity, servings)}mg
-            </div>
-            <div className='nutrition-column text-right'>
-              {getQuantity(tDay.K.quantity, servings)}%
-            </div>
-          </div>
-          <footer className='nutrition-footer'>
-            <div className='asteric'>*</div>
-            <div className='footnote'>
-              The % Daily Value (DV) tells you how much a nutrient in a serving
-              of food contributes to a daily diet. 2,000 calories a day is used
-              for general nutrition advice.
-            </div>
-          </footer>
-        </section>
-      </Collapse>
+  const tNutr = safeNutrientMap(data.totalNutrients)
+  const caloriesPerServing = getQuantity(data.calories, servings)
+  const hasCalories = caloriesPerServing != null
+
+  const macros = [
+    { key: 'PROCNT', label: 'Protein' },
+    { key: 'FAT', label: 'Fat' },
+    { key: 'CHOCDF', label: 'Carbs' },
+    { key: 'FIBTG', label: 'Fiber' },
+  ].map(m => ({ ...m, value: getQuantity(tNutr[m.key]?.quantity, servings) }))
+  const macroMax = Math.max(1, ...macros.map(m => m.value ?? 0))
+  const hasMacros = macros.some(m => m.value != null)
+
+  const fact = (key: string, unit: string) => {
+    const q = getQuantity(tNutr[key]?.quantity, servings)
+    return q != null ? `${q} ${unit}` : null
+  }
+  // Only keep facts that actually have a value.
+  const allFacts: { label: string; value: string }[] = [
+    hasCalories ? { label: 'Calories', value: `${caloriesPerServing}` } : null,
+    { label: 'Total Fat', value: fact('FAT', 'g') },
+    { label: 'Total Carbohydrate', value: fact('CHOCDF', 'g') },
+    { label: 'Dietary Fiber', value: fact('FIBTG', 'g') },
+    { label: 'Sugars', value: fact('SUGAR', 'g') },
+    { label: 'Protein', value: fact('PROCNT', 'g') },
+    { label: 'Sodium', value: fact('NA', 'mg') },
+  ].filter((f): f is { label: string; value: string } => !!f && f.value != null)
+  const detailFacts = allFacts.filter(f => f.label !== 'Calories')
+  const showFactsTable = detailFacts.length > 0
+
+  // Nothing usable → render nothing (no empty card).
+  if (!hasCalories && !hasMacros && !showFactsTable) return null
+
+  const caloriesEl = hasCalories && (
+    <div className='nd-cal'>
+      <strong>{caloriesPerServing}</strong> calories
     </div>
+  )
+  const macroBars = hasMacros && (
+    <div className='nd-macros'>
+      {macros.map(m => (
+        <div className='nd-macro' key={m.key}>
+          <div className='nd-macro-top'>
+            <span>{m.label}</span>
+            <span>{m.value != null ? `${m.value}g` : '—'}</span>
+          </div>
+          <div className='nd-track'>
+            <div
+              className='nd-fill'
+              style={{ width: `${((m.value ?? 0) / macroMax) * 100}%` }}
+            />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+  const factsTable = showFactsTable && (
+    <table className='nd-facts'>
+      <tbody>
+        {detailFacts.map(f => (
+          <tr key={f.label}>
+            <td>{f.label}</td>
+            <td>{f.value}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
+
+  return (
+    <section className='card nutrition-card'>
+      <div className='recipe-nutrition-data'>
+        <div className='nd-head'>
+          <h3>Nutrition</h3>
+          <span className='nd-per'>per serving</span>
+        </div>
+
+        {hasMacros && showFactsTable ? (
+          // full data: macro bars beside a facts table
+          <div className='nd-grid'>
+            <div className='nd-macros-col'>
+              {caloriesEl}
+              {macroBars}
+            </div>
+            {factsTable}
+          </div>
+        ) : hasMacros ? (
+          // macros only (no detailed facts)
+          <div className='nd-macros-col'>
+            {caloriesEl}
+            {macroBars}
+          </div>
+        ) : showFactsTable ? (
+          // facts only (no macro breakdown)
+          <div className='nd-facts-only'>
+            {caloriesEl}
+            {factsTable}
+          </div>
+        ) : (
+          // calories only
+          <div className='nd-cal solo'>
+            <strong>{caloriesPerServing}</strong> calories per serving
+          </div>
+        )}
+      </div>
+    </section>
   )
 }
 

@@ -1,132 +1,437 @@
-import React, { FC, useState } from 'react'
-import { useInfiniteQuery } from '@tanstack/react-query'
-import { useLocation } from 'react-router-dom'
-import './Recipes.scss'
-import RecipeThumbnail from 'src/Components/RecipeThumbnail/RecipeThumbnail'
-import RecipeFilters from 'src/Components/RecipeFilters/RecipeFilters'
-import SearchRecipesInput from 'src/Components/SearchRecipesInput/SearchRecipesInput'
+import { ChevronDownIcon, SearchOffIcon, SlidersIcon } from 'src/Components/icons'
+import React, { FC, useEffect, useState } from 'react'
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
-import RecipeAPI from 'src/api/recipes'
 import { TailSpin } from 'react-loader-spinner'
+import { spinnerColor } from 'src/util/loadingStyles'
+import { useDelayedLoading } from 'src/hooks/useDelayedLoading'
+import './Recipes.scss'
+import RecipeCard from 'src/Components/RecipeCard/RecipeCard'
+import SearchRecipesInput from 'src/Components/SearchRecipesInput/SearchRecipesInput'
+import SortDropdown from 'src/Components/SortDropdown/SortDropdown'
+import RecipeAPI from 'src/api/recipes'
+import { SITE_URL, DEFAULT_OG_IMAGE } from 'src/util/seo'
+import { RECIPES_PATH } from 'src/routes'
+import { dietLabelsOptions } from 'src/recipeData/dietLabels'
+import cuisinesList from 'src/recipeData/cuisinesList'
+import mealTypesList from 'src/recipeData/mealTypesList'
+
+const RECIPES_PER_PAGE = 10
+
+const SORT_OPTIONS = [
+  { value: 'popular', label: 'Popular' },
+  { value: 'new', label: 'Newest' },
+  { value: 'old', label: 'Oldest' },
+  { value: 'cheapest', label: 'Cheapest' },
+  { value: 'expensive', label: 'Priciest' },
+  { value: 'shortest', label: 'Quickest' },
+  { value: 'longest', label: 'Longest' },
+]
+
+const dietLabelOf = (value: string) =>
+  dietLabelsOptions.find(o => o.value === value)?.label ??
+  value.replace(/[-_]/g, ' ')
 
 const Recipes: FC = () => {
-  const [selectFilterVal, setSelectFilterVal] = useState('')
-  const [selectedTags, setSelectedTags] = useState<string[]>([])
-  const [selectedCuisine, setSelectedCuisine] = useState('')
-  const [filtersLoading, setFiltersLoading] = useState(true)
-
   const location = useLocation()
+  const navigate = useNavigate()
   const urlParams = new URLSearchParams(location.search)
   const param = urlParams.get('q')
   const query = param ? param.split('-').join(' ') : ''
-  const orderParam = urlParams.get('order')
-  const filter = orderParam || selectFilterVal
+
+  const [sort, setSort] = useState('popular')
+  const [diets, setDiets] = useState<string[]>([])
+  const [cuisine, setCuisine] = useState('')
+  const [meals, setMeals] = useState<string[]>([])
+  // Gate the query until the initial URL params have been read into state, so
+  // we don't fire a default fetch and then immediately refetch with filters.
+  const [filtersLoading, setFiltersLoading] = useState(true)
+  const [drawerOpen, setDrawerOpen] = useState(false)
+
+  // Hydrate filter state from the URL once on mount.
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    setSort(params.get('order') || 'popular')
+    setDiets(params.get('dietTags')?.split(',').filter(Boolean) ?? [])
+    setCuisine(params.get('cuisine') ?? '')
+    setMeals(params.get('mealTypes')?.split(',').filter(Boolean) ?? [])
+    setFiltersLoading(false)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Reflect filter state back into the URL (shareable + bookmarkable).
+  const syncUrl = (next: {
+    sort?: string
+    diets?: string[]
+    cuisine?: string
+    meals?: string[]
+  }) => {
+    const params = new URLSearchParams(location.search)
+    const s = next.sort ?? sort
+    const d = next.diets ?? diets
+    const c = next.cuisine ?? cuisine
+    const m = next.meals ?? meals
+    s && s !== 'popular' ? params.set('order', s) : params.delete('order')
+    d.length ? params.set('dietTags', d.join(',')) : params.delete('dietTags')
+    c ? params.set('cuisine', c) : params.delete('cuisine')
+    m.length ? params.set('mealTypes', m.join(',')) : params.delete('mealTypes')
+    navigate(`${RECIPES_PATH}?${params.toString()}`)
+  }
+
+  const changeSort = (value: string) => {
+    setSort(value)
+    syncUrl({ sort: value })
+  }
+  const toggleDiet = (value: string) => {
+    const next = diets.includes(value)
+      ? diets.filter(d => d !== value)
+      : [...diets, value]
+    setDiets(next)
+    syncUrl({ diets: next })
+  }
+  const changeCuisine = (value: string) => {
+    const next = cuisine === value ? '' : value
+    setCuisine(next)
+    syncUrl({ cuisine: next })
+  }
+  const toggleMeal = (value: string) => {
+    const next = meals.includes(value)
+      ? meals.filter(m => m !== value)
+      : [...meals, value]
+    setMeals(next)
+    syncUrl({ meals: next })
+  }
+  // Reset just the filter selections (diets/cuisine/meals). Shared by the in-list
+  // "Clear filters" button (which re-syncs the URL, preserving the search term)
+  // and the empty-state "Browse all" reset (which drops the search term too), so
+  // the two affordances can't drift on which filters they clear.
+  const resetFilters = () => {
+    setDiets([])
+    setCuisine('')
+    setMeals([])
+  }
+  const clearFilters = () => {
+    resetFilters()
+    syncUrl({ diets: [], cuisine: '', meals: [] })
+  }
+  // Full reset escape-hatch for the empty state: drop the search term AND every
+  // filter, landing on the unfiltered catalog. `syncUrl`/`clearFilters` both
+  // preserve `q`, so navigating to a bare RECIPES_PATH (no query string) is what
+  // additionally clears the search term.
+  const browseAll = () => {
+    setSort('popular')
+    resetFilters()
+    navigate(RECIPES_PATH)
+  }
 
   const { data, isFetching, isError, fetchNextPage, hasNextPage } =
     useInfiniteQuery({
-      queryKey: [
-        'recipes',
-        {
-          sort: filter,
-          tags: selectedTags,
-          cuisine: selectedCuisine,
-          search: query,
-        },
-      ],
+      queryKey: ['recipes', { sort, diets, cuisine, search: query, meals }],
       queryFn: ({ pageParam }) =>
-        RecipeAPI.getAllRecipes(
-          pageParam as number,
-          filter,
-          selectedTags,
-          selectedCuisine,
-          9,
-          query
-        ),
+        RecipeAPI.getAllRecipes({
+          page: pageParam as number,
+          order: sort,
+          cuisine,
+          recipesPerPage: RECIPES_PER_PAGE,
+          query,
+          mealTypes: meals,
+          diets,
+        }),
       initialPageParam: 0,
       getNextPageParam: (lastPage, allPages) => {
         const totalFetched = allPages.reduce(
           (sum, p) => sum + p.recipeList.length,
           0
         )
+        // Next page index = pages fetched so far (0-indexed). The server
+        // response has no `page` field, so deriving it from `allPages.length`
+        // is robust; `lastPage.page + 1` would be NaN and the API would skip(0),
+        // re-serving page 0 as duplicates.
         return totalFetched < lastPage.total_results
-          ? lastPage.page + 1
+          ? allPages.length
           : undefined
       },
       enabled: !filtersLoading,
       retry: false,
     })
 
+  // Which filter values actually exist in the catalog, so we don't offer a
+  // cuisine with zero recipes. Falls back to the full curated list if the
+  // request hasn't resolved (or failed) — better to over-offer than show none.
+  const { data: facets } = useQuery({
+    queryKey: ['recipe-facets'],
+    queryFn: () => RecipeAPI.getRecipeFacets(),
+    staleTime: 10 * 60 * 1000,
+  })
+  const availableCuisines = facets
+    ? cuisinesList.filter(c =>
+        facets.cuisines.some(fc => fc.toLowerCase() === c.toLowerCase())
+      )
+    : cuisinesList
+
   const recipeList = data?.pages.flatMap(p => p.recipeList) ?? []
   const totalResults = data?.pages[0]?.total_results ?? null
+  const activeFilterCount = diets.length + meals.length + (cuisine ? 1 : 0)
+  const hasResults = recipeList.length > 0
+  const isInitialLoading = !data && !isError
+  // Hold the skeleton grid behind a short delay (docs/design/loading-states.md)
+  // so a cache hit resolves into cards without a one-frame flash. The empty state
+  // is gated on totalResults === 0 (null while loading), so it can't flash here.
+  const showInitialSkeleton = useDelayedLoading(isInitialLoading)
 
   return (
     <>
       <Helmet>
         <meta charSet='utf-8' />
-        <title>Prepify | Search Recipes</title>
+        <title>Recipes · Prepify</title>
         <meta
           name='description'
           content="Find healthy and budget-friendly recipes on Prepify's search page. Get meal prices and nutrition info for easy meal planning. Cook delicious meals with our flavorful recipes."
         />
+        <link rel='canonical' href={`${SITE_URL}/recipes`} />
+        {/* Sole live-head meta source for this route (static index.html copies
+            are stripped on JS boot). */}
+        <meta property='og:type' content='website' />
+        <meta property='og:title' content='Recipes · Prepify' />
+        <meta
+          property='og:description'
+          content="Find healthy, budget-friendly recipes on Prepify — every recipe includes meal price and nutrition info."
+        />
+        <meta property='og:image' content={DEFAULT_OG_IMAGE} />
+        <meta property='og:url' content={`${SITE_URL}/recipes`} />
+        <meta name='twitter:card' content='summary_large_image' />
+        <meta name='twitter:title' content='Recipes · Prepify' />
+        <meta
+          name='twitter:description'
+          content="Find healthy, budget-friendly recipes on Prepify — every recipe includes meal price and nutrition info."
+        />
+        <meta name='twitter:image' content={DEFAULT_OG_IMAGE} />
       </Helmet>
       <div className='page recipes-page'>
-        <h1 className='title'>Recipes</h1>
-        <SearchRecipesInput defaultVal={query} autoComplete={true} />
-        <section className='recipes-container'>
-          <RecipeFilters
-            selectVal={selectFilterVal}
-            setSelectVal={setSelectFilterVal}
-            selectedDietTags={selectedTags}
-            setSelectedDietTags={setSelectedTags}
-            selectedCuisine={selectedCuisine}
-            setSelectedCuisine={setSelectedCuisine}
-            filtersLoading={filtersLoading}
-            setFiltersLoading={setFiltersLoading}
-          />
-          {isError ? (
-            <div className='fetch-error'>
-              Failed to load recipes. Please try again.
-            </div>
-          ) : totalResults === 0 ? (
-            <div>No Results Found</div>
-          ) : (
-            <>
-              {recipeList[0] ? (
-                <div className='recipes-list'>
-                  {recipeList.map((recipe, idx) => {
-                    return <RecipeThumbnail key={idx} recipe={recipe} />
-                  })}
-                </div>
-              ) : (
-                <div className='recipes-list'>
-                  <RecipeThumbnail recipe={null} loading={true} />
-                  <RecipeThumbnail recipe={null} loading={true} />
-                  <RecipeThumbnail recipe={null} loading={true} />
-                  <RecipeThumbnail recipe={null} loading={true} />
-                </div>
-              )}
-            </>
-          )}
+        <header className='recipes-header'>
+          <h1>Recipes</h1>
+          <p>Healthy, budget-friendly meals with real prices per serving.</p>
+        </header>
 
-          {hasNextPage ? (
-            <button
-              className='load-more-btn btn'
-              onClick={() => fetchNextPage()}
-              disabled={isFetching}
-            >
-              {isFetching ? (
-                <TailSpin
-                  height='30'
-                  width='30'
-                  color='black'
-                  ariaLabel='loading'
-                />
-              ) : (
-                'Load More Recipes'
-              )}
+        <div className='recipes-toolbar'>
+          <SearchRecipesInput defaultVal={query} autoComplete={true} />
+          <button
+            type='button'
+            className='recipes-filters-btn'
+            onClick={() => setDrawerOpen(true)}
+          >
+            <SlidersIcon /> Filters
+            {activeFilterCount > 0 && (
+              <span className='recipes-filters-btn__badge'>
+                {activeFilterCount}
+              </span>
+            )}
+          </button>
+
+          <SortDropdown
+            className='recipes-sort'
+            options={SORT_OPTIONS}
+            value={sort}
+            onChange={changeSort}
+          />
+        </div>
+
+        {activeFilterCount > 0 && (
+          <div className='recipes-active'>
+            {cuisine && (
+              <button
+                className='recipes-active__chip'
+                onClick={() => changeCuisine(cuisine)}
+              >
+                {cuisine} ✕
+              </button>
+            )}
+            {diets.map(d => (
+              <button
+                key={d}
+                className='recipes-active__chip'
+                onClick={() => toggleDiet(d)}
+              >
+                {dietLabelOf(d)} ✕
+              </button>
+            ))}
+            {meals.map(m => (
+              <button
+                key={m}
+                className='recipes-active__chip'
+                onClick={() => toggleMeal(m)}
+              >
+                {m} ✕
+              </button>
+            ))}
+            <button className='recipes-active__clear' onClick={clearFilters}>
+              Clear all
             </button>
-          ) : null}
-        </section>
+          </div>
+        )}
+
+        {isError ? (
+          <div className='recipes-message'>
+            Failed to load recipes. Please try again.
+          </div>
+        ) : totalResults === 0 ? (
+          <div className='recipes-empty'>
+            <div className='recipes-empty__icon' aria-hidden='true'>
+              <SearchOffIcon />
+            </div>
+            <h2 className='recipes-empty__title'>No recipes found</h2>
+            <p className='recipes-empty__msg'>
+              {query ? (
+                <>
+                  Nothing matched <strong>“{query}”</strong>
+                  {activeFilterCount > 0 ? ' with these filters' : ''}. Try a
+                  different search{activeFilterCount > 0 ? ' or loosen your filters' : ''}.
+                </>
+              ) : (
+                'No recipes match these filters. Try removing one to see more.'
+              )}
+            </p>
+            <div className='recipes-empty__actions'>
+              {activeFilterCount > 0 && (
+                <button
+                  className='recipes-empty__btn recipes-empty__btn--ghost'
+                  onClick={clearFilters}
+                >
+                  Clear filters
+                </button>
+              )}
+              <button
+                className='recipes-empty__btn recipes-empty__btn--primary'
+                onClick={browseAll}
+              >
+                Browse all recipes
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Gives the results grid a heading so the card <h3>s don't skip a
+                level under the page <h1> (visually hidden). */}
+            <h2 className='sr-only'>Recipe results</h2>
+            <div className='recipes-grid'>
+              {showInitialSkeleton
+                ? Array.from({ length: 8 }).map((_, i) => (
+                    <RecipeCard key={i} recipe={null} loading={true} />
+                  ))
+                : recipeList.map(recipe => (
+                    <RecipeCard key={recipe._id} recipe={recipe} />
+                  ))}
+            </div>
+
+            {hasNextPage && hasResults && (
+              <div className='recipes-load-more'>
+                <button
+                  className='load-more-btn'
+                  onClick={() => fetchNextPage()}
+                  disabled={isFetching}
+                >
+                  {isFetching ? (
+                    <TailSpin
+                      height='22'
+                      width='22'
+                      color={spinnerColor}
+                      ariaLabel='loading'
+                    />
+                  ) : (
+                    <>
+                      Load more recipes <ChevronDownIcon />
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+          </>
+        )}
+
+        {drawerOpen && (
+          <div className='recipes-drawer' role='dialog' aria-label='Filters'>
+            <div
+              className='recipes-drawer__backdrop'
+              onClick={() => setDrawerOpen(false)}
+            />
+            <div className='recipes-drawer__panel'>
+              <div className='recipes-drawer__head'>
+                <h2>Filters</h2>
+                <button
+                  onClick={() => setDrawerOpen(false)}
+                  aria-label='Close filters'
+                >
+                  ✕
+                </button>
+              </div>
+              <div className='recipes-drawer__body'>
+                <section>
+                  <h3>Diet</h3>
+                  <div className='recipes-drawer__chips'>
+                    {dietLabelsOptions.map(o => (
+                      <button
+                        key={o.value}
+                        className={`recipes-chip ${
+                          diets.includes(o.value) ? 'is-active' : ''
+                        }`}
+                        onClick={() => toggleDiet(o.value)}
+                      >
+                        {o.label}
+                      </button>
+                    ))}
+                  </div>
+                </section>
+                <section>
+                  <h3>Cuisine</h3>
+                  <div className='recipes-drawer__chips'>
+                    {availableCuisines.map(c => (
+                      <button
+                        key={c}
+                        className={`recipes-chip ${
+                          cuisine === c ? 'is-active' : ''
+                        }`}
+                        onClick={() => changeCuisine(c)}
+                      >
+                        {c}
+                      </button>
+                    ))}
+                  </div>
+                </section>
+                <section>
+                  <h3>Meal</h3>
+                  <div className='recipes-drawer__chips'>
+                    {mealTypesList.map(m => (
+                      <button
+                        key={m}
+                        className={`recipes-chip ${
+                          meals.includes(m) ? 'is-active' : ''
+                        }`}
+                        onClick={() => toggleMeal(m)}
+                      >
+                        {m}
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              </div>
+              <div className='recipes-drawer__foot'>
+                <button
+                  className='recipes-drawer__reset'
+                  onClick={clearFilters}
+                >
+                  Reset
+                </button>
+                <button
+                  className='recipes-drawer__apply'
+                  onClick={() => setDrawerOpen(false)}
+                >
+                  Show recipes
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </>
   )

@@ -1,28 +1,9 @@
 {
-  "parsedIngredient": {
-    "quantity": 2,
-    "unit": "cup",
-    "unitPlural": "cups",
-    "symbol": "c",
-    "ingredient": "flour",
-    "minQty": 2,
-    "maxQty": 2,
-    "originalIngredientString": "2 cups flour",
-    "comment": ""
-  },
   "ingredientData": {
-    "_id": "fixture-ingredient-1",
-    "originalName": "all-purpose flour",
-    "name": "flour",
-    "amount": 1,
-    "possibleUnits": ["cup", "g", "oz", "tablespoon", "teaspoon"],
-    "consistency": "solid",
-    "shoppingListUnits": ["ounces", "pounds"],
-    "aisle": "Baking",
-    "image": "flour.png",
-    "ingredientId": 20081,
+    "name": "all-purpose flour",
+    "category": "Baking",
     "imagePath": "https://img.spoonacular.com/ingredients_100x100/flour.png",
+    "possibleUnits": ["cup", "g", "oz", "tablespoon", "teaspoon"],
     "totalPriceUSACents": 42
-  },
-  "id": "fixture-id-1"
+  }
 }

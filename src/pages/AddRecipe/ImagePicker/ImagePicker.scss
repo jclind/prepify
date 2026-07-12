@@ -11,9 +11,15 @@
   width: 100%;
   border-radius: s.$border-radius;
   min-height: 200px;
-  background-color: #f0f0f0;
-  border: 2px dashed #ccc;
+  background-color: s.$gray-200;
+  border: 2px dashed s.$gray-400;
   cursor: pointer;
+
+  // Keyboard focus indicator for the empty-dropzone button (role=button + tab
+  // stop added in the component). Uses the shared focus-ring mixin.
+  &:focus-visible {
+    @include s.outline();
+  }
 
   input[type='file'] {
     display: none;
@@ -26,15 +32,15 @@
     justify-content: center;
     align-items: center;
     z-index: 5;
-    background: rgba(255, 255, 255, 0.829);
+    background: rgba(s.$white, 0.85);
     height: 28px;
     width: 28px;
-    border-radius: 50%;
+    border-radius: s.$radius-circle;
     color: black;
     border: 0;
     cursor: pointer;
     &:hover {
-      background: white;
+      background: s.$white;
     }
     .icon {
       height: 18px;
@@ -59,7 +65,7 @@
     transform: translate(-50%, -50%);
     font-size: 14px;
     font-weight: bold;
-    color: #666;
+    color: s.$tertiary-text;
   }
 }
 .image-picker-box-selected {

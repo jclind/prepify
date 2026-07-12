@@ -7,18 +7,16 @@
 #   VITE_FIREBASE_APP_ID
 #   VITE_FIREBASE_MEASUREMENT_ID
 #   FIREBASE_SERVICE_ACCOUNT   (base64-encoded service account JSON for backend tests)
-#   MONGO_URI                  (MongoDB connection string for E2E Express server)
 #   CYPRESS_API_URL            (Railway backend URL, e.g. https://prepify.up.railway.app)
+# The E2E Express server runs against an ephemeral Mongo service container (see the
+# e2e job), so no MONGO_URI secret is needed — the Cypress specs mock the API anyway.
 
 name: Tests
-
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 on:
   pull_request:
   push:
-    branches: [main, development]
+    branches: [main, development, release]
 
 concurrency:
   group: tests-${{ github.ref }}
@@ -29,8 +27,8 @@ jobs:
     name: Backend (Supertest)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: npm
@@ -46,8 +44,8 @@ jobs:
     name: Frontend (Vitest)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
       - name: Install dependencies
@@ -56,12 +54,55 @@ jobs:
         run: npm install @rolldown/binding-linux-x64-gnu --no-save
       - run: npm test
 
+  static:
+    name: Static (typecheck + build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit
+      # vite build needs the platform-specific rolldown binding (see frontend job).
+      - name: Install platform-specific rolldown binding
+        run: npm install @rolldown/binding-linux-x64-gnu --no-save
+      # Typecheck first — it's fast and fails clearly before the heavier build.
+      # `tsc --noEmit` enforces the tsconfig `strict` setting, which `vite build`
+      # (per-file esbuild/rolldown transpile) does NOT check.
+      - name: Typecheck (tsc --noEmit)
+        run: npm run typecheck
+      # The Vitest suite lives in src/test/**, which the base tsconfig excludes
+      # (the Cypress config files would otherwise poison the program with
+      # Cypress's global Chai `expect`). tsconfig.tests.json re-includes it so
+      # test files can't silently drift from the real types.
+      - name: Typecheck tests (tsc --noEmit -p tsconfig.tests.json)
+        run: npx tsc --noEmit -p tsconfig.tests.json
+      # Verify the production bundle actually builds (Netlify parity).
+      - name: Production build (vite build)
+        run: npm run build
+
   e2e:
     name: E2e (Cypress)
     runs-on: ubuntu-latest
+    # The Cypress specs fully intercept the API with fixtures (cy.intercept), so
+    # the Express server only needs to boot and serve /health for the wait-on
+    # gate — it never reads real data. Run it against an ephemeral, throwaway
+    # Mongo so E2E doesn't depend on (and never touches) the prod database or a
+    # rotating MONGO_URI secret. GitHub waits for the healthcheck before steps run.
+    services:
+      mongodb:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.runCommand({ ping: 1 })'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
       - name: Install root dependencies
@@ -79,7 +120,7 @@ jobs:
         working-directory: server
         env:
           PORT: 4000
-          MONGO_URI: ${{ secrets.MONGO_URI }}
+          MONGO_URI: mongodb://localhost:27017/prepify
           FRONTEND_URLS: http://localhost:3000
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
       - name: Check Express server startup
@@ -125,3 +166,52 @@ jobs:
           VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
           VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
           VITE_FIREBASE_MEASUREMENT_ID: ${{ secrets.VITE_FIREBASE_MEASUREMENT_ID }}
+
+  fallow:
+    name: Fallow (dead-code, advisory)
+    runs-on: ubuntu-latest
+    # Option B: advisory only — this job NEVER blocks merges (continue-on-error).
+    # Findings are posted to the run's Step Summary for visibility.
+    # TODO: once we trust the signal, flip to Option A (baseline-gated regression
+    # mode): commit a baseline of existing findings, fail only on NEW dead code,
+    # and drop `continue-on-error`. See the `regression` config in fallow docs.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          # Full history so `fallow audit` can diff changed files against the base.
+          fetch-depth: 0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      # node_modules must be present so Fallow can resolve imports/deps;
+      # without them it reports false "unresolved import" / "unused dependency" noise.
+      - name: Install root dependencies
+        run: npm ci --prefer-offline --no-audit
+      - name: Install server dependencies
+        run: npm ci --prefer-offline --no-audit
+        working-directory: server
+      # Version pinned for deterministic CI — Fallow releases very frequently and
+      # a new version could change findings and surprise a green PR.
+      - name: Run Fallow dead-code analysis
+        run: |
+          {
+            echo '## Fallow — dead-code (advisory, non-blocking)'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          npx --yes fallow@2.95.0 dead-code | tee -a "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+      # Changed-files audit: dead-code + complexity + duplication scoped to the
+      # PR diff. Default `--gate new-only` only counts findings the PR introduces
+      # (inherited backlog is reported but not failed). PR events only — needs a base.
+      - name: Run Fallow audit (changed files)
+        if: github.event_name == 'pull_request'
+        env:
+          FALLOW_AUDIT_BASE: origin/${{ github.base_ref }}
+        run: |
+          {
+            echo "## Fallow — audit: changed files vs ${{ github.base_ref }} (advisory)"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          npx --yes fallow@2.95.0 audit | tee -a "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"

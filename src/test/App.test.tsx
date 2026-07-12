@@ -5,20 +5,27 @@
  * any module-level Firebase code executes (e.g. `const auth = getAuth()` in
  * AuthContext.tsx and `initializeApp(...)` in src/client/db.ts).
  *
- * The onAuthStateChanged stub never calls its callback, so AuthProvider stays in
- * `loading: true` and renders only the loading spinner — no page components
- * mount, no API calls fire.
+ * The onAuthStateChanged stub captures its callback (h.authCallback) instead of
+ * firing it, so AuthProvider starts in `loading: true` and renders only the
+ * loading spinner. Tests can then fire the callback themselves to settle auth
+ * and let the real route table render.
  *
  * App.tsx has no Router; it relies on context from react-router-dom (useLocation
  * in ScrollToTop, useNavigate in AuthProvider). The MemoryRouter wrapper below
- * supplies that context.
+ * supplies that context; QueryClientProvider mirrors index.tsx for the
+ * react-query hooks on the home route.
  */
 
 import React from 'react'
 import { vi } from 'vitest'
-import { render } from '@testing-library/react'
+import { act, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import App from 'src/App'
+
+const h = vi.hoisted(() => ({
+  authCallback: null as ((user: unknown) => void) | null,
+}))
 
 vi.mock('firebase/app', () => ({
   initializeApp: vi.fn().mockReturnValue({}),
@@ -26,7 +33,10 @@ vi.mock('firebase/app', () => ({
 
 vi.mock('firebase/auth', () => ({
   getAuth: vi.fn().mockReturnValue({
-    onAuthStateChanged: vi.fn().mockReturnValue(() => {}),
+    onAuthStateChanged: (cb: (user: unknown) => void) => {
+      h.authCallback = cb
+      return () => {}
+    },
     currentUser: null,
   }),
   signOut: vi.fn(),
@@ -53,16 +63,59 @@ vi.mock('firebase/firestore', () => ({
   getFirestore: vi.fn().mockReturnValue({}),
 }))
 
-vi.mock('firebase/analytics', () => ({
-  getAnalytics: vi.fn().mockReturnValue({}),
+// The home route fetches recipe rows on mount; keep it network-free.
+vi.mock('src/api/recipes', () => ({
+  default: {
+    getTrendingRecipes: vi.fn().mockResolvedValue([]),
+    getAllRecipes: vi.fn().mockResolvedValue({ recipes: [], totalCount: 0 }),
+    getForYouRecipes: vi.fn().mockResolvedValue([]),
+    getRandomRecipe: vi.fn().mockResolvedValue(null),
+    searchAutoCompleteRecipes: vi.fn().mockResolvedValue([]),
+  },
 }))
 
-describe('App', () => {
-  it('renders without crashing', () => {
-    render(
+const renderApp = () =>
+  render(
+    <QueryClientProvider client={new QueryClient()}>
       <MemoryRouter>
         <App />
       </MemoryRouter>
-    )
+    </QueryClientProvider>
+  )
+
+describe('App', () => {
+  beforeEach(() => {
+    h.authCallback = null
+    // jsdom has no Element.scrollTo; ScrollToTop calls it on the body.
+    document.body.scrollTo = vi.fn()
+  })
+
+  it('shows the auth-loading state until onAuthStateChanged settles', () => {
+    renderApp()
+    expect(
+      screen.getByRole('heading', { name: /auth loading/i })
+    ).toBeInTheDocument()
+    // No route content while auth is unresolved.
+    expect(screen.queryByRole('main')).not.toBeInTheDocument()
+  })
+
+  it('renders the home route once auth settles signed-out', async () => {
+    renderApp()
+    expect(h.authCallback).not.toBeNull()
+
+    await act(async () => {
+      h.authCallback!(null)
+    })
+
+    // The route table + Layout rendered: page landmarks plus real home content.
+    expect(screen.getByRole('main')).toBeInTheDocument()
+    // Navbar + mobile menu both expose nav landmarks — at least one rendered.
+    expect(screen.getAllByRole('navigation').length).toBeGreaterThan(0)
+    expect(
+      screen.getByRole('heading', { name: /trending this week/i })
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('heading', { name: /auth loading/i })
+    ).not.toBeInTheDocument()
   })
 })

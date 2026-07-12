@@ -55,15 +55,15 @@
     background: s.$primary-text;
     color: s.$white;
     font-weight: 700;
-    font-size: 1rem;
-    border-radius: 50%;
+    font-size: s.$text-md;
+    border-radius: s.$radius-circle;
   }
 
   .content {
     flex: 1;
     min-width: 0;
     text-align: start;
-    font-size: 0.95rem;
+    font-size: s.$text-base;
     font-weight: 500;
     line-height: 1.55;
     padding-top: 4px;
@@ -82,7 +82,7 @@
     border: none;
     cursor: pointer;
     .text {
-      font-size: 0.95rem;
+      font-size: s.$text-base;
       font-weight: 700;
       color: s.$primary;
       white-space: nowrap;
@@ -103,11 +103,12 @@
     width: 30px;
     height: 30px;
     border: none;
-    border-radius: 7px;
+    border-radius: s.$radius-md;
     background: none;
     color: s.$tertiary-text;
     cursor: pointer;
-    transition: all 0.1s linear;
+    transition: color s.$hover-timing, background-color s.$hover-timing,
+      border-color s.$hover-timing;
     .icon {
       height: 16px;
       width: 16px;
@@ -116,7 +117,7 @@
       color: s.$primary;
       background: s.$white;
     }
-    &:focus {
+    &:focus-visible {
       @include s.outline();
     }
   }

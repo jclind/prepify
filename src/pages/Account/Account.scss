@@ -1,165 +1,451 @@
 @use '../../helpers.scss' as s;
 
+// Account page — promoted from the "P2 / two-column header" redesign. Identity on
+// the left, a level/XP card + action controls on the right, a centered segmented
+// nav, then the active sub-page. NOTE: this project's SCSS is global and
+// unscoped, so every class here is `acct-`-prefixed to avoid leaking app-wide,
+// and the segmented nav is a <div role="navigation"> (never <nav>) so the global
+// `nav { position:absolute }` rule can't match it.
+
+// Cap the profile well under the global 1400px `.page`. On ultra-wide monitors
+// the header's single fr identity column stretched, stranding the identity and
+// the level/controls cluster at opposite edges of a huge card. Containing the
+// whole page keeps the two clusters a comfortable distance apart and tightens
+// the (otherwise sparse) sub-page grids too. `.account-page.page` outranks
+// `.page` so source order can't matter.
+.account-page.page {
+  max-width: 1180px;
+}
+
 .account-page {
-  .account-header {
+  // ── Header card ────────────────────────────────────────────────────────────
+  .acct-head {
+    display: grid;
+    grid-template-columns: 1.4fr 340px;
+    gap: 1.75rem;
+    align-items: center;
+    background: #fff;
+    border: 1px solid s.$surface-warm-border;
+    border-radius: s.$radius-4xl;
+    padding: 1.5rem;
+    box-shadow: s.$elevation-3;
+    margin-bottom: 1.75rem;
+
+    @include s.below(s.$bp-3xl) {
+      grid-template-columns: 1fr;
+      gap: 1.25rem;
+    }
+  }
+
+  // ── Identity (left) ────────────────────────────────────────────────────────
+  .acct-id {
     display: flex;
-    justify-content: center;
-    width: 100%;
-    padding-bottom: 2rem;
+    align-items: flex-start;
+    gap: 1.25rem;
+    min-width: 0;
+  }
+  .acct-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: s.$radius-circle;
+    object-fit: cover;
+    flex-shrink: 0;
+    box-shadow: s.$shadow-brand;
 
-    .info-container {
+    &.not-set {
       display: flex;
-      gap: 2rem;
+      align-items: center;
+      justify-content: center;
+      color: s.$primary;
+      font-weight: 600;
+      font-size: s.$text-4xl;
+      background: s.$primary-text;
+    }
+  }
+  .acct-id-text {
+    min-width: 0;
+  }
+  .acct-name {
+    font-size: s.$text-3xl;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+  .acct-meta {
+    color: s.$tertiary-text;
+    font-weight: 600;
+    font-size: s.$text-sm;
+    margin-top: 0.3rem;
+  }
+  .acct-bio {
+    color: s.$secondary-text;
+    line-height: 1.55;
+    font-size: s.$text-base;
+    margin-top: 0.6rem;
+    max-width: 600px;
+  }
+  .acct-bio-empty {
+    display: inline-block;
+    margin-top: 0.6rem;
+    font-size: s.$text-sm;
+    font-weight: 600;
+    color: s.$tertiary-text;
+    text-decoration: none;
+    transition: color 0.12s ease;
+    &:hover {
+      color: s.$primary;
+    }
+  }
 
-      .profile-image {
-        display: flex;
-        justify-content: center;
-        align-items: center;
+  // ── Right column: level card + controls share one width / right edge ───────
+  .acct-side {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
 
-        border-radius: 50%;
-        height: 100px;
-        width: 100px;
-      }
-      .profile-image.not-set {
-        color: s.$primary;
-        font-weight: 500;
-        font-size: 3.125rem;
-        background: s.$primary-text;
-      }
-      .content {
-        display: flex;
-        flex-direction: column;
-        font-size: 1.875rem;
-        font-weight: 700;
-        justify-content: space-around;
-        .username {
-          font-size: 1.875rem;
-        }
-        .edit-profile-btn {
-          font-size: 1.125rem;
-          border: 1px solid s.$primary-text;
-          border-radius: s.$border-radius;
-          padding: 0.5rem 1rem;
-        }
-      }
+    @include s.below(s.$bp-3xl) {
+      border-top: 1px solid #f0e8dd;
+      padding-top: 1.25rem;
     }
-    @media screen and (max-width: 600px) {
-      .info-container {
-        gap: 1rem;
-        .content {
-          .username {
-            font-size: 1.5rem;
-          }
-        }
-      }
+  }
+
+  // Level / XP card -----------------------------------------------------------
+  .acct-levelcard {
+    width: 100%;
+    text-align: left;
+    font-family: inherit;
+    cursor: pointer;
+    // Soft teal→orange brand tint, matching the recipe-owner control banner
+    // (RecipeControls.scss) — replaces the off-palette warm cream.
+    background: linear-gradient(
+      135deg,
+      rgba(s.$secondary, 0.13),
+      rgba(s.$primary, 0.09)
+    );
+    border: 1px solid rgba(s.$primary, 0.22);
+    border-radius: s.$radius-2xl;
+    padding: 0.85rem 1rem;
+    transition: border-color 0.12s ease, box-shadow 0.12s ease;
+
+    &:hover {
+      border-color: rgba(s.$primary, 0.4);
+      box-shadow: s.$shadow-brand;
     }
-    @media screen and (max-width: 500px) {
-      .info-container {
-        .profile-image {
-          font-size: 2.5rem;
-          height: 80px;
-          width: 80px;
-        }
-        .content {
-          .username {
-            font-size: 1.25rem;
-          }
-          .edit-profile-btn {
-            font-size: 1rem;
-            border: 1px solid s.$primary-text;
-            border-radius: s.$border-radius;
-            padding: 0.5rem 0.75rem;
-          }
-        }
-      }
+  }
+  .acct-levelcard-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.7rem;
+  }
+  .acct-lvl-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: s.$text-fine;
+    font-weight: 700;
+    color: s.$secondary-text;
+    background: #fff;
+    border: 1px solid rgba(s.$primary-text, 0.08);
+    border-radius: s.$radius-pill;
+    padding: 0.3rem 0.75rem 0.3rem 0.3rem;
+    box-shadow: s.$elevation-1;
+    white-space: nowrap;
+  }
+  .acct-lvl-chip-num {
+    flex-shrink: 0;
+    white-space: nowrap;
+    font-size: s.$text-caption;
+    font-weight: 800;
+    color: #fff;
+    background: linear-gradient(135deg, s.$primary, s.$primary-tint);
+    padding: 0.18rem 0.5rem;
+    border-radius: s.$radius-pill;
+  }
+  .acct-rewards-cta {
+    font-weight: 800;
+    font-size: s.$text-fine;
+    color: s.$primary;
+    white-space: nowrap;
+    span {
+      font-size: s.$text-md;
     }
-    @media screen and (max-width: 400px) {
-      .info-container {
-        .profile-image {
-          font-size: 2.188rem;
-          height: 70px;
-          width: 70px;
-        }
-        .content {
-          .username {
-            font-size: 1.125rem;
-          }
-          .edit-profile-btn {
-            font-size: 1rem;
-            border: 1px solid s.$primary-text;
-            border-radius: s.$border-radius;
-            padding: 0.5rem 0.75rem;
-          }
-        }
-      }
+  }
+  .acct-xpbar {
+    width: 100%;
+    .acct-xpbar-track {
+      height: 6px;
+      background: rgba(s.$primary-text, 0.1);
+      border-radius: s.$radius-pill;
+      overflow: hidden;
     }
-    @media screen and (max-width: 350px) {
-      .info-container {
-        .content {
-          .username {
-            font-size: 1rem;
-          }
-        }
+    .acct-xpbar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, s.$primary-tint, s.$primary);
+      border-radius: s.$radius-pill;
+    }
+    .acct-xpbar-label {
+      display: block;
+      margin-top: 0.35rem;
+      font-size: s.$text-caption;
+      font-weight: 700;
+      color: s.$tertiary-text;
+    }
+  }
+
+  // Controls ------------------------------------------------------------------
+  .acct-controls {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem;
+  }
+  // `.acct-btn` rides the shared `.btn` base; only the heavier 700 weight and a
+  // slightly smaller icon are local. (Layout/shape/reset come from `.btn`.)
+  .acct-btn {
+    font-weight: 700;
+    svg {
+      font-size: s.$text-md;
+    }
+  }
+  // Warm-palette outline pill on the `.btn` base — bespoke cream border + brand
+  // hover, so no colour variant. Tighter padding + smaller text than the base.
+  .acct-edit {
+    font-size: s.$text-sm;
+    color: s.$secondary-text;
+    background: #fff;
+    border: 1px solid #e3d9ca;
+    padding: 0.5rem 1.1rem;
+    // Lifts on hover to match its `.acct-iconbtn` siblings in the same row
+    // (they lift) — Edit shouldn't be the flat odd-one-out. Transform + shadow
+    // ease via the `.btn` base transition.
+    &:hover {
+      border-color: s.$primary;
+      color: s.$primary;
+      transform: translateY(s.$hover-lift);
+      box-shadow: s.$elevation-2;
+    }
+  }
+  // `.btn--icon` gives the circular shape; the warm colours are bespoke (kept).
+  // A hair larger than the 2.25rem icon default.
+  .acct-iconbtn {
+    width: 38px;
+    height: 38px;
+    color: s.$secondary-text;
+    background: #fff;
+    border: 1px solid #e3d9ca;
+    &:hover {
+      border-color: s.$primary;
+      color: s.$primary;
+      transform: translateY(s.$hover-lift);
+      box-shadow: s.$elevation-2;
+    }
+  }
+
+  // ── Main: nav rail + sub-page (two-column dashboard on desktop) ────────────
+  // The rail sits beside the active sub-page on desktop; under 900px both
+  // collapse to a single column with the rail becoming a four-up tab bar above
+  // the content.
+  .acct-main {
+    display: grid;
+    grid-template-columns: 230px 1fr;
+    gap: 1.5rem;
+    align-items: start;
+
+    @include s.below(s.$bp-3xl) {
+      grid-template-columns: 1fr;
+      gap: 1.25rem;
+    }
+  }
+
+  // ── Account nav rail ───────────────────────────────────────────────────────
+  .acct-segment {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    background: #fff;
+    border: 1px solid s.$surface-warm-border;
+    border-radius: s.$radius-3xl;
+    padding: 0.6rem;
+    box-shadow: s.$elevation-3;
+    // Keep the rail in view while scrolling a long sub-page.
+    position: sticky;
+    top: calc(#{s.$nav-height} + 1rem);
+
+    // Collapse to a fixed four-up tab bar — all four destinations fit, no
+    // horizontal scroll.
+    @include s.below(s.$bp-3xl) {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.25rem;
+      position: static;
+      margin-bottom: 0.25rem;
+    }
+  }
+  .acct-seg {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    font-family: inherit;
+    font-weight: 700;
+    font-size: s.$text-base;
+    color: s.$secondary-text;
+    text-decoration: none;
+    border-radius: 11px;
+    padding: 0.7rem 0.85rem;
+    white-space: nowrap;
+    transition: background 0.12s ease, color 0.12s ease;
+
+    &:hover {
+      background: s.$gray-50;
+      color: s.$primary-text;
+    }
+    &.active {
+      color: s.$primary-accessible;
+      background: rgba(s.$primary, 0.1);
+    }
+
+    .acct-seg-icon {
+      display: flex;
+      font-size: s.$text-lg;
+    }
+    // The short label is phone-only (≤600px); the full label shows otherwise.
+    .acct-seg-label-short {
+      display: none;
+    }
+    .acct-seg-count {
+      margin-left: auto;
+      font-size: s.$text-caption;
+      font-weight: 800;
+      color: s.$secondary-text;
+      background: s.$gray-200;
+      border-radius: s.$radius-pill;
+      padding: 0.1rem 0.5rem;
+    }
+    &.active .acct-seg-count {
+      color: s.$primary-accessible;
+      background: rgba(s.$primary, 0.15);
+    }
+
+    // Tab-bar cell (≤900px): icon over label, centered; count rides as a corner
+    // badge so each cell stays two tidy lines.
+    @include s.below(s.$bp-3xl) {
+      flex-direction: column;
+      gap: 0.3rem;
+      justify-content: center;
+      text-align: center;
+      padding: 0.65rem 0.25rem;
+      font-size: s.$text-fine;
+      .acct-seg-icon {
+        font-size: s.$text-xl;
+      }
+      .acct-seg-count {
+        position: absolute;
+        top: 0.25rem;
+        right: 0.4rem;
+        margin-left: 0;
+        font-size: s.$text-caption;
+        padding: 0.05rem 0.3rem;
       }
     }
   }
-  .account-body {
-    margin-top: 2rem;
-    .options-bar {
-      display: flex;
-      gap: 2rem;
-      padding-bottom: 1rem;
-      border-bottom: 1px solid s.$tertiary-text;
-      // With four tabs, let the bar scroll on narrow screens instead of
-      // wrapping or shrinking the labels to the point of being unreadable.
-      flex-wrap: nowrap;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      scrollbar-width: none;
 
-      &::-webkit-scrollbar {
+  // ── Body / sub-page mount ──────────────────────────────────────────────────
+  .account-body {
+    margin-top: 0;
+    // Sit in the .acct-main 1fr track without letting non-shrinkable content
+    // (a long recipe title, a wide review) force the track wider than its share
+    // and overflow the page horizontally. Grid tracks default to min-width:auto.
+    min-width: 0;
+  }
+
+  // ── Phone layout (app-style rebuild, ≤600px) ───────────────────────────────
+  // The two-column header collapses into a centered profile card, and the
+  // segmented control becomes an icon-over-label tab bar. Mobile-first rebuild
+  // approved against the "Option B" mock. Placed last so it overrides the ≤880px
+  // rules where they overlap.
+  @include s.below(s.$bp-lg) {
+    .acct-head {
+      grid-template-columns: 1fr;
+      justify-items: center;
+      text-align: center;
+      gap: 1.1rem;
+      padding: 1.5rem 1.25rem;
+    }
+
+    // Identity stacks: avatar over name / meta / bio, all centered.
+    .acct-id {
+      flex-direction: column;
+      align-items: center;
+      gap: 0.85rem;
+      text-align: center;
+    }
+    .acct-avatar {
+      width: 76px;
+      height: 76px;
+      &.not-set {
+        font-size: s.$text-3xl;
+      }
+    }
+    .acct-id-text {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .acct-name {
+      font-size: s.$text-2xl;
+    }
+    .acct-bio {
+      max-width: 100%;
+    }
+
+    // Level card + controls sit beneath, full width, no divider.
+    .acct-side {
+      width: 100%;
+      align-items: stretch;
+      border-top: none;
+      padding-top: 0;
+    }
+    // Controls collapse to a centered row of equal circular icon buttons; the
+    // "Edit profile" label drops to just its pencil.
+    .acct-controls {
+      justify-content: center;
+    }
+    .acct-edit {
+      width: 42px;
+      height: 42px;
+      padding: 0;
+      border-radius: s.$radius-circle;
+      span {
         display: none;
       }
-
-      .selection {
-        text-decoration: none;
-        font-weight: 700;
-        color: s.$tertiary-text;
-        white-space: nowrap;
-      }
-      @media screen and (max-width: 450px) {
-        justify-content: space-around;
-        width: 100%;
-        gap: 1rem;
-        .selection {
-          font-size: 0.875rem;
-        }
-      }
-      @media screen and (max-width: 350px) {
-        justify-content: space-between;
-        .selection {
-          font-size: 0.75rem;
-        }
-      }
-      .selection.active {
-        color: s.$primary-text;
+      svg {
+        font-size: s.$text-lg;
       }
     }
-  }
-  .no-data-saved {
-    text-align: center;
-    margin: 0 auto;
-    margin-top: 3rem;
-    padding-bottom: 3rem;
-
-    h2 {
-      font-size: 24px;
-      margin-bottom: 10px;
+    .acct-iconbtn {
+      width: 42px;
+      height: 42px;
     }
 
-    p {
-      font-size: 16px;
-      color: #666;
+    // ── Nav tab bar: tighten + swap in the short label ──
+    // The four-up grid layout itself comes from the ≤900px rules above; on
+    // phones we just shrink the cells and swap "Your Recipes" → "Recipes" so a
+    // single line fits.
+    .acct-seg {
+      font-size: s.$text-caption;
+      padding: 0.55rem 0.2rem;
+      line-height: 1;
+
+      .acct-seg-label.has-short {
+        display: none;
+      }
+      .acct-seg-label-short {
+        display: inline;
+      }
     }
   }
 }

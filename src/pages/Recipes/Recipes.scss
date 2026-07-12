@@ -1,73 +1,488 @@
 @use '../../helpers.scss' as s;
 
 .recipes-page {
-  min-height: calc(
-    100vh - #{s.$nav-height} - #{s.$footer-height} - #{s.$footer-margin} - 2rem
-  );
-  h1.title {
-    text-align: center;
-  }
+  // Fills the flexbox app-main so the footer stays pinned to the viewport
+  // bottom on short result sets (sticky-footer shell from the footer redesign).
+  flex: 1 0 auto;
+  padding-bottom: 3rem;
 
-  .search-recipes-form {
-    margin: 0 auto;
-    margin-top: 2rem;
-    margin-bottom: 1rem;
-    width: 100%;
-    input {
-      background: s.$white;
+  .recipes-header {
+    margin-bottom: 1.4rem;
+    h1 {
+      font-size: s.$text-3xl;
+      font-weight: 800;
+      letter-spacing: -0.015em;
+    }
+    p {
+      color: s.$tertiary-text;
+      margin-top: 0.2rem;
+      font-size: s.$text-base;
     }
   }
-  .recipes-container {
+
+  // Restyle SearchRecipesInput into the clean rounded "pill" from the approved
+  // design (the component is kept for its autocomplete). Scoped to this page so
+  // other usages are unaffected. It sits inline in the toolbar (flex: 1).
+  .search-recipes-form {
+    flex: 1;
+    width: auto;
+    min-width: 0;
+    max-width: none;
+    margin: 0;
+
+    .search-recipes-input-label {
+      .icon {
+        left: 1.1rem;
+        height: 20px;
+        width: 20px;
+        color: s.$tertiary-text;
+      }
+      input {
+        box-sizing: border-box;
+        height: 44px;
+        border: 1px solid s.$gray-400;
+        border-radius: s.$radius-pill;
+        background: s.$white;
+        font-size: s.$text-base;
+        padding: 0.1rem 6.5rem 0.1rem 2.85rem;
+        transition: border-color 0.14s ease, box-shadow 0.14s ease;
+        &::placeholder {
+          color: s.$tertiary-text;
+        }
+        &:focus {
+          border-color: s.$primary;
+          @include s.focus-glow(s.$primary, 0.12);
+        }
+      }
+      .search-recipes-btn {
+        top: 50%;
+        transform: translateY(-50%);
+        right: 6px;
+        height: 36px;
+        font-size: s.$text-base;
+        padding: 0 1.15rem;
+        border-radius: s.$radius-pill;
+      }
+    }
+  }
+
+  // ---- Toolbar: search (flex) + Filters + Sort, all inline on desktop ----
+  .recipes-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+
+    // Mobile: search takes its own row; Filters + Sort sit beneath it.
+    @include s.below(s.$bp-xl) {
+      flex-wrap: wrap;
+      .search-recipes-form {
+        flex: 1 1 100%;
+      }
+      .recipes-filters-btn {
+        flex: 1;
+        justify-content: center;
+      }
+    }
+  }
+
+  .recipes-filters-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    // Grey rest border to match the Sort pill beside it — the two toolbar pills
+    // were disagreeing at rest (this was a heavier ink border).
+    border: 1px solid s.$gray-400;
+    background: s.$white;
+    color: s.$primary-text;
+    font-family: inherit;
+    font-weight: 700;
+    font-size: s.$text-sm;
+    padding: 0 1.1rem;
+    box-sizing: border-box;
+    min-height: 44px; // compact, matches the search pill (G06 sizing)
+    border-radius: s.$radius-pill;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: color s.$hover-timing, border-color s.$hover-timing;
+    svg {
+      font-size: s.$text-md;
+    }
+    // Outline-language hover (orange border + text) to match the app's other
+    // outline buttons, instead of the one-off dark charcoal fill inversion.
+    &:hover {
+      border-color: s.$primary;
+      color: s.$primary;
+    }
+    &__badge {
+      display: inline-grid;
+      place-items: center;
+      min-width: 1.25rem;
+      height: 1.25rem;
+      padding: 0 0.35rem;
+      background: s.$primary;
+      color: s.$white;
+      border-radius: s.$radius-pill;
+      font-size: s.$text-caption;
+    }
+  }
+
+  .recipes-sort {
+    position: relative;
+    flex-shrink: 0;
+
+    &__trigger {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      box-sizing: border-box;
+      min-height: 44px; // compact, matches the search pill (G06 sizing)
+      padding: 0 1rem;
+      font-family: inherit;
+      font-weight: 700;
+      font-size: s.$text-sm;
+      color: s.$primary-text;
+      background: s.$white;
+      border: 1px solid s.$gray-400;
+      border-radius: s.$radius-pill;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: color s.$hover-timing, border-color s.$hover-timing;
+      .chev {
+        font-size: s.$text-md;
+        transition: transform 0.14s ease;
+      }
+      // Match the Filters button beside it (orange border + text) so the two
+      // toolbar pills share one hover language.
+      &:hover {
+        border-color: s.$primary;
+        color: s.$primary;
+      }
+      &.is-open .chev {
+        transform: rotate(180deg);
+      }
+    }
+
+    &__menu {
+      position: absolute;
+      top: calc(100% + 0.5rem);
+      right: 0;
+      z-index: 20;
+      min-width: 180px;
+      list-style: none;
+      background: s.$white;
+      border: 1px solid s.$gray-300;
+      border-radius: s.$radius-xl;
+      box-shadow: s.$elevation-4;
+      padding: 0.4rem;
+      button {
+        display: block;
+        width: 100%;
+        text-align: left;
+        border: none;
+        background: none;
+        font-family: inherit;
+        font-size: s.$text-sm;
+        font-weight: 600;
+        color: s.$primary-text;
+        padding: 0.45rem 0.6rem;
+        border-radius: s.$radius-md;
+        cursor: pointer;
+        &:hover {
+          background: s.$gray-200;
+        }
+        &.is-active {
+          color: s.$primary;
+          background: rgba(s.$primary, 0.08);
+        }
+      }
+    }
+  }
+
+  // ---- Active filter chips ----
+  .recipes-active {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+    &__chip {
+      border: none;
+      background: rgba(s.$primary, 0.1);
+      color: s.$primary;
+      font-weight: 700;
+      font-size: s.$text-fine;
+      padding: 0.35rem 0.75rem;
+      border-radius: s.$radius-pill;
+      cursor: pointer;
+      text-transform: capitalize;
+      transition: background-color s.$hover-timing;
+      // Deepen the tint on hover so the dismiss affordance reads as interactive.
+      &:hover {
+        background: rgba(s.$primary, 0.18);
+      }
+    }
+    &__clear {
+      border: none;
+      background: none;
+      color: s.$secondary-text;
+      font-weight: 700;
+      font-size: s.$text-fine;
+      text-decoration: underline;
+      cursor: pointer;
+      transition: color s.$hover-timing;
+      &:hover {
+        color: s.$primary-text;
+      }
+    }
+  }
+
+  // ---- Grid ----
+  .recipes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+  }
+
+  // ---- Load more ----
+  // The button itself is the shared global `.load-more-btn` (index.scss) — this
+  // wrapper only owns the top spacing on the grid.
+  .recipes-load-more {
+    display: flex;
+    justify-content: center;
+    margin-top: 3rem;
+  }
+
+  // ---- Empty / error ----
+  .recipes-empty {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding-bottom: 2rem;
-    .recipes-list {
-      display: grid;
-      justify-items: center;
-      grid-template-columns: 1fr 1fr 1fr 1fr;
-      width: fit-content;
-      margin: 0 auto;
-      margin-top: 2rem;
-      gap: 2rem;
+    text-align: center;
+    max-width: 30rem;
+    margin: 1.5rem auto;
+    padding: 3.5rem 1.5rem;
+    color: s.$secondary-text;
 
-      @media screen and (max-width: 1400px) {
-        grid-template-columns: 1fr 1fr 1fr;
-        gap: 1rem;
-      }
-      @media screen and (max-width: 1200px) {
-        gap: 0.5rem;
-      }
-      @media screen and (max-width: 1100px) {
-        grid-template-columns: 1fr 1fr;
-        gap: 2rem;
-      }
-      @media screen and (max-width: 815px) {
-        gap: 1rem;
-      }
-      @media screen and (max-width: 725px) {
-        grid-template-columns: 1fr;
-      }
-    }
-    .load-more-recipes-btn {
+    &__icon {
       display: flex;
-      justify-content: center;
       align-items: center;
-      width: 250px;
-      height: 45px;
-      border: 1px solid s.$gray-400;
-      margin: 0 auto;
-      border-radius: s.$border-radius;
-      font-size: 1.3rem;
-      white-space: nowrap;
-
-      &:hover {
-        border-color: s.$tertiary-text;
-      }
-
-      @media screen and (max-width: 375px) {
-        font-size: 1.25rem;
+      justify-content: center;
+      width: 5rem;
+      height: 5rem;
+      border-radius: s.$radius-circle;
+      background: s.$primary-background;
+      color: s.$primary;
+      margin-bottom: 1.25rem;
+      svg {
+        width: 2.25rem;
+        height: 2.25rem;
       }
     }
+    &__title {
+      margin: 0 0 0.5rem;
+      color: s.$primary-text;
+      font-size: s.$text-2xl;
+      font-weight: 700;
+    }
+    &__msg {
+      margin: 0 0 1.75rem;
+      font-size: s.$text-md;
+      line-height: 1.5;
+      color: s.$secondary-text;
+      strong {
+        color: s.$primary-text;
+        font-weight: 600;
+      }
+    }
+    &__actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      justify-content: center;
+    }
+    &__btn {
+      border: none;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: s.$text-base;
+      padding: 0.7rem 1.6rem;
+      border-radius: s.$radius-pill;
+      transition: background s.$hover-timing, color s.$hover-timing,
+        border-color s.$hover-timing, filter s.$hover-timing,
+        transform s.$hover-timing, box-shadow s.$hover-timing;
+      &--primary {
+        background: s.$primary-accessible;
+        color: s.$white;
+        &:hover {
+          filter: s.$hover-brighten;
+          transform: translateY(s.$hover-lift);
+          box-shadow: s.$shadow-brand;
+        }
+      }
+      &--ghost {
+        background: transparent;
+        color: s.$primary-text;
+        border: 1px solid s.$gray-400;
+        &:hover {
+          border-color: s.$primary;
+          color: s.$primary-accessible;
+          transform: translateY(s.$hover-lift);
+          box-shadow: s.$elevation-2;
+        }
+      }
+    }
+  }
+  .recipes-message {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: s.$secondary-text;
+    font-weight: 600;
+  }
+
+  // ---- Filters drawer (modal above the navbar) ----
+  .recipes-drawer {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+
+    &__backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+    }
+    &__panel {
+      position: absolute;
+      top: 0;
+      right: 0;
+      height: 100%;
+      width: min(420px, 100%);
+      background: s.$white;
+      display: flex;
+      flex-direction: column;
+      box-shadow: -8px 0 30px rgba(0, 0, 0, 0.2);
+      animation: recipes-drawer-slide 0.2s ease;
+    }
+    &__head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid s.$gray-200;
+      h2 {
+        font-size: s.$text-xl;
+        font-weight: 800;
+      }
+      button {
+        border: none;
+        background: none;
+        font-size: s.$text-lg;
+        cursor: pointer;
+        color: s.$secondary-text;
+        transition: color s.$hover-timing;
+        &:hover {
+          color: s.$primary-text;
+        }
+      }
+    }
+    &__body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem;
+      section + section {
+        margin-top: 1.5rem;
+      }
+      h3 {
+        font-size: s.$text-fine;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: s.$tertiary-text;
+        margin-bottom: 0.75rem;
+      }
+    }
+    &__chips {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    &__foot {
+      display: flex;
+      gap: 0.75rem;
+      padding: 1rem 1.5rem;
+      border-top: 1px solid s.$gray-200;
+    }
+    &__reset {
+      border: 1px solid s.$gray-400;
+      background: s.$white;
+      color: s.$secondary-text;
+      font-weight: 700;
+      padding: 0.75rem 1.25rem;
+      border-radius: s.$radius-pill;
+      cursor: pointer;
+      // Neutral outline — border+text→ink and a lift, matching `.btn--outline`.
+      // A standalone dialog-footer secondary, so it lifts (unlike the compact
+      // Filters/Sort toolbar pills, which stay flat).
+      transition: color s.$hover-timing, border-color s.$hover-timing,
+        transform s.$hover-timing, box-shadow s.$hover-timing;
+      &:hover {
+        border-color: s.$primary-text;
+        color: s.$primary-text;
+        transform: translateY(s.$hover-lift);
+        box-shadow: s.$elevation-2;
+      }
+    }
+    &__apply {
+      flex: 1;
+      border: none;
+      background: s.$primary-accessible;
+      color: s.$white;
+      font-weight: 700;
+      padding: 0.75rem;
+      border-radius: s.$radius-pill;
+      cursor: pointer;
+      // The drawer's primary CTA now reads like every other `.btn--primary`.
+      transition: filter s.$hover-timing, transform s.$hover-timing,
+        box-shadow s.$hover-timing;
+      &:hover {
+        filter: s.$hover-brighten;
+        transform: translateY(s.$hover-lift);
+        box-shadow: s.$shadow-brand;
+      }
+    }
+  }
+
+  .recipes-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.4rem 0.85rem;
+    border-radius: s.$radius-pill;
+    border: 1px solid s.$gray-400;
+    background: s.$white;
+    color: s.$secondary-text;
+    font-size: s.$text-sm;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color s.$hover-timing, background-color s.$hover-timing,
+      border-color s.$hover-timing;
+    &:hover {
+      border-color: s.$primary;
+      color: s.$primary-accessible;
+    }
+    &.is-active {
+      background: s.$primary-accessible;
+      border-color: s.$primary-accessible;
+      color: s.$white;
+    }
+  }
+}
+
+@keyframes recipes-drawer-slide {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
   }
 }

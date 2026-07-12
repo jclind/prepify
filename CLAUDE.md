@@ -6,6 +6,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Prepify is a recipe website built with React/TypeScript frontend and an Express backend. Key features include recipe creation, search/filter, ingredient parsing with nutrition data, recipe ratings/reviews, and user authentication.
 
+> **Coding standard:** [`docs/CONVENTIONS.md`](docs/CONVENTIONS.md) is the house code & architecture standard
+> — frontend layering, the API-client and render-stability patterns, the server route/auth/validation
+> conventions, the design-system rules, testing gates, and process conventions. Read it before non-trivial
+> work; the R1/R2 refactors follow it.
+
 ## Architecture
 
 ### Two-Service Architecture
@@ -17,9 +22,9 @@ Prepify is a recipe website built with React/TypeScript frontend and an Express 
 
 - `src/pages/` - Route components (Home, Recipes, AddRecipe, Account, etc.)
 - `src/Components/` - Reusable UI components (Layout, Navbar, RecipeThumbnail, Form, etc.)
-- `src/context/` - React Context providers (AuthContext is active; RecipeContext is commented out/migrated)
+- `src/context/` - React Context providers (AuthContext is active; RecipeContext has been removed/migrated)
 - `src/api/` - API client modules
-- `src/util/` - Utility functions (calculateServingPrice, validateIngredientQuantityStr, etc.)
+- `src/util/` - Utility functions (calculateServingPrice, formatQuantity, etc.)
 - `src/recipeData/` - Static data (cuisinesList, dietLabels, mealTypesList)
 - `src/test/` - Vitest test suite with jsdom environment
 
@@ -63,27 +68,32 @@ npx cypress open       # Open Cypress test runner
 
 ## Environment Variables
 
+> **Environment target:** the local `.env` / `server/.env` in this checkout point at
+> **dedicated dev infrastructure** — Firebase project `prepify-dev-58579` (auth +
+> storage) and the `prepify-dev` MongoDB cluster — not production. So local writes,
+> seeded/admin accounts, and destructive testing hit dev, not live user data. (This
+> is the dev side of the pre-1.0 env separation; earlier notes that "Mongo is prod"
+> are stale.) Always confirm `VITE_FIREBASE_PROJECT_ID` / the `MONGO_URI` host before
+> assuming an environment, since prod credentials may be swapped in elsewhere.
+
 ### Frontend (.env)
 - `VITE_API_URL` - Main API server URL (default: http://localhost:4000)
-- `VITE_EDAMAM_APP_ID` - Edamam nutrition API app ID
-- `VITE_EDAMAM_APP_KEY` - Edamam nutrition API app key
 - `VITE_FIREBASE_API_KEY` - Firebase Web API key
 - `VITE_FIREBASE_AUTH_DOMAIN` - Firebase auth domain
 - `VITE_FIREBASE_PROJECT_ID` - Firebase project ID
 - `VITE_FIREBASE_STORAGE_BUCKET` - Firebase Storage bucket
 - `VITE_FIREBASE_MESSAGING_SENDER_ID` - Firebase Cloud Messaging sender ID
 - `VITE_FIREBASE_APP_ID` - Firebase app ID
-- `VITE_FIREBASE_MEASUREMENT_ID` - Firebase Analytics measurement ID
 - `VITE_CYPRESS` - Set to `"true"` when running under Cypress; toggles test-mode behavior in `src/client/db.ts`
-- `VITE_OPEN_AI_API_KEY` - **Defined but unused — remove before production or wire to a feature.** Present in `.env.example` with zero callers in `src/`.
-- `VITE_INGREDIENT_PARSER_URL` - **Defined but unused — remove before production or wire to a feature.** Ingredient parsing now goes through the main server (`POST /api/ingredients/parse`).
 
 ### Main Server (.env)
 - `MONGO_URI` - MongoDB connection string
 - `FIREBASE_SERVICE_ACCOUNT` - JSON string of Firebase service account
 - `FRONTEND_URLS` - Comma-separated CORS origins
 - `PORT` - Default 4000
-- `SPOONACULAR_API_KEY` - Spoonacular API key used by `POST /api/ingredients/parse` (server/routes/ingredients.js)
+- `INGREDIENT_PARSER_PROXY_URL` - Optional. Overrides the base URL of the hosted ingredient-enrichment proxy used by `@jclind/ingredient-parser` v2 (server/routes/ingredients.js). Unset = the package's default hosted proxy. NOTE: as of `@jclind/ingredient-parser` v2 the parser is key-free on the client — the proxy holds the Spoonacular key — so `SPOONACULAR_API_KEY` is **no longer used by this server** (it was needed only by the v1 in-process library call).
+- `EDAMAM_APP_ID` / `EDAMAM_APP_KEY` - Edamam nutrition API credentials, used server-side only by the `POST /api/nutrition/details` proxy (server/routes/nutrition.js). Moved off the client (formerly `VITE_EDAMAM_APP_ID/KEY`) so the keys aren't shipped in the browser bundle.
+- `PAID_QUOTA_<SURFACE>_USER_DAILY` / `PAID_QUOTA_<SURFACE>_GLOBAL_DAILY` - Optional. Per-account and global DAILY spend ceilings on the paid third-party surfaces (audit H1), on top of the per-minute rate limiters. `<SURFACE>` is one of `NUTRITION` (Edamam), `INGREDIENTS` (Spoonacular parse), `RECIPE` (Cloud Vision + OpenAI moderation on recipe creates). Unset = the code defaults in `server/util/paidQuota.js` (nutrition 150/6000, ingredients 600/20000, recipe 50/2000). The global ceiling is what bounds a Sybil swarm's total spend regardless of account count; tune below your billing comfort line. Counters live in the `paidQuota` Mongo collection and self-reap via a TTL index. The limiter is skipped under `NODE_ENV=test`.
 
 ## Key Patterns
 
@@ -94,8 +104,8 @@ npx cypress open       # Open Cypress test runner
 
 ### Recipe Data Flow
 1. User creates recipe → image uploaded to Firebase Storage → data posted to main server
-2. Nutrition data calculated via Edamam API (`src/api/recipes.ts`: `getRecipeNutrition`)
-3. Ingredient parsing uses `@jclind/ingredient-parser` library locally
+2. Nutrition data calculated via Edamam API, proxied through the server (`src/api/recipes.ts`: `getRecipeNutrition` → `POST /api/nutrition/details` in server/routes/nutrition.js)
+3. Ingredient parsing/enrichment uses `@jclind/ingredient-parser` **v2**: the client parses locally and synchronously via `parseIngredientString` (legacy flat shape), while enrichment (image + estimated price) goes through `POST /api/ingredients/parse` (server/routes/ingredients.js), which calls the package's `ingredientParser` → hosted proxy (key-free; the proxy holds the Spoonacular key). The server maps the v2 result (`price.cents`/`image`) back onto Prepify's stable persisted shape (`totalPriceUSACents`/`imagePath`), so saved recipe documents and downstream consumers are decoupled from the package's type surface (the app owns `ParsedIngredient`/`IngredientData` in `src/types.ts`)
 4. Serving price calculated via `src/util/calculateServingPrice.ts`
 
 ### Testing
@@ -114,7 +124,7 @@ npx cypress open       # Open Cypress test runner
 
 ## Important Notes
 
-- RecipeContext in `src/context/RecipeContext.tsx` is commented out - recipe operations are called directly via `RecipeAPI` class
-- Firebase Admin SDK initialization is guarded with `if (!admin.apps.length)` to prevent double initialization
+- RecipeContext has been removed (the former `src/context/RecipeContext.tsx` no longer exists) - recipe operations are called directly via `RecipeAPI` class
+- Firebase Admin SDK is on **v14** and uses the **modular API** (`firebase-admin/app`, `firebase-admin/auth`, `firebase-admin/storage`) — v14 removed the legacy `admin.*` namespace. Init is guarded with `if (!getApps().length)` (from `firebase-admin/app`) to prevent double initialization (`server/middleware/auth.js`). The frontend's Cypress config (`cypress.config.ts`) also runs Admin v14 for E2E token minting. Both `package.json`s carry an `overrides` pinning `uuid` to `^11.1.1` in the Admin dependency subtree — the `@google-cloud/storage` chain otherwise pulls a `uuid@9` with a moderate CVE and there's no fixed storage release yet; drop the override once one ships.
 - MongoDB connections use connection pooling with maxPoolSize: 10
 - The main server exposes a `/health` endpoint for health checks

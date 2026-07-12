@@ -1,17 +1,18 @@
+import { AlertCircleIcon, EditIcon } from 'src/Components/icons'
 import React, { FC } from 'react'
-import { Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import Skeleton from 'react-loading-skeleton'
 import 'react-loading-skeleton/dist/skeleton.css'
 
 import './Drafts.scss'
+import EmptyState from 'src/Components/EmptyState/EmptyState'
 import DraftAPI from 'src/api/drafts'
 import DraftCard from './DraftCard'
+import { useDelayedLoading } from 'src/hooks/useDelayedLoading'
 
 const Drafts: FC = () => {
   const queryClient = useQueryClient()
 
-  const { data: drafts, isLoading } = useQuery({
+  const { data: drafts, isLoading, isError, refetch } = useQuery({
     queryKey: ['drafts'],
     queryFn: () => DraftAPI.listDrafts(),
   })
@@ -21,18 +22,26 @@ const Drafts: FC = () => {
     queryClient.invalidateQueries({ queryKey: ['drafts'] })
   }
 
+  const showSkeleton = useDelayedLoading(isLoading)
   const hasDrafts = !!drafts && drafts.length > 0
   const showList = hasDrafts || isLoading
 
   return (
     <div className='drafts'>
       {showList ? (
-        <div className='drafts-list'>
+        // Render the skeleton cards whenever loading so the grid reserves its
+        // height from frame 1; the flash-guard delay only hides them (sk-hold)
+        // until it's worth drawing — no blank-then-grow jump.
+        <div
+          className={`drafts-list ${
+            isLoading && !showSkeleton ? 'sk-hold' : ''
+          }`}
+        >
           {isLoading ? (
             <>
-              <Skeleton height={92} borderRadius={12} />
-              <Skeleton height={92} borderRadius={12} />
-              <Skeleton height={92} borderRadius={12} />
+              <DraftCard loading />
+              <DraftCard loading />
+              <DraftCard loading />
             </>
           ) : (
             drafts!.map(draft => (
@@ -44,17 +53,22 @@ const Drafts: FC = () => {
             ))
           )}
         </div>
+      ) : isError ? (
+        // Error is not empty: a failed fetch must never read as "no drafts" to a
+        // user who has them. See docs/design/loading-states.md.
+        <EmptyState
+          icon={<AlertCircleIcon />}
+          title='Couldn’t load your drafts'
+          description='Something went wrong. Please try again.'
+          action={{ label: 'Try again', onClick: () => refetch() }}
+        />
       ) : (
-        <div className='no-data-saved'>
-          <h2>No Drafts Yet</h2>
-          <p>
-            Recipes you start are saved here automatically until you publish
-            them.
-          </p>
-          <Link to='/add-recipe' className='btn add-recipe-btn'>
-            Start a Recipe
-          </Link>
-        </div>
+        <EmptyState
+          icon={<EditIcon />}
+          title='No Drafts Yet'
+          description='Recipes you start are saved here automatically until you publish them.'
+          action={{ label: 'Start a Recipe', to: '/add-recipe' }}
+        />
       )}
     </div>
   )

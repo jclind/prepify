@@ -25,6 +25,20 @@ const TEST_UID = 'test-uid'
 const AUTH_HEADER = { Authorization: 'Bearer fake-test-token' }
 const RECIPE_ID = 'recipe-001'
 
+// Drive requests through ONE long-lived listening server rather than letting
+// supertest spin up (and tear down) an ephemeral server per `request(server)` call.
+// Under parallel-worker load that per-call churn intermittently surfaced as a
+// "socket hang up" (a transient connection error read as a non-array body), e.g.
+// the `GET /getTrendingRecipes › caps limit at 20` flake. Same approach as
+// writeLimiter.test.js (PR-C).
+let server
+beforeAll(() => {
+  server = app.listen(0)
+})
+afterAll((done) => {
+  server.close(done)
+})
+
 const BASE_RECIPE = {
   _id: RECIPE_ID,
   title: 'Tuscan Chicken Skillet',
@@ -43,6 +57,17 @@ const BASE_RECIPE = {
     'https://firebasestorage.googleapis.com/v0/b/test-bucket/o/recipeImages%2Ftuscan.jpg?alt=media&token=abc',
 }
 
+// addRecipe now derives the author handle from the caller's uid→username mapping
+// (audit M3), so the test uid needs a usernames doc or POST /addRecipe 400s
+// ("You must set a username before publishing"). Seed it before every test.
+beforeEach(async () => {
+  await getDB().collection('usernames').updateOne(
+    { _id: TEST_UID },
+    { $set: { username: 'testuser', username_lower: 'testuser' } },
+    { upsert: true }
+  )
+})
+
 afterEach(async () => {
   const db = getDB()
   await Promise.all([
@@ -50,6 +75,7 @@ afterEach(async () => {
     db.collection('userRecipeData').deleteMany({}),
     db.collection('stats').deleteMany({}),
     db.collection('ratings').deleteMany({}),
+    db.collection('usernames').deleteMany({}),
   ])
 })
 
@@ -66,7 +92,7 @@ describe('GET /recipes', () => {
   })
 
   it('returns { recipeList, total_results } shape', async () => {
-    const res = await request(app).get('/api/recipes')
+    const res = await request(server).get('/api/recipes')
     expect(res.status).toBe(200)
     expect(res.body).toHaveProperty('recipeList')
     expect(res.body).toHaveProperty('total_results')
@@ -77,14 +103,14 @@ describe('GET /recipes', () => {
   // Browse is intentionally public — anonymous visitors can view recipes.
   // Explicit assertion so a future stray verifyToken doesn't silently break it.
   it('succeeds without an Authorization header (route is public)', async () => {
-    const res = await request(app).get('/api/recipes')
+    const res = await request(server).get('/api/recipes')
     expect(res.status).toBe(200)
     expect(res.body).toHaveProperty('recipeList')
     expect(res.body).toHaveProperty('total_results')
   })
 
   it('filters results by search query (q)', async () => {
-    const res = await request(app).get('/api/recipes?q=chicken')
+    const res = await request(server).get('/api/recipes?q=chicken')
     expect(res.status).toBe(200)
     expect(res.body.recipeList).toHaveLength(1)
     expect(res.body.recipeList[0].title).toBe('Tuscan Chicken Skillet')
@@ -92,31 +118,361 @@ describe('GET /recipes', () => {
   })
 
   it('search is case-insensitive', async () => {
-    const res = await request(app).get('/api/recipes?q=PASTA')
+    const res = await request(server).get('/api/recipes?q=PASTA')
     expect(res.status).toBe(200)
     expect(res.body.recipeList).toHaveLength(1)
     expect(res.body.recipeList[0]._id).toBe('recipe-003')
   })
 
   it('returns empty list when no recipes match query', async () => {
-    const res = await request(app).get('/api/recipes?q=zzznomatch')
+    const res = await request(server).get('/api/recipes?q=zzznomatch')
     expect(res.status).toBe(200)
     expect(res.body.recipeList).toHaveLength(0)
     expect(res.body.total_results).toBe(0)
   })
 
   it('page 0 with recipesPerPage=2 returns first 2 of 3', async () => {
-    const res = await request(app).get('/api/recipes?page=0&recipesPerPage=2')
+    const res = await request(server).get('/api/recipes?page=0&recipesPerPage=2')
     expect(res.status).toBe(200)
     expect(res.body.recipeList).toHaveLength(2)
     expect(res.body.total_results).toBe(3)
   })
 
   it('page 1 with recipesPerPage=2 returns the remaining 1', async () => {
-    const res = await request(app).get('/api/recipes?page=1&recipesPerPage=2')
+    const res = await request(server).get('/api/recipes?page=1&recipesPerPage=2')
     expect(res.status).toBe(200)
     expect(res.body.recipeList).toHaveLength(1)
     expect(res.body.total_results).toBe(3)
+  })
+
+  it('treats a negative page as page 0 (no negative skip / 500)', async () => {
+    const res = await request(server).get('/api/recipes?page=-1')
+    expect(res.status).toBe(200)
+    expect(res.body.recipeList).toHaveLength(3)
+    expect(res.body.total_results).toBe(3)
+  })
+
+  it('floors a negative recipesPerPage instead of 500ing (negative limit/skip)', async () => {
+    const res = await request(server).get('/api/recipes?page=1&recipesPerPage=-5')
+    expect(res.status).toBe(200)
+    // A negative recipesPerPage floors to 1, so page=1 (skip=1) returns 1 recipe.
+    expect(res.body.recipeList).toHaveLength(1)
+    expect(res.body.total_results).toBe(3)
+  })
+
+  it('caps recipesPerPage at 50 even when a larger page is requested', async () => {
+    const db = getDB()
+    // 3 seeded in beforeEach + 52 more = 55 total, so a capped page shows exactly 50.
+    await db.collection('recipes').insertMany(
+      Array.from({ length: 52 }, (_, i) => ({
+        ...BASE_RECIPE,
+        _id: `cap-recipe-${i}`,
+        title: `Cap Recipe ${i}`,
+      }))
+    )
+
+    const res = await request(server).get('/api/recipes?page=0&recipesPerPage=500')
+    expect(res.status).toBe(200)
+    expect(res.body.recipeList).toHaveLength(50)
+    expect(res.body.total_results).toBe(55)
+  })
+})
+
+// ─── GET /recipes — sorting & meal filter ─────────────────────────────────────
+
+describe('GET /recipes sorting & meal filter', () => {
+  beforeEach(async () => {
+    const db = getDB()
+    // Distinct price / time / createdAt / saves so order is unambiguous.
+    await db.collection('recipes').insertMany([
+      { ...BASE_RECIPE, _id: 's-a', title: 'Alpha', mealTypes: ['breakfast'], nutritionLabels: ['vegan'], servingPrice: 100, totalTime: 10, createdAt: '3000', numTimesSaved: 5 },
+      { ...BASE_RECIPE, _id: 's-b', title: 'Bravo', mealTypes: ['dinner'], nutritionLabels: [], servingPrice: 300, totalTime: 50, createdAt: '1000', numTimesSaved: 1 },
+      { ...BASE_RECIPE, _id: 's-c', title: 'Charlie', mealTypes: ['lunch', 'dinner'], nutritionLabels: ['vegan'], servingPrice: 200, totalTime: 30, createdAt: '2000', numTimesSaved: 9 },
+    ])
+  })
+
+  const firstId = async (order) => {
+    const res = await request(server).get(`/api/recipes?order=${order}`)
+    expect(res.status).toBe(200)
+    return res.body.recipeList[0]._id
+  }
+
+  it('cheapest → lowest servingPrice first', async () => {
+    expect(await firstId('cheapest')).toBe('s-a')
+  })
+  it('expensive → highest servingPrice first', async () => {
+    expect(await firstId('expensive')).toBe('s-b')
+  })
+  it('shortest → lowest totalTime first', async () => {
+    expect(await firstId('shortest')).toBe('s-a')
+  })
+  it('longest → highest totalTime first', async () => {
+    expect(await firstId('longest')).toBe('s-b')
+  })
+  it('new → newest createdAt first', async () => {
+    expect(await firstId('new')).toBe('s-a')
+  })
+  it('old → oldest createdAt first', async () => {
+    expect(await firstId('old')).toBe('s-b')
+  })
+  it('popular → most-saved first', async () => {
+    expect(await firstId('popular')).toBe('s-c')
+  })
+
+  it('mealTypes filters to recipes with that meal', async () => {
+    const res = await request(server).get('/api/recipes?mealTypes=dinner')
+    expect(res.status).toBe(200)
+    expect(res.body.recipeList.map((r) => r._id).sort()).toEqual(['s-b', 's-c'])
+  })
+
+  it('mealTypes AND tags (diet) combine', async () => {
+    const res = await request(server).get('/api/recipes?mealTypes=dinner&tags=vegan')
+    expect(res.status).toBe(200)
+    expect(res.body.recipeList).toHaveLength(1)
+    expect(res.body.recipeList[0]._id).toBe('s-c')
+  })
+
+  // Hardening: `order` is client-controlled; an inherited-member name must not
+  // resolve to a function/object and break the Mongo sort.
+  it('ignores a prototype-polluting order value (no 500)', async () => {
+    const res = await request(server).get('/api/recipes?order=constructor')
+    expect(res.status).toBe(200)
+    expect(Array.isArray(res.body.recipeList)).toBe(true)
+  })
+
+  // Hardening: a repeated list param arrives as an array; must not throw.
+  it('handles a repeated mealTypes param as an array', async () => {
+    const res = await request(server).get(
+      '/api/recipes?mealTypes=dinner&mealTypes=lunch'
+    )
+    expect(res.status).toBe(200)
+    expect(res.body.recipeList.map((r) => r._id).sort()).toEqual(['s-b', 's-c'])
+  })
+})
+
+// ─── GET /recipes — diet filter (conjunctive / AND) ───────────────────────────
+
+describe('GET /recipes diet filter (AND)', () => {
+  beforeEach(async () => {
+    const db = getDB()
+    await db.collection('recipes').insertMany([
+      { ...BASE_RECIPE, _id: 'd-1', title: 'Both', nutritionLabels: ['vegan', 'gluten-free'] },
+      { ...BASE_RECIPE, _id: 'd-2', title: 'VeganOnly', nutritionLabels: ['vegan'] },
+      { ...BASE_RECIPE, _id: 'd-3', title: 'GfOnly', nutritionLabels: ['gluten-free'] },
+    ])
+  })
+
+  it('a single diet matches any recipe carrying it', async () => {
+    const res = await request(server).get('/api/recipes?diets=vegan')
+    expect(res.status).toBe(200)
+    expect(res.body.recipeList.map((r) => r._id).sort()).toEqual(['d-1', 'd-2'])
+  })
+
+  it('multiple diets require ALL labels (AND, not OR)', async () => {
+    const res = await request(server).get('/api/recipes?diets=vegan,gluten-free')
+    expect(res.status).toBe(200)
+    expect(res.body.recipeList.map((r) => r._id)).toEqual(['d-1'])
+  })
+})
+
+describe('GET /recipes/facets', () => {
+  beforeEach(async () => {
+    const db = getDB()
+    await db.collection('recipes').insertMany([
+      { ...BASE_RECIPE, _id: 'f-1', cuisine: 'Italian', mealTypes: ['dinner'], nutritionLabels: ['vegan'] },
+      { ...BASE_RECIPE, _id: 'f-2', cuisine: 'Mexican', mealTypes: ['lunch'], nutritionLabels: ['gluten-free'] },
+      // Empty/missing values should be dropped, not surfaced as facets.
+      { ...BASE_RECIPE, _id: 'f-3', cuisine: '', mealTypes: [], nutritionLabels: [] },
+    ])
+  })
+
+  it('returns only the distinct, non-empty values present in the catalog', async () => {
+    const res = await request(server).get('/api/recipes/facets')
+    expect(res.status).toBe(200)
+    expect(res.body.cuisines.sort()).toEqual(['Italian', 'Mexican'])
+    expect(res.body.diets.sort()).toEqual(['gluten-free', 'vegan'])
+    expect(res.body.mealTypes.sort()).toEqual(['dinner', 'lunch'])
+    // The empty-string cuisine from f-3 is filtered out.
+    expect(res.body.cuisines).not.toContain('')
+  })
+
+  it('serves a cached response — a direct DB insert is not reflected until the cache is busted', async () => {
+    const { facetsCache } = require('../util/facetsCache')
+    const db = getDB()
+
+    // Warm the cache.
+    const first = await request(server).get('/api/recipes/facets')
+    expect(first.body.cuisines.sort()).toEqual(['Italian', 'Mexican'])
+
+    // Insert straight into the collection, bypassing the write routes that bust
+    // the cache — so this new cuisine must NOT appear while the cache is warm.
+    await db.collection('recipes').insertOne({
+      ...BASE_RECIPE,
+      _id: 'f-cache',
+      cuisine: 'Thai',
+    })
+    const cached = await request(server).get('/api/recipes/facets')
+    expect(cached.body.cuisines.sort()).toEqual(['Italian', 'Mexican'])
+
+    // After an explicit bust, the next load rescans and picks it up.
+    facetsCache.invalidate()
+    const fresh = await request(server).get('/api/recipes/facets')
+    expect(fresh.body.cuisines.sort()).toEqual(['Italian', 'Mexican', 'Thai'])
+  })
+
+  it('surfaces a newly added recipe\'s cuisine on the next load (addRecipe busts the cache)', async () => {
+    // Warm the cache without the new cuisine.
+    const before = await request(server).get('/api/recipes/facets')
+    expect(before.body.cuisines).not.toContain('Thai')
+
+    // Adding through the real route must invalidate the cache…
+    const add = await request(server)
+      .post('/api/addRecipe')
+      .set(AUTH_HEADER)
+      .send({
+        title: 'Pad See Ew',
+        description: 'Thai noodles',
+        ingredients: [{ id: 'i1', name: 'noodles' }],
+        instructions: [{ step: 'Stir fry' }],
+        cuisine: 'Thai',
+        mealTypes: ['dinner'],
+        nutritionLabels: ['vegetarian'],
+      })
+    expect(add.status).toBe(201)
+
+    // …so the next facets load (no explicit bust) already includes it.
+    const after = await request(server).get('/api/recipes/facets')
+    expect(after.body.cuisines).toContain('Thai')
+    expect(after.body.diets).toContain('vegetarian')
+  })
+})
+
+// ─── GET /getRecipe — public projection ───────────────────────────────────────
+
+// The internal moderation/curation stamps carry admin Firebase uids + curation
+// metadata and must never reach public callers; the client-facing fields must
+// still come through. See util/recipeFields.publicRecipeProjection.
+describe('GET /getRecipe — public projection', () => {
+  const STAMPS = ['moderatedBy', 'moderatedAt', 'featuredBy', 'featuredAt', 'publishUpdatedBy', 'publishUpdatedAt']
+
+  // A published recipe stamped as if it had been moderated + featured by an admin.
+  const seedStamped = (over = {}) =>
+    seedRecipe({
+      ...BASE_RECIPE,
+      _id: 'r-stamped',
+      userId: TEST_UID,
+      status: 'published',
+      featured: true,
+      moderatedBy: 'admin-uid-AAA',
+      moderatedAt: new Date().toISOString(),
+      featuredBy: 'admin-uid-BBB',
+      featuredAt: new Date().toISOString(),
+      publishUpdatedBy: 'admin-uid-CCC',
+      publishUpdatedAt: new Date().toISOString(),
+      ...over,
+    })
+
+  afterEach(() => admin.__resetClaims())
+
+  it('strips the internal moderation stamps from an anonymous read', async () => {
+    await seedStamped()
+    const res = await request(server).get('/api/getRecipe?id=r-stamped')
+    expect(res.status).toBe(200)
+    for (const k of STAMPS) expect(res.body).not.toHaveProperty(k)
+  })
+
+  it('keeps the client-facing fields the UI depends on', async () => {
+    await seedStamped()
+    const res = await request(server).get('/api/getRecipe?id=r-stamped')
+    // userId → owner-gating; status → owner "held for review" notice; plus the
+    // display fields.
+    expect(res.body).toMatchObject({
+      _id: 'r-stamped',
+      title: BASE_RECIPE.title,
+      userId: TEST_UID,
+      status: 'published',
+      featured: true,
+    })
+    expect(res.body.rating).toEqual(BASE_RECIPE.rating)
+  })
+
+  it('still increments the view counter through the projection', async () => {
+    await seedStamped({ views: 4 })
+    const res = await request(server).get('/api/getRecipe?id=r-stamped')
+    expect(res.body.views).toBe(5)
+  })
+
+  it('an admin read still sees the full doc (moderation stamps intact)', async () => {
+    await seedStamped()
+    admin.__setClaims({ admin: true })
+    const res = await request(server).get('/api/getRecipe?id=r-stamped').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    for (const k of STAMPS) expect(res.body).toHaveProperty(k)
+    expect(res.body.moderatedBy).toBe('admin-uid-AAA')
+  })
+
+  it('an owner previewing their own held recipe gets it without the admin stamps', async () => {
+    await seedStamped({ _id: 'r-stamped-held', status: 'pending_review' })
+    const res = await request(server).get('/api/getRecipe?id=r-stamped-held').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(res.body._id).toBe('r-stamped-held')
+    // The owner needs status (the held-for-review notice) but not the admin uids.
+    expect(res.body.status).toBe('pending_review')
+    for (const k of STAMPS) expect(res.body).not.toHaveProperty(k)
+  })
+})
+
+// The public LIST surfaces (browse + trending) render recipe cards, so they
+// project to the lighter card shape — which, like the detail projection, keeps
+// the internal moderation stamps (and the author uid) off anonymous responses.
+describe('public list endpoints — card projection', () => {
+  const CARD_INTERNAL = [
+    'userId',
+    'status',
+    'moderatedBy',
+    'moderatedAt',
+    'featuredBy',
+    'featuredAt',
+    'publishUpdatedBy',
+    'publishUpdatedAt',
+  ]
+
+  // A published, featured recipe carrying all six admin stamps.
+  const seedStampedCard = () =>
+    seedRecipe({
+      ...BASE_RECIPE,
+      _id: 'card-stamped',
+      userId: TEST_UID,
+      status: 'published',
+      featured: true,
+      moderatedBy: 'admin-uid-AAA',
+      moderatedAt: new Date().toISOString(),
+      featuredBy: 'admin-uid-BBB',
+      featuredAt: new Date().toISOString(),
+      publishUpdatedBy: 'admin-uid-CCC',
+      publishUpdatedAt: new Date().toISOString(),
+    })
+
+  it('GET /recipes browse card omits the author uid + internal stamps', async () => {
+    await seedStampedCard()
+    const res = await request(server).get('/api/recipes')
+    expect(res.status).toBe(200)
+    const card = res.body.recipeList.find((r) => r._id === 'card-stamped')
+    expect(card).toBeDefined()
+    for (const k of CARD_INTERNAL) expect(card).not.toHaveProperty(k)
+    // The fields the browse card renders are still present.
+    expect(card).toMatchObject({ title: BASE_RECIPE.title, cuisine: 'Italian' })
+    expect(card.rating).toEqual(BASE_RECIPE.rating)
+  })
+
+  it('GET /getTrendingRecipes card omits the author uid + internal stamps (incl. featuredBy)', async () => {
+    await seedStampedCard()
+    const res = await request(server).get('/api/getTrendingRecipes')
+    expect(res.status).toBe(200)
+    const card = res.body.find((r) => r._id === 'card-stamped')
+    expect(card).toBeDefined()
+    for (const k of CARD_INTERNAL) expect(card).not.toHaveProperty(k)
+    expect(card).toMatchObject({ title: BASE_RECIPE.title })
   })
 })
 
@@ -124,12 +480,12 @@ describe('GET /recipes', () => {
 
 describe('POST /addRecipe', () => {
   it('rejects request with no auth token (401)', async () => {
-    const res = await request(app).post('/api/addRecipe').send({})
+    const res = await request(server).post('/api/addRecipe').send({})
     expect(res.status).toBe(401)
   })
 
   it('rejects request with missing required fields (400)', async () => {
-    const res = await request(app)
+    const res = await request(server)
       .post('/api/addRecipe')
       .set(AUTH_HEADER)
       .send({})
@@ -152,7 +508,7 @@ describe('POST /addRecipe', () => {
       views: 500,
     }
 
-    const res = await request(app)
+    const res = await request(server)
       .post('/api/addRecipe')
       .set(AUTH_HEADER)
       .send(payload)
@@ -174,6 +530,102 @@ describe('POST /addRecipe', () => {
     expect(stored.userId).toBe(TEST_UID)
   })
 
+  // Audit M3: authorUsername is derived server-side from the caller's uid→username
+  // mapping and is NOT accepted from the client, so a user can't publish a recipe
+  // attributed to someone else's handle.
+  it('derives authorUsername from the caller’s uid, ignoring a client-supplied one', async () => {
+    const res = await request(server)
+      .post('/api/addRecipe')
+      .set(AUTH_HEADER)
+      .send({
+        title: 'Test Recipe',
+        ingredients: [{ id: 'i1', name: 'salt' }],
+        instructions: [{ content: 'Add salt', index: 1, id: 's1' }],
+        mealTypes: ['dinner'],
+        // Impersonation attempt — client claims to be a different, popular handle.
+        authorUsername: 'famous_chef',
+      })
+    expect(res.status).toBe(201)
+    const { ObjectId } = require('mongodb')
+    const stored = await getDB().collection('recipes').findOne({ _id: new ObjectId(res.body._id) })
+    // 'testuser' is the handle seeded for TEST_UID in the top-level beforeEach.
+    expect(stored.authorUsername).toBe('testuser')
+    expect(stored.authorUsername).not.toBe('famous_chef')
+  })
+
+  it('rejects a create when the caller has no username (400)', async () => {
+    // Remove the seeded handle so the caller has no uid→username mapping.
+    await getDB().collection('usernames').deleteOne({ _id: TEST_UID })
+    const res = await request(server)
+      .post('/api/addRecipe')
+      .set(AUTH_HEADER)
+      .send({
+        title: 'Test Recipe',
+        ingredients: [{ id: 'i1', name: 'salt' }],
+        instructions: [{ content: 'Add salt', index: 1, id: 's1' }],
+        mealTypes: ['dinner'],
+      })
+    expect(res.status).toBe(400)
+    expect(res.body.error).toMatch(/set a username/i)
+  })
+
+  it('ignores client-supplied status, featured, and a forged rating on create', async () => {
+    const res = await request(server)
+      .post('/api/addRecipe')
+      .set(AUTH_HEADER)
+      .send({
+        title: 'Test Recipe',
+        description: 'A test recipe',
+        ingredients: [{ id: 'i1', name: 'salt' }],
+        instructions: [{ content: 'Add salt', index: 1, id: 's1' }],
+        mealTypes: ['dinner'],
+        // Curation / moderation flags a client must never be able to set on create.
+        status: 'active',
+        featured: true,
+        // A forged rating to fake social proof on a brand-new recipe.
+        rating: { rateCount: 99, rateValue: 5 },
+      })
+
+    expect(res.status).toBe(201)
+    const { ObjectId } = require('mongodb')
+    const stored = await getDB().collection('recipes').findOne({ _id: new ObjectId(res.body._id) })
+    expect(stored.status).toBeUndefined()
+    expect(stored.featured).toBeUndefined()
+    expect(stored.rating).toEqual({
+      rateCount: 0,
+      rateValue: 0,
+      breakdown: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+    })
+  })
+
+  it('stamps createdAt server-side and ignores a client-forged createdAt/editedAt', async () => {
+    const before = Date.now()
+    const res = await request(server)
+      .post('/api/addRecipe')
+      .set(AUTH_HEADER)
+      .send({
+        title: 'Test Recipe',
+        description: 'A test recipe',
+        ingredients: [{ id: 'i1', name: 'salt' }],
+        instructions: [{ content: 'Add salt', index: 1, id: 's1' }],
+        mealTypes: ['dinner'],
+        // A forged far-future createdAt would pin this recipe to the top of the
+        // "Newest" sort forever; a forged editedAt would fake an edit history.
+        createdAt: '9999999999999',
+        editedAt: '5000',
+      })
+
+    expect(res.status).toBe(201)
+    const { ObjectId } = require('mongodb')
+    const stored = await getDB().collection('recipes').findOne({ _id: new ObjectId(res.body._id) })
+    // Server stamped its own ms-epoch, not the forged value.
+    expect(stored.createdAt).not.toBe('9999999999999')
+    expect(Number(stored.createdAt)).toBeGreaterThanOrEqual(before)
+    expect(Number(stored.createdAt)).toBeLessThanOrEqual(Date.now())
+    // A new recipe is never pre-edited, regardless of what the client sends.
+    expect(stored.editedAt).toBeNull()
+  })
+
   describe('input bounds (defense-in-depth)', () => {
     const validBody = () => ({
       title: 'Test Recipe',
@@ -184,7 +636,7 @@ describe('POST /addRecipe', () => {
     })
 
     const expectRejected = async (overrides, pattern) => {
-      const res = await request(app)
+      const res = await request(server)
         .post('/api/addRecipe')
         .set(AUTH_HEADER)
         .send({ ...validBody(), ...overrides })
@@ -219,8 +671,67 @@ describe('POST /addRecipe', () => {
       await expectRejected({ instructions }, /instruction cannot exceed/i)
     })
 
+    it('rejects an ingredient line over 200 characters', async () => {
+      const ingredients = [
+        { id: 'i1', parsedIngredient: { originalIngredientString: 'x'.repeat(201) } },
+      ]
+      await expectRejected({ ingredients }, /ingredient cannot exceed/i)
+    })
+
+    it('rejects a negative prep time', async () => {
+      await expectRejected({ prepTime: -5 }, /Prep time must be between/)
+    })
+
+    it('rejects a non-numeric servings', async () => {
+      await expectRejected({ servings: '4' }, /Servings must be a number/)
+    })
+
+    it('rejects a fractional servings', async () => {
+      await expectRejected({ servings: 2.5 }, /Servings must be a whole number/)
+    })
+
+    it('rejects zero servings', async () => {
+      await expectRejected({ servings: 0 }, /Servings must be between/)
+    })
+
+    // Audit M4: servingPrice is recomputed from the submitted ingredient prices
+    // BEFORE the bounds check, so an over-cap/negative RECOMPUTED value is what
+    // must be rejected — a client-sent servingPrice figure is ignored entirely
+    // (see the "server-recomputed servingPrice (V1)" + "audit M4" describes below).
+    // A forged ingredientData.totalPriceUSACents used to slip an out-of-bounds
+    // price past this check because the recompute ran only AFTER it.
+    it('rejects an over-cap servingPrice recomputed from a forged ingredient price', async () => {
+      await expectRejected(
+        {
+          servings: 1,
+          servingPrice: 100, // ignored — the recompute below is what's validated
+          ingredients: [
+            { id: 'i1', parsedIngredient: { originalIngredientString: '1 diamond' }, ingredientData: { totalPriceUSACents: 2_000_000 } },
+          ],
+        },
+        /Serving price must be between/
+      )
+    })
+
+    it('rejects a negative servingPrice recomputed from a forged ingredient price', async () => {
+      await expectRejected(
+        {
+          servings: 1,
+          servingPrice: 100, // ignored — the recompute below is what's validated
+          ingredients: [
+            { id: 'i1', parsedIngredient: { originalIngredientString: '1 gold' }, ingredientData: { totalPriceUSACents: -999_999 } },
+          ],
+        },
+        /Serving price must be between/
+      )
+    })
+
+    it('rejects an absurdly large total time', async () => {
+      await expectRejected({ totalTime: Number.MAX_VALUE }, /Total time must be between/)
+    })
+
     it('accepts a payload exactly at the limits (201)', async () => {
-      const res = await request(app)
+      const res = await request(server)
         .post('/api/addRecipe')
         .set(AUTH_HEADER)
         .send({
@@ -229,6 +740,94 @@ describe('POST /addRecipe', () => {
           description: 'A'.repeat(2000),
         })
       expect(res.status).toBe(201)
+    })
+
+    it('accepts valid numeric fields (201)', async () => {
+      const res = await request(server)
+        .post('/api/addRecipe')
+        .set(AUTH_HEADER)
+        .send({
+          ...validBody(),
+          prepTime: 15,
+          cookTime: 30,
+          totalTime: 45,
+          servings: 4,
+          fridgeLife: 3,
+          freezerLife: 90,
+          servingPrice: 250,
+        })
+      expect(res.status).toBe(201)
+    })
+  })
+
+  // V1: the server no longer trusts the client-sent `servingPrice` — it
+  // recomputes it from the submitted ingredients/servings (server/util/
+  // calculateServingPrice.js, a mirror of src/util/calculateServingPrice.ts).
+  describe('server-recomputed servingPrice (V1)', () => {
+    // A fully-priced, real ingredient row (has both `parsedIngredient` and a
+    // non-null `ingredientData` carrying a price) — the only row shape the
+    // recompute counts.
+    const priced = (id, cents) => ({
+      id,
+      parsedIngredient: { originalIngredientString: `${id} ingredient` },
+      ingredientData: { name: id, totalPriceUSACents: cents },
+    })
+    // An errored/unenriched row — still a real parsed ingredient, but the
+    // lookup never resolved. Per the backlog note, these rows are legitimately
+    // publishable by design; the recompute must skip them (contribute $0)
+    // rather than reject the request.
+    const nullRow = (id) => ({
+      id,
+      parsedIngredient: { originalIngredientString: `${id} ingredient` },
+      ingredientData: null,
+      error: { message: 'lookup failed' },
+    })
+
+    it('ignores a lowball client-sent servingPrice and null ingredientData rows, storing the server recompute instead', async () => {
+      const res = await request(server)
+        .post('/api/addRecipe')
+        .set(AUTH_HEADER)
+        .send({
+          title: 'Test Recipe',
+          description: 'A test recipe',
+          // 1000 cents total from the one priced row; the null row must NOT
+          // error the request and must NOT count toward the total.
+          ingredients: [priced('i1', 1000), nullRow('i2')],
+          instructions: [{ content: 'Cook it', index: 1, id: 's1' }],
+          mealTypes: ['dinner'],
+          servings: 4,
+          // A stale-tab / raced-submit / direct-API-caller lowball price that
+          // understates the true cost — the server must not trust this.
+          servingPrice: 1,
+        })
+
+      expect(res.status).toBe(201)
+      const { ObjectId } = require('mongodb')
+      const stored = await getDB().collection('recipes').findOne({ _id: new ObjectId(res.body._id) })
+      // 1000 cents / 4 servings = 250, matching src/util/calculateServingPrice.ts.
+      expect(stored.servingPrice).toBe(250)
+      expect(stored.servingPrice).not.toBe(1)
+    })
+
+    it('matches the client util\'s calculation for an all-enriched ingredient list', async () => {
+      const res = await request(server)
+        .post('/api/addRecipe')
+        .set(AUTH_HEADER)
+        .send({
+          title: 'Test Recipe',
+          description: 'A test recipe',
+          // 600 + 400 = 1000 cents over 4 servings = 250 cents/serving — the
+          // same fixture as src/test/calculateServingPrice.test.ts's first case.
+          ingredients: [priced('i1', 600), priced('i2', 400)],
+          instructions: [{ content: 'Cook it', index: 1, id: 's1' }],
+          mealTypes: ['dinner'],
+          servings: 4,
+        })
+
+      expect(res.status).toBe(201)
+      const { ObjectId } = require('mongodb')
+      const stored = await getDB().collection('recipes').findOne({ _id: new ObjectId(res.body._id) })
+      expect(stored.servingPrice).toBe(250)
     })
   })
 })
@@ -259,14 +858,14 @@ describe('PUT /editRecipe', () => {
   })
 
   it('rejects request with no auth token (401)', async () => {
-    const res = await request(app)
+    const res = await request(server)
       .put(`/api/editRecipe?recipeId=${RECIPE_ID}`)
       .send(validEdit())
     expect(res.status).toBe(401)
   })
 
   it('returns 400 when recipeId is missing', async () => {
-    const res = await request(app)
+    const res = await request(server)
       .put('/api/editRecipe')
       .set(AUTH_HEADER)
       .send(validEdit())
@@ -274,7 +873,7 @@ describe('PUT /editRecipe', () => {
   })
 
   it('returns 404 if the recipe does not exist', async () => {
-    const res = await request(app)
+    const res = await request(server)
       .put('/api/editRecipe?recipeId=nonexistent')
       .set(AUTH_HEADER)
       .send(validEdit())
@@ -286,7 +885,7 @@ describe('PUT /editRecipe', () => {
     await db.collection('recipes').deleteOne({ _id: RECIPE_ID })
     await seedRecipe({ ...OWNED_RECIPE, userId: 'someone-else' })
 
-    const res = await request(app)
+    const res = await request(server)
       .put(`/api/editRecipe?recipeId=${RECIPE_ID}`)
       .set(AUTH_HEADER)
       .send(validEdit())
@@ -298,7 +897,7 @@ describe('PUT /editRecipe', () => {
   })
 
   it('rejects missing required fields (400)', async () => {
-    const res = await request(app)
+    const res = await request(server)
       .put(`/api/editRecipe?recipeId=${RECIPE_ID}`)
       .set(AUTH_HEADER)
       .send({ description: 'no title/ingredients/etc' })
@@ -307,7 +906,7 @@ describe('PUT /editRecipe', () => {
   })
 
   it('enforces input bounds (400)', async () => {
-    const res = await request(app)
+    const res = await request(server)
       .put(`/api/editRecipe?recipeId=${RECIPE_ID}`)
       .set(AUTH_HEADER)
       .send({ ...validEdit(), title: 'A'.repeat(51) })
@@ -316,7 +915,7 @@ describe('PUT /editRecipe', () => {
   })
 
   it('updates editable fields and stamps editedAt', async () => {
-    const res = await request(app)
+    const res = await request(server)
       .put(`/api/editRecipe?recipeId=${RECIPE_ID}`)
       .set(AUTH_HEADER)
       .send(validEdit())
@@ -332,7 +931,7 @@ describe('PUT /editRecipe', () => {
   })
 
   it('never resets ratings, saves, made-count, views, or createdAt on edit', async () => {
-    await request(app)
+    await request(server)
       .put(`/api/editRecipe?recipeId=${RECIPE_ID}`)
       .set(AUTH_HEADER)
       .send(validEdit())
@@ -347,7 +946,7 @@ describe('PUT /editRecipe', () => {
   })
 
   it('ignores attempts to overwrite protected fields via the payload', async () => {
-    const res = await request(app)
+    const res = await request(server)
       .put(`/api/editRecipe?recipeId=${RECIPE_ID}`)
       .set(AUTH_HEADER)
       .send({
@@ -373,6 +972,61 @@ describe('PUT /editRecipe', () => {
     expect(stored._id).toBe(RECIPE_ID)
     expect(stored.createdAt).toBe(OWNED_RECIPE.createdAt)
   })
+
+  // V1: the edit path recomputes servingPrice too — same helper, same rules.
+  describe('server-recomputed servingPrice (V1)', () => {
+    const priced = (id, cents) => ({
+      id,
+      parsedIngredient: { originalIngredientString: `${id} ingredient` },
+      ingredientData: { name: id, totalPriceUSACents: cents },
+    })
+    const nullRow = (id) => ({
+      id,
+      parsedIngredient: { originalIngredientString: `${id} ingredient` },
+      ingredientData: null,
+      error: { message: 'lookup failed' },
+    })
+
+    it('ignores a lowball client-sent servingPrice and null ingredientData rows on edit', async () => {
+      const res = await request(server)
+        .put(`/api/editRecipe?recipeId=${RECIPE_ID}`)
+        .set(AUTH_HEADER)
+        .send({
+          ...validEdit(),
+          ingredients: [priced('i1', 1000), nullRow('i2')],
+          servings: 4,
+          servingPrice: 1, // stale/forged lowball — must be ignored
+        })
+
+      expect(res.status).toBe(200)
+      const db = getDB()
+      const stored = await db.collection('recipes').findOne({ _id: RECIPE_ID })
+      expect(stored.servingPrice).toBe(250)
+      expect(stored.servingPrice).not.toBe(1)
+    })
+
+    it('falls back to the recipe\'s existing stored servings when the edit payload omits it', async () => {
+      // OWNED_RECIPE (seeded in beforeEach) carries no `servings` field of its
+      // own; seed one directly so the fallback path has a real value to read.
+      const db = getDB()
+      await db.collection('recipes').updateOne({ _id: RECIPE_ID }, { $set: { servings: 5 } })
+
+      const res = await request(server)
+        .put(`/api/editRecipe?recipeId=${RECIPE_ID}`)
+        .set(AUTH_HEADER)
+        .send({
+          ...validEdit(), // omits `servings` entirely
+          ingredients: [priced('i1', 1000)],
+        })
+
+      expect(res.status).toBe(200)
+      const stored = await db.collection('recipes').findOne({ _id: RECIPE_ID })
+      // 1000 cents / the pre-existing 5 servings = 200, not divided by
+      // something undefined (which would be 0 under the server's guard).
+      expect(stored.servingPrice).toBe(200)
+      expect(stored.servings).toBe(5)
+    })
+  })
 })
 
 // ─── POST /recipes/:id/save ───────────────────────────────────────────────────
@@ -384,7 +1038,7 @@ describe('POST /recipes/:id/save', () => {
   })
 
   it('saves a recipe and increments numTimesSaved', async () => {
-    const res = await request(app)
+    const res = await request(server)
       .post(`/api/recipes/${RECIPE_ID}/save`)
       .set(AUTH_HEADER)
 
@@ -398,17 +1052,76 @@ describe('POST /recipes/:id/save', () => {
 
   it('returns 409 on duplicate save attempt', async () => {
     // first save
-    await request(app)
+    await request(server)
       .post(`/api/recipes/${RECIPE_ID}/save`)
       .set(AUTH_HEADER)
 
     // second save — same recipe, same user
-    const res = await request(app)
+    const res = await request(server)
       .post(`/api/recipes/${RECIPE_ID}/save`)
       .set(AUTH_HEADER)
 
     expect(res.status).toBe(409)
     expect(res.body.error).toMatch(/already saved/)
+  })
+
+  it('does not double-count numTimesSaved under concurrent saves (TOCTOU)', async () => {
+    // Fire several saves of the SAME recipe from the SAME user at once. The old
+    // read-check-then-write let two both pass the "already saved?" check and
+    // double-push / double-inc; the atomic conditional write must land exactly
+    // one save and one increment, the rest 409. (No userRecipeData doc exists
+    // yet, so this also exercises the concurrent-insert / dup-retry path.)
+    const results = await Promise.all(
+      Array.from({ length: 5 }, () =>
+        request(server).post(`/api/recipes/${RECIPE_ID}/save`).set(AUTH_HEADER)
+      )
+    )
+    expect(results.filter(r => r.status === 200)).toHaveLength(1)
+    expect(results.filter(r => r.status === 409)).toHaveLength(4)
+
+    const db = getDB()
+    const recipe = await db.collection('recipes').findOne({ _id: RECIPE_ID })
+    expect(recipe.numTimesSaved).toBe(1)
+    const userData = await db.collection('userRecipeData').findOne({ _id: TEST_UID })
+    expect(userData.savedRecipes).toHaveLength(1)
+  })
+})
+
+// ─── POST /madeRecipe ─────────────────────────────────────────────────────────
+
+describe('POST /madeRecipe', () => {
+  beforeEach(async () => {
+    const db = getDB()
+    await db.collection('recipes').insertOne({ ...BASE_RECIPE, numTimesMade: 0 })
+  })
+
+  it('records the recipe and increments numTimesMade on first call', async () => {
+    const res = await request(server)
+      .post(`/api/madeRecipe?recipeId=${RECIPE_ID}`)
+      .set(AUTH_HEADER)
+
+    expect(res.status).toBe(200)
+    expect(res.body).toEqual({ made: true })
+
+    const db = getDB()
+    const recipe = await db.collection('recipes').findOne({ _id: RECIPE_ID })
+    expect(recipe.numTimesMade).toBe(1)
+    const userData = await db.collection('userRecipeData').findOne({ _id: TEST_UID })
+    expect(userData.madeRecipes).toEqual([{ recipeId: RECIPE_ID }])
+  })
+
+  it('does not inflate numTimesMade when the same user re-marks it made', async () => {
+    // Three calls from the same user — madeRecipes is a set, so the global
+    // counter must only count the first (guards against counter inflation).
+    for (let i = 0; i < 3; i++) {
+      await request(server).post(`/api/madeRecipe?recipeId=${RECIPE_ID}`).set(AUTH_HEADER)
+    }
+
+    const db = getDB()
+    const recipe = await db.collection('recipes').findOne({ _id: RECIPE_ID })
+    expect(recipe.numTimesMade).toBe(1)
+    const userData = await db.collection('userRecipeData').findOne({ _id: TEST_UID })
+    expect(userData.madeRecipes).toHaveLength(1)
   })
 })
 
@@ -425,7 +1138,7 @@ describe('DELETE /recipes/:id/save', () => {
   })
 
   it('returns 404 if recipe is not in the user\'s saved list', async () => {
-    const res = await request(app)
+    const res = await request(server)
       .delete(`/api/recipes/not-saved-id/save`)
       .set(AUTH_HEADER)
 
@@ -434,7 +1147,7 @@ describe('DELETE /recipes/:id/save', () => {
   })
 
   it('unsaves a recipe and decrements numTimesSaved', async () => {
-    const res = await request(app)
+    const res = await request(server)
       .delete(`/api/recipes/${RECIPE_ID}/save`)
       .set(AUTH_HEADER)
 
@@ -451,7 +1164,7 @@ describe('DELETE /recipes/:id/save', () => {
     // Force counter to 0 before unsaving (simulates already-corrected data)
     await db.collection('recipes').updateOne({ _id: RECIPE_ID }, { $set: { numTimesSaved: 0 } })
 
-    const res = await request(app)
+    const res = await request(server)
       .delete(`/api/recipes/${RECIPE_ID}/save`)
       .set(AUTH_HEADER)
 
@@ -460,13 +1173,105 @@ describe('DELETE /recipes/:id/save', () => {
     const recipe = await db.collection('recipes').findOne({ _id: RECIPE_ID })
     expect(recipe.numTimesSaved).toBe(0)
   })
+
+  it('lands exactly one decrement across concurrent unsaves', async () => {
+    // The atomic conditional $pull makes this correct BY CONSTRUCTION: single-
+    // document update semantics guarantee only one racing write removes the
+    // entry (modifiedCount 1) and thus decrements; the rest see recipeId absent
+    // (modifiedCount 0) and 404 without touching the counter. This test asserts
+    // that invariant on the fixed code and exercises the concurrent path.
+    //
+    // NOTE (verified, not assumed): unlike the save-side concurrency test — which
+    // reliably reproduces its pre-fix race because concurrent upserts on a
+    // not-yet-existing doc all read null and multi-$push — the pre-fix unsave
+    // race (read isSaved, then $pull) does NOT reproduce at this HTTP layer even
+    // at 20-way concurrency: the first request's $pull commits before the others'
+    // read resolves, so racy code serializes to the same 1×200/N×404 here. So
+    // this test is path coverage + the atomicity contract, not a regression trap
+    // for that specific TOCTOU — the guarantee rests on the single-doc update,
+    // and reviewers should treat a regression to read-then-write as un-caught by
+    // CI. Seed the counter high so a decrement is observable, not floored at 0.
+    const db = getDB()
+    await db.collection('recipes').updateOne({ _id: RECIPE_ID }, { $set: { numTimesSaved: 5 } })
+
+    const results = await Promise.all(
+      Array.from({ length: 5 }, () =>
+        request(server).delete(`/api/recipes/${RECIPE_ID}/save`).set(AUTH_HEADER)
+      )
+    )
+    expect(results.filter(r => r.status === 200)).toHaveLength(1)
+    expect(results.filter(r => r.status === 404)).toHaveLength(4)
+
+    const recipe = await db.collection('recipes').findOne({ _id: RECIPE_ID })
+    expect(recipe.numTimesSaved).toBe(4)
+    const userData = await db.collection('userRecipeData').findOne({ _id: TEST_UID })
+    expect(userData.savedRecipes).toHaveLength(0)
+  })
+})
+
+// ─── GET /getSavedRecipeIds ────────────────────────────────────────────────────
+// This is the single read the client's useSaveRecipe hook resolves every card's
+// saved state from, so its shape (a flat array of recipeId strings) and its
+// save/unsave round-trip are part of the save subsystem's contract.
+
+describe('GET /getSavedRecipeIds', () => {
+  it('returns [] when the user has no saved-recipe data', async () => {
+    const res = await request(server)
+      .get('/api/getSavedRecipeIds')
+      .set(AUTH_HEADER)
+
+    expect(res.status).toBe(200)
+    expect(res.body).toEqual([])
+  })
+
+  it('returns a flat array of saved recipe id strings', async () => {
+    const db = getDB()
+    await db.collection('userRecipeData').insertOne({
+      _id: TEST_UID,
+      savedRecipes: [
+        { recipeId: 'recipe-001', dateSaved: '1' },
+        { recipeId: 'recipe-002', dateSaved: '2' },
+      ],
+    })
+
+    const res = await request(server)
+      .get('/api/getSavedRecipeIds')
+      .set(AUTH_HEADER)
+
+    expect(res.status).toBe(200)
+    expect(res.body).toEqual(['recipe-001', 'recipe-002'])
+  })
+
+  it('round-trips: a saved id appears here, then disappears after unsave', async () => {
+    const db = getDB()
+    await db.collection('recipes').insertOne({ ...BASE_RECIPE, numTimesSaved: 0 })
+
+    // Initially not saved.
+    let ids = await request(server).get('/api/getSavedRecipeIds').set(AUTH_HEADER)
+    expect(ids.body).not.toContain(RECIPE_ID)
+
+    // Save → id is now present.
+    await request(server).post(`/api/recipes/${RECIPE_ID}/save`).set(AUTH_HEADER)
+    ids = await request(server).get('/api/getSavedRecipeIds').set(AUTH_HEADER)
+    expect(ids.body).toContain(RECIPE_ID)
+
+    // Unsave → id is gone again.
+    await request(server).delete(`/api/recipes/${RECIPE_ID}/save`).set(AUTH_HEADER)
+    ids = await request(server).get('/api/getSavedRecipeIds').set(AUTH_HEADER)
+    expect(ids.body).not.toContain(RECIPE_ID)
+  })
+
+  it('requires auth', async () => {
+    const res = await request(server).get('/api/getSavedRecipeIds')
+    expect(res.status).toBe(401)
+  })
 })
 
 // ─── GET /health ──────────────────────────────────────────────────────────────
 
 describe('GET /health', () => {
   it('returns 200 with { status: "ok" }', async () => {
-    const res = await request(app).get('/health')
+    const res = await request(server).get('/health')
     expect(res.status).toBe(200)
     expect(res.body).toEqual({ status: 'ok' })
   })
@@ -480,20 +1285,48 @@ describe('GET /getRecipe', () => {
   })
 
   it('returns 400 if id is missing', async () => {
-    const res = await request(app).get('/api/getRecipe')
+    const res = await request(server).get('/api/getRecipe')
     expect(res.status).toBe(400)
   })
 
   it('returns 404 if recipe is not found', async () => {
-    const res = await request(app).get('/api/getRecipe?id=nonexistent')
+    const res = await request(server).get('/api/getRecipe?id=nonexistent')
     expect(res.status).toBe(404)
   })
 
   it('returns the recipe and increments the view count', async () => {
-    const res = await request(app).get(`/api/getRecipe?id=${RECIPE_ID}`)
+    const res = await request(server).get(`/api/getRecipe?id=${RECIPE_ID}`)
     expect(res.status).toBe(200)
     expect(res.body._id).toBe(RECIPE_ID)
     expect(res.body.views).toBe(6)
+  })
+
+  // optionalAuth's catch-and-continue (middleware/auth.js): a Bearer header whose
+  // token fails verification must be treated as anonymous — req.uid/req.isAdmin
+  // never set from the bad token — so a hidden recipe stays 404, not leaked.
+  it('treats a rejected token as anonymous (hidden recipe stays 404)', async () => {
+    await seedRecipe({ ...BASE_RECIPE, _id: 'hidden-opt', userId: TEST_UID, status: 'hidden' })
+    admin.__verifyIdToken.mockRejectedValueOnce(new Error('Firebase ID token has expired'))
+
+    const res = await request(server)
+      .get('/api/getRecipe?id=hidden-opt')
+      .set(AUTH_HEADER)
+
+    expect(res.status).toBe(404)
+    expect(res.body).toEqual({ error: 'Not found' })
+  })
+
+  // Discriminating variant: the OWNER of a pending_review recipe would get 200,
+  // so a 404 here proves the bad token never populated req.uid.
+  it('does not set req.uid from a rejected token (owner pending_review preview denied)', async () => {
+    await seedRecipe({ ...BASE_RECIPE, _id: 'pending-opt', userId: TEST_UID, status: 'pending_review' })
+    admin.__verifyIdToken.mockRejectedValueOnce(new Error('invalid signature'))
+
+    const res = await request(server)
+      .get('/api/getRecipe?id=pending-opt')
+      .set(AUTH_HEADER)
+
+    expect(res.status).toBe(404)
   })
 })
 
@@ -529,12 +1362,12 @@ describe('DELETE /deleteRecipe', () => {
   })
 
   it('rejects request with no auth token (401)', async () => {
-    const res = await request(app).delete(`/api/deleteRecipe?recipeId=${RECIPE_ID}`)
+    const res = await request(server).delete(`/api/deleteRecipe?recipeId=${RECIPE_ID}`)
     expect(res.status).toBe(401)
   })
 
   it('returns 404 if the recipe does not exist', async () => {
-    const res = await request(app)
+    const res = await request(server)
       .delete(`/api/deleteRecipe?recipeId=nonexistent`)
       .set(AUTH_HEADER)
     expect(res.status).toBe(404)
@@ -546,7 +1379,7 @@ describe('DELETE /deleteRecipe', () => {
     await db.collection('recipes').deleteOne({ _id: RECIPE_ID })
     await seedRecipe({ ...BASE_RECIPE, userId: 'someone-else' })
 
-    const res = await request(app)
+    const res = await request(server)
       .delete(`/api/deleteRecipe?recipeId=${RECIPE_ID}`)
       .set(AUTH_HEADER)
 
@@ -558,7 +1391,7 @@ describe('DELETE /deleteRecipe', () => {
   })
 
   it('deletes the recipe and removes it from the owner\'s created/saved/made lists', async () => {
-    const res = await request(app)
+    const res = await request(server)
       .delete(`/api/deleteRecipe?recipeId=${RECIPE_ID}`)
       .set(AUTH_HEADER)
 
@@ -575,7 +1408,7 @@ describe('DELETE /deleteRecipe', () => {
   })
 
   it('removes the recipe\'s ratings/reviews but leaves other recipes\' ratings', async () => {
-    await request(app)
+    await request(server)
       .delete(`/api/deleteRecipe?recipeId=${RECIPE_ID}`)
       .set(AUTH_HEADER)
 
@@ -585,7 +1418,7 @@ describe('DELETE /deleteRecipe', () => {
   })
 
   it('removes the recipeId from other users\' saved/made lists without touching unrelated entries', async () => {
-    await request(app)
+    await request(server)
       .delete(`/api/deleteRecipe?recipeId=${RECIPE_ID}`)
       .set(AUTH_HEADER)
 
@@ -596,7 +1429,7 @@ describe('DELETE /deleteRecipe', () => {
   })
 
   it('deletes the recipe image from storage', async () => {
-    await request(app)
+    await request(server)
       .delete(`/api/deleteRecipe?recipeId=${RECIPE_ID}`)
       .set(AUTH_HEADER)
 
@@ -607,7 +1440,7 @@ describe('DELETE /deleteRecipe', () => {
     const db = getDB()
     await db.collection('recipes').updateOne({ _id: RECIPE_ID }, { $set: { recipeImage: '' } })
 
-    const res = await request(app)
+    const res = await request(server)
       .delete(`/api/deleteRecipe?recipeId=${RECIPE_ID}`)
       .set(AUTH_HEADER)
 
@@ -619,7 +1452,7 @@ describe('DELETE /deleteRecipe', () => {
   it('succeeds (200) even if storage image deletion fails', async () => {
     admin.__deleteFile.mockRejectedValueOnce(new Error('storage down'))
 
-    const res = await request(app)
+    const res = await request(server)
       .delete(`/api/deleteRecipe?recipeId=${RECIPE_ID}`)
       .set(AUTH_HEADER)
 
@@ -639,12 +1472,12 @@ describe('GET /getSavedRecipe', () => {
   })
 
   it('rejects request with no auth token (401)', async () => {
-    const res = await request(app).get(`/api/getSavedRecipe?recipeId=${RECIPE_ID}`)
+    const res = await request(server).get(`/api/getSavedRecipe?recipeId=${RECIPE_ID}`)
     expect(res.status).toBe(401)
   })
 
   it('returns the saved entry when the recipe is in the saved list', async () => {
-    const res = await request(app)
+    const res = await request(server)
       .get(`/api/getSavedRecipe?recipeId=${RECIPE_ID}`)
       .set(AUTH_HEADER)
     expect(res.status).toBe(200)
@@ -653,11 +1486,42 @@ describe('GET /getSavedRecipe', () => {
   })
 
   it('returns null when the recipe is not in the saved list', async () => {
-    const res = await request(app)
+    const res = await request(server)
       .get(`/api/getSavedRecipe?recipeId=not-saved`)
       .set(AUTH_HEADER)
     expect(res.status).toBe(200)
     expect(res.body).toBeNull()
+  })
+})
+
+// ─── GET /getSavedRecipeIds ───────────────────────────────────────────────────
+
+describe('GET /getSavedRecipeIds', () => {
+  it('rejects request with no auth token (401)', async () => {
+    const res = await request(server).get('/api/getSavedRecipeIds')
+    expect(res.status).toBe(401)
+  })
+
+  it('returns the current user saved recipe ids', async () => {
+    await seedUserRecipeData(TEST_UID, {
+      savedRecipes: [
+        { recipeId: 'r1', dateSaved: '1' },
+        { recipeId: 'r2', dateSaved: '2' },
+      ],
+    })
+    const res = await request(server)
+      .get('/api/getSavedRecipeIds')
+      .set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(res.body.sort()).toEqual(['r1', 'r2'])
+  })
+
+  it('returns [] when the user has no saved recipes', async () => {
+    const res = await request(server)
+      .get('/api/getSavedRecipeIds')
+      .set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(res.body).toEqual([])
   })
 })
 
@@ -669,12 +1533,12 @@ describe('POST /madeRecipe', () => {
   })
 
   it('rejects request with no auth token (401)', async () => {
-    const res = await request(app).post(`/api/madeRecipe?recipeId=${RECIPE_ID}`)
+    const res = await request(server).post(`/api/madeRecipe?recipeId=${RECIPE_ID}`)
     expect(res.status).toBe(401)
   })
 
   it('increments numTimesMade and adds to madeRecipes', async () => {
-    const res = await request(app)
+    const res = await request(server)
       .post(`/api/madeRecipe?recipeId=${RECIPE_ID}`)
       .set(AUTH_HEADER)
 
@@ -690,8 +1554,8 @@ describe('POST /madeRecipe', () => {
   })
 
   it('does not double-add to madeRecipes on repeated calls ($addToSet)', async () => {
-    await request(app).post(`/api/madeRecipe?recipeId=${RECIPE_ID}`).set(AUTH_HEADER)
-    await request(app).post(`/api/madeRecipe?recipeId=${RECIPE_ID}`).set(AUTH_HEADER)
+    await request(server).post(`/api/madeRecipe?recipeId=${RECIPE_ID}`).set(AUTH_HEADER)
+    await request(server).post(`/api/madeRecipe?recipeId=${RECIPE_ID}`).set(AUTH_HEADER)
 
     const db = getDB()
     const userData = await db.collection('userRecipeData').findOne({ _id: TEST_UID })
@@ -704,12 +1568,12 @@ describe('POST /madeRecipe', () => {
 
 describe('GET /checkMadeRecipe', () => {
   it('rejects request with no auth token (401)', async () => {
-    const res = await request(app).get(`/api/checkMadeRecipe?recipeId=${RECIPE_ID}`)
+    const res = await request(server).get(`/api/checkMadeRecipe?recipeId=${RECIPE_ID}`)
     expect(res.status).toBe(401)
   })
 
   it('returns { made: false } when user has not made the recipe', async () => {
-    const res = await request(app)
+    const res = await request(server)
       .get(`/api/checkMadeRecipe?recipeId=${RECIPE_ID}`)
       .set(AUTH_HEADER)
     expect(res.status).toBe(200)
@@ -719,7 +1583,7 @@ describe('GET /checkMadeRecipe', () => {
   it('returns { made: true } when user has made the recipe', async () => {
     await seedUserRecipeData(TEST_UID, { madeRecipes: [{ recipeId: RECIPE_ID }] })
 
-    const res = await request(app)
+    const res = await request(server)
       .get(`/api/checkMadeRecipe?recipeId=${RECIPE_ID}`)
       .set(AUTH_HEADER)
     expect(res.status).toBe(200)
@@ -739,7 +1603,7 @@ describe('GET /searchAutoCompleteRecipes', () => {
   })
 
   it('returns recipes matching the title search', async () => {
-    const res = await request(app).get('/api/searchAutoCompleteRecipes?title=apple')
+    const res = await request(server).get('/api/searchAutoCompleteRecipes?title=apple')
     expect(res.status).toBe(200)
     expect(res.body).toHaveLength(2)
     const titles = res.body.map((r) => r.title)
@@ -762,7 +1626,7 @@ describe('GET /searchAutoCompleteRecipes', () => {
       ingredients: [],
       instructions: [],
     })
-    const res = await request(app).get('/api/searchAutoCompleteRecipes?title=Full')
+    const res = await request(server).get('/api/searchAutoCompleteRecipes?title=Full')
     expect(res.status).toBe(200)
     expect(res.body).toHaveLength(1)
     expect(Object.keys(res.body[0]).sort()).toEqual([
@@ -779,7 +1643,7 @@ describe('GET /searchAutoCompleteRecipes', () => {
   })
 
   it('is case-insensitive', async () => {
-    const res = await request(app).get('/api/searchAutoCompleteRecipes?title=APPLE')
+    const res = await request(server).get('/api/searchAutoCompleteRecipes?title=APPLE')
     expect(res.status).toBe(200)
     expect(res.body).toHaveLength(2)
   })
@@ -788,9 +1652,63 @@ describe('GET /searchAutoCompleteRecipes', () => {
     await seedRecipes(
       Array.from({ length: 10 }, (_, i) => ({ _id: `extra-${i}`, title: `apple-extra-${i}` }))
     )
-    const res = await request(app).get('/api/searchAutoCompleteRecipes?title=apple')
+    const res = await request(server).get('/api/searchAutoCompleteRecipes?title=apple')
     expect(res.status).toBe(200)
     expect(res.body.length).toBeLessThanOrEqual(8)
+  })
+
+  it('returns [] for a blank title', async () => {
+    const res = await request(server).get('/api/searchAutoCompleteRecipes?title=')
+    expect(res.status).toBe(200)
+    expect(res.body).toEqual([])
+  })
+
+  it('surfaces near-misses for a typo via the fuzzy fallback', async () => {
+    // "appl" is a literal substring of neither once misspelled; "aple" has no
+    // substring match, so only the fuzzy fallback can surface the apple recipes.
+    const res = await request(server).get('/api/searchAutoCompleteRecipes?title=aple')
+    expect(res.status).toBe(200)
+    const titles = res.body.map((r) => r.title)
+    expect(titles).toContain('Apple Pie')
+    expect(titles).toContain('Apple Crumble')
+    // unrelated titles must not leak in
+    expect(titles).not.toContain('Banana Bread')
+  })
+
+  it('does not add fuzzy noise when the exact match already suffices', async () => {
+    // "apple" matches both apple recipes exactly; Banana Bread must never appear.
+    const res = await request(server).get('/api/searchAutoCompleteRecipes?title=apple')
+    expect(res.body.map((r) => r.title)).not.toContain('Banana Bread')
+  })
+
+  it('surfaces a stemmed word match via the $text tier (index-backed)', async () => {
+    await seedRecipes([{ _id: 'ac-grill', title: 'Grilled Salmon' }])
+    // "grilling" is not a substring of "Grilled Salmon" (tier 1 misses) and its
+    // fuzzy score is below threshold (0.625 < 0.7, tier 3 misses) — only the
+    // $text tier, which stems grilling→grill ← grilled, can surface it.
+    const res = await request(server).get('/api/searchAutoCompleteRecipes?title=grilling')
+    expect(res.status).toBe(200)
+    expect(res.body.map((r) => r.title)).toContain('Grilled Salmon')
+  })
+
+  it('degrades gracefully (no 500) when the title text index is absent', async () => {
+    await seedRecipes([{ _id: 'ac-grill2', title: 'Grilled Salmon' }])
+    const recipes = getDB().collection('recipes')
+    const textIndex = (await recipes.indexes()).find((i) => i.textIndexVersion)
+    await recipes.dropIndex(textIndex.name)
+    try {
+      // With no text index the $text tier throws internally; the route must catch
+      // it and fall through to the (here empty) fuzzy tier rather than 500.
+      const res = await request(server).get('/api/searchAutoCompleteRecipes?title=grilling')
+      expect(res.status).toBe(200)
+      expect(res.body.map((r) => r.title)).not.toContain('Grilled Salmon')
+    } finally {
+      // Restore the index so the rest of the suite keeps its $text tier.
+      await recipes.createIndex({ title: 'text' })
+    }
+    // And with it restored, the same query surfaces the match again.
+    const res = await request(server).get('/api/searchAutoCompleteRecipes?title=grilling')
+    expect(res.body.map((r) => r.title)).toContain('Grilled Salmon')
   })
 })
 
@@ -808,14 +1726,14 @@ describe('GET /getTrendingRecipes', () => {
   })
 
   it('returns 4 recipes sorted by views descending by default', async () => {
-    const res = await request(app).get('/api/getTrendingRecipes')
+    const res = await request(server).get('/api/getTrendingRecipes')
     expect(res.status).toBe(200)
     expect(res.body).toHaveLength(4)
     expect(res.body[0]._id).toBe('tr-1')
   })
 
   it('respects the limit query param', async () => {
-    const res = await request(app).get('/api/getTrendingRecipes?limit=2')
+    const res = await request(server).get('/api/getTrendingRecipes?limit=2')
     expect(res.status).toBe(200)
     expect(res.body).toHaveLength(2)
     expect(res.body[0]._id).toBe('tr-1')
@@ -825,9 +1743,376 @@ describe('GET /getTrendingRecipes', () => {
     await seedRecipes(
       Array.from({ length: 20 }, (_, i) => ({ _id: `cap-${i}`, title: `Recipe ${i}`, views: i }))
     )
-    const res = await request(app).get('/api/getTrendingRecipes?limit=100')
+    const res = await request(server).get('/api/getTrendingRecipes?limit=100')
     expect(res.status).toBe(200)
-    expect(res.body.length).toBeLessThanOrEqual(20)
+    expect(Array.isArray(res.body)).toBe(true)
+    expect(res.body).toHaveLength(20)
+  })
+})
+
+// ─── GET /getForYouRecipes ────────────────────────────────────────────────────
+
+describe('GET /getForYouRecipes', () => {
+  it('rejects request with no auth token (401)', async () => {
+    const res = await request(server).get('/api/getForYouRecipes')
+    expect(res.status).toBe(401)
+  })
+
+  it('returns [] when the user has too little signal (< MIN_SIGNAL)', async () => {
+    // Only 2 interacted recipes — below the threshold to personalize.
+    await seedRecipes([
+      { ...BASE_RECIPE, _id: 'fy-a', cuisine: 'Italian' },
+      { ...BASE_RECIPE, _id: 'fy-b', cuisine: 'Italian' },
+    ])
+    await seedUserRecipeData(TEST_UID, {
+      savedRecipes: [
+        { recipeId: 'fy-a', dateSaved: '1' },
+        { recipeId: 'fy-b', dateSaved: '2' },
+      ],
+    })
+    const res = await request(server).get('/api/getForYouRecipes').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(res.body).toEqual([])
+  })
+
+  it('recommends unseen recipes matching the user\'s taste, excluding seen and own', async () => {
+    await seedRecipes([
+      // Three saved Italian dinners → builds an Italian-dinner taste profile.
+      { ...BASE_RECIPE, _id: 'fy-s1', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'fy-s2', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'fy-s3', cuisine: 'Italian', mealTypes: ['dinner'] },
+      // Unseen Italian dinners → should be recommended.
+      { ...BASE_RECIPE, _id: 'fy-c1', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'fy-c2', cuisine: 'Italian', mealTypes: ['dinner'] },
+      // Unseen Mexican breakfast sharing no feature with the profile → excluded.
+      // (nutritionLabels cleared so it doesn't match the inherited 'low-carb' diet.)
+      { ...BASE_RECIPE, _id: 'fy-mex', cuisine: 'Mexican', mealTypes: ['breakfast'], nutritionLabels: [] },
+      // Unseen Italian dinner but authored by the user → excluded as own.
+      { ...BASE_RECIPE, _id: 'fy-own', cuisine: 'Italian', mealTypes: ['dinner'], userId: TEST_UID },
+    ])
+    await seedUserRecipeData(TEST_UID, {
+      savedRecipes: [
+        { recipeId: 'fy-s1', dateSaved: '1' },
+        { recipeId: 'fy-s2', dateSaved: '2' },
+        { recipeId: 'fy-s3', dateSaved: '3' },
+      ],
+    })
+
+    const res = await request(server).get('/api/getForYouRecipes').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(Array.isArray(res.body)).toBe(true)
+
+    const ids = res.body.map((r) => r._id)
+    // Only the unseen, on-taste Italian dinners qualify.
+    expect(ids.sort()).toEqual(['fy-c1', 'fy-c2'])
+    // Never recommend something already saved, the user's own, or off-taste.
+    expect(ids).not.toContain('fy-s1')
+    expect(ids).not.toContain('fy-own')
+    expect(ids).not.toContain('fy-mex')
+  })
+
+  it('excludes hidden recipes from recommendations', async () => {
+    await seedRecipes([
+      { ...BASE_RECIPE, _id: 'fy-s1', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'fy-s2', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'fy-s3', cuisine: 'Italian', mealTypes: ['dinner'] },
+      // On-taste but moderation-hidden → must not surface.
+      { ...BASE_RECIPE, _id: 'fy-hidden', cuisine: 'Italian', mealTypes: ['dinner'], status: 'hidden' },
+    ])
+    await seedUserRecipeData(TEST_UID, {
+      savedRecipes: [
+        { recipeId: 'fy-s1', dateSaved: '1' },
+        { recipeId: 'fy-s2', dateSaved: '2' },
+        { recipeId: 'fy-s3', dateSaved: '3' },
+      ],
+    })
+
+    const res = await request(server).get('/api/getForYouRecipes').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(res.body.map((r) => r._id)).not.toContain('fy-hidden')
+  })
+
+  it('reaches the signal threshold via ratings and recommends on-taste recipes', async () => {
+    await seedRecipes([
+      // Three highly-rated Italian dinners → Italian-dinner taste profile, built
+      // entirely from ratings (no saves/makes), exercising that signal path.
+      { ...BASE_RECIPE, _id: 'fy-r1', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'fy-r2', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'fy-r3', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'fy-rec', cuisine: 'Italian', mealTypes: ['dinner'] },
+    ])
+    await seedRating({ userId: TEST_UID, recipeId: 'fy-r1', rating: 5 })
+    await seedRating({ userId: TEST_UID, recipeId: 'fy-r2', rating: 5 })
+    await seedRating({ userId: TEST_UID, recipeId: 'fy-r3', rating: 4 })
+
+    const res = await request(server).get('/api/getForYouRecipes').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    const ids = res.body.map((r) => r._id)
+    expect(ids).toContain('fy-rec')
+    // Rated recipes are "seen" → never recommended back.
+    expect(ids).not.toContain('fy-r1')
+  })
+
+  it('reaches the signal threshold via made recipes', async () => {
+    await seedRecipes([
+      { ...BASE_RECIPE, _id: 'fy-m1', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'fy-m2', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'fy-m3', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'fy-mrec', cuisine: 'Italian', mealTypes: ['dinner'] },
+    ])
+    await seedUserRecipeData(TEST_UID, {
+      madeRecipes: [{ recipeId: 'fy-m1' }, { recipeId: 'fy-m2' }, { recipeId: 'fy-m3' }],
+    })
+
+    const res = await request(server).get('/api/getForYouRecipes').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    const ids = res.body.map((r) => r._id)
+    expect(ids).toContain('fy-mrec')
+    expect(ids).not.toContain('fy-m1')
+  })
+
+  it('does not surface a community-popular recipe the user has no taste affinity for', async () => {
+    // Regression for the taste-vs-quality gate: an off-taste recipe with a strong
+    // community rating + many saves has a positive *blended* score but zero taste,
+    // and must NOT appear. (Seeds elsewhere carry no rating/saves, so only this
+    // case proves the quality nudge can't pull an off-taste recipe in.)
+    await seedRecipes([
+      { ...BASE_RECIPE, _id: 'fy-s1', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'fy-s2', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'fy-s3', cuisine: 'Italian', mealTypes: ['dinner'] },
+      // On-taste, unrated → should surface.
+      { ...BASE_RECIPE, _id: 'fy-italian', cuisine: 'Italian', mealTypes: ['dinner'] },
+      // Off-taste but community-loved → must stay out despite blended score > 0.
+      {
+        ...BASE_RECIPE,
+        _id: 'fy-popular',
+        cuisine: 'French',
+        mealTypes: ['breakfast'],
+        nutritionLabels: [],
+        rating: { rateCount: 200, rateValue: 5 },
+        numTimesSaved: 500,
+      },
+    ])
+    await seedUserRecipeData(TEST_UID, {
+      savedRecipes: [
+        { recipeId: 'fy-s1', dateSaved: '1' },
+        { recipeId: 'fy-s2', dateSaved: '2' },
+        { recipeId: 'fy-s3', dateSaved: '3' },
+      ],
+    })
+
+    const res = await request(server).get('/api/getForYouRecipes').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    const ids = res.body.map((r) => r._id)
+    expect(ids).toContain('fy-italian')
+    expect(ids).not.toContain('fy-popular')
+  })
+
+  it('honors the limit query param (and the per-cuisine cap)', async () => {
+    await seedRecipes([
+      // Saves across two on-taste cuisines so several candidates qualify.
+      { ...BASE_RECIPE, _id: 'fy-i1', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'fy-i2', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'fy-x1', cuisine: 'Mexican', mealTypes: ['dinner'], nutritionLabels: ['low-carb'] },
+      // Unseen candidates: 2 Italian + 2 Mexican (4 pass the 2-per-cuisine cap).
+      { ...BASE_RECIPE, _id: 'fy-i3', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'fy-i4', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'fy-x2', cuisine: 'Mexican', mealTypes: ['dinner'], nutritionLabels: ['low-carb'] },
+      { ...BASE_RECIPE, _id: 'fy-x3', cuisine: 'Mexican', mealTypes: ['dinner'], nutritionLabels: ['low-carb'] },
+    ])
+    await seedUserRecipeData(TEST_UID, {
+      savedRecipes: [
+        { recipeId: 'fy-i1', dateSaved: '1' },
+        { recipeId: 'fy-i2', dateSaved: '2' },
+        { recipeId: 'fy-x1', dateSaved: '3' },
+      ],
+    })
+
+    const res = await request(server).get('/api/getForYouRecipes?limit=2').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(res.body.length).toBeLessThanOrEqual(2)
+    expect(res.body.length).toBeGreaterThan(0)
+  })
+
+  it('excludes a review-only (rating: null) recipe from recommendations', async () => {
+    await seedRecipes([
+      { ...BASE_RECIPE, _id: 'fy-s1', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'fy-s2', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'fy-s3', cuisine: 'Italian', mealTypes: ['dinner'] },
+      // On-taste, but the user wrote a review with no star rating → engaged with
+      // it, so it must not be recommended back.
+      { ...BASE_RECIPE, _id: 'fy-reviewed', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'fy-fresh', cuisine: 'Italian', mealTypes: ['dinner'] },
+    ])
+    await seedUserRecipeData(TEST_UID, {
+      savedRecipes: [
+        { recipeId: 'fy-s1', dateSaved: '1' },
+        { recipeId: 'fy-s2', dateSaved: '2' },
+        { recipeId: 'fy-s3', dateSaved: '3' },
+      ],
+    })
+    await seedRating({ userId: TEST_UID, recipeId: 'fy-reviewed', rating: null })
+
+    const res = await request(server).get('/api/getForYouRecipes').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    const ids = res.body.map((r) => r._id)
+    expect(ids).not.toContain('fy-reviewed')
+    expect(ids).toContain('fy-fresh')
+  })
+
+  it('does not count review-only (rating: null) docs toward the signal threshold', async () => {
+    await seedRecipes([
+      { ...BASE_RECIPE, _id: 'fy-s1', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'fy-s2', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'fy-rev', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'fy-cand', cuisine: 'Italian', mealTypes: ['dinner'] },
+    ])
+    // 2 real signals (saves) + 1 review-only doc → still below MIN_SIGNAL (3),
+    // so the row stays hidden. A null rating must never act as taste signal.
+    await seedUserRecipeData(TEST_UID, {
+      savedRecipes: [
+        { recipeId: 'fy-s1', dateSaved: '1' },
+        { recipeId: 'fy-s2', dateSaved: '2' },
+      ],
+    })
+    await seedRating({ userId: TEST_UID, recipeId: 'fy-rev', rating: null })
+
+    const res = await request(server).get('/api/getForYouRecipes').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(res.body).toEqual([])
+  })
+})
+
+describe('GET /recipes/random', () => {
+  it('returns a visible recipe for an anonymous user, never a hidden one', async () => {
+    await seedRecipes([
+      { ...BASE_RECIPE, _id: 'rnd-vis', title: 'Visible' },
+      { ...BASE_RECIPE, _id: 'rnd-hidden', title: 'Hidden', status: 'hidden' },
+    ])
+    // Only one visible candidate, so the (random) pick is deterministic here.
+    for (let i = 0; i < 4; i++) {
+      const res = await request(server).get('/api/recipes/random')
+      expect(res.status).toBe(200)
+      expect(res.body._id).toBe('rnd-vis')
+    }
+  })
+
+  it('returns 404 when there are no recipes', async () => {
+    const res = await request(server).get('/api/recipes/random')
+    expect(res.status).toBe(404)
+  })
+
+  it('returns 404 when the only recipes are hidden (fallback excludes them)', async () => {
+    await seedRecipes([
+      { ...BASE_RECIPE, _id: 'rnd-h1', status: 'hidden' },
+      { ...BASE_RECIPE, _id: 'rnd-h2', status: 'unpublished' },
+    ])
+    const res = await request(server).get('/api/recipes/random')
+    expect(res.status).toBe(404)
+  })
+
+  it('honors the exclude param (never returns the excluded recipe)', async () => {
+    await seedRecipes([
+      { ...BASE_RECIPE, _id: 'rnd-a', title: 'A' },
+      { ...BASE_RECIPE, _id: 'rnd-b', title: 'B' },
+    ])
+    for (let i = 0; i < 6; i++) {
+      const res = await request(server).get('/api/recipes/random?exclude=rnd-a')
+      expect(res.status).toBe(200)
+      expect(res.body._id).toBe('rnd-b')
+    }
+  })
+
+  it('gives a signal user a weighted on-taste pick, excluding seen and own', async () => {
+    await seedRecipes([
+      // 3 saved Italian dinners → Italian-dinner taste profile.
+      { ...BASE_RECIPE, _id: 'rnd-s1', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'rnd-s2', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'rnd-s3', cuisine: 'Italian', mealTypes: ['dinner'] },
+      // The ONLY unseen, non-own, on-taste candidate → must always be the pick.
+      { ...BASE_RECIPE, _id: 'rnd-on', cuisine: 'Italian', mealTypes: ['dinner'] },
+      // Own (excluded) + off-taste (taste 0 → filtered out) decoys.
+      { ...BASE_RECIPE, _id: 'rnd-own', cuisine: 'Italian', mealTypes: ['dinner'], userId: TEST_UID },
+      { ...BASE_RECIPE, _id: 'rnd-off', cuisine: 'Mexican', mealTypes: ['breakfast'], nutritionLabels: [] },
+    ])
+    await seedUserRecipeData(TEST_UID, {
+      savedRecipes: [
+        { recipeId: 'rnd-s1', dateSaved: '1' },
+        { recipeId: 'rnd-s2', dateSaved: '2' },
+        { recipeId: 'rnd-s3', dateSaved: '3' },
+      ],
+    })
+
+    for (let i = 0; i < 5; i++) {
+      const res = await request(server).get('/api/recipes/random').set(AUTH_HEADER)
+      expect(res.status).toBe(200)
+      expect(res.body._id).toBe('rnd-on')
+    }
+  })
+
+  it('falls back to a random visible recipe when a signal user has no on-taste candidate', async () => {
+    await seedRecipes([
+      { ...BASE_RECIPE, _id: 'rnd-s1', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'rnd-s2', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'rnd-s3', cuisine: 'Italian', mealTypes: ['dinner'] },
+      // Only unseen candidate is off-taste → taste path finds nothing, so the
+      // route falls through to a uniform random pick rather than 404.
+      { ...BASE_RECIPE, _id: 'rnd-offonly', cuisine: 'Thai', mealTypes: ['breakfast'], nutritionLabels: [] },
+    ])
+    await seedUserRecipeData(TEST_UID, {
+      savedRecipes: [
+        { recipeId: 'rnd-s1', dateSaved: '1' },
+        { recipeId: 'rnd-s2', dateSaved: '2' },
+        { recipeId: 'rnd-s3', dateSaved: '3' },
+      ],
+    })
+
+    const res = await request(server).get('/api/recipes/random').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(res.body._id).toBe('rnd-offonly')
+  })
+
+  it('still returns a recipe for an authed user below the signal threshold (fallback)', async () => {
+    await seedRecipes([{ ...BASE_RECIPE, _id: 'rnd-only', title: 'Solo' }])
+    // 1 save → below MIN_SIGNAL, so the taste path is skipped and the fallback
+    // runs. The only recipe is one they've seen, so the "prefer unseen" pool is
+    // empty and the fallback relaxes to return the seen recipe anyway (rather
+    // than a dead end).
+    await seedUserRecipeData(TEST_UID, {
+      savedRecipes: [{ recipeId: 'rnd-only', dateSaved: '1' }],
+    })
+    const res = await request(server).get('/api/recipes/random').set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(res.body._id).toBe('rnd-only')
+  })
+
+  it('fallback prefers an unseen recipe over seen ones for a signal user', async () => {
+    await seedRecipes([
+      // 3 saved Italian dinners → signal, but all SEEN.
+      { ...BASE_RECIPE, _id: 'rnd-s1', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'rnd-s2', cuisine: 'Italian', mealTypes: ['dinner'] },
+      { ...BASE_RECIPE, _id: 'rnd-s3', cuisine: 'Italian', mealTypes: ['dinner'] },
+      // A SEEN off-taste recipe (saved) — a valid fallback candidate by status,
+      // but the user has already seen it, so it must NOT be preferred.
+      { ...BASE_RECIPE, _id: 'rnd-seen-off', cuisine: 'Mexican', mealTypes: ['breakfast'], nutritionLabels: [] },
+      // The only UNSEEN recipe is off-taste, so the taste path finds nothing and
+      // the fallback runs — it must always pick this unseen one, never the seen.
+      { ...BASE_RECIPE, _id: 'rnd-unseen-off', cuisine: 'Thai', mealTypes: ['breakfast'], nutritionLabels: [] },
+    ])
+    await seedUserRecipeData(TEST_UID, {
+      savedRecipes: [
+        { recipeId: 'rnd-s1', dateSaved: '1' },
+        { recipeId: 'rnd-s2', dateSaved: '2' },
+        { recipeId: 'rnd-s3', dateSaved: '3' },
+        { recipeId: 'rnd-seen-off', dateSaved: '4' },
+      ],
+    })
+
+    for (let i = 0; i < 8; i++) {
+      const res = await request(server).get('/api/recipes/random').set(AUTH_HEADER)
+      expect(res.status).toBe(200)
+      expect(res.body._id).toBe('rnd-unseen-off')
+    }
   })
 })
 
@@ -841,7 +2126,7 @@ describe('Phase 5-D — recipeIdQuery coercion', () => {
     const hex = oid.toHexString()
     await seedRecipe({ ...BASE_RECIPE, _id: oid, views: 5 })
 
-    const res = await request(app).get(`/api/getRecipe?id=${hex}`)
+    const res = await request(server).get(`/api/getRecipe?id=${hex}`)
     expect(res.status).toBe(200)
     // BSON ObjectId serialises to its hex string over JSON
     expect(res.body._id).toBe(hex)
@@ -863,7 +2148,7 @@ describe('Phase 5-D — recipeIdQuery coercion', () => {
       ],
     })
 
-    const res = await request(app)
+    const res = await request(server)
       .get('/api/getSavedRecipes?page=0&recipesPerPage=10&order=new')
       .set(AUTH_HEADER)
 

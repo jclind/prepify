@@ -1,9 +1,13 @@
 import React from 'react'
-import RecipeFormInput from 'src/pages/AddRecipe/RecipeFormInput'
+import FormInput from 'src/Components/Form/FormInput'
 
 interface ServingSizeInputProps {
-  servings: number | ''
-  setServings: (value: number | '') => void
+  // The raw field string (empty until the user types). Numeric coercion is the
+  // caller's job at submit time (useRecipeForm's `Number(servings)`) — storing
+  // the raw string keeps the field byte-identical to what was typed and avoids a
+  // `number` type that's a lie for a DOM-string value.
+  servings: string
+  setServings: (value: string) => void
   invalid?: boolean
   describedBy?: string
 }
@@ -14,24 +18,24 @@ const ServingSizeInput: React.FC<ServingSizeInputProps> = ({
   invalid,
   describedBy,
 }) => {
-  const handleChange = (inputVal: number | '') => {
+  const handleChange = (raw: string) => {
+    const num = Number(raw)
     if (
-      inputVal === '' ||
-      (!isNaN(inputVal) &&
-        inputVal % 1 === 0 &&
-        inputVal >= 1 &&
-        inputVal <= 99)
+      raw === '' ||
+      (!isNaN(num) && num % 1 === 0 && num >= 1 && num <= 99)
     ) {
-      setServings(inputVal)
+      // Store the raw string as typed; submit-time Number() does the coercion.
+      setServings(raw)
     }
   }
 
   return (
-    <RecipeFormInput
+    <FormInput
+      size='compact'
       type='number'
       placeholder='How many servings does your recipe make?'
       val={servings}
-      setVal={(val: number | '') => handleChange(val)}
+      setVal={handleChange}
       invalid={invalid}
       describedBy={describedBy}
     />

@@ -1,9 +1,11 @@
 import React, { FC } from 'react'
-import { closestFraction } from 'src/util/validateIngredientQuantityStr'
+import { formatIngredientQuantity } from 'src/util/formatQuantity'
 import './IngredientItemText.scss'
 
 type IngredientItemTextProps = {
   quantity: number | null
+  minQty: number | null
+  maxQty: number | null
   unit: string | null
   ingredientName: string | null
   comment: string | null
@@ -11,16 +13,19 @@ type IngredientItemTextProps = {
 
 const IngredientItemText: FC<IngredientItemTextProps> = ({
   quantity,
+  minQty,
+  maxQty,
   unit,
   ingredientName,
   comment,
 }) => {
+  const quantityText = formatIngredientQuantity(quantity, minQty, maxQty)
   return (
     <div className='ingredient-item-text'>
       <p>
-        {quantity ? (
+        {quantityText ? (
           <>
-            <strong>{closestFraction(quantity)}</strong>{' '}
+            <strong>{quantityText}</strong>{' '}
           </>
         ) : null}
         {unit ? (

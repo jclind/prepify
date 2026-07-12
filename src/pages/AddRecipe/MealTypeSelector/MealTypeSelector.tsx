@@ -1,7 +1,7 @@
 import React, { FC } from 'react'
-import Select, { ActionMeta, MultiValue, StylesConfig } from 'react-select'
+import Select, { ActionMeta, MultiValue } from 'react-select'
 import mealTypesList from 'src/recipeData/mealTypesList'
-import styles from 'src/_exports.module.scss'
+import { recipeSelectStyles } from 'src/pages/AddRecipe/recipeSelectStyles'
 
 type OptionType = {
   value: string
@@ -13,33 +13,15 @@ const mealTypeOptions: OptionType[] = mealTypesList.map(m => ({
   label: m,
 }))
 
-const customStyles: StylesConfig<OptionType> = {
-  control: (provided: any, state: any) => ({
-    ...provided,
-    borderColor: state.isFocused ? styles.primary : provided.borderColor,
-    borderWidth: '2px',
-    backgroundColor: 'none',
-    '&:hover': {
-      borderColor: 'primary',
-    },
-    boxShadow: 'none',
-    fontWeight: '500',
-  }),
-  option: (provided: any, state: any) => ({
-    ...provided,
-    backgroundColor: state.isSelected ? styles.primary : 'transparent',
-    color: state.isSelected ? 'white' : 'inherit',
-    fontWeight: '500',
-    '&:hover': {
-      backgroundColor: state.isSelected ? 'primary' : 'lightgray',
-      color: state.isSelected ? 'white' : 'inherit',
-    },
-  }),
-}
-
 type MealTypeSelectorProps = {
   mealTypes: string[]
   setMealTypes: React.Dispatch<React.SetStateAction<string[]>>
+  // Accessibility: mark the select invalid and point it at the section's error
+  // message. react-select exposes aria-invalid/aria-errormessage (it has no
+  // aria-describedby prop), and aria-errormessage is only exposed to assistive
+  // tech while aria-invalid is set, so the two are passed as a gated pair.
+  invalid?: boolean
+  errorMessageId?: string
 }
 const getMealTypesByString = (mealTypesString: string[]): OptionType[] => {
   const matchingMealTypes = mealTypeOptions.filter(option =>
@@ -52,6 +34,8 @@ const getMealTypesByString = (mealTypesString: string[]): OptionType[] => {
 const MealTypeSelector: FC<MealTypeSelectorProps> = ({
   mealTypes,
   setMealTypes,
+  invalid,
+  errorMessageId,
 }) => {
   const handleChange = (
     newValue: MultiValue<OptionType> | null,
@@ -72,9 +56,12 @@ const MealTypeSelector: FC<MealTypeSelectorProps> = ({
         isMulti={true}
         onChange={handleChange}
         options={mealTypeOptions}
-        styles={customStyles}
+        styles={recipeSelectStyles}
         placeholder='Select meal type(s)...'
         closeMenuOnSelect={false}
+        aria-label='Course'
+        aria-invalid={invalid || undefined}
+        aria-errormessage={invalid ? errorMessageId : undefined}
       />
     </div>
   )

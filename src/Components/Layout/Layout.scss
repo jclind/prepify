@@ -1,0 +1,57 @@
+@use '../../helpers.scss' as s;
+
+// App shell: a flexbox sticky-footer column so the footer sits at the bottom of
+// the viewport on short pages and flows after the content on long ones — without
+// any page needing to subtract the footer's height. The footer is content-driven
+// (its height varies by breakpoint), so hard-coding a reserved height is wrong;
+// `flex: 1 0 auto` on the main region pushes the footer down instead.
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.app-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1 0 auto;
+  // Programmatic skip-link target — don't paint a ring when focused via the
+  // skip link (keyboard Tab still rings real controls inside).
+  &:focus {
+    outline: none;
+  }
+}
+
+// Skip-to-content: visually hidden until it receives keyboard focus, then pinned
+// to the top-left above the nav so the first Tab on any page jumps past the header.
+// Hidden via a clipped 1px box (not an off-viewport `top: -3rem` park): the old
+// negative-offset pattern left painted geometry above the fold that iOS/Android
+// rubber-band overscroll would reveal (`.app-shell` has no `position`, so it
+// resolved against the document and scrolled with the page). A clip-based box has
+// no off-viewport geometry to expose while the keyboard-Tab reveal still works.
+.skip-to-content {
+  position: absolute;
+  left: 0.5rem;
+  top: 0.5rem;
+  z-index: 1000;
+  clip-path: inset(50%);
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  background: s.$white;
+  color: s.$primary;
+  font-weight: 600;
+  border-radius: s.$border-radius;
+  box-shadow: s.$elevation-2;
+
+  &:focus {
+    clip-path: none;
+    width: auto;
+    height: auto;
+    padding: 0.6rem 1rem;
+    overflow: visible;
+    white-space: normal;
+  }
+}

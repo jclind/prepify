@@ -1,0 +1,95 @@
+@use '../../helpers.scss' as s;
+
+.admin-layout {
+  display: flex;
+  min-height: 100vh;
+  background: s.$admin-slate-50;
+
+  .admin-sidebar {
+    width: 220px;
+    flex-shrink: 0;
+    background: s.$admin-chrome;
+    color: s.$admin-slate-200;
+    display: flex;
+    flex-direction: column;
+    padding: 1.5rem 1rem;
+    gap: 1.5rem;
+
+    .admin-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 700;
+      font-size: s.$text-lg;
+
+      a {
+        color: s.$white;
+        text-decoration: none;
+      }
+
+      .admin-badge {
+        font-size: s.$text-caption;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        background: s.$admin-action;
+        color: s.$white;
+        padding: 0.15rem 0.4rem;
+        border-radius: s.$radius-xs;
+      }
+    }
+
+    .admin-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+
+      .admin-nav-link {
+        color: s.$admin-on-chrome;
+        text-decoration: none;
+        padding: 0.5rem 0.75rem;
+        border-radius: s.$radius-sm;
+        font-size: s.$text-base;
+        transition: background 0.15s, color 0.15s;
+
+        &:hover {
+          background: rgba(s.$white, 0.06);
+          color: s.$white;
+        }
+
+        &.active {
+          background: s.$admin-action;
+          color: s.$white;
+        }
+      }
+    }
+  }
+
+  .admin-content {
+    flex: 1;
+    padding: 2rem;
+    overflow-x: auto;
+  }
+}
+
+@include s.below(s.$bp-xl) {
+  .admin-layout {
+    flex-direction: column;
+
+    .admin-sidebar {
+      width: 100%;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem;
+    }
+
+    .admin-nav {
+      flex-direction: row;
+    }
+
+    .admin-content {
+      padding: 1rem;
+    }
+  }
+}

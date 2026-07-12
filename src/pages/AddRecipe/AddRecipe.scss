@@ -1,5 +1,14 @@
 @use '../../helpers.scss' as s;
 
+// The footer carries a global top margin ($footer-margin) for breathing room
+// after page content. On the create/edit-recipe page the sticky summary bar now
+// sits flush at the bottom of the form, so that margin renders as an empty gap
+// between the bar and the footer. Cancel it for this page only (the bar provides
+// the visual separation) — scoped via :has so no global footer style is touched.
+.app-shell:has(.add-recipe-page) .site-footer {
+  margin-top: 0;
+}
+
 .add-recipe-page {
   display: flex;
   flex-direction: column;
@@ -13,8 +22,9 @@
   // distinct surface. Keep the global .page's top padding so the h1 sits at
   // the same height as headers on other pages (e.g. Recipes).
   background: s.$primary-background;
-  // Clear the fixed summary bar at the bottom of the page.
-  padding-bottom: 130px;
+  // The summary bar is now a sticky in-flow child (see AddRecipeSummaryBar.scss),
+  // so it reserves its own space at the end of the page — no bottom padding hack
+  // needed to clear a fixed overlay, and the footer below it stays reachable.
 
   .add-recipe-heading {
     display: flex;
@@ -24,7 +34,7 @@
   }
 
   h1 {
-    font-size: 2rem;
+    font-size: s.$text-3xl;
     font-weight: 700;
     text-align: center;
   }
@@ -36,12 +46,12 @@
     align-items: center;
     gap: 0.4rem;
     margin: 0 0 0.65rem;
-    font-size: 0.85rem;
+    font-size: s.$text-sm;
     color: s.$secondary-text;
 
     .icon {
       flex-shrink: 0;
-      font-size: 1rem;
+      font-size: s.$text-md;
       color: s.$primary;
     }
   }
@@ -79,9 +89,9 @@
         margin-bottom: 1rem;
 
         .text {
-          color: s.$primary;
+          color: s.$primary-accessible;
           font-weight: 700;
-          font-size: 1rem;
+          font-size: s.$text-md;
           text-transform: uppercase;
           letter-spacing: 0.08em;
           white-space: nowrap;
@@ -92,7 +102,7 @@
           background: s.$gray-400;
         }
         .req {
-          font-size: 0.7rem;
+          font-size: s.$text-caption;
           font-weight: 600;
           text-transform: uppercase;
           letter-spacing: 0.06em;
@@ -101,16 +111,16 @@
       }
 
       // f02: slightly larger, airier inputs. Scoped to this page so the shared
-      // RecipeFormInput / RecipeFormTextArea stay unchanged elsewhere.
-      .recipe-form-input .input-container {
+      // FormInput / RecipeFormTextArea stay unchanged elsewhere.
+      .form-input .input-container {
         height: 48px;
       }
-      .recipe-form-input,
+      .form-input,
       .recipe-form-textarea {
         .input-container {
           input,
           textarea {
-            font-size: 1rem;
+            font-size: s.$text-md;
             border-radius: s.$border-radius;
           }
           textarea {
@@ -125,7 +135,7 @@
     margin-bottom: 0.5rem;
   }
 
-  @media screen and (max-width: 600px) {
+  @include s.below(s.$bp-lg) {
     .container {
       padding: 40px 0 32px;
 

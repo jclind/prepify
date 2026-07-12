@@ -1,10 +1,5 @@
+import { BookmarkIcon, CheckCircleIcon, CloseIcon, EditIcon, EyeIcon, TrashIcon, UserIcon } from 'src/Components/icons'
 import React, { FC, useState } from 'react'
-import {
-  AiOutlineClose,
-  AiOutlineEdit,
-  AiOutlineDelete,
-  AiOutlineUser,
-} from 'react-icons/ai'
 import { TailSpin } from 'react-loader-spinner'
 import Modal from 'react-modal'
 import { useNavigate } from 'react-router-dom'
@@ -13,38 +8,28 @@ import toast from 'react-hot-toast'
 import AuthAPI from 'src/api/auth'
 import RecipeAPI from 'src/api/recipes'
 import { useQueryClient } from '@tanstack/react-query'
+import { panelModalStyles } from 'src/util/modalStyles'
 import './RecipeControls.scss'
 
 type RecipeControlsType = {
   recipeId: string
   recipeUserId?: string
   recipeTitle: string
+  views?: number
+  numTimesSaved?: number
+  numTimesMade?: number
 }
 
-const customStyles = {
-  content: {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    right: 'auto',
-    bottom: 'auto',
-    marginRight: '-50%',
-    transform: 'translate(-50%, -50%)',
-
-    background: '#eeeeee',
-    padding: '2.5rem',
-    borderRadius: '5px',
-  },
-  overlay: {
-    zIndex: '1000',
-    background: 'rgba(0, 0, 0, 0.5)',
-  },
-}
+const formatCount = (n: number | null | undefined): string =>
+  (n ?? 0).toLocaleString()
 
 const RecipeControls: FC<RecipeControlsType> = ({
   recipeId,
   recipeUserId,
   recipeTitle,
+  views,
+  numTimesSaved,
+  numTimesMade,
 }) => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const closeDeleteModal = () => {
@@ -92,37 +77,53 @@ const RecipeControls: FC<RecipeControlsType> = ({
   return (
     <div className='recipe-controls-container'>
       <span className='who'>
-        <AiOutlineUser className='icon' aria-hidden='true' />
+        <UserIcon className='icon' aria-hidden='true' />
         <span>
           <strong>You</strong> created this recipe
         </span>
       </span>
       <div className='btns-container'>
         <button
-          className='edit-btn'
+          className='edit-btn btn'
           onClick={() => navigate(`/recipes/${recipeId}/edit`)}
           aria-label='Edit recipe'
         >
-          <AiOutlineEdit className='icon' aria-hidden='true' />
+          <EditIcon className='icon' aria-hidden='true' />
           Edit
         </button>
         <button
-          className='delete-btn'
+          className='delete-btn btn'
           onClick={() => setIsDeleteModalOpen(true)}
         >
-          <AiOutlineDelete className='icon' aria-hidden='true' />
+          <TrashIcon className='icon' aria-hidden='true' />
           Delete
         </button>
+      </div>
+
+      <div className='owner-stats' aria-label='Recipe statistics'>
+        <span className='stat'>
+          <EyeIcon className='icon' aria-hidden='true' />
+          <b>{formatCount(views)}</b> {views === 1 ? 'view' : 'views'}
+        </span>
+        <span className='stat'>
+          <BookmarkIcon className='icon' aria-hidden='true' />
+          <b>{formatCount(numTimesSaved)}</b>{' '}
+          {numTimesSaved === 1 ? 'save' : 'saves'}
+        </span>
+        <span className='stat'>
+          <CheckCircleIcon className='icon' aria-hidden='true' />
+          <b>{formatCount(numTimesMade)}</b> made
+        </span>
       </div>
 
       <Modal
         isOpen={isDeleteModalOpen}
         onRequestClose={closeDeleteModal}
-        style={customStyles}
+        style={panelModalStyles}
         className='confirm-delete-modal'
       >
-        <button className='close-modal btn' onClick={closeDeleteModal}>
-          <AiOutlineClose className='icon' />
+        <button className='close-modal btn btn--icon' onClick={closeDeleteModal}>
+          <CloseIcon className='icon' />
         </button>
         <div className='content'>
           <h4>Delete Recipe?</h4>
@@ -132,11 +133,11 @@ const RecipeControls: FC<RecipeControlsType> = ({
           <p>This action cannot be undone.</p>
           {deleteError && <p className='error'>Error: {deleteError}</p>}
           <div className='btns'>
-            <button className='cancel' onClick={closeDeleteModal}>
+            <button className='cancel btn btn--outline' onClick={closeDeleteModal}>
               Cancel
             </button>
             <button
-              className='confirm'
+              className='confirm btn btn--danger-solid'
               onClick={handleDeleteRecipe}
               disabled={deleteLoading}
             >

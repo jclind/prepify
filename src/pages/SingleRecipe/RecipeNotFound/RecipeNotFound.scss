@@ -4,24 +4,143 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1rem;
-  min-height: calc(
-    100vh - #{s.$nav-height} - #{s.$footer-height} - #{s.$footer-margin}
-  );
-  padding-top: s.$nav-height;
-  margin: 0 auto;
+  // Fills the flexbox app-main; the app shell positions the footer (Layout.scss).
+  flex: 1 0 auto;
+  padding: calc(#{s.$nav-height} + 2rem) 1.25rem 3rem;
+  width: 100%;
+  box-sizing: border-box;
+
+  .rnf-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    width: 100%;
+    max-width: 560px;
+    padding: 2.75rem 2rem;
+    background: s.$white;
+    border: 1.5px solid s.$gray-200;
+    border-radius: s.$radius-4xl;
+    box-shadow: s.$elevation-4;
+  }
+
+  .rnf-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 76px;
+    height: 76px;
+    margin-bottom: 1.4rem;
+    border-radius: s.$radius-circle;
+    background: linear-gradient(135deg, rgba(s.$secondary, 0.14), rgba(s.$primary, 0.12));
+    color: s.$primary;
+    svg { width: 38px; height: 38px; }
+  }
 
   h1 {
-    margin-top: 2rem;
+    font-size: s.$text-3xl;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin: 0 0 0.6rem;
+    color: s.$primary-text;
   }
+
   p.text {
-    text-align: center;
-    max-width: 700px;
+    max-width: 420px;
+    margin: 0 0 1.75rem;
     font-weight: 500;
+    line-height: 1.6;
     color: s.$secondary-text;
-    padding-bottom: 1rem;
+  }
+
+  .rnf-search {
+    width: 100%;
+    .rnf-search-label {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      margin-bottom: 0.6rem;
+      font-size: s.$text-caption;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: s.$tertiary-text;
+      svg { width: 16px; height: 16px; }
+    }
+
+    // The shared SearchRecipesInput defaults to a white, borderless input, which
+    // vanishes on this white card (no container emphasis). Give it a bordered
+    // pill field so the search reads as the primary next action — mirrors the
+    // /recipes toolbar treatment (pill border + $primary focus glow).
+    .search-recipes-form {
+      width: 100%;
+      max-width: none;
+      margin: 0;
+
+      .search-recipes-input-label {
+        .icon {
+          left: 1rem;
+          height: 20px;
+          width: 20px;
+          color: s.$tertiary-text;
+        }
+        input {
+          box-sizing: border-box;
+          height: 48px;
+          border: 1.5px solid s.$gray-400;
+          border-radius: s.$radius-pill;
+          background: s.$primary-background;
+          font-size: s.$text-base;
+          // Reserve the right gutter for the "Search" button, which mounts once
+          // the user types (matches the /recipes field).
+          padding: 0.1rem 6.5rem 0.1rem 2.85rem;
+          transition: border-color 0.14s ease, box-shadow 0.14s ease;
+          &:focus {
+            border-color: s.$primary;
+            @include s.focus-glow(s.$primary, 0.12);
+          }
+        }
+        .search-recipes-btn {
+          right: 6px;
+          height: 36px;
+        }
+      }
+    }
+  }
+
+  .rnf-actions {
+    margin-top: 1.5rem;
+    .rnf-browse {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.75rem 1.6rem;
+      border-radius: s.$radius-pill;
+      background: s.$primary;
+      color: s.$white;
+      font-weight: 700;
+      font-size: s.$text-base;
+      text-decoration: none;
+      transition: filter s.$hover-timing, transform s.$hover-timing,
+        box-shadow s.$hover-timing;
+      &:hover {
+        filter: s.$hover-brighten;
+        transform: translateY(s.$hover-lift);
+        box-shadow: s.$shadow-brand;
+      }
+      &:focus-visible { @include s.outline(); }
+    }
+  }
+
+  .rnf-help {
+    margin: 1.6rem 0 0;
+    font-size: s.$text-sm;
+    color: s.$tertiary-text;
     .contact-link {
-      color: s.$secondary;
+      color: s.$secondary-accessible;
+      font-weight: 600;
+      &:hover { text-decoration: underline; }
     }
   }
 }

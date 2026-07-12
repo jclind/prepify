@@ -1,0 +1,173 @@
+@use '../../helpers.scss' as s;
+
+// Unified save + collections control. The wrapper just holds the trigger +
+// portal; each surface positions it and styles the trigger chrome (reusing
+// .save-recipe-btn on the recipe page, .recipe-card__save over a card, etc.).
+.save-control {
+  position: relative;
+  display: inline-flex;
+
+  &__trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    font-family: inherit;
+    color: inherit;
+    background: none;
+    border: none;
+    cursor: pointer;
+  }
+
+  &__caret {
+    font-size: s.$text-lg;
+    margin-left: -0.1rem;
+  }
+}
+
+// Toast shown on first save, nudging toward collections.
+.save-toast {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+
+  &__action {
+    border: none;
+    background: none;
+    padding: 0;
+    font-family: inherit;
+    font-weight: 800;
+    font-size: inherit;
+    color: s.$primary;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+}
+
+// Portaled to <body> and fixed-positioned at the trigger so a card's
+// overflow/transform can't clip it; inline top/left come from the control.
+.add-to-collection-portal {
+  position: fixed;
+  z-index: 1000;
+}
+
+.add-to-collection-popover {
+  width: 230px;
+  background: #fff;
+  border: 1px solid s.$surface-warm-border;
+  border-radius: s.$radius-2xl;
+  box-shadow: s.$elevation-3;
+  padding: 0.6rem;
+  text-align: left;
+
+  .popover-title {
+    font-weight: 800;
+    font-size: s.$text-sm;
+    color: s.$primary-text;
+    padding: 0.15rem 0.35rem 0.5rem;
+  }
+
+  .collection-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+
+  .popover-empty {
+    font-size: s.$text-fine;
+    color: s.$secondary-text;
+    padding: 0.4rem 0.35rem;
+  }
+
+  // The "All saved" master row sits above the collection list with a divider.
+  .collection-option.master {
+    margin-bottom: 0.35rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 1px solid s.$gray-200;
+    border-radius: 9px 9px 0 0;
+    font-weight: 700;
+  }
+
+  .collection-option {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    width: 100%;
+    background: none;
+    border: none;
+    border-radius: 9px;
+    padding: 0.5rem 0.4rem;
+    font-family: inherit;
+    font-size: s.$text-sm;
+    color: s.$primary-text;
+    cursor: pointer;
+    text-align: left;
+
+    &:hover {
+      background: s.$gray-50;
+    }
+    &:disabled {
+      cursor: default;
+    }
+
+    .checkbox {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      border: 2px solid s.$gray-400;
+      border-radius: 5px;
+      color: #fff;
+      font-size: s.$text-caption;
+    }
+    &.checked .checkbox {
+      background: s.$primary;
+      border-color: s.$primary;
+    }
+
+    .name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  .new-collection-row {
+    display: flex;
+    gap: 0.35rem;
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid s.$gray-200;
+
+    input {
+      flex: 1;
+      min-width: 0;
+      font-family: inherit;
+      font-size: s.$text-sm;
+      padding: 0.45rem 0.55rem;
+      border: 1px solid s.$gray-400;
+      border-radius: 9px;
+      &:focus {
+        outline: none;
+        border-color: s.$primary;
+      }
+    }
+
+    // `.btn .btn--primary .btn--sm` ($primary fill/hover from the variant);
+    // keeps its fixed square width (no-shrink in the input row) and the larger
+    // icon glyph, with padding zeroed so the 34px box isn't blown out.
+    .create-btn {
+      flex-shrink: 0;
+      width: 34px;
+      padding: 0;
+      font-size: s.$text-md;
+      &:disabled {
+        opacity: 0.5;
+      }
+    }
+  }
+}

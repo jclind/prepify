@@ -1,0 +1,21 @@
+@use '../../helpers.scss' as s;
+
+.recipe-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  // Own the box via aspect-ratio (matching the RecipeCard <img> and skeleton),
+  // not height:100% — the .recipe-card__thumb parent has no height of its own,
+  // so height:100% resolves to auto and the tile collapses.
+  aspect-ratio: 4 / 3;
+  // Soft tint of the brand orange so it reads as "no photo" not "broken".
+  background: linear-gradient(135deg, s.$primary-wash, s.$primary-wash-deep);
+  color: s.$primary-tint;
+
+  &__icon {
+    width: 36%;
+    height: 36%;
+    opacity: 0.9;
+  }
+}

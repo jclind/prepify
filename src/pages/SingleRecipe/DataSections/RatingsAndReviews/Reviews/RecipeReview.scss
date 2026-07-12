@@ -1,166 +1,88 @@
 @use '../../../../../helpers.scss' as s;
 
+// One public review: a warm-bordered white card. The identity vocabulary
+// (.rr-avatar/.rr-who/.rr-nm/.rr-sub/.rr-dt) is defined in
+// RatingsAndReviews.scss — every card renders inside `.recipe-ratings`.
+
 .recipe-review {
-  padding: 2rem 0;
-  border-top: 1px solid s.$gray-400;
-  // font-weight: 500;
+  background: s.$white;
+  border: 1px solid s.$surface-warm-border;
+  border-radius: s.$radius-3xl;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1rem;
+
   .head {
     display: flex;
-    gap: 0.35rem;
-    align-items: flex-start;
-    padding-bottom: 1.5rem;
+    gap: 0.8rem;
+    align-items: center;
 
-    .name {
-      font-weight: 600;
-    }
-    .date {
-      flex: 1;
-      text-align: right;
-      font-size: 0.875rem;
-      font-weight: 500;
-      // color: s.$secondary-text;
-    }
-    @media screen and (max-width: 450px) {
-      position: relative;
-      flex-wrap: wrap;
-      gap: 0.25rem;
-      .name-content {
-        display: flex;
-        flex-wrap: wrap;
-        max-width: 300px;
-        column-gap: 0.35rem;
-        .name {
-          font-size: 0.875rem;
-        }
-      }
-      .rating {
-        display: flex;
-        .text {
-          display: none;
-        }
-      }
-      .date {
-        position: absolute;
-        color: s.$tertiary-text;
-        right: 0;
-        font-size: 0.75rem;
-      }
-    }
-    @media screen and (max-width: 350px) {
-      .name-content {
-        max-width: 200px;
-      }
+    .avatar {
+      height: 40px;
+      width: 40px;
+      border-radius: s.$radius-circle;
+      flex-shrink: 0;
+      object-fit: cover;
     }
   }
-  .body {
-    .text {
-      font-size: 1rem;
-      font-weight: 500;
-      color: s.$primary-text;
-      line-height: 1.5;
-    }
-    textarea.editing-review {
-      width: 100%;
-      background: none;
-      padding: 0.5rem;
-      box-sizing: border-box;
-      height: 14ch;
-      resize: none;
-    }
-    .review-options {
-      display: flex;
-      gap: 1rem;
-      padding-top: 1rem;
-      .icon {
-        height: 18px;
-        width: 18px;
-      }
-      .actions {
-        display: flex;
-        justify-content: flex-end;
-        flex: 1;
-        gap: 1.5rem;
 
-        button {
-          font-size: 0.875rem;
-          font-weight: 600;
-          text-decoration: underline;
-          color: s.$tertiary-text;
-        }
-        button.edit-btn {
-          &:hover {
-            color: s.$primary-text;
-          }
-          &:focus {
-            @include s.outline();
-          }
-        }
-        button.delete-btn {
-          &:hover {
-            color: s.$error-red;
-          }
-          &:focus {
-            @include s.outline();
-          }
-        }
-        button.edit-review {
-          position: relative;
-          text-decoration: none;
-          padding: 0.5rem 1rem;
-          background: s.$primary;
-          height: 45px;
-          color: s.$white;
-          border-radius: s.$border-radius;
+  // The report kebab sits at the head's right edge, after the date.
+  .review-options {
+    display: flex;
+    flex-shrink: 0;
+  }
 
-          display: flex;
-          justify-self: center;
-          align-items: center;
-        }
-      }
-      button.like-review-btn,
-      button.dislike-review-btn {
-        &:focus {
-          @include s.outline();
-        }
-      }
+  .stars {
+    margin: 0.5rem 0 0.35rem;
+  }
+  .text {
+    color: s.$secondary-text;
+    line-height: 1.6;
+    font-size: s.$text-base;
+  }
+
+  @include s.below(s.$bp-sm) {
+    padding: 1.1rem 1.25rem;
+
+    // head gets crowded at phone widths: drop the date to its own caption
+    // line under the identity, aligned with the text column.
+    .head {
+      flex-wrap: wrap;
+    }
+    .head .rr-dt {
+      order: 5;
+      flex-basis: 100%;
+      margin-left: calc(40px + 0.8rem);
+      margin-top: 0.1rem;
+      font-size: s.$text-caption;
     }
   }
 }
 
 .delete-modal {
   .heading {
-    font-size: 1.25rem;
-    font-weight: 600;
+    font-size: s.$text-xl;
+    font-weight: 700;
     margin-bottom: 0.5rem;
   }
   .text {
     font-weight: 500;
     color: s.$secondary-text;
+    line-height: 1.6;
     margin-bottom: 2rem;
   }
   .options {
     display: flex;
-    gap: 1.5rem;
+    gap: 1rem;
     justify-content: center;
+    flex-wrap: wrap;
+    // cancel = `.btn .btn--outline`, delete = `.btn .btn--danger-solid`; only
+    // the modal-button sizing (and the loader's positioning) are local.
     button {
-      font-size: 1.125rem;
-      padding: 0.75rem 1.25rem;
-      border-radius: s.$border-radius;
-      transition: all 0.3s linear;
-    }
-    button.cancel {
-      background: s.$gray-300;
-      &:hover {
-        background: s.$gray-400;
-      }
+      font-size: s.$text-base;
+      padding: 0.65rem 1.25rem;
     }
     button.delete {
       position: relative;
-      background: s.$error-red;
-      color: s.$primary-background;
-      &:hover {
-        background: s.$error-red-hover;
-      }
     }
   }
 }

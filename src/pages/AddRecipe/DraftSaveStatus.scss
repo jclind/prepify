@@ -8,12 +8,12 @@
   // Reserve the line height even when idle/empty so showing or hiding the
   // status never nudges the form below it.
   min-height: 1.25rem;
-  font-size: 0.85rem;
+  font-size: s.$text-sm;
   font-weight: 500;
   color: s.$tertiary-text;
 
   svg {
-    font-size: 1rem;
+    font-size: s.$text-md;
     flex-shrink: 0;
   }
 
@@ -23,5 +23,11 @@
 
   &.error {
     color: s.$error-red;
+  }
+
+  // Cross-tab conflict: a distinct amber "reload" prompt, not the red error —
+  // nothing failed, the user just needs to reload for the latest version.
+  &.conflict {
+    color: s.$alert-warning-amber-text;
   }
 }

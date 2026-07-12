@@ -6,9 +6,9 @@
   align-items: center;
   justify-content: center;
   gap: 1rem;
-  min-height: calc(
-    100vh - #{s.$nav-height} - #{s.$footer-height} - #{s.$footer-margin}
-  );
+  // Fills the flexbox app-main so the centered content stays vertically centered
+  // between nav and footer; the app shell positions the footer (Layout.scss).
+  flex: 1 0 auto;
   padding: 0;
   padding-top: s.$nav-height;
   margin: 0 auto;
@@ -16,59 +16,59 @@
     display: flex;
     justify-content: center;
     align-items: center;
+    gap: 0.5rem;
 
     span.number {
-      font-size: 11.25;
-      font-weight: 700;
+      font-size: 11.25rem;
+      font-weight: 800;
+      font-style: italic;
+      line-height: 1;
+      color: s.$primary-text;
     }
-    .image-container {
-      height: 190px;
+    // Donut ring (react-icons/lu LuDonut) standing in for the "0".
+    .zero {
       width: 190px;
-      img {
-        object-fit: fit;
-        min-height: 190px;
-        min-width: 190px;
-      }
+      height: 190px;
+      color: s.$primary;
+      stroke-width: 1.5;
     }
 
-    @media screen and (max-width: 650px) {
+    @include s.below(s.$bp-xl) {
       span.number {
         font-size: 10rem;
       }
-      .image-container {
-        height: 160px;
+      .zero {
         width: 160px;
-        img {
-          min-height: 160px;
-          min-width: 160px;
-        }
+        height: 160px;
       }
     }
-    @media screen and (max-width: 550px) {
+    @include s.below(s.$bp-md) {
       span.number {
         font-size: 8.75rem;
       }
-      .image-container {
-        height: 140px;
+      .zero {
         width: 140px;
-        img {
-          min-height: 140px;
-          min-width: 140px;
-        }
+        height: 140px;
       }
     }
-    @media screen and (max-width: 450px) {
+    @include s.below(s.$bp-sm) {
       span.number {
         font-size: 7.5rem;
       }
-      .image-container {
-        height: 120px;
+      .zero {
         width: 120px;
-        img {
-          object-fit: fit;
-          min-height: 120px;
-          min-width: 120px;
-        }
+        height: 120px;
+      }
+    }
+    // Smallest phones (≤375px): the two italic digits + donut overrun a ~320px
+    // viewport at 7.5rem — step down once more so the glyph stays inside.
+    @include s.below(s.$bp-xs) {
+      span.number {
+        font-size: 6rem;
+      }
+      .zero {
+        width: 100px;
+        height: 100px;
       }
     }
   }
@@ -86,24 +86,27 @@
       font-weight: 500;
       color: s.$secondary-text;
       .contact-link {
-        color: s.$secondary;
+        color: s.$secondary-accessible;
+        text-decoration: none;
+        &:hover {
+          text-decoration: underline;
+        }
       }
     }
+    // `.btn .btn--primary` — kept oversized on this hero 404: larger padding,
+    // 1.5rem type, heavier weight, and the top spacing are local.
     button.home-btn {
-      background: s.$primary;
-      color: s.$white;
       padding: 0.75rem 2rem;
-      border-radius: 10px;
-      font-size: 1.5rem;
+      font-size: s.$text-2xl;
       font-weight: 700;
       margin-top: 2rem;
     }
-    @media screen and (max-width: 450px) {
+    @include s.below(s.$bp-sm) {
       h1 {
-        font-size: 1.5rem;
+        font-size: s.$text-2xl;
       }
       p.text {
-        font-size: 0.875rem;
+        font-size: s.$text-sm;
       }
     }
   }

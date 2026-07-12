@@ -1,75 +1,50 @@
-import React, { FC, useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
-import Select, { SingleValue } from 'react-select'
+import { AlertCircleIcon, BookOpenIcon, ChevronDownIcon } from 'src/Components/icons'
+import React, { FC } from 'react'
 
 import './UserRecipes.scss'
+import EmptyState from 'src/Components/EmptyState/EmptyState'
 import RecipeAPI from 'src/api/recipes'
-import { RecipeType } from 'types'
-import { selectCustomStyles } from 'src/pages/Account/selectCustomStyles'
+import { CreatedRecipeCardType } from 'types'
+import { usePaginatedLoadMore } from 'src/pages/Account/usePaginatedLoadMore'
 import UserRecipeThumbnail from './UserRecipeThumbnail'
 
-type OptionType = { value: string; label: string }
-
-const options: OptionType[] = [
-  { value: 'new', label: 'Date Created: Newest' },
-  { value: 'old', label: 'Date Created: Oldest' },
-]
+// Default order: newest first. (The sort control was removed for now; the query
+// keeps this fixed order.)
+const SORT = 'new'
 
 const UserRecipes: FC = () => {
-  const [recipes, setRecipes] = useState<RecipeType[]>([])
-  const [currPage, setCurrPage] = useState(0)
-  const [isMoreRecipes, setIsMoreRecipes] = useState(false)
-
-  const [selectOption, setSelectOption] = useState(options[0])
-
-  const { data, isLoading } = useQuery({
-    queryKey: ['created-recipes', selectOption.value, currPage],
-    queryFn: () => RecipeAPI.getCreatedRecipes(currPage, 6, selectOption.value),
+  // `showGrid` (the hook's showList) stays true across the one-frame gap where
+  // the query has settled but the accumulator hasn't populated yet, so the
+  // "no recipes" empty state can't flash before a genuine zero result.
+  const {
+    items: recipes,
+    isLoading,
+    showSkeleton,
+    isError,
+    refetch,
+    isMore,
+    showList: showGrid,
+    loadMore,
+  } = usePaginatedLoadMore<CreatedRecipeCardType>({
+    queryKey: page => ['created-recipes', SORT, page],
+    queryFn: page =>
+      RecipeAPI.getCreatedRecipes(page, 6, SORT).then(
+        d => d && { items: d.recipes, totalCount: d.totalCount }
+      ),
   })
-
-  useEffect(() => {
-    if (data) {
-      if (currPage === 0) {
-        setRecipes([...data.recipes])
-        setIsMoreRecipes(Number(data.totalCount) > data.recipes.length)
-      } else {
-        const updated = [...recipes, ...data.recipes]
-        setRecipes(updated)
-        setIsMoreRecipes(Number(data.totalCount) > updated.length)
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data])
-
-  const handleSelectChange = (e: SingleValue<OptionType>) => {
-    if (!e) return
-    setSelectOption(e)
-    setCurrPage(0)
-  }
-
-  const handleLoadMoreRecipes = () => {
-    setCurrPage(prev => prev + 1)
-  }
-
-  const showGrid = recipes.length > 0 || isLoading
 
   return (
     <div className='user-recipes'>
       {showGrid ? (
         <>
-          <div className='user-recipes-filters'>
-            <Select<OptionType, false>
-              options={options}
-              styles={selectCustomStyles}
-              isSearchable={false}
-              isClearable={false}
-              className='select'
-              onChange={handleSelectChange}
-              value={selectOption}
-            />
-          </div>
-          <div className='thumbnails-container'>
+          {/* Render the skeleton thumbnails whenever loading so the grid reserves
+              its height from frame 1; the flash-guard delay only hides them
+              (sk-hold) until it's worth drawing — no blank-then-grow jump. */}
+          <div
+            className={`thumbnails-container ${
+              isLoading && !showSkeleton ? 'sk-hold' : ''
+            }`}
+          >
             {!isLoading ? (
               recipes.map(recipe => (
                 <UserRecipeThumbnail key={recipe._id} recipe={recipe} />
@@ -82,23 +57,28 @@ const UserRecipes: FC = () => {
               </>
             )}
           </div>
-          {isMoreRecipes && recipes.length > 0 ? (
-            <button
-              className='load-more-btn btn'
-              onClick={handleLoadMoreRecipes}
-            >
-              Load More Recipes
+          {isMore && recipes.length > 0 ? (
+            <button className='load-more-btn' onClick={loadMore}>
+              Load more recipes <ChevronDownIcon />
             </button>
           ) : null}
         </>
+      ) : isError ? (
+        // Error is not empty: a failed fetch must never read as "no recipes" to
+        // a user who has them. See docs/design/loading-states.md.
+        <EmptyState
+          icon={<AlertCircleIcon />}
+          title='Couldn’t load your recipes'
+          description='Something went wrong. Please try again.'
+          action={{ label: 'Try again', onClick: () => refetch() }}
+        />
       ) : (
-        <div className='no-data-saved'>
-          <h2>No Recipes Created Yet</h2>
-          <p>Share your first recipe with the Prepify community!</p>
-          <Link to='/add-recipe' className='btn add-recipe-btn'>
-            Add a Recipe
-          </Link>
-        </div>
+        <EmptyState
+          icon={<BookOpenIcon />}
+          title='No Recipes Created Yet'
+          description='Share your first recipe with the Prepify community!'
+          action={{ label: 'Add a Recipe', to: '/add-recipe' }}
+        />
       )}
     </div>
   )

@@ -1,9 +1,38 @@
 $primary: #ff5722; // Also located in TrendingRecipes.js
+$primary-hover: #e74e1d; // darkened orange for primary-button/link hover
+// Light decorative tint of the brand orange — gradient stops + the "no photo"
+// placeholder. Purely decorative (never text/contrast), so it's outside the
+// accessible-orange story below.
+$primary-tint: #ff8a5c;
+// Decorative warm washes — very light tints of the brand orange, used only as
+// non-text surface fills (the "no photo" RecipePlaceholder gradient). Like
+// $primary-tint, purely decorative, outside the accessible-orange story.
+$primary-wash: #fff3ee; // lightest warm wash (placeholder gradient start)
+$primary-wash-deep: #ffe1d4; // warmer wash (placeholder gradient end)
+// Deep warm brand tone — dark desaturated orange used as text on a warm tint
+// (the account-restriction status banner). The dark warm sibling of the washes.
+$primary-deep: #7c2d12;
 $secondary: #00adb5;
+// Accessible (WCAG AA) variants of the brand colors, for the cases where the
+// brand color is small text on a light surface OR a fill behind white text —
+// both need 4.5:1, which #ff5722/#00adb5 miss (2.7–3.2:1).
+//
+// TEMPORARY — orange reverted to the vivid brand #ff5722 at the owner's request
+// (the AA #bf360c read too "brown"). This intentionally re-fails WCAG AA contrast
+// on the orange logo/CTAs/accents and drops Lighthouse a11y below 100 on the
+// pages that use them, pending a brand-colour decision (the orange-shade
+// exploration is filed in docs/BACKLOG.md). The teal variant stays accessible.
+// To restore AA, set this back to ~#bf360c (or the chosen on-light orange).
+$primary-accessible: #ff5722;
+$secondary-accessible: #00787e;
 
 $primary-text: #303841;
 $secondary-text: #595f66;
-$tertiary-text: #979ba0;
+// Muted body/meta text. Darkened from #979ba0 (2.4–2.8:1, failed WCAG AA) to
+// the lightest value that clears 4.5:1 on every light surface in the palette —
+// white 5.29:1, gray-50 #fafafa 5.07:1, gray-200 #eeeeee 4.56:1 — so it stays
+// as "muted" as AA allows while passing. (a11y sweep, 2026-06-25)
+$tertiary-text: #666c75;
 
 $white: rgb(255, 255, 255);
 $gray-50: #fafafa;
@@ -14,7 +43,12 @@ $gray-500: #bebebe;
 $gray-600: #a6a6a6;
 
 $success-green: #28a745;
-$error-red: #dc3545;
+// Darkened from #dc3545 (which failed WCAG AA as text on light surfaces — 3.9:1
+// on #eeeeee, 4.28:1 on the danger tint, and a razor-thin 4.53:1 even on white)
+// to the lightest red clearing 4.5:1 everywhere it's used: as text on white
+// 5.43:1 / #eeeeee 4.68:1 / danger tint 5.14:1, and as a fill under white text
+// 5.43:1. Used for inline validation + danger UI (alerts have their own tokens).
+$error-red: #c5303f;
 $error-red-hover: #b02a37;
 $warning-amber: #ffc107;
 
@@ -30,9 +64,77 @@ $alert-warning-amber: #fff3cd;
 $alert-warning-amber-border: #ffeeba;
 $alert-warning-amber-text: #856404;
 
-$primary-background: #eeeeee;
+$primary-background: #eeeeee; // UI fill token (search inputs, tracks, alerts, …)
+// Page backdrop (body). A touch lighter than the #eeeeee fill token for a
+// softer, airier surface. Kept separate so the fills keep their definition.
+$page-bg: #f5f5f5;
 $secondary-background: #d6d6d6;
 $tertiary-background: #b1b1b1;
+
+// Warm-cream surface family (Account, Public Profile, Home cards)
+$surface-warm-border: #ece2d6;
+
+// ── Admin / moderation sub-palette ──────────────────────────────────────────
+// A cool, Tailwind-derived slate/blue system, deliberately distinct from the
+// warm brand neutrals above ($gray-* are warm; these slates are cool): the
+// admin console reads as a separate "tool" surface, not a brand page. Named
+// hybrid — neutrals as a scale (like $gray-*), statuses by role (like $alert-*).
+// Status hues are intentionally NOT the brand $alert-* set; they're the denser
+// cool moderation palette. Documented in docs/design/admin-palette.md.
+//
+// Cool neutral spine: text hierarchy → surfaces → borders.
+$admin-slate-900: #111827; // headings, stat values (max contrast)
+$admin-slate-700: #374151; // body text, neutral-pill text
+$admin-slate-600: #4b5563; // secondary / default control text
+$admin-slate-500: #6b7280; // muted labels, meta, section eyebrows
+$admin-slate-400: #9ca3af; // hints, timestamps (AA floor on white)
+$admin-slate-300: #d8dbe0; // default input/button border
+$admin-slate-200: #e5e7eb; // card borders, inert pill bg, row separators
+$admin-slate-100: #f3f4f6; // neutral surface, count-badge bg
+$admin-slate-50: #f9fafb; // lightest surface (bulk bar, page bg)
+$admin-chrome: #1f2430; // dark sidebar + active tab/toggle fill
+$admin-on-chrome: #b9bec9; // nav-link text on the dark chrome
+// Interactive.
+$admin-action: #3b82f6; // active nav, badge, focus ring
+$admin-link: #2563eb; // hyperlinks
+// Status — approved / resolved (green).
+$admin-ok-bg: #dcfce7;
+$admin-ok-text: #166534;
+$admin-ok-fill: #16a34a; // approve/resolve action buttons
+$admin-ok-fill-hover: #15803d;
+// Status — pending / review / general (indigo).
+$admin-info-bg: #e0e7ff;
+$admin-info-text: #3730a3;
+// Status — open / featured / suspended (amber).
+$admin-warn-bg: #fef3c7;
+$admin-warn-text: #b45309;
+$admin-warn-text-dk: #92400e;
+$admin-warn-border: #fcd34d;
+$admin-warn-fill: #d97706; // warn bars/dots in analytics/audit
+// Status — hidden / banned / rejected (red). Distinct from brand $error-red.
+$admin-danger-bg: #fee2e2;
+$admin-danger-text: #b91c1c;
+$admin-danger-text-dk: #7f1d1d;
+$admin-danger-border: #fca5a5;
+$admin-danger-fill: #dc2626; // danger bars/dots, bright reject red
+// Automod / special-category accents (purple).
+$admin-automod-bg: #faf7ff;
+$admin-automod-border: #c7b3e6;
+$admin-automod-text: #6b21a8;
+$admin-automod-label-bg: #ede4fb;
+$admin-review-bg: #fae8ff; // "review"-type report pill
+$admin-review-text: #86198f;
+// Classification accents — report-type / bug-category chips (the green/amber
+// variants). These label *what kind* of item it is, an axis orthogonal to
+// status, so they're kept separate from the $admin-ok / $admin-warn status
+// hues: re-tuning a status colour must not silently shift a category chip.
+// They currently mirror those hues. (The indigo "general" base and purple
+// "review" category legitimately reuse $admin-info / $admin-review per their
+// documented general / special-category meanings.)
+$admin-cat-green-bg: #dcfce7;
+$admin-cat-green-text: #166534;
+$admin-cat-amber-bg: #fef3c7;
+$admin-cat-amber-text: #92400e;
 
 // Navbar
 $nav-height: 6.25rem;
@@ -49,13 +151,150 @@ $recipe-body-max-width: 800px;
 
 $home-hero-height: calc(500px - #{$page-top-padding} - #{$page-top-margin});
 
-$border-radius: 10px;
+// Corner-radius scale. Steps are the radii already in use across the app, so
+// every repoint is value-identical. Off-scale one-offs (5/7/9/11/13/18px) and
+// the token-less admin files keep raw values pending normalization / import
+// wiring (see docs/BACKLOG.md).
+$radius-xs: 4px;
+$radius-sm: 6px;
+$radius-md: 8px;
+$radius-lg: 10px;
+$radius-xl: 12px;
+$radius-2xl: 14px;
+$radius-3xl: 16px;
+$radius-4xl: 20px;
+$radius-pill: 999px;
+$radius-circle: 50%;
+
+// Canonical default radius (cards/controls). Alias of $radius-lg; retained for
+// the existing s.$border-radius references.
+$border-radius: $radius-lg;
 
 $max-width: 1400px;
 
-$card-box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
+// ── Elevation scale ──────────────────────────────────────────────────────────
+// A 6-step shadow ramp that the app's ~40 ad-hoc `box-shadow:` literals collapse
+// onto. Steps read as height: 1 barely lifts a surface, 6 floats a full-screen
+// overlay. One slate tint runs across the whole ramp — rgba($primary-text, …),
+// i.e. rgb(48,56,65), the brand text colour — replacing the old mix of pure-black,
+// slate, and warm shadows so every raised surface casts the same cool, on-brand
+// shadow. Documented in docs/design/elevation.md.
+//
+// Out of scope, kept bespoke (NOT on this ramp) — directional or multi-layer
+// shadows where the ramp geometry would be wrong: the two-layer add-ingredient
+// bar (index.scss), the horizontal off-canvas drawer (Recipes.scss), and the two
+// upward sticky-bar shadows (AccountStatusBanner / AddRecipeSummaryBar). The
+// coloured field-focus glows (`box-shadow: 0 0 0 3px …`) are their own concern —
+// they live in the `@mixin focus-glow()` below, not on this neutral ramp.
+$elevation-1: 0 1px 3px rgba($primary-text, 0.14); //   hairline — toggle knobs, faint insets
+$elevation-2: 0 2px 8px rgba($primary-text, 0.12); //   small — sticky nav, badges, chips
+$elevation-3: 0 6px 18px rgba($primary-text, 0.1); //   resting cards (RecipeCard, Home, panels)
+$elevation-4: 0 12px 28px rgba($primary-text, 0.14); // raised — hovers, dropdowns, popovers
+$elevation-5: 0 18px 50px rgba($primary-text, 0.22); // modals / dialogs
+$elevation-6: 0 24px 60px rgba($primary-text, 0.4); //  full-screen overlay backdrop
+
+// Colored brand "glow" shadows — accent shadows tinted to the brand hue for CTAs.
+// Kept separate from the neutral elevation ramp: these signal emphasis, not height.
+$shadow-brand: 0 8px 20px rgba($primary, 0.18); //        primary CTA hover glow
+$shadow-brand-strong: 0 6px 16px rgba($primary, 0.28); // stronger CTA glow; currently unreferenced (see docs/design/elevation.md)
+$shadow-teal: 0 8px 18px rgba($secondary, 0.3); //        teal auth-submit glow
+$shadow-danger: 0 8px 20px rgba($error-red, 0.22); //     danger CTA hover glow
+
+// ── Hover motion ─────────────────────────────────────────────────────────────
+// One shared "how a surface reacts to your cursor" language (the button-system's
+// hover normalization — "Lift"). Buttons rise $hover-lift, cards rise the larger
+// $hover-lift-card, both eased over $hover-timing; surfaced buttons (primary /
+// outline / danger) also gain a shadow, while ghost stays flat (it has no surface
+// to raise). Orange FILL buttons additionally lighten by the single $hover-brighten
+// (so the fill responds to the cursor, lighter — not darker). Under
+// `prefers-reduced-motion` (index.scss) the lift still applies but its transition
+// duration collapses to ~0, so it snaps into place with no animation.
+// Replaces the old ad-hoc mix of -1/-2/-3/-4px lifts and six brightness magnitudes
+// (now one canonical lighten) and scattered 0.1–0.3s timings. Documented in
+// docs/design/button-hover-audit.md.
+$hover-lift: -2px; //        buttons rise this far on hover
+$hover-lift-card: -4px; //   cards rise this far on hover
+$hover-timing: 0.15s ease; // single duration/easing token for hover motion
+$hover-brighten: brightness(1.06); // the one canonical "lighten on hover" for orange fills
+
+// Chrome (navbar + footer) hover timing. Snappier than $hover-timing, and the
+// chrome dialect is deliberately FLAT — its hovers give colour/fill feedback but
+// never lift (a -2px lift belongs to content on a page, not a fixed bar). One
+// timing for the whole nav/footer surface. See docs/scss-conventions.md.
+$nav-timing: 0.12s ease;
 
 $font-family: 'Montserrat', sans-serif;
+
+// ── Type scale ───────────────────────────────────────────────────────────────
+// A 10-step modular scale that the app's ~490 ad-hoc `font-size:` literals
+// collapse onto. Steps are anchored on the frequency peaks already in use, so
+// the most-common sizes (.85/.95/1/1.25rem) are kept verbatim and the long tail
+// of near-dupes (drift like .82≈.85, .9≈.95, 1.4≈1.5) normalizes onto the
+// nearest step — an intentional, documented collapse (the biggest single shift
+// is 2.8px, the typical one ≤0.8px). `rem` so the scale honours the user's root
+// font size. Documented in docs/design/type-scale.md.
+//
+// Out of scope (kept bespoke, NOT on this scale): the PrintableRecipe `pt` print
+// scale, the About `clamp()` fluid headings, the 404/PublicProfile giant display
+// numerals, and the icon-relative `em` sizes.
+$text-caption: 0.72rem; // 11.5px — tiny meta: timestamps, counts, eyebrow labels
+$text-fine: 0.78rem; //    12.5px — small meta / dense secondary text
+$text-sm: 0.85rem; //      13.6px — small UI: pills, chips, helper text (most common)
+$text-base: 0.95rem; //    15.2px — default body / paragraph text
+$text-md: 1rem; //         16px   — emphasized body, standard control text
+$text-lg: 1.125rem; //     18px   — lead paragraphs, large controls
+$text-xl: 1.25rem; //      20px   — card titles, sub-headings
+$text-2xl: 1.5rem; //      24px   — section headings (h3)
+$text-3xl: 1.875rem; //    30px   — page headings (h2)
+$text-4xl: 2.25rem; //     36px   — hero / top-level headings (h1)
+
+// Responsive breakpoints. Canonical "down" (max-width) tiers, anchored on the
+// values already used most across the app. Queries reach them through the
+// below()/above()/between() mixins so the breakpoint list lives in one place.
+// Tuned one-offs (the recipe page's 700/720/820, isolated 500/520/850, and the
+// DesktopNav 860/1000/1080/1240 cascade) pass a literal px to the mixins and
+// keep their exact values; convergence of those is a separate design call
+// (see docs/BACKLOG.md).
+$bp-xs: 375px;
+$bp-sm: 450px;
+$bp-md: 560px;
+$bp-lg: 600px;
+$bp-xl: 640px;
+$bp-2xl: 768px;
+$bp-3xl: 900px;
+$bp-4xl: 1100px;
+// Navbar flip — a complementary max/min pair kept distinct from the content
+// scale (the nav reflows on its own breakpoint, not a content one).
+$bp-nav: 725px;
+$bp-nav-up: 726px;
+
+@mixin below($bp) {
+  @media screen and (max-width: $bp) { @content; }
+}
+@mixin above($bp) {
+  @media screen and (min-width: $bp) { @content; }
+}
+@mixin between($min, $max) {
+  @media screen and (min-width: $min) and (max-width: $max) { @content; }
+}
+
+// ── Focus affordances ────────────────────────────────────────────────────────
+// Two distinct focus signals, deliberately kept separate:
+//
+//   @mixin outline()    — the accessibility keyboard-focus ring (blue, outline-
+//                         style: auto), shown on :focus-visible. One ring on every
+//                         control; see "Focus rings" in docs/scss-conventions.md.
+//   @mixin focus-glow() — the soft coloured halo a *form field* casts while
+//                         focused (paired with a border-colour shift), typically on
+//                         :focus / :focus-within — and as the :focus-visible ring
+//                         where a field's glow doubles as its keyboard indicator
+//                         (WCAG 2.4.7). Fixed 3px spread; the tint follows the
+//                         field's accent — teal $secondary by default, or $primary
+//                         / $error-red / a success green for branded & validation
+//                         states. Documented in docs/scss-conventions.md.
+@mixin focus-glow($color: $secondary, $opacity: 0.15) {
+  box-shadow: 0 0 0 3px rgba($color, $opacity);
+}
 
 @mixin outline() {
   outline-color: #4d90fe;

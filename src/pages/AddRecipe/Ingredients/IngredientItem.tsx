@@ -1,34 +1,34 @@
-import React, { Dispatch, SetStateAction, FC, useState, useRef } from 'react'
+import { AlertCircleIcon, CloseIcon, DragIcon, RotateCwIcon, ShoppingBasketIcon } from 'src/Components/icons'
+import React, { FC, useState, useRef, useEffect } from 'react'
 import { DraggableProvided, DraggableStateSnapshot } from '@hello-pangea/dnd'
-import { CiShoppingBasket } from 'react-icons/ci'
-import { MdDragIndicator } from 'react-icons/md'
-import { AiOutlineClose } from 'react-icons/ai'
 import Skeleton from 'react-loading-skeleton'
-import RecipeAPI from 'src/api/recipes'
-import { getIndexById } from 'src/util/getIndexById'
+import { skeletonBase as skeletonColor, spinnerColor } from 'src/util/loadingStyles'
+import { toast } from 'react-hot-toast'
+import RecipeAPI, { INGREDIENT_RATE_LIMIT_CODE } from 'src/api/recipes'
 import { IngredientsType } from 'types'
-import RecipeFormInput from 'src/pages/AddRecipe/RecipeFormInput'
+import FormInput from 'src/Components/Form/FormInput'
+import {
+  IngredientEnrichTimeoutError,
+  withTimeout,
+} from 'src/pages/AddRecipe/Ingredients/ingredientEnrichment'
+import { IngredientStatus } from 'src/pages/AddRecipe/Ingredients/ingredientEnrichment'
 import '../ListComponents/Item.scss'
 import { TailSpin } from 'react-loader-spinner'
-import styles from 'src/_exports.module.scss'
 import IngredientItemText from 'src/Components/IngredientItemText/IngredientItemText'
 
-const skeletonColor = '#d6d6d6'
 
 type IngredientItemProps = {
   ingredients: IngredientsType[]
   ingredient?: IngredientsType
-  setLoading: Dispatch<
-    SetStateAction<{
-      isLoading: boolean
-      index: number
-    }>
-  >
+  // Sets this row's enrichment status by id (see IngredientsContainer).
+  setItemStatus: (id: string, status: IngredientStatus | null) => void
   loading?: boolean
+  errored?: boolean
   provided?: DraggableProvided
   snapshot?: DraggableStateSnapshot
   removeIngredient: (id: string) => void
-  setIngredients: Dispatch<SetStateAction<IngredientsType[]>>
+  retryIngredient: (id: string) => void
+  setIngredients: React.Dispatch<React.SetStateAction<IngredientsType[]>>
 }
 
 // Per-ingredient price label from the enriched parser data. Returns '—' when
@@ -48,11 +48,13 @@ const priceLabel = (ingredient?: IngredientsType): string => {
 const IngredientItem: FC<IngredientItemProps> = ({
   ingredients,
   ingredient,
-  setLoading,
+  setItemStatus,
   loading,
+  errored,
   provided,
   snapshot,
   removeIngredient,
+  retryIngredient,
   setIngredients,
 }) => {
   const [isEditing, setIsEditing] = useState(false)
@@ -64,10 +66,59 @@ const IngredientItem: FC<IngredientItemProps> = ({
     return ingredient.parsedIngredient.originalIngredientString
   })
   const editInputRef = useRef<HTMLInputElement>(null)
+  // handleEditSubmit ends by programmatically blur()-ing the input (so a
+  // keyboard Enter-submit also exits edit mode visually). That blur()
+  // synchronously re-fires the same FormInput's onBlur, which is also wired
+  // to submit — without a guard, every Enter-submit double-invokes
+  // handleEditSubmit against the same stale closed-over editedVal/ingredient
+  // (double network call, double toast). This ref is flipped immediately
+  // before the self-triggered blur() and consumed by handleBlur below, so
+  // only a genuine user blur (click-away while editing) reaches
+  // handleEditSubmit a second time.
+  const suppressNextBlurSubmitRef = useRef(false)
+  // Guards handleEditSubmit's async path (the getIngredientData enrichment
+  // await) against re-entry. Set synchronously at the top of handleEditSubmit
+  // — before the first await — and cleared in a finally, so it's already true
+  // for the whole pending window. Without it: (a) a genuine blur-away while
+  // the row is still awaiting enrichment slips past suppressNextBlurSubmitRef
+  // (that flag only guards the submit's own trailing self-blur, not a real
+  // user blur) and fires a second, fully duplicate submit against the same
+  // stale editedVal; (b) a rapid double-Enter does the same via onEnter. Both
+  // mean a duplicate network call, a duplicate 429 toast, and doubled
+  // rate-limit consumption. A ref (not state) because it's read/written
+  // synchronously inside event handlers and never needs to trigger a render.
+  const isSubmittingRef = useRef(false)
+
+  // When enrichment last 429'd, hold retryAt (epoch ms) here so the retry
+  // button can disable itself instead of immediately re-429ing. Sourced from
+  // ingredient.error on mount/prop-change (the add path sets it via
+  // getIngredientData); the edit path below sets it directly on a fresh 429.
+  const rowRetryAt =
+    ingredient && 'error' in ingredient && ingredient.error?.code === INGREDIENT_RATE_LIMIT_CODE
+      ? ingredient.error.retryAt
+      : undefined
+  const [isRateLimited, setIsRateLimited] = useState(
+    () => !!rowRetryAt && rowRetryAt > Date.now()
+  )
+  // Re-sync when the row's error changes (e.g. a fresh 429 on retry/edit) and
+  // self-clear once retryAt passes, so the button re-enables without any
+  // outside trigger.
+  useEffect(() => {
+    if (!rowRetryAt || rowRetryAt <= Date.now()) {
+      setIsRateLimited(false)
+      return
+    }
+    setIsRateLimited(true)
+    const timer = setTimeout(() => setIsRateLimited(false), rowRetryAt - Date.now())
+    return () => clearTimeout(timer)
+  }, [rowRetryAt])
+
   const renderIngredientText = () => {
     if (typeof ingredient !== 'undefined' && 'parsedIngredient' in ingredient) {
       const {
         quantity,
+        minQty,
+        maxQty,
         unit,
         ingredient: ingredientName,
         comment,
@@ -75,6 +126,8 @@ const IngredientItem: FC<IngredientItemProps> = ({
       return (
         <IngredientItemText
           quantity={quantity}
+          minQty={minQty}
+          maxQty={maxQty}
           unit={unit}
           ingredientName={ingredientName}
           comment={comment}
@@ -85,6 +138,12 @@ const IngredientItem: FC<IngredientItemProps> = ({
   }
   const handleIngrClick = () => {
     if (editInputRef?.current) {
+      // A genuine blur-away submit leaves the suppress flag set: focus has
+      // already left the input by the time handleEditSubmit runs, so its
+      // trailing self-blur() no-ops on the already-blurred element (no event)
+      // and never consumes the flag. Reset on edit-entry so stale suppression
+      // can't swallow the next session's genuine blur-away.
+      suppressNextBlurSubmitRef.current = false
       setIsEditing(true)
       editInputRef.current.focus()
     }
@@ -95,33 +154,80 @@ const IngredientItem: FC<IngredientItemProps> = ({
     )
   }
   const handleEditSubmit = async () => {
-    if (!editedVal || !ingredient) {
+    // Re-entry guard: a second call (rapid double-Enter, or a genuine
+    // blur-away that races the pending enrichment await below) while a
+    // submit is already in flight is dropped. Set before any await so it's
+    // already true for the entire pending window — see isSubmittingRef above.
+    if (isSubmittingRef.current) return
+    isSubmittingRef.current = true
+    try {
+      if (!editedVal || !ingredient) {
+        setIsEditing(false)
+        return
+      }
+
+      const isLabel = 'label' in ingredient
+
+      if (isLabel && ingredient.label !== editedVal) {
+        editIngredient(ingredient.id, { label: editedVal, id: ingredient.id })
+      } else if (
+        !isLabel &&
+        ingredient.parsedIngredient.originalIngredientString !== editedVal
+      ) {
+        const id = ingredient.id
+        setItemStatus(id, 'loading')
+        try {
+          // Same timeout/exit guard as the add path: getIngredientData soft-fails
+          // but can't protect against a request that never settles, so race it
+          // against a wall clock.
+          const ingredientDataRes = await withTimeout(
+            RecipeAPI.getIngredientData(editedVal)
+          )
+          editIngredient(id, { ...ingredientDataRes })
+          const rowError =
+            'error' in ingredientDataRes ? ingredientDataRes.error : undefined
+          setItemStatus(id, rowError ? 'error' : null)
+          // Same honest-messaging branch as the add path: a 429 is a distinct,
+          // expected condition, not a generic miss, so it gets its own toast
+          // instead of silently landing on the row.
+          if (rowError?.code === INGREDIENT_RATE_LIMIT_CODE) {
+            toast.error(
+              `"${editedVal}" hit the ingredient lookup limit — wait a moment before retrying.`
+            )
+          }
+        } catch (err: unknown) {
+          const timedOut = err instanceof IngredientEnrichTimeoutError
+          setItemStatus(id, 'error')
+          toast.error(
+            timedOut
+              ? `"${editedVal}" is taking too long to look up — kept without nutrition data. Retry or edit it.`
+              : `Couldn't fetch data for "${editedVal}" — kept without it. Retry or edit it.`
+          )
+        }
+      }
+
       setIsEditing(false)
+      suppressNextBlurSubmitRef.current = true
+      editInputRef?.current?.blur()
+    } finally {
+      isSubmittingRef.current = false
+    }
+  }
+
+  // Wired to FormInput's onBlur. Genuine blur-away (clicking elsewhere while
+  // editing) should still submit; the blur() handleEditSubmit triggers on
+  // itself should not resubmit — see suppressNextBlurSubmitRef above. A blur
+  // that lands while a submit is already pending (isSubmittingRef) is also
+  // dropped rather than firing a second submit; the in-flight submit's own
+  // post-await tail (setIsEditing(false), etc.) is what exits edit mode, so
+  // dropping this blur doesn't leave the row stuck open.
+  const handleBlur = () => {
+    if (suppressNextBlurSubmitRef.current) {
+      suppressNextBlurSubmitRef.current = false
       return
     }
-
-    const isLabel = 'label' in ingredient
-
-    if (isLabel && ingredient.label !== editedVal) {
-      editIngredient(ingredient.id, { label: editedVal, id: ingredient.id })
-    } else if (
-      !isLabel &&
-      ingredient.parsedIngredient.originalIngredientString !== editedVal
-    ) {
-      const currIndex = getIndexById(ingredients, ingredient.id)
-      setLoading({ isLoading: true, index: currIndex })
-      const ingredientDataRes = await RecipeAPI.getIngredientData(editedVal)
-      // Phase A: soft-fail by design — whether enrichment succeeded or returned
-      // an error variant, we overwrite the existing ingredient with the new
-      // parse result so the edit takes effect either way. The error is carried
-      // through on the IngredientsType payload itself; no extra handling needed
-      // here.
-      editIngredient(ingredient.id, { ...ingredientDataRes })
-      setLoading({ isLoading: false, index: -1 })
-    }
-
-    setIsEditing(false)
-    editInputRef?.current?.blur()
+    if (isSubmittingRef.current) return
+    handleEditSubmit()
   }
 
   if (!ingredient) return null
@@ -133,7 +239,7 @@ const IngredientItem: FC<IngredientItemProps> = ({
       ref={provided?.innerRef}
       className={`ingredients-container item ingredient-row ${
         snapshot?.isDragging ? 'dragging' : ''
-      }`}
+      } ${errored ? 'errored' : ''}`}
       {...provided?.draggableProps}
     >
       {/* Always-visible drag handle (the only drag target, so the row text
@@ -143,7 +249,7 @@ const IngredientItem: FC<IngredientItemProps> = ({
         aria-label='Drag to reorder'
         {...provided?.dragHandleProps}
       >
-        <MdDragIndicator className='icon' />
+        <DragIcon className='icon' />
       </div>
 
       {isEditing ? null : isParsed ? (
@@ -160,18 +266,14 @@ const IngredientItem: FC<IngredientItemProps> = ({
                     alt=''
                   />
                 ) : (
-                  <CiShoppingBasket className='img no-img' />
+                  <ShoppingBasketIcon className='img no-img' />
                 )}
               </>
             )}
           </div>
-          <div className='text-container'>
-            {loading ? (
-              <Skeleton baseColor={skeletonColor} height={25} width={'35ch'} />
-            ) : (
-              renderIngredientText()
-            )}
-          </div>
+          {/* Optimistic: the parsed text is available locally, so show it
+              immediately even while enrichment (image/price) is still loading. */}
+          <div className='text-container'>{renderIngredientText()}</div>
         </button>
       ) : (
         <button className='label-text-container' onClick={handleIngrClick}>
@@ -179,7 +281,29 @@ const IngredientItem: FC<IngredientItemProps> = ({
         </button>
       )}
 
-      {!isEditing && isParsed && (
+      {!isEditing && isParsed && errored && !loading && (
+        <button
+          type='button'
+          className='ingr-retry'
+          aria-label='Retry ingredient lookup'
+          title={
+            isRateLimited
+              ? 'Rate limited — please wait a moment before retrying'
+              : "Couldn't fetch nutrition data — retry"
+          }
+          disabled={isRateLimited}
+          onClick={e => {
+            e.stopPropagation()
+            if (isRateLimited) return
+            retryIngredient(ingredient.id)
+          }}
+        >
+          <AlertCircleIcon className='icon warn' />
+          <RotateCwIcon className='icon retry' />
+        </button>
+      )}
+
+      {!isEditing && isParsed && !errored && (
         <span className={`ingr-price ${loading ? 'na' : ''}`}>
           {loading ? '' : priceLabel(ingredient)}
         </span>
@@ -193,16 +317,17 @@ const IngredientItem: FC<IngredientItemProps> = ({
           removeIngredient(ingredient.id)
         }}
       >
-        <AiOutlineClose className='icon' />
+        <CloseIcon className='icon' />
       </button>
 
       {!snapshot?.isDragging && (
         <div className={`${isEditing ? 'edit-input' : 'hidden'}`}>
-          <RecipeFormInput
+          <FormInput
+            size='compact'
             val={editedVal}
             setVal={setEditedVal}
             inputRef={editInputRef}
-            onBlur={handleEditSubmit}
+            onBlur={handleBlur}
             onEnter={handleEditSubmit}
           />
           {loading && (
@@ -210,7 +335,7 @@ const IngredientItem: FC<IngredientItemProps> = ({
               <TailSpin
                 height='20'
                 width='20'
-                color={styles.primaryText}
+                color={spinnerColor}
                 ariaLabel='loading'
               />
             </div>

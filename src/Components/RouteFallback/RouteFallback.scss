@@ -1,0 +1,7 @@
+.route-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  // Tall enough that the footer doesn't jump into the viewport mid-load.
+  min-height: 60vh;
+}

@@ -1,18 +1,31 @@
+import { MapPinIcon, UserIcon } from 'src/Components/icons'
 import React, { ChangeEvent, FC, useEffect, useState } from 'react'
+import { Helmet } from 'react-helmet-async'
 import '../../Components/Form/FormStyles.scss'
 import './CreateUsername.scss'
 import { TailSpin } from 'react-loader-spinner'
+import { spinnerColor } from 'src/util/loadingStyles'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import UsernameInput from 'src/Components/Form/UsernameInput'
+import FormInput from 'src/Components/Form/FormInput'
 import AuthAPI from 'src/api/auth'
+import { getApiErrorMessage } from 'src/util/getApiErrorMessage'
 import { useAuth } from 'src/context/AuthContext'
+
+const BIO_MAX = 300
+const LOCATION_MAX = 80
 
 const CreateUsername: FC = () => {
   const [currUsername, setCurrUsername] = useState('')
   const [isUsernameAvailable, setIsUsernameAvailable] = useState<
     boolean | null
   >(null)
+
+  // Optional profile details — username is the only required field.
+  const [displayName, setDisplayName] = useState('')
+  const [bio, setBio] = useState('')
+  const [location, setLocation] = useState('')
 
   const [loadingCreateUsername, setLoadingCreateUsername] = useState(false)
   // Block rendering the form until we've confirmed the user actually needs it,
@@ -52,12 +65,11 @@ const CreateUsername: FC = () => {
     }
   }, [authLoading, user, navigate])
 
-  const handleCreateUsernameForm = (e: ChangeEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: ChangeEvent<HTMLFormElement>) => {
     e.preventDefault()
 
-    const uid = user?.uid
-    if (!uid) {
-      setError('You must be signed in to create a username.')
+    if (!user?.uid) {
+      setError('You must be signed in to continue.')
       return
     }
     if (!isUsernameAvailable) return
@@ -65,25 +77,42 @@ const CreateUsername: FC = () => {
     setLoadingCreateUsername(true)
     setError('')
 
-    AuthAPI.setUsername(currUsername)
-      .then(() => {
+    // Username first (the required identity); optional details only when filled.
+    // Each step is independent so a failure surfaces its own message.
+    ;(async () => {
+      try {
+        await AuthAPI.setUsername(currUsername)
+        if (displayName.trim()) {
+          // Moderated server-side before it's set on the Firebase Auth profile
+          // (a rejected name throws and surfaces below); reload to reflect it.
+          await AuthAPI.updateDisplayName(displayName.trim())
+          await user.reload()
+        }
+        if (bio.trim() || location.trim()) {
+          await AuthAPI.updateProfile({
+            bio: bio.trim(),
+            location: location.trim(),
+          })
+        }
         setLoadingCreateUsername(false)
         // A toast (rendered at the app root) survives the redirect, unlike an
         // inline message on a page we immediately navigate away from.
-        toast.success('Username created successfully!')
+        toast.success('Welcome to Prepify!')
         navigate('/')
-      })
-      .catch((error: unknown) => {
+      } catch (err: unknown) {
         setLoadingCreateUsername(false)
-        setError(error instanceof Error ? error.message : String(error))
-      })
+        // Prefer the server's reason (e.g. a 422 moderation block on the
+        // username) over axios's generic "Request failed with status code 422".
+        setError(getApiErrorMessage(err, 'Something went wrong. Please try again.'))
+      }
+    })()
   }
 
   if (authLoading || checkingExisting) {
     return (
       <div className='create-username-page form-format'>
         <div className='login-form-container loading-state'>
-          <TailSpin height='50' width='50' color='gray' ariaLabel='loading' />
+          <TailSpin height='50' width='50' color={spinnerColor} ariaLabel='loading' />
         </div>
       </div>
     )
@@ -91,13 +120,21 @@ const CreateUsername: FC = () => {
 
   return (
     <div className='create-username-page form-format'>
+      <Helmet>
+        <title>Choose a Username · Prepify</title>
+        <meta name='robots' content='noindex' />
+      </Helmet>
       <div className='login-form-container'>
-        <form onSubmit={handleCreateUsernameForm} className='form'>
-          <h1 className='title'>One last step...</h1>
+        <div className='brand-mark'>P</div>
+        <form onSubmit={handleSubmit} className='form'>
+          <h1 className='title'>Finish your profile</h1>
           <p className='prompt'>
-            Create a unique username to identify yourself with.
+            Pick a username to get started — everything else is optional and you
+            can change it anytime.
           </p>
-          {error ? <div className='error'>{error}</div> : null}
+          <div aria-live='polite'>
+            {error ? <div className='error'>{error}</div> : null}
+          </div>
           <div className='input-fields'>
             <UsernameInput
               username={currUsername}
@@ -107,20 +144,62 @@ const CreateUsername: FC = () => {
               isUsernameAvailable={isUsernameAvailable}
               setIsUsernameAvailable={setIsUsernameAvailable}
             />
+
+            <div className='optional-divider'>
+              <span>Optional</span>
+            </div>
+
+            <FormInput
+              icon={<UserIcon className='icon' />}
+              type='text'
+              name='display-name'
+              label='Display name'
+              autoComplete='name'
+              required={false}
+              val={displayName}
+              setVal={setDisplayName}
+              placeholder='John Smith'
+            />
+            <FormInput
+              icon={<MapPinIcon className='icon' />}
+              type='text'
+              name='location'
+              label='Location'
+              autoComplete='off'
+              required={false}
+              maxLength={LOCATION_MAX}
+              val={location}
+              setVal={setLocation}
+              placeholder='Toronto, Canada'
+            />
+            <label className='form-input form-input--md'>
+              <span className='label-title'>Bio</span>
+              <textarea
+                className='form-textarea'
+                value={bio}
+                onChange={e => setBio(e.target.value)}
+                placeholder='Tell others a little about yourself'
+                maxLength={BIO_MAX}
+                rows={3}
+              />
+              <span className='input-hint input-hint--ok'>
+                {bio.length}/{BIO_MAX}
+              </span>
+            </label>
           </div>
           <button
             className='form-action-btn btn'
-            disabled={loadingCreateUsername}
+            disabled={loadingCreateUsername || !isUsernameAvailable}
           >
             {loadingCreateUsername ? (
               <TailSpin
-                height='30'
-                width='30'
+                height='28'
+                width='28'
                 color='white'
                 ariaLabel='loading'
               />
             ) : (
-              'Create Username'
+              'Continue'
             )}
           </button>
           <button

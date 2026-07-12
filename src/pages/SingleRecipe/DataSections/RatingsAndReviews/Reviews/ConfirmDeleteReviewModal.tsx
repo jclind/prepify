@@ -1,6 +1,9 @@
 import React, { FC, useState } from 'react'
 import { TailSpin } from 'react-loader-spinner'
+import { spinnerColor } from 'src/util/loadingStyles'
 import Modal from 'react-modal'
+import toast from 'react-hot-toast'
+import { panelModalStylesWith } from 'src/util/modalStyles'
 
 type ConfirmDeleteReviewModalProps = {
   deleteModalIsOpen: boolean
@@ -8,30 +11,6 @@ type ConfirmDeleteReviewModalProps = {
   handleDeleteReview: () => Promise<void>
 }
 
-const customStyles = {
-  content: {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    right: 'auto',
-    bottom: 'auto',
-    marginRight: '-50%',
-    transform: 'translate(-50%, -50%)',
-
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'center',
-    alignItems: 'center',
-
-    background: '#eeeeee',
-    padding: '2.5rem',
-    borderRadius: '5px',
-  },
-  overlay: {
-    zIndex: '1000',
-    background: 'rgba(0, 0, 0, 0.5)',
-  },
-}
 const ConfirmDeleteReviewModal: FC<ConfirmDeleteReviewModalProps> = ({
   deleteModalIsOpen,
   setDeleteModalIsOpen,
@@ -46,35 +25,46 @@ const ConfirmDeleteReviewModal: FC<ConfirmDeleteReviewModalProps> = ({
     <Modal
       isOpen={deleteModalIsOpen}
       onRequestClose={closeModal}
-      style={customStyles}
+      style={panelModalStylesWith({
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+      })}
       className='delete-modal'
     >
-      <div className='heading'>
-        Are you sure you want to delete your review?
-      </div>
-      <p className='text'>This action is permanent and cannot be undone.</p>
+      <div className='heading'>Delete your review?</div>
+      {/* deleteReview only clears the written text — the star rating survives
+          until removed on its own — so the copy must not claim otherwise. */}
+      <p className='text'>
+        Your written review will be permanently removed. Your star rating stays
+        until you remove it.
+      </p>
       <div className='options'>
-        <button className='cancel btn' onClick={closeModal}>
+        <button className='cancel btn btn--outline' onClick={closeModal}>
           Cancel
         </button>
         <button
-          className='delete btn'
+          className='delete btn btn--danger-solid'
           onClick={() => {
             setDeleteLoading(true)
-            handleDeleteReview().catch((error: unknown) => {
+            handleDeleteReview().catch(() => {
+              // Surface the failure to the user (and keep the modal open to
+              // retry) instead of failing silently — matches the rating
+              // controls' toast pattern in useOwnRating.
               setDeleteLoading(false)
-              console.log(error)
+              toast.error('Could not delete your review. Please try again.')
             })
           }}
           disabled={deleteLoading}
         >
-          Delete
+          Delete review
           {deleteLoading && (
             <div className='btn-overlay'>
               <TailSpin
                 height='30'
                 width='30'
-                color='#303841'
+                color={spinnerColor}
                 ariaLabel='loading'
               />
             </div>

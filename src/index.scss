@@ -1,5 +1,6 @@
 @use './helpers.scss' as s;
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,700&display=swap');
+// fallow-ignore-next-line unresolved-import
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,700&display=swap');
 
 * {
   font-family: s.$font-family;
@@ -24,20 +25,20 @@ body {
   color: s.$primary-text;
   position: relative;
   width: 100%;
-  background: s.$primary-background;
+  background: s.$page-bg;
 }
 
 h2 {
   font-weight: 600;
-  font-size: 1.5rem;
+  font-size: s.$text-2xl;
 }
 h3 {
   font-weight: 500;
-  font-size: 1.5rem;
+  font-size: s.$text-2xl;
 }
 h4 {
   font-weight: 500;
-  font-size: 1.125rem;
+  font-size: s.$text-lg;
 }
 p {
   line-height: 1.75;
@@ -48,56 +49,225 @@ input {
     color: s.$tertiary-text;
   }
 }
+// Show the focus ring for keyboard navigation only (`:focus-visible`), not for
+// mouse/touch clicks. Keyboard users still get a clear indicator on Tab; a plain
+// pointer click no longer leaves an outline behind. Modern browsers already drive
+// their default ring off the same heuristic, so no `:focus` fallback is needed.
 button {
-  &:focus {
+  // Every button reads as clickable. Bare <button>s otherwise fall back to the
+  // UA default arrow (only `.btn` set a cursor), so non-`.btn` buttons across the
+  // app looked non-interactive. Disabled buttons keep the default arrow; a
+  // component may still override (e.g. `not-allowed`).
+  cursor: pointer;
+  &:disabled {
+    cursor: default;
+  }
+  &:focus-visible {
     @include s.outline();
   }
 }
 a {
-  &:focus {
+  &:focus-visible {
     @include s.outline();
   }
 }
 
-.btn {
-  background: none;
-  outline: none;
-  border: none;
-  cursor: pointer;
-  font-size: 1.5rem;
-  font-weight: 500;
-  color: s.$primary-text;
+// Visually hidden but exposed to assistive tech — for headings/labels that give
+// screen-reader structure without altering the visual layout.
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
-.action-btn {
-  padding: 0.75rem 1.5rem;
-  border: 2px solid s.$primary-text;
-  border-radius: s.$border-radius;
-  transition: all 0.1s linear;
 
-  &:hover {
-    border: 2px solid s.$primary;
-    background: s.$primary;
+// Flash-guard hold for skeletons (see useDelayedLoading / loading-states.md):
+// skeletons are rendered while loading so their container reserves full height
+// from the first frame (no grow-on-appear jump), but stay unpainted until the
+// delay elapses. visibility (not display) keeps the layout box intact.
+.sk-hold { visibility: hidden; }
+
+// Honor the OS "reduce motion" setting globally: near-instant animations and
+// transitions (the nav condense, star hover, skip-link slide, modal fades, …)
+// for users who've opted out of motion. Opt-in only — the default experience is
+// unchanged. Functional transforms still apply; only their duration collapses.
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
   }
+}
+
+// ── Button system ──────────────────────────────────────────────────────────
+// One pill `.btn` base + BEM modifiers. See docs/design/button-system.md.
+// Base = reset + inline-flex layout + default (md) size + pill shape. Compose
+// with a colour variant (`.btn--primary` etc.) and, optionally, a size
+// (`.btn--sm`/`.btn--lg`/`.btn--block`). The :focus-visible ring is provided
+// globally by the `button` rule above — variants never re-declare focus.
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  white-space: nowrap;
+  line-height: 1;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: s.$text-base;
+  padding: 0.6rem 1.3rem;
+  color: s.$primary-text;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: s.$radius-pill;
+  cursor: pointer;
+  // Motion tokens: $hover-timing (0.15s ease) drives every hover property so the
+  // lift, colour, shadow and filter all ease together. See button-hover-audit.md.
+  transition: background-color s.$hover-timing, border-color s.$hover-timing,
+    color s.$hover-timing, transform s.$hover-timing, box-shadow s.$hover-timing,
+    filter s.$hover-timing;
+
+  svg {
+    font-size: 1.1em;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+// Sizes (default = md, baked into `.btn`)
+.btn--sm {
+  padding: 0.45rem 0.95rem;
+  font-size: s.$text-sm;
+}
+.btn--lg {
+  padding: 0.7rem 1.6rem;
+  font-size: s.$text-md;
+}
+.btn--block {
+  width: 100%;
+}
+
+// Colour variants
+// Hover "Lift": surfaced variants rise $hover-lift + gain a shadow; ghost stays
+// flat (no surface to raise). Motion eases via the base `.btn` transition.
+.btn--primary {
+  background: s.$primary;
+  border-color: s.$primary;
+  color: s.$white;
+
+  &:hover:not(:disabled) {
+    // Orange fill lightens (not darkens) on hover — the shared $hover-brighten.
+    filter: s.$hover-brighten;
+    transform: translateY(s.$hover-lift);
+    box-shadow: s.$shadow-brand;
+  }
+}
+.btn--outline {
+  background: s.$white;
+  border-color: s.$gray-400;
+  color: s.$primary-text;
+
+  &:hover:not(:disabled) {
+    border-color: s.$primary-text;
+    transform: translateY(s.$hover-lift);
+    box-shadow: s.$elevation-2;
+  }
+}
+.btn--ghost {
+  background: none;
+  border-color: transparent;
+  color: s.$secondary-text;
+
+  &:hover:not(:disabled) {
+    color: s.$primary-text;
+  }
+}
+.btn--danger {
+  background: s.$white;
+  border-color: s.$error-red;
+  color: s.$error-red;
+
+  &:hover:not(:disabled) {
+    background: s.$error-red;
+    color: s.$white;
+    transform: translateY(s.$hover-lift);
+    box-shadow: s.$shadow-danger;
+  }
+}
+.btn--danger-solid {
+  background: s.$error-red;
+  border-color: s.$error-red;
+  color: s.$white;
+
+  &:hover:not(:disabled) {
+    background: s.$error-red-hover;
+    border-color: s.$error-red-hover;
+    transform: translateY(s.$hover-lift);
+    box-shadow: s.$shadow-danger;
+  }
+}
+
+// Icon-only — square, circular; composes with a colour variant for its hover.
+.btn--icon {
+  padding: 0;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: s.$radius-circle;
 }
 
 .load-more-btn {
+  // One canonical "load more" for the whole app — recipes grid, saved, ratings,
+  // your-recipes, public profile, and the reviews list. Self-contained, deferred
+  // from the `.btn` system: supplies its own reset so it renders WITHOUT a `btn`
+  // class. `width: fit-content` + `margin: 0 auto` centres it standalone (the
+  // account pages render it bare) and it also centres inside a flex wrapper.
+  // Hover is the branded pill (orange border + text, lift, brand glow) that the
+  // /recipes grid used to define locally — now the single shared treatment.
   display: flex;
-  justify-content: center;
   align-items: center;
-  width: 250px;
-  height: 45px;
-  border: 1px solid s.$gray-400;
+  justify-content: center;
+  gap: 0.5rem;
+  width: fit-content;
   margin: 0 auto;
-  border-radius: s.$border-radius;
-  font-size: 1.3rem;
+  min-height: 3rem;
+  padding: 0.85rem 2.2rem;
+  background: s.$white;
+  color: s.$primary-text;
+  border: 1.5px solid s.$gray-400;
+  border-radius: s.$radius-pill;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: s.$text-base;
+  cursor: pointer;
   white-space: nowrap;
 
-  &:hover {
-    border-color: s.$tertiary-text;
+  transition: color s.$hover-timing, border-color s.$hover-timing,
+    transform s.$hover-timing, box-shadow s.$hover-timing;
+
+  svg {
+    font-size: s.$text-xl;
   }
 
-  @media screen and (max-width: 375px) {
-    font-size: 1.25rem;
+  &:hover:not(:disabled) {
+    color: s.$primary;
+    border-color: s.$primary;
+    transform: translateY(s.$hover-lift);
+    box-shadow: s.$shadow-brand;
+  }
+
+  &:disabled {
+    cursor: default;
   }
 }
 
@@ -118,19 +288,6 @@ a {
   gap: 2rem;
   height: 90vh;
   width: 100%;
-}
-
-.abs-logo {
-  top: 0;
-  left: 0;
-  right: 0;
-  margin: 0 auto;
-  height: s.$nav-height;
-  display: flex;
-  align-items: center;
-  position: absolute;
-  width: 90%;
-  max-width: s.$max-width;
 }
 
 .error,
@@ -194,7 +351,7 @@ a {
   border-radius: s.$border-radius;
 
   font-weight: 600;
-  font-size: 1rem;
+  font-size: s.$text-md;
 
   .content {
     flex: 1;
@@ -226,7 +383,7 @@ a {
   display: flex;
   justify-content: center;
   align-items: center;
-  font-size: 1.5rem;
+  font-size: s.$text-2xl;
   font-weight: 700;
   height: 100vh;
   width: 100%;
@@ -239,103 +396,13 @@ a {
   }
 }
 
-@media print {
-  ::-webkit-scrollbar {
-    width: 0px;
-    background: transparent; /* make scrollbar transparent */
-  }
-  body,
-  html,
-  .single-recipe-page {
-    height: 100% !important;
-    width: 100% !important;
-    display: inline-block;
-    overflow: visible !important;
-  }
-  #root {
-    height: 100% !important;
-    width: 100% !important;
-  }
-  .single-recipe-page {
-    position: fixed;
-    z-index: 1000;
-    top: 0;
-    left: 0;
-    height: 100%;
-    width: 100%;
-    margin: 0;
-    padding-top: 2rem;
-    background-color: white;
-    .recipe-container {
-      margin: 0 auto;
-      padding: 0;
-      .header-content {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        flex-direction: column;
-        margin: 0 auto;
-        width: 100%;
-        padding: 0;
-        .description-content {
-          display: flex;
-          justify-content: center;
-          flex-direction: column;
-          align-items: center;
-          margin: 0;
-          padding: 0;
-          min-height: 0px !important;
-          h1.title {
-            text-align: center;
-            margin: 0 auto;
-          }
-          .description {
-            text-align: center;
-            padding: 0 !important;
-            margin: 0 !important;
-          }
-          .recipe-data {
-            padding: 0 !important;
-            margin: 0 !important;
-            max-width: 400px !important;
-          }
-        }
-        .actions {
-          display: none !important;
-        }
-      }
-      .recipe-image-container {
-        display: none !important;
-      }
-    }
-  }
-  .ingredients,
-  .directions {
-    padding-left: 2rem;
-    box-sizing: border-box;
-  }
-  .directions {
-    display: block;
-    page-break-before: always;
-    .list {
-      page-break-before: always;
-      .direction {
-        page-break-before: always;
-        .content {
-          page-break-before: always;
-        }
-      }
-    }
-  }
-  .tags-container {
-    display: none;
-  }
-  .recipe-ratings {
-    display: none;
-  }
-}
+// Print styles live with the dedicated print component
+// (src/pages/SingleRecipe/PrintableRecipe/PrintableRecipe.scss), which
+// react-to-print clones into an isolated iframe. The previous global
+// `@media print` block targeted the pre-redesign SingleRecipe DOM and no longer
+// matched anything, so it was removed.
 
 // Dnd
 .dragging {
-  box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
+  box-shadow: s.$elevation-2;
 }

@@ -17,7 +17,7 @@
   border-radius: s.$border-radius;
   padding: 0.75rem 1.25rem;
 
-  @media screen and (max-width: 560px) {
+  @include s.below(s.$bp-md) {
     flex-direction: column;
     align-items: stretch;
     gap: 0.85rem;
@@ -31,13 +31,13 @@
     min-width: 0;
 
     .banner-title {
-      font-size: 0.95rem;
+      font-size: s.$text-base;
       font-weight: 600;
       color: s.$primary-text;
     }
 
     .banner-sub {
-      font-size: 0.85rem;
+      font-size: s.$text-sm;
       color: s.$tertiary-text;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -46,7 +46,7 @@
       // On phones a single ellipsed line cuts the title off almost immediately
       // (the "Pick up where you left off on …" prefix eats the width). Let it
       // wrap to a tidy two lines instead so the recipe name is actually visible.
-      @media screen and (max-width: 560px) {
+      @include s.below(s.$bp-md) {
         white-space: normal;
         display: -webkit-box;
         -webkit-line-clamp: 2;
@@ -55,7 +55,7 @@
     }
 
     // Keep the text clear of the corner dismiss button when stacked.
-    @media screen and (max-width: 560px) {
+    @include s.below(s.$bp-md) {
       padding-right: 1.75rem;
     }
   }
@@ -66,36 +66,41 @@
     gap: 1rem;
     flex-shrink: 0;
 
-    @media screen and (max-width: 560px) {
+    @include s.below(s.$bp-md) {
       width: 100%;
       gap: 0.85rem;
     }
 
+    // AA-orange CTA on the `.btn` base — kept off the generic `.btn--primary`
+    // (whose hover fails white-on-fill AA); these fills are AA-tuned.
     .resume-btn {
-      cursor: pointer;
-      font-size: 0.85rem;
+      font-size: s.$text-sm;
       font-weight: 600;
       white-space: nowrap;
       padding: 0.4rem 0.9rem;
-      border-radius: s.$border-radius;
-      border: 1px solid s.$primary;
-      background: s.$primary;
+      // AA on-light orange so the white label clears 4.5:1 (vivid #ff5722 fill
+      // is only 3.16:1). Hover is the shared Lift (rise + brand glow + lighten).
+      border: 1px solid s.$primary-accessible;
+      background: s.$primary-accessible;
       color: s.$white;
-      transition: filter 0.1s linear;
+      transition: filter s.$hover-timing, transform s.$hover-timing,
+        box-shadow s.$hover-timing;
 
       &:hover {
-        filter: brightness(108%);
+        filter: s.$hover-brighten;
+        transform: translateY(s.$hover-lift);
+        box-shadow: s.$shadow-brand;
       }
 
       // Comfortable full-width tap target on phones.
-      @media screen and (max-width: 560px) {
+      @include s.below(s.$bp-md) {
         flex: 1;
         padding: 0.6rem 0.9rem;
       }
     }
 
     .view-all {
-      font-size: 0.85rem;
+      font-size: s.$text-sm;
       color: s.$tertiary-text;
       text-decoration: none;
       white-space: nowrap;
@@ -115,14 +120,14 @@
       cursor: pointer;
       color: s.$tertiary-text;
       padding: 0.25rem;
-      font-size: 1rem;
+      font-size: s.$text-md;
 
       &:hover {
         color: s.$primary-text;
       }
 
       // Tuck into the top-right corner so the stacked layout reads cleanly.
-      @media screen and (max-width: 560px) {
+      @include s.below(s.$bp-md) {
         position: absolute;
         top: 0.5rem;
         right: 0.5rem;

@@ -105,6 +105,38 @@ describe('POST /api/drafts', () => {
     expect(res.body.code).toBe('DRAFT_LIMIT')
   })
 
+  it('holds the cap under concurrent POSTs (TOCTOU regression): 5 concurrent creates at 24 existing drafts land exactly 1, reject 4 with 409 DRAFT_LIMIT', async () => {
+    const now = Date.now().toString()
+    const mine = Array.from({ length: 24 }, (_, i) => ({
+      _id: new ObjectId(),
+      userId: TEST_UID,
+      title: `draft ${i}`,
+      createdAt: now,
+      updatedAt: now,
+    }))
+    await getDB().collection('recipeDrafts').insertMany(mine)
+
+    const responses = await Promise.all(
+      Array.from({ length: 5 }, (_, i) =>
+        request(app)
+          .post('/api/drafts')
+          .set(AUTH_HEADER)
+          .send({ title: `concurrent ${i}` })
+      )
+    )
+
+    const succeeded = responses.filter((res) => res.status === 201)
+    const rejected = responses.filter((res) => res.status === 409)
+    expect(succeeded).toHaveLength(1)
+    expect(rejected).toHaveLength(4)
+    rejected.forEach((res) => expect(res.body.code).toBe('DRAFT_LIMIT'))
+
+    const finalCount = await getDB()
+      .collection('recipeDrafts')
+      .countDocuments({ userId: TEST_UID })
+    expect(finalCount).toBe(25)
+  })
+
   it('still allows editing an existing draft when at the cap', async () => {
     const now = Date.now().toString()
     const mine = Array.from({ length: 25 }, (_, i) => ({
@@ -119,7 +151,7 @@ describe('POST /api/drafts', () => {
     const res = await request(app)
       .put(`/api/drafts/${mine[0]._id}`)
       .set(AUTH_HEADER)
-      .send({ title: 'edited at cap' })
+      .send({ title: 'edited at cap', updatedAt: now })
     expect(res.status).toBe(200)
     expect(res.body.title).toBe('edited at cap')
   })
@@ -179,7 +211,7 @@ describe('PUT /api/drafts/:id', () => {
     const res = await request(app)
       .put(`/api/drafts/${draft._id}`)
       .set(AUTH_HEADER)
-      .send({ title: 'after', servings: 4 })
+      .send({ title: 'after', servings: 4, updatedAt: '1000' })
     expect(res.status).toBe(200)
     expect(res.body.title).toBe('after')
     expect(res.body.servings).toBe(4)
@@ -200,10 +232,50 @@ describe('PUT /api/drafts/:id', () => {
     const res = await request(app)
       .put(`/api/drafts/${draft._id}`)
       .set(AUTH_HEADER)
-      .send({ title: 'x', userId: 'other-uid', createdAt: '999' })
+      .send({
+        title: 'x',
+        userId: 'other-uid',
+        createdAt: '999',
+        updatedAt: draft.updatedAt,
+      })
     expect(res.status).toBe(200)
     expect(res.body.userId).toBe(TEST_UID)
     expect(res.body.createdAt).toBe('500')
+  })
+
+  it('rejects a PUT with no updatedAt precondition', async () => {
+    const draft = await seedDraft()
+    const res = await request(app)
+      .put(`/api/drafts/${draft._id}`)
+      .set(AUTH_HEADER)
+      .send({ title: 'no version sent' })
+    expect(res.status).toBe(400)
+  })
+
+  it("409s with DRAFT_CONFLICT + the current draft when updatedAt doesn't match — the two-tab clobber this closes (B5/D2)", async () => {
+    const draft = await seedDraft({ title: 'original', updatedAt: '1000' })
+    // Tab A saves first, moving the stored updatedAt forward.
+    const tabA = await request(app)
+      .put(`/api/drafts/${draft._id}`)
+      .set(AUTH_HEADER)
+      .send({ title: 'from tab A', updatedAt: '1000' })
+    expect(tabA.status).toBe(200)
+
+    // Tab B still thinks the base version is '1000' (its last known state
+    // before Tab A saved) and tries to overwrite on top of it.
+    const tabB = await request(app)
+      .put(`/api/drafts/${draft._id}`)
+      .set(AUTH_HEADER)
+      .send({ title: 'from tab B', updatedAt: '1000' })
+    expect(tabB.status).toBe(409)
+    expect(tabB.body.code).toBe('DRAFT_CONFLICT')
+    expect(tabB.body.draft.title).toBe('from tab A')
+
+    // Tab A's save must survive untouched — the whole point of the guard.
+    const stored = await getDB()
+      .collection('recipeDrafts')
+      .findOne({ _id: draft._id })
+    expect(stored.title).toBe('from tab A')
   })
 
   it('rejects content that exceeds bounds', async () => {
@@ -213,6 +285,83 @@ describe('PUT /api/drafts/:id', () => {
       .set(AUTH_HEADER)
       .send({ title: 'a'.repeat(51) })
     expect(res.status).toBe(400)
+  })
+
+  // ─── supersede flag (W16: durable unload-flush) ───────────────────────────
+  // The unload keepalive flush (src/api/drafts.ts) sets `supersede: true` so its
+  // freshest edits land unconditionally — it must never 409 against a normal
+  // autosave that raced ahead of it. Only the flush sets the flag; regular
+  // autosave still carries (and is conditioned on) the base updatedAt.
+  it('with supersede:true writes unconditionally, bypassing the updatedAt precondition (a stale base still lands)', async () => {
+    const draft = await seedDraft({ title: 'original', updatedAt: '1000' })
+    // Another save moves the stored version forward first.
+    const ahead = await request(app)
+      .put(`/api/drafts/${draft._id}`)
+      .set(AUTH_HEADER)
+      .send({ title: 'raced ahead', updatedAt: '1000' })
+    expect(ahead.status).toBe(200)
+
+    // The flush carries a STALE base ('1000') but supersede:true — a normal PUT
+    // would 409 here; the flush must win instead.
+    const flush = await request(app)
+      .put(`/api/drafts/${draft._id}`)
+      .set(AUTH_HEADER)
+      .send({ title: 'flush wins', updatedAt: '1000', supersede: true })
+    expect(flush.status).toBe(200)
+    expect(flush.body.title).toBe('flush wins')
+
+    const stored = await getDB()
+      .collection('recipeDrafts')
+      .findOne({ _id: draft._id })
+    expect(stored.title).toBe('flush wins')
+    // The transient flag is never persisted onto the document.
+    expect(stored.supersede).toBeUndefined()
+  })
+
+  it('with supersede:true does not require an updatedAt precondition (no 400 when omitted)', async () => {
+    const draft = await seedDraft({ title: 'before', updatedAt: '1000' })
+    const res = await request(app)
+      .put(`/api/drafts/${draft._id}`)
+      .set(AUTH_HEADER)
+      .send({ title: 'no version, superseding', supersede: true })
+    expect(res.status).toBe(200)
+    expect(res.body.title).toBe('no version, superseding')
+  })
+
+  it('without the flag still 409s DRAFT_CONFLICT when the base updatedAt has moved', async () => {
+    const draft = await seedDraft({ title: 'original', updatedAt: '1000' })
+    const ahead = await request(app)
+      .put(`/api/drafts/${draft._id}`)
+      .set(AUTH_HEADER)
+      .send({ title: 'raced ahead', updatedAt: '1000' })
+    expect(ahead.status).toBe(200)
+
+    // Same stale base, but NO supersede flag → the precondition still guards it.
+    const stale = await request(app)
+      .put(`/api/drafts/${draft._id}`)
+      .set(AUTH_HEADER)
+      .send({ title: 'stale normal save', updatedAt: '1000' })
+    expect(stale.status).toBe(409)
+    expect(stale.body.code).toBe('DRAFT_CONFLICT')
+  })
+
+  it('with supersede:true still 404s when the draft was deleted (a flush never resurrects it)', async () => {
+    // No draft exists at this id — models the draft being deleted elsewhere
+    // between the tab loading it and the unload flush firing.
+    const res = await request(app)
+      .put(`/api/drafts/${new ObjectId()}`)
+      .set(AUTH_HEADER)
+      .send({ title: 'flush after delete', updatedAt: '1000', supersede: true })
+    expect(res.status).toBe(404)
+  })
+
+  it("with supersede:true still can't touch another user's draft (403)", async () => {
+    const draft = await seedDraft({ userId: 'other-uid' })
+    const res = await request(app)
+      .put(`/api/drafts/${draft._id}`)
+      .set(AUTH_HEADER)
+      .send({ title: 'hijacked', updatedAt: '1000', supersede: true })
+    expect(res.status).toBe(403)
   })
 
   it("checks ownership before bounds (403, not 400, for another user's draft)", async () => {

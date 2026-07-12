@@ -1,0 +1,259 @@
+@use '../../../helpers.scss' as s;
+
+// Dedicated print-only layout for a recipe. Hidden on screen; react-to-print
+// clones this subtree into an isolated iframe and prints it, so the styles here
+// are fully decoupled from the on-screen SingleRecipe design.
+
+// Keep it out of the normal page flow on screen (it stays mounted so the print
+// ref always points at live, current data).
+@media screen {
+  .printable-recipe {
+    display: none;
+  }
+}
+
+.printable-recipe {
+  box-sizing: border-box;
+  color: #000;
+  background: s.$white;
+  font-family: Georgia, 'Times New Roman', serif;
+  line-height: 1.45;
+  font-size: 12pt;
+  max-width: 7.5in;
+  margin: 0 auto;
+  padding: 0.25in;
+  // Break long unbroken tokens (URLs, long compound words) so they wrap inside
+  // their column instead of overflowing the page edge.
+  overflow-wrap: break-word;
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  h1,
+  h2 {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    margin: 0;
+  }
+
+  .pr-header {
+    border-bottom: 2px solid #000;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .pr-title {
+    font-size: 24pt;
+    line-height: 1.1;
+  }
+
+  .pr-byline {
+    font-size: 10pt;
+    font-style: italic;
+    color: #333;
+    margin-top: 0.25rem;
+  }
+
+  .pr-description {
+    margin: 0.5rem 0 0;
+    font-size: 11pt;
+  }
+
+  .pr-meta {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    margin: 0.75rem 0 0;
+    padding: 0;
+
+    li {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .pr-meta-label {
+      font-size: 8pt;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #555;
+    }
+
+    .pr-meta-value {
+      font-size: 12pt;
+      font-weight: bold;
+    }
+  }
+
+  .pr-section {
+    margin-bottom: 1.25rem;
+
+    h2 {
+      font-size: 14pt;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      border-bottom: 1px solid #999;
+      padding-bottom: 0.2rem;
+      margin-bottom: 0.5rem;
+    }
+  }
+
+  // Ingredients: two columns to save vertical space, but never split a single
+  // ingredient across a page or column break.
+  .pr-ingredients ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    columns: 2;
+    column-gap: 1.5rem;
+  }
+
+  .pr-ing {
+    padding: 0.15rem 0;
+    break-inside: avoid;
+    page-break-inside: avoid;
+
+    .pr-qty {
+      font-weight: bold;
+    }
+  }
+
+  .pr-ing-group {
+    list-style: none;
+    font-weight: bold;
+    font-style: italic;
+    margin-top: 0.5rem;
+    break-inside: avoid;
+    column-span: all;
+  }
+
+  // Explicit numbering (see component note): no list markers, a flex number
+  // column that grows for double/triple digits, and group labels that sit flush
+  // without consuming a number.
+  .pr-instructions ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .pr-step {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.2rem 0;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .pr-step-num {
+    flex-shrink: 0;
+    min-width: 1.6rem;
+    font-weight: bold;
+  }
+
+  .pr-step-text {
+    flex: 1;
+  }
+
+  .pr-step-group {
+    font-weight: bold;
+    font-style: italic;
+    margin-top: 0.5rem;
+  }
+
+  // Nutrition and tags are supporting info — keep them compact with smaller
+  // headings, tight spacing, and condensed text so they don't dominate the page.
+  .pr-nutrition,
+  .pr-tags {
+    margin-bottom: 0.6rem;
+    // Compact supporting blocks shouldn't be torn across a page break.
+    break-inside: avoid;
+    page-break-inside: avoid;
+
+    h2 {
+      font-size: 10pt;
+      padding-bottom: 0.1rem;
+      margin-bottom: 0.3rem;
+    }
+  }
+
+  .pr-nutrition {
+    .pr-per {
+      font-size: 8pt;
+      font-weight: normal;
+      text-transform: none;
+      letter-spacing: 0;
+      color: #555;
+    }
+
+    ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.1rem 1.25rem;
+      font-size: 9pt;
+
+      li {
+        display: flex;
+        justify-content: space-between;
+        gap: 0.5rem;
+        min-width: 1.35in;
+
+        .pr-nutr-label {
+          color: #333;
+        }
+
+        .pr-nutr-value {
+          font-weight: bold;
+        }
+      }
+    }
+  }
+
+  .pr-tags p {
+    margin: 0;
+    font-size: 9pt;
+    color: #333;
+  }
+
+  .pr-footer {
+    margin-top: 1rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid #999;
+    font-size: 9pt;
+    color: #555;
+
+    .pr-price {
+      margin-bottom: 0.2rem;
+    }
+
+    .pr-source {
+      word-break: break-all;
+    }
+  }
+}
+
+// Give every printed sheet a consistent margin via @page (the react-to-print
+// iframe doesn't inherit the browser's default print margins), and let the
+// content fill that printable area instead of the screen's centered max-width.
+@media print {
+  @page {
+    margin: 0.5in 0.6in;
+  }
+  // The app's global `html, body { height: 100%; overflow: hidden }` gets copied
+  // into react-to-print's print iframe and clips the output to a single page.
+  // Reset it so multi-page recipes paginate instead of being cut off.
+  html,
+  body {
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .printable-recipe {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+  }
+}

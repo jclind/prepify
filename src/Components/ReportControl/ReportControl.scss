@@ -1,0 +1,199 @@
+@use '../../helpers.scss' as s;
+
+.report-control-trigger {
+  display: inline-flex;
+  align-items: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: s.$tertiary-text;
+  font-family: inherit;
+  font-size: s.$text-fine;
+  line-height: 1.2;
+  padding: 0.15rem 0.35rem;
+  border-radius: s.$radius-xs;
+  transition: color 0.15s, background 0.15s;
+
+  &:hover {
+    color: s.$error-red;
+    background: rgba(s.$error-red, 0.08);
+  }
+
+  // Keyboard users get a clear ring (the hover tint isn't enough on its own).
+  &:focus-visible {
+    outline: 2px solid rgba(s.$error-red, 0.5);
+    outline-offset: 1px;
+    color: s.$error-red;
+  }
+
+  &.button {
+    border: 1px solid s.$admin-slate-300;
+    padding: 0.4rem 0.75rem;
+    font-size: s.$text-sm;
+
+    &:hover {
+      border-color: s.$error-red;
+    }
+  }
+}
+
+// ── Kebab (three-dots) variant ──────────────────────────────────────────────
+.report-menu {
+  position: relative;
+  display: inline-flex;
+
+  .report-menu-trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: s.$tertiary-text;
+    border-radius: s.$radius-circle;
+    width: 1.9rem;
+    height: 1.9rem;
+    font-size: s.$text-md;
+    line-height: 1;
+    transition: color 0.15s, background 0.15s;
+
+    &:hover,
+    &.is-open {
+      color: s.$admin-slate-600;
+      background: rgba(0, 0, 0, 0.06);
+    }
+
+    &:focus-visible {
+      outline: 2px solid rgba(s.$admin-action, 0.5);
+      outline-offset: 1px;
+    }
+  }
+
+  .report-menu-panel {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    z-index: 50;
+    min-width: 9.5rem;
+    padding: 0.3rem;
+    background: s.$white;
+    border: 1px solid s.$admin-slate-200;
+    border-radius: s.$radius-md;
+    box-shadow: s.$elevation-3;
+  }
+
+  .report-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.5rem 0.6rem;
+    background: none;
+    border: none;
+    border-radius: s.$radius-sm;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: s.$text-sm;
+    color: s.$admin-slate-700;
+    text-align: left;
+    white-space: nowrap;
+    text-transform: capitalize;
+
+    svg {
+      flex-shrink: 0;
+      font-size: s.$text-base;
+    }
+
+    &:hover {
+      background: rgba(s.$error-red, 0.08);
+      color: s.$error-red;
+    }
+
+    &:focus-visible {
+      outline: 2px solid rgba(s.$error-red, 0.5);
+      outline-offset: -2px;
+      color: s.$error-red;
+    }
+  }
+}
+
+.report-modal {
+  outline: none;
+
+  .report-modal-title {
+    margin: 0 0 0.35rem;
+    font-size: s.$text-xl;
+  }
+
+  .report-modal-sub {
+    margin: 0 0 1.25rem;
+    color: s.$admin-slate-500;
+    font-size: s.$text-base;
+  }
+
+  .report-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin-bottom: 1rem;
+    font-size: s.$text-sm;
+    font-weight: 600;
+    color: s.$admin-slate-700;
+
+    select,
+    textarea {
+      font-weight: 400;
+      font-size: s.$text-base;
+      padding: 0.55rem 0.65rem;
+      border: 1px solid s.$admin-slate-300;
+      border-radius: s.$radius-sm;
+      font-family: inherit;
+      resize: vertical;
+
+      &:focus {
+        outline: none;
+        border-color: s.$admin-action;
+      }
+    }
+  }
+
+  .report-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.6rem;
+    margin-top: 0.5rem;
+
+    button {
+      cursor: pointer;
+      border-radius: s.$radius-sm;
+      padding: 0.55rem 1rem;
+      font-size: s.$text-base;
+      font-weight: 600;
+      position: relative;
+    }
+
+    .report-cancel-btn {
+      background: s.$admin-slate-100;
+      border: 1px solid s.$admin-slate-300;
+      color: s.$admin-slate-700;
+    }
+
+    .report-submit-btn {
+      background: s.$error-red;
+      border: 1px solid s.$error-red;
+      color: s.$white;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+
+      &:disabled {
+        opacity: 0.7;
+        cursor: default;
+      }
+    }
+
+    .report-btn-spinner {
+      display: inline-flex;
+    }
+  }
+}

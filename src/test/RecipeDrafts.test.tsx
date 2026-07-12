@@ -34,6 +34,12 @@ vi.mock('src/api/auth', () => ({
   default: { getUID: vi.fn().mockReturnValue('test-uid') },
 }))
 
+// Signed-in via AuthContext too — useRecipeForm gates autosave on useAuth().user
+// (V8): a null user shows "sign in to save drafts" and never autosaves.
+vi.mock('src/context/AuthContext', () => ({
+  useAuth: () => ({ user: { uid: 'test-uid' } }),
+}))
+
 vi.mock('src/api/drafts', () => ({
   default: {
     createDraft: vi.fn(),
@@ -41,13 +47,16 @@ vi.mock('src/api/drafts', () => ({
     listDrafts: vi.fn(),
     getDraft: vi.fn(),
     deleteDraft: vi.fn(),
+    warmAuth: vi.fn(),
+    flushDraftKeepalive: vi.fn(() => true),
   },
   DRAFT_LIMIT_CODE: 'DRAFT_LIMIT',
+  DRAFT_CONFLICT_CODE: 'DRAFT_CONFLICT',
 }))
 
 vi.mock('react-top-loading-bar', () => ({ default: () => null }))
 
-vi.mock('src/pages/AddRecipe/RecipeFormInput', () => ({
+vi.mock('src/Components/Form/FormInput', () => ({
   default: ({ val, setVal, placeholder }: any) => (
     <input
       placeholder={placeholder}

@@ -1,0 +1,33 @@
+{
+  "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
+
+  // Extra reachable files Fallow can't infer from imports alone.
+  // These are loaded by tooling/conventions, not by `import`, so without
+  // declaring them they show up as false-positive "unused files".
+  "entry": [
+    "server/scripts/*.js",          // operational CLI scripts (setAdmin, createModerationIndexes, etc.) run by hand
+    "server/__mocks__/*.js",        // Jest auto-mocks (e.g. firebase-admin), loaded by convention in __tests__
+    "src/test/setup.ts"             // Vitest setupFiles target (vite.config.ts -> test.setupFiles)
+  ],
+
+  // Build/tooling deps invoked via config, never `import`ed in source.
+  "ignoreDependencies": [
+    "sass",                         // used by Vite to compile .scss at build time
+    "@vitest/coverage-v8"           // used by `vitest --coverage`, not imported
+  ],
+
+  // The AddRecipe/Dnd folder is an intentional namespace barrel: DndContext,
+  // Drag, and Drop each have a default export collected by index.ts. Fallow
+  // can't disambiguate multiple default exports in one dir, so it false-flags
+  // Drop's default as "unused" (it's used by DndContext) and reports the
+  // DndContext/Drag default pair as a duplicate export. Exclude the barrel.
+  "ignoreExports": [
+    { "file": "src/pages/AddRecipe/Dnd/DndContext.tsx", "exports": ["*"] },
+    { "file": "src/pages/AddRecipe/Dnd/Drag.tsx", "exports": ["*"] },
+    { "file": "src/pages/AddRecipe/Dnd/Drop.tsx", "exports": ["*"] }
+  ]
+
+  // Note: the remote Google Fonts @import in src/index.scss is suppressed
+  // inline (// fallow-ignore-next-line unresolved-import) — Fallow's glob
+  // matchers can't match the multiline token its SCSS parser captures.
+}

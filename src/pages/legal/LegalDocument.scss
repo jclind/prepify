@@ -1,0 +1,89 @@
+@use '../../helpers.scss' as s;
+
+.legal-document {
+  // Fills the flexbox app-main so the footer stays at the viewport bottom on
+  // short pages (see Layout.scss); nav is position:absolute, so offset content
+  // past it with top padding ≈ the nav height.
+  flex: 1 0 auto;
+  padding: calc(#{s.$nav-height} + 2rem) 1.5rem 4rem;
+  font-family: s.$font-family;
+
+  .legal-document-inner {
+    max-width: s.$recipe-body-max-width;
+    margin: 0 auto;
+  }
+
+  .legal-document-header {
+    margin-bottom: 2.5rem;
+
+    h1 {
+      font-size: s.$text-4xl;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: s.$primary-text;
+      margin-bottom: 0.5rem;
+    }
+
+    .effective-date {
+      color: s.$tertiary-text;
+      font-size: s.$text-base;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+    }
+
+    .draft-notice {
+      background: s.$alert-warning-amber;
+      border: 1px solid s.$alert-warning-amber-border;
+      color: s.$alert-warning-amber-text;
+      border-radius: s.$border-radius;
+      padding: 1rem 1.25rem;
+      font-size: s.$text-base;
+      line-height: 1.6;
+
+      strong {
+        font-weight: 700;
+      }
+    }
+  }
+
+  .legal-document-body {
+    color: s.$secondary-text;
+    font-size: s.$text-md;
+    line-height: 1.7;
+
+    section {
+      margin-bottom: 2rem;
+    }
+
+    h2 {
+      font-size: s.$text-xl;
+      font-weight: 700;
+      color: s.$primary-text;
+      margin-bottom: 0.75rem;
+    }
+
+    p {
+      margin-bottom: 1rem;
+    }
+
+    ul {
+      margin: 0 0 1rem 1.25rem;
+      padding: 0;
+
+      li {
+        margin-bottom: 0.5rem;
+      }
+    }
+
+    a {
+      // Inline links use the app's one accessible teal (was orange here).
+      color: s.$secondary-accessible;
+      font-weight: 600;
+      text-decoration: none;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+}
