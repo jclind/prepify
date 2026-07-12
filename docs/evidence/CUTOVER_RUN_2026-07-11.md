@@ -16,7 +16,11 @@
   | Vitest (`vitest run`) | 757 passed / 2 skipped (92 files) |
   | `vite build` | ✓ built |
   | server Jest (`jest --runInBand`) | 908 passed / 43 suites |
+- **CONCURRENT-SESSION EVENT (resolved):** while paused, a separate session landed the **2026-07-11 security-audit remediation batch** into `development` — `#316` (audit writeup, docs) + `#317` (code fixes H1/M1/M2/M3/M4/L1: paid-API daily cost ceiling, UID/admin-stamp projection, ghost/self-rating guards, authorUsername impersonation fix, servingPrice bounds recompute, requireActive on 2 routes). Its own branch was merged + cleaned up. **Owner decision: the security batch is IN 1.0** (already merged; launches hardened). New boot index `paidQuota.expireAt` (TTL, non-unique, new collection) — does NOT affect the 2e unique-index gate.
+- **00:09 EDT (2026-07-12)** — Re-verified after rollover: on `development`, tree clean, `development` == `origin/development` == `d483bac`; only `#303` open.
+- **00:12 EDT (2026-07-12)** — Re-ran all five gates on `d483bac` (post-security-batch) — GREEN: tsc 0 ×2 · Vitest 757/2 · build ✓ · **Jest 928/44** (+20 security tests).
 - **PENDING (owner via `!`):** four prod snapshot dry-runs + duplicate-ratings aggregation; Atlas snapshot timestamp; §1 go/no-go call.
+- **TIMING NOTE:** it is now past midnight (00:12 EDT 2026-07-12). Runbook rule = pause before **2d** (the point-of-no-return coupled window) if merging to `release` past ~8pm. Recommended split: run §1 + 2a/2b/2c (deploy-independent, idempotent, snapshot-reversible) now; resume 2d→§5 fresh. Owner call.
 
 ---
 
