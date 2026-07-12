@@ -183,7 +183,10 @@ router.post('/newReview', verifyToken, requireActive, reviewWriteLimiter, asyncH
   if (!usernameDoc) return res.status(400).json({ error: 'Username not found for this user' })
   const { username } = usernameDoc
 
-  const now = Date.now().toString()
+  // Numeric epoch-ms (V5 cutover): the ratings collection must be single-typed
+  // for the New/Top sorts (BSON compares by type first). '' stays the
+  // "no review yet" sentinel — normalizeRatingTypes preserves it.
+  const now = Date.now()
   // Keyed by the stable uid (D1). username is denormalized for display, written
   // once on insert ($setOnInsert) alongside the defaulted rating fields. The
   // dup-retry handles a concurrent double-submit racing on the unique index.
@@ -245,7 +248,7 @@ router.post('/editReview', verifyToken, requireActive, reviewWriteLimiter, async
   // convention (drafts.js): 404 = no such doc, 403 = exists but not yours.
   const editResult = await db.collection('ratings').updateOne(
     { userId: req.uid, recipeId },
-    { $set: { reviewText: text, reviewLastUpdated: Date.now().toString() } }
+    { $set: { reviewText: text, reviewLastUpdated: Date.now() } }
   )
   if (editResult.matchedCount === 0) {
     return res.status(404).json({ error: 'Review not found' })

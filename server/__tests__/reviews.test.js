@@ -340,6 +340,8 @@ describe('POST /editReview', () => {
       .collection('ratings')
       .findOne({ username: TEST_USERNAME, recipeId: RECIPE_ID })
     expect(doc.reviewText).toBe('Updated review')
+    // V5 cutover: an edit stamps a numeric epoch-ms reviewLastUpdated.
+    expect(doc.reviewLastUpdated).toEqual(expect.any(Number))
   })
 
   it('accepts the params in a JSON body (the new client transport)', async () => {
@@ -648,6 +650,9 @@ describe('POST /newReview', () => {
     expect(res.body.reviewText).toBe('Amazing dish!')
     expect(res.body.username).toBe(TEST_USERNAME)
     expect(res.body.recipeId).toBe(RECIPE_ID)
+    // V5 cutover: timestamps are numeric epoch-ms, never strings.
+    expect(res.body.reviewCreatedAt).toEqual(expect.any(Number))
+    expect(res.body.reviewLastUpdated).toEqual(expect.any(Number))
   })
 
   // Audit §4 item 4: reviewText must be bounded (mirrors DESCRIPTION_MAX_LENGTH).
@@ -695,6 +700,10 @@ describe('POST /newReview', () => {
 
     expect(res.status).toBe(200)
     expect(res.body.reviewText).toBe('Updated text')
+    // V5 cutover: the upsert overwrites the legacy string timestamps with
+    // numeric epoch-ms.
+    expect(res.body.reviewCreatedAt).toEqual(expect.any(Number))
+    expect(res.body.reviewLastUpdated).toEqual(expect.any(Number))
   })
 
   // Identity is resolved server-side from req.uid → usernames collection.

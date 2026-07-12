@@ -271,8 +271,10 @@ export type OptionalReviewType = {
   // docs carry null here (the server writes numbers, never strings).
   rating: number | null
   ratingLastUpdated: string
-  reviewCreatedAt?: string
-  reviewLastUpdated?: string
+  // Transitional (V5 cutover): numeric epoch-ms on new writes, string on
+  // pre-migration docs; '' = no review yet.
+  reviewCreatedAt?: string | number
+  reviewLastUpdated?: string | number
   reviewText?: string
   recipeTitle?: string
   recipeImage?: string
@@ -289,8 +291,10 @@ export type ReviewType = {
   recipeId: string
   rating: number | null
   ratingLastUpdated: string
-  reviewCreatedAt: string
-  reviewLastUpdated: string
+  // Transitional (V5 cutover): numeric epoch-ms on new writes, string on
+  // pre-migration docs; '' = no review yet.
+  reviewCreatedAt: string | number
+  reviewLastUpdated: string | number
   reviewText: string
   photoURL: string | null
   displayName: string | null
@@ -311,8 +315,10 @@ export type OwnReviewStatus = {
   rating?: number | null
   ratingLastUpdated?: string
   reviewText?: string
-  reviewCreatedAt?: string
-  reviewLastUpdated?: string
+  // Transitional (V5 cutover): numeric epoch-ms on new writes, string on
+  // pre-migration docs; '' = no review yet.
+  reviewCreatedAt?: string | number
+  reviewLastUpdated?: string | number
 }
 
 export interface NewReviewType {
