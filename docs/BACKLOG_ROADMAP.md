@@ -2588,3 +2588,25 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   username integrity, moderation-queue flooding, and two write routes missing `requireActive`. Doc-only
   landing — **no fixes yet**; remediation is queued as follow-up work (suggested order + per-finding
   evidence/repro in the doc), to be picked up verify-first in a fresh session.
+- **2026-07-11** — **Security audit remediation batch 1 landed ([#317](https://github.com/jclind/prepify/pull/317)
+  `0b5842d`) — H1, M1, M2, M3, M4, L1 all fixed.** Every finding was **reproduced live against the dev
+  `:4000` stack first** (minted user/second-user/admin Firebase tokens), fixed, then re-run to prove closure
+  with a passing legitimate control; remediation status table added to `docs/SECURITY_AUDIT_2026-07-11.md`.
+  **H1** (paid-API cost ceiling): new `server/util/paidQuota.js` — per-account **+ global** daily counters
+  (`paidQuota` collection, TTL-reaped via a new `db.js` index) mounted on `/ingredients/parse`,
+  `/nutrition/details`, and recipe creates; `ingr` array length-capped at `MAX_INGREDIENTS`. The global
+  ceiling is the Sybil defeater — live-proved a **fresh** account gets 429'd once the aggregate is spent
+  despite being under its own per-account cap. Caps env-overridable (`PAID_QUOTA_<SURFACE>_USER_DAILY`/
+  `_GLOBAL_DAILY`, documented in `CLAUDE.md`); a `console.error` fires on the global trip as an
+  aggregate-spend alert hook. **M1**: inclusion projection on `getReviews`/`getSingleUserReviews` +
+  `publicRecipeProjection` on the `$lookup` sub-pipeline — reviewer `userId`, `moderatedBy`/`moderatedAt`/
+  `moderationHidden`, and recipe internal stamps no longer reach public callers (`ReviewType.userId` made
+  optional in `src/types.ts` to match). **M2**: `addRating`/`newReview` now load the target recipe — 404 on
+  missing/hidden, 403 on self-rating. **M3**: `authorUsername` removed from `CREATABLE_RECIPE_FIELDS`,
+  derived server-side from `req.uid` at create (**behaviour change:** a create now requires a username →
+  400, consistent with `addRating`/`newReview`). **M4**: `servingPrice` recomputed onto the body **before**
+  `validateRecipeBounds` on create + edit, closing the gap #292's recompute left (it ran after the check).
+  **L1**: `requireActive` added to `/nutrition/details` + `/acknowledgeAchievements`. Tests: server **928
+  green** (44 suites, +19 incl. new `paidQuota.test.js`), frontend **757 green**, `tsc` clean; CI green incl.
+  the E2e/Cypress run. All `SECAUDIT-` dev fixtures (incl. residue from the audit's own run) purged.
+  **Deferred to follow-up waves: M5/M6/M7 + remaining LOW/INFO (L2–L6, I1–I2).**
