@@ -45,6 +45,11 @@
   - Gate — convergence dry-run: `12 already in sync, 0 would correct`. ✅ (No rating averages/counts moved.)
 - **2c — D1 `backfillRatingUserIds` — ✅ DONE (no-op).** `--apply`: 0 updated, 0 unresolved (prod had no orphans). No disposition call.
 - **Consolidated board (`checkMigrationState`, exit=0):** legacy `_id` ✓0 · ratings `userId` ✓0 · reports `reportedUid` ✓0 · aggregates ✓0 — "All known migrations complete." **§2a–2c CLOSED.**
+- **2d code half (iii) — #303 merged into development — ✅ DONE.**
+  - ⚠️ Unplanned: #303 (opened pre-security-batch) **conflicted** with #317 — both touched `reviews.js` newReview/editReview, `API_CONTRACT.md`, `formatDate.ts`. `reviews.js`/`reviews.test.js` **auto-merged clean** (verified by hand: timestamp flip on write lines 189/197/251 + security guards 94/96 as preconditions both present); resolved 2 real conflicts — `formatDate.ts` (took #303's `string|number` type + development's #309 coerce-first logic) and `API_CONTRACT.md` (took #303's numeric-timestamp semantics + development's current `:516`/`:533` client anchors).
+  - Integrated on branch, **all 5 gates green** (tsc×2, Vitest 757/2, build, **Jest 928/44**), pushed → #303 CI **fully green** on merged head (incl. E2e Cypress).
+  - Owner pre-approved merge-on-green. Merged (merge commit `3e3feda`); merged tree byte-identical to gated tree (empty diff → gates hold). Net server change = the 2-line `Date.now().toString()`→`Date.now()` flip. `[DO NOT MERGE]` stripped, branch deleted.
+- **NEXT:** §4 beta-flip PR (author) → dress rehearsal → then the coupled prod window (2d-ii normalize `--apply` → §5 deploy → 2d-v re-apply → 2d-vi verify).
 
 ---
 
