@@ -8,6 +8,8 @@ const { REVIEW_VISIBLE, RECIPE_VISIBLE } = require('../util/moderation')
 const { DESCRIPTION_MAX_LENGTH } = require('../util/recipeLimits')
 const { recordAudit } = require('../util/auditLog')
 const { recomputeRecipeRating, hasNumericRating } = require('../util/recipeRating')
+const { publicRecipeProjection, pickFields } = require('../util/recipeFields')
+const { recipeIdQuery } = require('../util/recipeIdQuery')
 const { upsertWithDupRetry } = require('../util/upsertWithDupRetry')
 const { notifyInBackground, notifyReviewTakenDown } = require('../util/email')
 const { moderateText } = require('../util/textModeration')
@@ -17,6 +19,30 @@ const router = Router()
 
 // Hard ceiling on client-requested page sizes (audit §4.5); mirrors recipes.js.
 const MAX_PER_PAGE = 50
+
+// The review fields safe to serialize to PUBLIC (unauthenticated / non-admin)
+// callers — an inclusion allowlist, so a field added to the rating doc later
+// can't silently leak (audit M1). Deliberately EXCLUDES:
+//   • `userId` — the reviewer's Firebase uid (a username→uid oracle). It's still
+//     FETCHED on /getReviews because it's the identity join key for avatar
+//     enrichment + the isCurrentUser flag, but stripped from the response there.
+//   • `moderatedBy` / `moderatedAt` / `moderationHidden` — the admin uid +
+//     timestamp of any takedown/restore; internal moderation state no client
+//     reads. An inclusion projection drops these structurally.
+const REVIEW_PUBLIC_FIELDS = [
+  '_id',
+  'recipeId',
+  'username',
+  'rating',
+  'ratingLastUpdated',
+  'reviewCreatedAt',
+  'reviewLastUpdated',
+  'reviewText',
+]
+// Mongo inclusion projection over the allowlist, for the public review reads.
+const reviewPublicProjection = Object.fromEntries(
+  REVIEW_PUBLIC_FIELDS.map((f) => [f, 1])
+)
 
 // Resolve reviewer avatar + display name for a page of reviews (§D). photoURL and
 // displayName live on the Firebase Auth record, not the rating doc, so batch-fetch
@@ -48,6 +74,30 @@ async function resolveReviewerIdentities(reviews) {
   return byUid
 }
 
+// Load the rating/review target recipe and enforce the two integrity rules the
+// rating writes previously skipped entirely (audit M2): neither addRating nor
+// newReview loaded the recipe they were writing against, so —
+//   • a nonexistent / hidden / pending recipeId still upserted a rating (ghost
+//     targets, and XP/achievement farming off junk recipeIds), and
+//   • an author could rate + review their OWN recipe, inflating its public
+//     average and ranking signal.
+// Returns a { status, error } to send back, or null when the write may proceed.
+// Scoped through RECIPE_VISIBLE so a soft-hidden/unpublished/pending recipe is
+// "not found" for rating purposes — you can only rate what the public can see.
+// Projected to just userId (the recipe author uid), the only field the checks
+// need. Called BEFORE the (paid) text-moderation pass in newReview so a ghost or
+// self-target never spends a classifier call.
+async function checkRatableRecipe(db, recipeId, uid) {
+  const recipe = await db
+    .collection('recipes')
+    .findOne({ ...recipeIdQuery(recipeId), ...RECIPE_VISIBLE }, { projection: { userId: 1 } })
+  if (!recipe) return { status: 404, error: 'Recipe not found' }
+  if (recipe.userId === uid) {
+    return { status: 403, error: 'You cannot rate or review your own recipe' }
+  }
+  return null
+}
+
 // POST /addRating
 router.post('/addRating', verifyToken, requireActive, reviewWriteLimiter, asyncHandler(async (req, res) => {
   const { recipeId, rating } = req.query
@@ -67,6 +117,14 @@ router.post('/addRating', verifyToken, requireActive, reviewWriteLimiter, asyncH
   }
   if (parsedRating < 1 || parsedRating > 5) {
     return res.status(400).json({ error: 'Rating must be between 1 and 5' })
+  }
+
+  // Target must exist, be publicly visible, and not be the caller's own recipe
+  // (audit M2) — otherwise this endpoint upserts ratings against ghost/hidden
+  // targets and lets an author self-rate.
+  const targetError = await checkRatableRecipe(db, recipeId, userId)
+  if (targetError) {
+    return res.status(targetError.status).json({ error: targetError.error })
   }
 
   // dup-retry: the unique { userId, recipeId } index turns a concurrent
@@ -103,6 +161,14 @@ router.post('/newReview', verifyToken, requireActive, reviewWriteLimiter, asyncH
   }
   if (reviewText.length > DESCRIPTION_MAX_LENGTH) {
     return res.status(400).json({ error: `Review cannot exceed ${DESCRIPTION_MAX_LENGTH} characters` })
+  }
+
+  // Target must exist, be publicly visible, and not be the caller's own recipe
+  // (audit M2). Checked BEFORE the paid moderation pass so a ghost/self target
+  // never spends a classifier call.
+  const targetError = await checkRatableRecipe(db, recipeId, userId)
+  if (targetError) {
+    return res.status(targetError.status).json({ error: targetError.error })
   }
 
   // Reviews are short and author-only; there's no useful owner-only "pending"
@@ -287,7 +353,16 @@ router.get('/getReviews', optionalAuth, asyncHandler(async (req, res) => {
   else if (filter === 'top') sort = { rating: -1 }
 
   const [rawReviews, totalCount] = await Promise.all([
-    db.collection('ratings').find(query).sort(sort).skip(skip).limit(limit).toArray(),
+    // Project to the public allowlist PLUS userId: the uid is needed server-side
+    // (identity enrichment + isCurrentUser) but is stripped from the response
+    // below, and the projection structurally drops the moderation stamps (M1).
+    db.collection('ratings')
+      .find(query)
+      .project({ ...reviewPublicProjection, userId: 1 })
+      .sort(sort)
+      .skip(skip)
+      .limit(limit)
+      .toArray(),
     db.collection('ratings').countDocuments(query),
   ])
 
@@ -296,8 +371,10 @@ router.get('/getReviews', optionalAuth, asyncHandler(async (req, res) => {
   const identities = await resolveReviewerIdentities(rawReviews)
   const reviews = rawReviews.map((r) => {
     const identity = identities.get(r.userId)
+    // pickFields drops userId (not on the allowlist) from the serialized shape;
+    // r.userId is still read here for the enrichment + isCurrentUser flag.
     return {
-      ...r,
+      ...pickFields(r, REVIEW_PUBLIC_FIELDS),
       isCurrentUser: req.uid != null && r.userId === req.uid,
       photoURL: identity ? identity.photoURL : null,
       displayName: identity ? identity.displayName : null,
@@ -371,6 +448,12 @@ router.get('/getSingleUserReviews', asyncHandler(async (req, res) => {
                   },
                 },
               },
+              // Project the joined recipe to the public recipe shape so the
+              // internal admin stamps (moderatedBy/featuredBy/publishUpdatedBy +
+              // their timestamps) never ride out to a public caller through this
+              // join — every OTHER public recipe read strips them via
+              // publicRecipeProjection, and this join path now does too (audit M1).
+              { $project: publicRecipeProjection },
             ],
             as: 'recipe',
           },
@@ -393,9 +476,11 @@ router.get('/getSingleUserReviews', asyncHandler(async (req, res) => {
       // The account "Ratings" list reads flat `recipeImage`/`recipeTitle` off
       // each review (the rating doc itself stores neither). Denormalize them
       // from the recipe doc so the thumbnail and title actually render; keep
-      // the full `recipeData` for callers (e.g. admin) that need the rest.
+      // the (now public-projected) `recipeData` for callers that need the rest.
+      // pickFields keeps only the review allowlist, dropping the reviewer uid +
+      // moderation stamps from the review-level fields too (audit M1).
       return {
-        ...r,
+        ...pickFields(r, REVIEW_PUBLIC_FIELDS),
         recipeImage: recipeData.recipeImage,
         recipeTitle: recipeData.title,
         recipeData,
@@ -403,9 +488,11 @@ router.get('/getSingleUserReviews', asyncHandler(async (req, res) => {
     })
   } else {
     // No recipe join → every visible review is returnable, so a plain
-    // find + countDocuments over the same query keeps totalCount exact.
+    // find + countDocuments over the same query keeps totalCount exact. Project
+    // to the public allowlist so the reviewer uid + moderation stamps never
+    // reach a public caller (M1); this path needs no uid server-side.
     ;[reviews, totalCount] = await Promise.all([
-      db.collection('ratings').find(query).sort(sort).skip(skip).limit(limit).toArray(),
+      db.collection('ratings').find(query).project(reviewPublicProjection).sort(sort).skip(skip).limit(limit).toArray(),
       db.collection('ratings').countDocuments(query),
     ])
   }

@@ -30,17 +30,22 @@ const EDITABLE_RECIPE_FIELDS = [
   'totalTime',
 ]
 
-// Creating a recipe additionally accepts the author snapshot. The server stamps
-// _id/userId, the createdAt/editedAt timestamps, zeroes the social counters, and
-// seeds the rating itself — so the client can't dictate a recipe's creation time
-// (createdAt drives the "Newest"/"Oldest" browse sort, so a forged/skewed client
-// clock could otherwise pin a recipe to the top of Newest). Curation/moderation
-// flags (`status`, `featured`) and any other unlisted key the client sends are
-// ignored on create, exactly as the edit whitelist ignores them on update.
-const CREATABLE_RECIPE_FIELDS = [
-  ...EDITABLE_RECIPE_FIELDS,
-  'authorUsername',
-]
+// Creating a recipe carries no extra client-supplied fields beyond the editable
+// set. The server stamps _id/userId, the createdAt/editedAt timestamps, zeroes
+// the social counters, seeds the rating itself, and derives `authorUsername`
+// from the caller's req.uid→username mapping — so the client can't dictate a
+// recipe's creation time (createdAt drives the "Newest"/"Oldest" browse sort, so
+// a forged/skewed client clock could otherwise pin a recipe to the top of
+// Newest) NOR forge the displayed author.
+//
+// `authorUsername` USED to be here, but it was persisted verbatim and never
+// checked against the caller — letting a user publish a recipe attributed to
+// someone else's handle (audit M3, author impersonation). It's now server-
+// derived at write time (routes/recipes.js addRecipe) and is NOT client-
+// writable, so CREATABLE == EDITABLE. Curation/moderation flags (`status`,
+// `featured`) and any other unlisted key the client sends are ignored on create,
+// exactly as the edit whitelist ignores them on update.
+const CREATABLE_RECIPE_FIELDS = [...EDITABLE_RECIPE_FIELDS]
 
 // The internal moderation/curation stamps an admin action writes onto a recipe.
 // They carry admin Firebase uids + curation metadata that no client reads, so
@@ -68,6 +73,10 @@ const RECIPE_INTERNAL_STAMPS = [
 const PUBLIC_RECIPE_FIELDS = [
   '_id',
   ...CREATABLE_RECIPE_FIELDS,
+  // Server-derived author handle (stamped from req.uid at create — audit M3).
+  // Not client-writable (dropped from CREATABLE above), but public: the recipe
+  // card/detail displays it, so it must reach public responses.
+  'authorUsername',
   // Server-stamped timestamps the client renders (formerly client-supplied, now
   // authoritative on the server — see CREATABLE_RECIPE_FIELDS).
   'createdAt',

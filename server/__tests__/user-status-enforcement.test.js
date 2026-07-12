@@ -61,6 +61,29 @@ describe('requireActive blocks suspended/banned users from writes', () => {
     expect(res.status).toBe(403)
     expect(res.body.code).toBe('ACCOUNT_BANNED')
   })
+
+  // Audit L1: these two write routes previously omitted requireActive, so a
+  // banned/suspended account kept burning paid Edamam quota and mutating
+  // gamification state for the ~1h its token stayed valid.
+  it('banned → 403 ACCOUNT_BANNED on POST /nutrition/details (audit L1)', async () => {
+    await setStatus('banned')
+    const res = await request(app)
+      .post('/api/nutrition/details')
+      .set(AUTH_HEADER)
+      .send({ ingr: ['1 cup flour'], title: 'x' })
+    expect(res.status).toBe(403)
+    expect(res.body.code).toBe('ACCOUNT_BANNED')
+  })
+
+  it('banned → 403 ACCOUNT_BANNED on POST /acknowledgeAchievements (audit L1)', async () => {
+    await setStatus('banned')
+    const res = await request(app)
+      .post('/api/acknowledgeAchievements')
+      .set(AUTH_HEADER)
+      .send({ ids: ['first_recipe'] })
+    expect(res.status).toBe(403)
+    expect(res.body.code).toBe('ACCOUNT_BANNED')
+  })
 })
 
 describe('requireActive lets active / legacy users through', () => {

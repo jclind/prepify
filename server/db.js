@@ -247,6 +247,16 @@ async function ensureIndexes() {
   } catch (err) {
     console.error('Failed to create indexes on ingredientMisses:', err.message)
   }
+
+  // Paid-API daily spend counters (audit H1). Docs are keyed by UTC-day + surface
+  // (+ uid for the per-account counter) and carry an `expireAt`; a TTL index reaps
+  // them shortly after the day rolls over so the collection never grows unbounded.
+  // expireAfterSeconds: 0 means "delete once the wall clock passes expireAt".
+  try {
+    await db.collection('paidQuota').createIndex({ expireAt: 1 }, { expireAfterSeconds: 0 })
+  } catch (err) {
+    console.error('Failed to create TTL index on paidQuota.expireAt:', err.message)
+  }
 }
 
 async function closeDB() {
