@@ -111,6 +111,23 @@ describe('GET /api/admin/users', () => {
       .set(AUTH_HEADER)
     expect(res.body).toEqual({ users: [], totalCount: 0 })
   })
+
+  it('floors a negative perPage instead of 500ing (negative skip)', async () => {
+    admin.__setClaims({ admin: true })
+    await seedUser('u1', 'alpha')
+    await seedUser('u2', 'beta')
+    await seedUser('u3', 'gamma')
+
+    // A negative perPage floors to 1, so page=2 (skip=1) returns the 2nd
+    // alphabetically-sorted user.
+    const res = await request(app)
+      .get('/api/admin/users?page=2&perPage=-5')
+      .set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(res.body.users).toHaveLength(1)
+    expect(res.body.users[0].username).toBe('beta')
+    expect(res.body.totalCount).toBe(3)
+  })
 })
 
 describe('GET /api/admin/users/:uid', () => {

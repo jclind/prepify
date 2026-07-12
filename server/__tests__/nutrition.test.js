@@ -79,6 +79,22 @@ describe('POST /api/nutrition/details', () => {
     expect(global.fetch).not.toHaveBeenCalled()
   })
 
+  // Audit H1 (rollup): the ingr array is length-bounded so one paid Edamam call
+  // can't be made to do the work of thousands of ingredients (the 100 kb body
+  // limit alone let far more than a real recipe's worth through). A recipe can't
+  // exceed MAX_INGREDIENTS rows, so anything larger is rejected before the fetch.
+  it('returns 400 when ingr exceeds MAX_INGREDIENTS, without calling Edamam', async () => {
+    const { MAX_INGREDIENTS } = require('../util/recipeLimits')
+    global.fetch = jest.fn()
+    const res = await request(app)
+      .post('/api/nutrition/details')
+      .set(AUTH_HEADER)
+      .send({ ingr: Array.from({ length: MAX_INGREDIENTS + 1 }, () => '1 cup flour') })
+    expect(res.status).toBe(400)
+    expect(res.body.error).toMatch(/cannot contain more than/)
+    expect(global.fetch).not.toHaveBeenCalled()
+  })
+
   // ── Misconfiguration ─────────────────────────────────────────────────────────
 
   it('returns 503 (not 500/200) when the Edamam keys are not configured', async () => {

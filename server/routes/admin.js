@@ -174,8 +174,10 @@ router.get('/admin/users', verifyToken, requireAdmin, asyncHandler(async (req, r
   const db = getDB()
   const query = (req.query.query || '').trim()
   const page = Math.max(parseInt(req.query.page) || 1, 1)
+  // Floor at 1 so a negative ?perPage can't sneak past the Math.min cap and
+  // produce a negative .skip() downstream (MongoDB rejects that as a 500).
   const perPage = Math.min(
-    parseInt(req.query.perPage) || DEFAULT_PER_PAGE,
+    Math.max(parseInt(req.query.perPage) || DEFAULT_PER_PAGE, 1),
     MAX_PER_PAGE
   )
 
@@ -327,7 +329,9 @@ router.get('/admin/audit', verifyToken, requireAdmin, asyncHandler(async (req, r
   const db = getDB()
   const { action, targetType, actorUid } = req.query
   const page = Math.max(parseInt(req.query.page) || 1, 1)
-  const perPage = Math.min(parseInt(req.query.perPage) || DEFAULT_PER_PAGE, MAX_PER_PAGE)
+  // Floor at 1 so a negative ?perPage can't sneak past the Math.min cap and
+  // produce a negative .skip() downstream (MongoDB rejects that as a 500).
+  const perPage = Math.min(Math.max(parseInt(req.query.perPage) || DEFAULT_PER_PAGE, 1), MAX_PER_PAGE)
 
   const filter = {}
   if (typeof action === 'string' && AUDIT_ACTIONS.includes(action)) filter.action = action
@@ -476,7 +480,9 @@ router.get('/admin/ingredients', verifyToken, requireAdmin, asyncHandler(async (
   const db = getDB()
   const { type } = req.query
   const page = Math.max(parseInt(req.query.page) || 1, 1)
-  const perPage = Math.min(parseInt(req.query.perPage) || DEFAULT_PER_PAGE, MAX_PER_PAGE)
+  // Floor at 1 so a negative ?perPage can't sneak past the Math.min cap and
+  // produce a negative .skip() downstream (MongoDB rejects that as a 500).
+  const perPage = Math.min(Math.max(parseInt(req.query.perPage) || DEFAULT_PER_PAGE, 1), MAX_PER_PAGE)
 
   const filter = {}
   if (typeof type === 'string' && INGREDIENT_MISS_TYPES.includes(type)) filter.type = type

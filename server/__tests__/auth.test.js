@@ -251,12 +251,12 @@ describe('POST /setUsername', () => {
   // Reviews (ratings) and review reports denormalize the username, so a rename
   // must carry across or a user's existing reviews keep the old handle.
   describe('rename propagation', () => {
-    it("rewrites the user's ratings to the new username", async () => {
+    it("rewrites the user's ratings (matched by userId) to the new username", async () => {
       await seedUser(TEST_UID, 'oldname')
       const db = getDB()
       await db
         .collection('ratings')
-        .insertOne({ username: 'oldname', recipeId: 'r1', rating: 5 })
+        .insertOne({ userId: TEST_UID, username: 'oldname', recipeId: 'r1', rating: 5 })
 
       const res = await request(app)
         .post('/api/setUsername?username=newname')
@@ -268,8 +268,32 @@ describe('POST /setUsername', () => {
       ).toBeNull()
       const moved = await db
         .collection('ratings')
-        .findOne({ username: 'newname' })
+        .findOne({ userId: TEST_UID })
       expect(moved.recipeId).toBe('r1')
+      expect(moved.username).toBe('newname')
+    })
+
+    // Regression for the userId migration: the cascade filter changed from
+    // { username: prevUsername } to { userId: uid }. A rating row created
+    // before ratings carried userId (pre-D1 residue) has no userId to match on,
+    // so it's intentionally left with the stale username rather than rewritten
+    // — this is a documented, deliberate behavior change (see auth.js comment).
+    it('does not rewrite a legacy rating row that has no userId', async () => {
+      await seedUser(TEST_UID, 'oldname')
+      const db = getDB()
+      await db
+        .collection('ratings')
+        .insertOne({ username: 'oldname', recipeId: 'legacy1', rating: 5 })
+
+      const res = await request(app)
+        .post('/api/setUsername?username=newname')
+        .set(AUTH_HEADER)
+      expect(res.status).toBe(200)
+
+      const legacy = await db
+        .collection('ratings')
+        .findOne({ recipeId: 'legacy1' })
+      expect(legacy.username).toBe('oldname')
     })
 
     it('rewrites reportedUsername on open review reports', async () => {
@@ -295,7 +319,7 @@ describe('POST /setUsername', () => {
       const db = getDB()
       await db
         .collection('ratings')
-        .insertOne({ username: 'someoneelse', recipeId: 'r1', rating: 3 })
+        .insertOne({ userId: 'other-uid', username: 'someoneelse', recipeId: 'r1', rating: 3 })
 
       await request(app)
         .post('/api/setUsername?username=newname')

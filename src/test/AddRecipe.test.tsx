@@ -1,6 +1,6 @@
 import React from 'react'
 import { vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { HelmetProvider } from 'react-helmet-async'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -732,6 +732,122 @@ describe('AddRecipe form', () => {
       const { unmount } = renderAddRecipe()
       unmount()
       expect(draftCreate).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('resume hydration vs in-flight keystrokes (W15 bug 3)', () => {
+    it('does not clobber a field the user edits while the draft is still loading', async () => {
+      const user = userEvent.setup()
+      // Control the draft GET so we can type during the sub-second load window.
+      let resolveDraft!: (d: any) => void
+      draftGet.mockReturnValue(
+        new Promise(res => {
+          resolveDraft = res
+        })
+      )
+      renderAddRecipe({ initialEntries: ['/add-recipe?draftId=d1'] })
+
+      // The user starts typing a title before the draft comes back.
+      await user.type(
+        screen.getByPlaceholderText('Add a title to your recipe.'),
+        'My own title'
+      )
+
+      // The draft now lands with its OWN title plus an untouched field.
+      await act(async () => {
+        resolveDraft({
+          _id: 'd1',
+          userId: 'u1',
+          createdAt: '1',
+          updatedAt: '1',
+          title: 'Draft title',
+          description: 'Draft description',
+        })
+      })
+
+      // Pre-fix HYDRATE spread the draft over the form and overwrote the title
+      // the user was typing. The user's in-progress edit must survive, while the
+      // untouched description still hydrates from the draft.
+      await waitFor(() =>
+        expect(
+          screen.getByPlaceholderText('Add a description to your recipe')
+        ).toHaveValue('Draft description')
+      )
+      expect(
+        screen.getByPlaceholderText('Add a title to your recipe.')
+      ).toHaveValue('My own title')
+    })
+  })
+
+  describe('transient resume-hydration failure recovers (W16 seed 2)', () => {
+    it('retries the hydration on the next edit instead of wedging autosave forever', async () => {
+      const user = userEvent.setup()
+      // The first `?draftId` GET fails transiently (5xx) — the draft still
+      // exists. Pre-W16 this was terminal: autosave stayed disabled for the
+      // session and the ONLY signal (an edit) never re-attempted the load, so
+      // the resumed content never arrived and nothing ever autosaved again. The
+      // retry lands the draft on the next edit.
+      draftGet
+        .mockRejectedValueOnce({ isAxiosError: true, response: { status: 503 } })
+        .mockResolvedValueOnce({
+          _id: 'd1',
+          userId: 'u1',
+          createdAt: '1',
+          updatedAt: '1',
+          title: 'Recovered draft',
+          description: 'from the server',
+        })
+      renderAddRecipe({ initialEntries: ['/add-recipe?draftId=d1'] })
+
+      // First attempt fires and fails; wait for the transient-failure toast so
+      // the retry is armed before we type.
+      await waitFor(() => expect(draftGet).toHaveBeenCalledTimes(1))
+      await waitFor(() => expect(toastError).toHaveBeenCalled())
+
+      // The user keeps working — a single edit must re-attempt the hydration
+      // (pre-fix draftGet is only ever called once).
+      await user.type(
+        screen.getByPlaceholderText('Add a title to your recipe.'),
+        'X'
+      )
+      await waitFor(() => expect(draftGet).toHaveBeenCalledTimes(2))
+
+      // The retry succeeds: the untouched description hydrates from the draft,
+      // while the title the user was typing is preserved (merge guard).
+      await waitFor(() =>
+        expect(
+          screen.getByPlaceholderText('Add a description to your recipe')
+        ).toHaveValue('from the server')
+      )
+      expect(
+        screen.getByPlaceholderText('Add a title to your recipe.')
+      ).toHaveValue('X')
+    })
+
+    it('a retry that 404s falls through to a fresh start (draft truly gone)', async () => {
+      const user = userEvent.setup()
+      // Transient failure first, then the draft turns out to be gone on retry.
+      draftGet
+        .mockRejectedValueOnce({ isAxiosError: true, response: { status: 503 } })
+        .mockRejectedValueOnce({
+          isAxiosError: true,
+          response: { status: 404, data: { error: 'Draft not found' } },
+        })
+      renderAddRecipe({ initialEntries: ['/add-recipe?draftId=d1'] })
+      await waitFor(() => expect(draftGet).toHaveBeenCalledTimes(1))
+      await waitFor(() => expect(toastError).toHaveBeenCalled())
+
+      // The edit retries; the 404 routes to the "start a new one" recovery.
+      await user.type(
+        screen.getByPlaceholderText('Add a title to your recipe.'),
+        'Fresh'
+      )
+      await waitFor(() => expect(draftGet).toHaveBeenCalledTimes(2))
+      await waitFor(() =>
+        expect(toastError).toHaveBeenCalledWith(
+          "Couldn't load that draft — starting a new one."
+        )
+      )
     })
   })
 

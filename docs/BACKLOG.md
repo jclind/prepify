@@ -32,6 +32,246 @@ The triage date stamped on items is the date they were filed here, not when they
 
 ---
 
+## Adversarial sweep — 2026-07-11 (post-#281–#302 merges + prod-readiness)
+
+Four read-only audit lanes over everything merged since the 2026-07-09 bug hunt (Waves 9–13, PRs
+#281–#302) plus a cutover-focused prod-readiness pass. Findings only — zero fixes applied
+(audit-first protocol). Severity: **P1** = release blocker · **P2** = real user-facing bug / fix
+before-or-at cutover · **P3** = latent/edge/nit. Each lane also produced an explicit cleared-list
+(the #295 blur-guard hardening, #294 `updatedAtRef` seeding, both TOCTOU trims, all 8 limiter
+mounts + the PUT-drafts no-limiter pin, storage.rules, asyncHandler coverage, client-bundle secret
+hygiene, and the U3 watch items all verified sound — details in the session transcripts).
+
+**P1 — none found.**
+
+> **Wave 14 (2026-07-11 overnight, owner authorized fixes) — ALL FIVE PRs MERGED 2026-07-11**
+> (owner approved via the per-wave confirmation; merges: #304 `0642768` · #307 `0bcd854` ·
+> #306 `421f239` · #305 `e2adec9` · #308 `ce301b3`. Day-session diff review verified #308's
+> deviation against disk (auth.js:191-194 really does `updateMany({ username })` over ratings)
+> and #305's CI-invisible shutdown path (`closeDB` is exported); cross-PR composition checked
+> (#306's userId-less rating seeds are ignored by #308's partial unique index) and proven by
+> full local gates on the merged HEAD: both tsc 0, Vitest 739/2, server Jest 43/902.):**
+> **A** drafts 404-wedge → **#307** (404 recovery: refs cleared + caller nulls id/URL param +
+> toast; re-creates on next edit; flush can't resurrect) ·
+> **B** ratings-index code half + `requireActive` on parse + structural PUT-pin → **#308**
+> (⚠️ DEVIATION: the "stale username index" claim below was WRONG — the `POST /setUsername`
+> rename cascade (`auth.js:191-194`) still `updateMany`s ratings by `username`, so the index was
+> KEPT with corrected comments; boot now provisions the D1 unique+partial index with a caught
+> failure path) ·
+> **C** pagination floors → **#306** (9 routes + 11 regression tests, 894 server tests green) ·
+> **D** IngredientItem in-flight guard → **#304** ·
+> **E** prod hardening → **#305** (/health Mongo ping 200/503, SIGTERM graceful shutdown,
+> unhandledRejection→Sentry+exit, quiet CORS 403, /api JSON 404, FRONTEND_URLS prod warning, CI
+> `release` push trigger).
+> CI: all five green on their merged heads.
+> NEW follow-up seed from B's deviation: **migrate the setUsername rename cascade off
+> `ratings.username` onto `userId`** (rows already carry it) — after which the `username_1` index
+> is fully dead and a follow-up can add the guarded `dropIndex`.
+> NOT claimed (conflict with parked PR #303's files or deliberate deferral): flush-vs-in-flight
+> race, keepalive 429, hydration clobber, signed-out badge, `ratingLastUpdated` drift,
+> `formatDate` guard, API_CONTRACT anchors, FRONTEND_URLS ops check (runbook step, not code).
+
+> **Wave 15 MERGED 2026-07-11 (four disjoint lanes, owner-approved after diff review + CI-green;
+> dev at `c0f0098`):** **A** drafts-autosave cluster → **[#311](https://github.com/jclind/prepify/pull/311)**
+> (one serialized Opus PR closing all four cluster bugs — flush-vs-in-flight 409 retry-once against the
+> server's fresh `updatedAt`, keepalive POST 429/non-2xx now reports failure via `res.ok`, HYDRATE merges
+> a `Partial` filtered to still-pristine fields so in-flight keystrokes survive, and a distinct `conflict`
+> badge + `isSignedIn`-before-no-op-return; +8 failing-before tests, Vitest 739→747; documented trade-off:
+> the keepalive 409 retry supersedes a genuine cross-tab newer write on unload — strictly better than the
+> prior silent-drop, durable server-side-supersede filed below) · **B** setUsername cascade → userId →
+> **[#310](https://github.com/jclind/prepify/pull/310)** (filter `{username}`→`{userId:uid}`, reports
+> cascade + `username_1` index KEPT, legacy userId-less rows now intentionally skipped; db.js index comment
+> reworked to "dead-pending-drop"; +1 Jest test, 902→903) · **C** formatDate honest guard →
+> **[#309](https://github.com/jclind/prepify/pull/309)** (coerce-first `Number(d)` then `isNaN`; all 3
+> callers byte-identical, +5 tests incl. the ISO failing-before) · **D** API_CONTRACT anchors →
+> **[#312](https://github.com/jclind/prepify/pull/312)** (117 of 207 anchors re-anchored, 90 already
+> correct; orchestrator independently verified digit-only via digit-strip diff + 6 on-disk spot-checks).
+> Diff-review caught B's now-false index comment (directed rework). CI: all four 6/6 green on their reviewed
+> heads. NOT boarded (unchanged): `ratingLastUpdated` watch item, all V5/W1/I1/I2 cutover ops, parked #303,
+> the two owner-disposition branches. New follow-up seeds from the wave filed at the bottom of P3 below.
+
+### P2
+
+- `[x]` **Drafts editor wedges permanently when its draft is deleted elsewhere (404 unhandled)** *(fixed in [#307](https://github.com/jclind/prepify/pull/307), Wave 14 · A, merged 2026-07-11: dedicated 404 branch drops the dead `draftId`/`updatedAtRef`, the caller nulls its mirrored id + `?draftId` URL param and toasts, the next edit re-creates via `createDraft`, the badge resets to a calm idle, and the unload flush can no longer resurrect the dead PUT — recovery and flush paths both regression-tested)* —
+  `src/pages/AddRecipe/useDraftAutosave.ts:284-297` handles only `409 DRAFT_LIMIT`/`DRAFT_CONFLICT`;
+  the deliberate `404` from `PUT /drafts/:id` (`server/routes/drafts.js:171-174`, delete-race) hits the
+  generic `else` → `setStatus('error')` with `draftId` still set, so every keystroke retries the dead
+  PUT and `saveNow` never falls back to `createDraft`. Trigger: delete the open draft in another tab's
+  Drafts list, or the `POST /drafts` 25-cap trim deleting the oldest draft *while it's open in a tab*.
+  That tab can never persist again (generic "Couldn't save draft" forever, no recovery guidance). Fix
+  shape: on 404, clear `draftId`/`updatedAtRef` so the next save re-creates, or surface a "draft was
+  deleted — keep editing to save a new copy" state.
+- `[x]` **Cutover gate: ratings `{userId,recipeId}` index is manual-script-only** *(code half fixed in [#308](https://github.com/jclind/prepify/pull/308), Wave 14 · B, merged 2026-07-11: `ensureIndexes` now boot-provisions the D1 unique+partial index with a spec byte-identical to the script's (same-name-different-options would throw) and a log-don't-crash failure path; `username_1` was KEPT — the drop half of this item was wrong, see the Wave-14 correction note. The RELEASE_RUNBOOK §2e script run stays as the explicit prod gate/belt-and-braces)* — `server/db.js`
+  `ensureIndexes` self-provisions every other hot index at boot, but the D1 ratings index lives only in
+  `server/scripts/createModerationIndexes.js:58-66`. Post-cutover, `getSingleUserReviews`,
+  `getAccountCounts`, and every rating/review upsert COLLSCAN prod until that script is run — P1 if the
+  runbook step is skipped (now gated in `RELEASE_RUNBOOK.md` pre-flight). Also: the boot-created
+  `ratings.{username:1}` index (`server/db.js:135`) is stale — no route queries ratings by username
+  anymore. Fix shape: move the `{userId,recipeId}` unique partial index into `ensureIndexes`, drop the
+  username one. *(Wave 14 correction: the drop half was WRONG — the setUsername rename cascade still
+  filters ratings by `username`; #308 moved the D1 index into boot and kept `username_1` with honest
+  comments. See the claim block above for the cascade-migration follow-up seed.)*
+- `[x]` **CORS hard-fails silent if `FRONTEND_URLS` is unset/typo'd on prod Railway** *(closed 2026-07-11: the optional hardening shipped in [#305](https://github.com/jclind/prepify/pull/305) — a loud startup warning when `NODE_ENV=production` and `FRONTEND_URLS` is unset — and the actual Railway-value verification is a RELEASE_RUNBOOK.md gate; the remaining work is operational, at cutover)* —
+  `server/app.js:28` falls back to `localhost:3000` only; no prod-domain fallback, and `/health` stays
+  green while every browser call is CORS-rejected. Operational, not code: verify the Railway value
+  (`https://prepifymeals.com,https://www.prepifymeals.com`) at cutover (now in `RELEASE_RUNBOOK.md`).
+  Optional hardening: log a startup warning when `NODE_ENV=production` and `FRONTEND_URLS` is unset.
+
+### P3
+
+- `[x]` **Negative `perPage` reaches `.limit()`/`.skip()` repo-wide → 500** *(fixed in [#306](https://github.com/jclind/prepify/pull/306), Wave 14 · C, merged 2026-07-11: house `Math.min(Math.max(parseInt(x) || default, 1), MAX_PER_PAGE)` floor on all listed routes incl. the public `GET /api/recipes`, + regression tests incl. the reports.test.js negative-perPage gap)* — only `bugReports.js:110`
+  and `publicProfile.js:157-160` floor `perPage` at 1. Missing everywhere else, most notably the
+  **public unauthenticated** `GET /api/recipes` (`server/routes/recipes.js:61-64`:
+  `?page=1&recipesPerPage=-5` → negative skip → 500; closest to P2), plus `reviews.js:275-278,322-324`,
+  `reports.js:198-201` (its #289 comment claims the guard defeats negative skip — defeated by negative
+  perPage; test gap: `reports.test.js` never tries negative perPage), and `admin.js:177,329,478`.
+  Huge/NaN `perPage` are handled correctly everywhere. Fix shape: house `Math.max(1, …)` floor, one
+  sweep PR + tests.
+- `[x]` **`users.js` paginated routes floor neither `page` nor `perPage`** *(fixed in [#306](https://github.com/jclind/prepify/pull/306), Wave 14 · C, merged 2026-07-11: both routes floor `page` at 0 and `perPage` at 1, incl. the in-memory-slice variant; 4 regression tests)* — `getCreatedRecipes`
+  (`server/routes/users.js:73`, real `.skip()` → 500 on `?page=-1`) and `getSavedRecipes` (`:123`,
+  in-memory slice → silently returns `[]`). Fold into the pagination-floor sweep above.
+- `[x]` **`POST /api/ingredients/parse` lacks `requireActive`** *(fixed in [#308](https://github.com/jclind/prepify/pull/308), Wave 14 · B, merged 2026-07-11: `requireActive` mounted between `verifyToken` and `parseLimiter` (house write-surface order); the wiring pin updated to the 4-handler chain and the route added to the requireActive suite)* — `server/routes/ingredients.js:118`
+  mounts `verifyToken → parseLimiter` only, so a just-suspended/banned account (Firebase token valid up
+  to ~1h) can still burn paid Spoonacular quota, bounded by the ~90/min per-uid limiter. The wiring test
+  (`writeLimiter.wiring.test.js:109-115`) pins the current chain, so this is a design gap, not drift.
+- `[x]` **`IngredientItem` edit-submit has no in-flight guard across the enrichment await** *(fixed in [#304](https://github.com/jclind/prepify/pull/304), Wave 14 · D, merged 2026-07-11: `isSubmittingRef` set before the first await and cleared in a finally; handleBlur drops in-flight blurs — the pending submit's own tail exits edit mode, so no wedge; pending-window tests via a deferred promise + real focus movement)* —
+  `src/pages/AddRecipe/Ingredients/IngredientItem.tsx:144-193`: blur-away or a second Enter during the
+  pending `getIngredientData` await fires a full second enrichment (duplicate request + duplicate 429
+  toast + extra rate-limit consumption; no corruption — writes are id-keyed and the #295 stuck-flag
+  hardening holds). `InstructionItem` unaffected (synchronous submit). Fix shape: an `isSubmittingRef`
+  in-flight guard.
+- `[x]` **Unload flush can race an in-flight autosave and silently drop the newest edits** *(fixed in [#311](https://github.com/jclind/prepify/pull/311), Wave 15 · A/Bug1, merged 2026-07-11: `flushDraftKeepalive` now retries the keepalive PUT once against the server's fresh `updatedAt` read from the 409 `{draft}` body, so the newest content supersedes the older in-flight write regardless of landing order; failing-before tested. Documented trade-off: on a GENUINE cross-tab conflict the retry supersedes the other tab's newer write on unload where the interactive path shows the conflict badge — strictly better than the prior silent-drop; the durable server-side-supersede fix is filed below)* —
+  `useDraftAutosave.ts:361-387`: flush proceeds while `inFlightRef` is true, so both PUTs carry the same
+  base `updatedAt`; if the older in-flight save lands first, the keepalive (newer content) 409s during
+  unload — invisible. Narrow window; fix shape: have flush await/supersede the in-flight save or retry
+  once with the bumped `updatedAt`.
+- `[x]` **Keepalive `POST /drafts` 429 is treated as success** *(fixed in [#311](https://github.com/jclind/prepify/pull/311), Wave 15 · A/Bug2, merged 2026-07-11: the keepalive create now checks `res.ok`, so a resolved-but-non-2xx (429 rate-limit, 5xx) reports the failed create instead of masquerading as a saved draft; failing-before tested)* — `src/api/drafts.ts:93-105`: a 429 is a
+  resolved fetch, so the flush reports true and the new draft is never created. Abuse-only reachability
+  (30 creates/min; the 25-draft cap trips first).
+- `[x]` **`?draftId` resume hydration clobbers keystrokes typed during the load** *(fixed in [#311](https://github.com/jclind/prepify/pull/311), Wave 15 · A/Bug3, merged 2026-07-11: HYDRATE now dispatches a `Partial` filtered to only fields still at their fresh-form (`PRISTINE_FORM`) default — a field the user typed into during the async `getDraft` differs from default and is kept; the `{...state,...values}` reducer merges the rest; normal-resume path unchanged; failing-before tested)* —
+  `src/pages/AddRecipe/useRecipeForm.ts:282-298`: fields aren't disabled during `getDraft`; the HYDRATE
+  dispatch spreads over anything typed in the sub-second window.
+- `[x]` **Signed-out badge stale on passive sign-out; 409 conflict badge is generic** *(fixed in [#311](https://github.com/jclind/prepify/pull/311), Wave 15 · A/Bug4, merged 2026-07-11: the `isSignedIn` check now sits BEFORE the unchanged-content early-return so a passive sign-out corrects the badge immediately; a distinct `conflict` `DraftStatus` → "Reload to see the latest" (`RotateCwIcon`) replaces the generic error badge on a cross-tab 409, `aria-live` intact; failing-before tested)* —
+  `useDraftAutosave.ts:327-334` early-returns on unchanged content before the `isSignedIn` check, so the
+  badge corrects only on the next keystroke; a cross-tab conflict's "reload to see latest" guidance is
+  toast-only (`DraftSaveStatus.tsx:13-23` shows generic "Couldn't save draft").
+- `[x]` **`/health` is a static 200** *(fixed in [#305](https://github.com/jclind/prepify/pull/305), Wave 14 · E, merged 2026-07-11: live `{ping:1}` on the getDB() singleton raced against a 2s timeout — 200 ok / 503 degraded, can never throw)* — `server/app.js:66` never checks Mongo, so a runtime Mongo drop
+  leaves Railway serving a green health check on a wedged instance (boot-time failure exits correctly).
+- `[x]` **No `SIGTERM`/`unhandledRejection` handlers, no graceful shutdown** *(fixed in [#305](https://github.com/jclind/prepify/pull/305), Wave 14 · E, merged 2026-07-11: SIGTERM/SIGINT drain + closeDB + 10s force-exit; unhandledRejection/uncaughtException → Sentry capture + flush + exit 1; lives in index.js so untestable by the suite — reviewed by hand incl. the closeDB export)* — `server/index.js`:
+  Railway deploys drop in-flight requests; an unhandled rejection crashes without a Sentry capture.
+- `[x]` **Rejected CORS origins throw → 500 + Sentry capture per bot probe** *(fixed in [#305](https://github.com/jclind/prepify/pull/305), Wave 14 · E, merged 2026-07-11: the rejection error is tagged `status = 403`, so the backstop renders a quiet JSON 403 and skips the Sentry capture (it only captures ≥500); regression-tested)* — `server/app.js:50,106-117`:
+  scanner traffic from random origins generates Sentry quota noise. Fix shape: respond 403 quietly.
+- `[x]` **Unmatched `/api/*` paths return Express's default HTML "Cannot GET"** *(fixed in [#305](https://github.com/jclind/prepify/pull/305), Wave 14 · E, merged 2026-07-11: `/api`-scoped JSON 404 catch-all mounted after every router, before the error backstop)* — no JSON 404 catch-all
+  before the error middleware; breaks the house JSON-error contract (no leak).
+- `[x]` **CI doesn't run on direct pushes to `release`** *(fixed in [#305](https://github.com/jclind/prepify/pull/305), Wave 14 · E, merged 2026-07-11: `release` added to the workflow's push branches. The branch-protection required-checks confirmation on `release` remains an owner/settings check — not visible in-repo)* — `.github/workflows/test.yml:19` triggers on
+  `push: [main, development]` only; a development→release **PR** runs everything, a direct push/merge runs
+  nothing. Confirm branch protection marks the jobs required on `release` (settings not visible in-repo).
+- `[x]` **PUT-drafts no-limiter pin only checks the 5 exported limiter instances** *(fixed in [#308](https://github.com/jclind/prepify/pull/308), Wave 14 · B, merged 2026-07-11: structural `isRateLimiter` check — express-rate-limit middleware carries `getKey`/`resetKey` — asserts NO handler in the PUT chain is a limiter at all, exported or not)* —
+  `writeLimiter.wiring.test.js:84-97`: a brand-new limiter instance added to the PUT chain wouldn't fail
+  the pin. Residual test-gap note from the limiter lane's cleared-list.
+- `[ ]` **`ratingLastUpdated` is the next mixed-type field brewing** — written as BSON `Date`
+  (`reviews.js:78`) but `''` on `$setOnInsert`/`removeRating`, typed `string` in `src/types.ts`. Nothing
+  sorts on it today (V5 PR #303 lane noticed). Watch item; normalize only if something starts reading it.
+- `[x]` **`formatDate`'s `Number.isNaN(d)` guard is dead code for strings** *(fixed in [#309](https://github.com/jclind/prepify/pull/309), Wave 15 · C, merged 2026-07-11: coerce-first — `const n = Number(d); Number.isNaN(n) ? new Date(d) : new Date(n)` — so a non-numeric/ISO string now parses via `new Date(d)` instead of rendering Invalid Date; all 3 grep'd callers pass epoch-ms strings so output is byte-identical; +5 tests incl. the ISO failing-before case)* — `src/util/formatDate.ts:17`:
+  `Number.isNaN('abc')` is always false (no coercion), so every string takes `new Date(Number(d))` — an
+  ISO string input would render Invalid Date. Harmless for epoch-ms inputs; the ternary lies about intent.
+- `[x]` **Migrate the `setUsername` rename cascade off `ratings.username` onto `userId`** *(filed
+  2026-07-11, off the Wave 14 · B [#308](https://github.com/jclind/prepify/pull/308) deviation; **fixed in
+  [#310](https://github.com/jclind/prepify/pull/310), Wave 15 · B, merged 2026-07-11**: the cascade now
+  `updateMany({ userId: uid }, { $set: { username } })`s — the `reports` cascade (`reportedUsername`) and
+  the `ratings.username_1` index both KEPT; the db.js index comment was reworked to "dead — kept only until
+  the guarded dropIndex follow-up lands, PR #310 is what killed it". Documented behavior change: a legacy
+  rating row missing `userId` (pre-D1 residue) is no longer rewritten by a rename. +1 Jest regression test
+  (userId-matched rename + legacy-row skip, both failing-before). **The `dropIndex` follow-up is now
+  unblocked — see the P3-tail seed below.**)* —
+  `auth.js:191-194` still `updateMany({ username: prevUsername })`s ratings to carry a handle change;
+  rating rows already carry `userId` (D1), so the cascade can filter on that instead and simply `$set`
+  the new username. After that lands, the boot-created `ratings.username_1` index (kept by #308 for
+  exactly this query) is fully dead: a follow-up can add the guarded `dropIndex` to `ensureIndexes`
+  and remove it from `createModerationIndexes.js`. Low.
+- `[x]` **API_CONTRACT.md handler line anchors have drifted** *(fixed in [#312](https://github.com/jclind/prepify/pull/312), Wave 15 · D, merged 2026-07-11: 207 `file:NN` anchors audited — 117 re-anchored against disk at HEAD, 90 already correct; orchestrator independently verified the diff is digit-only (110 removed lines byte-identical to added after stripping digits) + 6 on-disk spot-checks. 5 CONTENT-drift items — stale prose, not line numbers — were out of scope and are filed as the prose-drift seed below)* — e.g. `/newReview` says `reviews.js:66`
+  (actual ~97). Doc-only sweep to re-anchor or drop line numbers.
+
+### Wave 15 follow-up seeds (filed 2026-07-11, off the #309–#312 lane reports; none cutover-gated)
+
+> **Wave 16 CLAIMED 2026-07-11** — the five seeds below run as four disjoint lanes, subagent-per-lane in
+> worktrees, MERGES-HELD policy (run to PR-open + diff-review + CI-green, single owner confirmation; no merge
+> on silence). Lanes: **A** `feat/w16-drafts-durable-supersede` (Opus; seeds 1+2 FUSED into one serialized
+> drafts-autosave-cluster lane — durable unload-flush supersede via an explicit `supersede:true` keepalive
+> body flag the server honors by dropping the `updatedAt` precondition, settable only by the flush path; +
+> transient resume-hydration retry-on-next-edit falling through to #307's recovery) · **B**
+> `feat/w16-drop-username-index` **— PARKED 2026-07-11, seed premise FALSE**: the lane's mandatory pre-cut
+> verification found the `username_1` index is NOT dead. `admin.js:103` (`$match: { username: {$in} }` in the
+> admin-users review tally) and `admin.js:250` (`.find({ username })` in admin-user-detail recentReviews) are
+> live admin-dashboard reads of `ratings` by bare `username` (plus the `reports.js:236` legacy fallback);
+> `createModerationIndexes.js` even documents the index as "admin user list review tally". #310 migrated only
+> the setUsername *cascade* to `userId`, so the "DEAD INDEX" comment it added to `db.js:132` is itself WRONG.
+> No changes made, no PR. Re-filed as a corrected, properly-scoped seed below (migrate the admin/reports reads
+> to `userId` FIRST, then the drop + comment-fix can land). · **C** `feat/w16-formatdate-dedup` (Sonnet, tiny; dedup `UserRecipeThumbnail.tsx`'s
+> local `formatDate` onto `src/util/formatDate` — verified byte-identical for valid epoch-ms inputs, the
+> local null/0 guard MUST be preserved) · **D** `feat/w16-api-contract-prose` (Sonnet, doc-only; fix the 5
+> prose-drift API_CONTRACT.md entries — all 5 premises verified stale on disk at HEAD). NOT boarded:
+> `ratingLastUpdated` watch item, all V5/W1/I1/I2 cutover ops, parked #303, the two owner-disposition
+> branches.
+>
+> **Wave 16 MERGED 2026-07-11** (owner-approved after diff review + 6/6 CI-green on each head SHA; dev at
+> `89c6316`): **A** drafts durable-supersede + hydration-retry → **[#315](https://github.com/jclind/prepify/pull/315)**
+> (one serialized Opus PR: `PUT /drafts/:id` now takes an optional `supersede:true` that drops the `updatedAt`
+> precondition on a `{_id}`-only match — flush-path-only, never persisted, still ownership-checked, can 404 but
+> never 409; #311's client 409-retry dance REMOVED as structurally dead; + a bounded (4-attempt) resume-hydration
+> retry armed on the user's next edit that falls through to #307's 404/403 recovery; +11 tests, Vitest 752→755,
+> Jest 903→908) · **C** formatDate dedup → **[#313](https://github.com/jclind/prepify/pull/313)** (delegates
+> valid-date formatting to `src/util/formatDate` short-form — verified byte-identical for epoch-ms inputs — while
+> KEEPING the local null/0 guard so garbage `createdAt` still hides the date; +2 tests) · **D** API_CONTRACT
+> prose-drift → **[#314](https://github.com/jclind/prepify/pull/314)** (all 5 entries corrected against disk;
+> entry 4's open-guard turned out to EXIST at reports.js:339 so 3 tied spots were fixed for internal consistency;
+> doc-only). **B** PARKED (see below) — its pre-cut verification proved the `username_1` index is NOT dead.
+> Orchestrator close-out: added the `supersede` flag to the API_CONTRACT PUT /drafts/:id entry; full gates on the
+> merged HEAD (tsc 0, Vitest 757/2, Jest 908/43); worktrees + local/remote lane branches + placeholders removed.
+
+- `[x]` **Durable draft unload-flush — server-side supersede/force-write** *(DONE in [#315](https://github.com/jclind/prepify/pull/315), Wave 16 · A, merged 2026-07-11: the keepalive flush now PUTs `supersede:true`; the server applies it without the `updatedAt` precondition (matched on `{_id}` alone, still ownership-checked, never 409s), so the newest content wins the unload race deterministically instead of via #311's client-side 409-retry — which is removed. Residual limit, unchanged: it still only lands if the JS context survives unload (`fetch(keepalive:true)`); a hard process-kill can still drop it, and a genuine cross-tab conflict now resolves last-write-wins by design. The GENUINE-conflict-supersedes trade-off from #311 is now explicit and server-enforced.)* — the keepalive
+  409-retry (`flushDraftKeepalive`, `src/api/drafts.ts`) only lands if the JS context survives the unload
+  (pagehide→bfcache, mobile background/freeze); a hard tab-close/process-kill drops both the original save
+  and the retry. And on a GENUINE cross-tab conflict the retry supersedes the other tab's newer write. A
+  durable fix needs a server-side "force/supersede" draft-write path so the newest content wins
+  deterministically without client-side racing. Low; the #311 fix is already strictly better than the
+  prior silent-drop.
+- `[x]` **Transient resume-hydration failure permanently disables autosave** *(DONE in [#315](https://github.com/jclind/prepify/pull/315), Wave 16 · A, merged 2026-07-11: a transient (network/5xx) `getDraft` failure now arms a bounded retry (`MAX_HYDRATION_ATTEMPTS = 4`) fired on the user's next edit — an edit is the only signal the user is still working while autosave is disabled — so a one-off blip recovers on its own instead of wedging the session; only after exhausting retries does it fall back to the "refresh to try again" prompt. A retry that 404/403s routes into #307's "draft gone → re-create on next edit" recovery. Failing-before test proved the prior wedge.)* —
+  in `useRecipeForm`, a 5xx/network failure of the `?draftId` `getDraft` leaves `hydrated` false forever
+  with only a "refresh to try again" toast — no auto-retry affordance, unlike the 404/403 recovery path
+  (#307). Candidate for a small lane: retry/re-enable hydration on a recoverable error. Low-medium.
+- `[~]` **`ratings.username_1` is NOT droppable yet — admin/reports still read ratings by `username`**
+  *(re-scoped 2026-07-11 after Wave 16 · B's pre-cut verification proved the original "now-dead" premise
+  FALSE; supersedes the earlier "guarded dropIndex, safe post-#310" framing)* — #310 migrated ONLY the
+  setUsername rename cascade (`auth.js`) to filter ratings by the stable `userId`; it did NOT touch the admin
+  dashboard's username-keyed reads, so the boot-created `ratings.username_1` index still backs live queries:
+  **(a)** `server/routes/admin.js:103` — the admin-users review tally aggregates `{ $match: { username:
+  { $in: usernames } } }` (every admin-users page load); **(b)** `server/routes/admin.js:250` — admin-user
+  detail does `ratings.find({ username: usernameDoc.username }).limit(5)` ("recentReviews"); **(c)**
+  `server/routes/reports.js:236` — a legacy-report fallback `findOne({ username: reportedUsername, recipeId })`
+  when a report lacks `reportedUid`. `createModerationIndexes.js:42` documents the index accordingly ("admin
+  user list review tally (still keyed by reportedUsername)"). ALSO: the "DEAD INDEX — no live query uses it"
+  comment #310 added at `server/db.js:132` is factually WRONG and should be corrected. Proper fix, in order:
+  (1) migrate `admin.js:103`/`admin.js:250` (and decide the `reports.js:236` legacy fallback) from `username`
+  to `userId`-keyed reads — same shape as #310's cascade migration, with the same legacy-row tradeoff
+  (rows missing `userId` drop out of the tally); (2) THEN the guarded `dropIndex('username_1')` + remove the
+  standalone create from `db.js`/`createModerationIndexes.js` + fix the db.js comment + flip #308's
+  `ensureIndexes.test.js` EXISTS assertion to absence. Low-medium (was mis-sized as a trivial cleanup). NOTE:
+  do NOT touch the SEPARATE compound `recipeId_1_username_1` index — it backs `getReviews`/recompute by
+  `recipeId` and is out of scope.
+- `[x]` **`UserRecipeThumbnail.tsx` has a local `formatDate` duplicate** *(DONE in [#313](https://github.com/jclind/prepify/pull/313), Wave 16 · C, merged 2026-07-11: the hand-rolled `toLocaleDateString` body is removed and delegates to the shared `formatDate(createdAt, true)` — verified byte-identical output for valid epoch-ms inputs across every month/day/year — while a local wrapper (`formatCreated`) KEEPS the null/0 guard so a missing/garbage `createdAt` still hides the date instead of rendering the shared util's un-guarded epoch-zero fallback; +2 tests pin the rendered date and the null-hide.)* —
+  `src/pages/Account/UserRecipes/UserRecipeThumbnail.tsx` defines its own (already-correct `Number(createdAt)`)
+  `formatDate` instead of importing the shared `src/util/formatDate`. Dedup onto the shared util. Nit.
+- `[x]` **API_CONTRACT.md prose-drift (5 entries) — content stale, not line numbers** *(DONE in [#314](https://github.com/jclind/prepify/pull/314), Wave 16 · D, merged 2026-07-11: all 5 corrected against disk at HEAD — (1) addRecipe now typed `Omit<RecipeType,…>` so it omits the four dead fields; (2) `getIngredientData` reframed as "partially used" — it now branches on the 429/`RATE_LIMITED` code with `Retry-After`, only `getRecipeNutrition` still swallows; (3) `getCreatedRecipes` now floors negative page at users.js:75; (4) the `PATCH /reports/:id` open-guard turned out to EXIST at reports.js:339 (`409 ALREADY_RESOLVED`), so the entry + its Notes + the bug-reports cross-reference were all corrected for internal consistency; (5) `getUsername` count fixed to the 2 real sites. Doc-only.)* —
+  (1) `src/api/recipes.ts` addRecipe no longer posts `rating`/`views`/`numTimesSaved`/`numTimesMade` (now
+  explicitly `Omit`ted); (2) `getIngredientData` now has dedicated 429 handling, contradicting the doc's
+  "surfaces the generic axios err.message"; (3) `getCreatedRecipes` now floors a negative `page` (#306),
+  doc says it doesn't; (4) `PATCH /reports/:id` now has an open-only guard (`409 ALREADY_RESOLVED`), doc
+  says it lacks one; (5) the `getUsername` client-call-site count (doc cites 3 in `recipes.ts`, only 2
+  exist). Doc-prose follow-up sweep. Low.
+
+---
+
 ## Bugs
 
 - `[x]` *(fixed in [#281](https://github.com/jclind/prepify/pull/281), B1: per-row enrichment status lifted into `useRecipeForm` and gated through the validator — submit blocks while any row is in flight, clears reactively when it settles, so a create can no longer persist `ingredientData:null`; errored rows stay publishable by design.)* **Publishing/saving mid-enrichment persists `ingredientData:null` and an understated `servingPrice`** *(from `sweeps/BUG_HUNT_2026-07-09.md` M3, filed 2026-07-10; boarded Wave 9 · B1)* — the add flow inserts ingredients optimistically with `ingredientData:null` and fills price/image when async enrichment resolves (up to 12s later). `handleSubmit`'s create path isn't gated on rows still loading (only `validateRecipeForm`'s count check + the `addRecipeLoading` button-disable), so a submit inside that window persists the ingredient as `ingredientData:null` **forever**, and `calculateServingPrice` (which sums only non-null rows) silently understates the stored price shown on cards + the recipe page. `src/pages/AddRecipe/useRecipeForm.ts:389`, `IngredientsContainer.tsx:97-102`. **Fix:** lift per-row enrichment status to the form and gate submit while any row is in flight.

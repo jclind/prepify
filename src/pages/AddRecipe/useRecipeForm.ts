@@ -146,6 +146,13 @@ function initFormState(initialRecipe?: RecipeType): RecipeFormState {
   }
 }
 
+// Fresh create-form defaults, used to detect which fields the user has already
+// touched when a resumed draft lands mid-load. A field whose live value still
+// equals its default here is "untouched" and safe to hydrate; one that differs
+// was typed into during the async draft GET and must NOT be clobbered. See the
+// merge guard in the resume-hydration effect.
+const PRISTINE_FORM = initFormState()
+
 // When `initialRecipe` is supplied the form runs in edit mode: every field is
 // pre-populated from the existing recipe and submitting updates it (preserving
 // ratings/saves) instead of creating a new one.
@@ -173,6 +180,14 @@ export function useRecipeForm(initialRecipe?: RecipeType) {
     mealTypes,
     nutritionLabels,
   } = state
+
+  // Live mirror of the reducer state. The resume-hydration effect below runs its
+  // HYDRATE dispatch inside an async `.then`, long after its closure captured the
+  // state at effect time; it reads this ref to see whether the user typed into a
+  // field during the sub-second draft load (the reducer state only changes on an
+  // edit) and, if so, skips clobbering that field.
+  const stateRef = useRef(state)
+  stateRef.current = state
 
   // Stable per-field setters that preserve the useState dispatch contract, so
   // child components (and their React.memo boundaries) see an unchanging setter
@@ -264,6 +279,26 @@ export function useRecipeForm(initialRecipe?: RecipeType) {
   // drafts created in the current session (the user never had an image to lose).
   const [resumedFromDraft, setResumedFromDraft] = useState(false)
 
+  // ─── Resume-hydration retry (transient-failure recovery) ──────────────────
+  // A transient (network/5xx) failure of the `?draftId` GET below used to be
+  // terminal for the session: autosave stayed disabled (hydrated=false) with no
+  // recovery but a manual refresh, so a one-off blip permanently wedged the
+  // editor. We now re-attempt the GET on the user's next edit (autosave is off
+  // while un-hydrated, so an edit is the only signal the user is still working
+  // and the network may have recovered). Bumping this counter re-runs the
+  // hydration effect; the retry is bounded so a persistently-down server doesn't
+  // fire a GET per keystroke forever — after MAX_HYDRATION_ATTEMPTS we fall back
+  // to the manual-refresh prompt. A 404/403 on any attempt still routes to the
+  // "draft is gone → start fresh" recovery below (autosave re-creates on the
+  // next edit), never to this retry path.
+  const [hydrationRetry, setHydrationRetry] = useState(0)
+  // Armed by a transient hydration failure; the next edit consumes it to fire a
+  // retry. A ref so the edit-watcher effect reads it without re-subscribing.
+  const hydrationPendingRetryRef = useRef(false)
+  // Count of hydration GETs that have failed transiently, to bound the retries.
+  const hydrationFailuresRef = useRef(0)
+  const MAX_HYDRATION_ATTEMPTS = 4
+
   // Load the draft named in the URL whenever it points at one we haven't loaded
   // yet. Runs on mount for `?draftId=…`, and again when the resume banner
   // navigates to a draft while this page is already mounted — same route, so no
@@ -279,23 +314,35 @@ export function useRecipeForm(initialRecipe?: RecipeType) {
         if (draft) {
           setDraftId(urlDraftId)
           setDraftUpdatedAt(draft.updatedAt)
-          dispatch({
-            type: 'HYDRATE',
-            values: {
-              title: draft.title ?? '',
-              description: draft.description ?? '',
-              servings: String(draft.servings ?? ''),
-              prepTime: draft.prepTime != null ? minToHrMin(draft.prepTime) : null,
-              cookTime: draft.cookTime != null ? minToHrMin(draft.cookTime) : null,
-              fridgeLife: draft.fridgeLife ?? 0,
-              freezerLife: draft.freezerLife ?? 0,
-              ingredients: draft.ingredients ?? [],
-              instructions: draft.instructions ?? [],
-              cuisine: draft.cuisine ?? '',
-              mealTypes: draft.mealTypes ?? [],
-              nutritionLabels: draft.nutritionLabels ?? [],
-            },
-          })
+          const hydrateValues: Partial<RecipeFormState> = {
+            title: draft.title ?? '',
+            description: draft.description ?? '',
+            servings: String(draft.servings ?? ''),
+            prepTime: draft.prepTime != null ? minToHrMin(draft.prepTime) : null,
+            cookTime: draft.cookTime != null ? minToHrMin(draft.cookTime) : null,
+            fridgeLife: draft.fridgeLife ?? 0,
+            freezerLife: draft.freezerLife ?? 0,
+            ingredients: draft.ingredients ?? [],
+            instructions: draft.instructions ?? [],
+            cuisine: draft.cuisine ?? '',
+            mealTypes: draft.mealTypes ?? [],
+            nutritionLabels: draft.nutritionLabels ?? [],
+          }
+          // The draft GET is async: a keystroke typed into a field during the
+          // sub-second load would be silently overwritten by this HYDRATE (it
+          // spreads over the current form). Merge instead of clobber — keep any
+          // field the user already edited (live value differs from the fresh-form
+          // default) and hydrate only the untouched rest, so the resumed content
+          // still lands without eating in-flight keystrokes.
+          const live = stateRef.current
+          const mergedValues = Object.fromEntries(
+            Object.entries(hydrateValues).filter(
+              ([key]) =>
+                JSON.stringify(live[key as keyof RecipeFormState]) ===
+                JSON.stringify(PRISTINE_FORM[key as keyof RecipeFormState])
+            )
+          ) as Partial<RecipeFormState>
+          dispatch({ type: 'HYDRATE', values: mergedValues })
           // A draft autosaved while a row's lookup was still in flight persists
           // that row as ingredientData:null. Nothing re-enriches on resume, so
           // without a status the row would render settled and the submit gate
@@ -325,15 +372,25 @@ export function useRecipeForm(initialRecipe?: RecipeType) {
           // Transient failure (network/5xx) on a draft that likely still
           // exists. Leave autosave disabled (hydrated stays false) so we don't
           // create a duplicate or overwrite the unloaded draft with a partial
-          // form; ask the user to retry.
-          toast.error('Could not load your draft. Refresh to try again.')
+          // form. Rather than wedge the session until a manual refresh, arm a
+          // bounded retry: the user's next edit re-runs this GET (see the
+          // edit-watcher effect below), so a blip that clears recovers on its
+          // own. Only give up (and ask for a refresh) once the retries are
+          // exhausted, so a persistently-failing server isn't hit per keystroke.
+          hydrationFailuresRef.current += 1
+          if (hydrationFailuresRef.current < MAX_HYDRATION_ATTEMPTS) {
+            hydrationPendingRetryRef.current = true
+            toast.error("Couldn't load your draft — we'll retry as you keep editing.")
+          } else {
+            toast.error('Could not load your draft. Refresh to try again.')
+          }
         }
       })
     return () => {
       cancelled = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [urlDraftId])
+  }, [urlDraftId, hydrationRetry])
 
   // Serializable draft content mirrored from form state. Times are stored as
   // minutes (matching the recipe shape); empty values are omitted.
@@ -371,6 +428,20 @@ export function useRecipeForm(initialRecipe?: RecipeType) {
     ]
   )
 
+  // Fire a hydration retry on the user's first edit after a transient failure.
+  // While un-hydrated, autosave is disabled and no draft GET is otherwise in
+  // flight, so an edit (draftContent identity change) is the trigger to try
+  // again. The ref is consumed here so exactly one retry is armed per failure —
+  // a re-armed retry only follows the *next* transient failure, not every
+  // keystroke. Placed after `draftContent` so its identity is defined when this
+  // effect subscribes.
+  useEffect(() => {
+    if (hydrated || !hydrationPendingRetryRef.current) return
+    hydrationPendingRetryRef.current = false
+    setHydrationRetry(n => n + 1)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftContent])
+
   // A brand-new draft is created once the form holds any real content, not just
   // a title (see hasDraftableContent). An all-default form still never creates
   // one, keeping the Drafts list and the per-user draft count clean; updating
@@ -394,6 +465,19 @@ export function useRecipeForm(initialRecipe?: RecipeType) {
     },
     onLimitReached: (message: string) => toast.error(message),
     onConflict: (message: string) => toast.error(message),
+    onDeletedElsewhere: (message: string) => {
+      // The draft we were autosaving into was deleted elsewhere (another tab's
+      // Drafts list, or the per-user cap trim evicting the oldest). Drop the dead
+      // id + URL param — mirroring the hydration-404 recovery above — so the next
+      // edit re-creates a fresh draft instead of retrying a doomed PUT. Current
+      // work isn't lost: it re-creates on the next change.
+      setDraftId(null)
+      setDraftUpdatedAt(null)
+      const next = new URLSearchParams(searchParams)
+      next.delete('draftId')
+      setSearchParams(next, { replace: true })
+      toast.error(message)
+    },
   })
 
   // Reflect the active draft id in the URL (replace) so a refresh resumes the

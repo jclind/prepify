@@ -24,4 +24,10 @@
   &.error {
     color: s.$error-red;
   }
+
+  // Cross-tab conflict: a distinct amber "reload" prompt, not the red error —
+  // nothing failed, the user just needs to reload for the latest version.
+  &.conflict {
+    color: s.$alert-warning-amber-text;
+  }
 }

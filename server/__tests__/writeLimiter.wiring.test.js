@@ -39,6 +39,18 @@ const routeHandlers = (router, method, path) => {
   return layer.route.stack.map((s) => s.handle)
 }
 
+// Structurally identify ANY express-rate-limit middleware — including a limiter
+// instance a route file never exports. `rateLimit()` (used by every limiter in
+// middleware/writeLimiter.js and the per-route parseLimiter/reportLimiter) attaches
+// `getKey` and `resetKey` function properties to the returned middleware; a plain
+// route handler or auth middleware has neither. This lets the pins below assert
+// "is / is not a limiter" without needing a reference to the specific singleton, so
+// a brand-new, not-yet-exported limiter added to a route can't slip past them.
+const isRateLimiter = (handler) =>
+  typeof handler === 'function' &&
+  typeof handler.getKey === 'function' &&
+  typeof handler.resetKey === 'function'
+
 describe('per-surface write limiters are wired onto every moderated write route', () => {
   const cases = [
     ['recipes', recipesRouter, 'post', '/addRecipe', recipeWriteLimiter],
@@ -81,10 +93,14 @@ describe('per-surface write limiters are wired onto every moderated write route'
     expect(limiters.size).toBe(5)
   })
 
-  it('PUT /drafts/:id (autosave) is NOT wired to draftWriteLimiter or any other limiter', () => {
-    // The autosave path is deliberately unlimited (see the comment at that
-    // route's mount point in drafts.js) — assert none of the per-surface
-    // limiter instances appear in its handler chain.
+  it('PUT /drafts/:id (autosave) is NOT wired to draftWriteLimiter or ANY rate-limiter', () => {
+    // The autosave path is deliberately unlimited (see the comment at that route's
+    // mount point in drafts.js). Two layers of assertion:
+    //   1. none of the KNOWN per-surface limiter instances appear, and
+    //   2. structurally, NO handler in the chain is a rate-limiter at all — so a
+    //      brand-new limiter instance added to this route (which the instance
+    //      checks alone would miss, since they only know the 5 exported singletons)
+    //      still fails this pin.
     const handlers = routeHandlers(draftsRouter, 'put', '/:id')
     const allLimiters = [
       recipeWriteLimiter,
@@ -94,6 +110,7 @@ describe('per-surface write limiters are wired onto every moderated write route'
       draftWriteLimiter,
     ]
     allLimiters.forEach((limiter) => expect(handlers).not.toContain(limiter))
+    expect(handlers.some(isRateLimiter)).toBe(false)
   })
 
   it('collections POST /collections and PATCH /collections/:id SHARE one limiter instance', () => {
@@ -106,21 +123,32 @@ describe('per-surface write limiters are wired onto every moderated write route'
     expect(renameHandlers).toContain(collectionWriteLimiter)
   })
 
-  it('ingredients POST /parse mounts a user limiter right after verifyToken', () => {
-    // parseLimiter is internal to the route file (not exported), so assert
-    // structurally: verifyToken first, exactly one middleware before the handler.
+  it('ingredients POST /parse mounts requireActive + a user limiter + the daily paid-quota limiter after verifyToken', () => {
+    // parseLimiter + the paid-quota limiter are internal to the route file (not
+    // exported), so assert structurally: verifyToken → requireActive → per-minute
+    // limiter → daily paid-quota limiter → handler. requireActive gates paid
+    // Spoonacular quota behind an active account; the paidQuotaLimiter adds the
+    // per-account + global DAILY ceiling (audit H1), matching the write-surface order.
     const handlers = routeHandlers(ingredientsRouter, 'post', '/parse')
     expect(handlers[0]).toBe(verifyToken)
-    expect(handlers).toHaveLength(3) // verifyToken, parseLimiter, handler
+    expect(handlers[1]).toBe(requireActive)
+    expect(handlers).toHaveLength(5) // verifyToken, requireActive, parseLimiter, paidQuotaLimiter, handler
+    // The 3rd handler is the unexported per-user parseLimiter — identify it
+    // structurally rather than by reference.
+    expect(isRateLimiter(handlers[2])).toBe(true)
+    // The 4th is the daily paid-quota limiter (audit H1), named for structural id.
+    expect(handlers[3].name).toBe('paidQuotaLimiter')
   })
 
-  it('gamification POST /acknowledgeAchievements mounts profileWriteLimiter after verifyToken', () => {
-    // A userProfiles write that shares the profile budget. Unlike the profile
-    // routes above it has no requireActive, so assert only verifyToken → limiter.
+  it('gamification POST /acknowledgeAchievements mounts requireActive + profileWriteLimiter after verifyToken', () => {
+    // A userProfiles write that shares the profile budget. requireActive was added
+    // (audit L1) so a suspended/banned account can't keep mutating gamification
+    // state: assert verifyToken → requireActive → limiter.
     const handlers = routeHandlers(gamificationRouter, 'post', '/acknowledgeAchievements')
-    expect(handlers).toContain(verifyToken)
+    expect(handlers[0]).toBe(verifyToken)
+    expect(handlers[1]).toBe(requireActive)
     expect(handlers).toContain(profileWriteLimiter)
-    expect(handlers.indexOf(verifyToken)).toBeLessThan(handlers.indexOf(profileWriteLimiter))
+    expect(handlers.indexOf(requireActive)).toBeLessThan(handlers.indexOf(profileWriteLimiter))
   })
 
   it('reports POST /reports mounts a breadth limiter after verifyToken + requireActive', () => {
@@ -148,6 +176,7 @@ describe('requireActive is wired onto every blocked-user write surface', () => {
     ['recipes', recipesRouter, 'post', '/recipes/:id/save'],
     ['recipes', recipesRouter, 'delete', '/recipes/:id/save'],
     ['recipes', recipesRouter, 'post', '/madeRecipe'],
+    ['ingredients', ingredientsRouter, 'post', '/parse'],
   ]
 
   it.each(cases)(

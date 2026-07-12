@@ -1,5 +1,11 @@
 # Prepify — 1.0 Cutover Runbook
 
+> **⚠ SUPERSEDED (2026-07-11) by [`RELEASE_RUNBOOK.md`](./RELEASE_RUNBOOK.md)** — which folds in
+> Waves 9–13, corrects Phase 5's mis-filing of the rating-type migration (it is sequencing-critical
+> and coupled to the deploy — V5, PR #303), and grounds every step in the 2026-07-11 dev rehearsal
+> ([`evidence/CUTOVER_REHEARSAL_2026-07-11.md`](./evidence/CUTOVER_REHEARSAL_2026-07-11.md)).
+> The smoke-test checklists in this file are still referenced from there; the ordered steps are not.
+
 The single ordered checklist for flipping Prepify from **beta → 1.0**. Everything the parallel
 backlog program tracked (`BACKLOG_ROADMAP.md` Waves 1–8) is merged; the only work left is this
 owner-driven cutover. It is deliberately **not** automatable — the beta flip is the intentional

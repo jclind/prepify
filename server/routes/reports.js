@@ -195,7 +195,11 @@ router.get('/reports', verifyToken, requireAdmin, asyncHandler(async (req, res) 
   if (status && ['open', ...RESOLUTIONS].includes(status)) filter.status = status
   if (targetType && TARGET_TYPES.includes(targetType)) filter.targetType = targetType
 
-  const limit = Math.min(parseInt(perPage) || 20, MAX_PER_PAGE)
+  // Floor at 1 so a negative ?perPage can't sneak past the Math.min cap above
+  // and make `limit` negative. The page floor below alone isn't sufficient —
+  // a negative perPage made `limit` negative, so `skip = page * limit` went
+  // negative again for page > 0 (MongoDB rejects that as a 500) (#289).
+  const limit = Math.min(Math.max(parseInt(perPage) || 20, 1), MAX_PER_PAGE)
   // Floor at 0 so a negative ?page never produces a negative .skip() (which
   // MongoDB rejects, surfacing as a 500 instead of a clean first page).
   const skip = Math.max(0, parseInt(page) || 0) * limit

@@ -49,6 +49,21 @@ to the *sweep program*); this file applies it to the **general backlog**. Compan
 > [Wave 13 section](#wave-13--wave-12-follow-up-tail-boarded-2026-07-11)). The collection-name
 > moderation seed closed won't-fix (owner decision, owner-private visibility). The `addReview`
 > numeric flip stays held for the owner's V5 cutover.
+>
+> **Wave 14 boarded AND drained 2026-07-11** — unlike earlier waves it lives on the
+> [BACKLOG.md 2026-07-11 sweep board](./BACKLOG.md#adversarial-sweep--2026-07-11-post-281302-merges--prod-readiness),
+> not this table: the overnight cutover-readiness session (see `docs/RELEASE_RUNBOOK.md` +
+> `docs/evidence/CUTOVER_REHEARSAL_2026-07-11.md`) re-seeded the board with a fresh sweep
+> (0 P1 / 3 P2 / 13 P3) and ran five fix lanes A–E as PRs #304–#308; the day session
+> diff-reviewed and merged all five (2026-07-11). PR #303 (`[DO NOT MERGE]` V5 flip half)
+> stays parked for the owner's cutover.
+>
+> **Waves 15 & 16 boarded AND drained 2026-07-11** — also on the BACKLOG.md sweep board, not this table.
+> Wave 15 (#309–#312) drained the unclaimed P3 sweep tail; Wave 16 drained its own follow-up seeds as
+> **#313** (formatDate dedup) · **#314** (API_CONTRACT prose-drift) · **#315** (drafts durable-supersede +
+> resume-hydration retry). Wave 16 · B (drop the `ratings.username_1` index) was **PARKED**: its mandatory
+> pre-cut verification proved the index is NOT dead (admin.js/reports.js still read `ratings` by `username`);
+> re-scoped as a "migrate the admin/reports reads to `userId` first" seed. dev at `89c6316`.
 
 ---
 
@@ -2517,3 +2532,81 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   verbatim, with F1's agent independently handling the DRAFT_LIMIT-409-below-the-rate-cap test
   interaction correctly. Remaining board: owner-gated ops only (V5 sequencing-critical cutover,
   W1, I1/I2) + two branches awaiting owner disposition.
+- **2026-07-11** — **Wave 14 merged (five overnight-authored PRs) — the sweep's fix lanes are
+  drained.** The overnight cutover-readiness session had left lanes A–E open with merges held;
+  this session diff-reviewed all five and merged after all-green CI on each head: #304 `0642768`
+  (IngredientItem in-flight guard, deferred-promise + real-focus tests) · #307 `0bcd854` (drafts
+  404-wedge recovery: hook refs + caller id/URL cleared, re-create on next edit, flush pinned) ·
+  #306 `421f239` (pagination floors on 9 routes + 11 tests) · #305 `e2adec9` (prod hardening:
+  live /health ping 200/503, graceful shutdown, fatal-error Sentry+exit, quiet CORS 403, /api
+  JSON 404, FRONTEND_URLS warning, CI `release` trigger) · #308 `ce301b3` (D1 ratings index
+  boot-provisioned with script-identical spec, `requireActive` on /parse, structural
+  no-limiter-on-PUT pin; its DEVIATION — keeping `username_1` because the setUsername rename
+  cascade still queries ratings by username — verified against auth.js:191-194 before merge).
+  Review also hand-verified what CI can't see: #305's index.js shutdown path (`closeDB` export)
+  and the #306↔#308 cross-PR seed/unique-index composition; full local gates re-run on the
+  merged HEAD: tsc 0 ×2, Vitest 739/2, server Jest 43/902. Close-out: BACKLOG sweep items
+  ticked (3 P2 + 10 P3 fixed; 7 P3 remain deliberately unclaimed + 1 new seed filed: migrate
+  the setUsername cascade onto userId, then drop `username_1`); API_CONTRACT.md updated
+  (/health semantics, CORS-403/JSON-404/lifecycle notes, /parse requireActive + 403, pagination
+  floors on all affected endpoints incl. striking getCreatedRecipes' stale "not floored" text);
+  lane branches deleted local+remote. PR #303 stays parked `[DO NOT MERGE]` for the V5 cutover.
+- **2026-07-11** — **Independent audit of Waves 13–15: FINDINGS (1 live, low-sev), everything
+  substantive VERIFIED.** A read-only session verified all 11 PRs (#301–#312) at their merge
+  commits and tracked survival to HEAD; all gates reconciled exactly (incl. arithmetically
+  across Wave 16's landings). Three findings were historical and already corrected by Wave 16;
+  the one live finding is fixed in this commit: **db.js's "DEAD INDEX" comment on
+  `ratings.username_1` was false** — three queries still filter ratings by bare username
+  (admin.js user-list tally :103, user-detail recentReviews :~250, reports.js legacy fallback
+  :232-238); the comment (and ensureIndexes.test.js's twin) now name the three real consumers
+  and the drop condition. Wave 16 had already parked the dropIndex lane on the same evidence.
+- **2026-07-11** — **Adversarial runbook audit: GO-WITH-FIXES — all fixes applied to
+  RELEASE_RUNBOOK.md this commit.** Verified against the scripts on disk before applying:
+  (1) **2e is the cutover's riskiest moment** — the unique `{userId,recipeId}` build can E11000
+  on historical duplicate ratings, the script exits 1 (gateable) but the db.js boot path SWALLOWS
+  the same failure, so #308 is not a safety net → 2e is now a HARD exit-0 gate before §5's
+  deploy, fed by a new §1 duplicate-ratings pre-check aggregation; (2) §2's "every script exits
+  0 only when nothing is pending" was false — `reconcileRatingAggregates` and
+  `backfillRatingUserIds` always exit 0 (gate them on checkMigrationState, never `$?`; both also
+  hardcode `db('prepify')`); 2c gained an explicit checkMigrationState re-run gate; (3) §1 now
+  notes checkMigrationState has NO V5 coverage; (4) 3a gained the prod-SA acquisition step (the
+  SA JSON is a different credential from the firebase-CLI login); (5) §5 gained a functional
+  post-deploy CORS curl check and the rolling-deploy drain caveat before 2d-(v)/(vi); (6) the
+  rehearsal-coverage claim was tightened (2b ran 2026-07-09 separately; 2e never rehearsed
+  end-to-end — dev had 0 updatable rows). Stale #308-still-open and username_1 notes refreshed.
+- **2026-07-11** — **Security & abuse audit landed ([#316](https://github.com/jclind/prepify/pull/316)
+  `2e030b8`) — [`docs/SECURITY_AUDIT_2026-07-11.md`](./SECURITY_AUDIT_2026-07-11.md).** Exhaustive
+  static + live-exploit pass across 9 dimensions against the dev stack; every finding reproduced on a
+  running `:4000` with minted user/second-user/admin Firebase tokens. **32 confirmed** (1 high, 12
+  medium, 17 low, 2 info), **3 refuted**. Perimeter verified solid — no NoSQL injection, no
+  mass-assignment privilege escalation (`CREATABLE_RECIPE_FIELDS` allowlist holds), IDOR on edit/delete
+  enforced by `req.uid`, admin routes gated by `requireAdmin`. Confirmed themes are info-leak +
+  business-logic abuse: **H1** paid third-party APIs have no aggregate/daily cost ceiling → Sybil quota
+  drain; **M1** public review endpoints over-return reviewer + admin Firebase UIDs and recipe internal
+  stamps; **M2** ratings/reviews never load the target recipe → self-rating, ghost targets, XP farming;
+  plus author impersonation (`authorUsername`), `servingPrice` bounds bypass, ranking-counter inflation,
+  username integrity, moderation-queue flooding, and two write routes missing `requireActive`. Doc-only
+  landing — **no fixes yet**; remediation is queued as follow-up work (suggested order + per-finding
+  evidence/repro in the doc), to be picked up verify-first in a fresh session.
+- **2026-07-11** — **Security audit remediation batch 1 landed ([#317](https://github.com/jclind/prepify/pull/317)
+  `0b5842d`) — H1, M1, M2, M3, M4, L1 all fixed.** Every finding was **reproduced live against the dev
+  `:4000` stack first** (minted user/second-user/admin Firebase tokens), fixed, then re-run to prove closure
+  with a passing legitimate control; remediation status table added to `docs/SECURITY_AUDIT_2026-07-11.md`.
+  **H1** (paid-API cost ceiling): new `server/util/paidQuota.js` — per-account **+ global** daily counters
+  (`paidQuota` collection, TTL-reaped via a new `db.js` index) mounted on `/ingredients/parse`,
+  `/nutrition/details`, and recipe creates; `ingr` array length-capped at `MAX_INGREDIENTS`. The global
+  ceiling is the Sybil defeater — live-proved a **fresh** account gets 429'd once the aggregate is spent
+  despite being under its own per-account cap. Caps env-overridable (`PAID_QUOTA_<SURFACE>_USER_DAILY`/
+  `_GLOBAL_DAILY`, documented in `CLAUDE.md`); a `console.error` fires on the global trip as an
+  aggregate-spend alert hook. **M1**: inclusion projection on `getReviews`/`getSingleUserReviews` +
+  `publicRecipeProjection` on the `$lookup` sub-pipeline — reviewer `userId`, `moderatedBy`/`moderatedAt`/
+  `moderationHidden`, and recipe internal stamps no longer reach public callers (`ReviewType.userId` made
+  optional in `src/types.ts` to match). **M2**: `addRating`/`newReview` now load the target recipe — 404 on
+  missing/hidden, 403 on self-rating. **M3**: `authorUsername` removed from `CREATABLE_RECIPE_FIELDS`,
+  derived server-side from `req.uid` at create (**behaviour change:** a create now requires a username →
+  400, consistent with `addRating`/`newReview`). **M4**: `servingPrice` recomputed onto the body **before**
+  `validateRecipeBounds` on create + edit, closing the gap #292's recompute left (it ran after the check).
+  **L1**: `requireActive` added to `/nutrition/details` + `/acknowledgeAchievements`. Tests: server **928
+  green** (44 suites, +19 incl. new `paidQuota.test.js`), frontend **757 green**, `tsc` clean; CI green incl.
+  the E2e/Cypress run. All `SECAUDIT-` dev fixtures (incl. residue from the audit's own run) purged.
+  **Deferred to follow-up waves: M5/M6/M7 + remaining LOW/INFO (L2–L6, I1–I2).**

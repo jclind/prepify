@@ -129,12 +129,52 @@ async function ensureIndexes() {
     console.error('Failed to create title text index on recipes:', err.message)
   }
 
-  // Backs GET /api/getSingleUserReviews (a user's ratings) and the ratings count
-  // in GET /api/getAccountCounts, both of which filter ratings by username.
+  // LIVE INDEX — an earlier comment here declared it dead after #310 moved the
+  // setUsername rename cascade to `userId`; that was wrong (2026-07-11 audit).
+  // Three queries still filter ratings by bare `username`: the admin user-list
+  // review tally (routes/admin.js — $match { username: { $in } } aggregate),
+  // the admin user-detail recentReviews lookup (routes/admin.js — find by
+  // username), and the reports legacy fallback for rows that never captured a
+  // reportedUid (routes/reports.js). The index stays until ALL THREE migrate
+  // to `userId`; only then does the guarded-dropIndex follow-up (BACKLOG seed,
+  // parked by Wave 16) become safe. Do not drop on the strength of the rename
+  // cascade alone.
   try {
     await db.collection('ratings').createIndex({ username: 1 })
   } catch (err) {
     console.error('Failed to create index on ratings.username:', err.message)
+  }
+
+  // D1 ratings identity index — the "one rating per (user, recipe)" invariant every
+  // review upsert relies on. Provisioned at boot (in addition to the deliberate
+  // scripts/createModerationIndexes.js run) so the window between a fresh deploy's
+  // write path going live and someone running the script can't slip a duplicate
+  // past the upsert filter. Definition mirrors that script's entry EXACTLY — same
+  // key, same name, same options (unique + partialFilterExpression) — because a
+  // same-name-but-different-options createIndex throws; identical specs make the
+  // two calls a no-op for each other. UNIQUE enforces the invariant; PARTIAL on
+  // `userId: { $exists: true }` so it ignores not-yet-backfilled legacy docs (and
+  // still serves every read, which always predicates on an existing userId). Also
+  // backs the userId-prefix scans (getSingleUserReviews, account counts,
+  // exportMyData, delete-account cascade).
+  try {
+    await db.collection('ratings').createIndex(
+      { userId: 1, recipeId: 1 },
+      {
+        name: 'userId_1_recipeId_1',
+        unique: true,
+        partialFilterExpression: { userId: { $exists: true } },
+      }
+    )
+  } catch (err) {
+    // A unique index can fail to build over legacy data holding pre-backfill
+    // duplicates (cf. the username_lower guard above). Log rather than crash
+    // startup — the duplicates need manual cleanup + the backfill re-run, but the
+    // rest of the server should still come up.
+    console.error(
+      'Failed to create D1 unique index on ratings.userId_recipeId:',
+      err.message
+    )
   }
 
   // Backs GET /getReviews, the per-recipe review list on every recipe-detail page.
@@ -206,6 +246,16 @@ async function ensureIndexes() {
     await ingredientMisses.createIndex({ type: 1, count: -1, lastSeen: -1 })
   } catch (err) {
     console.error('Failed to create indexes on ingredientMisses:', err.message)
+  }
+
+  // Paid-API daily spend counters (audit H1). Docs are keyed by UTC-day + surface
+  // (+ uid for the per-account counter) and carry an `expireAt`; a TTL index reaps
+  // them shortly after the day rolls over so the collection never grows unbounded.
+  // expireAfterSeconds: 0 means "delete once the wall clock passes expireAt".
+  try {
+    await db.collection('paidQuota').createIndex({ expireAt: 1 }, { expireAfterSeconds: 0 })
+  } catch (err) {
+    console.error('Failed to create TTL index on paidQuota.expireAt:', err.message)
   }
 }
 

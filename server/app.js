@@ -17,6 +17,7 @@ const adminRoutes = require('./routes/admin')
 const collectionRoutes = require('./routes/collections')
 const Sentry = require('@sentry/node')
 const { GENERIC_500_MESSAGE } = require('./util/respondServerError')
+const { getDB } = require('./db')
 
 const app = express()
 
@@ -37,6 +38,19 @@ const netlifyPreviewPattern = /^https:\/\/deploy-preview-\d+--prepify\.netlify\.
 const isProduction = process.env.NODE_ENV === 'production'
 const localhostDevPattern = /^http:\/\/(localhost|127\.0\.0\.1):30(0\d|10)$/
 
+// Loud startup warning: in production with FRONTEND_URLS unset/empty, the CORS
+// allow-list silently falls back to 'http://localhost:3000' — which no real
+// browser client sends — so every production origin (except Netlify deploy
+// previews) is blocked and the frontend can't reach the API. This only warns;
+// the fallback behaviour is intentionally left unchanged.
+if (isProduction && !(process.env.FRONTEND_URLS || '').trim()) {
+  console.warn(
+    'WARNING: FRONTEND_URLS is unset in production. CORS will fall back to ' +
+      "'http://localhost:3000' and block all real production origins. Set " +
+      'FRONTEND_URLS to your production frontend origin(s) (comma-separated).'
+  )
+}
+
 app.use(cors({
   origin: (origin, callback) => {
     if (
@@ -47,7 +61,12 @@ app.use(cors({
     ) {
       callback(null, true)
     } else {
-      callback(new Error('Not allowed by CORS'))
+      // A rejected origin is an expected client condition, not a server fault:
+      // tag it 403 so the error backstop renders it as a quiet JSON 403 and
+      // does NOT Sentry-capture it (the backstop only captures status >= 500).
+      const err = new Error('Not allowed by CORS')
+      err.status = 403
+      callback(err)
     }
   },
   credentials: true,
@@ -63,7 +82,29 @@ if (isProduction) app.set('trust proxy', 1)
 
 // /health stays above the limiter so platform health checks and uptime
 // monitors can never be throttled into a false "down".
-app.get('/health', (req, res) => res.json({ status: 'ok' }))
+//
+// A live DB round-trip (not a static 200): a wedged instance whose Mongo
+// connection has dropped must report unhealthy so Railway restarts it instead
+// of leaving the deploy green on a broken pod. The ping is raced against a 2s
+// timeout so a hung/unreachable Mongo can't stall the healthcheck past the
+// driver's serverSelectionTimeoutMS. It reuses the getDB() singleton (never a
+// new client) and can never throw: a not-yet-connected getDB(), a failed ping,
+// or the timeout all collapse to a 503 { status: 'degraded' }.
+app.get('/health', async (req, res) => {
+  let timer
+  try {
+    const db = getDB() // throws if connectDB() hasn't completed yet
+    const timeout = new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error('health ping timeout')), 2000)
+    })
+    await Promise.race([db.command({ ping: 1 }), timeout])
+    res.json({ status: 'ok' })
+  } catch (err) {
+    res.status(503).json({ status: 'degraded' })
+  } finally {
+    clearTimeout(timer)
+  }
+})
 
 // Generous global per-IP backstop — normal browsing is tens of requests a
 // minute, so only scripted abuse approaches this. The tight per-user limit on
@@ -94,6 +135,15 @@ app.use('/api', reportRoutes)
 app.use('/api', bugReportRoutes)
 app.use('/api', adminRoutes)
 app.use('/api', collectionRoutes)
+
+// JSON 404 for unmatched API routes. Without this, an unknown /api/* path falls
+// through to Express's default handler, which returns an HTML "Cannot GET …"
+// page — a JSON API should answer with JSON. Scoped to /api and mounted AFTER
+// every router (so real routes still match) but BEFORE the error backstop.
+// Non-API surfaces (/health, anything outside /api) are unaffected.
+app.use('/api', (req, res) => {
+  res.status(404).json({ error: 'Not found' })
+})
 
 // Central error backstop. Route handlers catch their own errors (via
 // respondServerError), but errors thrown *outside* a route's try/catch — a
