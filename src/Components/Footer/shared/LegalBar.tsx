@@ -13,7 +13,7 @@ const LegalBar: FC<LegalBarProps> = ({ showVersion = true, className = '' }) => 
   <div className={`footer-legal ${className}`.trim()}>
     <span className='footer-copy'>© {currentYear} Prepify</span>
     <BugReportModal />
-    {showVersion && <span className='footer-version'>v{version}-beta</span>}
+    {showVersion && <span className='footer-version'>v{version}</span>}
   </div>
 )
 
