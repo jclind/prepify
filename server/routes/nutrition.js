@@ -1,8 +1,10 @@
 const { Router } = require('express')
-const { verifyToken } = require('../middleware/auth')
+const { verifyToken, requireActive } = require('../middleware/auth')
 const { makeUserLimiter } = require('../middleware/writeLimiter')
+const { makePaidQuotaLimiter } = require('../util/paidQuota')
 const { GENERIC_500_MESSAGE } = require('../util/respondServerError')
 const { asyncHandler } = require('../util/asyncHandler')
+const { MAX_INGREDIENTS } = require('../util/recipeLimits')
 
 const router = Router()
 
@@ -18,7 +20,24 @@ const nutritionLimiter = makeUserLimiter({
   message: 'Too many nutrition lookups — wait a minute and try again.',
 })
 
-router.post('/details', verifyToken, nutritionLimiter, asyncHandler(async (req, res) => {
+// Daily spend ceiling on the paid Edamam surface (audit H1) — a per-account and a
+// global daily cap on top of the per-minute limiter, so a Sybil swarm of fresh
+// accounts can't drain the nutrition budget across the day. Caps are overridable
+// via PAID_QUOTA_NUTRITION_USER_DAILY / PAID_QUOTA_NUTRITION_GLOBAL_DAILY. A real
+// user hits nutrition once per recipe save, so 150/account/day is far above human
+// use while still bounding a single rogue account hard.
+const nutritionQuota = makePaidQuotaLimiter({
+  surface: 'nutrition',
+  perUserDaily: 150,
+  globalDaily: 6000,
+  message: 'Daily nutrition-lookup limit reached — please try again tomorrow.',
+})
+
+// requireActive sits between verifyToken and the limiter (the house write-surface
+// order, mirroring /api/ingredients/parse) so a just-suspended/banned account —
+// whose ID token stays valid for up to ~1h — can't keep burning paid Edamam
+// quota through this proxy (audit L1).
+router.post('/details', verifyToken, requireActive, nutritionLimiter, nutritionQuota, asyncHandler(async (req, res) => {
   const { ingr, title } = req.body
   if (
     !Array.isArray(ingr) ||
@@ -28,6 +47,15 @@ router.post('/details', verifyToken, nutritionLimiter, asyncHandler(async (req, 
     return res
       .status(400)
       .json({ error: 'ingr must be a non-empty array of strings' })
+  }
+  // Bound the array length (audit H1 rollup): a recipe can't exceed MAX_INGREDIENTS
+  // rows, so a payload larger than that is either malformed or an attempt to make
+  // one paid Edamam call do the work of many. The 100 kb body limit alone let
+  // thousands of short strings through.
+  if (ingr.length > MAX_INGREDIENTS) {
+    return res
+      .status(400)
+      .json({ error: `ingr cannot contain more than ${MAX_INGREDIENTS} items` })
   }
 
   const appId = process.env.EDAMAM_APP_ID

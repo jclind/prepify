@@ -2,6 +2,7 @@ const { Router } = require('express')
 const { ingredientParser } = require('@jclind/ingredient-parser')
 const { verifyToken, requireActive } = require('../middleware/auth')
 const { makeUserLimiter } = require('../middleware/writeLimiter')
+const { makePaidQuotaLimiter } = require('../util/paidQuota')
 const { GENERIC_500_MESSAGE } = require('../util/respondServerError')
 const { asyncHandler } = require('../util/asyncHandler')
 const { getDB } = require('../db')
@@ -82,6 +83,21 @@ const parseLimiter = makeUserLimiter({
   message: 'Too many ingredient lookups — wait a minute and try again.',
 })
 
+// Daily spend ceiling on the paid Spoonacular surface (audit H1) — a per-account
+// and a global daily cap on top of the per-minute parseLimiter, so a Sybil swarm
+// of fresh accounts (each of which resets the per-uid minute budget) can't drain
+// the enrichment budget across the day. The parse route fires once per ingredient
+// row, so the per-account daily allowance is generous — a heavy author filling
+// several max-size recipes a day stays well under 600 — while the global ceiling
+// bounds total spend regardless of account count. Overridable via
+// PAID_QUOTA_INGREDIENTS_USER_DAILY / PAID_QUOTA_INGREDIENTS_GLOBAL_DAILY.
+const parseQuota = makePaidQuotaLimiter({
+  surface: 'ingredients',
+  perUserDaily: 600,
+  globalDaily: 20000,
+  message: 'Daily ingredient-lookup limit reached — please try again tomorrow.',
+})
+
 // Spoonacular migrated CDNs: the old spoonacular.com/cdn host now 301-redirects;
 // img.spoonacular.com serves the image directly. The parser's buildImageUrl
 // still constructs the old host (node_modules/@jclind/ingredient-parser/dist/
@@ -118,7 +134,7 @@ function mapIngredientData(data) {
 // requireActive sits between verifyToken and the limiter (the house write-surface
 // order) so a just-suspended/banned account — whose ID token stays valid for up to
 // ~1h — can't keep burning paid Spoonacular quota through the enrichment proxy.
-router.post('/parse', verifyToken, requireActive, parseLimiter, asyncHandler(async (req, res) => {
+router.post('/parse', verifyToken, requireActive, parseLimiter, parseQuota, asyncHandler(async (req, res) => {
   const { ingredientString } = req.body
   if (!ingredientString || typeof ingredientString !== 'string') {
     return res.status(400).json({ error: 'ingredientString must be a non-empty string' })

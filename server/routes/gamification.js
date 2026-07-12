@@ -2,7 +2,7 @@ const express = require('express')
 const { asyncHandler } = require('../util/asyncHandler')
 const router = express.Router()
 const { getDB } = require('../db')
-const { verifyToken } = require('../middleware/auth')
+const { verifyToken, requireActive } = require('../middleware/auth')
 const { profileWriteLimiter } = require('../middleware/writeLimiter')
 const { getGamificationCountsFor } = require('../util/accountCounts')
 const { computeGamification, ACHIEVEMENTS } = require('../util/gamification')
@@ -33,8 +33,10 @@ router.get('/getGamification', verifyToken, asyncHandler(async (req, res) => {
 // profileWriteLimiter mirrors the sibling userProfiles writes (updateProfile,
 // updatePrivacy, …): cheap + idempotent, but it's still an authed per-user write,
 // so it shares the same per-uid write budget rather than relying only on the
-// coarse global per-IP backstop.
-router.post('/acknowledgeAchievements', verifyToken, profileWriteLimiter, asyncHandler(async (req, res) => {
+// coarse global per-IP backstop. requireActive gates it like every other content
+// write so a suspended/banned account can't keep mutating gamification state for
+// the ~1h token lifetime (audit L1).
+router.post('/acknowledgeAchievements', verifyToken, requireActive, profileWriteLimiter, asyncHandler(async (req, res) => {
   const { ids } = req.body || {}
   if (!Array.isArray(ids)) {
     return res.status(400).json({ error: 'ids must be an array' })

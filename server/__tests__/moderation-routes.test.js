@@ -81,6 +81,17 @@ beforeEach(() => {
   admin.__updateUser.mockClear()
 })
 
+// addRecipe derives authorUsername from the caller's uid→username mapping (audit
+// M3), so the create-path tests need a usernames doc for TEST_UID or they'd 400
+// before reaching the moderation tiers under test. Scoped to the two create
+// describes (the reviews/profile describes seed their own user via seedUser).
+const seedCreatorUsername = () =>
+  getDB().collection('usernames').updateOne(
+    { _id: TEST_UID },
+    { $set: { username: 'chef_test', username_lower: 'chef_test' } },
+    { upsert: true }
+  )
+
 afterEach(async () => {
   admin.__resetClaims()
   admin.__resetUsers()
@@ -97,6 +108,7 @@ afterEach(async () => {
 })
 
 describe('POST /addRecipe — moderation tiers', () => {
+  beforeEach(seedCreatorUsername)
   it('high confidence → 422 blocked, nothing persisted', async () => {
     moderateText.mockResolvedValue(HIGH)
     const res = await request(app).post('/api/addRecipe').set(AUTH).send(RECIPE_BODY)
@@ -273,6 +285,7 @@ describe('username + profile blocking', () => {
 })
 
 describe('fail-open at the route layer', () => {
+  beforeEach(seedCreatorUsername)
   it('classifier-disabled/error verdict (clean) lets the recipe save', async () => {
     moderateText.mockResolvedValue({ ...CLEAN, source: 'error' })
     const res = await request(app).post('/api/addRecipe').set(AUTH).send(RECIPE_BODY)
@@ -284,6 +297,7 @@ describe('fail-open at the route layer', () => {
 // ── P2: image moderation, collapsed with the text verdict on the recipe path ──
 
 describe('POST /addRecipe — image moderation tiers (text clean)', () => {
+  beforeEach(seedCreatorUsername)
   it('high-confidence image → 422 blocked, nothing persisted', async () => {
     moderateImage.mockResolvedValue(IMG_HIGH)
     const res = await request(app).post('/api/addRecipe').set(AUTH).send(RECIPE_BODY)

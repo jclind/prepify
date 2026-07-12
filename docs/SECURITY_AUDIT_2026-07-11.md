@@ -7,6 +7,23 @@
 
 ---
 
+## Remediation log
+
+**Batch 1 (2026-07-11)** — verified-before-fixed against dev, each with a live repro + a re-run proving closure and a passing control:
+
+| Finding | Status | Fix summary |
+|---|---|---|
+| **H1** · paid-API aggregate cost ceiling | ✅ Fixed | New `server/util/paidQuota.js` — per-account + **global** daily counters (Mongo, TTL-reaped) mounted on `/ingredients/parse`, `/nutrition/details`, and recipe creates; `ingr` array length-capped. Live proof: per-account cap trips, and the global ceiling stops a **fresh** account (Sybil defeat). |
+| **M1** · review endpoints leak reviewer/admin UIDs + stamps | ✅ Fixed | Inclusion projection on `getReviews`/`getSingleUserReviews` + `publicRecipeProjection` on the `$lookup` sub-pipeline. `userId`/`moderatedBy`/`moderatedAt`/`moderationHidden` + recipe internal stamps no longer reach public callers. |
+| **M2** · ratings/reviews never load target recipe | ✅ Fixed | `addRating`/`newReview` now load the recipe: 404 on missing/hidden, 403 on self-rating. |
+| **M3** · client-controlled `authorUsername` | ✅ Fixed | Removed from `CREATABLE_RECIPE_FIELDS`; derived server-side from `req.uid`→username at create. |
+| **M4** · `servingPrice` recompute defeats its bounds check | ✅ Fixed | `servingPrice` recomputed onto the body **before** `validateRecipeBounds` on create + edit, so the persisted value is bounds-checked. |
+| **L1** · two write routes missing `requireActive` | ✅ Fixed | Added `requireActive` to `/nutrition/details` and `/acknowledgeAchievements`. |
+
+Deferred to follow-up waves: **M5/M6/M7** and the remaining **LOW/INFO** items (L2–L6, I1–I2).
+
+---
+
 ## TL;DR
 
 The **hard perimeter holds.** The scary classes came back clean: **no NoSQL injection**, **no mass-assignment privilege escalation** (you can't forge `isAdmin`/`authorId`/`points`/`rating` — the field-allowlist blocks it), admin routes are correctly gated by `requireAdmin`, and cross-user object tampering (IDOR on edit/delete) is enforced by `req.uid` ownership checks.

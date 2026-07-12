@@ -222,6 +222,75 @@ describe('POST /addRating', () => {
   })
 })
 
+// ─── Audit M2: rating/review target must exist, be visible, and not be self ─────
+// addRating + newReview previously never loaded the recipe they wrote against, so
+// they accepted ghost/hidden targets and let an author rate their OWN recipe.
+
+describe('addRating / newReview — target recipe validation (audit M2)', () => {
+  const SELF_RECIPE = 'recipe-self-001'
+  const HIDDEN_RECIPE = 'recipe-hidden-001'
+  beforeEach(async () => {
+    const db = getDB()
+    // A recipe the TEST_UID caller owns (self-rating target) and a soft-hidden one.
+    await db.collection('recipes').insertMany([
+      { _id: SELF_RECIPE, userId: TEST_UID, title: 'My Own Recipe', rating: { rateCount: 0, rateValue: 0 } },
+      { _id: HIDDEN_RECIPE, userId: OTHER_UID, status: 'hidden', title: 'Hidden Recipe', rating: { rateCount: 0, rateValue: 0 } },
+    ])
+  })
+
+  it('addRating on a NONEXISTENT recipe → 404 (no rating written)', async () => {
+    const res = await request(app)
+      .post('/api/addRating?recipeId=ghost-recipe-xyz&rating=5')
+      .set(AUTH_HEADER)
+    expect(res.status).toBe(404)
+    expect(await getDB().collection('ratings').countDocuments({ recipeId: 'ghost-recipe-xyz' })).toBe(0)
+  })
+
+  it('addRating on a HIDDEN recipe → 404', async () => {
+    const res = await request(app)
+      .post(`/api/addRating?recipeId=${HIDDEN_RECIPE}&rating=5`)
+      .set(AUTH_HEADER)
+    expect(res.status).toBe(404)
+  })
+
+  it('addRating on the caller’s OWN recipe → 403 (no self-rating)', async () => {
+    const res = await request(app)
+      .post(`/api/addRating?recipeId=${SELF_RECIPE}&rating=5`)
+      .set(AUTH_HEADER)
+    expect(res.status).toBe(403)
+    expect(res.body.error).toMatch(/your own recipe/i)
+    expect(await getDB().collection('ratings').countDocuments({ recipeId: SELF_RECIPE })).toBe(0)
+  })
+
+  it('newReview on a NONEXISTENT recipe → 404 (no review written, no XP farming)', async () => {
+    const res = await request(app)
+      .post('/api/newReview')
+      .set(AUTH_HEADER)
+      .send({ recipeId: 'ghost-recipe-xyz', reviewText: 'nice' })
+    expect(res.status).toBe(404)
+    expect(await getDB().collection('ratings').countDocuments({ recipeId: 'ghost-recipe-xyz' })).toBe(0)
+  })
+
+  it('newReview on the caller’s OWN recipe → 403', async () => {
+    const res = await request(app)
+      .post('/api/newReview')
+      .set(AUTH_HEADER)
+      .send({ recipeId: SELF_RECIPE, reviewText: 'best recipe ever' })
+    expect(res.status).toBe(403)
+    expect(res.body.error).toMatch(/your own recipe/i)
+  })
+
+  it('CONTROL: a valid rating on someone else’s visible recipe still succeeds', async () => {
+    // RECIPE_ID (seeded in the shared beforeEach) has no author uid, so it isn't
+    // the caller's own recipe and is publicly visible.
+    const res = await request(app)
+      .post(`/api/addRating?recipeId=${RECIPE_ID}&rating=4`)
+      .set(AUTH_HEADER)
+    expect(res.status).toBe(200)
+    expect(res.body).toEqual({ rated: true })
+  })
+})
+
 // ─── POST /editReview ──────────────────────────────────────────────────────────
 
 describe('POST /editReview', () => {
@@ -818,6 +887,40 @@ describe('GET /getReviews', () => {
     expect(res.body.reviews[0].isCurrentUser).toBe(false)
   })
 
+  // Audit M1: the public review payload must NOT carry the reviewer's Firebase
+  // uid or the moderation stamps (moderatedBy/moderatedAt/moderationHidden — the
+  // admin uid + timestamp of a takedown/restore). Seed a review carrying all of
+  // them, then assert an anonymous read strips them while still rendering the
+  // display fields + the derived isCurrentUser flag.
+  it('does not leak userId or moderation stamps to a public caller', async () => {
+    await seedRating({
+      userId: OTHER_UID,
+      username: OTHER_USERNAME,
+      recipeId: RECIPE_ID,
+      rating: 4,
+      reviewText: 'A restored review',
+      reviewCreatedAt: '1000',
+      reviewLastUpdated: '1000',
+      moderationHidden: false, // restored → visible again, but stamps remain
+      moderatedBy: 'admin-uid-123',
+      moderatedAt: new Date(),
+    })
+
+    const res = await request(app).get(`/api/getReviews?recipeId=${RECIPE_ID}`)
+    expect(res.status).toBe(200)
+    const review = res.body.reviews[0]
+    // No internal identifiers.
+    expect(review).not.toHaveProperty('userId')
+    expect(review).not.toHaveProperty('moderatedBy')
+    expect(review).not.toHaveProperty('moderatedAt')
+    expect(review).not.toHaveProperty('moderationHidden')
+    // Display fields still present so the review renders.
+    expect(review.username).toBe(OTHER_USERNAME)
+    expect(review.rating).toBe(4)
+    expect(review.reviewText).toBe('A restored review')
+    expect(review.isCurrentUser).toBe(false)
+  })
+
   it('paginates results', async () => {
     for (let i = 0; i < 3; i++) {
       await seedRating({
@@ -1039,6 +1142,48 @@ describe('GET /getSingleUserReviews', () => {
     expect(res.status).toBe(200)
     expect(res.body.reviews[0].recipeData).toBeDefined()
     expect(res.body.reviews[0].recipeData._id).toBe(RECIPE_ID)
+  })
+
+  // Audit M1: the returnRecipeData join must strip BOTH the review-level reviewer
+  // uid/moderation stamps AND the recipe's internal admin stamps (featuredBy/
+  // moderatedBy/publishUpdatedBy + timestamps) — this join path used to bypass the
+  // publicRecipeProjection every other public recipe read applies.
+  it('strips reviewer uid + recipe internal admin stamps when returnRecipeData=true', async () => {
+    const db = getDB()
+    // Stamp the joined recipe with admin uids that must never reach a public read.
+    await db.collection('recipes').updateOne(
+      { _id: RECIPE_ID },
+      { $set: { featuredBy: 'admin-uid-1', featuredAt: new Date(), moderatedBy: 'admin-uid-2', publishUpdatedBy: 'admin-uid-3' } }
+    )
+    await seedRating({
+      userId: TEST_UID,
+      username: TEST_USERNAME,
+      recipeId: RECIPE_ID,
+      rating: 4,
+      reviewText: 'Great recipe!',
+      reviewCreatedAt: '1000',
+      moderatedBy: 'admin-uid-9',
+      moderatedAt: new Date(),
+    })
+
+    const res = await request(app).get(
+      `/api/getSingleUserReviews?username=${TEST_USERNAME}&returnRecipeData=true`
+    )
+    expect(res.status).toBe(200)
+    const review = res.body.reviews[0]
+    // Review-level internal fields gone.
+    expect(review).not.toHaveProperty('userId')
+    expect(review).not.toHaveProperty('moderatedBy')
+    expect(review).not.toHaveProperty('moderatedAt')
+    // Joined recipe's internal admin stamps gone.
+    const rd = review.recipeData
+    expect(rd).not.toHaveProperty('featuredBy')
+    expect(rd).not.toHaveProperty('featuredAt')
+    expect(rd).not.toHaveProperty('moderatedBy')
+    expect(rd).not.toHaveProperty('publishUpdatedBy')
+    // Still renders.
+    expect(rd.title).toBe('Review Test Recipe')
+    expect(review.recipeTitle).toBe('Review Test Recipe')
   })
 
   // The account "Ratings" list reads flat recipeImage/recipeTitle off each

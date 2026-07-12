@@ -4,6 +4,7 @@ const { ObjectId } = require('mongodb')
 const { getDB, getClient } = require('../db')
 const { verifyToken, optionalAuth, requireAdmin, requireActive } = require('../middleware/auth')
 const { recipeWriteLimiter } = require('../middleware/writeLimiter')
+const { makePaidQuotaLimiter } = require('../util/paidQuota')
 const { recipeIdQuery, recipeIdInQuery } = require('../util/recipeIdQuery')
 const { MIN_SIGNAL, selectForYou, tasteScore, weightedSample } = require('../util/forYou')
 const { loadInteractions, buildSeenProfile } = require('../util/tasteContext')
@@ -506,8 +507,22 @@ router.get('/getRecipe', optionalAuth, asyncHandler(async (req, res) => {
   res.json(recipe)
 }))
 
+// Daily spend ceiling on recipe CREATES (audit H1): every create runs a paid
+// Cloud Vision image scan + OpenAI text moderation, so it's a paid surface too.
+// A per-account + global daily cap on top of the 12/min recipeWriteLimiter bounds
+// a Sybil swarm's cumulative Vision/OpenAI spend. 50 creates/account/day is far
+// above any human authoring cadence. Overridable via PAID_QUOTA_RECIPE_USER_DAILY
+// / PAID_QUOTA_RECIPE_GLOBAL_DAILY. (editRecipe re-scans the image only when it
+// actually changes, so it isn't unconditionally metered here.)
+const recipeCreateQuota = makePaidQuotaLimiter({
+  surface: 'recipe',
+  perUserDaily: 50,
+  globalDaily: 2000,
+  message: 'Daily recipe-creation limit reached — please try again tomorrow.',
+})
+
 // POST /addRecipe
-router.post('/addRecipe', verifyToken, requireActive, recipeWriteLimiter, asyncHandler(async (req, res) => {
+router.post('/addRecipe', verifyToken, requireActive, recipeWriteLimiter, recipeCreateQuota, asyncHandler(async (req, res) => {
   const db = getDB()
   const body = req.body
   const uid = req.uid
@@ -519,9 +534,27 @@ router.post('/addRecipe', verifyToken, requireActive, recipeWriteLimiter, asyncH
   // stored (matches the client's submit-time trim) and the length cap sees the
   // trimmed value.
   normalizeRecipeInput(body)
+  // Recompute servingPrice from the submitted ingredient prices BEFORE the bounds
+  // check (audit M4). The recompute previously ran only when building the insert
+  // doc — AFTER validateRecipeBounds had checked the client-sent figure — so a
+  // forged/negative/over-cap ingredientData.totalPriceUSACents produced an
+  // out-of-bounds persisted servingPrice the bounds check never saw. Writing it
+  // onto `body` here means validateRecipeBounds validates the value that will
+  // actually be stored (and pickFields copies this same recomputed value below).
+  body.servingPrice = calculateServingPrice(body.ingredients, body.servings)
   const boundsError = validateRecipeBounds(body)
   if (boundsError) {
     return res.status(400).json({ error: boundsError })
+  }
+
+  // Derive the author handle server-side from the caller's uid (audit M3): the
+  // client no longer supplies authorUsername (removed from CREATABLE_RECIPE_FIELDS),
+  // so a user can't publish a recipe attributed to someone else's handle. Reject
+  // before the paid moderation scans if the caller has no username — they can't be
+  // attributed and can't have completed onboarding.
+  const authorDoc = await db.collection('usernames').findOne({ _id: uid })
+  if (!authorDoc) {
+    return res.status(400).json({ error: 'You must set a username before publishing a recipe' })
   }
 
   // Automated moderation on BOTH axes — text and the recipe image — collapsed to
@@ -554,6 +587,9 @@ router.post('/addRecipe', verifyToken, requireActive, recipeWriteLimiter, asyncH
     ...pickFields(body, CREATABLE_RECIPE_FIELDS),
     _id: newId,
     userId: uid,
+    // Server-derived (audit M3): the displayed author is the caller's real handle,
+    // never a client-supplied one.
+    authorUsername: authorDoc.username,
     // A 13-digit ms-epoch string (matches the edit path's editedAt stamp), so the
     // "Newest"/"Oldest" browse sort's lexicographic ordering stays chronological.
     createdAt: Date.now().toString(),
@@ -562,15 +598,13 @@ router.post('/addRecipe', verifyToken, requireActive, recipeWriteLimiter, asyncH
     numTimesSaved: 0,
     numTimesMade: 0,
     views: 0,
-    // Server-recomputed from the submitted ingredients/servings, overriding
-    // whatever pickFields just copied from the client body above — the client's
-    // servingPrice is UI-preview-only now (see util/calculateServingPrice, a
-    // mirror of src/util/calculateServingPrice.ts). A stale tab, raced submit,
-    // or a direct API caller can otherwise persist a price inconsistent with
-    // the stored rows (e.g. understated when a lowball price rides along with
-    // unenriched/null ingredientData rows, which are still legitimately
-    // publishable by design).
-    servingPrice: calculateServingPrice(body.ingredients, body.servings),
+    // Server-recomputed from the submitted ingredients/servings (see the recompute
+    // + bounds-validation above, audit M4) — the client's servingPrice is
+    // UI-preview-only now (see util/calculateServingPrice, a mirror of
+    // src/util/calculateServingPrice.ts). Re-stated explicitly here so the stored
+    // value is unmistakably the validated server figure, not the client's; pickFields
+    // already copied this same recomputed body.servingPrice above.
+    servingPrice: body.servingPrice,
   }
   await db.collection('recipes').insertOne(docToInsert)
   // A new recipe can introduce a cuisine/diet/mealType the browse filter UI has
@@ -617,6 +651,13 @@ router.put('/editRecipe', verifyToken, requireActive, recipeWriteLimiter, asyncH
   // Trim the title before bounds + persistence (see addRecipe) so an edit can't
   // reintroduce surrounding whitespace the create path already strips.
   normalizeRecipeInput(body)
+  // Recompute servingPrice from the submitted ingredient prices BEFORE the bounds
+  // check (audit M4) — see addRecipe. `servings` is optional on edit (not a
+  // required field), so fall back to the recipe's stored value when the edit
+  // omits it, dividing by what will actually be persisted rather than undefined.
+  // `ingredients` IS required, so body.ingredients is always present here.
+  const effectiveServings = 'servings' in body ? body.servings : recipe.servings
+  body.servingPrice = calculateServingPrice(body.ingredients, effectiveServings)
   const boundsError = validateRecipeBounds(body)
   if (boundsError) {
     return res.status(400).json({ error: boundsError })
@@ -645,18 +686,13 @@ router.put('/editRecipe', verifyToken, requireActive, recipeWriteLimiter, asyncH
   // ignored. The hold status is NOT set here — holdRecipeForReview owns it, so
   // the recipe is only hidden once its admin-queue report exists.
   //
-  // servingPrice is server-recomputed, not trusted from the client (see
-  // addRecipe / util/calculateServingPrice). `servings` is optional at this
-  // layer (not in REQUIRED_RECIPE_FIELDS), so an edit that doesn't touch it
-  // won't include it in `body` — fall back to the recipe's current stored
-  // servings so the recompute divides by what will actually be persisted,
-  // not `undefined`. `ingredients` IS required, so body.ingredients is always
-  // present here.
-  const effectiveServings = 'servings' in body ? body.servings : recipe.servings
+  // servingPrice was recomputed + bounds-validated above (audit M4); pickFields
+  // copies that recomputed body.servingPrice, and it's re-stated explicitly here
+  // so the stored value is unmistakably the validated server figure.
   const update = {
     ...pickFields(body, EDITABLE_RECIPE_FIELDS),
     editedAt: Date.now().toString(),
-    servingPrice: calculateServingPrice(body.ingredients, effectiveServings),
+    servingPrice: body.servingPrice,
   }
   // Medium → re-hold as 'pending_review', BUT never downgrade an admin takedown:
   // if the recipe is already 'hidden'/'unpublished', an owner edit must not lift

@@ -279,9 +279,12 @@ export type OptionalReviewType = {
 }
 export type ReviewType = {
   _id: string
-  // Stable Firebase uid of the reviewer (D1) — identity join key, never shown.
-  // `username` is the public handle; `displayName` the optional visible name.
-  userId: string
+  // The reviewer's stable Firebase uid is used server-side as the identity join
+  // key but is NEVER serialized to callers (audit M1: it was a username→uid
+  // oracle). The public handle is `username`; `displayName` the optional visible
+  // name; `isCurrentUser` the rename-proof "this review is mine" signal. Kept
+  // optional only so legacy callers don't break — it is not present at runtime.
+  userId?: string
   username: string
   recipeId: string
   rating: number | null

@@ -57,6 +57,17 @@ const BASE_RECIPE = {
     'https://firebasestorage.googleapis.com/v0/b/test-bucket/o/recipeImages%2Ftuscan.jpg?alt=media&token=abc',
 }
 
+// addRecipe now derives the author handle from the caller's uid→username mapping
+// (audit M3), so the test uid needs a usernames doc or POST /addRecipe 400s
+// ("You must set a username before publishing"). Seed it before every test.
+beforeEach(async () => {
+  await getDB().collection('usernames').updateOne(
+    { _id: TEST_UID },
+    { $set: { username: 'testuser', username_lower: 'testuser' } },
+    { upsert: true }
+  )
+})
+
 afterEach(async () => {
   const db = getDB()
   await Promise.all([
@@ -64,6 +75,7 @@ afterEach(async () => {
     db.collection('userRecipeData').deleteMany({}),
     db.collection('stats').deleteMany({}),
     db.collection('ratings').deleteMany({}),
+    db.collection('usernames').deleteMany({}),
   ])
 })
 
@@ -518,6 +530,45 @@ describe('POST /addRecipe', () => {
     expect(stored.userId).toBe(TEST_UID)
   })
 
+  // Audit M3: authorUsername is derived server-side from the caller's uid→username
+  // mapping and is NOT accepted from the client, so a user can't publish a recipe
+  // attributed to someone else's handle.
+  it('derives authorUsername from the caller’s uid, ignoring a client-supplied one', async () => {
+    const res = await request(server)
+      .post('/api/addRecipe')
+      .set(AUTH_HEADER)
+      .send({
+        title: 'Test Recipe',
+        ingredients: [{ id: 'i1', name: 'salt' }],
+        instructions: [{ content: 'Add salt', index: 1, id: 's1' }],
+        mealTypes: ['dinner'],
+        // Impersonation attempt — client claims to be a different, popular handle.
+        authorUsername: 'famous_chef',
+      })
+    expect(res.status).toBe(201)
+    const { ObjectId } = require('mongodb')
+    const stored = await getDB().collection('recipes').findOne({ _id: new ObjectId(res.body._id) })
+    // 'testuser' is the handle seeded for TEST_UID in the top-level beforeEach.
+    expect(stored.authorUsername).toBe('testuser')
+    expect(stored.authorUsername).not.toBe('famous_chef')
+  })
+
+  it('rejects a create when the caller has no username (400)', async () => {
+    // Remove the seeded handle so the caller has no uid→username mapping.
+    await getDB().collection('usernames').deleteOne({ _id: TEST_UID })
+    const res = await request(server)
+      .post('/api/addRecipe')
+      .set(AUTH_HEADER)
+      .send({
+        title: 'Test Recipe',
+        ingredients: [{ id: 'i1', name: 'salt' }],
+        instructions: [{ content: 'Add salt', index: 1, id: 's1' }],
+        mealTypes: ['dinner'],
+      })
+    expect(res.status).toBe(400)
+    expect(res.body.error).toMatch(/set a username/i)
+  })
+
   it('ignores client-supplied status, featured, and a forged rating on create', async () => {
     const res = await request(server)
       .post('/api/addRecipe')
@@ -643,8 +694,36 @@ describe('POST /addRecipe', () => {
       await expectRejected({ servings: 0 }, /Servings must be between/)
     })
 
-    it('rejects a serving price over the cap', async () => {
-      await expectRejected({ servingPrice: 5_000_000 }, /Serving price must be between/)
+    // Audit M4: servingPrice is recomputed from the submitted ingredient prices
+    // BEFORE the bounds check, so an over-cap/negative RECOMPUTED value is what
+    // must be rejected — a client-sent servingPrice figure is ignored entirely
+    // (see the "server-recomputed servingPrice (V1)" + "audit M4" describes below).
+    // A forged ingredientData.totalPriceUSACents used to slip an out-of-bounds
+    // price past this check because the recompute ran only AFTER it.
+    it('rejects an over-cap servingPrice recomputed from a forged ingredient price', async () => {
+      await expectRejected(
+        {
+          servings: 1,
+          servingPrice: 100, // ignored — the recompute below is what's validated
+          ingredients: [
+            { id: 'i1', parsedIngredient: { originalIngredientString: '1 diamond' }, ingredientData: { totalPriceUSACents: 2_000_000 } },
+          ],
+        },
+        /Serving price must be between/
+      )
+    })
+
+    it('rejects a negative servingPrice recomputed from a forged ingredient price', async () => {
+      await expectRejected(
+        {
+          servings: 1,
+          servingPrice: 100, // ignored — the recompute below is what's validated
+          ingredients: [
+            { id: 'i1', parsedIngredient: { originalIngredientString: '1 gold' }, ingredientData: { totalPriceUSACents: -999_999 } },
+          ],
+        },
+        /Serving price must be between/
+      )
     })
 
     it('rejects an absurdly large total time', async () => {
