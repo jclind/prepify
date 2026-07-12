@@ -43,6 +43,8 @@
   - Dry-run: 12 scanned, **12 would correct** — all `breakdown (absent)`, purely additive (rateCount/rateValue unchanged; histograms reconcile to stored averages, spot-checked Tuscan 3.75 / Granola 4.5 / Egg-Fried-Rice 2.5). Explains §1's "0 aggregates pending" = presence check, not breakdown.
   - `--apply`: **12 corrected**.
   - Gate — convergence dry-run: `12 already in sync, 0 would correct`. ✅ (No rating averages/counts moved.)
+- **2c — D1 `backfillRatingUserIds` — ✅ DONE (no-op).** `--apply`: 0 updated, 0 unresolved (prod had no orphans). No disposition call.
+- **Consolidated board (`checkMigrationState`, exit=0):** legacy `_id` ✓0 · ratings `userId` ✓0 · reports `reportedUid` ✓0 · aggregates ✓0 — "All known migrations complete." **§2a–2c CLOSED.**
 
 ---
 
