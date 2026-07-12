@@ -31,7 +31,14 @@
   | **dup ratings (2e input)** | **0** — re-run explicitly on `prepify` via `getSiblingDB` (first raw `mongosh` defaulted to `test`; total=17 confirmed prepify) | ✅ no E11000 risk |
 - **§1 GO/NO-GO: GO** (owner) — data is clean, cleaner than the dev rehearsal; no data fixes needed, no orphan-disposition call.
 - **TIMING DECISION (owner, ~00:20 EDT): FULL SEND — ship 1.0 tonight.** Proceed 2a→2d→§5 straight through despite past-midnight. Copilot holds every hard gate; explicit owner confirmation required at the `development`→`release` merge (point of no return).
-- **NEXT:** Atlas snapshot timestamp (rollback point) → then 2a.
+- **Rollback anchor:** owner confirmed Atlas backup in place before any §2 write ("backups in place", ~00:2x EDT 2026-07-12). Exact snapshot timestamp: _(owner to paste; retro-recorded)_.
+
+### §2 — prod data ops (live)
+
+- **2a — W1 legacy `_id` → ObjectId — ✅ DONE.**
+  - Canary `--apply --id=652ec5f57f529103dab7e4a3` ("Pad Thai", 0 refs): 1 converted, 7 remaining. Mechanism confirmed on prod.
+  - Full `--apply`: **7 converted** (incl. Tuscan Chicken Skillet 8r/3rep/6lists), `string _ids remaining: 0`, refs untouched.
+  - Gate — verification dry-run: `legacy string-_id docs: 0`, **exit=0**. Idempotency proven. ✅
 
 ---
 
