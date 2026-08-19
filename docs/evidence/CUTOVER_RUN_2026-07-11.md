@@ -56,7 +56,13 @@
   - Merged (merge commit `35596e5`); merge tree byte-identical to CI-green `4d75f9b`. Owner-approved. `development`==`origin`, version 1.0.0, footer de-beta confirmed, 0 open PRs.
 - **2e — prod index gate — ✅ PASSED (HARD GATE).** `createModerationIndexes.js` **exit=0**, 6 indexes built; `getIndexes()` confirms `userId_1_recipeId_1 | unique=true | partial={"userId":{"$exists":true}}`. No E11000 (0-dup pre-check held). Double-rating invariant live.
 - **2d-(ii) — normalizeRatingTypes `--apply` on prod — ✅ DONE (opens coupled window).** 13 rewritten (8 rating→double, 11 reviewCreatedAt→num), `string-typed remaining: 0`, exit=0; confirming dry-run `17 in sync, 0 rewrite, exit=0`. **⚠️ Window OPEN: live release code writes strings until deploy — closed by 2d-(v) re-apply.**
-- **Pre-deploy state:** `development`@`35596e5` (CI-green tree, v1.0.0) ready. `release`@`e7d1828` (~633 behind). ALL prod data prep done (2a/2b/2c/2e/2d-ii). Remaining: pre-deploy env confirms (Netlify SENTRY_DSN, Railway FRONTEND_URLS) → **§5 deploy (owner explicit "ship it")** → 2d-(v) re-apply → 2d-(vi) verify → prod smoke → tag 1.0.0.
+- **Pre-deploy state:** `development`@`35596e5` (CI-green tree, v1.0.0) ready. `release`@`e7d1828` (~633 behind). ALL prod data prep done (2a/2b/2c/2e/2d-ii).
+
+### §5 — DEPLOY
+- **Pre-deploy env confirms (owner, dashboards):** §3 image ops **SKIPPED** (storage.rules NOT deployed, no `firebase deploy`); Railway `FRONTEND_URLS` = exact 2 prod origins ✓; Netlify `VITE_IMAGE_VARIANTS_ENABLED`=false ✓; Netlify Production `VITE_SENTRY_DSN` set ✓. Owner: **"Ship it!"**
+- **Release divergence check (pre-push):** `release` diverged from `development` only by historical deploy-merge commits (#63–#102, no unique content); merge-base `b957206` (#101). Local test-merge: **0 conflicts**, merged tree **== development's tree exactly**. `storage.rules` rides along but is **inert** (Firebase rules change only via `firebase deploy`) → skipped-§3 posture intact.
+- **🚀 DEPLOY: pushed `development`→`release` `e7d1828`→`96e3aa1` at 01:36:29 EDT 2026-07-12.** Prod Netlify + Railway builds triggered.
+- **NEXT (post-deploy):** confirm Railway fully live + old instance drained → functional CORS curl → 2d-(v) re-apply normalize → 2d-(vi) verify query 0 + post/edit review → prod smoke test → Sentry/Railway watch → tag GitHub Release 1.0.0.
 
 ---
 
