@@ -2,6 +2,7 @@ const express = require('express')
 const cors = require('cors')
 const helmet = require('helmet')
 const { rateLimit } = require('express-rate-limit')
+const pkg = require('./package.json')
 const recipeRoutes = require('./routes/recipes')
 const reviewRoutes = require('./routes/reviews')
 const userRoutes = require('./routes/users')
@@ -122,6 +123,38 @@ app.get('/health', async (req, res) => {
   } finally {
     clearTimeout(timer)
   }
+})
+
+// GET /version — what code is actually running.
+//
+// Added after the 2026-08-19 restore, where confirming a deploy meant opening
+// the Railway dashboard because nothing the server serves identifies its own
+// build. A deploy you can't verify from outside is a deploy you have to trust,
+// and the health-probe outage in this same file is what trusting looks like.
+//
+// Deliberately does NOT touch the database. Its whole job is answering "which
+// build is live" during an incident, which is exactly when Mongo may be the
+// thing that's broken — a version endpoint that 500s with the database is
+// useless at the only moment it matters. /health is the DB liveness signal;
+// this is the identity signal. Keep them separate.
+//
+// Railway injects RAILWAY_GIT_COMMIT_SHA and RAILWAY_GIT_BRANCH into the
+// runtime env automatically (they don't appear in the dashboard's variable
+// list, which is expected). Anywhere else — local, CI, Jest — they're absent
+// and the fields come back null rather than throwing or reporting a wrong SHA.
+//
+// Public on purpose: the repo is public, so a commit SHA discloses nothing an
+// attacker couldn't already read, and gating it behind auth would defeat the
+// one-curl check it exists for. Nothing beyond build identity goes in here.
+app.get('/version', (req, res) => {
+  const sha = process.env.RAILWAY_GIT_COMMIT_SHA || null
+  res.json({
+    version: pkg.version,
+    commit: sha ? sha.slice(0, 7) : null,
+    commitFull: sha,
+    branch: process.env.RAILWAY_GIT_BRANCH || null,
+    env: process.env.NODE_ENV || 'development',
+  })
 })
 
 // Generous global per-IP backstop — normal browsing is tens of requests a
