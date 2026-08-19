@@ -85,19 +85,37 @@ if (isProduction) app.set('trust proxy', 1)
 //
 // A live DB round-trip (not a static 200): a wedged instance whose Mongo
 // connection has dropped must report unhealthy so Railway restarts it instead
-// of leaving the deploy green on a broken pod. The ping is raced against a 2s
+// of leaving the deploy green on a broken pod. The probe is raced against a 2s
 // timeout so a hung/unreachable Mongo can't stall the healthcheck past the
 // driver's serverSelectionTimeoutMS. It reuses the getDB() singleton (never a
-// new client) and can never throw: a not-yet-connected getDB(), a failed ping,
+// new client) and can never throw: a not-yet-connected getDB(), a failed probe,
 // or the timeout all collapse to a 503 { status: 'degraded' }.
+//
+// The probe is a REAL QUERY, deliberately not `db.command({ ping: 1 })`. That
+// distinction is not theoretical: from 2026-07-12 to 2026-08-19 the prod Atlas
+// cluster was terminated, and for that entire window `/health` answered 200
+// { status: 'ok' } while every data route 500'd with a TLS handshake failure.
+// The ping was being served even though no query could run, so Railway held a
+// completely dead instance green for five weeks and nothing alerted. A findOne
+// goes through the same query path the routes use, so "the DB answers pings"
+// can never again stand in for "the app can actually read data".
+//
+// `recipes` is the right collection to probe: it backs the home and browse
+// pages, so if it is unreadable the site is down by any definition. The empty
+// filter with an _id-only projection makes this O(1) — the server returns the
+// first document it walks, or null on an empty collection, which is a healthy
+// answer (a fresh deploy against an empty DB must report healthy).
 app.get('/health', async (req, res) => {
   let timer
   try {
     const db = getDB() // throws if connectDB() hasn't completed yet
     const timeout = new Promise((_, reject) => {
-      timer = setTimeout(() => reject(new Error('health ping timeout')), 2000)
+      timer = setTimeout(() => reject(new Error('health probe timeout')), 2000)
     })
-    await Promise.race([db.command({ ping: 1 }), timeout])
+    await Promise.race([
+      db.collection('recipes').findOne({}, { projection: { _id: 1 } }),
+      timeout,
+    ])
     res.json({ status: 'ok' })
   } catch (err) {
     res.status(503).json({ status: 'degraded' })
