@@ -466,6 +466,55 @@ hygiene, and the U3 watch items all verified sound — details in the session tr
   backfill, then pull the parfait's per-ingredient `totalPriceUSACents` to attribute parse-bug vs
   proxy-estimate before writing any fix. → **N1**
   - *(2026-07-08 update, N6 [#255](https://github.com/jclind/prepify/pull/255))* — **investigated + guarded, not closed**: a dev dry-run showed **0 servingPrice drift** (so half (1)'s `--apply` is a no-op on current data) and attributed the parfait to a **bad proxy gram-estimate** (`1 cup strawberries` = $25.34 on stale v1 data), not a parse or division bug. Fix-option (B) — a **`price_outlier` flag** on enriched rows ≥ $15 — shipped on N6's telemetry surface (**flag, not clamp**). Still open: **(A)** the owner/proxy-gated re-enrich backfill for stale v1 prices, and half (2)'s parse-quality hardening in `updateIngredients.ts`.
+- `[ ]` **Volume-measured ingredients whose name isn't in the 13-entry density table are priced ~200x too
+  low (`1 1/3 cup salsa` → $0.01)** *(filed 2026-08-20, found during the post-cluster-restore prod smoke)* —
+  the opposite failure direction from the "$10 parfait" item above, and unlike that one this has a definite
+  root cause. `@jclind/ingredient-parser@2.0.0` converts volume→grams via a **13-entry** `DENSITIES` table
+  (`src/enrich/volume.ts:34`). On no match, `lookupDensity` returns `null`, `makeDensityToGrams` returns
+  `null`, and `calculatePrice` falls back to `unitEstimate` = `perUnitCents * quantity`
+  (`src/enrich/price.ts`). **That fallback is actively wrong, not merely absent:** the proxy sets
+  `perUnitCents` from Spoonacular's `estimatedSingleUnitPrice`
+  (`ingredient-parser-server/services/mapToNeutral.js:40`), which for these ingredients equals the per-gram
+  price — salsa returns `{perGramCents: 0.39, perUnitCents: 0.39}`. So the fallback prices *1.33 cups* as if
+  it were *1.33 grams*, a ~236x undercount, silently and at `confidence:'low'`.
+
+  Reproduced exactly against the live proxy values:
+  ```
+  lookupDensity("salsa") = null
+  calculatePrice(1.333, {name:'cup',type:'volume'}, {perGramCents:0.39, perUnitCents:0.39})
+    → {cents: 0.52, basis: 'unit-estimate', grams: null, confidence: 'low'}
+    → server/routes/ingredients.js mapIngredientData: Math.round(0.52) = 1 cent = $0.01
+  correct: 1 1/3 cup = 315.5 ml ≈ 315 g (salsa ≈ water density) × 0.39 = 123 cents = $1.23
+  same inputs for "rice" (IS in the table) → {cents: 104.57, basis: 'gram'} = $1.05
+  ```
+
+  **Scope is wide**, because recipes are mostly measured in cups and tablespoons. Of 17 common ingredients
+  checked, 13 have no density: salsa · yogurt · shredded cheese · black beans · diced tomatoes · onion · corn ·
+  rolled oats · breadcrumbs · chopped walnuts · chocolate chips · soy sauce. Only brown/powdered/plain sugar,
+  flour, honey/syrup/molasses, oil, butter, milk, cream, water/broth/stock/juice/wine/vinegar, salt, rice, and
+  cocoa resolve.
+
+  **Two adjacent findings from the same read:**
+  - `"boiling water"` resolves to density **0.92 (oil's)** — `DENSITIES` matches by substring, `"boiling
+    water".includes("oil")` is true, and `oil` is listed before `water`, so first-match-wins picks oil.
+    Ordering bug in the same table.
+  - **Prepify discards the confidence signal.** `calculatePrice` already returns `basis:'unit-estimate'` and
+    `confidence:'low'` for exactly these guesses, but `mapIngredientData`
+    (`server/routes/ingredients.js`) keeps only `price.cents`, so the UI renders a guessed $0.01 with the same
+    authority as a measured number.
+
+  **Fix (layered, spans three repos — needs an owner decision on the first point):**
+  1. **Decide whether a wrong price beats no price.** Recommend the fallback *decline* when
+     `perUnitCents === perGramCents` (which proves it isn't a real per-unit price) rather than emit a
+     confidently-wrong figure. Per-serving cost is a headline feature; an honest blank beats $0.01.
+  2. Expand `DENSITIES` and fix the substring ordering (`ingredient-parser-v2`, then republish + bump the
+     `@jclind/ingredient-parser` pin in `server/package.json`, currently `2.0.0`).
+  3. Surface `confidence`/`basis` through `mapIngredientData` and show low-confidence prices as estimates in
+     the UI instead of dropping the field.
+
+  Pairs with the user-editable price feature filed under Features (a manual override is both a feature and the
+  workaround for every ingredient the table will never cover). Cross-ref the N1 "$10 parfait" item above:
+  same "estimate quality" half, opposite direction, and this one is root-caused.
 - `[x]` **`Received NaN for the \`value\` attribute` warning on Edit Recipe — root-caused; it's a real
   hydration bug, not cosmetic (verified 2026-06-26)** — *(fixed in [#235](https://github.com/jclind/prepify/pull/235), F1:
   hydrate `TimeInput` from `val.hours`/`val.minutes` — the `Number(val)` arithmetic that produced `NaN` on an object `val` is
@@ -1089,6 +1138,28 @@ findings table.)*
   --omit=dev` at root = 0; the deployed bundle is clean.) Low. *(surfaced 2026-06-26 in the security sweep.)*
 
 ## Features
+
+- `[ ]` **Let authors edit an ingredient's price on Add Recipe and Edit Recipe** *(filed 2026-08-20; owner
+  idea, prompted by the density-table pricing bug in Bugs)* — every per-ingredient price today comes from the
+  Spoonacular proxy estimate, with no way for an author to correct it. That leaves three bad situations with
+  no exit: enrichment misses entirely and the row shows "—" forever; the estimate is silently wrong (the
+  ~200x volume undercount, and the "$10 parfait" overcount); or the author simply knows better, because they
+  bought the thing and the local price differs from a national gram-estimate.
+
+  A manual override fixes all three at once and is the only one of them that scales, since the density table
+  will never cover every ingredient. It also turns per-serving cost from "a number we guessed" into "a number
+  the author stands behind," which is a meaningfully better product claim.
+
+  **Sketch (not a decision):** an editable price on the ingredient row, defaulting to the enriched estimate,
+  that marks the row as author-set once touched. Persist the override alongside the estimate rather than
+  overwriting it, so re-enrichment can never silently stomp a manual value and the UI can distinguish
+  "author-priced" from "estimated". `server/util/calculateServingPrice.js` already recomputes server-side
+  (Wave 10 · V1), so the override has to be whitelisted and trusted there deliberately, not just sent from
+  the client. Touches: the ingredient row UI, `IngredientsType`/`IngredientData` in `src/types.ts`, the
+  create/edit field whitelists in `server/util/recipeFields.js`, and both serving-price calculators.
+
+  Open questions for triage: does an override survive an ingredient-string edit that re-triggers enrichment;
+  is it per-recipe or remembered per-user; and does the recipe page label author-set prices for viewers.
 
 - `[x]` **Report reason: "incorrect info / price"** *(fixed in [#256](https://github.com/jclind/prepify/pull/256), N2: added `incorrect_info` across the `ReportReason` union, client `REASON_OPTIONS`, and server `REASONS`; **recipe-gated** — a new `RECIPE_ONLY_REASONS` server gate 400s it on review/user targets and a `recipeOnly` client flag hides it there; also spaced the admin queue reason pill as a 4th display surface)* *(triaged 2026-07-08; filed 2026-06-18 — doesn't exist)*
   — today's reasons are exactly `spam | inappropriate | offensive | copyright | dangerous | other`, synced in
