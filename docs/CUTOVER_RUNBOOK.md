@@ -168,6 +168,10 @@ late at night.
 
 - `[ ]` **Transport:** `https://prepifymeals.com` loads with a valid cert; `www` → apex 301; prod API
   `/health` returns 200 over SSL.
+- `[ ]` **Right build is live:** `curl <prod-api>/version` and confirm `commitFull` equals the SHA you
+  just pushed to `release`. Do this BEFORE the rest of the smoke test — testing against a stale
+  container wastes the pass and hides the real result. `/health` alone can't tell you this: it
+  returns an identical 200 on old and new code.
 - `[ ]` **Flip is live:** no `Beta` button; footer reads `v1.0.0` (no `-beta`); Release Notes header shows
   `1.0.0` + the actual ship `RELEASE_DATE`; **zero console errors** on load.
 - `[ ]` **Read paths:** Home (all rows), Browse `/recipes` (filter/sort/load-more), Search autocomplete,
