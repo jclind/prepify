@@ -4,6 +4,8 @@
  *     healthy, 503 {status:'degraded'} when the query fails. The ping-vs-query
  *     distinction has its own regression test below; see app.js for the
  *     2026-07/08 outage it encodes.
+ *   - GET /version reports build identity (package version + Railway commit
+ *     SHA/branch) and never touches the DB, so it still answers during an outage.
  *   - A rejected CORS origin renders as a quiet JSON 403 (no Sentry capture).
  *   - An unmatched /api route returns a JSON 404, not Express's default HTML.
  *
@@ -87,6 +89,64 @@ describe('GET /health', () => {
     await request(app).get('/health')
     expect(spy).toHaveBeenCalledWith('recipes')
     spy.mockRestore()
+  })
+})
+
+// ─── /version build identity ─────────────────────────────────────────────────
+
+describe('GET /version', () => {
+  const { RAILWAY_GIT_COMMIT_SHA, RAILWAY_GIT_BRANCH } = process.env
+
+  afterEach(() => {
+    // Restore exactly, including the "was undefined" case.
+    if (RAILWAY_GIT_COMMIT_SHA === undefined) delete process.env.RAILWAY_GIT_COMMIT_SHA
+    else process.env.RAILWAY_GIT_COMMIT_SHA = RAILWAY_GIT_COMMIT_SHA
+    if (RAILWAY_GIT_BRANCH === undefined) delete process.env.RAILWAY_GIT_BRANCH
+    else process.env.RAILWAY_GIT_BRANCH = RAILWAY_GIT_BRANCH
+  })
+
+  it('reports the server package version', async () => {
+    const res = await request(app).get('/version')
+    expect(res.status).toBe(200)
+    expect(res.body.version).toBe(require('../package.json').version)
+  })
+
+  it('reports the short and full commit SHA when Railway injects it', async () => {
+    process.env.RAILWAY_GIT_COMMIT_SHA = '2f317e7abcdef0123456789abcdef0123456789a'
+    process.env.RAILWAY_GIT_BRANCH = 'release'
+    const res = await request(app).get('/version')
+    expect(res.status).toBe(200)
+    expect(res.body.commit).toBe('2f317e7')
+    expect(res.body.commitFull).toBe('2f317e7abcdef0123456789abcdef0123456789a')
+    expect(res.body.branch).toBe('release')
+  })
+
+  it('reports null (not a wrong or partial SHA) when the vars are absent', async () => {
+    delete process.env.RAILWAY_GIT_COMMIT_SHA
+    delete process.env.RAILWAY_GIT_BRANCH
+    const res = await request(app).get('/version')
+    expect(res.status).toBe(200)
+    expect(res.body.commit).toBeNull()
+    expect(res.body.commitFull).toBeNull()
+    expect(res.body.branch).toBeNull()
+  })
+
+  // The whole point of the endpoint: it answers "which build is live" during an
+  // incident, which is exactly when Mongo may be the broken thing. If it touched
+  // the DB it would 500 alongside it and tell you nothing.
+  it('never touches the database, so it survives a DB outage', async () => {
+    const db = getDB()
+    const colSpy = jest.spyOn(db, 'collection')
+    const cmdSpy = jest.spyOn(db, 'command')
+    try {
+      const res = await request(app).get('/version')
+      expect(res.status).toBe(200)
+      expect(colSpy).not.toHaveBeenCalled()
+      expect(cmdSpy).not.toHaveBeenCalled()
+    } finally {
+      colSpy.mockRestore()
+      cmdSpy.mockRestore()
+    }
   })
 })
 
