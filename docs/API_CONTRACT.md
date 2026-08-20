@@ -16,7 +16,8 @@ implemented behavior, not a proposal.
 
 ## Route overview
 
-73 routes + `GET /health`. Each section below documents its routes in full and ends with a
+73 routes + the two unauthenticated ops endpoints `GET /health` and `GET /version`. Each
+section below documents its routes in full and ends with a
 `#### DRIFT` list of client↔server mismatches found during regeneration.
 
 | Section | Route file | Routes |
@@ -106,10 +107,37 @@ Full lists live in each section's `#### DRIFT` subsection. The load-bearing ones
 
 - **Handler:** `server/app.js` — above the global limiter so monitors can't be throttled into a
   false "down". No auth. Since [#305](https://github.com/jclind/prepify/pull/305) (Wave 14 · E) it is a
-  **live DB health check**, not a static 200: a `{ ping: 1 }` on the `getDB()` singleton raced against a
-  2s timeout — `200 { status: 'ok' }` when the ping succeeds, `503 { status: 'degraded' }` on a failed
-  ping, timeout, or not-yet-connected DB (never throws), so the platform restarts a wedged instance
-  instead of keeping a green check on a dropped Mongo connection.
+  **live DB health check**, not a static 200: raced against a 2s timeout on the `getDB()` singleton —
+  `200 { status: 'ok' }` on success, `503 { status: 'degraded' }` on failure, timeout, or a
+  not-yet-connected DB (never throws), so the platform restarts a wedged instance instead of keeping a
+  green check on a dropped Mongo connection.
+- **The probe is a real query, not a ping** (changed in
+  [#319](https://github.com/jclind/prepify/pull/319)): `recipes.findOne({}, { projection: { _id: 1 } })`.
+  It previously ran `db.command({ ping: 1 })`, and from **2026-07-12 to 2026-08-19** the prod Atlas
+  cluster was terminated while that ping kept being answered — `/health` served `200 { status: 'ok' }`
+  for five weeks while every data route 500'd on a TLS handshake failure, so the platform held a dead
+  instance green and nothing alerted. A `findOne` goes through the same query path the routes use.
+  `recipes` backs home and browse, so an unreadable one means the site is down; the empty filter with an
+  `_id`-only projection keeps it O(1), and a `null` result (empty collection, fresh deploy) is **healthy**.
+
+### GET /version
+
+- **Handler:** `server/app.js` — alongside `/health`, above the global limiter. No auth.
+  Added in [#320](https://github.com/jclind/prepify/pull/320) after the 2026-08-19 cluster restore,
+  where confirming which build was live meant opening the Railway dashboard because nothing the server
+  served identified its own commit.
+- **Returns** `200 { version, commit, commitFull, branch, env }` — `version` from
+  `server/package.json`; `commit`/`commitFull`/`branch` from Railway's auto-injected
+  `RAILWAY_GIT_COMMIT_SHA` / `RAILWAY_GIT_BRANCH` (these do **not** appear in the dashboard's variable
+  list, which is expected). Off-Railway — local, CI, Jest — those vars are absent and the fields are
+  `null` rather than a wrong or partial SHA.
+- **Never touches the DB**, deliberately. It answers "which build is live" during an incident, which is
+  exactly when Mongo may be the broken thing; a version endpoint that 500s alongside the database is
+  useless at the only moment it matters. `/health` is the liveness signal, `/version` is the identity
+  signal — keep them separate.
+- **Public on purpose:** the repo is public, so the SHA discloses nothing an attacker couldn't already
+  read, and gating it behind auth would defeat the one-curl deploy check it exists for. Nothing beyond
+  build identity belongs in this response.
 
 ## Auth middleware glossary
 
