@@ -274,8 +274,15 @@ One PR off `development` (all anchors re-verified 2026-07-11):
     https://prepify-production-63a6.up.railway.app/health | grep -i access-control-allow-origin
   ```
   Must echo the prod origin; no header = `FRONTEND_URLS` misconfigured — fix before the smoke test.
+- `[ ]` **Confirm the new build is actually serving** (added 2026-08-20, [#320](https://github.com/jclind/prepify/pull/320)):
+  ```bash
+  curl -s https://prepify-production-63a6.up.railway.app/version
+  ```
+  `commitFull` must equal the SHA you just pushed to `release`. This is the drain check — during a
+  roll the OLD container keeps answering `/health` with 200 while `/version` still reports the old
+  SHA (or 404s, on builds predating the endpoint). Poll until it flips; ~4 min is normal.
 - `[ ]` **V5 step 2d-(v)/(vi):** first confirm the Railway deploy is FULLY live and the old
-  instance drained (a lingering old instance keeps writing string timestamps); then re-run prod
+  instance drained (use the `/version` check above rather than eyeballing the dashboard) (a lingering old instance keeps writing string timestamps); then re-run prod
   `normalizeRatingTypes.js --apply`, run the verification query until it is *stably* 0, and
   post/edit/delete a throwaway review to confirm.
 - `[ ]` **Production smoke test on `prepifymeals.com`** — run CUTOVER_RUNBOOK.md "Comprehensive

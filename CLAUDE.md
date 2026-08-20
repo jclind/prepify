@@ -127,4 +127,11 @@ npx cypress open       # Open Cypress test runner
 - RecipeContext has been removed (the former `src/context/RecipeContext.tsx` no longer exists) - recipe operations are called directly via `RecipeAPI` class
 - Firebase Admin SDK is on **v14** and uses the **modular API** (`firebase-admin/app`, `firebase-admin/auth`, `firebase-admin/storage`) — v14 removed the legacy `admin.*` namespace. Init is guarded with `if (!getApps().length)` (from `firebase-admin/app`) to prevent double initialization (`server/middleware/auth.js`). The frontend's Cypress config (`cypress.config.ts`) also runs Admin v14 for E2E token minting. Both `package.json`s carry an `overrides` pinning `uuid` to `^11.1.1` in the Admin dependency subtree — the `@google-cloud/storage` chain otherwise pulls a `uuid@9` with a moderate CVE and there's no fixed storage release yet; drop the override once one ships.
 - MongoDB connections use connection pooling with maxPoolSize: 10
-- The main server exposes a `/health` endpoint for health checks
+- The main server exposes two unauthenticated ops endpoints, both above the global rate limiter:
+  `/health` (liveness) runs a **real query** (`recipes.findOne`), not a `ping` — a ping was answered
+  for five weeks in Aug 2026 while every data route failed, so the platform held a dead instance
+  green ([#319](https://github.com/jclind/prepify/pull/319)). `/version` (build identity) returns
+  `{ version, commit, commitFull, branch, env }` from Railway's auto-injected
+  `RAILWAY_GIT_COMMIT_SHA`/`RAILWAY_GIT_BRANCH` and **never touches the DB**, so it still answers
+  during an outage ([#320](https://github.com/jclind/prepify/pull/320)). Confirm any deploy with
+  `curl <api>/version` rather than opening the Railway dashboard.
