@@ -195,10 +195,31 @@ coupled to the deploy** — see the matrix in IMAGE_PIPELINE.md "Ordering": the 
 Deploying the rules while prod still serves the old flat-writing frontend 403s every prod image
 upload. So if doing these at 1.0: deploy rules in the same window as step 5's merge.
 
+> ⚠️ **THE COUPLING BITES BOTH WAYS — and the second way is what actually happened.** The warning
+> above only describes rules-ahead-of-frontend. The 2026-07-12 cutover skipped §3 entirely while
+> deploying the uid-writing frontend, which is the *mirror* failure: prod served
+> `recipeImages/{uid}/{uuid}` uploads against rules that only permitted the flat path, so **every
+> prod image upload 403'd** with `storage/unauthorized`. It stayed invisible for five weeks because
+> the prod Mongo cluster was terminated in the same window, so nobody could reach the upload step.
+> Found and fixed 2026-08-21 (`firebase deploy --only storage` on `prepify-9b974`).
+>
+> **Neither half of this pair is safe alone.** Deploy them together, or verify a real image upload
+> immediately after deploying either one.
+>
+> **A dev rehearsal cannot catch this.** `prepify-dev-58579` already had the correct rules deployed,
+> so the 2026-07-11 dress rehearsal passed create-with-image 12/12 against dev while prod was broken.
+> Storage rules deploy out-of-band from code and nothing in CI compares environments, so rule drift
+> is invisible to every gate you have. **Treat image upload as prod-only verification.** (Both
+> projects re-confirmed in sync 2026-08-24.)
+
 ### 3a — I2: uid re-key (`storage.rules` deploy + object migration)
 
-- `[ ]` `firebase use <prod-project>` (`prepify-9b974`) && `firebase deploy --only storage`
+- `[x]` `firebase use <prod-project>` (`prepify-9b974`) && `firebase deploy --only storage`
   — **in the same window as the step-5 deploy** (carries the X3 owner-delete grant automatically).
+  **DONE 2026-08-21**, five weeks late, after prod image uploads were found 403'ing (see the warning
+  above). Rules compiled and released to `prepify-9b974`; a real create-with-image on
+  prepifymeals.com then succeeded. Switch the CLI back (`firebase use dev`) afterwards so the local
+  default isn't left pointing at prod.
 - `[ ]` **Acquire the prod service-account JSON first** (audit gap 2026-07-11): Firebase console →
   project `prepify-9b974` → Project settings → Service accounts → *Generate new private key*. This
   is a **different credential** from the `firebase use`/`firebase deploy` CLI login above — the CLI
