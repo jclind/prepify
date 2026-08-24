@@ -85,6 +85,9 @@ npx cypress open       # Open Cypress test runner
 - `VITE_FIREBASE_MESSAGING_SENDER_ID` - Firebase Cloud Messaging sender ID
 - `VITE_FIREBASE_APP_ID` - Firebase app ID
 - `VITE_CYPRESS` - Set to `"true"` when running under Cypress; toggles test-mode behavior in `src/client/db.ts`
+- `VITE_SENTRY_DSN` - Client error monitoring. Unset (local/CI) makes every export in `src/util/sentry.ts` a
+  no-op. Events are tagged `release: VITE_APP_VERSION`, the same string the server sends, so a frontend
+  regression can be lined up against the backend deploy that caused it.
 
 ### Main Server (.env)
 - `MONGO_URI` - MongoDB connection string
@@ -92,6 +95,11 @@ npx cypress open       # Open Cypress test runner
 - `FRONTEND_URLS` - Comma-separated CORS origins
 - `PORT` - Default 4000
 - `INGREDIENT_PARSER_PROXY_URL` - Optional. Overrides the base URL of the hosted ingredient-enrichment proxy used by `@jclind/ingredient-parser` v2 (server/routes/ingredients.js). Unset = the package's default hosted proxy. NOTE: as of `@jclind/ingredient-parser` v2 the parser is key-free on the client — the proxy holds the Spoonacular key — so `SPOONACULAR_API_KEY` is **no longer used by this server** (it was needed only by the v1 in-process library call).
+- `SENTRY_DSN` - Server error monitoring (`server/instrument.js`, required first in `index.js` so
+  auto-instrumentation hooks in). Unset = init skipped and every `Sentry.*` call is a safe no-op. Events
+  carry `release` = `server/package.json` version (matching the client's tag on purpose) and `dist` = the
+  short `RAILWAY_GIT_COMMIT_SHA`, the same build `GET /version` reports. NOTE: only the *client* DSN was
+  ever confirmed during the 1.0 cutover; if this one is unset the server reports nothing, silently.
 - `EDAMAM_APP_ID` / `EDAMAM_APP_KEY` - Edamam nutrition API credentials, used server-side only by the `POST /api/nutrition/details` proxy (server/routes/nutrition.js). Moved off the client (formerly `VITE_EDAMAM_APP_ID/KEY`) so the keys aren't shipped in the browser bundle.
 - `PAID_QUOTA_<SURFACE>_USER_DAILY` / `PAID_QUOTA_<SURFACE>_GLOBAL_DAILY` - Optional. Per-account and global DAILY spend ceilings on the paid third-party surfaces (audit H1), on top of the per-minute rate limiters. `<SURFACE>` is one of `NUTRITION` (Edamam), `INGREDIENTS` (Spoonacular parse), `RECIPE` (Cloud Vision + OpenAI moderation on recipe creates). Unset = the code defaults in `server/util/paidQuota.js` (nutrition 150/6000, ingredients 600/20000, recipe 50/2000). The global ceiling is what bounds a Sybil swarm's total spend regardless of account count; tune below your billing comfort line. Counters live in the `paidQuota` Mongo collection and self-reap via a TTL index. The limiter is skipped under `NODE_ENV=test`.
 
@@ -127,4 +135,11 @@ npx cypress open       # Open Cypress test runner
 - RecipeContext has been removed (the former `src/context/RecipeContext.tsx` no longer exists) - recipe operations are called directly via `RecipeAPI` class
 - Firebase Admin SDK is on **v14** and uses the **modular API** (`firebase-admin/app`, `firebase-admin/auth`, `firebase-admin/storage`) — v14 removed the legacy `admin.*` namespace. Init is guarded with `if (!getApps().length)` (from `firebase-admin/app`) to prevent double initialization (`server/middleware/auth.js`). The frontend's Cypress config (`cypress.config.ts`) also runs Admin v14 for E2E token minting. Both `package.json`s carry an `overrides` pinning `uuid` to `^11.1.1` in the Admin dependency subtree — the `@google-cloud/storage` chain otherwise pulls a `uuid@9` with a moderate CVE and there's no fixed storage release yet; drop the override once one ships.
 - MongoDB connections use connection pooling with maxPoolSize: 10
-- The main server exposes a `/health` endpoint for health checks
+- The main server exposes two unauthenticated ops endpoints, both above the global rate limiter:
+  `/health` (liveness) runs a **real query** (`recipes.findOne`), not a `ping` — a ping was answered
+  for five weeks in Aug 2026 while every data route failed, so the platform held a dead instance
+  green ([#319](https://github.com/jclind/prepify/pull/319)). `/version` (build identity) returns
+  `{ version, commit, commitFull, branch, env }` from Railway's auto-injected
+  `RAILWAY_GIT_COMMIT_SHA`/`RAILWAY_GIT_BRANCH` and **never touches the DB**, so it still answers
+  during an outage ([#320](https://github.com/jclind/prepify/pull/320)). Confirm any deploy with
+  `curl <api>/version` rather than opening the Railway dashboard.

@@ -64,6 +64,45 @@
 - **🚀 DEPLOY: pushed `development`→`release` `e7d1828`→`96e3aa1` at 01:36:29 EDT 2026-07-12.** Prod Netlify + Railway builds triggered.
 - **NEXT (post-deploy):** confirm Railway fully live + old instance drained → functional CORS curl → 2d-(v) re-apply normalize → 2d-(vi) verify query 0 + post/edit review → prod smoke test → Sentry/Railway watch → tag GitHub Release 1.0.0.
 
+
+### §5 tail — ABANDONED 2026-07-12, RESUMED + CLOSED 2026-08-21
+
+The run stopped immediately after the deploy push. Everything below §5's "NEXT (post-deploy)" line
+went unrun for five weeks: no functional CORS curl, no 2d-(v) normalize re-apply, no prod smoke test,
+no GitHub Release tag. Recorded here rather than quietly ticked, because the gap is the story.
+
+- **What broke in the interval.** Both prod and dev Atlas clusters were **terminated** (free-tier
+  auto-pause at 30 days of inactivity, then termination — irreversible). Signature:
+  `SSL alert number 80` / `tlsv1 alert internal error`. The old shared `Cluster0` went with them,
+  taking the `@jclind/ingredient-parser` cache and breaking ingredient enrichment.
+- **Nothing alerted, for five weeks.** `/health` ran `db.command({ ping: 1 })`, the terminated
+  cluster kept answering that ping, and Railway held a completely dead instance green while every
+  data route 500'd. Fixed in [#319](https://github.com/jclind/prepify/pull/319) — the probe is now a
+  real query. The parser service had the same bug in a worse form (a *static* 200) and was fixed the
+  same way in its own repo.
+- **Restore (2026-08-20).** New clusters `prepify-dev.yrtuhzr` + `prepify-prod.uiqvztd`, both free
+  tier by owner decision. Data loss accepted (dev-only content; the schemas were the asset). A fresh
+  empty DB boots clean: 9 collections, 33 boot indexes, 6 from `createModerationIndexes.js`,
+  `checkMigrationState` exit 0. **§2's entire data-ops burden is void** — 2a/2b/2c/2d had no legacy
+  data left to migrate. Firebase Auth accounts survived (auth + the `admin` claim live in Firebase);
+  a user with no Mongo doc lands on `/create-username`, the normal signup path.
+- **[#320](https://github.com/jclind/prepify/pull/320) — `GET /version`.** Confirming the restore
+  deploy meant opening the Railway dashboard, because both `/health` variants return an identical 200
+  when healthy. Verify deploys with `curl <api>/version` now.
+- **§3a — the skipped storage rules.** §5 above records "§3 image ops **SKIPPED** (storage.rules NOT
+  deployed)" as a safe choice. It was not. Prod was already serving the uid-writing frontend, so
+  every prod image upload 403'd from 2026-07-12 until the rules were deployed 2026-08-21. It hid
+  behind the dead database — you cannot reach the upload step without a working DB. See the warning
+  now at the top of RELEASE_RUNBOOK §3.
+- **Prod smoke test — PASSED 2026-08-21/24** on prepifymeals.com: create-with-image succeeds,
+  ingredient enrichment returns image + price, no app-origin console errors (Sentry captured
+  `captureSession` only, no `captureException`).
+- **Still open:** publish the drafted `v1.0.0` GitHub Release (targets `7ac42ca`); the Sentry
+  release-event check, which **cannot be completed in a browser with an ad blocker** — the envelope
+  POST is `ERR_BLOCKED_BY_CLIENT`, so an empty Sentry dashboard proves nothing; and the ingredient
+  pricing bug filed 2026-08-20 ([#322](https://github.com/jclind/prepify/pull/322), Bugs) which
+  predates all of this and is not launch-blocking.
+
 ---
 
 # Prepify — 1.0 Release Runbook
