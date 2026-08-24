@@ -11,9 +11,21 @@
 // backstop, so they no longer call respondServerError directly.
 const GENERIC_500_MESSAGE = 'Internal server error'
 
+// Sentry is a safe no-op without SENTRY_DSN (instrument.js skips init), so this
+// require is free in dev/CI/tests.
+const Sentry = require('@sentry/node')
+
+// REPORTS TO SENTRY. It didn't until 2026-08-24, and that was a real blind spot:
+// the Sentry capture lived ONLY in the app.js backstop, which sees errors
+// forwarded via next(err). Every caller of this function returns its own 500 and
+// never forwards, so those faults reached the client and the Railway log but were
+// invisible to error monitoring. Confirmed against prod logs — an ingredient
+// enrichment 500 was served to a user with no corresponding Sentry event.
+// Capture never blocks or changes the client-facing response.
 function respondServerError(res, err, req) {
   const where = req ? `${req.method} ${req.originalUrl}` : 'server'
   console.error(`[500] ${where}`, err)
+  Sentry.captureException(err)
   return res.status(500).json({ error: GENERIC_500_MESSAGE })
 }
 

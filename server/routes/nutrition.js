@@ -1,4 +1,5 @@
 const { Router } = require('express')
+const Sentry = require('@sentry/node')
 const { verifyToken, requireActive } = require('../middleware/auth')
 const { makeUserLimiter } = require('../middleware/writeLimiter')
 const { makePaidQuotaLimiter } = require('../util/paidQuota')
@@ -109,6 +110,11 @@ router.post('/details', verifyToken, requireActive, nutritionLimiter, nutritionQ
       err && err.message,
       err && err.stack
     )
+    // Report to Sentry. This route returns its own 500 rather than forwarding
+    // via next(err), so the app.js backstop never sees it — without this the
+    // fault reaches the user and the Railway log but not error monitoring.
+    // Proven blind in the 2026-08 prod logs. Capture can't change the response.
+    Sentry.captureException(err)
     return res.status(500).json({ error: GENERIC_500_MESSAGE })
   }
 }))

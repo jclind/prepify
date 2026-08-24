@@ -65,7 +65,19 @@ app.use(cors({
       // A rejected origin is an expected client condition, not a server fault:
       // tag it 403 so the error backstop renders it as a quiet JSON 403 and
       // does NOT Sentry-capture it (the backstop only captures status >= 500).
-      const err = new Error('Not allowed by CORS')
+      //
+      // NAME THE ORIGIN. This message used to be the bare string 'Not allowed by
+      // CORS', so the backstop logged `[403] GET /api/...` with no way to tell
+      // WHO was rejected. A burst of those in the 2026-08 prod logs was therefore
+      // undiagnosable: the requests looked exactly like a real Home page load, but
+      // nothing recorded which origin sent them, and every candidate we could test
+      // after the fact (apex, www, http→https redirects, the netlify.app domain)
+      // turned out to be either allowed or not serving the app at all.
+      //
+      // The origin is attacker-controlled, so it is length-capped and stripped of
+      // newlines/control characters before going anywhere near a log line.
+      const safeOrigin = String(origin).replace(/[\r\n\t]/g, ' ').slice(0, 200)
+      const err = new Error(`Not allowed by CORS: ${safeOrigin}`)
       err.status = 403
       callback(err)
     }
