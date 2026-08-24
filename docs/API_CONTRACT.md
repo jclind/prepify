@@ -16,7 +16,7 @@ implemented behavior, not a proposal.
 
 ## Route overview
 
-73 routes + the two unauthenticated ops endpoints `GET /health` and `GET /version`. Each
+74 routes + the two unauthenticated ops endpoints `GET /health` and `GET /version`. Each
 section below documents its routes in full and ends with a
 `#### DRIFT` list of client↔server mismatches found during regeneration.
 
@@ -903,6 +903,28 @@ The six routes below (`server/routes/admin.js`) are the admin console's user-mod
   - `401` / `403` from middleware.
 - **Client:** `src/api/admin.ts` → `getAnalytics(params?)` — used by `src/pages/Admin/Analytics/Analytics.tsx:47` (refetches on day-range toggle).
 - **Notes:** Recipes with no `status` field are counted as legacy `'active'` (line 393–400). `usersOverTime` is incomplete history: `usernames.createdAt` only exists for accounts created after the field was introduced, so older signups are absent from the series (comment at line 364–367); recipe/report series are fully historical. `autoFlagsDismissed` counts automod reports an admin dismissed — dismissal does not restore a held recipe (line 418–420).
+
+### POST /api/admin/diagnostics/sentry-test
+
+- **Middleware:** `verifyToken` → `requireAdmin`. Admin-only by necessity, not convention: without the
+  gate this is a public 500-generator and a way to burn Sentry quota. Tests assert the 401/403 paths and
+  that neither reaches `captureException`.
+- **Purpose:** prove server-side error reporting works, on demand. `@sentry/node` emits **only when
+  something throws** (unlike `@sentry/react`, which auto-tracks a session on every page load), so a
+  healthy server and one with a broken `SENTRY_DSN` are indistinguishable from the Sentry console. Added
+  2026-08-24 after that gap hid two real bugs: the server set no `release` at all
+  ([#324](https://github.com/jclind/prepify/pull/324)), and the Sentry capture lived only in the app.js
+  backstop so `ingredients`/`nutrition`/`auth` 500s were never reported
+  ([#325](https://github.com/jclind/prepify/pull/325)).
+- **It throws rather than calling `captureException` directly**, on purpose: the point is to exercise the
+  real path (`asyncHandler` → the app.js backstop → log + capture → generic body), so a pass means the
+  production pipeline works rather than that a special-cased test call does.
+- **Returns `500 { error: 'Internal server error' }` — that IS the pass.** Any other status means the
+  request never reached the handler.
+- **Query:** `marker` (optional) is echoed into the error message so a specific run is findable in
+  Sentry. Admin-supplied but still capped at 80 chars and stripped of control characters, same treatment
+  as the CORS origin in `app.js`.
+- **Runbook:** CUTOVER_RUNBOOK's "Error tracking — SERVER" smoke item is this call.
 
 ### GET /api/admin/ingredients
 - **Handler:** `server/routes/admin.js:479`
