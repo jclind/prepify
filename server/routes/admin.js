@@ -501,4 +501,40 @@ router.get('/admin/ingredients', verifyToken, requireAdmin, asyncHandler(async (
   res.json({ items, totalCount })
 }))
 
+// POST /admin/diagnostics/sentry-test — prove error reporting actually works.
+//
+// Answering "is Sentry receiving anything?" used to mean waiting for a real
+// incident, which is the worst possible time to discover it isn't. The asymmetry
+// that makes this necessary: @sentry/react auto-tracks sessions, so every page
+// load proves the web SDK end to end, while @sentry/node emits ONLY when
+// something throws. A healthy server and a server whose DSN is wrong look
+// identical from the Sentry console.
+//
+// That gap hid two real bugs (2026-08): the server set no `release` at all, and
+// the Sentry capture lived only in the app.js backstop, so 500s from
+// routes/ingredients.js, routes/nutrition.js and middleware/auth.js were never
+// reported. Both are fixed; this endpoint is how you confirm they stay fixed
+// after any deploy, DSN rotation, or SDK upgrade.
+//
+// It THROWS rather than calling captureException directly, on purpose. The whole
+// point is to exercise the real production path — asyncHandler forwards to the
+// app.js backstop, which logs, captures, and returns the generic 500 body — so a
+// pass means the actual pipeline works, not that a special-cased test call does.
+// Expect a 500 with `{ error: 'Internal server error' }`; that IS the pass.
+//
+// Admin-only (verifyToken + requireAdmin) so it can never become a public
+// 500-generator or a way to burn Sentry quota. `marker` is echoed into the error
+// message so you can search Sentry for a specific run; it is admin-supplied but
+// still length-capped and stripped of control characters, same treatment as the
+// CORS origin in app.js — untrusted text is untrusted text.
+router.post('/admin/diagnostics/sentry-test', verifyToken, requireAdmin, asyncHandler(async (req) => {
+  const raw = typeof req.query.marker === 'string' ? req.query.marker : ''
+  const marker = raw.replace(/[\r\n\t]/g, ' ').trim().slice(0, 80)
+  throw new Error(
+    `Sentry diagnostic — deliberate test error from POST /admin/diagnostics/sentry-test${
+      marker ? ` [marker: ${marker}]` : ''
+    }`
+  )
+}))
+
 module.exports = router
