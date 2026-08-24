@@ -85,6 +85,9 @@ npx cypress open       # Open Cypress test runner
 - `VITE_FIREBASE_MESSAGING_SENDER_ID` - Firebase Cloud Messaging sender ID
 - `VITE_FIREBASE_APP_ID` - Firebase app ID
 - `VITE_CYPRESS` - Set to `"true"` when running under Cypress; toggles test-mode behavior in `src/client/db.ts`
+- `VITE_SENTRY_DSN` - Client error monitoring. Unset (local/CI) makes every export in `src/util/sentry.ts` a
+  no-op. Events are tagged `release: VITE_APP_VERSION`, the same string the server sends, so a frontend
+  regression can be lined up against the backend deploy that caused it.
 
 ### Main Server (.env)
 - `MONGO_URI` - MongoDB connection string
@@ -92,6 +95,11 @@ npx cypress open       # Open Cypress test runner
 - `FRONTEND_URLS` - Comma-separated CORS origins
 - `PORT` - Default 4000
 - `INGREDIENT_PARSER_PROXY_URL` - Optional. Overrides the base URL of the hosted ingredient-enrichment proxy used by `@jclind/ingredient-parser` v2 (server/routes/ingredients.js). Unset = the package's default hosted proxy. NOTE: as of `@jclind/ingredient-parser` v2 the parser is key-free on the client — the proxy holds the Spoonacular key — so `SPOONACULAR_API_KEY` is **no longer used by this server** (it was needed only by the v1 in-process library call).
+- `SENTRY_DSN` - Server error monitoring (`server/instrument.js`, required first in `index.js` so
+  auto-instrumentation hooks in). Unset = init skipped and every `Sentry.*` call is a safe no-op. Events
+  carry `release` = `server/package.json` version (matching the client's tag on purpose) and `dist` = the
+  short `RAILWAY_GIT_COMMIT_SHA`, the same build `GET /version` reports. NOTE: only the *client* DSN was
+  ever confirmed during the 1.0 cutover; if this one is unset the server reports nothing, silently.
 - `EDAMAM_APP_ID` / `EDAMAM_APP_KEY` - Edamam nutrition API credentials, used server-side only by the `POST /api/nutrition/details` proxy (server/routes/nutrition.js). Moved off the client (formerly `VITE_EDAMAM_APP_ID/KEY`) so the keys aren't shipped in the browser bundle.
 - `PAID_QUOTA_<SURFACE>_USER_DAILY` / `PAID_QUOTA_<SURFACE>_GLOBAL_DAILY` - Optional. Per-account and global DAILY spend ceilings on the paid third-party surfaces (audit H1), on top of the per-minute rate limiters. `<SURFACE>` is one of `NUTRITION` (Edamam), `INGREDIENTS` (Spoonacular parse), `RECIPE` (Cloud Vision + OpenAI moderation on recipe creates). Unset = the code defaults in `server/util/paidQuota.js` (nutrition 150/6000, ingredients 600/20000, recipe 50/2000). The global ceiling is what bounds a Sybil swarm's total spend regardless of account count; tune below your billing comfort line. Counters live in the `paidQuota` Mongo collection and self-reap via a TTL index. The limiter is skipped under `NODE_ENV=test`.
 
