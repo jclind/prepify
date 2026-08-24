@@ -186,8 +186,21 @@ late at night.
   (confirms `OPENAI_API_KEY` + `MODERATION_ENABLED=true` on prod).
 - `[ ]` **Support path:** submit the `/help` contact form and the footer "Report a bug" form → confirm the
   admin queue receives it + the `ADMIN_NOTIFY_EMAIL` alert lands (Resend).
-- `[ ]` **Error tracking:** confirm a Sentry event lands for the prod release (check the dashboard for the
-  `1.0.0` release, or trigger a benign handled error).
+- `[ ]` **Error tracking — CLIENT:** load the site and confirm a session lands against the release in
+  Sentry. `@sentry/react` auto-tracks sessions, so a plain page load is enough; no error needed.
+  ⚠️ **Do this in incognito with extensions off.** An ad blocker blocks Sentry's envelope POST
+  (`net::ERR_BLOCKED_BY_CLIENT`), so an empty dashboard proves nothing — this silently defeated the
+  check on 2026-08-24.
+- `[ ]` **Error tracking — SERVER:** a page load proves nothing here. `@sentry/node` emits **only when
+  something throws**, so a healthy server and a server with a wrong/absent `SENTRY_DSN` look identical.
+  Make it throw, as an admin:
+  ```bash
+  curl -X POST -H "Authorization: Bearer <admin ID token>" \
+    "<prod-api>/api/admin/diagnostics/sentry-test?marker=<release-or-sha>"
+  ```
+  **A `500 {"error":"Internal server error"}` is the PASS** — it means the error travelled the real
+  production path. Then find it in Sentry by the marker and confirm its tags read `release: <version>`
+  and `dist: <short sha>`, cross-checking that sha against `<prod-api>/version`.
 - `[ ]` **Social preview (known limitation, not a failure):** pasting a recipe URL into Slack/iMessage
   shows the **generic** site card — expected for the SPA until prerendering ships (RELEASE_PLAN §C).
 - `[ ]` **Mobile (real device):** home, single recipe, hamburger menu — no overflow, no console errors.
