@@ -113,6 +113,38 @@
         color: s.$tertiary-text;
         font-weight: 500;
       }
+
+      // A price the parser flagged as a guess: a volume measure run through an
+      // average density, or a per-item price multiplied by a count. The number
+      // is still the best we have, so it stays legible — the marker is what
+      // stops it reading as measured.
+      &.estimate {
+        display: inline-flex;
+        align-items: baseline;
+        justify-content: flex-end;
+        gap: 4px;
+        .est {
+          font-size: s.$text-caption;
+          font-weight: 600;
+          letter-spacing: 0.02em;
+          text-transform: uppercase;
+          color: s.$tertiary-text;
+          border: 1px solid s.$gray-400;
+          border-radius: s.$radius-xs;
+          padding: 0 3px;
+          line-height: 1.4;
+        }
+      }
+
+      // No price at all. Replaces the old '—', which said "nothing here" when
+      // what we mean is "this one needs you": these rows are skipped by the
+      // per-serving total, so an unnoticed one quietly understates the recipe.
+      &.none {
+        font-size: s.$text-fine;
+        font-weight: 600;
+        color: s.$tertiary-text;
+        white-space: nowrap;
+      }
     }
 
     // Shown in place of the price when enrichment failed/timed out: the row is

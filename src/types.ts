@@ -18,11 +18,25 @@ export type ParsedIngredient = {
   comment: string | null
 }
 
+// How a price was arrived at, straight from @jclind/ingredient-parser. 'gram'
+// means the quantity was converted to grams and multiplied by a per-gram price;
+// 'unit-estimate' means it was multiplied by a per-item price instead.
+export type PriceBasis = 'gram' | 'unit-estimate'
+
+// 'high' only for mass measures, where unit → grams is exact and
+// density-independent. Volume conversions lean on an average density (a cup of
+// flour genuinely varies ±20%) and per-item multiplication is a guess, so both
+// are 'low' and the UI labels them as estimates.
+export type PriceConfidence = 'high' | 'low'
+
 export interface IngredientData {
   // Fields the app reads/persists today.
   name: string
   imagePath?: string
   totalPriceUSACents?: number
+  // Absent on rows enriched before 2026-08, and absent whenever the price is.
+  priceBasis?: PriceBasis
+  priceConfidence?: PriceConfidence
   possibleUnits?: string[]
   category?: string
   // Tolerated extras: older recipe documents persisted the full v1 enrichment

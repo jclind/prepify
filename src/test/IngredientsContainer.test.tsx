@@ -306,3 +306,85 @@ describe('IngredientsContainer — enrichment timeout', () => {
     expect(mockToastError.mock.calls[0][0]).toMatch(/too long/i)
   })
 })
+
+// Every per-ingredient price is an estimate, but they are not equally good, and
+// until now the row rendered all of them identically. A mass measure converts
+// to grams exactly; a volume measure goes through an average density that
+// varies ±20%; a count multiplies a per-item price. The parser reports which it
+// used, and since @jclind/ingredient-parser 2.1.0 it returns no price at all
+// rather than guessing when a measure can't be priced honestly.
+describe('IngredientsContainer — price confidence on the row', () => {
+  const priced = (data: Record<string, unknown> | null) => ({
+    ...enriched('2 cups flour'),
+    ingredientData: data,
+  })
+
+  const addAndSettle = async (data: Record<string, unknown> | null) => {
+    const user = userEvent.setup()
+    mockGetIngredientData.mockResolvedValue(priced(data))
+    render(<Wrapper />)
+    await addIngredient(user, '2 cups flour')
+    await waitFor(() => expect(screen.getByText('flour')).toBeInTheDocument())
+  }
+
+  it('renders an exact (mass-converted) price plainly, with no estimate marker', async () => {
+    await addAndSettle({
+      totalPriceUSACents: 300,
+      priceBasis: 'gram',
+      priceConfidence: 'high',
+    })
+    await waitFor(() => expect(rowPriceText()).toContain('$3.00'))
+    expect(document.querySelector('.ingr-price.estimate')).toBeNull()
+    expect(screen.queryByLabelText('estimated')).not.toBeInTheDocument()
+  })
+
+  it('marks a density-estimated price as an estimate, keeping the number', async () => {
+    await addAndSettle({
+      totalPriceUSACents: 300,
+      priceBasis: 'gram',
+      priceConfidence: 'low',
+    })
+    await waitFor(() => expect(rowPriceText()).toContain('$3.00'))
+    expect(document.querySelector('.ingr-price.estimate')).not.toBeNull()
+    expect(screen.getByLabelText('estimated')).toBeInTheDocument()
+  })
+
+  it('marks a per-item estimate too, and says so in the tooltip', async () => {
+    await addAndSettle({
+      totalPriceUSACents: 300,
+      priceBasis: 'unit-estimate',
+      priceConfidence: 'low',
+    })
+    await waitFor(() => expect(rowPriceText()).toContain('$3.00'))
+    expect(document.querySelector('.ingr-price')?.getAttribute('title')).toMatch(
+      /per-item price/i
+    )
+  })
+
+  it('prompts for a price when the parser declined to guess one', async () => {
+    // The salsa case: a volume measure with no density entry. The parser now
+    // returns no price rather than the ~236x undercount it used to.
+    await addAndSettle({ totalPriceUSACents: undefined, name: 'salsa' })
+    await waitFor(() => expect(rowPriceText()).toContain('needs price'))
+    expect(rowPriceText()).not.toContain('$')
+    expect(document.querySelector('.ingr-price')?.getAttribute('title')).toMatch(
+      /per-serving cost/i
+    )
+  })
+
+  it('never renders $0.00 for a row whose price is null', async () => {
+    // Number(null) is 0, so a naive coercion would show a confident "$0.00"
+    // for a row that has no price at all.
+    await addAndSettle({ totalPriceUSACents: null, name: 'salsa' })
+    await waitFor(() => expect(rowPriceText()).toContain('needs price'))
+    expect(rowPriceText()).not.toContain('$0.00')
+  })
+
+  it('leaves rows enriched before provenance existed rendering plainly', async () => {
+    // Historical recipes carry a price and no basis/confidence. They must not
+    // all sprout estimate markers on the strength of a missing field.
+    await addAndSettle({ totalPriceUSACents: 300 })
+    await waitFor(() => expect(rowPriceText()).toContain('$3.00'))
+    expect(document.querySelector('.ingr-price.estimate')).toBeNull()
+  })
+})
