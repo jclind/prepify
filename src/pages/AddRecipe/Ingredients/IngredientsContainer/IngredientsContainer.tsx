@@ -159,6 +159,19 @@ const IngredientsContainer: FC<IngredientsContainerProps> = ({
     return sum
   }, 0)
 
+  // True when at least one ingredient row contributes nothing to that sum, so
+  // the subtotal is a floor rather than a total. Until the price-confidence work
+  // every enriched row carried *some* number, so an unmarked total was at least
+  // internally consistent; now the parser declines to price a measure it can't
+  // price honestly, and an unmarked total would understate the recipe silently —
+  // the same defect this whole change exists to remove, one level up. Covers a
+  // failed lookup too, which was always excluded from the sum.
+  const hasUnpricedRow = ingredients.some(
+    ingr =>
+      'parsedIngredient' in ingr &&
+      typeof ingr.ingredientData?.totalPriceUSACents !== 'number'
+  )
+
   return (
     <div className='ingredients-container'>
       <IngredientsInput onAdd={addIngredient} />
@@ -175,6 +188,14 @@ const IngredientsContainer: FC<IngredientsContainerProps> = ({
         {subtotalCents > 0 && (
           <span className='ingredients-subtotal'>
             Subtotal <b>${(subtotalCents / 100).toFixed(2)}</b>
+            {hasUnpricedRow && (
+              <span
+                className='partial'
+                title="Some ingredients have no price yet, so this is less than the recipe's full cost."
+              >
+                partial
+              </span>
+            )}
           </span>
         )}
       </div>

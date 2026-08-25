@@ -380,6 +380,34 @@ describe('IngredientsContainer — price confidence on the row', () => {
     expect(rowPriceText()).not.toContain('$0.00')
   })
 
+  it('marks the subtotal partial when a row contributes no price', async () => {
+    // The footer used to state a confident total while silently excluding rows
+    // that carry no price — the same defect as the row-level one, a level up.
+    // Needs a mixed list: with nothing priced the subtotal is hidden entirely.
+    const user = userEvent.setup()
+    mockGetIngredientData
+      .mockResolvedValueOnce(priced({ totalPriceUSACents: 300 }))
+      .mockResolvedValueOnce(priced({ totalPriceUSACents: undefined, name: 'salsa' }))
+    render(<Wrapper />)
+    await addIngredient(user, '2 cups flour')
+    await addIngredient(user, '2 cups salsa')
+
+    await waitFor(() =>
+      expect(document.querySelector('.ingr-price.none')).not.toBeNull()
+    )
+    const subtotal = document.querySelector('.ingredients-subtotal')
+    expect(subtotal?.textContent).toContain('$3.00')
+    expect(subtotal?.textContent).toContain('partial')
+  })
+
+  it('leaves the subtotal unmarked when every row is priced', async () => {
+    await addAndSettle({ totalPriceUSACents: 300 })
+    await waitFor(() => expect(rowPriceText()).toContain('$3.00'))
+    const subtotal = document.querySelector('.ingredients-subtotal')
+    expect(subtotal?.textContent).toContain('$3.00')
+    expect(subtotal?.textContent).not.toContain('partial')
+  })
+
   it('leaves rows enriched before provenance existed rendering plainly', async () => {
     // Historical recipes carry a price and no basis/confidence. They must not
     // all sprout estimate markers on the strength of a missing field.
