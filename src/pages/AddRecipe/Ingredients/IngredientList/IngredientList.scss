@@ -113,6 +113,55 @@
         color: s.$tertiary-text;
         font-weight: 500;
       }
+
+      // A price the parser flagged as a guess: a volume measure run through an
+      // average density, or a per-item price multiplied by a count. The number
+      // is still the best we have, so it stays legible — the marker is what
+      // stops it reading as measured.
+      &.estimate {
+        display: inline-flex;
+        align-items: baseline;
+        justify-content: flex-end;
+        gap: 4px;
+        .est {
+          font-size: s.$text-caption;
+          font-weight: 600;
+          letter-spacing: 0.02em;
+          text-transform: uppercase;
+          color: s.$tertiary-text;
+          border: 1px solid s.$gray-400;
+          border-radius: s.$radius-xs;
+          padding: 0 3px;
+          line-height: 1.4;
+        }
+      }
+
+      // No price at all. Replaces the old '—', which said "nothing here" when
+      // what we mean is "this one needs you": these rows are skipped by the
+      // per-serving total, so an unnoticed one quietly understates the recipe.
+      //
+      // Filled rather than outlined. An outline on a white row reads as
+      // disabled next to a bold price — it was the quietest treatment available
+      // and it disappeared. The fill escalates cleanly off the EST chip beside
+      // it (plain price → grey outline → amber fill) while staying quieter than
+      // the prices themselves, so the row with no data doesn't become the
+      // loudest thing in the list.
+      &.none {
+        display: inline-flex;
+        align-items: baseline;
+        justify-content: flex-end;
+        font-size: s.$text-caption;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+        color: s.$chip-warning-amber-text;
+        background: s.$chip-warning-amber;
+        border: 1px solid s.$chip-warning-amber-border;
+        border-radius: s.$radius-xs;
+        padding: 1px 5px;
+        line-height: 1.5;
+        white-space: nowrap;
+      }
     }
 
     // Shown in place of the price when enrichment failed/timed out: the row is

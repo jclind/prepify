@@ -31,18 +31,61 @@ type IngredientItemProps = {
   setIngredients: React.Dispatch<React.SetStateAction<IngredientsType[]>>
 }
 
-// Per-ingredient price label from the enriched parser data. Returns '—' when
-// pricing couldn't be fetched (soft-fail) so a row never looks broken.
-const priceLabel = (ingredient?: IngredientsType): string => {
-  if (
-    ingredient &&
-    'ingredientData' in ingredient &&
-    ingredient.ingredientData
-  ) {
-    const cents = Number(ingredient.ingredientData.totalPriceUSACents)
-    if (!isNaN(cents)) return `$${(cents / 100).toFixed(2)}`
+// Per-ingredient price for the row, carrying the parser's own provenance so a
+// guess doesn't render with the authority of a measured number. Three states:
+//
+//   'exact'    — a mass measure. unit → grams is exact and density-independent.
+//   'estimate' — a volume measure converted through an average density (a cup
+//                of flour genuinely varies ±20%), or a per-item price
+//                multiplied by a count. Same number, marked as a guess.
+//   'none'     — no price at all. Since @jclind/ingredient-parser 2.1.0 the
+//                parser declines rather than guessing when a measure can't be
+//                priced, which is why this is now common enough to deserve real
+//                copy. It matters because calculateServingPrice skips these
+//                rows silently, so the per-serving total understates until the
+//                author supplies a price.
+//
+// Rows enriched before priceBasis existed carry a price but no provenance, and
+// land in 'exact' on purpose — historical recipes shouldn't all sprout estimate
+// markers on the strength of a missing field.
+type PriceKind = 'exact' | 'estimate' | 'none'
+type PriceDisplay = { text: string; kind: PriceKind; title: string }
+
+const priceDisplay = (ingredient?: IngredientsType): PriceDisplay => {
+  const data =
+    ingredient && 'ingredientData' in ingredient ? ingredient.ingredientData : null
+  // Guarded on the type rather than Number(): `Number(null)` is 0, which would
+  // render a confident "$0.00" for a row that has no price at all.
+  const cents =
+    data && typeof data.totalPriceUSACents === 'number'
+      ? data.totalPriceUSACents
+      : null
+
+  if (cents === null || !Number.isFinite(cents)) {
+    return {
+      // "needs price", not "add price": there's no way to set one yet, and a
+      // label that reads like a button you can't press is worse than a label
+      // that just states the problem. Becomes the hook for the author-editable
+      // price feature when that lands.
+      text: 'needs price',
+      kind: 'none',
+      title:
+        "We couldn't estimate a price for this ingredient, so it isn't counted in the per-serving cost.",
+    }
   }
-  return '—'
+
+  const text = `$${(cents / 100).toFixed(2)}`
+  if (data?.priceConfidence === 'low') {
+    return {
+      text,
+      kind: 'estimate',
+      title:
+        data.priceBasis === 'unit-estimate'
+          ? 'Estimated from a per-item price rather than a measured amount.'
+          : 'Estimated using an average density for this ingredient, so it can be off by roughly 20%.',
+    }
+  }
+  return { text, kind: 'exact', title: '' }
 }
 
 const IngredientItem: FC<IngredientItemProps> = ({
@@ -233,6 +276,7 @@ const IngredientItem: FC<IngredientItemProps> = ({
   if (!ingredient) return null
 
   const isParsed = 'parsedIngredient' in ingredient
+  const price = priceDisplay(ingredient)
 
   return (
     <div
@@ -304,8 +348,16 @@ const IngredientItem: FC<IngredientItemProps> = ({
       )}
 
       {!isEditing && isParsed && !errored && (
-        <span className={`ingr-price ${loading ? 'na' : ''}`}>
-          {loading ? '' : priceLabel(ingredient)}
+        <span
+          className={`ingr-price ${loading ? 'na' : price.kind}`}
+          title={loading ? undefined : price.title || undefined}
+        >
+          {loading ? '' : price.text}
+          {!loading && price.kind === 'estimate' && (
+            <span className='est' aria-label='estimated'>
+              est
+            </span>
+          )}
         </span>
       )}
 

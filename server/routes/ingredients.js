@@ -120,12 +120,23 @@ function rewriteImageHost(url) {
 // basket icon) instead of a misleading "$0.00" / broken thumbnail. Cents are
 // rounded to whole cents to match v1's integer-cent convention (v2 prices are
 // gram-estimated floats).
+//
+// `priceBasis`/`priceConfidence` carry the parser's own provenance through to
+// the UI. Every price here is an estimate, but they are not equally good: a
+// mass measure converts to grams exactly ('gram'/'high'), a volume measure goes
+// through an average density that genuinely varies ±20% ('gram'/'low'), and a
+// count multiplies a per-item price ('unit-estimate'/'low'). We used to keep
+// only `cents`, so a guess rendered with the same authority as a measured
+// number. Flattened rather than nested to stay consistent with the rest of this
+// shape, and both are omitted with the price itself.
 function mapIngredientData(data) {
   if (!data) return null
   const out = { name: data.name }
   if (data.image) out.imagePath = rewriteImageHost(data.image)
   if (data.price && typeof data.price.cents === 'number') {
     out.totalPriceUSACents = Math.round(data.price.cents)
+    if (data.price.basis) out.priceBasis = data.price.basis
+    if (data.price.confidence) out.priceConfidence = data.price.confidence
   }
   if (Array.isArray(data.possibleUnits)) out.possibleUnits = data.possibleUnits
   if (data.category) out.category = data.category

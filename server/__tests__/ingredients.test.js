@@ -118,6 +118,8 @@ describe('POST /api/ingredients/parse', () => {
         imagePath: 'https://img.spoonacular.com/ingredients_100x100/flour.png',
         possibleUnits: ['g', 'oz', 'cup'],
         totalPriceUSACents: 33,
+        priceBasis: 'gram',
+        priceConfidence: 'low',
       },
     })
   })
@@ -198,6 +200,55 @@ describe('POST /api/ingredients/parse', () => {
     expect(res.status).toBe(200)
     expect(res.body.ingredientData).not.toHaveProperty('totalPriceUSACents')
     expect(res.body.ingredientData.name).toBe('all-purpose flour')
+  })
+
+  // ── Price provenance passthrough ────────────────────────────────────────────────
+  //
+  // The parser reports how it arrived at a price. Keeping only `cents` made a
+  // density guess render with the same authority as a measured number, so the
+  // UI can now tell them apart.
+
+  it('carries priceBasis/priceConfidence through for a density-estimated price', async () => {
+    const res = await request(app)
+      .post('/api/ingredients/parse')
+      .set(AUTH_HEADER)
+      .send({ ingredientString: '2 cups flour' })
+    expect(res.body.ingredientData).toMatchObject({
+      priceBasis: 'gram',
+      priceConfidence: 'low',
+    })
+  })
+
+  it('marks an exact mass conversion high-confidence', async () => {
+    ingredientParser.mockResolvedValue({
+      ...V2_RESULT,
+      data: {
+        ...V2_RESULT.data,
+        price: { cents: 40, basis: 'gram', grams: 200, perGramCents: 0.2, confidence: 'high' },
+      },
+    })
+    const res = await request(app)
+      .post('/api/ingredients/parse')
+      .set(AUTH_HEADER)
+      .send({ ingredientString: '200 g flour' })
+    expect(res.body.ingredientData).toMatchObject({
+      totalPriceUSACents: 40,
+      priceBasis: 'gram',
+      priceConfidence: 'high',
+    })
+  })
+
+  it('omits the provenance fields along with the price when there is none', async () => {
+    ingredientParser.mockResolvedValue({
+      ...V2_RESULT,
+      data: { ...V2_RESULT.data, price: null },
+    })
+    const res = await request(app)
+      .post('/api/ingredients/parse')
+      .set(AUTH_HEADER)
+      .send({ ingredientString: '2 cups parsley' })
+    expect(res.body.ingredientData).not.toHaveProperty('priceBasis')
+    expect(res.body.ingredientData).not.toHaveProperty('priceConfidence')
   })
 
   it('omits imagePath when the ingredient has no image', async () => {

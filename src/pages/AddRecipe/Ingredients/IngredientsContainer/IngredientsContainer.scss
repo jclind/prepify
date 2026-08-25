@@ -36,12 +36,32 @@
     }
 
     .ingredients-subtotal {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 6px;
       font-size: s.$text-sm;
       font-weight: 600;
       color: s.$secondary-text;
       b {
         color: s.$primary;
         font-weight: 700;
+      }
+
+      // Same amber chip as an unpriced row, deliberately: within this block one
+      // colour means one thing, "pricing is incomplete". Without it the footer
+      // states a confident total while quietly excluding rows.
+      .partial {
+        font-size: s.$text-caption;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+        color: s.$chip-warning-amber-text;
+        background: s.$chip-warning-amber;
+        border: 1px solid s.$chip-warning-amber-border;
+        border-radius: s.$radius-xs;
+        padding: 1px 5px;
+        line-height: 1.5;
+        white-space: nowrap;
       }
     }
 
