@@ -595,6 +595,70 @@ hygiene, and the U3 watch items all verified sound — details in the session tr
 
   Lands in `ingredient-parser-v2` (republish + pin bump), same path as the fix above. Low priority: it
   overstates rather than understates, and it's a rounding-level error next to the ~236x one.
+- `[ ]` **Ground spices have no density entry, so every `1 tbsp <spice>` shows "needs price"** *(found
+  2026-08-26 in the owner's prod smoke test of 1.0.1)* — the `DENSITIES` table's "Nuts and seasoning"
+  section ends at `salt`. There is **no pepper, chili powder, cumin, paprika, cinnamon, garlic powder,
+  oregano** or any other ground spice in all 52 entries. A spice is almost always measured in tsp/tbsp,
+  which is a `volume` unit, so it needs a density; without one the 2.1.0 gate correctly declines to guess
+  and the row reads "needs price". Spices appear in most savory recipes, so this is the **single biggest
+  coverage hole** the 2.1.0 fix left behind.
+
+  Confirmed the fix would actually deliver prices rather than move the failure downstream — the proxy has
+  real per-gram prices for all of them:
+
+  ```
+  chili powder  4.29 c/g   → 1 tbsp (~8 g) ≈ 34c
+  black pepper  3.00 c/g   → 1 tbsp ≈ 24c
+  ground cumin  6.61 c/g   → 1 tbsp ≈ 53c
+  ```
+
+  **Fix:** one table entry. Milled dry spices cluster tightly around **0.45–0.55 g/ml** regardless of which
+  spice, so a single `{ match: [...spice names], density: 0.5 }` covers the whole category to well inside
+  the ±20% the EST label already warns about. Cheapest item on this list by a wide margin.
+
+  *Aside worth keeping:* `chili powder` returns `perUnitCents: 0.43` against `perGramCents: 4.29` — not
+  equal, so the proxy's equality test does **not** drop it, yet 0.43c for "one unit of chili powder" is
+  meaningless. It's the **unit-type gate** in `calculatePrice` (volume can never be priced per item) that
+  saves this case, not the equality rule. Good evidence the type gate was the right call and shouldn't be
+  weakened later in favour of the equality check alone.
+- `[ ]` **`1 can (15 oz) black beans` shows "needs price" while `15 oz black beans` prices fine** *(found
+  2026-08-26 in the owner's prod smoke test of 1.0.1)* — the parenthetical size is parsed and then thrown
+  away. `parse('1 can (15 oz) black beans, drained and rinsed')` returns:
+
+  ```
+  qty  1
+  unit { name: 'can', type: 'count' }
+  comment 'drained and rinsed 15 oz'          ← the real measure, demoted to prose
+  ```
+
+  So the ingredient is priced as *one can*, and black beans have no honest per-unit price (the proxy drops
+  it, since it equalled the per-gram price), so it declines. Meanwhile `15 oz` alone parses as `mass` and
+  converts exactly — 425 g × 0.15c = **~64c**.
+
+  **Fix (preferred):** in `ingredient-parser-v2`, when the unit is an informal container (`can`, `jar`,
+  `package`, `box`, `bag`, `bottle`) and the comment contains a parsable mass/volume measure, prefer the
+  parenthetical as the real quantity. The data is already extracted; it only needs to win. This also
+  generalises to `1 package (10 oz) frozen spinach`, `2 cans (14.5 oz each) diced tomatoes`, and the rest
+  of a very common recipe idiom.
+
+  **Fallback the owner suggested:** a hint on the ingredient input along the lines of *"prices resolve
+  better with an exact measure: `15 oz black beans (1 can)`"*. Worth considering **in addition**, but not
+  instead — teaching authors to write around a parser limitation is a worse trade than fixing the parser,
+  and the owner ranked it second too. Note the hint direction only helps if the parenthetical is at the
+  *end*, which is itself a parser quirk rather than a rule authors should have to learn.
+- `[ ]` **`salt and pepper to taste` shows "needs price"; it should be $0.00** *(owner's call, 2026-08-26,
+  from the same smoke test)* — `parse('salt and pepper to taste')` returns `quantity.value: null` and
+  `unit: null`. There is genuinely no amount, so nothing can be priced, and the row now nags for a price
+  that shouldn't exist.
+
+  **This is the same mechanism as the water item above and should ship with it:** the package deliberately
+  treats `0` as "no data" (`usablePrice`), so "genuinely free / negligible" needs its own signal —
+  `basis: 'free'` with `confidence: 'high'`, which the UI renders as a plain `$0.00`.
+
+  **Design caution:** the trigger must be the phrase, not the missing quantity. An author who writes just
+  `flour` with no amount has an *unknown* cost, not a free one, and silently zeroing that would understate
+  the recipe — precisely the failure mode this whole thread exists to kill. Trigger on `to taste` (and
+  probably `as needed`, `for garnish`, `for serving`), optionally narrowed to a pantry-staple allowlist.
 - `[x]` **`Received NaN for the \`value\` attribute` warning on Edit Recipe — root-caused; it's a real
   hydration bug, not cosmetic (verified 2026-06-26)** — *(fixed in [#235](https://github.com/jclind/prepify/pull/235), F1:
   hydrate `TimeInput` from `val.hours`/`val.minutes` — the `Number(val)` arithmetic that produced `NaN` on an object `val` is
