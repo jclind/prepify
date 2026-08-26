@@ -466,8 +466,9 @@ hygiene, and the U3 watch items all verified sound — details in the session tr
   backfill, then pull the parfait's per-ingredient `totalPriceUSACents` to attribute parse-bug vs
   proxy-estimate before writing any fix. → **N1**
   - *(2026-07-08 update, N6 [#255](https://github.com/jclind/prepify/pull/255))* — **investigated + guarded, not closed**: a dev dry-run showed **0 servingPrice drift** (so half (1)'s `--apply` is a no-op on current data) and attributed the parfait to a **bad proxy gram-estimate** (`1 cup strawberries` = $25.34 on stale v1 data), not a parse or division bug. Fix-option (B) — a **`price_outlier` flag** on enriched rows ≥ $15 — shipped on N6's telemetry surface (**flag, not clamp**). Still open: **(A)** the owner/proxy-gated re-enrich backfill for stale v1 prices, and half (2)'s parse-quality hardening in `updateIngredients.ts`.
-- `[ ]` **Volume-measured ingredients whose name isn't in the 13-entry density table are priced ~200x too
-  low (`1 1/3 cup salsa` → $0.01)** *(filed 2026-08-20, found during the post-cluster-restore prod smoke)* —
+- `[x]` **Volume-measured ingredients whose name isn't in the 13-entry density table are priced ~200x too
+  low (`1 1/3 cup salsa` → $0.01)** *(filed 2026-08-20, found during the post-cluster-restore prod smoke;
+  fixes 1, 2 and 4 SHIPPED 2026-08-25, fix 3 in flight)* —
   the opposite failure direction from the "$10 parfait" item above, and unlike that one this has a definite
   root cause. `@jclind/ingredient-parser@2.0.0` converts volume→grams via a **13-entry** `DENSITIES` table
   (`src/enrich/volume.ts:34`). On no match, `lookupDensity` returns `null`, `makeDensityToGrams` returns
@@ -489,7 +490,7 @@ hygiene, and the U3 watch items all verified sound — details in the session tr
   ```
 
   **Scope is wide**, because recipes are mostly measured in cups and tablespoons. Of 17 common ingredients
-  checked, 13 have no density: salsa · yogurt · shredded cheese · black beans · diced tomatoes · onion · corn ·
+  checked, 12 have no density: salsa · yogurt · shredded cheese · black beans · diced tomatoes · onion · corn ·
   rolled oats · breadcrumbs · chopped walnuts · chocolate chips · soy sauce. Only brown/powdered/plain sugar,
   flour, honey/syrup/molasses, oil, butter, milk, cream, water/broth/stock/juice/wine/vinegar, salt, rice, and
   cocoa resolve.
@@ -503,18 +504,97 @@ hygiene, and the U3 watch items all verified sound — details in the session tr
     (`server/routes/ingredients.js`) keeps only `price.cents`, so the UI renders a guessed $0.01 with the same
     authority as a measured number.
 
-  **Fix (layered, spans three repos — needs an owner decision on the first point):**
-  1. **Decide whether a wrong price beats no price.** Recommend the fallback *decline* when
-     `perUnitCents === perGramCents` (which proves it isn't a real per-unit price) rather than emit a
-     confidently-wrong figure. Per-serving cost is a headline feature; an honest blank beats $0.01.
+  **Fix (layered, spans three repos)** *(plan settled 2026-08-25, see the update below)*:
+  1. **Gate the unit-estimate fallback** (`ingredient-parser-v2`, `src/enrich/price.ts`): a `volume` unit that
+     failed gram conversion returns no price instead of a category-error figure, and a `perUnitCents` equal to
+     `perGramCents` is treated as absent.
   2. Expand `DENSITIES` and fix the substring ordering (`ingredient-parser-v2`, then republish + bump the
      `@jclind/ingredient-parser` pin in `server/package.json`, currently `2.0.0`).
-  3. Surface `confidence`/`basis` through `mapIngredientData` and show low-confidence prices as estimates in
-     the UI instead of dropping the field.
+  3. Surface `confidence`/`basis` through `mapIngredientData` and label estimated prices in the UI.
+  4. Stop emitting the fake `perUnitCents` at the proxy
+     (`ingredient-parser-server/services/mapToNeutral.js:40`). It's a read-time projection over the Mongo
+     cache, so it lands without a republish, a redeploy of Prepify, or a re-fetch of any cached ingredient.
+
+  *(2026-08-25 update — live-proxy probe of 20 ingredients; the two owner decisions are made)*
+
+  **`perUnitCents === perGramCents` is a clean discriminator, not a heuristic.** Spoonacular's
+  `/information?amount=1` prices one *default unit*, and for bulk goods that default is a gram. The equality
+  therefore proves the "single unit price" is a per-gram price in disguise, and the split is sharp:
+
+  ```
+  genuine per-item price   egg 24 · banana 15.73 · onion 24.2 · lemon 50 · chicken breast 200.39 · walnuts 4.79
+  equal to perGram (fake)  salsa · black beans · yogurt · olive oil · flour · corn · rolled oats · breadcrumbs
+                           · chocolate chips · soy sauce · shredded cheese · diced tomatoes   (cents, live proxy)
+  ```
+
+  So declining on equality costs nothing real: `2 eggs` and `3 onions` keep pricing correctly. **The wider
+  rule matters more.** A `volume` unit can never be priced per item *regardless* of the equality, because
+  multiplying cups by price-per-onion is a category error. `1 cup strawberries` has a genuine per-item price
+  (10.71) and still lands at $0.11 against a real ~$1.28. Gate on `unit.type === 'volume'` first, equality
+  second.
+
+  **Owner decisions (2026-08-25):**
+  - **(a)** Show a prominent **estimate** label whenever `confidence:'low'`, covering density-derived and
+    count-based estimates alike. Transparency to the recipe author is the goal.
+  - **(b)** A volume unit with no density and no honest per-unit price shows **no price**. $0.01 for a third
+    of a jar of salsa is noise, and labeling noise an estimate is a wrong number with a disclaimer on it.
+  - **(c)** That no-price state gets its **own** label prompting the author to set a price, rather than a dead
+    `—`. It becomes the entry point for the editable-price feature filed under Features.
+
+  Four resulting states: `gram`/`high` renders plain · `gram`/`low` and `unit-estimate`/`low` render with the
+  estimate label · declined renders the add-a-price prompt.
+
+  *(2026-08-25 — what shipped)*
+
+  - **`@jclind/ingredient-parser@2.1.0`** (published; `latest` finally moves off 1.3.4, where it had sat
+    because 2.0.0 went out under a `next` tag). `calculatePrice` gates the unit-estimate fallback on units
+    that count discrete items and discards a `perUnitCents` equal to `perGramCents`. `DENSITIES` goes 13 → 52
+    entries, and matching changes from raw substring/first-match to **whole-word/longest-term**, which fixes
+    `"boiling water"` → oil more durably than reordering would and revives the `buttermilk` alias that
+    `butter` had been swallowing. A third instance of the same category error turned up during the fix and was
+    closed with it: a **mass** measure with no per-gram price was multiplying a per-item price too
+    (`100 g` priced as 100 whole items). 354 tests, up from 343.
+  - **`ingredient-parser-server@d3c5184`** (pushed to `main`, auto-deploys): `mapToNeutral` drops the fake
+    `perUnitCents` at the source. Read-time projection, so every already-cached document is fixed without a
+    re-fetch. The equality test runs *after* the `estimatedCost.value` fallback, since older docs carry no
+    `estimatedGramPrice`. 108 tests, up from 103.
+  - Verified against the published tarball through the public API, not the working tree: `1 1/3 cup salsa`
+    $0.01 → **$1.27**, `2 tbsp soy sauce` $0.01 → $0.22, `1 cup strawberries` $0.11 → $1.33, `2 cups parsley`
+    $1.50 → no price, `3 onions` $0.73 unchanged.
+  - **Prepify [#327](https://github.com/jclind/prepify/pull/327)** (merged 2026-08-25, `6a1dd0d`): pin bumped
+    to 2.1.0, `mapIngredientData` carries `priceBasis`/`priceConfidence`, and the ingredient row renders three
+    states — a plain price, a grey `est` badge, and an amber `needs price` chip. The row guards on
+    `typeof cents === 'number'`, not `Number(cents)`, so a missing price can't render as a confident `$0.00`;
+    rows with no provenance fall through to the plain state, so existing recipes don't sprout markers. Visual
+    QA caught one thing the tests couldn't: the Subtotal was silently omitting unpriced rows and stating a
+    confident total, the same defect one level up — it now carries a `PARTIAL` chip.
+  - **Not yet deployed to prod as of the merge.** Deploying visibly changes prices on existing recipes: some
+    rows go from a wrong number to a right one, some from a wrong number to `needs price`, and per-serving
+    totals drop accordingly. Intended, but user-visible.
 
   Pairs with the user-editable price feature filed under Features (a manual override is both a feature and the
   workaround for every ingredient the table will never cover). Cross-ref the N1 "$10 parfait" item above:
   same "estimate quality" half, opposite direction, and this one is root-caused.
+- `[ ]` **Water is priced as a grocery item (`4 cups boiling water` ≈ $0.95)** *(filed 2026-08-25, off the
+  density-table fix above; owner's call that this is worth fixing)* — now that volume measures actually
+  convert to grams, water converts accurately and then gets multiplied by Spoonacular's per-gram price for
+  *bottled* water. Nobody buys the tap water in a recipe, so the honest cost is $0.00 and inflating the
+  per-serving total with it makes every soup and pasta recipe look more expensive than it is.
+
+  Two things make this more than a one-line change:
+  - **Not every "water" is free.** Coconut water, sparkling water, tonic water, rose water and rice wine
+    vinegar's cousins are all bought. A word match on `water` would zero all of them. This needs a small
+    allowlist of genuinely-free forms (`water`, `tap/cold/warm/hot/boiling/ice water`, `ice`) rather than a
+    substring rule, and the same argument probably extends to `ice` and possibly `salt`-level pantry staples
+    (open question: where does the line sit?).
+  - **The package deliberately treats a price of `0` as "no data"** (`usablePrice` in `enrich/price.ts`), so
+    that a provider returning `perGramCents: 0` isn't read as confidently free. Expressing "this genuinely is
+    free" therefore needs its own signal, not a `0` that gets swallowed. Likely a `basis: 'free'` with
+    `confidence: 'high'`, which the UI would render as `$0.00` plainly rather than as an estimate or as
+    "needs price".
+
+  Lands in `ingredient-parser-v2` (republish + pin bump), same path as the fix above. Low priority: it
+  overstates rather than understates, and it's a rounding-level error next to the ~236x one.
 - `[x]` **`Received NaN for the \`value\` attribute` warning on Edit Recipe — root-caused; it's a real
   hydration bug, not cosmetic (verified 2026-06-26)** — *(fixed in [#235](https://github.com/jclind/prepify/pull/235), F1:
   hydrate `TimeInput` from `val.hours`/`val.minutes` — the `Number(val)` arithmetic that produced `NaN` on an object `val` is
@@ -1160,6 +1240,12 @@ findings table.)*
 
   Open questions for triage: does an override survive an ingredient-string edit that re-triggers enrichment;
   is it per-recipe or remembered per-user; and does the recipe page label author-set prices for viewers.
+
+  *(2026-08-25)* — the density-bug fix gives this feature a **built-in entry point**. Decision (c) on that
+  item replaces the dead `—` on an unpriced row with a label prompting the author to set a price, so the row
+  that most needs a manual override is already asking for one by the time this ships. Together with the
+  estimate label from decision (a), the ingredient row ends up with three honest states (measured, estimated,
+  yours) instead of one undifferentiated number.
 
 - `[x]` **Report reason: "incorrect info / price"** *(fixed in [#256](https://github.com/jclind/prepify/pull/256), N2: added `incorrect_info` across the `ReportReason` union, client `REASON_OPTIONS`, and server `REASONS`; **recipe-gated** — a new `RECIPE_ONLY_REASONS` server gate 400s it on review/user targets and a `recipeOnly` client flag hides it there; also spaced the admin queue reason pill as a 4th display surface)* *(triaged 2026-07-08; filed 2026-06-18 — doesn't exist)*
   — today's reasons are exactly `spam | inappropriate | offensive | copyright | dangerous | other`, synced in

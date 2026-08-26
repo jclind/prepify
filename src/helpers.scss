@@ -63,6 +63,16 @@ $alert-success-green-text: #155724;
 $alert-warning-amber: #fff3cd;
 $alert-warning-amber-border: #ffeeba;
 $alert-warning-amber-text: #856404;
+// Chip siblings of the alert-amber triad above, for an inline "needs your
+// attention" marker sitting directly on a white row rather than inside an alert
+// box. The alert tint (#fff3cd) is only 1.11:1 against white, so a chip built
+// from it is nearly invisible at 12px — this fill is deep enough to register
+// without shouting. Text is darkened from $alert-warning-amber-text because that
+// colour lands at 4.53:1 on this fill, the same razor-thin figure that got
+// $error-red darkened above; #755703 clears 5.55:1.
+$chip-warning-amber: #ffe8a3;
+$chip-warning-amber-border: #f2d68b;
+$chip-warning-amber-text: #755703;
 
 $primary-background: #eeeeee; // UI fill token (search inputs, tracks, alerts, …)
 // Page backdrop (body). A touch lighter than the #eeeeee fill token for a
