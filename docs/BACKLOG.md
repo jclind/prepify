@@ -575,8 +575,9 @@ hygiene, and the U3 watch items all verified sound — details in the session tr
   Pairs with the user-editable price feature filed under Features (a manual override is both a feature and the
   workaround for every ingredient the table will never cover). Cross-ref the N1 "$10 parfait" item above:
   same "estimate quality" half, opposite direction, and this one is root-caused.
-- `[ ]` **Water is priced as a grocery item (`4 cups boiling water` ≈ $0.95)** *(filed 2026-08-25, off the
-  density-table fix above; owner's call that this is worth fixing)* — now that volume measures actually
+- `[~]` **Water is priced as a grocery item (`4 cups boiling water` ≈ $0.95)** *(filed 2026-08-25, off the
+  density-table fix above; owner's call that this is worth fixing; **fixed in source** 2026-08-26,
+  `ingredient-parser-v2@d097497` on branch `2.x` — **not published**, rides the batched 2.2.0)* — now that volume measures actually
   convert to grams, water converts accurately and then gets multiplied by Spoonacular's per-gram price for
   *bottled* water. Nobody buys the tap water in a recipe, so the honest cost is $0.00 and inflating the
   per-serving total with it makes every soup and pasta recipe look more expensive than it is.
@@ -595,6 +596,23 @@ hygiene, and the U3 watch items all verified sound — details in the session tr
 
   Lands in `ingredient-parser-v2` (republish + pin bump), same path as the fix above. Low priority: it
   overstates rather than understates, and it's a rounding-level error next to the ~236x one.
+
+  **Shipped as designed, and the $0.95 above was already stale.** Both predictions in this entry held up.
+  The allowlist is exact-match (`src/enrich/free.ts`), so `coconut water`, `sparkling water`, `tonic water`
+  and `rose water` stay priced, and so do `watermelon` / `water chestnuts` / `watercress`, which a substring
+  rule would also have caught. `basis: 'free'` with `confidence: 'high'` is the signal, exactly as called.
+
+  What the entry didn't predict: **the proxy has no `water` entry at all any more**, under any spelling.
+  So water wasn't costing $0.95, it was returning no `ingredientData` and reading "needs price". That
+  changed where the fix had to live — inside `calculatePrice` it would never have run, since a failed
+  lookup returns before pricing. The free verdict is now decided in `createEnricher` too, and a free row
+  survives a lookup miss with a synthetic row. The lookup still runs first, because Prepify shows an
+  ingredient thumbnail and losing it would be its own small regression.
+
+  **The open "where does the line sit for pantry staples" question stays open**, and `salt` is deliberately
+  NOT on the allowlist. Salt only reads $0.00 when the author writes `to taste` (see the entry below), which
+  is a statement about the amount rather than about salt being free. That split feels right and is worth
+  keeping when the question is revisited.
 - `[~]` **Ground spices have no density entry, so every `1 tbsp <spice>` shows "needs price"** *(found
   2026-08-26 in the owner's prod smoke test of 1.0.1; **fixed in source** 2026-08-26,
   `ingredient-parser-v2@37ffde3` on branch `2.x`, 6 new tests / 360 passing — **not published**, it's
@@ -687,8 +705,9 @@ hygiene, and the U3 watch items all verified sound — details in the session tr
   Both orders price identically, so the hint would be teaching authors a rule that no longer exists. The
   reasoning stands on its own though: writing around a parser limitation was always the worse trade, and
   the owner ranked it second too.
-- `[ ]` **`salt and pepper to taste` shows "needs price"; it should be $0.00** *(owner's call, 2026-08-26,
-  from the same smoke test)* — `parse('salt and pepper to taste')` returns `quantity.value: null` and
+- `[x]` **`salt and pepper to taste` shows "needs price"; it should be $0.00** *(owner's call, 2026-08-26,
+  from the same smoke test; **fixed in source** 2026-08-26, `ingredient-parser-v2@d097497` on branch `2.x`,
+  33 new tests / 417 passing — **not published**, rides the batched 2.2.0)* — `parse('salt and pepper to taste')` returns `quantity.value: null` and
   `unit: null`. There is genuinely no amount, so nothing can be priced, and the row now nags for a price
   that shouldn't exist.
 
@@ -700,6 +719,23 @@ hygiene, and the U3 watch items all verified sound — details in the session tr
   `flour` with no amount has an *unknown* cost, not a free one, and silently zeroing that would understate
   the recipe — precisely the failure mode this whole thread exists to kill. Trigger on `to taste` (and
   probably `as needed`, `for garnish`, `for serving`), optionally narrowed to a pantry-staple allowlist.
+
+  **As shipped:** the trigger is the phrase **and** the absence of any measure, which is stricter than the
+  caution asked for and safe in both directions. `1 tsp salt to taste` still prices normally; bare `flour`
+  stays unknown. `to taste` and `as needed` are free; **`for garnish` / `for serving` / `for topping` are
+  deliberately NOT** (owner's call, 2026-08-26) — a garnish is a small amount of a real ingredient, so
+  zeroing `cilantro, for garnish` would understate a genuine cost, while `to taste` states outright that no
+  amount exists. Those rows keep reading "needs price"; revisit if the nag proves more annoying than the
+  understatement is wrong. No pantry-staple allowlist was needed, since `to taste` on *anything* is
+  unmeasured.
+
+  `parse()` now records the phrase as a normalized `purpose` field instead of deleting it, with the
+  spellings folded onto one form each (`to serve` → `for serving`, `as required`/`as desired` →
+  `as needed`).
+
+  **Second bug found and fixed here:** `as needed` was never in `stripTrailingPurpose`'s list, so
+  `salt as needed` parsed its name as **"salt as needed"**, missed the proxy lookup outright, and lost both
+  its price and its thumbnail. Nobody had noticed because the row looked the same as any other unpriced one.
 - `[x]` **`Received NaN for the \`value\` attribute` warning on Edit Recipe — root-caused; it's a real
   hydration bug, not cosmetic (verified 2026-06-26)** — *(fixed in [#235](https://github.com/jclind/prepify/pull/235), F1:
   hydrate `TimeInput` from `val.hours`/`val.minutes` — the `Number(val)` arithmetic that produced `NaN` on an object `val` is
@@ -1401,6 +1437,24 @@ findings table.)*
 
 ## Tech debt / process / infra
 
+- `[ ]` **The 2.2.0 pin bump needs three small client changes to land with it** *(filed 2026-08-26, off the
+  container-size + free-basis work)* — the parser side of all four pricing gaps is done in source and
+  unpublished. When 2.2.0 ships and both `package.json`s are pinned, the same PR should carry:
+  1. `src/types.ts:24` — `PriceBasis` is `'gram' | 'unit-estimate'`; add `'free'`. Type-only, nothing
+     breaks without it (the server passes the string through and the UI branches on `priceConfidence`
+     first), but the type would be lying.
+  2. `IngredientItem.tsx` `priceDisplay` — a `basis === 'free'` branch. A free row already renders
+     correctly as a plain `$0.00` with no badge, since `confidence: 'high'` lands it in the `exact` lane.
+     It just has an empty `title`, so a cook seeing `$0.00` next to "salt and pepper" has no way to learn
+     it's deliberate. One sentence of copy, no logic change.
+  3. Re-check the `PARTIAL` subtotal chip. A free row is priced, not unpriced, so it must **not** trip
+     the partial marker. Worth an explicit test either way, since "cents is 0" and "no price" have been
+     confused at this boundary before ([#327](https://github.com/jclind/prepify/pull/327) fixed exactly
+     that one level up).
+
+  Both `calculateServingPrice` copies already sum a `0` correctly (`Number(0)` is not `NaN`), and
+  `mapIngredientData` already guards on `typeof cents === 'number'` rather than truthiness, so a `0`
+  survives the server hop. Verified by reading, not assumed.
 - `[ ]` **The two trees pin different `@jclind/ingredient-parser` versions** *(filed 2026-08-26, off the
   1.0.1 smoke-test session)* — root `package.json` pins **2.0.0**, `server/package.json` pins **2.1.0**, so
   the client and server resolve different copies of the package. Harmless for pricing today: the client only
