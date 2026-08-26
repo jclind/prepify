@@ -466,7 +466,7 @@ hygiene, and the U3 watch items all verified sound — details in the session tr
   backfill, then pull the parfait's per-ingredient `totalPriceUSACents` to attribute parse-bug vs
   proxy-estimate before writing any fix. → **N1**
   - *(2026-07-08 update, N6 [#255](https://github.com/jclind/prepify/pull/255))* — **investigated + guarded, not closed**: a dev dry-run showed **0 servingPrice drift** (so half (1)'s `--apply` is a no-op on current data) and attributed the parfait to a **bad proxy gram-estimate** (`1 cup strawberries` = $25.34 on stale v1 data), not a parse or division bug. Fix-option (B) — a **`price_outlier` flag** on enriched rows ≥ $15 — shipped on N6's telemetry surface (**flag, not clamp**). Still open: **(A)** the owner/proxy-gated re-enrich backfill for stale v1 prices, and half (2)'s parse-quality hardening in `updateIngredients.ts`.
-- `[~]` **Volume-measured ingredients whose name isn't in the 13-entry density table are priced ~200x too
+- `[x]` **Volume-measured ingredients whose name isn't in the 13-entry density table are priced ~200x too
   low (`1 1/3 cup salsa` → $0.01)** *(filed 2026-08-20, found during the post-cluster-restore prod smoke;
   fixes 1, 2 and 4 SHIPPED 2026-08-25, fix 3 in flight)* —
   the opposite failure direction from the "$10 parfait" item above, and unlike that one this has a definite
@@ -561,8 +561,16 @@ hygiene, and the U3 watch items all verified sound — details in the session tr
   - Verified against the published tarball through the public API, not the working tree: `1 1/3 cup salsa`
     $0.01 → **$1.27**, `2 tbsp soy sauce` $0.01 → $0.22, `1 cup strawberries` $0.11 → $1.33, `2 cups parsley`
     $1.50 → no price, `3 onions` $0.73 unchanged.
-  - Remaining: fix 3, the Prepify UI half (pin bump + `priceBasis`/`priceConfidence` through
-    `mapIngredientData` + the three-state row).
+  - **Prepify [#327](https://github.com/jclind/prepify/pull/327)** (merged 2026-08-25, `6a1dd0d`): pin bumped
+    to 2.1.0, `mapIngredientData` carries `priceBasis`/`priceConfidence`, and the ingredient row renders three
+    states — a plain price, a grey `est` badge, and an amber `needs price` chip. The row guards on
+    `typeof cents === 'number'`, not `Number(cents)`, so a missing price can't render as a confident `$0.00`;
+    rows with no provenance fall through to the plain state, so existing recipes don't sprout markers. Visual
+    QA caught one thing the tests couldn't: the Subtotal was silently omitting unpriced rows and stating a
+    confident total, the same defect one level up — it now carries a `PARTIAL` chip.
+  - **Not yet deployed to prod as of the merge.** Deploying visibly changes prices on existing recipes: some
+    rows go from a wrong number to a right one, some from a wrong number to `needs price`, and per-serving
+    totals drop accordingly. Intended, but user-visible.
 
   Pairs with the user-editable price feature filed under Features (a manual override is both a feature and the
   workaround for every ingredient the table will never cover). Cross-ref the N1 "$10 parfait" item above:
