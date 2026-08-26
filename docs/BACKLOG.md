@@ -629,8 +629,10 @@ hygiene, and the U3 watch items all verified sound — details in the session tr
   meaningless. It's the **unit-type gate** in `calculatePrice` (volume can never be priced per item) that
   saves this case, not the equality rule. Good evidence the type gate was the right call and shouldn't be
   weakened later in favour of the equality check alone.
-- `[ ]` **`1 can (15 oz) black beans` shows "needs price" while `15 oz black beans` prices fine** *(found
-  2026-08-26 in the owner's prod smoke test of 1.0.1)* — the parenthetical size is parsed and then thrown
+- `[~]` **`1 can (15 oz) black beans` shows "needs price" while `15 oz black beans` prices fine** *(found
+  2026-08-26 in the owner's prod smoke test of 1.0.1; **fixed in source** 2026-08-26,
+  `ingredient-parser-v2@acdf628` on branch `2.x`, 24 new tests / 384 passing — **not published**, it rides
+  the batched 2.2.0 with the spice densities above)* — the parenthetical size is parsed and then thrown
   away. `parse('1 can (15 oz) black beans, drained and rinsed')` returns:
 
   ```
@@ -643,17 +645,48 @@ hygiene, and the U3 watch items all verified sound — details in the session tr
   it, since it equalled the per-gram price), so it declines. Meanwhile `15 oz` alone parses as `mass` and
   converts exactly — 425 g × 0.15c = **~64c**.
 
-  **Fix (preferred):** in `ingredient-parser-v2`, when the unit is an informal container (`can`, `jar`,
-  `package`, `box`, `bag`, `bottle`) and the comment contains a parsable mass/volume measure, prefer the
-  parenthetical as the real quantity. The data is already extracted; it only needs to win. This also
-  generalises to `1 package (10 oz) frozen spinach`, `2 cans (14.5 oz each) diced tomatoes`, and the rest
-  of a very common recipe idiom.
+  **Fix as shipped, and why it isn't quite what was filed here.** Preferring the parenthetical as the *real
+  quantity* would have worked for pricing and regressed the page: Prepify renders the parsed
+  quantity/unit/name (`src/Components/IngredientItemText/IngredientItemText.tsx`), not the original string,
+  so a recipe would have gone from reading "1 can black beans" to "15 ounce black beans" and lost the can a
+  cook actually buys. Instead `parse()` keeps quantity 1 / unit `can` and adds a structured
+  `containerSize: { value, unit }`; `calculatePrice` takes an optional 5th argument and prices
+  `quantity × containerSize` on the gram path. Display is byte-identical, `basis` stays `'gram'`, and
+  nothing in Prepify needed to change — the pin bump is the whole client-side story.
 
-  **Fallback the owner suggested:** a hint on the ingredient input along the lines of *"prices resolve
-  better with an exact measure: `15 oz black beans (1 can)`"*. Worth considering **in addition**, but not
-  instead — teaching authors to write around a parser limitation is a worse trade than fixing the parser,
-  and the owner ranked it second too. Note the hint direction only helps if the parenthetical is at the
-  *end*, which is itself a parser quirk rather than a rule authors should have to learn.
+  The measure deliberately **stays in `comment` too**. That field is documented as the raw text, the v1
+  projection has no `containerSize` to fall back on, and "1 can black beans, drained and rinsed 15 oz"
+  tells a shopper the can size. Structured data overlapping raw text is already how `preparation` and
+  `descriptors` work here.
+
+  Generalises as hoped: `2 cans (14.5 oz each)` and the far more common `2 cans (14.5 oz)` are both read as
+  per-container and multiplied by the count. Also handles the inverted `1 (15 ounce can) chickpeas`, where
+  the head carries no unit at all and the container word sits inside the parens.
+
+  **`jar`, `bottle`, `tin`, `carton` and `container` were missing from the unit registry entirely**, so
+  `1 jar (16 oz) salsa` was parsing its name as "jar salsa" and missing the proxy lookup on the name alone,
+  a second bug hiding behind this one. Added as `count` units. `stick` was left out on purpose: butter is
+  its only container use and the word also means celery and cinnamon.
+
+  Verified against the live proxy, not just the working tree: `1 can (15 oz) black beans` **$0.64**, to the
+  cent the same as `15 oz black beans`; `2 cans (14.5 oz) diced tomatoes` $1.07; `1 jar (16 oz) salsa`
+  $1.77; `1 (15 ounce can) chickpeas` $0.85. `1 can black beans` with no size still declines, which is the
+  honest answer and not something this fix should paper over.
+
+  Two loose ends filed rather than fixed:
+  - `1 package (10 oz) frozen spinach` still shows no price, but for an unrelated reason — **the proxy has
+    no entry for "spinach" at all**, under either `frozen spinach` or `spinach`. That's a provider data gap,
+    not a parser one, and it's the first evidence that the proxy's coverage of plain vegetables is worth a
+    survey before the next round of pricing work.
+  - `1 bottle gourd` (lauki, a real vegetable) now parses as unit `bottle` + name `gourd`. Same class of
+    collision as `stick` for celery, rare enough to accept, and noted here so it isn't re-diagnosed from
+    scratch later.
+
+  **Fallback the owner suggested** — a hint on the ingredient input along the lines of *"prices resolve
+  better with an exact measure: `15 oz black beans (1 can)`"* — is **moot now** and shouldn't be built.
+  Both orders price identically, so the hint would be teaching authors a rule that no longer exists. The
+  reasoning stands on its own though: writing around a parser limitation was always the worse trade, and
+  the owner ranked it second too.
 - `[ ]` **`salt and pepper to taste` shows "needs price"; it should be $0.00** *(owner's call, 2026-08-26,
   from the same smoke test)* — `parse('salt and pepper to taste')` returns `quantity.value: null` and
   `unit: null`. There is genuinely no amount, so nothing can be priced, and the row now nags for a price
