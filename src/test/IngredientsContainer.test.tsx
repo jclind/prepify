@@ -335,7 +335,7 @@ describe('IngredientsContainer — price confidence on the row', () => {
     })
     await waitFor(() => expect(rowPriceText()).toContain('$3.00'))
     expect(document.querySelector('.ingr-price.estimate')).toBeNull()
-    expect(screen.queryByLabelText('estimated')).not.toBeInTheDocument()
+    expect(document.querySelector('.ingr-price .sr-only')).toBeNull()
   })
 
   it('marks a density-estimated price as an estimate, keeping the number', async () => {
@@ -346,7 +346,15 @@ describe('IngredientsContainer — price confidence on the row', () => {
     })
     await waitFor(() => expect(rowPriceText()).toContain('$3.00'))
     expect(document.querySelector('.ingr-price.estimate')).not.toBeNull()
-    expect(screen.getByLabelText('estimated')).toBeInTheDocument()
+    // The visible "est" glyph is hidden from assistive tech and the explanation
+    // is carried as real text, because `aria-label` on a role-less span isn't
+    // honored — the badge used to announce as "est" with nothing behind it.
+    expect(document.querySelector('.est')?.getAttribute('aria-hidden')).toBe(
+      'true'
+    )
+    expect(document.querySelector('.ingr-price .sr-only')?.textContent).toMatch(
+      /average density/i
+    )
   })
 
   it('marks a per-item estimate too, and says so in the tooltip', async () => {
@@ -357,6 +365,9 @@ describe('IngredientsContainer — price confidence on the row', () => {
     })
     await waitFor(() => expect(rowPriceText()).toContain('$3.00'))
     expect(document.querySelector('.ingr-price')?.getAttribute('title')).toMatch(
+      /per-item price/i
+    )
+    expect(document.querySelector('.ingr-price .sr-only')?.textContent).toMatch(
       /per-item price/i
     )
   })

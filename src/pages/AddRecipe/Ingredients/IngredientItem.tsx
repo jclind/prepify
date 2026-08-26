@@ -354,9 +354,18 @@ const IngredientItem: FC<IngredientItemProps> = ({
         >
           {loading ? '' : price.text}
           {!loading && price.kind === 'estimate' && (
-            <span className='est' aria-label='estimated'>
-              est
-            </span>
+            <>
+              {/* The badge is decoration for this purpose: `aria-label` on a
+                  span with no role isn't honored, so it announced as the bare
+                  string "est" (or nothing) and the explanation in `title` is
+                  read inconsistently too. Hide the glyph, carry the real
+                  sentence in .sr-only — the same sentence sighted users get
+                  from the tooltip. */}
+              <span className='est' aria-hidden='true'>
+                est
+              </span>
+              <span className='sr-only'>{price.title}</span>
+            </>
           )}
         </span>
       )}
