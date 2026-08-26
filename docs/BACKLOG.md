@@ -595,8 +595,16 @@ hygiene, and the U3 watch items all verified sound — details in the session tr
 
   Lands in `ingredient-parser-v2` (republish + pin bump), same path as the fix above. Low priority: it
   overstates rather than understates, and it's a rounding-level error next to the ~236x one.
-- `[ ]` **Ground spices have no density entry, so every `1 tbsp <spice>` shows "needs price"** *(found
-  2026-08-26 in the owner's prod smoke test of 1.0.1)* — the `DENSITIES` table's "Nuts and seasoning"
+- `[~]` **Ground spices have no density entry, so every `1 tbsp <spice>` shows "needs price"** *(found
+  2026-08-26 in the owner's prod smoke test of 1.0.1; **fixed in source** 2026-08-26,
+  `ingredient-parser-v2@37ffde3` on branch `2.x`, 6 new tests / 360 passing — **not published**, it's
+  waiting to ride the batched 2.2.0 with the two items below, then the pin bump in both `package.json`s.
+  Landed as two groups rather than one: milled spices at 0.5 g/ml, dried leaf herbs at 0.17, since
+  crumbled leaf is a third the weight of powder. Bare `seasoning`/`spice` terms pick up the blends.
+  Herbs that are as often fresh as dried — basil, parsley, cilantro, dill, mint, sage, rosemary — are
+  left out on purpose: `parse()` strips "dried" and "fresh" alike, so nothing distinguishes them.
+  Verified end-to-end against the live proxy: 1 tsp black pepper $0.07, 1 tbsp chili powder $0.32,
+  1 tsp dried oregano $0.04, all gram-basis)* — the `DENSITIES` table's "Nuts and seasoning"
   section ends at `salt`. There is **no pepper, chili powder, cumin, paprika, cinnamon, garlic powder,
   oregano** or any other ground spice in all 52 entries. A spice is almost always measured in tsp/tbsp,
   which is a `volume` unit, so it needs a density; without one the 2.1.0 gate correctly declines to guess
@@ -1360,6 +1368,22 @@ findings table.)*
 
 ## Tech debt / process / infra
 
+- `[ ]` **The two trees pin different `@jclind/ingredient-parser` versions** *(filed 2026-08-26, off the
+  1.0.1 smoke-test session)* — root `package.json` pins **2.0.0**, `server/package.json` pins **2.1.0**, so
+  the client and server resolve different copies of the package. Harmless for pricing today: the client only
+  imports `parseIngredientString` (the legacy flat parse) and every priced path runs server-side through the
+  proxy. But it means the root tree is one version behind the density fix and nobody would notice. **Fix:**
+  pin both to the same version in the same PR as the next parser bump.
+- `[ ]` **Three copies of "does this row have a price", already disagreeing** *(filed 2026-08-26, same
+  session)* — `priceDisplay` tests `typeof x === 'number'`; both `calculateServingPrice`s (client
+  `src/util/calculateServingPrice.ts` and server `server/util/calculateServingPrice.js`) use `Number()` +
+  `isNaN`. A numeric *string* therefore counts as priced in two of the three. Only reachable through legacy
+  v1 documents, so it isn't biting anyone yet. **Fix:** one shared predicate, used by all three.
+- `[ ]` **Every price explanation lives in a `title` attribute, which never fires on touch** *(filed
+  2026-08-26, same session)* — the provenance wording shipped in
+  [#327](https://github.com/jclind/prepify/pull/327) explains *why* a price is an estimate, and on a phone
+  nobody can read it. The visible labels still make sense without it, so this is polish rather than a
+  regression. **Fix:** a tappable popover, or a line under the subtotal that doesn't need hover at all.
 - `[x]` **Account `recipes`/`ratings` tab badges use raw counts that can drift from their tab lists** *(from `sweeps/BUG_HUNT_2026-07-09.md` — follow-up to the L8/L9 saved-badge fix in [#279](https://github.com/jclind/prepify/pull/279), filed 2026-07-10; boarded Wave 9 · B6; **fixed in [#285](https://github.com/jclind/prepify/pull/285), merged 2026-07-10**: `recipes` badge now filters `RECIPE_OWNER_VISIBLE` (matches `getCreatedRecipes`); `ratings` badge goes through a new `countVisibleRatings` excluding moderation-hidden ratings and ratings whose recipe isn't `RECIPE_VISIBLE` (matches `getSingleUserReviews`'s `returnRecipeData` join) — same cheap id-list + `countDocuments` shape as the existing `countVisibleSaved`, no correlated `$lookup`. Runtime-verified end-to-end against the live dev server + dev Mongo with a real Firebase ID token.)* — `getAccountCountsFor` returns raw `countDocuments` for `recipes` and `ratings`, but the Your-Recipes tab filters `RECIPE_OWNER_VISIBLE` and the Ratings tab filters `REVIEW_VISIBLE` + recipe-visible, so a user with hidden/unpublished recipes (or hidden-recipe ratings) sees a badge reading higher than the list under it. Same class as the saved-badge drift already fixed in #279 (the `saved` badge now filters). `server/util/accountCounts.js`. **Fix:** filter each badge count to match its tab's list. **Dep:** land after #279 (which rewrites this file). — *(not surfaced directly by the hunt; noted while fixing L8/L9.)*
 - `[x]` **`UserRatings` passes a sort the server doesn't understand** *(filed 2026-07-09, out of the §D
   overhaul; folded into Wave 10 · V7; **fixed in [#290](https://github.com/jclind/prepify/pull/290), merged
