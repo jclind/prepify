@@ -581,9 +581,9 @@ hygiene, and the U3 watch items all verified sound — details in the session tr
   Pairs with the user-editable price feature filed under Features (a manual override is both a feature and the
   workaround for every ingredient the table will never cover). Cross-ref the N1 "$10 parfait" item above:
   same "estimate quality" half, opposite direction, and this one is root-caused.
-- `[~]` **Water is priced as a grocery item (`4 cups boiling water` ≈ $0.95)** *(filed 2026-08-25, off the
+- `[x]` **Water is priced as a grocery item (`4 cups boiling water` ≈ $0.95)** *(filed 2026-08-25, off the
   density-table fix above; owner's call that this is worth fixing; **fixed in source** 2026-08-26,
-  `ingredient-parser-v2@d097497` on branch `2.x` — **not published**, rides the batched 2.2.0)* — now that volume measures actually
+  `ingredient-parser-v2@d097497` — **published in 2.2.0**, 2026-08-27)* — now that volume measures actually
   convert to grams, water converts accurately and then gets multiplied by Spoonacular's per-gram price for
   *bottled* water. Nobody buys the tap water in a recipe, so the honest cost is $0.00 and inflating the
   per-serving total with it makes every soup and pasta recipe look more expensive than it is.
@@ -619,10 +619,10 @@ hygiene, and the U3 watch items all verified sound — details in the session tr
   NOT on the allowlist. Salt only reads $0.00 when the author writes `to taste` (see the entry below), which
   is a statement about the amount rather than about salt being free. That split feels right and is worth
   keeping when the question is revisited.
-- `[~]` **Ground spices have no density entry, so every `1 tbsp <spice>` shows "needs price"** *(found
+- `[x]` **Ground spices have no density entry, so every `1 tbsp <spice>` shows "needs price"** *(found
   2026-08-26 in the owner's prod smoke test of 1.0.1; **fixed in source** 2026-08-26,
-  `ingredient-parser-v2@37ffde3` on branch `2.x`, 6 new tests / 360 passing — **not published**, it's
-  waiting to ride the batched 2.2.0 with the two items below, then the pin bump in both `package.json`s.
+  `ingredient-parser-v2@37ffde3`, 6 new tests — **published in 2.2.0**, 2026-08-27; the pin bump in both
+  `package.json`s is the remaining step.
   Landed as two groups rather than one: milled spices at 0.5 g/ml, dried leaf herbs at 0.17, since
   crumbled leaf is a third the weight of powder. Bare `seasoning`/`spice` terms pick up the blends.
   Herbs that are as often fresh as dried — basil, parsley, cilantro, dill, mint, sage, rosemary — are
@@ -653,10 +653,9 @@ hygiene, and the U3 watch items all verified sound — details in the session tr
   meaningless. It's the **unit-type gate** in `calculatePrice` (volume can never be priced per item) that
   saves this case, not the equality rule. Good evidence the type gate was the right call and shouldn't be
   weakened later in favour of the equality check alone.
-- `[~]` **`1 can (15 oz) black beans` shows "needs price" while `15 oz black beans` prices fine** *(found
+- `[x]` **`1 can (15 oz) black beans` shows "needs price" while `15 oz black beans` prices fine** *(found
   2026-08-26 in the owner's prod smoke test of 1.0.1; **fixed in source** 2026-08-26,
-  `ingredient-parser-v2@acdf628` on branch `2.x`, 24 new tests / 384 passing — **not published**, it rides
-  the batched 2.2.0 with the spice densities above)* — the parenthetical size is parsed and then thrown
+  `ingredient-parser-v2@acdf628`, 24 new tests — **published in 2.2.0**, 2026-08-27)* — the parenthetical size is parsed and then thrown
   away. `parse('1 can (15 oz) black beans, drained and rinsed')` returns:
 
   ```
@@ -713,7 +712,7 @@ hygiene, and the U3 watch items all verified sound — details in the session tr
   the owner ranked it second too.
 - `[x]` **`salt and pepper to taste` shows "needs price"; it should be $0.00** *(owner's call, 2026-08-26,
   from the same smoke test; **fixed in source** 2026-08-26, `ingredient-parser-v2@d097497` on branch `2.x`,
-  33 new tests / 417 passing — **not published**, rides the batched 2.2.0)* — `parse('salt and pepper to taste')` returns `quantity.value: null` and
+  33 new tests — **published in 2.2.0**, 2026-08-27)* — `parse('salt and pepper to taste')` returns `quantity.value: null` and
   `unit: null`. There is genuinely no amount, so nothing can be priced, and the row now nags for a price
   that shouldn't exist.
 
@@ -1444,8 +1443,10 @@ findings table.)*
 ## Tech debt / process / infra
 
 - `[ ]` **The 2.2.0 pin bump needs three small client changes to land with it** *(filed 2026-08-26, off the
-  container-size + free-basis work)* — the parser side of all four pricing gaps is done in source and
-  unpublished. When 2.2.0 ships and both `package.json`s are pinned, the same PR should carry:
+  container-size + free-basis work; **unblocked 2026-08-27** — 2.2.0 is on npm, `latest` moved to it, and
+  the published tarball is verified through a fresh install against the live proxy)* — the parser side of
+  all four pricing gaps is done. **This is now the next piece of work.** Pin both `package.json`s to
+  2.2.0 (which also closes the pin-drift item below) and carry:
   1. `src/types.ts:24` — `PriceBasis` is `'gram' | 'unit-estimate'`; add `'free'`. Type-only, nothing
      breaks without it (the server passes the string through and the UI branches on `priceConfidence`
      first), but the type would be lying.
