@@ -568,9 +568,15 @@ hygiene, and the U3 watch items all verified sound — details in the session tr
     rows with no provenance fall through to the plain state, so existing recipes don't sprout markers. Visual
     QA caught one thing the tests couldn't: the Subtotal was silently omitting unpriced rows and stating a
     confident total, the same defect one level up — it now carries a `PARTIAL` chip.
-  - **Not yet deployed to prod as of the merge.** Deploying visibly changes prices on existing recipes: some
-    rows go from a wrong number to a right one, some from a wrong number to `needs price`, and per-serving
-    totals drop accordingly. Intended, but user-visible.
+  - **Not yet deployed to prod as of the merge.** *(Corrected 2026-08-27: this entry used to say deploying
+    "visibly changes prices on existing recipes." **It does not.** Prices are baked into each recipe
+    document at write time — `SingleRecipe.tsx:167` renders the persisted `servingPrice`, and
+    `calculateServingPrice` runs server-side only on create (`server/routes/recipes.js:544`) and edit
+    (`:660`), summing the **stored** per-row cents. Every call site of the enrichment endpoint is under
+    `src/pages/AddRecipe/`, and the edit path re-enriches only when the user actually changed the row's
+    text (`IngredientItem.tsx:217`). So a parser deploy reaches newly typed or edited ingredient rows, and
+    nothing else. Old recipes keep their old numbers until someone edits them, which also means a fix
+    doesn't retroactively repair them — a backfill would, and none is written.)*
 
   Pairs with the user-editable price feature filed under Features (a manual override is both a feature and the
   workaround for every ingredient the table will never cover). Cross-ref the N1 "$10 parfait" item above:
