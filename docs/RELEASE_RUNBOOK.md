@@ -10,6 +10,14 @@ separate earlier session (2026-07-09), and **2e's unique-index build has NOT bee
 end-to-end** (dev's backfill had 0 updatable rows, so the unique index never built over real
 backfilled data) — treat its prod run as a first run with its own gate (see 2e).
 
+> **[Reconciled 2026-08-27]:** EXECUTED. This runbook is history, not pending work. The live run is
+> logged in [`evidence/CUTOVER_RUN_2026-07-11.md`](./evidence/CUTOVER_RUN_2026-07-11.md): §1 GO
+> (`e0503d6`) through the §5 deploy push (`16ff7c2`) on 2026-07-11/12; the §5 tail that went unrun
+> for five weeks was closed 2026-08-21/24 (`b5dabc5`); the 1.0.0 GitHub Release was published
+> 2026-08-25 (tag → `f78f261`) and 1.0.1 shipped 2026-08-26 (PR #330). Inline notes below mark
+> where the record deviates from what actually happened. Checked: `git log --oneline -- docs/evidence/`,
+> `gh release list`, `gh pr view 318/330`.
+
 Companion docs: [`RELEASE_PLAN.md`](./RELEASE_PLAN.md) (launch gate + audit log),
 [`IMAGE_PIPELINE.md`](./IMAGE_PIPELINE.md) (image-ops detail), [`BACKLOG.md`](./BACKLOG.md).
 
@@ -18,6 +26,12 @@ Companion docs: [`RELEASE_PLAN.md`](./RELEASE_PLAN.md) (launch gate + audit log)
 > All prod env vars are already set and verified (RELEASE_PLAN "Infra status", 2026-06-26).
 > Firebase = Auth + Storage only (Netlify hosts the frontend). **Prod `release` is ~633 commits
 > behind `development` (PR #102, 2026-06-03)** — this deploy is a big jump; the smoke test matters.
+>
+> **[Reconciled 2026-08-27]:** Stale: `release` ~633 commits behind `development`. Truth: the deploy
+> merges landed. `release` received `development` on 2026-07-12 (`96e3aa1`), 2026-08-24 (`f78f261`,
+> the 1.0 cutover tail) and 2026-08-26 (1.0.1, `efff731` via PR #329); as of `618bd18` it trails
+> `development` by 2 docs-only commits. Checked: `git rev-list --count origin/release..origin/development`
+> = 2, `git log --oneline -3 origin/release`, `gh pr view 329`.
 >
 > **Environment safety:** the local `.env` / `server/.env` point at **dev** (`prepify-dev-58579`
 > Firebase + `prepify-dev` Mongo). Every prod ops command below therefore needs its prod target
@@ -81,6 +95,19 @@ also hardcode `client.db('prepify')` (they ignore `DB_NAME`) — fine iff the pr
 the code deploy — verified this week that the *live* `release` code already uses the
 `recipeIdQuery` shim on every recipe read/write, so converted ids keep resolving. Step 2d is the
 one that must be **coupled to the deploy**.
+
+> **[Reconciled 2026-08-27]:** EXECUTED, then voided by the outage. 2a (8 legacy ids, `fd05365`),
+> 2b (12 histograms, `3f68745`), 2c (no-op), 2d both halves (#303 merged `3e3feda`; prod normalized,
+> `026430a`), and 2e (index gate PASSED, 6 indexes built) all ran 2026-07-12. Then both Atlas
+> clusters were terminated and prod was restored empty on 2026-08-20, so today's prod DB holds none
+> of this legacy data (`checkMigrationState` exit 0 on the fresh DB). Nothing in §2 needs re-running
+> against current prod. Checked: `docs/evidence/CUTOVER_RUN_2026-07-11.md` §2 and §5 tail;
+> `git log --oneline -- docs/evidence/`.
+
+> **[Reconciled 2026-08-27]:** Half stale: "both hardcode `client.db('prepify')`." Truth: only
+> `backfillRatingUserIds.js:57` still hardcodes it; `reconcileRatingAggregates.js:114` has honored
+> `DB_NAME` (default `prepify`) since `f07341d` (2026-07-06), which predates this runbook. Checked:
+> both files, `git log -S DB_NAME --oneline -- server/scripts/reconcileRatingAggregates.js`.
 
 ### 2a — W1: legacy string `_id` → ObjectId (`migrateLegacyRecipeIds.js`)
 
@@ -225,6 +252,15 @@ upload. So if doing these at 1.0: deploy rules in the same window as step 5's me
   is a **different credential** from the `firebase use`/`firebase deploy` CLI login above — the CLI
   auth deploys the rules; the SA JSON is what the node script below authenticates with. Keep it out
   of the repo; pass it inline on the command line only.
+
+  > **[Reconciled 2026-08-27]:** Stale premise for the migration bullets below: "by construction
+  > all of prod's" recipe docs point at flat image paths. Truth: the restored prod DB (2026-08-20)
+  > started empty and every write since goes to `recipeImages/{uid}/{uuid}`
+  > (`src/api/recipes.ts:236`), so there are no flat-path recipe docs left to migrate. Whether old
+  > flat objects still sit in the Storage bucket is an owner check, not a repo fact. Checked:
+  > `src/api/recipes.ts:218-240`, `docs/evidence/CUTOVER_RUN_2026-07-11.md` §5 tail (fresh DB,
+  > 9 collections).
+
 - `[ ]` Object migration — **must run with the PROD service account.** The 2026-07-11 dev
   rehearsal proved this the hard way: **every flat object (12/12 on dev, and by construction all
   of prod's) lives in the `prepify-9b974.appspot.com` bucket, and the dev SA gets
@@ -256,6 +292,14 @@ upload. So if doing these at 1.0: deploy rules in the same window as step 5's me
 
 One PR off `development` (all anchors re-verified 2026-07-11):
 
+> **[Reconciled 2026-08-27]:** EXECUTED as PR #318 (head `4d75f9b`, merged `35596e5`, 2026-07-12),
+> with two deviations from the list below. The `ReleaseNotes.tsx` anchors are impossible now: the
+> modal was retired outright, `.tsx` + `.scss` deleted in `4d75f9b` (owner decision, notes live on
+> the GitHub 1.0 Release), not flipped via `isBeta = false`. And the dress rehearsal ran locally
+> rather than on a Netlify deploy-preview (Netlify builds no preview for feature-to-development
+> PRs); all 12 items including the #315 draft-autosave pass passed. Checked:
+> `git show 4d75f9b --stat`, `docs/evidence/CUTOVER_RUN_2026-07-11.md` §4.
+
 - `[ ]` `src/Components/Footer/shared/LegalBar.tsx:16` — `v{version}-beta` → `v{version}`.
 - `[ ]` `src/Components/Navbar/PrepifyLogo.tsx:17-18` — remove the `beta-tag` button (decision
   2026-06-17: remove).
@@ -280,6 +324,16 @@ One PR off `development` (all anchors re-verified 2026-07-11):
 ## 5 — Deploy + verify
 
 - `[ ]` Tag the GitHub Release `1.0.0`.
+
+> **[Reconciled 2026-08-27]:** EXECUTED, slowly. The deploy was pushed 2026-07-12 01:36 EDT
+> (`16ff7c2`); everything after that (functional CORS curl, 2d-(v) re-apply, smoke test, release
+> tag) went unrun for five weeks and was closed 2026-08-21/24 (`b5dabc5`). The 1.0.0 GitHub Release
+> was published 2026-08-25, tag → `f78f261`. 2d-(v)/(vi) became moot when the terminated prod
+> cluster was restored empty, and the browser-side Sentry check was ad-blocker-blind (see evidence),
+> which #324-#326 later addressed with the admin `sentry-test` diagnostic
+> (`server/routes/admin.js:530`). Checked: `docs/evidence/CUTOVER_RUN_2026-07-11.md` §5 and §5 tail,
+> `gh release list`, `git for-each-ref refs/tags/v1.0.0`.
+
 - `[ ]` Confirm Netlify **Production** context: `VITE_SENTRY_DSN` set; `VITE_IMAGE_VARIANTS_ENABLED`
   only if 3b ran.
 - `[ ]` Confirm prod Railway `FRONTEND_URLS` = `https://prepifymeals.com,https://www.prepifymeals.com`
@@ -330,6 +384,11 @@ One PR off `development` (all anchors re-verified 2026-07-11):
 - `[ ]` Netlify Production context cleanup: remove dead `VITE_EDAMAM_*` + `VITE_INGREDIENT_PARSER_URL`
   (beta build was their last consumer).
 - `[ ]` Rotate the exposed `Cluster0` `jesse` MongoDB password (old shared cluster; noted 2026-06-26).
+
+> **[Reconciled 2026-08-27]:** Moot: the shared `Cluster0` was terminated in the Aug 2026 Atlas
+> outage, so there is no cluster left to rotate a password on. The parser cache it hosted broke and
+> was re-homed by the parser service's own fix (separate repo). Checked:
+> `docs/evidence/CUTOVER_RUN_2026-07-11.md` §5 tail ("The old shared `Cluster0` went with them").
 - `[ ]` Relocate the `ingredients` / `ingredient_names` collections to the parser service's own DB
   (BACKLOG → Tech debt; they are LIVE parser data — never delete).
 - `[ ]` Drop the `uuid` override in both `package.json`s once `@google-cloud/storage` ships a

@@ -8,6 +8,13 @@ Modelled on [`sweeps/ROADMAP.md`](./sweeps/ROADMAP.md) (the same Board / Waves /
 to the *sweep program*); this file applies it to the **general backlog**. Companion to
 [`BACKLOG.md`](./BACKLOG.md) (the item write-ups) and [`RELEASE_PLAN.md`](./RELEASE_PLAN.md) (the launch gate).
 
+> **[Reconciled 2026-08-27]:** Read this file as history, not a live plan. The status log ends 2026-07-11;
+> the 1.0 cutover ran 2026-07-11/12, its abandoned post-deploy tail was closed 2026-08-21 after both Atlas
+> clusters were terminated and prod was rebuilt empty, and v1.0.0 and v1.0.1 shipped 2026-08-25 and
+> 2026-08-26. Everything after #317, including the outage hardening wave #319 through #326, is tracked in
+> `BACKLOG.md`, not here. Checked: `docs/evidence/CUTOVER_RUN_2026-07-11.md:65-100`, `gh release list`
+> (v1.0.0 2026-08-25, v1.0.1 2026-08-26), `package.json:3` reads 1.0.1.
+
 > **Verification pass 2026-07-03.** Every open (`[ ]`/`[~]`) BACKLOG item was re-checked against the current
 > tree before being placed on a wave. Three came back **STALE** and are pulled off the board (see
 > [Stale reconciliations](#stale-reconciliations--update-backlogmd)); a couple had line/detail drift noted inline.
@@ -57,6 +64,11 @@ to the *sweep program*); this file applies it to the **general backlog**. Compan
 > (0 P1 / 3 P2 / 13 P3) and ran five fix lanes A–E as PRs #304–#308; the day session
 > diff-reviewed and merged all five (2026-07-11). PR #303 (`[DO NOT MERGE]` V5 flip half)
 > stays parked for the owner's cutover.
+>
+> **[Reconciled 2026-08-27]:** Stale: #303 "stays parked" as the unmerged cutover half, and the `addReview`
+> flip "stays held" above. Truth: #303 merged 2026-07-12, commit `3e3feda`, during the cutover run and
+> shipped in v1.0.0; the flip is in the tree at `server/routes/reviews.js:189` writing
+> `reviewCreatedAt: Date.now()`. Checked: `gh pr view 303` returns MERGED 2026-07-12T04:58:36Z.
 >
 > **Waves 15 & 16 boarded AND drained 2026-07-11** — also on the BACKLOG.md sweep board, not this table.
 > Wave 15 (#309–#312) drained the unclaimed P3 sweep tail; Wave 16 drained its own follow-up seeds as
@@ -115,6 +127,15 @@ tracks (Waves 1–2's isolated lanes).
 ## Board
 
 Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merged · `[blocked]` waiting on a decision · `[dropped]` off the board.
+
+> **[Reconciled 2026-08-27]:** Four notes in this table are stale. The W1, V5, and I2 rows' "owner-gated for
+> the cutover" ops all executed in the 2026-07-11/12 cutover run: W1 `--apply` converted 7 with 0 string ids
+> left, `normalizeRatingTypes --apply` rewrote 13, and the V5 write-path flip landed with #303 so
+> `server/routes/reviews.js:189,197` writes numeric timestamps; `storage.rules` was deployed 2026-08-21 after
+> the outage. The R1 row's "visual smalls still open" predates the C1-tail lane #252, which closed all three
+> smalls, fixed or decided, and `src/pages/AddRecipe/recipeSelectStyles.ts:23-30` carries the fix. The August
+> restore then emptied the prod cluster, voiding the W1 and V5 migrated data. Checked:
+> `docs/evidence/CUTOVER_RUN_2026-07-11.md:38-40,58,84,94`, `gh pr view 303 252`.
 
 | Wave | Track | Backlog items covered | Status | Domain (collision surface) | Notes / deps |
 |---|---|---|---|---|---|
@@ -296,6 +317,13 @@ Wave 8 once §D lands.
   recipe under a native `ObjectId` and repoints every foreign ref (`ratings.recipeId`, `reports.recipeId`,
   `userRecipeData` saved/made lists), with Jest coverage. Retires the `recipeIdQuery.js` shim once the owner
   runs it against prod.
+
+  > **[Reconciled 2026-08-27]:** Stale: "retires the shim once the owner runs it against prod". Truth: the
+  > owner ran the prod `--apply` on 2026-07-12 and the shim was never retired; `server/util/recipeIdQuery.js`
+  > still exists, imported by 14 files under `server/` including `routes/recipes.js` and `routes/reviews.js`.
+  > The August 2026 restore rebuilt prod empty, so no legacy string ids exist anywhere and retiring the shim
+  > is now dead-code cleanup. Checked: `git grep -l recipeIdQuery server/`,
+  > `docs/evidence/CUTOVER_RUN_2026-07-11.md:38-40,84`.
 - **W2** AddRecipe a11y wiring — the two open a11y follow-ups from `ADD_RECIPE_UX_AUDIT.md` (only
   `RecipeFormTextArea` is wired today).
 - **W3** housekeeping smalls — the two remaining low-risk tech-debt one-liners, bundled F5-style.
@@ -384,6 +412,12 @@ must ship together with the owner's prod `normalizeRatingTypes.js --apply` as on
 the V5 row's sequencing warning); and the admin API-contract projection asymmetries beyond the two
 T4 normalizations (nothing else filed).
 
+> **[Reconciled 2026-08-27]:** Stale: the numeric flip is "deliberately held" for a cutover that had not
+> happened. Truth: the cutover ran 2026-07-11/12, #303 merged as `3e3feda` in the same run as the prod
+> `normalizeRatingTypes.js --apply`, and the New sort has been single-typed numeric since. Checked:
+> `gh pr view 303`, `docs/evidence/CUTOVER_RUN_2026-07-11.md:58`. The Wave 12 "Not boarded" note below
+> repeats this stale status.
+
 ### Wave 12 — Wave-11 follow-up tail (boarded 2026-07-10)
 
 The three seeds filed off Wave 11's lane reviews. Same orchestrated pattern (one subagent per lane
@@ -436,6 +470,11 @@ Not boarded: unchanged (the `addReview` numeric flip stays coupled to the owner'
 cutover; W1/I1/I2 ops runs stay owner-gated; branches
 `worktree-feat+moderation-pr-c-ratelimiter` and `feat/legal-pages` await owner disposition).
 
+> **[Reconciled 2026-08-27]:** Stale: the flip and the W1/I1/I2 ops are still pending. Truth: the cutover
+> executed them 2026-07-12 and the August restore voided the data half, see the Wave 11 note above. The
+> branch half is still true: both branches remain on origin today. Checked:
+> `gh api repos/jclind/prepify/branches`.
+
 ---
 
 ## Deferred / post-1.0 / owner (off the active board)
@@ -444,9 +483,19 @@ Verified-present but intentionally not scheduled — decisions, post-1.0, or own
 
 - **Social link-preview prerendering** — release §C decision (CSR-SPA limitation; crawlers see the generic card).
   **Gates JSON-LD escaping (C3)** — ship them together (rule 6).
+
+  > **[Reconciled 2026-08-27]:** Stale: the escaping half still gates on the prerendering PR. Truth: C3
+  > shipped the escape in #243; `serializeRecipeJsonLd()` in `src/pages/SingleRecipe/buildRecipeJsonLd.ts`
+  > escapes every `<` as `u003c`, so rule 6's "pull it into that PR" is already done. Only the prerendering
+  > decision is open. Checked: `src/pages/SingleRecipe/buildRecipeJsonLd.ts`, `src/test/buildRecipeJsonLd.test.ts`.
 - **Colour tokens → CSS custom properties** — post-1.0 theming; blocked on the brand-orange decision.
 - **Migrate off Edamam (nutrition)** — post-1.0; now an isolated server-only swap behind `POST /api/nutrition/details`.
 - **`@jclind/ingredient-parser` data relocation** — post-1.0 ops; folds into the prod Mongo split (relocate, don't delete).
+
+  > **[Reconciled 2026-08-27]:** Stale premise: the parser cache still sits on the shared cluster waiting to
+  > be relocated. Truth: the old shared `Cluster0` was terminated in the August 2026 outage and the
+  > `@jclind/ingredient-parser` cache went with it. There is nothing left to relocate, only a rebuild if the
+  > parser ever needs its cache back. Checked: `docs/evidence/CUTOVER_RUN_2026-07-11.md:74-77`.
 - **Brand-orange contrast / recolor + collapse remaining brand shades** — owner-owned (a11y sweep reverted
   `$primary-accessible` to vivid `#ff5722`). *Note: the shade literals this item wanted to dedupe are now
   **STALE in source** — see below.*
@@ -454,6 +503,12 @@ Verified-present but intentionally not scheduled — decisions, post-1.0, or own
 - **Reviewer avatars on review cards** — *(2026-07-08 triage)* deliberately **not** an N-track: it folds into
   the **RELEASE_PLAN §D Ratings & Reviews overhaul** (blocker), whose scope already owns `RecipeReview.tsx` +
   `reviews.js`. Write-up in BACKLOG Features.
+
+  > **[Reconciled 2026-08-27]:** Stale: avatars are deferred into a still-future §D. Truth: §D landed
+  > 2026-07-09 and shipped them; review cards render `UserAvatar`, the photo-plus-DefaultAvatar component
+  > added in `ef4e851`, now at
+  > `src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/RecipeReview.tsx:5,31`. Checked:
+  > `git log --diff-filter=A -- src/Components/UserAvatar/UserAvatar.tsx` shows `ef4e851` 2026-07-09.
 - **Avatar customizer on the profile page** — *(2026-07-08 triage)* post-1.0 personalization idea, captured in
   `FEATURE_IDEAS.md` (builds on the existing upload flow + `DefaultAvatar`; a preset/color or XP-frame picker
   persisting a style descriptor).
@@ -474,6 +529,11 @@ Found STALE in the 2026-07-03 verification pass; recommend ticking/annotating in
 - **CI actions pinned to Node 20** → **STALE.** `.github/workflows/test.yml` already sets `node-version: 24`
   everywhere + `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true` (line 17). The runtime concern is already handled;
   `checkout@v4`/`setup-node@v4` still run, but on Node 24. Close, or narrow to "bump action majors for hygiene."
+
+  > **[Reconciled 2026-08-27]:** Stale: `checkout@v4`/`setup-node@v4` "still run". Truth: W3, PR #270, bumped
+  > both to v5 on all uses and removed `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24`;
+  > `.github/workflows/test.yml:30-31` and every other use are v5 today. Checked: grep for
+  > `FORCE_JAVASCRIPT_ACTIONS` over `.github/workflows/` returns nothing.
 - **Collapse remaining brand shades** (`#f4501e`/`#a52f0a`/`#006065`) → **STALE in source.** Zero matches across
   `src/**/*.scss`/`.ts`/`.tsx`; they survive only in docs. The dedupe is effectively done — reconcile the sub-item.
 - **`reorder` util untested** → **STALE.** It *is* tested (`src/test/IngredientListReorder.test.tsx` has a

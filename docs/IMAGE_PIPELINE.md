@@ -1,5 +1,11 @@
 # Recipe image pipeline — responsive variants (I1) + uid re-key (I2)
 
+> **[Reconciled 2026-08-27]:** Rollout status has moved since this was written. The I2 rules
+> deploy is done on both environments (prod 2026-08-21), so the "do NOT deploy to prod" state
+> check in the I2 runbook below no longer describes reality. What remains owner-run is the I1
+> rollout (extension + backfill + flag, still unchecked in the release runbook) and the optional
+> object migration. Checked: commit `b5dabc5`; `git log origin/release -1` = `efff731`.
+
 How Prepify serves right-sized recipe images, and the **owner-run** steps to turn it
 on and to roll out the uid-scoped Storage keying. Companion to the code:
 `src/util/recipeImageVariants.ts` (URL derivation), `extensions/storage-resize-images.env`
@@ -149,6 +155,16 @@ serving originals. The extension + variants can stay in place (harmless, unused)
 > `storage.rules` file, so the prod `firebase deploy --only storage` at cutover carries
 > it automatically; no separate deploy.
 
+> **[Reconciled 2026-08-27]:** Stale: this entire state check. Truth: prod no longer serves PR
+> #102. The 1.0 cutover deployed the uid-writing frontend to `release` on 2026-07-12 while
+> skipping this rules deploy, so every prod image upload 403'd for five weeks (frontend ahead of
+> rules, the mirror of the case this note warns about); the I2+X3 rules were then deployed to
+> prod `prepify-9b974` on 2026-08-21 and a real create-with-image passed there. `origin/release`
+> now sits at `efff731`, two commits behind `development`. The ordering matrix below is still
+> sound analysis; the "old rules" row no longer matches either environment. Checked: commit
+> `b5dabc5` (records both the 403 window and the 2026-08-21 deploy);
+> `git rev-list --count origin/release..development` = 2.
+
 I2 changed two coupled things that must go live **together**: the frontend now
 uploads to `recipeImages/{uid}/{uuid}` (was `recipeImages/{filename}`), and
 `storage.rules` now (a) allows owner-scoped writes to that uid path and (b) **denies**
@@ -193,6 +209,11 @@ the old rules, **204** after this grant was deployed. **Nothing extra to deploy*
 in the same `storage.rules` as I2, so step 1 below applies it. Until prod gets that
 deploy, X3's cleanup is inert on prod (it logs the 403 and swallows it — no user-facing
 regression, the orphan just isn't removed).
+
+> **[Reconciled 2026-08-27]:** Stale: "until prod gets that deploy, X3's cleanup is inert on
+> prod." Truth: prod got it. The rules, including this delete grant (`storage.rules:42`), were
+> deployed to `prepify-9b974` on 2026-08-21, so X3's orphan cleanup is live on prod. Checked:
+> commit `b5dabc5`; `storage.rules:35-43`.
 
 **Known limitation — resize variants aren't cleaned up.** `deleteRecipeImage` removes
 only the original object (by its download URL). If the I1 "Resize Images" extension has
