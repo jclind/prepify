@@ -1442,11 +1442,11 @@ findings table.)*
 
 ## Tech debt / process / infra
 
-- `[ ]` **The 2.2.0 pin bump needs three small client changes to land with it** *(filed 2026-08-26, off the
-  container-size + free-basis work; **unblocked 2026-08-27** — 2.2.0 is on npm, `latest` moved to it, and
-  the published tarball is verified through a fresh install against the live proxy)* — the parser side of
-  all four pricing gaps is done. **This is now the next piece of work.** Pin both `package.json`s to
-  2.2.0 (which also closes the pin-drift item below) and carry:
+- `[x]` **The 2.2.0 pin bump needs three small client changes to land with it** *(filed 2026-08-26, off the
+  container-size + free-basis work; unblocked 2026-08-27; **done 2026-09-02** — both trees pinned and
+  installed at 2.2.0, all three changes landed, 768 frontend + 957 server tests green)* — the parser side of
+  all four pricing gaps is done. Pinned both `package.json`s to
+  2.2.0 (which also closes the pin-drift item below) and carried:
   1. `src/types.ts:24` — `PriceBasis` is `'gram' | 'unit-estimate'`; add `'free'`. Type-only, nothing
      breaks without it (the server passes the string through and the UI branches on `priceConfidence`
      first), but the type would be lying.
@@ -1462,8 +1462,23 @@ findings table.)*
   Both `calculateServingPrice` copies already sum a `0` correctly (`Number(0)` is not `NaN`), and
   `mapIngredientData` already guards on `typeof cents === 'number'` rather than truthiness, so a `0`
   survives the server hop. Verified by reading, not assumed.
-- `[ ]` **The two trees pin different `@jclind/ingredient-parser` versions** *(filed 2026-08-26, off the
-  1.0.1 smoke-test session)* — root `package.json` pins **2.0.0**, `server/package.json` pins **2.1.0**, so
+
+  **What actually landed**, where it differs from the plan above. Item 2 grew a fourth `PriceKind`
+  (`'free'`) rather than only setting a `title`. `.ingr-price.free` has no SCSS rules, so it renders
+  byte-identically to `exact`, but the row needs *some* hook to hang the screen-reader sentence on, and
+  reusing `exact` would have meant testing `title` for emptiness to decide. The sentence goes in
+  `.sr-only` as well as `title` for the reason the EST badge already does: `title` is announced
+  inconsistently, so a screen-reader user would otherwise hear "$0.00" and nothing else. Item 3 needed no
+  code change (`hasUnpricedRow` already tested `typeof !== 'number'`), so it landed as three tests plus a
+  comment saying why the check must never become a truthiness test.
+
+  Confirmed against the installed 2.2.0 through `mapIngredientData`'s exact logic, hitting the live proxy:
+  `1 can (15 oz) black beans` → 64¢ `gram`/`high`, `1 jar (16 oz) salsa` → 177¢, `salt and pepper to taste`
+  → 0¢ `free`/`high`, `salt as needed` → 0¢ `free`, `2 cups water` → 0¢ `free`. All four gaps closed
+  end to end.
+- `[x]` **The two trees pin different `@jclind/ingredient-parser` versions** *(filed 2026-08-26, off the
+  1.0.1 smoke-test session; **fixed 2026-09-02** in the 2.2.0 pin bump above, exactly as prescribed: both
+  trees now pin and resolve 2.2.0)* — root `package.json` pinned **2.0.0**, `server/package.json` **2.1.0**, so
   the client and server resolve different copies of the package. Harmless for pricing today: the client only
   imports `parseIngredientString` (the legacy flat parse) and every priced path runs server-side through the
   proxy. But it means the root tree is one version behind the density fix and nobody would notice. **Fix:**
