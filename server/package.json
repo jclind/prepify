@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "@google-cloud/storage": "^7.21.0",
-    "@jclind/ingredient-parser": "2.1.0",
+    "@jclind/ingredient-parser": "2.2.0",
     "@sentry/node": "^10.57.0",
     "cors": "^2.8.5",
     "dotenv": "^17.4.2",
