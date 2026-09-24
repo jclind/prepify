@@ -49,6 +49,8 @@ screenshots of anything changed. Polish only — no redesign.
    `pp-browse-btn`), cards, the `Form`/`FormInput` components, modals (react-modal config), empty states
    (recipe empty, profile empty, 404, profile-not-found — same visual language?), and the
    `RecipeCard` vs `RecipeThumbnail` overlap. Note duplication to consolidate.
+
+   > **[Reconciled 2026-09-23]:** Stale: this step (and the deliverable below, "consolidate `RecipeCard`/`RecipeThumbnail`") treats `RecipeThumbnail` as a live component. Truth: it was deleted as dead code in PR #199 (merged 2026-06-27); zero matches remain in `src/` or `cypress/`. Checked: `grep -rn "RecipeThumbnail" src/ cypress/`, `gh pr view 199` (MERGED).
 5. **States.** For each interactive component, are hover / focus-visible / active / disabled / loading /
    empty / error styled consistently? *Loading resolved (PR #213):* one convention — skeleton for known-shape
    content, `TailSpin` for discrete actions — with single colour tokens (`src/util/loadingStyles`), a

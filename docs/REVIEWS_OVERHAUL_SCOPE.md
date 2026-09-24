@@ -1,5 +1,7 @@
 # §D Ratings & Reviews Overhaul — Scope
 
+> **[Reconciled 2026-09-23]:** Superseded: this plan shipped on 2026-07-09 as PRs #266 (PR-A server), #267 (PR-B frontend plumbing) and #271 (PR-C redesign), all merged. The doc is now a historical spec. The notes below flag the claims most likely to misdirect a reader. Checked: gh pr view 266/267/271 (all MERGED, 2026-07-09); current tree.
+
 *Drafted 2026-07-08. Source spec: `RELEASE_PLAN.md:331-346` ("Ratings & Reviews area overhaul", **release blocker**). This document turns that item + its two fold-ins into an executable plan: workstreams, PR sequencing, decisions needed, and what can be delegated to a lower-cost model session.*
 
 ---
@@ -37,6 +39,8 @@ From `RELEASE_PLAN.md:331-346`:
 
 ## 2. Current state (condensed; full map in §7 appendix)
 
+> **[Reconciled 2026-09-23]:** Stale: this section maps the pre-overhaul code. Truth: the §D rewrite replaced this surface. The old ReviewsContainer/ReviewsList/AddReview/ReviewOptions components are gone; the area is now RatingsAndReviews.tsx plus RatingSummary.tsx and Reviews/{OwnReviewCard, ReviewComposer, ReviewTextarea, RecipeReview, ReviewCardSkeleton}. Checked: src/pages/SingleRecipe/DataSections/RatingsAndReviews/ listing, 2026-09-23.
+
 - **One Mongo collection, `ratings`** — a single doc per (user, recipe) holds both the star rating
   and optional review text. Unique partial index on `{userId, recipeId}`. No separate reviews
   collection; "review" = a ratings doc with non-empty `reviewText`.
@@ -62,6 +66,8 @@ From `RELEASE_PLAN.md:331-346`:
 
 These live in files §D rewrites anyway, so they're in scope — not flag-don't-act:
 
+> **[Reconciled 2026-09-23]:** Stale: all seven defects below are framed as to-fix. Truth: all shipped in #266/#267. editReview takes a JSON body (server/routes/reviews.js:226-237), StarRating is a WAI-ARIA radiogroup (src/Components/StarRating/StarRating.tsx:100-106), ReviewType carries rating: number | null plus userId/photoURL/displayName/isCurrentUser (src/types.ts:299-326), and the composer has a live length counter (Reviews/ReviewTextarea.tsx:39-51). Checked: tree, 2026-09-23.
+
 1. **`editReview` sends the review text unencoded in the query string**
    (`src/api/recipes.ts:456-458`) — text containing `&`, `#`, `%`, `+` is truncated/corrupted.
    Fix by moving `text` to a JSON body (matching `newReview`), server accepting body with a
@@ -83,9 +89,13 @@ Server-side timestamp inconsistencies (`ratingLastUpdated` mixed Date/string; ep
 sorts) are **data-shape territory shared with the post-1.0 data-integrity item** — leave writes as-is
 and file a note there, unless PR-A trivially normalizes new writes without a backfill.
 
+> **[Reconciled 2026-09-23]:** Stale: timestamp writes "left as-is". Truth: the V5 cutover flipped new writes to numeric epoch-ms (PR #303, merged 2026-07-12) and shipped server/scripts/normalizeRatingTypes.js as the one-off migration. Checked: server/routes/reviews.js:188-192; gh pr view 303.
+
 ---
 
 ## 3. Workstreams
+
+> **[Reconciled 2026-09-23]:** Stale: the workstreams below are framed as to-do. Truth: all shipped. The breakdown persists on the recipe doc (server/util/recipeRating.js:37-42) and the one-off backfill ran at the cutover (12 histograms, commit 3f68745); getReviews enriches photoURL/displayName via a batched getUsers() (server/routes/reviews.js:372-385); the New/Top sort toggle and the review-only composer are live (RatingsAndReviews.tsx:39 and :122-129; ReviewComposer.tsx:23-25). Checked: tree; gh pr view 266/267/271.
 
 ### WS-1 · Server: enriched `/getReviews` payload — **PR-A** (server-only)
 

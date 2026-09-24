@@ -1,5 +1,7 @@
 # Prepify — Backlog
 
+> **[Reconciled 2026-09-23]:** Status snapshot for reading this file: both `package.json`s are at 1.0.2 (commit `154fa80`, PR #333) with `@jclind/ingredient-parser` pinned `2.2.0` in both trees (PR #332), but there is still no v1.0.2 git tag or GitHub release (latest is 1.0.1) and the development-to-release deploy PR #334 is open, so 1.0.2 and the 2.2.0 pricing fixes are merged to development but not on prod. Also, both Mongo Atlas clusters were terminated and recreated empty on 2026-08-20, so any item premised on pre-outage prod data (legacy string `_id`s, mistyped rating docs, v1 price backfills) needs owner re-confirmation. The worst individual claims are annotated inline below. Checked: `package.json:3`, `server/package.json:3`, `package.json:11`, `gh release list`, `gh pr list`, commit `b5dabc5`.
+
 Triaged from Jesse's running notes (2026-06-17). This is the general backlog: bugs, UX polish,
 a11y, tech debt, testing, and ideas. The beta→1.0 launch checklist lives separately in
 [`RELEASE_PLAN.md`](./RELEASE_PLAN.md) — items here are **not** release blockers unless cross-referenced.
@@ -157,6 +159,7 @@ hygiene, and the U3 watch items all verified sound — details in the session tr
   toast-only (`DraftSaveStatus.tsx:13-23` shows generic "Couldn't save draft").
 - `[x]` **`/health` is a static 200** *(fixed in [#305](https://github.com/jclind/prepify/pull/305), Wave 14 · E, merged 2026-07-11: live `{ping:1}` on the getDB() singleton raced against a 2s timeout — 200 ok / 503 degraded, can never throw)* — `server/app.js:66` never checks Mongo, so a runtime Mongo drop
   leaves Railway serving a green health check on a wedged instance (boot-time failure exits correctly).
+  > **[Reconciled 2026-09-23]:** Superseded: the `{ping:1}` probe described here stayed green on a fully terminated cluster during the 2026-08 outage, so #319 replaced it with a real query (`recipes.findOne`) at `server/app.js:121-137`, and #320 added `GET /version` beside it. Checked: `server/app.js:127`, commit `b5dabc5` (runbook entry naming #319).
 - `[x]` **No `SIGTERM`/`unhandledRejection` handlers, no graceful shutdown** *(fixed in [#305](https://github.com/jclind/prepify/pull/305), Wave 14 · E, merged 2026-07-11: SIGTERM/SIGINT drain + closeDB + 10s force-exit; unhandledRejection/uncaughtException → Sentry capture + flush + exit 1; lives in index.js so untestable by the suite — reviewed by hand incl. the closeDB export)* — `server/index.js`:
   Railway deploys drop in-flight requests; an unhandled rejection crashes without a Sentry capture.
 - `[x]` **Rejected CORS origins throw → 500 + Sentry capture per bot probe** *(fixed in [#305](https://github.com/jclind/prepify/pull/305), Wave 14 · E, merged 2026-07-11: the rejection error is tagged `status = 403`, so the backstop renders a quiet JSON 403 and skips the Sentry capture (it only captures ≥500); regression-tested)* — `server/app.js:50,106-117`:
@@ -259,6 +262,7 @@ hygiene, and the U3 watch items all verified sound — details in the session tr
   `ensureIndexes.test.js` EXISTS assertion to absence. Low-medium (was mis-sized as a trivial cleanup). NOTE:
   do NOT touch the SEPARATE compound `recipeId_1_username_1` index — it backs `getReviews`/recompute by
   `recipeId` and is out of scope.
+  > **[Reconciled 2026-09-23]:** Partially done: the wrong "DEAD INDEX" `db.js` comment named here was corrected 2026-07-11 (commit `dd5b596`); `server/db.js:132-139` now documents the index as LIVE pending migration of the three username-keyed reads. Those reads are indeed still unmigrated, so the item's remaining scope stands. Checked: `server/db.js:132-139`, `server/routes/admin.js:103`, `server/routes/admin.js:251`, `server/routes/reports.js:233-236`.
 - `[x]` **`UserRecipeThumbnail.tsx` has a local `formatDate` duplicate** *(DONE in [#313](https://github.com/jclind/prepify/pull/313), Wave 16 · C, merged 2026-07-11: the hand-rolled `toLocaleDateString` body is removed and delegates to the shared `formatDate(createdAt, true)` — verified byte-identical output for valid epoch-ms inputs across every month/day/year — while a local wrapper (`formatCreated`) KEEPS the null/0 guard so a missing/garbage `createdAt` still hides the date instead of rendering the shared util's un-guarded epoch-zero fallback; +2 tests pin the rendered date and the null-hide.)* —
   `src/pages/Account/UserRecipes/UserRecipeThumbnail.tsx` defines its own (already-correct `Number(createdAt)`)
   `formatDate` instead of importing the shared `src/util/formatDate`. Dedup onto the shared util. Nit.
@@ -441,6 +445,7 @@ hygiene, and the U3 watch items all verified sound — details in the session tr
   (`Date.now().toString()` → `Date.now()`) must deploy together with the owner's prod `--apply` of
   `normalizeRatingTypes.js` — treat them as one cutover step, then the client's `coerceRating` becomes
   retirable. Low-med, but sequencing-critical.
+  > **[Reconciled 2026-09-23]:** Done: the flip landed in #303, merged 2026-07-12 (commit `3e3feda`), so this is no longer a pending cutover step. `/newReview` now writes numeric `Date.now()` (`server/routes/reviews.js:189,197`, with the in-code "V5 cutover" comment). The paired owner `--apply` run of `normalizeRatingTypes.js` is moot: both clusters were recreated empty 2026-08-20 (commit `b5dabc5`, runbook: "§2's entire data-ops burden is void"). Checked: `server/routes/reviews.js:189-197`, `gh pr view 303`.
 - `[~]` **Legacy rating docs are mistyped — "Top" review sort interleaves wrong** *(filed 2026-07-09, out of
   the §D overhaul; **script shipped in [#293](https://github.com/jclind/prepify/pull/293), merged 2026-07-10**
   (Wave 10 · V5) — `server/scripts/normalizeRatingTypes.js`, dry-run default, owner-gated `--apply`,
@@ -454,6 +459,7 @@ hygiene, and the U3 watch items all verified sound — details in the session tr
   normalizing `rating` → double and `reviewCreatedAt` → numeric date on all ratings docs (same ops-script
   shape as `reconcileRatingAggregates.js`; dry-run default, owner-gated `--apply` on prod), after which the
   client-side coercion can eventually be retired. Low-med.
+  > **[Reconciled 2026-09-23]:** Moot, closeable: the mixed-type prod docs this was waiting to normalize are gone (both clusters recreated empty 2026-08-20, commit `b5dabc5`), and #303 (merged 2026-07-12) made every new write single-typed numeric, so the Top sort no longer mixes BSON types. `coerceRating` remains at `src/api/recipes.ts:49` as boundary defense. Checked: `b5dabc5`, `server/routes/reviews.js:197`, `src/api/recipes.ts:49`.
 - `[ ]` **Per-ingredient price estimates can be wildly off (the "$10/serving parfait") — the remaining half
   of the serving-price saga** *(triaged 2026-07-08; filed 2026-06-17)* — PR #152 fixed only the division math,
   and that bug's signature was a flat **~$1.00**/serving (see `server/scripts/backfillServingPrice.js:6-10`) —
@@ -466,9 +472,11 @@ hygiene, and the U3 watch items all verified sound — details in the session tr
   backfill, then pull the parfait's per-ingredient `totalPriceUSACents` to attribute parse-bug vs
   proxy-estimate before writing any fix. → **N1**
   - *(2026-07-08 update, N6 [#255](https://github.com/jclind/prepify/pull/255))* — **investigated + guarded, not closed**: a dev dry-run showed **0 servingPrice drift** (so half (1)'s `--apply` is a no-op on current data) and attributed the parfait to a **bad proxy gram-estimate** (`1 cup strawberries` = $25.34 on stale v1 data), not a parse or division bug. Fix-option (B) — a **`price_outlier` flag** on enriched rows ≥ $15 — shipped on N6's telemetry surface (**flag, not clamp**). Still open: **(A)** the owner/proxy-gated re-enrich backfill for stale v1 prices, and half (2)'s parse-quality hardening in `updateIngredients.ts`.
+  > **[Reconciled 2026-09-23]:** Half (1)'s data premise is void: the re-enrich backfill targeted stale v1 prices and the N6 0-drift dry-run ran against the pre-outage dev DB, but both clusters were recreated empty 2026-08-20 (commit `b5dabc5`), so there is no v1-era data left to backfill. Only the estimate-quality half remains meaningful. Checked: `b5dabc5`.
 - `[x]` **Volume-measured ingredients whose name isn't in the 13-entry density table are priced ~200x too
   low (`1 1/3 cup salsa` → $0.01)** *(filed 2026-08-20, found during the post-cluster-restore prod smoke;
   fixes 1, 2 and 4 SHIPPED 2026-08-25, fix 3 in flight)* —
+  > **[Reconciled 2026-09-23]:** "Fix 3 in flight" and fix 2's "pin in `server/package.json`, currently `2.0.0`" are stale: fix 3 shipped the same day in #327 (merged 2026-08-25), and all four fixes closed end to end once both trees pinned 2.2.0 (commit `f284d8c`, PR #332, merged 2026-09-03). Checked: `gh pr view 327`, `package.json:11`, `server/package.json:12`.
   the opposite failure direction from the "$10 parfait" item above, and unlike that one this has a definite
   root cause. `@jclind/ingredient-parser@2.0.0` converts volume→grams via a **13-entry** `DENSITIES` table
   (`src/enrich/volume.ts:34`). On no match, `lookupDensity` returns `null`, `makeDensityToGrams` returns
@@ -577,6 +585,7 @@ hygiene, and the U3 watch items all verified sound — details in the session tr
     text (`IngredientItem.tsx:217`). So a parser deploy reaches newly typed or edited ingredient rows, and
     nothing else. Old recipes keep their old numbers until someone edits them, which also means a fix
     doesn't retroactively repair them — a backfill would, and none is written.)*
+  > **[Reconciled 2026-09-23]:** "Not yet deployed to prod" is no longer true for this fix set: PR #329 (merged 2026-08-26, "deploy: development -> release (ingredient price confidence #327, badge a11y #328)") carried it to the release branch and v1.0.1 shipped 2026-08-26. The newer 2.2.0 parser fixes (#332, #333) are merged to development only: deploy PR #334 is still open and there is no v1.0.2 tag or GitHub release, so 2.2.0 pricing is not on prod as of 2026-09-23. Checked: `gh pr list --state all`, `gh release list`.
 
   Pairs with the user-editable price feature filed under Features (a manual override is both a feature and the
   workaround for every ingredient the table will never cover). Cross-ref the N1 "$10 parfait" item above:
@@ -623,6 +632,7 @@ hygiene, and the U3 watch items all verified sound — details in the session tr
   2026-08-26 in the owner's prod smoke test of 1.0.1; **fixed in source** 2026-08-26,
   `ingredient-parser-v2@37ffde3`, 6 new tests — **published in 2.2.0**, 2026-08-27; the pin bump in both
   `package.json`s is the remaining step.
+  > **[Reconciled 2026-09-23]:** That remaining step is done: both trees were pinned to and installed at 2.2.0 on 2026-09-02 (commit `f284d8c`, PR #332, merged 2026-09-03). Checked: `package.json:11`, `server/package.json:12`.
   Landed as two groups rather than one: milled spices at 0.5 g/ml, dried leaf herbs at 0.17, since
   crumbled leaf is a third the weight of powder. Bare `seasoning`/`spice` terms pick up the blends.
   Herbs that are as often fresh as dried — basil, parsley, cilantro, dill, mint, sage, rosemary — are
@@ -1493,6 +1503,7 @@ findings table.)*
   [#327](https://github.com/jclind/prepify/pull/327) explains *why* a price is an estimate, and on a phone
   nobody can read it. The visible labels still make sense without it, so this is polish rather than a
   regression. **Fix:** a tappable popover, or a line under the subtotal that doesn't need hover at all.
+  > **[Reconciled 2026-09-23]:** Premise partly stale: since #328 (commit `e045f28`, merged 2026-08-25) the EST sentence is duplicated in a `.sr-only` span, and the 2.2.0 work gave free rows the same treatment (`src/pages/AddRecipe/Ingredients/IngredientItem.tsx:378-392`), so screen readers are covered. What remains is the touch/visibility gap only. Checked: `e045f28`, `IngredientItem.tsx:378-392`.
 - `[x]` **Account `recipes`/`ratings` tab badges use raw counts that can drift from their tab lists** *(from `sweeps/BUG_HUNT_2026-07-09.md` — follow-up to the L8/L9 saved-badge fix in [#279](https://github.com/jclind/prepify/pull/279), filed 2026-07-10; boarded Wave 9 · B6; **fixed in [#285](https://github.com/jclind/prepify/pull/285), merged 2026-07-10**: `recipes` badge now filters `RECIPE_OWNER_VISIBLE` (matches `getCreatedRecipes`); `ratings` badge goes through a new `countVisibleRatings` excluding moderation-hidden ratings and ratings whose recipe isn't `RECIPE_VISIBLE` (matches `getSingleUserReviews`'s `returnRecipeData` join) — same cheap id-list + `countDocuments` shape as the existing `countVisibleSaved`, no correlated `$lookup`. Runtime-verified end-to-end against the live dev server + dev Mongo with a real Firebase ID token.)* — `getAccountCountsFor` returns raw `countDocuments` for `recipes` and `ratings`, but the Your-Recipes tab filters `RECIPE_OWNER_VISIBLE` and the Ratings tab filters `REVIEW_VISIBLE` + recipe-visible, so a user with hidden/unpublished recipes (or hidden-recipe ratings) sees a badge reading higher than the list under it. Same class as the saved-badge drift already fixed in #279 (the `saved` badge now filters). `server/util/accountCounts.js`. **Fix:** filter each badge count to match its tab's list. **Dep:** land after #279 (which rewrites this file). — *(not surfaced directly by the hunt; noted while fixing L8/L9.)*
 - `[x]` **`UserRatings` passes a sort the server doesn't understand** *(filed 2026-07-09, out of the §D
   overhaul; folded into Wave 10 · V7; **fixed in [#290](https://github.com/jclind/prepify/pull/290), merged
@@ -1634,6 +1645,7 @@ findings table.)*
   **with tests** before any prod run. Low urgency (shim covers it indefinitely; only 8 docs); do it if/when
   the string/ObjectId duality is retired. *(surfaced 2026-07-08 during the Track-1 owner-ops prod run — the S6
   `checkMigrationState` DB check flagged it; all other checks came back clean.)* **(not a 1.0 blocker)**
+  > **[Reconciled 2026-09-23]:** Premise void: both Atlas clusters were terminated and recreated empty on 2026-08-20, "§2's entire data-ops burden is void", and a fresh DB boots with `checkMigrationState` exit 0 (commit `b5dabc5`, runbook). The 8 legacy docs, and the question of running `--apply`, died with the old clusters. If any pre-outage data was later re-imported, that import's `_id` types need an owner check before this can be ticked. Checked: `b5dabc5`.
 - `[ ]` **Retire the `recipeIdQuery` string/ObjectId shim (follow-up to the 5-D migration above)** — once the
   prod `--apply` run has converted all legacy string `_id`s and `checkMigrationState.js` reads 0, the `$or`
   string-branch in `server/util/recipeIdQuery.js` is dead weight. Remove the shim (or collapse it to a plain
@@ -1642,6 +1654,7 @@ findings table.)*
   foreign ref that still needs the string-form lookup) remains would break those reads. All recipes created
   post-Phase-5 already use `ObjectId`, so once prod+dev are migrated no new string ids appear and removal is
   permanently safe. Low; blocked on the owner-gated migration run. *(filed 2026-07-09 when W1 #268 landed.)*
+  > **[Reconciled 2026-09-23]:** Same wiped-DB premise as the migration item above: the shim (`server/util/recipeIdQuery.js`) is still in the tree and still harmless, but its strict ordering gate now reduces to an owner confirmation that no restored pre-outage data carries string `_id`s. Checked: `server/util/recipeIdQuery.js` exists, `b5dabc5`.
 - `[ ]` **Colour tokens → CSS custom properties when theming lands** — Jesse wants user-selectable
   themes (dark mode + other palettes) **post-1.0**. That's a *colour* concern: themes swap colours, not
   sizes — so the design tokens that need to become runtime-swappable are the colour groups (`$primary*`,
@@ -1793,6 +1806,7 @@ findings table.)*
   SEO/privacy wart (crawlers just bounce off the login wall). Add `noindex` to the **create** mode (edit mode
   already canonicalizes to the public recipe URL, which is correct). Low severity. *(surfaced 2026-06-23 in the
   Wave 4 Part 1 verification.)*
+  > **[Reconciled 2026-09-23]:** Done: `AddRecipe` now emits `<meta name='robots' content='noindex' />` at `src/pages/AddRecipe/AddRecipe.tsx:92-93` (commit `9498752`, R1/C1). Checked: `src/pages/AddRecipe/AddRecipe.tsx:93`.
 - `[x]` **JSON-LD recipe title/description isn't `</script>`-escaped** *(fixed in [#243](https://github.com/jclind/prepify/pull/243), C3: added `serializeRecipeJsonLd()` in `buildRecipeJsonLd.ts` — stringify then replace every `<` with its backslash-u003c escape, still valid JSON that JSON-LD parsers decode back to `<`; `SingleRecipe.tsx` renders the pre-escaped string. Shipped ahead of the prerender PR so the hole is closed before prerendering can make it live. +6 tests.)* — `SingleRecipe.tsx` interpolates
   user-supplied recipe `title`/`description` into a `<script type="application/ld+json">{JSON.stringify(...)}</script>`
   block, and `JSON.stringify` does not escape `<` / `</`. **Not exploitable today** — this is a CSR app, so
@@ -1826,6 +1840,7 @@ findings table.)*
   and pointing at `scss-conventions.md` + `design/*`. Unblocks R1/R2.)*
 - `[ ]` **Refactor the create-recipe page**.
 - `[ ]` **Refactor the account page**.
+  > **[Reconciled 2026-09-23]:** Both refactors above shipped 2026-07-07: #248 "R1: refactor the create-recipe page (useRecipeForm + FormField) + C1 cluster" and #250 "R2: refactor the account page (usePaginatedLoadMore + shell hooks)", the R1/R2 these sections keep cross-referencing. Checked: `gh pr view 248`, `gh pr view 250`.
 - `[x]` **Ingredient parser: handle "not found"** — *done in PR #164 (track 3d; PR open).* A client-side
   `withTimeout` (12s) races the enrichment request so a hung/"not found" lookup no longer sticks the UI; on
   timeout the row is kept, flagged errored with a retry, and a toast surfaces. Applied to both add and
@@ -2079,6 +2094,7 @@ findings table.)*
   test (`DietSelector.test.tsx`) but the structurally-similar `CuisineSelector`/`MealTypeSelector` are mocked
   in `AddRecipe.test.tsx:67-75` with no standalone unit test — a focused, low-effort fill-in. Also note: any
   new `TimeInput` test should cover the edit-mode hydration bug logged under Bugs.)**
+  > **[Reconciled 2026-09-23]:** The selector-unit gap is closed: `src/test/CuisineSelector.test.tsx` and `src/test/MealTypeSelector.test.tsx` exist (commit `6c96c27`, R1/C1), so only the "broader E2E happy-path variants" half remains. Checked: `ls src/test/`, `git log -- src/test/CuisineSelector.test.tsx`.
 - `[x]` **Cypress: test autocomplete on the Recipes page** — *covered in PR #168 (track 4-tests):* `browse.cy.ts`
   now types a partial query and asserts the dropdown options, types a typo and asserts results surface **with** the
   "showing similar recipes" banner, asserts the banner is **absent** on a literal match, and clicks a result to
@@ -2146,6 +2162,7 @@ findings table.)*
   already covered indirectly by `addRecipe.cy.ts`), `recipeLimits`, `invalidateSavedCaches`, `defaultAvatar`.
   Most are trivial; `updateIngredients` is the one worth a real test pass. *(surfaced 2026-06-27 in the
   code-quality & tests sweep coverage audit.)*
+  > **[Reconciled 2026-09-23]:** The list has shrunk further: `formatDate` now has `src/test/formatDate.test.ts` (#309, commit `6f81bbb`) and `reorder` is exercised directly by `src/test/IngredientListReorder.test.tsx` (commit `8e59ce7`). Still no dedicated tests under `src/test/` for `capitalize`, `formatPrice`, `formatCompactCount`, `timeElapsedSince`, `recipeLimits`, `invalidateSavedCaches`, or `defaultAvatar`. Checked: `ls src/test/`, `ls src/util/`.
 - `[ ]` **Test-quality audit follow-ups (2026-07-10)** — the six-slice suite-quality audit (see the
   test-quality PR of the same date for what already shipped) left these filed rather than fixed:
   - **Real ingredient-parser contract test (the headline gap).** `server/__tests__/ingredients.test.js:26`

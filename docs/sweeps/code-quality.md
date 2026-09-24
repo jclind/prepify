@@ -50,6 +50,8 @@ suites green. Open a PR with a coverage summary.
    truly abandoned, or leave a one-line note on why it stays. Also: unused exports/imports, unreachable
    branches, leftover `console.log`, and orphaned files. (Don't delete something load-bearing because it
    "looks" dead — verify no importer first.)
+
+   > **[Reconciled 2026-09-23]:** Stale: both items are named as dead code still in the repo. Truth: `RecipeContext`, the `RecipeAI` route, `RecipeThumbnail`, and `getIndexById` were all removed by PR #199 (merged 2026-06-27); greps for all four return zero matches in `src/`. This step's dead-code pass now starts from a clean slate. Checked: `grep -rn "RecipeContext|RecipeAI|getIndexById|RecipeThumbnail" src/`, `gh pr view 199` (MERGED).
 6. **Error handling.** Confirm the Sentry boundary (`AppErrorFallback`) covers the app and that async
    failures surface as user-facing states, not silent catches or unhandled rejections. Server: every route
    is wrapped in `asyncHandler` (verify) and the error middleware returns sane status codes without leaking
