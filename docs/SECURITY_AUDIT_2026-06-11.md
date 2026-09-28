@@ -105,6 +105,8 @@ now type-check before use.
   `worktree-feat+admin-service` branch; its `requireAdmin` claims middleware
   must be audited when that branch is merged.
 
+  > **[Reconciled 2026-09-23]:** Stale: this says no admin routes exist and `requireAdmin` is still unaudited. Truth: the admin surface merged (#121/#124-#126) and was re-audited clean in §5 below ("the surface already sound"); `server/routes/admin.js` exists today with `verifyToken + requireAdmin` chaining on its routes. Checked: `ls server/routes/admin.js`, §5 STATUS note in this doc.
+
 ---
 
 ## 4. Open findings — status checklist
@@ -125,6 +127,8 @@ touch the same files those branches change (see §5).
    `NODE_ENV=test` because supertest fires hundreds of requests from one IP in
    seconds — so the 429 path itself is intentionally untested by Jest. Cypress
    CI runs with limiters active and stays well under the global cap.
+
+   > **[Reconciled 2026-09-23]:** Stale: the parse limiter is described as 30/min, sized against the 50-ingredient cap. Truth: `PARSE_LIMIT` is now `MAX_INGREDIENTS + 40` (90) to cover edits and retries, with a per-account plus global daily paid-quota cap on top (`server/routes/ingredients.js:75-88`). Checked: `server/routes/ingredients.js`.
 2. [x] **500 handlers echo `err.message` to clients** (*Low–Medium*, info
    disclosure) — **DONE (2026-06-12).** Added `util/respondServerError.js`
    (logs the real error with `METHOD /path` context, returns

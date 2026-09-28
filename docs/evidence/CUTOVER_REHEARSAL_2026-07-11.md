@@ -1,5 +1,7 @@
 # Cutover rehearsal on dev — 2026-07-11 (overnight session)
 
+> **[Reconciled 2026-09-23]:** Stale: the dev end-state recorded below (converted `_id`s, normalized ratings, flat prod-bucket images) reads as current. Truth: both clusters were terminated and recreated empty on 2026-08-20, so none of that state exists and every migration step rehearsed here is moot. Checked: commit b5dabc5; the §5 tail of `docs/evidence/CUTOVER_RUN_2026-07-11.md`.
+
 Full dry-run → `--apply` → dry-run rehearsal of every owner-gated migration script against the
 **dev** environment, run to de-risk the 1.0 cutover. Every command below ran with the checked-in
 `server/.env`, whose targets were verified first:

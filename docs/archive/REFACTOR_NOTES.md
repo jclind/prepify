@@ -2,6 +2,8 @@
 
 Issues flagged during refactor phases that require a decision or future action.
 
+> **[Reconciled 2026-09-23]:** Stale: the intro frames these entries as items requiring a decision or future action. Truth: a historical record of the May 2026 refactor phases (entries dated 2026-05-10 to 2026-05-14). Current standards live in `docs/CONVENTIONS.md`; MongoDB-data items below are moot because both clusters were recreated empty on 2026-08-20. Checked: entry dates in this file; `docs/CONVENTIONS.md`; commit b5dabc5.
+
 ---
 
 ## Post-Phase-6: `formatRating` double-division fix
@@ -1297,6 +1299,8 @@ The fix was applied as a **post-parse transform in `server/routes/ingredients.js
 
 Pre-fix recipes in MongoDB have the old broken URL baked into `ingredients.ingredientData.imagePath`. Run this in Atlas to fix existing data:
 
+> **[Reconciled 2026-09-23]:** Stale: this Atlas script assumes pre-fix recipe documents still exist. Truth: moot. Both clusters were recreated empty on 2026-08-20, so no old-URL documents remain, and the server-side transform is live. Checked: commit b5dabc5; `server/routes/ingredients.js:102-111`.
+
 ```js
 // Count affected recipes first
 db.recipes.countDocuments({
@@ -1391,7 +1395,11 @@ The one-time MongoDB backfill (converting pre-Phase-5-D string `_id`s to
 ObjectIds) is still outstanding. Once run, the `$or` / expanded-`$in`
 branches become no-ops but are safe to leave in place indefinitely.
 
+> **[Reconciled 2026-09-23]:** Stale: "the one-time MongoDB backfill is still outstanding". Truth: closed. The backfill shipped as `server/scripts/migrateLegacyRecipeIds.js`, ran at the 2026-07-12 cutover, and both clusters were recreated empty on 2026-08-20, so no legacy string `_id`s exist. Checked: `server/scripts/migrateLegacyRecipeIds.js`; `docs/evidence/CUTOVER_RUN_2026-07-11.md:40`; commit b5dabc5.
+
 ### SingleRecipe page — missing error handling (flagged, not fixed)
+
+> **[Reconciled 2026-09-23]:** Stale: flags the SingleRecipe page as having no error state. Truth: fixed. `SingleRecipe.tsx` destructures `isError` (line 47) and renders `<RecipeNotFound />` (line 314). Checked: `src/pages/SingleRecipe/SingleRecipe.tsx:47,314`.
 
 `src/pages/SingleRecipe/SingleRecipe.tsx` has no error state for a failed
 `getRecipe` query. When `GET /api/getRecipe` returns a non-2xx response

@@ -135,6 +135,8 @@ Neither handler loads the recipe it's rating. Consequences, all live-confirmed:
 
 - **Fix:** Authenticate + moderate bug reports; dedupe reports per (reporter, target); consider a lower report cap and a per-target report ceiling.
 
+> **[Reconciled 2026-09-23]:** Stale: M7 is listed as fully deferred. Truth: the report-flooding half has landed, reports now dedupe per reporter and target (409 `ALREADY_REPORTED`, `server/routes/reports.js:158`) and carry per-uid limiters (PR #230, merged 2026-07-06). The bug-report channel is still `optionalAuth` with an IP-keyed limiter and no content moderation (`server/routes/bugReports.js:50`). Checked: those files, `gh pr view 230` (MERGED).
+
 ---
 
 ## LOW (17 — grouped)
