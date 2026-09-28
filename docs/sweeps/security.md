@@ -20,6 +20,8 @@ XSS. **Read-and-report first** — surface findings, fix only the clearly-safe o
 > the current diff, prefer the `/security-review` skill instead.
 
 > **[Reconciled 2026-09-23]:** Stale: this points at a `/security-review` skill (sweeps/README.md lists it too). Truth: no such skill exists; `.claude/skills/` holds only `release-readiness`, `run-prepify`, `worktree-create`, and `worktree-land`, and there is no `.claude/commands/` directory. Checked: `ls .claude/skills/ .claude/commands/`.
+>
+> **[Reconciled 2026-09-27]:** Correction to the note above: `security-review` is in fact available today, delivered through a plugin/sync mechanism a `.claude/skills/` directory listing doesn't surface. The 2026-09-23 check only ruled out a local project or user-scope skill file. This line's original pointer holds again. Checked: this session's own available-skills listing includes `engineering:security-review`.
 
 ## Kickoff
 

@@ -136,6 +136,12 @@ Status: `[ ]` not started · `[~]` in a worktree · `[P]` PR open · `[x]` merge
 > smalls, fixed or decided, and `src/pages/AddRecipe/recipeSelectStyles.ts:23-30` carries the fix. The August
 > restore then emptied the prod cluster, voiding the W1 and V5 migrated data. Checked:
 > `docs/evidence/CUTOVER_RUN_2026-07-11.md:38-40,58,84,94`, `gh pr view 303 252`.
+>
+> **[Reconciled 2026-09-27]:** Clarifying the "7" above against BACKLOG.md and RELEASE_RUNBOOK.md,
+> which both say "8 legacy ids": no contradiction, different steps of the same run. There were 8
+> legacy string-`_id` docs total; a canary `--apply --id=...` converted 1 first to confirm the
+> mechanism on prod, then the full `--apply` converted the remaining 7, for `string _ids
+> remaining: 0`. Checked: `docs/evidence/CUTOVER_RUN_2026-07-11.md:40-41`.
 
 | Wave | Track | Backlog items covered | Status | Domain (collision surface) | Notes / deps |
 |---|---|---|---|---|---|

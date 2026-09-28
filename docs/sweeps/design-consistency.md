@@ -51,6 +51,8 @@ screenshots of anything changed. Polish only — no redesign.
    `RecipeCard` vs `RecipeThumbnail` overlap. Note duplication to consolidate.
 
    > **[Reconciled 2026-09-23]:** Stale: this step (and the deliverable below, "consolidate `RecipeCard`/`RecipeThumbnail`") treats `RecipeThumbnail` as a live component. Truth: it was deleted as dead code in PR #199 (merged 2026-06-27); zero matches remain in `src/` or `cypress/`. Checked: `grep -rn "RecipeThumbnail" src/ cypress/`, `gh pr view 199` (MERGED).
+   >
+   > **[Reconciled 2026-09-27]:** Correction to the "Checked" command above: `grep -rn "RecipeThumbnail" src/ cypress/` does not return zero matches, it also hits the unrelated, still-live `UserRecipeThumbnail` component and a historical mention in `src/test/TEST_PLAN.md`. The underlying claim still holds, no component literally named `RecipeThumbnail` exists. Checked: `grep -rnE "\bRecipeThumbnail\b" src/ cypress/ --include='*.tsx' --include='*.ts' --include='*.scss'` returns zero matches.
 5. **States.** For each interactive component, are hover / focus-visible / active / disabled / loading /
    empty / error styled consistently? *Loading resolved (PR #213):* one convention — skeleton for known-shape
    content, `TailSpin` for discrete actions — with single colour tokens (`src/util/loadingStyles`), a

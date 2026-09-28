@@ -22,6 +22,8 @@ Related, already-built tooling: `/release-readiness` (audits the launch checklis
 `/code-review` and `/security-review` (diff-scoped), and the **run-prepify** skill (headless driver).
 
 > **[Reconciled 2026-09-23]:** Stale: `/code-review` and `/security-review` are listed as already-built tooling. Truth: neither exists in this repo or at user scope; the skills present are `release-readiness`, `run-prepify`, `worktree-create`, and `worktree-land`, and there is no `.claude/commands/` directory. Checked: `ls .claude/skills/ .claude/commands/ ~/.claude/skills/`.
+>
+> **[Reconciled 2026-09-27]:** Correction to the note above: both skills are in fact available today, `code-review` and `security-review`, delivered through a plugin/sync mechanism that a `.claude/skills/` directory listing doesn't surface. The 2026-09-23 check only ruled out a local project or user-scope skill file; it didn't rule out an invocable skill. This row's original claim holds again. Checked: this session's own available-skills listing includes `engineering:code-review` and `engineering:security-review`.
 
 ## Run log
 

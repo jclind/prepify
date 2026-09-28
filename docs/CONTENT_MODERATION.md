@@ -568,6 +568,12 @@ scores). Two findings were fixed (own follow-up commit):
   > cutover runbook's smoke item that would confirm them is still unticked. Checked:
   > `git rev-list --count origin/release..development` = 2; commit `b5dabc5` (records the
   > 2026-07-12 deploy push); `docs/CUTOVER_RUNBOOK.md:186`.
+  >
+  > **[Reconciled 2026-09-27]:** Correction to the line citation above: `docs/CUTOVER_RUNBOOK.md:186`
+  > is the tail of the "Transport" smoke item (the `/health` SSL check), not a moderation-key check.
+  > The actual unticked items that would confirm `GOOGLE_VISION_API_KEY` and `OPENAI_API_KEY` are
+  > "Create recipe with image" (line 196, image moderation) and "Text moderation" (line 201). The
+  > rest of the note is unaffected. Checked: `docs/CUTOVER_RUNBOOK.md:185-186,196,201`.
 
 **2026-06-15 — comprehensive authed live smoke across EVERY write surface (worktree server :4005, real
 blocklist + OpenAI, throwaway accounts, prod DB swept after). 14/14 effective.** Every server-side surface
