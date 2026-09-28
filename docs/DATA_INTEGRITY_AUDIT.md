@@ -2,6 +2,8 @@
 
 > **Status: CLOSED** — all items fixed in PR #134 (`04264cb`, 2026-06-13); the D5 env-separation residual was closed by PR #260 (2026-07-08). One deferred display-only residual remains (admin moderation/queue lookups still key reviews by denormalized handles) and is now tracked in [BACKLOG.md](./BACKLOG.md).
 
+> **[Reconciled 2026-09-23]:** Stale: that "one deferred residual" is only half-deferred now. The admin review-takedown endpoint keys on userId (see the D1 note below); the reports-queue handle dedupe is the part that still leans on the rename propagation. Checked: server/routes/reviews.js:524-538; server/routes/reports.js:77-84.
+
 > **Scope:** data-model / referential-integrity issues, distinct from the security audit
 > (`docs/SECURITY_AUDIT_2026-06-11.md`) and the historical error-handling audit
 > (`docs/archive/server-audit.md`). These are correctness problems in how documents reference each
@@ -66,11 +68,15 @@ Then the rename propagation and the username-based delete cascade both become un
 the brief window where a legacy username-only `ratings` doc could be double-written. Run
 `createModerationIndexes.js` for the new ratings index.
 
+> **[Reconciled 2026-09-23]:** Stale: deploy-time backfill instruction. Truth: moot. Both Mongo Atlas clusters were terminated and restored empty after the 2026-07-12 cutover (commit b5dabc5), so no legacy username-only ratings docs survive to backfill. The script remains at server/scripts/backfillRatingUserIds.js. Checked: git show b5dabc5; tree.
+
 **Deferred (residual):** the admin review-moderation endpoint and the reports queue still *reference*
 a review by its denormalized `(username, recipeId)` / `reportedUsername`, so `POST /setUsername` keeps
 its rename propagation to keep those display handles fresh — identity is now uid-stable regardless, so
 this is a display concern, not a correctness one. Fully dropping propagation would mean moving the
 moderation/queue lookups to `reportedUid` too.
+
+> **[Reconciled 2026-09-23]:** Stale: the moderation endpoint no longer matches on the handle. Truth: it resolves the handle to the uid and matches `{ userId, recipeId }`, with a uid-based audit targetId (server/routes/reviews.js:506-546; PR #231, merged 2026-07-05). The propagation is still kept for the reports queue's handle-based dedupe (server/routes/reports.js:77-84) and the display fields (server/routes/auth.js:197-206). Checked: tree; gh pr view 231.
 
 **Touches:** `server/routes/reviews.js`, `server/routes/auth.js` (deleteAccount, exportMyData),
 `server/routes/reports.js`, `server/routes/publicProfile.js`, `server/util/accountCounts.js`, plus

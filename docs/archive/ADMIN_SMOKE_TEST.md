@@ -3,6 +3,8 @@
 A quick end-to-end check of the **P0 + P1** admin functionality (admin identity,
 reporting, soft-hide moderation, report queue). ~10 minutes. Check each box.
 
+> **[Reconciled 2026-09-23]:** Stale: reads as a current checklist. Truth: a record of the manual P0 to P2 smoke test run against the `worktree-feat+admin-service` build on 2026-06-11; 1.0 has since shipped (2026-08-25), so re-verify against the current app before reusing any step. Checked: git history for this file (commits b8437bd through 9be95e1, all dated 2026-06-11).
+
 > Covers the build on `worktree-feat+admin-service`. Automated tests already pass
 > (server 190 / frontend 204); this verifies the real user-facing flow.
 

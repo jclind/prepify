@@ -21,6 +21,10 @@ one PR with a checklist + before/after metrics).
 Related, already-built tooling: `/release-readiness` (audits the launch checklist in `RELEASE_PLAN.md`),
 `/code-review` and `/security-review` (diff-scoped), and the **run-prepify** skill (headless driver).
 
+> **[Reconciled 2026-09-23]:** Stale: `/code-review` and `/security-review` are listed as already-built tooling. Truth: neither exists in this repo or at user scope; the skills present are `release-readiness`, `run-prepify`, `worktree-create`, and `worktree-land`, and there is no `.claude/commands/` directory. Checked: `ls .claude/skills/ .claude/commands/ ~/.claude/skills/`.
+>
+> **[Reconciled 2026-09-27]:** Correction to the note above: both skills are in fact available today, `code-review` and `security-review`, delivered through a plugin/sync mechanism that a `.claude/skills/` directory listing doesn't surface. The 2026-09-23 check only ruled out a local project or user-scope skill file; it didn't rule out an invocable skill. This row's original claim holds again. Checked: this session's own available-skills listing includes `engineering:code-review` and `engineering:security-review`.
+
 ## Run log
 
 The **historical ledger** — what's been run, when, and the PR. For the **forward plan** (what to run next,
@@ -67,6 +71,8 @@ PR (method §7).
    file ref + a "surfaced YYYY-MM-DD in the <sweep> sweep" note.
 5. **Keep the gates green.** `npx tsc --noEmit`, `npm test` (Vitest), `npm run build`; `cd server && npm test`
    (Jest) for backend changes. Don't touch the **beta tag** — that's the Phase-5 cutover.
+
+   > **[Reconciled 2026-09-23]:** Stale: the beta tag is treated as upcoming Phase-5 work. Truth: the flip shipped, commit `4d75f9b` ("release: flip beta → 1.0.0") deleted `ReleaseNotes.tsx` and the beta UI; the repo is at 1.0.2 with GitHub Releases v1.0.0 and v1.0.1. Checked: `git log --diff-filter=D -- "*ReleaseNotes*"`, `gh release list`, `grep '"version"' package.json`.
 6. **Ship one PR** into `development` with a short checklist of what was checked, before/after metrics where
    they exist, and links to any backlog items filed.
 7. **Update the trackers.** As the last step, refresh (a) this sweep's row in the [Run log](#run-log) above,

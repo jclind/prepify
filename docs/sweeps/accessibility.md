@@ -35,6 +35,8 @@ before/after Lighthouse a11y scores per page.
    (+ tabs) / Settings (all 4 sections) / Add Recipe. Record per-page scores. *(Track 4-qa already took the
    recipe page 80 → 89; the remainder — ingredient `<li role="checkbox">`, recipe-nav contrast,
    servings-input target-size — are in the backlog. Confirm them and look for what the cheap pass missed.)*
+
+   > **[Reconciled 2026-09-23]:** Stale: the parenthetical leaves all three remainder items in the backlog. Truth: the ingredient checklist role shipped in PR #179 (recipe page 89 to 97) and servings target-size in PR #202; only recipe-nav contrast remains, owner-gated with the brand-orange recolor (`$primary` is still `#ff5722`, `src/helpers.scss:1,26`). Checked: `gh pr view 179`, `gh pr view 202` (both MERGED), `src/helpers.scss`.
 2. **Keyboard.** Tab through every page: logical focus order, **visible** focus ring everywhere (track 3a
    moved rings to `:focus-visible` — verify no element lost its ring), no keyboard traps, modals
    (react-modal) trap + restore focus and close on Esc, the mobile nav menu is operable and returns focus to
@@ -50,16 +52,22 @@ before/after Lighthouse a11y scores per page.
    move the role to an inner element) and the autocomplete dropdown's `<ul role="listbox"><li><button
    role="option">` (a `<li>` between listbox and options + no arrow-key nav / `aria-activedescendant` —
    both in BACKLOG). Check `aria-checked`/`aria-expanded`/`aria-current` reflect real state.
+
+   > **[Reconciled 2026-09-23]:** Stale: both "known offenders" are listed as open. Truth: the ingredient checklist role was fixed in PR #179, and the autocomplete was rebuilt as an APG combobox with arrow-key nav and `aria-activedescendant` in PR #201 (`SearchRecipesInput.tsx:94-128`). Checked: `gh pr view 179`, `gh pr view 201` (both MERGED), `SearchRecipesInput.tsx`.
 5. **Contrast.** WCAG AA (4.5:1 text / 3:1 large + UI). Lighthouse flags the recipe-nav `.dnav__cta--signup`
    and `.dnav__link-label` on the solid nav — these are **brand colors**, so propose a token-level fix and
    file it (don't recolor blind). The `.beta-tag` is also low-contrast but is **deliberately deferred** to
    the Phase-5 beta-tag cutover — leave it.
+
+   > **[Reconciled 2026-09-23]:** Stale: the `.beta-tag` is described as still rendered and deferred to the Phase-5 cutover. Truth: the beta flip shipped (commit `4d75f9b`) and no `.tsx` renders a beta tag anymore; only orphaned `.scss` rules remain (`Navbar.scss`, `DesktopNav.scss`). Checked: `grep -rn "beta-tag" src/ --include=*.tsx` (zero matches), `git show 4d75f9b --stat`.
 6. **Forms.** Every input has an associated `<label>` (or `aria-label` — e.g. the servings input got one in
    4-qa); required fields are programmatically marked; validation errors are associated with their field
    (`aria-describedby`) and announced; the file-upload and dropdowns are labelled.
 7. **Zoom, reflow, motion.** 200% browser zoom and 320px-wide reflow without loss of content/function;
    `prefers-reduced-motion` honored for the nav condense, the star-hover, and any transitions; target sizes
    ≥24×24 (the servings stepper input is under — backlog).
+
+   > **[Reconciled 2026-09-23]:** Stale: the servings stepper is called under-minimum and backlogged. Truth: PR #202 sized all three controls past the 24px minimum (`.step-btn` 32px, `.serv-input` 28x32, `SingleRecipe.scss:307-324`). Checked: `gh pr view 202` (MERGED), `SingleRecipe.scss`.
 
 ## Tooling & where to look
 

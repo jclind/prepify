@@ -166,6 +166,11 @@ const IngredientsContainer: FC<IngredientsContainerProps> = ({
   // price honestly, and an unmarked total would understate the recipe silently —
   // the same defect this whole change exists to remove, one level up. Covers a
   // failed lookup too, which was always excluded from the sum.
+  //
+  // Tested on the type, never on truthiness. Since parser 2.2.0 a genuinely
+  // free ingredient (water, "salt and pepper to taste") carries a real
+  // `totalPriceUSACents: 0`, and a falsy check would call that row unpriced
+  // and stamp an honest total as partial.
   const hasUnpricedRow = ingredients.some(
     ingr =>
       'parsedIngredient' in ingr &&

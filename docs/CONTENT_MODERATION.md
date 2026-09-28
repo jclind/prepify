@@ -1,5 +1,12 @@
 # Prepify — Automated Content Moderation
 
+> **[Reconciled 2026-08-27]:** The framing above reads as an in-flight build plan; the build is
+> done. P0–P2 shipped and are merged at HEAD (classifiers in `server/util/textModeration.js`,
+> `server/util/imageModeration.js`, `server/util/automod.js`, wired into every write route), and
+> prod has run them since the 1.0 cutover deploy. P3 is the only open phase, and three of its
+> checklist items below are now done (annotated inline). Checked: those files at HEAD;
+> `git rev-list --count origin/release..development` = 2, so prod's `release` is current code.
+
 This is the **single living document** for designing and building Prepify's automated
 moderation of user-generated text and images. It is both the **reference/spec** (top half)
 and the **build tracker** (bottom half). Claude Code comes back to *this file* during the
@@ -54,12 +61,28 @@ Traced from the current codebase on 2026-06-14.
 | Username / display name | `username`, `displayName` | `server/routes/users.js`, surfaced in URLs + `publicProfile.js` | Public, and appears in the URL |
 | Bug reports / report reason | free-text `reason` / description | `bugReports.js`, `reports.js` | Admin-only — lower priority but still ingested |
 
+> **[Reconciled 2026-08-27]:** Stale: two cells in this table. Truth: reviews are no longer keyed
+> by `(username, recipeId)`; since the D1 re-key they are keyed by the immutable uid,
+> `(userId, recipeId)`, with `username` kept only as a display field. And the Profiles /
+> Username rows point at `server/routes/users.js`, which has no write routes; every profile and
+> name write lives in `server/routes/auth.js` (`/setUsername` line 134, `/updateProfile` line
+> 232, `/updateDisplayName` line 302). Checked: `server/routes/reviews.js:190,217`
+> ("Keyed by the stable uid (D1)"); `server/scripts/backfillRatingUserIds.js:3-10`; a
+> `router.post` grep over both route files.
+
 ### Images (expensive, async → moderate via **Storage trigger**, plus a legal layer)
 
 | Surface | Storage path | Upload site |
 |---|---|---|
 | Recipe images | `recipeImages/{name}` | `src/api/recipes.ts:152` |
 | Profile photos | `profilePhotos/{uid}` | `src/context/AuthContext.tsx:220` |
+
+> **[Reconciled 2026-08-27]:** Stale: recipe images at `recipeImages/{name}` and both line
+> references. Truth: recipe uploads were re-keyed to `recipeImages/{uid}/{uuid}` by I2; the
+> upload call is now `src/api/recipes.ts:236-240` (`uploadRecipeImage`, defined at line 203) and
+> the photo upload is `src/context/AuthContext.tsx:233-235`. `profilePhotos/{uid}` itself is
+> still correct. Checked: those lines; `server/scripts/migrateRecipeImagesToUid.js` exists for
+> the remaining flat-path objects.
 
 ---
 
@@ -75,6 +98,11 @@ Traced from the current codebase on 2026-06-14.
    - Route uploads through the Express server (larger refactor + bandwidth cost). Only do this
      if a Cloud Function proves impractical.
 
+   > **[Reconciled 2026-08-27]:** Stale: the `recipes.ts:152` / `AuthContext.tsx:220` references
+   > in this item. Truth: those uploads now live at `src/api/recipes.ts:236-240` and
+   > `src/context/AuthContext.tsx:233-235`. The claim itself (client uploads bytes directly,
+   > only the URL reaches the server) still holds. Checked: those lines.
+
    > **What P2 actually shipped (2026-06-15):** neither of the above. The server never sees the
    > *bytes*, but it *does* receive the resulting **URL** at recipe-create/edit time, so recipe
    > images are scanned server-side from that URL (no Functions, no upload re-routing). Profile
@@ -84,6 +112,12 @@ Traced from the current codebase on 2026-06-14.
 2. **Reviews have no stable id.** They live inside the `ratings` collection keyed by
    `(username, recipeId)`, with text in `reviewText`. Any auto-flag for a review must key off
    `(username, recipeId)`, exactly like the existing report/moderation paths do.
+
+   > **[Reconciled 2026-08-27]:** Stale: the keying advice. Truth: reviews are keyed by the
+   > immutable uid, `(userId, recipeId)`, since the D1 re-key; the report/moderation paths were
+   > re-keyed the same way. New code that keys off `(username, recipeId)` detaches data from the
+   > user on every rename. Checked: `server/routes/reviews.js:190` and `:217` ("Keyed by the
+   > stable uid (D1)"); `server/scripts/backfillRatingUserIds.js:3-10`.
 
 3. **Soft-hide already ripples through every public read path.** Recipes use a `status` field
    (`status === 'hidden'`), reviews use `moderationHidden`. Auto-mod must reuse these *same*
@@ -105,6 +139,14 @@ Traced from the current codebase on 2026-06-14.
 
 5. **Don't moderate from the client.** `VITE_OPEN_AI_API_KEY` exists but is unused. Any
    moderation key must live server-side only — a client-side key is both bypassable and leaked.
+
+   > **[Reconciled 2026-08-27]:** Stale: "`VITE_OPEN_AI_API_KEY` exists but is unused." Truth:
+   > that variable no longer exists anywhere in the client tree or `.env.example`; it was
+   > removed in the dead client-env sweep (PR #151, 2026-06-17). The server-only rule the item
+   > argues for still holds, and the live keys are `OPENAI_API_KEY` / `GOOGLE_VISION_API_KEY`,
+   > read only in `server/util/textModeration.js` and `server/util/imageModeration.js`.
+   > Checked: repo-wide grep for `VITE_OPEN_AI` returns no source or env hits;
+   > `docs/RELEASE_PLAN.md:130`.
 
 6. **CSAM is not "moderation," it's a legal obligation.** General NSFW classifiers do **not**
    detect it, and discovery carries mandatory-reporting duties (US: NCMEC). Treat it as its own
@@ -207,6 +249,12 @@ tiers, Text engine, Username timing, and Verification rows).
 > Firebase Auth) — was brought server-side via a new endpoint. Scanner: **Cloud Vision
 > SafeSearch** over REST (no SDK dep, mirrors the OpenAI choice). Tradeoff accepted:
 > orphan uploads (images never attached to a doc) aren't scanned; CSAM is P3 regardless.
+>
+> **[Reconciled 2026-08-27]:** Stale (one premise above): "`firebase.json` is `{}`". Truth: it
+> now pins `storage.rules` and the resize extension (`firebase/storage-resize-images@0.3.5`),
+> so Functions-backed Firebase infra does exist in the manifest for the I1 image pipeline. The
+> P2 decision itself (server-side URL scan, no Storage trigger for moderation) still stands.
+> Checked: `firebase.json`; `extensions/storage-resize-images.env`.
 
 - [x] `server/util/imageModeration.js` — env-gated `moderateImage(url, context)`, Cloud
       Vision SafeSearch via native `fetch`, graded high/medium/clean from adult/violence/racy
@@ -263,8 +311,30 @@ tiers, Text engine, Username timing, and Verification rows).
 - [ ] *(deferred, trigger-gated — see decision above)* Integrate PhotoDNA Cloud Service on the image path.
 - [ ] *(deferred)* Mandatory-reporting runbook (NCMEC CyberTipline, preserve-don't-delete) documented for when a match occurs.
 - [ ] Rate-limit content creation endpoints if not already covered by the security-audit limits.
+
+  > **[Reconciled 2026-08-27]:** Done, can be ticked: every moderated write route carries a
+  > per-minute limiter (`recipeWriteLimiter`, `reviewWriteLimiter`, `profileWriteLimiter` in
+  > `server/middleware/writeLimiter.js`), and `POST /addRecipe` additionally carries a daily
+  > paid-spend quota (50/account, 2000 global) because creates run paid Vision + OpenAI scans.
+  > Checked: `server/routes/recipes.js:530` (the route stacks `recipeWriteLimiter,
+  > recipeCreateQuota`), `:517-524` (quota defaults); limiter imports at `recipes.js:6`,
+  > `reviews.js:6`, `auth.js:8`.
+
 - [ ] Admin queue: visually distinguish `system`-flagged items + show classifier reason/score.
+
+  > **[Reconciled 2026-08-27]:** Done, can be ticked: the admin reports queue renders an
+  > `automod` pill for `report.source === 'automod'` and a classifier note
+  > (`Auto-flagged: …`) built from `report.classifier`. Checked:
+  > `src/pages/Admin/Reports/Reports.tsx:347-359`.
+
 - [ ] Metrics: counts of auto-hidden / auto-flagged / false-positive-restored.
+
+  > **[Reconciled 2026-08-27]:** Done in substance: the admin stats endpoint reports
+  > `moderation: { autoHeld, autoBlocked, autoFlagsDismissed }`, all-time counts over the
+  > `recipe.autohold` / `content.blocked` audit actions plus dismissed automod reports. One
+  > caveat in the code itself: a dismissed flag is not a restore, so
+  > "false-positive-restored" per se is not counted. Checked: `server/routes/admin.js:418-420`
+  > (the caveat), `:459-462` (the totals).
 - [x] **Adult-hit canary** — `imageModeration.js` warns on `adult >= LIKELY` (early-warning for trigger #2) AND sends a throttled best-effort alert email via `email.js` (`MODERATION_ALERT_EMAIL`, ≤1 per `MODERATION_ALERT_THROTTLE_MS`/30 min) (2026-06-16).
 
 ---
@@ -491,6 +561,20 @@ scores). Two findings were fixed (own follow-up commit):
   shipped moderation yet at the time of this smoke (a slur username + review went through on the live
   site — cleaned up via account delete). The `OPENAI_API_KEY` + redeploy is the pending Railway step.
 
+  > **[Reconciled 2026-08-27]:** Stale (the last sentence): "the redeploy is the pending Railway
+  > step." Truth: the 1.0 cutover put this code on prod, and `origin/release` (`efff731`) now sits
+  > two commits behind `development`, so prod runs it. Whether `OPENAI_API_KEY` /
+  > `GOOGLE_VISION_API_KEY` are actually set in Railway cannot be verified from this repo; the
+  > cutover runbook's smoke item that would confirm them is still unticked. Checked:
+  > `git rev-list --count origin/release..development` = 2; commit `b5dabc5` (records the
+  > 2026-07-12 deploy push); `docs/CUTOVER_RUNBOOK.md:186`.
+  >
+  > **[Reconciled 2026-09-27]:** Correction to the line citation above: `docs/CUTOVER_RUNBOOK.md:186`
+  > is the tail of the "Transport" smoke item (the `/health` SSL check), not a moderation-key check.
+  > The actual unticked items that would confirm `GOOGLE_VISION_API_KEY` and `OPENAI_API_KEY` are
+  > "Create recipe with image" (line 196, image moderation) and "Text moderation" (line 201). The
+  > rest of the note is unaffected. Checked: `docs/CUTOVER_RUNBOOK.md:185-186,196,201`.
+
 **2026-06-15 — comprehensive authed live smoke across EVERY write surface (worktree server :4005, real
 blocklist + OpenAI, throwaway accounts, prod DB swept after). 14/14 effective.** Every server-side surface
 moderates correctly:
@@ -516,3 +600,9 @@ moderates correctly:
 _Next: P2 + the displayName/UX fixes + blocklist hardening are on PR #139 (into development). P3 CSAM
 still needs a provider decision (Cloudflare / PhotoDNA / Thorn) — ask the user before integrating. No
 P1 follow-ups remain._
+
+> **[Reconciled 2026-08-27]:** Stale: "on PR #139 (into development)". Truth: that stack merged
+> long ago and everything it lists is in the tree at HEAD (`POST /updateDisplayName` at
+> `server/routes/auth.js:302`, the blocklist hardening passes in
+> `server/util/moderationBlocklist.js:107-165`, the UX fix in `src/util/getApiErrorMessage.ts`).
+> P3 CSAM remains the only open phase. Checked: those files.

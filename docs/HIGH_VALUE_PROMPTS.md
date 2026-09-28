@@ -40,6 +40,8 @@ polish + verification.
 
 Note: the empty/error/loading states sweep (old item #3) lives in RELEASE_PLAN §A and is covered here.
 
+> **[Reconciled 2026-09-23]:** Stale: the "~11 open `[ ]` items" count includes beta-tag blockers that are now done. Truth: the 1.0 flip landed (commit `4d75f9b`, GitHub Releases v1.0.0 and v1.0.1, `package.json` at 1.0.2), so the beta rows atop RELEASE_PLAN.md are behind-the-times rather than open work; the real remaining `[ ]` set is smaller and mostly owner-gated polish (ratings overhaul, social previews, autocomplete redesign). Checked: `git show 4d75f9b --stat`, `gh release list`, `grep -n "\[ \]" docs/RELEASE_PLAN.md`.
+
 ## 2. Full multi-agent bug hunt
 
 The canonical token-heavy "spend for confidence" workflow. Adversarial verification kills the
@@ -52,6 +54,8 @@ plausible-but-wrong findings that make broad bug hunts noisy.
 > confirmed findings to docs/ with repro steps; fix the clear-cut ones on a branch with tests.
 
 Tip: the leading "ultracode" opts into the multi-agent orchestration.
+
+> **[Reconciled 2026-09-23]:** Stale: this hunt is listed as still worth running. Truth: it ran as `docs/sweeps/BUG_HUNT_2026-07-09.md` (30 confirmed findings across two runs) and the remediation merged: PR #279 plus follow-ups #281, #284, #286. Checked: that file, `gh pr view 279/281/284/286` (all MERGED).
 
 ## 3. End-to-end user-journey simulation
 

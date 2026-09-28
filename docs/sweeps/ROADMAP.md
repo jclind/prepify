@@ -2,6 +2,8 @@
 
 > Board fully closed 2026-07-02 (PR #222); the live board is [../BACKLOG_ROADMAP.md](../BACKLOG_ROADMAP.md).
 
+> **[Reconciled 2026-09-23]:** Stale: the continue-protocol below tells a session to pick the next open track off the Board. Truth: the board is closed and stays that way. Every PR the Board lists (#179 through #222) was re-verified merged via `gh pr view`, the five playbooks, the `/worktree-create` skill, `../BACKLOG.md`, and the `README.md#run-log` anchor all resolve in this tree, and the two `[dropped]` rows are still valid (the brand orange is still `#ff5722`, `src/helpers.scss:1`). Point new work at `../BACKLOG_ROADMAP.md`, not this board.
+
 A parallelism-aware plan for running the five [assurance sweeps](README.md) to completion, designed so
 the inevitable **deferred tail** of each sweep (fix-small / file-large) becomes the next wave of work
 instead of getting lost in the backlog. Companion to [`README.md`](README.md) (the playbooks + run-log

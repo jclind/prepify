@@ -391,6 +391,69 @@ describe('IngredientsContainer — price confidence on the row', () => {
     expect(rowPriceText()).not.toContain('$0.00')
   })
 
+  // Parser 2.2.0 prices water and cook's-discretion amounts at a real 0
+  // (`basis: 'free'`) instead of declining. A 0 that means "free" and a missing
+  // price have been confused at this boundary before, so both the row and the
+  // footer are pinned.
+  it('renders a free ingredient as a plain $0.00, with no estimate marker', async () => {
+    await addAndSettle({
+      totalPriceUSACents: 0,
+      priceBasis: 'free',
+      priceConfidence: 'high',
+      name: 'water',
+    })
+    await waitFor(() => expect(rowPriceText()).toContain('$0.00'))
+    expect(rowPriceText()).not.toContain('needs price')
+    expect(document.querySelector('.ingr-price.estimate')).toBeNull()
+    expect(document.querySelector('.ingr-price.none')).toBeNull()
+    expect(document.querySelector('.est')).toBeNull()
+  })
+
+  it('explains the zero, in the tooltip and to a screen reader', async () => {
+    // $0.00 with nothing behind it reads as a bug. `title` alone isn't enough:
+    // it's announced inconsistently, the same reason the est badge carries its
+    // sentence in .sr-only.
+    await addAndSettle({
+      totalPriceUSACents: 0,
+      priceBasis: 'free',
+      priceConfidence: 'high',
+      name: 'water',
+    })
+    await waitFor(() => expect(rowPriceText()).toContain('$0.00'))
+    expect(document.querySelector('.ingr-price')?.getAttribute('title')).toMatch(
+      /free/i
+    )
+    expect(document.querySelector('.ingr-price .sr-only')?.textContent).toMatch(
+      /free/i
+    )
+  })
+
+  it('does not mark the subtotal partial for a free row', async () => {
+    // A free row is priced, so the total is complete. Reading "cents is 0" as
+    // "no price" would stamp an honest subtotal as partial.
+    const user = userEvent.setup()
+    mockGetIngredientData
+      .mockResolvedValueOnce(priced({ totalPriceUSACents: 300 }))
+      .mockResolvedValueOnce(
+        priced({
+          totalPriceUSACents: 0,
+          priceBasis: 'free',
+          priceConfidence: 'high',
+          name: 'water',
+        })
+      )
+    render(<Wrapper />)
+    await addIngredient(user, '2 cups flour')
+    await addIngredient(user, '1 cup water')
+
+    await waitFor(() =>
+      expect(document.querySelectorAll('.ingr-price')).toHaveLength(2)
+    )
+    const subtotal = document.querySelector('.ingredients-subtotal')
+    expect(subtotal?.textContent).toContain('$3.00')
+    expect(subtotal?.textContent).not.toContain('partial')
+  })
+
   it('marks the subtotal partial when a row contributes no price', async () => {
     // The footer used to state a confident total while silently excluding rows
     // that carry no price — the same defect as the row-level one, a level up.

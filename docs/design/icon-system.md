@@ -82,3 +82,7 @@ wrapper like the star/bookmark examples.
   Material / Tabler / Feather / …) to one stroke weight. Filled variants moved to the
   `fill="currentColor"` convention; `PrinterFilledIcon` and `AlertTriangleFilledIcon`
   dropped (fill read as a blob); 2 brand exceptions documented. 92 concepts.
+
+> **[Reconciled 2026-09-27]:** The "92 concepts" above is an as-of-2026-06-29 count, not a live one; a
+> concept has been added since. Current count in `src/Components/icons/index.ts` is 93. Checked: exported
+> icon count in that file, 2026-09-27.

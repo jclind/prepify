@@ -1,5 +1,7 @@
 # Prepify — Backlog
 
+> **[Reconciled 2026-09-23]:** Status snapshot for reading this file: both `package.json`s are at 1.0.2 (commit `154fa80`, PR #333) with `@jclind/ingredient-parser` pinned `2.2.0` in both trees (PR #332), but there is still no v1.0.2 git tag or GitHub release (latest is 1.0.1) and the development-to-release deploy PR #334 is open, so 1.0.2 and the 2.2.0 pricing fixes are merged to development but not on prod. Also, both Mongo Atlas clusters were terminated and recreated empty on 2026-08-20, so any item premised on pre-outage prod data (legacy string `_id`s, mistyped rating docs, v1 price backfills) needs owner re-confirmation. The worst individual claims are annotated inline below. Checked: `package.json:3`, `server/package.json:3`, `package.json:11`, `gh release list`, `gh pr list`, commit `b5dabc5`.
+
 Triaged from Jesse's running notes (2026-06-17). This is the general backlog: bugs, UX polish,
 a11y, tech debt, testing, and ideas. The beta→1.0 launch checklist lives separately in
 [`RELEASE_PLAN.md`](./RELEASE_PLAN.md) — items here are **not** release blockers unless cross-referenced.
@@ -157,6 +159,7 @@ hygiene, and the U3 watch items all verified sound — details in the session tr
   toast-only (`DraftSaveStatus.tsx:13-23` shows generic "Couldn't save draft").
 - `[x]` **`/health` is a static 200** *(fixed in [#305](https://github.com/jclind/prepify/pull/305), Wave 14 · E, merged 2026-07-11: live `{ping:1}` on the getDB() singleton raced against a 2s timeout — 200 ok / 503 degraded, can never throw)* — `server/app.js:66` never checks Mongo, so a runtime Mongo drop
   leaves Railway serving a green health check on a wedged instance (boot-time failure exits correctly).
+  > **[Reconciled 2026-09-23]:** Superseded: the `{ping:1}` probe described here stayed green on a fully terminated cluster during the 2026-08 outage, so #319 replaced it with a real query (`recipes.findOne`) at `server/app.js:121-137`, and #320 added `GET /version` beside it. Checked: `server/app.js:127`, commit `b5dabc5` (runbook entry naming #319).
 - `[x]` **No `SIGTERM`/`unhandledRejection` handlers, no graceful shutdown** *(fixed in [#305](https://github.com/jclind/prepify/pull/305), Wave 14 · E, merged 2026-07-11: SIGTERM/SIGINT drain + closeDB + 10s force-exit; unhandledRejection/uncaughtException → Sentry capture + flush + exit 1; lives in index.js so untestable by the suite — reviewed by hand incl. the closeDB export)* — `server/index.js`:
   Railway deploys drop in-flight requests; an unhandled rejection crashes without a Sentry capture.
 - `[x]` **Rejected CORS origins throw → 500 + Sentry capture per bot probe** *(fixed in [#305](https://github.com/jclind/prepify/pull/305), Wave 14 · E, merged 2026-07-11: the rejection error is tagged `status = 403`, so the backstop renders a quiet JSON 403 and skips the Sentry capture (it only captures ≥500); regression-tested)* — `server/app.js:50,106-117`:
@@ -259,6 +262,7 @@ hygiene, and the U3 watch items all verified sound — details in the session tr
   `ensureIndexes.test.js` EXISTS assertion to absence. Low-medium (was mis-sized as a trivial cleanup). NOTE:
   do NOT touch the SEPARATE compound `recipeId_1_username_1` index — it backs `getReviews`/recompute by
   `recipeId` and is out of scope.
+  > **[Reconciled 2026-09-23]:** Partially done: the wrong "DEAD INDEX" `db.js` comment named here was corrected 2026-07-11 (commit `dd5b596`); `server/db.js:132-139` now documents the index as LIVE pending migration of the three username-keyed reads. Those reads are indeed still unmigrated, so the item's remaining scope stands. Checked: `server/db.js:132-139`, `server/routes/admin.js:103`, `server/routes/admin.js:251`, `server/routes/reports.js:233-236`.
 - `[x]` **`UserRecipeThumbnail.tsx` has a local `formatDate` duplicate** *(DONE in [#313](https://github.com/jclind/prepify/pull/313), Wave 16 · C, merged 2026-07-11: the hand-rolled `toLocaleDateString` body is removed and delegates to the shared `formatDate(createdAt, true)` — verified byte-identical output for valid epoch-ms inputs across every month/day/year — while a local wrapper (`formatCreated`) KEEPS the null/0 guard so a missing/garbage `createdAt` still hides the date instead of rendering the shared util's un-guarded epoch-zero fallback; +2 tests pin the rendered date and the null-hide.)* —
   `src/pages/Account/UserRecipes/UserRecipeThumbnail.tsx` defines its own (already-correct `Number(createdAt)`)
   `formatDate` instead of importing the shared `src/util/formatDate`. Dedup onto the shared util. Nit.
@@ -441,6 +445,7 @@ hygiene, and the U3 watch items all verified sound — details in the session tr
   (`Date.now().toString()` → `Date.now()`) must deploy together with the owner's prod `--apply` of
   `normalizeRatingTypes.js` — treat them as one cutover step, then the client's `coerceRating` becomes
   retirable. Low-med, but sequencing-critical.
+  > **[Reconciled 2026-09-23]:** Done: the flip landed in #303, merged 2026-07-12 (commit `3e3feda`), so this is no longer a pending cutover step. `/newReview` now writes numeric `Date.now()` (`server/routes/reviews.js:189,197`, with the in-code "V5 cutover" comment). The paired owner `--apply` run of `normalizeRatingTypes.js` is moot: both clusters were recreated empty 2026-08-20 (commit `b5dabc5`, runbook: "§2's entire data-ops burden is void"). Checked: `server/routes/reviews.js:189-197`, `gh pr view 303`.
 - `[~]` **Legacy rating docs are mistyped — "Top" review sort interleaves wrong** *(filed 2026-07-09, out of
   the §D overhaul; **script shipped in [#293](https://github.com/jclind/prepify/pull/293), merged 2026-07-10**
   (Wave 10 · V5) — `server/scripts/normalizeRatingTypes.js`, dry-run default, owner-gated `--apply`,
@@ -454,6 +459,7 @@ hygiene, and the U3 watch items all verified sound — details in the session tr
   normalizing `rating` → double and `reviewCreatedAt` → numeric date on all ratings docs (same ops-script
   shape as `reconcileRatingAggregates.js`; dry-run default, owner-gated `--apply` on prod), after which the
   client-side coercion can eventually be retired. Low-med.
+  > **[Reconciled 2026-09-23]:** Moot, closeable: the mixed-type prod docs this was waiting to normalize are gone (both clusters recreated empty 2026-08-20, commit `b5dabc5`), and #303 (merged 2026-07-12) made every new write single-typed numeric, so the Top sort no longer mixes BSON types. `coerceRating` remains at `src/api/recipes.ts:49` as boundary defense. Checked: `b5dabc5`, `server/routes/reviews.js:197`, `src/api/recipes.ts:49`.
 - `[ ]` **Per-ingredient price estimates can be wildly off (the "$10/serving parfait") — the remaining half
   of the serving-price saga** *(triaged 2026-07-08; filed 2026-06-17)* — PR #152 fixed only the division math,
   and that bug's signature was a flat **~$1.00**/serving (see `server/scripts/backfillServingPrice.js:6-10`) —
@@ -466,9 +472,11 @@ hygiene, and the U3 watch items all verified sound — details in the session tr
   backfill, then pull the parfait's per-ingredient `totalPriceUSACents` to attribute parse-bug vs
   proxy-estimate before writing any fix. → **N1**
   - *(2026-07-08 update, N6 [#255](https://github.com/jclind/prepify/pull/255))* — **investigated + guarded, not closed**: a dev dry-run showed **0 servingPrice drift** (so half (1)'s `--apply` is a no-op on current data) and attributed the parfait to a **bad proxy gram-estimate** (`1 cup strawberries` = $25.34 on stale v1 data), not a parse or division bug. Fix-option (B) — a **`price_outlier` flag** on enriched rows ≥ $15 — shipped on N6's telemetry surface (**flag, not clamp**). Still open: **(A)** the owner/proxy-gated re-enrich backfill for stale v1 prices, and half (2)'s parse-quality hardening in `updateIngredients.ts`.
+  > **[Reconciled 2026-09-23]:** Half (1)'s data premise is void: the re-enrich backfill targeted stale v1 prices and the N6 0-drift dry-run ran against the pre-outage dev DB, but both clusters were recreated empty 2026-08-20 (commit `b5dabc5`), so there is no v1-era data left to backfill. Only the estimate-quality half remains meaningful. Checked: `b5dabc5`.
 - `[x]` **Volume-measured ingredients whose name isn't in the 13-entry density table are priced ~200x too
   low (`1 1/3 cup salsa` → $0.01)** *(filed 2026-08-20, found during the post-cluster-restore prod smoke;
   fixes 1, 2 and 4 SHIPPED 2026-08-25, fix 3 in flight)* —
+  > **[Reconciled 2026-09-23]:** "Fix 3 in flight" and fix 2's "pin in `server/package.json`, currently `2.0.0`" are stale: fix 3 shipped the same day in #327 (merged 2026-08-25), and all four fixes closed end to end once both trees pinned 2.2.0 (commit `f284d8c`, PR #332, merged 2026-09-03). Checked: `gh pr view 327`, `package.json:11`, `server/package.json:12`.
   the opposite failure direction from the "$10 parfait" item above, and unlike that one this has a definite
   root cause. `@jclind/ingredient-parser@2.0.0` converts volume→grams via a **13-entry** `DENSITIES` table
   (`src/enrich/volume.ts:34`). On no match, `lookupDensity` returns `null`, `makeDensityToGrams` returns
@@ -568,15 +576,23 @@ hygiene, and the U3 watch items all verified sound — details in the session tr
     rows with no provenance fall through to the plain state, so existing recipes don't sprout markers. Visual
     QA caught one thing the tests couldn't: the Subtotal was silently omitting unpriced rows and stating a
     confident total, the same defect one level up — it now carries a `PARTIAL` chip.
-  - **Not yet deployed to prod as of the merge.** Deploying visibly changes prices on existing recipes: some
-    rows go from a wrong number to a right one, some from a wrong number to `needs price`, and per-serving
-    totals drop accordingly. Intended, but user-visible.
+  - **Not yet deployed to prod as of the merge.** *(Corrected 2026-08-27: this entry used to say deploying
+    "visibly changes prices on existing recipes." **It does not.** Prices are baked into each recipe
+    document at write time — `SingleRecipe.tsx:167` renders the persisted `servingPrice`, and
+    `calculateServingPrice` runs server-side only on create (`server/routes/recipes.js:544`) and edit
+    (`:660`), summing the **stored** per-row cents. Every call site of the enrichment endpoint is under
+    `src/pages/AddRecipe/`, and the edit path re-enriches only when the user actually changed the row's
+    text (`IngredientItem.tsx:217`). So a parser deploy reaches newly typed or edited ingredient rows, and
+    nothing else. Old recipes keep their old numbers until someone edits them, which also means a fix
+    doesn't retroactively repair them — a backfill would, and none is written.)*
+  > **[Reconciled 2026-09-23]:** "Not yet deployed to prod" is no longer true for this fix set: PR #329 (merged 2026-08-26, "deploy: development -> release (ingredient price confidence #327, badge a11y #328)") carried it to the release branch and v1.0.1 shipped 2026-08-26. The newer 2.2.0 parser fixes (#332, #333) are merged to development only: deploy PR #334 is still open and there is no v1.0.2 tag or GitHub release, so 2.2.0 pricing is not on prod as of 2026-09-23. Checked: `gh pr list --state all`, `gh release list`.
 
   Pairs with the user-editable price feature filed under Features (a manual override is both a feature and the
   workaround for every ingredient the table will never cover). Cross-ref the N1 "$10 parfait" item above:
   same "estimate quality" half, opposite direction, and this one is root-caused.
-- `[ ]` **Water is priced as a grocery item (`4 cups boiling water` ≈ $0.95)** *(filed 2026-08-25, off the
-  density-table fix above; owner's call that this is worth fixing)* — now that volume measures actually
+- `[x]` **Water is priced as a grocery item (`4 cups boiling water` ≈ $0.95)** *(filed 2026-08-25, off the
+  density-table fix above; owner's call that this is worth fixing; **fixed in source** 2026-08-26,
+  `ingredient-parser-v2@d097497` — **published in 2.2.0**, 2026-08-27)* — now that volume measures actually
   convert to grams, water converts accurately and then gets multiplied by Spoonacular's per-gram price for
   *bottled* water. Nobody buys the tap water in a recipe, so the honest cost is $0.00 and inflating the
   per-serving total with it makes every soup and pasta recipe look more expensive than it is.
@@ -595,6 +611,146 @@ hygiene, and the U3 watch items all verified sound — details in the session tr
 
   Lands in `ingredient-parser-v2` (republish + pin bump), same path as the fix above. Low priority: it
   overstates rather than understates, and it's a rounding-level error next to the ~236x one.
+
+  **Shipped as designed, and the $0.95 above was already stale.** Both predictions in this entry held up.
+  The allowlist is exact-match (`src/enrich/free.ts`), so `coconut water`, `sparkling water`, `tonic water`
+  and `rose water` stay priced, and so do `watermelon` / `water chestnuts` / `watercress`, which a substring
+  rule would also have caught. `basis: 'free'` with `confidence: 'high'` is the signal, exactly as called.
+
+  What the entry didn't predict: **the proxy has no `water` entry at all any more**, under any spelling.
+  So water wasn't costing $0.95, it was returning no `ingredientData` and reading "needs price". That
+  changed where the fix had to live — inside `calculatePrice` it would never have run, since a failed
+  lookup returns before pricing. The free verdict is now decided in `createEnricher` too, and a free row
+  survives a lookup miss with a synthetic row. The lookup still runs first, because Prepify shows an
+  ingredient thumbnail and losing it would be its own small regression.
+
+  **The open "where does the line sit for pantry staples" question stays open**, and `salt` is deliberately
+  NOT on the allowlist. Salt only reads $0.00 when the author writes `to taste` (see the entry below), which
+  is a statement about the amount rather than about salt being free. That split feels right and is worth
+  keeping when the question is revisited.
+- `[x]` **Ground spices have no density entry, so every `1 tbsp <spice>` shows "needs price"** *(found
+  2026-08-26 in the owner's prod smoke test of 1.0.1; **fixed in source** 2026-08-26,
+  `ingredient-parser-v2@37ffde3`, 6 new tests — **published in 2.2.0**, 2026-08-27; the pin bump in both
+  `package.json`s is the remaining step.
+  > **[Reconciled 2026-09-23]:** That remaining step is done: both trees were pinned to and installed at 2.2.0 on 2026-09-02 (commit `f284d8c`, PR #332, merged 2026-09-03). Checked: `package.json:11`, `server/package.json:12`.
+  Landed as two groups rather than one: milled spices at 0.5 g/ml, dried leaf herbs at 0.17, since
+  crumbled leaf is a third the weight of powder. Bare `seasoning`/`spice` terms pick up the blends.
+  Herbs that are as often fresh as dried — basil, parsley, cilantro, dill, mint, sage, rosemary — are
+  left out on purpose: `parse()` strips "dried" and "fresh" alike, so nothing distinguishes them.
+  Verified end-to-end against the live proxy: 1 tsp black pepper $0.07, 1 tbsp chili powder $0.32,
+  1 tsp dried oregano $0.04, all gram-basis)* — the `DENSITIES` table's "Nuts and seasoning"
+  section ends at `salt`. There is **no pepper, chili powder, cumin, paprika, cinnamon, garlic powder,
+  oregano** or any other ground spice in all 52 entries. A spice is almost always measured in tsp/tbsp,
+  which is a `volume` unit, so it needs a density; without one the 2.1.0 gate correctly declines to guess
+  and the row reads "needs price". Spices appear in most savory recipes, so this is the **single biggest
+  coverage hole** the 2.1.0 fix left behind.
+
+  Confirmed the fix would actually deliver prices rather than move the failure downstream — the proxy has
+  real per-gram prices for all of them:
+
+  ```
+  chili powder  4.29 c/g   → 1 tbsp (~8 g) ≈ 34c
+  black pepper  3.00 c/g   → 1 tbsp ≈ 24c
+  ground cumin  6.61 c/g   → 1 tbsp ≈ 53c
+  ```
+
+  **Fix:** one table entry. Milled dry spices cluster tightly around **0.45–0.55 g/ml** regardless of which
+  spice, so a single `{ match: [...spice names], density: 0.5 }` covers the whole category to well inside
+  the ±20% the EST label already warns about. Cheapest item on this list by a wide margin.
+
+  *Aside worth keeping:* `chili powder` returns `perUnitCents: 0.43` against `perGramCents: 4.29` — not
+  equal, so the proxy's equality test does **not** drop it, yet 0.43c for "one unit of chili powder" is
+  meaningless. It's the **unit-type gate** in `calculatePrice` (volume can never be priced per item) that
+  saves this case, not the equality rule. Good evidence the type gate was the right call and shouldn't be
+  weakened later in favour of the equality check alone.
+- `[x]` **`1 can (15 oz) black beans` shows "needs price" while `15 oz black beans` prices fine** *(found
+  2026-08-26 in the owner's prod smoke test of 1.0.1; **fixed in source** 2026-08-26,
+  `ingredient-parser-v2@acdf628`, 24 new tests — **published in 2.2.0**, 2026-08-27)* — the parenthetical size is parsed and then thrown
+  away. `parse('1 can (15 oz) black beans, drained and rinsed')` returns:
+
+  ```
+  qty  1
+  unit { name: 'can', type: 'count' }
+  comment 'drained and rinsed 15 oz'          ← the real measure, demoted to prose
+  ```
+
+  So the ingredient is priced as *one can*, and black beans have no honest per-unit price (the proxy drops
+  it, since it equalled the per-gram price), so it declines. Meanwhile `15 oz` alone parses as `mass` and
+  converts exactly — 425 g × 0.15c = **~64c**.
+
+  **Fix as shipped, and why it isn't quite what was filed here.** Preferring the parenthetical as the *real
+  quantity* would have worked for pricing and regressed the page: Prepify renders the parsed
+  quantity/unit/name (`src/Components/IngredientItemText/IngredientItemText.tsx`), not the original string,
+  so a recipe would have gone from reading "1 can black beans" to "15 ounce black beans" and lost the can a
+  cook actually buys. Instead `parse()` keeps quantity 1 / unit `can` and adds a structured
+  `containerSize: { value, unit }`; `calculatePrice` takes an optional 5th argument and prices
+  `quantity × containerSize` on the gram path. Display is byte-identical, `basis` stays `'gram'`, and
+  nothing in Prepify needed to change — the pin bump is the whole client-side story.
+
+  The measure deliberately **stays in `comment` too**. That field is documented as the raw text, the v1
+  projection has no `containerSize` to fall back on, and "1 can black beans, drained and rinsed 15 oz"
+  tells a shopper the can size. Structured data overlapping raw text is already how `preparation` and
+  `descriptors` work here.
+
+  Generalises as hoped: `2 cans (14.5 oz each)` and the far more common `2 cans (14.5 oz)` are both read as
+  per-container and multiplied by the count. Also handles the inverted `1 (15 ounce can) chickpeas`, where
+  the head carries no unit at all and the container word sits inside the parens.
+
+  **`jar`, `bottle`, `tin`, `carton` and `container` were missing from the unit registry entirely**, so
+  `1 jar (16 oz) salsa` was parsing its name as "jar salsa" and missing the proxy lookup on the name alone,
+  a second bug hiding behind this one. Added as `count` units. `stick` was left out on purpose: butter is
+  its only container use and the word also means celery and cinnamon.
+
+  Verified against the live proxy, not just the working tree: `1 can (15 oz) black beans` **$0.64**, to the
+  cent the same as `15 oz black beans`; `2 cans (14.5 oz) diced tomatoes` $1.07; `1 jar (16 oz) salsa`
+  $1.77; `1 (15 ounce can) chickpeas` $0.85. `1 can black beans` with no size still declines, which is the
+  honest answer and not something this fix should paper over.
+
+  Two loose ends filed rather than fixed:
+  - `1 package (10 oz) frozen spinach` still shows no price, but for an unrelated reason — **the proxy has
+    no entry for "spinach" at all**, under either `frozen spinach` or `spinach`. That's a provider data gap,
+    not a parser one, and it's the first evidence that the proxy's coverage of plain vegetables is worth a
+    survey before the next round of pricing work.
+  - `1 bottle gourd` (lauki, a real vegetable) now parses as unit `bottle` + name `gourd`. Same class of
+    collision as `stick` for celery, rare enough to accept, and noted here so it isn't re-diagnosed from
+    scratch later.
+
+  **Fallback the owner suggested** — a hint on the ingredient input along the lines of *"prices resolve
+  better with an exact measure: `15 oz black beans (1 can)`"* — is **moot now** and shouldn't be built.
+  Both orders price identically, so the hint would be teaching authors a rule that no longer exists. The
+  reasoning stands on its own though: writing around a parser limitation was always the worse trade, and
+  the owner ranked it second too.
+- `[x]` **`salt and pepper to taste` shows "needs price"; it should be $0.00** *(owner's call, 2026-08-26,
+  from the same smoke test; **fixed in source** 2026-08-26, `ingredient-parser-v2@d097497` on branch `2.x`,
+  33 new tests — **published in 2.2.0**, 2026-08-27)* — `parse('salt and pepper to taste')` returns `quantity.value: null` and
+  `unit: null`. There is genuinely no amount, so nothing can be priced, and the row now nags for a price
+  that shouldn't exist.
+
+  **This is the same mechanism as the water item above and should ship with it:** the package deliberately
+  treats `0` as "no data" (`usablePrice`), so "genuinely free / negligible" needs its own signal —
+  `basis: 'free'` with `confidence: 'high'`, which the UI renders as a plain `$0.00`.
+
+  **Design caution:** the trigger must be the phrase, not the missing quantity. An author who writes just
+  `flour` with no amount has an *unknown* cost, not a free one, and silently zeroing that would understate
+  the recipe — precisely the failure mode this whole thread exists to kill. Trigger on `to taste` (and
+  probably `as needed`, `for garnish`, `for serving`), optionally narrowed to a pantry-staple allowlist.
+
+  **As shipped:** the trigger is the phrase **and** the absence of any measure, which is stricter than the
+  caution asked for and safe in both directions. `1 tsp salt to taste` still prices normally; bare `flour`
+  stays unknown. `to taste` and `as needed` are free; **`for garnish` / `for serving` / `for topping` are
+  deliberately NOT** (owner's call, 2026-08-26) — a garnish is a small amount of a real ingredient, so
+  zeroing `cilantro, for garnish` would understate a genuine cost, while `to taste` states outright that no
+  amount exists. Those rows keep reading "needs price"; revisit if the nag proves more annoying than the
+  understatement is wrong. No pantry-staple allowlist was needed, since `to taste` on *anything* is
+  unmeasured.
+
+  `parse()` now records the phrase as a normalized `purpose` field instead of deleting it, with the
+  spellings folded onto one form each (`to serve` → `for serving`, `as required`/`as desired` →
+  `as needed`).
+
+  **Second bug found and fixed here:** `as needed` was never in `stripTrailingPurpose`'s list, so
+  `salt as needed` parsed its name as **"salt as needed"**, missed the proxy lookup outright, and lost both
+  its price and its thumbnail. Nobody had noticed because the row looked the same as any other unpriced one.
 - `[x]` **`Received NaN for the \`value\` attribute` warning on Edit Recipe — root-caused; it's a real
   hydration bug, not cosmetic (verified 2026-06-26)** — *(fixed in [#235](https://github.com/jclind/prepify/pull/235), F1:
   hydrate `TimeInput` from `val.hours`/`val.minutes` — the `Number(val)` arithmetic that produced `NaN` on an object `val` is
@@ -1296,6 +1452,58 @@ findings table.)*
 
 ## Tech debt / process / infra
 
+- `[x]` **The 2.2.0 pin bump needs three small client changes to land with it** *(filed 2026-08-26, off the
+  container-size + free-basis work; unblocked 2026-08-27; **done 2026-09-02** — both trees pinned and
+  installed at 2.2.0, all three changes landed, 768 frontend + 957 server tests green)* — the parser side of
+  all four pricing gaps is done. Pinned both `package.json`s to
+  2.2.0 (which also closes the pin-drift item below) and carried:
+  1. `src/types.ts:24` — `PriceBasis` is `'gram' | 'unit-estimate'`; add `'free'`. Type-only, nothing
+     breaks without it (the server passes the string through and the UI branches on `priceConfidence`
+     first), but the type would be lying.
+  2. `IngredientItem.tsx` `priceDisplay` — a `basis === 'free'` branch. A free row already renders
+     correctly as a plain `$0.00` with no badge, since `confidence: 'high'` lands it in the `exact` lane.
+     It just has an empty `title`, so a cook seeing `$0.00` next to "salt and pepper" has no way to learn
+     it's deliberate. One sentence of copy, no logic change.
+  3. Re-check the `PARTIAL` subtotal chip. A free row is priced, not unpriced, so it must **not** trip
+     the partial marker. Worth an explicit test either way, since "cents is 0" and "no price" have been
+     confused at this boundary before ([#327](https://github.com/jclind/prepify/pull/327) fixed exactly
+     that one level up).
+
+  Both `calculateServingPrice` copies already sum a `0` correctly (`Number(0)` is not `NaN`), and
+  `mapIngredientData` already guards on `typeof cents === 'number'` rather than truthiness, so a `0`
+  survives the server hop. Verified by reading, not assumed.
+
+  **What actually landed**, where it differs from the plan above. Item 2 grew a fourth `PriceKind`
+  (`'free'`) rather than only setting a `title`. `.ingr-price.free` has no SCSS rules, so it renders
+  byte-identically to `exact`, but the row needs *some* hook to hang the screen-reader sentence on, and
+  reusing `exact` would have meant testing `title` for emptiness to decide. The sentence goes in
+  `.sr-only` as well as `title` for the reason the EST badge already does: `title` is announced
+  inconsistently, so a screen-reader user would otherwise hear "$0.00" and nothing else. Item 3 needed no
+  code change (`hasUnpricedRow` already tested `typeof !== 'number'`), so it landed as three tests plus a
+  comment saying why the check must never become a truthiness test.
+
+  Confirmed against the installed 2.2.0 through `mapIngredientData`'s exact logic, hitting the live proxy:
+  `1 can (15 oz) black beans` → 64¢ `gram`/`high`, `1 jar (16 oz) salsa` → 177¢, `salt and pepper to taste`
+  → 0¢ `free`/`high`, `salt as needed` → 0¢ `free`, `2 cups water` → 0¢ `free`. All four gaps closed
+  end to end.
+- `[x]` **The two trees pin different `@jclind/ingredient-parser` versions** *(filed 2026-08-26, off the
+  1.0.1 smoke-test session; **fixed 2026-09-02** in the 2.2.0 pin bump above, exactly as prescribed: both
+  trees now pin and resolve 2.2.0)* — root `package.json` pinned **2.0.0**, `server/package.json` **2.1.0**, so
+  the client and server resolve different copies of the package. Harmless for pricing today: the client only
+  imports `parseIngredientString` (the legacy flat parse) and every priced path runs server-side through the
+  proxy. But it means the root tree is one version behind the density fix and nobody would notice. **Fix:**
+  pin both to the same version in the same PR as the next parser bump.
+- `[ ]` **Three copies of "does this row have a price", already disagreeing** *(filed 2026-08-26, same
+  session)* — `priceDisplay` tests `typeof x === 'number'`; both `calculateServingPrice`s (client
+  `src/util/calculateServingPrice.ts` and server `server/util/calculateServingPrice.js`) use `Number()` +
+  `isNaN`. A numeric *string* therefore counts as priced in two of the three. Only reachable through legacy
+  v1 documents, so it isn't biting anyone yet. **Fix:** one shared predicate, used by all three.
+- `[ ]` **Every price explanation lives in a `title` attribute, which never fires on touch** *(filed
+  2026-08-26, same session)* — the provenance wording shipped in
+  [#327](https://github.com/jclind/prepify/pull/327) explains *why* a price is an estimate, and on a phone
+  nobody can read it. The visible labels still make sense without it, so this is polish rather than a
+  regression. **Fix:** a tappable popover, or a line under the subtotal that doesn't need hover at all.
+  > **[Reconciled 2026-09-23]:** Premise partly stale: since #328 (commit `e045f28`, merged 2026-08-25) the EST sentence is duplicated in a `.sr-only` span, and the 2.2.0 work gave free rows the same treatment (`src/pages/AddRecipe/Ingredients/IngredientItem.tsx:378-392`), so screen readers are covered. What remains is the touch/visibility gap only. Checked: `e045f28`, `IngredientItem.tsx:378-392`.
 - `[x]` **Account `recipes`/`ratings` tab badges use raw counts that can drift from their tab lists** *(from `sweeps/BUG_HUNT_2026-07-09.md` — follow-up to the L8/L9 saved-badge fix in [#279](https://github.com/jclind/prepify/pull/279), filed 2026-07-10; boarded Wave 9 · B6; **fixed in [#285](https://github.com/jclind/prepify/pull/285), merged 2026-07-10**: `recipes` badge now filters `RECIPE_OWNER_VISIBLE` (matches `getCreatedRecipes`); `ratings` badge goes through a new `countVisibleRatings` excluding moderation-hidden ratings and ratings whose recipe isn't `RECIPE_VISIBLE` (matches `getSingleUserReviews`'s `returnRecipeData` join) — same cheap id-list + `countDocuments` shape as the existing `countVisibleSaved`, no correlated `$lookup`. Runtime-verified end-to-end against the live dev server + dev Mongo with a real Firebase ID token.)* — `getAccountCountsFor` returns raw `countDocuments` for `recipes` and `ratings`, but the Your-Recipes tab filters `RECIPE_OWNER_VISIBLE` and the Ratings tab filters `REVIEW_VISIBLE` + recipe-visible, so a user with hidden/unpublished recipes (or hidden-recipe ratings) sees a badge reading higher than the list under it. Same class as the saved-badge drift already fixed in #279 (the `saved` badge now filters). `server/util/accountCounts.js`. **Fix:** filter each badge count to match its tab's list. **Dep:** land after #279 (which rewrites this file). — *(not surfaced directly by the hunt; noted while fixing L8/L9.)*
 - `[x]` **`UserRatings` passes a sort the server doesn't understand** *(filed 2026-07-09, out of the §D
   overhaul; folded into Wave 10 · V7; **fixed in [#290](https://github.com/jclind/prepify/pull/290), merged
@@ -1437,6 +1645,7 @@ findings table.)*
   **with tests** before any prod run. Low urgency (shim covers it indefinitely; only 8 docs); do it if/when
   the string/ObjectId duality is retired. *(surfaced 2026-07-08 during the Track-1 owner-ops prod run — the S6
   `checkMigrationState` DB check flagged it; all other checks came back clean.)* **(not a 1.0 blocker)**
+  > **[Reconciled 2026-09-23]:** Premise void: both Atlas clusters were terminated and recreated empty on 2026-08-20, "§2's entire data-ops burden is void", and a fresh DB boots with `checkMigrationState` exit 0 (commit `b5dabc5`, runbook). The 8 legacy docs, and the question of running `--apply`, died with the old clusters. If any pre-outage data was later re-imported, that import's `_id` types need an owner check before this can be ticked. Checked: `b5dabc5`.
 - `[ ]` **Retire the `recipeIdQuery` string/ObjectId shim (follow-up to the 5-D migration above)** — once the
   prod `--apply` run has converted all legacy string `_id`s and `checkMigrationState.js` reads 0, the `$or`
   string-branch in `server/util/recipeIdQuery.js` is dead weight. Remove the shim (or collapse it to a plain
@@ -1445,6 +1654,7 @@ findings table.)*
   foreign ref that still needs the string-form lookup) remains would break those reads. All recipes created
   post-Phase-5 already use `ObjectId`, so once prod+dev are migrated no new string ids appear and removal is
   permanently safe. Low; blocked on the owner-gated migration run. *(filed 2026-07-09 when W1 #268 landed.)*
+  > **[Reconciled 2026-09-23]:** Same wiped-DB premise as the migration item above: the shim (`server/util/recipeIdQuery.js`) is still in the tree and still harmless, but its strict ordering gate now reduces to an owner confirmation that no restored pre-outage data carries string `_id`s. Checked: `server/util/recipeIdQuery.js` exists, `b5dabc5`.
 - `[ ]` **Colour tokens → CSS custom properties when theming lands** — Jesse wants user-selectable
   themes (dark mode + other palettes) **post-1.0**. That's a *colour* concern: themes swap colours, not
   sizes — so the design tokens that need to become runtime-swappable are the colour groups (`$primary*`,
@@ -1596,6 +1806,7 @@ findings table.)*
   SEO/privacy wart (crawlers just bounce off the login wall). Add `noindex` to the **create** mode (edit mode
   already canonicalizes to the public recipe URL, which is correct). Low severity. *(surfaced 2026-06-23 in the
   Wave 4 Part 1 verification.)*
+  > **[Reconciled 2026-09-23]:** Done: `AddRecipe` now emits `<meta name='robots' content='noindex' />` at `src/pages/AddRecipe/AddRecipe.tsx:92-93` (commit `9498752`, R1/C1). Checked: `src/pages/AddRecipe/AddRecipe.tsx:93`.
 - `[x]` **JSON-LD recipe title/description isn't `</script>`-escaped** *(fixed in [#243](https://github.com/jclind/prepify/pull/243), C3: added `serializeRecipeJsonLd()` in `buildRecipeJsonLd.ts` — stringify then replace every `<` with its backslash-u003c escape, still valid JSON that JSON-LD parsers decode back to `<`; `SingleRecipe.tsx` renders the pre-escaped string. Shipped ahead of the prerender PR so the hole is closed before prerendering can make it live. +6 tests.)* — `SingleRecipe.tsx` interpolates
   user-supplied recipe `title`/`description` into a `<script type="application/ld+json">{JSON.stringify(...)}</script>`
   block, and `JSON.stringify` does not escape `<` / `</`. **Not exploitable today** — this is a CSR app, so
@@ -1629,6 +1840,7 @@ findings table.)*
   and pointing at `scss-conventions.md` + `design/*`. Unblocks R1/R2.)*
 - `[ ]` **Refactor the create-recipe page**.
 - `[ ]` **Refactor the account page**.
+  > **[Reconciled 2026-09-23]:** Both refactors above shipped 2026-07-07: #248 "R1: refactor the create-recipe page (useRecipeForm + FormField) + C1 cluster" and #250 "R2: refactor the account page (usePaginatedLoadMore + shell hooks)", the R1/R2 these sections keep cross-referencing. Checked: `gh pr view 248`, `gh pr view 250`.
 - `[x]` **Ingredient parser: handle "not found"** — *done in PR #164 (track 3d; PR open).* A client-side
   `withTimeout` (12s) races the enrichment request so a hung/"not found" lookup no longer sticks the UI; on
   timeout the row is kept, flagged errored with a retry, and a toast surfaces. Applied to both add and
@@ -1882,6 +2094,7 @@ findings table.)*
   test (`DietSelector.test.tsx`) but the structurally-similar `CuisineSelector`/`MealTypeSelector` are mocked
   in `AddRecipe.test.tsx:67-75` with no standalone unit test — a focused, low-effort fill-in. Also note: any
   new `TimeInput` test should cover the edit-mode hydration bug logged under Bugs.)**
+  > **[Reconciled 2026-09-23]:** The selector-unit gap is closed: `src/test/CuisineSelector.test.tsx` and `src/test/MealTypeSelector.test.tsx` exist (commit `6c96c27`, R1/C1), so only the "broader E2E happy-path variants" half remains. Checked: `ls src/test/`, `git log -- src/test/CuisineSelector.test.tsx`.
 - `[x]` **Cypress: test autocomplete on the Recipes page** — *covered in PR #168 (track 4-tests):* `browse.cy.ts`
   now types a partial query and asserts the dropdown options, types a typo and asserts results surface **with** the
   "showing similar recipes" banner, asserts the banner is **absent** on a literal match, and clicks a result to
@@ -1949,6 +2162,7 @@ findings table.)*
   already covered indirectly by `addRecipe.cy.ts`), `recipeLimits`, `invalidateSavedCaches`, `defaultAvatar`.
   Most are trivial; `updateIngredients` is the one worth a real test pass. *(surfaced 2026-06-27 in the
   code-quality & tests sweep coverage audit.)*
+  > **[Reconciled 2026-09-23]:** The list has shrunk further: `formatDate` now has `src/test/formatDate.test.ts` (#309, commit `6f81bbb`) and `reorder` is exercised directly by `src/test/IngredientListReorder.test.tsx` (commit `8e59ce7`). Still no dedicated tests under `src/test/` for `capitalize`, `formatPrice`, `formatCompactCount`, `timeElapsedSince`, `recipeLimits`, `invalidateSavedCaches`, or `defaultAvatar`. Checked: `ls src/test/`, `ls src/util/`.
 - `[ ]` **Test-quality audit follow-ups (2026-07-10)** — the six-slice suite-quality audit (see the
   test-quality PR of the same date for what already shipped) left these filed rather than fixed:
   - **Real ingredient-parser contract test (the headline gap).** `server/__tests__/ingredients.test.js:26`
