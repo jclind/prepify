@@ -67,6 +67,21 @@ describe('useScrolled', () => {
     expect(screen.getByTestId('out').textContent).toBe('true')
   })
 
+  // The real layout: only <body> holds the offset, and its scroll event does
+  // not bubble, so the hook needs the capture-phase listener on window.
+  it('tracks scrolling of the <body> container alone', () => {
+    setScrollTop(0)
+    render(<Harness />)
+
+    document.body.scrollTop = 40
+    fireEvent.scroll(document.body)
+    expect(screen.getByTestId('out').textContent).toBe('true')
+
+    document.body.scrollTop = 0
+    fireEvent.scroll(document.body)
+    expect(screen.getByTestId('out').textContent).toBe('false')
+  })
+
   it('reads true at mount when the page was already scrolled (e.g. reload mid-page)', () => {
     setScrollTop(50)
     render(<Harness />)

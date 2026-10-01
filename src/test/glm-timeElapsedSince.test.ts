@@ -18,32 +18,44 @@ describe('timeElapsedSince', () => {
   })
 
   it('renders minute ages until an hour', () => {
-    expect(timeElapsedSince(ago(90 * SEC))).toBe('1 minutes ago')
+    expect(timeElapsedSince(ago(90 * SEC))).toBe('1 minute ago')
     expect(timeElapsedSince(ago(23 * MIN))).toBe('23 minutes ago')
   })
 
   it('renders hour ages until a day', () => {
-    expect(timeElapsedSince(ago(70 * MIN))).toBe('1 hours ago')
+    expect(timeElapsedSince(ago(70 * MIN))).toBe('1 hour ago')
     expect(timeElapsedSince(ago(5 * HOUR))).toBe('5 hours ago')
   })
 
   it('renders day ages until a week', () => {
-    expect(timeElapsedSince(ago(26 * HOUR))).toBe('1 days ago')
+    expect(timeElapsedSince(ago(26 * HOUR))).toBe('1 day ago')
     expect(timeElapsedSince(ago(3 * DAY))).toBe('3 days ago')
   })
 
   it('renders week ages until a month', () => {
-    expect(timeElapsedSince(ago(8 * DAY))).toBe('1 weeks ago')
+    expect(timeElapsedSince(ago(8 * DAY))).toBe('1 week ago')
     expect(timeElapsedSince(ago(20 * DAY))).toBe('2 weeks ago')
   })
 
   it('renders month ages until a year', () => {
-    expect(timeElapsedSince(ago(40 * DAY))).toBe('1 months ago')
+    expect(timeElapsedSince(ago(40 * DAY))).toBe('1 month ago')
     expect(timeElapsedSince(ago(100 * DAY))).toBe('3 months ago')
   })
 
   it('renders year ages beyond 365 days', () => {
-    expect(timeElapsedSince(ago(400 * DAY))).toBe('1 years ago')
+    expect(timeElapsedSince(ago(400 * DAY))).toBe('1 year ago')
+  })
+
+  it('uses the singular for exactly one unit', () => {
+    expect(timeElapsedSince(ago(1 * SEC + 500))).toBe('1 second ago')
+    expect(timeElapsedSince(ago(2 * DAY + HOUR))).toBe('2 days ago')
+  })
+
+  // Review-only docs store ratingLastUpdated as '' (server/routes/reviews.js),
+  // and UserRatings passes that straight in.
+  it('returns "invalid date" for an empty or unparseable input', () => {
+    expect(timeElapsedSince('')).toBe('invalid date')
+    expect(timeElapsedSince('not a date')).toBe('invalid date')
   })
 
   it('accepts a stored ISO string as well as a Date', () => {

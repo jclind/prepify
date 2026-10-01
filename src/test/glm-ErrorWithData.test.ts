@@ -2,9 +2,8 @@ import { describe, it, expect } from 'vitest'
 import { ErrorWithData } from 'src/util/ErrorWithData'
 
 // ErrorWithData carries a machine-readable code alongside a human message.
-// Callers (http-common, api modules) branch on `instanceof ErrorWithData` and
-// read `.code`, so both the Error base behaviour and the code field are the
-// public contract.
+// AuthContext throws it, and callers read `.code` and `.message`, so both
+// the Error base behaviour and the code field are the public contract.
 describe('ErrorWithData', () => {
   it('is an Error carrying a machine-readable code and message', () => {
     const err = new ErrorWithData('AUTH/USER_NOT_FOUND', 'No such user')

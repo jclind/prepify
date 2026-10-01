@@ -47,11 +47,12 @@ function Harness({ gamification }: { gamification: Gamification | null }) {
   return null
 }
 
-const renderHarness = (gamification: Gamification | null) =>
+const renderHarness = (
+  gamification: Gamification | null,
+  client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+) =>
   render(
-    <QueryClientProvider
-      client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
-    >
+    <QueryClientProvider client={client}>
       <Harness gamification={gamification} />
     </QueryClientProvider>
   )
@@ -122,15 +123,32 @@ describe('useAchievementsToast', () => {
     expect(mockAck).toHaveBeenCalledWith(['first-recipe', 'ghost-id'])
   })
 
-  it('survives a failed acknowledge (toast already shown, no crash)', async () => {
-    mockAck.mockRejectedValueOnce(new Error('offline'))
+  // The refetch is what clears newlyUnlocked, so it is the thing that stops
+  // the toast firing again.
+  it('refetches gamification after a successful acknowledge', async () => {
+    const client = new QueryClient()
+    const invalidate = vi.spyOn(client, 'invalidateQueries')
     const achievements = [ach('first-recipe', 'First Recipe')]
-    renderHarness(gamificationOf(achievements, ['first-recipe']))
+    renderHarness(gamificationOf(achievements, ['first-recipe']), client)
+
+    await waitFor(() =>
+      expect(invalidate).toHaveBeenCalledWith({ queryKey: ['gamification', 'user-1'] })
+    )
+  })
+
+  it('survives a failed acknowledge without refetching', async () => {
+    mockAck.mockRejectedValueOnce(new Error('offline'))
+    const client = new QueryClient()
+    const invalidate = vi.spyOn(client, 'invalidateQueries')
+    const achievements = [ach('first-recipe', 'First Recipe')]
+    renderHarness(gamificationOf(achievements, ['first-recipe']), client)
 
     await waitFor(() =>
       expect(mockToast.success).toHaveBeenCalledTimes(1)
     )
-    // The .catch swallows the rejection; wait for it to actually land.
+    // Let the rejected ack settle. An unhandled rejection would fail the run.
     await new Promise(r => setTimeout(r, 10))
+    expect(mockToast.success).toHaveBeenCalledTimes(1)
+    expect(invalidate).not.toHaveBeenCalled()
   })
 })

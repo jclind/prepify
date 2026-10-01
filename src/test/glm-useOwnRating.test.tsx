@@ -35,11 +35,12 @@ function Harness() {
   )
 }
 
-const renderHarness = () =>
+const newClient = () =>
+  new QueryClient({ defaultOptions: { queries: { retry: false } } })
+
+const renderHarness = (client = newClient()) =>
   render(
-    <QueryClientProvider
-      client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
-    >
+    <QueryClientProvider client={client}>
       <Harness />
     </QueryClientProvider>
   )
@@ -61,10 +62,61 @@ describe('useOwnRating', () => {
     await waitFor(() => expect(screen.getByTestId('rating').textContent).toBe('3'))
   })
 
-  it('seeds to zero when there is no review doc or no numeric rating', async () => {
-    mockCheck.mockResolvedValue(null)
+  // The hook starts at 0 before the query lands, so each case seeds 3 first
+  // and then refetches a doc without a usable rating; otherwise a wait for '0'
+  // passes before the query has run.
+  it.each([
+    ['no review doc', null],
+    ['a doc without a rating', { reviewed: true }],
+    ['a null rating', { rating: null }],
+  ])('reseeds to zero from %s', async (_label, doc) => {
+    mockCheck.mockResolvedValueOnce({ rating: 3 }).mockResolvedValue(doc)
+    mockAdd.mockResolvedValue({})
     renderHarness()
+    await waitFor(() => expect(screen.getByTestId('rating').textContent).toBe('3'))
+
+    fireEvent.click(screen.getByText('rate4')) // success invalidates check-made
+    await waitFor(() => expect(mockCheck).toHaveBeenCalledTimes(2))
     await waitFor(() => expect(screen.getByTestId('rating').textContent).toBe('0'))
+  })
+
+  it('a successful save refreshes the recipe aggregate and the own-review doc', async () => {
+    mockCheck.mockResolvedValue({ rating: 3 })
+    mockAdd.mockResolvedValue({})
+    const client = newClient()
+    const invalidate = vi.spyOn(client, 'invalidateQueries')
+    renderHarness(client)
+    await waitFor(() => expect(screen.getByTestId('rating').textContent).toBe('3'))
+
+    fireEvent.click(screen.getByText('rate4'))
+    await waitFor(() =>
+      expect(invalidate).toHaveBeenCalledWith({ queryKey: ['recipe', 'recipe-1'] })
+    )
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['check-made', 'recipe-1'] })
+  })
+
+  it('only the latest of two successful saves refetches', async () => {
+    mockCheck.mockResolvedValue({ rating: 3 })
+    let resolveFirst!: (v: object) => void
+    mockAdd.mockImplementationOnce(
+      () => new Promise((res) => (resolveFirst = res))
+    )
+    mockAdd.mockResolvedValue({})
+    const client = newClient()
+    const invalidate = vi.spyOn(client, 'invalidateQueries')
+    renderHarness(client)
+    await waitFor(() => expect(screen.getByTestId('rating').textContent).toBe('3'))
+
+    fireEvent.click(screen.getByText('rate4')) // req 1: held open
+    fireEvent.click(screen.getByText('rate2')) // req 2: resolves at once
+    await waitFor(() => expect(invalidate).toHaveBeenCalledTimes(2))
+    invalidate.mockClear()
+
+    await act(async () => {
+      resolveFirst({})
+      await Promise.resolve()
+    })
+    expect(invalidate).not.toHaveBeenCalled()
   })
 
   it('reverts to the previous stars and toasts when the save fails', async () => {

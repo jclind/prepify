@@ -14,7 +14,8 @@ describe('formatPrice', () => {
   })
 
   it('rounds fractional cents to the nearest cent', () => {
-    // Serving-price math can produce fractional cents (sum / servings).
+    // Stored prices are whole cents today (calculateServingPrice rounds), so
+    // this guards a caller that forgets to.
     // 10/3 cents = $0.0333… → down; 5/3 cents = $0.0166… → up.
     expect(formatPrice(10 / 3)).toBe('$0.03')
     expect(formatPrice(5 / 3)).toBe('$0.02')

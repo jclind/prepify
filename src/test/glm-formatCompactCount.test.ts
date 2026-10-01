@@ -16,6 +16,12 @@ describe('formatCompactCount', () => {
     expect(formatCompactCount(1_000)).toBe('1.0k')
     expect(formatCompactCount(1_500)).toBe('1.5k')
     expect(formatCompactCount(9_400)).toBe('9.4k')
+    expect(formatCompactCount(9_949)).toBe('9.9k')
+  })
+
+  it('rolls 9,960 to 9,999 into "10k" instead of "10.0k"', () => {
+    expect(formatCompactCount(9_960)).toBe('10k')
+    expect(formatCompactCount(9_999)).toBe('10k')
   })
 
   it('switches to whole-k from 10k up', () => {
@@ -29,7 +35,7 @@ describe('formatCompactCount', () => {
     expect(formatCompactCount(104_999)).toBe('105k')
   })
 
-  it('rolls a k value that rounds to 1000 into megabytes instead of "1000k"', () => {
+  it('rolls a k value that rounds to 1000 into millions instead of "1000k"', () => {
     // The boundary the code guards explicitly: 999,500 rounds to 1000k.
     expect(formatCompactCount(999_500)).toBe('1.0M')
   })

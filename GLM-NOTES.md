@@ -34,3 +34,30 @@ No application source changed. Server suite untouched (957 passed).
 
 server/, pages and larger components, API modules. A later pass can pick up
 from here.
+
+## Second review by Claude, 2026-10-01
+
+A review agent checked every test against intent, not current output. Changes:
+
+- timeElapsedSince: the tests asserted "1 minutes ago" and friends, locking in
+  a grammar bug. Fixed the source to use the singular for 1, and fixed the
+  dead `if (!oldDate)` guard (a Date is always truthy) to `isNaN`, so `''`
+  returns 'invalid date' instead of "NaN years ago". `''` is reachable: the
+  server stores `ratingLastUpdated: ''` on review-only docs and UserRatings
+  renders it.
+- formatCompactCount: about 9,951 to 9,999 rendered "10.0k". Now "10k", tested.
+- useOwnRating: the zero-seed test passed before the query ran (initial state
+  is already 0). It now seeds 3, refetches a doc without a usable rating, and
+  waits for the second query. Added tests that a successful save invalidates
+  `['recipe', id]` and `['check-made', id]`, and that a stale success does not.
+- useAchievementsToast: the failed-ack test had no assertion. It now checks
+  one toast and no refetch; a new test checks the refetch after a good ack.
+- useScrolled: every test set both scrollTop values and fired on window, so
+  the body-only path and the capture listener were untested. Added one that
+  sets only body.scrollTop and fires on body.
+- Comment fixes in formatPrice and ErrorWithData tests that described callers
+  that don't exist.
+
+Frontend GLM files: 67 pass. In this worktree PublicProfile, Recipes and
+RecipesApi fail with auth/invalid-api-key because it has no `.env`; they pass
+in the main checkout.
