@@ -2676,3 +2676,15 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   green** (44 suites, +19 incl. new `paidQuota.test.js`), frontend **757 green**, `tsc` clean; CI green incl.
   the E2e/Cypress run. All `SECAUDIT-` dev fixtures (incl. residue from the audit's own run) purged.
   **Deferred to follow-up waves: M5/M6/M7 + remaining LOW/INFO (L2–L6, I1–I2).**
+- **2026-11-01** — **1.0.2 promoted to prod ([#334](https://github.com/jclind/prepify/pull/334), `15eb648`), then
+  visitor-facing fixes merged to `development` ([#337](https://github.com/jclind/prepify/pull/337) `bd4379e`).**
+  Found by the 2026-09-28 read-only review and a logged-out walkthrough of prod. Search no longer slugifies the
+  query, so "gluten-free", "mac & cheese" and "café" reach the title regex intact (`slugify` dependency dropped).
+  Canonicals and `og:url` moved from `www.prepifymeals.com`, which 301s, to the apex; the sitemap lists only
+  public pages and `robots.txt` names it. The `/recipes` filter drawer gets Escape, a focus trap and a scroll
+  lock through a new shared `src/hooks/useModalFocus.ts`, which the mobile nav menu now uses too. The public
+  contact address is `apps@jesselind.com`. Landed the GLM test pass (13 files; notes in
+  `docs/sweeps/GLM_TESTS_2026-09-28.md`) with its two display fixes ("1 minutes ago", "NaN years ago",
+  "10.0k"). Verified: Vitest 837 passed / 2 skipped, `tsc` 0 on both configs, build OK, all CI green incl.
+  Cypress. Not yet in prod. Still open from that review: the `useOwnRating` race where a star tapped before
+  the user's review loads can be reset (unconfirmed in a browser), and recipe pages are not in the sitemap.
