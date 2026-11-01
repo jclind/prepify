@@ -1,7 +1,7 @@
 import React from 'react'
 import { describe, it, expect, afterEach } from 'vitest'
 import { render } from '@testing-library/react'
-import { useBodyScrollLock } from 'src/Components/Navbar/menu/useBodyScrollLock'
+import { useBodyScrollLock } from 'src/hooks/useBodyScrollLock'
 
 // useBodyScrollLock freezes <body> overflow while a modal menu is open and —
 // the part worth pinning — restores whatever overflow was there before, so
