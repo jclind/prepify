@@ -560,6 +560,18 @@ describe('IngredientsContainer — author-entered price', () => {
     expect(screen.getByRole('textbox', { name: 'Price in dollars for 2 cups flour' })).toBeInTheDocument()
   })
 
+  it('closes without saving when the field loses focus holding text that is not a price', async () => {
+    const { user, button } = await addUnpriced()
+    await user.click(button)
+    await user.type(screen.getByRole('textbox', { name: 'Price in dollars for 2 cups flour' }), 'abc')
+    await user.tab()
+    await waitFor(() => expect(rowPriceText()).toBe('add price'))
+    expect(mockToastError).toHaveBeenCalledWith(
+      "That price wasn't saved. Enter a price from $0 to $500, like 1.25."
+    )
+    expect(screen.queryByRole('textbox', { name: 'Price in dollars for 2 cups flour' })).toBeNull()
+  })
+
   it('offers no price button on a row the parser priced', async () => {
     const user = userEvent.setup()
     mockGetIngredientData.mockResolvedValue(priced({ totalPriceUSACents: 300 }))

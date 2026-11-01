@@ -324,14 +324,22 @@ const IngredientItem: FC<IngredientItemProps> = ({
   // Writes the author's price onto the row, or clears it when the field is
   // left empty. A parser price is never overwritten here: the button only
   // exists on 'none' and 'author' rows.
-  const savePrice = () => {
+  //
+  // Text that isn't a price keeps the field open on Enter, so the author can
+  // fix it. On blur it closes without saving instead: pulling focus back would
+  // trap a keyboard user, since Tab would land right back in the field.
+  const savePrice = (fromBlur: boolean) => {
     if (priceClosedRef.current || !ingredient) return
     const id = ingredient.id
     const raw = priceVal.trim()
     const cents = raw === '' ? null : parseAuthorPrice(raw)
     if (raw !== '' && cents === null) {
-      toast.error('Enter a price from $0 to $500, like 1.25.')
-      priceInputRef.current?.focus()
+      toast.error(
+        fromBlur
+          ? 'That price wasn\'t saved. Enter a price from $0 to $500, like 1.25.'
+          : 'Enter a price from $0 to $500, like 1.25.'
+      )
+      if (fromBlur) closePriceEditor()
       return
     }
     setIngredients(prev =>
@@ -467,13 +475,13 @@ const IngredientItem: FC<IngredientItemProps> = ({
             onKeyDown={e => {
               if (e.key === 'Enter') {
                 e.preventDefault()
-                savePrice()
+                savePrice(false)
               } else if (e.key === 'Escape') {
                 e.preventDefault()
                 closePriceEditor()
               }
             }}
-            onBlur={savePrice}
+            onBlur={() => savePrice(true)}
           />
         </span>
       )}

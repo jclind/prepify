@@ -37,7 +37,8 @@ const UnpricedIngredientsModal: FC<UnpricedIngredientsModalProps> = ({
     </h2>
     <p className='text'>
       The cost per serving leaves these out, so it will look lower than it is.
-      Select "add price" on a row to fill one in.
+      Select "add price" on a row to fill one in. A row whose lookup failed
+      needs a retry first.
     </p>
     <ul className='lines'>
       {lines?.map((line, i) => (
