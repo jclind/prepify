@@ -37,8 +37,7 @@ const Recipes: FC = () => {
   const location = useLocation()
   const navigate = useNavigate()
   const urlParams = new URLSearchParams(location.search)
-  const param = urlParams.get('q')
-  const query = param ? param.split('-').join(' ') : ''
+  const query = urlParams.get('q')?.trim() ?? ''
 
   const [sort, setSort] = useState('popular')
   const [diets, setDiets] = useState<string[]>([])

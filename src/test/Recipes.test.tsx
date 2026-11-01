@@ -112,7 +112,7 @@ describe('Recipes (Browse) page', () => {
     mockGetAllRecipes.mockResolvedValue({ recipeList: [], total_results: 0 })
     renderRecipes('/recipes?q=zzz-nope')
     await screen.findByText('No recipes found')
-    expect(screen.getByText(/zzz nope/i)).toBeInTheDocument()
+    expect(screen.getByText(/zzz-nope/i)).toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: /browse all recipes/i })
     ).toBeInTheDocument()
@@ -268,15 +268,15 @@ describe('Recipes (Browse) page', () => {
     expect(screen.queryByText('Recipe 1')).toBeNull()
   })
 
-  it('normalizes URL query ?q=taco-tuesday to "taco tuesday" before the API call', async () => {
+  it('passes the URL query to the API as typed, hyphens and & included', async () => {
     mockGetAllRecipes.mockResolvedValue({
       recipeList: [],
       total_results: 0,
     })
-    renderRecipes('/?q=taco-tuesday')
+    renderRecipes('/?q=gluten-free%20mac%20%26%20cheese')
     await waitFor(() =>
       expect(mockGetAllRecipes).toHaveBeenCalledWith(
-        expect.objectContaining({ query: 'taco tuesday' })
+        expect.objectContaining({ query: 'gluten-free mac & cheese' })
       )
     )
   })
