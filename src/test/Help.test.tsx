@@ -63,7 +63,7 @@ describe('Help', () => {
     renderHelp()
     expect(
       screen.getByRole('link', { name: /jesselindcs@gmail\.com/i })
-    ).toHaveAttribute('href', 'mailto:JesseLindCS@gmail.com')
+    ).toHaveAttribute('href', 'mailto:apps@jesselind.com')
   })
 
   it('reveals the compact form once a topic is selected', () => {

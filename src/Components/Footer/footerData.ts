@@ -10,7 +10,7 @@ import {
 // ---------------------------------------------------------------------------
 
 export const version = import.meta.env.VITE_APP_VERSION
-export const contactEmail = 'JesseLindCS@gmail.com'
+export const contactEmail = 'apps@jesselind.com'
 export const longTagline =
   'Real recipes with the prices and nutrition baked in. Plan, shop and cook with zero guesswork.'
 
