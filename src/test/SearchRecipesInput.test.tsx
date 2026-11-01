@@ -240,6 +240,18 @@ describe('SearchRecipesInput — combobox / listbox semantics + keyboard nav', (
     )
   })
 
+  it('submits the query as typed, keeping hyphens, & and accents', async () => {
+    const user = userEvent.setup()
+    renderInput()
+    await user.type(
+      screen.getByLabelText('Search all recipes'),
+      '  gluten-free mac & cheese café {Enter}'
+    )
+    expect(navigateSpy).toHaveBeenCalledWith(
+      '/recipes?q=gluten-free%20mac%20%26%20cheese%20caf%C3%A9'
+    )
+  })
+
   it('Escape closes the dropdown and collapses the combobox', async () => {
     const user = userEvent.setup()
     renderInput()

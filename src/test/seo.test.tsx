@@ -21,7 +21,7 @@ const seedStaticHead = () => {
   const tags: Array<[string, string, string]> = [
     ['property', 'og:title', 'Prepify · Budget-friendly, healthy recipes'],
     ['property', 'og:image', DEFAULT_OG_IMAGE],
-    ['property', 'og:url', 'https://www.prepifymeals.com'],
+    ['property', 'og:url', 'https://prepifymeals.com'],
     ['name', 'twitter:image', DEFAULT_OG_IMAGE],
   ]
   tags.forEach(([attr, key, content]) => {
@@ -94,7 +94,7 @@ describe('per-route meta is the single source after strip', () => {
           <meta property='og:image' content='https://cdn.example/tacos.jpg' />
           <meta
             property='og:url'
-            content='https://www.prepifymeals.com/recipes/abc'
+            content='https://prepifymeals.com/recipes/abc'
           />
           <meta name='twitter:image' content='https://cdn.example/tacos.jpg' />
         </Helmet>
@@ -113,7 +113,7 @@ describe('per-route meta is the single source after strip', () => {
     expect(metas('og:image')).toHaveLength(1)
     expect(content('og:image')).toBe('https://cdn.example/tacos.jpg')
     expect(metas('og:url')).toHaveLength(1)
-    expect(content('og:url')).toBe('https://www.prepifymeals.com/recipes/abc')
+    expect(content('og:url')).toBe('https://prepifymeals.com/recipes/abc')
     expect(metas('twitter:image')).toHaveLength(1)
     expect(content('twitter:image')).toBe('https://cdn.example/tacos.jpg')
 

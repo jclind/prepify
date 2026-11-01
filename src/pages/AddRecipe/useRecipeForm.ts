@@ -22,6 +22,7 @@ import {
 } from 'types'
 import { hrMinToMin } from 'src/util/hrMinToMin'
 import { minToHrMin } from 'src/util/minToHrMin'
+import { unpricedIngredientLines } from 'src/util/unpricedIngredients'
 import RecipeAPI from 'src/api/recipes'
 import DraftAPI from 'src/api/drafts'
 import { useAuth } from 'src/context/AuthContext'
@@ -224,6 +225,9 @@ export function useRecipeForm(initialRecipe?: RecipeType) {
   const [errors, setErrors] = useState<Partial<AddRecipeErrorType>>({})
   const [isFormValid, setIsFormValid] = useState(false)
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false)
+  // The lines of ingredients with no price, while the "publish without these
+  // prices?" warning is open. Null when it's closed.
+  const [unpricedWarning, setUnpricedWarning] = useState<string[] | null>(null)
 
   // Per-row ingredient enrichment status, lifted here (rather than living in
   // IngredientsContainer) so submission can be gated while any row's
@@ -529,7 +533,9 @@ export function useRecipeForm(initialRecipe?: RecipeType) {
     enrichmentPending,
   ])
 
-  const handleSubmit = async () => {
+  // `skipPriceCheck` is the author answering the unpriced warning with
+  // "publish anyway". Every other caller goes through handleSubmit.
+  const submit = async (skipPriceCheck: boolean) => {
     if (addRecipeLoading) return
     setHasAttemptedSubmit(true)
     const submitErrors = validate(true)
@@ -547,6 +553,17 @@ export function useRecipeForm(initialRecipe?: RecipeType) {
       }
       addRecipeFormRef?.current && addRecipeFormRef.current.scrollTo(0, 0)
       return
+    }
+
+    // A row with no price adds $0, so the published per-serving price would be
+    // low and nothing on the recipe page says so. Ask before publishing rather
+    // than blocking: some authors won't know a price either.
+    if (!skipPriceCheck) {
+      const unpriced = unpricedIngredientLines(ingredients)
+      if (unpriced.length > 0) {
+        setUnpricedWarning(unpriced)
+        return
+      }
     }
 
     setAddRecipeLoading(true)
@@ -625,6 +642,13 @@ export function useRecipeForm(initialRecipe?: RecipeType) {
     setLoadingProgress(100)
   }
 
+  const handleSubmit = () => submit(false)
+  const publishWithoutPrices = () => {
+    setUnpricedWarning(null)
+    return submit(true)
+  }
+  const closeUnpricedWarning = () => setUnpricedWarning(null)
+
   return {
     isEditMode,
     // field values
@@ -658,6 +682,9 @@ export function useRecipeForm(initialRecipe?: RecipeType) {
     addRecipeFormRef,
     // handlers
     handleSubmit,
+    unpricedWarning,
+    publishWithoutPrices,
+    closeUnpricedWarning,
   }
 }
 

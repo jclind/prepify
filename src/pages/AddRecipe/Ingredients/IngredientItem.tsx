@@ -32,7 +32,7 @@ type IngredientItemProps = {
 }
 
 // Per-ingredient price for the row, carrying the parser's own provenance so a
-// guess doesn't render with the authority of a measured number. Four states:
+// guess doesn't render with the authority of a measured number. Five states:
 //
 //   'exact'    — a mass measure. unit → grams is exact and density-independent.
 //   'estimate' — a volume measure converted through an average density (a cup
@@ -43,12 +43,16 @@ type IngredientItemProps = {
 //                to 'exact', no badge and no styling of its own. It exists only
 //                so the row can say why the number is 0, since $0.00 next to
 //                "salt and pepper" otherwise reads as broken.
+//   'author'   — a price the recipe author typed for a row the parser
+//                couldn't price. Renders like 'exact', and stays a button so
+//                the author can change it.
 //   'none'     — no price at all. Since @jclind/ingredient-parser 2.1.0 the
 //                parser declines rather than guessing when a measure can't be
 //                priced, which is why this is now common enough to deserve real
 //                copy. It matters because calculateServingPrice skips these
 //                rows silently, so the per-serving total understates until the
-//                author supplies a price.
+//                author supplies a price, which the row's "add price" button
+//                lets them do.
 //
 // 'free' and 'none' are the pair most easily confused, and the subtotal chip
 // depends on keeping them apart: a free row is priced and must not mark the
@@ -57,7 +61,7 @@ type IngredientItemProps = {
 // Rows enriched before priceBasis existed carry a price but no provenance, and
 // land in 'exact' on purpose — historical recipes shouldn't all sprout estimate
 // markers on the strength of a missing field.
-type PriceKind = 'exact' | 'estimate' | 'free' | 'none'
+type PriceKind = 'exact' | 'estimate' | 'free' | 'author' | 'none'
 type PriceDisplay = { text: string; kind: PriceKind; title: string }
 
 const priceDisplay = (ingredient?: IngredientsType): PriceDisplay => {
@@ -72,14 +76,10 @@ const priceDisplay = (ingredient?: IngredientsType): PriceDisplay => {
 
   if (cents === null || !Number.isFinite(cents)) {
     return {
-      // "needs price", not "add price": there's no way to set one yet, and a
-      // label that reads like a button you can't press is worse than a label
-      // that just states the problem. Becomes the hook for the author-editable
-      // price feature when that lands.
-      text: 'needs price',
+      text: 'add price',
       kind: 'none',
       title:
-        "We couldn't estimate a price for this ingredient, so it isn't counted in the per-serving cost.",
+        "We couldn't estimate a price for this ingredient, so it isn't counted in the per-serving cost. Add one yourself.",
     }
   }
 
@@ -94,6 +94,9 @@ const priceDisplay = (ingredient?: IngredientsType): PriceDisplay => {
       title: 'This ingredient is free, so it adds nothing to the cost.',
     }
   }
+  if (data?.priceBasis === 'author') {
+    return { text, kind: 'author', title: 'You entered this price. Select it to change it.' }
+  }
   if (data?.priceConfidence === 'low') {
     return {
       text,
@@ -105,6 +108,18 @@ const priceDisplay = (ingredient?: IngredientsType): PriceDisplay => {
     }
   }
   return { text, kind: 'exact', title: '' }
+}
+
+// server/util/recipeLimits.js rejects a row priced above this.
+const MAX_AUTHOR_PRICE_CENTS = 50_000
+
+// "1.25", "$1.25", ".4" and "3" are all fine. Returns whole cents, or null when
+// the text isn't a price in range.
+export const parseAuthorPrice = (raw: string): number | null => {
+  const text = raw.trim().replace(/^\$\s*/, '')
+  if (!/^(\d+\.?\d*|\.\d+)$/.test(text)) return null
+  const cents = Math.round(Number(text) * 100)
+  return cents <= MAX_AUTHOR_PRICE_CENTS ? cents : null
 }
 
 const IngredientItem: FC<IngredientItemProps> = ({
@@ -150,6 +165,17 @@ const IngredientItem: FC<IngredientItemProps> = ({
   // rate-limit consumption. A ref (not state) because it's read/written
   // synchronously inside event handlers and never needs to trigger a render.
   const isSubmittingRef = useRef(false)
+
+  // The author-price editor. Enter or blur saves, Escape cancels. Both Enter
+  // and Escape unmount the input, and a browser may still deliver its blur, so
+  // the ref drops that late blur instead of saving a second time.
+  const [isPricing, setIsPricing] = useState(false)
+  const [priceVal, setPriceVal] = useState('')
+  const priceInputRef = useRef<HTMLInputElement>(null)
+  const priceClosedRef = useRef(false)
+  useEffect(() => {
+    if (isPricing) priceInputRef.current?.focus()
+  }, [isPricing])
 
   // When enrichment last 429'd, hold retryAt (epoch ms) here so the retry
   // button can disable itself instead of immediately re-429ing. Sourced from
@@ -276,6 +302,71 @@ const IngredientItem: FC<IngredientItemProps> = ({
     }
   }
 
+  const openPriceEditor = () => {
+    const cents =
+      ingredient && 'ingredientData' in ingredient
+        ? ingredient.ingredientData?.totalPriceUSACents
+        : undefined
+    const isAuthor =
+      ingredient && 'ingredientData' in ingredient
+        ? ingredient.ingredientData?.priceBasis === 'author'
+        : false
+    setPriceVal(isAuthor && typeof cents === 'number' ? (cents / 100).toFixed(2) : '')
+    priceClosedRef.current = false
+    setIsPricing(true)
+  }
+
+  const closePriceEditor = () => {
+    priceClosedRef.current = true
+    setIsPricing(false)
+  }
+
+  // Writes the author's price onto the row, or clears it when the field is
+  // left empty. A parser price is never overwritten here: the button only
+  // exists on 'none' and 'author' rows.
+  //
+  // Text that isn't a price keeps the field open on Enter, so the author can
+  // fix it. On blur it closes without saving instead: pulling focus back would
+  // trap a keyboard user, since Tab would land right back in the field.
+  const savePrice = (fromBlur: boolean) => {
+    if (priceClosedRef.current || !ingredient) return
+    const id = ingredient.id
+    const raw = priceVal.trim()
+    const cents = raw === '' ? null : parseAuthorPrice(raw)
+    if (raw !== '' && cents === null) {
+      toast.error(
+        fromBlur
+          ? 'That price wasn\'t saved. Enter a price from $0 to $500, like 1.25.'
+          : 'Enter a price from $0 to $500, like 1.25.'
+      )
+      if (fromBlur) closePriceEditor()
+      return
+    }
+    setIngredients(prev =>
+      prev.map(item => {
+        if (item.id !== id || !('parsedIngredient' in item) || !item.ingredientData) {
+          return item
+        }
+        const { totalPriceUSACents, priceBasis, priceConfidence, ...rest } =
+          item.ingredientData
+        if (cents === null) {
+          // Clearing only undoes an author price. Leave anything else alone.
+          return priceBasis === 'author' ? { ...item, ingredientData: rest } : item
+        }
+        return {
+          ...item,
+          ingredientData: {
+            ...rest,
+            totalPriceUSACents: cents,
+            priceBasis: 'author',
+            priceConfidence: 'high',
+          },
+        }
+      })
+    )
+    closePriceEditor()
+  }
+
   // Wired to FormInput's onBlur. Genuine blur-away (clicking elsewhere while
   // editing) should still submit; the blur() handleEditSubmit triggers on
   // itself should not resubmit — see suppressNextBlurSubmitRef above. A blur
@@ -296,6 +387,7 @@ const IngredientItem: FC<IngredientItemProps> = ({
 
   const isParsed = 'parsedIngredient' in ingredient
   const price = priceDisplay(ingredient)
+  const ingredientLine = isParsed ? ingredient.parsedIngredient.originalIngredientString : ''
 
   return (
     <div
@@ -366,7 +458,65 @@ const IngredientItem: FC<IngredientItemProps> = ({
         </button>
       )}
 
-      {!isEditing && isParsed && !errored && (
+      {!isEditing && isParsed && !errored && isPricing && (
+        <span className='ingr-price-edit'>
+          <span className='currency' aria-hidden='true'>
+            $
+          </span>
+          <input
+            ref={priceInputRef}
+            type='text'
+            inputMode='decimal'
+            className='ingr-price-input'
+            aria-label={`Price in dollars for ${ingredientLine}`}
+            placeholder='0.00'
+            value={priceVal}
+            onChange={e => setPriceVal(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                savePrice(false)
+              } else if (e.key === 'Escape') {
+                e.preventDefault()
+                closePriceEditor()
+              }
+            }}
+            onBlur={() => savePrice(true)}
+          />
+        </span>
+      )}
+
+      {!isEditing &&
+        isParsed &&
+        !errored &&
+        !isPricing &&
+        !loading &&
+        (price.kind === 'none' || price.kind === 'author') && (
+          <button
+            type='button'
+            className={`ingr-price ${price.kind}`}
+            title={price.title}
+            // The visible "add price" doesn't say which ingredient, and a list
+            // of identical button names is useless to a screen-reader user.
+            aria-label={
+              price.kind === 'none'
+                ? `Add a price for ${ingredientLine}`
+                : `${price.text} for ${ingredientLine}, a price you entered. Change it`
+            }
+            onClick={e => {
+              e.stopPropagation()
+              openPriceEditor()
+            }}
+          >
+            {price.text}
+          </button>
+        )}
+
+      {!isEditing &&
+        isParsed &&
+        !errored &&
+        !isPricing &&
+        (loading || (price.kind !== 'none' && price.kind !== 'author')) && (
         <span
           className={`ingr-price ${loading ? 'na' : price.kind}`}
           title={loading ? undefined : price.title || undefined}

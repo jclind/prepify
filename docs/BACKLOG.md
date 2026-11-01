@@ -1375,7 +1375,7 @@ findings table.)*
 
 ## Features
 
-- `[ ]` **Let authors edit an ingredient's price on Add Recipe and Edit Recipe** *(filed 2026-08-20; owner
+- `[~]` *(partly done in [#338](https://github.com/jclind/prepify/pull/338), 2026-11-01: an author can price a row the parser couldn't, and publishing asks first when rows are unpriced. Overriding a parser price is still open.)* **Let authors edit an ingredient's price on Add Recipe and Edit Recipe** *(filed 2026-08-20; owner
   idea, prompted by the density-table pricing bug in Bugs)* — every per-ingredient price today comes from the
   Spoonacular proxy estimate, with no way for an author to correct it. That leaves three bad situations with
   no exit: enrichment misses entirely and the row shows "—" forever; the estimate is silently wrong (the

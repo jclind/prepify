@@ -17,7 +17,7 @@
 
 // Canonical production origin — used to build absolute URLs for social tags
 // (og:image / og:url must be absolute for crawlers to resolve them).
-export const SITE_URL = 'https://www.prepifymeals.com'
+export const SITE_URL = 'https://prepifymeals.com'
 
 // Branded 1200×630 link-preview card (public/images/og-card.png).
 export const DEFAULT_OG_IMAGE = `${SITE_URL}/images/og-card.png`

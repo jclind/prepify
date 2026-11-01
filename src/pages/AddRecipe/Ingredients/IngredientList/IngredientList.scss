@@ -164,6 +164,53 @@
       }
     }
 
+    // 'none' and 'author' render as buttons, since selecting either opens the
+    // price field. Strip the button chrome so they keep the span look above.
+    button.ingr-price {
+      font-family: inherit;
+      cursor: pointer;
+      &.none:hover {
+        border-color: s.$chip-warning-amber-text;
+      }
+      &.author {
+        background: none;
+        border: none;
+        padding: 0;
+        text-decoration: underline dotted s.$gray-400;
+        text-underline-offset: 3px;
+        &:hover {
+          color: s.$primary-text;
+          text-decoration-color: currentColor;
+        }
+      }
+      &:focus-visible {
+        @include s.outline();
+      }
+    }
+
+    .ingr-price-edit {
+      flex: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      width: 76px;
+      font-weight: 700;
+      color: s.$secondary-text;
+      .ingr-price-input {
+        width: 100%;
+        min-width: 0;
+        font: inherit;
+        font-size: s.$text-base;
+        text-align: right;
+        padding: 2px 6px;
+        border: 1px solid s.$gray-400;
+        border-radius: s.$radius-xs;
+        &:focus-visible {
+          @include s.outline();
+        }
+      }
+    }
+
     // Shown in place of the price when enrichment failed/timed out: the row is
     // kept (the parsed ingredient is still usable) but flagged, with a one-tap
     // retry. The warning icon swaps to the retry icon on hover/focus.

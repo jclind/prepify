@@ -1,7 +1,10 @@
+const ago = (n: number, unit: string): string =>
+  `${n} ${unit}${n === 1 ? '' : 's'} ago`
+
 export const timeElapsedSince = (date: Date | string): string => {
   const now = new Date()
   const oldDate = new Date(date)
-  if (!oldDate) return 'invalid date'
+  if (isNaN(oldDate.getTime())) return 'invalid date'
   const elapsedMs = now.getTime() - oldDate.getTime()
   const elapsedSec = elapsedMs / 1000
   const elapsedMin = elapsedSec / 60
@@ -12,18 +15,18 @@ export const timeElapsedSince = (date: Date | string): string => {
   const elapsedYear = elapsedDay / 365
 
   if (elapsedMin < 1) {
-    return `${Math.floor(elapsedSec)} seconds ago`
+    return ago(Math.floor(elapsedSec), 'second')
   } else if (elapsedHr < 1) {
-    return `${Math.floor(elapsedMin)} minutes ago`
+    return ago(Math.floor(elapsedMin), 'minute')
   } else if (elapsedDay < 1) {
-    return `${Math.floor(elapsedHr)} hours ago`
+    return ago(Math.floor(elapsedHr), 'hour')
   } else if (elapsedWeek < 1) {
-    return `${Math.floor(elapsedDay)} days ago`
+    return ago(Math.floor(elapsedDay), 'day')
   } else if (elapsedMonth < 1) {
-    return `${Math.floor(elapsedWeek)} weeks ago`
+    return ago(Math.floor(elapsedWeek), 'week')
   } else if (elapsedYear < 1) {
-    return `${Math.floor(elapsedMonth)} months ago`
+    return ago(Math.floor(elapsedMonth), 'month')
   } else {
-    return `${Math.floor(elapsedYear)} years ago`
+    return ago(Math.floor(elapsedYear), 'year')
   }
 }

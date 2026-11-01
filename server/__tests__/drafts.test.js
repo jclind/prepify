@@ -73,6 +73,25 @@ describe('POST /api/drafts', () => {
     expect(res.status).toBe(400)
   })
 
+  // Drafts run validateRecipeBounds too, so a ceiling on parser prices would
+  // fail every autosave of a recipe with one expensive row.
+  it('saves a draft whose parser-priced row is over $500', async () => {
+    const res = await request(app)
+      .post('/api/drafts')
+      .set(AUTH_HEADER)
+      .send({
+        title: 'Saffron rice',
+        ingredients: [
+          {
+            id: 'i1',
+            parsedIngredient: { originalIngredientString: '1 lb saffron' },
+            ingredientData: { name: 'saffron', totalPriceUSACents: 120_000, priceBasis: 'gram' },
+          },
+        ],
+      })
+    expect(res.status).toBe(201)
+  })
+
   it('allows an empty/partial draft (no required fields)', async () => {
     const res = await request(app).post('/api/drafts').set(AUTH_HEADER).send({})
     expect(res.status).toBe(201)

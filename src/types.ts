@@ -23,8 +23,9 @@ export type ParsedIngredient = {
 // 'unit-estimate' means it was multiplied by a per-item price instead. 'free'
 // (2.2.0) means the parser decided the ingredient genuinely costs nothing, so
 // the 0 is an answer rather than a missing lookup: water and ice, and amounts
-// left to the cook like "salt and pepper to taste".
-export type PriceBasis = 'gram' | 'unit-estimate' | 'free'
+// left to the cook like "salt and pepper to taste". 'author' is Prepify's own:
+// the recipe author typed the price because the parser couldn't produce one.
+export type PriceBasis = 'gram' | 'unit-estimate' | 'free' | 'author'
 
 // 'high' only for mass measures, where unit → grams is exact and
 // density-independent. Volume conversions lean on an average density (a cup of

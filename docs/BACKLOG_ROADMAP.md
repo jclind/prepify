@@ -2676,3 +2676,28 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   green** (44 suites, +19 incl. new `paidQuota.test.js`), frontend **757 green**, `tsc` clean; CI green incl.
   the E2e/Cypress run. All `SECAUDIT-` dev fixtures (incl. residue from the audit's own run) purged.
   **Deferred to follow-up waves: M5/M6/M7 + remaining LOW/INFO (L2–L6, I1–I2).**
+- **2026-11-01** — **1.0.2 promoted to prod ([#334](https://github.com/jclind/prepify/pull/334), `15eb648`), then
+  visitor-facing fixes merged to `development` ([#337](https://github.com/jclind/prepify/pull/337) `bd4379e`).**
+  Found by the 2026-09-28 read-only review and a logged-out walkthrough of prod. Search no longer slugifies the
+  query, so "gluten-free", "mac & cheese" and "café" reach the title regex intact (`slugify` dependency dropped).
+  Canonicals and `og:url` moved from `www.prepifymeals.com`, which 301s, to the apex; the sitemap lists only
+  public pages and `robots.txt` names it. The `/recipes` filter drawer gets Escape, a focus trap and a scroll
+  lock through a new shared `src/hooks/useModalFocus.ts`, which the mobile nav menu now uses too. The public
+  contact address is `apps@jesselind.com`. Landed the GLM test pass (13 files; notes in
+  `docs/sweeps/GLM_TESTS_2026-09-28.md`) with its two display fixes ("1 minutes ago", "NaN years ago",
+  "10.0k"). Verified: Vitest 837 passed / 2 skipped, `tsc` 0 on both configs, build OK, all CI green incl.
+  Cypress. Not yet in prod. Still open from that review: the `useOwnRating` race where a star tapped before
+  the user's review loads can be reset (unconfirmed in a browser), and recipe pages are not in the sitemap.
+- **2026-11-01** — **Author-entered ingredient prices merged ([#338](https://github.com/jclind/prepify/pull/338)
+  `add174c`), plus parser 2.3.0 ([#339](https://github.com/jclind/prepify/pull/339) `7cf23be`).** Entering the
+  first meal-prep recipes on prod left rows like chia seeds, feta and cilantro unpriced: the proxy had per-gram
+  prices, but the parser declines a volume measure with no density. Parser 2.3.0 (published to npm) adds cup
+  weights for chia, granola, crumbled feta, edamame, mixed/frozen berries and the jack/blend cheeses, sourced
+  from USDA FDC; leafy greens and fresh herbs stay unpriced on purpose. #338 turns a row's "needs price" chip
+  into an "add price" button that opens a dollar field (`priceBasis: 'author'`), and asks before publishing
+  with any row still unpriced (`UnpricedIngredientsModal`, owner's request). Server: every present row price
+  must be a number ≥ 0 on create, edit and draft save, and an author price is capped at $500. Parser prices
+  stay uncapped, since drafts run the same check and a pound of saffron is real. A review agent caught that
+  the first cut capped parser rows too, plus a blur focus trap; both fixed before merge. Verified: Vitest 849,
+  Jest 963, `tsc` clean, CI green incl. Cypress. Not yet in prod. Still open from the backlog item: overriding a
+  price the parser did produce, and pricing a row whose lookup failed (it keeps its retry button).
