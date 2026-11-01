@@ -4,39 +4,18 @@
     <loc>https://prepifymeals.com/</loc>
   </url>
   <url>
-    <loc>https://prepifymeals.com/login</loc>
-  </url>
-  <url>
-    <loc>https://prepifymeals.com/signup</loc>
-  </url>
-  <url>
-    <loc>https://prepifymeals.com/forgot-password</loc>
-  </url>
-  <url>
     <loc>https://prepifymeals.com/recipes</loc>
   </url>
   <url>
-    <loc>https://prepifymeals.com/add-recipe</loc>
+    <loc>https://prepifymeals.com/about</loc>
   </url>
   <url>
     <loc>https://prepifymeals.com/help</loc>
   </url>
   <url>
-    <loc>https://prepifymeals.com/account</loc>
+    <loc>https://prepifymeals.com/privacy</loc>
   </url>
   <url>
-    <loc>https://prepifymeals.com/account/saved-recipes</loc>
-  </url>
-  <url>
-    <loc>https://prepifymeals.com/account/ratings</loc>
-  </url>
-  <url>
-    <loc>https://prepifymeals.com/account/your-recipes</loc>
-  </url>
-  <url>
-    <loc>https://prepifymeals.com/settings</loc>
-  </url>
-  <url>
-    <loc>https://prepifymeals.com/settings/password</loc>
+    <loc>https://prepifymeals.com/terms</loc>
   </url>
 </urlset>

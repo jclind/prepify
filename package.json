@@ -31,7 +31,6 @@
     "react-to-print": "^3.3.0",
     "react-top-loading-bar": "^3.0.2",
     "sass": "^1.99.0",
-    "slugify": "^1.6.5",
     "typescript": "6.0.3",
     "uuid": "^14.0.0"
   },

@@ -133,14 +133,14 @@ const About: FC = () => (
         name='description'
         content='Prepify is a recipe site where every recipe shows its real per-serving price and full nutrition up front, so you can plan, shop, and cook with zero guesswork.'
       />
-      <link rel='canonical' href='https://www.prepifymeals.com/about' />
+      <link rel='canonical' href='https://prepifymeals.com/about' />
       <meta property='og:title' content='About Prepify' />
       <meta
         property='og:description'
         content='No more surprises. Every recipe on Prepify shows its real price per serving and full nutrition up front. You always know what you are getting into before you start cooking.'
       />
       <meta property='og:type' content='website' />
-      <meta property='og:url' content='https://www.prepifymeals.com/about' />
+      <meta property='og:url' content='https://prepifymeals.com/about' />
     </Helmet>
 
     <header className='about-hero'>

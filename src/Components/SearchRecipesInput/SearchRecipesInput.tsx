@@ -3,7 +3,6 @@ import React, { FC, useState, useEffect, useRef, useId } from 'react'
 import { useNavigate } from 'react-router-dom'
 import './SearchRecipesInput.scss'
 import { formatRating } from 'src/util/formatRating'
-import slugify from 'slugify'
 import RecipeAPI from 'src/api/recipes'
 import { useDebounce } from 'src/hooks/useDebounce'
 import { RecipeSearchResponseType } from 'types'
@@ -206,8 +205,11 @@ const SearchRecipesInput: FC<SearchRecipesInputProps> = ({
     // a click searches the newer one; that skew is one-directional (a click
     // always searches what's currently typed, never something staler) and
     // self-corrects, so it's preferred over making Enter search a stale value.
-    if (slugify(searchRecipeVal)) {
-      navigate(`/recipes?q=${slugify(searchRecipeVal)}`)
+    // Send the text as typed. A slug round-trip used to strip hyphens, `&`,
+    // apostrophes and accents, so "gluten-free" could never match its title.
+    const q = searchRecipeVal.trim()
+    if (q) {
+      navigate(`/recipes?q=${encodeURIComponent(q)}`)
     } else {
       navigate('/recipes')
     }

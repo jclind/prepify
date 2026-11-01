@@ -112,7 +112,7 @@ describe('Recipes (Browse) page', () => {
     mockGetAllRecipes.mockResolvedValue({ recipeList: [], total_results: 0 })
     renderRecipes('/recipes?q=zzz-nope')
     await screen.findByText('No recipes found')
-    expect(screen.getByText(/zzz nope/i)).toBeInTheDocument()
+    expect(screen.getByText(/zzz-nope/i)).toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: /browse all recipes/i })
     ).toBeInTheDocument()
@@ -268,15 +268,15 @@ describe('Recipes (Browse) page', () => {
     expect(screen.queryByText('Recipe 1')).toBeNull()
   })
 
-  it('normalizes URL query ?q=taco-tuesday to "taco tuesday" before the API call', async () => {
+  it('passes the URL query to the API as typed, hyphens and & included', async () => {
     mockGetAllRecipes.mockResolvedValue({
       recipeList: [],
       total_results: 0,
     })
-    renderRecipes('/?q=taco-tuesday')
+    renderRecipes('/?q=gluten-free%20mac%20%26%20cheese')
     await waitFor(() =>
       expect(mockGetAllRecipes).toHaveBeenCalledWith(
-        expect.objectContaining({ query: 'taco tuesday' })
+        expect.objectContaining({ query: 'gluten-free mac & cheese' })
       )
     )
   })
@@ -285,5 +285,28 @@ describe('Recipes (Browse) page', () => {
     mockGetAllRecipes.mockRejectedValue(new Error('network error'))
     renderRecipes()
     await screen.findByText('Failed to load recipes. Please try again.')
+  })
+
+  it('filter drawer takes focus, traps Tab, closes on Escape and restores focus', async () => {
+    mockGetAllRecipes.mockResolvedValue({ recipeList: [], total_results: 0 })
+    const user = userEvent.setup()
+    renderRecipes()
+    const opener = screen.getByRole('button', { name: /Filters/ })
+    await user.click(opener)
+
+    const dialog = screen.getByRole('dialog', { name: 'Filters' })
+    expect(dialog).toHaveFocus()
+    expect(document.body.style.overflow).toBe('hidden')
+
+    // Shift+Tab from the panel wraps to the last control instead of leaving.
+    await user.keyboard('{Shift>}{Tab}{/Shift}')
+    expect(screen.getByRole('button', { name: 'Show recipes' })).toHaveFocus()
+    await user.tab()
+    expect(dialog).toContainElement(document.activeElement as HTMLElement)
+
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('dialog', { name: 'Filters' })).toBeNull()
+    expect(opener).toHaveFocus()
+    expect(document.body.style.overflow).toBe('')
   })
 })
