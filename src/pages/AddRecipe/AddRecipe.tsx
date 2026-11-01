@@ -80,8 +80,8 @@ const AddRecipe: FC<AddRecipeProps> = ({ initialRecipe }) => {
           rel='canonical'
           href={
             isEditMode && initialRecipe
-              ? `https://www.prepifymeals.com/recipes/${initialRecipe._id}`
-              : 'https://www.prepifymeals.com/add-recipe'
+              ? `https://prepifymeals.com/recipes/${initialRecipe._id}`
+              : 'https://prepifymeals.com/add-recipe'
           }
         />
         <meta

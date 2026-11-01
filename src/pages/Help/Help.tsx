@@ -90,7 +90,7 @@ const Help: FC = () => {
           name='description'
           content='Get help with Prepify — report a bug, suggest an idea, or ask a question. A real person reads every message and replies by email.'
         />
-        <link rel='canonical' href='https://www.prepifymeals.com/help' />
+        <link rel='canonical' href='https://prepifymeals.com/help' />
       </Helmet>
       <div className='help-page form-format'>
         <div className='form-container'>
