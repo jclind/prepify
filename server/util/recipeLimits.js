@@ -23,6 +23,12 @@ const MAX_TIME_MINUTES = 60 * 24 * 14 // 20160 (two weeks)
 const MAX_STORAGE_DAYS = 365
 const MAX_SERVINGS = 1000
 const MAX_SERVING_PRICE_CENTS = 1_000_000 // $10,000 / serving
+// One ingredient row's price, in US cents. An author can type a price for a row
+// the parser couldn't price, so this is user input now. servingPrice alone isn't
+// enough of a check: a negative row passes it as long as the other rows outweigh
+// it, and quietly lowers the total. Not integer-pinned, because parser prices are
+// fractional cents (2 tbsp chia seeds is 42.35).
+const MAX_INGREDIENT_PRICE_CENTS = 50_000 // $500 / row
 
 // Per-field numeric spec, checked by validateRecipeBounds. `min`/`max` are
 // inclusive; `integer: true` additionally requires a whole number. Every numeric
@@ -125,6 +131,21 @@ function validateRecipeBounds(body) {
     if (ingredientTooLong) {
       return `An ingredient cannot exceed ${INGREDIENT_MAX_LENGTH} characters`
     }
+    // Only a present price is checked. Absent or null means "no price", which
+    // calculateServingPrice already counts as $0.
+    const badPrice = body.ingredients.some(ing => {
+      const cents = ing && ing.ingredientData ? ing.ingredientData.totalPriceUSACents : null
+      if (cents == null) return false
+      return (
+        typeof cents !== 'number' ||
+        !Number.isFinite(cents) ||
+        cents < 0 ||
+        cents > MAX_INGREDIENT_PRICE_CENTS
+      )
+    })
+    if (badPrice) {
+      return `An ingredient price must be between $0 and $${MAX_INGREDIENT_PRICE_CENTS / 100}`
+    }
   }
   if (Array.isArray(body.instructions)) {
     if (body.instructions.length > MAX_INSTRUCTIONS) {
@@ -161,4 +182,5 @@ module.exports = {
   MAX_STORAGE_DAYS,
   MAX_SERVINGS,
   MAX_SERVING_PRICE_CENTS,
+  MAX_INGREDIENT_PRICE_CENTS,
 }
