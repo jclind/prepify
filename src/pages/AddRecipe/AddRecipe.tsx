@@ -22,6 +22,7 @@ import { Helmet } from 'react-helmet-async'
 import DraftSaveStatus from 'src/pages/AddRecipe/DraftSaveStatus'
 import DraftResumeBanner from 'src/pages/AddRecipe/DraftResumeBanner'
 import { useRecipeForm } from 'src/pages/AddRecipe/useRecipeForm'
+import UnpricedIngredientsModal from 'src/pages/AddRecipe/UnpricedIngredientsModal'
 
 // When `initialRecipe` is supplied the form runs in edit mode: every field is
 // pre-populated from the existing recipe and submitting updates it (preserving
@@ -70,6 +71,9 @@ const AddRecipe: FC<AddRecipeProps> = ({ initialRecipe }) => {
     resumedFromDraft,
     addRecipeFormRef,
     handleSubmit,
+    unpricedWarning,
+    publishWithoutPrices,
+    closeUnpricedWarning,
   } = useRecipeForm(initialRecipe)
 
   return (
@@ -267,6 +271,12 @@ const AddRecipe: FC<AddRecipeProps> = ({ initialRecipe }) => {
               ? () => navigate(`/recipes/${initialRecipe._id}`)
               : undefined
           }
+        />
+        <UnpricedIngredientsModal
+          lines={unpricedWarning}
+          isEditMode={isEditMode}
+          onAddPrices={closeUnpricedWarning}
+          onPublishAnyway={publishWithoutPrices}
         />
       </div>
     </>

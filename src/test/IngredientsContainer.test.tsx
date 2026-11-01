@@ -5,6 +5,7 @@ import userEvent from '@testing-library/user-event'
 import IngredientsContainer from 'src/pages/AddRecipe/Ingredients/IngredientsContainer/IngredientsContainer'
 import RecipeAPI from 'src/api/recipes'
 import { toast } from 'react-hot-toast'
+import { parseAuthorPrice } from 'src/pages/AddRecipe/Ingredients/IngredientItem'
 import {
   IngredientEnrichTimeoutError,
   IngredientStatus,
@@ -376,7 +377,7 @@ describe('IngredientsContainer — price confidence on the row', () => {
     // The salsa case: a volume measure with no density entry. The parser now
     // returns no price rather than the ~236x undercount it used to.
     await addAndSettle({ totalPriceUSACents: undefined, name: 'salsa' })
-    await waitFor(() => expect(rowPriceText()).toContain('needs price'))
+    await waitFor(() => expect(rowPriceText()).toContain('add price'))
     expect(rowPriceText()).not.toContain('$')
     expect(document.querySelector('.ingr-price')?.getAttribute('title')).toMatch(
       /per-serving cost/i
@@ -387,7 +388,7 @@ describe('IngredientsContainer — price confidence on the row', () => {
     // Number(null) is 0, so a naive coercion would show a confident "$0.00"
     // for a row that has no price at all.
     await addAndSettle({ totalPriceUSACents: null, name: 'salsa' })
-    await waitFor(() => expect(rowPriceText()).toContain('needs price'))
+    await waitFor(() => expect(rowPriceText()).toContain('add price'))
     expect(rowPriceText()).not.toContain('$0.00')
   })
 
@@ -403,7 +404,7 @@ describe('IngredientsContainer — price confidence on the row', () => {
       name: 'water',
     })
     await waitFor(() => expect(rowPriceText()).toContain('$0.00'))
-    expect(rowPriceText()).not.toContain('needs price')
+    expect(rowPriceText()).not.toContain('add price')
     expect(document.querySelector('.ingr-price.estimate')).toBeNull()
     expect(document.querySelector('.ingr-price.none')).toBeNull()
     expect(document.querySelector('.est')).toBeNull()
@@ -488,5 +489,116 @@ describe('IngredientsContainer — price confidence on the row', () => {
     await addAndSettle({ totalPriceUSACents: 300 })
     await waitFor(() => expect(rowPriceText()).toContain('$3.00'))
     expect(document.querySelector('.ingr-price.estimate')).toBeNull()
+  })
+})
+
+describe('IngredientsContainer — author-entered price', () => {
+  const priced = (data: Record<string, unknown>) => ({
+    ...enriched('2 cups flour'),
+    ingredientData: { name: 'flour', ...data },
+  })
+
+  const addUnpriced = async () => {
+    const user = userEvent.setup()
+    mockGetIngredientData.mockResolvedValue(priced({ totalPriceUSACents: undefined }))
+    render(<Wrapper />)
+    await addIngredient(user, '2 cups flour')
+    const button = await screen.findByRole('button', {
+      name: 'Add a price for 2 cups flour',
+    })
+    return { user, button }
+  }
+
+  it('saves a typed price on Enter and counts it in the subtotal', async () => {
+    const { user, button } = await addUnpriced()
+    await user.click(button)
+    const input = screen.getByRole('textbox', { name: 'Price in dollars for 2 cups flour' })
+    expect(input).toHaveFocus()
+    await user.type(input, '$1.25{enter}')
+
+    await waitFor(() => expect(document.querySelector('.ingr-price.author')).not.toBeNull())
+    expect(rowPriceText()).toBe('$1.25')
+    const subtotal = document.querySelector('.ingredients-subtotal')
+    expect(subtotal?.textContent).toContain('$1.25')
+    expect(subtotal?.textContent).not.toContain('partial')
+  })
+
+  it('reopens an author price with its value, and clearing it removes the price', async () => {
+    const { user, button } = await addUnpriced()
+    await user.click(button)
+    await user.type(screen.getByRole('textbox', { name: 'Price in dollars for 2 cups flour' }), '0.4{enter}')
+    await user.click(
+      await screen.findByRole('button', { name: /\$0\.40 for 2 cups flour, a price you entered/ })
+    )
+    const input = screen.getByRole('textbox', { name: 'Price in dollars for 2 cups flour' })
+    expect(input).toHaveValue('0.40')
+    await user.clear(input)
+    await user.type(input, '{enter}')
+    await waitFor(() => expect(rowPriceText()).toBe('add price'))
+  })
+
+  it('saves on blur, like the row text editor', async () => {
+    const { user, button } = await addUnpriced()
+    await user.click(button)
+    await user.type(screen.getByRole('textbox', { name: 'Price in dollars for 2 cups flour' }), '2')
+    await user.click(document.body)
+    await waitFor(() => expect(rowPriceText()).toBe('$2.00'))
+  })
+
+  it('Escape closes the field without saving', async () => {
+    const { user, button } = await addUnpriced()
+    await user.click(button)
+    await user.type(screen.getByRole('textbox', { name: 'Price in dollars for 2 cups flour' }), '3{escape}')
+    await waitFor(() => expect(rowPriceText()).toBe('add price'))
+  })
+
+  it('keeps the field open and says why when the price is not a number', async () => {
+    const { user, button } = await addUnpriced()
+    await user.click(button)
+    await user.type(screen.getByRole('textbox', { name: 'Price in dollars for 2 cups flour' }), 'abc{enter}')
+    expect(mockToastError).toHaveBeenCalledWith('Enter a price from $0 to $500, like 1.25.')
+    expect(screen.getByRole('textbox', { name: 'Price in dollars for 2 cups flour' })).toBeInTheDocument()
+  })
+
+  it('closes without saving when the field loses focus holding text that is not a price', async () => {
+    const { user, button } = await addUnpriced()
+    await user.click(button)
+    await user.type(screen.getByRole('textbox', { name: 'Price in dollars for 2 cups flour' }), 'abc')
+    await user.tab()
+    await waitFor(() => expect(rowPriceText()).toBe('add price'))
+    expect(mockToastError).toHaveBeenCalledWith(
+      "That price wasn't saved. Enter a price from $0 to $500, like 1.25."
+    )
+    expect(screen.queryByRole('textbox', { name: 'Price in dollars for 2 cups flour' })).toBeNull()
+  })
+
+  it('offers no price button on a row the parser priced', async () => {
+    const user = userEvent.setup()
+    mockGetIngredientData.mockResolvedValue(priced({ totalPriceUSACents: 300 }))
+    render(<Wrapper />)
+    await addIngredient(user, '2 cups flour')
+    await waitFor(() => expect(rowPriceText()).toContain('$3.00'))
+    expect(screen.queryByRole('button', { name: /price/i })).toBeNull()
+  })
+})
+
+describe('parseAuthorPrice', () => {
+  it('reads dollars into whole cents', () => {
+    expect(parseAuthorPrice('1.25')).toBe(125)
+    expect(parseAuthorPrice('$1.25')).toBe(125)
+    expect(parseAuthorPrice(' .4 ')).toBe(40)
+    expect(parseAuthorPrice('3')).toBe(300)
+    expect(parseAuthorPrice('3.')).toBe(300)
+    expect(parseAuthorPrice('0')).toBe(0)
+    expect(parseAuthorPrice('1.256')).toBe(126)
+    expect(parseAuthorPrice('500')).toBe(50_000)
+  })
+
+  it('rejects anything the server would', () => {
+    expect(parseAuthorPrice('500.01')).toBeNull()
+    expect(parseAuthorPrice('-1')).toBeNull()
+    expect(parseAuthorPrice('abc')).toBeNull()
+    expect(parseAuthorPrice('1,25')).toBeNull()
+    expect(parseAuthorPrice('')).toBeNull()
   })
 })

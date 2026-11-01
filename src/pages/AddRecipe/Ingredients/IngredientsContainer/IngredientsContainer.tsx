@@ -7,6 +7,7 @@ import RecipeAPI, { INGREDIENT_RATE_LIMIT_CODE } from 'src/api/recipes'
 import AddLabel from 'src/pages/AddRecipe/AddLabel/AddLabel'
 import IngredientList from 'src/pages/AddRecipe/Ingredients/IngredientList/IngredientList'
 import IngredientsInput from 'src/pages/AddRecipe/Ingredients/IngredientsInput'
+import { isUnpricedIngredient } from 'src/util/unpricedIngredients'
 import {
   IngredientEnrichTimeoutError,
   IngredientStatus,
@@ -166,16 +167,7 @@ const IngredientsContainer: FC<IngredientsContainerProps> = ({
   // price honestly, and an unmarked total would understate the recipe silently —
   // the same defect this whole change exists to remove, one level up. Covers a
   // failed lookup too, which was always excluded from the sum.
-  //
-  // Tested on the type, never on truthiness. Since parser 2.2.0 a genuinely
-  // free ingredient (water, "salt and pepper to taste") carries a real
-  // `totalPriceUSACents: 0`, and a falsy check would call that row unpriced
-  // and stamp an honest total as partial.
-  const hasUnpricedRow = ingredients.some(
-    ingr =>
-      'parsedIngredient' in ingr &&
-      typeof ingr.ingredientData?.totalPriceUSACents !== 'number'
-  )
+  const hasUnpricedRow = ingredients.some(isUnpricedIngredient)
 
   return (
     <div className='ingredients-container'>

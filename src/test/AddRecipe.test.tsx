@@ -122,12 +122,33 @@ vi.mock('src/pages/AddRecipe/Ingredients/IngredientsContainer/IngredientsContain
                 comment: null,
                 originalIngredientString: '2 cups Flour',
               },
-              ingredientData: null,
+              // Priced, so a plain submit doesn't stop at the unpriced warning.
+              ingredientData: { name: 'flour', totalPriceUSACents: 120 },
             },
           ])
         }
       >
         Add Ingredient
+      </button>
+      <button
+        data-testid='add-unpriced-ingredient'
+        onClick={() =>
+          setIngredients([
+            {
+              id: 'ingr-2',
+              parsedIngredient: {
+                ingredient: 'cilantro',
+                quantity: 0.25,
+                unit: 'cup',
+                comment: 'chopped',
+                originalIngredientString: '1/4 cup chopped cilantro',
+              },
+              ingredientData: { name: 'cilantro' },
+            },
+          ])
+        }
+      >
+        Add Unpriced Ingredient
       </button>
       {/* Drive the lifted enrichment-status map the way the real container
           does: loading while a lookup is in flight, error on a settled
@@ -337,6 +358,47 @@ describe('AddRecipe form', () => {
     expect(submitBtn).toHaveClass('invalid')
     await fillAllFields(user)
     await waitFor(() => expect(submitBtn).toHaveClass('valid'))
+  })
+
+  describe('unpriced ingredient warning', () => {
+    const fillWithUnpriced = async (user: ReturnType<typeof userEvent.setup>) => {
+      await fillAllFields(user)
+      await user.click(screen.getByTestId('add-unpriced-ingredient'))
+      await waitFor(() =>
+        expect(screen.getByText('Create Recipe').closest('button')).toHaveClass('valid')
+      )
+      await user.click(screen.getByText('Create Recipe'))
+    }
+
+    it('asks before publishing, listing the line the author typed', async () => {
+      const user = userEvent.setup()
+      renderAddRecipe()
+      await fillWithUnpriced(user)
+      expect(await screen.findByText('1 ingredient has no price')).toBeInTheDocument()
+      expect(screen.getByText('1/4 cup chopped cilantro')).toBeInTheDocument()
+      expect(mockAddRecipe).not.toHaveBeenCalled()
+    })
+
+    it('"Add prices" closes the warning without publishing', async () => {
+      const user = userEvent.setup()
+      renderAddRecipe()
+      await fillWithUnpriced(user)
+      await user.click(await screen.findByRole('button', { name: 'Add prices' }))
+      await waitFor(() =>
+        expect(screen.queryByText('1 ingredient has no price')).not.toBeInTheDocument()
+      )
+      expect(mockAddRecipe).not.toHaveBeenCalled()
+    })
+
+    it('"Publish anyway" publishes once', async () => {
+      const user = userEvent.setup()
+      mockAddRecipe.mockResolvedValue({ status: 'success', id: 'new-1', pendingReview: false })
+      renderAddRecipe()
+      await fillWithUnpriced(user)
+      await user.click(await screen.findByRole('button', { name: 'Publish anyway' }))
+      await waitFor(() => expect(mockAddRecipe).toHaveBeenCalledTimes(1))
+      expect(navigateFn).toHaveBeenCalledWith('/recipes/new-1')
+    })
   })
 
   it('clicking "Create Recipe" when valid calls RecipeAPI.addRecipe with the mapped payload', async () => {

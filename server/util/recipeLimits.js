@@ -23,6 +23,17 @@ const MAX_TIME_MINUTES = 60 * 24 * 14 // 20160 (two weeks)
 const MAX_STORAGE_DAYS = 365
 const MAX_SERVINGS = 1000
 const MAX_SERVING_PRICE_CENTS = 1_000_000 // $10,000 / serving
+// One ingredient row's price, in US cents. servingPrice alone isn't enough of a
+// check: a negative row passes it as long as the other rows outweigh it, and
+// quietly lowers the total. So every present row price must be a number >= 0.
+// Not integer-pinned, because parser prices are fractional cents (2 tbsp chia
+// seeds is 42.35).
+//
+// The $500 ceiling applies only to a price the author typed (priceBasis
+// 'author'). A parser price has no ceiling on purpose: routes/ingredients.js
+// leaves "a pound of saffron" unclamped, and drafts run this same check, so a
+// ceiling there would block autosave on a row the author has no way to fix.
+const MAX_INGREDIENT_PRICE_CENTS = 50_000 // $500 / author-priced row
 
 // Per-field numeric spec, checked by validateRecipeBounds. `min`/`max` are
 // inclusive; `integer: true` additionally requires a whole number. Every numeric
@@ -125,6 +136,26 @@ function validateRecipeBounds(body) {
     if (ingredientTooLong) {
       return `An ingredient cannot exceed ${INGREDIENT_MAX_LENGTH} characters`
     }
+    // Only a present price is checked. Absent or null means "no price", which
+    // calculateServingPrice already counts as $0.
+    const priceOf = ing => (ing && ing.ingredientData ? ing.ingredientData.totalPriceUSACents : null)
+    const badPrice = body.ingredients.some(ing => {
+      const cents = priceOf(ing)
+      return cents != null && (typeof cents !== 'number' || !Number.isFinite(cents) || cents < 0)
+    })
+    if (badPrice) {
+      return 'An ingredient price must be a number of $0 or more'
+    }
+    const authorPriceTooHigh = body.ingredients.some(
+      ing =>
+        ing &&
+        ing.ingredientData &&
+        ing.ingredientData.priceBasis === 'author' &&
+        priceOf(ing) > MAX_INGREDIENT_PRICE_CENTS
+    )
+    if (authorPriceTooHigh) {
+      return `A price you enter for an ingredient can't be more than $${MAX_INGREDIENT_PRICE_CENTS / 100}`
+    }
   }
   if (Array.isArray(body.instructions)) {
     if (body.instructions.length > MAX_INSTRUCTIONS) {
@@ -161,4 +192,5 @@ module.exports = {
   MAX_STORAGE_DAYS,
   MAX_SERVINGS,
   MAX_SERVING_PRICE_CENTS,
+  MAX_INGREDIENT_PRICE_CENTS,
 }

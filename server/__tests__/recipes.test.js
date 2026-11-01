@@ -713,17 +713,61 @@ describe('POST /addRecipe', () => {
       )
     })
 
-    it('rejects a negative servingPrice recomputed from a forged ingredient price', async () => {
-      await expectRejected(
-        {
-          servings: 1,
-          servingPrice: 100, // ignored — the recompute below is what's validated
-          ingredients: [
-            { id: 'i1', parsedIngredient: { originalIngredientString: '1 gold' }, ingredientData: { totalPriceUSACents: -999_999 } },
-          ],
-        },
-        /Serving price must be between/
-      )
+    // Authors can type a row's price, so each row is bounded on its own. A
+    // negative row used to pass whenever the other rows outweighed it.
+    describe('per-ingredient price', () => {
+      const row = (id, cents, extra = {}) => ({
+        id,
+        parsedIngredient: { originalIngredientString: `1 ${id}` },
+        ingredientData: { name: id, totalPriceUSACents: cents, ...extra },
+      })
+      const authorRow = (id, cents) => row(id, cents, { priceBasis: 'author' })
+
+      it('rejects a negative row even when the total stays positive', async () => {
+        await expectRejected(
+          { servings: 1, ingredients: [row('gold', 10_000), row('rebate', -500)] },
+          /ingredient price must be a number of \$0 or more/
+        )
+      })
+
+      it('rejects a non-numeric row price', async () => {
+        await expectRejected(
+          { servings: 1, ingredients: [row('salt', '250')] },
+          /ingredient price must be a number/
+        )
+      })
+
+      it('rejects an author-entered price over $500', async () => {
+        await expectRejected(
+          { servings: 1, ingredients: [authorRow('saffron', 50_001)] },
+          /can't be more than \$500/
+        )
+      })
+
+      it('accepts a parser price over $500, like a pound of saffron (201)', async () => {
+        const res = await request(server)
+          .post('/api/addRecipe')
+          .set(AUTH_HEADER)
+          .send({ ...validBody(), servings: 1, ingredients: [row('saffron', 120_000, { priceBasis: 'gram' })] })
+        expect(res.status).toBe(201)
+      })
+
+      it('accepts 0, $500, fractional cents and an absent price (201)', async () => {
+        const res = await request(server)
+          .post('/api/addRecipe')
+          .set(AUTH_HEADER)
+          .send({
+            ...validBody(),
+            servings: 1,
+            ingredients: [
+              row('water', 0),
+              authorRow('saffron', 50_000),
+              row('chia', 42.35),
+              { id: 'i4', parsedIngredient: { originalIngredientString: '1 cilantro' }, ingredientData: { name: 'cilantro' } },
+            ],
+          })
+        expect(res.status).toBe(201)
+      })
     })
 
     it('rejects an absurdly large total time', async () => {
@@ -1003,6 +1047,19 @@ describe('PUT /editRecipe', () => {
       const stored = await db.collection('recipes').findOne({ _id: RECIPE_ID })
       expect(stored.servingPrice).toBe(250)
       expect(stored.servingPrice).not.toBe(1)
+    })
+
+    it('rejects a negative ingredient price on edit', async () => {
+      const res = await request(server)
+        .put(`/api/editRecipe?recipeId=${RECIPE_ID}`)
+        .set(AUTH_HEADER)
+        .send({
+          ...validEdit(),
+          ingredients: [priced('i1', 1000), priced('i2', -1)],
+          servings: 1,
+        })
+      expect(res.status).toBe(400)
+      expect(res.body.error).toMatch(/ingredient price must be a number/)
     })
 
     it('falls back to the recipe\'s existing stored servings when the edit payload omits it', async () => {
