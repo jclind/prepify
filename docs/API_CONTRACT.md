@@ -14,6 +14,8 @@ implemented behavior, not a proposal.
 > last regenerated that way in PR #262; the standing prompt was retired from `HIGH_VALUE_PROMPTS.md` once
 > it shipped.)
 
+> **[Reconciled 2026-08-27]:** Stale: the 2026-07-08 regeneration is the last full walk of these routes. Truth: the security-audit batch that merged four days later, PR #317 commit fafceaf, changed several contracts without a fresh pass, and PRs #282, #279, and #327 changed more; the inline [Reconciled 2026-08-27] notes below mark the drifted entries. The handler `file:line` cites have also drifted since 2026-07-08, so trust the route path over the line number: reviews.js handlers now sit roughly 50 lines past their cited lines, the late recipes.js routes roughly 36 past, auth.js roughly 6 past, and the cited `ingredients.js:121` and `nutrition.js:21` are now 149 and 41. Checked: `git show fafceaf 3bc67b1 60de2b7 7743a47` in this tree, plus a grep of every router method declaration in `server/routes/` on 2026-08-27.
+
 ## Route overview
 
 74 routes + the two unauthenticated ops endpoints `GET /health` and `GET /version`. Each
@@ -36,6 +38,8 @@ section below documents its routes in full and ends with a
 | [Bug Reports](#bug-reports) | `server/routes/bugReports.js` | 4 |
 | [Admin](#admin) | `server/routes/admin.js` | 6 |
 
+> **[Reconciled 2026-08-27]:** Stale: the Admin row counts 6 routes. Truth: `server/routes/admin.js` defines 7, the seventh being `POST /admin/diagnostics/sentry-test` at admin.js:530, which the Admin section below documents; the 74-route total above stays correct with 7 counted here. Checked: grep of the router declarations in admin.js, lines 173 through 530.
+
 ### Drift highlights (2026-07-08 regeneration)
 
 Full lists live in each section's `#### DRIFT` subsection. The load-bearing ones:
@@ -43,6 +47,8 @@ Full lists live in each section's `#### DRIFT` subsection. The load-bearing ones
 - **Real bug — `checkMadeRecipe` shape mismatch:** the server returns `{ made: boolean }`, but
   `MadeRecipeBtn.tsx` expects `{ datesMade?: string[] }`, so its "once an hour" re-make throttle
   silently resets on reload (see [DRIFT — recipes](#drift--recipes)).
+
+> **[Reconciled 2026-08-27]:** Stale: this bullet describes `MadeRecipeBtn` as expecting `{ datesMade?: string[] }`. Truth: fixed the same day in 089f11d, "fix(recipe): align MadeRecipeBtn to the server's binary made model"; the component now types the response as `{ made: boolean }` and the button is a one-shot toggle, so no re-make throttle exists to reset. Checked: src/pages/SingleRecipe/Buttons/MadeRecipeBtn.tsx:19,28,32 and `git show 089f11d`.
 - **Real bug (fixed with this regeneration) — `editReview` URL encoding:** the client interpolated
   raw review text into the query string; `&`, `#`, `%`, `+` in a review corrupted the edit. Now sent
   via axios `params` so it's encoded (see [DRIFT — reviews](#drift--reviews)).
@@ -52,6 +58,8 @@ Full lists live in each section's `#### DRIFT` subsection. The load-bearing ones
 - **Types over-promise:** several list endpoints are typed `RecipeType[]` in the client but the
   server ships lean card projections; `RecipeDBResponseType` declares fields `GET /api/recipes`
   never returns.
+
+> **[Reconciled 2026-08-27]:** Stale: this bullet and the two DRIFT entries it points to. Truth: resolved on the client side; `RecipeDBResponseType` now declares only `{ recipeList: RecipeCardType[], total_results }` with a comment that the old fields "were never sent by the server", and the trending, for-you, and random methods are typed `RecipeCardType[]` or `RecipeCardType | null`. Checked: src/types.ts:265-268 and src/api/recipes.ts:130,136,144.
 - The old contract's CRITICAL/HIGH flags are **resolved**: paths are `/api`-prefixed on one server,
   the server generates recipe `_id`s and stamps `userId` from the token, client-supplied
   `userId`/`username` are never trusted, and the nutrition/ingredient keys live server-side.
@@ -237,7 +245,11 @@ All routes live in `server/routes/recipes.js`, mounted at `/api` (server/app.js)
 ### POST /api/addRecipe
 - **Handler:** `server/routes/recipes.js:510`
 - **Middleware:** `verifyToken`, `requireActive`, `recipeWriteLimiter`
+
+> **[Reconciled 2026-08-27]:** Stale: the chain ends at `recipeWriteLimiter`. Truth: a `recipeCreateQuota` daily-spend limiter runs after it at recipes.js:517-525, because every create pays a Cloud Vision image scan plus OpenAI text moderation; an over-quota create gets a 429 with `code: 'DAILY_QUOTA_EXCEEDED'` and a "daily recipe-creation limit reached, try again tomorrow" message, at default caps of 50 per account per day and 2000 global per day, overridable via `PAID_QUOTA_RECIPE_USER_DAILY` and `PAID_QUOTA_RECIPE_GLOBAL_DAILY`, skipped under `NODE_ENV=test`, failing open on a counter-DB error. Checked: server/routes/recipes.js:517-525 and server/util/paidQuota.js:85-118, commit fafceaf, PR #317.
 - **Request:** body — recipe document. Required: `title`, `ingredients`, `instructions`, `mealTypes` (missing/blank/empty-array → `400 { error: 'Missing required fields: …' }`). Bounds (server/util/recipeLimits.js, each violation → `400 { error: <message> }`): title ≤ 50 chars (trimmed first), description ≤ 2000, ≤ 50 ingredients (each raw line ≤ 200 chars), ≤ 50 instructions (each ≤ 1000 chars); numeric fields must be finite numbers in range — `prepTime`/`cookTime`/`totalTime` 0–20160 int, `servings` 1–1000 int, `fridgeLife`/`freezerLife` 0–365 int, `servingPrice` 0–1,000,000. Only `CREATABLE_RECIPE_FIELDS` are persisted (content fields + `recipeImage`, `nutritionData`, `servingPrice`, `totalTime`, `authorUsername`, `createdAt`, `editedAt`); everything else (`status`, `featured`, `rating`, counters…) is ignored — the server stamps `_id`, `userId`, zeroed `rating`/`numTimesSaved`/`numTimesMade`/`views`.
+
+> **[Reconciled 2026-08-27]:** Stale: the parenthetical lists `authorUsername` and `createdAt` among the client-persisted creatable fields, and lets a client-sent `servingPrice` through as-is. Truth: since audits M3 and M4 in fafceaf (PR #317) the server derives `authorUsername` from the caller's uid, rejecting a caller with no username via `400 { error: 'You must set a username before publishing a recipe' }` at recipes.js:555-558, stamps `createdAt` itself, and recomputes `servingPrice` from the submitted ingredients and servings before bounds validation at recipes.js:537-548, so the client's figure is preview-only; the same recompute runs on edit at recipes.js:654-660. `CREATABLE_RECIPE_FIELDS` now equals `EDITABLE_RECIPE_FIELDS` and carries neither `authorUsername` nor timestamps (server/util/recipeFields.js:33-48). Checked: the cited lines in this tree.
 - **Response:** `201 { _id: ObjectId, pendingReview: boolean }`; `422 { error: <friendly message>, code: 'CONTENT_BLOCKED' }` on a high-confidence automod verdict (server/util/automod.js:99); `401` (auth), `403` (`ACCOUNT_BANNED`/`ACCOUNT_SUSPENDED`), `429` (`RATE_LIMITED`)
 - **Client:** `src/api/recipes.ts` → `RecipeAPI.addRecipe()` — used by `src/pages/AddRecipe/useRecipeForm.ts` (uploads image to Firebase Storage and fetches nutrition via the server proxy first, then posts)
 - **Notes:** text + image are moderated concurrently (text fails open, image fails closed); a **medium** verdict still saves the recipe but holds it as `pending_review` via `holdRecipeForReview` (report filed first, then status flipped) and returns `pendingReview: true`. Also pushes `{recipeId}` onto the author's `userRecipeData.userRecipes` and busts the facets cache.
@@ -344,8 +356,12 @@ All routes live in `server/routes/recipes.js`, mounted at `/api` (server/app.js)
 #### DRIFT — recipes
 
 - **`checkMadeRecipe` response shape mismatch (real bug surface):** the server returns `{ made: boolean }` (server/routes/recipes.js:997) and stores made entries as `{ recipeId }` with no date, but `src/pages/SingleRecipe/Buttons/MadeRecipeBtn.tsx:20,29` casts the result to `{ datesMade?: string[] }` and derives `numTimesMade`/`lastDateMade` from it. `datesMade` is always `undefined` from the server, so the "once an hour" re-make throttle only works off the component's optimistic cache write within a session and silently resets on refetch/reload.
+
+> **[Reconciled 2026-08-27]:** Stale: the client half of this bug. Truth: fixed in 089f11d on 2026-07-08; MadeRecipeBtn.tsx:19,28 now types the response as `{ made: boolean }` and derives nothing from `datesMade`. The server half is unchanged and still returns `{ made: boolean }`, now at recipes.js:1033. Checked: both files in this tree.
 - **`RecipeDBResponseType` over-declares:** `src/types.ts:252` includes `page`, `filters`, `entries_per_page`, but `GET /api/recipes` only ever returns `{ recipeList, total_results }` (server/routes/recipes.js:160).
 - **List endpoints typed as full `RecipeType[]` but server ships the lean card projection:** `getAllRecipes().recipeList`, `getTrendingRecipes()`, `getForYouRecipes()`, and `getRandomRecipe()` are all typed `RecipeType`/`RecipeType[]` in `src/api/recipes.ts:91,130,136,144`, yet the server projects `publicRecipeCardProjection` — fields like `description`, `ingredients`, `instructions`, `nutritionData`, `views`, `userId`, `createdAt`, `authorUsername` are absent at runtime.
+
+> **[Reconciled 2026-08-27]:** Stale: both over-promise items, this one and the `RecipeDBResponseType` one above it. Truth: resolved on the client; `RecipeDBResponseType` now declares only `{ recipeList: RecipeCardType[], total_results }` (src/types.ts:265-268, with a comment that the old fields "were never sent by the server"), and `getTrendingRecipes`, `getForYouRecipes`, and `getRandomRecipe` are typed `RecipeCardType[]` / `RecipeCardType | null` (src/api/recipes.ts:130,136,144). Checked: those files in this tree.
 - **Resolved:** `addRecipe` no longer sends dead fields. The create body (`src/api/recipes.ts:337–345`) is explicitly typed `Omit<RecipeType, '_id' | 'createdAt' | 'editedAt' | 'rating' | 'views' | 'numTimesSaved' | 'numTimesMade'>` — the client omits the server-authoritative fields at the type level instead of posting them for the server to discard.
 - **`PUT /editRecipe` returns the raw document, not the public projection:** unlike `getRecipe`, the edit response (server/routes/recipes.js:668–685) carries any internal admin stamps (`moderatedBy/At`, `featuredBy/At`, `publishUpdatedBy/At`) present on the doc back to the owner — inconsistent with the whitelist rationale in `server/util/recipeFields.js`.
 - **Unreferenced sort option:** `order=top` in `GET /recipes` (server/routes/recipes.js:137) has no client caller (`trending` is used by `src/pages/Home/HomeBrowseByMeal.tsx:61`; the browse UI uses the other seven).
@@ -363,6 +379,8 @@ All routes live in `server/routes/reviews.js`, mounted at `/api` (server/app.js)
   - `400 {error:'Invalid rating'}` — `parseFloat` yields NaN
   - `400 {error:'Rating must be between 1 and 5'}`
 - **Response:** `200 {rated: true}`. Plus `401` (verifyToken), `403 {error, code, reason}` (requireActive), `429 {error, code:'RATE_LIMITED'}`.
+
+> **[Reconciled 2026-08-27]:** Stale: the status list omits the target checks added by audit M2. Truth: the recipe must exist, be publicly visible, and not be the caller's own; a nonexistent, hidden, unpublished, or pending target returns `404 { error: 'Recipe not found' }` and self-rating returns `403 { error: 'You cannot rate or review your own recipe' }`, both from `checkRatableRecipe` at reviews.js:90-99, called at 125-128. Checked: server/routes/reviews.js as cited, commit fafceaf, PR #317.
 - **Client:** `src/api/recipes.ts:511` → `RecipeAPI.addRating(recipeId, rating)` — used by `src/pages/SingleRecipe/DataSections/RatingsAndReviews/Ratings/Ratings.tsx:44`. Returns `null` without calling if not signed in.
 - **Notes:** Upsert via `upsertWithDupRetry` on the unique `{userId, recipeId}` index (concurrent double-submit → E11000 retried as plain update). On insert, review fields are defaulted to `''`. Recomputes and persists the recipe's aggregate `rating: {rateCount, rateValue, breakdown}` via `recomputeRecipeRating` (server/util/recipeRating.js), which excludes moderation-hidden docs and non-numeric ratings. `breakdown` (added §D PR-A) is a `{1..5: number}` per-star histogram of the counted ratings (each bucketed by nearest whole star, buckets sum to `rateCount`); new recipes seed it all-zero, and the one-off backfill is `server/scripts/reconcileRatingAggregates.js --apply`.
 
@@ -375,6 +393,8 @@ All routes live in `server/routes/reviews.js`, mounted at `/api` (server/app.js)
   - `422 {error: <friendly message>, code:'CONTENT_BLOCKED'}` — `moderateText(reviewText, 'review')` verdict not clean; both high and medium confidence block inline via `respondBlocked` (server/util/automod.js:99), which also fires a best-effort `content.blocked` audit row
   - `400 {error:'Username not found for this user'}` — no `usernames` doc
 - **Response:** `200` = the full updated `ratings` document (re-fetched after upsert: `_id, userId, recipeId, username, rating, ratingLastUpdated, reviewText, reviewCreatedAt, reviewLastUpdated`, timestamps as **numeric epoch-ms** (`Date.now()`); `''` remains the "no review yet" sentinel on rating-only docs). Plus `401/403/429` as above.
+
+> **[Reconciled 2026-08-27]:** Stale: same status omission as /addRating, and the timestamp wording overgeneralizes. Truth: /newReview runs the same M2 target gate at reviews.js:169-172 with the same 404 and 403 bodies; also `ratingLastUpdated` is written by /addRating as a BSON Date (reviews.js:136), so on a doc rated before it was reviewed that one field serializes as an ISO string, while `reviewCreatedAt` and `reviewLastUpdated` are numeric epoch-ms (reviews.js:189-197). The V5 code half itself merged as PR #303, commit 3e3feda, on 2026-07-12. Checked: reviews.js as cited plus `gh pr view 303`, state MERGED.
 - **Client:** `src/api/recipes.ts:516` → `RecipeAPI.newReview(recipeId, text)` — used by `src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/AddReview.tsx:37`.
 - **Notes:** Upsert on `{userId, recipeId}`; on insert `rating: null` is defaulted so a review-before-rating doc never poisons the aggregate. No rating recompute (text doesn't affect the score). **V5 cutover:** timestamps flipped from `Date.now().toString()` strings to numeric epoch-ms; pre-migration prod docs remain strings until the coupled `normalizeRatingTypes.js --apply` run (the two must ship together — the New/Top sorts compare BSON type first).
 
@@ -419,6 +439,8 @@ All routes live in `server/routes/reviews.js`, mounted at `/api` (server/app.js)
 - **Middleware:** `optionalAuth` (anonymous-friendly)
 - **Request:** query `recipeId` (string, required — `400 {error:'recipeId is required'}`), `page` (int, default 0), `reviewsPerPage` (int, default 5, floored at 1 since [#306](https://github.com/jclind/prepify/pull/306) — negative values 500'd via negative skip/limit — and capped at `MAX_PER_PAGE` = 50, reviews.js:19), `filter` (`'new'` → sort `reviewCreatedAt` desc, `'top'` → sort `rating` desc, anything else → natural order).
 - **Response:** `200 {reviews: [...], totalCount: number}` — each review is the raw ratings doc (only docs with non-empty `reviewText` and not `moderationHidden` via `REVIEW_VISIBLE`, server/util/moderation.js:33) plus a derived `isCurrentUser: boolean` and, added in §D PR-A, the author's `photoURL: string | null` and `displayName: string | null`.
+
+> **[Reconciled 2026-08-27]:** Stale: "each review is the raw ratings doc", and the Notes line below about authors' `userId` being visible to anonymous callers. Truth: since audit M1 in fafceaf (PR #317), both public review reads project through the `REVIEW_PUBLIC_FIELDS` allowlist, `{_id, recipeId, username, rating, ratingLastUpdated, reviewCreatedAt, reviewLastUpdated, reviewText}` at reviews.js:32-45; the author's uid is fetched for the isCurrentUser join and avatar enrichment but stripped from the response by `pickFields` at reviews.js:364,375-385. /getSingleUserReviews projects the same way at 486 and 498, and its joined `recipeData` goes through `publicRecipeProjection` at 459, so it is no longer the full recipe body. Checked: server/routes/reviews.js as cited.
 - **Client:** `src/api/recipes.ts:549` → `RecipeAPI.getReviews(recipeId, filter, page, reviewsPerPage)` — used by `src/pages/SingleRecipe/DataSections/RatingsAndReviews/Reviews/ReviewsContainer.tsx:40` (react-query).
 - **Notes:** `isCurrentUser` is derived from the *verified* token uid (`req.uid`) matching the doc's `userId` — never from any client-supplied identity. `photoURL`/`displayName` are resolved from Firebase Auth via a single deduped, batched `getAuth().getUsers()` keyed on the docs' stable `userId` (the rating doc stores neither); the lookup is failure-tolerant (a transient Admin-SDK error or a deleted/not-found reviewer yields `null` for both fields and never fails the list) — same degrade-gracefully pattern as `getPublicProfile`. Legacy docs lacking a `userId` skip the lookup entirely. Raw docs are spread as-is, so authors' `userId` (Firebase uid) and denormalized `username` are visible to anonymous callers.
 
@@ -450,6 +472,8 @@ All routes live in `server/routes/reviews.js`, mounted at `/api` (server/app.js)
 - ~~**Missing-doc status inconsistency between the two delete routes**~~ **[fixed]** — `/deleteReview` and `/editReview` used to return `403` for "you have no doc for this recipe" while `/removeRating` returned `404` for the identical case. Both routes key the lookup on `req.uid`, so a miss is purely not-found, never a permissions failure (house convention per `drafts.js`: 404 = no such doc, 403 = exists but not yours). All three now return `404 {error: 'Review not found'}` / `404 {error: 'Rating not found'}` respectively.
 - **`getSingleUserReviews` is a public any-username endpoint whose only client caller queries the caller's own handle** — the route takes arbitrary `username` with no auth, but `src/api/recipes.ts:581` hardwires `AuthAPI.getUsername()`. The public-profile surface does not use this endpoint (no other call sites in `src/`), so the arbitrary-username capability is currently reachable only by direct request.
 - **Raw ratings docs leak internal fields to anonymous callers** — `/getReviews` (reviews.js:297-305) and `/getSingleUserReviews` spread the stored doc verbatim, exposing each author's Firebase `userId`, Mongo `_id`, and (on moderated-then-restored docs) `moderatedBy`/`moderatedAt`. Nothing secret-critical, but there is no projection layer.
+
+> **[Reconciled 2026-08-27]:** Stale: this item says there is no projection layer on the public review reads. Truth: fixed by audit M1 in fafceaf (PR #317); `reviewPublicProjection` and `pickFields` over `REVIEW_PUBLIC_FIELDS` keep `userId`, `moderationHidden`, and the moderation stamps out of both /getReviews and /getSingleUserReviews responses, reviews.js:358-387 and 477-500. Checked: the handlers as cited.
 ## Auth & Account
 
 ### GET /api/getUsername
@@ -563,6 +587,8 @@ All routes live in `server/routes/reviews.js`, mounted at `/api` (server/app.js)
 - **Client:** `src/api/recipes.ts` → `getAccountCounts()` (null when signed out) — used by `src/pages/Account/useAccountData.ts:56`, `src/pages/Account/SavedRecipes/SavedRecipes.tsx:100`
 - **Notes:** Counts are **unfiltered** by visibility (correct for the owner's own tabs); the public-profile endpoint deliberately does its own `RECIPE_VISIBLE` aggregate instead of reusing these (publicProfile.js:51–54).
 
+> **[Reconciled 2026-08-27]:** Stale: "Counts are unfiltered by visibility". Truth: `getAccountCountsFor` now filters each count to match its tab, saved via `RECIPE_VISIBLE`, recipes via `RECIPE_OWNER_VISIBLE`, ratings via `REVIEW_VISIBLE` plus a visible-recipe join, with only drafts unfiltered (server/util/accountCounts.js:40-80); the change came with 7743a47, PR #279, whose module header notes that unfiltered counts left a badge reading higher than the grid it sits on. Checked: accountCounts.js and users.js:224-227 in this tree.
+
 ## Public Profiles
 
 ### GET /api/getPublicProfile
@@ -572,6 +598,8 @@ All routes live in `server/routes/reviews.js`, mounted at `/api` (server/app.js)
 - **Response:** `200 {username, displayName, photoURL, bio, location, level, rank, xp, xpNext, pct, achievements (earned only), recipes (first 12, publicRecipeCardProjection, sorted createdAt desc + _id tiebreaker), recipesTotalCount, recipesSavesTotal, recipesMadeTotal}`; `404 {error:'Profile not found'}` for BOTH an unknown username and a profile with `isPublic:false` — identical responses so a private account's existence isn't leaked (publicProfile.js:90–96)
 - **Client:** `src/api/publicProfile.ts` → `getPublicProfile(username)` (resolves 404 to `null`; other errors propagate) — used by `src/pages/PublicProfile/PublicProfile.tsx:149`
 - **Notes:** **Privacy gating:** private → 404; `hideLocation` blanks `location` but leaves the rest public. Header stats come from a `RECIPE_VISIBLE`-filtered aggregate (count + saves/made sums), not `getAccountCountsFor` (which is unfiltered and would leak held/hidden recipe counts). displayName/photoURL come from Firebase Auth via Admin SDK, falling back to `{displayName: username, photoURL: null}` on lookup failure so the profile still renders. Gamification is computed from unfiltered account counts (`computeGamification(counts, [])`).
+
+> **[Reconciled 2026-08-27]:** Stale: gamification on the public profile reads as unfiltered. Truth: it calls `getGamificationCountsFor` at publicProfile.js:54, whose recipes, ratings, and saved counts are each visibility-filtered so a held or hidden recipe cannot leak through a level or achievement (server/util/accountCounts.js:82-98; commit 7743a47, PR #279). The literal `computeGamification(counts, [])` is still the call; the second argument is the empty seen-achievements list, not the counts. Checked: both files as cited.
 
 ### GET /api/getPublicProfileRecipes
 - **Handler:** `server/routes/publicProfile.js:129`
@@ -681,6 +709,8 @@ All routes live in `server/routes/reviews.js`, mounted at `/api` (server/app.js)
 ### POST /api/acknowledgeAchievements
 - **Handler:** `server/routes/gamification.js:37`
 - **Middleware:** `verifyToken`, `profileWriteLimiter` (a `makeUserLimiter` instance at the default 30 req/min per uid → `429 { error, code: 'RATE_LIMITED' }`; shared budget with the other `userProfiles` writes' pattern but its own bucket)
+
+> **[Reconciled 2026-08-27]:** Stale: the middleware list omits `requireActive`. Truth: the chain is verifyToken, requireActive, profileWriteLimiter at gamification.js:39, added with audit L1 in fafceaf (PR #317), so a suspended or banned account gets the `403 { error, code, reason }` body on this route too. Checked: server/routes/gamification.js:39 and its route comment.
 - **Request:** body `{ ids: string[] }`. Non-array → `400 { error: 'ids must be an array' }`. Ids not in the achievement catalog are silently dropped; nothing is written when none survive.
 - **Response:** `200 { success: true }`. `400`/`401`/`429` per above.
 - **Client:** `src/api/gamification.ts` → `acknowledgeAchievements(ids)` — used by `src/pages/Account/useAchievementsToast.ts:29` (fires with `newlyUnlocked` after showing the toast). Client no-ops on an empty array.
@@ -693,9 +723,13 @@ None found. Client paths, methods, request bodies, and typed response shapes (`R
 ### POST /api/ingredients/parse
 - **Handler:** `server/routes/ingredients.js:121`
 - **Middleware:** `verifyToken` → `requireActive` (added in [#308](https://github.com/jclind/prepify/pull/308), Wave 14 · B — a just-suspended/banned account with a still-valid ID token can no longer burn paid Spoonacular quota) → `parseLimiter` (per-user `makeUserLimiter` instance, package defaults: **30 req / 60s per `req.uid`**, custom message `'Too many ingredient lookups — wait a minute and try again.'`, 429 body `{error, code: 'RATE_LIMITED'}`; in-memory per-process bucket, skipped when `NODE_ENV === 'test'`) → `asyncHandler`
+
+> **[Reconciled 2026-08-27]:** Stale: the parseLimiter is described at the factory default of 30 per 60s, and the chain stops at parseLimiter. Truth: the cap is `PARSE_LIMIT = MAX_INGREDIENTS + 40`, i.e. 90 per minute per uid (ingredients.js:68-85, with MAX_INGREDIENTS 50 at recipeLimits.js:10; raised in PR #282, commit 60de2b7, because 30 sat below the 50-ingredient recipe cap), and a `parseQuota` daily-spend limiter runs after it at ingredients.js:95-100 and 149: an over-quota call gets a 429 with `code: 'DAILY_QUOTA_EXCEEDED'` and a "daily ingredient-lookup limit reached, try again tomorrow" message, at defaults of 600 per account per day and 20000 global per day, overridable via `PAID_QUOTA_INGREDIENTS_USER_DAILY` and `PAID_QUOTA_INGREDIENTS_GLOBAL_DAILY`, skipped under `NODE_ENV=test`, failing open on a counter-DB error (paidQuota.js:85-118). Checked: ingredients.js, recipeLimits.js:10, and paidQuota.js in this tree.
 - **Request:** JSON body `{ ingredientString: string }` — must be a non-empty string. Rejection: `400 {error: 'ingredientString must be a non-empty string'}` (falsy or non-string).
 - **Response:**
   - `200 { ingredientData: IngredientData | null }` — `null` is a *clean lookup miss* (no Spoonacular match), returned deliberately as 200 so the client renders its soft-fail row state. When non-null: `{ name: string, imagePath?: string, totalPriceUSACents?: number (integer), possibleUnits?: string[], category?: string }` — price/image keys are **omitted** (not null) when absent.
+
+> **[Reconciled 2026-08-27]:** Stale: the shape omits the price-provenance fields. Truth: when a price is present the response also carries `priceBasis` ('gram' or 'unit-estimate') and `priceConfidence` ('high' or 'low'), flattened beside `totalPriceUSACents` and omitted together with the price when absent (`mapIngredientData`, ingredients.js:126-144); shipped in PR #327, commit 3bc67b1, merged 2026-08-25. Checked: server/routes/ingredients.js in this tree.
   - `400 {error}` — validation, above.
   - `401` — `verifyToken` (missing/invalid Bearer).
   - `403 { error, code: 'ACCOUNT_SUSPENDED' | 'ACCOUNT_BANNED', reason }` — requireActive.
@@ -714,6 +748,8 @@ None found. Client paths, methods, request bodies, and typed response shapes (`R
 ### POST /api/nutrition/details
 - **Handler:** `server/routes/nutrition.js:21`
 - **Middleware:** `verifyToken` → `nutritionLimiter` (independent per-user `makeUserLimiter` instance, defaults: **30 req / 60s per `req.uid`**, message `'Too many nutrition lookups — wait a minute and try again.'`, 429 body `{error, code: 'RATE_LIMITED'}`; skipped under Jest) → `asyncHandler`
+
+> **[Reconciled 2026-08-27]:** Stale: the chain lacks `requireActive` and the daily quota, and the request rules below lack an array-size cap. Truth: the mount is verifyToken, requireActive, nutritionLimiter, nutritionQuota at nutrition.js:41, added with audits H1 and L1 in fafceaf (PR #317); requireActive adds the `403 { error, code, reason }` suspended/banned body, and the quota returns a 429 with `code: 'DAILY_QUOTA_EXCEEDED'` and a "daily nutrition-lookup limit reached, try again tomorrow" message, at defaults of 150 per account per day and 6000 global per day, overridable via `PAID_QUOTA_NUTRITION_USER_DAILY` and `PAID_QUOTA_NUTRITION_GLOBAL_DAILY`, skipped under `NODE_ENV=test`, failing open (nutrition.js:24-35; paidQuota.js:85-118). Also `ingr` arrays longer than MAX_INGREDIENTS, 50, now get `400 { error: 'ingr cannot contain more than 50 items' }` at nutrition.js:52-60. Checked: nutrition.js and paidQuota.js as cited.
 - **Request:** JSON body `{ ingr: string[], title?: string }` — `ingr` must be a non-empty array of strings. `title` optional; non-string/empty falls back to `'recipe 1'` (Edamam requires one). Rejection: `400 {error: 'ingr must be a non-empty array of strings'}`.
 - **Response:**
   - `200 <Edamam nutrition-details JSON>` — passed through verbatim on Edamam 2xx.
@@ -826,6 +862,8 @@ None found. Client paths, methods, request bodies, and typed response shapes (`R
 ## Admin
 
 The six routes below (`server/routes/admin.js`) are the admin console's user-moderation, audit, analytics, and ingredient-telemetry surface. Admin identity is the `admin` custom claim on the Firebase ID token — `verifyToken` decodes it into `req.isAdmin` and `requireAdmin` gates on that flag; there is no database role lookup. There is also no central user record: the roster is derived from the `usernames` collection (`_id` = uid), left-joined against the `users` status collection and per-user activity counts (`enrichUsers`, server/routes/admin.js:88). The other `/admin/*` routes — recipes moderation (`/admin/recipes/*` incl. feature/publish/approve), reviews moderation (`/admin/reviews/*`), reports (`/admin/reports`), and bug reports (`/admin/bug-reports`) — are documented in their own resource sections, as are the `src/api/admin.ts` methods that call them (`setRecipeFeatured`, `setRecipePublished`, `approveRecipe`).
+
+> **[Reconciled 2026-08-27]:** Stale: "The six routes below". Truth: seven; `POST /admin/diagnostics/sentry-test` at admin.js:530, added 2026-08-24 via PR #326 commit e49de7c, is the seventh and is documented below between analytics and ingredients, so this section's intro undercounts and its surface list omits the diagnostics surface. Checked: `git merge-base --is-ancestor e49de7c HEAD` passes in this tree, and grep shows seven router declarations in admin.js at lines 173, 223, 263, 328, 368, 479, 530.
 
 ### GET /api/admin/users
 - **Handler:** `server/routes/admin.js:173`

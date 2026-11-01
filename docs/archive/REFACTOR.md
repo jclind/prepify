@@ -2,6 +2,8 @@
 
 Last updated: 2026-05-13
 
+> **[Reconciled 2026-09-23]:** Stale: the title calls this file the source of truth. Truth: it is the close-out record of the May 2026 refactor (all six phases complete, 2026-05-10 to 2026-05-13). The house standard is now `docs/CONVENTIONS.md`, and the data-migration deferrals below are moot because both clusters were recreated empty on 2026-08-20. Checked: `docs/CONVENTIONS.md`; commit b5dabc5.
+
 ---
 
 ## The Plan
@@ -168,6 +170,8 @@ All 10 components from the PATTERN_AUDIT.md hit list migrated from `useEffect`+`
 - **`GET /api/getSingleUserReviews`** target-vs-identity ambiguity. Revisit when a public-profile UI is in scope.
 - **`PUT /api/saveRecipe`, `PUT /api/unsaveRecipe`** also non-idempotent mutations. Worth converting to POST/DELETE alongside a future round of recipe-save UX work.
 
+> **[Reconciled 2026-09-23]:** Stale: lists the MongoDB `_id` backfill and the save/unsave POST/DELETE conversion as deferred. Truth: both closed. The backfill shipped as `server/scripts/migrateLegacyRecipeIds.js` and both clusters were recreated empty on 2026-08-20, so no legacy docs remain; save/unsave are now `POST`/`DELETE /api/recipes/:id/save`. Checked: `server/scripts/`; `server/routes/recipes.js:901,961`; commit b5dabc5.
+
 ### Commits on this branch (in order)
 
 - `refactor(api): standardize /api prefix on routes; remove dead tag endpoints (Phase 5-B)`
@@ -223,6 +227,8 @@ Server test note: Server tests use **Jest** (`npm test --prefix server`). Vitest
 
 These items appeared on the original Phase 6 known-items list (or surfaced during the phase) but were not executed. None block close-out; each has a reason it didn't fit this phase.
 
+> **[Reconciled 2026-09-23]:** Stale: two items below have since shipped. Truth: `uploadRecipeImage` now keys objects by uid plus uuid (`src/api/recipes.ts:236`), and `VITE_APP_VERSION` is injected at build time (`vite.config.ts:15-16`). The `ignoreDeprecations: "6.0"` item is still open (`tsconfig.json:104`). Checked: those paths.
+
 - **`uploadRecipeImage` unique filenames.** Originally listed at line 194. Fix touches the Firebase Storage upload path and may require a migration plan for any pre-existing colliding objects in the bucket. Better as its own focused PR than bundled with verb/URL polish.
 - **`VITE_APP_VERSION` env var for Footer / ReleaseNotes.** Originally listed at line 198 (and flagged in Phase 2-C). Removing the cross-boundary `package.json` import requires either a Vite plugin or a `define()` injection — small surface but a real architectural choice about how to expose build metadata. Worth one targeted PR.
 - **`ignoreDeprecations: "6.0"` in `tsconfig.json`.** Originally listed at line 199 (and flagged in Phase 2-C). Migrating off `baseUrl` + `paths` is a TypeScript-tooling refactor that should be tied to the next TS major-version upgrade — doing it now without that pressure invites re-doing it later.
@@ -244,3 +250,5 @@ Each chat should be scoped to one phase where possible.
 
 This file (`REFACTOR.md`) is the ground truth — it does not live in chat context.
 Any new session should reference this file, not rely on conversation history.
+
+> **[Reconciled 2026-09-23]:** Stale: names this file as the ground truth for new sessions. Truth: superseded; `docs/CONVENTIONS.md` is the house standard and live procedures live in `docs/RELEASE_RUNBOOK.md` and `docs/CUTOVER_RUNBOOK.md`. Checked: those files exist in `docs/`.

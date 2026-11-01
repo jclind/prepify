@@ -181,6 +181,8 @@ Consolidate to one token. `$footer-border #e6e6e6` is just `$gray-300`.
 
 ## Suggested remediation order
 
+> **[Reconciled 2026-09-23]:** Stale: reads as pending remediation work. Truth: much of it landed after 2026-06-13. `helpers.scss` now has `$primary-hover` (line 2), a `$radius-sm/md/lg` scale (lines 169 to 181), and a full `$admin-*` token group (lines 96 to 108); the token-less F2 files now `@use helpers` (e.g. `src/pages/Admin/Analytics/Analytics.scss:1`). Checked: those paths.
+
 1. **Tokenize the cheap wins first** (low risk, high leverage): `$primary-hover`,
    the danger red, the avatar-glow shadow, `$footer-border → $gray-300`.
 2. **Add radius + elevation scales** (F4, F5) and sweep inline `10px` / shadows.

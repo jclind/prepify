@@ -58,6 +58,8 @@ and the ingredient/instruction list containers), plus associating each visible `
 field label via `aria-labelledby`. The announced-error (`role='alert'`) and the
 shared-primitive wiring (RecipeFormInput / RecipeFormTextArea / ServingsInput) are done.
 
+> **[Reconciled 2026-09-23]:** Stale: these follow-ups are described as open. Truth: substantially landed through a shared FormField wrapper that wires aria-labelledby onto section headers and aria-describedby to error alerts (src/pages/AddRecipe/FormField.tsx:44-45), used by TimeInput and the AddRecipe sections; ImagePicker carries aria-describedby (ImagePicker.tsx:122). Any residual gaps are limited to the react-select pickers and the list containers, which I could not confirm either way. Checked: tree, 2026-09-23.
+
 ---
 
 ## 1. Flow walkthrough (current behavior)
@@ -77,6 +79,8 @@ Shows a top `LoadingBar` and swaps the button label for a spinner. Three outcome
 - `AUTH_ERROR` sentinel → inline "session expired" message
 - `null` → inline generic "Failed to create recipe" message
 
+> **[Reconciled 2026-09-23]:** Stale: the outcome list and the "inline message" wording are out of date. Truth: feedback is now toast-based (success "Recipe published.", a session-expired toast, error toasts with the server's reason), and there is a fourth outcome: the server can hold a new recipe for automated review, and the UI shows a longer-lived pending-review notice instead of the plain success toast. Checked: src/pages/AddRecipe/useRecipeForm.ts:52-57, :580-621.
+
 If invalid on submit, the form scrolls back to top and renders field errors (red box +
 warning icon).
 
@@ -84,6 +88,8 @@ warning icon).
 added; on enrichment failure a warning appears and the item falls back to a basket icon.
 Localized spinner in the input. Items are click-to-edit, removable, and reorderable (DnD
 behind a Reorder/Done toggle). Group labels supported.
+
+> **[Reconciled 2026-09-23]:** Stale: this walkthrough predates the price UI. Truth: rows now carry price-confidence badges so parser guesses are not rendered as facts, and a real $0 price renders as "free" (parser pinned 2.2.0). Checked: src/pages/AddRecipe/Ingredients/IngredientItem.tsx:38-103 and :347-381; PRs #327, #328, #332 (gh, all merged).
 
 **Instructions.** Same container pattern; numbered steps re-index correctly on removal.
 Labels + reorder supported.

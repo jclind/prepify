@@ -19,6 +19,10 @@ XSS. **Read-and-report first** — surface findings, fix only the clearly-safe o
 > Read [`README.md`](README.md) first. This is the security-specific brief. For a focused review of just
 > the current diff, prefer the `/security-review` skill instead.
 
+> **[Reconciled 2026-09-23]:** Stale: this points at a `/security-review` skill (sweeps/README.md lists it too). Truth: no such skill exists; `.claude/skills/` holds only `release-readiness`, `run-prepify`, `worktree-create`, and `worktree-land`, and there is no `.claude/commands/` directory. Checked: `ls .claude/skills/ .claude/commands/`.
+>
+> **[Reconciled 2026-09-27]:** Correction to the note above: `security-review` is in fact available today, delivered through a plugin/sync mechanism a `.claude/skills/` directory listing doesn't surface. The 2026-09-23 check only ruled out a local project or user-scope skill file. This line's original pointer holds again. Checked: this session's own available-skills listing includes `engineering:security-review`.
+
 ## Kickoff
 
 ```
@@ -38,6 +42,8 @@ control. Open a PR with the findings table.
    client-exposed third-party keys that should be proxied: `VITE_OPEN_AI_API_KEY` and the Edamam app
    id/key live in the client `.env` and ride along in the bundle — these belong behind the server. Confirm
    `.env.example` carries no real values.
+
+   > **[Reconciled 2026-09-23]:** Stale: both keys are described as client-exposed. Truth: `VITE_OPEN_AI_API_KEY` has zero matches in `src/`, `server/`, and `.env.example` (the live key was revoked and removed), and `.env.example:3` now directs `EDAMAM_APP_ID`/`EDAMAM_APP_KEY` to `server/.env`, not the client. The nutrition call is server-proxied. Checked: `grep -rn "VITE_OPEN_AI\|EDAMAM" src/ server/ .env.example`.
 2. **Authentication.** Firebase ID tokens are verified server-side via the auth middleware
    (`server/middleware/*`, Admin SDK) which sets `req.uid`. Check: every state-changing route is behind
    `verifyToken` (and `requireActive` where it matters), tokens are actually *verified* (not just decoded),

@@ -4,6 +4,14 @@ Prepify has carried a **beta** label since early on. This doc is the single chec
 to a real **1.0** release. It's meant to be a living document — run `/release-readiness` in Claude
 Code anytime to re-audit the codebase and have the status markers below updated automatically.
 
+> **[Reconciled 2026-08-27]:** The 1.0 gate this plan tracks has passed. v1.0.0 shipped (flip
+> commit `4d75f9b`, PR #318 merged 2026-07-12; GitHub Release "Prepify 1.0.0" published 2026-08-25,
+> tag `v1.0.0` → `f78f261`) and v1.0.1 followed on 2026-08-26 (PR #330; `"version": "1.0.1"` at
+> `package.json:3` and `server/package.json:3`). Status markers below that still read `[ ]` or
+> `[~]` pre-date the flip; inline notes mark the executed ones. Checked: `git tag`,
+> `git for-each-ref refs/tags`, `gh release list`, `gh pr view 318/330`, and
+> `grep -rn -iE "beta|isBeta" src` (only dead `.beta-tag` SCSS remains).
+
 ## What "1.0" means for Prepify
 
 The beta tag comes off when: the app has no obvious rough edges for a first-time visitor, no secret
@@ -26,6 +34,14 @@ before flipping the beta tag; nice-to-haves can ship in a 1.0.x.
 
 The beta label is **hardcoded in three places**, so removing it is a small coordinated refactor, not
 a feature flag. Do these together:
+
+> **[Reconciled 2026-08-27]:** Stale: these edits were still pending. Truth: all shipped 2026-07-12
+> in flip PR #318 (head `4d75f9b`, merge `35596e5`). The footer suffix is gone (`LegalBar.tsx:16`
+> now renders plain `v{version}`), the Beta button is gone from `PrepifyLogo.tsx`, and instead of
+> `isBeta = false` the ReleaseNotes modal was retired outright (owner decision, `.tsx` + `.scss`
+> deleted in `4d75f9b`; notes live on the GitHub 1.0 Release). The two `[ ]` rows at the top of
+> Section A ("Beta tag fully removed", "Release notes refreshed") point here and are done with it.
+> Checked: `git show 4d75f9b --stat`, `docs/evidence/CUTOVER_RUN_2026-07-11.md` §4.
 
 - `[ ]` **Remove `-beta` from the footer** — (moved: the `-beta` suffix now lives in
   `src/Components/Footer/shared/LegalBar.tsx:16`, `v{version}-beta`, after the footer redesign — not
@@ -353,6 +369,12 @@ Chunky design efforts that are bigger than a single checkbox. Tag each as **(blo
   - **Release-day note:** prod needs the one-time breakdown backfill after deploy —
     `MONGO_URI=<prod> node server/scripts/reconcileRatingAggregates.js --apply` (idempotent; dev done
     2026-07-09). Until run, prod hides the histogram and self-heals per-recipe on rating writes.
+    > **[Reconciled 2026-08-27]:** Stale: the backfill was still owed on prod. Truth: it ran
+    > 2026-07-12 (12 histograms corrected, convergence dry-run clean; commit `3f68745`), and the
+    > constraint is now moot anyway. The 2026-08 Atlas termination wiped that database, prod was
+    > restored empty on 2026-08-20, and the fresh DB has no legacy recipes to backfill
+    > (`checkMigrationState` exit 0). Checked: `docs/evidence/CUTOVER_RUN_2026-07-11.md` §2 (2b done)
+    > and "§5 tail" (fresh-DB restore).
 
 - `[x]` **Homepage redesign** — **(design shipped)**
   - **Shipped:** the redesign landed earlier (`e1539c3`) — Home is now `HomeHero → Trending → Browse by
@@ -410,6 +432,14 @@ the actual flip. Deploy is **Netlify** frontend + Railway backend (Firebase is A
 > with valid HTTPS. Deploy is now **branch-based**: merging `development`→`release` triggers the prod Netlify
 > build + the prod Railway service. So step 5 below is "merge to `release`," not a manual env-var-then-build.
 > The only thing gating cutover is the deliberate beta-flip (held until you say go) + the About-page rewrite.
+
+> **[Reconciled 2026-08-27]:** Stale: cutover was still "gated." Truth: both items finished and the
+> cutover was executed 2026-07-11 through 2026-07-12. §1 pre-flight GO (`e0503d6`), data ops 2a-2e (`fd05365`,
+> `3f68745`, `f2dc171`, `04de263`, `026430a`), flip PR #318 merged (`3ec00cb`), deploy pushed to
+> `release` (`16ff7c2`). The §5 tail that went unrun for five weeks was closed 2026-08-21/24
+> (`b5dabc5`). Checklist items 1-7 below all happened, and the version has since moved past 1.0.0 to
+> 1.0.1 (PR #330, GitHub Release 2026-08-26). Checked: `git log --oneline -- docs/evidence/`,
+> `gh release list`, `gh pr view 318/330`.
 
 1. `[ ]` All blockers above are `[x]`.
 2. `[ ]` Bump `version` in `package.json` to `1.0.0`.

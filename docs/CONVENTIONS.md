@@ -51,6 +51,11 @@ that spans both is two PRs, not one.
 | `src/client/` | Firebase app init (`db.ts`). |
 | `src/test/` | **All** Vitest tests, flat (not co-located by feature); mocks in `src/test/mocks/`. |
 
+> **[Reconciled 2026-09-23]:** Stale: `src/util/` is described as "one function per file". Truth: only the
+> oldest files still hold a single export (`formatPrice.ts`, `calculateServingPrice.ts`); most now export
+> several (`toastMessages.ts` 13, `seo.ts` 6, `recipeLimits.ts` 6, `sentry.ts` 4). Treat the row as
+> "small pure helpers", not a one-function cap. Checked: `grep -c '^export' src/util/*.ts`.
+
 **The dependency graph is one-way: `pages → Components → hooks/util/api`.** `Components/` must never import
 from `pages/` (grep confirms zero such imports today). A page may import its own sub-components via the
 `src/pages/...` alias; same-dir children use a relative `'./Child'` import.
@@ -145,6 +150,11 @@ Repeated route strings should live in one place so a rename can't drift copies a
   introduced `src/routes.ts` (`RECIPES_PATH`, `ACCOUNT_*_PATH`, `activeAccountTab`) to extend the pattern to
   top-level paths.
 
+> **[Reconciled 2026-09-23]:** Stale: the parenthetical credits `src/routes.ts` with an `activeAccountTab`
+> export. Truth: `src/routes.ts` (27 lines) exports only `RECIPES_PATH` and the four `ACCOUNT_*_PATH`
+> constants; `activeAccountTab`/`activeAccountTabIndex` still live in `accountTabs.tsx`, as the bullet above
+> says. Checked: src/routes.ts:18-27, src/pages/Account/components/accountTabs.tsx:66,79.
+
 **Convention for new work: reference the route constant, don't retype the literal.** Now that `src/routes.ts`
 has landed, adopt it for any new route reference; the R1/R2 refactors should migrate the pages they touch.
 
@@ -196,6 +206,11 @@ under `NODE_ENV=test`, error body `{ error, code: 'RATE_LIMITED' }`). Each call 
 per-surface bucket**: `recipeWriteLimiter` (tighter — 12, paid Vision scan), `reviewWriteLimiter` (30),
 `profileWriteLimiter` (30), plus per-route buckets (`reportLimiter`, `nutritionLimiter`, `parseLimiter`).
 A coarse global per-IP backstop lives in `app.js`; these per-uid limiters are the fine-grained layer.
+
+> **[Reconciled 2026-09-23]:** Stale (incomplete): the inventory names only recipe/review/profile plus the
+> report/nutrition/parse route buckets. Truth: `collectionWriteLimiter` and `draftWriteLimiter` (both at the
+> 30/min default) also exist and are exported from the same factory. Checked:
+> server/middleware/writeLimiter.js:64-85.
 
 ### 3.5 Input validation — server-authoritative, defense-in-depth
 
@@ -278,6 +293,12 @@ Each component folder holds `Component.tsx` + `Component.scss`; the component im
 sheet pulls tokens via `@use '../../helpers.scss' as s;` (referenced as `s.$primary`, `@include
 s.focus-glow;`). The only cross-component style layer is the shared `.btn` system in
 [`src/index.scss`](../src/index.scss).
+
+> **[Reconciled 2026-09-23]:** Stale: "the only cross-component style layer is the shared `.btn` system".
+> Truth: `src/index.scss` (408 lines) now carries several other global, cross-component classes:
+> `.load-more-btn` (the one shared load-more button), the `.sk-hold` skeleton reserve utility,
+> `.sr-only`, `.page`, `.auth-loading-container`, the `.error`/`.warning`/`.success` text styles, `.tag`,
+> `.alert`, `.window-too-small`, `.dragging`. Checked: src/index.scss:77-406.
 
 ### 4.2 Use tokens & mixins, never literals
 

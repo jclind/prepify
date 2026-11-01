@@ -32,12 +32,17 @@ type IngredientItemProps = {
 }
 
 // Per-ingredient price for the row, carrying the parser's own provenance so a
-// guess doesn't render with the authority of a measured number. Three states:
+// guess doesn't render with the authority of a measured number. Four states:
 //
 //   'exact'    — a mass measure. unit → grams is exact and density-independent.
 //   'estimate' — a volume measure converted through an average density (a cup
 //                of flour genuinely varies ±20%), or a per-item price
 //                multiplied by a count. Same number, marked as a guess.
+//   'free'     — a real price that happens to be 0 (parser 2.2.0): water, or an
+//                amount left to the cook like "to taste". Renders identically
+//                to 'exact', no badge and no styling of its own. It exists only
+//                so the row can say why the number is 0, since $0.00 next to
+//                "salt and pepper" otherwise reads as broken.
 //   'none'     — no price at all. Since @jclind/ingredient-parser 2.1.0 the
 //                parser declines rather than guessing when a measure can't be
 //                priced, which is why this is now common enough to deserve real
@@ -45,10 +50,14 @@ type IngredientItemProps = {
 //                rows silently, so the per-serving total understates until the
 //                author supplies a price.
 //
+// 'free' and 'none' are the pair most easily confused, and the subtotal chip
+// depends on keeping them apart: a free row is priced and must not mark the
+// total partial.
+//
 // Rows enriched before priceBasis existed carry a price but no provenance, and
 // land in 'exact' on purpose — historical recipes shouldn't all sprout estimate
 // markers on the strength of a missing field.
-type PriceKind = 'exact' | 'estimate' | 'none'
+type PriceKind = 'exact' | 'estimate' | 'free' | 'none'
 type PriceDisplay = { text: string; kind: PriceKind; title: string }
 
 const priceDisplay = (ingredient?: IngredientsType): PriceDisplay => {
@@ -75,6 +84,16 @@ const priceDisplay = (ingredient?: IngredientsType): PriceDisplay => {
   }
 
   const text = `$${(cents / 100).toFixed(2)}`
+  // Before the confidence check, though a free price is always 'high': the
+  // basis is the more specific fact, and reading it first keeps the branch
+  // true if the parser ever downgrades a free row's confidence.
+  if (data?.priceBasis === 'free') {
+    return {
+      text,
+      kind: 'free',
+      title: 'This ingredient is free, so it adds nothing to the cost.',
+    }
+  }
   if (data?.priceConfidence === 'low') {
     return {
       text,
@@ -353,6 +372,12 @@ const IngredientItem: FC<IngredientItemProps> = ({
           title={loading ? undefined : price.title || undefined}
         >
           {loading ? '' : price.text}
+          {/* Same reasoning as the estimate badge below: `title` alone is read
+              inconsistently, so a screen-reader user would hear "$0.00" and
+              nothing explaining it. No badge here, only the sentence. */}
+          {!loading && price.kind === 'free' && (
+            <span className='sr-only'>{price.title}</span>
+          )}
           {!loading && price.kind === 'estimate' && (
             <>
               {/* The badge is decoration for this purpose: `aria-label` on a

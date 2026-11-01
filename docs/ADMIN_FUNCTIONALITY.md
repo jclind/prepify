@@ -30,6 +30,8 @@ Scoped **2026-06-10**. Single-developer estimate: **~3 weeks** for the full P0�
 
 ## How the system works today (the ground truth)
 
+> **[Reconciled 2026-09-23]:** Stale: this section describes the 2026-06-10 pre-build state under a "today" heading. Truth: all of it shipped (see Progress below); the collections list now also includes users, reports, auditLog, bugReports and paidQuota. Checked: server/routes/admin.js:173-536, src/pages/Admin/ listing, server/db.js:203-216.
+
 - **Auth**: Firebase ID token → `server/middleware/auth.js` `verifyToken` sets `req.uid`.
   **No roles, no claims today.** Every write route is owner-only via `recipe.userId !== uid`
   checks (`server/routes/recipes.js:181`, `:227`).
@@ -178,6 +180,8 @@ the admin-system reference / decision record.** Later additions exist outside th
 doc's original P0–P3 scope: an admin **bug-reports** tab and an admin
 **ingredients** tab.
 
+> **[Reconciled 2026-09-23]:** Stale: the post-P3 additions list stops at the bug-reports and ingredients tabs. Truth: there is also an automod hold-for-review pipeline (server/util/automod.js; held recipes get status 'pending_review' and are approved via PATCH /admin/recipes/:id/approve, server/routes/recipes.js:811) and POST /admin/diagnostics/sentry-test (server/routes/admin.js:530, #326). RECIPE_VISIBLE now also excludes 'pending_review' (server/util/moderation.js:22). Checked: tree; gh pr view 326 (merged 2026-08-24).
+
 P2 smoke test PASS (2026-06-11). Fixes applied during it: account-status banner
 (pulled forward from P3 — persistent upfront notice for suspended/banned users),
 Users page live/clearable search + pagination, and admin-bypass on `getRecipe`
@@ -212,9 +216,13 @@ flag on the `ratings` doc for reviews (original text preserved, reversible).
   P2 should add an owner-facing "your content was moderated" surface.
 - `getSavedRecipes` `totalCount` still counts a saved-but-hidden recipe even though
   it's filtered from the returned page (minor pagination drift).
+
+  > **[Reconciled 2026-09-23]:** Stale: this drift was real when written. Truth: fixed in #279; totalCount now counts only RECIPE_VISIBLE recipes on both the save-time fast path and the search/sort path (server/routes/users.js:207-214 and :170-178). Checked: tree; gh pr view 279 (merged 2026-07-10).
 - A taken-down review's star rating is **EXCLUDED** from the recipe's average
   rating — the average is recomputed both on takedown **and** on restore
   (`server/routes/reviews.js:404`).
+
+  > **[Reconciled 2026-09-23]:** Stale cite only: the moderation endpoint and its recompute now sit at server/routes/reviews.js:514 and :551. The described behavior (average recomputed on takedown and restore) is unchanged. Checked: tree, 2026-09-23.
 - The review's author still sees their own taken-down review on the recipe page
   (the "Your Review" exception), even though it's hidden from everyone else.
 

@@ -6,6 +6,8 @@ Files examined: 28
 
 > **Status (2026-07-08):** most findings resolved; remaining open items are now tracked in BACKLOG.md. Inline markers below: ✅ FIXED / ⏳ OPEN / 🗑 OBSOLETE.
 
+> **[Reconciled 2026-09-23]:** This audit predates newer add-recipe surface it doesn't cover: the ingredient parser is pinned to 2.2.0 with a real $0 price rendered as "free" (package.json:11; f284d8c, #332 merged 2026-09-03), per-ingredient price-confidence badges (#327, #328), draft autosave/resume (src/pages/AddRecipe/useDraftAutosave.ts, DraftResumeBanner.tsx), and server-side daily paid-API quota plus the per-user parse limiter (server/util/paidQuota.js; server/routes/ingredients.js:149). Checked: tree; gh pr view 327/328/332.
+
 ---
 
 ## Summary
@@ -28,6 +30,8 @@ The Add Recipe flow has been substantially de-risked by Phases 5-C, 5-D, and 5-F
 - **Redundant `userId` in query params alongside Bearer token** (REFACTOR.md Decision Log, Phase 5-C) — **Confirmed resolved for `POST /addRecipe`.** Body is the recipe object only; server stamps `userId: req.uid` (`server/routes/recipes.js:148`).
 - **`server-ingredients/` directory still referenced** (REFACTOR.md Decision Log) — **No longer applicable.** No references found anywhere in the AddRecipe path; ingredient parsing flows through `/api/ingredients/parse` only.
 - **`uploadRecipeImage` non-unique filenames** (REFACTOR.md Phase 6 — Deferred) — **Confirmed still applicable.** `src/api/recipes.ts:92` writes `recipeImages/${imageFile.name}` with no UUID/hash prefix. Re-flagged in Cat 4 as the deferred follow-up is still outstanding.
+
+  > **[Reconciled 2026-09-23]:** Stale: "still applicable / still outstanding". Truth: fixed. uploadRecipeImage keys objects `recipeImages/{uid}/{uuid}` (src/api/recipes.ts:235-243), matching the ✅ marker already on Category 4. Checked: tree, 2026-09-23.
 - **Phase 2-C DnD barrel re-exports** (REFACTOR_NOTES.md Phase 2-C) — **Confirmed wired correctly.** `src/pages/AddRecipe/Dnd/index.ts` re-exports `DndContext`, `Drop`, `Drag`; reorder reaches submission via shared parent state (see Cat 7).
 - **Phase 2-D — `addRecipe` typing** (REFACTOR.md Phase 2-D Deferred) — **Resolved.** `http.post<{ _id: string }>` is now generic-typed; return is `Promise<string | null>`. No `any` in this method.
 - 🗑 OBSOLETE — **EnrichmentResult `source` hardcoded `'spoonacular'`** (API_CONTRACT.md Flags — Low) — **Confirmed.** `src/api/ingredientParserApi.ts:18-20` always sets `'spoonacular'`. Field is unused in the frontend; cosmetic. _(No longer applies: `EnrichmentResult` now only exposes `{ data }` — the `source` field is gone.)_
@@ -45,6 +49,7 @@ The Add Recipe flow has been substantially de-risked by Phases 5-C, 5-D, and 5-F
 - **Suggested fix direction:** Capture `const newId = await RecipeAPI.addRecipe(...)`; on truthy, navigate via `useNavigate()` to the single-recipe route (or fire a toast and redirect). On falsy keep the existing error path. This is the load-bearing reason the server contract was changed in Phase 5-D — the navigation half of that change wasn't wired up.
 
 #### [LOW] `errors.cookTime` is dead UI
+> **[Reconciled 2026-09-23]:** Stale: unmarked finding. Truth: fixed. The unreachable errors.cookTime render is gone from AddRecipe.tsx; cookTime stays optional. Checked: tree, 2026-09-23.
 - **File:** `src/pages/AddRecipe/AddRecipe.tsx:202-205`
 - **Description:** `validate()` never assigns `newErrors.cookTime`, so the conditional render is unreachable. Either cookTime should be required (it currently isn't) or this branch should be removed.
 - **Suggested fix direction:** Remove the cookTime error JSX since cook time is intentionally optional, or add cookTime to the validation set if business rules require it.
@@ -66,6 +71,7 @@ The Add Recipe flow has been substantially de-risked by Phases 5-C, 5-D, and 5-F
 - **Suggested fix direction:** Add reasonable bounds in `validate()` (e.g., description ≤ 500, ingredients/instructions ≤ ~50 entries each, instruction content ≤ 500). Mirror the bounds server-side as a defence-in-depth check.
 
 #### [MEDIUM] Errors only surface on submit, not as the user fills the form
+> **[Reconciled 2026-09-23]:** Stale: unmarked finding. Truth: fixed. A hasAttemptedSubmit flag gates error display and the live-validation effect keeps shown errors in sync so a fixed field clears immediately (src/pages/AddRecipe/useRecipeForm.ts:226, :515). Checked: tree, 2026-09-23.
 - **File:** `src/pages/AddRecipe/AddRecipe.tsx:90-103, 105-132`
 - **Description:** The `useEffect` runs `validate()` without `assignErrors`, so it computes `isFormValid` for the button class but never displays errors. Inline errors only appear after the user clicks submit (`validate(true)` on `:105`). A user filling out a long form gets no progressive feedback about what's missing.
 - **Suggested fix direction:** Either run `validate(true)` in the effect (after the user has interacted at least once — track with a `hasInteracted` flag to avoid first-paint errors), or surface a per-field "this is required" badge on blur.
@@ -91,6 +97,7 @@ The Add Recipe flow has been substantially de-risked by Phases 5-C, 5-D, and 5-F
 - **Suggested fix direction:** Either teach the server to report cache hits (a header or response field) and propagate, or drop the union to `'spoonacular'` until cache reporting exists.
 
 #### [LOW] Ingredient parse failure UX is per-row-implicit
+> **[Reconciled 2026-09-23]:** Stale: unmarked finding. Truth: addressed. Enrichment-failed rows carry an errored state with an AlertCircleIcon warn marker (src/pages/AddRecipe/Ingredients/IngredientItem.tsx:347-364) and row failures toast; parse errors also carry the #282 rate-limit retry state (IngredientItem.tsx:156-165). Checked: tree, 2026-09-23.
 - **File:** `src/pages/AddRecipe/Ingredients/IngredientsInput.tsx:43-47`
 - **Description:** Soft-fail policy is implemented correctly — the ingredient is added, a small inline warning appears: `Added "X", but couldn't fetch nutrition/image data.` This is good. The minor issue: the warning replaces itself on the next add and there's no way for the user to retroactively review which earlier ingredients ended up enrichment-less. The error state is carried on the ingredient itself (`IngredientsType` error variant) but not visually surfaced in `IngredientItem.tsx` beyond the missing image (replaced by `CiShoppingBasket`).
 - **Suggested fix direction:** Add a small visual marker on enrichment-failed `IngredientItem` rows (e.g., a warning icon with tooltip "nutrition data unavailable").
@@ -101,6 +108,8 @@ The Add Recipe flow has been substantially de-risked by Phases 5-C, 5-D, and 5-F
 
 #### [HIGH] Orphaned images on partial failure ⏳ OPEN
 - _Still open — the `addRecipe` catch logs/maps the error but does not delete the already-uploaded image. Tracked in BACKLOG.md._
+
+  > **[Reconciled 2026-09-23]:** Stale: marked OPEN. Truth: fixed. addRecipe tracks the URL it uploaded and the catch runs a best-effort deleteRecipeImage cleanup before surfacing the error (src/api/recipes.ts:242-260, :366-368). Checked: tree, 2026-09-23.
 - **File:** `src/api/recipes.ts:104-161`
 - **Description:** `uploadRecipeImage` runs first (`:112-115`), then `getRecipeNutrition` (`:122-124`), then `http.post('api/addRecipe', ...)` (`:156`). If nutrition fetching throws (Edamam down/401, network error), or the POST fails (server 500, expired token), the catch block on `:158` returns `null` and the image stays in Firebase Storage forever. There is no compensating delete in the catch.
 - **Suggested fix direction:** Either (a) defer image upload to *after* the recipe POST succeeds (the server stores the URL but doesn't need it to validate), or (b) keep current order but track the upload's storage ref and call `deleteObject(ref)` from the catch. Option (a) is simpler and avoids the cleanup race.
@@ -112,6 +121,7 @@ The Add Recipe flow has been substantially de-risked by Phases 5-C, 5-D, and 5-F
 - **Suggested fix direction:** Prefix with `${uuidv4()}-` or `${userUid}/${uuidv4()}-`. UUID is already imported at `src/api/recipes.ts:20`.
 
 #### [MEDIUM] No pre-upload file validation
+> **[Reconciled 2026-09-23]:** Stale: unmarked finding. Truth: fixed. ImagePicker rejects non-JPEG/PNG/WebP types and files over 5MB with a toast before any upload (src/pages/AddRecipe/ImagePicker/ImagePicker.tsx:7, :48-53). Checked: tree, 2026-09-23.
 - **File:** `src/pages/AddRecipe/ImagePicker/ImagePicker.tsx:14-52`
 - **Description:** `accept='image/*'` is the only filter. No size cap, no MIME re-check, no dimension floor/ceiling. A 50MB photo from a phone uploads to Firebase Storage as-is, blocks the submit pipeline for a long time, and bloats the bucket.
 - **Suggested fix direction:** Add a size guard (~5MB) and a brief MIME whitelist check in `handleFileSelect`. Surface "image too large" inline.
@@ -132,6 +142,7 @@ The Add Recipe flow has been substantially de-risked by Phases 5-C, 5-D, and 5-F
 - **Suggested fix direction:** Log the error in the catch (at minimum `console.error('addRecipe failed', error)` — or push to a real telemetry sink). Map common failure shapes (401, network, Firebase, Edamam) to user-actionable messages.
 
 #### [MEDIUM] Edamam call has no try/catch — bubbles into outer catch as the same generic failure
+> **[Reconciled 2026-09-23]:** Stale: unmarked finding. Truth: fixed. getRecipeNutrition catches failures, logs, and returns null so the recipe still gets created without nutrition (src/api/recipes.ts:491-507). Checked: tree, 2026-09-23.
 - **File:** `src/api/recipes.ts:178-181, 162-201`
 - **Description:** `getRecipeNutrition` posts to Edamam without local error handling. A network error or 401 from Edamam throws, the outer `addRecipe` catch on `:158` returns `null`, and the user sees the same "Failed to create recipe." message — even though the *recipe data* was valid and the only thing that broke was a third-party API call that arguably shouldn't block creation in the first place.
 - **Suggested fix direction:** Wrap the nutrition call in try/catch in `getRecipeNutrition` itself; on failure return `{ nutritionData: null, dietLabels: null }` so the recipe still gets created (matches the soft-fail pattern already used for ingredient enrichment).
@@ -142,6 +153,7 @@ The Add Recipe flow has been substantially de-risked by Phases 5-C, 5-D, and 5-F
 - **Suggested fix direction:** After a successful image upload, hold the resulting URL in state; on retry skip `uploadRecipeImage` if the same `File` reference and a URL already exist. Same idea for nutrition data.
 
 #### [LOW] Error banner styling is a single `<p className='submit-error'>` with no role
+> **[Reconciled 2026-09-23]:** Stale: unmarked finding. Truth: superseded. The .submit-error element was removed in the toast migration, and AddRecipeFormError now renders role='alert' (src/pages/AddRecipe/AddRecipeFormError.tsx:13). Checked: tree, 2026-09-23.
 - **File:** `src/pages/AddRecipe/AddRecipe.tsx:246-248`
 - **Description:** No `role='alert'` or `aria-live`, so screen readers won't announce the failure when it appears. `AddRecipeFormError.tsx` has the same issue.
 - **Suggested fix direction:** Add `role='alert'` to the submit-error paragraph and `role='status'` (or `role='alert'`) to `AddRecipeFormError`.
@@ -159,6 +171,7 @@ The Add Recipe flow has been substantially de-risked by Phases 5-C, 5-D, and 5-F
 - **Description:** Body is the `Omit<RecipeType, '_id'>` shape — no userId field. Server stamps `userId: req.uid` after spreading body (`:148`), so any client-side userId would be overridden. Phase 5-C resolution holds. No new finding.
 
 #### [MEDIUM] Expired token mid-submit produces a confusing generic failure
+> **[Reconciled 2026-09-23]:** Stale: unmarked finding. Truth: fixed. addRecipe maps a 401 to an auth-error result (src/api/recipes.ts:369-370) and the submit handler toasts a session-expired message instead of the generic failure (src/pages/AddRecipe/useRecipeForm.ts:580, :604). Checked: tree, 2026-09-23.
 - **File:** `src/api/recipes.ts:158-160`, `src/api/http-common.ts:13-18`
 - **Description:** If `getIdToken()` succeeds (because the token was still good at request time) but the token expires during the multi-step pipeline, only the *latest* request gets a fresh token. A 401 from any leg falls into the generic catch and the user sees "Failed to create recipe" with no prompt to re-authenticate. The token-refresh interceptor pulls a fresh token per call, so this is rare in practice — but if a user lets an Add Recipe form sit overnight and clicks submit, every step will get a fresh token automatically *unless* the refresh itself fails (revoked, network down).
 - **Suggested fix direction:** On a 401 status from `addRecipe`, show "Your session expired — please sign in again" and redirect to the auth flow. Distinguish 401 from other failures in the error mapping.
@@ -186,11 +199,14 @@ The Add Recipe flow has been substantially de-risked by Phases 5-C, 5-D, and 5-F
 
 #### [MEDIUM] `createdAt` computed client-side as epoch-ms-as-string ⏳ OPEN
 - _Still open — the client still sends `new Date().getTime().toString()` (`src/api/recipes.ts:284`) and the server does not stamp `createdAt` at insert. Tracked in BACKLOG.md._
+
+  > **[Reconciled 2026-09-23]:** Stale: marked OPEN. Truth: fixed. The create body omits createdAt entirely (a client clock must not set the Newest-sort position, src/api/recipes.ts:330-341) and the server stamps `createdAt: Date.now().toString()` at insert (server/routes/recipes.js:595). Checked: tree, 2026-09-23.
 - **File:** `src/api/recipes.ts:145`
 - **Description:** `new Date().getTime().toString()` — client clock is the source of truth for recipe creation time. A user with a wrong clock backdates their own recipe. Inconsistent with normal practice (server timestamps).
 - **Suggested fix direction:** Drop from client payload; have `server/routes/recipes.js:148` stamp `createdAt: Date.now().toString()` (or a proper ISO string) at insert time.
 
 #### [MEDIUM] `nutritionData` shape mismatch between TypeScript and runtime tolerance
+> **[Reconciled 2026-09-23]:** Stale: the described failure path is gone. Truth: diet/health labels now come from the form rather than Edamam (no label access remains in the client), getRecipeNutrition soft-fails to null, and the create body accepts nutritionData: null (src/api/recipes.ts:288-300, :329). Checked: tree, 2026-09-23.
 - **File:** `src/types.ts:73-85`, `src/api/recipes.ts:178-201`
 - **Description:** `NutritionDataType` requires every field to be present. If Edamam returns a partial response (some fields missing), the `nutritionResult: NutritionDataType = nutritionResultRes.data` cast on `:183` is a lie; downstream `nutritionResult.dietLabels` and `.healthLabels` access (`:190-191`) will throw if those fields are missing. Falsy-result guard on `:185` handles only the empty case.
 - **Suggested fix direction:** Validate the Edamam response shape before casting. At minimum, defensive default the two arrays before spreading: `[...(nutritionResult.dietLabels ?? []), ...(nutritionResult.healthLabels ?? [])]`.
@@ -233,6 +249,7 @@ The Add Recipe flow has been substantially de-risked by Phases 5-C, 5-D, and 5-F
 - **Suggested fix direction:** Type the callback args properly (`react-select` v5 has these typings) or add a project-level eslint exception with a TODO.
 
 #### [LOW] `MealTypeSelector` placeholder says "Select a cuisine..."
+> **[Reconciled 2026-09-23]:** Stale: unmarked finding. Truth: fixed. The placeholder reads 'Select meal type(s)...' (src/pages/AddRecipe/MealTypeSelector/MealTypeSelector.tsx:60). Checked: tree, 2026-09-23.
 - **File:** `src/pages/AddRecipe/MealTypeSelector/MealTypeSelector.tsx:76`
 - **Description:** Copy-paste from `CuisineSelector`. Cosmetic but visible to users.
 - **Suggested fix direction:** Change to `'Select meal types...'`.

@@ -6,6 +6,14 @@
 > ([`evidence/CUTOVER_REHEARSAL_2026-07-11.md`](./evidence/CUTOVER_REHEARSAL_2026-07-11.md)).
 > The smoke-test checklists in this file are still referenced from there; the ordered steps are not.
 
+> **[Reconciled 2026-08-27]:** EXECUTED. The cutover this file (and its successor runbook)
+> describes ran live 2026-07-11→12 and was closed out 2026-08-21/24; the 1.0.0 GitHub Release was
+> published 2026-08-25 (tag → `f78f261`) and 1.0.1 followed 2026-08-26 (PR #330). Full log:
+> [`evidence/CUTOVER_RUN_2026-07-11.md`](./evidence/CUTOVER_RUN_2026-07-11.md). The smoke-test
+> checklists below are the copies the successor runbook references, and they were run: 12/12 local
+> dress rehearsal 2026-07-12, prod smoke test passed 2026-08-21/24. Checked:
+> `git log --oneline -- docs/evidence/`, `gh release list`, `gh pr view 318/330`.
+
 The single ordered checklist for flipping Prepify from **beta → 1.0**. Everything the parallel
 backlog program tracked (`BACKLOG_ROADMAP.md` Waves 1–8) is merged; the only work left is this
 owner-driven cutover. It is deliberately **not** automatable — the beta flip is the intentional
@@ -108,6 +116,14 @@ them up in a 1.0.x. Do them here only if you want them live at launch. Full runb
 The beta label is hardcoded in 3 UI spots + the release-notes flag. Do these together in **one PR** off
 `development`. `grep -rn -iE "beta" src` currently returns 13 hits; after these edits it should return
 only the `.beta-tag` SCSS class (decide keep-or-rename — cosmetic).
+
+> **[Reconciled 2026-08-27]:** Stale anchors: the two `ReleaseNotes.tsx` edits below are impossible
+> now. The flip shipped as PR #318 (head `4d75f9b`, 2026-07-12) and retired the ReleaseNotes modal
+> outright, deleting `.tsx` + `.scss`, rather than setting `isBeta = false` (owner decision, notes
+> live on the GitHub 1.0 Release). `package.json` is also past this step, at `1.0.1` since
+> 2026-08-26 (`package.json:3`, PR #330). The `LegalBar.tsx` and `PrepifyLogo.tsx` edits happened
+> as written. Checked: `git show 4d75f9b --stat` (5 files, modal deleted), `ls src/Components/ReleaseNotes`
+> (gone), `grep -rn -iE "beta|isBeta" src` (only `.beta-tag` SCSS).
 
 - `[ ]` **Footer version suffix** — `src/Components/Footer/shared/LegalBar.tsx:16`: drop `-beta`
   (`v{version}-beta` → `v{version}`).
@@ -217,6 +233,12 @@ late at night.
   and its callers. Never before Phase 1a is applied *and* live.
 - `[ ]` **Legacy rating-type migration** (BACKLOG Bugs, 2026-07-09): old `rating` docs store stringified
   numbers, so the new "Top" sort interleaves wrong by BSON type order — normalize to numbers.
+
+> **[Reconciled 2026-08-27]:** Done, twice over. It ran as RELEASE_RUNBOOK 2d on 2026-07-12
+> (prod normalized, `026430a`; the flip half, PR #303, merged `3e3feda`), and the 2026-08 restore
+> left today's prod DB with no legacy ratings anyway. Post-flip writes are numeric. The box-flip
+> item below is being handled by the 2026-08-27 docs reconciliation. Checked:
+> `docs/evidence/CUTOVER_RUN_2026-07-11.md` §2 (2d) and §5 tail; `gh pr view 303` (MERGED).
 - `[ ]` Flip the RELEASE_PLAN cutover checklist + this runbook's boxes to `[x]`; add an audit-log entry.
 
 ---

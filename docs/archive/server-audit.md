@@ -4,6 +4,8 @@
 > see `docs/SECURITY_AUDIT_2026-06-11.md` for the current audit, the
 > regression cross-check against this list, and the remaining open items.
 
+> **[Reconciled 2026-09-23]:** Stale: names `docs/SECURITY_AUDIT_2026-06-11.md` as the current audit. Truth: a newer one exists, `docs/SECURITY_AUDIT_2026-07-11.md`, with its own remediation batch; both are historical now. Checked: both files present in `docs/`.
+
 ---
 
 ### Backend Issues
@@ -53,6 +55,8 @@
 ---
 
 ### Quick Wins
+
+> **[Reconciled 2026-09-23]:** Stale: these read as open one-line fixes. Truth: all five were addressed by later work, and some referenced files are gone (`server/routes/tags.js` deleted; `PUT /saveRecipe` replaced by `POST /api/recipes/:id/save`). The axios auth interceptor is live at `src/api/http-common.ts:43`, and `deleteRecipe` now 403s non-owners. Checked: `src/api/http-common.ts:43`; `server/routes/`; `server/routes/recipes.js:736,901`.
 
 Ordered by impact:
 

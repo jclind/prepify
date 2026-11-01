@@ -9,6 +9,8 @@ Everything is coded with Claude across **git worktrees**. The point of this doc 
 
 _Created 2026-06-17._
 
+> **[Reconciled 2026-09-23]:** Stale: presents the beta-to-1.0 cutover as upcoming work. Truth: this is the June 2026 gameplan, kept as a record. 1.0.0 shipped 2026-08-25 (tag `v1.0.0` to `f78f261`), 1.0.1 on 2026-08-26, and both package.jsons are now 1.0.2 (commit 154fa80, no tag yet). Live procedure docs: `docs/RELEASE_RUNBOOK.md`; roadmap: `docs/BACKLOG_ROADMAP.md`. Checked: `git tag v1.0.0`; `package.json:3`; GitHub releases.
+
 ---
 
 ## Locked decisions (2026-06-17)
@@ -65,6 +67,8 @@ same commit.**
 | 4-tests | Toast/alert + Cypress autocomplete tests | `[x]` | #168 ✅ |
 | 4-qa | Empty/error sweep + links + copy + mobile + Lighthouse | `[x]` | #174 ✅ |
 | 5 | Cutover (beta off + 1.0.0 + deploy) | `[ ]` | — |
+
+> **[Reconciled 2026-09-23]:** Stale: Track 5 shows the cutover as not started. Truth: done. The beta tag is gone and 1.0.0 released 2026-08-25 (tag `v1.0.0` to `f78f261`); 1.0.1 followed 2026-08-26; the current version is 1.0.2 (154fa80, untagged). Checked: `git tag v1.0.0`; `package.json:3`.
 
 _Doc ownership: this board owns **progress**; `RELEASE_PLAN.md` owns **launch acceptance** (audited by
 `/release-readiness`); `BACKLOG.md` owns **scope**. Keep status in one place per concern to avoid drift._
@@ -576,6 +580,8 @@ Append a one-liner when a track changes state (started / PR / merged). Keeps ses
   deploy, smoke-test prod. **Beta tag still untouched** (the celebration move). *(The owner-only About-page
   rewrite — `RELEASE_PLAN.md §C` — was completed + signed off 2026-06-26, so the beta-flip is now the last
   thing gating 1.0.)*
+
+  > **[Reconciled 2026-09-23]:** Stale: "beta tag still untouched", cutover on hold. Truth: the beta tag is gone from `src/` (no `isBeta`, no `-beta` strings; the ReleaseNotes component was removed at cutover) and 1.0 shipped 2026-08-25. Checked: grep of `src/`; `git tag v1.0.0` to `f78f261`.
 
 ---
 

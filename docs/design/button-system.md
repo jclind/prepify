@@ -74,6 +74,14 @@ ghost icon button is `.btn .btn--icon .btn--ghost`).
 
 ## Migration note
 
+> **[Reconciled 2026-09-23]:** Stale: this note reads as if the named pre-system classes are already
+> replaced and their rule blocks deleted. Truth: of the examples listed, only `.submit-review-btn` is gone.
+> `.sr-btn-primary` (src/pages/Settings/components/controls.scss:218, src/pages/Settings/sections/sections.scss:71),
+> `.about-btn-primary` (src/pages/About/About.scss:70), `.recipes-empty__btn` (src/pages/Recipes/Recipes.tsx:298-305,
+> since extended with `--ghost`/`--primary` modifiers), and `.form-action-btn` (src/Components/Form/FormStyles.scss:237)
+> all still exist with their own rule blocks. Treat this section as the migration rule for when those
+> surfaces are next touched, not as a completed state. Checked: repo grep for each class name.
+
 The pre-system page classes (`.sr-btn-primary`, `.about-btn-primary`,
 `.recipes-empty__btn`, `.form-action-btn`, `.submit-review-btn`, …) are replaced
 by `.btn .btn--*` at the call site, deleting the duplicated rule blocks. Where a

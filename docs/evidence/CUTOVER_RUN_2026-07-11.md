@@ -1,5 +1,7 @@
 # Prepify — 1.0 Release Runbook — LIVE RUN LOG (2026-07-11)
 
+> **[Reconciled 2026-09-23]:** Stale: the "Still open" tail below and the embedded runbook copy read as current. Truth: the v1.0.0 GitHub Release shipped 2026-08-25 targeting `f78f261`, superseding the drafted `7ac42ca`; "Prepify 1.0.1" shipped 2026-08-26 and is Latest; both package.jsons are now 1.0.2 (commit 154fa80, no tag yet). The embedded runbook is superseded by `docs/RELEASE_RUNBOOK.md`, and its §2 data-ops steps are moot after the 2026-08-20 empty-cluster recreate. Checked: GitHub releases; `git tag v1.0.0`; `package.json:3`; commit b5dabc5.
+
 > **This is the live cutover run log**, copied from `RELEASE_RUNBOOK.md` and annotated as we execute.
 > Owner: Jesse (driving). Copilot: Claude. Every command output, count, decision, and timestamp lands here.
 > `[x]` = done this run · inline `» RUN:` notes are live annotations.
