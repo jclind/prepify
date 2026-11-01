@@ -62,7 +62,7 @@ describe('Help', () => {
   it('always offers the email fallback, even before picking a topic', () => {
     renderHelp()
     expect(
-      screen.getByRole('link', { name: /jesselindcs@gmail\.com/i })
+      screen.getByRole('link', { name: /apps@jesselind\.com/i })
     ).toHaveAttribute('href', 'mailto:apps@jesselind.com')
   })
 
