@@ -286,4 +286,27 @@ describe('Recipes (Browse) page', () => {
     renderRecipes()
     await screen.findByText('Failed to load recipes. Please try again.')
   })
+
+  it('filter drawer takes focus, traps Tab, closes on Escape and restores focus', async () => {
+    mockGetAllRecipes.mockResolvedValue({ recipeList: [], total_results: 0 })
+    const user = userEvent.setup()
+    renderRecipes()
+    const opener = screen.getByRole('button', { name: /Filters/ })
+    await user.click(opener)
+
+    const dialog = screen.getByRole('dialog', { name: 'Filters' })
+    expect(dialog).toHaveFocus()
+    expect(document.body.style.overflow).toBe('hidden')
+
+    // Shift+Tab from the panel wraps to the last control instead of leaving.
+    await user.keyboard('{Shift>}{Tab}{/Shift}')
+    expect(screen.getByRole('button', { name: 'Show recipes' })).toHaveFocus()
+    await user.tab()
+    expect(dialog).toContainElement(document.activeElement as HTMLElement)
+
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('dialog', { name: 'Filters' })).toBeNull()
+    expect(opener).toHaveFocus()
+    expect(document.body.style.overflow).toBe('')
+  })
 })

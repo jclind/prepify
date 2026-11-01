@@ -1,11 +1,12 @@
 import { ChevronDownIcon, SearchOffIcon, SlidersIcon } from 'src/Components/icons'
-import React, { FC, useEffect, useState } from 'react'
+import React, { FC, useCallback, useEffect, useRef, useState } from 'react'
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import { TailSpin } from 'react-loader-spinner'
 import { spinnerColor } from 'src/util/loadingStyles'
 import { useDelayedLoading } from 'src/hooks/useDelayedLoading'
+import { useModalFocus } from 'src/hooks/useModalFocus'
 import './Recipes.scss'
 import RecipeCard from 'src/Components/RecipeCard/RecipeCard'
 import SearchRecipesInput from 'src/Components/SearchRecipesInput/SearchRecipesInput'
@@ -47,6 +48,9 @@ const Recipes: FC = () => {
   // we don't fire a default fetch and then immediately refetch with filters.
   const [filtersLoading, setFiltersLoading] = useState(true)
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const drawerPanelRef = useRef<HTMLDivElement>(null)
+  const closeDrawer = useCallback(() => setDrawerOpen(false), [])
+  useModalFocus(drawerOpen, drawerPanelRef, closeDrawer)
 
   // Hydrate filter state from the URL once on mount.
   useEffect(() => {
@@ -349,18 +353,19 @@ const Recipes: FC = () => {
         )}
 
         {drawerOpen && (
-          <div className='recipes-drawer' role='dialog' aria-label='Filters'>
+          <div className='recipes-drawer'>
+            <div className='recipes-drawer__backdrop' onClick={closeDrawer} />
             <div
-              className='recipes-drawer__backdrop'
-              onClick={() => setDrawerOpen(false)}
-            />
-            <div className='recipes-drawer__panel'>
+              ref={drawerPanelRef}
+              tabIndex={-1}
+              className='recipes-drawer__panel'
+              role='dialog'
+              aria-modal='true'
+              aria-label='Filters'
+            >
               <div className='recipes-drawer__head'>
                 <h2>Filters</h2>
-                <button
-                  onClick={() => setDrawerOpen(false)}
-                  aria-label='Close filters'
-                >
+                <button onClick={closeDrawer} aria-label='Close filters'>
                   ✕
                 </button>
               </div>
@@ -421,10 +426,7 @@ const Recipes: FC = () => {
                 >
                   Reset
                 </button>
-                <button
-                  className='recipes-drawer__apply'
-                  onClick={() => setDrawerOpen(false)}
-                >
+                <button className='recipes-drawer__apply' onClick={closeDrawer}>
                   Show recipes
                 </button>
               </div>

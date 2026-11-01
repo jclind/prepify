@@ -45,7 +45,7 @@ that spans both is two PRs, not one.
 | `src/Components/` | Shared/reusable UI (`RecipeCard`, `Layout`, `Navbar`, `icons`), plus route guards (`PrivateRoute.tsx`, `AdminRoute.tsx`). |
 | `src/context/` | Global React context — **only `AuthContext.tsx`** (there is no `RecipeContext`; recipe ops go through `RecipeAPI` directly). |
 | `src/api/` | One class-based client module per domain + `http-common.ts`. |
-| `src/hooks/` | Shared hooks (`useDebounce`, `useSaveRecipe`, `useSlashFocusSearch`). |
+| `src/hooks/` | Shared hooks (`useDebounce`, `useSaveRecipe`, `useSlashFocusSearch`, `useModalFocus` for overlay panels). |
 | `src/util/` | Pure helpers, **one function per file** (`formatPrice.ts`, `calculateServingPrice.ts`). |
 | `src/recipeData/` | Static domain lists (`cuisinesList.ts`, `dietLabels.ts`, `mealTypesList.ts`). |
 | `src/client/` | Firebase app init (`db.ts`). |
