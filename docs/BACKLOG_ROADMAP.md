@@ -2717,3 +2717,11 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   CI green; the edge function under Node against an echo server; a CLI deploy against dev (`/api` on the same
   host, 200s, no-store, no added latency). Not yet in prod: needs `EDGE_PROXY_SECRET` on Railway, a promotion,
   then production `VITE_API_URL=same-origin` (rollback: set it back to `https://api.prepifymeals.com`).
+- **2026-11-02** — **Same-origin API live in prod ([#345](https://github.com/jclind/prepify/pull/345) `72d1b4d`).**
+  Production `VITE_API_URL=same-origin`; the live bundle and a signed-in save/unsave as the Prepify account went
+  through `prepifymeals.com/api/*` with 200s. Verified the visitor IP: edge-forwarded requests and a direct
+  request carrying the secret plus the tester's real IP shared one rate-limit count, and a wrong secret was
+  ignored. Found along the way, not fixed: a request straight to Railway is keyed by a Railway proxy address
+  rather than the caller (`trust proxy` 1), so before this change every visitor shared the global per-IP
+  budget; browsers now take the edge path, so only scripts hitting Railway directly are still pooled. Railway
+  also appears to run two instances with in-memory limiter stores, so each limit is about double its number.

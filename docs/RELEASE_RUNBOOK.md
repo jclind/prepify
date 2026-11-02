@@ -22,9 +22,12 @@ Companion docs: [`RELEASE_PLAN.md`](./RELEASE_PLAN.md) (launch gate + audit log)
 [`IMAGE_PIPELINE.md`](./IMAGE_PIPELINE.md) (image-ops detail), [`BACKLOG.md`](./BACKLOG.md).
 
 > **Deploy model:** branch-based. Merging `development` → `release` triggers the prod Netlify build
-> (`prepifymeals.com`) + the prod Railway service, served at `api.prepifymeals.com` since 2026-11-02
-> (Railway's own `prepify-production-63a6.up.railway.app` still answers, but some networks block
-> `*.up.railway.app` DNS, so the frontend's production `VITE_API_URL` in Netlify uses the custom domain).
+> (`prepifymeals.com`) + the prod Railway service. Since 2026-11-02 the site calls its own
+> `prepifymeals.com/api/*` and a Netlify Edge Function forwards to Railway, because some networks
+> block `*.railway.app` DNS (production `VITE_API_URL=same-origin`; Netlify `API_PROXY_TARGET` and
+> `EDGE_PROXY_SECRET`, the latter also on Railway). The checks below use the Railway custom domain
+> `api.prepifymeals.com`. Rollback: set production `VITE_API_URL` to `https://api.prepifymeals.com`
+> and redeploy.
 > All prod env vars are already set and verified (RELEASE_PLAN "Infra status", 2026-06-26).
 > Firebase = Auth + Storage only (Netlify hosts the frontend). **Prod `release` is ~633 commits
 > behind `development` (PR #102, 2026-06-03)** — this deploy is a big jump; the smoke test matters.
