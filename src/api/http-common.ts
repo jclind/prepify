@@ -68,6 +68,24 @@ http.interceptors.request.use(async config => {
   return config
 })
 
+// A request that got no response at all: offline, the server down, or a
+// network whose DNS or firewall blocks the site (some block *.railway.app,
+// which is why the API is served from the site's own domain). Without a
+// message the page just renders empty and looks broken. The fixed toast id
+// keeps a page's worth of failed calls to one notice.
+export const API_UNREACHABLE_TOAST_ID = 'api-unreachable'
+export const API_UNREACHABLE_MESSAGE =
+  'Could not reach Prepify. Check your connection, or try a different network.'
+export const OFFLINE_MESSAGE =
+  'You appear to be offline. Recipes will load once you reconnect.'
+
+export function isUnreachableError(error: {
+  response?: unknown
+  code?: string
+}): boolean {
+  return !error.response && error.code !== 'ERR_CANCELED'
+}
+
 // Surface a clear message when a suspended/banned account is blocked from a
 // write (server requireActive returns 403 with a machine code). Without this,
 // every gated action would just fail with a generic error. The rejection still
@@ -82,6 +100,13 @@ http.interceptors.response.use(
           ? 'Your account has been banned.'
           : 'Your account is suspended.'
       toast.error(data.reason ? `${base} ${data.reason}` : base)
+    }
+    if (isUnreachableError(error)) {
+      const offline = typeof navigator !== 'undefined' && navigator.onLine === false
+      toast.error(offline ? OFFLINE_MESSAGE : API_UNREACHABLE_MESSAGE, {
+        id: API_UNREACHABLE_TOAST_ID,
+        duration: 8000,
+      })
     }
     // Report server faults (5xx) and network failures (no response) to Sentry
     // so silent backend breakage is visible without relying on a user report.
