@@ -1358,6 +1358,38 @@ describe('GET /getRecipe', () => {
     expect(res.body.views).toBe(6)
   })
 
+  describe('authorPhotoURL', () => {
+    afterEach(() => admin.__resetUsers())
+
+    it("attaches the author's current Firebase profile photo", async () => {
+      await seedRecipe({ ...BASE_RECIPE, _id: 'with-photo', userId: 'author-1' })
+      admin.__setUsers([{ uid: 'author-1', photoURL: 'https://img.example/me.jpg' }])
+      const res = await request(server).get('/api/getRecipe?id=with-photo')
+      expect(res.status).toBe(200)
+      expect(res.body.authorPhotoURL).toBe('https://img.example/me.jpg')
+    })
+
+    it('is null when the author has no photo or no account', async () => {
+      await seedRecipe({ ...BASE_RECIPE, _id: 'no-photo', userId: 'author-2' })
+      admin.__setUsers([{ uid: 'author-2' }])
+      expect((await request(server).get('/api/getRecipe?id=no-photo')).body.authorPhotoURL).toBeNull()
+
+      await seedRecipe({ ...BASE_RECIPE, _id: 'gone-author', userId: 'deleted-uid' })
+      const res = await request(server).get('/api/getRecipe?id=gone-author')
+      expect(res.status).toBe(200)
+      expect(res.body.authorPhotoURL).toBeNull()
+    })
+
+    it('still returns the recipe when the photo lookup fails', async () => {
+      await seedRecipe({ ...BASE_RECIPE, _id: 'lookup-fails', userId: 'author-3' })
+      admin.__getUser.mockRejectedValueOnce(new Error('Admin SDK unavailable'))
+      const res = await request(server).get('/api/getRecipe?id=lookup-fails')
+      expect(res.status).toBe(200)
+      expect(res.body._id).toBe('lookup-fails')
+      expect(res.body.authorPhotoURL).toBeNull()
+    })
+  })
+
   // optionalAuth's catch-and-continue (middleware/auth.js): a Bearer header whose
   // token fails verification must be treated as anonymous — req.uid/req.isAdmin
   // never set from the bad token — so a hidden recipe stays 404, not leaked.

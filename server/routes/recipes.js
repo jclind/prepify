@@ -1,4 +1,5 @@
 const { Router } = require('express')
+const { getAuth } = require('firebase-admin/auth')
 const { asyncHandler } = require('../util/asyncHandler')
 const { ObjectId } = require('mongodb')
 const { getDB, getClient } = require('../db')
@@ -442,6 +443,26 @@ router.get('/recipes/random', optionalAuth, asyncHandler(async (req, res) => {
   res.json(random)
 }))
 
+// The author's profile photo lives on their Firebase Auth record, not the
+// recipe, so a changed photo shows up on every recipe without rewriting them.
+// Keyed on the recipe's stored uid, never a client value. A failed lookup or a
+// deleted account gives null and the client falls back to DefaultAvatar, like
+// resolveReviewerIdentities in routes/reviews.js; it never fails the request.
+async function withAuthorPhoto(recipe) {
+  let authorPhotoURL = null
+  if (recipe.userId) {
+    try {
+      const user = await getAuth().getUser(recipe.userId)
+      authorPhotoURL = user.photoURL || null
+    } catch (err) {
+      if (err?.code !== 'auth/user-not-found') {
+        console.warn('getRecipe: author photo lookup failed:', err?.message || err)
+      }
+    }
+  }
+  return { ...recipe, authorPhotoURL }
+}
+
 // GET /getRecipe — fetch single recipe and increment view count.
 // optionalAuth so an admin keeps access to hidden/unpublished recipes (to review
 // + restore them); for everyone else a moderated recipe is treated as not found.
@@ -465,7 +486,7 @@ router.get('/getRecipe', optionalAuth, asyncHandler(async (req, res) => {
       )
       recipe.automodClassifier = report?.classifier || null
     }
-    return res.json(recipe)
+    return res.json(await withAuthorPhoto(recipe))
   }
 
   // Public: a soft-hidden/unpublished recipe is "not found" — and the
@@ -493,7 +514,7 @@ router.get('/getRecipe', optionalAuth, asyncHandler(async (req, res) => {
           // notice) + their own userId, but not the admin moderation stamps.
           { projection: publicRecipeProjection }
         )
-      if (own) return res.json(own)
+      if (own) return res.json(await withAuthorPhoto(own))
     }
     return res.status(404).json({ error: 'Not found' })
   }
@@ -504,7 +525,7 @@ router.get('/getRecipe', optionalAuth, asyncHandler(async (req, res) => {
     { $inc: { totalRecipeViews: 1 } }
   )
 
-  res.json(recipe)
+  res.json(await withAuthorPhoto(recipe))
 }))
 
 // Daily spend ceiling on recipe CREATES (audit H1): every create runs a paid

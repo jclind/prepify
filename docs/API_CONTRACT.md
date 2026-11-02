@@ -239,6 +239,7 @@ All routes live in `server/routes/recipes.js`, mounted at `/api` (server/app.js)
 - **Response:** `200` public detail shape (see intro). Admin callers instead get the **raw, unprojected** document regardless of moderation state, with `automodClassifier` attached (from the open automod report) when `status === 'pending_review'`. `404 { error: 'Not found' }` when missing — or, for non-admins, when the recipe is hidden/unpublished/pending (unless the caller is the owner and the recipe is only `pending_review`, in which case the owner gets their own recipe back).
 - **Client:** `src/api/recipes.ts` → `RecipeAPI.getRecipe()` — used by `src/pages/SingleRecipe/SingleRecipe.tsx`, `src/pages/EditRecipe/EditRecipe.tsx`
 - **Notes:** the public read atomically increments `views` (and fire-and-forgets a global `stats.totalRecipeViews` bump); admin previews and owner pending-review views do **not** count a view.
+- **`authorPhotoURL`:** every 200 (public, owner and admin) carries `authorPhotoURL`, read from the author's Firebase Auth record by the stored `userId` (`withAuthorPhoto`), so a changed profile photo shows on all their recipes. It is `null` when the author has no photo, the account is gone, or the lookup fails; the byline then falls back to `DefaultAvatar`.
 
 ### Create / edit / delete
 

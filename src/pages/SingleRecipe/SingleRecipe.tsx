@@ -23,7 +23,7 @@ import PrintableRecipe from 'src/pages/SingleRecipe/PrintableRecipe/PrintableRec
 import ReportControl from 'src/Components/ReportControl/ReportControl'
 import AdminRecipeControls from 'src/Components/AdminRecipeControls/AdminRecipeControls'
 import { SITE_URL, DEFAULT_OG_IMAGE } from 'src/util/seo'
-import DefaultAvatar from 'src/Components/DefaultAvatar/DefaultAvatar'
+import UserAvatar from 'src/Components/UserAvatar/UserAvatar'
 
 import { useDelayedLoading } from 'src/hooks/useDelayedLoading'
 import { updateIngredients } from 'src/util/updateIngredients'
@@ -420,7 +420,8 @@ const SingleRecipe: FC = () => {
                   className='author-row'
                   aria-label={`View @${currRecipe.authorUsername}'s profile`}
                 >
-                  <DefaultAvatar
+                  <UserAvatar
+                    photoURL={currRecipe.authorPhotoURL}
                     seed={currRecipe.authorUsername}
                     className='avatar'
                     ariaHidden
