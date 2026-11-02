@@ -286,3 +286,16 @@ describe('POST /api/ingredients/parse', () => {
     expect(res.body).toHaveProperty('error', 'Internal server error')
   })
 })
+
+describe('ingredient lookup timeout', () => {
+  const { withTimeout } = require('../routes/ingredients')
+
+  it('rejects once the lookup takes longer than the limit', async () => {
+    const never = new Promise(() => {})
+    await expect(withTimeout(never, 20)).rejects.toThrow('timed out after 20ms')
+  })
+
+  it('passes a fast lookup through unchanged', async () => {
+    await expect(withTimeout(Promise.resolve(V2_RESULT), 1000)).resolves.toBe(V2_RESULT)
+  })
+})

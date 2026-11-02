@@ -20,6 +20,20 @@ const router = Router()
 // investigation, where `1 cup strawberries` enriched to $25.34. Tune here.
 const PRICE_OUTLIER_CENTS = 1500
 
+// The parser's proxy call has no timeout of its own. A hung lookup would hold
+// the request until the platform or the site's edge gives up (the Netlify edge
+// forward allows about 26s), so give up at 15s and let the client's retry
+// button take over.
+const PARSE_TIMEOUT_MS = 15000
+
+function withTimeout(promise, ms) {
+  let timer
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`ingredient lookup timed out after ${ms}ms`)), ms)
+  })
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer))
+}
+
 // Normalize an ingredient string into a stable telemetry key: lowercase, drop a
 // trailing comma-clause ("…strawberries, fresh or frozen" → "…strawberries"),
 // collapse internal whitespace, trim, and cap length so a pathological input
@@ -157,12 +171,15 @@ router.post('/parse', verifyToken, requireActive, parseLimiter, parseQuota, asyn
     // fixed server-side — optionally overridable via INGREDIENT_PARSER_PROXY_URL,
     // otherwise the package default. We deliberately do NOT forward any
     // client-supplied options, so a caller can't redirect the proxy target.
-    const { data } = await ingredientParser(ingredientString, {
-      imageSize: '100x100',
-      ...(process.env.INGREDIENT_PARSER_PROXY_URL
-        ? { serverUrl: process.env.INGREDIENT_PARSER_PROXY_URL }
-        : {}),
-    })
+    const { data } = await withTimeout(
+      ingredientParser(ingredientString, {
+        imageSize: '100x100',
+        ...(process.env.INGREDIENT_PARSER_PROXY_URL
+          ? { serverUrl: process.env.INGREDIENT_PARSER_PROXY_URL }
+          : {}),
+      }),
+      PARSE_TIMEOUT_MS
+    )
 
     const ingredientData = mapIngredientData(data)
 
@@ -212,5 +229,6 @@ router.post('/parse', verifyToken, requireActive, parseLimiter, parseQuota, asyn
 // skipped when mounted on the shared app under NODE_ENV=test).
 router.PARSE_LIMIT = PARSE_LIMIT
 router.parseLimiter = parseLimiter
+router.withTimeout = withTimeout
 
 module.exports = router
