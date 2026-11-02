@@ -103,5 +103,5 @@
     "skipLibCheck": true /* Skip type checking all .d.ts files. */,
     "ignoreDeprecations": "6.0" /* Suppress TS5101: baseUrl deprecated in TS 7.0 — pre-existing, required for src/ alias resolution. */
   },
-  "exclude": ["node_modules", "src/test", "cypress"]
+  "exclude": ["node_modules", "src/test", "cypress", "netlify"]
 }
