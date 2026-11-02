@@ -22,7 +22,9 @@ Companion docs: [`RELEASE_PLAN.md`](./RELEASE_PLAN.md) (launch gate + audit log)
 [`IMAGE_PIPELINE.md`](./IMAGE_PIPELINE.md) (image-ops detail), [`BACKLOG.md`](./BACKLOG.md).
 
 > **Deploy model:** branch-based. Merging `development` → `release` triggers the prod Netlify build
-> (`prepifymeals.com`) + the prod Railway service (`prepify-production-63a6.up.railway.app`).
+> (`prepifymeals.com`) + the prod Railway service, served at `api.prepifymeals.com` since 2026-11-02
+> (Railway's own `prepify-production-63a6.up.railway.app` still answers, but some networks block
+> `*.up.railway.app` DNS, so the frontend's production `VITE_API_URL` in Netlify uses the custom domain).
 > All prod env vars are already set and verified (RELEASE_PLAN "Infra status", 2026-06-26).
 > Firebase = Auth + Storage only (Netlify hosts the frontend). **Prod `release` is ~633 commits
 > behind `development` (PR #102, 2026-06-03)** — this deploy is a big jump; the smoke test matters.
@@ -346,12 +348,12 @@ One PR off `development` (all anchors re-verified 2026-07-11):
 - `[ ]` **Verify CORS functionally after the deploy** (not just by eyeballing the dashboard):
   ```bash
   curl -si -H 'Origin: https://prepifymeals.com' \
-    https://prepify-production-63a6.up.railway.app/health | grep -i access-control-allow-origin
+    https://api.prepifymeals.com/health | grep -i access-control-allow-origin
   ```
   Must echo the prod origin; no header = `FRONTEND_URLS` misconfigured — fix before the smoke test.
 - `[ ]` **Confirm the new build is actually serving** (added 2026-08-20, [#320](https://github.com/jclind/prepify/pull/320)):
   ```bash
-  curl -s https://prepify-production-63a6.up.railway.app/version
+  curl -s https://api.prepifymeals.com/version
   ```
   `commitFull` must equal the SHA you just pushed to `release`. This is the drain check — during a
   roll the OLD container keeps answering `/health` with 200 while `/version` still reports the old
