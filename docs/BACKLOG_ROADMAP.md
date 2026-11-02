@@ -2725,3 +2725,11 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   rather than the caller (`trust proxy` 1), so before this change every visitor shared the global per-IP
   budget; browsers now take the edge path, so only scripts hitting Railway directly are still pooled. Railway
   also appears to run two instances with in-memory limiter stores, so each limit is about double its number.
+- **2026-11-02** — **Author photo on recipe pages ([#347](https://github.com/jclind/prepify/pull/347) `32bbc89`) and an
+  unreachable-server notice ([#348](https://github.com/jclind/prepify/pull/348) `cef96db`).** The recipe byline
+  always drew `DefaultAvatar`, so a profile photo never showed there; `getRecipe` now attaches `authorPhotoURL`
+  from the author's Firebase Auth record (fail-soft to null) and the byline uses `UserAvatar`. A request with no
+  response now shows one toast ("Could not reach Prepify…", or an offline variant) instead of a silently empty
+  page; cancelled requests and server answers stay quiet. Also: server-dashboard #34 added a `prepify-site`
+  probe on `prepifymeals.com/api/recipes?limit=1` that requires JSON, so a missing edge function (SPA fallback
+  HTML with a 200) alerts. A Codex review of #337-#346 found nothing. Not yet in prod: needs a promotion.
