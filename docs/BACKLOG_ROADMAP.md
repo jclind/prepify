@@ -2701,3 +2701,19 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   the first cut capped parser rows too, plus a blur focus trap; both fixed before merge. Verified: Vitest 849,
   Jest 963, `tsc` clean, CI green incl. Cypress. Not yet in prod. Still open from the backlog item: overriding a
   price the parser did produce, and pricing a row whose lookup failed (it keeps its retry button).
+- **2026-11-02** — **Same-origin API through a Netlify Edge Function merged ([#343](https://github.com/jclind/prepify/pull/343)
+  `7d33efb`, [#344](https://github.com/jclind/prepify/pull/344) `b59e431`).** On the owner's MacBook network the site
+  loaded with no recipes: that network's DNS refuses `*.railway.app`, every API call failed with
+  `ERR_NAME_NOT_RESOLVED`, and it followed the new `api.prepifymeals.com` CNAME to the same block. Fix: the browser
+  calls `prepifymeals.com/api/*` and `netlify/edge-functions/api-proxy.ts` forwards it to `API_PROXY_TARGET`
+  (Netlify env, prod or dev Railway per context), sending the visitor IP (`context.ip`) and `EDGE_PROXY_SECRET`.
+  Server (#343): `server/middleware/edgeProxy.js` sets `req.ip` from `X-Prepify-Client-Ip` only when the secret
+  matches, so both per-IP limiters keep seeing visitors, and every `/api` response is `private, no-store` (they
+  had an ETag and no Cache-Control, which a CDN could share across users). Ingredient parse times out at 15s.
+  Client (#344): `VITE_API_URL=same-origin` resolves to `window.location.origin`. The plan was checked by an
+  independent review agent first; its four blockers (no headers on `_redirects` rules, SPA-fallback order,
+  relative-path resolution with an empty base URL, cross-user caching) shaped the final design. Netlify's build
+  command lost `printenv`, which would have logged the secret. Verified: Jest 974, Vitest 852, `tsc`, build,
+  CI green; the edge function under Node against an echo server; a CLI deploy against dev (`/api` on the same
+  host, 200s, no-store, no added latency). Not yet in prod: needs `EDGE_PROXY_SECRET` on Railway, a promotion,
+  then production `VITE_API_URL=same-origin` (rollback: set it back to `https://api.prepifymeals.com`).
