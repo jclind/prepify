@@ -3,8 +3,25 @@ import { getAuth } from 'firebase/auth'
 import toast from 'react-hot-toast'
 import { Sentry, sentryEnabled } from 'src/util/sentry'
 
-export const API_BASE_URL =
-  import.meta.env.VITE_API_URL || 'http://localhost:4000'
+// VITE_API_URL is a full origin, or the literal `same-origin`. Production uses
+// `same-origin` so the browser calls prepifymeals.com/api/* and the site's
+// Netlify Edge Function (netlify/edge-functions/api-proxy.ts) forwards it to
+// Railway. Some networks' DNS blocks *.railway.app, and this way visitors only
+// ever look up the site's own domain. It has to resolve to a full origin, not
+// '', because most calls use relative `api/...` paths that would otherwise
+// resolve against the current page path.
+export function resolveApiBaseUrl(
+  configured: string | undefined,
+  origin: string
+): string {
+  if (configured === 'same-origin') return origin
+  return configured || 'http://localhost:4000'
+}
+
+export const API_BASE_URL = resolveApiBaseUrl(
+  import.meta.env.VITE_API_URL,
+  window.location.origin
+)
 
 export const http = axios.create({
   baseURL: API_BASE_URL,

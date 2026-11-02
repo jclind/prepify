@@ -19,6 +19,7 @@ const collectionRoutes = require('./routes/collections')
 const Sentry = require('@sentry/node')
 const { GENERIC_500_MESSAGE } = require('./util/respondServerError')
 const { getDB } = require('./db')
+const { edgeClientIp, noStore } = require('./middleware/edgeProxy')
 
 const app = express()
 
@@ -168,6 +169,11 @@ app.get('/version', (req, res) => {
     env: process.env.NODE_ENV || 'development',
   })
 })
+
+// Both run before every /api limiter: edgeClientIp restores the visitor's IP
+// for requests the site's Netlify edge forwards, and noStore keeps per-user
+// responses out of any shared cache (middleware/edgeProxy.js).
+app.use('/api', edgeClientIp(), noStore)
 
 // Generous global per-IP backstop — normal browsing is tens of requests a
 // minute, so only scripted abuse approaches this. The tight per-user limit on
