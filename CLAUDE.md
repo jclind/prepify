@@ -143,4 +143,6 @@ npx cypress open       # Open Cypress test runner
   `{ version, commit, commitFull, branch, env }` from Railway's auto-injected
   `RAILWAY_GIT_COMMIT_SHA`/`RAILWAY_GIT_BRANCH` and **never touches the DB**, so it still answers
   during an outage ([#320](https://github.com/jclind/prepify/pull/320)). Confirm any deploy with
-  `curl <api>/version` rather than opening the Railway dashboard.
+  `curl https://api.prepifymeals.com/version` rather than opening the Railway dashboard. Prod's API
+  is on that custom domain (Netlify's production-context `VITE_API_URL`) because some networks' DNS
+  blocks `*.up.railway.app`.
