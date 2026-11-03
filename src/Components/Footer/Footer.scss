@@ -65,8 +65,9 @@ $inner-max: s.$max-width;
 }
 .footer-wordmark {
   font-size: s.$text-2xl;
-  font-weight: 800;
-  letter-spacing: -0.02em;
+  // Same mark as the navbar logo: Montserrat Bold italic, body letter-spacing.
+  font-weight: 700;
+  font-style: italic;
   color: s.$primary;
   text-decoration: none;
   // Was missing a transition, so the darken snapped. One chrome timing.
