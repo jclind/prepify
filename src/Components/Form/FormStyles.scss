@@ -38,8 +38,8 @@
     box-shadow: s.$elevation-5;
   }
 
-  // Brand mark — teal rounded square with a thin, cursive-leaning white "P"
-  // (Montserrat thin italic) to echo the favicon.
+  // Brand mark — teal rounded square with a white "P" in Montserrat SemiBold
+  // (600) italic, the same letterform as the favicon.
   .brand-mark {
     align-self: center;
     display: flex;
@@ -49,7 +49,7 @@
     height: 52px;
     border-radius: s.$radius-3xl;
     font-size: s.$text-4xl;
-    font-weight: 300;
+    font-weight: 600;
     font-style: italic;
     line-height: 1;
     letter-spacing: 0;
