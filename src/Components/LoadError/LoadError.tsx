@@ -1,5 +1,4 @@
 import React, { FC, ReactNode, useEffect, useState } from 'react'
-import axios from 'axios'
 import { useQueryClient } from '@tanstack/react-query'
 import { isUnreachableError } from 'src/api/http-common'
 import { CloudOffIcon, RotateCwIcon, WifiOffIcon } from 'src/Components/icons'
@@ -8,10 +7,10 @@ import './LoadError.scss'
 type LoadErrorKind = 'offline' | 'unreachable' | 'server'
 
 // Same test the unreachable toast uses, so the inline message and the toast
-// never disagree. Only an axios error counts as "unreachable": a plain Error
-// (a bug in our own code) has no response either, but the network is fine.
+// never disagree. A plain Error (a bug in our own code, or a token refresh that
+// failed before any request) has no response either, but the network is fine.
 export function loadErrorKind(error: unknown): LoadErrorKind {
-  if (!axios.isAxiosError(error) || !isUnreachableError(error)) return 'server'
+  if (!isUnreachableError(error)) return 'server'
   return typeof navigator !== 'undefined' && navigator.onLine === false
     ? 'offline'
     : 'unreachable'
