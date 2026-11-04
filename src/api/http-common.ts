@@ -79,11 +79,12 @@ export const API_UNREACHABLE_MESSAGE =
 export const OFFLINE_MESSAGE =
   'You appear to be offline. Recipes will load once you reconnect.'
 
-export function isUnreachableError(error: {
-  response?: unknown
-  code?: string
-}): boolean {
-  return !error.response && error.code !== 'ERR_CANCELED'
+// Only a request axios actually sent counts. The response interceptor also
+// receives failures from the request interceptor (say, a sign-in token that
+// can't refresh), which never reached the network, so blaming the visitor's
+// connection for those would be wrong.
+export function isUnreachableError(error: unknown): boolean {
+  return axios.isAxiosError(error) && !error.response && error.code !== 'ERR_CANCELED'
 }
 
 // Surface a clear message when a suspended/banned account is blocked from a
@@ -110,15 +111,25 @@ http.interceptors.response.use(
     }
     // Report server faults (5xx) and network failures (no response) to Sentry
     // so silent backend breakage is visible without relying on a user report.
-    // Client-side 4xx are expected validation/auth outcomes and stay out of the
-    // error stream. The rejection still propagates to callers unchanged.
+    // `kind: network` is what the "visitors can't reach the API" monitor counts,
+    // so only those two go under it. A failure before the request was sent (the
+    // request interceptor, like a token refresh) is reported as `request-setup`.
+    // Cancelled requests and client-side 4xx are expected and stay out. The
+    // rejection still propagates to callers unchanged.
     if (sentryEnabled) {
       const status = error.response?.status
-      if (!status || status >= 500) {
+      const unreachable = isUnreachableError(error)
+      const kind =
+        unreachable || (status !== undefined && status >= 500)
+          ? 'network'
+          : !axios.isAxiosError(error)
+            ? 'request-setup'
+            : null
+      if (kind) {
         const method = error.config?.method?.toUpperCase() ?? 'REQUEST'
         const url = error.config?.url ?? 'unknown'
         Sentry.captureException(error, {
-          tags: { kind: 'network', http_status: status ?? 'no-response' },
+          tags: { kind, http_status: status ?? 'no-response' },
           extra: { method, url },
         })
       }

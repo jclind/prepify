@@ -8,6 +8,7 @@ const { GENERIC_500_MESSAGE } = require('../util/respondServerError')
 const { asyncHandler } = require('../util/asyncHandler')
 const { getDB } = require('../db')
 const { MAX_INGREDIENTS } = require('../util/recipeLimits')
+const { withTimeout: sharedWithTimeout } = require('../util/authorIdentity')
 
 const router = Router()
 
@@ -27,11 +28,7 @@ const PRICE_OUTLIER_CENTS = 1500
 const PARSE_TIMEOUT_MS = 15000
 
 function withTimeout(promise, ms) {
-  let timer
-  const timeout = new Promise((_, reject) => {
-    timer = setTimeout(() => reject(new Error(`ingredient lookup timed out after ${ms}ms`)), ms)
-  })
-  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer))
+  return sharedWithTimeout(promise, ms, 'ingredient lookup')
 }
 
 // Normalize an ingredient string into a stable telemetry key: lowercase, drop a
