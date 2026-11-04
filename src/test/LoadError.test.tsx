@@ -3,8 +3,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AxiosError, AxiosHeaders } from 'axios'
-import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
-import LoadError, { loadErrorKind, useRetainedErrors } from 'src/Components/LoadError/LoadError'
+import { QueryClient, QueryClientProvider, onlineManager, useQuery } from '@tanstack/react-query'
+import LoadError, { loadErrorKind, loadErrorView } from 'src/Components/LoadError/LoadError'
 
 vi.mock('firebase/auth', () => ({
   getAuth: () => ({ currentUser: null }),
@@ -22,6 +22,15 @@ const serverError = () =>
 
 function renderWith(ui: React.ReactElement, client = new QueryClient()) {
   return render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>)
+}
+
+// Mirrors the real sections: the skeleton while loading, the tray while the
+// query's latest outcome is an error (including during a retry after it).
+const Section = ({ queryKey, fetcher }: { queryKey: string; fetcher: () => Promise<unknown> }) => {
+  const query = useQuery({ queryKey: [queryKey], queryFn: fetcher })
+  const { failed, retrying } = loadErrorView(query)
+  if (failed) return <LoadError error={query.error} retrying={retrying} ghost={null} />
+  return <p>{query.isLoading ? 'Loading' : `Loaded ${queryKey}`}</p>
 }
 
 describe('LoadError', () => {
@@ -94,17 +103,7 @@ describe('LoadError', () => {
       .mockImplementationOnce(failLater)
       .mockImplementationOnce(failLater)
       .mockResolvedValue('ok')
-    // Mirrors the real sections: the skeleton shows while loading, and the
-    // retained error keeps the tray up during a retry.
-    const Section = () => {
-      const { isLoading, isFetching, error } = useQuery({ queryKey: ['s'], queryFn: fetcher })
-      const [shownError] = useRetainedErrors([{ error, isFetching }])
-      if (shownError) {
-        return <LoadError error={shownError} retrying={isFetching} ghost={null} />
-      }
-      return <p>{isLoading ? 'Loading' : 'Loaded'}</p>
-    }
-    renderWith(<Section />, client)
+    renderWith(<Section queryKey='s' fetcher={fetcher} />, client)
     const button = await screen.findByRole('button', { name: 'Try again' })
     button.focus()
 
@@ -122,6 +121,40 @@ describe('LoadError', () => {
 
     // The next retry succeeds: the tray gives way to the content.
     await userEvent.keyboard('{Enter}')
-    expect(await screen.findByText('Loaded')).toBeInTheDocument()
+    expect(await screen.findByText('Loaded s')).toBeInTheDocument()
+  })
+
+  it('does not carry an error over to a different query, like a new sort', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const slow = () => new Promise(resolve => setTimeout(() => resolve('ok'), 30))
+    const { rerender } = renderWith(
+      <Section queryKey='popular' fetcher={() => Promise.reject(networkError())} />,
+      client
+    )
+    await screen.findByRole('button', { name: 'Try again' })
+    rerender(
+      <QueryClientProvider client={client}>
+        <Section queryKey='newest' fetcher={slow} />
+      </QueryClientProvider>
+    )
+    // The new query loads normally instead of showing the old one's tray.
+    expect(screen.getByText('Loading')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /try again|retrying/i })).not.toBeInTheDocument()
+    expect(await screen.findByText('Loaded newest')).toBeInTheDocument()
+  })
+
+  it('keeps the tray while a retry is paused because the browser is offline', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    renderWith(<Section queryKey='p' fetcher={() => Promise.reject(networkError())} />, client)
+    const button = await screen.findByRole('button', { name: 'Try again' })
+    button.focus()
+    onlineManager.setOnline(false)
+    try {
+      await userEvent.keyboard('{Enter}')
+      expect(await screen.findByRole('button', { name: 'Retrying' })).toBe(button)
+      expect(button).toHaveFocus()
+    } finally {
+      onlineManager.setOnline(true)
+    }
   })
 })

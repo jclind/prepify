@@ -12,7 +12,7 @@ import RecipeCard from 'src/Components/RecipeCard/RecipeCard'
 import SearchRecipesInput from 'src/Components/SearchRecipesInput/SearchRecipesInput'
 import SortDropdown from 'src/Components/SortDropdown/SortDropdown'
 import RecipeAPI from 'src/api/recipes'
-import LoadError, { useRetainedErrors } from 'src/Components/LoadError/LoadError'
+import LoadError, { loadErrorView } from 'src/Components/LoadError/LoadError'
 import { SITE_URL, DEFAULT_OG_IMAGE } from 'src/util/seo'
 import { RECIPES_PATH } from 'src/routes'
 import { dietLabelsOptions } from 'src/recipeData/dietLabels'
@@ -129,36 +129,36 @@ const Recipes: FC = () => {
     navigate(RECIPES_PATH)
   }
 
-  const { data, isFetching, error, fetchNextPage, hasNextPage } =
-    useInfiniteQuery({
-      queryKey: ['recipes', { sort, diets, cuisine, search: query, meals }],
-      queryFn: ({ pageParam }) =>
-        RecipeAPI.getAllRecipes({
-          page: pageParam as number,
-          order: sort,
-          cuisine,
-          recipesPerPage: RECIPES_PER_PAGE,
-          query,
-          mealTypes: meals,
-          diets,
-        }),
-      initialPageParam: 0,
-      getNextPageParam: (lastPage, allPages) => {
-        const totalFetched = allPages.reduce(
-          (sum, p) => sum + p.recipeList.length,
-          0
-        )
-        // Next page index = pages fetched so far (0-indexed). The server
-        // response has no `page` field, so deriving it from `allPages.length`
-        // is robust; `lastPage.page + 1` would be NaN and the API would skip(0),
-        // re-serving page 0 as duplicates.
-        return totalFetched < lastPage.total_results
-          ? allPages.length
-          : undefined
-      },
-      enabled: !filtersLoading,
-      retry: false,
-    })
+  const recipesQuery = useInfiniteQuery({
+    queryKey: ['recipes', { sort, diets, cuisine, search: query, meals }],
+    queryFn: ({ pageParam }) =>
+      RecipeAPI.getAllRecipes({
+        page: pageParam as number,
+        order: sort,
+        cuisine,
+        recipesPerPage: RECIPES_PER_PAGE,
+        query,
+        mealTypes: meals,
+        diets,
+      }),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, allPages) => {
+      const totalFetched = allPages.reduce(
+        (sum, p) => sum + p.recipeList.length,
+        0
+      )
+      // Next page index = pages fetched so far (0-indexed). The server
+      // response has no `page` field, so deriving it from `allPages.length`
+      // is robust; `lastPage.page + 1` would be NaN and the API would skip(0),
+      // re-serving page 0 as duplicates.
+      return totalFetched < lastPage.total_results
+        ? allPages.length
+        : undefined
+    },
+    enabled: !filtersLoading,
+    retry: false,
+  })
+  const { data, isFetching, error, fetchNextPage, hasNextPage } = recipesQuery
 
   // Which filter values actually exist in the catalog, so we don't offer a
   // cuisine with zero recipes. Falls back to the full curated list if the
@@ -178,9 +178,8 @@ const Recipes: FC = () => {
   const totalResults = data?.pages[0]?.total_results ?? null
   const activeFilterCount = diets.length + meals.length + (cuisine ? 1 : 0)
   const hasResults = recipeList.length > 0
-  // Kept through a retry, so the tray (and its focused button) stays put.
-  const [shownError] = useRetainedErrors([{ error, isFetching }])
-  const isInitialLoading = !data && !shownError
+  const { failed, retrying } = loadErrorView(recipesQuery)
+  const isInitialLoading = !data && !failed
   // Hold the skeleton grid behind a short delay (docs/design/loading-states.md)
   // so a cache hit resolves into cards without a one-frame flash. The empty state
   // is gated on totalResults === 0 (null while loading), so it can't flash here.
@@ -277,10 +276,10 @@ const Recipes: FC = () => {
           </div>
         )}
 
-        {shownError ? (
+        {failed ? (
           <LoadError
-            error={shownError}
-            retrying={isFetching}
+            error={error}
+            retrying={retrying}
             className='recipes-load-error'
             ghost={
               <div className='recipes-grid'>

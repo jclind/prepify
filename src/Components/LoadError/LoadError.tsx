@@ -1,4 +1,4 @@
-import React, { FC, ReactNode, useRef } from 'react'
+import React, { FC, ReactNode, useEffect, useState } from 'react'
 import axios from 'axios'
 import { useQueryClient } from '@tanstack/react-query'
 import { isUnreachableError } from 'src/api/http-common'
@@ -27,6 +27,7 @@ const COPY: Record<LoadErrorKind, { title: string; detail: string }> = {
 }
 
 interface LoadErrorProps {
+  /** The query's error; null while a retry after it is running. */
   error: unknown
   /** The section's query is refetching: the button spins and ignores clicks. */
   retrying?: boolean
@@ -41,23 +42,25 @@ interface LoadErrorProps {
   className?: string
 }
 
+interface QueryOutcome {
+  errorUpdatedAt: number
+  dataUpdatedAt: number
+  fetchStatus: 'fetching' | 'paused' | 'idle'
+}
+
 /**
- * Each query's error, kept while a refetch after that error is in flight.
+ * Whether a section should show its error tray, and whether a fetch is running.
  *
- * Refetching a query that has no data resets it to loading, so a section would
- * swap its tray for the skeleton mid-retry. That unmounts the focused Try again
- * button, and keyboard focus falls to <body>. Holding the last error until the
- * refetch settles keeps the tray (and the focus) in place: it clears when the
- * retry succeeds and is replaced when it fails again.
+ * `failed` asks React Query whether this query's latest outcome was an error:
+ * it failed more recently than it last got data. Refetching a query with no
+ * data resets `error` and `status` to loading, but not these timestamps, so
+ * `failed` holds through a retry. The tray, and the Try again button a keyboard
+ * user has focused, stays put instead of flashing to the skeleton, including a
+ * retry paused because the browser is offline. It clears only when data
+ * arrives, and it's per query, so a new /recipes sort or filter starts clean.
  */
-export function useRetainedErrors(
-  queries: ReadonlyArray<{ error: unknown; isFetching: boolean }>
-): unknown[] {
-  const last = useRef<unknown[]>([])
-  last.current = queries.map(
-    (q, i) => q.error ?? (q.isFetching ? last.current[i] ?? null : null)
-  )
-  return last.current
+export function loadErrorView(q: QueryOutcome): { failed: boolean; retrying: boolean } {
+  return { failed: q.errorUpdatedAt > q.dataUpdatedAt, retrying: q.fetchStatus !== 'idle' }
 }
 
 // Inline error for a section whose query failed: a dashed tray where the
@@ -72,7 +75,14 @@ const LoadError: FC<LoadErrorProps> = ({
   className,
 }) => {
   const queryClient = useQueryClient()
-  const kind = loadErrorKind(error)
+  // A retry clears the query's `error` while it runs, so keep the last one to
+  // hold the copy steady. A tray first mounted mid-retry has none yet and shows
+  // the generic message.
+  const [lastError, setLastError] = useState<unknown>(error)
+  useEffect(() => {
+    if (error) setLastError(error)
+  }, [error])
+  const kind = loadErrorKind(error ?? lastError)
   const { title, detail } = COPY[kind]
   const Icon = kind === 'offline' ? WifiOffIcon : CloudOffIcon
 

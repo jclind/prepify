@@ -3,17 +3,18 @@ import { useQuery } from '@tanstack/react-query'
 import RecipeAPI from 'src/api/recipes'
 import { RecipeCardType } from 'types'
 import { useDelayedLoading } from 'src/hooks/useDelayedLoading'
-import LoadError, { useRetainedErrors } from 'src/Components/LoadError/LoadError'
+import LoadError, { loadErrorView } from 'src/Components/LoadError/LoadError'
 import { HomeRecipeCard, HomeRecipeCardSkeleton } from './HomeRecipeCard'
 
 const HomeTrending: FC = () => {
-  const { data, isLoading, isFetching, error } = useQuery<RecipeCardType[]>({
+  const query = useQuery<RecipeCardType[]>({
     queryKey: ['trending-recipes'],
     queryFn: () => RecipeAPI.getTrendingRecipes(4),
     // Trending shifts slowly; match the For-You / by-meal rows (5 min) so a
     // Home re-visit serves from cache instead of refetching on every mount.
     staleTime: 5 * 60 * 1000,
   })
+  const { data, isLoading, error } = query
 
   const recipes = data ?? []
   // Per docs/design/loading-states.md: gate the skeleton behind a short delay so
@@ -21,14 +22,13 @@ const HomeTrending: FC = () => {
   // isLoading branch still owns this frame (so the empty state can't flash either
   // — it just holds a blank grid until the skeleton is due).
   const showSkeleton = useDelayedLoading(isLoading)
-  // Kept through a retry, so the tray (and its focused button) stays put.
-  const [shownError] = useRetainedErrors([{ error, isFetching }])
+  const { failed, retrying } = loadErrorView(query)
 
-  if (shownError) {
+  if (failed) {
     return (
       <LoadError
-        error={shownError}
-        retrying={isFetching}
+        error={error}
+        retrying={retrying}
         ghost={
           <div className='home-trending-grid'>
             {Array.from({ length: 4 }).map((_, i) => (
