@@ -157,6 +157,21 @@ describe('Recipes (Browse) page', () => {
     await screen.findByText('Load more recipes')
   })
 
+  it('Try again after a failed "Load more" retries that page, not page 0', async () => {
+    const user = userEvent.setup()
+    mockGetAllRecipes
+      .mockResolvedValueOnce({ recipeList: [makeRecipe('1')], total_results: 2 })
+      .mockRejectedValueOnce(new Error('page 1 failed'))
+      .mockResolvedValueOnce({ recipeList: [makeRecipe('2')], total_results: 2 })
+    renderRecipes()
+    await user.click(await screen.findByText('Load more recipes'))
+    await user.click(await screen.findByRole('button', { name: 'Try again' }))
+
+    expect(await screen.findByText('Recipe 2')).toBeInTheDocument()
+    expect(screen.getByText('Recipe 1')).toBeInTheDocument()
+    expect(mockGetAllRecipes.mock.calls.map(([args]) => args.page)).toEqual([0, 1, 1])
+  })
+
   it('"Load More" button is absent when all results are already loaded', async () => {
     mockGetAllRecipes.mockResolvedValue({
       recipeList: [makeRecipe('1'), makeRecipe('2')],
@@ -284,7 +299,8 @@ describe('Recipes (Browse) page', () => {
   it('shows an error message when getAllRecipes throws', async () => {
     mockGetAllRecipes.mockRejectedValue(new Error('network error'))
     renderRecipes()
-    await screen.findByText('Failed to load recipes. Please try again.')
+    await screen.findByText(/something went wrong on our end/i)
+    expect(screen.getByRole('button', { name: /try again/i })).toBeInTheDocument()
   })
 
   it('filter drawer takes focus, traps Tab, closes on Escape and restores focus', async () => {

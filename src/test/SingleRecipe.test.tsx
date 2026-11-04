@@ -139,6 +139,23 @@ describe('SingleRecipe page', () => {
     expect(authorLink).toHaveTextContent('@chef')
   })
 
+  it("shows the author's profile photo in the byline when the recipe carries one", async () => {
+    mockGetRecipe.mockResolvedValue({ ...baseRecipe, authorPhotoURL: 'https://img.example/chef.jpg' })
+    renderSingleRecipe()
+    await screen.findByText('Chicken Tacos')
+    const authorLink = screen.getByRole('link', { name: "View @chef's profile" })
+    const img = authorLink.querySelector('img')
+    expect(img).toHaveAttribute('src', 'https://img.example/chef.jpg')
+  })
+
+  it('falls back to the generated avatar when the author has no photo', async () => {
+    mockGetRecipe.mockResolvedValue({ ...baseRecipe, authorPhotoURL: null })
+    renderSingleRecipe()
+    await screen.findByText('Chicken Tacos')
+    const authorLink = screen.getByRole('link', { name: "View @chef's profile" })
+    expect(authorLink.querySelector('img')).toBeNull()
+  })
+
   it('shows RecipeNotFound when API response has no title', async () => {
     mockGetRecipe.mockResolvedValue({ _id: 'recipe-1' })
     renderSingleRecipe()

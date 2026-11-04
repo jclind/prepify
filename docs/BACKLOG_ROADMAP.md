@@ -2717,3 +2717,40 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   CI green; the edge function under Node against an echo server; a CLI deploy against dev (`/api` on the same
   host, 200s, no-store, no added latency). Not yet in prod: needs `EDGE_PROXY_SECRET` on Railway, a promotion,
   then production `VITE_API_URL=same-origin` (rollback: set it back to `https://api.prepifymeals.com`).
+- **2026-11-02** — **Same-origin API live in prod ([#345](https://github.com/jclind/prepify/pull/345) `72d1b4d`).**
+  Production `VITE_API_URL=same-origin`; the live bundle and a signed-in save/unsave as the Prepify account went
+  through `prepifymeals.com/api/*` with 200s. Verified the visitor IP: edge-forwarded requests and a direct
+  request carrying the secret plus the tester's real IP shared one rate-limit count, and a wrong secret was
+  ignored. Found along the way, not fixed: a request straight to Railway is keyed by a Railway proxy address
+  rather than the caller (`trust proxy` 1), so before this change every visitor shared the global per-IP
+  budget; browsers now take the edge path, so only scripts hitting Railway directly are still pooled. Railway
+  also appears to run two instances with in-memory limiter stores, so each limit is about double its number.
+- **2026-11-02** — **Author photo on recipe pages ([#347](https://github.com/jclind/prepify/pull/347) `32bbc89`) and an
+  unreachable-server notice ([#348](https://github.com/jclind/prepify/pull/348) `cef96db`).** The recipe byline
+  always drew `DefaultAvatar`, so a profile photo never showed there; `getRecipe` now attaches `authorPhotoURL`
+  from the author's Firebase Auth record (fail-soft to null) and the byline uses `UserAvatar`. A request with no
+  response now shows one toast ("Could not reach Prepify…", or an offline variant) instead of a silently empty
+  page; cancelled requests and server answers stay quiet. Also: server-dashboard #34 added a `prepify-site`
+  probe on `prepifymeals.com/api/recipes?limit=1` that requires JSON, so a missing edge function (SPA fallback
+  HTML with a 200) alerts. A Codex review of #337-#346 found nothing. Not yet in prod: needs a promotion.
+- **2026-11-03** — Merged [#349](https://github.com/jclind/prepify/pull/349): new site icon (white Montserrat
+  SemiBold 600 italic "P" on flat `#FF5722`) across favicon, apple-touch, manifest and maskable icons; the auth
+  pages' brand tile P goes to 600 italic (the font request swaps italic 300 for 600); the footer wordmark now
+  matches the navbar (Bold 700 italic). Share card unchanged until real recipe photos land. Not yet in prod.
+- **2026-11-04** — Merged [#350](https://github.com/jclind/prepify/pull/350): failed recipe sections (home
+  Trending, the three meal cards, /recipes) show a dashed tray the size of the missing content instead of a
+  line of "Couldn't load" text, so nothing jumps on recovery. `LoadError` says why (offline, can't reach
+  Prepify, or the server failed, using the toast's `isUnreachableError`) with Try again, which refetches every
+  failed query (or, after a failed Load more, that page). `loadErrorView` keeps the tray through a retry
+  (status `error`, or `pending` with `errorUpdateCount > 0`) so keyboard focus stays on the button. Design
+  picked from three variants (dashed tray won). Four Codex passes found 8 issues, all fixed with tests; the
+  last found none. Follow-up: account pages keep their generic copy. Not yet in prod.
+- **2026-11-04** — Merged [#351](https://github.com/jclind/prepify/pull/351), fixes from the adversarial Codex
+  review of the #347-#350 promotion: author photos and review identities go through
+  `server/util/authorIdentity.js` (`resolveAuthorIdentities`): one batched Firebase lookup plus the
+  `userProfiles` privacy check, both under 1.5s, null on timeout. Private profiles show no real photo or display
+  name on recipes and reviews, except to themselves and admins. The auth listener resets React Query's cache on
+  a uid change. `isUnreachableError` requires a sent axios request (token-refresh failures go to Sentry as
+  `kind: request-setup`), and cancelled requests are no longer reported. Follow-ups (pre-existing, in-place
+  account switch only): `usePaginatedLoadMore` keeps the previous user's pages in state; a slow write from the
+  previous account (MadeRecipeBtn, useSaveRecipe rollback) can land in the reset cache.

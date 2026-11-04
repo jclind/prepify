@@ -1037,6 +1037,27 @@ describe('GET /getReviews', () => {
       expect(res.body.reviews[0].displayName).toBe('Reviewer One')
     })
 
+    it('withholds the photo and display name of a reviewer whose profile is private', async () => {
+      admin.__setUsers([
+        { uid: 'rev-private', photoURL: 'https://cdn/private.jpg', displayName: 'Private Person' },
+        { uid: 'rev-public', photoURL: 'https://cdn/public.jpg', displayName: 'Public Person' },
+      ])
+      await getDB().collection('userProfiles').insertOne({ _id: 'rev-private', isPublic: false })
+      try {
+        await seedRating({ userId: 'rev-private', username: 'priv', recipeId: RECIPE_ID, rating: 5, reviewText: 'Quiet', reviewCreatedAt: '2000' })
+        await seedRating({ userId: 'rev-public', username: 'pub', recipeId: RECIPE_ID, rating: 4, reviewText: 'Loud', reviewCreatedAt: '1000' })
+
+        const res = await request(app).get(`/api/getReviews?recipeId=${RECIPE_ID}`)
+        expect(res.status).toBe(200)
+        const byText = Object.fromEntries(res.body.reviews.map(r => [r.reviewText, r]))
+        expect(byText.Quiet.photoURL).toBeNull()
+        expect(byText.Quiet.displayName).toBeNull()
+        expect(byText.Loud.photoURL).toBe('https://cdn/public.jpg')
+      } finally {
+        await getDB().collection('userProfiles').deleteMany({})
+      }
+    })
+
     it('returns null photoURL/displayName when the reviewer has no Auth record', async () => {
       // Deleted / never-existed Auth user: getUsers finds nobody for the uid.
       admin.__setUsers([])

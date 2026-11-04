@@ -13,6 +13,7 @@
 const request = require('supertest')
 const admin = require('firebase-admin') // auto-mocked (server/__mocks__/firebase-admin.js)
 const app = require('../app')
+const { AUTH_LOOKUP_TIMEOUT_MS } = require('../util/authorIdentity')
 const { getDB } = require('../db')
 const {
   seedRecipe,
@@ -1356,6 +1357,102 @@ describe('GET /getRecipe', () => {
     expect(res.status).toBe(200)
     expect(res.body._id).toBe(RECIPE_ID)
     expect(res.body.views).toBe(6)
+  })
+
+  describe('authorPhotoURL', () => {
+    afterEach(() => admin.__resetUsers())
+
+    it("attaches the author's current Firebase profile photo", async () => {
+      await seedRecipe({ ...BASE_RECIPE, _id: 'with-photo', userId: 'author-1' })
+      admin.__setUsers([{ uid: 'author-1', photoURL: 'https://img.example/me.jpg' }])
+      const res = await request(server).get('/api/getRecipe?id=with-photo')
+      expect(res.status).toBe(200)
+      expect(res.body.authorPhotoURL).toBe('https://img.example/me.jpg')
+    })
+
+    it('is null when the author has no photo or no account', async () => {
+      await seedRecipe({ ...BASE_RECIPE, _id: 'no-photo', userId: 'author-2' })
+      admin.__setUsers([{ uid: 'author-2' }])
+      expect((await request(server).get('/api/getRecipe?id=no-photo')).body.authorPhotoURL).toBeNull()
+
+      await seedRecipe({ ...BASE_RECIPE, _id: 'gone-author', userId: 'deleted-uid' })
+      const res = await request(server).get('/api/getRecipe?id=gone-author')
+      expect(res.status).toBe(200)
+      expect(res.body.authorPhotoURL).toBeNull()
+    })
+
+    it('still returns the recipe when the photo lookup fails', async () => {
+      await seedRecipe({ ...BASE_RECIPE, _id: 'lookup-fails', userId: 'author-3' })
+      admin.__setUsers([{ uid: 'author-3', photoURL: 'https://img.example/3.jpg' }])
+      admin.__getUsers.mockRejectedValueOnce(new Error('Admin SDK unavailable'))
+      const res = await request(server).get('/api/getRecipe?id=lookup-fails')
+      expect(res.status).toBe(200)
+      expect(res.body._id).toBe('lookup-fails')
+      expect(res.body.authorPhotoURL).toBeNull()
+    })
+
+    it("doesn't wait on a hung photo lookup", async () => {
+      await seedRecipe({ ...BASE_RECIPE, _id: 'lookup-hangs', userId: 'author-4' })
+      admin.__setUsers([{ uid: 'author-4', photoURL: 'https://img.example/4.jpg' }])
+      admin.__getUsers.mockImplementationOnce(() => new Promise(() => {}))
+      const started = Date.now()
+      const res = await request(server).get('/api/getRecipe?id=lookup-hangs')
+      expect(res.status).toBe(200)
+      expect(res.body.authorPhotoURL).toBeNull()
+      expect(Date.now() - started).toBeLessThan(AUTH_LOOKUP_TIMEOUT_MS + 1000)
+    })
+
+    it("doesn't wait on a hung privacy lookup, and withholds the photo", async () => {
+      await seedRecipe({ ...BASE_RECIPE, _id: 'privacy-hangs', userId: 'author-5' })
+      admin.__setUsers([{ uid: 'author-5', photoURL: 'https://img.example/5.jpg' }])
+      const db = getDB()
+      const realCollection = db.collection.bind(db)
+      const spy = jest.spyOn(db, 'collection').mockImplementation((name, ...rest) => {
+        if (name !== 'userProfiles') return realCollection(name, ...rest)
+        return { find: () => ({ toArray: () => new Promise(() => {}) }) }
+      })
+      try {
+        const started = Date.now()
+        const res = await request(server).get('/api/getRecipe?id=privacy-hangs')
+        expect(res.status).toBe(200)
+        expect(res.body.authorPhotoURL).toBeNull()
+        expect(Date.now() - started).toBeLessThan(AUTH_LOOKUP_TIMEOUT_MS + 1000)
+      } finally {
+        spy.mockRestore()
+      }
+    })
+
+    describe('when the author made their profile private', () => {
+      beforeEach(async () => {
+        await seedRecipe({ ...BASE_RECIPE, _id: 'private-author', userId: TEST_UID })
+        admin.__setUsers([{ uid: TEST_UID, photoURL: 'https://img.example/private.jpg' }])
+        await getDB().collection('userProfiles').insertOne({ _id: TEST_UID, isPublic: false })
+      })
+      afterEach(async () => {
+        admin.__resetClaims()
+        await getDB().collection('userProfiles').deleteMany({})
+      })
+
+      it('hides the photo from the public', async () => {
+        const res = await request(server).get('/api/getRecipe?id=private-author')
+        expect(res.status).toBe(200)
+        expect(res.body.authorPhotoURL).toBeNull()
+      })
+
+      it('still shows it to the author', async () => {
+        const res = await request(server).get('/api/getRecipe?id=private-author').set(AUTH_HEADER)
+        expect(res.body.authorPhotoURL).toBe('https://img.example/private.jpg')
+      })
+
+      it('still shows it to an admin', async () => {
+        await seedRecipe({ ...BASE_RECIPE, _id: 'private-other', userId: 'someone-else' })
+        admin.__setUsers([{ uid: 'someone-else', photoURL: 'https://img.example/other.jpg' }])
+        await getDB().collection('userProfiles').insertOne({ _id: 'someone-else', isPublic: false })
+        admin.__setClaims({ admin: true })
+        const res = await request(server).get('/api/getRecipe?id=private-other').set(AUTH_HEADER)
+        expect(res.body.authorPhotoURL).toBe('https://img.example/other.jpg')
+      })
+    })
   })
 
   // optionalAuth's catch-and-continue (middleware/auth.js): a Bearer header whose

@@ -1,5 +1,4 @@
 const { Router } = require('express')
-const { getAuth } = require('firebase-admin/auth')
 const { asyncHandler } = require('../util/asyncHandler')
 const { getDB } = require('../db')
 const { verifyToken, optionalAuth, requireAdmin, requireActive } = require('../middleware/auth')
@@ -7,6 +6,7 @@ const { reviewWriteLimiter } = require('../middleware/writeLimiter')
 const { REVIEW_VISIBLE, RECIPE_VISIBLE } = require('../util/moderation')
 const { DESCRIPTION_MAX_LENGTH } = require('../util/recipeLimits')
 const { recordAudit } = require('../util/auditLog')
+const { resolveAuthorIdentities } = require('../util/authorIdentity')
 const { recomputeRecipeRating, hasNumericRating } = require('../util/recipeRating')
 const { publicRecipeProjection, pickFields } = require('../util/recipeFields')
 const { recipeIdQuery } = require('../util/recipeIdQuery')
@@ -44,35 +44,6 @@ const reviewPublicProjection = Object.fromEntries(
   REVIEW_PUBLIC_FIELDS.map((f) => [f, 1])
 )
 
-// Resolve reviewer avatar + display name for a page of reviews (§D). photoURL and
-// displayName live on the Firebase Auth record, not the rating doc, so batch-fetch
-// them keyed on the doc's stable uid (never a client-supplied value). One deduped
-// getUsers() call covers the page (≤ MAX_PER_PAGE < the SDK's 100-identifier cap).
-// Degrade gracefully like publicProfile: a failed batch or a not-found/deleted
-// reviewer yields null fields (the client falls back to DefaultAvatar + @username)
-// and NEVER fails the list. Returns a Map<uid, { photoURL, displayName }>.
-async function resolveReviewerIdentities(reviews) {
-  const byUid = new Map()
-  const uids = [...new Set(reviews.map((r) => r.userId).filter(Boolean))]
-  // getUsers() throws on an empty identifier array — skip the call when a page
-  // has no resolvable uids (e.g. legacy docs written before the uid backfill).
-  if (uids.length === 0) return byUid
-  try {
-    const { users } = await getAuth().getUsers(uids.map((uid) => ({ uid })))
-    for (const u of users) {
-      byUid.set(u.uid, {
-        photoURL: u.photoURL || null,
-        displayName: u.displayName || null,
-      })
-    }
-  } catch (err) {
-    // Transient Admin SDK failure — return what we have (empty); callers default
-    // the fields to null so the reviews still render. Log it so a real outage
-    // (avatars silently vanishing page-wide) surfaces instead of being invisible.
-    console.warn('resolveReviewerIdentities: getUsers batch failed, reviews will render without avatars:', err?.message || err)
-  }
-  return byUid
-}
 
 // Load the rating/review target recipe and enforce the two integrity rules the
 // rating writes previously skipped entirely (audit M2): neither addRating nor
@@ -369,9 +340,15 @@ router.get('/getReviews', optionalAuth, asyncHandler(async (req, res) => {
     db.collection('ratings').countDocuments(query),
   ])
 
-  // Enrich each review with the author's avatar + display name (§D). Batched,
-  // deduped, and failure-tolerant — see resolveReviewerIdentities.
-  const identities = await resolveReviewerIdentities(rawReviews)
+  // Enrich each review with the author's avatar + display name (§D), keyed on the
+  // doc's stable uid, never a client value. One batched, deduped lookup, bounded
+  // in time, withheld for private profiles, and failure-tolerant: a missing
+  // identity renders as DefaultAvatar + @username. See util/authorIdentity.
+  const identities = await resolveAuthorIdentities(
+    db,
+    rawReviews.map((r) => r.userId),
+    { viewerUid: req.uid ?? null, isAdmin: Boolean(req.isAdmin) }
+  )
   const reviews = rawReviews.map((r) => {
     const identity = identities.get(r.userId)
     // pickFields drops userId (not on the allowlist) from the serialized shape;

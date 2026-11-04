@@ -131,7 +131,8 @@ describe('Home page', () => {
     it('shows an error message when getTrendingRecipes rejects', async () => {
       mockGetTrendingRecipes.mockRejectedValue(new Error('boom'))
       renderHome()
-      expect(await screen.findByText(/couldn.t load trending recipes/i)).toBeInTheDocument()
+      expect(await screen.findByText(/something went wrong on our end/i)).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /try again/i })).toBeInTheDocument()
     })
   })
 
@@ -263,7 +264,7 @@ describe('Home page', () => {
       mockGetAllRecipes.mockRejectedValue(new Error('boom'))
       renderHome()
       await waitFor(() => {
-        expect(screen.getAllByText(/couldn.t load recipes/i)).toHaveLength(3)
+        expect(screen.getAllByText(/recipes didn.t load/i)).toHaveLength(3)
       })
     })
   })

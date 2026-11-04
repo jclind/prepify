@@ -143,4 +143,10 @@ npx cypress open       # Open Cypress test runner
   `{ version, commit, commitFull, branch, env }` from Railway's auto-injected
   `RAILWAY_GIT_COMMIT_SHA`/`RAILWAY_GIT_BRANCH` and **never touches the DB**, so it still answers
   during an outage ([#320](https://github.com/jclind/prepify/pull/320)). Confirm any deploy with
-  `curl <api>/version` rather than opening the Railway dashboard.
+  `curl https://api.prepifymeals.com/version` rather than opening the Railway dashboard. Browsers
+  don't call that host: production's `VITE_API_URL` is `same-origin`, so the site calls
+  `prepifymeals.com/api/*` and the Netlify Edge Function `netlify/edge-functions/api-proxy.ts`
+  forwards to Railway (`API_PROXY_TARGET`), because some networks' DNS blocks `*.railway.app` even
+  through a CNAME. `/health` and `/version` aren't under `/api`, so they're only on the Railway
+  hosts. Calls straight to Railway are keyed by a Railway proxy address, not the caller, so the
+  per-IP limits only see real visitors on the edge path.

@@ -11,6 +11,7 @@ const { loadInteractions, buildSeenProfile } = require('../util/tasteContext')
 const { RECIPE_VISIBLE, RECIPE_OWNER_VISIBLE } = require('../util/moderation')
 const { fuzzyRankTitles, toTextSearch } = require('../util/recipeTitleMatch')
 const { recordAudit } = require('../util/auditLog')
+const { resolveAuthorIdentities } = require('../util/authorIdentity')
 const { notifyInBackground, notifyRecipeHidden } = require('../util/email')
 const { validateRequiredRecipeFields, normalizeRecipeInput, validateRecipeBounds } = require('../util/recipeLimits')
 const { upsertWithDupRetry } = require('../util/upsertWithDupRetry')
@@ -442,6 +443,20 @@ router.get('/recipes/random', optionalAuth, asyncHandler(async (req, res) => {
   res.json(random)
 }))
 
+// The author's profile photo lives on their Firebase Auth record, not the
+// recipe, so a changed photo shows up on every recipe without rewriting them.
+// Keyed on the recipe's stored uid, never a client value. The lookup is bounded
+// and respects a private profile (see util/authorIdentity); a slow or failed
+// lookup gives null, the client falls back to DefaultAvatar, and it never fails
+// the request.
+async function withAuthorPhoto(db, recipe, req) {
+  const identities = await resolveAuthorIdentities(db, [recipe.userId], {
+    viewerUid: req.uid ?? null,
+    isAdmin: Boolean(req.isAdmin),
+  })
+  return { ...recipe, authorPhotoURL: identities.get(recipe.userId)?.photoURL ?? null }
+}
+
 // GET /getRecipe — fetch single recipe and increment view count.
 // optionalAuth so an admin keeps access to hidden/unpublished recipes (to review
 // + restore them); for everyone else a moderated recipe is treated as not found.
@@ -465,7 +480,7 @@ router.get('/getRecipe', optionalAuth, asyncHandler(async (req, res) => {
       )
       recipe.automodClassifier = report?.classifier || null
     }
-    return res.json(recipe)
+    return res.json(await withAuthorPhoto(db, recipe, req))
   }
 
   // Public: a soft-hidden/unpublished recipe is "not found" — and the
@@ -493,7 +508,7 @@ router.get('/getRecipe', optionalAuth, asyncHandler(async (req, res) => {
           // notice) + their own userId, but not the admin moderation stamps.
           { projection: publicRecipeProjection }
         )
-      if (own) return res.json(own)
+      if (own) return res.json(await withAuthorPhoto(db, own, req))
     }
     return res.status(404).json({ error: 'Not found' })
   }
@@ -504,7 +519,7 @@ router.get('/getRecipe', optionalAuth, asyncHandler(async (req, res) => {
     { $inc: { totalRecipeViews: 1 } }
   )
 
-  res.json(recipe)
+  res.json(await withAuthorPhoto(db, recipe, req))
 }))
 
 // Daily spend ceiling on recipe CREATES (audit H1): every create runs a paid

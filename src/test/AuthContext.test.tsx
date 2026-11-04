@@ -24,14 +24,16 @@ import {
 import { uploadBytes, getDownloadURL } from 'firebase/storage'
 import AuthAPI from 'src/api/auth'
 import AuthProvider, { useAuth } from 'src/context/AuthContext'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 // Mutable holder the onAuthStateChanged stub reads, so each test can sign in a
 // password-based or Google-based user before rendering.
-const h = vi.hoisted(() => ({ authUser: null as any }))
+const h = vi.hoisted(() => ({ authUser: null as any, authCb: null as null | ((u: any) => void) }))
 
 vi.mock('firebase/auth', () => ({
   getAuth: vi.fn(() => ({
     onAuthStateChanged: (cb: (u: any) => void) => {
+      h.authCb = cb
       cb(h.authUser)
       return () => {}
     },
@@ -407,5 +409,30 @@ describe('AuthContext — referential stability', () => {
     expect(second!.logout).toBe(first!.logout)
     expect(second!.deleteAccount).toBe(first!.deleteAccount)
     expect(second!.updateProfileData).toBe(first!.updateProfileData)
+  })
+})
+
+// ─── cached data across accounts ─────────────────────────────────────────────
+
+describe('AuthContext — switching accounts', () => {
+  it('drops cached query data when the signed-in user changes', async () => {
+    const client = new QueryClient()
+    client.setQueryData(['recipe', 'r1'], { authorPhotoURL: 'https://img.example/private.jpg' })
+    h.authUser = makeUser()
+    renderHook(() => useAuth(), {
+      wrapper: ({ children }: { children: ReactNode }) => (
+        <QueryClientProvider client={client}>
+          <AuthProvider>{children}</AuthProvider>
+        </QueryClientProvider>
+      ),
+    })
+    // The first auth state (page load) keeps the cache.
+    await waitFor(() => expect(h.authCb).not.toBeNull())
+    expect(client.getQueryData(['recipe', 'r1'])).toBeDefined()
+
+    await act(async () => {
+      h.authCb!(null)
+    })
+    expect(client.getQueryData(['recipe', 'r1'])).toBeUndefined()
   })
 })

@@ -94,6 +94,9 @@ export type RecipeType = {
   nutritionData: NutritionDataType | null
   totalTime: number
   authorUsername: string
+  // Attached by GET /getRecipe from the author's Firebase account, so a changed
+  // profile photo shows on every recipe. Absent on list/card responses.
+  authorPhotoURL?: string | null
   rating: RatingAggregate
   createdAt: string
   editedAt: null | string

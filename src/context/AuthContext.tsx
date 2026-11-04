@@ -6,7 +6,9 @@ import React, {
   useContext,
   useCallback,
   useMemo,
+  useRef,
 } from 'react'
+import { QueryClientContext } from '@tanstack/react-query'
 import {
   signOut,
   getAuth,
@@ -98,6 +100,11 @@ const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true)
 
   const navigate = useNavigate()
+  // Read through the context, not useQueryClient(), so the provider still works
+  // where no QueryClientProvider is mounted (some tests).
+  const queryClient = useContext(QueryClientContext)
+  // The uid of the last auth state seen; undefined until the first one.
+  const lastUidRef = useRef<string | null | undefined>(undefined)
 
   const logout = useCallback(() => {
     signOut(auth)
@@ -324,6 +331,15 @@ const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
       // Attribute Sentry error reports to the signed-in account (cleared on
       // logout). No-ops when Sentry is disabled.
       setSentryUser(userInstance ? { uid: userInstance.uid } : null)
+      // Some responses depend on who's asking (an admin, or an author viewing
+      // their own private profile, gets real photos others don't). When the
+      // account changes, drop cached data so the next viewer never sees the
+      // last one's, even briefly. resetQueries also refetches what's on screen.
+      const uid = userInstance?.uid ?? null
+      if (lastUidRef.current !== undefined && lastUidRef.current !== uid) {
+        void queryClient?.resetQueries()
+      }
+      lastUidRef.current = uid
       if (userInstance) {
         setUser(userInstance)
         // Read the admin custom claim off the verified ID token. Mirrors the
