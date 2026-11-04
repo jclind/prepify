@@ -2733,3 +2733,7 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   page; cancelled requests and server answers stay quiet. Also: server-dashboard #34 added a `prepify-site`
   probe on `prepifymeals.com/api/recipes?limit=1` that requires JSON, so a missing edge function (SPA fallback
   HTML with a 200) alerts. A Codex review of #337-#346 found nothing. Not yet in prod: needs a promotion.
+- **2026-11-03** — Merged [#349](https://github.com/jclind/prepify/pull/349): new site icon (white Montserrat
+  SemiBold 600 italic "P" on flat `#FF5722`) across favicon, apple-touch, manifest and maskable icons; the auth
+  pages' brand tile P goes to 600 italic (the font request swaps italic 300 for 600); the footer wordmark now
+  matches the navbar (Bold 700 italic). Share card unchanged until real recipe photos land. Not yet in prod.
