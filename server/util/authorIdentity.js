@@ -22,8 +22,9 @@ function withTimeout(promise, ms, label = 'lookup') {
 // Privacy: a user who switched their profile to private (userProfiles.isPublic
 // === false) gets no real photo or display name here either, matching
 // /getPublicProfile's 404, except to themselves (`viewerUid`) and to admins.
-// If the privacy lookup itself fails, every identity is withheld rather than
-// risk showing a private one.
+// If the privacy lookup itself fails or runs past the deadline, every identity
+// is withheld rather than risk showing a private one. Both lookups run in
+// parallel under the same deadline, so the whole step is bounded.
 async function resolveAuthorIdentities(db, uids, { viewerUid = null, isAdmin = false } = {}) {
   const byUid = new Map()
   const unique = [...new Set(uids.filter(Boolean))]
@@ -38,10 +39,14 @@ async function resolveAuthorIdentities(db, uids, { viewerUid = null, isAdmin = f
     ),
     isAdmin
       ? Promise.resolve([])
-      : db
-          .collection('userProfiles')
-          .find({ _id: { $in: unique }, isPublic: false }, { projection: { _id: 1 } })
-          .toArray(),
+      : withTimeout(
+          db
+            .collection('userProfiles')
+            .find({ _id: { $in: unique }, isPublic: false }, { projection: { _id: 1 } })
+            .toArray(),
+          AUTH_LOOKUP_TIMEOUT_MS,
+          'author privacy lookup'
+        ),
   ])
 
   if (authResult.status === 'rejected') {

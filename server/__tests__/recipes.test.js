@@ -1402,6 +1402,26 @@ describe('GET /getRecipe', () => {
       expect(Date.now() - started).toBeLessThan(AUTH_LOOKUP_TIMEOUT_MS + 1000)
     })
 
+    it("doesn't wait on a hung privacy lookup, and withholds the photo", async () => {
+      await seedRecipe({ ...BASE_RECIPE, _id: 'privacy-hangs', userId: 'author-5' })
+      admin.__setUsers([{ uid: 'author-5', photoURL: 'https://img.example/5.jpg' }])
+      const db = getDB()
+      const realCollection = db.collection.bind(db)
+      const spy = jest.spyOn(db, 'collection').mockImplementation((name, ...rest) => {
+        if (name !== 'userProfiles') return realCollection(name, ...rest)
+        return { find: () => ({ toArray: () => new Promise(() => {}) }) }
+      })
+      try {
+        const started = Date.now()
+        const res = await request(server).get('/api/getRecipe?id=privacy-hangs')
+        expect(res.status).toBe(200)
+        expect(res.body.authorPhotoURL).toBeNull()
+        expect(Date.now() - started).toBeLessThan(AUTH_LOOKUP_TIMEOUT_MS + 1000)
+      } finally {
+        spy.mockRestore()
+      }
+    })
+
     describe('when the author made their profile private', () => {
       beforeEach(async () => {
         await seedRecipe({ ...BASE_RECIPE, _id: 'private-author', userId: TEST_UID })
