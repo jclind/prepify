@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AxiosError, AxiosHeaders } from 'axios'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
 import LoadError, { loadErrorKind } from 'src/Components/LoadError/LoadError'
 
 vi.mock('firebase/auth', () => ({
@@ -82,5 +82,29 @@ describe('LoadError', () => {
     await waitFor(() => expect(client.getQueryState(['failed'])?.status).toBe('success'))
     expect(failed).toHaveBeenCalledTimes(2)
     expect(healthy).toHaveBeenCalledTimes(1)
+  })
+  it('gives focus back to Try again when a keyboard retry fails', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    // Fails after a short delay, like a real request, so the loading state
+    // actually renders between the two trays.
+    const fetcher = vi.fn(
+      () => new Promise((_, reject) => setTimeout(() => reject(networkError()), 30))
+    )
+    // Mirrors the real sections: the skeleton replaces the tray while loading,
+    // so the focused button is unmounted during the retry.
+    const Section = () => {
+      const { isLoading, isError, error } = useQuery({ queryKey: ['s'], queryFn: fetcher })
+      if (isLoading) return <p>Loading</p>
+      return isError ? <LoadError error={error} ghost={null} /> : <p>Loaded</p>
+    }
+    renderWith(<Section />, client)
+    const first = await screen.findByRole('button', { name: 'Try again' })
+    first.focus()
+    await userEvent.keyboard('{Enter}')
+    expect(await screen.findByText('Loading')).toBeInTheDocument()
+
+    const again = await screen.findByRole('button', { name: 'Try again' })
+    expect(fetcher).toHaveBeenCalledTimes(2)
+    await waitFor(() => expect(again).toHaveFocus())
   })
 })

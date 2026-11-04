@@ -56,13 +56,14 @@
   }
 }
 
-// One-column phone layouts would stack every ghost card and leave the message
-// floating in a very tall empty tray. Keep one card's height there; the loaded
-// content then only grows downward.
-@include s.below(520px) {
-  .load-error:not(.load-error--compact) .load-error__ghost > * > :nth-child(n + 2) {
-    display: none;
-  }
+// Where a grid wraps to more than one row (one or two columns on phones and
+// tablets), the full ghost would leave the message floating in a very tall
+// empty tray. Cap it at about one card; the loaded content then only grows
+// downward. A height cap rather than a breakpoint, so it follows each grid's
+// own column rules.
+.load-error:not(.load-error--compact) .load-error__ghost {
+  max-height: 26rem;
+  overflow: hidden;
 }
 
 @keyframes load-error-spin { to { transform: rotate(360deg); } }

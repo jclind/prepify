@@ -1,4 +1,4 @@
-import React, { FC, ReactNode, useState } from 'react'
+import React, { FC, ReactNode, useEffect, useRef, useState } from 'react'
 import axios from 'axios'
 import { useQueryClient } from '@tanstack/react-query'
 import { isUnreachableError } from 'src/api/http-common'
@@ -39,6 +39,13 @@ interface LoadErrorProps {
   className?: string
 }
 
+// While a retry runs, the section swaps this tray for its loading skeleton,
+// which unmounts the focused button. If the retry fails, the first tray that
+// comes back takes focus, so a keyboard user isn't dropped onto <body>. The
+// window closes on its own, so a later, unrelated error never steals focus.
+const REFOCUS_WINDOW_MS = 15000
+let refocusUntil = 0
+
 // Inline error for a section whose query failed: a dashed tray where the
 // recipes would be, saying why (offline, can't reach the server, or the server
 // failed) with a retry. One outage usually fails several queries at once, so
@@ -46,15 +53,32 @@ interface LoadErrorProps {
 const LoadError: FC<LoadErrorProps> = ({ error, compact = false, ghost, className }) => {
   const queryClient = useQueryClient()
   const [retrying, setRetrying] = useState(false)
+  const buttonRef = useRef<HTMLButtonElement>(null)
   const kind = loadErrorKind(error)
   const { title, detail } = COPY[kind]
   const Icon = kind === 'offline' ? WifiOffIcon : CloudOffIcon
 
+  useEffect(() => {
+    if (Date.now() < refocusUntil) {
+      refocusUntil = 0
+      buttonRef.current?.focus()
+    }
+  }, [])
+
   const retry = () => {
+    if (document.activeElement === buttonRef.current) {
+      refocusUntil = Date.now() + REFOCUS_WINDOW_MS
+    }
     setRetrying(true)
     queryClient
       .refetchQueries({ predicate: q => q.state.status === 'error' })
-      .finally(() => setRetrying(false))
+      .finally(() => {
+        setRetrying(false)
+        // Retry worked and no tray came back: nothing to refocus.
+        if (!queryClient.getQueryCache().findAll({ predicate: q => q.state.status === 'error' }).length) {
+          refocusUntil = 0
+        }
+      })
   }
 
   return (
@@ -69,6 +93,7 @@ const LoadError: FC<LoadErrorProps> = ({ error, compact = false, ghost, classNam
         <p className='load-error__title'>{title}</p>
         {compact ? null : <p className='load-error__detail'>{detail}</p>}
         <button
+          ref={buttonRef}
           type='button'
           className={`load-error__retry btn btn--sm ${compact ? 'btn--ghost' : 'btn--outline'}`}
           onClick={retry}
