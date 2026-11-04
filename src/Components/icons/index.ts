@@ -78,6 +78,8 @@ export {
   LuIceCreamCone as IceCreamIcon,
   LuInbox as InboxIcon,
   LuInfo as InfoIcon,
+  LuCloudOff as CloudOffIcon,
+  LuWifiOff as WifiOffIcon,
   LuCookingPot as KitchenIcon,
   LuLightbulb as LightbulbIcon,
   LuLock as LockIcon,

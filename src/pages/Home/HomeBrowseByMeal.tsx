@@ -103,7 +103,17 @@ const HomeBrowseByMeal: FC = () => {
               // (visibility) until it's worth drawing — no grow-on-appear jump.
               Array.from({ length: PER_COL }).map((_, k) => <SkeletonRow key={k} />)
             ) : error ? (
-              <li><LoadError error={error} compact /></li>
+              <li>
+                <LoadError
+                  error={error}
+                  compact
+                  ghost={
+                    <ul>
+                      {Array.from({ length: PER_COL }).map((_, k) => <SkeletonRow key={k} />)}
+                    </ul>
+                  }
+                />
+              </li>
             ) : picks.length > 0 ? (
               picks.map(r => <MealRow recipe={r} key={r._id} />)
             ) : (

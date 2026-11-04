@@ -1,24 +1,68 @@
 @use '../../helpers.scss' as s;
 
+// The ghost is the section's own skeleton, kept invisible, so the tray is
+// exactly as tall as the content it stands in for.
 .load-error {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.75rem;
-  padding: 1rem 0;
+  position: relative;
 
-  &__msg {
+  &__ghost {
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  &__tray {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 1rem;
+    text-align: center;
+    border: 2px dashed s.$gray-400;
+    border-radius: s.$radius-2xl;
+  }
+
+  &__icon {
+    flex-shrink: 0;
+    font-size: 2rem;
+    color: s.$gray-600;
+  }
+  &__title {
+    margin: 0;
+    color: s.$primary-text;
+    font-size: s.$text-lg;
+    font-weight: 700;
+  }
+  &__detail {
     margin: 0;
     color: s.$tertiary-text;
-    font-weight: 600;
+    font-size: s.$text-sm;
+    font-weight: 500;
+  }
+  &__retry {
+    margin-top: 0.4rem;
+    svg { font-size: 0.95em; }
+    .spin { animation: load-error-spin 0.8s linear infinite; }
   }
 
-  // Meal cards: smaller text, and the ghost button sits flush with the copy.
+  // Meal cards: smaller icon and title, no detail line.
   &--compact {
-    gap: 0.25rem;
-    padding: 0.6rem 0.4rem;
-
-    .load-error__msg { font-size: s.$text-sm; }
-    .btn { padding-left: 0; padding-right: 0; }
+    .load-error__tray { gap: 0.25rem; }
+    .load-error__icon { font-size: 1.5rem; }
+    .load-error__title { font-size: s.$text-base; }
+    .load-error__retry { margin-top: 0; }
   }
 }
+
+// One-column phone layouts would stack every ghost card and leave the message
+// floating in a very tall empty tray. Keep one card's height there; the loaded
+// content then only grows downward.
+@include s.below(520px) {
+  .load-error:not(.load-error--compact) .load-error__ghost > * > :nth-child(n + 2) {
+    display: none;
+  }
+}
+
+@keyframes load-error-spin { to { transform: rotate(360deg); } }

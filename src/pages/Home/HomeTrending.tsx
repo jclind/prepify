@@ -36,7 +36,20 @@ const HomeTrending: FC = () => {
     )
   }
 
-  if (isError) return <LoadError error={error} />
+  if (isError) {
+    return (
+      <LoadError
+        error={error}
+        ghost={
+          <div className='home-trending-grid'>
+            {Array.from({ length: 4 }).map((_, i) => (
+              <HomeRecipeCardSkeleton key={i} />
+            ))}
+          </div>
+        }
+      />
+    )
+  }
 
   if (recipes.length === 0) {
     return <p className='home-empty'>No trending recipes yet.</p>

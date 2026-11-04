@@ -334,11 +334,7 @@
       }
     }
   }
-  .recipes-load-error {
-    align-items: center;
-    text-align: center;
-    padding: 3rem 1rem;
-  }
+  .recipes-load-error { margin-top: 1rem; }
 
   // ---- Filters drawer (modal above the navbar) ----
   .recipes-drawer {

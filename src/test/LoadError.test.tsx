@@ -5,7 +5,6 @@ import userEvent from '@testing-library/user-event'
 import { AxiosError, AxiosHeaders } from 'axios'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import LoadError, { loadErrorKind } from 'src/Components/LoadError/LoadError'
-import { API_UNREACHABLE_MESSAGE, OFFLINE_MESSAGE } from 'src/api/http-common'
 
 vi.mock('firebase/auth', () => ({
   getAuth: () => ({ currentUser: null }),
@@ -38,25 +37,35 @@ describe('LoadError', () => {
   })
 
   it('says the server could not be reached when the request got no response', () => {
-    renderWith(<LoadError error={networkError()} />)
-    expect(screen.getByText(API_UNREACHABLE_MESSAGE)).toBeInTheDocument()
+    renderWith(<LoadError error={networkError()} ghost={null} />)
+    expect(screen.getByText('Can’t reach Prepify')).toBeInTheDocument()
+    expect(screen.getByText(/check your connection/i)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument()
   })
 
   it('says the visitor is offline when the browser reports no connection', () => {
     vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false)
-    renderWith(<LoadError error={networkError()} />)
-    expect(screen.getByText(OFFLINE_MESSAGE)).toBeInTheDocument()
+    renderWith(<LoadError error={networkError()} ghost={null} />)
+    expect(screen.getByText('You’re offline')).toBeInTheDocument()
   })
 
   it('blames the server when it answered with an error', () => {
-    renderWith(<LoadError error={serverError()} />)
+    renderWith(<LoadError error={serverError()} ghost={null} />)
     expect(screen.getByText(/something went wrong on our end/i)).toBeInTheDocument()
   })
 
-  it('uses short copy in compact mode', () => {
-    renderWith(<LoadError error={networkError()} compact />)
-    expect(screen.getByText('Couldn’t reach Prepify.')).toBeInTheDocument()
+  it('shows only the title in compact mode', () => {
+    renderWith(<LoadError error={networkError()} compact ghost={null} />)
+    expect(screen.getByText('Can’t reach Prepify')).toBeInTheDocument()
+    expect(screen.queryByText(/check your connection/i)).not.toBeInTheDocument()
+  })
+
+  it('keeps the skeleton it stands in for, hidden from screen readers', () => {
+    const { container } = renderWith(
+      <LoadError error={networkError()} ghost={<div className='sk'>skeleton</div>} />
+    )
+    expect(container.querySelector('.load-error__ghost .sk')).toBeInTheDocument()
+    expect(container.querySelector('.load-error__ghost')).toHaveAttribute('aria-hidden', 'true')
   })
 
   it('Try again refetches every failed query', async () => {
@@ -67,7 +76,7 @@ describe('LoadError', () => {
     await client.prefetchQuery({ queryKey: ['healthy'], queryFn: healthy })
     expect(client.getQueryState(['failed'])?.status).toBe('error')
 
-    renderWith(<LoadError error={networkError()} />, client)
+    renderWith(<LoadError error={networkError()} ghost={null} />, client)
     await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
 
     await waitFor(() => expect(client.getQueryState(['failed'])?.status).toBe('success'))

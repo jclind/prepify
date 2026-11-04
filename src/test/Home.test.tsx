@@ -264,7 +264,7 @@ describe('Home page', () => {
       mockGetAllRecipes.mockRejectedValue(new Error('boom'))
       renderHome()
       await waitFor(() => {
-        expect(screen.getAllByText(/couldn.t load recipes/i)).toHaveLength(3)
+        expect(screen.getAllByText(/recipes didn.t load/i)).toHaveLength(3)
       })
     })
   })

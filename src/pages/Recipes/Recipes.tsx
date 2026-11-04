@@ -276,7 +276,17 @@ const Recipes: FC = () => {
         )}
 
         {isError ? (
-          <LoadError error={error} className='recipes-load-error' />
+          <LoadError
+            error={error}
+            className='recipes-load-error'
+            ghost={
+              <div className='recipes-grid'>
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <RecipeCard key={i} recipe={null} loading={true} />
+                ))}
+              </div>
+            }
+          />
         ) : totalResults === 0 ? (
           <div className='recipes-empty'>
             <div className='recipes-empty__icon' aria-hidden='true'>

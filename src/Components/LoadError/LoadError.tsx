@@ -1,11 +1,8 @@
-import React, { FC, useState } from 'react'
+import React, { FC, ReactNode, useState } from 'react'
 import axios from 'axios'
 import { useQueryClient } from '@tanstack/react-query'
-import {
-  API_UNREACHABLE_MESSAGE,
-  OFFLINE_MESSAGE,
-  isUnreachableError,
-} from 'src/api/http-common'
+import { isUnreachableError } from 'src/api/http-common'
+import { CloudOffIcon, RotateCwIcon, WifiOffIcon } from 'src/Components/icons'
 import './LoadError.scss'
 
 type LoadErrorKind = 'offline' | 'unreachable' | 'server'
@@ -20,30 +17,38 @@ export function loadErrorKind(error: unknown): LoadErrorKind {
     : 'unreachable'
 }
 
-const MESSAGES: Record<LoadErrorKind, { full: string; compact: string }> = {
-  offline: { full: OFFLINE_MESSAGE, compact: 'You appear to be offline.' },
-  unreachable: { full: API_UNREACHABLE_MESSAGE, compact: 'Couldn’t reach Prepify.' },
-  server: {
-    full: 'Couldn’t load recipes. Something went wrong on our end.',
-    compact: 'Couldn’t load recipes.',
+const COPY: Record<LoadErrorKind, { title: string; detail: string }> = {
+  offline: { title: 'You’re offline', detail: 'Recipes will load once you reconnect.' },
+  unreachable: {
+    title: 'Can’t reach Prepify',
+    detail: 'Check your connection, or try a different network.',
   },
+  server: { title: 'Recipes didn’t load', detail: 'Something went wrong on our end.' },
 }
 
 interface LoadErrorProps {
   error: unknown
-  /** Short copy for tight spots, like the home page's meal cards. */
+  /** Title only, for tight spots like the home page's meal cards. */
   compact?: boolean
+  /**
+   * The section's loading skeleton. It's rendered invisibly under the message
+   * so the error takes exactly the height the loaded content would, at every
+   * screen width, and nothing jumps when a retry fills it in.
+   */
+  ghost: ReactNode
   className?: string
 }
 
-// Inline error for a section whose query failed. It says why (offline, can't
-// reach the server, or the server failed) and offers a retry. One outage
-// usually fails several queries at once, so Try again refetches every failed
-// query, not only this section's.
-const LoadError: FC<LoadErrorProps> = ({ error, compact = false, className }) => {
+// Inline error for a section whose query failed: a dashed tray where the
+// recipes would be, saying why (offline, can't reach the server, or the server
+// failed) with a retry. One outage usually fails several queries at once, so
+// Try again refetches every failed query, not only this section's.
+const LoadError: FC<LoadErrorProps> = ({ error, compact = false, ghost, className }) => {
   const queryClient = useQueryClient()
   const [retrying, setRetrying] = useState(false)
   const kind = loadErrorKind(error)
+  const { title, detail } = COPY[kind]
+  const Icon = kind === 'offline' ? WifiOffIcon : CloudOffIcon
 
   const retry = () => {
     setRetrying(true)
@@ -56,15 +61,23 @@ const LoadError: FC<LoadErrorProps> = ({ error, compact = false, className }) =>
     <div
       className={`load-error ${compact ? 'load-error--compact' : ''} ${className ?? ''}`.trim()}
     >
-      <p className='load-error__msg'>{MESSAGES[kind][compact ? 'compact' : 'full']}</p>
-      <button
-        type='button'
-        className={`btn btn--sm ${compact ? 'btn--ghost' : 'btn--outline'}`}
-        onClick={retry}
-        disabled={retrying}
-      >
-        {retrying ? 'Retrying…' : 'Try again'}
-      </button>
+      <div className='load-error__ghost' aria-hidden='true'>
+        {ghost}
+      </div>
+      <div className='load-error__tray'>
+        <Icon className='load-error__icon' aria-hidden='true' />
+        <p className='load-error__title'>{title}</p>
+        {compact ? null : <p className='load-error__detail'>{detail}</p>}
+        <button
+          type='button'
+          className={`load-error__retry btn btn--sm ${compact ? 'btn--ghost' : 'btn--outline'}`}
+          onClick={retry}
+          disabled={retrying}
+        >
+          <RotateCwIcon aria-hidden='true' className={retrying ? 'spin' : ''} />
+          {retrying ? 'Retrying' : 'Try again'}
+        </button>
+      </div>
     </div>
   )
 }
