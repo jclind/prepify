@@ -334,12 +334,7 @@
       }
     }
   }
-  .recipes-message {
-    text-align: center;
-    padding: 3rem 1rem;
-    color: s.$secondary-text;
-    font-weight: 600;
-  }
+  .recipes-load-error { margin-top: 1rem; }
 
   // ---- Filters drawer (modal above the navbar) ----
   .recipes-drawer {

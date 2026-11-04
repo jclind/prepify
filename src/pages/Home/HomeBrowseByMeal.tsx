@@ -5,6 +5,7 @@ import { useQueries } from '@tanstack/react-query'
 import Skeleton from 'react-loading-skeleton'
 import 'react-loading-skeleton/dist/skeleton.css'
 import RecipeAPI from 'src/api/recipes'
+import LoadError, { loadErrorView } from 'src/Components/LoadError/LoadError'
 import { RecipeCardType } from 'types'
 import { useDelayedLoading } from 'src/hooks/useDelayedLoading'
 import { skeletonColor, fmtPrice, ratingLabel } from './homeFormat'
@@ -78,7 +79,13 @@ const HomeBrowseByMeal: FC = () => {
       claimed.add(r._id)
       picks.push(r)
     }
-    return { meal, picks, isLoading: results[i].isLoading, isError: results[i].isError }
+    return {
+      meal,
+      picks,
+      isLoading: results[i].isLoading,
+      error: results[i].error,
+      ...loadErrorView(results[i]),
+    }
   })
 
   // Per docs/design/loading-states.md: one shared delay gate for the column
@@ -89,20 +96,31 @@ const HomeBrowseByMeal: FC = () => {
 
   return (
     <div className='home-meal-cols'>
-      {columns.map(({ meal, picks, isLoading, isError }) => (
+      {columns.map(({ meal, picks, isLoading, error, failed, retrying }) => (
         <div className='home-meal-col' key={meal}>
           <div className='meal-col-head'>
             <h3>{meal}</h3>
             <Link to='/recipes' className='see-all'>See all <ChevronRightIcon /></Link>
           </div>
-          <ul className={(isLoading) && !showSkeleton ? 'sk-hold' : ''}>
-            {isLoading ? (
+          <ul className={isLoading && !failed && !showSkeleton ? 'sk-hold' : ''}>
+            {failed ? (
+              <li>
+                <LoadError
+                  error={error}
+                  retrying={retrying}
+                  compact
+                  ghost={
+                    <ul>
+                      {Array.from({ length: PER_COL }).map((_, k) => <SkeletonRow key={k} />)}
+                    </ul>
+                  }
+                />
+              </li>
+            ) : isLoading ? (
               // Always render the skeleton rows while loading so the column holds
               // its height from frame 1; the flash-guard delay only hides them
               // (visibility) until it's worth drawing — no grow-on-appear jump.
               Array.from({ length: PER_COL }).map((_, k) => <SkeletonRow key={k} />)
-            ) : isError ? (
-              <li className='empty-row'>Couldn’t load recipes.</li>
             ) : picks.length > 0 ? (
               picks.map(r => <MealRow recipe={r} key={r._id} />)
             ) : (
