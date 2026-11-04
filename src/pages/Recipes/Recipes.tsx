@@ -129,8 +129,9 @@ const Recipes: FC = () => {
     navigate(RECIPES_PATH)
   }
 
+  const recipesKey = ['recipes', { sort, diets, cuisine, search: query, meals }] as const
   const recipesQuery = useInfiniteQuery({
-    queryKey: ['recipes', { sort, diets, cuisine, search: query, meals }],
+    queryKey: recipesKey,
     queryFn: ({ pageParam }) =>
       RecipeAPI.getAllRecipes({
         page: pageParam as number,
@@ -278,8 +279,14 @@ const Recipes: FC = () => {
 
         {failed ? (
           <LoadError
+            // One tray per query: its remembered message can't carry over to
+            // another sort or filter.
+            key={JSON.stringify(recipesKey)}
             error={error}
             retrying={retrying}
+            onRetry={
+              recipesQuery.isFetchNextPageError ? () => void fetchNextPage() : undefined
+            }
             className='recipes-load-error'
             ghost={
               <div className='recipes-grid'>

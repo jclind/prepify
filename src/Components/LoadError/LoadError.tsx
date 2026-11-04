@@ -31,6 +31,12 @@ interface LoadErrorProps {
   error: unknown
   /** The section's query is refetching: the button spins and ignores clicks. */
   retrying?: boolean
+  /**
+   * What Try again does. Default: refetch every failed query. /recipes passes
+   * fetchNextPage when the failure was loading another page, since a refetch
+   * would only reload the pages it already has.
+   */
+  onRetry?: () => void
   /** Title only, for tight spots like the home page's meal cards. */
   compact?: boolean
   /**
@@ -43,24 +49,27 @@ interface LoadErrorProps {
 }
 
 interface QueryOutcome {
-  errorUpdatedAt: number
-  dataUpdatedAt: number
+  status: 'pending' | 'error' | 'success'
+  errorUpdateCount: number
   fetchStatus: 'fetching' | 'paused' | 'idle'
 }
 
 /**
  * Whether a section should show its error tray, and whether a fetch is running.
  *
- * `failed` asks React Query whether this query's latest outcome was an error:
- * it failed more recently than it last got data. Refetching a query with no
- * data resets `error` and `status` to loading, but not these timestamps, so
- * `failed` holds through a retry. The tray, and the Try again button a keyboard
- * user has focused, stays put instead of flashing to the skeleton, including a
- * retry paused because the browser is offline. It clears only when data
- * arrives, and it's per query, so a new /recipes sort or filter starts clean.
+ * Refetching a query that has no data resets it to `pending` with no error, so
+ * a section would swap its tray for the skeleton mid-retry, unmounting the Try
+ * again button a keyboard user has focused. A query that is pending but has
+ * failed before is that retry, so it keeps the tray, including a retry paused
+ * because the browser is offline. A query with data stays `error` during its
+ * retry anyway. Both come from React Query's per-key state, so a new /recipes
+ * sort or filter starts clean, and no clock is involved.
  */
 export function loadErrorView(q: QueryOutcome): { failed: boolean; retrying: boolean } {
-  return { failed: q.errorUpdatedAt > q.dataUpdatedAt, retrying: q.fetchStatus !== 'idle' }
+  return {
+    failed: q.status === 'error' || (q.status === 'pending' && q.errorUpdateCount > 0),
+    retrying: q.fetchStatus !== 'idle',
+  }
 }
 
 // Inline error for a section whose query failed: a dashed tray where the
@@ -70,6 +79,7 @@ export function loadErrorView(q: QueryOutcome): { failed: boolean; retrying: boo
 const LoadError: FC<LoadErrorProps> = ({
   error,
   retrying = false,
+  onRetry,
   compact = false,
   ghost,
   className,
@@ -88,7 +98,8 @@ const LoadError: FC<LoadErrorProps> = ({
 
   const retry = () => {
     if (retrying) return
-    void queryClient.refetchQueries({ predicate: q => q.state.status === 'error' })
+    if (onRetry) onRetry()
+    else void queryClient.refetchQueries({ predicate: q => q.state.status === 'error' })
   }
 
   return (

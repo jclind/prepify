@@ -45,6 +45,16 @@ describe('LoadError', () => {
     expect(loadErrorKind(new Error('boom'))).toBe('server')
   })
 
+  it('shows the tray for an error, and for a retry after one, but not a first load', () => {
+    const v = (status: 'pending' | 'error' | 'success', errorUpdateCount: number) =>
+      loadErrorView({ status, errorUpdateCount, fetchStatus: 'idle' }).failed
+    expect(v('error', 1)).toBe(true)
+    expect(v('pending', 1)).toBe(true) // refetching after an error, no data yet
+    expect(v('pending', 0)).toBe(false) // first load
+    expect(v('success', 3)).toBe(false) // failed before, recovered since
+    expect(loadErrorView({ status: 'error', errorUpdateCount: 1, fetchStatus: 'paused' }).retrying).toBe(true)
+  })
+
   it('says the server could not be reached when the request got no response', () => {
     renderWith(<LoadError error={networkError()} ghost={null} />)
     expect(screen.getByText('Can’t reach Prepify')).toBeInTheDocument()
