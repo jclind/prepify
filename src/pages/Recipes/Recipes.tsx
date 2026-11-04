@@ -12,6 +12,7 @@ import RecipeCard from 'src/Components/RecipeCard/RecipeCard'
 import SearchRecipesInput from 'src/Components/SearchRecipesInput/SearchRecipesInput'
 import SortDropdown from 'src/Components/SortDropdown/SortDropdown'
 import RecipeAPI from 'src/api/recipes'
+import LoadError from 'src/Components/LoadError/LoadError'
 import { SITE_URL, DEFAULT_OG_IMAGE } from 'src/util/seo'
 import { RECIPES_PATH } from 'src/routes'
 import { dietLabelsOptions } from 'src/recipeData/dietLabels'
@@ -128,7 +129,7 @@ const Recipes: FC = () => {
     navigate(RECIPES_PATH)
   }
 
-  const { data, isFetching, isError, fetchNextPage, hasNextPage } =
+  const { data, isFetching, isError, error, fetchNextPage, hasNextPage } =
     useInfiniteQuery({
       queryKey: ['recipes', { sort, diets, cuisine, search: query, meals }],
       queryFn: ({ pageParam }) =>
@@ -275,9 +276,7 @@ const Recipes: FC = () => {
         )}
 
         {isError ? (
-          <div className='recipes-message'>
-            Failed to load recipes. Please try again.
-          </div>
+          <LoadError error={error} className='recipes-load-error' />
         ) : totalResults === 0 ? (
           <div className='recipes-empty'>
             <div className='recipes-empty__icon' aria-hidden='true'>

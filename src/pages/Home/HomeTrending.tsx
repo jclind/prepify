@@ -3,10 +3,11 @@ import { useQuery } from '@tanstack/react-query'
 import RecipeAPI from 'src/api/recipes'
 import { RecipeCardType } from 'types'
 import { useDelayedLoading } from 'src/hooks/useDelayedLoading'
+import LoadError from 'src/Components/LoadError/LoadError'
 import { HomeRecipeCard, HomeRecipeCardSkeleton } from './HomeRecipeCard'
 
 const HomeTrending: FC = () => {
-  const { data, isLoading, isError } = useQuery<RecipeCardType[]>({
+  const { data, isLoading, isError, error } = useQuery<RecipeCardType[]>({
     queryKey: ['trending-recipes'],
     queryFn: () => RecipeAPI.getTrendingRecipes(4),
     // Trending shifts slowly; match the For-You / by-meal rows (5 min) so a
@@ -35,14 +36,10 @@ const HomeTrending: FC = () => {
     )
   }
 
-  if (isError || recipes.length === 0) {
-    return (
-      <p className='home-empty'>
-        {isError
-          ? 'Couldn’t load trending recipes. Please try again later.'
-          : 'No trending recipes yet.'}
-      </p>
-    )
+  if (isError) return <LoadError error={error} />
+
+  if (recipes.length === 0) {
+    return <p className='home-empty'>No trending recipes yet.</p>
   }
 
   return (

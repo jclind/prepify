@@ -284,7 +284,8 @@ describe('Recipes (Browse) page', () => {
   it('shows an error message when getAllRecipes throws', async () => {
     mockGetAllRecipes.mockRejectedValue(new Error('network error'))
     renderRecipes()
-    await screen.findByText('Failed to load recipes. Please try again.')
+    await screen.findByText(/something went wrong on our end/i)
+    expect(screen.getByRole('button', { name: /try again/i })).toBeInTheDocument()
   })
 
   it('filter drawer takes focus, traps Tab, closes on Escape and restores focus', async () => {

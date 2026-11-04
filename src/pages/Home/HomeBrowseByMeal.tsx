@@ -5,6 +5,7 @@ import { useQueries } from '@tanstack/react-query'
 import Skeleton from 'react-loading-skeleton'
 import 'react-loading-skeleton/dist/skeleton.css'
 import RecipeAPI from 'src/api/recipes'
+import LoadError from 'src/Components/LoadError/LoadError'
 import { RecipeCardType } from 'types'
 import { useDelayedLoading } from 'src/hooks/useDelayedLoading'
 import { skeletonColor, fmtPrice, ratingLabel } from './homeFormat'
@@ -78,7 +79,7 @@ const HomeBrowseByMeal: FC = () => {
       claimed.add(r._id)
       picks.push(r)
     }
-    return { meal, picks, isLoading: results[i].isLoading, isError: results[i].isError }
+    return { meal, picks, isLoading: results[i].isLoading, error: results[i].error }
   })
 
   // Per docs/design/loading-states.md: one shared delay gate for the column
@@ -89,7 +90,7 @@ const HomeBrowseByMeal: FC = () => {
 
   return (
     <div className='home-meal-cols'>
-      {columns.map(({ meal, picks, isLoading, isError }) => (
+      {columns.map(({ meal, picks, isLoading, error }) => (
         <div className='home-meal-col' key={meal}>
           <div className='meal-col-head'>
             <h3>{meal}</h3>
@@ -101,8 +102,8 @@ const HomeBrowseByMeal: FC = () => {
               // its height from frame 1; the flash-guard delay only hides them
               // (visibility) until it's worth drawing — no grow-on-appear jump.
               Array.from({ length: PER_COL }).map((_, k) => <SkeletonRow key={k} />)
-            ) : isError ? (
-              <li className='empty-row'>Couldn’t load recipes.</li>
+            ) : error ? (
+              <li><LoadError error={error} compact /></li>
             ) : picks.length > 0 ? (
               picks.map(r => <MealRow recipe={r} key={r._id} />)
             ) : (
