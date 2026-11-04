@@ -2737,3 +2737,11 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   SemiBold 600 italic "P" on flat `#FF5722`) across favicon, apple-touch, manifest and maskable icons; the auth
   pages' brand tile P goes to 600 italic (the font request swaps italic 300 for 600); the footer wordmark now
   matches the navbar (Bold 700 italic). Share card unchanged until real recipe photos land. Not yet in prod.
+- **2026-11-04** — Merged [#350](https://github.com/jclind/prepify/pull/350): failed recipe sections (home
+  Trending, the three meal cards, /recipes) show a dashed tray the size of the missing content instead of a
+  line of "Couldn't load" text, so nothing jumps on recovery. `LoadError` says why (offline, can't reach
+  Prepify, or the server failed, using the toast's `isUnreachableError`) with Try again, which refetches every
+  failed query (or, after a failed Load more, that page). `loadErrorView` keeps the tray through a retry
+  (status `error`, or `pending` with `errorUpdateCount > 0`) so keyboard focus stays on the button. Design
+  picked from three variants (dashed tray won). Four Codex passes found 8 issues, all fixed with tests; the
+  last found none. Follow-up: account pages keep their generic copy. Not yet in prod.
