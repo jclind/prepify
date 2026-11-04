@@ -2745,3 +2745,12 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   (status `error`, or `pending` with `errorUpdateCount > 0`) so keyboard focus stays on the button. Design
   picked from three variants (dashed tray won). Four Codex passes found 8 issues, all fixed with tests; the
   last found none. Follow-up: account pages keep their generic copy. Not yet in prod.
+- **2026-11-04** — Merged [#351](https://github.com/jclind/prepify/pull/351), fixes from the adversarial Codex
+  review of the #347-#350 promotion: author photos and review identities go through
+  `server/util/authorIdentity.js` (`resolveAuthorIdentities`): one batched Firebase lookup plus the
+  `userProfiles` privacy check, both under 1.5s, null on timeout. Private profiles show no real photo or display
+  name on recipes and reviews, except to themselves and admins. The auth listener resets React Query's cache on
+  a uid change. `isUnreachableError` requires a sent axios request (token-refresh failures go to Sentry as
+  `kind: request-setup`), and cancelled requests are no longer reported. Follow-ups (pre-existing, in-place
+  account switch only): `usePaginatedLoadMore` keeps the previous user's pages in state; a slow write from the
+  previous account (MadeRecipeBtn, useSaveRecipe rollback) can land in the reset cache.
