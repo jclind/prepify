@@ -1,4 +1,4 @@
-import React, { FC, ReactNode, useEffect, useRef, useState } from 'react'
+import React, { FC, ReactNode, useRef } from 'react'
 import axios from 'axios'
 import { useQueryClient } from '@tanstack/react-query'
 import { isUnreachableError } from 'src/api/http-common'
@@ -28,6 +28,8 @@ const COPY: Record<LoadErrorKind, { title: string; detail: string }> = {
 
 interface LoadErrorProps {
   error: unknown
+  /** The section's query is refetching: the button spins and ignores clicks. */
+  retrying?: boolean
   /** Title only, for tight spots like the home page's meal cards. */
   compact?: boolean
   /**
@@ -39,46 +41,44 @@ interface LoadErrorProps {
   className?: string
 }
 
-// While a retry runs, the section swaps this tray for its loading skeleton,
-// which unmounts the focused button. If the retry fails, the first tray that
-// comes back takes focus, so a keyboard user isn't dropped onto <body>. The
-// window closes on its own, so a later, unrelated error never steals focus.
-const REFOCUS_WINDOW_MS = 15000
-let refocusUntil = 0
+/**
+ * Each query's error, kept while a refetch after that error is in flight.
+ *
+ * Refetching a query that has no data resets it to loading, so a section would
+ * swap its tray for the skeleton mid-retry. That unmounts the focused Try again
+ * button, and keyboard focus falls to <body>. Holding the last error until the
+ * refetch settles keeps the tray (and the focus) in place: it clears when the
+ * retry succeeds and is replaced when it fails again.
+ */
+export function useRetainedErrors(
+  queries: ReadonlyArray<{ error: unknown; isFetching: boolean }>
+): unknown[] {
+  const last = useRef<unknown[]>([])
+  last.current = queries.map(
+    (q, i) => q.error ?? (q.isFetching ? last.current[i] ?? null : null)
+  )
+  return last.current
+}
 
 // Inline error for a section whose query failed: a dashed tray where the
 // recipes would be, saying why (offline, can't reach the server, or the server
 // failed) with a retry. One outage usually fails several queries at once, so
 // Try again refetches every failed query, not only this section's.
-const LoadError: FC<LoadErrorProps> = ({ error, compact = false, ghost, className }) => {
+const LoadError: FC<LoadErrorProps> = ({
+  error,
+  retrying = false,
+  compact = false,
+  ghost,
+  className,
+}) => {
   const queryClient = useQueryClient()
-  const [retrying, setRetrying] = useState(false)
-  const buttonRef = useRef<HTMLButtonElement>(null)
   const kind = loadErrorKind(error)
   const { title, detail } = COPY[kind]
   const Icon = kind === 'offline' ? WifiOffIcon : CloudOffIcon
 
-  useEffect(() => {
-    if (Date.now() < refocusUntil) {
-      refocusUntil = 0
-      buttonRef.current?.focus()
-    }
-  }, [])
-
   const retry = () => {
-    if (document.activeElement === buttonRef.current) {
-      refocusUntil = Date.now() + REFOCUS_WINDOW_MS
-    }
-    setRetrying(true)
-    queryClient
-      .refetchQueries({ predicate: q => q.state.status === 'error' })
-      .finally(() => {
-        setRetrying(false)
-        // Retry worked and no tray came back: nothing to refocus.
-        if (!queryClient.getQueryCache().findAll({ predicate: q => q.state.status === 'error' }).length) {
-          refocusUntil = 0
-        }
-      })
+    if (retrying) return
+    void queryClient.refetchQueries({ predicate: q => q.state.status === 'error' })
   }
 
   return (
@@ -92,12 +92,13 @@ const LoadError: FC<LoadErrorProps> = ({ error, compact = false, ghost, classNam
         <Icon className='load-error__icon' aria-hidden='true' />
         <p className='load-error__title'>{title}</p>
         {compact ? null : <p className='load-error__detail'>{detail}</p>}
+        {/* aria-disabled, not disabled: disabling the focused button would
+            drop keyboard focus, the thing the retained error exists to keep. */}
         <button
-          ref={buttonRef}
           type='button'
           className={`load-error__retry btn btn--sm ${compact ? 'btn--ghost' : 'btn--outline'}`}
           onClick={retry}
-          disabled={retrying}
+          aria-disabled={retrying}
         >
           <RotateCwIcon aria-hidden='true' className={retrying ? 'spin' : ''} />
           {retrying ? 'Retrying' : 'Try again'}

@@ -45,6 +45,8 @@
     margin-top: 0.4rem;
     svg { font-size: 0.95em; }
     .spin { animation: load-error-spin 0.8s linear infinite; }
+    // Matches .btn:disabled, but stays focusable (see LoadError.tsx).
+    &[aria-disabled='true'] { opacity: 0.6; cursor: default; }
   }
 
   // Meal cards: smaller icon and title, no detail line.

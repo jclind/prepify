@@ -3,11 +3,11 @@ import { useQuery } from '@tanstack/react-query'
 import RecipeAPI from 'src/api/recipes'
 import { RecipeCardType } from 'types'
 import { useDelayedLoading } from 'src/hooks/useDelayedLoading'
-import LoadError from 'src/Components/LoadError/LoadError'
+import LoadError, { useRetainedErrors } from 'src/Components/LoadError/LoadError'
 import { HomeRecipeCard, HomeRecipeCardSkeleton } from './HomeRecipeCard'
 
 const HomeTrending: FC = () => {
-  const { data, isLoading, isError, error } = useQuery<RecipeCardType[]>({
+  const { data, isLoading, isFetching, error } = useQuery<RecipeCardType[]>({
     queryKey: ['trending-recipes'],
     queryFn: () => RecipeAPI.getTrendingRecipes(4),
     // Trending shifts slowly; match the For-You / by-meal rows (5 min) so a
@@ -21,6 +21,24 @@ const HomeTrending: FC = () => {
   // isLoading branch still owns this frame (so the empty state can't flash either
   // — it just holds a blank grid until the skeleton is due).
   const showSkeleton = useDelayedLoading(isLoading)
+  // Kept through a retry, so the tray (and its focused button) stays put.
+  const [shownError] = useRetainedErrors([{ error, isFetching }])
+
+  if (shownError) {
+    return (
+      <LoadError
+        error={shownError}
+        retrying={isFetching}
+        ghost={
+          <div className='home-trending-grid'>
+            {Array.from({ length: 4 }).map((_, i) => (
+              <HomeRecipeCardSkeleton key={i} />
+            ))}
+          </div>
+        }
+      />
+    )
+  }
 
   if (isLoading) {
     // Render the skeleton cards immediately so the grid reserves its full height
@@ -33,21 +51,6 @@ const HomeTrending: FC = () => {
           <HomeRecipeCardSkeleton key={i} />
         ))}
       </div>
-    )
-  }
-
-  if (isError) {
-    return (
-      <LoadError
-        error={error}
-        ghost={
-          <div className='home-trending-grid'>
-            {Array.from({ length: 4 }).map((_, i) => (
-              <HomeRecipeCardSkeleton key={i} />
-            ))}
-          </div>
-        }
-      />
     )
   }
 

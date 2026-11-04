@@ -5,7 +5,7 @@ import { useQueries } from '@tanstack/react-query'
 import Skeleton from 'react-loading-skeleton'
 import 'react-loading-skeleton/dist/skeleton.css'
 import RecipeAPI from 'src/api/recipes'
-import LoadError from 'src/Components/LoadError/LoadError'
+import LoadError, { useRetainedErrors } from 'src/Components/LoadError/LoadError'
 import { RecipeCardType } from 'types'
 import { useDelayedLoading } from 'src/hooks/useDelayedLoading'
 import { skeletonColor, fmtPrice, ratingLabel } from './homeFormat'
@@ -70,6 +70,8 @@ const HomeBrowseByMeal: FC = () => {
   // Many recipes are tagged for multiple meals (e.g. Lunch + Dinner). Walk the
   // columns in order and let the first meal claim a recipe, so each column shows
   // a distinct set rather than repeating the same trending recipes.
+  // Kept through a retry, so each tray (and its focused button) stays put.
+  const shownErrors = useRetainedErrors(results)
   const claimed = new Set<string>()
   const columns = MEALS.map((meal, i) => {
     const picks: RecipeCardType[] = []
@@ -79,7 +81,13 @@ const HomeBrowseByMeal: FC = () => {
       claimed.add(r._id)
       picks.push(r)
     }
-    return { meal, picks, isLoading: results[i].isLoading, error: results[i].error }
+    return {
+      meal,
+      picks,
+      isLoading: results[i].isLoading,
+      isFetching: results[i].isFetching,
+      error: shownErrors[i],
+    }
   })
 
   // Per docs/design/loading-states.md: one shared delay gate for the column
@@ -90,22 +98,18 @@ const HomeBrowseByMeal: FC = () => {
 
   return (
     <div className='home-meal-cols'>
-      {columns.map(({ meal, picks, isLoading, error }) => (
+      {columns.map(({ meal, picks, isLoading, isFetching, error }) => (
         <div className='home-meal-col' key={meal}>
           <div className='meal-col-head'>
             <h3>{meal}</h3>
             <Link to='/recipes' className='see-all'>See all <ChevronRightIcon /></Link>
           </div>
-          <ul className={(isLoading) && !showSkeleton ? 'sk-hold' : ''}>
-            {isLoading ? (
-              // Always render the skeleton rows while loading so the column holds
-              // its height from frame 1; the flash-guard delay only hides them
-              // (visibility) until it's worth drawing — no grow-on-appear jump.
-              Array.from({ length: PER_COL }).map((_, k) => <SkeletonRow key={k} />)
-            ) : error ? (
+          <ul className={isLoading && !error && !showSkeleton ? 'sk-hold' : ''}>
+            {error ? (
               <li>
                 <LoadError
                   error={error}
+                  retrying={isFetching}
                   compact
                   ghost={
                     <ul>
@@ -114,6 +118,11 @@ const HomeBrowseByMeal: FC = () => {
                   }
                 />
               </li>
+            ) : isLoading ? (
+              // Always render the skeleton rows while loading so the column holds
+              // its height from frame 1; the flash-guard delay only hides them
+              // (visibility) until it's worth drawing — no grow-on-appear jump.
+              Array.from({ length: PER_COL }).map((_, k) => <SkeletonRow key={k} />)
             ) : picks.length > 0 ? (
               picks.map(r => <MealRow recipe={r} key={r._id} />)
             ) : (

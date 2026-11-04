@@ -12,7 +12,7 @@ import RecipeCard from 'src/Components/RecipeCard/RecipeCard'
 import SearchRecipesInput from 'src/Components/SearchRecipesInput/SearchRecipesInput'
 import SortDropdown from 'src/Components/SortDropdown/SortDropdown'
 import RecipeAPI from 'src/api/recipes'
-import LoadError from 'src/Components/LoadError/LoadError'
+import LoadError, { useRetainedErrors } from 'src/Components/LoadError/LoadError'
 import { SITE_URL, DEFAULT_OG_IMAGE } from 'src/util/seo'
 import { RECIPES_PATH } from 'src/routes'
 import { dietLabelsOptions } from 'src/recipeData/dietLabels'
@@ -129,7 +129,7 @@ const Recipes: FC = () => {
     navigate(RECIPES_PATH)
   }
 
-  const { data, isFetching, isError, error, fetchNextPage, hasNextPage } =
+  const { data, isFetching, error, fetchNextPage, hasNextPage } =
     useInfiniteQuery({
       queryKey: ['recipes', { sort, diets, cuisine, search: query, meals }],
       queryFn: ({ pageParam }) =>
@@ -178,7 +178,9 @@ const Recipes: FC = () => {
   const totalResults = data?.pages[0]?.total_results ?? null
   const activeFilterCount = diets.length + meals.length + (cuisine ? 1 : 0)
   const hasResults = recipeList.length > 0
-  const isInitialLoading = !data && !isError
+  // Kept through a retry, so the tray (and its focused button) stays put.
+  const [shownError] = useRetainedErrors([{ error, isFetching }])
+  const isInitialLoading = !data && !shownError
   // Hold the skeleton grid behind a short delay (docs/design/loading-states.md)
   // so a cache hit resolves into cards without a one-frame flash. The empty state
   // is gated on totalResults === 0 (null while loading), so it can't flash here.
@@ -275,9 +277,10 @@ const Recipes: FC = () => {
           </div>
         )}
 
-        {isError ? (
+        {shownError ? (
           <LoadError
-            error={error}
+            error={shownError}
+            retrying={isFetching}
             className='recipes-load-error'
             ghost={
               <div className='recipes-grid'>

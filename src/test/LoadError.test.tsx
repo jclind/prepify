@@ -4,7 +4,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AxiosError, AxiosHeaders } from 'axios'
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
-import LoadError, { loadErrorKind } from 'src/Components/LoadError/LoadError'
+import LoadError, { loadErrorKind, useRetainedErrors } from 'src/Components/LoadError/LoadError'
 
 vi.mock('firebase/auth', () => ({
   getAuth: () => ({ currentUser: null }),
@@ -83,28 +83,45 @@ describe('LoadError', () => {
     expect(failed).toHaveBeenCalledTimes(2)
     expect(healthy).toHaveBeenCalledTimes(1)
   })
-  it('gives focus back to Try again when a keyboard retry fails', async () => {
+  it('keeps the tray and keyboard focus through a failed retry, and clears on success', async () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-    // Fails after a short delay, like a real request, so the loading state
-    // actually renders between the two trays.
-    const fetcher = vi.fn(
-      () => new Promise((_, reject) => setTimeout(() => reject(networkError()), 30))
-    )
-    // Mirrors the real sections: the skeleton replaces the tray while loading,
-    // so the focused button is unmounted during the retry.
+    // Fails after a short delay, like a real request, so the retry is in
+    // flight long enough for the section to re-render.
+    const failLater = () =>
+      new Promise((_, reject) => setTimeout(() => reject(networkError()), 30))
+    const fetcher = vi
+      .fn()
+      .mockImplementationOnce(failLater)
+      .mockImplementationOnce(failLater)
+      .mockResolvedValue('ok')
+    // Mirrors the real sections: the skeleton shows while loading, and the
+    // retained error keeps the tray up during a retry.
     const Section = () => {
-      const { isLoading, isError, error } = useQuery({ queryKey: ['s'], queryFn: fetcher })
-      if (isLoading) return <p>Loading</p>
-      return isError ? <LoadError error={error} ghost={null} /> : <p>Loaded</p>
+      const { isLoading, isFetching, error } = useQuery({ queryKey: ['s'], queryFn: fetcher })
+      const [shownError] = useRetainedErrors([{ error, isFetching }])
+      if (shownError) {
+        return <LoadError error={shownError} retrying={isFetching} ghost={null} />
+      }
+      return <p>{isLoading ? 'Loading' : 'Loaded'}</p>
     }
     renderWith(<Section />, client)
-    const first = await screen.findByRole('button', { name: 'Try again' })
-    first.focus()
-    await userEvent.keyboard('{Enter}')
-    expect(await screen.findByText('Loading')).toBeInTheDocument()
+    const button = await screen.findByRole('button', { name: 'Try again' })
+    button.focus()
 
-    const again = await screen.findByRole('button', { name: 'Try again' })
+    await userEvent.keyboard('{Enter}')
+    // Mid-retry: same button, still focused, marked busy, no skeleton swap.
+    expect(await screen.findByRole('button', { name: 'Retrying' })).toBe(button)
+    expect(button).toHaveFocus()
+    expect(button).toHaveAttribute('aria-disabled', 'true')
+    expect(screen.queryByText('Loading')).not.toBeInTheDocument()
+
+    // The retry fails: the tray is still the same element, focus untouched.
+    await screen.findByRole('button', { name: 'Try again' })
+    expect(button).toHaveFocus()
     expect(fetcher).toHaveBeenCalledTimes(2)
-    await waitFor(() => expect(again).toHaveFocus())
+
+    // The next retry succeeds: the tray gives way to the content.
+    await userEvent.keyboard('{Enter}')
+    expect(await screen.findByText('Loaded')).toBeInTheDocument()
   })
 })
