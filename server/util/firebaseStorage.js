@@ -12,12 +12,34 @@ function parseStorageUrl(url) {
   return { bucket: match[1], path: decodeURIComponent(match[2]) }
 }
 
+// True when `path` is an image the given uid uploaded: exactly
+// `recipeImages/{ownerUid}/{file}`, the shape the client writes and
+// storage.rules lets only that uid create.
+function isOwnRecipeImagePath(path, ownerUid) {
+  if (typeof ownerUid !== 'string' || !ownerUid || ownerUid.includes('/')) return false
+  const prefix = `recipeImages/${ownerUid}/`
+  if (!path.startsWith(prefix)) return false
+  const file = path.slice(prefix.length)
+  return file !== '' && !file.includes('/') && file !== '.' && file !== '..'
+}
+
 // Best-effort deletion of a recipe's image from Firebase Storage. Never throws:
 // an orphaned image is undesirable but must not fail (or roll back) the recipe
 // deletion it accompanies. Returns true only when a file was actually deleted.
-async function deleteRecipeImage(url) {
+//
+// `recipeImage` is client-supplied and the Admin SDK ignores storage.rules, so
+// the URL alone can't be trusted: a user could point their recipe at someone
+// else's photo or avatar, delete the recipe, and take the other file with it.
+// Only a file under the recipe owner's own `recipeImages/{uid}/` prefix is
+// deleted. Anything else (another user's image, an avatar, a legacy flat
+// `recipeImages/{filename}` path) is left in place: an orphan beats a wrong delete.
+async function deleteRecipeImage(url, ownerUid) {
   const parsed = parseStorageUrl(url)
   if (!parsed) return false
+  if (!isOwnRecipeImagePath(parsed.path, ownerUid)) {
+    console.warn('Skipped deleting a recipe image outside the owner\'s prefix:', parsed.bucket, parsed.path)
+    return false
+  }
   try {
     await getStorage().bucket(parsed.bucket).file(parsed.path).delete()
     return true
@@ -55,4 +77,4 @@ async function deleteProfilePhoto(uid) {
   }
 }
 
-module.exports = { parseStorageUrl, deleteRecipeImage, deleteProfilePhoto }
+module.exports = { parseStorageUrl, isOwnRecipeImagePath, deleteRecipeImage, deleteProfilePhoto }
