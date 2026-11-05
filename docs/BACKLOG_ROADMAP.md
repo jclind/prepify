@@ -2754,3 +2754,8 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   `kind: request-setup`), and cancelled requests are no longer reported. Follow-ups (pre-existing, in-place
   account switch only): `usePaginatedLoadMore` keeps the previous user's pages in state; a slow write from the
   previous account (MadeRecipeBtn, useSaveRecipe rollback) can land in the reset cache.
+- **2026-11-05** — Merged [#355](https://github.com/jclind/prepify/pull/355), the README rewrite: live link,
+  three screenshots of the live site in `docs/screenshots/`, an architecture section (Netlify Edge Function in
+  front of Express on Railway), how `@jclind/ingredient-parser` prices recipes, the test suites, and local
+  setup. Feature claims checked against the code. Dropped the old MIT line, since the repo has no LICENSE
+  file. The GitHub repo homepage now points at https://prepifymeals.com. Docs only; not yet in prod.
