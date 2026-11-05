@@ -37,25 +37,46 @@ describe('parseStorageUrl', () => {
 })
 
 describe('deleteRecipeImage', () => {
+  const OWNER = 'user-abc'
+  const ownUrl = (bucket = 'test-bucket') =>
+    `https://firebasestorage.googleapis.com/v0/b/${bucket}/o/recipeImages%2F${OWNER}%2Fphoto-1?alt=media&token=abc`
+
   beforeEach(() => admin.__deleteFile.mockClear())
 
-  it('deletes the parsed file and returns true', async () => {
-    const url =
-      'https://firebasestorage.googleapis.com/v0/b/test-bucket/o/recipeImages%2Ftuscan.jpg?alt=media&token=abc'
-    await expect(deleteRecipeImage(url)).resolves.toBe(true)
+  it('deletes an image under the owner\'s recipeImages/{uid}/ prefix and returns true', async () => {
+    await expect(deleteRecipeImage(ownUrl(), OWNER)).resolves.toBe(true)
     expect(admin.__deleteFile).toHaveBeenCalledTimes(1)
   })
 
   it('returns false without calling storage for an unparseable url', async () => {
-    await expect(deleteRecipeImage('')).resolves.toBe(false)
+    await expect(deleteRecipeImage('', OWNER)).resolves.toBe(false)
+    expect(admin.__deleteFile).not.toHaveBeenCalled()
+  })
+
+  // The recipe's image URL is client-supplied, so it can name any object the
+  // Admin SDK can reach. None of these belong to OWNER and none may be deleted.
+  it.each([
+    ['another user\'s recipe image', 'recipeImages%2Fvictim-uid%2Fphoto-1'],
+    ['another user\'s avatar', 'profilePhotos%2Fvictim-uid'],
+    ['a legacy flat recipe image', 'recipeImages%2Ftuscan.jpg'],
+    ['a nested path under the owner prefix', `recipeImages%2F${OWNER}%2Fsub%2Fphoto`],
+    ['the owner prefix itself', `recipeImages%2F${OWNER}%2F`],
+    ['a uid that only starts with the owner\'s', `recipeImages%2F${OWNER}x%2Fphoto-1`],
+  ])('refuses to delete %s', async (_label, encodedPath) => {
+    const url = `https://firebasestorage.googleapis.com/v0/b/test-bucket/o/${encodedPath}?alt=media&token=abc`
+    await expect(deleteRecipeImage(url, OWNER)).resolves.toBe(false)
+    expect(admin.__deleteFile).not.toHaveBeenCalled()
+  })
+
+  it('refuses when the owner uid is missing', async () => {
+    await expect(deleteRecipeImage(ownUrl(), undefined)).resolves.toBe(false)
+    await expect(deleteRecipeImage(ownUrl(), '')).resolves.toBe(false)
     expect(admin.__deleteFile).not.toHaveBeenCalled()
   })
 
   it('swallows storage errors and returns false', async () => {
     admin.__deleteFile.mockRejectedValueOnce(new Error('boom'))
-    const url =
-      'https://firebasestorage.googleapis.com/v0/b/test-bucket/o/recipeImages%2Ftuscan.jpg?alt=media&token=abc'
-    await expect(deleteRecipeImage(url)).resolves.toBe(false)
+    await expect(deleteRecipeImage(ownUrl(), OWNER)).resolves.toBe(false)
   })
 })
 

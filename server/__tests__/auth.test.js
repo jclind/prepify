@@ -901,7 +901,7 @@ describe('POST /deleteAccount', () => {
 
       // Departing user owns 'owned' (with an image); keeper owns 'kept'.
       await db.collection('recipes').insertMany([
-        { _id: 'owned', userId: TEST_UID, recipeImage: 'https://firebasestorage.googleapis.com/v0/b/b/o/owned.jpg?alt=media&token=t' },
+        { _id: 'owned', userId: TEST_UID, recipeImage: `https://firebasestorage.googleapis.com/v0/b/b/o/recipeImages%2F${TEST_UID}%2Fowned.jpg?alt=media&token=t` },
         { _id: 'kept', userId: KEEPER_UID, rating: { rateCount: 0, rateValue: 0 } },
       ])
 

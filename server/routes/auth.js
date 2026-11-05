@@ -551,7 +551,7 @@ router.post('/deleteAccount', verifyToken, asyncHandler(async (req, res) => {
   // D5: drop the user's recipe images and profile photo from Storage. Both
   // helpers never throw — an orphaned blob beats a failed account delete.
   for (const recipe of ownRecipes) {
-    await deleteRecipeImage(recipe.recipeImage)
+    await deleteRecipeImage(recipe.recipeImage, uid)
   }
   await deleteProfilePhoto(uid)
 
