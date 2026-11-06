@@ -123,21 +123,20 @@ describe('per-surface write limiters are wired onto every moderated write route'
     expect(renameHandlers).toContain(collectionWriteLimiter)
   })
 
-  it('ingredients POST /parse mounts requireActive + a user limiter + the daily paid-quota limiter after verifyToken', () => {
-    // parseLimiter + the paid-quota limiter are internal to the route file (not
-    // exported), so assert structurally: verifyToken → requireActive → per-minute
-    // limiter → daily paid-quota limiter → handler. requireActive gates paid
-    // Spoonacular quota behind an active account; the paidQuotaLimiter adds the
-    // per-account + global DAILY ceiling (audit H1), matching the write-surface order.
+  it('ingredients POST /parse mounts requireActive + a user limiter after verifyToken', () => {
+    // parseLimiter is internal to the route file (not exported), so assert
+    // structurally: verifyToken → requireActive → per-minute limiter → handler.
+    // requireActive gates paid Spoonacular quota behind an active account. The
+    // daily paid quota (audit H1) is charged inside the handler after validation
+    // (review fix 1e), so it isn't in the chain; quotaAfterValidation.test.js
+    // covers it.
     const handlers = routeHandlers(ingredientsRouter, 'post', '/parse')
     expect(handlers[0]).toBe(verifyToken)
     expect(handlers[1]).toBe(requireActive)
-    expect(handlers).toHaveLength(5) // verifyToken, requireActive, parseLimiter, paidQuotaLimiter, handler
+    expect(handlers).toHaveLength(4) // verifyToken, requireActive, parseLimiter, handler
     // The 3rd handler is the unexported per-user parseLimiter — identify it
     // structurally rather than by reference.
     expect(isRateLimiter(handlers[2])).toBe(true)
-    // The 4th is the daily paid-quota limiter (audit H1), named for structural id.
-    expect(handlers[3].name).toBe('paidQuotaLimiter')
   })
 
   it('gamification POST /acknowledgeAchievements mounts requireActive + profileWriteLimiter after verifyToken', () => {

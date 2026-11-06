@@ -2,7 +2,7 @@ const { Router } = require('express')
 const Sentry = require('@sentry/node')
 const { verifyToken, requireActive } = require('../middleware/auth')
 const { makeUserLimiter } = require('../middleware/writeLimiter')
-const { makePaidQuotaLimiter } = require('../util/paidQuota')
+const { chargePaidQuota } = require('../util/paidQuota')
 const { GENERIC_500_MESSAGE } = require('../util/respondServerError')
 const { asyncHandler } = require('../util/asyncHandler')
 const { MAX_INGREDIENTS } = require('../util/recipeLimits')
@@ -26,19 +26,21 @@ const nutritionLimiter = makeUserLimiter({
 // accounts can't drain the nutrition budget across the day. Caps are overridable
 // via PAID_QUOTA_NUTRITION_USER_DAILY / PAID_QUOTA_NUTRITION_GLOBAL_DAILY. A real
 // user hits nutrition once per recipe save, so 150/account/day is far above human
-// use while still bounding a single rogue account hard.
-const nutritionQuota = makePaidQuotaLimiter({
+// use while still bounding a single rogue account hard. Charged in the handler
+// after validation and the key check, so a request that never reaches Edamam
+// isn't counted (review fix 1e).
+const NUTRITION_QUOTA = {
   surface: 'nutrition',
   perUserDaily: 150,
   globalDaily: 6000,
   message: 'Daily nutrition-lookup limit reached — please try again tomorrow.',
-})
+}
 
 // requireActive sits between verifyToken and the limiter (the house write-surface
 // order, mirroring /api/ingredients/parse) so a just-suspended/banned account —
 // whose ID token stays valid for up to ~1h — can't keep burning paid Edamam
 // quota through this proxy (audit L1).
-router.post('/details', verifyToken, requireActive, nutritionLimiter, nutritionQuota, asyncHandler(async (req, res) => {
+router.post('/details', verifyToken, requireActive, nutritionLimiter, asyncHandler(async (req, res) => {
   const { ingr, title } = req.body
   if (
     !Array.isArray(ingr) ||
@@ -67,6 +69,7 @@ router.post('/details', verifyToken, requireActive, nutritionLimiter, nutritionQ
     console.error('[nutrition/details] EDAMAM_APP_ID/EDAMAM_APP_KEY not configured')
     return res.status(503).json({ error: 'Nutrition service unavailable' })
   }
+  if (!(await chargePaidQuota(req, res, NUTRITION_QUOTA))) return
 
   try {
     const url = `${EDAMAM_URL}?app_id=${encodeURIComponent(
