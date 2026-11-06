@@ -55,7 +55,7 @@ const BASE_RECIPE = {
   ingredients: [{ id: 'i1', name: 'chicken' }],
   instructions: [{ step: 'Cook the chicken' }],
   recipeImage:
-    'https://firebasestorage.googleapis.com/v0/b/test-bucket/o/recipeImages%2Ftuscan.jpg?alt=media&token=abc',
+    'https://firebasestorage.googleapis.com/v0/b/test-bucket/o/recipeImages%2Ftest-uid%2Ftuscan.jpg?alt=media&token=abc',
 }
 
 // addRecipe now derives the author handle from the caller's uid→username mapping
@@ -1588,6 +1588,24 @@ describe('DELETE /deleteRecipe', () => {
       .set(AUTH_HEADER)
 
     expect(admin.__deleteFile).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not delete a Storage file outside the owner\'s prefix (another user\'s image)', async () => {
+    // recipeImage is client-supplied: pointing it at someone else's file and
+    // then deleting the recipe must not delete that file.
+    const db = getDB()
+    await db.collection('recipes').updateOne(
+      { _id: RECIPE_ID },
+      { $set: { recipeImage: 'https://firebasestorage.googleapis.com/v0/b/test-bucket/o/profilePhotos%2Fvictim-uid?alt=media&token=abc' } }
+    )
+
+    const res = await request(server)
+      .delete(`/api/deleteRecipe?recipeId=${RECIPE_ID}`)
+      .set(AUTH_HEADER)
+
+    expect(res.status).toBe(200)
+    expect(await db.collection('recipes').findOne({ _id: RECIPE_ID })).toBeNull()
+    expect(admin.__deleteFile).not.toHaveBeenCalled()
   })
 
   it('succeeds (200) and still deletes the recipe when there is no stored image', async () => {

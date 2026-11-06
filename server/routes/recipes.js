@@ -771,7 +771,7 @@ router.delete('/deleteRecipe', verifyToken, asyncHandler(async (req, res) => {
 
   // External side effect — runs after the transaction commits and never
   // fails the request (an orphaned image is preferable to a 500 here).
-  await deleteRecipeImage(recipe.recipeImage)
+  await deleteRecipeImage(recipe.recipeImage, recipe.userId)
 
   res.json({ deleted: true })
 }))

@@ -2754,3 +2754,15 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   `kind: request-setup`), and cancelled requests are no longer reported. Follow-ups (pre-existing, in-place
   account switch only): `usePaginatedLoadMore` keeps the previous user's pages in state; a slow write from the
   previous account (MadeRecipeBtn, useSaveRecipe rollback) can land in the reset cache.
+- **2026-11-05** — Merged [#355](https://github.com/jclind/prepify/pull/355), the README rewrite: live link,
+  three screenshots of the live site in `docs/screenshots/`, an architecture section (Netlify Edge Function in
+  front of Express on Railway), how `@jclind/ingredient-parser` prices recipes, the test suites, and local
+  setup. Feature claims checked against the code. Dropped the old MIT line, since the repo has no LICENSE
+  file. The GitHub repo homepage now points at https://prepifymeals.com. Docs only; not yet in prod.
+- **2026-11-05** — Merged [#359](https://github.com/jclind/prepify/pull/359), the critical finding from the
+  2026-11-05 abuse-and-cost and docs-vs-code reviews (#357 finding 1, #358 F1): `deleteRecipeImage` handed the
+  bucket and path from the client-supplied `recipeImage` to the Admin SDK, so a free account could delete
+  another user's photo or avatar by pointing a recipe at it and deleting the recipe. It now takes the owner uid
+  and deletes only `recipeImages/{uid}/{file}`; both callers (`DELETE /deleteRecipe`, `POST /deleteAccount`)
+  pass it. Anything else, including legacy flat paths, is left as an orphan. 8 new tests fail on the old code;
+  Codex review found nothing. Still open: write-time validation of `recipeImage` (#357 finding 2). Not yet in prod.
