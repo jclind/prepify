@@ -2,6 +2,10 @@ const timers = require('node:timers')
 const { connectDB, closeDB, getClient } = require('../db')
 const { facetsCache } = require('../util/facetsCache')
 
+// The project's Storage bucket. Image URLs the routes accept must live in it
+// (util/firebaseStorage.isAllowedBucket), and the fixtures use test-bucket.
+if (!process.env.FIREBASE_STORAGE_BUCKET) process.env.FIREBASE_STORAGE_BUCKET = 'test-bucket'
+
 // Under Node 26's jest environment the global timer functions aren't stable
 // across a fake-timer test: once a test runs `jest.useFakeTimers()` and then
 // `jest.useRealTimers()`, the restored globals can come back undefined, so the

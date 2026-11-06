@@ -20,7 +20,7 @@ const { moderateImage } = require('../util/imageModeration')
 const { gatherRecipeText, holdRecipeForReview, respondBlocked, worstVerdict, openAutomodReportQuery, restoreHeldRecipe } = require('../util/automod')
 const { EDITABLE_RECIPE_FIELDS, CREATABLE_RECIPE_FIELDS, pickFields, publicRecipeProjection, publicRecipeCardProjection } = require('../util/recipeFields')
 const { calculateServingPrice } = require('../util/calculateServingPrice')
-const { deleteRecipeImage } = require('../util/firebaseStorage')
+const { deleteRecipeImage, recipeImageUrlError } = require('../util/firebaseStorage')
 const { teardownRecipeDocs } = require('../util/teardownRecipe')
 const { facetsCache } = require('../util/facetsCache')
 
@@ -536,6 +536,14 @@ const recipeCreateQuota = makePaidQuotaLimiter({
   message: 'Daily recipe-creation limit reached — please try again tomorrow.',
 })
 
+// A recipe may have no image, but a stored image must be the caller's own
+// upload (util/firebaseStorage.recipeImageUrlError). Checked before any paid
+// scan or quota charge. Returns an error string for a 400, or null.
+function recipeImageError(body, uid) {
+  if (body.recipeImage == null || body.recipeImage === '') return null
+  return recipeImageUrlError(body.recipeImage, uid)
+}
+
 // POST /addRecipe
 router.post('/addRecipe', verifyToken, requireActive, recipeWriteLimiter, recipeCreateQuota, asyncHandler(async (req, res) => {
   const db = getDB()
@@ -560,6 +568,10 @@ router.post('/addRecipe', verifyToken, requireActive, recipeWriteLimiter, recipe
   const boundsError = validateRecipeBounds(body)
   if (boundsError) {
     return res.status(400).json({ error: boundsError })
+  }
+  const imageError = recipeImageError(body, uid)
+  if (imageError) {
+    return res.status(400).json({ error: imageError })
   }
 
   // Derive the author handle server-side from the caller's uid (audit M3): the
@@ -676,6 +688,14 @@ router.put('/editRecipe', verifyToken, requireActive, recipeWriteLimiter, asyncH
   const boundsError = validateRecipeBounds(body)
   if (boundsError) {
     return res.status(400).json({ error: boundsError })
+  }
+  // An unchanged image is accepted as stored, so a recipe with a legacy flat or
+  // pre-validation URL can still be edited. A new one must be the caller's own.
+  if (body.recipeImage !== recipe.recipeImage) {
+    const imageError = recipeImageError(body, uid)
+    if (imageError) {
+      return res.status(400).json({ error: imageError })
+    }
   }
 
   // Re-moderate the edited text + (only if it changed) the new image — same tiers
