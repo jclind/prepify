@@ -9,6 +9,7 @@ import { RecipeSearchResponseType } from 'types'
 import Skeleton from 'react-loading-skeleton'
 import { skeletonBase as skeletonColor } from 'src/util/loadingStyles'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { TITLE_MAX_LENGTH } from 'src/util/recipeLimits'
 
 
 function useOutsideAlerter(
@@ -52,7 +53,10 @@ const SearchRecipesInput: FC<SearchRecipesInputProps> = ({
   const debouncedQuery = useDebounce(searchRecipeVal, 300)
 
   const trimmedQuery = debouncedQuery.trim()
-  const queryActive = autoComplete && trimmedQuery.length > 2
+  // No title is longer than TITLE_MAX_LENGTH, and the server 400s a longer
+  // autocomplete query, so don't send one.
+  const queryActive =
+    autoComplete && trimmedQuery.length > 2 && trimmedQuery.length <= TITLE_MAX_LENGTH
 
   const { data, isFetching } = useQuery<RecipeSearchResponseType[]>({
     queryKey: ['recipe-autocomplete', trimmedQuery],

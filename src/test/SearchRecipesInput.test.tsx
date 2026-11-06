@@ -303,3 +303,18 @@ describe('SearchRecipesInput — combobox / listbox semantics + keyboard nav', (
     expect(combobox).toHaveAttribute('aria-activedescendant', first.id)
   })
 })
+
+describe('SearchRecipesInput — query length cap', () => {
+  // The server 400s a query longer than any title can be (review fix 1d), so
+  // the input doesn't send one.
+  it('skips autocomplete for a query longer than TITLE_MAX_LENGTH', async () => {
+    const user = userEvent.setup()
+    renderInput()
+    const input = screen.getByLabelText('Search all recipes')
+    await user.click(input)
+    await user.paste('chicken '.repeat(7)) // 56 characters
+    await new Promise(r => setTimeout(r, 500)) // past the 300ms debounce
+    expect(mockSearch).not.toHaveBeenCalled()
+  })
+})
+
