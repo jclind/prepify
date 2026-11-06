@@ -191,8 +191,9 @@ router.post('/setUsername', verifyToken, requireActive, profileWriteLimiter, asy
   // with a same-handle stranger and survives future handle reuse. NOTE: a
   // legacy rating row missing userId (pre-D1 residue) is intentionally NOT
   // updated by this — userId is now the source of truth for "this user's rows".
-  // Review reports separately denormalize the username via their own
-  // reportedUsername field and still need that propagated too. New name is
+  // Reports separately denormalize the username via their own reportedUsername
+  // field and still need that propagated too, matched on the reported uid: a
+  // report filed against a previous holder of this handle keeps its label. New name is
   // guaranteed free (checked above), so there's no collision with another
   // user's rows.
   if (prevUsername && prevUsername !== username) {
@@ -202,7 +203,7 @@ router.post('/setUsername', verifyToken, requireActive, profileWriteLimiter, asy
     await db
       .collection('reports')
       .updateMany(
-        { reportedUsername: prevUsername },
+        { reportedUid: uid },
         { $set: { reportedUsername: username } }
       )
   }

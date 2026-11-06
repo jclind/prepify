@@ -410,6 +410,9 @@ export interface ReportType {
 // Report enriched with a snapshot of the reported content, as returned by the
 // admin GET /reports queue.
 export interface AdminReportType extends ReportType {
+  // The reported account's uid, captured when the report was filed. Only the
+  // admin queue sees it. Missing on legacy reports.
+  reportedUid?: string | null
   target: {
     recipe: {
       _id: string
