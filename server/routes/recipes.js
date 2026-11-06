@@ -13,7 +13,7 @@ const { fuzzyRankTitles, toTextSearch } = require('../util/recipeTitleMatch')
 const { recordAudit } = require('../util/auditLog')
 const { resolveAuthorIdentities } = require('../util/authorIdentity')
 const { notifyInBackground, notifyRecipeHidden } = require('../util/email')
-const { validateRequiredRecipeFields, normalizeRecipeInput, validateRecipeBounds } = require('../util/recipeLimits')
+const { validateRequiredRecipeFields, normalizeRecipeInput, validateRecipeBounds, TITLE_MAX_LENGTH } = require('../util/recipeLimits')
 const { upsertWithDupRetry } = require('../util/upsertWithDupRetry')
 const { moderateText } = require('../util/textModeration')
 const { moderateImage } = require('../util/imageModeration')
@@ -227,6 +227,12 @@ router.get('/searchAutoCompleteRecipes', asyncHandler(async (req, res) => {
   const db = getDB()
   const title = typeof req.query.title === 'string' ? req.query.title.trim() : ''
   if (!title) return res.json([])
+  // No title is longer than TITLE_MAX_LENGTH, so a longer query can't match one.
+  // Refuse it before the three tiers below, the last of which runs Levenshtein
+  // over up to FUZZY_CANDIDATE_CAP titles at a cost that grows with its length.
+  if (title.length > TITLE_MAX_LENGTH) {
+    return res.status(400).json({ error: `Search text cannot exceed ${TITLE_MAX_LENGTH} characters` })
+  }
 
   // Accumulate up to AUTOCOMPLETE_LIMIT unique results across the tiers below,
   // preserving insertion order (tier 1 first) and skipping any _id already added.
@@ -315,7 +321,9 @@ router.get('/searchAutoCompleteRecipes', asyncHandler(async (req, res) => {
 // GET /getTrendingRecipes
 router.get('/getTrendingRecipes', asyncHandler(async (req, res) => {
   const db = getDB()
-  const limit = Math.min(parseInt(req.query.limit) || 4, 20)
+  // Clamp both ends: Mongo reads a negative limit as "one batch of |n|", so
+  // ?limit=-1000 used to return up to 1000 recipes.
+  const limit = Math.min(Math.max(parseInt(req.query.limit) || 4, 1), 20)
   // Admin-curated `featured` picks are pinned to the front of the row, then
   // the usual most-viewed ordering fills the rest.
   const recipes = await db
