@@ -2771,3 +2771,9 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   commit. Smoke test on prod: published a throwaway recipe with a photo as @Prepify (stored at
   `recipeImages/{uid}/{uuid}`), deleted it, and the photo's download URL stopped loading while another recipe's
   image still loaded, so the #359 guard allows the owner's own delete with real prod URLs.
+- **2026-11-06** — Merged [#363](https://github.com/jclind/prepify/pull/363), PR 1a of the review fix plan
+  (#362; CR-6, AC-4, code half of DV-2): `POST /updatePhoto` and `PUT /editRecipe` with a changed image now
+  charge a shared daily `vision` paid-quota surface (20 per account, 1000 global, env-overridable), after
+  validation and only when a scan will run. New `chargePaidQuota` in `server/util/paidQuota.js` charges from
+  inside a handler; the middleware wraps it. 5 of 8 new route tests fail on the old code; full server suite
+  999/999; Codex review found nothing. The audit docs' H1 status line is left for plan step 5a. Not yet in prod.
