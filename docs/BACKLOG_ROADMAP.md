@@ -2766,3 +2766,8 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   and deletes only `recipeImages/{uid}/{file}`; both callers (`DELETE /deleteRecipe`, `POST /deleteAccount`)
   pass it. Anything else, including legacy flat paths, is left as an orphan. 8 new tests fail on the old code;
   Codex review found nothing. Still open: write-time validation of `recipeImage` (#357 finding 2). Not yet in prod.
+- **2026-11-06** — Released **1.2.1** to prod ([#361](https://github.com/jclind/prepify/pull/361), `release` at
+  `c2d72da`; #354, #355, #359, #360). `/version` reports 1.2.1 at `c2d72da` and Netlify published the same
+  commit. Smoke test on prod: published a throwaway recipe with a photo as @Prepify (stored at
+  `recipeImages/{uid}/{uuid}`), deleted it, and the photo's download URL stopped loading while another recipe's
+  image still loaded, so the #359 guard allows the owner's own delete with real prod URLs.
