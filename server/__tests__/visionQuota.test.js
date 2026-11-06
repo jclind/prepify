@@ -26,9 +26,9 @@ const CLEAN = { allowed: true, severity: 'clean', reason: null, category: null, 
 const IMG_CLEAN = { allowed: true, severity: 'clean', reason: null, category: null, source: 'vision' }
 
 const img = (name) =>
-  `https://firebasestorage.googleapis.com/v0/b/test-bucket/o/recipeImages%2F${name}.jpg?alt=media&token=t`
+  `https://firebasestorage.googleapis.com/v0/b/test-bucket/o/recipeImages%2F${TEST_UID}%2F${name}?alt=media&token=t`
 const photo = (n) =>
-  `https://firebasestorage.googleapis.com/v0/b/test-bucket/o/profilePhotos%2Ftest-uid-${n}?alt=media&token=p`
+  `https://firebasestorage.googleapis.com/v0/b/test-bucket/o/profilePhotos%2F${TEST_UID}?alt=media&token=p${n}`
 
 const RECIPE_BODY = {
   title: 'Tuscan Chicken Skillet',

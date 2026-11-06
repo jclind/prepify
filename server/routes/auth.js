@@ -7,7 +7,7 @@ const { getDB, getClient } = require('../db')
 const { verifyToken, requireActive } = require('../middleware/auth')
 const { profileWriteLimiter } = require('../middleware/writeLimiter')
 const { recordAudit } = require('../util/auditLog')
-const { deleteRecipeImage, deleteProfilePhoto } = require('../util/firebaseStorage')
+const { deleteRecipeImage, deleteProfilePhoto, profilePhotoUrlError } = require('../util/firebaseStorage')
 // Imported as a namespace (not a destructured binding) so tests can spy on the
 // recompute — deleteAccount's post-commit reconciliation must survive a failing
 // recompute without going silent.
@@ -280,6 +280,11 @@ router.post('/updatePhoto', verifyToken, requireActive, profileWriteLimiter, asy
   const url = typeof photoURL === 'string' ? photoURL.trim() : ''
 
   if (url) {
+    // Only the caller's own profilePhotos/{uid} upload may become the avatar.
+    const urlError = profilePhotoUrlError(url, req.uid)
+    if (urlError) {
+      return res.status(400).json({ error: urlError })
+    }
     if (!(await chargePaidQuota(req, res, VISION_QUOTA))) return
     const verdict = await moderateImage(url, 'profile.photo')
     if (!verdict.allowed) {

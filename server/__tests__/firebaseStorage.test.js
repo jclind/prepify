@@ -68,6 +68,11 @@ describe('deleteRecipeImage', () => {
     expect(admin.__deleteFile).not.toHaveBeenCalled()
   })
 
+  it('refuses an own-prefix path in a bucket outside this project', async () => {
+    await expect(deleteRecipeImage(ownUrl('someone-elses-bucket'), OWNER)).resolves.toBe(false)
+    expect(admin.__deleteFile).not.toHaveBeenCalled()
+  })
+
   it('refuses when the owner uid is missing', async () => {
     await expect(deleteRecipeImage(ownUrl(), undefined)).resolves.toBe(false)
     await expect(deleteRecipeImage(ownUrl(), '')).resolves.toBe(false)
