@@ -2792,5 +2792,12 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
     `TITLE_MAX_LENGTH` and the input stops sending one; trending `limit` clamps to 1..20.
   - [#367](https://github.com/jclind/prepify/pull/367) (1f; AC-P1 partial): `storage.rules` allows only new
     objects under `recipeImages/{uid}/` (`resource == null`; the emulator counts an overwrite as `create`).
-    New `npm run test:rules` (emulator, not in CI). **Owner must run `firebase deploy --only storage`.**
+    New `npm run test:rules` (emulator, not in CI). Jesse deployed the rules to `prepify-9b974` the same day,
+    so this one is live ahead of the server release.
   - Left: 1e (quota after validation), which waits on nothing now.
+- **2026-11-06** — Merged [#368](https://github.com/jclind/prepify/pull/368) (1e; AC-5 first half), the last
+  Phase 1 PR. Recipe create, ingredient parse and nutrition now charge the daily paid quota inside the handler
+  after validation, through `chargePaidQuota`, so a malformed body, a caller with no username, or missing
+  Edamam keys no longer spend the shared global allowance. A valid call is still charged before the upstream
+  call, so a failed upstream call still counts. `makePaidQuotaLimiter` is gone. 5 of 8 new tests fail on the
+  old code; server suite 1048/1048; Codex review found nothing. Phase 1 is complete on `development`.
