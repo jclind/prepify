@@ -53,6 +53,21 @@ const heldReport = (id: string, recipeId: string) => ({
   target: { recipe: { title: `Dish ${id}`, recipeImage: '', status: 'pending_review' }, review: null },
 })
 
+// An open review report. reportedUid is the reviewer's account; the handle may
+// have passed to someone else since the report was filed.
+const reviewReport = (id: string, reportedUid?: string) => ({
+  _id: id,
+  targetType: 'review' as const,
+  recipeId: 'rec1',
+  reportedUsername: 'chef',
+  ...(reportedUid ? { reportedUid } : {}),
+  reporterUid: 'u1',
+  reason: 'harassment',
+  status: 'open' as const,
+  createdAt: new Date('2026-06-01').toISOString(),
+  target: { recipe: null, review: { reviewText: `Review ${id}`, rating: 1 } },
+})
+
 const renderReports = () =>
   render(
     <QueryClientProvider
@@ -164,5 +179,30 @@ describe('Admin Reports bulk actions', () => {
     expect(screen.getByText(/select all 1 open/i)).toBeInTheDocument()
     // The held report offers Approve, never a bare Dismiss.
     expect(screen.getByRole('button', { name: /^approve$/i })).toBeInTheDocument()
+  })
+})
+
+describe('Admin Reports review takedown', () => {
+  it('takes a review down by the reported uid, not the handle', async () => {
+    mockedList.mockResolvedValue({ reports: [reviewReport('v1', 'first-uid')], totalCount: 1, openCount: 1 })
+    renderReports()
+    await screen.findByText(/Review v1/)
+
+    fireEvent.click(screen.getByRole('button', { name: /^take down$/i }))
+    await waitFor(() =>
+      expect(ReportAPI.setReviewModeration).toHaveBeenCalledWith('rec1', 'first-uid', true)
+    )
+  })
+
+  it('disables take down on a legacy review report with no uid', async () => {
+    mockedList.mockResolvedValue({ reports: [reviewReport('v2')], totalCount: 1, openCount: 1 })
+    renderReports()
+    await screen.findByText(/Review v2/)
+
+    const button = screen.getByRole('button', { name: /^take down$/i })
+    expect(button).toBeDisabled()
+    fireEvent.click(button)
+    expect(ReportAPI.setReviewModeration).not.toHaveBeenCalled()
+    expect(ReportAPI.resolveReport).not.toHaveBeenCalled()
   })
 })

@@ -302,6 +302,7 @@ describe('POST /setUsername', () => {
       await db.collection('reports').insertOne({
         targetType: 'review',
         reportedUsername: 'oldname',
+        reportedUid: TEST_UID,
         recipeId: 'r1',
         status: 'open',
       })

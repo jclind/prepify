@@ -459,11 +459,11 @@ All routes live in `server/routes/reviews.js`, mounted at `/api` (server/app.js)
 ### PATCH /api/admin/reviews/moderation
 - **Handler:** `server/routes/reviews.js:424`
 - **Middleware:** `verifyToken` → `requireAdmin`
-- **Request:** body `{recipeId: string, username: string, moderationHidden: boolean}` (all required; `400 {error:'recipeId and username are required'}` / `400 {error:'moderationHidden must be a boolean'}`).
-  - `404 {error:'Review not found'}` — either the handle resolves to no `usernames` doc, or no ratings doc matches `{userId, recipeId}`
-- **Response:** `200 {recipeId, username: <canonical current handle>, moderationHidden}`. Plus `401`, `403` (requireAdmin).
-- **Client:** `src/api/reports.ts:75` → `ReportAPI.setReviewModeration(recipeId, username, moderationHidden)` — used by `src/pages/Admin/Reports/Reports.tsx:121,143` (take down / restore from the reports queue).
-- **Notes:** The handle is resolved case-insensitively to the stable uid and the match runs on `{userId, recipeId}` — never on the doc's denormalized (rename-stale) `username` field. Takedown sets a reversible `moderationHidden` flag plus `moderatedBy`/`moderatedAt` rather than blanking the text. Always recomputes the recipe aggregate (a hidden rating stops counting; restore re-counts it). Writes an audit row (`review.takedown`/`review.restore`, target `uid:recipeId`, labeled with the author's *current* handle) and, on takedown only, fires a background email to the author (`notifyReviewTakenDown`); restore is silent.
+- **Request:** body `{recipeId: string, userId: string, moderationHidden: boolean}` (all required; `400 {error:'recipeId and userId are required'}` / `400 {error:'moderationHidden must be a boolean'}`). `userId` is the report's `reportedUid`; a handle is no longer accepted (review fix 1c, 2026-11-06).
+  - `404 {error:'Review not found'}` — no ratings doc matches `{userId, recipeId}`
+- **Response:** `200 {recipeId, userId, username: <current handle, else the review's stored one, else null>, moderationHidden}`. Plus `401`, `403` (requireAdmin).
+- **Client:** `src/api/reports.ts:75` → `ReportAPI.setReviewModeration(recipeId, userId, moderationHidden)` — used by `src/pages/Admin/Reports/Reports.tsx` (take down / restore from the reports queue, sending `report.reportedUid`; both buttons are disabled on a legacy review report with no uid).
+- **Notes:** The match runs on `{userId, recipeId}`, never on a handle: a handle can pass to another account after a rename or account delete. Takedown sets a reversible `moderationHidden` flag plus `moderatedBy`/`moderatedAt` rather than blanking the text. Always recomputes the recipe aggregate (a hidden rating stops counting; restore re-counts it). Writes an audit row (`review.takedown`/`review.restore`, target `uid:recipeId`, labeled with the author's *current* handle) and, on takedown only, fires a background email to the author by uid (`notifyReviewTakenDown`); restore is silent.
 
 #### DRIFT — reviews
 

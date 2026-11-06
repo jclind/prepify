@@ -117,12 +117,9 @@ const Reports: FC = () => {
       const { recipeId } = report
       if (report.targetType === 'recipe' && recipeId) {
         await ReportAPI.setRecipeModeration(recipeId, 'hidden')
-      } else if (report.reportedUsername && recipeId) {
-        await ReportAPI.setReviewModeration(
-          recipeId,
-          report.reportedUsername,
-          true
-        )
+      } else if (report.targetType === 'review' && recipeId) {
+        if (!report.reportedUid) throw new Error('Review report has no reportedUid')
+        await ReportAPI.setReviewModeration(recipeId, report.reportedUid, true)
       }
       await ReportAPI.resolveReport(report._id, 'resolved')
     },
@@ -139,12 +136,9 @@ const Reports: FC = () => {
       const { recipeId } = report
       if (report.targetType === 'recipe' && recipeId) {
         await ReportAPI.setRecipeModeration(recipeId, 'active')
-      } else if (report.reportedUsername && recipeId) {
-        await ReportAPI.setReviewModeration(
-          recipeId,
-          report.reportedUsername,
-          false
-        )
+      } else if (report.targetType === 'review' && recipeId) {
+        if (!report.reportedUid) throw new Error('Review report has no reportedUid')
+        await ReportAPI.setReviewModeration(recipeId, report.reportedUid, false)
       }
     },
     onSuccess: () => {
@@ -175,12 +169,20 @@ const Reports: FC = () => {
       ? report.target.recipe?.status === 'hidden'
       : report.target.review?.moderationHidden === true
 
+  // A legacy review report has no reportedUid. Its handle may belong to a
+  // different account now, so the queue can't tell whose review it means.
+  const isLegacyReview = (report: AdminReportType) =>
+    report.targetType === 'review' && !report.reportedUid
+  const LEGACY_REVIEW_HINT =
+    "This report predates account ids, so the queue can't tell whose review it is. Check the review by hand."
+
   // Take-down button is offered both for a held recipe and a plain open report, so
   // render it once here rather than duplicating the markup across both branches.
   const takedownButton = (report: AdminReportType) => (
     <button
       className='action takedown'
-      disabled={busy}
+      disabled={busy || isLegacyReview(report)}
+      title={isLegacyReview(report) ? LEGACY_REVIEW_HINT : undefined}
       onClick={() => takedownMutation.mutate(report)}
     >
       Take down
@@ -392,7 +394,8 @@ const Reports: FC = () => {
                       {isTargetHidden(report) ? (
                         <button
                           className='action restore'
-                          disabled={busy}
+                          disabled={busy || isLegacyReview(report)}
+                          title={isLegacyReview(report) ? LEGACY_REVIEW_HINT : undefined}
                           onClick={() => restoreMutation.mutate(report)}
                         >
                           Restore
