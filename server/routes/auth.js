@@ -20,6 +20,7 @@ const {
 } = require('../util/recipeFields')
 const { moderateText } = require('../util/textModeration')
 const { moderateImage } = require('../util/imageModeration')
+const { chargePaidQuota, VISION_QUOTA } = require('../util/paidQuota')
 const { respondBlocked } = require('../util/automod')
 
 const USERNAME_MIN_LENGTH = 3
@@ -268,7 +269,8 @@ router.post('/updateProfile', verifyToken, requireActive, profileWriteLimiter, a
 // Like a review/bio (and unlike a recipe), a photo has no owner-only "pending"
 // state to fall back to, so BOTH high and medium confidence block (422); the
 // image fails CLOSED, so a scan outage also rejects rather than applying an
-// unscanned photo. Clearing the photo (empty URL) needs no scan.
+// unscanned photo. Clearing the photo (empty URL) needs no scan. A scan is
+// charged against the shared daily Vision quota (util/paidQuota) before it runs.
 router.post('/updatePhoto', verifyToken, requireActive, profileWriteLimiter, asyncHandler(async (req, res) => {
   const db = getDB()
   const { photoURL } = req.body || {}
@@ -278,6 +280,7 @@ router.post('/updatePhoto', verifyToken, requireActive, profileWriteLimiter, asy
   const url = typeof photoURL === 'string' ? photoURL.trim() : ''
 
   if (url) {
+    if (!(await chargePaidQuota(req, res, VISION_QUOTA))) return
     const verdict = await moderateImage(url, 'profile.photo')
     if (!verdict.allowed) {
       return respondBlocked(res, { db, uid: req.uid, surface: 'profile.photo', verdict })

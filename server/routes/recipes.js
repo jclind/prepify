@@ -4,7 +4,7 @@ const { ObjectId } = require('mongodb')
 const { getDB, getClient } = require('../db')
 const { verifyToken, optionalAuth, requireAdmin, requireActive } = require('../middleware/auth')
 const { recipeWriteLimiter } = require('../middleware/writeLimiter')
-const { makePaidQuotaLimiter } = require('../util/paidQuota')
+const { makePaidQuotaLimiter, chargePaidQuota, VISION_QUOTA } = require('../util/paidQuota')
 const { recipeIdQuery, recipeIdInQuery } = require('../util/recipeIdQuery')
 const { MIN_SIGNAL, selectForYou, tasteScore, weightedSample } = require('../util/forYou')
 const { loadInteractions, buildSeenProfile } = require('../util/tasteContext')
@@ -528,7 +528,7 @@ router.get('/getRecipe', optionalAuth, asyncHandler(async (req, res) => {
 // a Sybil swarm's cumulative Vision/OpenAI spend. 50 creates/account/day is far
 // above any human authoring cadence. Overridable via PAID_QUOTA_RECIPE_USER_DAILY
 // / PAID_QUOTA_RECIPE_GLOBAL_DAILY. (editRecipe re-scans the image only when it
-// actually changes, so it isn't unconditionally metered here.)
+// actually changes, so it charges the separate 'vision' quota in the handler.)
 const recipeCreateQuota = makePaidQuotaLimiter({
   surface: 'recipe',
   perUserDaily: 50,
@@ -685,6 +685,9 @@ router.put('/editRecipe', verifyToken, requireActive, recipeWriteLimiter, asyncH
   // adding new flags). The image is re-scanned only when the URL actually changed,
   // so a plain text edit doesn't pay for (or re-hold on) an already-cleared image.
   const newImage = body.recipeImage && body.recipeImage !== recipe.recipeImage ? body.recipeImage : null
+  // A changed image costs a Vision scan, so charge the daily Vision quota now
+  // that the body has passed validation. Text-only edits aren't charged.
+  if (newImage && !(await chargePaidQuota(req, res, VISION_QUOTA))) return
   // Run the two scans concurrently (see addRecipe) — independent calls that both
   // resolve internally, so Promise.all is safe.
   const [textVerdict, imageVerdict] = await Promise.all([
