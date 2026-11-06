@@ -66,6 +66,11 @@ npm test               # Run Jest tests
 npx cypress open       # Open Cypress test runner
 ```
 
+### Storage rules tests
+```bash
+npm run test:rules     # storage.rules against the Storage emulator (needs Java + the Firebase CLI; not in CI)
+```
+
 ## Environment Variables
 
 > **Environment target:** the local `.env` / `server/.env` in this checkout point at
