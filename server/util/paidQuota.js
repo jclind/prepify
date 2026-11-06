@@ -73,9 +73,10 @@ function envInt(name, fallback) {
 }
 
 // Charge one call against the daily quota for a paid `surface`, from inside a
-// handler. Use this instead of the middleware when the paid call is conditional
-// or should only be charged after validation (a Vision scan runs only when an
-// image is set or changed). Needs req.uid. Returns true when the caller may
+// handler. Call it after the request is validated and just before the paid
+// call, so a malformed request never spends the shared global allowance (review
+// fix 1e), and only when the paid call will really run (a Vision scan runs only
+// when an image is set or changed). Needs req.uid. Returns true when the caller may
 // proceed; otherwise it has already sent the 429 and returns false.
 //
 // Skipped under Jest like the sibling rate limiters (the suite fires many
@@ -120,15 +121,6 @@ async function chargePaidQuota(req, res, {
   }
 }
 
-// Build an Express middleware enforcing the daily quota for one paid `surface`
-// on every request. Mount AFTER verifyToken (needs req.uid). Same options and
-// behavior as chargePaidQuota.
-function makePaidQuotaLimiter(opts) {
-  return async function paidQuotaLimiter(req, res, next) {
-    if (await chargePaidQuota(req, res, opts)) next()
-  }
-}
-
 // Cloud Vision SafeSearch scans outside recipe create: a profile photo set and a
 // recipe image change on edit. Recipe create is metered under the 'recipe'
 // surface instead, since every create scans. 20 scans per account per day is
@@ -142,4 +134,4 @@ const VISION_QUOTA = {
   message: 'Daily image-upload limit reached — please try again tomorrow.',
 }
 
-module.exports = { makePaidQuotaLimiter, chargePaidQuota, VISION_QUOTA, bumpAndCheckQuota, utcDayKey }
+module.exports = { chargePaidQuota, VISION_QUOTA, bumpAndCheckQuota, utcDayKey }

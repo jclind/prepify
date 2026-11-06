@@ -4,7 +4,7 @@ const { ObjectId } = require('mongodb')
 const { getDB, getClient } = require('../db')
 const { verifyToken, optionalAuth, requireAdmin, requireActive } = require('../middleware/auth')
 const { recipeWriteLimiter } = require('../middleware/writeLimiter')
-const { makePaidQuotaLimiter, chargePaidQuota, VISION_QUOTA } = require('../util/paidQuota')
+const { chargePaidQuota, VISION_QUOTA } = require('../util/paidQuota')
 const { recipeIdQuery, recipeIdInQuery } = require('../util/recipeIdQuery')
 const { MIN_SIGNAL, selectForYou, tasteScore, weightedSample } = require('../util/forYou')
 const { loadInteractions, buildSeenProfile } = require('../util/tasteContext')
@@ -537,12 +537,14 @@ router.get('/getRecipe', optionalAuth, asyncHandler(async (req, res) => {
 // above any human authoring cadence. Overridable via PAID_QUOTA_RECIPE_USER_DAILY
 // / PAID_QUOTA_RECIPE_GLOBAL_DAILY. (editRecipe re-scans the image only when it
 // actually changes, so it charges the separate 'vision' quota in the handler.)
-const recipeCreateQuota = makePaidQuotaLimiter({
+// Charged after validation and the username check, so a request that fails
+// those is never counted (review fix 1e).
+const RECIPE_CREATE_QUOTA = {
   surface: 'recipe',
   perUserDaily: 50,
   globalDaily: 2000,
   message: 'Daily recipe-creation limit reached — please try again tomorrow.',
-})
+}
 
 // A recipe may have no image, but a stored image must be the caller's own
 // upload (util/firebaseStorage.recipeImageUrlError). Checked before any paid
@@ -553,7 +555,7 @@ function recipeImageError(body, uid) {
 }
 
 // POST /addRecipe
-router.post('/addRecipe', verifyToken, requireActive, recipeWriteLimiter, recipeCreateQuota, asyncHandler(async (req, res) => {
+router.post('/addRecipe', verifyToken, requireActive, recipeWriteLimiter, asyncHandler(async (req, res) => {
   const db = getDB()
   const body = req.body
   const uid = req.uid
@@ -591,6 +593,7 @@ router.post('/addRecipe', verifyToken, requireActive, recipeWriteLimiter, recipe
   if (!authorDoc) {
     return res.status(400).json({ error: 'You must set a username before publishing a recipe' })
   }
+  if (!(await chargePaidQuota(req, res, RECIPE_CREATE_QUOTA))) return
 
   // Automated moderation on BOTH axes — text and the recipe image — collapsed to
   // the most severe verdict. High-confidence → block the write (4xx). Medium →

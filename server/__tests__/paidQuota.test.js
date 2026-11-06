@@ -2,10 +2,10 @@
  * Audit H1 — daily paid-API spend ceiling.
  *
  * Exercises the counter core (bumpAndCheckQuota) directly against the in-memory
- * Mongo, rather than through a route: the middleware itself is skipped under
- * NODE_ENV=test (like every sibling rate limiter, so the supertest suites aren't
- * throttled), so the DB-backed decision logic is what needs coverage. `now` is
- * injected so the UTC-day rollover is deterministic without touching the clock.
+ * Mongo. The route-level charge (chargePaidQuota) is skipped under NODE_ENV=test
+ * unless PAID_QUOTA_ENFORCE_IN_TEST is set; visionQuota.test.js and
+ * quotaAfterValidation.test.js cover it through routes. `now` is injected so the
+ * UTC-day rollover is deterministic without touching the clock.
  */
 const { getDB } = require('../db')
 const { bumpAndCheckQuota, utcDayKey } = require('../util/paidQuota')
