@@ -2777,3 +2777,20 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   validation and only when a scan will run. New `chargePaidQuota` in `server/util/paidQuota.js` charges from
   inside a handler; the middleware wraps it. 5 of 8 new route tests fail on the old code; full server suite
   999/999; Codex review found nothing. The audit docs' H1 status line is left for plan step 5a. Not yet in prod.
+- **2026-11-06** — Merged the rest of Phase 1 of the review fix plan except 1e, each with tests shown failing
+  on `development` first and a Codex review with no findings. None is in prod yet.
+  - [#364](https://github.com/jclind/prepify/pull/364) (1b; AC-2, CR-34, rest of AC-1): `addRecipe`,
+    `editRecipe` (changed image only) and `updatePhoto` 400 any image URL that isn't an https Firebase Storage
+    download URL in this project's bucket under the caller's `recipeImages/{uid}/` or `profilePhotos/{uid}`.
+    `moderateImage` fails closed on a non-string; `deleteRecipeImage` checks the bucket; the uid migration's
+    `--delete-old` keeps a flat object shared by two recipes. All 18 prod recipes pass the new check.
+  - [#365](https://github.com/jclind/prepify/pull/365) (1c; run 2 #2, CR-18 reports part): review takedown
+    takes `{recipeId, userId}` from `report.reportedUid`, the takedown email goes by uid, and a rename
+    relabels only reports whose `reportedUid` is the renaming account. Legacy review reports with no uid
+    can't be actioned from the queue.
+  - [#366](https://github.com/jclind/prepify/pull/366) (1d; AC-6, CR-9): autocomplete 400s a query over
+    `TITLE_MAX_LENGTH` and the input stops sending one; trending `limit` clamps to 1..20.
+  - [#367](https://github.com/jclind/prepify/pull/367) (1f; AC-P1 partial): `storage.rules` allows only new
+    objects under `recipeImages/{uid}/` (`resource == null`; the emulator counts an overwrite as `create`).
+    New `npm run test:rules` (emulator, not in CI). **Owner must run `firebase deploy --only storage`.**
+  - Left: 1e (quota after validation), which waits on nothing now.
