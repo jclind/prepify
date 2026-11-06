@@ -7,7 +7,7 @@ const { getDB, getClient } = require('../db')
 const { verifyToken, requireActive } = require('../middleware/auth')
 const { profileWriteLimiter } = require('../middleware/writeLimiter')
 const { recordAudit } = require('../util/auditLog')
-const { deleteRecipeImage, deleteProfilePhoto } = require('../util/firebaseStorage')
+const { deleteRecipeImage, deleteProfilePhoto, profilePhotoUrlError } = require('../util/firebaseStorage')
 // Imported as a namespace (not a destructured binding) so tests can spy on the
 // recompute — deleteAccount's post-commit reconciliation must survive a failing
 // recompute without going silent.
@@ -20,6 +20,7 @@ const {
 } = require('../util/recipeFields')
 const { moderateText } = require('../util/textModeration')
 const { moderateImage } = require('../util/imageModeration')
+const { chargePaidQuota, VISION_QUOTA } = require('../util/paidQuota')
 const { respondBlocked } = require('../util/automod')
 
 const USERNAME_MIN_LENGTH = 3
@@ -190,8 +191,9 @@ router.post('/setUsername', verifyToken, requireActive, profileWriteLimiter, asy
   // with a same-handle stranger and survives future handle reuse. NOTE: a
   // legacy rating row missing userId (pre-D1 residue) is intentionally NOT
   // updated by this — userId is now the source of truth for "this user's rows".
-  // Review reports separately denormalize the username via their own
-  // reportedUsername field and still need that propagated too. New name is
+  // Reports separately denormalize the username via their own reportedUsername
+  // field and still need that propagated too, matched on the reported uid: a
+  // report filed against a previous holder of this handle keeps its label. New name is
   // guaranteed free (checked above), so there's no collision with another
   // user's rows.
   if (prevUsername && prevUsername !== username) {
@@ -201,7 +203,7 @@ router.post('/setUsername', verifyToken, requireActive, profileWriteLimiter, asy
     await db
       .collection('reports')
       .updateMany(
-        { reportedUsername: prevUsername },
+        { reportedUid: uid },
         { $set: { reportedUsername: username } }
       )
   }
@@ -268,7 +270,8 @@ router.post('/updateProfile', verifyToken, requireActive, profileWriteLimiter, a
 // Like a review/bio (and unlike a recipe), a photo has no owner-only "pending"
 // state to fall back to, so BOTH high and medium confidence block (422); the
 // image fails CLOSED, so a scan outage also rejects rather than applying an
-// unscanned photo. Clearing the photo (empty URL) needs no scan.
+// unscanned photo. Clearing the photo (empty URL) needs no scan. A scan is
+// charged against the shared daily Vision quota (util/paidQuota) before it runs.
 router.post('/updatePhoto', verifyToken, requireActive, profileWriteLimiter, asyncHandler(async (req, res) => {
   const db = getDB()
   const { photoURL } = req.body || {}
@@ -278,6 +281,12 @@ router.post('/updatePhoto', verifyToken, requireActive, profileWriteLimiter, asy
   const url = typeof photoURL === 'string' ? photoURL.trim() : ''
 
   if (url) {
+    // Only the caller's own profilePhotos/{uid} upload may become the avatar.
+    const urlError = profilePhotoUrlError(url, req.uid)
+    if (urlError) {
+      return res.status(400).json({ error: urlError })
+    }
+    if (!(await chargePaidQuota(req, res, VISION_QUOTA))) return
     const verdict = await moderateImage(url, 'profile.photo')
     if (!verdict.allowed) {
       return respondBlocked(res, { db, uid: req.uid, surface: 'profile.photo', verdict })

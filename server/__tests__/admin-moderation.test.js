@@ -194,11 +194,11 @@ describe('PATCH /api/admin/reviews/moderation', () => {
     const res = await request(app)
       .patch('/api/admin/reviews/moderation')
       .set(AUTH_HEADER)
-      .send({ recipeId: 'r1', username: 'baduser', moderationHidden: true })
+      .send({ recipeId: 'r1', userId: 'baduser-uid', moderationHidden: true })
     expect(res.status).toBe(403)
   })
 
-  it('takes down and restores a review (resolves handle → uid), preserving text', async () => {
+  it('takes down and restores a review by uid, preserving text', async () => {
     admin.__setClaims({ admin: true })
     await seedUser('baduser-uid', 'baduser')
     await seedRating({ userId: 'baduser-uid', username: 'baduser', recipeId: 'r1', reviewText: 'nasty stuff', rating: 1, reviewCreatedAt: '1', reviewLastUpdated: '1' })
@@ -206,7 +206,7 @@ describe('PATCH /api/admin/reviews/moderation', () => {
     const hide = await request(app)
       .patch('/api/admin/reviews/moderation')
       .set(AUTH_HEADER)
-      .send({ recipeId: 'r1', username: 'baduser', moderationHidden: true })
+      .send({ recipeId: 'r1', userId: 'baduser-uid', moderationHidden: true })
     expect(hide.status).toBe(200)
 
     let doc = await getDB().collection('ratings').findOne({ username: 'baduser', recipeId: 'r1' })
@@ -221,7 +221,7 @@ describe('PATCH /api/admin/reviews/moderation', () => {
     const restore = await request(app)
       .patch('/api/admin/reviews/moderation')
       .set(AUTH_HEADER)
-      .send({ recipeId: 'r1', username: 'baduser', moderationHidden: false })
+      .send({ recipeId: 'r1', userId: 'baduser-uid', moderationHidden: false })
     expect(restore.status).toBe(200)
     const listAfter = await request(app).get('/api/getReviews?recipeId=r1')
     expect(listAfter.body.reviews.find((r) => r.username === 'baduser')).toBeDefined()
@@ -256,7 +256,7 @@ describe('PATCH /api/admin/reviews/moderation', () => {
     await request(app)
       .patch('/api/admin/reviews/moderation')
       .set(AUTH_HEADER)
-      .send({ recipeId: 'r1', username: 'troll', moderationHidden: true })
+      .send({ recipeId: 'r1', userId: 'troll-uid', moderationHidden: true })
 
     let recipe = await getDB().collection('recipes').findOne({ _id: 'r1' })
     expect(recipe.rating.rateCount).toBe(1) // only the 5-star counts now
@@ -266,18 +266,16 @@ describe('PATCH /api/admin/reviews/moderation', () => {
     await request(app)
       .patch('/api/admin/reviews/moderation')
       .set(AUTH_HEADER)
-      .send({ recipeId: 'r1', username: 'troll', moderationHidden: false })
+      .send({ recipeId: 'r1', userId: 'troll-uid', moderationHidden: false })
 
     recipe = await getDB().collection('recipes').findOne({ _id: 'r1' })
     expect(recipe.rating.rateCount).toBe(2)
     expect(recipe.rating.rateValue).toBe(3) // (5 + 1) / 2
   })
 
-  // D1 identity: the takedown resolves the supplied handle → uid and matches on
-  // it, so it still finds a review whose DENORMALIZED username went stale after
-  // a rename. Matching the stale username directly (the old behaviour) would
-  // 404 and leave reported content up.
-  it('takes down a review whose stored username is stale (matches by resolved uid)', async () => {
+  // D1 identity: the takedown matches on uid, so it still finds a review whose
+  // DENORMALIZED username went stale after a rename.
+  it('takes down a review whose stored username is stale (matches by uid)', async () => {
     admin.__setClaims({ admin: true })
     // Current handle is 'newhandle'; the rating doc still carries the OLD one.
     await seedUser('renamed-uid', 'newhandle')
@@ -286,7 +284,7 @@ describe('PATCH /api/admin/reviews/moderation', () => {
     const res = await request(app)
       .patch('/api/admin/reviews/moderation')
       .set(AUTH_HEADER)
-      .send({ recipeId: 'r1', username: 'newhandle', moderationHidden: true })
+      .send({ recipeId: 'r1', userId: 'renamed-uid', moderationHidden: true })
     expect(res.status).toBe(200)
     // Response echoes the author's CURRENT canonical handle, not the stale one.
     expect(res.body.username).toBe('newhandle')
@@ -295,12 +293,12 @@ describe('PATCH /api/admin/reviews/moderation', () => {
     expect(doc.moderationHidden).toBe(true)
   })
 
-  it('404s a takedown for an unknown handle (resolves to no user)', async () => {
+  it('404s a takedown for a uid with no review', async () => {
     admin.__setClaims({ admin: true })
     const res = await request(app)
       .patch('/api/admin/reviews/moderation')
       .set(AUTH_HEADER)
-      .send({ recipeId: 'r1', username: 'ghost', moderationHidden: true })
+      .send({ recipeId: 'r1', userId: 'ghost-uid', moderationHidden: true })
     expect(res.status).toBe(404)
   })
 
@@ -309,13 +307,13 @@ describe('PATCH /api/admin/reviews/moderation', () => {
     const badBody = await request(app)
       .patch('/api/admin/reviews/moderation')
       .set(AUTH_HEADER)
-      .send({ recipeId: 'r1', username: 'baduser' })
+      .send({ recipeId: 'r1', userId: 'baduser-uid' })
     expect(badBody.status).toBe(400)
 
     const missing = await request(app)
       .patch('/api/admin/reviews/moderation')
       .set(AUTH_HEADER)
-      .send({ recipeId: 'nope', username: 'ghost', moderationHidden: true })
+      .send({ recipeId: 'nope', userId: 'ghost-uid', moderationHidden: true })
     expect(missing.status).toBe(404)
   })
 })

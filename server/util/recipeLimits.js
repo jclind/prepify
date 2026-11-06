@@ -185,6 +185,7 @@ module.exports = {
   validateRequiredRecipeFields,
   normalizeRecipeInput,
   validateRecipeBounds,
+  TITLE_MAX_LENGTH,
   DESCRIPTION_MAX_LENGTH,
   INGREDIENT_MAX_LENGTH,
   MAX_INGREDIENTS,

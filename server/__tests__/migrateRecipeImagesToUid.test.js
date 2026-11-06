@@ -9,7 +9,7 @@
  *   - `downloadUrl` — producing a Firebase download URL whose whole path is
  *     percent-encoded (slashes → %2F) so `parseStorageUrl` round-trips it.
  */
-const { classifyImage, downloadUrl } = require('../scripts/migrateRecipeImagesToUid')
+const { classifyImage, downloadUrl, countFlatImageRefs } = require('../scripts/migrateRecipeImagesToUid')
 const { parseStorageUrl } = require('../util/firebaseStorage')
 
 const fbUrl = (bucket, encodedPath, token = 'tok') =>
@@ -63,5 +63,27 @@ describe('downloadUrl', () => {
     // The migration writes this URL; the migration also reads paths back with
     // parseStorageUrl — they must agree, or a re-run would misclassify.
     expect(parseStorageUrl(url)).toEqual({ bucket, path: objectPath })
+  })
+})
+
+// --delete-old must not delete a flat object another recipe still points at:
+// the second recipe's own copy would then fail (its source is gone) and leave
+// it pointing at a deleted file.
+describe('countFlatImageRefs', () => {
+  test('counts recipes per flat bucket/path, ignoring uid-scoped and external images', () => {
+    const shared = fbUrl('b1', 'recipeImages%2Fshared.jpg')
+    const refs = countFlatImageRefs([
+      { recipeImage: shared },
+      { recipeImage: shared.replace('token=tok', 'token=other') },
+      { recipeImage: fbUrl('b1', 'recipeImages%2Fsolo.jpg') },
+      { recipeImage: fbUrl('b2', 'recipeImages%2Fshared.jpg') },
+      { recipeImage: fbUrl('b1', 'recipeImages%2Fuid%2Fx') },
+      { recipeImage: 'https://example.com/a.jpg' },
+      { recipeImage: null },
+    ])
+    expect(refs.get('b1/recipeImages/shared.jpg')).toBe(2)
+    expect(refs.get('b1/recipeImages/solo.jpg')).toBe(1)
+    expect(refs.get('b2/recipeImages/shared.jpg')).toBe(1)
+    expect(refs.size).toBe(3)
   })
 })

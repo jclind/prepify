@@ -146,13 +146,16 @@ describe('per-event recipient resolution', () => {
     expect(sentArg().html).toMatch(/Spicy Noodles/)
   })
 
-  it('reviewTakenDown resolves the owner via the usernames collection', async () => {
+  it('reviewTakenDown emails the author by uid, not whoever holds their old handle', async () => {
     const db = getDB()
-    await seedUser('chef-uid', 'chef')
+    await seedUser('new-holder-uid', 'chef')
     await seedRecipe({ _id: 'r1', title: 'Pad Thai', userId: 'someone' })
-    admin.__setUsers([{ uid: 'chef-uid', email: 'chef@example.dev' }])
+    admin.__setUsers([
+      { uid: 'chef-uid', email: 'chef@example.dev' },
+      { uid: 'new-holder-uid', email: 'new@example.dev' },
+    ])
 
-    await notifyReviewTakenDown(db, 'chef', 'r1')
+    await notifyReviewTakenDown(db, 'chef-uid', 'r1')
     expect(sentArg().to).toBe('chef@example.dev')
     expect(sentArg().html).toMatch(/Pad Thai/)
   })
@@ -178,10 +181,10 @@ describe('failures never throw', () => {
     expect(res.error).toMatch(/testing emails/)
   })
 
-  it('resolves when the recipient lookup itself throws', async () => {
-    // A db whose findOne rejects — emailForUsername must swallow it.
+  it('resolves when the recipient lookup itself fails', async () => {
+    // No such Auth user: emailForUid's getUser throws and must be swallowed.
     const brokenDb = { collection: () => ({ findOne: () => Promise.reject(new Error('db down')) }) }
-    await expect(notifyReviewTakenDown(brokenDb, 'chef', 'r1')).resolves.toBeUndefined()
+    await expect(notifyReviewTakenDown(brokenDb, 'gone-uid', 'r1')).resolves.toBeUndefined()
     expect(sendMock).not.toHaveBeenCalled()
   })
 })
@@ -404,7 +407,7 @@ describe('moderation routes trigger the right sends', () => {
     const takedown = await request(app)
       .patch('/api/admin/reviews/moderation')
       .set(AUTH_HEADER)
-      .send({ recipeId: 'r1', username: 'author', moderationHidden: true })
+      .send({ recipeId: 'r1', userId: 'author-uid', moderationHidden: true })
     expect(takedown.status).toBe(200)
     await flushNotifications()
     expect(sendMock).toHaveBeenCalledTimes(1)
@@ -414,7 +417,7 @@ describe('moderation routes trigger the right sends', () => {
     const restore = await request(app)
       .patch('/api/admin/reviews/moderation')
       .set(AUTH_HEADER)
-      .send({ recipeId: 'r1', username: 'author', moderationHidden: false })
+      .send({ recipeId: 'r1', userId: 'author-uid', moderationHidden: false })
     expect(restore.status).toBe(200)
     await flushNotifications()
     expect(sendMock).not.toHaveBeenCalled()

@@ -107,22 +107,6 @@ async function emailForUid(uid) {
   }
 }
 
-// Reviews are keyed by username (no uid on the doc); the usernames collection is
-// _id=uid → username. Look up by the indexed, canonical `username_lower` (the same
-// field auth.js/publicProfile.js query) so the match is case-insensitive and hits
-// the index instead of scanning.
-async function emailForUsername(db, username) {
-  try {
-    const doc = await db
-      .collection('usernames')
-      .findOne({ username_lower: String(username).toLowerCase() })
-    if (!doc) return null
-    return emailForUid(doc._id)
-  } catch (err) {
-    return null
-  }
-}
-
 // --- Templates --------------------------------------------------------------
 
 const TEAM = 'The Prepify Team'
@@ -324,10 +308,10 @@ function notifyRecipeHidden(ownerUid, recipeTitle) {
 }
 
 // Review taken down → email the author. Restore is silent.
-function notifyReviewTakenDown(db, ownerUsername, recipeId) {
-  if (!emailEnabled() || !ownerUsername) return Promise.resolve()
+function notifyReviewTakenDown(db, ownerUid, recipeId) {
+  if (!emailEnabled() || !ownerUid) return Promise.resolve()
   return deliver(
-    () => emailForUsername(db, ownerUsername),
+    () => emailForUid(ownerUid),
     async () => templates.reviewTakenDown({ recipeTitle: await fetchRecipeTitle(db, recipeId) })
   )
 }
