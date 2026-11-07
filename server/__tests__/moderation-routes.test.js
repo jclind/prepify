@@ -58,7 +58,7 @@ const RECIPE_BODY = {
     },
   ],
   instructions: [{ content: 'Cook the chicken', index: 0, id: 's1' }],
-  recipeImage: 'https://firebasestorage.googleapis.com/v0/b/test-bucket/o/recipeImages%2Ft.jpg?alt=media&token=abc',
+  recipeImage: 'https://firebasestorage.googleapis.com/v0/b/test-bucket/o/recipeImages%2Ftest-uid%2Ft.jpg?alt=media&token=abc',
 }
 
 // content.blocked audit rows are written fire-and-forget by respondBlocked (so a
@@ -345,7 +345,7 @@ describe('PUT /editRecipe — image only re-scanned when it changed', () => {
   it('scans (and can block on) a changed image URL', async () => {
     await seedRecipe({ ...RECIPE_BODY, _id: 'e-img2', userId: TEST_UID })
     moderateImage.mockResolvedValue(IMG_HIGH)
-    const changed = { ...RECIPE_BODY, recipeImage: 'https://firebasestorage.googleapis.com/v0/b/test-bucket/o/recipeImages%2FNEW.jpg?alt=media&token=z' }
+    const changed = { ...RECIPE_BODY, recipeImage: 'https://firebasestorage.googleapis.com/v0/b/test-bucket/o/recipeImages%2Ftest-uid%2FNEW.jpg?alt=media&token=z' }
     const res = await request(app).put('/api/editRecipe?recipeId=e-img2').set(AUTH).send(changed)
     expect(res.status).toBe(422)
     expect(moderateImage).toHaveBeenCalledWith(changed.recipeImage, 'recipe.image')

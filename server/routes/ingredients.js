@@ -3,7 +3,7 @@ const Sentry = require('@sentry/node')
 const { ingredientParser } = require('@jclind/ingredient-parser')
 const { verifyToken, requireActive } = require('../middleware/auth')
 const { makeUserLimiter } = require('../middleware/writeLimiter')
-const { makePaidQuotaLimiter } = require('../util/paidQuota')
+const { chargePaidQuota } = require('../util/paidQuota')
 const { GENERIC_500_MESSAGE } = require('../util/respondServerError')
 const { asyncHandler } = require('../util/asyncHandler')
 const { getDB } = require('../db')
@@ -103,12 +103,14 @@ const parseLimiter = makeUserLimiter({
 // several max-size recipes a day stays well under 600 — while the global ceiling
 // bounds total spend regardless of account count. Overridable via
 // PAID_QUOTA_INGREDIENTS_USER_DAILY / PAID_QUOTA_INGREDIENTS_GLOBAL_DAILY.
-const parseQuota = makePaidQuotaLimiter({
+// Charged in the handler after the body is validated, so a malformed request
+// never spends anyone's daily allowance (review fix 1e).
+const PARSE_QUOTA = {
   surface: 'ingredients',
   perUserDaily: 600,
   globalDaily: 20000,
   message: 'Daily ingredient-lookup limit reached — please try again tomorrow.',
-})
+}
 
 // Spoonacular migrated CDNs: the old spoonacular.com/cdn host now 301-redirects;
 // img.spoonacular.com serves the image directly. The parser's buildImageUrl
@@ -157,11 +159,12 @@ function mapIngredientData(data) {
 // requireActive sits between verifyToken and the limiter (the house write-surface
 // order) so a just-suspended/banned account — whose ID token stays valid for up to
 // ~1h — can't keep burning paid Spoonacular quota through the enrichment proxy.
-router.post('/parse', verifyToken, requireActive, parseLimiter, parseQuota, asyncHandler(async (req, res) => {
+router.post('/parse', verifyToken, requireActive, parseLimiter, asyncHandler(async (req, res) => {
   const { ingredientString } = req.body
   if (!ingredientString || typeof ingredientString !== 'string') {
     return res.status(400).json({ error: 'ingredientString must be a non-empty string' })
   }
+  if (!(await chargePaidQuota(req, res, PARSE_QUOTA))) return
   try {
     // v2 is key-free on the client: the parser calls the hosted proxy (which
     // holds the Spoonacular key), so no API key is passed here. The proxy URL is

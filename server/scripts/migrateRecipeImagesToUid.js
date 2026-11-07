@@ -90,6 +90,21 @@ function classifyImage(url) {
   return { kind: 'unexpected', path: parsed.path }
 }
 
+// How many recipes point at each flat object, keyed `bucket/path`. Two recipes
+// can share one flat object (the old upload key was the file name), so
+// --delete-old must skip any object with more than one reference: deleting it
+// after moving the first recipe would break the second recipe's copy.
+function countFlatImageRefs(recipes) {
+  const refs = new Map()
+  for (const recipe of recipes) {
+    const cls = classifyImage(recipe.recipeImage)
+    if (cls.kind !== 'flat') continue
+    const key = `${cls.bucket}/${cls.path}`
+    refs.set(key, (refs.get(key) || 0) + 1)
+  }
+  return refs
+}
+
 // Resolve the owner uid for a recipe: the stamped `userId`, else the author's
 // handle via the `usernames` collection (`_id` IS the uid). Returns null when
 // neither resolves — such a recipe can't be owner-scoped and is left untouched.
@@ -195,6 +210,14 @@ async function main() {
       }
     }
 
+    // Counted over the whole catalog, not just the --id/--limit batch, so a
+    // reference outside the batch still protects a shared object.
+    const flatRefs = DELETE_OLD
+      ? countFlatImageRefs(
+          await db.collection('recipes').find({}, { projection: { recipeImage: 1 } }).toArray()
+        )
+      : new Map()
+
     const cursor = db
       .collection('recipes')
       .find(query, { projection: { recipeImage: 1, userId: 1, authorUsername: 1 } })
@@ -241,7 +264,9 @@ async function main() {
         counts.migrated++
         line(`  moved  ${id}: ${cls.path} → ${newPath}`)
 
-        if (DELETE_OLD) {
+        if (DELETE_OLD && flatRefs.get(`${cls.bucket}/${cls.path}`) > 1) {
+          line(`  keep   ${id}: old object is shared with another recipe, not deleted`)
+        } else if (DELETE_OLD) {
           try {
             await getStorage().bucket(cls.bucket).file(cls.path).delete()
             counts.deletedOld++
@@ -293,7 +318,7 @@ async function main() {
 // Export the pure helpers for unit testing; only load env + run the migration
 // when invoked directly (`node scripts/migrateRecipeImagesToUid.js`), so a test
 // `require`-ing this file doesn't pull real server/.env creds into its process.
-module.exports = { classifyImage, downloadUrl, resolveOwnerUid }
+module.exports = { classifyImage, countFlatImageRefs, downloadUrl, resolveOwnerUid }
 if (require.main === module) {
   require('dotenv').config({ path: path.join(__dirname, '..', '.env') })
   main()

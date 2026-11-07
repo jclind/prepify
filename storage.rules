@@ -28,17 +28,23 @@ service firebase.storage {
     // the owner-write check below.
     match /recipeImages/{uid}/{imageId} {
       allow read: if true;
-      allow write: if request.auth != null
-                   && request.auth.uid == uid
-                   && request.resource.size < 5 * 1024 * 1024
-                   && request.resource.contentType.matches('image/.*');
-      // Owner-scoped delete (X3). `allow write` nominally covers delete, but on a
-      // delete `request.resource` is null, so the size/contentType guards above
-      // evaluate false and deletes get denied. The client cleans up its own
-      // just-uploaded object when a create/edit fails after the upload
-      // (api/recipes.ts deleteRecipeImage) — without this grant that cleanup 403s
-      // and the orphan leaks. A separate `allow delete` (rules OR together) lets
-      // the owner delete under their uid prefix without a resource to inspect.
+      // New objects only, never an overwrite: the server moderates an image
+      // once, when the recipe pointing at it is saved, so an in-place overwrite
+      // would swap new content in behind an approved URL. The client always
+      // uploads to a fresh uuid, so it never needs to overwrite. `resource ==
+      // null` is what enforces it: the Storage emulator treats an overwrite as
+      // `create`, so the method name alone doesn't. (Review fix 1f; delete-then-
+      // recreate at the same path is still possible, see the 2026-11-06 fix
+      // plan, D6.)
+      allow create: if request.auth != null
+                    && resource == null
+                    && request.auth.uid == uid
+                    && request.resource.size < 5 * 1024 * 1024
+                    && request.resource.contentType.matches('image/.*');
+      // Owner-scoped delete (X3). The client cleans up its own just-uploaded
+      // object when a create/edit fails after the upload (api/recipes.ts
+      // deleteRecipeImage); without this grant that cleanup 403s and the
+      // orphan leaks.
       allow delete: if request.auth != null && request.auth.uid == uid;
     }
 

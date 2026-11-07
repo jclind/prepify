@@ -144,7 +144,13 @@ async function callVision(imageUrl) {
  * confidence to surface. The bucket name lives in `reason` for human readers.
  */
 async function moderateImage(imageUrl, context = '') {
-  if (!imageUrl || typeof imageUrl !== 'string' || !imageUrl.trim()) return clean('empty')
+  if (imageUrl == null || (typeof imageUrl === 'string' && !imageUrl.trim())) return clean('empty')
+  // A non-string (an array or object a caller forgot to validate) is not "no
+  // image": it would still be stored. Fail closed, like a scan error.
+  if (typeof imageUrl !== 'string') {
+    console.error(`moderateImage: non-string image value (failing closed) [${context}]`)
+    return { allowed: false, severity: 'medium', reason: 'vision:unscanned', category: 'unscanned', score: null, scores: null, source: 'error' }
+  }
   if (!imageModerationEnabled()) return clean('disabled')
 
   let annotation

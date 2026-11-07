@@ -482,34 +482,31 @@ router.get('/getSingleUserReviews', asyncHandler(async (req, res) => {
 
 // PATCH /admin/reviews/moderation — admin take down / restore a review.
 // Reviews have no stable id of their own; their identity is the author's stable
-// uid + recipeId (D1). The admin UI hands us the reported *handle*, so resolve
-// it to that uid and match on it — the username stored on the rating doc is a
-// denormalized display field that goes stale on a rename, so matching it
-// directly would miss the very reviews a renamed author left. Uses a distinct
-// `moderationHidden` flag rather than blanking reviewText, so the takedown is
-// reversible and the original text is preserved for audit/appeal.
+// uid + recipeId (D1). The admin queue sends the report's `reportedUid`, never
+// the handle: a handle can pass to another account after a rename or account
+// delete, so resolving it at takedown time could hide the new holder's review
+// instead. Uses a distinct `moderationHidden` flag rather than blanking
+// reviewText, so the takedown is reversible and the original text is preserved
+// for audit/appeal.
 router.patch('/admin/reviews/moderation', verifyToken, requireAdmin, asyncHandler(async (req, res) => {
   const db = getDB()
-  const { recipeId, username, moderationHidden } = req.body
-  if (!recipeId || typeof recipeId !== 'string' || !username || typeof username !== 'string') {
-    return res.status(400).json({ error: 'recipeId and username are required' })
+  const { recipeId, userId, moderationHidden } = req.body
+  if (!recipeId || typeof recipeId !== 'string' || !userId || typeof userId !== 'string') {
+    return res.status(400).json({ error: 'recipeId and userId are required' })
   }
   if (typeof moderationHidden !== 'boolean') {
     return res.status(400).json({ error: 'moderationHidden must be a boolean' })
   }
 
-  // Resolve handle → stable uid (case-insensitive, the same lookup the unique
-  // index / getSingleUserReviews use). An unknown handle can own no review.
-  const ownerDoc = await db
-    .collection('usernames')
-    .findOne({ username_lower: username.toLowerCase() })
-  if (!ownerDoc) {
-    return res.status(404).json({ error: 'Review not found' })
-  }
-  const userId = ownerDoc._id
-  // Prefer the author's CURRENT handle for the audit trail + notification, so a
-  // rename between review and takedown doesn't stamp a stale label.
-  const canonicalUsername = ownerDoc.username
+  // The author's CURRENT handle labels the audit trail, so a rename between
+  // review and takedown doesn't stamp a stale one. An account with no handle
+  // any more (deleted, or never finished onboarding) falls back to the name
+  // stored on the review.
+  const ownerDoc = await db.collection('usernames').findOne({ _id: userId })
+  const rating = ownerDoc
+    ? null
+    : await db.collection('ratings').findOne({ userId, recipeId }, { projection: { username: 1 } })
+  const canonicalUsername = ownerDoc?.username ?? rating?.username ?? null
 
   const result = await db.collection('ratings').updateOne(
     { userId, recipeId },
@@ -532,12 +529,12 @@ router.patch('/admin/reviews/moderation', verifyToken, requireAdmin, asyncHandle
     targetType: 'review',
     // Stable key for the target: uid + recipeId (survives renames).
     targetId: `${userId}:${recipeId}`,
-    targetLabel: `@${canonicalUsername}`,
+    targetLabel: canonicalUsername ? `@${canonicalUsername}` : userId,
     metadata: { recipeId, userId, username: canonicalUsername },
   })
   // Notify the review author on a takedown (background). Restore is silent.
-  if (moderationHidden) notifyInBackground(notifyReviewTakenDown(db, canonicalUsername, recipeId))
-  res.json({ recipeId, username: canonicalUsername, moderationHidden })
+  if (moderationHidden) notifyInBackground(notifyReviewTakenDown(db, userId, recipeId))
+  res.json({ recipeId, userId, username: canonicalUsername, moderationHidden })
 }))
 
 module.exports = router

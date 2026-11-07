@@ -71,15 +71,16 @@ class ReportAPIClass {
     return result.data
   }
 
-  // Admin: take down / restore a review (keyed by username + recipeId).
+  // Admin: take down / restore a review, keyed by the author's uid + recipeId.
+  // Never the handle: it can belong to a different account by now.
   async setReviewModeration(
     recipeId: string,
-    username: string,
+    userId: string,
     moderationHidden: boolean
   ): Promise<void> {
     await http.patch('api/admin/reviews/moderation', {
       recipeId,
-      username,
+      userId,
       moderationHidden,
     })
   }

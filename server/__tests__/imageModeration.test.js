@@ -64,6 +64,19 @@ describe('imageModeration — env gating', () => {
     expect((await moderateImage('   ')).source).toBe('empty')
     expect(global.fetch).not.toHaveBeenCalled()
   })
+
+  // An array or object is not "no image": the route would still store it, so
+  // treating it as empty would publish an unscanned value. It fails closed.
+  it('fails CLOSED on a non-string value instead of calling it empty', async () => {
+    global.fetch = jest.fn()
+    for (const value of [[URL], { url: URL }, 42]) {
+      const v = await moderateImage(value, 'recipe.image')
+      expect(v.allowed).toBe(false)
+      expect(v.severity).toBe('medium')
+      expect(v.source).toBe('error')
+    }
+    expect(global.fetch).not.toHaveBeenCalled()
+  })
 })
 
 describe('imageModeration — grading', () => {

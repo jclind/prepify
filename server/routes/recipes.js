@@ -4,7 +4,7 @@ const { ObjectId } = require('mongodb')
 const { getDB, getClient } = require('../db')
 const { verifyToken, optionalAuth, requireAdmin, requireActive } = require('../middleware/auth')
 const { recipeWriteLimiter } = require('../middleware/writeLimiter')
-const { makePaidQuotaLimiter } = require('../util/paidQuota')
+const { chargePaidQuota, VISION_QUOTA } = require('../util/paidQuota')
 const { recipeIdQuery, recipeIdInQuery } = require('../util/recipeIdQuery')
 const { MIN_SIGNAL, selectForYou, tasteScore, weightedSample } = require('../util/forYou')
 const { loadInteractions, buildSeenProfile } = require('../util/tasteContext')
@@ -13,14 +13,14 @@ const { fuzzyRankTitles, toTextSearch } = require('../util/recipeTitleMatch')
 const { recordAudit } = require('../util/auditLog')
 const { resolveAuthorIdentities } = require('../util/authorIdentity')
 const { notifyInBackground, notifyRecipeHidden } = require('../util/email')
-const { validateRequiredRecipeFields, normalizeRecipeInput, validateRecipeBounds } = require('../util/recipeLimits')
+const { validateRequiredRecipeFields, normalizeRecipeInput, validateRecipeBounds, TITLE_MAX_LENGTH } = require('../util/recipeLimits')
 const { upsertWithDupRetry } = require('../util/upsertWithDupRetry')
 const { moderateText } = require('../util/textModeration')
 const { moderateImage } = require('../util/imageModeration')
 const { gatherRecipeText, holdRecipeForReview, respondBlocked, worstVerdict, openAutomodReportQuery, restoreHeldRecipe } = require('../util/automod')
 const { EDITABLE_RECIPE_FIELDS, CREATABLE_RECIPE_FIELDS, pickFields, publicRecipeProjection, publicRecipeCardProjection } = require('../util/recipeFields')
 const { calculateServingPrice } = require('../util/calculateServingPrice')
-const { deleteRecipeImage } = require('../util/firebaseStorage')
+const { deleteRecipeImage, recipeImageUrlError } = require('../util/firebaseStorage')
 const { teardownRecipeDocs } = require('../util/teardownRecipe')
 const { facetsCache } = require('../util/facetsCache')
 
@@ -227,6 +227,12 @@ router.get('/searchAutoCompleteRecipes', asyncHandler(async (req, res) => {
   const db = getDB()
   const title = typeof req.query.title === 'string' ? req.query.title.trim() : ''
   if (!title) return res.json([])
+  // No title is longer than TITLE_MAX_LENGTH, so a longer query can't match one.
+  // Refuse it before the three tiers below, the last of which runs Levenshtein
+  // over up to FUZZY_CANDIDATE_CAP titles at a cost that grows with its length.
+  if (title.length > TITLE_MAX_LENGTH) {
+    return res.status(400).json({ error: `Search text cannot exceed ${TITLE_MAX_LENGTH} characters` })
+  }
 
   // Accumulate up to AUTOCOMPLETE_LIMIT unique results across the tiers below,
   // preserving insertion order (tier 1 first) and skipping any _id already added.
@@ -315,7 +321,9 @@ router.get('/searchAutoCompleteRecipes', asyncHandler(async (req, res) => {
 // GET /getTrendingRecipes
 router.get('/getTrendingRecipes', asyncHandler(async (req, res) => {
   const db = getDB()
-  const limit = Math.min(parseInt(req.query.limit) || 4, 20)
+  // Clamp both ends: Mongo reads a negative limit as "one batch of |n|", so
+  // ?limit=-1000 used to return up to 1000 recipes.
+  const limit = Math.min(Math.max(parseInt(req.query.limit) || 4, 1), 20)
   // Admin-curated `featured` picks are pinned to the front of the row, then
   // the usual most-viewed ordering fills the rest.
   const recipes = await db
@@ -528,16 +536,26 @@ router.get('/getRecipe', optionalAuth, asyncHandler(async (req, res) => {
 // a Sybil swarm's cumulative Vision/OpenAI spend. 50 creates/account/day is far
 // above any human authoring cadence. Overridable via PAID_QUOTA_RECIPE_USER_DAILY
 // / PAID_QUOTA_RECIPE_GLOBAL_DAILY. (editRecipe re-scans the image only when it
-// actually changes, so it isn't unconditionally metered here.)
-const recipeCreateQuota = makePaidQuotaLimiter({
+// actually changes, so it charges the separate 'vision' quota in the handler.)
+// Charged after validation and the username check, so a request that fails
+// those is never counted (review fix 1e).
+const RECIPE_CREATE_QUOTA = {
   surface: 'recipe',
   perUserDaily: 50,
   globalDaily: 2000,
   message: 'Daily recipe-creation limit reached — please try again tomorrow.',
-})
+}
+
+// A recipe may have no image, but a stored image must be the caller's own
+// upload (util/firebaseStorage.recipeImageUrlError). Checked before any paid
+// scan or quota charge. Returns an error string for a 400, or null.
+function recipeImageError(body, uid) {
+  if (body.recipeImage == null || body.recipeImage === '') return null
+  return recipeImageUrlError(body.recipeImage, uid)
+}
 
 // POST /addRecipe
-router.post('/addRecipe', verifyToken, requireActive, recipeWriteLimiter, recipeCreateQuota, asyncHandler(async (req, res) => {
+router.post('/addRecipe', verifyToken, requireActive, recipeWriteLimiter, asyncHandler(async (req, res) => {
   const db = getDB()
   const body = req.body
   const uid = req.uid
@@ -561,6 +579,10 @@ router.post('/addRecipe', verifyToken, requireActive, recipeWriteLimiter, recipe
   if (boundsError) {
     return res.status(400).json({ error: boundsError })
   }
+  const imageError = recipeImageError(body, uid)
+  if (imageError) {
+    return res.status(400).json({ error: imageError })
+  }
 
   // Derive the author handle server-side from the caller's uid (audit M3): the
   // client no longer supplies authorUsername (removed from CREATABLE_RECIPE_FIELDS),
@@ -571,6 +593,7 @@ router.post('/addRecipe', verifyToken, requireActive, recipeWriteLimiter, recipe
   if (!authorDoc) {
     return res.status(400).json({ error: 'You must set a username before publishing a recipe' })
   }
+  if (!(await chargePaidQuota(req, res, RECIPE_CREATE_QUOTA))) return
 
   // Automated moderation on BOTH axes — text and the recipe image — collapsed to
   // the most severe verdict. High-confidence → block the write (4xx). Medium →
@@ -677,6 +700,14 @@ router.put('/editRecipe', verifyToken, requireActive, recipeWriteLimiter, asyncH
   if (boundsError) {
     return res.status(400).json({ error: boundsError })
   }
+  // An unchanged image is accepted as stored, so a recipe with a legacy flat or
+  // pre-validation URL can still be edited. A new one must be the caller's own.
+  if (body.recipeImage !== recipe.recipeImage) {
+    const imageError = recipeImageError(body, uid)
+    if (imageError) {
+      return res.status(400).json({ error: imageError })
+    }
+  }
 
   // Re-moderate the edited text + (only if it changed) the new image — same tiers
   // as create. High → reject the edit; the previously-saved version stays as-is.
@@ -685,6 +716,9 @@ router.put('/editRecipe', verifyToken, requireActive, recipeWriteLimiter, asyncH
   // adding new flags). The image is re-scanned only when the URL actually changed,
   // so a plain text edit doesn't pay for (or re-hold on) an already-cleared image.
   const newImage = body.recipeImage && body.recipeImage !== recipe.recipeImage ? body.recipeImage : null
+  // A changed image costs a Vision scan, so charge the daily Vision quota now
+  // that the body has passed validation. Text-only edits aren't charged.
+  if (newImage && !(await chargePaidQuota(req, res, VISION_QUOTA))) return
   // Run the two scans concurrently (see addRecipe) — independent calls that both
   // resolve internally, so Promise.all is safe.
   const [textVerdict, imageVerdict] = await Promise.all([
