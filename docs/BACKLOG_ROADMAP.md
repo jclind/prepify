@@ -2801,3 +2801,11 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   Edamam keys no longer spend the shared global allowance. A valid call is still charged before the upstream
   call, so a failed upstream call still counts. `makePaidQuotaLimiter` is gone. 5 of 8 new tests fail on the
   old code; server suite 1048/1048; Codex review found nothing. Phase 1 is complete on `development`.
+- **2026-11-07** — Released **1.2.2** to prod ([#370](https://github.com/jclind/prepify/pull/370), `release` at
+  `3fbe16a`; #363 to #368 plus the #369 bump), which ships all of Phase 1 of the review fix plan. `/version`
+  reports 1.2.2 at `3fbe16a` and Netlify published the same commit. Before merging, a local 1.2.2 server on dev
+  infra passed the full suites and a signed-in smoke run with a throwaway account (foreign photo URL 400, no
+  username 400, empty parse and nutrition 400, non-admin moderation 403, no quota counter left by any of them).
+  On prod: site and recipes page 200, autocomplete returns titles and 400s a 51-character query, trending
+  honors `limit=3`, and the changed write routes 401 without a token. The signed-in and admin checks in the
+  PR are left for Jesse.
