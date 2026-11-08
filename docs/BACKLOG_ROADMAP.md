@@ -2809,3 +2809,8 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   On prod: site and recipes page 200, autocomplete returns titles and 400s a 51-character query, trending
   honors `limit=3`, and the changed write routes 401 without a token. The signed-in and admin checks in the
   PR are left for Jesse.
+- **2026-11-08** — Merged [#372](https://github.com/jclind/prepify/pull/372) (2a; CR-1), the first Phase 2 PR
+  of the review fix plan. The recipe page computes its scaled ingredient list with `useMemo` from the current
+  recipe and servings instead of keeping a copy in state that only rebuilt when servings changed, so moving
+  between two recipes with equal servings no longer shows the first recipe's ingredients. The new test fails
+  on the old code; frontend suite 880 passed, 2 skipped; Codex review found nothing. Not yet in prod.
