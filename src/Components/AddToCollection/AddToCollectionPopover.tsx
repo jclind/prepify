@@ -38,6 +38,7 @@ const AddToCollectionPopover: FC<Props> = ({
   // Surface the error and block toggling instead.
   useEffect(() => {
     let active = true
+    setLoading(true)
     setLoadError(false)
     RecipeAPI.getSavedRecipe(recipeId)
       .then(entry => {
@@ -53,6 +54,10 @@ const AddToCollectionPopover: FC<Props> = ({
       active = false
     }
   }, [recipeId])
+
+  // Creating files the recipe with `selected` plus the new id, so it has the
+  // same rule as toggling: no write until the real membership set has loaded.
+  const membershipReady = !loading && !loadError
 
   const persist = async (next: Set<string>) => {
     setBusy(true)
@@ -77,7 +82,7 @@ const AddToCollectionPopover: FC<Props> = ({
 
   const handleCreate = async () => {
     const name = newName.trim()
-    if (!name || busy) return
+    if (!name || busy || !membershipReady) return
     setBusy(true)
 
     let created
@@ -169,7 +174,7 @@ const AddToCollectionPopover: FC<Props> = ({
         <button
           type='submit'
           className='create-btn btn btn--primary btn--sm'
-          disabled={!newName.trim() || busy}
+          disabled={!newName.trim() || busy || !membershipReady}
           aria-label='Create collection'
         >
           <PlusIcon />
