@@ -1,5 +1,5 @@
 import { ArrowLeftIcon, CheckCircleIcon, ClockIcon, GroupAddIcon, MinusIcon, PlusIcon, ShoppingBasketIcon, StarFilledIcon, StarOutlineIcon, TagIcon } from 'src/Components/icons'
-import React, { FC, useState, useEffect, useRef } from 'react'
+import React, { FC, useState, useEffect, useMemo, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useParams, Link } from 'react-router-dom'
 import { isAxiosError } from 'axios'
@@ -75,7 +75,6 @@ const SingleRecipe: FC = () => {
   const currRecipe: RecipeType | null =
     !isPending && fetchedRecipe && fetchedRecipe.title ? fetchedRecipe : null
 
-  const [modIngredients, setModIngredients] = useState<IngredientsType[]>([])
   const [servingSize, setServingSize] = useState(0)
   // Draft string for the servings input so the field can be cleared or hold an
   // in-progress value while typing; the committed numeric value is servingSize.
@@ -128,12 +127,18 @@ const SingleRecipe: FC = () => {
   useEffect(() => {
     if (currRecipe && servingSize > 0) {
       updateRecipeLocalStorage(currRecipe._id, servingSize)
-      setModIngredients(
-        updateIngredients(currRecipe.ingredients, currRecipe.servings, servingSize)
-      )
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [servingSize])
+
+  // Derived, not stored: a copy in state only recomputed when servingSize
+  // changed, so moving between two recipes with the same servings kept the
+  // first recipe's ingredients on screen.
+  const ingredients = useMemo<IngredientsType[]>(() => {
+    if (!currRecipe) return []
+    if (servingSize <= 0) return currRecipe.ingredients ?? []
+    return updateIngredients(currRecipe.ingredients ?? [], currRecipe.servings, servingSize)
+  }, [currRecipe, servingSize])
 
   useEffect(() => {
     if (fetchedRecipe && fetchedRecipe.title) {
@@ -168,8 +173,6 @@ const SingleRecipe: FC = () => {
   const hasPrice = servPrice > 0
   const currUID = AuthAPI.getUID()
   const isOwner = !!currUID && !!currRecipe?.userId && currUID === currRecipe.userId
-  const ingredients =
-    modIngredients.length > 0 ? modIngredients : currRecipe?.ingredients ?? []
   const instructions = currRecipe?.instructions ?? []
 
   const pageUrl =

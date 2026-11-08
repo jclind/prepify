@@ -25,9 +25,12 @@ vi.mock('src/api/auth', () => ({
   },
 }))
 
+// Mutable so a test can switch recipes in place, the way a route change from
+// one recipe link to another reuses the mounted page.
+const mockParams = vi.hoisted(() => ({ recipeId: 'recipe-1' }))
 vi.mock('react-router-dom', async importOriginal => {
   const actual = await importOriginal<typeof import('react-router-dom')>()
-  return { ...actual, useParams: () => ({ recipeId: 'recipe-1' }) }
+  return { ...actual, useParams: () => mockParams }
 })
 
 // Isolate from complex sub-component trees
@@ -97,9 +100,9 @@ const nutritionDataFixture = {
 const createTestQueryClient = () =>
   new QueryClient({ defaultOptions: { queries: { retry: false } } })
 
-const renderSingleRecipe = () =>
+const renderSingleRecipe = (client = createTestQueryClient()) =>
   render(
-    <QueryClientProvider client={createTestQueryClient()}>
+    <QueryClientProvider client={client}>
       <MemoryRouter initialEntries={['/recipes/recipe-1']}>
         <HelmetProvider>
           <SingleRecipe />
@@ -108,10 +111,17 @@ const renderSingleRecipe = () =>
     </QueryClientProvider>
   )
 
+const ingredientRow = (id: string, quantity: number, unit: string, ingredient: string) => ({
+  id,
+  parsedIngredient: { quantity, minQty: quantity, maxQty: quantity, unit, ingredient, comment: null },
+  ingredientData: null,
+})
+
 describe('SingleRecipe page', () => {
   beforeEach(() => {
     mockGetRecipe.mockReset()
     localStorage.clear()
+    mockParams.recipeId = 'recipe-1'
   })
 
   it('shows loading state in header while API call is pending', async () => {
@@ -217,6 +227,43 @@ describe('SingleRecipe page', () => {
         ])
       )
     })
+  })
+
+  it('shows the new recipe\'s ingredients after navigating between recipes with equal servings', async () => {
+    // The scaled list used to live in state and only recompute when the serving
+    // count changed. Two recipes with the same servings left the first recipe's
+    // ingredients on the second recipe's page.
+    const tacos = {
+      ...baseRecipe,
+      ingredients: [ingredientRow('t1', 1, 'lb', 'chicken thighs')],
+    }
+    const pancakes = {
+      ...baseRecipe,
+      _id: 'recipe-2',
+      title: 'Pancakes',
+      ingredients: [ingredientRow('p1', 2, 'cups', 'flour')],
+    }
+    mockGetRecipe.mockImplementation(async (id: string) =>
+      id === 'recipe-2' ? pancakes : tacos
+    )
+    const client = createTestQueryClient()
+    const { rerender } = renderSingleRecipe(client)
+    await screen.findByText('chicken thighs')
+
+    mockParams.recipeId = 'recipe-2'
+    rerender(
+      <QueryClientProvider client={client}>
+        <MemoryRouter initialEntries={['/recipes/recipe-2']}>
+          <HelmetProvider>
+            <SingleRecipe />
+          </HelmetProvider>
+        </MemoryRouter>
+      </QueryClientProvider>
+    )
+
+    await screen.findByText('Pancakes')
+    expect(await screen.findByText('flour')).toBeInTheDocument()
+    expect(screen.queryByText('chicken thighs')).toBeNull()
   })
 
   it('renders the recipe when recipeServings localStorage holds invalid JSON (no crash)', async () => {
