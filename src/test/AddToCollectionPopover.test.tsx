@@ -34,6 +34,7 @@ vi.mock('react-hot-toast', () => ({
 
 const mockGetSaved = RecipeAPI.getSavedRecipe as unknown as Mock
 const mockSetCollections = CollectionsAPI.setRecipeCollections as unknown as Mock
+const mockCreate = CollectionsAPI.create as unknown as Mock
 
 const collections = [
   { id: 'A', name: 'Dinners' },
@@ -86,4 +87,47 @@ it('does NOT wipe memberships when the membership load fails', async () => {
   // Nothing was persisted — no chance to clobber the real membership set.
   await user.click(screen.getByText(/Couldn’t load/i))
   expect(mockSetCollections).not.toHaveBeenCalled()
+})
+
+it('does NOT create or file while memberships are still loading', async () => {
+  // Creating files the recipe with `selected + new id`. Before the load settles
+  // `selected` is empty, so a create then would send only the new id and drop
+  // every collection the recipe is already in.
+  mockGetSaved.mockReturnValue(new Promise(() => {}))
+  const user = userEvent.setup()
+  renderPopover()
+
+  await user.type(screen.getByPlaceholderText('New collection…'), 'Lunches{Enter}')
+  await user.click(screen.getByRole('button', { name: 'Create collection' }))
+
+  expect(mockCreate).not.toHaveBeenCalled()
+  expect(mockSetCollections).not.toHaveBeenCalled()
+})
+
+it('does NOT create or file after the membership load fails', async () => {
+  mockGetSaved.mockRejectedValue(new Error('network'))
+  const user = userEvent.setup()
+  renderPopover()
+  await screen.findByText(/Couldn’t load this recipe’s collections/i)
+
+  await user.type(screen.getByPlaceholderText('New collection…'), 'Lunches{Enter}')
+  await user.click(screen.getByRole('button', { name: 'Create collection' }))
+
+  expect(mockCreate).not.toHaveBeenCalled()
+  expect(mockSetCollections).not.toHaveBeenCalled()
+})
+
+it('files a new collection alongside the recipe’s existing ones', async () => {
+  mockGetSaved.mockResolvedValue({ collectionIds: ['A'] })
+  mockCreate.mockResolvedValue({ id: 'C', name: 'Lunches' })
+  mockSetCollections.mockResolvedValue(undefined)
+  const user = userEvent.setup()
+  renderPopover()
+  await screen.findByRole('button', { name: /Dinners/ })
+
+  await user.type(screen.getByPlaceholderText('New collection…'), 'Lunches{Enter}')
+
+  await waitFor(() => expect(mockSetCollections).toHaveBeenCalledTimes(1))
+  const [, sentIds] = mockSetCollections.mock.calls[0]
+  expect([...sentIds].sort()).toEqual(['A', 'C'])
 })

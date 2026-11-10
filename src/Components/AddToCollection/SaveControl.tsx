@@ -110,7 +110,7 @@ const SaveControl: FC<Props> = ({
     onMutated?.()
   }
 
-  const handleClick = (e: React.MouseEvent) => {
+  const handleClick = async (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
     // Logged out: toggle() surfaces the "please login" toast and no-ops.
@@ -122,8 +122,14 @@ const SaveControl: FC<Props> = ({
       setOpen(o => !o)
       return
     }
-    // First save: instant + optimistic, with a nudge toward collections.
-    toggle()
+    // First save: the bookmark fills at once (optimistic), but the "Saved" nudge
+    // waits for the write. A failed save rolls the bookmark back, so announcing
+    // it up front told the user the opposite of what happened.
+    const ok = await toggle()
+    if (!ok) {
+      toast.error('Could not save the recipe. Please try again.')
+      return
+    }
     toast(
       t => (
         <span className='save-toast'>
