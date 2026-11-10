@@ -114,6 +114,8 @@ const Ratings: FC = () => {
   const {
     items: reviews,
     isLoading,
+    isLoadingMore,
+    loadMoreError,
     showSkeleton,
     isError,
     refetch,
@@ -132,37 +134,47 @@ const Ratings: FC = () => {
     <div className='user-ratings'>
       {showList ? (
         <>
-          {/* Render the skeleton rows whenever loading so the list reserves its
-              height from frame 1; the flash-guard delay only hides them (sk-hold)
-              until it's worth drawing — no blank-then-grow jump. */}
+          {/* On a first load, render the skeleton rows right away so the list
+              reserves its height from frame 1; the flash-guard delay only hides
+              them (sk-hold) until it's worth drawing. "Load more" keeps the
+              loaded rows and adds skeletons after them. */}
           <div
             className={`thumbnails-container ${
-              isLoading && !showSkeleton ? 'sk-hold' : ''
+              isLoading && !isLoadingMore && !showSkeleton ? 'sk-hold' : ''
             }`}
           >
-            {isLoading ? (
+            {isLoading && !isLoadingMore ? (
               <>
                 <SingleReview loading={true} />
                 <SingleReview loading={true} />
               </>
             ) : (
-              reviews.map(review => {
-                return (
-                  <SingleReview
-                    key={review._id}
-                    review={review}
-                    loading={isLoading}
-                  />
-                )
-              })
+              <>
+                {reviews.map(review => (
+                  <SingleReview key={review._id} review={review} loading={false} />
+                ))}
+                {isLoadingMore && showSkeleton && (
+                  <>
+                    <SingleReview loading={true} />
+                    <SingleReview loading={true} />
+                  </>
+                )}
+              </>
             )}
           </div>
           {isMoreReviews && reviews.length > 0 ? (
             <button
               className='load-more-btn'
               onClick={handleLoadMoreReviews}
+              disabled={isLoadingMore}
             >
-              Load more reviews <ChevronDownIcon />
+              {loadMoreError ? (
+                'Couldn’t load more. Try again'
+              ) : (
+                <>
+                  Load more reviews <ChevronDownIcon />
+                </>
+              )}
             </button>
           ) : null}
         </>

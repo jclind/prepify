@@ -48,6 +48,7 @@ const RatingsAndReviews: FC<RatingsAndReviewsProps> = ({
   const {
     items: reviews,
     isLoading,
+    loadMoreError,
     showSkeleton,
     isError,
     isMore,
@@ -167,7 +168,13 @@ const RatingsAndReviews: FC<RatingsAndReviewsProps> = ({
         {isMore && !isLoading && (
           <div className='get-more-reviews'>
             <button className='load-more-btn' onClick={loadMore}>
-              Load more reviews <ChevronDownIcon />
+              {loadMoreError ? (
+                'Couldn’t load more. Try again'
+              ) : (
+                <>
+                  Load more reviews <ChevronDownIcon />
+                </>
+              )}
             </button>
           </div>
         )}

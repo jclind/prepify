@@ -183,3 +183,95 @@ it('refetch() recovers from a failed fetch into content', async () => {
   expect(result.current.isError).toBe(false)
   expect(result.current.showList).toBe(true)
 })
+
+it('a double click on "Load more" advances one page, never skipping one', async () => {
+  // Two clicks before the re-render used to run `p => p + 1` twice, landing on
+  // page 2 so page 1 was never fetched.
+  const queryFn = vi.fn(async (page: number) => ({
+    items: [`p${page}`],
+    totalCount: 5,
+  }))
+  const { result } = renderLoadMore(queryFn)
+  await waitFor(() => expect(result.current.items).toEqual(['p0']))
+
+  act(() => {
+    result.current.loadMore()
+    result.current.loadMore()
+  })
+
+  await waitFor(() => expect(result.current.items).toEqual(['p0', 'p1']))
+  expect(result.current.page).toBe(1)
+  expect(queryFn).not.toHaveBeenCalledWith(2)
+})
+
+it('after a later page fails, loadMore retries that page instead of skipping it', async () => {
+  let page1Calls = 0
+  const queryFn = vi.fn(async (page: number): Promise<LoadMorePage<string> | null> => {
+    if (page === 0) return { items: ['a'], totalCount: 3 }
+    if (page === 1) {
+      page1Calls += 1
+      if (page1Calls === 1) throw new Error('network down')
+      return { items: ['b'], totalCount: 3 }
+    }
+    return { items: ['c'], totalCount: 3 }
+  })
+  const { result } = renderLoadMore(queryFn)
+  await waitFor(() => expect(result.current.items).toEqual(['a']))
+
+  act(() => result.current.loadMore())
+  await waitFor(() => expect(result.current.loadMoreError).toBe(true))
+  // The loaded page stays on screen and the button can offer a retry.
+  expect(result.current.items).toEqual(['a'])
+  expect(result.current.isMore).toBe(true)
+
+  await act(async () => {
+    result.current.loadMore()
+  })
+
+  await waitFor(() => expect(result.current.items).toEqual(['a', 'b']))
+  expect(result.current.page).toBe(1)
+  expect(result.current.loadMoreError).toBe(false)
+  expect(queryFn).not.toHaveBeenCalledWith(2)
+})
+
+it('a null later page counts as failed and is retried, not skipped', async () => {
+  let page1Calls = 0
+  const queryFn = vi.fn(async (page: number): Promise<LoadMorePage<string> | null> => {
+    if (page === 0) return { items: ['a'], totalCount: 2 }
+    page1Calls += 1
+    return page1Calls === 1 ? null : { items: ['b'], totalCount: 2 }
+  })
+  const { result } = renderLoadMore(queryFn)
+  await waitFor(() => expect(result.current.items).toEqual(['a']))
+
+  act(() => result.current.loadMore())
+  await waitFor(() => expect(result.current.loadMoreError).toBe(true))
+
+  await act(async () => {
+    result.current.loadMore()
+  })
+
+  await waitFor(() => expect(result.current.items).toEqual(['a', 'b']))
+  expect(result.current.page).toBe(1)
+})
+
+it('flags isLoadingMore for a later page but not for page 0', async () => {
+  let releasePage1: () => void = () => {}
+  const queryFn = vi.fn((page: number): Promise<LoadMorePage<string> | null> =>
+    page === 0
+      ? Promise.resolve({ items: ['a'], totalCount: 2 })
+      : new Promise(res => (releasePage1 = () => res({ items: ['b'], totalCount: 2 })))
+  )
+  const { result } = renderLoadMore(queryFn)
+  expect(result.current.isLoading).toBe(true)
+  expect(result.current.isLoadingMore).toBe(false)
+  await waitFor(() => expect(result.current.items).toEqual(['a']))
+
+  act(() => result.current.loadMore())
+  await waitFor(() => expect(result.current.isLoadingMore).toBe(true))
+  expect(result.current.items).toEqual(['a'])
+
+  await act(async () => releasePage1())
+  await waitFor(() => expect(result.current.items).toEqual(['a', 'b']))
+  expect(result.current.isLoadingMore).toBe(false)
+})
