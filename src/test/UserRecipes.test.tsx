@@ -9,9 +9,9 @@
 
 import React from 'react'
 import { vi, Mock } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClient, QueryClientProvider, onlineManager } from '@tanstack/react-query'
 import UserRecipes from 'src/pages/Account/UserRecipes/UserRecipes'
 import RecipeAPI from 'src/api/recipes'
 
@@ -87,4 +87,32 @@ it('offers a retry on the button when the next page fails, keeping the loaded re
   await screen.findByText('Recipe 8')
   // The retry fetched page 1 again, never page 2.
   expect(mockGetCreated).not.toHaveBeenCalledWith(2, 6, 'new')
+})
+
+it('says it is offline instead of looking idle, then loads on reconnect', async () => {
+  mockGetCreated.mockImplementation((page: number) =>
+    Promise.resolve(
+      page === 0
+        ? { recipes: [1, 2, 3, 4, 5, 6].map(recipe), totalCount: 8 }
+        : { recipes: [7, 8].map(recipe), totalCount: 8 }
+    )
+  )
+  const user = userEvent.setup()
+  renderTab()
+  await screen.findByText('Recipe 6')
+
+  act(() => onlineManager.setOnline(false))
+  try {
+    await user.click(screen.getByRole('button', { name: /Load more recipes/ }))
+
+    const offline = await screen.findByRole('button', { name: /You’re offline/ })
+    expect(offline).toBeDisabled()
+    expect(screen.getAllByTestId('recipe')).toHaveLength(6)
+    expect(mockGetCreated).not.toHaveBeenCalledWith(1, 6, 'new')
+
+    act(() => onlineManager.setOnline(true))
+    await screen.findByText('Recipe 8')
+  } finally {
+    onlineManager.setOnline(true)
+  }
 })

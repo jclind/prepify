@@ -42,6 +42,9 @@ export type UsePaginatedLoadMoreResult<T> = {
   // A page after the first is in flight. Keep `items` rendered and add
   // skeletons after them; only a page-0 load swaps the list for skeletons.
   isLoadingMore: boolean
+  // That later page is paused because the browser is offline. It loads by
+  // itself on reconnect; the button should say so instead of looking idle.
+  loadMoreOffline: boolean
   // A page after the first failed (or came back null). `loadMore` retries that
   // same page, so the button can stay and say so.
   loadMoreError: boolean
@@ -89,10 +92,23 @@ export function usePaginatedLoadMore<T>({
   const mergedPageRef = useRef<number | null>(null)
   const baseItemsRef = useRef<T[]>([])
 
-  const { data, isLoading, isFetching, isError, refetch } = useQuery({
+  const {
+    data,
+    isLoading: isFirstFetch,
+    isFetching,
+    isPaused,
+    isError,
+    refetch,
+  } = useQuery({
     queryKey: queryKey(page),
     queryFn: () => queryFn(page),
   })
+  // While the browser is offline react-query pauses a fetch instead of running
+  // it: no request, no error, and it resumes on reconnect. A paused page with
+  // nothing to show yet counts as loading, so a first load offline renders
+  // skeletons rather than the empty state.
+  const waitingOffline = isPaused && !data
+  const isLoading = isFirstFetch || waitingOffline
   const showSkeleton = useDelayedLoading(isLoading)
 
   useEffect(() => {
@@ -124,13 +140,13 @@ export function usePaginatedLoadMore<T>({
   // from skipping a page. A page that failed or came back null is never merged,
   // so the next click retries it instead of moving past it for good.
   const loadMore = useCallback(() => {
-    if (isFetching) return
+    if (isFetching || isPaused) return
     if (mergedPageRef.current !== page) {
       refetch()
       return
     }
     setPage(page + 1)
-  }, [isFetching, page, refetch])
+  }, [isFetching, isPaused, page, refetch])
   const reset = useCallback(() => setPage(0), [])
 
   const hasResolvedItems = !!data && data.items.length > 0
@@ -139,14 +155,18 @@ export function usePaginatedLoadMore<T>({
   // on screen for these instead of swapping them for skeletons or an error.
   // `isFetching && !data` covers the first fetch and a retry after an error
   // (react-query keeps an errored query out of `isLoading` while it retries),
-  // but not a background refetch of a page that already loaded.
-  const isLoadingMore = page > 0 && isFetching && !data
-  const loadMoreError = page > 0 && !isFetching && (isError || data === null)
+  // but not a background refetch of a page that already loaded. A fetch paused
+  // offline counts too, and `loadMoreOffline` lets the button say why.
+  const isLoadingMore = page > 0 && (isFetching || isPaused) && !data
+  const loadMoreOffline = page > 0 && waitingOffline
+  const loadMoreError =
+    page > 0 && !isFetching && !isPaused && (isError || data === null)
 
   return {
     items,
     isLoading,
     isLoadingMore,
+    loadMoreOffline,
     loadMoreError,
     showSkeleton,
     isError,

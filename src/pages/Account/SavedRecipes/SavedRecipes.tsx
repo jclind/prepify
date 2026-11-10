@@ -60,6 +60,7 @@ const SavedRecipes: FC = () => {
     items: recipes,
     isLoading,
     isLoadingMore,
+    loadMoreOffline,
     loadMoreError,
     showSkeleton,
     isError,
@@ -402,7 +403,9 @@ const SavedRecipes: FC = () => {
               onClick={handleLoadMoreRecipes}
               disabled={isLoadingMore}
             >
-              {loadMoreError ? (
+              {loadMoreOffline ? (
+                'You’re offline. More will load when you reconnect'
+              ) : loadMoreError ? (
                 'Couldn’t load more. Try again'
               ) : (
                 <>

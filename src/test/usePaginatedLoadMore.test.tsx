@@ -11,7 +11,7 @@
 import React, { FC, ReactNode } from 'react'
 import { vi } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClient, QueryClientProvider, onlineManager } from '@tanstack/react-query'
 import {
   usePaginatedLoadMore,
   LoadMorePage,
@@ -274,4 +274,51 @@ it('flags isLoadingMore for a later page but not for page 0', async () => {
   await act(async () => releasePage1())
   await waitFor(() => expect(result.current.items).toEqual(['a', 'b']))
   expect(result.current.isLoadingMore).toBe(false)
+})
+
+describe('offline', () => {
+  // react-query pauses fetches while offline: no request and no error, so
+  // without handling the button looked idle and a first load looked empty.
+  afterEach(() => onlineManager.setOnline(true))
+
+  it('a later page requested offline waits, says so, and loads on reconnect', async () => {
+    const queryFn = vi.fn(async (page: number) => ({
+      items: [page === 0 ? 'a' : 'b'],
+      totalCount: 2,
+    }))
+    const { result } = renderLoadMore(queryFn)
+    await waitFor(() => expect(result.current.items).toEqual(['a']))
+
+    act(() => onlineManager.setOnline(false))
+    act(() => result.current.loadMore())
+
+    await waitFor(() => expect(result.current.loadMoreOffline).toBe(true))
+    expect(result.current.isLoadingMore).toBe(true)
+    expect(result.current.loadMoreError).toBe(false)
+    expect(result.current.items).toEqual(['a'])
+    expect(queryFn).not.toHaveBeenCalledWith(1)
+
+    // More clicks while offline don't move the page.
+    act(() => result.current.loadMore())
+    expect(result.current.page).toBe(1)
+
+    act(() => onlineManager.setOnline(true))
+    await waitFor(() => expect(result.current.items).toEqual(['a', 'b']))
+    expect(result.current.loadMoreOffline).toBe(false)
+    expect(queryFn).not.toHaveBeenCalledWith(2)
+  })
+
+  it('a first load offline counts as loading, not as an empty list', async () => {
+    onlineManager.setOnline(false)
+    const queryFn = vi.fn(async () => ({ items: ['a'], totalCount: 1 }))
+    const { result } = renderLoadMore(queryFn)
+
+    await waitFor(() => expect(result.current.isLoading).toBe(true))
+    expect(result.current.showList).toBe(true)
+    expect(result.current.loadMoreOffline).toBe(false)
+    expect(queryFn).not.toHaveBeenCalled()
+
+    act(() => onlineManager.setOnline(true))
+    await waitFor(() => expect(result.current.items).toEqual(['a']))
+  })
 })
