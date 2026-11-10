@@ -138,15 +138,17 @@ export function usePaginatedLoadMore<T>({
   // Advance only once the current page has been merged. Setting `page + 1`
   // (not `p => p + 1`) keeps a double click that lands before the re-render
   // from skipping a page. A page that failed or came back null is never merged,
-  // so the next click retries it instead of moving past it for good.
+  // so the next click retries it instead of moving past it for good, and
+  // `cancelRefetch: false` reuses a retry that's already running. A background
+  // or paused refresh of a merged page doesn't block the next page.
   const loadMore = useCallback(() => {
-    if (isFetching || isPaused) return
+    if (isLoading) return
     if (mergedPageRef.current !== page) {
-      refetch()
+      refetch({ cancelRefetch: false })
       return
     }
     setPage(page + 1)
-  }, [isFetching, isPaused, page, refetch])
+  }, [isLoading, page, refetch])
   const reset = useCallback(() => setPage(0), [])
 
   const hasResolvedItems = !!data && data.items.length > 0

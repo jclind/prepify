@@ -30,6 +30,8 @@ const newClient = () =>
     },
   })
 
+const nextTick = () => new Promise(resolve => setTimeout(resolve, 0))
+
 const renderLoadMore = <T,>(
   queryFn: (page: number) => Promise<LoadMorePage<T> | null>,
   keyPrefix = 'k'
@@ -247,12 +249,16 @@ it('a null later page counts as failed and is retried, not skipped', async () =>
   act(() => result.current.loadMore())
   await waitFor(() => expect(result.current.loadMoreError).toBe(true))
 
+  // A double click on the retry sends one request. A plain refetch() would
+  // cancel the first one and send it again, since null counts as cached data.
   await act(async () => {
+    result.current.loadMore()
     result.current.loadMore()
   })
 
   await waitFor(() => expect(result.current.items).toEqual(['a', 'b']))
   expect(result.current.page).toBe(1)
+  expect(page1Calls).toBe(2)
 })
 
 it('flags isLoadingMore for a later page but not for page 0', async () => {
@@ -274,6 +280,32 @@ it('flags isLoadingMore for a later page but not for page 0', async () => {
   await act(async () => releasePage1())
   await waitFor(() => expect(result.current.items).toEqual(['a', 'b']))
   expect(result.current.isLoadingMore).toBe(false)
+})
+
+it('a background refetch of a loaded page does not block "Load more"', async () => {
+  // e.g. refetchOnWindowFocus refiring page 0 just as the user clicks.
+  let page0Calls = 0
+  const queryFn = vi.fn((page: number): Promise<LoadMorePage<string> | null> => {
+    if (page === 1) return Promise.resolve({ items: ['b'], totalCount: 2 })
+    page0Calls += 1
+    return page0Calls === 1
+      ? Promise.resolve({ items: ['a'], totalCount: 2 })
+      : new Promise(() => {})
+  })
+  const { result } = renderLoadMore(queryFn)
+  await waitFor(() => expect(result.current.items).toEqual(['a']))
+
+  // react-query notifies observers on a timer, so wait one tick for the hook
+  // to see the refetch in flight before clicking.
+  await act(async () => {
+    result.current.refetch()
+    await nextTick()
+  })
+  expect(page0Calls).toBe(2)
+  act(() => result.current.loadMore())
+
+  await waitFor(() => expect(result.current.items).toEqual(['a', 'b']))
+  expect(result.current.page).toBe(1)
 })
 
 describe('offline', () => {
@@ -306,6 +338,30 @@ describe('offline', () => {
     await waitFor(() => expect(result.current.items).toEqual(['a', 'b']))
     expect(result.current.loadMoreOffline).toBe(false)
     expect(queryFn).not.toHaveBeenCalledWith(2)
+  })
+
+  it('a paused refresh of a loaded page still lets "Load more" say it is offline', async () => {
+    const queryFn = vi.fn(async (page: number) => ({
+      items: [page === 0 ? 'a' : 'b'],
+      totalCount: 2,
+    }))
+    const { result } = renderLoadMore(queryFn)
+    await waitFor(() => expect(result.current.items).toEqual(['a']))
+
+    // Page 0 refreshes while offline, so it sits paused with its data cached.
+    act(() => onlineManager.setOnline(false))
+    await act(async () => {
+      result.current.refetch()
+      await nextTick()
+    })
+    act(() => result.current.loadMore())
+
+    await waitFor(() => expect(result.current.loadMoreOffline).toBe(true))
+    expect(result.current.page).toBe(1)
+    expect(result.current.items).toEqual(['a'])
+
+    act(() => onlineManager.setOnline(true))
+    await waitFor(() => expect(result.current.items).toEqual(['a', 'b']))
   })
 
   it('a first load offline counts as loading, not as an empty list', async () => {
