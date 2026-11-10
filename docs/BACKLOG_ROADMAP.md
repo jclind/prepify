@@ -2814,3 +2814,9 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   recipe and servings instead of keeping a copy in state that only rebuilt when servings changed, so moving
   between two recipes with equal servings no longer shows the first recipe's ingredients. The new test fails
   on the old code; frontend suite 880 passed, 2 skipped; Codex review found nothing. Not yet in prod.
+- **2026-11-10** — Merged [#373](https://github.com/jclind/prepify/pull/373) (2b; CR-2, CR-25). The save
+  popover's create button waits for the recipe's memberships to load, the rule toggling already had, so a
+  create during the load or after a failed load no longer files the recipe into only the new collection and
+  drops the rest. The first-save "Saved" toast waits for the save; a failed save shows an error instead. 4 of 5
+  new tests fail on the old code; frontend suite 885 passed, 2 skipped; Codex review found nothing. Not yet in
+  prod. Left over, not in any plan PR: unsaving from the popover's "All saved" row also fails silently.
