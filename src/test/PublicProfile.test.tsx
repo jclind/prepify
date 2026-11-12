@@ -1,9 +1,9 @@
 import React from 'react'
 import { vi } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import { HelmetProvider } from 'react-helmet-async'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClient, QueryClientProvider, onlineManager } from '@tanstack/react-query'
 import PublicProfile from 'src/pages/PublicProfile/PublicProfile'
 import PublicProfileAPI from 'src/api/publicProfile'
 import { PublicProfile as PublicProfileType, RecipeType } from 'types'
@@ -146,5 +146,79 @@ describe('PublicProfile', () => {
     renderAt('/u/ghost')
 
     expect(await screen.findByText('Profile not found')).toBeInTheDocument()
+  })
+
+  it('shows a retryable error, not "Profile not found", when the request fails', async () => {
+    mockGet
+      .mockRejectedValueOnce(new Error('Network Error'))
+      .mockResolvedValue(sampleProfile)
+    renderAt()
+
+    expect(await screen.findByText('Couldn’t load this profile')).toBeInTheDocument()
+    expect(screen.queryByText('Profile not found')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }))
+    expect(await screen.findByText('Cool Cook')).toBeInTheDocument()
+  })
+
+  describe('load more', () => {
+    const page1 = {
+      recipes: [{ ...sampleRecipe, _id: 'r2', title: 'Tomato Soup' }],
+      totalCount: 3,
+    }
+    afterEach(() => onlineManager.setOnline(true))
+
+    it('retries a failed page instead of skipping past it', async () => {
+      mockGet.mockResolvedValue({ ...sampleProfile, recipesTotalCount: 3 })
+      mockGetRecipes
+        .mockRejectedValueOnce(new Error('Network Error'))
+        .mockResolvedValue(page1)
+      renderAt()
+
+      fireEvent.click(
+        await screen.findByRole('button', { name: /load more recipes/i })
+      )
+      fireEvent.click(
+        await screen.findByRole('button', { name: /couldn’t load more/i })
+      )
+
+      expect(await screen.findByText('Tomato Soup')).toBeInTheDocument()
+      expect(mockGetRecipes).toHaveBeenCalledTimes(2)
+      expect(mockGetRecipes).not.toHaveBeenCalledWith('cooluser', 2, 12)
+    })
+
+    it('says when the next page is waiting offline, then loads it on reconnect', async () => {
+      mockGet.mockResolvedValue({ ...sampleProfile, recipesTotalCount: 3 })
+      mockGetRecipes.mockResolvedValue(page1)
+      renderAt()
+      const button = await screen.findByRole('button', {
+        name: /load more recipes/i,
+      })
+
+      act(() => onlineManager.setOnline(false))
+      fireEvent.click(button)
+
+      expect(
+        await screen.findByRole('button', { name: /you’re offline/i })
+      ).toBeDisabled()
+      expect(mockGetRecipes).not.toHaveBeenCalled()
+
+      act(() => onlineManager.setOnline(true))
+      expect(await screen.findByText('Tomato Soup')).toBeInTheDocument()
+    })
+  })
+
+  it('a first load offline waits instead of saying "Profile not found"', async () => {
+    onlineManager.setOnline(false)
+    mockGet.mockResolvedValue(sampleProfile)
+    renderAt()
+
+    // react-query notifies on a timer; give the paused state time to render.
+    await act(() => new Promise(resolve => setTimeout(resolve, 20)))
+    expect(screen.queryByText('Profile not found')).not.toBeInTheDocument()
+    expect(mockGet).not.toHaveBeenCalled()
+
+    act(() => onlineManager.setOnline(true))
+    expect(await screen.findByText('Cool Cook')).toBeInTheDocument()
   })
 })
