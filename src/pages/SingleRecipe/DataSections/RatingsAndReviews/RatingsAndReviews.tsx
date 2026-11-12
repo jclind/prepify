@@ -48,6 +48,8 @@ const RatingsAndReviews: FC<RatingsAndReviewsProps> = ({
   const {
     items: reviews,
     isLoading,
+    loadMoreOffline,
+    loadMoreError,
     showSkeleton,
     isError,
     isMore,
@@ -164,10 +166,22 @@ const RatingsAndReviews: FC<RatingsAndReviewsProps> = ({
             )}
           </div>
         )}
-        {isMore && !isLoading && (
+        {isMore && (!isLoading || loadMoreOffline) && (
           <div className='get-more-reviews'>
-            <button className='load-more-btn' onClick={loadMore}>
-              Load more reviews <ChevronDownIcon />
+            <button
+              className='load-more-btn'
+              onClick={loadMore}
+              disabled={loadMoreOffline}
+            >
+              {loadMoreOffline ? (
+                'You’re offline. More will load when you reconnect'
+              ) : loadMoreError ? (
+                'Couldn’t load more. Try again'
+              ) : (
+                <>
+                  Load more reviews <ChevronDownIcon />
+                </>
+              )}
             </button>
           </div>
         )}

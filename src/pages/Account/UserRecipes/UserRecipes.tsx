@@ -19,6 +19,9 @@ const UserRecipes: FC = () => {
   const {
     items: recipes,
     isLoading,
+    isLoadingMore,
+    loadMoreOffline,
+    loadMoreError,
     showSkeleton,
     isError,
     refetch,
@@ -37,29 +40,51 @@ const UserRecipes: FC = () => {
     <div className='user-recipes'>
       {showGrid ? (
         <>
-          {/* Render the skeleton thumbnails whenever loading so the grid reserves
-              its height from frame 1; the flash-guard delay only hides them
-              (sk-hold) until it's worth drawing — no blank-then-grow jump. */}
+          {/* On a first load, render the skeleton thumbnails right away so the
+              grid reserves its height from frame 1; the flash-guard delay only
+              hides them (sk-hold) until it's worth drawing. "Load more" keeps
+              the loaded recipes and adds skeletons after them (#371). */}
           <div
             className={`thumbnails-container ${
-              isLoading && !showSkeleton ? 'sk-hold' : ''
+              isLoading && !isLoadingMore && !showSkeleton ? 'sk-hold' : ''
             }`}
           >
-            {!isLoading ? (
-              recipes.map(recipe => (
-                <UserRecipeThumbnail key={recipe._id} recipe={recipe} />
-              ))
-            ) : (
+            {isLoading && !isLoadingMore ? (
               <>
                 <UserRecipeThumbnail recipe={null} loading={true} />
                 <UserRecipeThumbnail recipe={null} loading={true} />
                 <UserRecipeThumbnail recipe={null} loading={true} />
               </>
+            ) : (
+              <>
+                {recipes.map(recipe => (
+                  <UserRecipeThumbnail key={recipe._id} recipe={recipe} />
+                ))}
+                {isLoadingMore && showSkeleton && (
+                  <>
+                    <UserRecipeThumbnail recipe={null} loading={true} />
+                    <UserRecipeThumbnail recipe={null} loading={true} />
+                    <UserRecipeThumbnail recipe={null} loading={true} />
+                  </>
+                )}
+              </>
             )}
           </div>
           {isMore && recipes.length > 0 ? (
-            <button className='load-more-btn' onClick={loadMore}>
-              Load more recipes <ChevronDownIcon />
+            <button
+              className='load-more-btn'
+              onClick={loadMore}
+              disabled={isLoadingMore}
+            >
+              {loadMoreOffline ? (
+                'You’re offline. More will load when you reconnect'
+              ) : loadMoreError ? (
+                'Couldn’t load more. Try again'
+              ) : (
+                <>
+                  Load more recipes <ChevronDownIcon />
+                </>
+              )}
             </button>
           ) : null}
         </>
