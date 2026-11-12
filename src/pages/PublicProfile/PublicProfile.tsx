@@ -1,4 +1,4 @@
-import { AwardIcon, BookOpenIcon, BookmarkIcon, ChevronDownIcon, ClockIcon, MapPinIcon, ShareIcon, StarOutlineIcon } from 'src/Components/icons'
+import { AlertCircleIcon, AwardIcon, BookOpenIcon, BookmarkIcon, ChevronDownIcon, ClockIcon, MapPinIcon, ShareIcon, StarOutlineIcon } from 'src/Components/icons'
 import React, { FC, useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
@@ -144,7 +144,13 @@ const PublicProfile: FC = () => {
     enabled: !!currentUid,
   })
 
-  const { data, isLoading, isError } = useQuery({
+  const {
+    data,
+    isLoading: isFirstFetch,
+    isPaused,
+    isError,
+    refetch,
+  } = useQuery({
     queryKey: ['public-profile', username],
     queryFn: () => PublicProfileAPI.getPublicProfile(username as string),
     enabled: !!username,
@@ -154,6 +160,9 @@ const PublicProfile: FC = () => {
     refetchOnWindowFocus: false,
   })
 
+  // Offline, react-query pauses the fetch (no request, no error) and resumes it
+  // on reconnect. Keep the skeleton up rather than reading "no data" as not found.
+  const isLoading = isFirstFetch || (isPaused && !data)
   const showSkeleton = useDelayedLoading(isLoading)
 
   // Reset the avatar fallback when the profile (and its photo) changes.
@@ -166,7 +175,14 @@ const PublicProfile: FC = () => {
     setExtraPage(0)
   }, [username])
 
-  const { data: moreData, isFetching: isLoadingMore } = useQuery({
+  const {
+    data: moreData,
+    isLoading: isFirstFetchMore,
+    isFetching: isFetchingMore,
+    isPaused: isPausedMore,
+    isError: isErrorMore,
+    refetch: refetchMore,
+  } = useQuery({
     queryKey: ['public-profile-recipes', username, extraPage],
     queryFn: () =>
       PublicProfileAPI.getPublicProfileRecipes(
@@ -183,6 +199,21 @@ const PublicProfile: FC = () => {
       setExtraPages(prev => ({ ...prev, [extraPage]: moreData.recipes }))
     }
   }, [moreData, extraPage])
+
+  const moreOffline = extraPage > 0 && isPausedMore && !moreData
+  const isLoadingMore = extraPage > 0 && (isFetchingMore || isPausedMore) && !moreData
+  const moreFailed = extraPage > 0 && isErrorMore && !isFetchingMore && !moreData
+
+  // Advance only once the requested page has landed. A page that failed is
+  // retried instead of skipped, so its recipes aren't lost for good.
+  const loadMore = () => {
+    if (isFirstFetchMore || moreOffline) return
+    if (extraPage > 0 && !extraPages[extraPage]) {
+      refetchMore({ cancelRefetch: false })
+      return
+    }
+    setExtraPage(extraPage + 1)
+  }
 
   const handleShare = async () => {
     const url = window.location.href
@@ -219,7 +250,27 @@ const PublicProfile: FC = () => {
     )
   }
 
-  if (isError || !data) {
+  // Error is not empty: a failed request isn't a missing user. Only a 404,
+  // which the API maps to null, gets "Profile not found". A failed background
+  // refetch (e.g. on reconnect) keeps the profile already on screen.
+  if (isError && !data) {
+    return (
+      <div className='page public-profile pp-centered'>
+        <Helmet>
+          <title>Profile · Prepify</title>
+          <meta name='robots' content='noindex' />
+        </Helmet>
+        <EmptyState
+          icon={<AlertCircleIcon />}
+          title='Couldn’t load this profile'
+          description='Something went wrong. Please try again.'
+          action={{ label: 'Try again', onClick: () => refetch() }}
+        />
+      </div>
+    )
+  }
+
+  if (!data) {
     return (
       <div className='page public-profile pp-centered'>
         <Helmet>
@@ -426,11 +477,15 @@ const PublicProfile: FC = () => {
                 <button
                   type='button'
                   className='load-more-btn'
-                  onClick={() => setExtraPage(p => p + 1)}
+                  onClick={loadMore}
                   disabled={isLoadingMore}
                 >
-                  {isLoadingMore ? (
+                  {moreOffline ? (
+                    'You’re offline. More will load when you reconnect'
+                  ) : isLoadingMore ? (
                     'Loading…'
+                  ) : moreFailed ? (
+                    'Couldn’t load more. Try again'
                   ) : (
                     <>
                       Load more recipes <ChevronDownIcon />
