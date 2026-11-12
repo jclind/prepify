@@ -2820,3 +2820,10 @@ Append-only; newest at the bottom. Mirror each merge into the item's box in [`BA
   drops the rest. The first-save "Saved" toast waits for the save; a failed save shows an error instead. 4 of 5
   new tests fail on the old code; frontend suite 885 passed, 2 skipped; Codex review found nothing. Not yet in
   prod. Left over, not in any plan PR: unsaving from the popover's "All saved" row also fails silently.
+- **2026-11-12** — Merged [#374](https://github.com/jclind/prepify/pull/374) (2c; CR-3, fixes #371). "Load more"
+  on the Account tabs and recipe reviews advances one page per click, retries a failed or null page instead of
+  skipping it, and keeps loaded cards on screen while the next page loads, so the grid no longer jumps (#371).
+  Offline, the button says it's waiting and the page loads on reconnect; a background or paused refresh of a
+  loaded page no longer blocks it (Codex finding, fixed in the PR). Every new test failed on the code before
+  it; frontend suite 896 passed, 2 skipped; Codex's second review found nothing. Not yet in prod. Queued after
+  Phase 2, approved by Jesse: an inline loading shell in `index.html` so a slow first load isn't a white page.
